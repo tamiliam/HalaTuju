@@ -65,6 +65,27 @@ walk would surface unguarded routes. There were none: longest-prefix matching ha
 by accident. The hole was real; the drift had not happened yet. One blind spot remains and is
 written down — a new child under a prefix-matched section inherits its parent's row.
 
+## Addendum — TD-258 fixed the same day, on the owner's word
+
+The owner read the finding and said *"fix td 258"*. Built by a second Opus 5 agent under the same
+rules; shipped together with H3.
+
+- **Tests first, seen red:** 4 of the 8 new tests failed against the old code, each for the
+  reason it was written — including `404 != 400`, the oracle itself, demonstrated.
+- **Three fixes:** fund resolves through `pool.for_sponsor` (three indistinguishable 404s); the
+  mock donation is gated off and cannot arm against a managed database; `fund_student` refuses a
+  programme-less application before any arithmetic. `KNOWN_UNFENCED` is empty again.
+- **The agent disagreed with the TD entry, and was right.** The entry suggested the *fundable*
+  queryset; the agent chose the *display* set, the same as the sibling view, and wrote down why.
+  It flagged the choice as a judgement call rather than hiding it. Recorded in `docs/decisions.md`.
+- **The guard fired on the fix's own docstring** — the first draft quoted the old bare-id query in
+  prose. Reworded, not pragma-ed: a pragma there would have been a false claim of safety.
+- **What the lead checked before the push:** the new flag is absent from Cloud Run; production
+  connects by `DB_HOST`, so the mock cannot arm; 0 cohorts and 0 applications lack a programme, so
+  the new refusal blocks no real student.
+- *Process note.* A security hole in a money path went from found to fixed in one day because the
+  freeze had already cleared the desk. That is an argument for the freeze, not a coincidence.
+
 ## Numbers
 
 | Gate | Before | After |

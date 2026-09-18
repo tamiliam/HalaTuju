@@ -38,6 +38,37 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Security: TD-258 closed - the sponsor fund view goes through the fence; the mock donation is gated off - 2026-09-18
+
+Found by the code-health H3 guard the same day; fixed on the owner's word (*"fix td 258"*) under
+the freeze's security exception. Built by an Opus 5 agent, tests written FIRST and seen red;
+diff reviewed and production checked by the lead. No migration. Web app untouched.
+
+- **Fund goes through the ONE seam.** `SponsorFundView` resolves the student through
+  `pool.for_sponsor(pool.display_pool_queryset(...), sponsor)` - the same seam and set as its
+  sibling detail view. **An id that holds no row, an id in a gift the sponsor was never accepted
+  into, and an id that exists but is not in the pool now give the IDENTICAL answer: 404
+  `not_found`.** Before today they were three different answers - an existence-and-state oracle
+  over every tenant's students. The test asserts the three responses equal EACH OTHER, not just a
+  constant.
+- **The rule, written into the view:** the fence decides what is VISIBLE, the service decides what
+  is FUNDABLE. Distinctions survive only inside the visible pool, where they leak nothing
+  (`insufficient_balance` is news about your own wallet). See `docs/decisions.md`.
+- **The MOCK donation endpoint is gated OFF by default** behind `SPONSOR_MOCK_DONATIONS_ENABLED`,
+  and refuses to arm at all when the process talks to a managed database (`DATABASE_URL` /
+  `DB_HOST`) - a production signal, never `not DEBUG`. Off, it answers exactly like a route that
+  does not exist and writes nothing. No live UI ever called it. The real money-in path is the
+  admin wallet credit and its sign-off chain.
+- **The NULL-programme bucket is never spendable.** `fund_student` - the single spend choke-point -
+  refuses an application with no gift (`programme_required`) BEFORE any balance arithmetic.
+  Nine test files had funded programme-less fixtures; each was given a gift rather than the rule
+  being softened.
+- **`KNOWN_UNFENCED` is empty again.** Four bite-checks, all bit: revert any one fix and a named
+  test goes red; remove `for_sponsor(` and the fence guard itself goes red.
+- **Production, checked by the lead:** the new flag is ABSENT from Cloud Run; the api runs on
+  `DB_HOST`, so the mock cannot arm there even if someone set it; 0 cohorts and 0 applications
+  without a programme, so the new rule blocks no real student. Gates: 6,730 pytest, 0 failed.
+
 ## Code health H3 - three guards closed, and the first one found a hole in the sponsor money path - 2026-09-18
 
 Sprint H3 of the code-health roadmap, under the development freeze. Built by an Opus 5 agent;

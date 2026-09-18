@@ -154,8 +154,8 @@ chasing them is how a health arc turns into a rewrite.
   `docker build`; a normal push deploys as before; build-minutes projection written down.
 - **Complexity:** medium. **~6h.**
 
-### H3 — The guards the splits will lean on ✅ BUILT 2026-09-18
-*Retro: `docs/retrospective-2026-09-18-code-health-h3.md`. TD-219, TD-240, TD-250 closed; the fence is package-aware for H11. Raised **TD-257** (22 endpoints no test drives — a Phase-2 backfill, after the H5 factory) and **TD-258** (HIGH: the sponsor fund view is outside the fence and a mock donation endpoint is live — reported, not patched; the owner's call).*
+### H3 — The guards the splits will lean on ✅ SHIPPED 2026-09-18
+*Retro: `docs/retrospective-2026-09-18-code-health-h3.md`. TD-219, TD-240, TD-250 closed; the fence is package-aware for H11. Raised **TD-257** (22 endpoints no test drives — a Phase-2 backfill, after the H5 factory) and **TD-258** (HIGH: the sponsor fund view is outside the fence and a mock donation endpoint is live — reported, not patched — then **fixed the same day on the owner's word** and shipped with H3).*
 - **Goal:** close three holes in the mechanical guards *before* code starts moving between files.
 - **Scope:**
   - **TD-219 (high):** nothing tests the seam between a view and the service it calls — two

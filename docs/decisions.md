@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## A sponsor may ACT on exactly what they can SEE: the fence decides visibility, the service decides fundability — 2026-09-18
+
+**Decision:** every sponsor-facing endpoint that takes a student id resolves it through
+`pool.for_sponsor(pool.display_pool_queryset(...), sponsor)`. Anything outside that set is ONE
+answer — `404 not_found` — whether the id holds no row, belongs to another gift, or is not in the
+pool. Whether a visible student can be *funded* is then the service's question
+(`award_and_notify` → `fund_student` → `is_fundable`), and its error codes are allowed to differ.
+
+**Alternatives:** resolve the fund action through the stricter FUNDABLE set
+(`eligible_pool_queryset`), which TD-258's own first sketch suggested. Rejected: a just-funded
+grace-window card is on the sponsor's screen as a "Sponsored" card, so a 404 would claim a student
+they are looking at does not exist, to hide a state the card already shows.
+
+**Rationale:** TD-258. `SponsorFundView` read the application by bare id and told three cases
+apart — an existence-and-state oracle across the programme fence. The cross-gift *write* was
+blocked only by balance arithmetic; nothing in the path stated the fence. One seam, one answer,
+is a rule a guard can check (`test_org_fence.py`, sponsor vocabulary) and a reader can hold.
+
+**Trade-offs:** one distinction survives that the fundable set would hide — a sponsor learns that a
+card they can already see was taken a moment ago. Accepted: the card carries that state.
+
+**Revisit if:** the display pool ever grows to include students a sponsor should be able to see
+but never be told the funding state of.
+
 ## New `public` tables get RLS from a DATABASE event trigger, not from memory — 2026-09-16
 
 **Decision:** an event trigger `rls_auto_enable` (on `ddl_command_end`) runs

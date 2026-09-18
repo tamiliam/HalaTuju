@@ -77,9 +77,10 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   there.** Moves money back to a sponsor and retracts a promise, so it is the owner's call.
 
 ### High — engineering, promoted and ready to schedule
-- **TD-258 (security, money path) — raised 2026-09-18 by code health H3.** The sponsor FUND view reads an
-  application by bare id, outside `pool.for_sponsor`; a MOCK donation endpoint is live in production.
-  Nothing exploited, money cannot move this way today (checked). ~2h. **The freeze allows it.**
+- *Closed 2026-09-18:* **TD-258** (security, money path) — the sponsor FUND view now resolves the
+  student through `pool.for_sponsor`, the MOCK donation endpoint is behind
+  `SPONSOR_MOCK_DONATIONS_ENABLED` (default OFF, **never set in production**), and a NULL-programme
+  application can no longer be funded. Nothing had been exploited.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
   backfill of the code-health roadmap, after the H5 factory.
 - *Closed 2026-09-18 by H3:* TD-219 (view/service seam), TD-240 (fence scan of `views_sponsor.py`),
@@ -3960,7 +3961,7 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
-### [TD-258] The sponsor FUND view reads an application outside the sponsor fence, and a MOCK donation endpoint is live in production — HIGH (security, money path)
+### [TD-258] The sponsor FUND view reads an application outside the sponsor fence, and a MOCK donation endpoint is live in production — HIGH (security, money path) — **RESOLVED 2026-09-18**
 
 **Found:** code health H3 (2026-09-18), the first time the org-fence guard scanned
 `views_sponsor.py` (TD-240). Reported by the building agent, not patched; verified by the lead.
@@ -4002,6 +4003,37 @@ and money cannot move this way today.** The guard logs the fund read in `KNOWN_U
 - tests for all three, then remove the `KNOWN_UNFENCED` line.
 
 **The freeze allows security fixes.** Recommended before H4.
+
+**Resolved 2026-09-18.** All three holes closed, no migration, no schema change.
+(1) **Fund goes through the fence.** `SponsorFundView.post` resolves the student through
+`pool.for_sponsor(pool.display_pool_queryset(ScholarshipApplication), sponsor)` — the same seam and
+the same visibility set as its sibling `SponsorPoolDetailView`, deliberately the DISPLAY set rather
+than the stricter fundable one, so that what a sponsor may ACT on is exactly what they can SEE.
+Everything outside that set is one answer, `404 not_found`: a missing id, an id in a gift they were
+never accepted into, and a real row that is not pooled are now indistinguishable (asserted equal to
+*each other*, not merely each to a constant). Distinctions survive only inside the visible pool,
+where they leak nothing — `insufficient_balance` is news about the caller's own wallet, and
+`not_fundable` is news about a card whose state the card already shows. `award_and_notify` and its
+error codes are untouched.
+(2) **The mock donation endpoint has its own gate: `SPONSOR_MOCK_DONATIONS_ENABLED`, default OFF,
+and it is NOT to be set in production.** Switched off, `SponsorDonateView` answers exactly like a
+route that is not there for that caller — `404 pool_not_available`, the body the pool gate already
+uses for a hidden feature — and writes nothing; naming the mock in the error would advertise it.
+Switched on, behaviour is unchanged. The flag is armed by the environment variable but additionally
+refuses to arm when a managed database is configured (`DATABASE_URL` / `DB_HOST`) — a production
+SIGNAL, never `not DEBUG`. **No live UI ever called this endpoint** (`halatuju-web/src` has no
+reference to `wallet/donate`), so nothing in the web app changed. The real money-in path in
+production is and remains the admin wallet credit, `sponsorship.record_admin_credit` plus its
+maker → [finance] → approver sign-off chain.
+(3) **The NULL-programme bucket is never spendable.** `fund_student` — the single spend choke point
+that `award_and_notify`, the standing-gift allocator and the admin batch all reach — refuses an
+application whose `programme` is NULL with `programme_required`, BEFORE any balance arithmetic, so
+the NULL wallet is never consulted. The bucket still does its original job of partitioning bare
+fixtures; it is simply no longer a wallet anything can buy with. Nine test files (and the
+`bursary_e2e` dev command) that funded programme-less fixtures were given a gift rather than the
+rule being weakened.
+The `KNOWN_UNFENCED` ledger in `test_org_fence.py` is now EMPTY; the mechanism is kept. Tests live
+in `apps/scholarship/tests/test_td258_sponsor_money_fence.py`.
 
 ### [TD-257] Twenty-two wired endpoints are never driven by a test — high
 
