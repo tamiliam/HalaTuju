@@ -1059,11 +1059,22 @@ export function isStuckAfterVerdict(
     status: string | null | undefined
     verdictDecidedAt?: string | null
     verifiedAt?: string | null
+    /** The recorded outcome — 'accept' | 'decline'. See the ⚠ below: it decides WHICH mark
+     *  proves the submit ran, and without it a decline reads as stuck for ever. */
+    outcome?: string | null
   },
 ): boolean {
   if (!opts.verdictDecidedAt) return false   // no verdict recorded — nothing half-done
-  if (opts.verifiedAt) return false          // the accept DID run — the case moved
-  return LIVE_STATES.includes(opts.status || '')
+  if (!LIVE_STATES.includes(opts.status || '')) return false
+  // ⚠ TWO ROADS REACH QC AND THEY LEAVE DIFFERENT MARKS (BrightPath #24, 2026-09-18).
+  // Recommend goes through verify-accept, which stamps `verified_at`. DECLINE has no identity or
+  // completeness gate — an incomplete applicant is exactly who gets declined — so since 2026-07-19
+  // `submit-decline` moves the case to 'interviewed' (AWAITING QC) and stamps NOTHING else.
+  // Asking for `verified_at` on that road is asking for a mark that is never written: every
+  // declined case awaiting QC read as "not submitted", and the panel told the reviewer to press
+  // Approve — which would have replaced her decline with a recommendation.
+  if (opts.outcome === 'decline') return opts.status !== 'interviewed'
+  return !opts.verifiedAt
 }
 
 /**

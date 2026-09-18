@@ -1015,10 +1015,12 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // two things one Approve press does; locking on it stranded application 144 for six days with
   // no button its own reviewer could press. While the case is still waiting to be submitted, the
   // controls stay live so she can finish it herself — see `isStuckAfterVerdict`.
+  const recordedOutcome = (app.officer_verdict as { overall?: string } | null)?.overall ?? null
   const stuckAfterVerdict = isStuckAfterVerdict({
     status: app.status,
     verdictDecidedAt: app.verdict_decided_at,
     verifiedAt: app.verified_at,
+    outcome: recordedOutcome,
   })
   const decisionLocked = decisionRecorded && !decisionReopened && !stuckAfterVerdict
 
@@ -2830,7 +2832,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   message that vanished with the page. */}
               {stuckAfterVerdict && (
                 <p className="rounded-lg bg-caution-50 px-3 py-2 text-[11px] text-caution-800">
-                  {t('admin.scholarship.recordVerdict.savedNotSubmitted',
+                  {t(recordedOutcome === 'decline'
+                       ? 'admin.scholarship.recordVerdict.savedNotSubmittedDecline'
+                       : 'admin.scholarship.recordVerdict.savedNotSubmitted',
                      { date: formatDate(app.verdict_decided_at) })}
                 </p>
               )}
@@ -2864,7 +2868,15 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               {/* Save is the final commit of the chosen outcome. */}
               <button onClick={doSave} disabled={!!busy || !canSave}
                 className="w-full px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium disabled:opacity-50">
-                {(busy === 'verdict' || busy === 'reject') ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
+                {/* ⚠ THE LABEL FOLLOWS THE CHOSEN OUTCOME (owner, BrightPath #24). One fixed
+                    "Save & generate final profile" promised a profile on a DECLINE, which
+                    generates none and should not — the reviewer was told the opposite of what
+                    the button does. */}
+                {(busy === 'verdict' || busy === 'reject')
+                  ? t('common.loading')
+                  : t(officerVerdict.overall === 'decline'
+                        ? 'admin.scholarship.recordVerdict.saveDecline'
+                        : 'admin.scholarship.recordVerdict.save')}
               </button>
             </div>
           )
