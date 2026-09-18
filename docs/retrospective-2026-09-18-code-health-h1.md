@@ -60,6 +60,14 @@ It could not: neither changed test was skipping at run time. What fell is the *s
 skip sites (2 → 0), which is what the reading measures. The three remaining runtime skips are
 "real corpus not present on this machine" — honest, environment-conditional.
 
+## The deploy — the proof the local box could not give
+
+Pushed on the owner's word. Both builds **SUCCESS** at `3b21722`. Serving:
+**`halatuju-api-01050-kw2`** and **`halatuju-web-00901-r9l`**, each the latest ready revision.
+The api build log shows pip installed **92 packages at the locked versions** — the image is what
+the lock says it is. Site 200; the admin applications endpoint answers 401 unauthenticated; zero
+ERROR lines on the new api revision. One deploy per service; no retry.
+
 ## Numbers
 
 | Gate | Result |
