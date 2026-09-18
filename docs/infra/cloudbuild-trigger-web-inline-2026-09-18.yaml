@@ -1,0 +1,83 @@
+# ROLLBACK ARTEFACT — the halatuju-web Cloud Build trigger exactly as it stood on 2026-09-18,
+# before H2 moved it from this INLINE `build:` block to the committed halatuju-web/cloudbuild.yaml.
+# Re-importing this file restores the un-gated inline build (no tests, no `filename:`):
+#   gcloud builds triggers import --source=docs/infra/cloudbuild-trigger-web-inline-2026-09-18.yaml \
+#     --account tamiliam@gmail.com --project gen-lang-client-0871147736
+# The trigger lives in the GLOBAL region. Contains names, ids and a service-account email only.
+build:
+  images:
+  - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+  options:
+    logging: CLOUD_LOGGING_ONLY
+    substitutionOption: ALLOW_LOOSE
+  steps:
+  - args:
+    - build
+    - --no-cache
+    - -t
+    - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    - halatuju-web
+    - -f
+    - halatuju-web/Dockerfile
+    id: Build
+    name: gcr.io/cloud-builders/docker
+  - args:
+    - push
+    - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+    name: gcr.io/cloud-builders/docker
+  - args:
+    - run
+    - services
+    - update
+    - $_SERVICE_NAME
+    - --platform=managed
+    - --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    - --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+    - --region=$_DEPLOY_REGION
+    - --quiet
+    entrypoint: gcloud
+    id: Deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  substitutions:
+    REPO_NAME: halatuju
+    _AR_HOSTNAME: asia-southeast1-docker.pkg.dev
+    _AR_PROJECT_ID: gen-lang-client-0871147736
+    _AR_REPOSITORY: cloud-run-source-deploy
+    _DEPLOY_REGION: asia-southeast1
+    _PLATFORM: managed
+    _SERVICE_NAME: halatuju-web
+    _TRIGGER_ID: 664dc878-4294-43ac-9f53-e00411809141
+  tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - halatuju-web
+createTime: '2026-03-15T08:38:06.161337720Z'
+description: Build and deploy to Cloud Run service halatuju-web on push to "^main$"
+github:
+  name: HalaTuju
+  owner: tamiliam
+  push:
+    branch: ^main$
+id: 664dc878-4294-43ac-9f53-e00411809141
+ignoredFiles:
+- docs/**
+includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+includedFiles:
+- halatuju-web/**
+name: rmgpgab-halatuju-web-asia-southeast1-tamiliam-HalaTuju--maaix
+resourceName: projects/gen-lang-client-0871147736/locations/global/triggers/664dc878-4294-43ac-9f53-e00411809141
+serviceAccount: projects/gen-lang-client-0871147736/serviceAccounts/90344691621-compute@developer.gserviceaccount.com
+substitutions:
+  REPO_NAME: halatuju
+  _AR_HOSTNAME: asia-southeast1-docker.pkg.dev
+  _AR_PROJECT_ID: gen-lang-client-0871147736
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _DEPLOY_REGION: asia-southeast1
+  _PLATFORM: managed
+  _SERVICE_NAME: halatuju-web
+  _TRIGGER_ID: 664dc878-4294-43ac-9f53-e00411809141
+tags:
+- gcp-cloud-build-deploy-cloud-run
+- gcp-cloud-build-deploy-cloud-run-managed
+- halatuju-web

@@ -1,5 +1,28 @@
 # HalaTuju API - Cloud Run Deployment
 
+## What a push to main does now (since H2, 2026-09-18)
+
+Both Cloud Build triggers run a **committed config file** — `halatuju_api/cloudbuild.yaml` and
+`halatuju-web/cloudbuild.yaml` — instead of the inline block that used to live in the console.
+
+- **Tests are the gate.** Each build runs its suite *in parallel with* `docker build`: the api runs
+  `manage.py check`, `makemigrations --check --dry-run` and `pytest -q -n auto` (on SQLite — no
+  database service needed); the web runs `npm ci` then `npm run gates` (typecheck, lint, i18n
+  parity, jest). The `push` step waits for **both** the tests and the image, so **a red suite means
+  the image is never pushed and the service is never updated**. Running the two in parallel is why
+  the gate costs almost no extra build time.
+- **Which files trigger a build** is still set on the trigger, not in the config file. As of
+  2026-09-18 — api: includes `halatuju_api/**`, ignores `docs/**` and `halatuju_api/CLAUDE.md`;
+  web: includes `halatuju-web/**`, ignores `docs/**`. Each config file's header repeats this.
+- **Hotfix bypass.** A flaky test must never block a fix with a user on the other side. Run the
+  trigger manually with `--substitutions=_SKIP_TESTS=1`; the build log then carries a loud banner
+  saying the deploy was not gated, and the skip must be recorded in the sprint retrospective.
+- **Rollback.** `docs/infra/cloudbuild-trigger-api-inline-2026-09-18.yaml` and
+  `…-web-inline-2026-09-18.yaml` are the exact trigger exports from before the switch. Re-import
+  one with `gcloud builds triggers import --source=<file>` to go back to the un-gated inline build.
+- **⚠ Triggers still do NOT run `migrate`.** This project is migrate-first: apply the migration to
+  production *before* pushing the code that needs it.
+
 ## Prerequisites
 
 1. Google Cloud SDK installed (`gcloud`)

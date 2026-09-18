@@ -1,0 +1,160 @@
+# HalaTuju api — Cloud Build configuration (committed; replaces the trigger's inline build).
+#
+# WHAT THIS FILE IS
+#   The Cloud Build trigger "rmgpgab-halatuju-api-asia-southeast1-tamiliam-HalaTuju--manez"
+#   (GitHub push to ^main$, project gen-lang-client-0871147736, region global) runs this file via
+#   `filename: halatuju_api/cloudbuild.yaml`. The build runs from the REPOSITORY ROOT, so paths
+#   below are repo-relative (`halatuju_api/Dockerfile`), not relative to this file.
+#   Build, Push, Deploy and SyncReleaseJob are an exact reproduction of the inline steps they
+#   replace. The only addition is the `test` step. It runs IN PARALLEL with `docker build`, so a
+#   green suite costs almost no extra wall time; `Push` waits for both, so a RED SUITE STOPS THE
+#   BUILD BEFORE ANYTHING IS PUSHED OR DEPLOYED.
+#
+# THE FILE FILTERS LIVE IN THE TRIGGER, NOT HERE. As of 2026-09-18 they are:
+#   includedFiles: halatuju_api/**
+#   ignoredFiles:  docs/**  and  halatuju_api/CLAUDE.md
+#   Changing them is a trigger change (console or `gcloud builds triggers`), not an edit here.
+#
+# HOTFIX BYPASS — a flaky test must never block a hotfix.
+#   Run the trigger manually with the tests skipped (this keeps the trigger's substitutions):
+#     gcloud builds triggers run rmgpgab-halatuju-api-asia-southeast1-tamiliam-HalaTuju--manez \
+#       --branch=main --substitutions=_SKIP_TESTS=1 \
+#       --region=global --account tamiliam@gmail.com --project gen-lang-client-0871147736
+#   The test step then prints a loud banner instead of running. Whoever uses it must record the
+#   skip in the sprint retrospective.
+#
+# ROLLBACK — put the trigger back on its inline config:
+#     gcloud builds triggers import \
+#       --source=docs/infra/cloudbuild-trigger-api-inline-2026-09-18.yaml \
+#       --account tamiliam@gmail.com --project gen-lang-client-0871147736
+#   (that file is the exact trigger export taken before this file existed; region global)
+#
+# ⚠ TRIGGERS DO NOT RUN `migrate`. This project is MIGRATE-FIRST: apply the migration to
+#   production BEFORE pushing the code that needs it. Nothing in this file changes that.
+#
+# ⚠ SUBSTITUTION vs SHELL. Cloud Build replaces `$_NAME` / `${_NAME}` inside `args` BEFORE the
+#   shell ever sees the text. So `$_SKIP_TESTS` below is not a shell variable — by the time bash
+#   runs, the line already reads `if [ "1" = "1" ]` (or `if [ "" = "1" ]`). A shell variable of
+#   our own would have to be written `$$NAME`; this file deliberately uses none.
+
+substitutions:
+  # Escape hatch. Empty = tests run (the normal path). "1" = tests are skipped, loudly.
+  _SKIP_TESTS: ''
+
+steps:
+  # ---------------------------------------------------------------- tests (parallel with Build)
+  - id: test
+    name: python:3.11-slim
+    dir: halatuju_api
+    entrypoint: bash
+    waitFor: ['-']
+    args:
+      - -c
+      - |
+        set -e
+
+        if [ "$_SKIP_TESTS" = "1" ]; then
+          echo "################################################################################"
+          echo "#                                                                              #"
+          echo "#   TESTS SKIPPED BY _SKIP_TESTS=1 — THIS DEPLOY WAS NOT GATED.                #"
+          echo "#                                                                              #"
+          echo "#   No test ran. Nothing proved this image works. It is about to be pushed      #"
+          echo "#   and deployed to production anyway, because a human asked for it.            #"
+          echo "#                                                                              #"
+          echo "#   Whoever triggered this build must record the skip, and why, in the sprint   #"
+          echo "#   retrospective (docs/retrospective-*.md) and re-run the full suite on main   #"
+          echo "#   as soon as the hotfix is out.                                               #"
+          echo "#                                                                              #"
+          echo "################################################################################"
+          exit 0
+        fi
+
+        # Mirrors the Dockerfile's system packages (gcc, libpq-dev) so this step installs the
+        # lock exactly the way the production image does, even if a pin ever loses its wheel.
+        echo "--- system packages ---"
+        apt-get update
+        apt-get install -y --no-install-recommends gcc libpq-dev
+        rm -rf /var/lib/apt/lists/*
+
+        echo "--- pip install (runtime lock + test runner) ---"
+        pip install --no-cache-dir -r requirements.lock -r requirements-dev.txt
+
+        # pytest.ini points at halatuju.settings.development, which falls back to SQLite when
+        # DATABASE_URL is unset — no database service is needed on the build worker.
+        echo "--- manage.py check ---"
+        python manage.py check
+
+        echo "--- makemigrations --check --dry-run (a model change without a migration is red) ---"
+        python manage.py makemigrations --check --dry-run
+
+        echo "--- pytest ---"
+        python -m pytest -q -n auto -p no:cacheprovider
+
+  # ---------------------------------------------------------------- image (parallel with tests)
+  - args:
+      - build
+      - --no-cache
+      - -t
+      - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - halatuju_api
+      - -f
+      - halatuju_api/Dockerfile
+    id: Build
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+
+  # ---------------------------------------------------------------- the gate: needs BOTH greens
+  - args:
+      - push
+      - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - test
+      - Build
+
+  - args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - --platform=managed
+      - --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - --region=$_DEPLOY_REGION
+      - --quiet
+    entrypoint: gcloud
+    id: Deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor:
+      - Push
+
+  - args:
+      - -c
+      - 'gcloud run jobs update release-decisions --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+        --region=$_DEPLOY_REGION --quiet || echo "WARN: release-decisions job image
+        sync failed (non-fatal); sync manually"'
+    entrypoint: bash
+    id: SyncReleaseJob
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor:
+      - Deploy
+
+images:
+  - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  # A trigger substitution this file never mentions (e.g. _PLATFORM) must not fail the build.
+  substitution_option: ALLOW_LOOSE
+
+# The inline config tagged every build with these; kept so build history filters as it always has.
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - halatuju-api
+
+# The inline config set no timeout, so it inherited Cloud Build's 60-minute default. Thirty
+# minutes is explicit and tighter: room for the suite beside the image build, without letting a
+# hung build burn an hour of the free tier.
+timeout: 1800s

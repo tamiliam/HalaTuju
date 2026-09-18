@@ -574,8 +574,17 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 - 1452 backend tests, 183 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
-- CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
-  `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
+- CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). Since H2 each trigger runs a
+  **committed config file** — `halatuju_api/cloudbuild.yaml` and `halatuju-web/cloudbuild.yaml` — not an inline block
+  in the console. **The tests are the gate:** each build runs its suite (api: `manage.py check`, `makemigrations
+  --check`, `pytest -n auto`; web: `npm run gates`) *in parallel with* `docker build`, and the push and deploy steps
+  wait for both, so **a red suite means nothing is pushed and nothing is deployed**. Running in parallel is why the
+  gate costs almost no extra build time. The trigger's `includedFiles`/`ignoredFiles` still live in the trigger, and
+  are recorded in each config's header comment. **Hotfix bypass:** run the trigger manually with `_SKIP_TESTS=1` —
+  the build log then carries a loud banner and the skip must be written into the sprint retro. **Rollback:** the two
+  pre-H2 trigger exports are kept in `docs/infra/` and can be re-imported with `gcloud builds triggers import`.
+  **Triggers do NOT run `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS
+  gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
 ## ⛔ DEVELOPMENT FREEZE — owner ruling, 2026-09-18 (READ BEFORE STARTING ANY WORK)

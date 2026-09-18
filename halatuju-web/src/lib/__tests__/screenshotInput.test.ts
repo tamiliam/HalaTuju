@@ -16,10 +16,19 @@
  *
  * If a THIRD surface ever accepts screenshots, add it to SURFACES. That is the point.
  */
+import { File as NodeFile } from 'node:buffer'
 import * as fs from 'fs'
 import * as path from 'path'
 
 import { imagesFrom, namedForPaste } from '@/lib/screenshotInput'
+
+// ⚠ `File` IS A BROWSER GLOBAL, AND ONLY NODE 20+ HAS IT. The production image — and so the deploy
+// gate — runs Node 18, where a bare `new File(...)` is a ReferenceError. This suite passed on every
+// dev box (Node 24) and failed the first time it ran where the app is built (code health H2,
+// 2026-09-18). `node:buffer` has exported `File` since 18.13, so borrow it when the global is absent.
+if (typeof (globalThis as { File?: unknown }).File === 'undefined') {
+  (globalThis as { File?: unknown }).File = NodeFile
+}
 
 const ROOT = path.join(__dirname, '..', '..')
 

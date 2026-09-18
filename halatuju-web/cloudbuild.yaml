@@ -1,0 +1,139 @@
+# HalaTuju web — Cloud Build configuration (committed; replaces the trigger's inline build).
+#
+# WHAT THIS FILE IS
+#   The Cloud Build trigger "rmgpgab-halatuju-web-asia-southeast1-tamiliam-HalaTuju--maaix"
+#   (GitHub push to ^main$, project gen-lang-client-0871147736, region global) runs this file via
+#   `filename: halatuju-web/cloudbuild.yaml`. The build runs from the REPOSITORY ROOT, so paths
+#   below are repo-relative (`halatuju-web/Dockerfile`), not relative to this file.
+#   Build, Push and Deploy are an exact reproduction of the inline steps they replace — including
+#   passing no --build-arg, because the Dockerfile's SANDBOX and API_URL args default to the
+#   production values and the inline step never overrode them. The only addition is the `test`
+#   step. It runs IN PARALLEL with `docker build`, so a green run costs almost no extra wall time;
+#   `Push` waits for both, so a RED SUITE STOPS THE BUILD BEFORE ANYTHING IS PUSHED OR DEPLOYED.
+#
+# THE FILE FILTERS LIVE IN THE TRIGGER, NOT HERE. As of 2026-09-18 they are:
+#   includedFiles: halatuju-web/**
+#   ignoredFiles:  docs/**
+#   Changing them is a trigger change (console or `gcloud builds triggers`), not an edit here.
+#
+# HOTFIX BYPASS — a flaky test must never block a hotfix.
+#   Run the trigger manually with the tests skipped (this keeps the trigger's substitutions):
+#     gcloud builds triggers run rmgpgab-halatuju-web-asia-southeast1-tamiliam-HalaTuju--maaix \
+#       --branch=main --substitutions=_SKIP_TESTS=1 \
+#       --region=global --account tamiliam@gmail.com --project gen-lang-client-0871147736
+#   The test step then prints a loud banner instead of running. Whoever uses it must record the
+#   skip in the sprint retrospective.
+#
+# ROLLBACK — put the trigger back on its inline config:
+#     gcloud builds triggers import \
+#       --source=docs/infra/cloudbuild-trigger-web-inline-2026-09-18.yaml \
+#       --account tamiliam@gmail.com --project gen-lang-client-0871147736
+#   (that file is the exact trigger export taken before this file existed; region global)
+#
+# ⚠ TRIGGERS DO NOT RUN `migrate`. The api is MIGRATE-FIRST: apply the migration to production
+#   BEFORE pushing the code that needs it. Nothing in this file changes that.
+#
+# ⚠ SUBSTITUTION vs SHELL. Cloud Build replaces `$_NAME` / `${_NAME}` inside `args` BEFORE the
+#   shell ever sees the text. So `$_SKIP_TESTS` below is not a shell variable — by the time sh
+#   runs, the line already reads `if [ "1" = "1" ]` (or `if [ "" = "1" ]`). A shell variable of
+#   our own would have to be written `$$NAME`; this file deliberately uses none.
+#   The test image is node:18-alpine (the Dockerfile's own base), which ships BusyBox `sh`, not
+#   bash — the script below is plain POSIX sh.
+
+substitutions:
+  # Escape hatch. Empty = tests run (the normal path). "1" = tests are skipped, loudly.
+  _SKIP_TESTS: ''
+
+steps:
+  # ---------------------------------------------------------------- tests (parallel with Build)
+  - id: test
+    name: node:18-alpine
+    dir: halatuju-web
+    entrypoint: sh
+    waitFor: ['-']
+    args:
+      - -c
+      - |
+        set -e
+
+        if [ "$_SKIP_TESTS" = "1" ]; then
+          echo "################################################################################"
+          echo "#                                                                              #"
+          echo "#   TESTS SKIPPED BY _SKIP_TESTS=1 — THIS DEPLOY WAS NOT GATED.                #"
+          echo "#                                                                              #"
+          echo "#   No gate ran. Nothing proved this bundle type-checks, lints, keeps i18n      #"
+          echo "#   parity or passes jest. It is about to be pushed and deployed to             #"
+          echo "#   production anyway, because a human asked for it.                            #"
+          echo "#                                                                              #"
+          echo "#   Whoever triggered this build must record the skip, and why, in the sprint   #"
+          echo "#   retrospective (docs/retrospective-*.md) and re-run the full gates on main   #"
+          echo "#   as soon as the hotfix is out.                                               #"
+          echo "#                                                                              #"
+          echo "################################################################################"
+          exit 0
+        fi
+
+        echo "--- npm ci ---"
+        npm ci
+
+        # gates = typecheck && lint && i18n parity && jest, in that order (package.json).
+        echo "--- npm run gates ---"
+        npm run gates
+
+  # ---------------------------------------------------------------- image (parallel with tests)
+  - args:
+      - build
+      - --no-cache
+      - -t
+      - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - halatuju-web
+      - -f
+      - halatuju-web/Dockerfile
+    id: Build
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+
+  # ---------------------------------------------------------------- the gate: needs BOTH greens
+  - args:
+      - push
+      - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - test
+      - Build
+
+  - args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - --platform=managed
+      - --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - --region=$_DEPLOY_REGION
+      - --quiet
+    entrypoint: gcloud
+    id: Deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    waitFor:
+      - Push
+
+images:
+  - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  # A trigger substitution this file never mentions (e.g. _PLATFORM) must not fail the build.
+  substitution_option: ALLOW_LOOSE
+
+# The inline config tagged every build with these; kept so build history filters as it always has.
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - halatuju-web
+
+# The inline config set no timeout, so it inherited Cloud Build's 60-minute default. Thirty
+# minutes is explicit and tighter: room for the gates beside the image build (which alone averages
+# 6.9 min), without letting a hung build burn an hour of the free tier.
+timeout: 1800s
