@@ -1,0 +1,14 @@
+# Developer tooling only — the test runner. NOT installed into the production image.
+# A fresh clone runs the suite with:
+#     pip install -r requirements.lock -r requirements-dev.txt
+#     pytest -q -n auto
+# Deliberately no `-r requirements.txt`: the runtime set comes from requirements.lock,
+# so a dev install and a production image install the same runtime code.
+pytest==9.0.3
+pytest-django==4.11.1
+pytest-xdist==3.8.0
+# Not a runtime dependency, on purpose — `spending_import.py` imports openpyxl LAZILY and says
+# so in its docstring, because the service reads the Sheets API and only a local .xlsx export
+# needs a spreadsheet reader. But `test_spending_import.py` writes an .xlsx to exercise that
+# path, so without this a fresh clone cannot run the suite. Dev-only; it stays out of the lock.
+openpyxl==3.1.5

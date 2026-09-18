@@ -1,0 +1,110 @@
+# The production runtime, frozen.
+#
+# This is an exact record of what pip installed in the production image build of
+# 2026-09-18 (commit c658a1b) — not a fresh resolve. The Dockerfile installs THIS
+# file, so two builds of the same commit install the same code.
+#
+# `requirements.txt` is still the source of INTENT: it states the version ranges a
+# package is allowed to move within, and the comments explaining why each one is here.
+# This file is the answer that intent resolved to on one particular day.
+#
+# To refresh it deliberately (never as a side effect of another change):
+#   1. Build the image without the lock: temporarily `pip install -r requirements.txt`.
+#   2. Read the "Successfully installed ..." line from the build log — that is the new set.
+#   3. Rewrite this file from that line (one `name==version` per package, sorted).
+#   4. REVIEW THE DIFF. Every moved version is a change to what production runs and
+#      belongs in its own commit, with the suite green against it.
+#
+# pip, setuptools and wheel are not listed: they come from the python:3.11-slim base image.
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.3
+aiosignal==1.4.0
+annotated-types==0.8.0
+anyio==4.15.1
+arabic-reshaper==3.0.1
+asgiref==3.12.1
+asn1crypto==1.5.1
+attrs==26.1.0
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.1
+cryptography==50.0.1
+cssselect2==0.10.1
+distro==1.9.0
+dj-database-url==2.3.0
+django==5.2.17
+django-cors-headers==4.9.0
+djangorestframework==3.18.1
+frozenlist==1.8.0
+google-api-core==2.38.0
+google-api-python-client==2.200.0
+google-auth==2.58.0
+google-auth-httplib2==0.4.2
+google-cloud-core==2.7.0
+google-cloud-storage==3.14.1
+google-cloud-vision==3.15.0
+google-crc32c==1.8.0
+google-genai==1.75.0
+google-resumable-media==2.10.2
+googleapis-common-protos==1.75.3
+grpcio==1.84.0
+grpcio-status==1.84.0
+gunicorn==22.0.0
+h11==0.16.0
+html5lib==1.1
+httpcore==1.0.9
+httplib2==0.32.0
+httpx==0.28.1
+idna==3.20
+jiter==0.17.0
+lxml==6.1.3
+multidict==6.8.0
+numpy==2.4.6
+openai==2.54.0
+opentelemetry-api==1.44.0
+oscrypto==1.3.0
+pandas==2.3.3
+pillow==11.3.0
+pillow-heif==0.22.0
+propcache==0.5.4
+proto-plus==1.28.4
+protobuf==7.36.2
+psycopg2-binary==2.9.13
+pyasn1==0.6.4
+pyasn1-modules==0.4.2
+pycparser==3.0
+pydantic==2.13.5
+pydantic-core==2.46.5
+pyhanko==0.37.0
+pyhanko-certvalidator==0.32.1
+pyjwt==2.14.0
+pyparsing==3.3.2
+pypdf==5.9.0
+pypdfium2==4.30.0
+python-bidi==0.6.11
+python-dateutil==2.9.0.post0
+python-docx==1.2.0
+python-dotenv==1.2.3
+pytz==2026.3.post1
+reportlab==5.0.1
+requests==2.34.2
+sentry-sdk==2.69.2
+six==1.17.0
+sniffio==1.3.1
+sqlparse==0.6.0
+svglib==2.2.0
+tenacity==9.1.4
+tinycss2==1.5.1
+tqdm==4.70.1
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+tzdata==2026.4
+tzlocal==5.4.4
+uritemplate==4.2.0
+uritools==6.1.3
+urllib3==2.8.0
+webencodings==0.6.1
+websockets==16.1.1
+whitenoise==6.12.0
+xhtml2pdf==0.2.20
+yarl==1.25.1

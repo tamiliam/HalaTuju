@@ -72,17 +72,9 @@ class TestStpmGoldenMaster:
             per_student[student['id']] = len(results)
             total += len(results)
 
-        # FIRST RUN: Print the baseline and skip
-        # After first run, replace None with the actual number
         GOLDEN_BASELINE = 2026
 
-        if GOLDEN_BASELINE is None:
-            for sid, count in per_student.items():
-                print(f"  {sid}: {count} programmes")
-            print(f"  TOTAL: {total}")
-            pytest.skip(f"First run — record baseline: {total}")
-        else:
-            assert total == GOLDEN_BASELINE, (
-                f"Golden master mismatch: expected {GOLDEN_BASELINE}, got {total}. "
-                f"Per student: {per_student}"
-            )
+        assert total == GOLDEN_BASELINE, (
+            f"Golden master mismatch: expected {GOLDEN_BASELINE}, got {total}. "
+            f"Per student: {per_student}"
+        )

@@ -1,0 +1,39 @@
+# What must NOT enter the production image.
+#
+# The Cloud Build trigger runs `docker build halatuju_api -f halatuju_api/Dockerfile`,
+# so THIS file is the one that counts — not `.gcloudignore`, which only applies to
+# `gcloud app/functions deploy`. The image is single-stage `COPY . .`, so anything
+# not listed here ships to production.
+#
+# Nothing below is imported by runtime code: checked by grep across every non-test
+# module for `apps.*.tests`, `conftest`, and paths into a `tests/` folder.
+
+# Tests and their fixtures (~11 MB) — never imported outside the suite.
+apps/*/tests/
+conftest.py
+pytest.ini
+requirements-dev.txt
+.pytest_cache
+
+# The document-recognition eval corpus (~512 MB of untracked OCR source images, PII).
+# The eval scripts and their labels/context JSON STAY: `manage.py eval_doc_recognition`
+# defaults to reading them from apps/scholarship/eval.
+apps/scholarship/eval/fixtures/
+
+# Build and editor droppings.
+**/__pycache__
+*.pyc
+*.pyo
+.vscode
+
+# Local-only state and secrets. Production configuration comes from Cloud Run
+# environment variables.
+.env
+.env.*
+db.sqlite3
+
+# Prose. No runtime code reads a .md file.
+# NOTE: `*` does not cross a `/` in a .dockerignore pattern, so this is the root-level
+# prose only (CHANGELOG.md, CLAUDE.md, DEPLOY.md). `docs/` (~230 KB) still ships; widen
+# this to `**/*.md` when someone wants it gone, which is safe for the same reason.
+*.md

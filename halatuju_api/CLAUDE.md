@@ -66,6 +66,17 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
 | Frontend | Cloud Run | asia-southeast1 | halatuju-web |
 | Database | Supabase | Singapore | pbrrlyoyyiftckqvzvvo |
 
+### What the api image installs and carries (H1, 2026-09-18)
+
+- The Dockerfile installs **`requirements.lock`** — exact `==` pins, a freeze of what pip actually
+  installed in the production image build of 2026-09-18. Two builds of one commit now install the
+  same code. Refresh it deliberately, never as a side effect: the recipe is in the file's header.
+- **`requirements.txt` stays** as the statement of intent — the allowed ranges and the reason each
+  package is here. A new package goes in `requirements.txt` first, then into the lock.
+- **`.dockerignore`** keeps the tests, the eval corpus, prose and local state out of the image.
+  The Cloud Build trigger runs `docker build`, so `.dockerignore` is the file that counts —
+  `.gcloudignore` does nothing here.
+
 ### GCP Project
 
 `gen-lang-client-0871147736` (account: `tamiliam@gmail.com`)
@@ -105,6 +116,12 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 
 ```bash
 cd halatuju-web
+npm run gates                # ⬅ ONE WORD, runs all four below in order — `typecheck`, `lint`,
+                             # `i18n`, `test` — and stops at the first failure. Each is also a
+                             # script of its own in package.json, for iterating on one gate. The
+                             # warnings below still apply; this only saves you typing them.
+
+# ── or the same four by hand ──
 npx jest --maxWorkers=2      # --maxWorkers=2 is required: a full run OOMs on 8 GB and reports
                              # worker contention as test FAILURES (exit 253)
 npx tsc --noEmit --incremental false
@@ -280,6 +297,9 @@ added NO migration.
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
+# 0. From a fresh clone, install the runtime + the test runner (nothing else is needed):
+pip install -r requirements.lock -r requirements-dev.txt
+
 # 1. Run all tests (966 collected, 966 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 

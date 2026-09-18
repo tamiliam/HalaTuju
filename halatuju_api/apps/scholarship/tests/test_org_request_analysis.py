@@ -250,12 +250,19 @@ class TestWhatTheOrganisationSees(_Base):
     def test_the_ENDPOINT_carries_no_path_and_no_engineer_hours(self):
         # The serializer is half the answer; this is what the requester's browser receives.
         req = self._req()
-        self._approved(req, hours='7.5', files=['apps/scholarship/referrals.py'])
+        # ⚠ THE SENTINEL MUST BE A STRING A TIMESTAMP CANNOT CONTAIN. This was '7.5', and the body
+        # carries `created_at` with microseconds — '…:37.520596Z' contains '7.5'. The test failed
+        # roughly one run in twenty for a reason that had nothing to do with engineer hours
+        # (found 2026-09-18, H1). '83.5' cannot occur: no clock field reaches 83 before a dot.
+        self._approved(req, hours='83.5', files=['apps/scholarship/referrals.py'])
         self._auth('an-oa')
         body = self.client.get(f'{BASE}{req.id}/').json()
         blob = str(body)
         self.assertNotIn('referrals.py', blob)
-        self.assertNotIn('7.5', blob)
+        self.assertNotIn('83.5', blob)
+        # …and the sentinel is REAL: the owner's view of the same request does carry it. Without
+        # this line the assertion above would pass just as well if the hours were never stored.
+        self.assertIn('83.5', str(OrgRequestOwnerSerializer(req).data))
         self.assertNotIn('analyses', body)
 
     def test_the_owner_sees_the_whole_working_paper(self):

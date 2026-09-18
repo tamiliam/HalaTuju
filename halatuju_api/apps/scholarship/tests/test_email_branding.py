@@ -220,7 +220,9 @@ def test_email_branding_golden():
         GOLDEN.write_text(
             json.dumps(captured, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
             encoding='utf-8')
-        pytest.skip('regenerated the golden fixture')
+        pytest.fail(
+            'regenerated the golden fixture — this run compared nothing; '
+            're-run WITHOUT UPDATE_EMAIL_GOLDEN', pytrace=False)
 
     assert GOLDEN.exists(), 'golden fixture missing — run once with UPDATE_EMAIL_GOLDEN=1'
     golden = json.loads(GOLDEN.read_text(encoding='utf-8'))

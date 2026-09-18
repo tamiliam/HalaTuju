@@ -6,23 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest --maxWorkers=2",
+    "typecheck": "tsc --noEmit --incremental false",
+    "i18n": "node scripts/check-i18n.js",
+    "gates": "npm run typecheck && npm run lint && npm run i18n && npm run test"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.39.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.17.0",
     "clsx": "^2.1.0",
     "malaysia-postcodes": "^2.7.3",
     "next": "14.2.0",
-    "next-intl": "^3.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-hook-form": "^7.49.0",
     "react-markdown": "^10.1.0",
-    "react-qr-code": "^2.0.18",
-    "tailwind-merge": "^2.2.0"
+    "react-qr-code": "^2.0.18"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
