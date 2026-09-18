@@ -557,6 +557,21 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
+**➕ ALSO LIVE (2026-09-18, the owner's second live read): the Overview's money charts, round
+three.** `main` at **`1a96415e`**; builds api `d8907f50` + web `16a74d81` SUCCESS (waited on BY
+BUILD ID); serving **halatuju-api-01046-dq9** / **halatuju-web-00893-7vc**, digests matched;
+Overview 200, endpoint 401 without login, no api ERROR logs. Gates: **6686 pytest** · **2302
+jest** · tsc 24 · lint 0 · `next build` 0. No migration. Retro
+`docs/retrospective-2026-09-18-overview-charts-round-three.md`.
+- **A week is filed under the month of its THURSDAY** (`monthOf`, ISO 8601) — no "Jun" over
+  data that starts in July.
+- The first weekly line is **ringgit per TRANSACTION** (`spent_per_transaction` replaced the
+  per-student `average`); the second's figure is **weekly transactions per student**
+  (`weekly_transactions_per_student`, `weeks` sent). Both denominators travel in the payload.
+- **Category legend: largest first, "Not categorised" (`unsorted`) last, "Not yet sorted"
+  (`none`) HIDDEN AT ZERO, shown with money** (`orderSlices`). This amends the 2026-09-15
+  "every slice at zero" rule for that one slice; the ten real categories are always listed.
+
 **➕ ALSO LIVE (2026-09-15, the owner's first live read): the Overview's money charts, round two.**
 `main` at **`4a2d4687`**; builds api `d195459d` + web `c69cd6e0` SUCCESS (waited on BY BUILD ID);
 serving **halatuju-api-01043-vwr** / **halatuju-web-00892-zcg**, digests matched; Overview 200,
