@@ -380,10 +380,10 @@ class FiguresTests(_Base):
             for key in ('released', 'spent', 'released_cum', 'spent_cum', 'gap'):
                 self.assertIsInstance(row[key], str)
         for row in body['money_series']['per_student_per_week']:
-            for key in ('spent', 'average', 'transactions_per_student'):
+            for key in ('spent', 'spent_per_transaction', 'transactions_per_student'):
                 self.assertIsInstance(row[key], str)
         overall = body['money_series']['per_student_overall']
-        for key in ('spent', 'average', 'transactions_per_student'):
+        for key in ('spent', 'spent_per_transaction', 'weekly_transactions_per_student'):
             self.assertIsInstance(overall[key], str)
         for slice_ in body['money_series']['by_category']:
             self.assertIsInstance(slice_['total'], str)
@@ -425,7 +425,7 @@ class FiguresTests(_Base):
         self.assertEqual(weeks[0], '2026-03-02')
         self.assertNotIn('2026-02-23', weeks)
 
-    def test_the_average_counts_only_wallets_that_were_live_that_week(self):
+    def test_the_student_denominator_counts_only_wallets_that_were_live_that_week(self):
         """The denominator is students with a RELEASED disbursement on or before the week's end —
         not every student in the gift, and not only the ones who spent."""
         weeks = {w['week']: w for w in
@@ -433,10 +433,18 @@ class FiguresTests(_Base):
         # M1's wallet went live on 5 July; M2's on 10 August.
         self.assertEqual(weeks['2026-08-03']['students'], 1)
         self.assertEqual(weeks['2026-08-03']['spent'], '42.50')
-        self.assertEqual(weeks['2026-08-03']['average'], '42.50')
         self.assertEqual(weeks['2026-08-10']['students'], 2)
         self.assertEqual(weeks['2026-08-10']['spent'], '120.00')
-        self.assertEqual(weeks['2026-08-10']['average'], '60.00')
+        self.assertNotIn('average', weeks['2026-08-03'])
+
+    def test_spent_per_transaction_is_ringgit_over_rows_each_week(self):
+        """⚠ Owner, 2026-09-18: the line is what a card payment COST, on average — ringgit over
+        rows, not over students. A week with no rows is '0.00', not a crash."""
+        weeks = {w['week']: w for w in
+                 self._body('ov-oa')['money_series']['per_student_per_week']}
+        self.assertEqual(weeks['2026-08-03']['spent_per_transaction'], '21.25')   # 42.50 / 2
+        self.assertEqual(weeks['2026-08-10']['spent_per_transaction'], '60.00')   # 120.00 / 2
+        self.assertEqual(weeks['2026-08-17']['spent_per_transaction'], '0.00')    # no rows
 
     def test_transactions_are_rows_not_items(self):
         """⚠ A Vircle row is one card transaction and carries no item count. `transactions` is a
@@ -449,13 +457,15 @@ class FiguresTests(_Base):
         self.assertEqual(weeks['2026-08-10']['transactions_per_student'], '1.0')
         self.assertNotIn('purchases', weeks['2026-08-03'])
 
-    def test_the_whole_period_figure_is_total_spend_over_students_with_a_wallet(self):
-        """The figure the page prints beneath the weekly lines: RM162.50 spent over the two
-        students whose wallets were live by `data_to` (20 Aug), four rows in all."""
+    def test_the_whole_period_figures_name_their_denominators(self):
+        """The two figures the page prints beneath the weekly lines. RM162.50 over four rows is
+        RM40.625 a transaction — HALF-UP to 40.63, not banker's 40.62. Four rows over the two
+        students whose wallets were live by `data_to` (20 Aug), over the three weeks the series
+        spans (3, 10, 17 Aug), is 0.67 a week — one decimal, 0.7."""
         overall = self._body('ov-oa')['money_series']['per_student_overall']
         self.assertEqual(overall, {
-            'students': 2, 'spent': '162.50', 'average': '81.25',
-            'transactions': 4, 'transactions_per_student': '2.0'})
+            'students': 2, 'weeks': 3, 'spent': '162.50', 'transactions': 4,
+            'spent_per_transaction': '40.63', 'weekly_transactions_per_student': '0.7'})
 
     def test_the_whole_period_figure_is_null_when_nothing_was_spent(self):
         body = self._body('ov-oa', '?programme=ov-gift2')

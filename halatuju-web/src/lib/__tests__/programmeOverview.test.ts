@@ -8,7 +8,8 @@
  */
 import {
   FULL_BOX, SMALL_AXIS_BOX, SMALL_BOX, WIDE_BOX, bandTone, barLayout, columnX, donutArcs, has,
-  lineLayout, monthOf, monthTicks, num, plotLeft, rm, sliceClasses, thinTicks, weekLabel,
+  lineLayout, monthOf, monthTicks, num, orderSlices, plotLeft, rm, sliceClasses, thinTicks,
+  weekLabel,
 } from '@/lib/programmeOverview'
 
 describe('rm — the money formatter, lifted from the sponsor card', () => {
@@ -189,12 +190,24 @@ describe('month ticks — the axis is labelled in months whatever the columns ar
     expect(monthOf('2026-13')).toBe(0)
   })
 
+  /* ⚠ A WEEK BELONGS TO THE MONTH ITS THURSDAY IS IN. The week that holds 1 July starts on
+   * Monday 29 June; calling it "Jun" put a month with no data on the axis (owner, 2026-09-18).
+   * The rule cuts both ways: the week starting Monday 31 August is September's. */
+  it('files a week under the month of its Thursday, not its Monday', () => {
+    expect(monthOf('2026-06-29')).toBe(7)   // Thu 2 Jul
+    expect(monthOf('2026-07-27')).toBe(7)   // Thu 30 Jul
+    expect(monthOf('2026-08-31')).toBe(9)   // Thu 3 Sep
+    expect(monthOf('2026-12-28')).toBe(12)  // Thu 31 Dec — still December
+    expect(monthOf('2027-12-27')).toBe(12)  // Thu 30 Dec
+    expect(monthOf('2026-03-30')).toBe(4)   // Thu 2 Apr
+  })
+
   /* ⚠ ONE TICK PER MONTH CHANGE, at the first column of that month — fifty weekly columns
    * become a dozen labels, which is the whole point (owner: "imagine the chart twelve months in"). */
   it('puts one tick at the first column of each month, and always one at the start', () => {
     const weeks = ['2026-06-29', '2026-07-06', '2026-07-13', '2026-07-27', '2026-08-03', '2026-08-10']
     expect(monthTicks(weeks, name)).toEqual([
-      { index: 0, label: 'Jun' }, { index: 1, label: 'Jul' }, { index: 4, label: 'Aug' },
+      { index: 0, label: 'Jul' }, { index: 4, label: 'Aug' },
     ])
     expect(monthTicks(['2026-07-06', '2026-07-13'], name)).toEqual([{ index: 0, label: 'Jul' }])
     expect(monthTicks([], name)).toEqual([])
@@ -211,6 +224,34 @@ describe('month ticks — the axis is labelled in months whatever the columns ar
     expect(thinned[0]).toEqual({ index: 0, label: 'm0' })
     expect(thinned[1]).toEqual({ index: 3, label: 'm3' })
     expect(thinTicks(many.slice(0, 4), 12)).toEqual(many.slice(0, 4))
+  })
+})
+
+describe('orderSlices — largest first, "not categorised" last, "not yet sorted" only with money', () => {
+  const rows = [
+    { code: 'food', total: '100.00' },
+    { code: 'none', total: '0.00' },
+    { code: 'groceries', total: '250.00' },
+    { code: 'unsorted', total: '900.00' },
+    { code: 'health', total: '0.00' },
+  ]
+
+  it('sorts the real categories by money and keeps the zero ones', () => {
+    expect(orderSlices(rows).map((r) => r.code)).toEqual(['groceries', 'food', 'health', 'unsorted'])
+  })
+
+  /* ⚠ HIDDEN AT ZERO, NEVER DROPPED. "Nothing has looked at this row yet" carrying money is the
+   * one case that must not be silent — it is money nobody has filed. */
+  it('lists "not yet sorted" only when it carries money, and then after "not categorised"', () => {
+    const withMoney = rows.map((r) => (r.code === 'none' ? { ...r, total: '5.00' } : r))
+    expect(orderSlices(withMoney).map((r) => r.code))
+      .toEqual(['groceries', 'food', 'health', 'unsorted', 'none'])
+  })
+
+  it('does not mutate the rows it was given', () => {
+    const before = rows.map((r) => r.code)
+    orderSlices(rows)
+    expect(rows.map((r) => r.code)).toEqual(before)
   })
 })
 

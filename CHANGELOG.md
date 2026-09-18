@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Overview's money charts, round three - the words under the lines - 2026-09-18
+
+The owner's second read of the live page, three requests on the three small charts.
+
+- **A week belongs to the month its THURSDAY is in.** The weekly series bins on the ISO Monday,
+  so the week holding 1 July starts on 29 June - and the axis said "Jun" for a gift whose data
+  starts in July. `monthOf` now files a week date by Monday + 3 (ISO 8601's own rule); a month
+  key is unchanged. "Jun" is gone from both lines.
+- **The first line is what a card payment COST, not what a student spent.** Owner: *"what we are
+  calculating is average spending per transaction by week."* The payload's weekly `average`
+  (ringgit over students) is replaced by `spent_per_transaction` (ringgit over rows), HALF-UP;
+  the title, the y-axis and the whole-period figure follow: *"Average spending per transaction,
+  whole period: RM x"*, with **n: x students** beneath it.
+- **The second line's figure is the average WEEKLY transactions per student**, not the count over
+  the whole period: rows over students over weeks (`weekly_transactions_per_student`, with
+  `weeks` sent so the denominator is inspectable). The note is now just *"A transaction is one
+  card payment."*
+- **The category legend is largest first, "Not categorised" last, and "Not yet sorted" is hidden
+  while it is zero.** `orderSlices` amends "every slice is listed, even at zero": the sorter runs
+  at import, so `none` is a permanent RM0.00 row that was noise - but it is hidden ONLY at zero,
+  never dropped, because money nobody has looked at is the one case that must not be silent (a
+  test gives it money and expects it back, last). The ten real categories still all appear.
+  `unsorted` is now labelled **Not categorised**, the Spending page's own word.
+
+Gates: 6686 pytest · 2302 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass ·
+`next build` exit 0 · `makemigrations --check` clean. Bite-checks 5 of 5.
+
 ## Test record #16 is closed - 2026-09-18 (DATA ONLY, no code, no deploy)
 
 The owner's own file (#16) sat at `awarded`: it made the awarded count 66, held RM2,000 of the

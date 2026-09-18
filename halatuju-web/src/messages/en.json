@@ -5892,22 +5892,22 @@
         "payments": "Payments",
         "spending": "Spending",
         "balance": "Balance",
-        "average": "Average spend per student, per week",
+        "average": "Average spending per transaction, per week",
         "transactions": "Transactions per student, per week",
-        "transactionsNote": "A transaction is one card payment. We are never told what was bought.",
-        "overallAverage": "Average per student, whole period",
-        "overallTransactions": "Transactions per student, whole period",
-        "ofStudentsOverall": "Of {count} students with a wallet.",
+        "transactionsNote": "A transaction is one card payment.",
+        "overallAverage": "Average spending per transaction, whole period",
+        "overallTransactions": "Average weekly transactions per student",
+        "ofStudentsOverall": "n: {count} students",
         "byCategory": "Spending by category"
       },
       "chart": {
         "applicationsLabel": "Applications received per week",
         "awardsLabel": "Awards made per month",
         "moneyLabel": "Money released and spent per month, with the running amount still in wallets",
-        "averageLabel": "Average spend per student per week",
+        "averageLabel": "Average spending per transaction per week",
         "transactionsLabel": "Transactions per student per week",
         "categoryLabel": "Spending by category",
-        "yRinggit": "RM per student",
+        "yRinggit": "RM per transaction",
         "yTransactions": "Transactions per student"
       },
       "months": {
@@ -5934,7 +5934,7 @@
         "health": "Health & pharmacy",
         "clothing": "Clothing & shoes",
         "transfer": "Sent to a person",
-        "unsorted": "Could not be sorted",
+        "unsorted": "Not categorised",
         "none": "Not yet sorted"
       },
       "intake": {

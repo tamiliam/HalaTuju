@@ -67,7 +67,7 @@ const CATEGORIES: api.OverviewCategory[] = [
   { code: 'transfer', total: '0.00', transactions: 0 },
   { code: 'unsorted', total: '0.00', transactions: 0 },
   // ⚠ "Nothing has looked at this row yet" — a DIFFERENT state from "the sorter looked and could
-  // not place it", and it is at zero here on purpose: a slice at zero must still be listed.
+  // not place it". At zero it is HIDDEN (owner, 2026-09-18); with money it must appear.
   { code: 'none', total: '0.00', transactions: 0 },
 ]
 
@@ -84,16 +84,16 @@ const MONEY_SERIES = {
       released_cum: '52800.00', spent_cum: '4590.65', gap: '48209.35' },
   ],
   per_student_per_week: [
-    { week: '2026-05-04', students: 44, spent: '853.60', average: '19.40',
-      transactions: 106, transactions_per_student: '2.4' },
-    { week: '2026-05-11', students: 44, spent: '900.00', average: '20.45',
-      transactions: 110, transactions_per_student: '2.5' },
-    { week: '2026-06-01', students: 50, spent: '1000.00', average: '20.00',
-      transactions: 120, transactions_per_student: '2.4' },
+    { week: '2026-05-04', students: 44, spent: '853.60', transactions: 106,
+      spent_per_transaction: '8.05', transactions_per_student: '2.4' },
+    { week: '2026-05-11', students: 44, spent: '900.00', transactions: 110,
+      spent_per_transaction: '8.18', transactions_per_student: '2.5' },
+    { week: '2026-06-01', students: 50, spent: '1000.00', transactions: 120,
+      spent_per_transaction: '8.33', transactions_per_student: '2.4' },
   ],
   per_student_overall: {
-    students: 58, spent: '13353.03', average: '230.22',
-    transactions: 1597, transactions_per_student: '27.5',
+    students: 58, weeks: 3, spent: '13353.03', transactions: 1597,
+    spent_per_transaction: '8.36', weekly_transactions_per_student: '9.2',
   },
   by_category: CATEGORIES,
 }
@@ -195,13 +195,12 @@ describe('an org admin sees the whole gift', () => {
   /* ⚠ ELEVEN SLICES, AND THE ONE NOBODY HAS LOOKED AT IS LISTED AT ZERO. Hiding a zero slice is
    * what would let the other ten read as complete when they are not — `by_category` sends all
    * eleven deliberately, and "not yet sorted: RM0.00" is an answer. */
-  it('lists the not-yet-sorted slice even at zero', async () => {
+  it('lists a real category even at zero', async () => {
     render(<ProgrammeOverviewPage />)
     const legend = await screen.findByTestId('chart-by-category-figures')
-    expect(legend.textContent).toContain('admin.programmeOverview.category.none')
+    // "Nothing on health" is an answer — the ten real categories are always listed.
+    expect(legend.textContent).toContain('admin.programmeOverview.category.health')
     expect(legend.textContent).toContain('RM0.00')
-    // All eleven, every time — an absent slice cannot be told from a slice nobody drew.
-    expect(legend.querySelectorAll('li').length).toBe(11)
   })
 
   /* ⚠ THREE FIGURES, NOT A TABLE (owner, 2026-09-15). The totals are the LAST month's running
@@ -239,19 +238,54 @@ describe('an org admin sees the whole gift', () => {
     expect(ticks.querySelectorAll('text').length).toBe(2)
     expect(ticks.textContent).toContain('admin.programmeOverview.months.5')
     expect(ticks.textContent).toContain('admin.programmeOverview.months.6')
+    // ⚠ Ringgit per TRANSACTION over the whole period (owner, 2026-09-18) — not per student, and
+    // not any single week's value.
     const figures = within(average).getByTestId('chart-average-per-student-figures')
     expect(figures.querySelectorAll('li').length).toBe(1)
-    expect(figures.textContent).toContain('RM230.22')
-    expect(figures.textContent).not.toContain('RM19.40')
-    // …and the denominator is named, in words, for the whole period.
+    expect(figures.textContent).toContain('admin.programmeOverview.series.overallAverage')
+    expect(figures.textContent).toContain('RM8.36')
+    expect(figures.textContent).not.toContain('RM8.05')
+    // …and n is named beneath it.
     expect(screen.getByText('admin.programmeOverview.series.ofStudentsOverall|58')).not.toBeNull()
-    // The second line says TRANSACTIONS, and carries a y-axis like the first.
+    // The second line says TRANSACTIONS, carries a y-axis like the first, and prints the
+    // average WEEKLY transactions per student — not the whole-period count.
     const transactions = screen.getByTestId('chart-transactions-per-student')
     expect(within(transactions).getByTestId('chart-y-axis').textContent)
       .toContain('admin.programmeOverview.chart.yTransactions')
-    expect(within(transactions).getByTestId('chart-transactions-per-student-figures').textContent)
-      .toContain('27.5')
+    const tFigures = within(transactions).getByTestId('chart-transactions-per-student-figures')
+    expect(tFigures.textContent).toContain('admin.programmeOverview.series.overallTransactions')
+    expect(tFigures.textContent).toContain('9.2')
     expect(screen.queryByTestId('chart-purchases-per-student')).toBeNull()
+  })
+
+  /* ⚠ LARGEST FIRST, "NOT CATEGORISED" LAST, AND "NOT YET SORTED" HIDDEN AT ZERO (owner,
+   * 2026-09-18). The ten real categories are all listed, zero or not. */
+  it('orders the category legend by money and hides "not yet sorted" while it is zero', async () => {
+    render(<ProgrammeOverviewPage />)
+    const legend = await screen.findByTestId('chart-by-category-figures')
+    const codes = Array.from(legend.querySelectorAll('li')).map((li) => li.textContent ?? '')
+    expect(codes.length).toBe(10)
+    expect(codes[0]).toContain('admin.programmeOverview.category.food')       // RM3,738.00
+    expect(codes[1]).toContain('admin.programmeOverview.category.groceries')  // RM2,404.00
+    expect(codes[9]).toContain('admin.programmeOverview.category.unsorted')
+    expect(legend.textContent).not.toContain('admin.programmeOverview.category.none')
+  })
+
+  it('shows "not yet sorted" the moment it carries money — last, after "not categorised"', async () => {
+    mockApi.getProgrammeOverview.mockResolvedValue({
+      ...ADMIN_PAYLOAD,
+      money_series: {
+        ...MONEY_SERIES,
+        by_category: CATEGORIES.map((c) => (c.code === 'none'
+          ? { ...c, total: '4076.12', transactions: 300 } : c)),
+      },
+    })
+    render(<ProgrammeOverviewPage />)
+    const legend = await screen.findByTestId('chart-by-category-figures')
+    const codes = Array.from(legend.querySelectorAll('li')).map((li) => li.textContent ?? '')
+    expect(codes.length).toBe(11)
+    expect(codes[10]).toContain('admin.programmeOverview.category.none')
+    expect(codes[10]).toContain('RM4,076.12')
   })
 })
 

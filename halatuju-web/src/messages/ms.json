@@ -5892,22 +5892,22 @@
         "payments": "Bayaran",
         "spending": "Perbelanjaan",
         "balance": "Baki",
-        "average": "Purata perbelanjaan setiap pelajar, setiap minggu",
+        "average": "Purata perbelanjaan setiap transaksi, setiap minggu",
         "transactions": "Transaksi setiap pelajar, setiap minggu",
-        "transactionsNote": "Satu transaksi ialah satu bayaran kad. Kami tidak pernah diberitahu apa yang dibeli.",
-        "overallAverage": "Purata setiap pelajar, keseluruhan tempoh",
-        "overallTransactions": "Transaksi setiap pelajar, keseluruhan tempoh",
-        "ofStudentsOverall": "Daripada {count} pelajar yang mempunyai dompet.",
+        "transactionsNote": "Satu transaksi ialah satu bayaran kad.",
+        "overallAverage": "Purata perbelanjaan setiap transaksi, keseluruhan tempoh",
+        "overallTransactions": "Purata transaksi mingguan setiap pelajar",
+        "ofStudentsOverall": "n: {count} pelajar",
         "byCategory": "Perbelanjaan mengikut kategori"
       },
       "chart": {
         "applicationsLabel": "Permohonan diterima setiap minggu",
         "awardsLabel": "Tajaan diberikan setiap bulan",
         "moneyLabel": "Wang dilepaskan dan dibelanjakan setiap bulan, dengan baki terkumpul yang masih dalam dompet",
-        "averageLabel": "Purata perbelanjaan setiap pelajar setiap minggu",
+        "averageLabel": "Purata perbelanjaan setiap transaksi setiap minggu",
         "transactionsLabel": "Transaksi setiap pelajar setiap minggu",
         "categoryLabel": "Perbelanjaan mengikut kategori",
-        "yRinggit": "RM setiap pelajar",
+        "yRinggit": "RM setiap transaksi",
         "yTransactions": "Transaksi setiap pelajar"
       },
       "months": {
@@ -5934,7 +5934,7 @@
         "health": "Kesihatan & farmasi",
         "clothing": "Pakaian & kasut",
         "transfer": "Dihantar kepada seseorang",
-        "unsorted": "Tidak dapat dikelaskan",
+        "unsorted": "Belum dikategorikan",
         "none": "Belum dikelaskan"
       },
       "intake": {

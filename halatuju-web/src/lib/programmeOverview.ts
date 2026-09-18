@@ -156,10 +156,23 @@ export function lineLayout(
 
 export interface Tick { index: number; label: string }
 
-/** `'2026-07'` or `'2026-07-06'` → `7`. `0` for anything unreadable, so a caller can skip it. */
+/**
+ * `'2026-07'` → `7`; `'2026-07-06'` → `7`. `0` for anything unreadable, so a caller can skip it.
+ *
+ * ⚠ A WEEK BELONGS TO THE MONTH ITS THURSDAY IS IN (ISO 8601's own rule for weeks and years).
+ * The weekly series bins on the ISO Monday, so the week that holds 1 July starts on 29 June —
+ * and labelling it "Jun" put a month on the axis that has no data at all (owner, 2026-09-18:
+ * "the data is from July onwards only"). Monday + 3 days is the Thursday.
+ */
 export function monthOf(iso: string): number {
-  const m = Number(String(iso).split('-')[1])
-  return m >= 1 && m <= 12 ? m : 0
+  const parts = String(iso).split('-')
+  const y = Number(parts[0])
+  const m = Number(parts[1])
+  const d = Number(parts[2])
+  if (!(m >= 1 && m <= 12)) return 0
+  if (parts.length < 3 || !(d >= 1 && d <= 31) || !y) return m
+  const thursday = new Date(Date.UTC(y, m - 1, d + 3))
+  return thursday.getUTCMonth() + 1
 }
 
 /**
@@ -235,6 +248,29 @@ export function donutArcs(
     rank += 1
   }
   return arcs
+}
+
+/**
+ * The legend's order: the categories by money, largest first; `unsorted` ("not categorised")
+ * LAST whatever its size; `none` ("nothing has looked at this row yet") ONLY when it carries
+ * money, after `unsorted`.
+ *
+ * ⚠ THIS AMENDS "EVERY SLICE IS LISTED, EVEN AT ZERO" (Programme Overview, 2026-09-15), on the
+ * owner's ruling of 2026-09-18: "not yet sorted" is normally RM0.00 because the sorter runs at
+ * import, and a permanent zero row was noise. The one case it must not be silent is when it is
+ * NOT zero — money nobody has looked at — so it is hidden only at zero, never dropped. The
+ * ten real categories still all appear, at zero or not, so "nothing on health" stays an answer.
+ *
+ * ⚠ Sorted on the PARSED number for ORDER only (`num`); the string is what gets displayed.
+ */
+export function orderSlices<T extends { code: string; total: string }>(rows: readonly T[]): T[] {
+  const categories = rows
+    .filter((r) => r.code !== 'unsorted' && r.code !== 'none')
+    .slice()
+    .sort((a, b) => num(b.total) - num(a.total))
+  const unsorted = rows.filter((r) => r.code === 'unsorted')
+  const none = rows.filter((r) => r.code === 'none' && num(r.total) > 0)
+  return [...categories, ...unsorted, ...none]
 }
 
 /**

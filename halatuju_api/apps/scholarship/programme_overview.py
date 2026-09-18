@@ -49,7 +49,7 @@ stopped importing". Applications have no import window, so theirs runs to this w
 from __future__ import annotations
 
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Min, Q
 from django.utils import timezone
@@ -419,33 +419,45 @@ def _wallets_live_by(scope):
     ]
 
 
+def _per(numerator, denominator, places):
+    """`numerator / denominator` to `places`, HALF-UP, and zero when there is no denominator —
+    a week before anybody had a wallet (or a transaction) is '0.00', not a crash."""
+    if not denominator:
+        return Decimal('0').quantize(places)
+    return (Decimal(numerator) / Decimal(denominator)).quantize(places, rounding=ROUND_HALF_UP)
+
+
 def per_student_overall(scope):
-    """The whole period in one line: what a student spent on average, and how many transactions.
+    """The whole period in two figures: what a transaction cost on average, and how many
+    transactions a student made in an average week.
 
     ⚠ THIS IS WHAT THE PAGE PRINTS BENEATH THE WEEKLY LINES, instead of every week's value. Owner,
     2026-09-15: the weekly list was clutter at eleven weeks and would be unreadable at fifty. The
     lines still show the movement; the figure a person quotes is the whole-period one.
 
-    ⚠ SAME DENOMINATOR RULE AS THE WEEKS: students whose wallet was live by `data_to` — the day
-    the data reaches — not every student in the gift. `transactions` is a ROW COUNT (see
-    `per_student_per_week`). `None` when there is no spending at all, so the page says nothing
-    rather than "RM0.00 per student".
+    ⚠ TWO DIFFERENT DENOMINATORS, BOTH NAMED (owner, 2026-09-18). `spent_per_transaction` is
+    ringgit over ROWS — what a card payment tends to be. `weekly_transactions_per_student` is rows
+    over students over WEEKS — how often a student pays in a week — where `students` are those
+    whose wallet was live by `data_to` (the same rule as the weekly series) and `weeks` is the
+    length of that series. `None` when there is no spending at all, so the page says nothing
+    rather than "RM0.00".
     """
     rows = [(d, a) for d, a in _txns(scope).values_list('txn_date', 'amount') if d is not None]
     if not rows:
         return None
     last = data_to(scope) or max(d for d, _ in rows)
     students = sum(1 for d in _wallets_live_by(scope) if d <= last)
+    weeks = len(_week_span(min(d for d, _ in rows), last))
     spent = sum(((a or _ZERO) for _, a in rows), _ZERO)
     transactions = len(rows)
     return {
         'students': students,
+        'weeks': weeks,
         'spent': spent.quantize(_CENTS),
-        'average': (spent / students).quantize(_CENTS) if students else _ZERO,
         'transactions': transactions,
-        'transactions_per_student': (
-            (Decimal(transactions) / students).quantize(Decimal('0.1'))
-            if students else Decimal('0.0')),
+        'spent_per_transaction': _per(spent, transactions, _CENTS),
+        'weekly_transactions_per_student': _per(
+            _per(transactions, students, Decimal('0.0001')), weeks, Decimal('0.1')),
     }
 
 
@@ -489,13 +501,13 @@ def per_student_per_week(scope):
             'week': w.isoformat(),
             'students': students,
             'spent': spent.quantize(_CENTS),
-            # ⚠ Guarded: a week before anybody had a wallet is '0.00', not a crash and not the
-            # whole week's spend attributed to nobody.
-            'average': (spent / students).quantize(_CENTS) if students else _ZERO,
             'transactions': transactions,
-            'transactions_per_student': (
-                (Decimal(transactions) / students).quantize(Decimal('0.1'))
-                if students else Decimal('0.0')),
+            # ⚠ What a card payment cost that week, on average — ringgit over ROWS (owner,
+            # 2026-09-18: "what we are calculating is average spending per transaction").
+            'spent_per_transaction': _per(spent, transactions, _CENTS),
+            # ⚠ Guarded: a week before anybody had a wallet is '0.0', not a crash and not the
+            # whole week's rows attributed to nobody.
+            'transactions_per_student': _per(transactions, students, Decimal('0.1')),
         })
     return out
 
@@ -681,10 +693,11 @@ def _overall_payload(overall):
         return None
     return {
         'students': overall['students'],
+        'weeks': overall['weeks'],
         'spent': _money_str(overall['spent']),
-        'average': _money_str(overall['average']),
         'transactions': overall['transactions'],
-        'transactions_per_student': _money_str(overall['transactions_per_student']),
+        'spent_per_transaction': _money_str(overall['spent_per_transaction']),
+        'weekly_transactions_per_student': _money_str(overall['weekly_transactions_per_student']),
     }
 
 
@@ -754,8 +767,8 @@ def build(admin, org, programme, *, now=None):
                 for r in money_per_month(scope, today=today)],
             'per_student_per_week': [
                 {'week': r['week'], 'students': r['students'],
-                 'spent': _money_str(r['spent']), 'average': _money_str(r['average']),
-                 'transactions': r['transactions'],
+                 'spent': _money_str(r['spent']), 'transactions': r['transactions'],
+                 'spent_per_transaction': _money_str(r['spent_per_transaction']),
                  'transactions_per_student': _money_str(r['transactions_per_student'])}
                 for r in per_student_per_week(scope)],
             'per_student_overall': _overall_payload(per_student_overall(scope)),

@@ -11511,3 +11511,25 @@ does not cover it and the owner must rule again.
 **Trade-offs:** a single week's value is no longer readable off the page. Accepted: nobody asked for one, and the server still sends every week, so a later "show me this week" is a rendering change, not a data change.
 
 **Revisit if:** somebody needs a specific week's figure from the page — then a hover or a click on a point is the answer, not the list.
+
+## "Not yet sorted" is hidden at zero, never dropped; the legend is largest first with "Not categorised" last — Overview, 2026-09-18
+
+**Decision:** `orderSlices` orders the category legend by money, largest first; `unsorted` (now labelled *Not categorised*, the Spending page's word) is always last; `none` (nothing has looked at the row yet) is listed ONLY when it carries money, after `unsorted`. This amends "every slice is present at zero" (Programme Overview, 2026-09-15) for that one slice. The server still sends all eleven.
+
+**Alternatives considered:** remove `none` outright (the owner's words); keep it at zero (the original rule); merge it into `unsorted`.
+
+**Rationale:** owner, 2026-09-18: *"REMOVE Not yet sorted."* The sorter runs at import, so the row is RM0.00 on every real page and a permanent zero was noise. But the reason the rule existed has not gone away — money nobody has filed is the one figure that must not be silent — so the row is hidden at zero rather than removed, and a test gives it money and expects it back. Merging into `unsorted` was refused for the same reason as before: "the sorter could not place it" and "nothing has looked" are different states with different fixes.
+
+**Trade-offs:** the legend length now varies (ten rows normally, eleven when something is unfiled). Accepted: the eleventh row appearing IS the signal.
+
+**Revisit if:** the import ever stops sorting at ingest, at which point `none` will carry money routinely and should be listed always again.
+
+## The first weekly line is ringgit per TRANSACTION; the second's figure is transactions per student per WEEK — Overview, 2026-09-18
+
+**Decision:** `per_student_per_week.spent_per_transaction` (ringgit over rows, HALF-UP to the cent) replaces the per-student weekly `average`; the whole-period figures are `spent_per_transaction` and `weekly_transactions_per_student` (rows over students over the number of weekly buckets), with `weeks` and `students` sent so both denominators are inspectable.
+
+**Alternatives considered:** keep ringgit per student (the first build); the whole-period transactions per student without dividing by weeks (round two).
+
+**Rationale:** owner, 2026-09-18: *"what we are calculating is average spending per transaction by week"* and *"average weekly transactions per student"*. Per-transaction says what a card payment tends to be; per-student-per-week says how often a student pays. Both are questions a programme officer asks; ringgit per student per week was neither.
+
+**Revisit if:** the officer wants ringgit per student again — then it is a third line, not a relabelling of this one.

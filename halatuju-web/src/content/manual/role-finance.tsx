@@ -87,12 +87,12 @@ export const roleFinance: ManualChapter = {
         so you can see the shape of it rather than a single total. Payments against spending, month by month, with
         the <strong>balance still in wallets</strong>, and three totals beneath: payments, spending, balance. (A
         payment released on or after the 27th counts as the <em>following</em> month&rsquo;s, because each month&rsquo;s
-        money goes out a few days early &mdash; so July&rsquo;s payment sits beside July&rsquo;s spending.) The average
-        spent per student, week by week, with the whole-period average beneath it. How many
+        money goes out a few days early &mdash; so July&rsquo;s payment sits beside July&rsquo;s spending.) What a card
+        payment cost on average, week by week, with the whole-period figure beneath it. How many
         <strong> transactions</strong> a student makes in a week &mdash; one card payment is one transaction; we
         are not told what was in the basket, so the chart never claims to count items. And where the money
-        goes, by category, with <strong>&ldquo;not yet sorted&rdquo; shown as its own slice</strong> rather than
-        folded into the others: a total you cannot see the unsorted part of is not a total you can rely on.
+        goes, by category, largest first, with <strong>&ldquo;not categorised&rdquo; last</strong> rather than
+        folded into the others: a total you cannot see the uncategorised part of is not a total you can rely on.
         <br /><br />
         These are <strong>totals only</strong>. No names, no files, no verdicts &mdash; the Overview follows
         the same line your role does everywhere else. And it does not replace <strong>Payments</strong>, which

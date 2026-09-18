@@ -333,11 +333,12 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>It shows the gift&rsquo;s money as figures &mdash; committed, paid, outstanding, spent &mdash; and
         four charts: payments against spending month by month with the <strong>balance still in wallets</strong>
         (money released on or after the 27th counts as the following month&rsquo;s payment, because the month&rsquo;s
-        money goes out a few days early), the average spent per student week by week, how many
+        money goes out a few days early), what a card payment cost on average week by week, how many
         <strong> transactions</strong> a student makes in a week (one card payment is one transaction; we are never
         told what was in the basket, so it does not pretend to count items), and where the money goes by category,
-        with <strong>&ldquo;not yet sorted&rdquo; kept as its own slice</strong>. Beneath the two weekly lines is
-        one figure each &mdash; the average for the whole period &mdash; rather than every week&rsquo;s value. You can see all of that because it is <strong>totals</strong>, and the money is your
+        largest first, with <strong>&ldquo;not categorised&rdquo; last</strong>. Beneath the two weekly lines is
+        one figure each &mdash; the average spend per transaction over the whole period, and the average number
+        of transactions a student makes in a week &mdash; rather than every week&rsquo;s value. You can see all of that because it is <strong>totals</strong>, and the money is your
         job. It is deliberately not the same as the <strong>Spending</strong> page, which you are still not
         given: that one names individual students, and checking a payment does not require knowing who bought
         what. <strong>Payments</strong> remains the ledger &mdash; the runs, the CSV, the signatures and the

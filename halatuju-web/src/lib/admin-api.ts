@@ -3047,20 +3047,24 @@ export interface OverviewStudentWeek {
   /** Students with a LIVE WALLET that week — the denominator the page names in words. */
   students: number
   spent: string
-  average: string
   /** ⚠ A ROW COUNT, not an item count: a Vircle row is one card transaction. */
   transactions: number
+  /** What a card payment cost that week on average — ringgit over rows. */
+  spent_per_transaction: string
   transactions_per_student: string
 }
-/** The whole period in one line — what the page prints beneath the weekly charts instead of
- *  every week's value. `null` when nothing has been spent. Same denominator as the weeks:
- *  students whose wallet was live by `data_to`. */
+/** The whole period in two figures — what the page prints beneath the weekly charts instead of
+ *  every week's value. `null` when nothing has been spent. `students` are those whose wallet was
+ *  live by `data_to`; `weeks` is the length of the weekly series. */
 export interface OverviewStudentOverall {
   students: number
+  weeks: number
   spent: string
-  average: string
   transactions: number
-  transactions_per_student: string
+  /** Ringgit over rows. */
+  spent_per_transaction: string
+  /** Rows over students over weeks — how often a student pays in an average week. */
+  weekly_transactions_per_student: string
 }
 export interface OverviewCategory { code: string; total: string; transactions: number }
 export interface OverviewIntake {

@@ -39,7 +39,8 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
-  FULL_BOX, SMALL_AXIS_BOX, bandTone, has, monthOf, monthTicks, num, rm, thinTicks, weekLabel,
+  FULL_BOX, SMALL_AXIS_BOX, bandTone, has, monthOf, monthTicks, num, orderSlices, rm, thinTicks,
+  weekLabel,
 } from '@/lib/programmeOverview'
 import { useProgrammeParam } from '@/lib/programmeScope'
 
@@ -138,9 +139,11 @@ export default function ProgrammeOverviewPage() {
      weekly figures in a row are not "the numbers a person would quote", they are noise; the
      average over the whole period is the number, and the line is the movement. */
   const averageFigures: ChartFigure[] = overall
-    ? [{ label: t(`${K}.series.overallAverage`), value: rmFig(overall.average) }] : []
+    ? [{ label: t(`${K}.series.overallAverage`), value: rmFig(overall.spent_per_transaction) }]
+    : []
   const transactionFigures: ChartFigure[] = overall
-    ? [{ label: t(`${K}.series.overallTransactions`), value: overall.transactions_per_student }]
+    ? [{ label: t(`${K}.series.overallTransactions`),
+         value: overall.weekly_transactions_per_student }]
     : []
   const weekTicks = monthTicks(perWeek.map((r) => r.week), monthName)
   const months = moneySeries?.money_per_month ?? []
@@ -343,7 +346,7 @@ export default function ProgrammeOverviewPage() {
                 box={SMALL_AXIS_BOX}
                 testId="chart-average-per-student"
                 label={t(`${K}.chart.averageLabel`)}
-                values={perWeek.map((r) => num(r.average))}
+                values={perWeek.map((r) => num(r.spent_per_transaction))}
                 columns={perWeek.map((r) => weekLabel(r.week))}
                 ticks={weekTicks}
                 yAxis={{ label: t(`${K}.chart.yRinggit`), format: (v) => `RM${Math.round(v)}` }}
@@ -373,15 +376,15 @@ export default function ProgrammeOverviewPage() {
               <p className="mt-2 text-[11px] text-ground-400">{t(`${K}.series.transactionsNote`)}</p>
             </Card>
 
-            {/* ⚠ ELEVEN SLICES, ALWAYS. "Not yet sorted" and "could not be sorted" are DIFFERENT
-                states and neither is ever merged away or hidden at zero — that is what would let
-                the other nine read as complete when they are not. */}
+            {/* ⚠ LARGEST FIRST, "NOT CATEGORISED" LAST, "NOT YET SORTED" ONLY WHEN IT HAS MONEY
+                (`orderSlices`; owner, 2026-09-18). The ten real categories are always listed, at
+                zero or not; the two unknown states are different and stay apart. */}
             <Card title={t(`${K}.series.byCategory`)}>
               <Donut
                 testId="chart-by-category"
                 label={t(`${K}.chart.categoryLabel`)}
-                rows={moneySeries.by_category
-                  .filter((r) => CATEGORY_CODES.indexOf(r.code) !== -1)
+                rows={orderSlices(moneySeries.by_category
+                  .filter((r) => CATEGORY_CODES.indexOf(r.code) !== -1))
                   .map((r) => ({
                     code: r.code,
                     label: t(`${K}.category.${r.code}`),
