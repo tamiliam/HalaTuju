@@ -557,6 +557,19 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
+**➕ ALSO LIVE (2026-09-18, latest): the Overview's charts, round five — hover everywhere, lists
+nowhere.** `main` at **`a6f8f744`**; web build `07ccf113` SUCCESS (waited on BY BUILD ID; web
+only, no api change); serving **halatuju-web-00895-4c7**, digest matched; Overview 200. Gates:
+**2309 jest** · tsc 24 · lint 0 · `next build` 0. Retro
+`docs/retrospective-2026-09-18-overview-charts-round-five.md`.
+- Every bar and point answers on hover with the VALUE ALONE (`BarSeries.titles`, `line.titles`,
+  `pointTitles`); no chart lists its columns beneath it (`Figures` renders nothing when empty).
+  The two weekly lines keep their one whole-period figure. **This SUPERSEDES "every chart prints
+  its figures beneath it"** — decision of 2026-09-18.
+- Money chart: y-axis on the BARS' scale (`rmAxis`), the three totals carry swatches and are the
+  legend, the note is gone (`series.gapNote` deleted). Applications/awards: y-axis
+  (`chart.yApplications`, `chart.yAwards`), hover values, months under the weekly bars.
+
 **➕ ALSO LIVE (2026-09-18, later): the Overview's money charts, round four.** `main` at
 **`b4cb6a4d`**; builds api `9ecb77fa` + web `71c05669` SUCCESS (waited on BY BUILD ID); serving
 **halatuju-api-01047-t24** / **halatuju-web-00894-99h**, digests matched; Overview 200, endpoint
