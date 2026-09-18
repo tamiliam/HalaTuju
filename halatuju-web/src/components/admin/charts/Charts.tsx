@@ -41,9 +41,15 @@ export interface BarSeries {
   key: string
   className: string
   values: readonly number[]
+  /** One per column: what the browser shows when the mouse rests on the bar. */
+  titles?: readonly string[]
 }
 
+/** ⚠ RENDERED ONLY WHEN THERE IS SOMETHING TO SAY. Since 2026-09-18 most charts answer a single
+ *  column on hover (`<title>`) and print nothing beneath; the two weekly lines print their one
+ *  whole-period figure. An empty `<ol>` would be a box that reads "no figures". */
 function Figures({ testId, figures }: { testId: string; figures: readonly ChartFigure[] }) {
+  if (figures.length === 0) return null
   return (
     <ol className="mt-2.5 flex flex-wrap gap-x-3.5 gap-y-1 text-[11px] tabular-nums text-ground-500"
       data-testid={`${testId}-figures`}>
@@ -139,12 +145,12 @@ function YAxisLabels({ axis, box, top, bottom }: {
  * still crosses the line it should.)
  */
 export function BarChart({
-  series, columns, figures, line, label, testId, box = WIDE_BOX, ticks, yAxis,
+  series, columns, figures = [], line, label, testId, box = WIDE_BOX, ticks, yAxis,
 }: {
   series: readonly BarSeries[]
   columns: readonly string[]
-  figures: readonly ChartFigure[]
-  line?: { values: readonly number[]; className: string }
+  figures?: readonly ChartFigure[]
+  line?: { values: readonly number[]; className: string; titles?: readonly string[] }
   label: string
   testId: string
   box?: ChartBox
@@ -158,12 +164,18 @@ export function BarChart({
     <div data-testid={testId}>
       <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
         role="img" aria-label={label}>
+        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} />}
         <line x1={plotLeft(box)} y1={baseline} x2={box.width - box.side} y2={baseline}
           className="stroke-ground-200" strokeWidth="1" />
+        {/* ⚠ A BAR CARRIES ITS OWN VALUE AS A `<title>` (owner, 2026-09-18: hover, not a list
+            beneath). The rect IS the hit target, so nothing extra is drawn. */}
         {series.map((s, i) => (
           <g key={s.key} className={s.className}>
             {bars[i].map((b, j) => (
-              <rect key={`${s.key}-${j}`} x={b.x} y={b.y} width={b.width} height={b.height} />
+              <rect key={`${s.key}-${j}`} x={b.x} y={b.y} width={b.width} height={b.height}
+                data-testid="chart-bar">
+                {s.titles && <title>{s.titles[j] ?? ''}</title>}
+              </rect>
             ))}
           </g>
         ))}
@@ -172,7 +184,12 @@ export function BarChart({
             className={line!.className}
             points={path.points.map((p) => `${p.x},${p.y}`).join(' ')} />
         )}
-        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} />}
+        {path && line?.titles && path.points.map((p, i) => (
+          <circle key={`hit-${i}`} cx={p.x} cy={p.y} r="7" className="fill-transparent"
+            data-testid="chart-point">
+            <title>{line.titles![i] ?? ''}</title>
+          </circle>
+        ))}
         {ticks
           ? <Ticks ticks={ticks} count={columns.length} box={box} />
           : <EndLabels columns={columns} box={box} />}
@@ -189,12 +206,12 @@ export function BarChart({
  * renders nothing at all, which reads as "no data" rather than "one week so far".
  */
 export function LineChart({
-  values, columns, figures, label, testId, className = 'stroke-brand-shape', box = WIDE_BOX,
+  values, columns, figures = [], label, testId, className = 'stroke-brand-shape', box = WIDE_BOX,
   ticks, yAxis, pointTitles,
 }: {
   values: readonly number[]
   columns: readonly string[]
-  figures: readonly ChartFigure[]
+  figures?: readonly ChartFigure[]
   label: string
   testId: string
   className?: string

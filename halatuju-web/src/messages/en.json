@@ -5888,7 +5888,6 @@
         "released": "Released",
         "spent": "Spent",
         "gap": "Still in wallets",
-        "gapNote": "the bars are each month; the line is what is still sitting in wallets. Money released on or after the 27th counts as the following month’s payment.",
         "payments": "Payments",
         "spending": "Spending",
         "balance": "Balance",
@@ -5909,7 +5908,9 @@
         "transactionsLabel": "Transactions per student per week",
         "categoryLabel": "Spending by category",
         "yRinggit": "RM per transaction",
-        "yTransactions": "Transactions per student"
+        "yTransactions": "Transactions per student",
+        "yApplications": "Applications",
+        "yAwards": "Awards"
       },
       "months": {
         "1": "Jan",

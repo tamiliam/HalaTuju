@@ -265,13 +265,53 @@ describe('an org admin sees the whole gift', () => {
     const average = await screen.findByTestId('chart-average-per-student')
     const points = within(average).getAllByTestId('chart-point')
     expect(points.length).toBe(3)
-    expect(points[0].querySelector('title')?.textContent).toBe('04/05: RM8.05')
+    // ⚠ THE VALUE ALONE (owner, 2026-09-18: "skip the dates").
+    expect(points[0].querySelector('title')?.textContent).toBe('RM8.05')
     const transactions = screen.getByTestId('chart-transactions-per-student')
     expect(within(transactions).getAllByTestId('chart-point')[2].querySelector('title')?.textContent)
-      .toBe('01/06: 2.4')
+      .toBe('2.4')
     const total = screen.getByTestId('chart-by-category-total')
     expect(total.textContent).toContain('admin.programmeOverview.series.spendingTotal')
     expect(total.textContent).toContain('RM13,353.03')   // MONEY.spent, not a sum of the slices
+  })
+
+  /* ⚠ THE MONEY CHART LISTS NOTHING BENEATH; every bar and point answers on hover, the y-axis
+   * is the bars' scale, and the three totals double as the legend with a swatch each. */
+  it('answers the money chart on hover, with a y-axis, swatches, and no list beneath', async () => {
+    render(<ProgrammeOverviewPage />)
+    const chart = await screen.findByTestId('chart-money-per-month')
+    expect(within(chart).queryByTestId('chart-money-per-month-figures')).toBeNull()
+    const bars = within(chart).getAllByTestId('chart-bar')
+    expect(bars.length).toBe(4)                                   // 2 months × 2 series
+    expect(bars[0].querySelector('title')?.textContent).toBe('RM52,800.00')   // May released
+    expect(bars[3].querySelector('title')?.textContent).toBe('RM3,410.25')    // June spent
+    const points = within(chart).getAllByTestId('chart-point')
+    expect(points[1].querySelector('title')?.textContent).toBe('RM48,209.35') // June balance
+    expect(within(chart).getByTestId('chart-y-axis').textContent).toContain('RM52,800')
+    const totals = screen.getByTestId('money-totals')
+    expect(within(totals).getByTestId('swatch-payments').getAttribute('class')).toContain('bg-brand-shape')
+    expect(within(totals).getByTestId('swatch-spending').getAttribute('class')).toContain('bg-ground-300')
+    expect(within(totals).getByTestId('swatch-balance').getAttribute('class')).toContain('border-dotted')
+  })
+
+  /* ⚠ THE TWO SMALL BAR CHARTS: values on hover, a y-axis, months on the weekly one, nothing
+   * beneath. */
+  it('gives the applications and awards charts a y-axis and hover values, and months under the weeks', async () => {
+    render(<ProgrammeOverviewPage />)
+    const apps = await screen.findByTestId('chart-applications-per-week')
+    expect(within(apps).queryByTestId('chart-applications-per-week-figures')).toBeNull()
+    expect(within(apps).getAllByTestId('chart-bar')[1].querySelector('title')?.textContent).toBe('36')
+    expect(within(apps).getByTestId('chart-y-axis').textContent)
+      .toContain('admin.programmeOverview.chart.yApplications')
+    // Two March weeks → one tick, "Mar" (months.3); no DD/MM on the axis.
+    const ticks = within(apps).getByTestId('chart-ticks')
+    expect(ticks.textContent).toBe('admin.programmeOverview.months.3')
+    expect(apps.textContent).not.toContain('02/03')
+    const awards = screen.getByTestId('chart-awards-per-month')
+    expect(within(awards).queryByTestId('chart-awards-per-month-figures')).toBeNull()
+    expect(within(awards).getAllByTestId('chart-bar')[1].querySelector('title')?.textContent).toBe('30')
+    expect(within(awards).getByTestId('chart-y-axis').textContent)
+      .toContain('admin.programmeOverview.chart.yAwards')
   })
 
   /* ⚠ LARGEST FIRST, "NOT CATEGORISED" LAST, AND "NOT YET SORTED" HIDDEN AT ZERO (owner,

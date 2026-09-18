@@ -82,6 +82,33 @@ describe('BarChart', () => {
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
 
+  /* ⚠ A BAR IS ITS OWN HIT TARGET: the `<title>` sits inside the rect. The line's points get
+   * invisible circles, as on `LineChart`. With no figures, no list is rendered at all. */
+  it('answers bars and line points on hover, draws a y-axis, and prints no empty list', () => {
+    const { container } = render(
+      <BarChart testId="chart-hover" label="Money released and spent per month"
+        series={[
+          { key: 'released', className: 'fill-brand-shape', values: [100, 250], titles: ['RM100.00', 'RM250.00'] },
+          { key: 'spent', className: 'fill-ground-300', values: [40, 90], titles: ['RM40.00', 'RM90.00'] },
+        ]}
+        line={{ className: 'stroke-ground-600', values: [60, 220], titles: ['RM60.00', 'RM220.00'] }}
+        columns={['Jul', 'Aug']} ticks={[{ index: 0, label: 'Jul' }, { index: 1, label: 'Aug' }]}
+        yAxis={{ label: 'RM', format: (v) => `RM${Math.round(v)}` }}
+        box={{ width: 740, height: 160, top: 10, bottom: 24, side: 12, left: 64 }} />)
+    const bars = container.querySelectorAll('[data-testid="chart-bar"]')
+    expect(bars.length).toBe(4)
+    expect(bars[1].querySelector('title')?.textContent).toBe('RM250.00')
+    expect(bars[2].querySelector('title')?.textContent).toBe('RM40.00')
+    const points = container.querySelectorAll('[data-testid="chart-point"]')
+    expect(points.length).toBe(2)
+    expect(points[1].querySelector('title')?.textContent).toBe('RM220.00')
+    const axis = container.querySelector('[data-testid="chart-y-axis"]') as Element
+    expect(axis.textContent).toContain('RM250')   // the bars' scale, not the line's
+    expect(axis.textContent).toContain('RM125')
+    expect(container.querySelector('[data-testid="chart-hover-figures"]')).toBeNull()
+    expect(container.innerHTML).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+
   it('names every column when given ticks, and drops the end labels', () => {
     const { container } = render(
       <BarChart testId="chart-months" label="Money released and spent per month"

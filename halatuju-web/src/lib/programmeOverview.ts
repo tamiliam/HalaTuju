@@ -55,8 +55,16 @@ export interface ChartBox {
 export const WIDE_BOX: ChartBox = { width: 360, height: 120, top: 8, bottom: 20, side: 8 }
 export const FULL_BOX: ChartBox = { width: 740, height: 150, top: 10, bottom: 24, side: 12 }
 export const SMALL_BOX: ChartBox = { width: 240, height: 110, top: 8, bottom: 18, side: 10 }
-/** The small box with room on the left for a y-axis title and its two tick values. */
+/** The boxes with room on the left for a y-axis title and its tick values. */
 export const SMALL_AXIS_BOX: ChartBox = { width: 240, height: 120, top: 10, bottom: 18, side: 10, left: 46 }
+export const WIDE_AXIS_BOX: ChartBox = { width: 360, height: 130, top: 10, bottom: 20, side: 8, left: 40 }
+export const FULL_AXIS_BOX: ChartBox = { width: 740, height: 160, top: 10, bottom: 24, side: 12, left: 64 }
+
+/** `12800` → `'RM12,800'`: a ROUNDED axis tick, never a figure a person quotes (those come from
+ *  the server as strings, through `rm`). Same grouping regex as `rm`, so the two agree. */
+export function rmAxis(v: number): string {
+  return `RM${String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`
+}
 
 /** Where the plot starts — the y-axis margin when there is one, the ordinary side otherwise. */
 export const plotLeft = (box: ChartBox): number => box.left ?? box.side

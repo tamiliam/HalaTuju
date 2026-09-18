@@ -11557,3 +11557,15 @@ does not cover it and the owner must rule again.
 **Trade-offs:** the tooltip is the browser's — plain text, its own delay, its own styling. Accepted: it answers one question and does not try to be a chart feature.
 
 **Revisit if:** touch users need the value (a `<title>` never shows on a phone) — then the answer is a tap that prints the week beneath the chart, not a hover.
+
+## A chart answers on hover and lists nothing beneath it; the figures beneath a chart are the whole-period ones or none — Overview, 2026-09-18
+
+**Decision:** every bar and every point on the Overview carries its own value as an SVG `<title>` (the bar is its own hit target; a line point gets an invisible circle). No chart lists its columns beneath it. The two weekly lines print their one whole-period figure; the other charts print nothing. This SUPERSEDES "every chart renders its figures as text beneath it" (Programme Overview, 2026-09-15) and completes the amendment of 2026-09-18 ("the figure beneath a weekly chart is the whole-period one").
+
+**Alternatives considered:** keep the per-column lists (the 15 September rule); a positioned tooltip component; a table on demand.
+
+**Rationale:** owner, 2026-09-18, on three consecutive reads: the lists were clutter at eleven columns and would be unreadable at fifty, and *"on hover, show value"* answers the same question with nothing on the page until it is asked. A `<title>` is read by screen readers, so the accessibility argument behind the original rule is met without the list. The whole-period figure stays on the two lines because it is a NUMBER — the one a person quotes — not a list.
+
+**Trade-offs:** on a phone there is no hover, so a single column's value is not readable on the page. Accepted for now: the whole-period figures and the totals are, and the owner reads this page on a desktop. The revisit clause below is the phone.
+
+**Revisit if:** a phone user needs one column's value — then a tap that prints the column beneath the chart, not a restored list.

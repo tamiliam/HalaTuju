@@ -8,8 +8,8 @@
  */
 import {
   FULL_BOX, SMALL_AXIS_BOX, SMALL_BOX, WIDE_BOX, bandTone, barLayout, columnX, donutArcs, has,
-  lineLayout, monthOf, monthTicks, num, orderSlices, plotLeft, rm, sliceClasses, thinTicks,
-  weekLabel,
+  lineLayout, monthOf, monthTicks, num, orderSlices, plotLeft, rm, rmAxis, sliceClasses,
+  thinTicks, weekLabel,
 } from '@/lib/programmeOverview'
 
 describe('rm — the money formatter, lifted from the sponsor card', () => {
@@ -252,6 +252,15 @@ describe('orderSlices — largest first, "not categorised" last, "not yet sorted
     const before = rows.map((r) => r.code)
     orderSlices(rows)
     expect(rows.map((r) => r.code)).toEqual(before)
+  })
+})
+
+describe('rmAxis — a rounded axis tick, grouped like rm', () => {
+  it('rounds and groups thousands, and is never a quotable figure', () => {
+    expect(rmAxis(12800)).toBe('RM12,800')
+    expect(rmAxis(7040.6)).toBe('RM7,041')
+    expect(rmAxis(0)).toBe('RM0')
+    expect(rmAxis(1234567)).toBe('RM1,234,567')
   })
 })
 

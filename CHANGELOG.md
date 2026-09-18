@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Overview's charts, round five - hover everywhere, lists nowhere - 2026-09-18
+
+The owner's third read. Every chart on the page now answers on hover and lists nothing beneath
+it, except the two weekly lines, which keep their one whole-period figure.
+
+- **Hover text is the value alone** - "RM8.05", not "04/05: RM8.05". The axis already says when.
+- **The money chart**: the per-month list beneath is gone; every bar carries its own value as a
+  `<title>` (the rect is the hit target) and every point on the balance line has one too. The
+  note under the title is gone; **the three totals are now also the legend** - a blue swatch for
+  Payments, a grey one for Spending, a dotted line for Balance, in front of each label. A y-axis
+  with the top and middle values and gridlines, on the BARS' scale (the balance line keeps its
+  own scale, as before, which is why its values live on its points).
+- **Applications per week and awards per month**: a y-axis each, values on hover, nothing
+  beneath, and the weekly one is labelled in months (`monthTicks`), not week dates.
+- `Figures` renders nothing when there is nothing to list; `BarSeries.titles` and
+  `line.titles` carry the hover text; `rmAxis` is the rounded, grouped axis tick.
+- No backend change.
+
+Gates: 2309 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass · `next build` exit 0
+(backend untouched; 6686 pytest from round four stands). Bite-checks 4 of 4.
+
 ## The Overview's money charts, round four - a figure that read low, and three small asks - 2026-09-18
 
 - **⚠ "Average weekly transactions per student" was total ÷ students ÷ weeks, and the owner

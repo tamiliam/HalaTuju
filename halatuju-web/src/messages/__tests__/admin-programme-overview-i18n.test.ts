@@ -145,7 +145,7 @@ describe('admin.programmeOverview i18n hygiene', () => {
     // locales identically. Five keys of exactly this shape shipped unresolved on 2026-09-08.
     const keys = ['applicationsLabel', 'awardsLabel', 'moneyLabel',
                   'averageLabel', 'transactionsLabel', 'categoryLabel',
-                  'yRinggit', 'yTransactions']
+                  'yRinggit', 'yTransactions', 'yApplications', 'yAwards']
       .map((k) => `${NS}.chart.${k}`)
     const missing: string[] = []
     for (const key of keys) {

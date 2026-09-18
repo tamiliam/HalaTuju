@@ -39,8 +39,8 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
-  FULL_BOX, SMALL_AXIS_BOX, bandTone, has, monthOf, monthTicks, num, orderSlices, rm, thinTicks,
-  weekLabel,
+  FULL_AXIS_BOX, SMALL_AXIS_BOX, WIDE_AXIS_BOX, bandTone, has, monthOf, monthTicks, num,
+  orderSlices, rm, rmAxis, thinTicks, weekLabel,
 } from '@/lib/programmeOverview'
 import { useProgrammeParam } from '@/lib/programmeScope'
 
@@ -259,28 +259,33 @@ export default function ProgrammeOverviewPage() {
       {/* ── How the applications arrived, and how the awards followed ── */}
       {has(data, 'applications_series') && appSeries && (
         <div className="mt-3 grid gap-3 lg:grid-cols-2" data-testid="overview-applications-series">
+          {/* ⚠ VALUES ON HOVER, MONTHS ON THE AXIS, NOTHING BENEATH (owner, 2026-09-18). The
+              weekly columns stay; the labels sit at each month's first week. */}
           <Card title={t(`${K}.series.applicationsPerWeek`)}>
             <BarChart
+              box={WIDE_AXIS_BOX}
               testId="chart-applications-per-week"
               label={t(`${K}.chart.applicationsLabel`)}
               series={[{ key: 'count', className: 'fill-brand-shape',
-                         values: appSeries.applications_per_week.map((r) => r.count) }]}
+                         values: appSeries.applications_per_week.map((r) => r.count),
+                         titles: appSeries.applications_per_week.map((r) => String(r.count)) }]}
               columns={appSeries.applications_per_week.map((r) => weekLabel(r.week))}
-              figures={appSeries.applications_per_week.map((r) => ({
-                label: weekLabel(r.week), value: String(r.count) }))}
+              ticks={monthTicks(appSeries.applications_per_week.map((r) => r.week), monthName)}
+              yAxis={{ label: t(`${K}.chart.yApplications`), format: (v) => String(Math.round(v)) }}
             />
           </Card>
           <Card title={t(`${K}.series.awardsPerMonth`)}>
             <BarChart
+              box={WIDE_AXIS_BOX}
               testId="chart-awards-per-month"
               label={t(`${K}.chart.awardsLabel`)}
               series={[{ key: 'count', className: 'fill-brand-shape',
-                         values: appSeries.awards_per_month.map((r) => r.count) }]}
+                         values: appSeries.awards_per_month.map((r) => r.count),
+                         titles: appSeries.awards_per_month.map((r) => String(r.count)) }]}
               columns={appSeries.awards_per_month.map((r) => monthTick(r.month))}
               ticks={thinTicks(appSeries.awards_per_month.map((r, i) => (
                 { index: i, label: monthTick(r.month) })))}
-              figures={appSeries.awards_per_month.map((r) => ({
-                label: monthTick(r.month), value: String(r.count) }))}
+              yAxis={{ label: t(`${K}.chart.yAwards`), format: (v) => String(Math.round(v)) }}
             />
           </Card>
         </div>
@@ -289,46 +294,64 @@ export default function ProgrammeOverviewPage() {
       {/* ── The money over time: what we released, what was spent, and what is still in wallets ── */}
       {has(data, 'money_series') && moneySeries && (
         <div className="mt-3 space-y-3" data-testid="overview-money-series">
-          <Card title={t(`${K}.series.moneyPerMonth`)} note={t(`${K}.series.gapNote`)}>
+          <Card title={t(`${K}.series.moneyPerMonth`)}>
+            {/* ⚠ EVERY BAR AND EVERY POINT ANSWERS ON HOVER; NOTHING IS LISTED BENEATH (owner,
+                2026-09-18). The y-axis is the BARS' scale; the balance line keeps its own (a
+                running total beside monthly bars would flatten every bar), which is why the
+                line's value lives on its points rather than on the axis. */}
             <BarChart
-              box={FULL_BOX}
+              box={FULL_AXIS_BOX}
               testId="chart-money-per-month"
               label={t(`${K}.chart.moneyLabel`)}
               series={[
                 { key: 'released', className: 'fill-brand-shape',
-                  values: moneySeries.money_per_month.map((r) => num(r.released)) },
+                  values: moneySeries.money_per_month.map((r) => num(r.released)),
+                  titles: moneySeries.money_per_month.map((r) => rmFig(r.released)) },
                 { key: 'spent', className: 'fill-ground-300',
-                  values: moneySeries.money_per_month.map((r) => num(r.spent)) },
+                  values: moneySeries.money_per_month.map((r) => num(r.spent)),
+                  titles: moneySeries.money_per_month.map((r) => rmFig(r.spent)) },
               ]}
               line={{ className: 'stroke-ground-600',
-                      values: moneySeries.money_per_month.map((r) => num(r.gap)) }}
+                      values: moneySeries.money_per_month.map((r) => num(r.gap)),
+                      titles: moneySeries.money_per_month.map((r) => signed(r.gap)) }}
               columns={moneySeries.money_per_month.map((r) => monthTick(r.month))}
               ticks={thinTicks(moneySeries.money_per_month.map((r, i) => (
                 { index: i, label: monthTick(r.month) })))}
-              figures={moneySeries.money_per_month.map((r) => ({
-                label: monthTick(r.month), value: signed(r.gap) }))}
+              yAxis={{ label: 'RM', format: rmAxis }}
             />
 
-            {/* ⚠ THREE FIGURES, NOT A TABLE (owner, 2026-09-15). Payments to date, spending to
-                date, and what is still in wallets — the last month's running figures, which the
-                server already carries. A month-by-month table was the same information said
-                four times per row; anybody who needs a month has the bars and the line. */}
+            {/* ⚠ THREE FIGURES THAT ARE ALSO THE LEGEND (owner, 2026-09-15 and 2026-09-18).
+                Payments to date, spending to date, and what is still in wallets — the last
+                month's running figures, which the server already carries — each with the
+                swatch of the mark that draws it: the blue bar, the grey bar, the dotted line. */}
             {lastMonth && (
               <dl className="mt-4 grid grid-cols-3 gap-3" data-testid="money-totals">
                 <div className="rounded-lg border border-ground-200 p-3">
-                  <dt className="text-[11px] font-medium text-ground-500">{t(`${K}.series.payments`)}</dt>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-medium text-ground-500">
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-brand-shape"
+                      data-testid="swatch-payments" />
+                    {t(`${K}.series.payments`)}
+                  </dt>
                   <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
                     {rmFig(lastMonth.released_cum)}
                   </dd>
                 </div>
                 <div className="rounded-lg border border-ground-200 p-3">
-                  <dt className="text-[11px] font-medium text-ground-500">{t(`${K}.series.spending`)}</dt>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-medium text-ground-500">
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-ground-300"
+                      data-testid="swatch-spending" />
+                    {t(`${K}.series.spending`)}
+                  </dt>
                   <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
                     {rmFig(lastMonth.spent_cum)}
                   </dd>
                 </div>
                 <div className="rounded-lg border border-ground-200 p-3">
-                  <dt className="text-[11px] font-medium text-ground-500">{t(`${K}.series.balance`)}</dt>
+                  <dt className="flex items-center gap-1.5 text-[11px] font-medium text-ground-500">
+                    <span className="inline-block w-4 border-t-2 border-dotted border-ground-600"
+                      data-testid="swatch-balance" />
+                    {t(`${K}.series.balance`)}
+                  </dt>
                   <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
                     {signed(lastMonth.gap)}
                   </dd>
@@ -350,7 +373,7 @@ export default function ProgrammeOverviewPage() {
                 columns={perWeek.map((r) => weekLabel(r.week))}
                 ticks={weekTicks}
                 yAxis={{ label: t(`${K}.chart.yRinggit`), format: (v) => `RM${Math.round(v)}` }}
-                pointTitles={perWeek.map((r) => `${weekLabel(r.week)}: ${rmFig(r.spent_per_transaction)}`)}
+                pointTitles={perWeek.map((r) => rmFig(r.spent_per_transaction))}
                 figures={averageFigures}
               />
               {overall && (
@@ -370,7 +393,7 @@ export default function ProgrammeOverviewPage() {
                 values={perWeek.map((r) => num(r.transactions_per_student))}
                 columns={perWeek.map((r) => weekLabel(r.week))}
                 ticks={weekTicks}
-                pointTitles={perWeek.map((r) => `${weekLabel(r.week)}: ${r.transactions_per_student}`)}
+                pointTitles={perWeek.map((r) => r.transactions_per_student)}
                 yAxis={{ label: t(`${K}.chart.yTransactions`),
                          format: (v) => String(Math.round(v * 10) / 10) }}
                 figures={transactionFigures}
