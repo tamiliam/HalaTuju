@@ -36,6 +36,7 @@ export type FactTileTone = 'green' | 'amber' | 'blue' | 'red'
 // `__tests__/soft-evidence-drift.test.ts` reads verdict_engine.py and fails on any
 // drift — the denylist had rotted (Phase-2B/2C soft codes leaked a tile to blue,
 // audit #11) precisely because nothing enforced the mirror.
+// drift-test: halatuju-web/src/lib/__tests__/soft-evidence-drift.test.ts
 export const SOFT_EVIDENCE = new Set<string>([
   'pathway_declared',              // the student's own declared pathway (unverified)
   'utility_percapita_b40',         // soft income proxy from the utility bills
@@ -1192,6 +1193,8 @@ export const CASE_CLOSED_STATES = new Set<string>(['rejected', 'withdrawn', 'exp
  * `decision_reopened_at` set, and is then expected to re-record the verdict. Keying on
  * status alone would hide the very panel that reopen exists to reach, and the backend guard
  * that mirrors this would refuse the write. See `services.review_writes_closed`.
+ *
+ * drift-test: halatuju_api/apps/scholarship/tests/test_closed_case_writes.py
  */
 export function isCaseClosed(
   opts: { status: string | null | undefined; decisionReopened?: boolean | null },
