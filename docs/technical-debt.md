@@ -3883,6 +3883,80 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
+### [TD-254] A signed-in student can CLAIM another student's profile with their IC number — HIGH (security)
+
+**Status:** Open (2026-09-18). **Owner ruling needed — this is a policy question before it is a code
+question.** Found while answering the owner's challenge to TD-253's sibling check ("how can another
+student claim a locked IC?"). **No evidence of use: there are zero duplicate NRICs in production
+today — and no way to be sure, because a transfer writes no audit line at all.**
+
+`POST /api/v1/profile/claim-nric/` (`courses/views.py:NricClaimView`) answers an IC that belongs to
+somebody else with `status: 'exists'` **and that person's NAME**. Repeat the call with
+`confirm: true` and the endpoint **transfers the whole profile to the caller's login** — raw SQL
+moves `saved_courses`, `admission_outcomes`, `generated_reports`, `email_verifications` and then the
+profile's primary key itself, so everything keyed to that profile follows, the scholarship
+application included.
+
+**It is live and reachable in the product.** `AuthGateModal.tsx` calls it on sign-in, shows the
+existing holder's name in a confirm dialog, and posts `confirm: true` on the button
+(`handleConfirmClaim`). `/profile` and `/scholarship/apply` call the same endpoint without confirm.
+
+**The IC lock does NOT stop this, and that is the part that surprises.** `nric_verified` is checked
+against the CALLER's own profile ("your NRIC is verified and locked") — never against the TARGET's.
+A verified, awarded student's profile transfers exactly as easily as an empty one. The database's
+unique index is partial (`WHERE nric_verified AND nric <> ''`) and is not violated by a transfer,
+because the row moves rather than duplicating.
+
+**What stands behind it today:** only the verify-&-accept clash check (`views_admin.py`,
+`nric_conflict`, 409), which catches the OTHER shape — two separate profiles both trying to become
+verified. It cannot see a transfer, because after a transfer there is still exactly one profile.
+
+**The design intent is legitimate** — a student who lost access to their email re-registers and
+reclaims their own record — which is why this is a ruling to make, not a bug to silently patch.
+
+**Options for the owner:**
+1. Refuse a transfer when the target profile is `nric_verified`, or holds a scholarship application,
+   and route it to support instead (smallest change; keeps the lost-email path for fresh profiles).
+2. Keep the self-service claim but require a second factor the real owner holds — the verified
+   contact phone or email on the target profile (the Twilio Verify door already exists).
+3. Leave it and accept the risk, with an audit line at minimum.
+
+**Whatever is chosen: stop returning the existing holder's NAME to an unauthenticated guess** (it is
+a name disclosure to anyone who types an IC), and **log the transfer** — old id, new id, IC, when.
+There is no log line today, so the question "has this ever happened?" has no answer.
+
+### [TD-253] An interview with NOTHING in it passes the gate that guards Approve and Decline — medium
+
+**Status:** Open (2026-09-18). Found by the owner on application #32: *"there is no findings. So the
+reviewer should have been prevented from recommending (approve/decline)."* He is right.
+
+`isDecisionReady` (officerCockpit.ts) wakes the Approve/Decline buttons on three conditions: the
+interview session is **submitted**, all four verdict facts are pass/fail, and a conclusion is typed.
+The first condition asks only that the SUBMIT BUTTON was pressed. `_validate_findings`
+(`views_admin.py`) then validates each finding in the dict — and an EMPTY dict has none to
+validate, so it returns no error and the submit succeeds.
+
+**Live proof:** application #32's interview session was submitted 2026-08-14 with `findings = {}`
+and an empty `overall_note`, and the case was carried to a recorded DECLINE on 2026-09-11. Nothing
+in the chain objected.
+
+The conclusion box is the only prose that is actually required (`reason.trim().length > 0`), and it
+is what the reviewer wrote her decline in — so the decision is not unreasoned. What is missing is
+the per-fact record the interview stage exists to capture.
+
+**⚠ MEASURED BEFORE PROPOSING A GATE: 35 of the 90 submitted interview sessions (39%) have EMPTY
+findings**, and 6 have no overall note. This is not one careless reviewer — it is how a large part
+of the cohort was reviewed, with the reasoning going into the conclusion box instead. So the
+question is first for the owner (is the per-fact record wanted at all, or is the conclusion
+enough?) and only then for the code. A hard gate shipped without that answer would strand 35
+existing cases and tell 39% of past reviews they were done wrong.
+
+**Fix when it bites:** require at least one finding with a verdict (and decide whether a rationale
+is required with it) at BOTH ends — `_validate_findings` refusing an empty dict on submit, and
+`isDecisionReady` keying on content rather than on the status word. ⚠ Check the live sessions first:
+if other submitted sessions are empty, a hard gate would strand them, so the backward repair is part
+of the change, not an afterthought.
+
 ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 **Status:** Open (2026-09-18). Found while closing test record #16 at the owner's request.
