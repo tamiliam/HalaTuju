@@ -557,6 +557,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
+**➕ ALSO LIVE (2026-09-18): Overview PHASE 2, SPRINT A — the organisation chooses its panels, and
+a round can be picked.** `main` at **`c658a1b6`**; builds api `c9546e7f` + web `151769fa` SUCCESS
+(waited on BY BUILD ID); serving **halatuju-api-01049-k8z** / **halatuju-web-00899-7xf**, digests
+matched; Overview 200, overview + layout endpoints 401 without login, no api ERROR logs. Gates:
+**6714 pytest** · **2354 jest** · tsc 24 · lint 0 · `next build` 0. **Migration
+`0161_overview_layout` APPLIED MIGRATE-FIRST with RLS — ledger 161 files = 161 rows; DO NOT
+RE-APPLY.** Retro `docs/retrospective-2026-09-18-overview-phase-2-sprint-a.md`; roadmap
+`docs/plans/2026-09-18-overview-phase-2-roadmap.md`.
+- **⚠ THE ORGANISATION'S LAYOUT NARROWS AND ORDERS A ROLE'S SECTIONS; IT NEVER WIDENS**
+  (`overview_layout.apply`, table `organisation_overview_layouts`, ordered `[{key, on}]` over the
+  five widgets). `mine`/`qc` are PAGES, not widgets — never switchable. Everything hidden →
+  `sections: []` with a 200. NOT an `org_config` kind (that module is int-only by doctrine).
+- `layout` rides on the payload for `org_admin`/super ONLY; the page shows Customise by its
+  PRESENCE. Writer: `AdminOverviewLayoutView` GET/PUT
+  `admin/scholarship/organisation/overview-layout/` (org derived, `?org=` for a super,
+  all-or-nothing, one compact `AUDIT overview_layout_set` line). ⚠ `get_or_create` MUST carry
+  `defaults={'sections': …}` — the model's `save()` validates and refuses an empty first row.
+- **`?intake=<cohort id>` narrows EVERYTHING inside the fence** (`_AdminBase._intake_narrowing`;
+  a round the caller may not see is 404, never 403). `intake`/`intakes` on EVERY role's payload —
+  a date, not a person. The strip = Payments footer is a claim about the UNFILTERED page.
+- The page renders `data.sections` in the server's order; the section blocks live in
+  `components/admin/overview/OverviewSections.tsx`; every split file declares
+  `const K = 'admin.programmeOverview'` (the i18n guard resolves `${K}.` by that literal).
+- **▶ NEXT = SPRINT B: widget ORDER** — up/down buttons + native HTML5 drag-and-drop, no library,
+  **no backend change**; `moveItem`/`reorderByDrop` already in `src/lib/overviewLayout.ts`.
+- Debt noted: `_gate`/`_organisation_for` now exists in THREE views (theme, configuration,
+  overview layout) — extract a verb-less base when a fourth appears.
+
 **➕ ALSO LIVE (2026-09-18, round six): only students who spent are counted; empty tiles and the
 Intake card are gone.** `main` at **`07cae039`**; builds api `1c1434bf` + web `071784c9` SUCCESS
 (waited on BY BUILD ID); serving **halatuju-api-01048-fvh** / **halatuju-web-00898-z99**, digests
