@@ -230,8 +230,12 @@ class _Base(TestCase):
         return r.json()
 
 
-_ALWAYS = {'programme', 'generated_at', 'data_to', 'sections'}
+#: On EVERY payload. `intake`/`intakes` joined on 2026-09-18 (phase 2): a round's name and year
+#: is a date, not a person or a sum, so every role may read it.
+_ALWAYS = {'programme', 'generated_at', 'data_to', 'sections', 'intake', 'intakes'}
 _FULL = _ALWAYS | {'funnel', 'money', 'attention', 'applications_series', 'money_series'}
+#: The five customisable widgets, in default order — must equal `overview_layout.CUSTOMISABLE`.
+_WIDGETS = ['funnel', 'money', 'attention', 'applications_series', 'money_series']
 
 
 class RolesAndShapeTests(_Base):
@@ -250,9 +254,12 @@ class RolesAndShapeTests(_Base):
 
     def test_the_key_set_per_role_is_exact(self):
         """⚠ THE ROLE GATE, PINNED. A section arriving by accident fails HERE, not on a screen."""
+        # ⚠ `layout` (keys and flags, never data) is on the payload ONLY for the roles that may
+        # edit it — org_admin and super. A plain admin, finance, qc, reviewer never receive it,
+        # and the page shows the Customise button by its presence.
         expected = {
-            'ov-su': _FULL,
-            'ov-oa': _FULL,
+            'ov-su': _FULL | {'layout'},
+            'ov-oa': _FULL | {'layout'},
             'ov-adm': _FULL,
             'ov-fin': _ALWAYS | {'money', 'money_series'},
             'ov-qc': _ALWAYS | {'qc'},
@@ -263,7 +270,7 @@ class RolesAndShapeTests(_Base):
                 body = self._body(uid)
                 self.assertEqual(set(body), keys)
                 # `sections` must DESCRIBE the payload, not merely accompany it.
-                self.assertEqual(set(body['sections']), keys - _ALWAYS)
+                self.assertEqual(set(body['sections']), keys - _ALWAYS - {'layout'})
 
     def test_a_reviewer_gets_no_money_and_no_programme_wide_funnel(self):
         body = self._body('ov-rev')
@@ -605,16 +612,21 @@ class FiguresTests(_Base):
             'due_soon': 1, 'overdue': 2, 'awaiting_qc': 1})
 
     def test_the_intake_block_is_gone_from_every_role(self):
-        """Owner, 2026-09-18: "doesn't add much value". Removed, not zeroed — a key absent."""
+        """Owner, 2026-09-18: "doesn't add much value". The CARD is gone; what `intake` carries
+        now is the picker's echo of a chosen round (or `None`) — never the old block's window
+        and switch."""
         for uid in ('ov-su', 'ov-oa', 'ov-fin', 'ov-qc', 'ov-rev'):
-            self.assertNotIn('intake', self._body(uid))
+            body = self._body(uid)
+            self.assertIsNone(body['intake'])
+            chosen = self._body(uid, f'?programme=ov-gift&intake={self.cohort.id}')['intake']
+            self.assertEqual(set(chosen), {'id', 'code', 'name', 'year', 'state'})
 
     def test_no_gift_named_still_answers(self):
         """With several gifts and none chosen, the page shows everything the fence allows."""
         body = self._body('ov-oa', '')
         self.assertIsNone(body['programme'])
         self.assertIn('funnel', body)
-        self.assertNotIn('intake', body)
+        self.assertIsNone(body['intake'])
 
 
 class MineTests(_Base):
@@ -686,3 +698,131 @@ class QcTests(_Base):
         self.qc.email = 'nobody@ov.test'
         self.qc.save(update_fields=['email'])
         self.assertEqual(self._body('ov-qc')['qc']['pace']['completed'], 0)
+
+
+class LayoutTests(_Base):
+    """The organisation's layout NARROWS and ORDERS the role's sections. It never widens."""
+
+    def _store(self, sections):
+        from apps.scholarship.models import OrganisationOverviewLayout
+        OrganisationOverviewLayout.objects.update_or_create(
+            organisation=self.org, defaults={'sections': sections})
+
+    @staticmethod
+    def _rows(order, off=()):
+        return [{'key': k, 'on': k not in off} for k in order]
+
+    def test_a_hidden_widget_is_absent_for_every_role_that_had_it(self):
+        self._store(self._rows(_WIDGETS, off=('money',)))
+        oa = self._body('ov-oa')
+        self.assertNotIn('money', oa)
+        self.assertNotIn('money', oa['sections'])
+        self.assertIn('money_series', oa)
+        fin = self._body('ov-fin')
+        self.assertNotIn('money', fin)
+        self.assertEqual(fin['sections'], ['money_series'])
+        # A reviewer never had `money`; their page is untouched by a layout that hides it.
+        self.assertEqual(self._body('ov-rev')['sections'], ['mine'])
+
+    def test_sections_follow_the_stored_order(self):
+        self._store(self._rows(['money_series', 'funnel', 'money', 'attention',
+                                'applications_series']))
+        self.assertEqual(self._body('ov-oa')['sections'],
+                         ['money_series', 'funnel', 'money', 'attention', 'applications_series'])
+        # A narrowed role keeps the layout's order among the widgets it may see.
+        self.assertEqual(self._body('ov-fin')['sections'], ['money_series', 'money'])
+
+    def test_the_layout_never_widens(self):
+        """`apply()` from the widening side: a hand-made layout naming `mine` for an org_admin,
+        and naming widgets a reviewer may not see. Nothing is added."""
+        from apps.scholarship import overview_layout
+        rows = self._rows(_WIDGETS) + [{'key': 'mine', 'on': True}]
+        self.assertEqual(overview_layout.apply(rows, programme_overview.FULL),
+                         list(programme_overview.FULL))
+        self.assertEqual(overview_layout.apply(self._rows(_WIDGETS), ('mine',)), ['mine'])
+        self.assertEqual(overview_layout.apply(self._rows(_WIDGETS), ('money', 'qc')),
+                         ['money', 'qc'])
+
+    def test_hiding_every_widget_a_role_may_see_is_a_200_with_no_sections(self):
+        self._store(self._rows(_WIDGETS, off=('money', 'money_series')))
+        r = self._get('ov-fin')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['sections'], [])
+
+    def test_layout_keys_and_flags_reach_only_those_who_may_edit(self):
+        self._store(self._rows(_WIDGETS, off=('attention',)))
+        self.assertEqual(self._body('ov-oa')['layout'],
+                         self._rows(_WIDGETS, off=('attention',)))
+        # The super sees the named gift's owner's layout.
+        self.assertEqual(self._body('ov-su')['layout'],
+                         self._rows(_WIDGETS, off=('attention',)))
+        for uid in ('ov-adm', 'ov-fin', 'ov-qc', 'ov-rev'):
+            self.assertNotIn('layout', self._body(uid), uid)
+
+    def test_no_row_means_every_widget_on_in_default_order(self):
+        body = self._body('ov-oa')
+        self.assertEqual(body['sections'], _WIDGETS)
+        self.assertEqual(body['layout'], self._rows(_WIDGETS))
+
+    def test_the_platform_scope_with_no_gift_has_no_layout_to_apply(self):
+        """Under `ALL_ORGS` with no gift there is no organisation, so no layout and no editor."""
+        self._store(self._rows(_WIDGETS, off=('funnel',)))
+        body = self._body('ov-su', '')
+        self.assertIn('funnel', body)
+        self.assertNotIn('layout', body)
+
+    def test_the_catalogue_is_the_full_widget_set(self):
+        from apps.scholarship import overview_layout
+        self.assertEqual(overview_layout.CUSTOMISABLE, programme_overview.FULL)
+
+
+class IntakeTests(_Base):
+    """`?intake=` narrows INSIDE the fence — everything on the page — and never widens."""
+
+    def test_the_round_narrows_every_section(self):
+        body = self._body('ov-oa', f'?programme=ov-gift&intake={self.cohort.id}')
+        self.assertEqual(body['funnel']['total'],
+                         ScholarshipApplication.objects.filter(cohort=self.cohort).count())
+        self.assertEqual(body['intake']['code'], 'ov-2026')
+        old = self._body('ov-oa', f'?programme=ov-gift&intake={self.old_cohort.id}')
+        self.assertEqual(old['funnel']['total'], 0)
+        self.assertEqual(Decimal(old['money']['committed']), Decimal('0'))
+        self.assertEqual(old['money_series']['money_per_month'], [])
+        # A reviewer's own cases and a QC's queue narrow too — nothing is exempt.
+        self.assertEqual(self._body('ov-rev', f'?programme=ov-gift&intake={self.old_cohort.id}')
+                         ['mine']['open'], 0)
+        self.assertEqual(self._body('ov-qc', f'?programme=ov-gift&intake={self.old_cohort.id}')
+                         ['qc']['awaiting'], 0)
+
+    def test_a_round_the_caller_may_not_see_is_404_never_403(self):
+        for query in (f'?programme=ov-gift&intake={self.other_cohort.id}',   # another tenant
+                      f'?programme=ov-gift&intake={self.cohort2.id}',        # another gift
+                      '?programme=ov-gift&intake=999999',                     # unknown
+                      '?programme=ov-gift&intake=abc'):                      # not an id
+            with self.subTest(query=query):
+                r = self._get('ov-oa', query)
+                self.assertEqual(r.status_code, 404)
+                self.assertEqual(r.json()['code'], 'not_found')
+
+    def test_the_picker_is_populated_for_every_role_newest_year_first(self):
+        for uid in ('ov-rev', 'ov-fin', 'ov-qc', 'ov-oa'):
+            with self.subTest(uid=uid):
+                intakes = self._body(uid)['intakes']
+                self.assertEqual([i['code'] for i in intakes], ['ov-2026', 'ov-2025'])
+                self.assertEqual(set(intakes[0]), {'id', 'code', 'name', 'year', 'state'})
+                self.assertEqual(intakes[0]['state'], 'open')
+
+    def test_the_platform_scope_with_no_gift_offers_no_rounds(self):
+        self.assertEqual(self._body('ov-su', '')['intakes'], [])
+        self.assertIsNone(self._body('ov-su', '')['intake'])
+
+    def test_a_tenant_with_no_gift_chosen_sees_every_round_inside_its_fence(self):
+        codes = {i['code'] for i in self._body('ov-oa', '')['intakes']}
+        self.assertEqual(codes, {'ov-2026', 'ov-2025', 'ov2-2026'})
+
+    def test_the_reconciliation_still_holds_unfiltered(self):
+        """The strip equals the Payments footer ONLY on the same scope; with no round chosen the
+        two screens describe the same rows and must still agree byte for byte."""
+        overview = self._body('ov-oa')['money']
+        footer = self._client('ov-oa').get(FUNDING + '?programme=ov-gift').json()['totals']
+        self.assertEqual(overview['paid'], footer['paid_total'])

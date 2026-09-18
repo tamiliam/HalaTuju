@@ -3756,6 +3756,41 @@ class OrgBillingDetails(models.Model):
         return f'{self.organisation_id}: {self.bill_to_name}'
 
 
+class OrganisationOverviewLayout(models.Model):
+    """Which Overview widgets an organisation shows, and in what order (phase 2, 2026-09-18).
+
+    One row per organisation; `sections` is the ORDERED list `[{key, on}]` over exactly the five
+    customisable widgets (`overview_layout.CUSTOMISABLE`). No row means the default: every widget
+    on, default order. Set by the org admin from the Overview's Customise mode; read by
+    `programme_overview.build` for every role in the organisation — as a NARROWING of what the
+    role may see, never a widening (see `overview_layout.apply`).
+
+    ⚠ THE FENCE IS ON THE MODEL. `save()` validates through `overview_layout.validate_sections`,
+    the `OrganisationConfiguration.save()` seam: a shell caller cannot store an unknown key, a
+    duplicate, or a list with a widget missing.
+    """
+    organisation = models.OneToOneField(
+        'courses.PartnerOrganisation', on_delete=models.CASCADE,
+        related_name='overview_layout')
+    sections = models.JSONField(
+        default=list,
+        help_text='Ordered list of {key, on} over the five customisable Overview widgets.')
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'organisation_overview_layouts'
+
+    def __str__(self):
+        return f'Overview layout for {self.organisation.code}'
+
+    def save(self, *args, **kwargs):
+        from . import overview_layout
+        self.sections = overview_layout.normalised(self.sections)
+        return super().save(*args, **kwargs)
+
+
 class BillingSequence(models.Model):
     """The last number used, per document kind per year — what makes numbering GAP-FREE.
 

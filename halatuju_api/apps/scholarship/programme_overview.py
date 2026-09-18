@@ -85,6 +85,13 @@ SECTIONS_BY_ROLE = {
 }
 
 
+def may_customise(admin):
+    """Who edits the organisation's layout: `org_admin`, and super (who passes every role
+    check — `PartnerAdminMixin.has_role`'s rule, spelled out here so this module stays free of
+    the view layer). The same answer `AdminOverviewLayoutView.ROLES` gives to a PUT."""
+    return bool(admin) and (admin.is_super or admin.role == 'org_admin')
+
+
 def sections_for(admin):
     """Which sections this admin's role may receive. `()` for anyone unlisted.
 
@@ -102,13 +109,16 @@ def sections_for(admin):
 
 # ── the fence ─────────────────────────────────────────────────────────────────────────────────
 
-def application_scope(org, programme=None):
+def application_scope(org, programme=None, cohort=None):
     """The applications this request may see. **THE fence — nothing here reaches around it.**
 
-    ⚠⚠ **`programme` NARROWS ALONGSIDE THE ORGANISATION FILTER, NEVER INSTEAD OF IT.** The same
-    wording `payments.eligible_rows` and `spend_report._txns` carry, and it is load-bearing: the
-    organisation is the SECURITY fence and the gift is a restriction inside it. If a future edit
-    ever makes the two an either/or, a caller naming a gift escapes the tenant wall.
+    ⚠⚠ **`programme` AND `cohort` NARROW ALONGSIDE THE ORGANISATION FILTER, NEVER INSTEAD OF
+    IT.** The same wording `payments.eligible_rows` and `spend_report._txns` carry, and it is
+    load-bearing: the organisation is the SECURITY fence and the gift (and, since 2026-09-18, the
+    intake round inside it) is a restriction inside it. If a future edit ever makes these an
+    either/or, a caller naming a gift or a round escapes the tenant wall. The view has already
+    refused a cohort from another tenant or another gift with a 404 (`_intake_narrowing`), so
+    `cohort` here is one the caller may see; the filter still sits INSIDE the fence.
 
     ⚠ **THE GIFT FILTER IS THE APPLICATIONS LIST'S OWN PAIR** (`views_admin.py:380`).
     `ScholarshipApplication.programme` is a denormalised copy set once at first save, so a cohort
@@ -130,7 +140,39 @@ def application_scope(org, programme=None):
         qs = ScholarshipApplication.objects.filter(owning_organisation=org)
     if programme is not None:
         qs = qs.filter(Q(programme=programme) | Q(cohort__programme=programme))
+    if cohort is not None:
+        qs = qs.filter(cohort=cohort)
     return qs
+
+
+def intakes_for(org, programme):
+    """The rounds the intake picker offers: the chosen gift's, newest year first.
+
+    ⚠ ON EVERY ROLE'S PAYLOAD. A round's code, name, year and state is the same class of fact the
+    old `intake` block put on every row (2026-09-15) — a date, not a person and not a sum — so a
+    reviewer populating a picker from it discloses nothing. This is what makes the org_admin-only
+    intake-years endpoint irrelevant here.
+
+    With no gift chosen: a tenant sees every round inside its fence; the platform scope sees `[]`
+    (there is no organisation to fence on, and the picker hides itself).
+    """
+    from .models import ScholarshipCohort
+    from .views_admin import round_state
+
+    if programme is not None:
+        # org-fence: the gift was resolved inside the caller's organisation by `_gift_narrowing`.
+        qs = ScholarshipCohort.objects.filter(programme=programme)
+    elif org is spend_report.ALL_ORGS:
+        return []
+    else:
+        # org-fence: owning_organisation — the cohort's own tenancy column.
+        qs = ScholarshipCohort.objects.filter(owning_organisation=org)
+    return [_intake_row(c, round_state(c)) for c in qs.order_by('-year', 'code')]
+
+
+def _intake_row(cohort, state):
+    return {'id': cohort.id, 'code': cohort.code, 'name': cohort.name,
+            'year': cohort.year, 'state': state}
 
 
 def _txns(scope, *, spend_only=True):
@@ -535,7 +577,7 @@ def by_category(scope):
     return out
 
 
-def mine(scope, admin, *, now, clocks, organisation_id=None, programme=None):
+def mine(scope, admin, *, now, clocks, organisation_id=None, programme=None, cohort=None):
     """A reviewer's OWN cases, and nothing else.
 
     ⚠ `due_soon` and `overdue` are SUBSETS of `open`, matching `attention` — see its note.
@@ -577,7 +619,8 @@ def mine(scope, admin, *, now, clocks, organisation_id=None, programme=None):
         })
     cases.sort(key=lambda c: (c['due_at'], c['id']))
     work = _reviewer_workloads(
-        [admin], organisation_id=organisation_id, programme=programme).get(admin.id, {})
+        [admin], organisation_id=organisation_id, programme=programme,
+        cohort=cohort).get(admin.id, {})
     return {
         **counts,
         'cases': cases,
@@ -666,19 +709,33 @@ def _overall_payload(overall):
     }
 
 
-def build(admin, org, programme, *, now=None):
-    """The whole payload, shaped by role, with every money value a STRING.
+def build(admin, org, programme, *, cohort=None, now=None):
+    """The whole payload, shaped by role, narrowed and ordered by the organisation's layout,
+    with every money value a STRING.
 
     ⚠ The sections are chosen FIRST and each is built only if chosen, so a role never pays for a
     query it may not read the answer to — and, more importantly, a bug in the serialisation below
     can never surface a section `sections_for` withheld.
+
+    ⚠⚠ THE ORGANISATION'S LAYOUT NARROWS AND ORDERS; IT NEVER WIDENS (`overview_layout.apply`).
+    `sections` is emitted in the layout's order and the page renders in that order. `mine` and
+    `qc` are pages, not widgets, and pass through untouched. A layout that hides everything a
+    role may see yields `sections: []` with a 200 — the view's 403 is about entitlement, which is
+    a different question. The layout's organisation is the SLA organisation: the tenant, or the
+    named gift's owner under the platform scope; with neither there is no layout to apply.
+
+    ⚠ `layout` (keys and flags, never data) is on the payload for org_admin and super ONLY — it
+    is what Customise mode edits, and the page shows the Customise button by its PRESENCE, never
+    by a client-side role check.
     """
     from .review_sla import clocks as review_clocks
+    from .views_admin import round_state
+    from . import overview_layout
 
     now = now or timezone.now()
     today = timezone.localtime(now).date()
-    scope = application_scope(org, programme)
-    sections = sections_for(admin)
+    scope = application_scope(org, programme, cohort)
+    role_sections = sections_for(admin)
 
     # ⚠ THE SLA CLOCKS ARE PER-ORGANISATION, AND THE PLATFORM SCOPE HAS NO ORGANISATION. Under
     # `ALL_ORGS` we take the gift's owner when a gift was named, and the platform default
@@ -689,10 +746,15 @@ def build(admin, org, programme, *, now=None):
         sla_org = programme.organisation
     clocks = review_clocks(sla_org)
 
+    layout = overview_layout.for_org(sla_org) if sla_org is not None else None
+    sections = (overview_layout.apply(layout, role_sections)
+                if layout is not None else list(role_sections))
+
     newest = data_to(scope)
-    # These four keys are on EVERY payload whatever the role. `data_to` is here rather than
-    # inside `money_series` because it is the "as at" stamp for the whole page — and it is a
-    # DATE, not money, so it discloses nothing a reviewer may not read.
+    # These keys are on EVERY payload whatever the role. `data_to` is here rather than inside
+    # `money_series` because it is the "as at" stamp for the whole page — and it is a DATE, not
+    # money, so it discloses nothing a reviewer may not read. Likewise `intake`/`intakes`: a
+    # round's name and year, see `intakes_for`.
     payload = {
         'programme': ({'code': programme.code, 'name': programme.name_en}
                       if programme is not None else None),
@@ -701,7 +763,11 @@ def build(admin, org, programme, *, now=None):
         'generated_at': timezone.localtime(now).isoformat(),
         'data_to': newest.isoformat() if newest else None,
         'sections': list(sections),
+        'intake': _intake_row(cohort, round_state(cohort)) if cohort is not None else None,
+        'intakes': intakes_for(org, programme),
     }
+    if layout is not None and may_customise(admin):
+        payload['layout'] = layout
 
     if 'funnel' in sections:
         payload['funnel'] = funnel(scope)
@@ -747,7 +813,7 @@ def build(admin, org, programme, *, now=None):
             scope, admin, now=now, clocks=clocks,
             organisation_id=(None if org is spend_report.ALL_ORGS
                              else getattr(org, 'id', None)),
-            programme=programme)
+            programme=programme, cohort=cohort)
     if 'qc' in sections:
         payload['qc'] = qc_queue(scope, admin, now=now)
     return payload

@@ -268,6 +268,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # MIRROR, not a subclass, so a stray verb on this route can never touch a colour draft.
         # Payload = the registry's few tunable numbers for ONE organisation; no student data.
         'AdminOrganisationConfigurationView': 'organisation-config-org-fenced',
+        # Programme Overview phase 2 (2026-09-18). The organisation's widget layout — the SAME
+        # derivation as the configuration view (organisation from `admin.owning_organisation`;
+        # super names `?org=`; cross-org 404, never 403), a MIRROR again. Payload = five keys and
+        # five booleans; no student data. Writers: org_admin + super. What it changes is read by
+        # `programme_overview.build` as a NARROWING of the role's sections, never a widening.
+        'AdminOverviewLayoutView': 'overview-layout-org-fenced',
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',

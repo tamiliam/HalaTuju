@@ -188,6 +188,42 @@ class _AdminBase(PartnerAdminMixin, APIView):
                                   status=status.HTTP_404_NOT_FOUND)
         return programme, None
 
+    def _intake_narrowing(self, request, admin, programme):
+        """Read `?intake=<cohort id>` and resolve it. Returns `(cohort|None, error|None)`.
+
+        The intake-round sibling of `_gift_narrowing` (Programme Overview phase 2, 2026-09-18),
+        and on `_AdminBase` for the same reason: the Applications list is the obvious next
+        caller, and two pages must not answer "which round?" two ways.
+
+        ⚠ AN ABSENT PARAMETER MEANS "DO NOT NARROW". ⚠ IT NARROWS INSIDE THE FENCE AND CAN
+        NEVER WIDEN: a non-super resolves only within their own organisation, and when a gift
+        was named the round must belong to it. An unknown id, another tenant's, another gift's
+        and a non-integer are all one answer — 404, never 403 and never 400 — because a
+        cross-tenant id must not confirm that round exists.
+        """
+        from .models import ScholarshipCohort
+
+        raw = (request.query_params.get('intake') or '').strip()
+        if not raw:
+            return None, None
+        not_found = Response({'error': 'not_found', 'code': 'not_found'},
+                             status=status.HTTP_404_NOT_FOUND)
+        try:
+            cohort_id = int(raw)
+        except ValueError:
+            return None, not_found
+        # org-fence: owning_organisation for every non-super; a super is fenced by the gift below
+        # (and sees every tenant without one, which is the platform scope this page gives them).
+        qs = ScholarshipCohort.objects.filter(pk=cohort_id)
+        if not self.has_role(admin, 'super'):
+            qs = qs.filter(owning_organisation_id=admin.owning_organisation_id)
+        if programme is not None:
+            qs = qs.filter(programme=programme)
+        cohort = qs.first()
+        if cohort is None:
+            return None, not_found
+        return cohort, None
+
     def _org_allows(self, admin, app):
         """Row-level org fence: True if this admin's organisation owns ``app``.
         Super is global; everyone else must match owning_organisation. A cross-org
@@ -2505,7 +2541,7 @@ def _median_days(values):
     return round((ordered[mid - 1] + ordered[mid]) / 2, 1)
 
 
-def _reviewer_workloads(admins, *, organisation_id=None, programme=None):
+def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=None):
     """`{admin_id: {...figures}}` for every reviewer, in ONE query, grouped in Python.
 
     ⚠ NOT `annotate()`. Two counts over two multi-valued relations multiply each other, and
@@ -2543,6 +2579,10 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None):
         rows = rows.filter(owning_organisation_id=organisation_id)
     if programme is not None:
         rows = rows.filter(Q(programme=programme) | Q(cohort__programme=programme))
+    if cohort is not None:
+        # The intake round inside the gift (Overview phase 2) — narrows, never widens; the
+        # Reviewers surface passes none and is byte-unchanged.
+        rows = rows.filter(cohort=cohort)
     by_email = {a.id: (a.email or '').strip().lower() for a in admins}
     out = {i: {'open_now': 0, 'completed': 0, 'recommended': 0, 'declined': 0,
                'rejected_after_review': 0, 'awaiting_qc': 0, 'unaccounted': 0, '_days': []}
@@ -8383,6 +8423,9 @@ class AdminProgrammeOverviewView(_AdminBase):
         programme, gift_err = self._gift_narrowing(request, admin)
         if gift_err:
             return gift_err
+        cohort, intake_err = self._intake_narrowing(request, admin, programme)
+        if intake_err:
+            return intake_err
         if admin.is_super:
             org = spend_report.ALL_ORGS
         else:
@@ -8390,4 +8433,115 @@ class AdminProgrammeOverviewView(_AdminBase):
             if org is None:
                 return Response({'error': 'no_org', 'code': 'no_org'},
                                 status=status.HTTP_400_BAD_REQUEST)
-        return Response(programme_overview.build(admin, org, programme))
+        return Response(programme_overview.build(admin, org, programme, cohort=cohort))
+
+
+class AdminOverviewLayoutView(_AdminBase):
+    """GET/PUT `admin/scholarship/organisation/overview-layout/` — which Overview widgets an
+    organisation shows, and in what order (Programme Overview phase 2, 2026-09-18).
+
+    Edited from the Overview's Customise mode by the org admin; read by
+    `programme_overview.build` for every role in the organisation as a NARROWING of what the
+    role may see (`overview_layout.apply` — never a widening; `mine`/`qc` are pages, not
+    widgets, and are not in the list at all).
+
+    ⚠ THE ORGANISATION IS DERIVED, NEVER SENT — the `AdminOrganisationConfigurationView` fence,
+    mirrored (same 404-not-403, same refusal to pick silently between two, `?org=` for a super).
+    A third copy of `_gate`/`_organisation_for`; extracting a verb-less base for the three is
+    noted as debt rather than done inside a feature sprint.
+
+    Who may write: `org_admin` and super — the layout changes what every colleague sees.
+
+    PUT is ALL-OR-NOTHING: the body must be the FULL ordered list of the five widgets with a
+    boolean each (`overview_layout.validate_sections`), refused with `{error, code, key}`; one
+    `AUDIT overview_layout_set` line per save in the compact `funnel+,money-,…` form.
+
+    tenancy: org-fenced on the derived organisation. Classified in test_org_fence.py.
+    """
+
+    ROLES = ('org_admin',)
+
+    def _gate(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not self.has_role(admin, *self.ROLES):
+            return None, self._deny_role()
+        return admin, None
+
+    def _organisation_for(self, admin, code):
+        """Mirrors `AdminOrganisationConfigurationView._organisation_for` — see its docstring."""
+        from apps.courses.models import PartnerOrganisation
+        qs = PartnerOrganisation.objects.filter(is_active=True).tenants()
+        if not self.has_role(admin, 'super'):
+            org_id = admin.owning_organisation_id
+            qs = qs.filter(id=org_id) if org_id else qs.none()
+        if code:
+            org = qs.filter(code=code).first()
+            if org is None:
+                return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+            return org, None
+        orgs = list(qs.order_by('code')[:2])
+        if not orgs:
+            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        if len(orgs) > 1:
+            return None, Response(
+                {'error': 'organisation_required', 'code': 'organisation_required',
+                 'organisations': [o.code for o in qs.order_by('code')]},
+                status=status.HTTP_400_BAD_REQUEST)
+        return orgs[0], None
+
+    def _payload(self, org):
+        from . import overview_layout
+        from .models import OrganisationOverviewLayout
+        # org-fence: `org` is the derived organisation above.
+        row = OrganisationOverviewLayout.objects.filter(organisation=org).first()
+        return {
+            'organisation': {'code': org.code, 'name': org.name},
+            'sections': overview_layout.for_org(org),
+            'updated_by_email': row.updated_by_email if row else '',
+            'updated_at': row.updated_at.isoformat() if row else None,
+        }
+
+    def get(self, request):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        if err:
+            return err
+        return Response(self._payload(org))
+
+    @staticmethod
+    def _compact(sections):
+        return ','.join(f"{s['key']}{'+' if s['on'] else '-'}" for s in sections)
+
+    def put(self, request):
+        from . import overview_layout
+        from .models import OrganisationOverviewLayout
+
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        if err:
+            return err
+        try:
+            sections = overview_layout.normalised(request.data.get('sections'))
+        except overview_layout.OverviewLayoutError as exc:
+            return Response({'error': exc.code, 'code': exc.code, 'key': exc.key},
+                            status=status.HTTP_400_BAD_REQUEST)
+        was = overview_layout.for_org(org)
+        # org-fence: as above. ⚠ `defaults=` carries the list INTO the create: the model's
+        # `save()` validates, and a row created empty first would be refused before the update.
+        row, created = OrganisationOverviewLayout.objects.get_or_create(
+            organisation=org,
+            defaults={'sections': sections, 'updated_by_email': admin.email or ''})
+        if not created:
+            row.sections = sections
+            row.updated_by_email = admin.email or ''
+            row.save()
+        if was != sections:
+            logger.info('AUDIT overview_layout_set org=%s was=%s now=%s by=%s',
+                        org.code, self._compact(was), self._compact(sections), admin.email or '')
+        return Response(self._payload(org))
