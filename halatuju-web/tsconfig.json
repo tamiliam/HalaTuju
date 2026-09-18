@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    // The app ships modern JS (Next 14 / SWC) and the tests run on Node, but with no `target`
+    // tsc falls back to ES5 and refuses `[...aSet]` (TS2802) even though `lib` is esnext.
+    // ES2017 matches what is actually emitted and keeps target and lib consistent.
+    "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,

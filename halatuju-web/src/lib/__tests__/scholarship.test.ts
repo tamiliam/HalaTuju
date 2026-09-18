@@ -190,7 +190,8 @@ describe('profileToApplyDefaults', () => {
     // not pre-checked / read from profile
     expect(d.consentToContact).toBe(false)
     expect(d.intendsTertiary2026).toBe(true)
-    expect((d as Record<string, unknown>).spmACount).toBeUndefined()
+    // spmACount is not an ApplyFormState field at all — a runtime check that it never leaks in.
+    expect(({ ...d } as Record<string, unknown>).spmACount).toBeUndefined()
   })
   it('handles a null profile (blank editable fields)', () => {
     const d = profileToApplyDefaults(null)
@@ -236,7 +237,7 @@ describe('profileAcademicSummary', () => {
 
 describe('buildApplicationPayload', () => {
   it('maps About Me + My Family + application fields to a snake_case payload (no academic, no NRIC)', () => {
-    const p = buildApplicationPayload(baseForm({ parentName: 'Rajan', parentPhone: '011-2222 3333' })) as Record<string, unknown>
+    const p = buildApplicationPayload(baseForm({ parentName: 'Rajan', parentPhone: '011-2222 3333' }))
     expect(p.name).toBe('Priya')
     expect(p.school).toBe('SMK Taman Desa')
     expect(p.preferred_state).toBe('Selangor')
@@ -250,10 +251,12 @@ describe('buildApplicationPayload', () => {
     expect(p.consent_to_contact).toBe(true)
     expect(p.declaration_name).toBe('Priya')   // typed signature, trimmed
     expect(p.form_data).toEqual({})
-    // academic data + NRIC are never posted here (profile / claim path)
-    expect(p.spm_a_count).toBeUndefined()
-    expect(p.nric).toBeUndefined()
-    expect(p.intended_pathway).toBeUndefined()  // superseded by pathways_considered
+    // academic data + NRIC are never posted here (profile / claim path). These keys are not on
+    // ApplicationPayload at all, so the check is a runtime one: read the payload as a plain record.
+    const raw: Record<string, unknown> = { ...p }
+    expect(raw.spm_a_count).toBeUndefined()
+    expect(raw.nric).toBeUndefined()
+    expect(raw.intended_pathway).toBeUndefined()  // superseded by pathways_considered
   })
   it('trims text and omits guardians when parent fields are blank', () => {
     const p = buildApplicationPayload(baseForm({ name: '  Priya  ', parentName: '', parentPhone: '' }))
@@ -266,27 +269,27 @@ describe('buildApplicationPayload', () => {
     expect(p.household_size).toBeNull()
   })
   it('maps the decided pathway (certainty + chosen pathway)', () => {
-    const p = buildApplicationPayload(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' })) as Record<string, unknown>
+    const p = buildApplicationPayload(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' }))
     expect(p.pathway_certainty).toBe('sure')
     expect(p.chosen_pathway).toBe('poly')
   })
   it('maps the chosen programme to a JSON object (and {} when none)', () => {
     const p = buildApplicationPayload(baseForm({
       chosenProgramme: { courseId: 'DKA', courseName: 'Diploma Kejuruteraan Awam', fieldKey: 'engineering' },
-    })) as Record<string, unknown>
+    }))
     expect(p.chosen_programme).toEqual({ course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', field_key: 'engineering' })
-    const none = buildApplicationPayload(baseForm({ chosenProgramme: null })) as Record<string, unknown>
+    const none = buildApplicationPayload(baseForm({ chosenProgramme: null }))
     expect(none.chosen_programme).toEqual({})
   })
   it('maps the institution pathway (pre-U track/stream + institution)', () => {
-    const p = buildApplicationPayload(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: 'KM Perak' })) as Record<string, unknown>
+    const p = buildApplicationPayload(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: 'KM Perak' }))
     expect(p.pre_u_track).toBe('sains')
     expect(p.pre_u_institution).toBe('KM Perak')
   })
   it('maps the Uncertain branch (reasons + trimmed note)', () => {
     const p = buildApplicationPayload(baseForm({
       pathwayCertainty: 'uncertain', uncertaintyReasons: ['guidance', 'finance'], uncertaintyNote: '  still thinking  ',
-    })) as Record<string, unknown>
+    }))
     expect(p.uncertainty_reasons).toEqual(['guidance', 'finance'])
     expect(p.uncertainty_note).toBe('still thinking')
   })
@@ -304,7 +307,7 @@ describe('buildApplicationPayload', () => {
       helpUniversity: 'yes',
       helpScholarship: 'unsure',
       anythingElse: '  single parent  ',
-    })) as Record<string, unknown>
+    }))
     expect(p.pathways_considered).toEqual(['matrik', 'stpm'])
     expect(p.top_choices).toEqual([
       { rank: 1, course_id: 'C1', course_name: 'Medicine', institution: 'UM' },
@@ -327,7 +330,7 @@ describe('buildApplicationPayload', () => {
         { courseId: 'C2', courseName: 'Pharmacy', institution: 'USM' },
         null,
       ],
-    })) as Record<string, unknown>
+    }))
     expect(p.top_choices).toEqual([
       { rank: 1, course_id: 'C2', course_name: 'Pharmacy', institution: 'USM' },
     ])

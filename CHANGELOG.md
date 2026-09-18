@@ -38,6 +38,28 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## The type check becomes a real gate: 24 errors to 0 (TD-221 closed) - 2026-09-18
+
+First act on the code-health baseline. The owner chose it from two options. Work by an Opus 5
+agent, verified and finished by the lead.
+
+- **`npx tsc --noEmit` reported 24 errors on main, so nobody read it.** All 24 were in nine TEST
+  files. Now 0, with **no suppressions** - no ts-ignore, no `any`, no excludes.
+- **Seven were one config hole.** `tsconfig.json` had no `target`; tsc fell back to ES5 and refused
+  `[...aSet]` although `lib` was esnext. Now `ES2017`. `next build` still exits 0.
+- **Four fixtures had a STALE SHAPE** - the family behind request #24. `SponsorPoolCard` had gained
+  four fields, `IncomeProofCheck` had moved to `points`, the cockpit `doc()` factory never set
+  `content_type`, and nine `as Record<string, unknown>` casts in `scholarship.test.ts` were
+  ERASING the type check on the apply payload. The casts are deleted; those assertions are typed now.
+- **Three were a real drift in app code.** `StrCheck.current_status` in `src/lib/api.ts` lacked
+  `wrong_type` and `unreadable`. The backend has always sent both and `officerCockpit.ts` handles
+  both; only the type lagged. Type-only change, no runtime effect. The two test helpers now take
+  the real union, so a status the backend cannot send is a type error.
+- **Run it as `npx tsc --noEmit --incremental false`.** With the cache on, tsc replayed the seven
+  fixed errors from `tsconfig.tsbuildinfo`. `CLAUDE.md` and `code_health.py` both say so now.
+- Bite-checked: a planted type error in a test file fails the gate. Gates: 2354 jest / 140 suites,
+  lint 0 errors, i18n parity ok, `next build` exit 0.
+
 ## Code health gets an instrument - a first reading, and a ratchet - 2026-09-18
 
 The owner: *"occasionally I find bugs being introduced during our coding, as the code base becomes

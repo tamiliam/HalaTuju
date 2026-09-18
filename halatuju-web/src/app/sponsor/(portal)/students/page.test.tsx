@@ -18,12 +18,14 @@ const pool: SponsorPoolCard[] = [
     funding_categories: ['tuition'], programme_months: 24, award_amount: '3000', funded_amount: '0',
     progress_state: null, support_status: null, enrolment_verified: true,
     field_image_slug: 'kejuruteraan', reporting_date: '2099-09-01',
+    course_href: '/course/DIP-MEK', funded: false, portfolio_status: null, supported_semesters: 4,
   },
   {
     id: 2, ref: 'S-BBB', state: 'Kedah', school: 'SMK B', field: 'health', course: 'Diploma Kejururawatan',
     academic: 'SPM · 5A', institution: '', blurb: '', funding_categories: [],
     programme_months: 36, award_amount: '2000', funded_amount: '0', progress_state: null, support_status: null,
     enrolment_verified: false, field_image_slug: '', reporting_date: null,
+    course_href: '', funded: false, portfolio_status: null, supported_semesters: null,
   },
 ]
 

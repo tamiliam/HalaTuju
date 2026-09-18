@@ -1887,7 +1887,10 @@ export interface StrCheck {
   // 'current' = approved (Lulus/Diluluskan/Layak) AND a current year; 'stale' = older year;
   // 'rejected' = a clear negative status; 'unconfirmed' = no approval shown (e.g. a SALINAN
   // application record) or approval we can't tie to a current year — not proof on its own.
-  current_status: 'current' | 'stale' | 'rejected' | 'unconfirmed' | 'unknown'
+  // 'wrong_type' = the file is not an STR document at all; 'unreadable' = we could not read it.
+  // The backend has always emitted both (verdict_engine.py) and officerCockpit.ts handles both;
+  // only this union lagged, which the type check found on 2026-09-18 (TD-221).
+  current_status: 'current' | 'stale' | 'rejected' | 'unconfirmed' | 'unknown' | 'wrong_type' | 'unreadable'
   ic_present: boolean
 }
 

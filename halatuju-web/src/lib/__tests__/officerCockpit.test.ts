@@ -49,6 +49,7 @@ function doc(over: Partial<AdminApplicantDocument> = {}): AdminApplicantDocument
     id: 1,
     doc_type: 'ic',
     original_filename: 'ic.pdf',
+    content_type: 'application/pdf',
     size: 1024,
     verification_status: 'pending',
     download_url: null,
@@ -246,6 +247,8 @@ const icCheck = (o: Partial<NonNullable<AdminApplicantDocument['income_ic_check'
   ({ nric: '', name: '', address: '', member: '', name_status: 'pending', readable: false, ...o } as NonNullable<AdminApplicantDocument['income_ic_check']>)
 const strCheck = (o: Partial<NonNullable<AdminApplicantDocument['str_check']>>) =>
   ({ name: '', nric: '', status: '', year: '', amount: '', member: '', name_status: 'no_ref', nric_status: 'no_ref', current_status: 'current', ic_present: false, ...o } as NonNullable<AdminApplicantDocument['str_check']>)
+// The real union, so a status the backend cannot send is a TYPE error here, not a silent pass.
+type StrStatus = NonNullable<AdminApplicantDocument['str_check']>['current_status']
 const acadCheck = (o: Partial<NonNullable<AdminApplicantDocument['academic_check']>>) =>
   ({ name: 'pending', subjects: 'pending', results: 'pending', candidate_name: '', exam: '', exam_year: '', missing: [], mismatched: [], uncertain: [], slip_count: 1, ...o } as NonNullable<AdminApplicantDocument['academic_check']>)
 const pathCheck = (o: Partial<NonNullable<AdminApplicantDocument['pathway_check']>>) =>
@@ -399,7 +402,7 @@ describe('documentFacts', () => {
   })
 
   it('str Current chip is DATE-only — dated→green, prior-year→amber, else grey "we don\'t know"', () => {
-    const cur = (s: string) =>
+    const cur = (s: StrStatus) =>
       documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
         .find((f) => f.key === 'current')!.status
     expect(cur('current')).toBe('verified')      // 🟢 dated this cycle
@@ -411,7 +414,7 @@ describe('documentFacts', () => {
   })
 
   it('str Status chip = approval (Lulus), distinct from currency/date', () => {
-    const stat = (s: string) =>
+    const stat = (s: StrStatus) =>
       documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
         .find((f) => f.key === 'status')!.status
     expect(stat('current')).toBe('verified')     // 🟢 Lulus

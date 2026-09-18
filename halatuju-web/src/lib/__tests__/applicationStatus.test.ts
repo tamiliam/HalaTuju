@@ -30,6 +30,8 @@ import {
 import { QC_ACCEPTED_STATES, isQcAccepted } from '@/lib/officerCockpit'
 
 const ALL_STATUSES = [...APPLICATION_STATUSES, ...SYNTHETIC_STATUSES]
+// The i18n keys are plain strings, so membership is checked against a widened copy of the vocabulary.
+const KNOWN_STATUSES = new Set<string>(ALL_STATUSES)
 const DEFAULT_TONE = 'bg-ground-100 text-ground-600'
 
 const statusesBlock = (m: {
@@ -54,7 +56,7 @@ describe('applicationStatus vocabulary', () => {
     })
 
     test('no label for an unknown status', () => {
-      const extra = Object.keys(block).filter((k) => ALL_STATUSES.indexOf(k) < 0)
+      const extra = Object.keys(block).filter((k) => !KNOWN_STATUSES.has(k))
       expect(extra).toEqual([])
     })
   })

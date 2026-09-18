@@ -2922,7 +2922,9 @@ before generalising from it.
 **Estimate:** ~1h for the label split plus its tests. Piece 1 is unestimated and should not be
 folded in.
 
-### [TD-221] `tsc --noEmit` fails on main with 24 pre-existing errors, so the "tsc gate" gates nothing — low
+### [TD-221] `tsc --noEmit` fails on main with 24 pre-existing errors, so the "tsc gate" gates nothing — low — **RESOLVED 2026-09-18**
+
+**Resolved 2026-09-18** (first act on the code-health baseline). 24 → 0. Seven were one config hole (`tsconfig.json` had no `target`, so tsc fell back to ES5 and refused `[...aSet]`; now `ES2017`). Fourteen were test fixtures and casts, of which FOUR were stale shapes the app had moved past (`SponsorPoolCard` +4 fields, `IncomeProofCheck.points`, `content_type`, and nine `as Record<string, unknown>` casts that were ERASING type checks on the apply payload). Three were a real drift in APP code: `StrCheck.current_status` in `src/lib/api.ts` lacked `wrong_type` and `unreadable`, which the backend has always sent and `officerCockpit.ts` already handles. No suppressions were used. Run as `npx tsc --noEmit --incremental false`; bite-checked with a planted error.
 
 **Found:** Layer 0 Sprint 5 (2026-08-30), running the four web gates in a fresh worktree.
 

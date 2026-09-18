@@ -10,15 +10,16 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok |
 
-## Latest run (2026-09-18, b0c2687, window 2026-06-20 onward)
+## Latest run (2026-09-18, 2e3cd2b, window 2026-06-20 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/views_admin.py` | 34 | 8393 | 285.4 |
-| `halatuju-web/src/lib/admin-api.ts` | 25 | 4008 | 100.2 |
+| `halatuju_api/apps/scholarship/views_admin.py` | 34 | 8547 | 290.6 |
+| `halatuju-web/src/lib/admin-api.ts` | 25 | 4099 | 102.5 |
 | `halatuju_api/apps/scholarship/services.py` | 32 | 2931 | 93.8 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 29 | 3187 | 92.4 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
@@ -26,20 +27,20 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 7 | 3587 | 25.1 |
-| `halatuju_api/apps/scholarship/models.py` | 5 | 4721 | 23.6 |
+| `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 300 fix / 430 feat commits since 2026-06-20
+- 300 fix / 432 feat commits since 2026-06-20
 
 ### Files over 1000 lines
-- `8393  halatuju_api/apps/scholarship/views_admin.py`
-- `4721  halatuju_api/apps/scholarship/models.py`
+- `8547  halatuju_api/apps/scholarship/views_admin.py`
+- `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
-- `4008  halatuju-web/src/lib/admin-api.ts`
+- `4099  halatuju-web/src/lib/admin-api.ts`
 - `3587  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3187  halatuju_api/apps/scholarship/income_engine.py`
 - `2931  halatuju_api/apps/scholarship/services.py`
-- `2465  halatuju-web/src/lib/api.ts`
+- `2468  halatuju-web/src/lib/api.ts`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2377  halatuju_api/apps/courses/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
@@ -92,7 +93,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - courses -> scholarship: 25
 - reports -> courses: 2
 - reports -> scholarship: 2
-- scholarship -> courses: 103
+- scholarship -> courses: 104
 
 ### Suppressions
 - # noqa: 80
@@ -105,14 +106,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `halatuju_api/apps/scholarship/tests/test_email_branding.py:223  pytest.skip('regenerated the golden fixture')`
 
 ### Source-text guard tests (web)
-- 24 of 138 web test files read source text
+- 24 of 140 web test files read source text
 
 ### Debt register
-- 146 entries have a defining line; 84 carry no resolution marker on it
+- 146 entries have a defining line; 83 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 348: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 3970: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 355: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 3979: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - `@supabase/ssr`
@@ -121,25 +122,26 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `tailwind-merge`
 
 ### tsc
-- 24 errors in 9 files
-- src/app/sponsor/(portal)/students/page.test.tsx
-- src/data/__tests__/stpm-schools.test.ts
-- src/lib/__tests__/applicationStatus.test.ts
-- src/lib/__tests__/documentHelp.test.ts
-- src/lib/__tests__/officerCockpit.test.ts
-- src/lib/__tests__/orgReject.test.ts
-- src/lib/__tests__/placeholder-parity.test.ts
-- src/lib/__tests__/scholarship.test.ts
-- src/lib/__tests__/soft-evidence-drift.test.ts
+- 0 errors in 0 files
 
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 5330
+- Total keys per locale: 5353
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-18 (second reading) — the type check is a gate again: tsc 24 → 0
+
+Taken after the first act on the baseline (TD-221 closed). No FAILs.
+- **tsc 24 → 0** — *done.* No suppressions. Seven config, fourteen test-side, three a real app-type
+  drift (`StrCheck.current_status`). Any tsc error is now a regression: tolerance is zero.
+- **td_open 84 → 83** — TD-221 carries its marker.
+- **hot#1 +5.2 and xapp +1** — *accept.* Both came from another sprint's commits (Overview phase 2
+  Sprint A) landing between the two readings, not from this change. Inside tolerance.
+- Everything else unchanged; decisions stand as in the baseline below.
 
 ### 2026-09-18 — baseline: the bugs land in eight files, and nothing was measuring that
 

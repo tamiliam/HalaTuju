@@ -153,7 +153,7 @@ describe('shouldShowCoach', () => {
   it('income proof coaches ONLY when the member IC is missing (no second Gopal)', () => {
     const proof = (ic_present: boolean) =>
       doc({ doc_type: 'salary_slip',
-        income_proof_check: { name: 'X', nric: '', amount: '', period: '', member: 'father',
+        income_proof_check: { name: 'X', nric: '', points: [{ key: 'amount', value: '2500' }], member: 'father',
           name_status: 'match', nric_status: 'no_ref', ic_present } } as Partial<ApplicantDocument>)
     expect(shouldShowCoach(proof(false))).toBe(true)   // no IC yet → "add the IC" nudge
     expect(shouldShowCoach(proof(true))).toBe(false)   // IC present → the IC anchors the coach

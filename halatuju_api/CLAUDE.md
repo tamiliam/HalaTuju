@@ -107,8 +107,11 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 cd halatuju-web
 npx jest --maxWorkers=2      # --maxWorkers=2 is required: a full run OOMs on 8 GB and reports
                              # worker contention as test FAILURES (exit 253)
-npx tsc --noEmit             # types. NOTE ~6 pre-existing errors in test files — grep for the
-                             # files you touched; do not read a clean grep as a clean run
+npx tsc --noEmit --incremental false
+                             # types. ⚠ 0 ERRORS REQUIRED since 2026-09-18 (TD-221 closed: the 24
+                             # old test-file errors are gone, so ANY error is yours). Keep
+                             # `--incremental false`: with the cache on, tsc REPLAYS errors from
+                             # tsconfig.tsbuildinfo after the cause is fixed.
 npx next lint                # ⚠ 0 ERRORS REQUIRED (warnings are fine — passing builds carry
                              # several). NEITHER jest NOR tsc runs ESLint, and `next build` LINTS
                              # BEFORE IT EMITS: on 2026-07-30 two eslint-disable comments naming a
