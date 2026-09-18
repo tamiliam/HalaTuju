@@ -557,6 +557,18 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
+**➕ ALSO LIVE (2026-09-18, later): the Overview's money charts, round four.** `main` at
+**`b4cb6a4d`**; builds api `9ecb77fa` + web `71c05669` SUCCESS (waited on BY BUILD ID); serving
+**halatuju-api-01047-t24** / **halatuju-web-00894-99h**, digests matched; Overview 200, endpoint
+401 without login, no api ERROR logs. Gates: **6686 pytest** · **2305 jest** · tsc 24 · lint 0 ·
+`next build` 0. No migration. Retro `docs/retrospective-2026-09-18-overview-charts-round-four.md`.
+- **⚠ `weekly_transactions_per_student` is the MEAN OF THE WEEKLY AVERAGES**, never
+  total ÷ today's students ÷ weeks — the owner caught that reading low (3.1 vs ~5.0) because
+  the early weeks were divided by students who had no wallet yet. Test names both formulas.
+- Y-axis: middle value + gridlines at top and middle. **Hover a point → the week's value**
+  (`pointTitles` → `<title>`, no state). **Total spending beneath the category ring** = the money
+  strip's `spent`, never the slices summed in the browser.
+
 **➕ ALSO LIVE (2026-09-18, the owner's second live read): the Overview's money charts, round
 three.** `main` at **`1a96415e`**; builds api `d8907f50` + web `16a74d81` SUCCESS (waited on BY
 BUILD ID); serving **halatuju-api-01046-dq9** / **halatuju-web-00893-7vc**, digests matched;
