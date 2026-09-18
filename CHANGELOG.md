@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Overview's money charts, round four - a figure that read low, and three small asks - 2026-09-18
+
+- **⚠ "Average weekly transactions per student" was total ÷ students ÷ weeks, and the owner
+  caught it reading low.** `students` is TODAY's count, so every early week — when a dozen
+  students had a wallet — was charged with fifty absentees, and the figure sank with each
+  student who joined. It is now the **mean of the weekly averages**: each week's rows over the
+  students whose wallet was live THAT week, averaged over the weeks that had one. On the live
+  gift: 3.1 → about 5.0. The test names both formulas and pins the difference (1.0 vs 0.7 on
+  the fixture).
+- **The y-axis has a middle value, and faint gridlines at the top and the middle**, on both
+  weekly lines. Three values, two lines, nothing rounded: the top IS the largest value, the
+  baseline IS the smallest, the middle is their mean.
+- **Rest the mouse on a point and the week's own value appears.** An invisible hit circle per
+  point carrying the browser's own `<title>` — no state, no positioning code. This is the
+  revisit clause of "the figure beneath a weekly chart is the whole-period one" firing exactly
+  as written: *"somebody needs a specific week's figure — then a hover on a point"*.
+- **Total spending sits beneath the category ring** — the money strip's own `spent`, never the
+  slices summed in the browser.
+
+Gates: 6686 pytest · 2305 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass ·
+`next build` exit 0 · `makemigrations --check` clean. Bite-checks 4 of 4.
+
 ## The Overview's money charts, round three - the words under the lines - 2026-09-18
 
 The owner's second read of the live page, three requests on the three small charts.

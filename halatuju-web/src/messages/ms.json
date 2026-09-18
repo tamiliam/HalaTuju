@@ -5898,7 +5898,8 @@
         "overallAverage": "Purata perbelanjaan setiap transaksi, keseluruhan tempoh",
         "overallTransactions": "Purata transaksi mingguan setiap pelajar",
         "ofStudentsOverall": "n: {count} pelajar",
-        "byCategory": "Perbelanjaan mengikut kategori"
+        "byCategory": "Perbelanjaan mengikut kategori",
+        "spendingTotal": "Jumlah perbelanjaan"
       },
       "chart": {
         "applicationsLabel": "Permohonan diterima setiap minggu",

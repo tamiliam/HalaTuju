@@ -5898,7 +5898,8 @@
         "overallAverage": "Average spending per transaction, whole period",
         "overallTransactions": "Average weekly transactions per student",
         "ofStudentsOverall": "n: {count} students",
-        "byCategory": "Spending by category"
+        "byCategory": "Spending by category",
+        "spendingTotal": "Total spending"
       },
       "chart": {
         "applicationsLabel": "Applications received per week",

@@ -350,6 +350,7 @@ export default function ProgrammeOverviewPage() {
                 columns={perWeek.map((r) => weekLabel(r.week))}
                 ticks={weekTicks}
                 yAxis={{ label: t(`${K}.chart.yRinggit`), format: (v) => `RM${Math.round(v)}` }}
+                pointTitles={perWeek.map((r) => `${weekLabel(r.week)}: ${rmFig(r.spent_per_transaction)}`)}
                 figures={averageFigures}
               />
               {overall && (
@@ -369,6 +370,7 @@ export default function ProgrammeOverviewPage() {
                 values={perWeek.map((r) => num(r.transactions_per_student))}
                 columns={perWeek.map((r) => weekLabel(r.week))}
                 ticks={weekTicks}
+                pointTitles={perWeek.map((r) => `${weekLabel(r.week)}: ${r.transactions_per_student}`)}
                 yAxis={{ label: t(`${K}.chart.yTransactions`),
                          format: (v) => String(Math.round(v * 10) / 10) }}
                 figures={transactionFigures}
@@ -383,6 +385,10 @@ export default function ProgrammeOverviewPage() {
               <Donut
                 testId="chart-by-category"
                 label={t(`${K}.chart.categoryLabel`)}
+                // ⚠ THE SERVER'S `spent`, the same figure as the money strip — never the rows
+                // summed in the browser (money through a float is money we have rounded).
+                total={money ? { label: t(`${K}.series.spendingTotal`), value: rmFig(money.spent) }
+                             : undefined}
                 rows={orderSlices(moneySeries.by_category
                   .filter((r) => CATEGORY_CODES.indexOf(r.code) !== -1))
                   .map((r) => ({

@@ -436,28 +436,36 @@ def per_student_overall(scope):
     lines still show the movement; the figure a person quotes is the whole-period one.
 
     ⚠ TWO DIFFERENT DENOMINATORS, BOTH NAMED (owner, 2026-09-18). `spent_per_transaction` is
-    ringgit over ROWS — what a card payment tends to be. `weekly_transactions_per_student` is rows
-    over students over WEEKS — how often a student pays in a week — where `students` are those
-    whose wallet was live by `data_to` (the same rule as the weekly series) and `weeks` is the
-    length of that series. `None` when there is no spending at all, so the page says nothing
-    rather than "RM0.00".
+    ringgit over ROWS — what a card payment tends to be. `weekly_transactions_per_student` is
+    the MEAN OF THE WEEKLY AVERAGES — each week's rows over the students whose wallet was live
+    THAT week, averaged over the weeks that had any such student. `students` (n) are those whose
+    wallet was live by `data_to`, and `weeks` is the length of the weekly series. `None` when
+    there is no spending at all, so the page says nothing rather than "RM0.00".
+
+    ⚠⚠ WHY THE MEAN OF WEEKLY AVERAGES AND NOT total ÷ students ÷ weeks (owner, 2026-09-18, who
+    caught it reading low): `students` is TODAY's count. Dividing every week's rows by today's 58
+    charges the early weeks — when a dozen students had a wallet — with fifty absentees, and the
+    figure sinks with every student who joins. Each weekly average already uses the right
+    denominator for its week, so their mean is the honest "how often does a student pay in a
+    week". On the live gift the two readings were 3.1 and 5.0.
     """
     rows = [(d, a) for d, a in _txns(scope).values_list('txn_date', 'amount') if d is not None]
     if not rows:
         return None
     last = data_to(scope) or max(d for d, _ in rows)
     students = sum(1 for d in _wallets_live_by(scope) if d <= last)
-    weeks = len(_week_span(min(d for d, _ in rows), last))
+    weekly = per_student_per_week(scope)
+    ratios = [Decimal(w['transactions']) / w['students'] for w in weekly if w['students']]
     spent = sum(((a or _ZERO) for _, a in rows), _ZERO)
     transactions = len(rows)
     return {
         'students': students,
-        'weeks': weeks,
+        'weeks': len(weekly),
         'spent': spent.quantize(_CENTS),
         'transactions': transactions,
         'spent_per_transaction': _per(spent, transactions, _CENTS),
         'weekly_transactions_per_student': _per(
-            _per(transactions, students, Decimal('0.0001')), weeks, Decimal('0.1')),
+            sum(ratios, Decimal('0')), len(ratios), Decimal('0.1')),
     }
 
 

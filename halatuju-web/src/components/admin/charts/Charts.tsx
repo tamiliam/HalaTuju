@@ -90,25 +90,34 @@ function Ticks({ ticks, count, box }: { ticks: readonly Tick[]; count: number; b
 }
 
 /**
- * A y-axis: a rotated title in the left margin, and the value at the top and at the baseline.
+ * A y-axis: a rotated title in the left margin, the value at the top, the middle and the
+ * baseline, and a faint gridline across the plot at the top and the middle.
  *
- * ⚠ TWO VALUES, NOT A GRID. The top of the plot IS the largest value and the baseline IS the
- * smallest (or zero), so those two labels are exact by construction; intermediate gridlines would
- * need rounding that the fixed `viewBox` gives no room to explain. The figures beneath still
- * carry every number a person would quote.
+ * ⚠ THREE VALUES, TWO GRIDLINES (owner, 2026-09-18). The top of the plot IS the largest value
+ * and the baseline IS the smallest (or zero), so those labels are exact by construction; the
+ * middle is their mean, which is exact too. No other gridlines: any further tick would need a
+ * rounding the fixed `viewBox` gives no room to explain. The figures beneath still carry every
+ * number a person would quote.
  */
 function YAxisLabels({ axis, box, top, bottom }: {
   axis: YAxis; box: ChartBox; top: number; bottom: number
 }) {
   const x = plotLeft(box) - 4
-  const midY = (box.top + (box.height - box.bottom)) / 2
+  const baseline = box.height - box.bottom
+  const midY = (box.top + baseline) / 2
   return (
     <g data-testid="chart-y-axis">
+      <line x1={plotLeft(box)} y1={box.top} x2={box.width - box.side} y2={box.top}
+        className="stroke-ground-100" strokeWidth="1" />
+      <line x1={plotLeft(box)} y1={midY} x2={box.width - box.side} y2={midY}
+        className="stroke-ground-100" strokeWidth="1" />
       <text x={x} y={box.top + 3} textAnchor="end" className="fill-ground-400 text-[8px]">
         {axis.format(top)}
       </text>
-      <text x={x} y={box.height - box.bottom} textAnchor="end"
-        className="fill-ground-400 text-[8px]">
+      <text x={x} y={midY + 3} textAnchor="end" className="fill-ground-400 text-[8px]">
+        {axis.format((top + bottom) / 2)}
+      </text>
+      <text x={x} y={baseline} textAnchor="end" className="fill-ground-400 text-[8px]">
         {axis.format(bottom)}
       </text>
       <text x={9} y={midY} textAnchor="middle" transform={`rotate(-90 9 ${midY})`}
@@ -181,7 +190,7 @@ export function BarChart({
  */
 export function LineChart({
   values, columns, figures, label, testId, className = 'stroke-brand-shape', box = WIDE_BOX,
-  ticks, yAxis,
+  ticks, yAxis, pointTitles,
 }: {
   values: readonly number[]
   columns: readonly string[]
@@ -193,6 +202,8 @@ export function LineChart({
   /** Named ticks under chosen columns; when given, the end labels are not drawn. */
   ticks?: readonly Tick[]
   yAxis?: YAxis
+  /** One per point: what the browser shows when the mouse rests on it. */
+  pointTitles?: readonly string[]
 }) {
   const { points, zeroY, min, max } = lineLayout(values, box)
   const latest = points.length > 0 ? points[points.length - 1] : null
@@ -200,6 +211,7 @@ export function LineChart({
     <div data-testid={testId}>
       <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
         role="img" aria-label={label}>
+        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} />}
         <line x1={plotLeft(box)} y1={box.height - box.bottom} x2={box.width - box.side}
           y2={box.height - box.bottom} className="stroke-ground-200" strokeWidth="1" />
         {/* ⚠ Drawn ONLY when something is actually negative — otherwise the zero line and the
@@ -213,7 +225,16 @@ export function LineChart({
             points={points.map((p) => `${p.x},${p.y}`).join(' ')} />
         )}
         {latest && <circle cx={latest.x} cy={latest.y} r="3" className="fill-brand-shape" />}
-        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} />}
+        {/* ⚠ HOVER TARGETS, NOT MARKS (owner, 2026-09-18: "show the weekly values on hover").
+            An invisible circle per point, wide enough to hit, carrying the browser's own
+            `<title>` tooltip — no state, no positioning code, nothing to break on a phone. The
+            figures beneath stay the quotable numbers; this is the one-week answer. */}
+        {pointTitles && points.map((p, i) => (
+          <circle key={`hit-${i}`} cx={p.x} cy={p.y} r="7" className="fill-transparent"
+            data-testid="chart-point">
+            <title>{pointTitles[i] ?? ''}</title>
+          </circle>
+        ))}
         {ticks
           ? <Ticks ticks={ticks} count={columns.length} box={box} />
           : <EndLabels columns={columns} box={box} />}
@@ -233,11 +254,13 @@ export function LineChart({
  * list, and the ring is the shape of it.
  */
 export function Donut({
-  rows, label, testId,
+  rows, label, testId, total,
 }: {
   rows: ReadonlyArray<{ code: string; label: string; display: string; total: string }>
   label: string
   testId: string
+  /** The whole, printed beneath the ring — the server's figure, never a sum of the rows. */
+  total?: { label: string; value: string }
 }) {
   const arcs = donutArcs(rows)
   // The colour a row gets depends on its rank among the rows that HAVE money, so the legend has to
@@ -248,16 +271,24 @@ export function Donut({
   }
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-      <svg viewBox="0 0 140 140" className="h-32 w-32 shrink-0 -rotate-90"
-        role="img" aria-label={label} data-testid={testId}>
-        <circle cx="70" cy="70" r={DONUT_RADIUS} fill="none" className="stroke-ground-100"
-          strokeWidth="18" />
-        {arcs.map((a) => (
-          <circle key={a.code} cx="70" cy="70" r={DONUT_RADIUS} fill="none" strokeWidth="18"
-            className={sliceClasses(a.code, a.rank).stroke}
-            strokeDasharray={`${a.dash} ${a.gap}`} strokeDashoffset={-a.offset} />
-        ))}
-      </svg>
+      <div className="flex shrink-0 flex-col items-center gap-2">
+        <svg viewBox="0 0 140 140" className="h-32 w-32 shrink-0 -rotate-90"
+          role="img" aria-label={label} data-testid={testId}>
+          <circle cx="70" cy="70" r={DONUT_RADIUS} fill="none" className="stroke-ground-100"
+            strokeWidth="18" />
+          {arcs.map((a) => (
+            <circle key={a.code} cx="70" cy="70" r={DONUT_RADIUS} fill="none" strokeWidth="18"
+              className={sliceClasses(a.code, a.rank).stroke}
+              strokeDasharray={`${a.dash} ${a.gap}`} strokeDashoffset={-a.offset} />
+          ))}
+        </svg>
+        {total && (
+          <div className="text-center" data-testid={`${testId}-total`}>
+            <div className="text-[11px] text-ground-500">{total.label}</div>
+            <div className="text-sm font-semibold tabular-nums text-ground-900">{total.value}</div>
+          </div>
+        )}
+      </div>
       <ol className="min-w-0 flex-1 text-xs" data-testid={`${testId}-figures`}>
         {rows.map((r) => (
           <li key={r.code}

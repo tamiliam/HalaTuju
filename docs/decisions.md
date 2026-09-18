@@ -11533,3 +11533,27 @@ does not cover it and the owner must rule again.
 **Rationale:** owner, 2026-09-18: *"what we are calculating is average spending per transaction by week"* and *"average weekly transactions per student"*. Per-transaction says what a card payment tends to be; per-student-per-week says how often a student pays. Both are questions a programme officer asks; ringgit per student per week was neither.
 
 **Revisit if:** the officer wants ringgit per student again — then it is a third line, not a relabelling of this one.
+
+## A whole-period rate over a growing population is the mean of the period averages, not the total over today's count — Overview, 2026-09-18
+
+**Decision:** `per_student_overall.weekly_transactions_per_student` is the mean of each week's `transactions ÷ students-with-a-live-wallet-that-week`, over the weeks that had at least one such student. It is NOT `transactions ÷ students ÷ weeks`. The same principle applies to any "per X per period" figure on a screen whose population grows over the period.
+
+**Alternatives considered:** total ÷ students ÷ weeks (round three — the owner caught it reading low: 3.1 against weekly points averaging 5.0); total ÷ student-weeks (each week's live students summed), which weights busy weeks more and is the honest rate per student-week but is not what the chart above it shows.
+
+**Rationale:** owner, 2026-09-18, offered both formulas and asked which was in use. `students` is today's count; dividing every week by it charges the early weeks with people who had no wallet yet, and the figure falls with every student who joins — a growing programme would read as a declining one. Each weekly average already uses the right denominator for its week; their mean is the number the line above it draws, so eye and figure agree. Student-weeks was set aside because it disagrees with the line for a subtler reason nobody reading the page would guess.
+
+**Trade-offs:** a week with one live wallet counts as much as a week with sixty. Accepted, and stated: the chart is "how often does a student pay in a week", and a week is a week.
+
+**Revisit if:** the officer wants the rate weighted by participation — that is the student-weeks figure, a second line, not a change to this one.
+
+## A specific week's value is answered on hover, and the figures beneath stay whole-period — Overview, 2026-09-18
+
+**Decision:** `LineChart` takes `pointTitles`, one per point, rendered as an invisible hit circle carrying the browser's own `<title>`. The figures beneath the chart remain the whole-period ones. This is the revisit clause of "the figure beneath a weekly chart is the whole-period one" (2026-09-15) firing as written; that decision stands.
+
+**Alternatives considered:** a positioned tooltip component with hover state; restoring the weekly figures list; nothing.
+
+**Rationale:** owner, 2026-09-18: *"Can the weekly values be shown when the mouse is hovered over the specific points?"* A `<title>` is the whole of the browser's tooltip machinery for free: no state, no positioning, nothing to break on a phone, and it survives the fixed `viewBox`. It does not need a library and it does not need `ResizeObserver`, which were the two things the chart-library refusal turned on.
+
+**Trade-offs:** the tooltip is the browser's — plain text, its own delay, its own styling. Accepted: it answers one question and does not try to be a chart feature.
+
+**Revisit if:** touch users need the value (a `<title>` never shows on a phone) — then the answer is a tap that prints the week beneath the chart, not a hover.

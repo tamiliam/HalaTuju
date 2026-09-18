@@ -459,13 +459,16 @@ class FiguresTests(_Base):
 
     def test_the_whole_period_figures_name_their_denominators(self):
         """The two figures the page prints beneath the weekly lines. RM162.50 over four rows is
-        RM40.625 a transaction — HALF-UP to 40.63, not banker's 40.62. Four rows over the two
-        students whose wallets were live by `data_to` (20 Aug), over the three weeks the series
-        spans (3, 10, 17 Aug), is 0.67 a week — one decimal, 0.7."""
+        RM40.625 a transaction — HALF-UP to 40.63, not banker's 40.62.
+
+        ⚠ THE WEEKLY FIGURE IS THE MEAN OF THE WEEKLY AVERAGES, NOT total ÷ students ÷ weeks.
+        Week of 3 Aug: 2 rows over the ONE student with a wallet = 2.0; 10 Aug: 2 over 2 = 1.0;
+        17 Aug: 0 over 2 = 0.0 → mean 1.0. The other formula gives 4 ÷ 2 ÷ 3 = 0.67 → 0.7,
+        because it charges the first week with a student who had no wallet yet."""
         overall = self._body('ov-oa')['money_series']['per_student_overall']
         self.assertEqual(overall, {
             'students': 2, 'weeks': 3, 'spent': '162.50', 'transactions': 4,
-            'spent_per_transaction': '40.63', 'weekly_transactions_per_student': '0.7'})
+            'spent_per_transaction': '40.63', 'weekly_transactions_per_student': '1.0'})
 
     def test_the_whole_period_figure_is_null_when_nothing_was_spent(self):
         body = self._body('ov-oa', '?programme=ov-gift2')

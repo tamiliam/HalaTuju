@@ -258,6 +258,22 @@ describe('an org admin sees the whole gift', () => {
     expect(screen.queryByTestId('chart-purchases-per-student')).toBeNull()
   })
 
+  /* ⚠ THE HOVER VALUE IS THE WEEK'S OWN FIGURE, and the total under the ring is the money
+   * strip's `spent` — the server's figure, never the rows summed in the browser. */
+  it('offers each week on hover, and prints the total spending beneath the category ring', async () => {
+    render(<ProgrammeOverviewPage />)
+    const average = await screen.findByTestId('chart-average-per-student')
+    const points = within(average).getAllByTestId('chart-point')
+    expect(points.length).toBe(3)
+    expect(points[0].querySelector('title')?.textContent).toBe('04/05: RM8.05')
+    const transactions = screen.getByTestId('chart-transactions-per-student')
+    expect(within(transactions).getAllByTestId('chart-point')[2].querySelector('title')?.textContent)
+      .toBe('01/06: 2.4')
+    const total = screen.getByTestId('chart-by-category-total')
+    expect(total.textContent).toContain('admin.programmeOverview.series.spendingTotal')
+    expect(total.textContent).toContain('RM13,353.03')   // MONEY.spent, not a sum of the slices
+  })
+
   /* ⚠ LARGEST FIRST, "NOT CATEGORISED" LAST, AND "NOT YET SORTED" HIDDEN AT ZERO (owner,
    * 2026-09-18). The ten real categories are all listed, zero or not. */
   it('orders the category legend by money and hides "not yet sorted" while it is zero', async () => {

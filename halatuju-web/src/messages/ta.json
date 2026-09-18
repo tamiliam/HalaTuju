@@ -5898,7 +5898,8 @@
         "overallAverage": "ஒரு பரிவர்த்தனைக்குச் சராசரிச் செலவு, முழுக் காலம்",
         "overallTransactions": "ஒரு மாணவருக்கு வாரச் சராசரிப் பரிவர்த்தனைகள்",
         "ofStudentsOverall": "n: {count} மாணவர்கள்",
-        "byCategory": "வகைவாரியான செலவு"
+        "byCategory": "வகைவாரியான செலவு",
+        "spendingTotal": "மொத்தச் செலவு"
       },
       "chart": {
         "applicationsLabel": "வாரந்தோறும் பெறப்பட்ட விண்ணப்பங்கள்",

@@ -152,9 +152,33 @@ describe('LineChart', () => {
     const axis = container.querySelector('[data-testid="chart-y-axis"]') as Element
     expect(axis.textContent).toContain('RM per student')
     expect(axis.textContent).toContain('RM31')   // the top of the plot is the largest value
+    expect(axis.textContent).toContain('RM16')   // the middle is their mean (31.2 / 2 = 15.6)
     expect(axis.textContent).toContain('RM0')    // the baseline is zero for an all-positive line
+    // Two gridlines, top and middle — plus the baseline, three lines in all.
+    expect(axis.querySelectorAll('line').length).toBe(2)
+    expect(container.querySelectorAll('line').length).toBe(3)
     const html = container.innerHTML
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+
+  /* ⚠ HOVER TARGETS, NOT MARKS. One invisible circle per point carrying the browser's own
+   * `<title>` — the one-week answer the owner asked for, with no state and no positioning code.
+   * The visible marks are unchanged: the latest point still has its one dot. */
+  it('gives every point a title to show on hover, and draws no extra visible mark', () => {
+    const { container } = render(
+      <LineChart testId="chart-hover" label="Average spend per student per week"
+        values={[19.4, 31.2, 24]} columns={['04/05', '11/05', '18/05']}
+        pointTitles={['04/05: RM19.40', '11/05: RM31.20', '18/05: RM24.00']}
+        figures={[]} />)
+    const hits = container.querySelectorAll('[data-testid="chart-point"]')
+    expect(hits.length).toBe(3)
+    expect(hits[1].querySelector('title')?.textContent).toBe('11/05: RM31.20')
+    expect(hits[0].getAttribute('class')).toBe('fill-transparent')
+    // Without titles, no hit targets at all — and the latest-point dot is the only circle.
+    const plain = render(
+      <LineChart testId="chart-plain" label="x" values={[1, 2]} columns={['a', 'b']} figures={[]} />)
+    expect(plain.container.querySelectorAll('[data-testid="chart-point"]').length).toBe(0)
+    expect(plain.container.querySelectorAll('circle').length).toBe(1)
   })
 })
 
@@ -199,5 +223,16 @@ describe('Donut', () => {
     expect(html.indexOf('fill="#')).toBe(-1)
     expect(html.indexOf('stroke="#')).toBe(-1)
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+
+  /* ⚠ THE TOTAL IS THE CALLER'S FIGURE, printed as given — the ring never sums its own rows. */
+  it('prints the total beneath the ring when given one, and nothing when not', () => {
+    render(<Donut testId="chart-total" label="Spending by category" rows={rows}
+      total={{ label: 'Total spending', value: 'RM7,744.00' }} />)
+    const total = screen.getByTestId('chart-total-total')
+    expect(total.textContent).toContain('Total spending')
+    expect(total.textContent).toContain('RM7,744.00')
+    const { container } = render(donut)
+    expect(container.querySelector('[data-testid="chart-donut-total"]')).toBeNull()
   })
 })
