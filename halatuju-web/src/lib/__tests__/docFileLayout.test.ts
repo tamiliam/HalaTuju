@@ -8,17 +8,15 @@
  * replaces its `(doc_type, household_member)` slot). So the mother's STR and salary-slip cards
  * alone kept Replace up in the header, away from a bare unbordered filename.
  *
- * These tests pin the two halves of the fix: the layout rule itself, and the absence of any
- * per-doc-type exemption in the component. The second is a source scan — it catches a
- * reintroduced constant or a doc-type test slipped back into the layout decision, not every
- * conceivable way to special-case a type.
+ * ⚠ THIS FILE IS NOW THE PURE RULE ONLY. It used to carry a second half that read
+ * `ScholarshipDocuments.tsx` as TEXT, looking for a re-introduced `MULTI_INSTANCE` constant —
+ * which could only ever catch the exemption coming back under the same NAME, and said nothing
+ * about where Replace actually sits on screen. That half was replaced in code health H6 by
+ * rendered assertions in `src/components/ScholarshipDocuments.test.tsx`
+ * ("no income-proof document gets its own layout"), which mount the component and check the
+ * chip for STR, the salary slip and the EPF statement against a control type.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import { docFileLayout, DOC_TYPES } from '@/lib/scholarship'
-
-const COMPONENT = path.join(__dirname, '..', '..', 'components', 'ScholarshipDocuments.tsx')
 
 describe('docFileLayout', () => {
   it('shows nothing when the card holds no file', () => {
@@ -48,22 +46,5 @@ describe('docFileLayout', () => {
       expect(DOC_TYPES as readonly string[]).toContain(dt)
     }
     expect(docFileLayout(1)).toBe('chip')
-  })
-})
-
-describe('ScholarshipDocuments has no per-type layout exemption', () => {
-  const src = fs.readFileSync(COMPONENT, 'utf8')
-
-  it('scanned the real component', () => {
-    expect(src.length).toBeGreaterThan(10_000)
-    expect(src).toContain('function FileChip')
-  })
-
-  it('sources the layout from the shared rule', () => {
-    expect(src).toContain('docFileLayout(')
-  })
-
-  it('carries no revived multi-instance constant', () => {
-    expect(src).not.toMatch(/MULTI_INSTANCE/)
   })
 })

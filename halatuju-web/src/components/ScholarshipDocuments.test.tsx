@@ -9,12 +9,15 @@
  * could sit in `lib/scholarship.ts` disagreeing with the submission gate in production without a
  * single test going red.
  *
- * Scope, deliberately narrow: does the tab render what the PROGRAMME asks for? Upload, deletion,
- * the income wizard's route logic and the coach all have their own homes and are not re-tested
- * here. `t` echoes its key, so assertions read against i18n keys rather than English copy — copy
- * changes must not break this file.
+ * Scope: does the tab render what the PROGRAMME asks for, and does every document card use the
+ * SAME file layout? Upload, deletion, the income wizard's route logic and the coach all have
+ * their own homes and are not re-tested here. `t` echoes its key, so assertions read against i18n
+ * keys rather than English copy — copy changes must not break this file.
+ *
+ * The second block arrived in code health H6, replacing the source-scanning half of
+ * `lib/__tests__/docFileLayout.test.ts`. Its reason is written at the block.
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import ScholarshipDocuments from './ScholarshipDocuments'
 import type { ApplicationRequirements, ScholarshipApplication } from '@/lib/api'
 import { sandboxApplication } from '@/sandbox/fixtures/scholarship'
@@ -145,6 +148,75 @@ describe('what the programme asks for decides what is drawn', () => {
     await render_(withoutBlock as ScholarshipApplication)
     for (const head of Object.values(HEAD)) {
       expect(screen.getByText(head)).toBeTruthy()
+    }
+  })
+})
+
+/**
+ * ⚠ THIS BLOCK REPLACES the source-scanning half of `src/lib/__tests__/docFileLayout.test.ts`,
+ * which grepped this component for a revived `MULTI_INSTANCE` constant.
+ *
+ * THE BUG IT REPLACES (2026-07-26). "Tidier document rows" gave every document card a bordered
+ * chip with Replace + Remove grouped INSIDE it — except `str` / `salary_slip` / `epf`, which it
+ * exempted as "multi-file". That exemption mirrored `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`,
+ * a backend rule already RETIRED on 2026-06-05 (every doc type is single-instance; an upload
+ * replaces its `(doc_type, household_member)` slot). So the mother's STR and salary-slip cards
+ * alone kept Replace up in the header, beside a bare unbordered filename.
+ *
+ * A text scan could only ever catch a re-introduced constant by NAME. What actually matters is
+ * where Replace sits, and that is now asserted from the DOM — for the three types that were
+ * exempted and, as the control, for one that never was.
+ */
+describe('no income-proof document gets its own layout', () => {
+  const doc = (id: number, docType: string, member = '', filename?: string) => ({
+    id, doc_type: docType, household_member: member,
+    original_filename: filename ?? `test-${docType}.pdf`,
+    content_type: 'application/pdf', size: 1234, verification_status: 'pending',
+    download_url: 'https://example.test/d', uploaded_at: '2026-06-01',
+  }) as unknown as api.ApplicantDocument
+
+  /** The bordered file row: the nearest ancestor of the filename that also holds Remove. That IS
+   *  the chip — one row carrying the file and its actions together. */
+  const fileRow = (filename: string): HTMLElement => {
+    let el: HTMLElement | null = screen.getByText(filename)
+    while (el && !within(el).queryByText('scholarship.docs.remove')) el = el.parentElement
+    if (!el) throw new Error(`no file row around ${filename} — nothing holds its Remove action`)
+    return el
+  }
+
+  /** The student, on one of the two income routes, with the given files already uploaded. */
+  const withRoute = async (route: 'salary' | 'str', documents: api.ApplicantDocument[]) => {
+    mockApi.listDocuments.mockResolvedValue({ documents })
+    await render_({
+      ...sandboxApplication, requirements: FULL, income_route: route, income_earner: 'father',
+      income_working_members: ['father'],
+    } as unknown as ScholarshipApplication)
+  }
+
+  it('STR renders through the same chip as the applicant IC', async () => {
+    await withRoute('str', [doc(1, 'ic'), doc(2, 'str', 'father')])
+    for (const name of ['test-ic.pdf', 'test-str.pdf']) {
+      expect(within(fileRow(name)).getByText('scholarship.docs.replace')).toBeTruthy()
+    }
+  })
+
+  it('the salary slip and the EPF statement do too', async () => {
+    await withRoute('salary', [doc(1, 'ic'), doc(3, 'salary_slip', 'father'),
+                               doc(4, 'epf', 'father')])
+    for (const name of ['test-ic.pdf', 'test-salary_slip.pdf', 'test-epf.pdf']) {
+      expect(within(fileRow(name)).getByText('scholarship.docs.replace')).toBeTruthy()
+    }
+  })
+
+  it('⚠ AND THE RULE STILL TAKES ONLY A COUNT — two files on one card drop Replace', async () => {
+    // Reachable during the TD-115 slot backfill: an STR earner's card shows the legacy untagged
+    // copy beside the member-tagged one. Without this the assertions above would also pass on a
+    // component that simply put Replace in every row for ever, and the layout rule would be
+    // untested in the one direction it can still vary.
+    await withRoute('str', [doc(2, 'str', 'father'), doc(5, 'str', '', 'legacy-str.pdf')])
+    for (const name of ['test-str.pdf', 'legacy-str.pdf']) {
+      expect(within(fileRow(name)).queryByText('scholarship.docs.replace')).toBeNull()
+      expect(within(fileRow(name)).getByText('scholarship.docs.remove')).toBeTruthy()
     }
   })
 })

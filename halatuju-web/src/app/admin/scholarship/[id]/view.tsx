@@ -2619,7 +2619,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             {t('admin.scholarship.reportingDateEntry.title')}
           </h2>
           <p className="text-xs text-ground-500">{t('admin.scholarship.reportingDateEntry.help')}</p>
+          {/* A `type="date"` box carries no accessible name of its own, so a screen reader
+              announced nothing here. The heading's own key — nothing on screen changes. */}
           <input
+            aria-label={t('admin.scholarship.reportingDateEntry.title')}
             type="date" value={reportingDateInput}
             onChange={(e) => setReportingDateInput(e.target.value)}
             className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm"

@@ -10,11 +10,22 @@
  *
  * The mistake was one of SCOPE, not implementation: I searched for the attachments *component*,
  * found one, and never asked where else a screenshot enters the system. A unit test of the shared
- * helper would not have caught it — the helper was fine, it simply had one caller. So the assertion
- * here is deliberately a STATIC SOURCE check over both files: it fails when a surface exists that
- * takes screenshots and does not accept them the two other ways.
+ * helper would not have caught it — the helper was fine, it simply had one caller.
  *
- * If a THIRD surface ever accepts screenshots, add it to SURFACES. That is the point.
+ * ⚠ **WHAT THIS FILE KEPT, AND WHAT IT GAVE AWAY (code health H6).** The half worth keeping is the
+ * DISK WALK: only reading the tree can answer "is there a surface nobody thought about?", and that
+ * question is the whole reason the defect happened. The half it gave away is every claim about
+ * what a paste DOES — because a source-shape check cannot see focus, and that is not hypothetical:
+ * this file once asserted `onPaste=` was attached, went green, and the feature was dead on BOTH
+ * surfaces, because a paste is dispatched at the FOCUSED element and bubbles upward while the
+ * handler sat on an unfocusable <div>. Those claims now live in mounts:
+ *
+ *   * `src/components/OrgRequestAttachments.paste.test.tsx`  — the detail page
+ *   * `src/app/admin/requests/page.paste.test.tsx`           — the create form
+ *
+ * So the rule enforced below is: **every surface that imports the shared helper is named here, and
+ * every named surface has a rendered test of its own.** A third surface cannot appear with only a
+ * source guard behind it.
  */
 import { File as NodeFile } from 'node:buffer'
 import * as fs from 'fs'
@@ -30,88 +41,77 @@ if (typeof (globalThis as { File?: unknown }).File === 'undefined') {
   (globalThis as { File?: unknown }).File = NodeFile
 }
 
-const ROOT = path.join(__dirname, '..', '..')
+const SRC = path.join(__dirname, '..', '..')
 
+/**
+ * The surfaces, and the RENDERED test that proves each one works. Paths are relative to `src/`.
+ * Adding a surface without a rendered test fails below; so does adding one and forgetting this
+ * list, because the list is checked against the disk.
+ */
 const SURFACES = [
-  { label: 'request detail (uploads immediately)', file: 'components/OrgRequestAttachments.tsx' },
-  { label: 'request create form (stages files)', file: 'app/admin/requests/page.tsx' },
+  {
+    label: 'request detail (uploads immediately)',
+    file: 'components/OrgRequestAttachments.tsx',
+    renderedTest: 'components/OrgRequestAttachments.paste.test.tsx',
+  },
+  {
+    label: 'request create form (stages files)',
+    file: 'app/admin/requests/page.tsx',
+    renderedTest: 'app/admin/requests/page.paste.test.tsx',
+  },
 ]
 
-const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8')
-
-describe('every screenshot surface accepts paste and drop', () => {
-  for (const { label, file } of SURFACES) {
-    describe(label, () => {
-      const src = read(file)
-
-      it('handles paste somewhere that can actually RECEIVE it', () => {
-        /*
-         * ⚠ THIS ASSERTION WAS WRONG ONCE, and the wrong version passed.
-         *
-         * It used to be `expect(src).toMatch(/onPaste=/)` — which proved a handler was ATTACHED,
-         * not that it could ever FIRE. Both surfaces put `onPaste` on a plain <div>. A paste event
-         * is dispatched at the FOCUSED element and bubbles UPWARD; an unfocused div with no
-         * tabIndex is never on that path. So paste was dead on both surfaces while this test was
-         * green and the hint text promised the feature. The owner reported it — for the third time
-         * on the same feature.
-         *
-         * A source-shape check cannot know about focus. What it CAN pin is the mechanism we chose
-         * because of it: listen on the document, filter to files, and clean up on unmount.
-         */
-        expect(src).toMatch(/document\.addEventListener\('paste'/)
-        expect(src).toMatch(/document\.removeEventListener\('paste'/)
-        expect(src).toMatch(/clipboardData/)
-        // A dead div-level handler must not linger beside the live one, or a paste inside the
-        // panel is handled twice and uploads the same image twice.
-        expect(src).not.toMatch(/onPaste=/)
-      })
-
-      it('leaves a TEXT paste completely alone', () => {
-        // The price of listening document-wide: Ctrl+V into any field must be untouched. So the
-        // handler body must BAIL OUT on a fileless clipboard BEFORE it calls preventDefault.
-        const bodyStart = src.indexOf('(e: ClipboardEvent) => {')
-        expect(bodyStart).toBeGreaterThan(-1)
-        const body = src.slice(bodyStart, src.indexOf("document.addEventListener('paste'", bodyStart))
-
-        const guardAt = body.search(/if \([^)]*(?:!files\.length|length === 0)[^)]*\) return/)
-        const preventAt = body.indexOf('preventDefault')
-        expect(guardAt).toBeGreaterThan(-1)
-        expect(preventAt).toBeGreaterThan(guardAt)
-      })
-
-      it('handles drag-and-drop', () => {
-        expect(src).toMatch(/onDrop=/)
-        expect(src).toMatch(/onDragOver=/)
-        expect(src).toMatch(/dataTransfer/)
-      })
-
-      it('routes through the SHARED filter rather than its own copy', () => {
-        // The duplication is what allowed the two surfaces to drift apart in the first place.
-        expect(src).toContain("from '@/lib/screenshotInput'")
-        expect(src).toMatch(/imagesFrom\(/)
-        // No local re-implementation of "is it an image".
-        expect(src).not.toMatch(/filter\(\(f\) => f\.type\.startsWith\('image\//)
-      })
-
-      it('offers a VISIBLE drop zone, not just a link and a promise', () => {
-        /*
-         * The third shape of the same mistake. First the handler was missing on one surface; then
-         * it was attached where it could never fire; then it fired but there was nothing on screen
-         * to aim a drag at — a text link plus hint copy saying "you can also paste or drag an image
-         * in", with the wrapper collapsing to the height of the link. The owner asked whether a
-         * surface had been built at all. It had not.
-         *
-         * A drop zone must be a TARGET BEFORE the drag begins: real padding, a dashed edge, and a
-         * state change while a file is over it. Asserting the copy alone is what let a promise
-         * ship without the thing it promised.
-         */
-        expect(src).toMatch(/border-dashed/)          // it looks like a drop target at rest
-        expect(src).toMatch(/py-6/)                   // it has height to aim at
-        expect(src).toContain('attachments.dropZone') // it says what you can do
-        expect(src).toMatch(/dragging\s*\n?\s*\?/)    // and it reacts while a file is over it
-      })
-    })
+/** Every `.ts`/`.tsx` under `src/`, tests excluded — the haystack the walk searches. */
+function walk(dir: string, acc: string[]): string[] {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules') walk(full, acc)
+    } else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+      acc.push(full)
+    }
   }
+  return acc
+}
+
+/** Relative to `src/`, forward slashes always, so a path written here on Windows is the same
+ *  string the Linux gate computes. */
+const rel = (file: string) => path.relative(SRC, file).split(path.sep).join('/')
+
+/** Every non-test file that routes a screenshot through the shared filter. `screenshotInput.ts`
+ *  is the helper itself, not a surface. */
+const found = walk(SRC, [])
+  .filter((f) => rel(f) !== 'lib/screenshotInput.ts')
+  .filter((f) => fs.readFileSync(f, 'utf8').includes("from '@/lib/screenshotInput'"))
+  .map(rel)
+  .sort()
+
+describe('no screenshot surface goes unnoticed', () => {
+  it('the walk actually read the tree (the floor)', () => {
+    // A path change that matched nothing would make the assertion below vacuously true, which is
+    // exactly the failure this whole file exists to prevent.
+    expect(walk(SRC, []).length).toBeGreaterThan(200)
+    expect(found.length).toBeGreaterThan(0)
+  })
+
+  it('⚠ EVERY SURFACE ON DISK IS NAMED HERE — a third one cannot appear quietly', () => {
+    expect(found).toEqual(SURFACES.map((s) => s.file).sort())
+  })
+
+  it.each(SURFACES)('$label has a RENDERED test, not a source guard', ({ renderedTest }) => {
+    // The claim a text scan cannot make: that a paste from where a person is actually typing
+    // reaches this surface. Each named file mounts its surface and dispatches one.
+    expect(fs.existsSync(path.join(SRC, renderedTest))).toBe(true)
+  })
+
+  it.each(SURFACES)('$label routes through the SHARED filter, not its own copy', ({ file }) => {
+    // The duplication is what allowed the two surfaces to drift apart in the first place. This
+    // one claim stays structural because it is about WHERE the rule lives, not about behaviour —
+    // two correct copies would pass every rendered test and still be the original defect.
+    const src = fs.readFileSync(path.join(SRC, file), 'utf8')
+    expect(src).toMatch(/imagesFrom\(/)
+    expect(src).not.toMatch(/filter\(\(f\) => f\.type\.startsWith\('image\//)
+  })
 })
 
 describe('namedForPaste', () => {
