@@ -72,6 +72,21 @@ owner can overrule it.
 **3. `guard%` rose 17 → 18.** The web standards test must read source, by nature. Inside tolerance;
 accepted, and H6 (which retires four text guards) more than pays it back.
 
+**4. The gate blocked this sprint's own web deploy — a load-dependent flake, not H4's code.**
+- *Symptom.* api deployed (6,760 passed in the build). Web: `2 failed, 2394 passed` — both
+  rendered tests (`admin/spending/page.test.tsx`, `AppShell.test.tsx`), `Unable to find an element
+  with the text…`. `Push` and `Deploy` never ran; production kept the previous web revision.
+- *Root cause.* Testing Library's `findBy*`/`waitFor` give up after **one second**. The gate runs
+  jest beside `next build` on 2 vCPUs. The same tests passed in the H2, H3 and TD-258 builds and
+  failed in this one: a race against machine load, which nobody sees on an 8-core dev box.
+- *System change.* `halatuju-web/jest.setup.ts` sets `asyncUtilTimeout` to 10 s and the per-test
+  limit to 30 s for the whole suite, wired by `setupFilesAfterEnv`. A timeout is a limit, not a
+  delay, so nothing gets slower unless the machine is. `jestSetup.test.ts` fails at once if the
+  wiring is ever dropped (bite-checked) — otherwise the flake would return weeks later, in the
+  gate, blocking a deploy. This is the risk H2's retro named ("a flaky test then blocks a deploy"),
+  arriving on schedule.
+
+## Numbers
 ## Numbers
 
 | Gate | Before | After |

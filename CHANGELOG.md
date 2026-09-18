@@ -66,6 +66,12 @@ Retro: `docs/retrospective-2026-09-19-code-health-h4.md`.
   **60**, of which 2 have a drift test. H9-H10 re-estimated to match.
 - **31 bite-checks, none silent; eight prove it does not cry wolf** (a comment-only edit, +5 lines
   on a listed file, a 590-line CRLF file, a "SERVED, NOT MIRRORED" comment all stay green).
+- **The gate stopped its own sprint's web deploy - correctly.** The api deployed; the web build
+  went red on two RENDERED tests (`spending/page`, `AppShell`) that had nothing to do with H4:
+  Testing Library's async helpers give up after ONE second, and on a 2-vCPU worker that is also
+  building the image, a render did not settle in time. Production stayed on the previous web
+  revision. Fix: `jest.setup.ts` raises the limit suite-wide (a limit, not a delay - a slow
+  machine now makes the suite slower, never red), with a test proving the setup is wired in.
 - Gates: 6,760 pytest, 2,396 jest, tsc 0, lint 0 errors, i18n ok; web standards test also green
   under Node 18. `guard%` 17 to 18 - the web standards test reads source by nature; accepted.
 
