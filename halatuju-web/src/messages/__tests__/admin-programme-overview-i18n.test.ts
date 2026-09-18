@@ -19,6 +19,7 @@ import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
+import { SECTION_KEYS } from '@/lib/overviewLayout'
 
 const SRC_DIR = path.join(__dirname, '..', '..') // .../src
 const NS = 'admin.programmeOverview'
@@ -90,11 +91,20 @@ const ATTENTION_KEYS = ['unassigned', 'withReviewer', 'dueSoon', 'overdue', 'awa
  *  (owner, 2026-09-15: "Jul", never "07/2026"). */
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
+/** The four states a round can be in (`views_admin.round_state`), named in the intake picker's
+ *  options as `${K}.intakes.state.${state}` — a fifth state on the Python side surfaces here. */
+const INTAKE_STATES = ['draft', 'open', 'closed', 'finished']
+
 const DYNAMIC = [
   ...ATTENTION_KEYS.map((k) => `${NS}.attention.${k}`),
   ...CATEGORY_CODES.map((c) => `${NS}.category.${c}`),
   ...BANDS.map((b) => `${NS}.band.${b}`),
   ...MONTHS.map((m) => `${NS}.months.${m}`),
+  // ⚠ The customise editor titles every card as `${K}.sections.${key}` from the SAME list the
+  // server validates against, so adding a customisable widget without naming it fails HERE
+  // rather than drawing a raw dotted string on an org admin's screen.
+  ...SECTION_KEYS.map((k) => `${NS}.sections.${k}`),
+  ...INTAKE_STATES.map((s) => `${NS}.intakes.state.${s}`),
 ]
 
 describe('admin.programmeOverview i18n hygiene', () => {

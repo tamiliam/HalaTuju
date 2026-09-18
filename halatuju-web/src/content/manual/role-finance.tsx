@@ -94,6 +94,10 @@ export const roleFinance: ManualChapter = {
         goes, by category, largest first, with <strong>&ldquo;not categorised&rdquo; last</strong> rather than
         folded into the others: a total you cannot see the uncategorised part of is not a total you can rely on.
         <br /><br />
+        An <strong>intake year</strong> picker at the top narrows every figure on the page to one round, the
+        money included. And your organisation admin may have switched a panel off for the whole organisation
+        &mdash; a chart you expected and cannot see is that, not a fault.
+        <br /><br />
         These are <strong>totals only</strong>. No names, no files, no verdicts &mdash; the Overview follows
         the same line your role does everywhere else. And it does not replace <strong>Payments</strong>, which
         remains the ledger: the runs, the CSV, the signatures and the funding summary student by student. Read

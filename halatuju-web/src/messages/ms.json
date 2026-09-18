@@ -5863,6 +5863,37 @@
       "loading": "Memuatkan gambaran keseluruhan…",
       "error": "Gambaran keseluruhan tidak dapat dimuatkan.",
       "asAt": "Data perbelanjaan sehingga {date}",
+      "intakes": {
+        "label": "Ambilan",
+        "all": "Semua ambilan",
+        "describing": "Menunjukkan ambilan {name} sahaja",
+        "state": {
+          "draft": "Draf",
+          "open": "Dibuka",
+          "closed": "Ditutup",
+          "finished": "Selesai"
+        }
+      },
+      "customise": {
+        "button": "Sesuaikan",
+        "title": "Pilih panel yang dilihat oleh organisasi ini",
+        "hint": "Matikan satu panel dan tiada sesiapa dalam organisasi anda akan melihatnya pada Gambaran keseluruhan mereka. Kes saya dan Menunggu semakan ialah keseluruhan halaman penilai dan pemeriksa, jadi ia tidak boleh dimatikan.",
+        "hidden": "Disembunyikan",
+        "visible": "Dipaparkan",
+        "save": "Simpan susun atur",
+        "discard": "Buang",
+        "saved": "Susun atur disimpan.",
+        "error": "Susun atur tidak dapat disimpan.",
+        "refused": "Susun atur ditolak: {name}."
+      },
+      "sections": {
+        "funnel": "Permohonan",
+        "money": "Wang",
+        "attention": "Perlu perhatian",
+        "applications_series": "Permohonan dan tajaan mengikut masa",
+        "money_series": "Wang mengikut masa"
+      },
+      "allHidden": "Setiap panel pada Gambaran keseluruhan ini telah dimatikan untuk organisasi anda. Pentadbir organisasi boleh menghidupkannya semula melalui Sesuaikan.",
       "funnel": {
         "title": "Permohonan",
         "total": "Permohonan diterima"

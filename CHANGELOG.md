@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Overview, phase 2 Sprint A - the organisation chooses its panels, and a round can be picked - 2026-09-18
+
+Owner rulings: the layout is **per organisation** (not per person); intake-year filter first,
+widgets on/off, then (Sprint B) drag-and-drop order.
+
+- **⚠ A NEW TABLE, `organisation_overview_layouts`** (migration `0161`, applied to production
+  MIGRATE-FIRST with RLS + the service_role policy; ledger 161 files = 161 rows). One row per
+  organisation: an ORDERED `[{key, on}]` over the five widgets (`funnel`, `money`, `attention`,
+  `applications_series`, `money_series`). No row = every widget on, default order. Not an
+  `org_config` JSON kind — that module is "a catalogue, not a form builder". The model's `save()`
+  validates through `overview_layout.validate_sections`, so a shell caller cannot store an unknown
+  key, a duplicate, or a list with a widget missing.
+- **⚠ THE LAYOUT NARROWS AND ORDERS A ROLE'S SECTIONS; IT NEVER WIDENS** (`overview_layout.apply`).
+  `programme_overview.build` emits `sections` in the organisation's order with the hidden widgets
+  absent — for every role in the organisation. `mine` and `qc` are PAGES, not widgets: outside the
+  catalogue, an org admin cannot switch a colleague's queue off. A layout that hides every widget
+  a role may see yields `sections: []` with a 200 (the page says so); the 403 stays on entitlement.
+- **Customise mode** (org_admin + super): a switch per panel, the console's one save bar, Save
+  posts the full ordered list. `layout` (keys and flags, never data) rides on the payload for those
+  two roles only, and the page shows the Customise button by its PRESENCE — no client role check.
+  Endpoint `GET/PUT admin/scholarship/organisation/overview-layout/`, organisation derived (`?org=`
+  for a super, cross-tenant 404), all-or-nothing with `{error, code, key}`, one compact
+  `AUDIT overview_layout_set` line per change.
+- **An intake-year picker on the page.** `?intake=<cohort id>` narrows EVERYTHING inside the
+  fence — funnel, money strip, charts, a reviewer's cases, a QC's queue — via
+  `_AdminBase._intake_narrowing` (on the base so the Applications list can follow): a round the
+  caller may not see is 404, never 403. `intakes` (code, name, year, state) rides on every role's
+  payload — a date, not a person or a sum — so a reviewer can populate the picker without the
+  org_admin-only years endpoint. The heading names the chosen round; the strip's byte-equality
+  with the Payments footer is a claim about the unfiltered page and is still pinned there.
+- The page renders `data.sections` in the order the server sent; the seven section blocks moved
+  into `components/admin/overview/OverviewSections.tsx` unchanged.
+
+Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
+per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
+4 web).
+
 ## The Overview, round six - only students who spent are counted; the empty tiles and the intake card go - 2026-09-18
 
 The owner's fourth read: *"n is stated as 58. However, only around 47 students have spent."*

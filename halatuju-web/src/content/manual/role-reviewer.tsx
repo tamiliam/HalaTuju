@@ -31,7 +31,8 @@ export const roleReviewer: ManualChapter = {
         <br /><br />
         <strong>You will not see money anywhere on this page</strong>, and you will not see the programme&rsquo;s
         overall figures. Those belong to the people who run the gift. What you see is your own cases, and
-        nothing else.</>
+        nothing else. An <strong>intake year</strong> picker at the top narrows them to one round, if you
+        want it.</>
       ),
     },
     {

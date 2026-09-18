@@ -9,6 +9,13 @@ export type QA = { q: ReactNode; a: ReactNode }
 export const FAQ: Record<Audience, QA[]> = {
   everyone: [
     {
+      q: <>A panel is missing from my <strong>Overview</strong>, or the page says everything is switched off.</>,
+      a: <>Your organisation admin chooses which panels the Overview shows, for the whole organisation. A
+        panel you expected and cannot see has been switched off for everybody, not just for you &mdash; ask
+        them, and they can switch it back on from <strong>Customise</strong>. Your own cases (reviewers) and
+        your queue (QC) are never switched off.</>,
+    },
+    {
       q: <>Is this paid? Do I get any compensation?</>,
       a: <>No — helping to run and review the programme is <strong>voluntary</strong>, and there&rsquo;s no
         payment. Thank you for giving your time to these students.</>,
@@ -200,6 +207,23 @@ export const FAQ: Record<Audience, QA[]> = {
     },
   ],
   org_admin: [
+    {
+      q: <>Can I choose which panels the <strong>Overview</strong> shows?</>,
+      a: <>Yes. Open a gift&rsquo;s Overview and press <strong>Customise</strong> at the top right. Each panel
+        has a switch; turn off the ones you do not want and press <strong>Save</strong>. It applies to your
+        <em> whole organisation</em>: a panel you hide is hidden for every colleague who would have seen it,
+        and everybody sees the panels in the same order. A reviewer&rsquo;s own cases and a QC&rsquo;s queue are
+        not panels &mdash; they cannot be switched off. If you switch off every panel a colleague could see,
+        their Overview says so rather than showing an empty page. (The platform team, looking across every
+        organisation, has to open a gift before Customise appears.)</>,
+    },
+    {
+      q: <>Can the Overview show just one <strong>intake year</strong>?</>,
+      a: <>Yes. The picker under the heading narrows <em>every</em> figure on the page to one round &mdash; the
+        applications, the money, the charts, and your colleagues&rsquo; queues. With no round chosen the page
+        shows the whole gift, and its money strip matches the Payments footer to the cent; with a round chosen
+        there is no such footer to match, so the heading names the round.</>,
+    },
     {
       q: <>Why does my <strong>Overview</strong> look different from my colleague&rsquo;s?</>,
       a: <>Because the page is shaped by what each person&rsquo;s role is for, and that is decided before the

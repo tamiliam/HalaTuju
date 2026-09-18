@@ -19,7 +19,7 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
 
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
+| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
 | **Admin — General** (`admin`) | **Everything** — as org_admin (a read; the page has no controls) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
 | **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per transaction per week, transactions per active student per week, spending by category. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | **Own work only** — the cases awaiting QC (oldest wait first) + own pace. **No money, no programme-wide funnel** | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
@@ -71,14 +71,30 @@ menu already withholds those pages from. A role missing from that map receives n
 
 | Role | Sections received |
 |---|---|
-| `super` / `org_admin` / `admin` | `funnel`, `money`, `attention`, `applications_series`, `money_series`, `intake` |
-| `finance` | `money`, `money_series`, `intake` |
-| `qc` | `qc`, `intake` |
-| `reviewer` | `mine`, `intake` |
+| `super` / `org_admin` / `admin` | `funnel`, `money`, `attention`, `applications_series`, `money_series` (+ `layout` for `super` / `org_admin`) |
+| `finance` | `money`, `money_series` |
+| `qc` | `qc` |
+| `reviewer` | `mine` |
 
-`intake` — *is this round open, and until when?* — is on **every** row on purpose: it is the one
-fact every console role needs and none of them could previously see without a page they may not
-open. It is a date, so it discloses nothing about a person or a sum.
+(The `intake` block that was on every row from 15 to 18 September is gone — owner: "doesn't add
+much value". Every payload now carries `intake` / `intakes` instead: the chosen round and the
+picker's options — code, name, year, state — a date, not a person or a sum.)
+
+**⚠ THE ORGANISATION'S LAYOUT NARROWS AND ORDERS THE ROW; IT NEVER WIDENS (phase 2, 2026-09-18).**
+`OrganisationOverviewLayout` holds an ordered `[{key, on}]` over the five widgets (`funnel`,
+`money`, `attention`, `applications_series`, `money_series`). `programme_overview.build` takes the
+role's row above, drops the widgets the organisation switched off, and emits `sections` in the
+organisation's order. `mine` and `qc` are **pages, not widgets** — outside the catalogue, never
+switchable. A layout that hides every widget a role may see yields `sections: []` with a 200.
+**Who edits it: `org_admin` + super** (`AdminOverviewLayoutView`, GET/PUT
+`admin/scholarship/organisation/overview-layout/`, organisation derived, `?org=` for a super,
+cross-tenant 404). The Overview shows Customise by the PRESENCE of `layout` on the payload.
+
+**⚠ THE INTAKE FILTER NARROWS EVERYTHING INSIDE THE FENCE.** `?intake=<cohort id>` is resolved by
+`_AdminBase._intake_narrowing`: a non-super only within their organisation, and within the named
+gift when one was named; unknown / another tenant's / another gift's / non-integer are one answer,
+404. With a round chosen every section narrows — the money strip included — so the strip's
+byte-equality with the Payments footer is a claim about the UNFILTERED page only.
 
 **⚠ FINANCE IS DELIBERATELY WIDENED HERE, AND THIS POINTS THE OPPOSITE WAY TO THE SPENDING PAGE.**
 `/admin/spending` refuses `finance` (`_SPENDING_ROLES`) and continues to. On the Overview, finance

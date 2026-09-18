@@ -37,7 +37,9 @@ export const roleAdminGeneral: ManualChapter = {
         application counted by the stage it has reached; what has been committed, paid, is still outstanding
         and has been spent; what is waiting for somebody (nobody assigned, with a reviewer, due soon, overdue,
         awaiting QC); and six charts showing how applications, awards and money have moved over time. A stage
-        with nobody in it is not shown. It is a read, like the rest of your remit — there is nothing on it to
+        with nobody in it is not shown. An <strong>intake year</strong> picker at the top narrows every figure
+        to one round. Your organisation admin may have switched some panels off for the whole organisation;
+        a panel you expected and cannot see is that, not a fault. It is a read, like the rest of your remit — there is nothing on it to
         click that changes anything. Everyone on the team can open it, and each of them sees the part that
         belongs to their job, so your colleague&rsquo;s Overview will not look like yours.</>
       ),

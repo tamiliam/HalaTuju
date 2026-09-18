@@ -18,9 +18,18 @@
  * `ChooseProgramme` — because this page reads, and describing everything the fence allows is a
  * true answer, just a less specific one.
  *
+ * ⚠ **`sections` IS AN ORDER, NOT A SET** (phase 2). The organisation arranges its own Overview,
+ * so the page draws what arrived in the order it arrived in — asserted with
+ * `compareDocumentPosition` against a fixture whose list is deliberately not the JSX order that
+ * used to be hard-coded here.
+ *
+ * ⚠ **THE CUSTOMISE BUTTON IS SHOWN BY THE PRESENCE OF `layout`, NEVER BY A ROLE CHECK** — the
+ * same doctrine as `has()`, and it is asserted from both sides: absent without the key, present
+ * with it.
+ *
  * ⚠ No jest-dom matchers exist in this project: `toBeNull` / `not.toBeNull` / `toEqual`.
  */
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import ProgrammeOverviewPage from './page'
 import * as api from '@/lib/admin-api'
@@ -98,6 +107,23 @@ const MONEY_SERIES = {
   by_category: CATEGORIES,
 }
 
+/** The rounds of the chosen gift, newest year first — sent to EVERY role (a round's name, year
+ *  and state is a date, not a person and not a sum). */
+const INTAKES: api.OverviewIntake[] = [
+  { id: 7, code: 'b40-2026', name: '2026 intake', year: 2026, state: 'open' },
+  { id: 4, code: 'b40-2025', name: '2025 intake', year: 2025, state: 'finished' },
+]
+
+/** The five customisable widgets, as an org_admin's payload carries them. `mine`/`qc` are never
+ *  in it — they are a whole page, not a widget. */
+const LAYOUT: api.OverviewLayoutRow[] = [
+  { key: 'funnel', on: true },
+  { key: 'money', on: true },
+  { key: 'attention', on: true },
+  { key: 'applications_series', on: true },
+  { key: 'money_series', on: true },
+]
+
 const ADMIN_PAYLOAD: api.ProgrammeOverview = {
   programme: { code: 'b40', name: 'Test Gift' },
   generated_at: '2026-09-15T10:00:00+08:00',
@@ -111,6 +137,13 @@ const ADMIN_PAYLOAD: api.ProgrammeOverview = {
     awards_per_month: [{ month: '2026-05', count: 19 }, { month: '2026-06', count: 30 }],
   },
   money_series: MONEY_SERIES,
+  intake: null,
+  intakes: [],
+}
+
+/** The same page for somebody who may arrange it — the ONLY difference is that `layout` arrived. */
+const ORG_ADMIN_PAYLOAD: api.ProgrammeOverview = {
+  ...ADMIN_PAYLOAD, intakes: INTAKES, layout: LAYOUT,
 }
 
 const FINANCE_PAYLOAD: api.ProgrammeOverview = {
@@ -120,6 +153,8 @@ const FINANCE_PAYLOAD: api.ProgrammeOverview = {
   sections: ['money', 'money_series'],
   money: MONEY,
   money_series: MONEY_SERIES,
+  intake: null,
+  intakes: [],
 }
 
 const REVIEWER_PAYLOAD: api.ProgrammeOverview = {
@@ -127,6 +162,8 @@ const REVIEWER_PAYLOAD: api.ProgrammeOverview = {
   generated_at: '2026-09-15T10:00:00+08:00',
   data_to: null,
   sections: ['mine'],
+  intake: null,
+  intakes: [],
   mine: {
     open: 3, due_soon: 1, overdue: 0,
     cases: [{ id: 13, ref: 'B40-0113', applicant_name: 'NURUL TEST', status: 'interviewing',
@@ -141,6 +178,8 @@ const QC_PAYLOAD: api.ProgrammeOverview = {
   generated_at: '2026-09-15T10:00:00+08:00',
   data_to: null,
   sections: ['qc'],
+  intake: null,
+  intakes: [],
   qc: {
     awaiting: 2, oldest_waiting_days: 4,
     cases: [{ id: 21, ref: 'B40-0121', applicant_name: 'AMIR TEST', status: 'interviewed',
@@ -436,7 +475,8 @@ describe('the switcher reaches the endpoint', () => {
   it('sends the chosen gift so the server can narrow the figures', async () => {
     render(<ProgrammeOverviewPage />)
     await waitFor(() => expect(mockApi.getProgrammeOverview).toHaveBeenCalled())
-    expect(mockApi.getProgrammeOverview.mock.calls[0][0]).toEqual('b40')
+    expect(mockApi.getProgrammeOverview.mock.calls[0][0])
+      .toEqual({ programme: 'b40', intake: undefined })
   })
 
   it('sends NO gift when none is chosen, and keeps the heading neutral', async () => {
@@ -447,7 +487,148 @@ describe('the switcher reaches the endpoint', () => {
     mockApi.getProgrammeOverview.mockResolvedValue({ ...ADMIN_PAYLOAD, programme: null })
     render(<ProgrammeOverviewPage />)
     await waitFor(() => expect(mockApi.getProgrammeOverview).toHaveBeenCalled())
-    expect(mockApi.getProgrammeOverview.mock.calls[0][0]).toEqual(undefined)
+    expect(mockApi.getProgrammeOverview.mock.calls[0][0])
+      .toEqual({ programme: undefined, intake: undefined })
     await waitFor(() => expect(heading()).toBe('admin.programmeOverview.title'))
+  })
+})
+
+/* ⚠⚠ THE ORDER IS THE SERVER'S. An organisation arranges its own Overview, so `sections` is a
+ * LIST and the page must walk it. A page that kept its own fixed run of JSX would pass every
+ * other test in this file and silently ignore every arrangement anybody ever saved. */
+describe('the organisation\'s own arrangement', () => {
+  it('draws the sections in the order they arrived, not the order they used to be written in', async () => {
+    mockApi.getProgrammeOverview.mockResolvedValue({
+      ...ADMIN_PAYLOAD, sections: ['money_series', 'funnel'],
+    })
+    render(<ProgrammeOverviewPage />)
+    const series = await screen.findByTestId('overview-money-series')
+    const funnel = screen.getByTestId('overview-funnel')
+    // Money-over-time came FIRST, so the funnel node FOLLOWS it in the document.
+    expect(series.compareDocumentPosition(funnel) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  /* ⚠ The API ships separately from this bundle, so a widget added on the Python side arrives
+   * before the renderer map knows it exists. Skipping it keeps a deployment gap invisible; an
+   * error where a panel should be would make a working page look broken. */
+  it('skips a section key it has no renderer for, and draws the rest', async () => {
+    mockApi.getProgrammeOverview.mockResolvedValue({
+      ...ADMIN_PAYLOAD, sections: ['sponsors', 'funnel'],
+    })
+    render(<ProgrammeOverviewPage />)
+    await screen.findByTestId('overview-funnel')
+    expect(screen.queryByTestId('overview-money')).toBeNull()
+  })
+
+  /* ⚠ AN EMPTY OVERVIEW IS A 200 AND SOMEBODY'S OWN DOING — a notice, never a refusal, which
+   * would claim an entitlement problem that does not exist. */
+  it('says so when the organisation has switched everything off', async () => {
+    mockApi.getProgrammeOverview.mockResolvedValue({ ...FINANCE_PAYLOAD, sections: [] })
+    render(<ProgrammeOverviewPage />)
+    const notice = await screen.findByTestId('overview-all-hidden')
+    expect(notice.textContent).toBe('admin.programmeOverview.allHidden')
+    expect(screen.queryByTestId('overview-money')).toBeNull()
+  })
+})
+
+describe('customising the layout', () => {
+  /* ⚠⚠ PRESENCE, NOT ROLE. The server sends `layout` to an org_admin and a super and to nobody
+   * else; the page asks whether it arrived, exactly as `has()` does for the widgets. */
+  it('offers no Customise button when the payload carried no layout', async () => {
+    render(<ProgrammeOverviewPage />)
+    await screen.findByTestId('overview-funnel')
+    expect(screen.queryByTestId('customise-button')).toBeNull()
+  })
+
+  it('offers it when the layout arrived', async () => {
+    authRole = { role: 'org_admin' }
+    mockApi.getProgrammeOverview.mockResolvedValue(ORG_ADMIN_PAYLOAD)
+    render(<ProgrammeOverviewPage />)
+    expect(await screen.findByTestId('customise-button')).not.toBeNull()
+  })
+
+  /* ⚠ THE EDITOR REPLACES THE WIDGETS. A switched-off panel has no data to draw, so live panels
+   * beside placeholders would read as broken rather than as an editor. */
+  it('swaps the widgets for the editor', async () => {
+    authRole = { role: 'org_admin' }
+    mockApi.getProgrammeOverview.mockResolvedValue(ORG_ADMIN_PAYLOAD)
+    render(<ProgrammeOverviewPage />)
+    fireEvent.click(await screen.findByTestId('customise-button'))
+    expect(screen.queryByTestId('customise-card-funnel')).not.toBeNull()
+    expect(screen.queryByTestId('overview-funnel')).toBeNull()
+    expect(screen.queryByTestId('overview-money-series')).toBeNull()
+  })
+})
+
+describe('the intake picker', () => {
+  beforeEach(() => {
+    mockApi.getProgrammeOverview.mockResolvedValue({ ...ADMIN_PAYLOAD, intakes: INTAKES })
+  })
+
+  it('is not drawn at all when the gift has no rounds', async () => {
+    mockApi.getProgrammeOverview.mockResolvedValue(ADMIN_PAYLOAD)
+    render(<ProgrammeOverviewPage />)
+    await screen.findByTestId('overview-funnel')
+    expect(screen.queryByTestId('intake-picker')).toBeNull()
+  })
+
+  it('lists every round, newest first, beside an "all intakes" option', async () => {
+    render(<ProgrammeOverviewPage />)
+    const picker = await screen.findByTestId('intake-picker')
+    const options = Array.from(picker.querySelectorAll('option'))
+    expect(options.map((o) => o.getAttribute('value'))).toEqual(['', '7', '4'])
+    expect(options[0].textContent).toBe('admin.programmeOverview.intakes.all')
+    expect(options[1].textContent)
+      .toBe('2026 intake (2026) · admin.programmeOverview.intakes.state.open')
+  })
+
+  /* ⚠ EVERYTHING NARROWS, so the chosen round has to reach the endpoint — a page where the
+   * picker named one year and the figures described all of them would be unreadable. */
+  it('sends the chosen round, and names it under the heading', async () => {
+    mockApi.getProgrammeOverview
+      .mockResolvedValueOnce({ ...ADMIN_PAYLOAD, intakes: INTAKES })
+      .mockResolvedValue({ ...ADMIN_PAYLOAD, intakes: INTAKES, intake: INTAKES[0] })
+    render(<ProgrammeOverviewPage />)
+    fireEvent.change(await screen.findByTestId('intake-picker'), { target: { value: '7' } })
+    await waitFor(() => expect(mockApi.getProgrammeOverview.mock.calls.length).toBe(2))
+    expect(mockApi.getProgrammeOverview.mock.calls[1][0])
+      .toEqual({ programme: 'b40', intake: 7 })
+    const line = await screen.findByTestId('overview-describing')
+    expect(line.textContent).toBe('admin.programmeOverview.intakes.describing|2026 intake')
+  })
+
+  /* ⚠ A ROUND BELONGS TO ONE GIFT. The moment the breadcrumb moves, last gift's round is not a
+   * stale value to tidy up later — it is already not a round of this gift, so it must never go
+   * out on the wire again. */
+  it('forgets the round when the gift changes', async () => {
+    const { rerender } = render(<ProgrammeOverviewPage />)
+    fireEvent.change(await screen.findByTestId('intake-picker'), { target: { value: '7' } })
+    await waitFor(() => expect(mockApi.getProgrammeOverview.mock.calls.length).toBe(2))
+    chosen = 'sabah'
+    rerender(<ProgrammeOverviewPage />)
+    await waitFor(() => expect(mockApi.getProgrammeOverview.mock.calls.length).toBe(3))
+    expect(mockApi.getProgrammeOverview.mock.calls[2][0])
+      .toEqual({ programme: 'sabah', intake: undefined })
+  })
+
+  /* ⚠ A 404 IS THE FENCE'S OWN ANSWER ABOUT THE ROUND — "there is no such thing", never "you may
+   * not". Dropping it and reading again puts the person back on a page that works; an error
+   * message about a cohort id would not. */
+  it('drops a round the server does not recognise and reads again, silently', async () => {
+    const notFound = Object.assign(new Error('not_found'), {
+      status: 404, body: { error: 'not_found', code: 'not_found' },
+    })
+    mockApi.getProgrammeOverview.mockImplementation((params) => (
+      params && params.intake !== undefined
+        ? Promise.reject(notFound)
+        : Promise.resolve({ ...ADMIN_PAYLOAD, intakes: INTAKES })))
+    render(<ProgrammeOverviewPage />)
+    fireEvent.change(await screen.findByTestId('intake-picker'), { target: { value: '7' } })
+    await waitFor(() => expect(mockApi.getProgrammeOverview.mock.calls.length).toBe(3))
+    expect(mockApi.getProgrammeOverview.mock.calls[2][0])
+      .toEqual({ programme: 'b40', intake: undefined })
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect((screen.getByTestId('intake-picker') as HTMLSelectElement).value).toBe('')
   })
 })

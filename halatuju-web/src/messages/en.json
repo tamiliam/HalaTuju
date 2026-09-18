@@ -5863,6 +5863,37 @@
       "loading": "Loading the overview…",
       "error": "Could not load the overview.",
       "asAt": "Spending data to {date}",
+      "intakes": {
+        "label": "Intake",
+        "all": "All intakes",
+        "describing": "Showing the {name} intake only",
+        "state": {
+          "draft": "Draft",
+          "open": "Open",
+          "closed": "Closed",
+          "finished": "Finished"
+        }
+      },
+      "customise": {
+        "button": "Customise",
+        "title": "Choose the panels this organisation sees",
+        "hint": "Switch a panel off and nobody in your organisation sees it on their Overview. My cases and Waiting to be checked are a reviewer's and a checker's whole page, so they cannot be switched off.",
+        "hidden": "Hidden",
+        "visible": "Shown",
+        "save": "Save layout",
+        "discard": "Discard",
+        "saved": "Layout saved.",
+        "error": "The layout could not be saved.",
+        "refused": "The layout was refused: {name}."
+      },
+      "sections": {
+        "funnel": "Applications",
+        "money": "Money",
+        "attention": "Needs attention",
+        "applications_series": "Applications and awards over time",
+        "money_series": "Money over time"
+      },
+      "allHidden": "Every panel on this Overview has been switched off for your organisation. An organisation admin can switch them back on with Customise.",
       "funnel": {
         "title": "Applications",
         "total": "Applications received"

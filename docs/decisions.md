@@ -11591,3 +11591,25 @@ does not cover it and the owner must rule again.
 **Rationale:** owner, 2026-09-18: *"the Intake year box doesn't add much value. Best removed."* On the live gift it read "No intake year has been set up for this gift yet" in a card the size of the attention list. The argument for keeping it was about reviewers and QC, whose Overview would otherwise be only their own queue — and that is exactly what they asked for.
 
 **Revisit if:** a reviewer asks whether more work is coming — then a single line under their queue, not a card.
+
+## The organisation's Overview layout narrows and orders a role's sections, and never widens — phase 2, 2026-09-18
+
+**Decision:** `OrganisationOverviewLayout` (its own table, one row per organisation, an ordered `[{key, on}]` over the five widgets) is applied inside `programme_overview.build` as a NARROWING of `SECTIONS_BY_ROLE`, emitted in layout order. `mine` and `qc` are pages, not widgets: outside the catalogue and never switchable. A layout that hides everything a role may see yields `sections: []` with a 200. `org_admin` and super edit it; `layout` rides on their payload only, and the page shows Customise by its presence.
+
+**Alternatives considered:** a JSON kind in `courses.org_config` (refused: that module is "a catalogue, not a form builder" by its own doctrine, its validator is int-only, and its audit line prints scalar was/now); per-person layouts (owner chose per organisation); letting the layout include `mine`/`qc` (an org admin could then switch a reviewer's whole page off); applying the layout on the client (a side door — the client must never choose sections).
+
+**Rationale:** owner, 2026-09-18: "customisable by the org admin", per organisation. Narrowing-only keeps role shaping the second gate it has always been; ordering server-side keeps the client rendering by presence and order, never by role. The list is ordered from day one so Sprint B (drag-and-drop) needs no migration.
+
+**Trade-offs:** an org admin can leave a finance colleague with an empty Overview; accepted, and the page says so. A super under the platform scope has no layout to edit until a gift (or `?org=`) names an organisation.
+
+**Revisit if:** a second organisation wants a per-ROLE layout — then the table gains a `role` column, not a second table.
+
+## Under an intake filter everything on the Overview narrows, the money strip included — phase 2, 2026-09-18
+
+**Decision:** `?intake=<cohort id>` narrows `application_scope` inside the fence, so every section — funnel, money strip, charts, a reviewer's cases, a QC's queue, `data_to` — describes that round only. The strip's byte-equality with the Payments footer is a claim about the UNFILTERED page and its two reconciliation tests run unfiltered. `intakes` rides on every role's payload.
+
+**Alternatives considered:** exempt the money strip so it always equals the Payments footer; exempt `mine`/`qc`; populate the picker from the org_admin-only years endpoint (a reviewer could not).
+
+**Rationale:** a page whose heading names a round must not carry one figure that ignores it — the exemption would be the confusing case, not the filter. The footer equality is a statement about the same scope; with a round chosen there is no footer on that scope to equal. A round's code, name, year and state is a date, not a person or a sum, so every role may read the picker's options.
+
+**Revisit if:** the Applications list gains the same filter (it should — `_intake_narrowing` is on `_AdminBase` for that reason), at which point the two pages must resolve `?intake=` identically.
