@@ -3914,12 +3914,18 @@ verified. It cannot see a transfer, because after a transfer there is still exac
 **The design intent is legitimate** — a student who lost access to their email re-registers and
 reclaims their own record — which is why this is a ruling to make, not a bug to silently patch.
 
-**Options for the owner:**
+**OWNER RULING 2026-09-18: option 2, plus the audit line from option 3.** A self-service claim survives, but only for somebody who can answer a challenge sent to the contact ALREADY ON the target profile; and every transfer is recorded whatever happens.
+
+**⚠ THE NUMBER THAT SHAPES THE BUILD, measured 2026-09-18: of 674 profiles carrying an IC, only 70 (10%) have a verified phone or email** — 17 phone, 63 email. So for nine accounts in ten there is no verified contact to challenge, and the honest behaviour for those is to REFUSE and route to a human. Two sub-decisions fall out of that, and they are the owner's:
+  * **Is an UNVERIFIED contact on the target profile good enough to receive the code?** It is     weaker (nobody proved that address), but it is the address the student gave us, and     without it self-service covers 10% of cases.
+  * **Does the phone count when the email is the thing they lost?** The claim exists for a     student locked out of their login email; sending the code to that same address helps     nobody. The phone is the route that actually answers the use case — and only 17 profiles     have one verified.
+
+The options as they were put:
 1. Refuse a transfer when the target profile is `nric_verified`, or holds a scholarship application,
    and route it to support instead (smallest change; keeps the lost-email path for fresh profiles).
-2. Keep the self-service claim but require a second factor the real owner holds — the verified
+2. **CHOSEN** — keep the self-service claim but require a second factor the real owner holds — the verified
    contact phone or email on the target profile (the Twilio Verify door already exists).
-3. Leave it and accept the risk, with an audit line at minimum.
+3. **ALSO CHOSEN (the audit half)** — record every transfer: old id, new id, IC, when, who.
 
 **Whatever is chosen: stop returning the existing holder's NAME to an unauthenticated guess** (it is
 a name disclosure to anyone who types an IC), and **log the transfer** — old id, new id, IC, when.
@@ -3927,7 +3933,11 @@ There is no log line today, so the question "has this ever happened?" has no ans
 
 ### [TD-253] An interview with NOTHING in it passes the gate that guards Approve and Decline — medium
 
-**Status:** Open (2026-09-18). Found by the owner on application #32: *"there is no findings. So the
+**Status:** Open — **OWNER RULING 2026-09-18, ready to build.** *"The reviewer could simply say: See conclusion. I want this to be a conscious decision on their part, and I want it to be complete."* So the answer to the question below is: the per-fact record IS wanted; an empty box is not a shortcut, and a short rationale ("See conclusion") is a legitimate answer — what is refused is SILENCE. Every agenda item must carry a verdict the reviewer actively chose, at both ends (submit refuses an incomplete set; the buttons stay asleep until it is complete).
+
+**⚠ THE BACKWARD REPAIR IS CHEAP, MEASURED 2026-09-18: only 2 live cases** carry an empty submitted interview (both awaiting QC, #32 and #140), and both are past the reviewer's hands. The other 33 sit on cases that are already decided, where a gate cannot reach them and should not try. So no migration, no re-opening of closed work — the rule binds from the day it ships.
+
+Found by the owner on application #32: *"there is no findings. So the
 reviewer should have been prevented from recommending (approve/decline)."* He is right.
 
 `isDecisionReady` (officerCockpit.ts) wakes the Approve/Decline buttons on three conditions: the
