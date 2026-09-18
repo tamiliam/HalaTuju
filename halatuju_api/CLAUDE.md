@@ -326,6 +326,50 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 966 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
+## Code standards (enforced by tests — since code health H4, 2026-09-19)
+
+These are not advice. Each one is an assertion in the normal test suite, and since H2 both suites
+run inside the Cloud Build deploy gate — so **a change that breaks a standard cannot deploy**,
+whoever or whatever wrote it. If you are reading this because a build went red, the failure
+message itself tells you what to do; this table is the why.
+
+| Standard | Enforced by | Why it exists |
+|---|---|---|
+| **No new giant file** — a source file may not pass 600 lines; the 36 api / 20 web files already over are listed with their size and may not grow more than 20 lines | `test_code_standards.py` · `codeStandards.test.ts` | `views_admin.py` is 8,547 lines and was fixed 34 times in 90 days. Nobody holds a file that size in one head, and nobody reviews it properly |
+| **No new giant function** — no Python function of 150+ lines outside the ledger of 16; a listed one may not grow more than 10 lines | `test_code_standards.py` | A 300-line function has no seams, so a branch in the middle of it can only be reached by running the whole thing |
+| **One rule, one home** — no module-level function name defined in 3+ files of one app, beyond the ten listed | `test_code_standards.py` | `_money` is seven functions with one name. A money-format fix made in one copy is not made in the other six |
+| **Tests can fail** — zero `skip` / `skipif` / `xfail` / `unittest.skip`; zero `.skip` / `.todo` / `xit` / `xdescribe`; the four files using a runtime `self.skipTest` are ledgered and may only shrink | both | Both golden masters used to skip themselves on the run straight after a regenerate: the least supervised moment in the process passed green |
+| **No blind spots** — `# noqa` and `# type: ignore` counts may not rise; no `@ts-ignore`; the `any` and `@ts-expect-error` counts may not rise | both | Every one is a gate told to look away, and `tsc` is a deploy gate here |
+| **Every `eslint-disable` carries a written reason** — ` -- why` on the same line, or a sentence in the comment above; the 37 without one are ledgered and may only shrink, and the total may not rise | `codeStandards.test.ts` | A rule switched off without a reason cannot be told from one switched off by accident, and nobody can ever judge whether it is still needed |
+| **No unguarded mirror** — a `src/lib` comment saying a rule is *mirrored* or *kept in sync* must carry `drift-test: <repo-relative path>` naming the test that proves it; the 58 without one are ledgered | `codeStandards.test.ts` | The `SOFT_EVIDENCE` denylist rotted because nothing enforced its mirror, and a fact backed only by soft signals leaked to blue. A comment asking two files to stay in step is a request; only a test is a rule. Better still: have the server **serve** the value rather than mirror it |
+| **No dead weight** — every package in `dependencies` is imported somewhere | `codeStandards.test.ts` | Downloaded on every build, audited on every scan, and read by the next person as something this app uses |
+| **The app boundary** — `courses → scholarship` imports may not rise above 25, and the module-level ones may not rise above 1 | `test_code_standards.py` | Two apps that import each other are one app with a line drawn through it, and the import-time half is what takes the service down at start-up |
+
+**The two budget files.** `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`.
+Each sits inside its own service folder, so it is inside the path filter of the Cloud Build trigger
+that runs the tests reading it. Each holds a frozen `baseline` (every number and every ledger as H4
+found them) and a live `budget` (starts identical, only ever tightens). Open either file; the
+`_how_this_works` note at the top says the same thing in five sentences.
+
+**The ratchet, in three sentences.** A test asserts `actual <= budget`, so the code may not get
+worse. It asserts `budget <= baseline` and that no ledger has gained a member, so a limit can never
+be raised back to where H4 found it and an exemption list can only shrink. And it asserts
+`budget <= actual + slack`, so when you improve something the build goes red until you lower the
+budget to match — that is the ratchet catching up with you, not a complaint. (The `baseline` block
+is pinned by a SHA-256 held in the test file, so rewriting history takes a second deliberate edit
+that a reviewer sees.)
+
+**Never raise a budget.** If you must grow a file that is already on the list, **split it first, in
+its own commit, with no behaviour change** — then add your work to the smaller module. If you must
+add a rule the front end already knows, serve it rather than mirror it. If a suppression is
+genuinely unavoidable, write the reason on the line. No failure message here will ever tell you to
+raise a number, because there is no case in which that is the right answer.
+
+**Not yet covered** (later sprints, each with its own test): "a new test file uses the factory
+rather than hand-building a `ScholarshipApplication`" arrives with H5; first-load-JS and
+database-query budgets arrive with H18. Style and formatting are deliberately out of scope for
+ever — a formatter pass rewrites every file and proves nothing about bugs.
+
 ## Key Files
 
 | File | Role | Sacred? |
@@ -606,7 +650,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. H4 (standards as tests in the gate) is next.**
+- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 (the backend test factory) is next.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

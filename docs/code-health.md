@@ -10,16 +10,17 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 **The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases, run back to back under a development freeze; awaiting the owner's word to start H1).
 
 ## Trend
-| date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | - | - |
-| 2026-09-18 | cc4406f | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 84 | 0 | 0 | ok |
-| 2026-09-18 | 257fcd4 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 85 | 0 | - | - |
-| 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | 0 | ok |
-| 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok |
-| 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok |
+| date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 1c24748 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | 0 | ok | ok |
+| 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | - | - | - |
+| 2026-09-18 | cc4406f | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 84 | 0 | 0 | ok | - |
+| 2026-09-18 | 257fcd4 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 85 | 0 | - | - | - |
+| 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | 0 | ok | - |
+| 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
+| 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-18, 08ee0ce, window 2026-06-20 onward)
+## Latest run (2026-09-19, 1c24748, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -29,14 +30,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/services.py` | 32 | 2931 | 93.8 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 29 | 3187 | 92.4 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
-| `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1634 | 45.8 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1637 | 45.8 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 7 | 3587 | 25.1 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 301 fix / 429 feat commits since 2026-06-20
+- 301 fix / 427 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8547  halatuju_api/apps/scholarship/views_admin.py`
@@ -51,7 +52,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `2377  halatuju_api/apps/courses/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `1942  halatuju-web/src/components/ScholarshipDocuments.tsx`
-- `1634  halatuju-web/src/lib/officerCockpit.ts`
+- `1637  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1368  halatuju_api/apps/courses/models.py`
@@ -111,7 +112,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Source-text guard tests (web)
-- 24 of 140 web test files read source text
+- 25 of 141 web test files read source text
 
 ### Debt register
 - 150 entries have a defining line; 83 carry no resolution marker on it
@@ -123,9 +124,35 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ### Unused npm dependencies
 - none
 
+### Standards budgets vs the last recorded run
+- halatuju_api/code-standards.json: not present at 08ee0ce (first reading of this file)
+- halatuju-web/code-standards.json: not present at 08ee0ce (first reading of this file)
+
+### tsc
+- 0 errors in 0 files
+
+### i18n
+- ==================================================
+- ALL PASSED (0 warnings)
+- Total keys per locale: 5353
+
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 — H4 closed: Phase 1 complete; a new reading, `std`
+
+`--full` after sprint H4. No FAILs.
+- **`std` — new reading, ok.** Compares each `code-standards.json` budget with the copy at the last
+  recorded run's commit; FAILs if a limit rose or an exemption list gained a member. First reading
+  of both files, so nothing to compare yet; from here on it holds the ratchet across history, which
+  the in-repo tests (depth-1 deploy checkout) cannot.
+- **guard% 17 → 18** — *accept.* The web standards test reads source by nature. H6 retires four
+  text guards and pays it back.
+- The tool's WARN list and the standards tests now agree by construction: the tests reuse this
+  tool's definitions of source, test, long function, duplicated name and suppression. `big` reads 25
+  here (over 1,000 lines) and 56 in the budgets (over 600) — a different threshold, on purpose.
+- All other readings unchanged; decisions stand as in the baseline.
 
 ### 2026-09-18 (fifth reading) — H3 closed: three guards in, one real hole found
 

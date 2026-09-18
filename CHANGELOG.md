@@ -38,6 +38,37 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health H4 - the standards become tests inside the deploy gate; Phase 1 is complete - 2026-09-19
+
+Sprint H4 of the code-health roadmap, under the development freeze; the first run under the
+owner's standing word to proceed without stopping. Built by an Opus 5 agent; verified, extended
+and closed by the lead. App code changed: three comment lines.
+Retro: `docs/retrospective-2026-09-19-code-health-h4.md`.
+
+- **A change that breaks a standard can no longer deploy.** 70 new tests read two committed budget
+  files - `halatuju_api/code-standards.json`, `halatuju-web/code-standards.json` - and run inside
+  the H2 gate. Each file sits inside its own trigger's path filter, so editing a budget runs the
+  build that checks it.
+- **The standards:** no new file over 600 lines (56 listed, none may grow past +20); no new
+  function of 150+ lines (16 listed); one rule one home (10 duplicated names listed, none may gain
+  a copy); no new `# noqa` / `# type: ignore` / `any` / `@ts-ignore`; every `eslint-disable`
+  carries a written reason (37 reasonless listed, shrink-only) and the total may not rise; no
+  unguarded mirror of a backend rule; no skipped tests; `courses -> scholarship` imports may not
+  rise (25, one at module level); every npm dependency imported.
+- **The budgets are a RATCHET.** `actual <= budget <= baseline`; every ledger a subset of its
+  baseline; and TIGHTNESS - when the code improves the test FAILS until the budget is lowered. The
+  baseline block is pinned by a SHA-256 in the test file. No test message suggests raising a number.
+- **The one loophole the tests cannot hold is held elsewhere.** The deploy checkout is depth-1, so
+  a test cannot see a limit fall and later creep back up. `Settings/_tools/code_health.py` gained
+  a `std` reading that compares each budget file with the last recorded run's commit and FAILS on
+  a raised limit or a ledger that gained a member.
+- **Measured, not assumed:** the roadmap said ~34 front-end rules mirror the backend. There are
+  **60**, of which 2 have a drift test. H9-H10 re-estimated to match.
+- **31 bite-checks, none silent; eight prove it does not cry wolf** (a comment-only edit, +5 lines
+  on a listed file, a 590-line CRLF file, a "SERVED, NOT MIRRORED" comment all stay green).
+- Gates: 6,760 pytest, 2,396 jest, tsc 0, lint 0 errors, i18n ok; web standards test also green
+  under Node 18. `guard%` 17 to 18 - the web standards test reads source by nature; accepted.
+
 ## Security: TD-258 closed - the sponsor fund view goes through the fence; the mock donation is gated off - 2026-09-18
 
 Found by the code-health H3 guard the same day; fixed on the owner's word (*"fix td 258"*) under

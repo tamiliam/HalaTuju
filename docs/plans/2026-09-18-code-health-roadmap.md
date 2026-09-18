@@ -57,7 +57,7 @@ Every sprint below ends by taking a reading, so the plan is judged by numbers, n
 home, and only then cut the giant files into pieces — in that order, because each step makes the
 next one safe. Then lock the standards in, so the work never has to be done twice.
 
-**Nineteen sprints in six phases, about 118 hours, run back to back.** The division is driven by four facts, all
+**Nineteen sprints in six phases, about 125 hours, run back to back.** The division is driven by four facts, all
 measured on 2026-09-18:
 
 1. **Nothing runs the tests before a deploy.** Both Cloud Build triggers are inline configs of
@@ -88,7 +88,7 @@ makes a reading worse than its own start has not finished.
 | `hot#1` (fixes × KLOC of the worst file) | 290 | **under 100** | H11, H12 |
 | `big` (files over 1,000 lines) | 25 | **12 or fewer** | H11–H16 |
 | `dup` (one function name, 3+ homes in an app) | 10 | **0 true duplicates** (renames count) | H7 |
-| Front-end rules mirrored with no drift guard | ~32 | **0** | H9, H10 |
+| Front-end rules mirrored with no drift guard | **58** *(measured at H4; the survey's ~32 missed file-header docblocks)* | **0** | H9, H10 |
 | `unused` npm packages | 4 | **0** | H1 |
 | `tsc` | 0 *(was 24; done 2026-09-18)* | **stays 0** | ratchet |
 | `guard%` (web tests that read source text) | 17 | **12 or under** | H6 |
@@ -169,7 +169,8 @@ chasing them is how a health arc turns into a rewrite.
   route → red). TD-219, TD-240, TD-250 carry their markers.
 - **Complexity:** medium. **~6h.** api deploy only if a real gap is found; else tests only.
 
-### H4 — The standards become tests, inside the gate
+### H4 — The standards become tests, inside the gate ✅ SHIPPED 2026-09-19 — **PHASE 1 COMPLETE**
+*Retro: `docs/retrospective-2026-09-19-code-health-h4.md`. 70 tests, two budget files (one per service, inside its trigger's path filter), a ratchet that needs no git, and a `std` reading in `code_health.py` that holds the one loophole git is needed for. Deviation from the text below: TWO files, not one, so an edit to a budget always triggers the build that checks it.*
 - **Goal:** the owner's second ruling, made mechanical. After this sprint a change that breaks a
   standard **cannot deploy**, whoever or whatever wrote it. Built early, on purpose: the rest of
   this arc is then held to the same standards it is installing.
@@ -281,6 +282,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** medium–high. **~9h.** Both services deploy.
 
 ### H9 — De-mirror the front end, wave 1: the decision gates
+*⚠ Re-estimated 2026-09-19: H4 measured **60** mirrored rules (58 unguarded), not ~34. Waves H9 and H10 are therefore ~29 rules each, not ~17 — expect ~10h each, not 6–7h. The cheap end state (a drift test that reads the backend source) is the default; *serving* a rule is reserved for the decision gates listed below. The ledger in `halatuju-web/code-standards.json` → `unguarded_mirrors` is the work list.*
 - **Goal:** the rules that decide what an officer may do stop living in two languages.
 - **Scope:** the template exists — `documentLimits.ts` and `interviewSlots.ts` are headed
   *"⚠ THE RULES ARE SERVED, NOT MIRRORED."* Apply it to: `ORG_REJECT_FROM`, the 13 application
