@@ -306,37 +306,85 @@ describe('probe gating reproduces the 404-means-invisible contract', () => {
 describe('the registry and the app router agree', () => {
   const ADMIN_DIR = path.join(__dirname, '..', '..', 'app', 'admin')
 
-  /** Top-level route segments that own a page.tsx, e.g. 'payments'.
+  /** Every route segment path under `src/app/admin/` that owns a page.tsx — 'payments',
+   * 'organisation/staff', 'sponsors/terms/[id]'.
    *
-   * ⚠ **TOP-LEVEL ONLY — THIS SCAN CANNOT SEE A NESTED ROUTE, AND THAT IS LEFT AS IT IS.**
-   * `/admin/programme/overview` has a `page.tsx` and is invisible here, because the reader stops
-   * at the first level. Widening it to a recursive walk was considered and rejected: this guard
-   * exists to catch a whole new SECTION shipped with no menu home, and a nested page is a child of
-   * a section that already has one — the registry's other direction ("every non-reserved href has
-   * a page behind it", below) does cover the nested route, by path. Named rather than fixed so the
-   * blind spot is a known one rather than a surprise.
+   * ⚠ **RECURSIVE SINCE TD-250 (code health H3, 2026-09-18).** It used to read the top level
+   * only, which was written when every console page was one directory deep and left
+   * `/admin/programme/overview` — the first two-level route — invisible: the guard neither
+   * complained about it nor protected it, so renaming the directory would have passed. Walking
+   * the tree re-asserts EVERY route at once, which is why it was done on its own rather than
+   * inside a feature commit.
+   *
+   * Two things the walk has to understand about the app router, because both change what a
+   * directory MEANS rather than merely where it sits:
+   *   • a **route group** `(name)` organises files without appearing in the URL, so it
+   *     contributes no segment — the walk steps through it and the trail is unchanged;
+   *   • a **dynamic segment** `[id]` is part of the URL but is not a destination anybody
+   *     navigates to. It is still walked and still returned, so that the exemption below is a
+   *     stated RULE applied to a real list, not a silence.
    */
-  function routeDirs(): string[] {
-    return fs.readdirSync(ADMIN_DIR, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && !d.name.startsWith('['))
-      .filter((d) => fs.existsSync(path.join(ADMIN_DIR, d.name, 'page.tsx')))
-      .map((d) => d.name)
+  function routeDirs(dir: string = ADMIN_DIR, trail: string[] = []): string[] {
+    const out: string[] = []
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const isGroup = entry.name.startsWith('(') && entry.name.endsWith(')')
+      const child = path.join(dir, entry.name)
+      const next = isGroup ? trail : [...trail, entry.name]
+      if (next.length > 0 && fs.existsSync(path.join(child, 'page.tsx'))) out.push(next.join('/'))
+      out.push(...routeDirs(child, next))
+    }
+    return out
   }
 
   const dirs = routeDirs()
+  /** A route with a `[param]` segment anywhere in it. */
+  const isDynamic = (seg: string) => seg.split('/').some((s) => s.startsWith('['))
 
   it('found the router (parse sanity — not a no-op)', () => {
     expect(dirs.length).toBeGreaterThanOrEqual(14)
     expect(fs.existsSync(path.join(ADMIN_DIR, 'page.tsx'))).toBe(true)
   })
 
+  // ⚠ THE WALK MUST ACTUALLY DESCEND. If a refactor broke the recursion the list would quietly
+  // shrink back to the top level and every assertion below would pass while guarding less than
+  // it did before TD-250 — the exact failure mode the org fence's own floor test exists for.
+  it('sees nested routes, not just the top level', () => {
+    expect(dirs).toContain('programme/overview')
+    expect(dirs).toContain('organisation/staff')
+    expect(dirs.filter((d) => d.includes('/')).length).toBeGreaterThanOrEqual(10)
+    // …and three levels deep, which is where a per-path exemption list would have stopped.
+    expect(dirs).toContain('sponsors/terms/[id]')
+  })
+
   it('every rendered admin page has a registry entry', () => {
     const chromeless = (href: string) => CHROMELESS.some((c) => href === c || href.startsWith(c))
     const orphans = dirs
+      // ⚠ **THE ONE EXEMPTION, AND IT IS A RULE, NOT A LIST.** A page under a `[param]`
+      // segment is a DETAIL page — one contract, one applicant, one payment run. The menu
+      // never links to it (you arrive from the list above it), so requiring a registry row
+      // would mean inventing sidebar entries for pages nobody can navigate to. What it must
+      // do instead is belong to a section that IS in the menu, which the next test asserts.
+      .filter((seg) => !isDynamic(seg))
       .map((d) => `/admin/${d}`)
       .filter((href) => !chromeless(href))
       .filter((href) => activeItem(href) === undefined)
     expect(orphans).toEqual([])
+  })
+
+  // The other half of that exemption: a detail page is excused from having its OWN row only
+  // because its parent has one. A `[id]` page under a section nobody can reach from the menu
+  // is an orphan with extra steps, so it fails here.
+  it('every detail page hangs off a section the menu offers', () => {
+    const chromeless = (href: string) => CHROMELESS.some((c) => href === c || href.startsWith(c))
+    const stranded = dirs
+      .filter(isDynamic)
+      // The nearest ancestor with no dynamic segment — 'sponsors/terms/[id]' → 'sponsors/terms'.
+      .map((seg) => seg.split('/').slice(0, seg.split('/').findIndex((s) => s.startsWith('['))))
+      .map((parts) => `/admin/${parts.join('/')}`)
+      .filter((href) => !chromeless(href))
+      .filter((href) => activeItem(href) === undefined)
+    expect(stranded).toEqual([])
   })
 
   it('every NON-reserved registry href has a page behind it', () => {

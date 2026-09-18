@@ -20,8 +20,8 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps import scholarship as _scholarship_pkg
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
-from apps.scholarship import views_admin
 from apps.scholarship.models import (
     ApplicantDocument, GraduationMessage, ScholarshipApplication, ScholarshipCohort,
     Sponsor, Sponsorship,
@@ -29,6 +29,68 @@ from apps.scholarship.models import (
 from apps.scholarship.views_admin import _AdminBase
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+#: The app directory the static guard reads from. Taken from the PACKAGE, never from
+#: `views_admin.__file__` — H11 turns `views_admin.py` into `views_admin/`, and
+#: `os.path.dirname()` of a package's `__init__.py` is the package itself, which would
+#: silently move the whole scan one level down.
+_APP_DIR = os.path.dirname(_scholarship_pkg.__file__)
+
+
+def scan_targets(base, entry):
+    """Resolve ONE `SCANNED` entry to the source files it names.
+
+    An entry is EITHER a filename (`views_admin.py`) OR a package directory
+    (`views_admin/`), and the guard must read the same queries either way. H11 splits
+    `views_admin.py` into a package of submodules; without this, the tuple would keep
+    naming a file that no longer exists and the guard would either error or — worse, if
+    someone "fixed" it by dropping the entry — pass for ever while watching nothing.
+
+    A directory is walked RECURSIVELY, so a submodule nested inside the package
+    (`views_admin/requests/invoices.py`) is scanned like any other. Returns absolute
+    paths, sorted, and an empty list when the entry names nothing — the floor test below
+    is what turns that emptiness into a failure.
+    """
+    path = os.path.join(base, entry)
+    if os.path.isdir(path):
+        return sorted(
+            os.path.join(dirpath, name)
+            for dirpath, _dirs, names in os.walk(path)
+            for name in names if name.endswith('.py'))
+    return [path] if os.path.isfile(path) else []
+
+
+def read_scanned(base, entry):
+    """(display name, source) for every file an entry names. The display name is relative
+    to `base` with forward slashes, so a package submodule reads as
+    `views_admin/invoices.py` on every platform."""
+    for path in scan_targets(base, entry):
+        with open(path, encoding='utf-8') as fh:
+            yield os.path.relpath(path, base).replace(os.sep, '/'), fh.read()
+
+
+def find_offences(base, entries, watched, fences=(), pragmas=()):
+    """Every watched query with neither a narrowing nor a pragma in its window.
+
+    Yields (display name, line number, token, stripped source line). The window spans a
+    pragma placed on the line(s) just above or just below, which is what makes a pragma a
+    normal comment rather than a magic suffix.
+
+    Module-level, and given its `base`, so the scanner itself is testable against a
+    throwaway tree — see `test_a_package_submodule_is_scanned_like_a_file`.
+    """
+    for entry in entries:
+        for name, src in read_scanned(base, entry):
+            lines = src.split('\n')
+            for tok in watched:
+                for m in re.finditer(re.escape(tok), src):
+                    window = src[max(0, m.start() - 200):m.start() + 200]
+                    if any(p in window for p in pragmas):
+                        continue
+                    if any(f in window for f in fences):
+                        continue
+                    n = src.count('\n', 0, m.start()) + 1
+                    yield name, n, tok, lines[n - 1].strip()
 
 
 # QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
@@ -518,7 +580,14 @@ class TestOrgFenceStaticGuard(TestCase):
     """A raw watched-model query in views_admin.py MUST be fenced. Any
     `ScholarshipApplication.objects` / `Sponsorship.objects` / `GraduationMessage.objects`
     / `ApplicantDocument.objects` without a nearby `# org-fence:` pragma fails — so a
-    future endpoint can't reintroduce a cross-tenant read/write by hand."""
+    future endpoint can't reintroduce a cross-tenant read/write by hand.
+
+    ⚠ **TWO VOCABULARIES, ONE GUARD (TD-240, code health H3).** An admin endpoint is fenced
+    on `owning_organisation`; a SPONSOR endpoint is not, and never was — it is fenced on the
+    SPONSOR (`pool.for_sponsor`, or reading off the sponsor row itself). That is why
+    `views_sponsor.py` sat in `NOT_YET_SCANNED` for months: scanning it with the admin
+    vocabulary alone would have reported every correct sponsor fence as an offence. It is now
+    scanned with BOTH — the admin tokens below, and the sponsor tokens in `SPONSOR_WATCHED`."""
 
     WATCHED = (
         'ScholarshipApplication.objects', 'Sponsorship.objects',
@@ -545,53 +614,111 @@ class TestOrgFenceStaticGuard(TestCase):
     #: views_admin.py alone; S4 put admin-facing queries in `spend_report.py`, which the guard
     #: would have been structurally unable to see. **A new module that queries a watched model
     #: for an admin surface belongs on this list on the day it is written.**
+    #: ⚠ AN ENTRY IS A FILE **OR** A PACKAGE DIRECTORY (code health H3). `scan_targets()`
+    #: walks a directory recursively, so when H11 turns `views_admin.py` into
+    #: `views_admin/`, this tuple changes by one character and the guard keeps seeing every
+    #: query — including ones in submodules that did not exist when it was written.
     SCANNED = ('views_admin.py', 'spend_report.py', 'spend_category.py',
                'spending_import.py', 'spend_summary.py', 'spend_sponsor.py', 'invoicing.py',
                # Programme Overview (2026-09-15) — a pure aggregation module that queries
                # ScholarshipApplication and BursarySpendTxn for an admin surface, so it joined
                # this tuple on the day it was written, per the note above.
-               'programme_overview.py')
+               'programme_overview.py',
+               # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
+               # the admin tokens above, and `SPONSOR_WATCHED` below.
+               'views_sponsor.py')
 
     #: ⚠ A LEDGER, NOT AN EXEMPTION LIST — the same idea as `NO_DOOR`. A file here is a
     #: DECISION somebody wrote down, and the reason is the check. Adding a name without a
     #: reason is the thing this is meant to make impossible.
-    NOT_YET_SCANNED = {
-        'views_sponsor.py':
-            'TD-240 — surfaced by this guard when S4 widened it, and PRE-DATES S4. The sponsor '
-            'endpoints fence on the sponsorship rather than on `owning_organisation`, so they '
-            'need their own audit and their own pragma vocabulary; doing it blind inside a '
-            'spending sprint would either bury real findings or add noise-pragmas that make the '
-            'guard weaker. Logged rather than silently excluded.',
+    #:
+    #: EMPTY since TD-240 closed (code health H3, 2026-09-18) — `views_sponsor.py` was its
+    #: only entry and is now in SCANNED. Kept, not deleted: the next file that cannot be
+    #: scanned today needs somewhere to say so out loud.
+    NOT_YET_SCANNED = {}
+
+    # ── The SPONSOR vocabulary (TD-240) ──────────────────────────────────────────────
+    #: A sponsor endpoint is NOT fenced on `owning_organisation` — a Sponsor is a
+    #: platform-level account with no organisation at all. It is fenced on the SPONSOR, and
+    #: there are exactly two safe shapes:
+    #:   * read off the sponsor row (`sponsor.sponsorships`, `sponsor.donations`) — safe by
+    #:     construction, because the sponsor was resolved from the caller's own JWT; or
+    #:   * narrow a pool queryset through `pool.for_sponsor(...)`, which keeps a sponsor to
+    #:     the gift programmes they have been ACCEPTED into.
+    #: The two builders below return every pool-eligible student on the PLATFORM. Using one
+    #: in a sponsor-facing file without `for_sponsor` in the same window is the sponsor
+    #: equivalent of a missing org fence — so it must carry a `# sponsor-fence:` pragma
+    #: saying why there is nothing to narrow.
+    #: ⚠ The trailing `(` is load-bearing: these names are also written in prose in the very
+    #: comments that explain the fence, and a guard that fired on its own documentation would
+    #: be deleted within a month. Only a CALL is a query.
+    SPONSOR_WATCHED = ('display_pool_queryset(', 'eligible_pool_queryset(')
+    SPONSOR_SCANNED = ('views_sponsor.py',)
+    #: What counts as a narrowing in the sponsor vocabulary, seen in the same window.
+    SPONSOR_FENCES = ('for_sponsor(',)
+
+    #: Either pragma satisfies either scan: the pragma's TEXT is what says which fence it
+    #: is claiming, and a reader needs the reason far more than the spelling.
+    PRAGMAS = ('org-fence:', 'sponsor-fence:')
+
+    #: ⚠⚠ **A FINDINGS LEDGER, AND IT MAY ONLY SHRINK.** A line here is a watched query that
+    #: is NOT fenced and that this sprint deliberately did not touch — never a query somebody
+    #: decided was fine (that is what a pragma is for). Keyed on the stripped source line, so
+    #: it survives the line moving but not the line changing. `test_the_unfenced_ledger_only_shrinks`
+    #: fails the moment an entry is fixed or fenced, with "remove me".
+    KNOWN_UNFENCED = {
+        'views_sponsor.py': {
+            'app = ScholarshipApplication.objects.filter(id=pk).first()':
+                'RAISED BY THE TD-240 AUDIT, code health H3 (2026-09-18) — NOT triaged, NOT '
+                'fixed, and deliberately NOT pragma-ed. `SponsorFundView.post` reads an '
+                'application by bare id, so it does NOT pass through `pool.for_sponsor` — the '
+                'module that owns that helper calls it "**the ONE seam** for per-programme pool '
+                'visibility ... every sponsor-facing read of the pool goes through here", and '
+                'this one does not. What stops a cross-gift AWARD today is arithmetic, not the '
+                'fence: `fund_student` refuses unless `sponsor_balance(sponsor, '
+                'application.programme)` covers the amount. What is NOT stopped is the '
+                'existence/state oracle the sibling detail view exists to prevent — 404 vs '
+                '`not_fundable` vs `insufficient_balance` distinguishes, for ANY application id '
+                'on the platform, "no such row" from "a row" from "a fundable student", across '
+                'every tenant and every gift. Fixing it is a one-line change to a MONEY path, so '
+                'it belongs to the owner and to a sprint of its own, not to a guard sprint. See '
+                'the H3 report.',
+        },
     }
 
-    def test_every_scanned_file_is_real_and_actually_carries_a_watched_query(self):
+    def _scan(self, entry):
+        """(display name, source) for every file an entry names."""
+        return read_scanned(_APP_DIR, entry)
+
+    def test_every_scanned_entry_is_real_and_actually_carries_a_watched_query(self):
         """THE FLOOR. A scan that silently matches nothing makes every assertion above vacuous,
         and the guard then passes for ever while protecting nothing. This is the same shape as
         the repair-door guard's own floor, and it exists because S4 widened SCANNED: dropping a
-        file from that tuple must FAIL here rather than quietly stop looking."""
-        base = os.path.dirname(views_admin.__file__)
-        for filename in self.SCANNED:
-            path = os.path.join(base, filename)
-            self.assertTrue(os.path.isfile(path), f'SCANNED names a missing file: {filename}')
-            with open(path, encoding='utf-8') as fh:
-                src = fh.read()
+        file from that tuple must FAIL here rather than quietly stop looking.
+
+        ⚠ Since H3 an entry may be a PACKAGE, and the same floor applies to it: the package must
+        exist, must hold at least one `*.py`, and the watched queries must still be findable
+        somewhere inside it — so a split that loses the queries fails HERE, not silently."""
+        watched = self.WATCHED + self.SPONSOR_WATCHED
+        for entry in self.SCANNED:
+            sources = list(self._scan(entry))
+            self.assertTrue(sources, f'SCANNED names a missing file or empty package: {entry}')
             self.assertTrue(
-                any(tok in src for tok in self.WATCHED),
-                f'{filename} carries no watched query - it is either the wrong file or the '
+                any(tok in src for _name, src in sources for tok in watched),
+                f'{entry} carries no watched query - it is either the wrong file or the '
                 f'queries moved, and either way this guard is now watching nothing.')
 
     def test_the_modules_that_query_watched_models_are_all_scanned(self):
         """The other half: a NEW admin-facing module that queries a watched model must join
         SCANNED. Without this, S4's own mistake repeats - move the query one file sideways and
         the guard is structurally blind to it."""
-        base = os.path.dirname(views_admin.__file__)
         candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
                       'spend_report.py', 'spend_category.py', 'spending_import.py',
                       'spend_summary.py', 'spend_sponsor.py', 'invoicing.py', 'invoice_pdf.py',
                       'programme_overview.py')
         unscanned = []
         for filename in candidates:
-            path = os.path.join(base, filename)
+            path = os.path.join(_APP_DIR, filename)
             if (not os.path.isfile(path) or filename in self.SCANNED
                     or filename in self.NOT_YET_SCANNED):
                 continue
@@ -599,23 +726,117 @@ class TestOrgFenceStaticGuard(TestCase):
                 src = fh.read()
             if any(tok in src for tok in self.WATCHED):
                 unscanned.append(filename)
-        self.assertEqual(unscanned, [], 
+        self.assertEqual(unscanned, [],
                          f'These query a watched model and are not in SCANNED: {unscanned}')
 
+    def _offences(self):
+        """Both passes: the admin vocabulary over SCANNED, the sponsor one over
+        SPONSOR_SCANNED. `views_sponsor.py` is in both, on purpose — a sponsor file may still
+        reach for an admin-watched manager, which is exactly the finding the audit made."""
+        yield from find_offences(_APP_DIR, self.SCANNED, self.WATCHED,
+                                 pragmas=self.PRAGMAS)
+        yield from find_offences(_APP_DIR, self.SPONSOR_SCANNED, self.SPONSOR_WATCHED,
+                                 fences=self.SPONSOR_FENCES, pragmas=self.PRAGMAS)
+
     def test_raw_admin_queries_are_fenced(self):
-        base = os.path.dirname(views_admin.__file__)
         offenders = []
-        for filename in self.SCANNED:
-            with open(os.path.join(base, filename), encoding='utf-8') as fh:
-                src = fh.read()
-            for tok in self.WATCHED:
-                for m in re.finditer(re.escape(tok), src):
-                    # Window spans a pragma placed on the line(s) just above or just below.
-                    window = src[max(0, m.start() - 200):m.start() + 200]
-                    if 'org-fence:' not in window:
-                        line = src.count('\n', 0, m.start()) + 1
-                        offenders.append(f'{filename}:{line} — {tok}')
+        for name, line, tok, text in self._offences():
+            if text in self.KNOWN_UNFENCED.get(name, {}):
+                continue        # a logged finding — see KNOWN_UNFENCED and the shrink test
+            offenders.append(f'{name}:{line} — {tok}')
         self.assertEqual(
             offenders, [],
-            'Raw admin query without an `# org-fence:` pragma (cross-tenant read/write risk):\n'
-            + '\n'.join(offenders))
+            'Raw query without an `# org-fence:` / `# sponsor-fence:` pragma '
+            '(cross-tenant or cross-sponsor read/write risk):\n' + '\n'.join(offenders))
+
+    def test_the_unfenced_ledger_only_shrinks(self):
+        """A logged finding must still BE one. When the query is fixed, fenced or deleted, this
+        fails with "remove me" — so the ledger can never quietly outlive the problem it records,
+        and can never be padded with lines that are no longer offences."""
+        live = {(name, text) for name, _line, _tok, text in self._offences()}
+        stale = []
+        for name, entries in self.KNOWN_UNFENCED.items():
+            for text in entries:
+                if (name, text) not in live:
+                    stale.append(f'{name}: {text}')
+        self.assertEqual(
+            stale, [],
+            'KNOWN_UNFENCED entries that are no longer unfenced offences — remove them '
+            '(and say so in the technical-debt register):\n' + '\n'.join(stale))
+
+    def test_the_sponsor_vocabulary_is_actually_looking_at_something(self):
+        """The sponsor half's own floor. `SPONSOR_WATCHED` names helper functions rather than
+        managers, so a rename in `pool.py` would leave the tokens matching nothing and the
+        sponsor scan silently green. Both names must still be real, exported helpers."""
+        from apps.scholarship import pool
+        for token in self.SPONSOR_WATCHED:
+            self.assertTrue(
+                callable(getattr(pool, token.rstrip('('), None)),
+                f'SPONSOR_WATCHED names `{token}`, which is no longer a helper in pool.py — '
+                f'the sponsor half of this guard is now watching nothing.')
+        for fence in self.SPONSOR_FENCES:
+            self.assertTrue(
+                callable(getattr(pool, fence.rstrip('('), None)),
+                f'SPONSOR_FENCES names `{fence}`, which is no longer a helper in pool.py.')
+
+
+# ── The scanner itself, proven against a throwaway tree (code health H3) ──────────────
+#
+# H11 turns `views_admin.py` into `views_admin/`. The danger is not that the guard errors —
+# that would be loud — but that it goes quiet: a scan that names a file which no longer
+# exists, or that stops at the package's `__init__.py`, is green and protects nothing. These
+# two tests exercise `scan_targets` / `find_offences` on a tiny fake app so the package
+# behaviour is proven WITHOUT depending on the real tree ever being split.
+
+_PRAGMA_FREE = (
+    'class AdminThingView(_AdminBase):\n'
+    '    def get(self, request):\n'
+    '        return ScholarshipApplication.objects.all()\n'
+)
+_PRAGMA_ED = (
+    'class AdminThingView(_AdminBase):\n'
+    '    def get(self, request):\n'
+    '        # org-fence: scoped through _org_scoped, see the base gate.\n'
+    '        return ScholarshipApplication.objects.all()\n'
+)
+
+
+def _fake_package(root, **files):
+    pkg = root / 'views_admin'
+    (pkg / 'nested').mkdir(parents=True)
+    (pkg / '__init__.py').write_text('from .requests import *  # noqa\n', encoding='utf-8')
+    for name, body in files.items():
+        (pkg / name.replace('/', os.sep)).write_text(body, encoding='utf-8')
+    return pkg
+
+
+def test_a_package_submodule_is_scanned_like_a_file(tmp_path):
+    """THE H11 PROOF, and it is the only one that matters: a watched query with NO pragma,
+    sitting in a submodule the guard has never heard of, must still be caught."""
+    _fake_package(tmp_path, **{'requests.py': _PRAGMA_ED,
+                               'nested/invoices.py': _PRAGMA_FREE})
+
+    found = list(find_offences(str(tmp_path), ('views_admin',),
+                               ('ScholarshipApplication.objects',),
+                               pragmas=('org-fence:',)))
+
+    # The pragma-ed submodule is silent; the pragma-free one two levels down is not.
+    assert [(name, tok) for name, _line, tok, _text in found] == [
+        ('views_admin/nested/invoices.py', 'ScholarshipApplication.objects')]
+    # …and it is reported at the real line, in the real submodule, not at the package root.
+    assert found[0][1] == 3
+
+
+def test_scan_targets_reads_a_file_and_a_package_the_same_way(tmp_path):
+    """Today's behaviour must not move: a filename entry still resolves to exactly that one
+    file, and a missing entry still resolves to nothing (which the floor test turns red)."""
+    (tmp_path / 'views_admin.py').write_text(_PRAGMA_ED, encoding='utf-8')
+    assert [os.path.basename(p) for p in scan_targets(str(tmp_path), 'views_admin.py')] \
+        == ['views_admin.py']
+    assert scan_targets(str(tmp_path), 'not_here.py') == []
+
+    _fake_package(tmp_path, **{'requests.py': _PRAGMA_ED, 'nested/invoices.py': _PRAGMA_ED})
+    names = [os.path.relpath(p, str(tmp_path)).replace(os.sep, '/')
+             for p in scan_targets(str(tmp_path), 'views_admin')]
+    assert names == ['views_admin/__init__.py', 'views_admin/nested/invoices.py',
+                     'views_admin/requests.py']

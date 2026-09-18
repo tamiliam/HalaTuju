@@ -299,6 +299,9 @@ class SponsorPoolCountView(APIView):
     def get(self, request):
         if not getattr(settings, 'SPONSOR_POOL_ENABLED', False):
             return Response({'count': 0, 'enabled': False})
+        # TD-240. The one pool read in this file with nothing to narrow to: the caller is
+        # ANONYMOUS (a public marketing page), so there is no sponsor and no membership.
+        # sponsor-fence: none — platform-wide COUNT only, never a row and never an id.
         count = pool.eligible_pool_queryset(ScholarshipApplication).count()
         return Response({'count': count, 'enabled': True})
 
