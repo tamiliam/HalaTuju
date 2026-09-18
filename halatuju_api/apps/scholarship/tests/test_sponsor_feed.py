@@ -12,13 +12,13 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
+from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import in_programme
 from apps.scholarship import sponsor_feed
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Consent, Donation, GraduationMessage, ScholarshipApplication, ScholarshipCohort,
-    Sponsor, SponsorProfile,
+    Consent, Donation, GraduationMessage, Programme, ScholarshipApplication,
+    ScholarshipCohort, Sponsor, SponsorProfile,
 )
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -51,6 +51,15 @@ def _sponsor(uid='spon-1', status='approved'):
         phone='0123', source='friend', consent_at=timezone.now(), status=status)
 
 
+def _gift():
+    """TD-258: an application that belongs to no gift can never be funded, and money is
+    restricted to the gift it was given to — so the cohort and the donation name this one."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='sf-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='sf-gift', defaults={'name_en': 'Feed Gift'})
+    return programme
+
+
 def _fund_accept(sponsor, app):
     svc.fund_student(sponsor, app)
     return svc.respond_to_award(app, action='accept')
@@ -59,11 +68,12 @@ def _fund_accept(sponsor, app):
 class TestSponsorActivityService(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_activity_collects_lifecycle_events_newest_first(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('10000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('10000'), programme=_gift())
         app = _fundable_app(self.cohort)
         _fund_accept(s, app)                                            # funded + accepted
         in_programme.record_semester_result(app, semester='1', cgpa=Decimal('3.5'))   # semester
@@ -91,11 +101,12 @@ class TestSponsorActivityService(TestCase):
 class TestCommunityStats(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_community_counts(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         _fund_accept(s, app)                       # one active sponsorship → 1 supported
         _fundable_app(self.cohort, suffix='wait')  # a second student stays in the pool
@@ -110,7 +121,8 @@ class TestCommunityStats(TestCase):
 class TestSponsorFeedEndpoints(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
         _sponsor('spon-ok')
         _sponsor('spon-pending', status='pending')
 

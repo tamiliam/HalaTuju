@@ -592,6 +592,15 @@ def fund_student(sponsor, application):
     when the agreement binds — so a fresh offer has a NULL deadline and can never lapse until a
     student has actually been invited to sign. The old offer+14d semantics are dead.
     Raises SponsorshipError on a bad state."""
+    # ⚠ THE NULL BUCKET IS NOT A WALLET (TD-258). `sponsor_balance(sponsor, None)` scopes to
+    # the NULL programme so bare fixtures self-partition — a safe partition that becomes a
+    # back door the moment something can SPEND from it, because a NULL-programme application
+    # matches a NULL-programme donation exactly (which is what the mock donation minted). So
+    # an application belonging to no gift can never be bought. Refused HERE, the single spend
+    # choke point (`award_and_notify`, standing gifts and the admin batch all arrive through
+    # this function), BEFORE any arithmetic, so the NULL wallet is never even consulted.
+    if application.programme_id is None:
+        raise SponsorshipError('programme_required')
     if not is_fundable(application):
         raise SponsorshipError('not_fundable')
     amount = application.award_amount

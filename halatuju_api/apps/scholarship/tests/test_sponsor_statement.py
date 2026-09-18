@@ -10,10 +10,10 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
+from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Consent, Donation, ScholarshipApplication, ScholarshipCohort,
+    Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort,
     Sponsor, SponsorProfile,
 )
 
@@ -26,6 +26,15 @@ def _token(uid, email='x@x.com'):
         {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated',
          'email': email, 'is_anonymous': False},
         TEST_JWT_SECRET, algorithm='HS256')
+
+
+def _gift():
+    """TD-258: an application that belongs to no gift can never be funded, and money is
+    restricted to the gift it was given to — so the cohort and the donations name this one."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='ss-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='ss-gift', defaults={'name_en': 'Statement Gift'})
+    return programme
 
 
 def _fundable_app(cohort, *, suffix='1', award=Decimal('3000')):
@@ -50,12 +59,15 @@ def _sponsor(uid='spon-1', status='approved'):
 class TestSponsorStatementService(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_statement_two_ledgers(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('5000'), reference='DN-1')
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'), reference='DN-2')
+        Donation.objects.create(sponsor=s, amount=Decimal('5000'), reference='DN-1',
+                                programme=_gift())
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), reference='DN-2',
+                                programme=_gift())
         app = _fundable_app(self.cohort, award=Decimal('2500'))
         svc.fund_student(s, app)
         svc.respond_to_award(app, action='accept')   # → active gift of 2500
@@ -83,7 +95,8 @@ class TestSponsorStatementService(TestCase):
 class TestSponsorStatementEndpoint(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
         _sponsor('spon-ok')
         _sponsor('spon-pending', status='pending')
 

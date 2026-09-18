@@ -12,16 +12,27 @@ from decimal import Decimal
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.courses.models import StudentProfile
+from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import disbursement
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Consent, Donation, ScholarshipApplication, ScholarshipCohort, Sponsor, SponsorProfile,
+    Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
+    SponsorProfile,
 )
 
 
+def _gift():
+    """TD-258: an application that belongs to no gift can never be funded, and money is
+    restricted to the gift it was given to — so the cohort and the donation name this one."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='lc-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='lc-gift', defaults={'name_en': 'Lifecycle Gift'})
+    return programme
+
+
 def _cohort():
-    return ScholarshipCohort.objects.create(code='lc', name='B40', year=2026)
+    return ScholarshipCohort.objects.create(code='lc', name='B40', year=2026,
+                                            programme=_gift())
 
 
 def _app(cohort, status='recommended', suffix='1'):
@@ -41,7 +52,7 @@ def _sponsor(uid='lc-spon', balance=Decimal('3000')):
         supabase_user_id=uid, name='Jane', email='jane@sponsor.example', phone='0123',
         source='friend', consent_at=timezone.now(), status='approved')
     if balance:
-        Donation.objects.create(sponsor=s, amount=balance)
+        Donation.objects.create(sponsor=s, amount=balance, programme=_gift())
     return s
 
 

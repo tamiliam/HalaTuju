@@ -12,11 +12,11 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
+from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import in_programme
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Consent, Donation, ScholarshipApplication, ScholarshipCohort,
+    Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort,
     Sponsor, SponsorProfile,
 )
 from apps.scholarship.serializers import SponsorSponsorshipSerializer
@@ -30,6 +30,15 @@ def _token(uid, email='x@x.com'):
         {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated',
          'email': email, 'is_anonymous': False},
         TEST_JWT_SECRET, algorithm='HS256')
+
+
+def _gift():
+    """TD-258: an application that belongs to no gift can never be funded, and money is
+    restricted to the gift it was given to — so the cohort and the donation name this one."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='si-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='si-gift', defaults={'name_en': 'Impact Gift'})
+    return programme
 
 
 def _fundable_app(cohort, *, suffix='1', award=Decimal('3000')):
@@ -59,11 +68,12 @@ def _fund_accept(sponsor, app):
 class TestSponsorImpactService(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_impact_aggregates_committed_completed_and_semesters(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('10000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('10000'), programme=_gift())
         # Student A — ongoing, two semesters recorded.
         a = _fundable_app(self.cohort, suffix='a', award=Decimal('2500'))
         _fund_accept(s, a)
@@ -97,11 +107,12 @@ class TestSponsorImpactService(TestCase):
 class TestSponsorshipSerializerJourney(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_serializer_carries_onboarded_and_semesters_no_leak(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         sp = _fund_accept(s, app)
         in_programme.record_semester_result(app, semester='1', cgpa=Decimal('3.0'))
@@ -117,7 +128,8 @@ class TestSponsorshipSerializerJourney(TestCase):
 class TestSponsorImpactEndpoint(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
         _sponsor('spon-ok')
         _sponsor('spon-pending', status='pending')
 

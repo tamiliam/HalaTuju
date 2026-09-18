@@ -127,8 +127,8 @@ class Command(BaseCommand):
         from apps.scholarship import bursary, contracts
         from apps.scholarship import sponsorship as svc
         from apps.scholarship.models import (
-            ApplicantDocument, ContractTemplate, ScholarshipApplication, ScholarshipCohort,
-            Sponsor, SponsorProfile, Donation, Consent,
+            ApplicantDocument, ContractTemplate, Programme, ScholarshipApplication,
+            ScholarshipCohort, Sponsor, SponsorProfile, Donation, Consent,
         )
 
         guar_name, guar_nric, guar_phone = 'Rahmah Binti Ahmad', '700101-10-5555', '013-1112222'
@@ -140,7 +140,11 @@ class Command(BaseCommand):
         owner_org = PartnerOrganisation.objects.create(
             code='e2e-owner', name='E2E Owner Org', contact_email='owner@example.test')
         cohort.owning_organisation = owner_org
-        cohort.save(update_fields=['owning_organisation'])
+        # TD-258: a student who belongs to no GIFT can never be funded, so the walk names
+        # one — the application copies it in save(), like the organisation above.
+        cohort.programme = Programme.objects.create(
+            organisation=owner_org, code='e2e-gift', name_en='E2E Gift')
+        cohort.save(update_fields=['owning_organisation', 'programme'])
         template = self._seed_and_deploy_template(owner_org, contracts, ContractTemplate)
 
         org = None
@@ -172,7 +176,9 @@ class Command(BaseCommand):
         sponsor = Sponsor.objects.create(
             supabase_user_id='e2e-spon', name='Anon Sponsor', email='spon@example.test',
             phone='0123', source='friend', consent_at=timezone.now(), status='approved')
-        Donation.objects.create(sponsor=sponsor, amount=Decimal('3000'))
+        # Money is restricted to the gift it was given to, so the credit names the student's.
+        Donation.objects.create(sponsor=sponsor, amount=Decimal('3000'),
+                                programme=app.programme)
         svc.fund_student(sponsor, app)
         app.refresh_from_db()
         self._check(app.status == 'awarded', f"application funded -> status '{app.status}'")

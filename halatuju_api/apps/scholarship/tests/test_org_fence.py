@@ -666,25 +666,15 @@ class TestOrgFenceStaticGuard(TestCase):
     #: decided was fine (that is what a pragma is for). Keyed on the stripped source line, so
     #: it survives the line moving but not the line changing. `test_the_unfenced_ledger_only_shrinks`
     #: fails the moment an entry is fixed or fenced, with "remove me".
-    KNOWN_UNFENCED = {
-        'views_sponsor.py': {
-            'app = ScholarshipApplication.objects.filter(id=pk).first()':
-                'RAISED BY THE TD-240 AUDIT, code health H3 (2026-09-18) — NOT triaged, NOT '
-                'fixed, and deliberately NOT pragma-ed. `SponsorFundView.post` reads an '
-                'application by bare id, so it does NOT pass through `pool.for_sponsor` — the '
-                'module that owns that helper calls it "**the ONE seam** for per-programme pool '
-                'visibility ... every sponsor-facing read of the pool goes through here", and '
-                'this one does not. What stops a cross-gift AWARD today is arithmetic, not the '
-                'fence: `fund_student` refuses unless `sponsor_balance(sponsor, '
-                'application.programme)` covers the amount. What is NOT stopped is the '
-                'existence/state oracle the sibling detail view exists to prevent — 404 vs '
-                '`not_fundable` vs `insufficient_balance` distinguishes, for ANY application id '
-                'on the platform, "no such row" from "a row" from "a fundable student", across '
-                'every tenant and every gift. Fixing it is a one-line change to a MONEY path, so '
-                'it belongs to the owner and to a sprint of its own, not to a guard sprint. See '
-                'the H3 report.',
-        },
-    }
+    #:
+    #: EMPTY since TD-258 was fixed (2026-09-18). Its single entry was
+    #: `SponsorFundView.post` reading an application by bare id; that view now resolves
+    #: through `pool.for_sponsor(pool.display_pool_queryset(...), sponsor)` like its
+    #: sibling, so the line is no longer an offence and the ledger no longer records one.
+    #: Kept, not deleted: the MECHANISM is the point — the next unfenced query somebody
+    #: consciously leaves alone needs somewhere to say so out loud, and
+    #: `test_the_unfenced_ledger_only_shrinks` is what stops that note outliving the problem.
+    KNOWN_UNFENCED = {}
 
     def _scan(self, entry):
         """(display name, source) for every file an entry names."""

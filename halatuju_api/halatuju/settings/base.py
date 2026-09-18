@@ -162,6 +162,23 @@ COURSE_REFRESH_REMINDER_EMAIL = os.environ.get('COURSE_REFRESH_REMINDER_EMAIL', 
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.
 SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# TD-258: the MOCK self-service donation endpoint (POST /api/v1/sponsor/wallet/donate/).
+# It mints a CONFIRMED, programme-less credit out of nothing, so on real data it is
+# self-minted spendable balance. DEFAULT OFF, and **NEVER to be set in production** — the
+# real money-in path there is the admin wallet credit (sponsorship.record_admin_credit)
+# and its maker/approver sign-off chain. While off the endpoint answers 404 exactly like a
+# route that does not exist for that caller.
+_SPONSOR_MOCK_DONATIONS_REQUESTED = (
+    os.environ.get('SPONSOR_MOCK_DONATIONS_ENABLED', '').lower() in ('1', 'true', 'yes'))
+# ⚠ GATED ON A PRODUCTION SIGNAL, NEVER ON `not DEBUG` (the project rule, learned from
+# Thulivellam): a managed database URL is what says "this talks to real money", and a
+# DEBUG=True process pointed at Supabase is exactly the case `not DEBUG` would wave
+# through. So the env var can only ARM the mock; a real database still refuses it.
+_TALKS_TO_A_MANAGED_DATABASE = bool(
+    os.environ.get('DATABASE_URL') or os.environ.get('DB_HOST'))
+SPONSOR_MOCK_DONATIONS_ENABLED = (
+    _SPONSOR_MOCK_DONATIONS_REQUESTED and not _TALKS_TO_A_MANAGED_DATABASE)
+
 # WhatsApp outbound comms (Twilio). DARK by default: every send is a no-op unless
 # WHATSAPP_ENABLED is true AND the three Twilio creds are set (the billable-API
 # "ship disabled first" rule). The sandbox sender is 'whatsapp:+14155238886'.

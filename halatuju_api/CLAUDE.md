@@ -106,6 +106,12 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
   account with it (`AdminInviteView` / `AdminResendView`). Without it, partner onboarding 500s.
 - `GEMINI_API_KEY` — Google Gemini API key for AI report generation (primary)
 - `OPENAI_API_KEY` — OpenAI API key for report generation (fallback when all Gemini models fail)
+- `SPONSOR_MOCK_DONATIONS_ENABLED` — **default OFF — NEVER set in production** (TD-258). Gates the
+  MOCK sponsor donation endpoint (`POST /api/v1/sponsor/wallet/donate/`), which mints a confirmed,
+  programme-less balance out of nothing. Off → the route answers 404 like a route that is not there.
+  The real money-in path in production is the admin wallet credit (`record_admin_credit`) and its
+  sign-off chain. Setting it has no effect where `DATABASE_URL`/`DB_HOST` is configured — it refuses
+  to arm against a managed database.
 
 **Frontend (halatuju-web)**:
 - `NEXT_PUBLIC_API_URL` — Backend API URL
@@ -600,7 +606,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). ⚠ H3 FOUND TD-258 (HIGH, security): `SponsorFundView` reads outside `pool.for_sponsor` and the MOCK `SponsorDonateView` is live in production - reported, NOT patched, awaiting the owner's word. H4 (standards as tests in the gate) is next.**
+- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. H4 (standards as tests in the gate) is next.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

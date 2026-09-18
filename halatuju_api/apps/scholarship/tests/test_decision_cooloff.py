@@ -8,16 +8,27 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import services
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Consent, Donation, ScholarshipApplication, ScholarshipCohort, Sponsor, SponsorProfile,
+    Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
+    SponsorProfile,
 )
 
 
+def _gift():
+    """TD-258: an application that belongs to no gift can never be funded, and money is
+    restricted to the gift it was given to — so the cohort and the donation name this one."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='cd-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='cd-gift', defaults={'name_en': 'Cool-off Gift'})
+    return programme
+
+
 def _cohort():
-    return ScholarshipCohort.objects.create(code='c', name='B40 Programme', year=2026)
+    return ScholarshipCohort.objects.create(code='c', name='B40 Programme', year=2026,
+                                            programme=_gift())
 
 
 @override_settings(DECLINE_COOLOFF_DAYS=7)
@@ -203,7 +214,7 @@ class TestAwardCooloff(TestCase):
         s = Sponsor.objects.create(
             supabase_user_id=f'sp{n}', name='Jane', email=f'j{n}@x.com',
             phone='0123', source='friend', consent_at=timezone.now(), status='approved')
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         svc.fund_student(s, app)            # → 'offered'
         return app, s
 
@@ -216,7 +227,7 @@ class TestAwardCooloff(TestCase):
         self.assertEqual(app.status, 'awarded')                 # still 'awarded' — not finalised to 'active' yet
         self.assertIsNotNone(app.award_due_at)
         self.assertEqual(len(mail.outbox), n)                   # no confirmed email yet
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))  # held
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))  # held
 
     def test_hold_reverts_acceptance_and_frees_money(self):
         app, s = self._offered_app()
@@ -225,7 +236,7 @@ class TestAwardCooloff(TestCase):
         app.refresh_from_db()
         self.assertIsNone(app.award_due_at)
         self.assertEqual(app.status, 'recommended')
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))   # returned to sponsor
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))   # returned to sponsor
         self.assertFalse(app.sponsorships.filter(status='active').exists())
 
     def test_release_after_due_confirms_and_emails(self):

@@ -29,7 +29,8 @@ from apps.scholarship import bursary, payments
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     BursaryAgreement, Consent, Disbursement, Donation, PaymentRun, PaymentRunItem,
-    ScholarshipApplication, ScholarshipCohort, Sponsor, Sponsorship, SponsorProfile,
+    Programme, ScholarshipApplication, ScholarshipCohort, Sponsor, Sponsorship,
+    SponsorProfile,
 )
 from apps.scholarship.tests.contract_helpers import brightpath_org
 
@@ -37,9 +38,21 @@ TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 ADULT_NRIC = '000101-10-1233'
 
 
+def _gift():
+    """THE gift these fixtures fund into. TD-258 refuses to fund an application that
+    belongs to no gift (the NULL programme bucket is not a wallet), and money is restricted
+    to the gift it was given to — so the cohort and the donation must name the same one.
+    Every cohort here hangs off `brightpath_org()`; idempotent within a test."""
+    programme, _ = Programme.objects.get_or_create(
+        organisation=brightpath_org(), code='gl-gift',
+        defaults={'name_en': 'Go-live Gift'})
+    return programme
+
+
 def _cohort(org, suffix='t1'):
     return ScholarshipCohort.objects.create(
-        code=f'gl-{suffix}', name='B40', year=2026, owning_organisation=org)
+        code=f'gl-{suffix}', name='B40', year=2026, owning_organisation=org,
+        programme=_gift())
 
 
 def _fundable_app(cohort, *, suffix='1', award=Decimal('3000'), referred=None):
@@ -59,7 +72,7 @@ def _sponsor(uid='gl-spon', amount='9000'):
     s = Sponsor.objects.create(
         supabase_user_id=uid, name='Jane', email='jane@sponsor.example', phone='0123',
         source='friend', consent_at=timezone.now(), status='approved')
-    Donation.objects.create(sponsor=s, amount=Decimal(amount))
+    Donation.objects.create(sponsor=s, amount=Decimal(amount), programme=_gift())
     return s
 
 

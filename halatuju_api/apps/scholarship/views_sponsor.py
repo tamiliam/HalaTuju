@@ -522,8 +522,20 @@ class SponsorGraduationMessagesView(_PoolBase):
 class SponsorDonateView(_PoolBase):
     """POST /api/v1/sponsor/wallet/donate/ {amount} — **MOCK** donation (dev/dummy
     only; the real toyyibPay integration is a later, gated step). A donation is
-    final and credits the sponsor's balance."""
+    final and credits the sponsor's balance.
+
+    ⚠ **GATED OFF BY DEFAULT (TD-258, 2026-09-18) AND NEVER TO BE SWITCHED ON IN
+    PRODUCTION.** This endpoint mints a CONFIRMED, programme-less credit out of nothing —
+    self-minted spendable balance — which is fine on dummy data and is real money's shape
+    everywhere else. The real money-in path in production is the admin wallet credit
+    (`sponsorship.record_admin_credit` → the maker/approver sign-off chain), never this.
+
+    The flag is checked BEFORE `_gate`, and the refusal is `_gate`'s own hidden-feature
+    answer — 404 `pool_not_available` — so a caller cannot tell a switched-off mock from a
+    route that was never wired. Naming the mock in the error would advertise it."""
     def post(self, request):
+        if not getattr(settings, 'SPONSOR_MOCK_DONATIONS_ENABLED', False):
+            return Response({'error': 'pool_not_available'}, status=status.HTTP_404_NOT_FOUND)
         sponsor, err = self._gate(request)
         if err:
             return err
@@ -540,12 +552,33 @@ class SponsorDonateView(_PoolBase):
 
 class SponsorFundView(_PoolBase):
     """POST /api/v1/sponsor/pool/<pk>/fund/ — fund a student IN FULL for their
-    admin-set award amount → an 'offered' award (1:1, full-or-nothing for now)."""
+    admin-set award amount → an 'offered' award (1:1, full-or-nothing for now).
+
+    **THE RULE (TD-258, 2026-09-18): the fence decides what is VISIBLE, the service decides
+    what is FUNDABLE.** Everything the sponsor may not SEE is ONE answer — 404 `not_found`
+    — so an id that holds no row, an id in a gift they were never accepted into, and an id
+    that exists but is not in the pool are INDISTINGUISHABLE. Until today this view fetched
+    the application straight off the model manager by bare id, and so told those three
+    apart — an existence-and-state oracle over every tenant's students.
+
+    ⚠ It resolves through the **DISPLAY** pool, the same seam and the same set as its
+    sibling `SponsorPoolDetailView` — deliberately NOT the stricter fundable set. What a
+    sponsor can act on must be exactly what they can see: a just-funded grace-window card
+    is on their screen as a full-bar "Sponsored" card, so answering `not_fundable` for it
+    tells them nothing the card did not, while a 404 would claim a student they are
+    looking at does not exist. Fundability stays where it belongs, in
+    `award_and_notify` → `fund_student` → `is_fundable`.
+
+    Distinctions therefore survive only INSIDE the visible pool, where they are useful and
+    leak nothing: `insufficient_balance` is news about the caller's own wallet, and
+    `not_fundable` is news about a card whose state they can already read."""
     def post(self, request, pk):
         sponsor, err = self._gate(request)
         if err:
             return err
-        app = ScholarshipApplication.objects.filter(id=pk).first()
+        app = pool.for_sponsor(
+            pool.display_pool_queryset(ScholarshipApplication), sponsor,
+        ).filter(id=pk).first()
         if app is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         try:

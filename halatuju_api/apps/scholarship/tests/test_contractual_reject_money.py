@@ -15,20 +15,31 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import services
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Consent, Donation, ScholarshipApplication, ScholarshipCohort, Sponsor, SponsorProfile,
-    Sponsorship,
+    Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
+    SponsorProfile, Sponsorship,
 )
+
+
+def _gift():
+    """TD-258: an application that belongs to no gift can never be funded, and money is
+    restricted to the gift it was given to — so the cohort, the donation and the balance
+    assertions all name this one."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='crm-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='crm-gift', defaults={'name_en': 'Reject Gift'})
+    return programme
 
 
 @override_settings(DECLINE_COOLOFF_DAYS=7)
 class TestContractualRejectLapsesSponsorship(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
         cls.admin = PartnerAdmin.objects.create(
             supabase_user_id='crm-admin', role='super', is_super_admin=True,
             is_active=True, name='A', email='admin@x.com')
@@ -47,7 +58,7 @@ class TestContractualRejectLapsesSponsorship(TestCase):
         s = Sponsor.objects.create(
             supabase_user_id=f'crmsp{n}', name='Jane', email=f'crmj{n}@x.com',
             phone='0123', source='friend', consent_at=timezone.now(), status='approved')
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         svc.fund_student(s, app)                                  # → 'awarded', 'offered' row
         svc.respond_to_award(app, action='accept')                # sponsorship → 'active'
         ScholarshipApplication.objects.filter(pk=app.pk).update(
@@ -57,12 +68,12 @@ class TestContractualRejectLapsesSponsorship(TestCase):
 
     def test_contractual_reject_lapses_and_returns_balance(self):
         app, s = self._funded_app()
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))    # money held
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))    # money held
         services.admin_reject(app, self.admin, 'contractual')
         app.refresh_from_db()
         self.assertEqual(app.status, 'rejected')
         self.assertFalse(app.sponsorships.filter(status__in=Sponsorship.HOLDING).exists())
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))  # returned to the sponsor
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))  # returned to the sponsor
 
     def test_cancel_reinstates_sponsorship_and_funded_status(self):
         app, s = self._funded_app()
@@ -71,7 +82,7 @@ class TestContractualRejectLapsesSponsorship(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'active')                     # snapshot restore (S1)
         self.assertTrue(app.sponsorships.filter(status='active').exists())
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))     # held again
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))     # held again
 
     def test_cancel_without_covering_balance_leaves_lapsed(self):
         app, s = self._funded_app()

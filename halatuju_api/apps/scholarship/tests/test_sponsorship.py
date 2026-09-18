@@ -14,13 +14,13 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import sponsorship as svc
 from apps.scholarship import services
 from apps.scholarship import pool
 from apps.scholarship.models import (
-    Consent, Donation, OnboardingResponse, ScholarshipApplication, ScholarshipCohort,
-    Sponsor, Sponsorship, SponsorProfile,
+    Consent, Donation, OnboardingResponse, Programme, ScholarshipApplication,
+    ScholarshipCohort, Sponsor, SponsorProgrammeMembership, Sponsorship, SponsorProfile,
 )
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -48,10 +48,29 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'))
     return app
 
 
+def _gift():
+    """THE gift every fixture in this module belongs to.
+
+    TD-258 (2026-09-18): an application that belongs to NO gift can never be funded — the
+    NULL programme bucket partitions bare fixtures, it is not a wallet — and the sponsor
+    FUND endpoint now resolves the student through `pool.for_sponsor`, which shows a
+    sponsor only the gifts they were ACCEPTED into. So these fixtures name a gift, give
+    their money to it, and are accepted into it. Idempotent within a test."""
+    org, _ = PartnerOrganisation.objects.get_or_create(code='sp-org', defaults={'name': 'Org'})
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='sp-gift', defaults={'name_en': 'Sponsorship Gift'})
+    return programme
+
+
 def _sponsor(uid='spon-1', status='approved'):
-    return Sponsor.objects.create(
+    sponsor = Sponsor.objects.create(
         supabase_user_id=uid, name='Jane Sponsor', email='jane@sponsor.example',
         phone='0123', source='friend', consent_at=timezone.now(), status=status)
+    # Accepted into the one gift (the second gate, separate from account vetting) — a
+    # pending account is NOT, exactly as `set_programme_membership` requires.
+    SponsorProgrammeMembership.objects.create(
+        sponsor=sponsor, programme=_gift(), status=status)
+    return sponsor
 
 
 # ─── service layer ───────────────────────────────────────────────────────────
@@ -59,20 +78,21 @@ def _sponsor(uid='spon-1', status='approved'):
 class TestSponsorshipService(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_balance_donations_minus_holding(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('1000'))
-        Donation.objects.create(sponsor=s, amount=Decimal('2000'))
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('1000'), programme=_gift())
+        Donation.objects.create(sponsor=s, amount=Decimal('2000'), programme=_gift())
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)                       # allocates 3000
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))
 
     def test_fund_insufficient_balance(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('1000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('1000'), programme=_gift())
         app = _fundable_app(self.cohort)               # award 3000
         with self.assertRaises(svc.SponsorshipError) as e:
             svc.fund_student(s, app)
@@ -80,7 +100,7 @@ class TestSponsorshipService(TestCase):
 
     def test_not_fundable_without_award_amount(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('5000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('5000'), programme=_gift())
         app = _fundable_app(self.cohort, award=None)
         ScholarshipApplication.objects.filter(id=app.id).update(award_amount=None)
         app.refresh_from_db()
@@ -90,7 +110,7 @@ class TestSponsorshipService(TestCase):
 
     def test_accept_adult_activates_and_sponsors(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)
         sp = svc.respond_to_award(app, action='accept')
@@ -104,7 +124,7 @@ class TestSponsorshipService(TestCase):
 
     def test_accept_minor_requires_guardian(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort, suffix='m', nric=MINOR_NRIC)
         svc.fund_student(s, app)
         with self.assertRaises(svc.SponsorshipError) as e:
@@ -116,19 +136,19 @@ class TestSponsorshipService(TestCase):
 
     def test_decline_frees_balance(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))
         svc.respond_to_award(app, action='decline')
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))  # returned to balance
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))  # returned to balance
 
     def test_cancel_offer_in_cooloff_reverts_to_pool(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         sp = svc.fund_student(s, app)                   # → 'awarded', balance held
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))
         svc.cancel_offer(s, sp.id)                      # withdrawn before the email went out
         sp.refresh_from_db()
         app.refresh_from_db()
@@ -137,11 +157,11 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(app.status, 'recommended')     # back in the pool…
         self.assertTrue(pool.is_pool_eligible(app))
         self.assertTrue(svc.is_fundable(app))           # …and another sponsor may fund them
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))   # amount freed
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))   # amount freed
 
     def test_cancel_offer_refused_once_student_emailed(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         sp = svc.fund_student(s, app)
         Sponsorship.objects.filter(id=sp.id).update(offer_emailed_at=timezone.now())
@@ -155,7 +175,7 @@ class TestSponsorshipService(TestCase):
 
     def test_cancel_offer_not_another_sponsors(self):
         s, other = _sponsor(), _sponsor(uid='spon-2')
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         sp = svc.fund_student(s, app)
         with self.assertRaises(svc.SponsorshipError) as e:
@@ -164,7 +184,7 @@ class TestSponsorshipService(TestCase):
 
     def test_lapse_expired_offer(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         sp = svc.fund_student(s, app)
         # fund_student no longer arms the clock — arm it explicitly (as the sign-invitation would),
@@ -173,13 +193,13 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(svc.lapse_expired_offers(), {'lapsed': 1, 'flagged': []})
         sp.refresh_from_db()
         self.assertEqual(sp.status, 'lapsed')
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))
 
     def test_fund_student_does_not_arm_deadline(self):
         # Offer-lapse rework: a fresh offer has a NULL accept_deadline (no clock until the
         # sign-invitation arms it), so it is never a lapse candidate.
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         sp = svc.fund_student(s, _fundable_app(self.cohort))
         self.assertIsNone(sp.accept_deadline)
         self.assertEqual(svc.lapse_expired_offers(), {'lapsed': 0, 'flagged': []})
@@ -190,7 +210,7 @@ class TestSponsorshipService(TestCase):
     def test_accept_emails_award_confirmed_without_sponsor_identity(self):
         from django.core import mail
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)
         mail.outbox = []
@@ -204,7 +224,7 @@ class TestSponsorshipService(TestCase):
 
     def test_complete_onboarding_records_consent_and_stamps(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)
         svc.respond_to_award(app, action='accept')          # → status 'sponsored'
@@ -235,7 +255,8 @@ class TestSponsorshipService(TestCase):
 class TestSponsorEndpoints(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
         cls.app = _fundable_app(cls.cohort)
         _sponsor('spon-ok')
         _sponsor('spon-pending', status='pending')
@@ -246,12 +267,22 @@ class TestSponsorEndpoints(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
 
+    def _credit(self, uid='spon-ok', amount='5000'):
+        """Put spendable money in the sponsor's wallet FOR THIS GIFT.
+
+        Was a call to the mock donation endpoint until TD-258 (2026-09-18). That endpoint
+        is gated off by default now, and what it mints lands in the NULL programme bucket,
+        which is nobody's wallet — so a fixture that needs a balance credits the gift
+        directly, exactly as the real (admin-recorded) money-in path does. The mock's own
+        on/off behaviour is covered in test_td258_sponsor_money_fence.py."""
+        sponsor = Sponsor.objects.get(supabase_user_id=uid)
+        return Donation.objects.create(sponsor=sponsor, amount=Decimal(amount),
+                                       programme=_gift())
+
     @override_settings(SPONSOR_POOL_ENABLED=True)
-    def test_donate_then_fund_then_my_sponsorships(self):
+    def test_fund_then_wallet_then_my_sponsorships(self):
         self._auth('spon-ok')
-        d = self.client.post('/api/v1/sponsor/wallet/donate/', {'amount': '5000'}, format='json')
-        self.assertEqual(d.status_code, 201, d.content)
-        self.assertEqual(Decimal(d.json()['balance']), Decimal('5000'))
+        self._credit()
         f = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json')
         self.assertEqual(f.status_code, 201, f.content)
         self.assertEqual(f.json()['status'], 'offered')
@@ -265,7 +296,7 @@ class TestSponsorEndpoints(TestCase):
     @override_settings(SPONSOR_POOL_ENABLED=True)
     def test_cancel_offer_endpoint_cooloff_then_refused(self):
         self._auth('spon-ok')
-        self.client.post('/api/v1/sponsor/wallet/donate/', {'amount': '5000'}, format='json')
+        self._credit()
         sp_id = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json').json()['id']
         c = self.client.post(f'/api/v1/sponsor/sponsorships/{sp_id}/cancel/', {}, format='json')
         self.assertEqual(c.status_code, 200, c.content)
@@ -302,7 +333,7 @@ class TestSponsorEndpoints(TestCase):
 
     def test_onboarding_complete_endpoint(self):
         s = Sponsor.objects.get(supabase_user_id='spon-ok')
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         svc.fund_student(s, self.app)
         svc.respond_to_award(self.app, action='accept')   # → 'sponsored'
         self._auth('stu-1')                               # the student owns the app (profile pk == uid)
@@ -331,13 +362,14 @@ class TestSponsorEndpoints(TestCase):
 class TestStudentAward(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def setUp(self):
         self.client = APIClient()
         self.app = _fundable_app(self.cohort)
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         svc.fund_student(s, self.app)
         self.uid = self.app.profile.supabase_user_id
 
@@ -374,7 +406,8 @@ class TestStudentAward(TestCase):
 class TestAdminSponsorship(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
         PartnerAdmin.objects.create(supabase_user_id='rev', role='reviewer', is_active=True, name='Rev', email='r@x.com')
         PartnerAdmin.objects.create(supabase_user_id='vie', role='admin', is_active=True, name='Vie', email='v@x.com')
         PartnerAdmin.objects.create(supabase_user_id='sup', role='super', is_active=True, name='Sup', email='s@x.com', is_super_admin=True)
@@ -419,7 +452,7 @@ class TestAdminSponsorship(TestCase):
 
     def test_oversight_sees_both_sides(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         ScholarshipApplication.objects.filter(id=self.app.id).update(award_amount=Decimal('3000'))
         self.app.refresh_from_db()
         svc.fund_student(s, self.app)
@@ -439,12 +472,13 @@ from django.core import mail  # noqa: E402
 class TestAwardOfferEmail(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_award_and_notify_funds_without_inline_email(self):
         # Cool-off model: awarding never emails inline — the release cron sends it later.
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         mail.outbox = []
         sp = svc.award_and_notify(s, app)
@@ -548,12 +582,13 @@ from django.core.management import call_command  # noqa: E402
 class TestAwardStudentsBatch(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def test_batch_awards_listed_apps_without_email(self):
         # Default (flag OFF): the batch funds + awards but sends NO email (owner sends later).
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('100000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('100000'), programme=_gift())
         a1 = _fundable_app(self.cohort, suffix='b1', award=Decimal('2000'))
         a2 = _fundable_app(self.cohort, suffix='b2', award=Decimal('3000'))
         mail.outbox = []
@@ -564,12 +599,12 @@ class TestAwardStudentsBatch(TestCase):
         self.assertEqual(a1.status, 'awarded')
         self.assertEqual(a2.status, 'awarded')
         self.assertEqual(Sponsorship.objects.filter(sponsor=s, status='offered').count(), 2)
-        self.assertEqual(svc.sponsor_balance(s, None), Decimal('95000'))   # 100000 - 2000 - 3000
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('95000'))   # 100000 - 2000 - 3000
         self.assertEqual(len(mail.outbox), 0)                        # decoupled — no emails
 
     def test_batch_noop_without_env(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('100000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('100000'), programme=_gift())
         a1 = _fundable_app(self.cohort, suffix='n1')
         mail.outbox = []
         call_command('award_students_batch')   # no SEED_* set
@@ -579,7 +614,7 @@ class TestAwardStudentsBatch(TestCase):
 
     def test_batch_skips_not_fundable(self):
         s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('100000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('100000'), programme=_gift())
         a1 = _fundable_app(self.cohort, suffix='s1', award=Decimal('2000'))
         a2 = _fundable_app(self.cohort, suffix='s2', award=None)   # not fundable (no amount)
         ScholarshipApplication.objects.filter(id=a2.id).update(award_amount=None)
@@ -597,11 +632,12 @@ class TestSendAwardOfferEmails(TestCase):
     """The TEMPORARY owner-controlled award-email send (decoupled from awarding)."""
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def _awarded(self, suffix):
         s = _sponsor(uid=f'sp-{suffix}')
-        Donation.objects.create(sponsor=s, amount=Decimal('5000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('5000'), programme=_gift())
         app = _fundable_app(self.cohort, suffix=suffix, award=Decimal('2000'))
         svc.fund_student(s, app)   # → offered Sponsorship + 'awarded', no email (default)
         return app
@@ -638,11 +674,12 @@ class TestReleaseAwardOfferEmails(TestCase):
     and skipped if the award was cancelled within the window."""
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
+                                                      programme=_gift())
 
     def _award(self, suffix, *, age_hours=0):
         s = _sponsor(uid=f'rl-{suffix}')
-        Donation.objects.create(sponsor=s, amount=Decimal('5000'))
+        Donation.objects.create(sponsor=s, amount=Decimal('5000'), programme=_gift())
         app = _fundable_app(self.cohort, suffix=suffix, award=Decimal('2000'))
         sp = svc.fund_student(s, app)          # offered + 'awarded', no email
         if age_hours:

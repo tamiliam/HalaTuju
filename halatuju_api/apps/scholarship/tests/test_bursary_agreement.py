@@ -22,7 +22,7 @@ from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfil
 from apps.scholarship import bursary
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    ApplicantDocument, BursaryAgreement, Consent, Donation,
+    ApplicantDocument, BursaryAgreement, Consent, Donation, Programme,
     ScholarshipApplication, ScholarshipCohort, Sponsor, SponsorProfile,
 )
 
@@ -53,7 +53,12 @@ def _ensure_active_template(cohort):
     from apps.scholarship.tests.contract_helpers import brightpath_org, seed_draft
     org = brightpath_org()
     cohort.owning_organisation = org
-    cohort.save(update_fields=['owning_organisation'])
+    # TD-258: an application that belongs to no GIFT can never be funded (the NULL
+    # programme bucket is not a wallet), so the cohort names one — the application copies
+    # it in save(), exactly as it copies the organisation above.
+    cohort.programme, _ = Programme.objects.get_or_create(
+        organisation=org, code='bursary-gift', defaults={'name_en': 'Bursary Gift'})
+    cohort.save(update_fields=['owning_organisation', 'programme'])
     active = contracts.active_template_for(org)
     if active is None:
         t = seed_draft('2026-bursary-test')
@@ -110,7 +115,8 @@ def _sponsor(uid='spon-1'):
 
 def _fund(app):
     s = _sponsor()
-    Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+    # Money is restricted to the gift it was given to, so the credit names the student's.
+    Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=app.programme)
     return svc.fund_student(s, app)
 
 
