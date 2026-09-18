@@ -557,7 +557,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
-**➕ ALSO LIVE (2026-09-18, latest): the Overview's charts, round five — hover everywhere, lists
+**➕ ALSO LIVE (2026-09-18, round six): only students who spent are counted; empty tiles and the
+Intake card are gone.** `main` at **`07cae039`**; builds api `1c1434bf` + web `071784c9` SUCCESS
+(waited on BY BUILD ID); serving **halatuju-api-01048-fvh** / **halatuju-web-00898-z99**, digests
+matched; Overview 200, endpoint 401 without login, no api ERROR logs. Gates: **6687 pytest** ·
+**2316 jest** · tsc 24 · lint 0 · `next build` 0. No migration. Retro
+`docs/retrospective-2026-09-18-overview-round-six.md`.
+- **⚠ n = STUDENTS WHO HAVE SPENT (47), never students with a wallet (58).** Eleven wallets have
+  no Vircle row at all (TD-245: cannot tell "spent nothing" from "absent from the export").
+  `_wallets_live_by` is deleted; nothing on this page counts a wallet.
+- **⚠ The weekly rate is over the students who spent THAT week** ("transactions per ACTIVE
+  student"); the whole-period figure is the mean of those (~7.2 live). Owner ruling, verbatim in
+  `programme_overview.per_student_per_week`.
+- Funnel tiles at zero are not drawn (server still sends all 13). **`intake` is GONE from
+  `SECTIONS_BY_ROLE`, the payload, the page, the locales, the manual and the role matrix** —
+  `test_the_intake_block_is_gone_from_every_role` pins it; do not bring it back as a card.
+
+**➕ ALSO LIVE (2026-09-18, round five): the Overview's charts — hover everywhere, lists
 nowhere.** `main` at **`a6f8f744`**; web build `07ccf113` SUCCESS (waited on BY BUILD ID; web
 only, no api change); serving **halatuju-web-00895-4c7**, digest matched; Overview 200. Gates:
 **2309 jest** · tsc 24 · lint 0 · `next build` 0. Retro
