@@ -11569,3 +11569,25 @@ does not cover it and the owner must rule again.
 **Trade-offs:** on a phone there is no hover, so a single column's value is not readable on the page. Accepted for now: the whole-period figures and the totals are, and the owner reads this page on a desktop. The revisit clause below is the phone.
 
 **Revisit if:** a phone user needs one column's value — then a tap that prints the column beneath the chart, not a restored list.
+
+## On the Overview, a student is counted only when they have spent — n, and the weekly rate — 2026-09-18
+
+**Decision:** `per_student_overall.students` (n) is the number of distinct students with a SPEND row. `per_student_per_week.students` is the number of distinct students with a SPEND row inside that week, so the chart is "transactions per ACTIVE student, per week" and the whole-period figure is the mean of those weekly rates. A student with a wallet and no Vircle row counts nowhere on the page.
+
+**Alternatives considered:** students with a live wallet by the week's end (the rule from 15 to 18 September — n read 58 against 47 spenders); students who had started spending by the week's end (counts a quiet week's student; about 6.4 on the live gift); the chosen rule (about 7.2).
+
+**Rationale:** owner, 2026-09-18, on both: *"students who technically are not in the report, as they haven't yet spent and made their presence felt, shouldn't be counted"* and *"if a student had 0 transactions in that week, that student shouldn't be counted"*. The page reports spending; a wallet that has never appeared in the spending export is not part of what it reports. Eleven of the fifty-eight wallets have no Vircle row at all, and TD-245 means we cannot say whether they spent nothing or are missing from the export — so counting them was asserting something we do not know.
+
+**Trade-offs:** the weekly rate is now a rate per SPENDER, so a week in which few students spent can read high. Accepted, and the title says so ("active student"). Note the two counts differ in kind: n is cumulative (anyone who has ever spent), the weekly denominator is per week (anyone who spent in it).
+
+**Revisit if:** the officer wants "how many of our students are spending at all" — that is the gap between n and the wallet count, a figure for the Spending page's wallet-gap section, not for this chart.
+
+## The Intake card is removed from the Overview — 2026-09-18
+
+**Decision:** the `intake` section is gone from `SECTIONS_BY_ROLE` for every role, from the payload, the page, the types, the locales, the manual and the role matrix. A round's state lives on Configuration.
+
+**Alternatives considered:** keep it (it was the one section every role shared, on the argument that "is the round open?" is the one fact everybody needs); hide it when no round exists.
+
+**Rationale:** owner, 2026-09-18: *"the Intake year box doesn't add much value. Best removed."* On the live gift it read "No intake year has been set up for this gift yet" in a card the size of the attention list. The argument for keeping it was about reviewers and QC, whose Overview would otherwise be only their own queue — and that is exactly what they asked for.
+
+**Revisit if:** a reviewer asks whether more work is coming — then a single line under their queue, not a card.

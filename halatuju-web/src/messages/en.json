@@ -5894,10 +5894,10 @@
         "spending": "Spending",
         "balance": "Balance",
         "average": "Average spending per transaction, per week",
-        "transactions": "Transactions per student, per week",
+        "transactions": "Transactions per active student, per week",
         "transactionsNote": "A transaction is one card payment.",
         "overallAverage": "Average spending per transaction, whole period",
-        "overallTransactions": "Average weekly transactions per student",
+        "overallTransactions": "Average weekly transactions per active student",
         "ofStudentsOverall": "n: {count} students",
         "byCategory": "Spending by category",
         "spendingTotal": "Total spending"
@@ -5907,10 +5907,10 @@
         "awardsLabel": "Awards made per month",
         "moneyLabel": "Money released and spent per month, with the running amount still in wallets",
         "averageLabel": "Average spending per transaction per week",
-        "transactionsLabel": "Transactions per student per week",
+        "transactionsLabel": "Transactions per active student per week",
         "categoryLabel": "Spending by category",
         "yRinggit": "RM per transaction",
-        "yTransactions": "Transactions per student",
+        "yTransactions": "Transactions per active student",
         "yApplications": "Applications",
         "yAwards": "Awards"
       },
@@ -5940,15 +5940,6 @@
         "transfer": "Sent to a person",
         "unsorted": "Not categorised",
         "none": "Not yet sorted"
-      },
-      "intake": {
-        "title": "Intake",
-        "open": "Open",
-        "closed": "Closed",
-        "finished": "Round finished {date}",
-        "window": "Applications open {from} until {to}",
-        "notStated": "not stated",
-        "none": "No intake year has been set up for this gift yet."
       },
       "mine": {
         "title": "My cases",

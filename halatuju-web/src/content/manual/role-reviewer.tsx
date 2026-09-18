@@ -30,9 +30,8 @@ export const roleReviewer: ManualChapter = {
         clock, which is the part worth knowing.
         <br /><br />
         <strong>You will not see money anywhere on this page</strong>, and you will not see the programme&rsquo;s
-        overall figures. Those belong to the people who run the gift. The one thing you do see beyond your own
-        cases is whether <strong>this year&rsquo;s intake is open</strong>, and until when, so you know whether
-        more work is on its way.</>
+        overall figures. Those belong to the people who run the gift. What you see is your own cases, and
+        nothing else.</>
       ),
     },
     {

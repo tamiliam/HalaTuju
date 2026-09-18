@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Overview, round six - only students who spent are counted; the empty tiles and the intake card go - 2026-09-18
+
+The owner's fourth read: *"n is stated as 58. However, only around 47 students have spent."*
+Investigated on the live data first: 58 wallets, 47 with a Vircle row, 11 with none at all.
+
+- **⚠ n IS THE STUDENTS WHO HAVE SPENT — 47, not 58.** *"Students who technically are not in
+  the report, as they haven't yet spent and made their presence felt, shouldn't be counted."*
+  `per_student_overall.students` is the distinct students with a SPEND row. A wallet with no
+  Vircle row is not in the report and not in n (TD-245: we cannot tell "spent nothing" from
+  "absent from the export").
+- **⚠ THE WEEKLY DENOMINATOR IS THE STUDENTS WHO SPENT THAT WEEK.** *"If a student had 0
+  transactions in that week, that student shouldn't be counted."* `per_student_per_week.students`
+  is the distinct spenders inside the week; the chart is now titled **transactions per ACTIVE
+  student, per week**, and the whole-period figure is the mean of those weekly rates (about 7.2
+  on the live gift, up from 5.0). "Students with a live wallet that week" — the rule since the
+  15th — is gone, and `_wallets_live_by` with it. A fixture test plants a wallet with no rows
+  and checks it counts nowhere.
+- **A funnel tile at zero is not drawn.** The server still sends all thirteen statuses; the page
+  shows the total and the stages with a case in them. Thirteen tiles were eleven zeros.
+- **The Intake card is gone** — *"doesn't add much value"*. Removed from the payload
+  (`SECTIONS_BY_ROLE` no longer carries `intake` for any role), the page, the types, the three
+  locales, the manual (five chapters) and the role matrix. A round's state lives on Configuration.
+
+Gates: 6687 pytest · 2316 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass ·
+`next build` exit 0 · `makemigrations --check` clean. Bite-checks 3 of 3.
+
 ## The stuck banner tells the truth per ROAD - 2026-09-18 (BrightPath #24)
 
 **LIVE.** `main` **7cc65ddb**, web **halatuju-web-00896-bvj**; site 200, `/admin/scholarship`

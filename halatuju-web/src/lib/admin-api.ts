@@ -3067,14 +3067,6 @@ export interface OverviewStudentOverall {
   weekly_transactions_per_student: string
 }
 export interface OverviewCategory { code: string; total: string; transactions: number }
-export interface OverviewIntake {
-  code: string
-  name: string
-  is_open: boolean
-  opens_on: string | null
-  closes_on: string | null
-  finished_at: string | null
-}
 export type OverviewBand = 'open' | 'due_soon' | 'overdue'
 export interface OverviewMyCase {
   id: number
@@ -3117,7 +3109,6 @@ export interface ProgrammeOverview {
     per_student_overall: OverviewStudentOverall | null
     by_category: OverviewCategory[]
   }
-  intake?: OverviewIntake | null
   mine?: { open: number; due_soon: number; overdue: number
            cases: OverviewMyCase[]; pace: OverviewPace }
   qc?: { awaiting: number; oldest_waiting_days: number | null

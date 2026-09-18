@@ -149,7 +149,7 @@ export const roleOrgAdmin: ManualChapter = {
         gift, and the group unfolds beneath your organisation&rsquo;s; step back to an organisation page and it
         folds away again. <strong>Overview is where a gift opens</strong>: click a gift&rsquo;s card and you land
         there — how many applications came in and where they have got to, what has been committed, paid and
-        spent, what is waiting for somebody, six charts over time, and whether this year&rsquo;s intake is open.
+        spent, what is waiting for somebody, and six charts over time.
         It is a page to read, not one to act on; everyone on your team can open it, and each of them sees the
         part that belongs to their job. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju

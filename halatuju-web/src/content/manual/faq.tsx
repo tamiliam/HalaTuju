@@ -177,8 +177,8 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>Your queue. It shows the cases waiting for QC, <strong>how long the oldest has been waiting</strong>,
         and the list with the longest wait first &mdash; plus how many you have checked and how long a case
         typically sits before QC picks it up. That last figure is the case&rsquo;s wait, not a score on you.
-        There is no money on the page and no programme-wide total: what you see is the work in front of you,
-        and whether this year&rsquo;s intake is still open.</>,
+        There is no money on the page and no programme-wide total: what you see is the work in front of
+        you.</>,
     },
     {
       q: <>Can I review cases now, not just QC them?</>,
@@ -208,8 +208,7 @@ export const FAQ: Record<Audience, QA[]> = {
         <strong> finance admin</strong> sees the money figures and the money charts, in totals only &mdash;
         never a name, a document or a verdict. A <strong>QC</strong> sees the cases waiting to be checked. A
         <strong> reviewer</strong> sees their own cases and when each verdict is due, and no money at all.
-        Everyone sees whether the intake is open. So if a colleague says their Overview has no money on it,
-        that is correct, not a fault.</>,
+        So if a colleague says their Overview has no money on it, that is correct, not a fault.</>,
     },
     {
       q: <>A sponsor was approved. Do they get told?</>,

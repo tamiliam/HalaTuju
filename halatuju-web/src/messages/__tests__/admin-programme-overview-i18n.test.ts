@@ -8,7 +8,7 @@
  *
  * ⚠ **THIS PAGE BUILDS MOST OF ITS KEYS DYNAMICALLY**, which a static scan cannot see — the
  * funnel's thirteen statuses through `statusLabelKey()`, the donut's eleven category codes, the
- * three verdict bands, and the intake's open/closed pair. Each family is enumerated below against
+ * three verdict bands, and the twelve month names. Each family is enumerated below against
  * the values the SERVER can actually send: `STATUS_CHOICES`, `SPEND_CATEGORY_CHOICES` plus the
  * `none` the blank category travels as, and `review_sla.review_band`'s three answers. Add a status
  * or a category on the Python side and the missing translation surfaces HERE.
@@ -82,9 +82,6 @@ const CATEGORY_CODES = [
 /** `review_sla.review_band`'s three answers, and no fourth. */
 const BANDS = ['open', 'due_soon', 'overdue']
 
-/** The intake's two states — `is_open` is the switch, and the page chooses one of these. */
-const INTAKE_STATES = ['open', 'closed']
-
 /** The five bands the attention strip draws, built as `${K}.attention.${key}` — a template the
  *  static scan above cannot resolve, and the strip is the whole section. */
 const ATTENTION_KEYS = ['unassigned', 'withReviewer', 'dueSoon', 'overdue', 'awaitingQc']
@@ -97,7 +94,6 @@ const DYNAMIC = [
   ...ATTENTION_KEYS.map((k) => `${NS}.attention.${k}`),
   ...CATEGORY_CODES.map((c) => `${NS}.category.${c}`),
   ...BANDS.map((b) => `${NS}.band.${b}`),
-  ...INTAKE_STATES.map((s) => `${NS}.intake.${s}`),
   ...MONTHS.map((m) => `${NS}.months.${m}`),
 ]
 
@@ -175,7 +171,9 @@ describe('admin.programmeOverview i18n hygiene', () => {
       expect(resolve(loc, `${NS}.chart.purchasesLabel`)).toBeUndefined()
       expect(resolve(loc, `${NS}.series.month`)).toBeUndefined()
     }
-    expect(resolve(en, `${NS}.series.transactions`)).toBe('Transactions per student, per week')
+    // "active": only a student who spent that week is counted (owner, 2026-09-18).
+    expect(resolve(en, `${NS}.series.transactions`)).toBe('Transactions per active student, per week')
+    for (const loc of [en, ms, ta]) expect(resolve(loc, `${NS}.intake`)).toBeUndefined()
   })
 
   test('the navigation label is REUSED, not duplicated', () => {

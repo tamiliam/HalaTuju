@@ -98,16 +98,11 @@ const MONEY_SERIES = {
   by_category: CATEGORIES,
 }
 
-const INTAKE: api.OverviewIntake = {
-  code: '2026', name: 'Intake 2026', is_open: false,
-  opens_on: '2026-03-02', closes_on: '2026-04-30', finished_at: '2026-07-31',
-}
-
 const ADMIN_PAYLOAD: api.ProgrammeOverview = {
   programme: { code: 'b40', name: 'Test Gift' },
   generated_at: '2026-09-15T10:00:00+08:00',
   data_to: '2026-09-06',
-  sections: ['funnel', 'money', 'attention', 'applications_series', 'money_series', 'intake'],
+  sections: ['funnel', 'money', 'attention', 'applications_series', 'money_series'],
   funnel: { total: 143, by_status: { ...zeroed(), awarded: 66, rejected: 42, expired: 31 } },
   money: MONEY,
   attention: { unassigned: 0, with_reviewer: 2, due_soon: 1, overdue: 0, awaiting_qc: 2 },
@@ -116,24 +111,22 @@ const ADMIN_PAYLOAD: api.ProgrammeOverview = {
     awards_per_month: [{ month: '2026-05', count: 19 }, { month: '2026-06', count: 30 }],
   },
   money_series: MONEY_SERIES,
-  intake: INTAKE,
 }
 
 const FINANCE_PAYLOAD: api.ProgrammeOverview = {
   programme: { code: 'b40', name: 'Test Gift' },
   generated_at: '2026-09-15T10:00:00+08:00',
   data_to: '2026-09-06',
-  sections: ['money', 'money_series', 'intake'],
+  sections: ['money', 'money_series'],
   money: MONEY,
   money_series: MONEY_SERIES,
-  intake: INTAKE,
 }
 
 const REVIEWER_PAYLOAD: api.ProgrammeOverview = {
   programme: { code: 'b40', name: 'Test Gift' },
   generated_at: '2026-09-15T10:00:00+08:00',
   data_to: null,
-  sections: ['mine', 'intake'],
+  sections: ['mine'],
   mine: {
     open: 3, due_soon: 1, overdue: 0,
     cases: [{ id: 13, ref: 'B40-0113', applicant_name: 'NURUL TEST', status: 'interviewing',
@@ -141,21 +134,19 @@ const REVIEWER_PAYLOAD: api.ProgrammeOverview = {
               band: 'due_soon' }],
     pace: { completed: 6, turnaround_days: 7.5 },
   },
-  intake: INTAKE,
 }
 
 const QC_PAYLOAD: api.ProgrammeOverview = {
   programme: { code: 'b40', name: 'Test Gift' },
   generated_at: '2026-09-15T10:00:00+08:00',
   data_to: null,
-  sections: ['qc', 'intake'],
+  sections: ['qc'],
   qc: {
     awaiting: 2, oldest_waiting_days: 4,
     cases: [{ id: 21, ref: 'B40-0121', applicant_name: 'AMIR TEST', status: 'interviewed',
               since: '2026-09-11T02:00:00+08:00', waiting_days: 4 }],
     pace: { completed: 9, turnaround_days: 1.5 },
   },
-  intake: INTAKE,
 }
 
 beforeEach(() => {
@@ -172,9 +163,27 @@ describe('an org admin sees the whole gift', () => {
     render(<ProgrammeOverviewPage />)
     await screen.findByTestId('overview-funnel')
     for (const id of ['overview-money', 'overview-attention', 'overview-applications-series',
-                      'overview-money-series', 'overview-intake']) {
+                      'overview-money-series']) {
       expect(screen.queryByTestId(id)).not.toBeNull()
     }
+    // The Intake card is gone (owner, 2026-09-18) — from the page, not merely hidden.
+    expect(screen.queryByTestId('overview-intake')).toBeNull()
+  })
+
+  /* ⚠ A STAGE AT ZERO IS NOT DRAWN (owner, 2026-09-18) — the total always is. The server still
+   * sends all thirteen; the page shows the three with a case in them plus the total. */
+  it('shows the total and only the stages that have a case in them', async () => {
+    render(<ProgrammeOverviewPage />)
+    const funnel = await screen.findByTestId('overview-funnel')
+    expect(funnel.textContent).toContain('admin.programmeOverview.funnel.total')
+    expect(funnel.textContent).toContain('143')
+    expect(funnel.textContent).toContain('admin.scholarship.statuses.awarded')
+    expect(funnel.textContent).toContain('admin.scholarship.statuses.rejected')
+    expect(funnel.textContent).toContain('admin.scholarship.statuses.expired')
+    expect(funnel.textContent).not.toContain('admin.scholarship.statuses.submitted')
+    expect(funnel.textContent).not.toContain('admin.scholarship.statuses.withdrawn')
+    // total + 3 stages = 4 tiles
+    expect(funnel.querySelectorAll('.rounded-xl').length).toBe(4)
     // …and nothing built for somebody else.
     expect(screen.queryByTestId('overview-mine')).toBeNull()
     expect(screen.queryByTestId('overview-qc')).toBeNull()

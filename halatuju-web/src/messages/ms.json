@@ -5894,10 +5894,10 @@
         "spending": "Perbelanjaan",
         "balance": "Baki",
         "average": "Purata perbelanjaan setiap transaksi, setiap minggu",
-        "transactions": "Transaksi setiap pelajar, setiap minggu",
+        "transactions": "Transaksi setiap pelajar aktif, setiap minggu",
         "transactionsNote": "Satu transaksi ialah satu bayaran kad.",
         "overallAverage": "Purata perbelanjaan setiap transaksi, keseluruhan tempoh",
-        "overallTransactions": "Purata transaksi mingguan setiap pelajar",
+        "overallTransactions": "Purata transaksi mingguan setiap pelajar aktif",
         "ofStudentsOverall": "n: {count} pelajar",
         "byCategory": "Perbelanjaan mengikut kategori",
         "spendingTotal": "Jumlah perbelanjaan"
@@ -5907,10 +5907,10 @@
         "awardsLabel": "Tajaan diberikan setiap bulan",
         "moneyLabel": "Wang dilepaskan dan dibelanjakan setiap bulan, dengan baki terkumpul yang masih dalam dompet",
         "averageLabel": "Purata perbelanjaan setiap transaksi setiap minggu",
-        "transactionsLabel": "Transaksi setiap pelajar setiap minggu",
+        "transactionsLabel": "Transaksi setiap pelajar aktif setiap minggu",
         "categoryLabel": "Perbelanjaan mengikut kategori",
         "yRinggit": "RM setiap transaksi",
-        "yTransactions": "Transaksi setiap pelajar",
+        "yTransactions": "Transaksi setiap pelajar aktif",
         "yApplications": "Permohonan",
         "yAwards": "Tajaan"
       },
@@ -5940,15 +5940,6 @@
         "transfer": "Dihantar kepada seseorang",
         "unsorted": "Belum dikategorikan",
         "none": "Belum dikelaskan"
-      },
-      "intake": {
-        "title": "Ambilan",
-        "open": "Dibuka",
-        "closed": "Ditutup",
-        "finished": "Pusingan tamat {date}",
-        "window": "Permohonan dibuka {from} hingga {to}",
-        "notStated": "tidak dinyatakan",
-        "none": "Belum ada tahun ambilan disediakan untuk pemberian ini."
       },
       "mine": {
         "title": "Kes saya",

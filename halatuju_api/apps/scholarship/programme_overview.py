@@ -1,7 +1,7 @@
 """Programme Overview — "how is this gift doing?", answered once and shaped by role.
 
 The page a person lands on after clicking a gift card: the funnel, the money, what needs
-attention, the charts over time, and the state of the intake. Every figure is READ from data the
+attention, and the charts over time. Every figure is READ from data the
 system already records — each status stamps a date, every spend row has a date, an amount and a
 category — so this module computes nothing new and stores nothing at all. There is no migration
 behind it and no new field collected.
@@ -51,7 +51,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.db.models import Min, Q
+from django.db.models import Q
 from django.utils import timezone
 
 from . import payments, spend_report
@@ -62,7 +62,7 @@ _CENTS = Decimal('0.01')
 
 #: Everything a full-scope console role sees. Kept as one tuple so the three roles that get it
 #: cannot drift apart by a copy-paste.
-FULL = ('funnel', 'money', 'attention', 'applications_series', 'money_series', 'intake')
+FULL = ('funnel', 'money', 'attention', 'applications_series', 'money_series')
 
 #: ⚠⚠ **THE SERVER DECIDES WHAT A ROLE RECEIVES.** A key absent here is a key never built, so it
 #: is not in the payload at all — absent, never zeroed. Zeroing would be its own leak: "your
@@ -72,16 +72,16 @@ FULL = ('funnel', 'money', 'attention', 'applications_series', 'money_series', '
 #: withholds Payments and Spending from them, and an Overview that handed over the same figures
 #: through a different route would make that withholding decorative.
 #:
-#: ⚠ `intake` is on every row on purpose — "is this round open, and until when?" is the one fact
-#: every console role needs and none of them can currently see without a page they may not open.
+#: (The `intake` block that was on every row until 2026-09-18 is gone — owner: "doesn't add much
+#: value". A round's state lives on Configuration; this page is the work and the money.)
 SECTIONS_BY_ROLE = {
     'super': FULL,
     'org_admin': FULL,
     'admin': FULL,
     # See the module docstring: aggregate money, never a person.
-    'finance': ('money', 'money_series', 'intake'),
-    'qc': ('qc', 'intake'),
-    'reviewer': ('mine', 'intake'),
+    'finance': ('money', 'money_series'),
+    'qc': ('qc',),
+    'reviewer': ('mine',),
 }
 
 
@@ -402,23 +402,6 @@ def money_per_month(scope, *, today):
     return out
 
 
-def _wallets_live_by(scope):
-    """The Malaysian date each student's wallet went live — their FIRST released disbursement.
-    One query, grouped by application; `None`s dropped."""
-    from .models import Disbursement
-
-    return [
-        _local_date(first)
-        for first in (Disbursement.objects
-                      .filter(status='released',
-                              application_id__in=scope.values_list('id', flat=True))
-                      .values('application_id')
-                      .annotate(first=Min('released_at'))
-                      .values_list('first', flat=True))
-        if first is not None
-    ]
-
-
 def _per(numerator, denominator, places):
     """`numerator / denominator` to `places`, HALF-UP, and zero when there is no denominator —
     a week before anybody had a wallet (or a transaction) is '0.00', not a crash."""
@@ -435,28 +418,33 @@ def per_student_overall(scope):
     2026-09-15: the weekly list was clutter at eleven weeks and would be unreadable at fifty. The
     lines still show the movement; the figure a person quotes is the whole-period one.
 
-    ⚠ TWO DIFFERENT DENOMINATORS, BOTH NAMED (owner, 2026-09-18). `spent_per_transaction` is
-    ringgit over ROWS — what a card payment tends to be. `weekly_transactions_per_student` is
-    the MEAN OF THE WEEKLY AVERAGES — each week's rows over the students whose wallet was live
-    THAT week, averaged over the weeks that had any such student. `students` (n) are those whose
-    wallet was live by `data_to`, and `weeks` is the length of the weekly series. `None` when
-    there is no spending at all, so the page says nothing rather than "RM0.00".
+    ⚠⚠ ONLY STUDENTS WHO HAVE SPENT ARE COUNTED, ANYWHERE ON THIS PAGE (owner, 2026-09-18).
+    `students` (n) is the number of distinct students with a SPEND row — 47 on the live gift, not
+    the 58 with a wallet: *"students who technically are not in the report, as they haven't yet
+    spent and made their presence felt, shouldn't be counted."* Eleven wallets have no Vircle
+    row at all, and TD-245 says we cannot tell "spent nothing" from "absent from the export".
+
+    ⚠ TWO DIFFERENT DENOMINATORS, BOTH NAMED. `spent_per_transaction` is ringgit over ROWS —
+    what a card payment tends to be. `weekly_transactions_per_student` is the MEAN OF THE
+    WEEKLY AVERAGES — each week's rows over the students who spent THAT week (see
+    `per_student_per_week`), averaged over the weeks that had one. `weeks` is the length of
+    the weekly series. `None` when there is no spending at all, so the page says nothing rather
+    than "RM0.00".
 
     ⚠⚠ WHY THE MEAN OF WEEKLY AVERAGES AND NOT total ÷ students ÷ weeks (owner, 2026-09-18, who
-    caught it reading low): `students` is TODAY's count. Dividing every week's rows by today's 58
-    charges the early weeks — when a dozen students had a wallet — with fifty absentees, and the
-    figure sinks with every student who joins. Each weekly average already uses the right
-    denominator for its week, so their mean is the honest "how often does a student pay in a
-    week". On the live gift the two readings were 3.1 and 5.0.
+    caught it reading low): a single headcount charges every week with people who were not
+    active in it, and the figure sinks as the programme grows. Each weekly average already uses
+    the right denominator for its week, so their mean is the honest "how often does an active
+    student pay in a week".
     """
-    rows = [(d, a) for d, a in _txns(scope).values_list('txn_date', 'amount') if d is not None]
+    rows = [(app, d, a) for app, d, a in
+            _txns(scope).values_list('application_id', 'txn_date', 'amount') if d is not None]
     if not rows:
         return None
-    last = data_to(scope) or max(d for d, _ in rows)
-    students = sum(1 for d in _wallets_live_by(scope) if d <= last)
+    students = len({app for app, _, _ in rows})
     weekly = per_student_per_week(scope)
     ratios = [Decimal(w['transactions']) / w['students'] for w in weekly if w['students']]
-    spent = sum(((a or _ZERO) for _, a in rows), _ZERO)
+    spent = sum(((a or _ZERO) for _, _, a in rows), _ZERO)
     transactions = len(rows)
     return {
         'students': students,
@@ -477,32 +465,31 @@ def per_student_per_week(scope):
     anything here would be inventing a quantity; the chart is named for what it actually counts.
     (It was called `purchases` until 2026-09-15; the owner asked for the honest word.)
 
-    ⚠⚠ **THE DENOMINATOR IS STUDENTS WITH A LIVE WALLET THAT WEEK** — distinct applications with
-    at least one RELEASED disbursement dated on or before the week's end. Dividing by "every
-    student in the gift" would drag the average down every week before the money started, and
-    dividing by "students who spent this week" would make the average meaningless (it would
-    approach the per-spender amount however few spent). A figure shown to a person carries an
-    implied "of what", so the page names this denominator in words beneath the chart.
+    ⚠⚠ **THE DENOMINATOR IS STUDENTS WHO SPENT THAT WEEK** — distinct applications with at
+    least one SPEND row dated inside the week (owner, 2026-09-18: *"if a student had 0
+    transactions in that week, that student shouldn't be counted"*). The chart is therefore
+    "transactions per ACTIVE student per week", and is named so. It replaced "students with a
+    live wallet that week" (15–18 September), which charged every week with wallets that had
+    never been used — eleven of the fifty-eight on the live gift have no Vircle row at all.
 
     ⚠ WEEKS STOP AT `data_to` (the newest `txn_date` we hold, of ANY transaction type), never
     today — see the module docstring. A zero week INSIDE the window is a real zero and stays; the
     weeks after it are the ones that would be fiction.
     """
-    rows = list(_txns(scope).values_list('txn_date', 'amount'))
-    rows = [(d, a) for d, a in rows if d is not None]
+    rows = list(_txns(scope).values_list('application_id', 'txn_date', 'amount'))
+    rows = [(app, d, a) for app, d, a in rows if d is not None]
     if not rows:
         return []
-    spent_by_week, transactions_by_week = {}, {}
-    for txn_date, amount in rows:
+    spent_by_week, transactions_by_week, spenders_by_week = {}, {}, {}
+    for app_id, txn_date, amount in rows:
         w = _week(txn_date)
         spent_by_week[w] = spent_by_week.get(w, _ZERO) + (amount or _ZERO)
         transactions_by_week[w] = transactions_by_week.get(w, 0) + 1
-    first_released = _wallets_live_by(scope)
+        spenders_by_week.setdefault(w, set()).add(app_id)
     out = []
-    last = data_to(scope) or max(d for d, _ in rows)
-    for w in _week_span(min(d for d, _ in rows), last):
-        week_end = w + timedelta(days=6)
-        students = sum(1 for d in first_released if d <= week_end)
+    last = data_to(scope) or max(d for _, d, _ in rows)
+    for w in _week_span(min(d for _, d, _ in rows), last):
+        students = len(spenders_by_week.get(w, ()))
         spent = spent_by_week.get(w, _ZERO)
         transactions = transactions_by_week.get(w, 0)
         out.append({
@@ -513,8 +500,7 @@ def per_student_per_week(scope):
             # ⚠ What a card payment cost that week, on average — ringgit over ROWS (owner,
             # 2026-09-18: "what we are calculating is average spending per transaction").
             'spent_per_transaction': _per(spent, transactions, _CENTS),
-            # ⚠ Guarded: a week before anybody had a wallet is '0.0', not a crash and not the
-            # whole week's rows attributed to nobody.
+            # ⚠ Guarded: a week nobody spent in is '0.0', not a crash.
             'transactions_per_student': _per(transactions, students, Decimal('0.1')),
         })
     return out
@@ -547,35 +533,6 @@ def by_category(scope):
     # by anyone", distinct from the sorter's own `unsorted` verdict above it.
     out.append({'code': 'none', 'total': totals[''].quantize(_CENTS), 'transactions': counts['']})
     return out
-
-
-def intake(programme):
-    """The gift's current round, or `None` when no gift was named.
-
-    ⚠ `None` FOR "NO GIFT NAMED" IS NOT THE SAME AS AN ABSENT SECTION. With several gifts and no
-    choice the page is showing everything the fence allows, and there is no single round to
-    describe — so the key is present and null rather than quietly missing.
-
-    ⚠ THE DATES DESCRIBE; THEY DO NOT OPEN OR CLOSE ANYTHING. `is_open` is the switch (see
-    `ScholarshipCohort`), and a NULL window is a normal round, never a broken one.
-    """
-    from .models import ScholarshipCohort
-
-    if programme is None:
-        return None
-    cohort = (ScholarshipCohort.objects
-              .filter(programme=programme, is_active=True)
-              .order_by('-year', '-id').first())
-    if cohort is None:
-        return None
-    return {
-        'code': cohort.code,
-        'name': cohort.name,
-        'is_open': cohort.is_open,
-        'opens_on': cohort.opens_on.isoformat() if cohort.opens_on else None,
-        'closes_on': cohort.closes_on.isoformat() if cohort.closes_on else None,
-        'finished_at': cohort.finished_at.isoformat() if cohort.finished_at else None,
-    }
 
 
 def mine(scope, admin, *, now, clocks, organisation_id=None, programme=None):
@@ -785,8 +742,6 @@ def build(admin, org, programme, *, now=None):
                  'transactions': r['transactions']}
                 for r in by_category(scope)],
         }
-    if 'intake' in sections:
-        payload['intake'] = intake(programme)
     if 'mine' in sections:
         payload['mine'] = mine(
             scope, admin, now=now, clocks=clocks,

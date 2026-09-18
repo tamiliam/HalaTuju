@@ -117,7 +117,6 @@ export default function ProgrammeOverviewPage() {
   const attention = data?.attention
   const appSeries = data?.applications_series
   const moneySeries = data?.money_series
-  const intake = data?.intake
   const mine = data?.mine
   const qc = data?.qc
 
@@ -169,18 +168,21 @@ export default function ProgrammeOverviewPage() {
       {error && <p className="mt-4 text-sm text-critical-600" role="alert">{error}</p>}
       {loading && !data && <p className="mt-4 text-sm text-ground-500">{t(`${K}.loading`)}</p>}
 
-      {/* ── The funnel. ALL THIRTEEN STATUSES, zero-filled, because a stage at zero is
-          information and an absent stage cannot be told from an empty one. No aggregate is
-          invented here: "awarded" on this page means the status called awarded, nothing more. ── */}
+      {/* ── The funnel. The server sends ALL THIRTEEN STATUSES, zero-filled; the page shows the
+          ones with a case in them (owner, 2026-09-18: "when the value is 0, skip the card"). The
+          total is always shown. No aggregate is invented here: "awarded" on this page means the
+          status called awarded, nothing more. ── */}
       {has(data, 'funnel') && data?.funnel && (
         <section className="mt-6" data-testid="overview-funnel">
           <h2 className="text-sm font-semibold text-ground-900">{t(`${K}.funnel.title`)}</h2>
           <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
             <Tile label={t(`${K}.funnel.total`)} value={String(data.funnel.total)} />
-            {APPLICATION_STATUSES.map((status) => (
-              <Tile key={status} label={t(statusLabelKey(status))}
-                value={String(data.funnel?.by_status[status] ?? 0)} />
-            ))}
+            {APPLICATION_STATUSES
+              .filter((status) => (data.funnel?.by_status[status] ?? 0) > 0)
+              .map((status) => (
+                <Tile key={status} label={t(statusLabelKey(status))}
+                  value={String(data.funnel?.by_status[status] ?? 0)} />
+              ))}
           </div>
         </section>
       )}
@@ -200,6 +202,8 @@ export default function ProgrammeOverviewPage() {
         </section>
       )}
 
+      {/* (The Intake card that sat beside Attention until 2026-09-18 is gone — owner: "doesn't
+          add much value". A round's state lives on Configuration.) */}
       <div className="mt-6 grid gap-3 lg:grid-cols-2">
         {/* ⚠ `due_soon` and `overdue` are SUBSETS of "with a reviewer", not a partition of it — a
             case does not stop being with its reviewer the moment it gets late. */}
@@ -223,37 +227,6 @@ export default function ProgrammeOverviewPage() {
           </Card>
         )}
 
-        {/* ⚠ THE DATES DESCRIBE THE ROUND; THEY DO NOT OPEN OR CLOSE IT. `is_open` is the switch,
-            and a round with no window is normal rather than broken. */}
-        {has(data, 'intake') && (
-          <Card title={t(`${K}.intake.title`)} testId="overview-intake">
-            {!intake ? (
-              <p className="text-sm text-ground-500">{t(`${K}.intake.none`)}</p>
-            ) : (
-              <div className="text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-ground-900">{intake.name}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    intake.is_open ? 'bg-positive-100 text-positive-800'
-                      : 'bg-ground-100 text-ground-600'}`}>
-                    {t(`${K}.intake.${intake.is_open ? 'open' : 'closed'}`)}
-                  </span>
-                </div>
-                <p className="mt-2 text-ground-700">
-                  {t(`${K}.intake.window`, {
-                    from: intake.opens_on ? formatDate(intake.opens_on) : t(`${K}.intake.notStated`),
-                    to: intake.closes_on ? formatDate(intake.closes_on) : t(`${K}.intake.notStated`),
-                  })}
-                </p>
-                {intake.finished_at && (
-                  <p className="mt-1 text-ground-500">
-                    {t(`${K}.intake.finished`, { date: formatDate(intake.finished_at) })}
-                  </p>
-                )}
-              </div>
-            )}
-          </Card>
-        )}
       </div>
 
       {/* ── How the applications arrived, and how the awards followed ── */}

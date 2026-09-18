@@ -231,8 +231,7 @@ class _Base(TestCase):
 
 
 _ALWAYS = {'programme', 'generated_at', 'data_to', 'sections'}
-_FULL = _ALWAYS | {'funnel', 'money', 'attention', 'applications_series',
-                   'money_series', 'intake'}
+_FULL = _ALWAYS | {'funnel', 'money', 'attention', 'applications_series', 'money_series'}
 
 
 class RolesAndShapeTests(_Base):
@@ -255,9 +254,9 @@ class RolesAndShapeTests(_Base):
             'ov-su': _FULL,
             'ov-oa': _FULL,
             'ov-adm': _FULL,
-            'ov-fin': _ALWAYS | {'money', 'money_series', 'intake'},
-            'ov-qc': _ALWAYS | {'qc', 'intake'},
-            'ov-rev': _ALWAYS | {'mine', 'intake'},
+            'ov-fin': _ALWAYS | {'money', 'money_series'},
+            'ov-qc': _ALWAYS | {'qc'},
+            'ov-rev': _ALWAYS | {'mine'},
         }
         for uid, keys in expected.items():
             with self.subTest(uid=uid):
@@ -425,16 +424,21 @@ class FiguresTests(_Base):
         self.assertEqual(weeks[0], '2026-03-02')
         self.assertNotIn('2026-02-23', weeks)
 
-    def test_the_student_denominator_counts_only_wallets_that_were_live_that_week(self):
-        """The denominator is students with a RELEASED disbursement on or before the week's end —
-        not every student in the gift, and not only the ones who spent."""
+    def test_the_student_denominator_counts_only_students_who_spent_that_week(self):
+        """⚠ Owner, 2026-09-18: a student with no transactions in a week is not counted for it.
+        Week of 3 Aug: only M1 spent (two rows). Week of 10 Aug: only M2 spent (two rows) — M1
+        had a live wallet and spent nothing, so M1 is NOT in that week's count. Week of 17 Aug:
+        nobody spent (the only row is a top-up), so the count is zero and the rate is '0.0'."""
         weeks = {w['week']: w for w in
                  self._body('ov-oa')['money_series']['per_student_per_week']}
-        # M1's wallet went live on 5 July; M2's on 10 August.
         self.assertEqual(weeks['2026-08-03']['students'], 1)
         self.assertEqual(weeks['2026-08-03']['spent'], '42.50')
-        self.assertEqual(weeks['2026-08-10']['students'], 2)
+        self.assertEqual(weeks['2026-08-03']['transactions_per_student'], '2.0')
+        self.assertEqual(weeks['2026-08-10']['students'], 1)
         self.assertEqual(weeks['2026-08-10']['spent'], '120.00')
+        self.assertEqual(weeks['2026-08-10']['transactions_per_student'], '2.0')
+        self.assertEqual(weeks['2026-08-17']['students'], 0)
+        self.assertEqual(weeks['2026-08-17']['transactions_per_student'], '0.0')
         self.assertNotIn('average', weeks['2026-08-03'])
 
     def test_spent_per_transaction_is_ringgit_over_rows_each_week(self):
@@ -454,21 +458,35 @@ class FiguresTests(_Base):
         self.assertEqual(weeks['2026-08-03']['transactions'], 2)
         self.assertEqual(weeks['2026-08-03']['transactions_per_student'], '2.0')
         self.assertEqual(weeks['2026-08-10']['transactions'], 2)
-        self.assertEqual(weeks['2026-08-10']['transactions_per_student'], '1.0')
+        # Two rows over the ONE student who spent that week (M1 had a wallet and spent nothing).
+        self.assertEqual(weeks['2026-08-10']['transactions_per_student'], '2.0')
         self.assertNotIn('purchases', weeks['2026-08-03'])
 
     def test_the_whole_period_figures_name_their_denominators(self):
         """The two figures the page prints beneath the weekly lines. RM162.50 over four rows is
         RM40.625 a transaction — HALF-UP to 40.63, not banker's 40.62.
 
-        ⚠ THE WEEKLY FIGURE IS THE MEAN OF THE WEEKLY AVERAGES, NOT total ÷ students ÷ weeks.
-        Week of 3 Aug: 2 rows over the ONE student with a wallet = 2.0; 10 Aug: 2 over 2 = 1.0;
-        17 Aug: 0 over 2 = 0.0 → mean 1.0. The other formula gives 4 ÷ 2 ÷ 3 = 0.67 → 0.7,
-        because it charges the first week with a student who had no wallet yet."""
+        ⚠ THE WEEKLY FIGURE IS THE MEAN OF THE WEEKLY AVERAGES OVER THE STUDENTS WHO SPENT
+        THAT WEEK. Week of 3 Aug: 2 rows over M1 alone = 2.0; 10 Aug: 2 rows over M2 alone =
+        2.0; 17 Aug: nobody spent, so the week is left out → mean 2.0. total ÷ students ÷
+        weeks would give 4 ÷ 2 ÷ 3 = 0.7, and "wallets live that week" would give 1.0. And n
+        is the students who have SPENT (2), not the students with a wallet (M3 has an award and
+        no wallet; a fourth with a wallet and no rows would not count either)."""
         overall = self._body('ov-oa')['money_series']['per_student_overall']
         self.assertEqual(overall, {
             'students': 2, 'weeks': 3, 'spent': '162.50', 'transactions': 4,
-            'spent_per_transaction': '40.63', 'weekly_transactions_per_student': '1.0'})
+            'spent_per_transaction': '40.63', 'weekly_transactions_per_student': '2.0'})
+
+    def test_n_excludes_a_student_with_a_wallet_and_no_spending(self):
+        """⚠ The 58-versus-47 case from the live gift, on the fixture: a released disbursement
+        with no Vircle row is not "in the report" and is not in n."""
+        ghost = self._app('ghost', status='awarded', award_amount=Decimal('1000.00'))
+        self._released(ghost, '600.00', _local(2026, 7, 6, 10))
+        overall = self._body('ov-oa')['money_series']['per_student_overall']
+        self.assertEqual(overall['students'], 2)
+        weeks = {w['week']: w for w in
+                 self._body('ov-oa')['money_series']['per_student_per_week']}
+        self.assertEqual(weeks['2026-08-03']['students'], 1)
 
     def test_the_whole_period_figure_is_null_when_nothing_was_spent(self):
         body = self._body('ov-oa', '?programme=ov-gift2')
@@ -586,19 +604,17 @@ class FiguresTests(_Base):
             'unassigned': 1, 'with_reviewer': 4,
             'due_soon': 1, 'overdue': 2, 'awaiting_qc': 1})
 
-    def test_the_intake_block_describes_the_gifts_newest_active_round(self):
-        intake = self._body('ov-oa')['intake']
-        self.assertEqual(intake['code'], 'ov-2026')
-        self.assertTrue(intake['is_open'])
-        self.assertEqual(intake['opens_on'], '2026-01-15')
-        self.assertEqual(intake['closes_on'], '2026-06-30')
-        self.assertIsNone(intake['finished_at'])
+    def test_the_intake_block_is_gone_from_every_role(self):
+        """Owner, 2026-09-18: "doesn't add much value". Removed, not zeroed — a key absent."""
+        for uid in ('ov-su', 'ov-oa', 'ov-fin', 'ov-qc', 'ov-rev'):
+            self.assertNotIn('intake', self._body(uid))
 
-    def test_intake_is_null_when_no_gift_is_named(self):
-        """Present and null, never quietly missing: with several gifts there is no one round."""
+    def test_no_gift_named_still_answers(self):
+        """With several gifts and none chosen, the page shows everything the fence allows."""
         body = self._body('ov-oa', '')
-        self.assertIn('intake', body)
-        self.assertIsNone(body['intake'])
+        self.assertIsNone(body['programme'])
+        self.assertIn('funnel', body)
+        self.assertNotIn('intake', body)
 
 
 class MineTests(_Base):

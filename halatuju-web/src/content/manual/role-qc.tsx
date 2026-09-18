@@ -31,8 +31,7 @@ export const roleQc: ManualChapter = {
         wait, not a score on you.
         <br /><br />
         The page shows <strong>your work and nothing wider</strong> — no money, and none of the
-        programme&rsquo;s overall figures, which belong to the people who run the gift. The one extra thing it
-        tells you is whether <strong>this year&rsquo;s intake is open</strong>, and until when.</>
+        programme&rsquo;s overall figures, which belong to the people who run the gift.</>
       ),
     },
     {
