@@ -1221,10 +1221,50 @@ describe('isStuckAfterVerdict', () => {
     })).toBe(false)
   })
 
-  it('a DECLINE is untouched — a rejected case is not live and stays locked', () => {
+  it('a rejected case is not live and stays locked', () => {
     expect(isStuckAfterVerdict({
       status: 'rejected', verdictDecidedAt: at, verifiedAt: null,
     })).toBe(false)
+  })
+
+  // ── The decline ROAD (BrightPath #24) ──
+  //
+  // ⚠ THIS PAIR REPLACES A FIXTURE THAT ASSERTED THE PAST. The old test called itself "a DECLINE
+  // is untouched" and passed `status: 'rejected'` — the shape a reviewer's decline had until
+  // 2026-07-19. Since then a decline goes to QC like a recommendation: status 'interviewed', and
+  // `verified_at` is NEVER stamped on that road. So the old fixture could not reach the branch it
+  // named, and every declined case awaiting QC read as stuck, telling the reviewer to press
+  // Approve — which would have overwritten her decline with a recommendation.
+  it('a DECLINE sent to QC is NOT stuck, even with no verified stamp', () => {
+    // Application 32, live: declined 11 Sep, awaiting QC, verified_at null for ever.
+    expect(isStuckAfterVerdict({
+      status: 'interviewed', verdictDecidedAt: at, verifiedAt: null, outcome: 'decline',
+    })).toBe(false)
+  })
+
+  it('a DECLINE whose submit never ran IS stuck — the reviewer keeps her button', () => {
+    // The decline road has its own half-completed press: the verdict saved, submit-decline did
+    // not run, so the case never reached 'interviewed'. She must be able to finish it herself —
+    // the same protection application 144 was given.
+    for (const s of ['shortlisted', 'profile_complete', 'interviewing']) {
+      expect(isStuckAfterVerdict({
+        status: s, verdictDecidedAt: at, verifiedAt: null, outcome: 'decline',
+      })).toBe(true)
+    }
+  })
+
+  it('an ACCEPT at awaiting-QC with no stamp is still stuck — the old rule survives', () => {
+    // ⚠ The fix must not widen into "anything at interviewed is fine": on the RECOMMEND road the
+    // stamp is exactly what proves the submit ran, and its absence is application 144's fault.
+    expect(isStuckAfterVerdict({
+      status: 'interviewed', verdictDecidedAt: at, verifiedAt: null, outcome: 'accept',
+    })).toBe(true)
+  })
+
+  it('with no outcome recorded it behaves as before (keyed on the stamp)', () => {
+    expect(isStuckAfterVerdict({
+      status: 'interviewing', verdictDecidedAt: at, verifiedAt: null,
+    })).toBe(true)
   })
 
   it('a decided case never reopens itself: recommended / awarded / closed are not stuck', () => {

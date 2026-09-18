@@ -52,6 +52,20 @@ describe('the Approve lock-out cannot come back', () => {
     expect(src.slice(at, at + 220)).toContain('verifiedAt: app.verified_at')
   })
 
+  it('the stuck check is asked about the recorded OUTCOME, not only the stamp', () => {
+    // BrightPath #24: `verified_at` is never written on the decline road, so a rule that reads
+    // only the stamp calls every declined case stuck. The page must pass the outcome in.
+    const src = code()
+    const at = src.indexOf('isStuckAfterVerdict({')
+    expect(at).toBeGreaterThan(-1)
+    expect(src.slice(at, at + 320)).toContain('outcome:')
+  })
+
+  it('the Save button label follows the chosen outcome', () => {
+    // One fixed "Save & generate final profile" promised a profile on a decline, which makes none.
+    expect(code()).toContain('recordVerdict.saveDecline')
+  })
+
   it('a reviewer coming back is TOLD the verdict is already saved', () => {
     // Without the note the panel looks untouched on a fresh load, so she cannot tell whether her
     // decision was recorded — the only clue she ever had vanished with the page.
