@@ -86,6 +86,15 @@ rules; shipped together with H3.
 - *Process note.* A security hole in a money path went from found to fixed in one day because the
   freeze had already cleared the desk. That is an argument for the freeze, not a coincidence.
 
+## The deploy
+
+H3 and the TD-258 fix shipped together at `08ee0ce`. **Both builds passed the H2 gate first: 6,730
+pytest ran inside the api build before the image was pushed** — the 8 new security tests among
+them. Serving `halatuju-api-01052-b57` / `halatuju-web-00903-7bs`. Site 200; admin endpoint 401;
+both sponsor endpoints answer 401 to an anonymous caller (authentication runs before the view);
+zero ERROR lines on the new revision. The lead cannot sign in as a sponsor, so the in-build suite
+is the evidence for the new answers, not a live probe — stated rather than implied.
+
 ## Numbers
 
 | Gate | Before | After |

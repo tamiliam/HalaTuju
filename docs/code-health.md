@@ -12,13 +12,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | - | - |
 | 2026-09-18 | cc4406f | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 84 | 0 | 0 | ok |
 | 2026-09-18 | 257fcd4 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 85 | 0 | - | - |
 | 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | 0 | ok |
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok |
 
-## Latest run (2026-09-18, cc4406f, window 2026-06-20 onward)
+## Latest run (2026-09-18, 08ee0ce, window 2026-06-20 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -113,22 +114,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 24 of 140 web test files read source text
 
 ### Debt register
-- 150 entries have a defining line; 84 carry no resolution marker on it
+- 150 entries have a defining line; 83 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 362: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4150: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 363: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 4182: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
-
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5353
 
 ## Reviews
 
