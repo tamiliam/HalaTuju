@@ -38,6 +38,36 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health H5 - a test factory that only builds states the product can reach - 2026-09-19
+
+Sprint H5 of the code-health roadmap, under the development freeze, on the owner's standing word.
+Built by an Opus 5 agent; spot-checked and closed by the lead. **Test code only** - no application
+source, no migration. Retro: `docs/retrospective-2026-09-19-code-health-h5.md`.
+
+- **`apps/scholarship/tests/factories.py`.** `make_application(stage=..., outcome=...)` builds an
+  application at a named stage with every field the product would have set and none it would not.
+  Plus `make_org`, `make_admin(role)`, `make_cohort` (always with a programme - TD-258),
+  `make_student`, and ONE home for the test JWT that 83 files each defined for themselves.
+- **The factory cannot drift:** `test_factories.py` walks a fresh application to every stage
+  THROUGH THE REAL SERVICES AND ENDPOINTS and compares. No stage is unverified. Both roads to QC
+  are walked - the decline road leaves `verified_at`, `verified_by`, the checklist and the IC lock
+  all unset, which is the fact request #24's fixture got wrong.
+- **The code overruled the brief six times** - no `draft` stage exists; `scored` and
+  `verdict_recorded` are real states with no status of their own; `assigned` does not move the
+  status; `expired` and `rejected` are branches, not points on the line.
+- **20 files converted, 121 hand-built applications removed, every test count identical, no
+  assertion changed.** The suite got FASTER: 174.6 s to 122.9 s.
+- **It found the #24 class again on its first day.** A fixture in `test_usage_attribution.py`
+  passed a `programme` to `Sponsorship.objects.create` - a column that does not exist - behind a
+  condition that was always false because the hand-built cohort had no programme. The branch had
+  never run. Removed; assertions untouched; `# H5-FINDING` comment in place.
+- **New standard in the gate:** a new test file may not hand-build a `ScholarshipApplication`
+  (counted by AST call, never by text); listed files may not gain one; the ledger only shrinks.
+  **154 files / 306 calls to 134 / 185.** Eleven bite-checks, none silent.
+- Workspace tool: `code_health.py`'s `std` reading no longer mistakes a NEW STANDARD for a
+  loosening (a new top-level budget key is stricter; a new ledger member is still a FAIL).
+- Gates: 6,803 pytest, 0 failed. No reading got worse.
+
 ## Code health H4 - the standards become tests inside the deploy gate; Phase 1 is complete - 2026-09-19
 
 Sprint H4 of the code-health roadmap, under the development freeze; the first run under the

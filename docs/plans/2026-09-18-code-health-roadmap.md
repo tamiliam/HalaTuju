@@ -206,7 +206,8 @@ chasing them is how a health arc turns into a rewrite.
 
 ## Phase 2 — Tests that can fail
 
-### H5 — A backend test factory that builds states the product can reach
+### H5 — A backend test factory that builds states the product can reach ✅ SHIPPED 2026-09-19
+*Retro: `docs/retrospective-2026-09-19-code-health-h5.md`. 20 files converted, 121 hand-built applications gone, suite 174 s → 123 s, every stage verified against the real code path, and a new gate standard (ledger 154 files → 134, shrink-only). Found one more impossible fixture — the #24 class. The stage list below was the lead's guess; the built one is in `CLAUDE.md` → Test fixtures.*
 - **Goal:** tests stop hand-building applications, so a fixture cannot describe an impossible case.
 - **Scope:** `apps/scholarship/tests/factories.py`: `make_admin(role)`, `make_cohort()`,
   `make_student()`, `auth_token(uid)` (duplicated per file today), and

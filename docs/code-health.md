@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 5fbc6e1 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | - | - | ok |
 | 2026-09-19 | 1c24748 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | 0 | ok | ok |
 | 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | - | - | - |
 | 2026-09-18 | cc4406f | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 84 | 0 | 0 | ok | - |
@@ -20,15 +21,15 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 1c24748, window 2026-06-21 onward)
+## Latest run (2026-09-19, 5fbc6e1, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/views_admin.py` | 34 | 8547 | 290.6 |
+| `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8547 | 273.5 |
 | `halatuju-web/src/lib/admin-api.ts` | 25 | 4099 | 102.5 |
-| `halatuju_api/apps/scholarship/services.py` | 32 | 2931 | 93.8 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 29 | 3187 | 92.4 |
+| `halatuju_api/apps/scholarship/services.py` | 31 | 2931 | 90.9 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1637 | 45.8 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
@@ -37,7 +38,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 301 fix / 427 feat commits since 2026-06-21
+- 299 fix / 427 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8547  halatuju_api/apps/scholarship/views_admin.py`
@@ -112,7 +113,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Source-text guard tests (web)
-- 25 of 141 web test files read source text
+- 25 of 142 web test files read source text
 
 ### Debt register
 - 150 entries have a defining line; 83 carry no resolution marker on it
@@ -125,20 +126,24 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Standards budgets vs the last recorded run
-- halatuju_api/code-standards.json: not present at 08ee0ce (first reading of this file)
-- halatuju-web/code-standards.json: not present at 08ee0ce (first reading of this file)
-
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5353
+- budgets no looser than at 1c24748
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (second reading) — H5 closed: the test factory; `std` holds
+
+Plain run after sprint H5 (test code only). No FAILs.
+- **`std` ok** — the api budget gained a whole new standard (`hand_built_application_fixtures`,
+  154 files → 134). The tool first read that as a loosening; it is the opposite, and the tool was
+  corrected the same day: a new top-level budget key is a new standard, a new ledger member is
+  still a FAIL.
+- **hot#1 290.6 → 273.5** — *no decision.* No source changed; the 90-day window moved a day and
+  dropped old fixes from `views_admin.py`. The fall is time, not work. H11–H12 do the work.
+- Not a reading: the suite fell from 174.6 s to 122.9 s, which is three-quarters of a build-minute
+  back on every api deploy.
+- All WARNs unchanged; decisions stand as in the baseline.
 
 ### 2026-09-19 — H4 closed: Phase 1 complete; a new reading, `std`
 

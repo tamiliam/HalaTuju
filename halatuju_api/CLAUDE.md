@@ -344,6 +344,7 @@ message itself tells you what to do; this table is the why.
 | **No unguarded mirror** — a `src/lib` comment saying a rule is *mirrored* or *kept in sync* must carry `drift-test: <repo-relative path>` naming the test that proves it; the 58 without one are ledgered | `codeStandards.test.ts` | The `SOFT_EVIDENCE` denylist rotted because nothing enforced its mirror, and a fact backed only by soft signals leaked to blue. A comment asking two files to stay in step is a request; only a test is a rule. Better still: have the server **serve** the value rather than mirror it |
 | **No dead weight** — every package in `dependencies` is imported somewhere | `codeStandards.test.ts` | Downloaded on every build, audited on every scan, and read by the next person as something this app uses |
 | **The app boundary** — `courses → scholarship` imports may not rise above 25, and the module-level ones may not rise above 1 | `test_code_standards.py` | Two apps that import each other are one app with a line drawn through it, and the import-time half is what takes the service down at start-up |
+| **New tests use the factory** — a test file not already in the ledger of 134 may not call `ScholarshipApplication.objects.create(`; a listed file's count may only fall | `test_code_standards.py` | A hand-built fixture can describe a state the product cannot reach, and then the test passes for ever while testing nothing (BrightPath #24). See **Test fixtures** below |
 
 **The two budget files.** `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`.
 Each sits inside its own service folder, so it is inside the path filter of the Cloud Build trigger
@@ -365,10 +366,47 @@ add a rule the front end already knows, serve it rather than mirror it. If a sup
 genuinely unavoidable, write the reason on the line. No failure message here will ever tell you to
 raise a number, because there is no case in which that is the right answer.
 
-**Not yet covered** (later sprints, each with its own test): "a new test file uses the factory
-rather than hand-building a `ScholarshipApplication`" arrives with H5; first-load-JS and
-database-query budgets arrive with H18. Style and formatting are deliberately out of scope for
-ever — a formatter pass rewrites every file and proves nothing about bugs.
+**Not yet covered** (later sprints, each with its own test): first-load-JS and database-query
+budgets arrive with H18. Style and formatting are deliberately out of scope for ever — a formatter
+pass rewrites every file and proves nothing about bugs.
+
+### Test fixtures
+
+`apps/scholarship/tests/factories.py` builds the supporting rows (`make_org`, `make_programme`,
+`make_cohort`, `make_admin`, `make_student`, `make_shortlistable_student`, `auth_token`,
+`authed_client`) and, above all, **`make_application(stage=…, outcome=…)`** — an application at a
+named stage, carrying every field the product would have stamped by then and none it would not.
+`**overrides` sets anything explicitly; an unknown stage, or an `outcome` at a stage that has none,
+raises a clear `ValueError`.
+
+| Stage | `status` | What the product has set by then | What it deliberately has NOT |
+|---|---|---|---|
+| `submitted` | `submitted` | locale, notify_email, declaration + `declared_at`, consent-to-contact | verdict, any decision stamp |
+| `scored` | `submitted` | `verdict`, `bucket`, `shortlist_reason`, `decision_due_at` | `decision_released_at`, `shortlisted_at` |
+| `shortlisted` | `shortlisted` | `decision_released_at`, `shortlisted_at`, `reminder_anchor_at` | `profile_completed_at` |
+| `profile_complete` | `profile_complete` | `profile_completed_at`, frozen `requirements_snapshot` | reviewer, verdict |
+| `assigned` | `profile_complete` | `assigned_to`, `assigned_at` — **the status does not move** | verdict |
+| `interviewing` | `interviewing` | `reporting_date` (the officer settles it here) | verdict |
+| `verdict_recorded` (needs an outcome) | `interviewing` | `officer_verdict`, `verdict_decided_at/_by`, engine version; `award_amount` applied on accept / cleared on decline — **the status does not move** | every verify stamp |
+| `awaiting_qc`, `outcome='recommend'` | `interviewed` | the verdict stamps **plus** `verified_at`, `verified_by`, `verify_checklist`, `profile.nric_verified` | QC/award stamps |
+| `awaiting_qc`, `outcome='decline'` | `interviewed` | the verdict stamps only | **`verified_at`, `verified_by`, `verify_checklist`, the NRIC lock, `award_amount`** |
+| `recommended` | `recommended` | `recommended_at/_by`, published anon `SponsorProfile`, active share consent, `award_amount` → in the sponsor pool | `awarded_at` |
+| `awarded` / `active` / `maintenance` | same | `awarded_at` / `active_at` / `maintenance_at` + `maintenance_substate` | later stamps |
+| `closed` | `closed` | `closure_reason`, `closed_at/_by` | — |
+| `rejected` (branches off the decline road) | `rejected` | `rejection_category`, `rejected_at/_by`, `pre_decline_status`, `pending_rejection_category`, `decline_due_at`, `pending_decline_by` | `decline_email_sent_at`, any QC/award stamp |
+| `expired` (branches off `shortlisted`) | `expired` | `expired_at`, `reminder_stage` 4, `last_reminder_at` | any verdict or reviewer |
+
+⚠ **Two roads reach QC and they leave different marks.** A reviewer who RECOMMENDS goes through
+`verify-accept`, which stamps `verified_at` / `verified_by` / `verify_checklist` and locks the
+NRIC; a reviewer who DECLINES goes through `submit-decline`, which stamps **none** of those,
+because a decline has no identity or completeness gate. Asking for `verified_at` on the decline
+road is asking for a mark production never writes — that was BrightPath request #24.
+
+`test_factories.py` walks a fresh application to **every** stage through the real services and the
+real endpoints and asserts the factory agrees, so the factory cannot become the next stale fixture.
+**New test files must use it** — enforced by `test_code_standards.py`; the ~134 files that still
+hand-build one convert as they are next touched (`small-change-lane.md`), and their ledger entries
+may only fall.
 
 ## Key Files
 
@@ -650,7 +688,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 (the backend test factory) is next.**
+- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 (a render harness for the reviewer cockpit) is next.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
