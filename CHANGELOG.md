@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## The stuck banner tells the truth per ROAD - 2026-09-18 (BrightPath #24)
+
+**LIVE.** `main` **7cc65ddb**, web **halatuju-web-00896-bvj**; site 200, `/admin/scholarship`
+200, no ERROR logs. Owner-triaged bug / small change, scheduled and approved before the build.
+
+The owner opened VETHIYASRE (#32) and read *"this case has not moved to QC yet. Press Approve
+again to submit it"* on a case that WAS with QC. **Two roads reach QC and they leave different
+marks.** Recommend goes through verify-accept, which stamps `verified_at`. A DECLINE has no
+identity or completeness gate - an incomplete applicant is exactly who gets declined - so since
+**2026-07-19** `submit-decline` moves the case to `interviewed` and stamps nothing else.
+`isStuckAfterVerdict` asked for the stamp on BOTH roads.
+
+- **Every declined case awaiting QC read as "not submitted"**, and the panel advised pressing
+  Approve - which would have replaced the reviewer's decline with a RECOMMENDATION. One live
+  case today; every future decline would have hit it.
+- The rule now takes the recorded outcome: on a decline, "submitted" means the case reached
+  awaiting-QC; on an accept it still means the stamp. **A decline whose submit never ran is
+  STILL stuck**, so the reviewer keeps her button - the protection #144 was given, on both roads.
+- Decline wording for the banner, and **the Save button follows the chosen outcome** (it promised
+  "generate final profile" on a decline, which generates none). en/ms/ta.
+- **⚠ THIS WAS INTRODUCED BY #144's OWN FIX (7 Sep), on a premise seven weeks stale.** That
+  commit says in writing *"A DECLINE is untouched - it leaves the case rejected, not a live
+  state"*, which stopped being true on 19 July. Its test called itself "a DECLINE is untouched"
+  and passed `status: 'rejected'` - so it could not reach the branch it named, and it passed
+  green through the whole regression. Replaced with the post-July shape, reason written above it.
+- +6 tests (2308 jest, 138 suites); lint 0 errors; `next build` exit 0. Three bites, all caught.
+- **⚠ PROCESS FAULT, MINE:** I built this from *"I want to wrap up the request first"*, which
+  was not a build instruction - the owner's triage had not happened yet. He called it, and the
+  work waited, uncommitted, until the request was triaged, scheduled and the analysis approved.
+  A request's next step is the OWNER'S control, not the next thing an engineer can do.
+
 ## The Overview's charts, round five - hover everywhere, lists nowhere - 2026-09-18
 
 The owner's third read. Every chart on the page now answers on hover and lists nothing beneath

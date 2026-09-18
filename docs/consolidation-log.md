@@ -7,6 +7,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-09-18 review — counter reset; the 11 reviewed entries are listed in that review)_
 
+- 2026-09-18 fix: the stuck banner tells the truth per ROAD (BrightPath #24) - `isStuckAfterVerdict` demanded `verified_at` on both roads to QC, but the DECLINE road (since 19 July) never stamps it, so every declined case awaiting QC read as "not submitted" and was advised to press Approve - which would have overwritten the decline with a recommendation. Now keyed on the recorded outcome, with a decline's own half-completed press still caught. Save's label follows the outcome. ⚠ Introduced by #144's fix on 7 Sep, whose test asserted the pre-July shape (`status: 'rejected'`) and could never reach the branch it named - the same family as the September date blackout. ⚠ And I BUILT IT UNASKED, from "wrap up the request", before the owner had triaged it; it sat uncommitted until he did. 7 files, web only, three bites caught.
+
 ## Reviews
 
 ### 2026-09-18 — eleven changes: five the owner SAW, six nobody could see
