@@ -38,6 +38,27 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health: the full sprint roadmap is written (not yet approved) - 2026-09-18
+
+The owner: *"I need a full implementation plan, covering all the sprints, and not like this
+piecemeal version."* `docs/plans/2026-09-18-code-health-roadmap.md` - sixteen sprints in five
+phases, about 95 hours, in the house roadmap format. Docs only.
+
+- **Order: gates, then tests that can fail, then one rule one home, then the big files, then the
+  bundle.** Each phase makes the next one safe; the cockpit gets a rendered test (H5) BEFORE
+  anybody splits it (H13), because today two text guards are its only evidence.
+- **Measured for the plan, not assumed:** both Cloud Build triggers are inline three-step configs
+  with no test step; 181 builds and 1,016 build-minutes in 30 days against a 2,500 free tier;
+  `views_admin.py` has ZERO helpers shared across its 25 domains and `urls.py` imports it as one
+  flat list of 142 names; `admin-api.ts` has zero deep imports; ~34 front-end rules say "mirrors
+  the backend" and two have a drift test; 303 hand-built application fixtures and no factory.
+- **A survey claim was checked and thrown out:** "530 MB of eval fixtures ship in the api image".
+  The triggers build from a git clone and those files are untracked. Tracked tests DO ship.
+- **`_money` is not seven copies of one function.** It is eight functions doing three jobs, none
+  byte-identical. The sprint renames and parameterises; it does not merge blindly.
+- The July code-health arc is fully shipped and the June audit's four rejected findings stay
+  rejected - nothing here repeats either.
+
 ## The type check becomes a real gate: 24 errors to 0 (TD-221 closed) - 2026-09-18
 
 First act on the code-health baseline. The owner chose it from two options. Work by an Opus 5
