@@ -558,6 +558,21 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
+## ⛔ DEVELOPMENT FREEZE — owner ruling, 2026-09-18 (READ BEFORE STARTING ANY WORK)
+
+The owner: *"I want to pause all other developments until this is stabilised or completed."*
+**The only development that may run is the code-health roadmap:
+`docs/plans/2026-09-18-code-health-roadmap.md`** (nineteen sprints, H1–H19, back to back).
+
+- **Allowed:** a production defect with a user on the other side (hotfix lane); operations with no
+  code (payment runs, spending imports, invoices, support); security fixes; BrightPath request
+  triage and analysis.
+- **Not allowed:** any new feature, page, model or polish — including **Overview phase 2 Sprint B**
+  (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
+- **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
+  after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
+- **Status: H1 has not started — it waits for the owner's word.**
+
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
 **➕ ALSO LIVE (2026-09-18): Overview PHASE 2, SPRINT A — the organisation chooses its panels, and

@@ -7,7 +7,7 @@ that got WORSE than the last run by more than a tolerance — the only thing tha
 
 Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` at sprint close).
 
-**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (sixteen sprints, five phases; not yet approved).
+**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases, run back to back under a development freeze; awaiting the owner's word to start H1).
 
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n |

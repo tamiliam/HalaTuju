@@ -1,12 +1,49 @@
 # Code health — the sprint roadmap
 
-**Written 2026-09-18** via `Settings/_workflows/implementation-planning.md`. **Not yet approved.**
-Nothing in here starts until the owner says so.
+**Written 2026-09-18** via `Settings/_workflows/implementation-planning.md`. **Revised the same
+day on two owner rulings (below). Awaiting the owner's word to start H1.**
 
 The owner, 2026-09-18: *"occasionally I find bugs being introduced during our coding, as the code
 base becomes more and more complicated. I'd like to audit the health of the codebase as we progress
 further."* Then, after the first fix was done on its own: *"I need a full implementation plan,
 covering all the sprints, and not like this piecemeal version."*
+
+### Owner rulings, 2026-09-18 (do not re-litigate)
+
+1. **Everything else stops.** *"I want to pause all other developments until this is stabilised or
+   completed."* → the sprints run **back to back**, not alternating with product work. The freeze
+   is defined in the next section.
+2. **It has to stay fixed.** *"Once this is built, future builds would ensure the standards are
+   maintained to prevent bugs or inefficiencies creeping in."* → the standards become **tests that
+   run in the deploy gate** (H4), efficiency gets **budgets** (H18), and the arc ends by writing
+   the standards into the workflows every future sprint follows (H19). A standard that lives only
+   in a document is a habit, and this project's own record says habits are what fail.
+
+## The development freeze
+
+**In force from 2026-09-18 — the ruling is the owner's own words — until the owner lifts it.** It is posted at the top of `halatuju_api/CLAUDE.md` "Next Sprint", where every agent reads first.
+
+| Allowed during the freeze | Not allowed |
+|---|---|
+| A **production defect with a user on the other side** — hotfix lane, smallest fix, regression test | New features, pages, models, screens |
+| **Operations with no code**: payment runs, spending imports, invoices (September bills by 15 Oct), student and sponsor support, data repairs through existing doors | Copy or design polish |
+| **BrightPath requests:** triage and analysis continue; a request that is a live defect is fixed; **every other build is scheduled for after the freeze**, and the requester is told so | Building a non-defect request |
+| Security fixes | Refactors outside this roadmap |
+
+**What the freeze parks — checked, nothing is half-built:** every feature branch is merged into
+`main` (0 commits ahead); Overview phase 2 **Sprint A is live and closed, Sprint B (widget order) has
+not started** and waits. TD-253 (findings must be complete) and TD-254 (IC-claim second factor,
+HIGH, security) were deferred by the owner earlier the same day. ⚠ **TD-254 is a security item:
+the owner may pull it forward at any point and the freeze does not argue.**
+
+**Two ways out, both the owner's call:**
+- **Stabilised** — the checkpoint after **Phase 3** (H10). By then a red suite cannot ship, the
+  standards are enforced in the gate, tests can fail, and every rule has one home: the things that
+  *prevent* bugs are done. What remains (Phases 4–5) makes the code easier to work in. The owner
+  may lift the freeze here and finish the rest alternating with product work.
+- **Completed** — after H19, which lifts the freeze as its last act.
+
+Each sprint's retro states which the project is closer to, with the reading to show it.
 
 **The measurement lives in `docs/code-health.md`** (tool: `Settings/_tools/code_health.py`,
 workflow: `Settings/_workflows/code-health-audit.md`). This document is only the decomposition.
@@ -18,9 +55,9 @@ Every sprint below ends by taking a reading, so the plan is judged by numbers, n
 
 **In one sentence:** stop bugs reaching production, make tests able to fail, give every rule one
 home, and only then cut the giant files into pieces — in that order, because each step makes the
-next one safe.
+next one safe. Then lock the standards in, so the work never has to be done twice.
 
-**Sixteen sprints in five phases, about 95 hours.** The division is driven by four facts, all
+**Nineteen sprints in six phases, about 118 hours, run back to back.** The division is driven by four facts, all
 measured on 2026-09-18:
 
 1. **Nothing runs the tests before a deploy.** Both Cloud Build triggers are inline configs of
@@ -47,15 +84,18 @@ makes a reading worse than its own start has not finished.
 | Reading | 2026-09-18 | Target | Moved by |
 |---|---|---|---|
 | Tests run before deploy | no | **yes, both services** | H2 |
-| `fix%` (fixes ÷ fixes+features, 90 days) | 41 | **under 30**, read 90 days after H16 | all |
-| `hot#1` (fixes × KLOC of the worst file) | 290 | **under 100** | H10, H11 |
-| `big` (files over 1,000 lines) | 25 | **12 or fewer** | H10–H15 |
-| `dup` (one function name, 3+ homes in an app) | 10 | **0 true duplicates** (renames count) | H6 |
-| Front-end rules mirrored with no drift guard | ~32 | **0** | H8, H9 |
+| `fix%` (fixes ÷ fixes+features, 90 days) | 41 | **under 30**, read 90 days after H17 | all |
+| `hot#1` (fixes × KLOC of the worst file) | 290 | **under 100** | H11, H12 |
+| `big` (files over 1,000 lines) | 25 | **12 or fewer** | H11–H16 |
+| `dup` (one function name, 3+ homes in an app) | 10 | **0 true duplicates** (renames count) | H7 |
+| Front-end rules mirrored with no drift guard | ~32 | **0** | H9, H10 |
 | `unused` npm packages | 4 | **0** | H1 |
 | `tsc` | 0 *(was 24; done 2026-09-18)* | **stays 0** | ratchet |
-| `guard%` (web tests that read source text) | 17 | **12 or under** | H5 |
-| Rendered tests that mount the cockpit | 0 | **1 harness, 6+ tests** | H5 |
+| `guard%` (web tests that read source text) | 17 | **12 or under** | H6 |
+| Rendered tests that mount the cockpit | 0 | **1 harness, 6+ tests** | H6 |
+| Standards enforced by a test in the deploy gate | 0 | **all of H4's list** | H4, H19 |
+| Database queries to open one applicant (officer view) | unmeasured | **measured, budgeted, cannot grow** | H18 |
+| First-load JS per route | unbudgeted | **budgeted, cannot grow** | H17, H18 |
 
 `long` (16 long functions) and `xapp` get no target: they fall as a side-effect or not at all, and
 chasing them is how a health arc turns into a rewrite.
@@ -120,17 +160,49 @@ chasing them is how a health arc turns into a rewrite.
     against the URLs the endpoint tests hit, in the shape of `test_org_fence.py`.
   - **TD-240:** the org-fence guard has never scanned `views_sponsor.py`.
   - **TD-250:** the route-drift test reads only the top level of `src/app/admin/`.
-  - Teach `test_org_fence.py` to scan a **package** (`views_admin/*.py`), not just a filename — H10
+  - Teach `test_org_fence.py` to scan a **package** (`views_admin/*.py`), not just a filename — H11
     breaks it otherwise, and a fence guard that cannot see the queries is the worst kind of green.
 - **Acceptance:** each guard bite-checked (remove a fence pragma / an endpoint test / a nested
   route → red). TD-219, TD-240, TD-250 carry their markers.
 - **Complexity:** medium. **~6h.** api deploy only if a real gap is found; else tests only.
 
+### H4 — The standards become tests, inside the gate
+- **Goal:** the owner's second ruling, made mechanical. After this sprint a change that breaks a
+  standard **cannot deploy**, whoever or whatever wrote it. Built early, on purpose: the rest of
+  this arc is then held to the same standards it is installing.
+- **How:** one committed budget file, `code-standards.json`, and two test files that read it —
+  `halatuju_api/apps/scholarship/tests/test_code_standards.py` and
+  `halatuju-web/src/lib/__tests__/codeStandards.test.ts`. They run in the normal suites, so from
+  H2 onward they run before every deploy. **The budget is a RATCHET: a number in it may only go
+  down.** A test asserts the file itself never loosens against `main`.
+- **The standards (each one maps to a way bugs have got in here):**
+
+  | Standard | Rule the test enforces |
+  |---|---|
+  | No new giant file | A **new** source file may not pass 600 lines. A file already over is listed with its size and **may not grow**; when a split shrinks it, the entry is lowered or removed |
+  | No new giant function | No new Python function of 150+ lines; the 16 known ones are listed and may not grow |
+  | One rule, one home | No function name defined in 3+ files of one app, beyond the listed exceptions (which H7 empties) |
+  | No unguarded mirror | A `src/lib` comment saying *mirrors / keep in sync* must name the drift test that guards it, or the test fails (H9–H10 empty the list) |
+  | No blind spots | No `@ts-ignore`; no `any`; every `eslint-disable` carries a written reason; the count may not rise |
+  | Tests can fail | Zero skipped / xfail / todo tests |
+  | No dead weight | Every npm dependency is imported somewhere |
+  | The app boundary | `courses → scholarship` imports may not rise, and may not be module-level |
+  | New tests use the factory | From H5: a **new** test file may not hand-build a `ScholarshipApplication` |
+
+- **Kept out on purpose:** style and formatting. A formatter pass rewrites every file and proves
+  nothing about bugs.
+- **`code_health.py` stays what it is** — the trend and the conversation. The tests are the
+  enforcement. One measures, the other refuses; neither does both.
+- **Acceptance:** every standard bite-checked **both ways** — a breach goes red, and a legitimate
+  change stays green (a guard that cries wolf gets deleted within a month, and one did today).
+  The ratchet test refuses a loosened budget.
+- **Complexity:** medium. **~8h.** No behaviour change; both suites grow.
+
 ---
 
 ## Phase 2 — Tests that can fail
 
-### H4 — A backend test factory that builds states the product can reach
+### H5 — A backend test factory that builds states the product can reach
 - **Goal:** tests stop hand-building applications, so a fixture cannot describe an impossible case.
 - **Scope:** `apps/scholarship/tests/factories.py`: `make_admin(role)`, `make_cohort()`,
   `make_student()`, `auth_token(uid)` (duplicated per file today), and
@@ -145,7 +217,7 @@ chasing them is how a health arc turns into a rewrite.
   when its code is disabled.
 - **Complexity:** medium. **~7h.** No deploy (tests only; H1's `.dockerignore` keeps them out).
 
-### H5 — A render harness for the cockpit, and the stopgap guards retired
+### H6 — A render harness for the cockpit, and the stopgap guards retired
 - **Goal:** the 3,587-line reviewer screen is mounted by a real test before anybody moves it.
 - **Scope:**
   - `src/test/adminApplicationDetail.ts`: a typed `AdminApplicationDetail` fixture builder (the
@@ -169,7 +241,7 @@ chasing them is how a health arc turns into a rewrite.
 
 ## Phase 3 — One rule, one home
 
-### H6 — Money and text helpers ⚠ touches money
+### H7 — Money and text helpers ⚠ touches money
 - **Goal:** no two functions share a name and differ in behaviour.
 - **What the survey found — this is not the merge it looked like:** `_money` is **eight functions
   doing three jobs** (extract a figure from OCR text; parse to `Decimal`; format for display). No
@@ -193,7 +265,7 @@ chasing them is how a health arc turns into a rewrite.
   byte-identical; reading: `dup` has no true duplicates.
 - **Complexity:** medium. **~7h.** api deploy.
 
-### H7 — The income rule gets one served answer (TD-235) ⚠ touches eligibility
+### H8 — The income rule gets one served answer (TD-235) ⚠ touches eligibility
 - **Goal:** "is this household's income evidenced?" is answered in one place and *served*.
 - **Scope:** `income_engine.any_member_income_evidenced` becomes the single answer; the frozen
   gate, the cockpit display and the de-dup sweep read it. `src/lib/incomeWizard.ts` — a declared
@@ -205,7 +277,7 @@ chasing them is how a health arc turns into a rewrite.
   STPM 2026 golden masters unchanged; stored-row count reported.
 - **Complexity:** medium–high. **~9h.** Both services deploy.
 
-### H8 — De-mirror the front end, wave 1: the decision gates
+### H9 — De-mirror the front end, wave 1: the decision gates
 - **Goal:** the rules that decide what an officer may do stop living in two languages.
 - **Scope:** the template exists — `documentLimits.ts` and `interviewSlots.ts` are headed
   *"⚠ THE RULES ARE SERVED, NOT MIRRORED."* Apply it to: `ORG_REJECT_FROM`, the 13 application
@@ -219,7 +291,7 @@ chasing them is how a health arc turns into a rewrite.
   the web test or the screen follows); reading: `mirror` roughly halves.
 - **Complexity:** medium. **~7h.** Both services deploy.
 
-### H9 — De-mirror, wave 2: the rest
+### H10 — De-mirror, wave 2: the rest
 - **Scope:** `family.py` codes and `is_valid_person_name`, `clauseNumbering.ts`,
   `REQUEST_COMPONENT_TREE`, `invitations.status_of`, `reviewer_profile_complete`,
   `partner_comms.KINDS`, contrast + theme token families (already asserted on both sides — confirm
@@ -236,10 +308,11 @@ wording changes. Lesson 173: *"the temptation is to improve the wording in the s
 would make the diff unreviewable."* The proof of a move is a full green suite plus a diff that
 `git diff -M --stat` reads as renames and re-exports.
 
-**⚠ Another agent works this checkout.** Each Phase-4 sprint opens with a line in
-`AGENT-TERRITORY.log` naming the files frozen and for how long, and lands in **one** day.
+**The freeze means one agent in the checkout.** If the owner lifts it at the checkpoint, each
+remaining Phase-4 sprint opens with a line in `AGENT-TERRITORY.log` naming the files it holds and
+for how long, and lands in **one** day.
 
-### H10 — `views_admin.py` becomes a package, wave 1
+### H11 — `views_admin.py` becomes a package, wave 1
 - **Scope:** `views_admin/__init__.py` re-exports all 142 names, so `urls.py` is **byte-identical**.
   Move the six domains with their own service module and no shared helper (~3,200 lines):
   requests (831), gift programmes + intake years (866), invoices (455), contracts (421),
@@ -256,7 +329,7 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
   bite-checked in a moved file; reading: `hot#1` falls by about a third.
 - **Complexity:** medium. **~6h.** api deploy.
 
-### H11 — `views_admin` wave 2
+### H12 — `views_admin` wave 2
 - **Scope:** the remaining nineteen domains (applications/verdict/QC, interviews, sponsors,
   sources, reviewers, billing, org configuration, spending, overview…). The 19 patch strings move
   with `build_verdict` and `refine_sponsor_profile`. `interview_agenda_full` has zero callers
@@ -265,7 +338,7 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
   reading: `hot#1` under 100.
 - **Complexity:** medium. **~7h.** api deploy.
 
-### H12 — `admin-api.ts` and `api.ts` become barrels
+### H13 — `admin-api.ts` and `api.ts` become barrels
 - **Scope:** `src/lib/http.ts` takes the four private fetch helpers (they are *not* shared today:
   `apiRequest` handles `nric_required` and field errors; `adminFetch` does not — keep both
   behaviours). `src/lib/admin-api/{applications,billing,requests,…}.ts` behind
@@ -278,8 +351,8 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
 - **Acceptance:** zero importer edits; jest, tsc, lint, `next build` green; bundle size not larger.
 - **Complexity:** low–medium. **~5h.** web deploy.
 
-### H13 — The cockpit and the documents component, panel by panel
-- **Depends on H5** — not negotiable.
+### H14 — The cockpit and the documents component, panel by panel
+- **Depends on H6** — not negotiable.
 - **Scope:** `view.tsx`: about 1,300 of 2,528 JSX lines sit in panels coupled only to `app`, `t`,
   `token` and one to three handlers — documents drawer (304), disbursement ledger (122), org-admin
   reject wizard (98), QC (98), blockers (88), bursary agreement, witness, assign, closure,
@@ -289,11 +362,11 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
   and `IncomeWizard` (539) move out.
   `useApiLoad(token, fn)`: ~26 of the 33 `exhaustive-deps` disables are one shape (the omitted dep
   is always `t`). One hook retires them; the four with a written reason stay.
-- **Acceptance:** H5's rendered tests green unchanged; `theme.test.ts` path list re-pointed and
+- **Acceptance:** H6's rendered tests green unchanged; `theme.test.ts` path list re-pointed and
   bite-checked; `view.tsx` under ~2,000 lines; `supp` down ~25.
 - **Complexity:** medium–high. **~9h.** web deploy.
 
-### H14 — `models.py` and `services.py`
+### H15 — `models.py` and `services.py`
 - **Scope:** `models/` package with full re-export — `ScholarshipApplication` is a wide table
   (159 fields, 3 methods), not a fat class, so this is a file move. 310 importers, 3 patch sites,
   and migrations address models by label, not by file. `services.py` splits on its existing
@@ -302,7 +375,7 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
   failed move**; pytest green.
 - **Complexity:** low–medium. **~6h.** api deploy.
 
-### H15 — `emails.py`, `income_engine.py`, and the back-edge
+### H16 — `emails.py`, `income_engine.py`, and the back-edge
 - **Scope:** `emails.py`: copy constants (1,005 lines of EN/BM/TA) out to `email_copy/`; senders
   by domain. The safety net is `test_email_branding.py` — a byte-identity golden over every
   `send_*`. ⚠ **Never set `UPDATE_EMAIL_GOLDEN` during this sprint**; it would bless the
@@ -316,9 +389,9 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
 
 ---
 
-## Phase 5 — What the visitor downloads
+## Phase 5 — Efficiency: what the visitor downloads, and what each page costs
 
-### H16 — One locale per visitor
+### H17 — One locale per visitor
 - **Goal:** an English reader stops downloading ~1.2 MB of Malay and Tamil.
 - **Scope:** `src/lib/i18n.tsx` statically imports all three locale files (1.53 MB) into every
   client bundle. English stays static as the fallback; `ms` and `ta` load on demand. Watch for a
@@ -328,34 +401,80 @@ would make the diff unreviewable."* The proof of a move is a full green suite pl
   flash in a recorded Playwright run for each locale.
 - **Complexity:** medium. **~5h.** web deploy.
 
+### H18 — Efficiency gets budgets too
+- **Goal:** the owner's word was *"bugs **or inefficiencies**"*. Slowness creeps in the same way
+  bugs do — one reasonable change at a time, with nothing counting.
+- **Scope:**
+  - **Query budgets.** `assertNumQueries`-style tests on the five busiest endpoints: officer
+    applicant detail, applications list, student application, sponsor pool, Programme Overview.
+    ⚠ The June audit found the applicant-detail GET made **20–30 duplicate queries, wrote to the
+    database, and ran the verdict engine 2–3 times** — and nothing marks those as closed.
+    **Measure first.** If still true, fixing that one endpoint is this sprint's main work.
+  - **Bundle budget.** First-load JS per route, read from `next build`, recorded in
+    `code-standards.json`, ratcheted. H17 sets the new low; this keeps it.
+  - **Build budget.** Build minutes per deploy and api image size, recorded at sprint close.
+  - One reading added to `code_health.py`: `queries` for the applicant detail.
+- **Acceptance:** each budget bite-checked (add a query in a loop → red; add a heavy import → red).
+- **Complexity:** medium–high. **~9h.** api deploy if the N+1 is real.
+
+---
+
+## Phase 6 — Lock it in, and lift the freeze
+
+### H19 — The standards move into how every future sprint is run
+- **Goal:** six months from now, an agent that has never seen this document still keeps to it.
+- **Scope — each line is a change to a workflow or a project file, not advice:**
+  - **`halatuju_api/CLAUDE.md` — a "Code standards" section**, short: the standards, each with the
+    test that enforces it and the one-line reason. New rule → one home, served not mirrored. New
+    view → a seam test. New test → the factory. A file you must grow past its budget → split it
+    first, in its own commit.
+  - **`sprint-start.md`** — a health pre-flight: read the hotspot list in `docs/code-health.md`;
+    if the sprint touches a file on it, the sprint plan says how that file is left **no worse**.
+  - **`sprint-close.md`** — already takes the reading (added 2026-09-18). Add: run the built-in
+    `/code-review` on the sprint's diff before the deploy push, findings answered in the retro.
+  - **`small-change-lane.md`** — the consolidation review already runs the reading. Add: the third
+    consecutive accept of the same WARN becomes a TD entry.
+  - **`system-audit.md`** — every fifth sprint, a **read-through** of the top three hotspots by an
+    agent, recorded in `docs/code-health.md`. Numbers find growth; only reading finds a wrong idea.
+  - **Tighten `code-standards.json` to the arc's targets** — the last turn of the ratchet.
+  - Close out: final reading against the targets table; TD entries for anything missed; retro for
+    the whole arc; **lift the freeze** — update `CLAUDE.md` Next Sprint, the MEMORY.md registry,
+    Mission Control, and tell BrightPath their queued requests are open again.
+- **Acceptance:** a dry run — a throwaway branch that adds a 700-line file, a mirrored rule, a
+  hand-built fixture and a query in a loop is refused **four times, by four different tests**,
+  without anyone remembering anything.
+- **Complexity:** low–medium. **~6h.**
+
 ---
 
 ## Sequence, and what blocks what
 
 ```
-H1 ─► H2 ─► H3 ─┬─► H4 ────────────► H6 ─► H7
-                ├─► H5 ─────────────────────────► H13
-                ├─► H8 ─► H9
-                └─► H10 ─► H11 ─► H14 ─► H15
-                          H12 (any time after H1)      H16 (any time after H1)
+Phase 1   H1 -> H2 -> H3 -> H4
+Phase 2   H5 -> H6
+Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT: "stabilised" - the owner may lift the freeze
+Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16
+Phase 5   H17 -> H18
+Phase 6   H19                          <-- "completed" - the freeze lifts
 ```
 
-- **H1 → H2 → H3 are strictly first.** Every later sprint is safer once a red suite cannot ship.
-- **H5 blocks H13.** H3 blocks H10. H4 should precede H6/H7 (their tests use the factory).
-- Phases 3 and 4 do not block each other and can alternate.
-- **Health work alternates with product work** — one health sprint for every one or two feature
-  sprints. Sixteen in a row would stall the product and nobody would finish it.
-- **Standing rule once approved:** a feature sprint that must change a file still on the hotspot
-  list pulls that file's Phase-4 sprint forward instead of adding to it.
+- **H1 → H2 → H3 → H4 are strictly first.** Every later sprint is safer once a red suite cannot ship.
+- **H6 blocks H14.** H3 blocks H11. H5 should precede H7/H8 (their tests use the factory).
+- Phases 3 and 4 do not block each other; Phase 3 goes first because it is the half that prevents bugs.
+- **Back to back, by owner ruling.** With the product frozen there is one agent in the checkout,
+  which removes Phase 4's biggest risk (a file changing under a move).
+- **If the owner lifts the freeze at the checkpoint**, the remaining sprints alternate with product
+  work, and a feature sprint that must change a file still on the hotspot list pulls that file's
+  Phase-4 sprint forward instead of adding to it.
 
 ## Deliberately NOT in scope
 
 - **Splitting `vision.py`.** 140 patch sites on two network seams. Most expensive move, least
-  benefit. Revisit only if it re-enters the top three hotspots after H11.
+  benefit. Revisit only if it re-enters the top three hotspots after H12.
 - **Untangling the Decision/Recommendation panel.** That is a redesign with a Stitch prototype, its
   own roadmap, and the owner's eye — not a health move.
 - **Coverage percentages.** A coverage number invites tests written for the number. The bite-check
-  habit is the better instrument and is already in use. Reconsider after H5.
+  habit is the better instrument and is already in use. Reconsider after H6.
 - **ruff / mypy / prettier / pre-commit across the repo.** A formatter pass rewrites every file
   the other agent is editing, and mypy on 70k untyped lines is its own arc.
 - **GitHub Actions as the gate.** It is only a *check*; the Cloud Build triggers fire on push
@@ -369,17 +488,21 @@ H1 ─► H2 ─► H3 ─┬─► H4 ────────────► H
 
 | Risk | Guard |
 |---|---|
-| A "pure move" changes behaviour | Moves only; full suite; email golden; golden masters; rendered cockpit tests exist first (H5) |
-| Two agents, one checkout, a file mid-move | `AGENT-TERRITORY.log` freeze line; each move lands within one day |
+| A "pure move" changes behaviour | Moves only; full suite; email golden; golden masters; rendered cockpit tests exist first (H6) |
+| Two agents, one checkout, a file mid-move | Removed by the freeze; if lifted early, `AGENT-TERRITORY.log` and each move lands within one day |
 | The test step eats the free build minutes | Spike measures it first (H2); path-filter fallback; `pytest -n auto` |
 | A flaky test blocks a hotfix | `_SKIP_TESTS=1`, loud in the log, recorded in the retro |
 | Pinning changes what production runs | Lock is a freeze of the **serving** image, not a fresh resolve |
-| The arc stalls half-way | Every sprint stands alone and leaves the code better; stopping after any phase is safe |
+| The arc stalls half-way | Every sprint stands alone and leaves the code better; the Phase 3 checkpoint is a planned place to stop |
+| A long freeze frustrates students, sponsors or BrightPath | Defects and operations are never frozen; requesters are told when work resumes; the checkpoint offers an early exit |
+| The standards get loosened later, "just this once" | The budget is a ratchet guarded by its own test; loosening it needs a commit that says so, which the owner sees |
 
-## Owner decisions this plan needs
+## Owner decisions
 
-1. **Approve the roadmap** (or strike sprints from it).
-2. **H2:** agree to switch the two Cloud Build triggers to committed config files — the one
-   change here that touches production infrastructure.
-3. **Cadence:** alternate health and product sprints (recommended), or run Phase 1 back-to-back
-   first and alternate from Phase 2.
+**Settled 2026-09-18:** cadence — back to back, under a freeze. Standards — enforced in the gate.
+
+**Still needed:**
+1. **The word to start H1.** (The freeze is already in force.)
+2. **H2:** agree to switch the two Cloud Build triggers to committed config files — the one change
+   here that touches production infrastructure. Needed when H2 starts, not before.
+3. **At the checkpoint (after H10):** lift the freeze, or run to the end.

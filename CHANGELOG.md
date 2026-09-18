@@ -41,8 +41,24 @@ per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-check
 ## Code health: the full sprint roadmap is written (not yet approved) - 2026-09-18
 
 The owner: *"I need a full implementation plan, covering all the sprints, and not like this
-piecemeal version."* `docs/plans/2026-09-18-code-health-roadmap.md` - sixteen sprints in five
-phases, about 95 hours, in the house roadmap format. Docs only.
+piecemeal version."* `docs/plans/2026-09-18-code-health-roadmap.md`, in the house roadmap format. Docs only.
+
+**Revised the same day on two owner rulings - now nineteen sprints in six phases, about 118 hours.**
+- ***"I want to pause all other developments until this is stabilised or completed."*** A
+  **development freeze is in force from 2026-09-18**, posted at the top of `CLAUDE.md` Next Sprint.
+  Defects, operations, security and request triage continue; features, polish and non-defect
+  builds wait - including Overview phase 2 Sprint B (not started). Checked first: every feature
+  branch is merged, nothing is half-built. Two exits, both the owner's: "stabilised" at the
+  Phase 3 checkpoint, or "completed" after H19. The sprints run back to back.
+- ***"...future builds would ensure the standards are maintained to prevent bugs or inefficiencies
+  creeping in."*** Three additions. **H4 - the standards become TESTS inside the deploy gate**,
+  driven by a committed `code-standards.json` that is a RATCHET (a number may only go down, and a
+  test guards the file itself). **H18 - efficiency gets budgets**: query counts on the five
+  busiest endpoints, first-load JS per route, build minutes. The June audit's applicant-detail
+  N+1 (20-30 duplicate queries, writes on a GET, the verdict engine run 2-3 times) was never
+  marked closed - measure first. **H19 - the standards move into the workflows** (sprint-start
+  pre-flight, `/code-review` at sprint close, a read-through audit every fifth sprint), proven by
+  a dry-run branch that must be refused four times by four different tests.
 
 - **Order: gates, then tests that can fail, then one rule one home, then the big files, then the
   bundle.** Each phase makes the next one safe; the cockpit gets a rendered test (H5) BEFORE
