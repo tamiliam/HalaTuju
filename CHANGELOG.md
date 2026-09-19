@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-262 item 1 - a stale STR no longer hides the payslips behind it - 2026-09-19
+
+The owner's rule 4 (2026-09-19): *"The stronger proof should be given preference."* An STR-route
+household whose STR was stale, unreadable or in somebody else's name was capped at Unsure with the
+salary evidence on file NEVER ASSESSED - the two branches returned before the salary route was
+reached. No migration. No web file changed. No student-facing screen or copy changed.
+
+- **The split came first, and it is what made the gap visible.** `_verdict_income_salary` was 198
+  lines of one straight run. It is now four named steps - `_salary_relationship_docs` /
+  `_salary_member_scan` / `_salary_unresolved` / `_salary_place_verdict` - in the new module
+  `apps/scholarship/verdict_income_salary.py`. A new module because `verdict_engine.py` sat exactly
+  on its oversize budget; the same reason `income_shown.py` is one. A PURE MOVE, proven by the
+  characterisation suites passing UNEDITED across it. `verdict_engine.py` 1,284 -> 1,146 lines,
+  both budgets lowered, `_verdict_income_salary` left the `long_functions` ledger.
+- **`_stronger_income_fact` assesses both readings and keeps the stronger, by band.** It can only
+  ever RAISE: the weaker is discarded, so the salary route's own `income_above_b40_line` RED is
+  never taken over an amber STR answer. The STR's unresolved items are carried onto the raised
+  fact, so the officer still reads why the STR did not settle it and the student's re-upload ask
+  stays open.
+- **⚠ The gate is the salary route's own `income_proof_present`, NOT `salary_income_satisfied`.**
+  The latter reads like "is there salary evidence?" and is not - it is the gate's "one complete
+  cluster", and a cluster is complete on any of the four ways, the fourth being a non-breached
+  household STR. A stale or mismatched STR is not breached, so it satisfies the very predicate,
+  and gating on it would have opened the door for a household with no payslip at all.
+- **⚠ Rules 1 and 2 are byte-untouched.** A current genuine STR is settled by STR PRECEDENCE
+  before the route split, so payslips still cannot lower it - pinned, and a bite that removes
+  precedence reddens five existing tests.
+- **Stored vs computed.** The verdict is computed per read; it is stored only in
+  `ai_verdict_snapshot` at verdict-record time and a snapshot is never regenerated - so no stored
+  row moves, only live cards repaint. `VERDICT_ENGINE_VERSION` 2026-09-11.1 -> **2026-09-19.1**.
+  `results_doc.MODEL_VERSION` deliberately NOT bumped: no document signature moved.
+- **Nine new pinned rows** (section 8 of `test_income_evidence_homes.py`), written against the
+  unchanged tree and seen green, then the three that should rise edited and seen RED first. **Four
+  bite-checks; one came back SILENT** and earned the row it was missing - a second earner's IC that
+  did not read makes the salary route answer 'review' with no income figure anywhere, which the
+  gate must refuse. pytest 6,970 -> **6,978** / 3 skipped. `code_health` `long` 16 -> **15**, `std`
+  ok, nothing worse.
+
 ## TD-262 chunks 2+3 - the reviewer's screens test READABILITY, as the gate always did - 2026-09-19
 
 Approved by the owner ("1": do both together). Built by an Opus 5 agent, pinned rows edited first

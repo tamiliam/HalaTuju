@@ -45,6 +45,7 @@ from django.utils import timezone
 
 from apps.scholarship import income_engine, services, verdict_engine
 from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.verdict_income_salary import verdict_income_salary
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
 # ── Document builders ───────────────────────────────────────────────────────────────────────
@@ -617,3 +618,134 @@ class TestOneLiveCopy(IncomeHomesBase):
         self.assertIsNone(new.superseded_at)
         # The kept blank-tagged copy inherits the superseded sibling's recipient attribution.
         self.assertEqual(new.household_member, 'father')
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 8. THE STR ROUTE'S FALL-THROUGH  (TD-262 item 1 — "the stronger proof is preferred", R4)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+class TestStrRouteFallThrough(IncomeHomesBase):
+    """The owner's rule 4 (2026-09-19, ``docs/decisions.md``): *"The stronger proof should be
+    given preference."* These rows are one household — a father whose IC reads, whose patronymic
+    links him to the student — seen at each STR state, with and without a payslip behind it.
+
+    ⚠ EVERY ROW IS AN ELIGIBILITY ANSWER. Read the file header: no expectation here may be edited
+    to make a refactor green. The four rows that MOVED for item 1 were edited FIRST, seen red
+    against the unfixed tree, and say so at the assertion."""
+
+    def _household(self, app):
+        """Five people at home. ``make_student`` is deliberately minimal, so without a household
+        size ``income_headroom`` cannot compute and EVERY salary reading bands 'unknown' — which
+        would make this whole section a table of coincidences."""
+        app.profile.household_size = 5
+        app.profile.save(update_fields=['household_size'])
+        return app
+
+    def _str_route(self, **str_kw):
+        """An STR-route household: the father declared as the STR recipient, his IC on file and
+        reading, and an STR in whatever state the row is about."""
+        app = self._household(self._app(route='str', members=(), earner='father'))
+        self._ic(app)
+        _str_doc(app, recipient_name=FATHER_NAME, recipient_nric=FATHER_NRIC, **str_kw)
+        return app
+
+    def _stranger_str_route(self):
+        """The same household, but the CURRENT approved STR is in a stranger's name."""
+        app = self._household(self._app(route='str', members=(), earner='father'))
+        self._ic(app)
+        _str_doc(app, status='Lulus', year='2026',
+                 recipient_name='Someone Else Bin Nobody', recipient_nric='999999-14-9999')
+        return app
+
+    def _payslip(self, app, gross='RM 1,800.00'):
+        """⚠ ``gross_income`` / ``net_income``, NOT the ``gross`` / ``net`` keys the older
+        scenarios above use. Those read as a payslip (`income_shown`) but carry no FIGURE, so
+        `income_headroom` bands 'unknown' and no salary reading can ever reach green — which is
+        precisely what this section has to exercise."""
+        return _doc(app, 'salary_slip', 'father',
+                    fields={'gross_income': gross, 'net_income': gross, 'period': '08/2026'})
+
+    # ── the three non-dispositive STR states, WITH a payslip behind them ────────────────────
+    def test_stale_str_with_a_good_payslip(self):
+        app = self._str_route(status='Lulus', year='2024')
+        self._payslip(app)
+        # ⚠ MOVED BY TD-262 ITEM 1. It read ('recommend', ['str_not_current']): the `str_unsure`
+        # branch returned before the payslip was ever assessed, so a fully documented earner well
+        # under the B40 line was capped at Unsure by a screenshot from last year's cycle. The STR
+        # note is CARRIED ON to the raised fact — the band moves and nothing else is lost.
+        self.assertEqual(self.verdict(app), ('verified', ['str_not_current']))
+
+    def test_unreadable_str_with_a_good_payslip(self):
+        app = self._str_route(status='', year='')
+        self._payslip(app)
+        # ⚠ MOVED BY TD-262 ITEM 1 — was ('recommend', ['str_not_current']).
+        self.assertEqual(self.verdict(app), ('verified', ['str_not_current']))
+
+    def test_recipient_mismatch_str_with_a_good_payslip(self):
+        app = self._stranger_str_route()
+        self._payslip(app)
+        # ⚠ MOVED BY TD-262 ITEM 1 — was ('recommend', ['str_recipient_mismatch']). A STRANGER'S
+        # STR proves nothing about this household, and it used to cap one that had proved itself.
+        self.assertEqual(self.verdict(app), ('verified', ['str_recipient_mismatch']))
+
+    # ── the same three with NO usable payslip: nothing to prefer, nothing moves ─────────────
+    def test_stale_str_with_no_payslip_does_not_move(self):
+        app = self._str_route(status='Lulus', year='2024')
+        # ⚠ AND `salary_income_satisfied` IS TRUE HERE, which is exactly why it is not the gate
+        # for item 1: the submission gate's "one complete cluster" is satisfied on ANY of the
+        # four ways, and the fourth is a non-breached household STR — this very STR. Pinned so a
+        # later reader does not "simplify" the fall-through onto it.
+        self.assertIs(income_engine.salary_income_satisfied(app), True)
+        self.assertEqual(self.verdict(app), ('recommend', ['str_not_current']))
+
+    def test_unreadable_str_with_an_unusable_payslip_does_not_move(self):
+        app = self._str_route(status='', year='')
+        _doc(app, 'salary_slip', 'father', fields=_SLIP_FIELDS, authenticity='not_salary')
+        self.assertEqual(self.verdict(app), ('recommend', ['str_not_current']))
+
+    def test_recipient_mismatch_str_with_no_payslip_does_not_move(self):
+        app = self._stranger_str_route()
+        self.assertEqual(self.verdict(app), ('recommend', ['str_recipient_mismatch']))
+
+    # ── R1 / R2: a CURRENT genuine STR is settled upstream and payslips never touch it ──────
+    def test_a_current_str_stays_green_behind_an_unusable_payslip(self):
+        app = self._str_route(status='Lulus', year='2026')
+        _doc(app, 'salary_slip', 'father', fields=_SLIP_FIELDS, authenticity='not_salary')
+        # STR PRECEDENCE settles this before the route split — rules 1 and 2, untouched by item 1.
+        self.assertEqual(self.verdict(app), ('verified', []))
+
+    # ── "stronger" means stronger ABOUT MONEY ───────────────────────────────────────────────
+    def test_a_salary_reading_with_no_income_figure_never_raises(self):
+        """⚠ WRITTEN BECAUSE A BITE-CHECK CAME BACK SILENT. Removing the `income_proof_present`
+        gate from `_stronger_income_fact` broke nothing in the six rows above, because with no
+        payslip the salary route bands 'unknown' and answers 'recommend' — the same word. It is
+        NOT always the same word: a household whose second earner's IC did not read comes back
+        'review' (Probable, blue) off the FIRST earner's IC and patronymic alone. That is a
+        document saying nothing whatever about what the family earns, and un-gated it would lift
+        a stale-STR household from Unsure to Probable on the strength of it."""
+        app = self._str_route(status='Lulus', year='2024')
+        _doc(app, 'parent_ic', 'mother')              # present, but nothing read off it
+        # A birth certificate that READS, so the mother's relationship doc is not itself a red.
+        _doc(app, 'birth_certificate',
+             fields={'bc_child_name': STUDENT_NAME, 'bc_mother_name': 'Kamala A/P Suppiah'})
+        present = set(app.documents.filter(superseded_at__isnull=True)
+                      .values_list('doc_type', flat=True))
+        salary = verdict_income_salary(
+            app, income_engine.student_name_for_link(app), present, any_route=True)
+        self.assertEqual(salary['status'], 'review')          # stronger by BAND...
+        self.assertNotIn('income_proof_present', [i['code'] for i in salary['evidence']])
+        self.assertEqual(self.verdict(app), ('recommend', ['str_not_current']))   # ...but not taken
+
+    # ── the guard that makes "stronger" one-way ─────────────────────────────────────────────
+    def test_an_over_the_line_salary_never_pulls_a_stale_str_household_down(self):
+        """The salary route's own answer for this household is RED (`income_above_b40_line`).
+        A household may only ever be RAISED by item 1, so the weaker reading is discarded and
+        the STR's amber stands."""
+        app = self._str_route(status='Lulus', year='2024')
+        self._payslip(app, gross='RM 20,000.00')
+        present = set(app.documents.filter(superseded_at__isnull=True)
+                      .values_list('doc_type', flat=True))
+        salary = verdict_income_salary(
+            app, income_engine.student_name_for_link(app), present, any_route=True)
+        self.assertEqual(salary['status'], 'gap')
+        self.assertIn('income_above_b40_line', [i['code'] for i in salary['unresolved']])
+        self.assertEqual(self.verdict(app), ('recommend', ['str_not_current']))

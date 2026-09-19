@@ -431,11 +431,40 @@ turns a per-earner cue green on a fact about somebody else.
 **Who reads it.** `income_engine.member_income_evidenced` (the gate — literally `shown or
 str_not_breached(app)`, which is where the household arm lives and the ONLY place it lives) ·
 `income_engine._member_income_documented` (the officer's chase list, and through it the pension /
-informal / formal-slip asks and the household-size tick) · `verdict_engine._verdict_income_salary`
-(`any_financial`, the verdict's financial-evidence line) · the officer cockpit, which reads it
-**SERVED** on the applicant-detail payload (`income_shown`) through
-`halatuju-web/src/lib/incomeShown.ts` — served, never mirrored, with an absent field falling back
-to the old presence reading so a half-deployed pair cannot paint a screen of red.
+informal / formal-slip asks and the household-size tick) ·
+`verdict_income_salary._salary_member_scan` (`any_financial`, the verdict's financial-evidence
+line) · the officer cockpit, which reads it **SERVED** on the applicant-detail payload
+(`income_shown`) through `halatuju-web/src/lib/incomeShown.ts` — served, never mirrored, with an
+absent field falling back to the old presence reading so a half-deployed pair cannot paint a
+screen of red.
+
+### The income verdict has two routes, and they live in two files
+
+`verdict_engine._verdict_income` owns the STR route and the order of precedence; the SALARY route
+is `apps/scholarship/verdict_income_salary.py` (`verdict_income_salary`, split into
+`_salary_relationship_docs` / `_salary_member_scan` / `_salary_unresolved` /
+`_salary_place_verdict`). It is a separate module because `verdict_engine.py` is on the oversize
+ledger — the same reason `income_shown.py` is one — and the edge is one-way: the salary module
+imports `verdict_engine`'s `_fact` / `_item` primitives at module level, `verdict_engine` imports
+it lazily inside the function.
+
+**⚠ "THE STRONGER PROOF IS PREFERRED" (owner rule 4, `docs/decisions.md` 2026-09-19).** When the
+STR is stale, unreadable or in a stranger's name, `_stronger_income_fact` assesses the salary
+evidence too and answers with whichever reading is stronger. **It can only ever RAISE a band** —
+the weaker reading is discarded, so the salary route's own `income_above_b40_line` RED is never
+taken over an amber STR answer — and the STR's unresolved items are carried onto the raised fact,
+so nothing the officer or the student was told disappears.
+
+**⚠ `salary_income_satisfied` IS NOT "is there salary evidence?" AND MUST NOT BE USED AS THAT
+GATE.** It is the submission gate's "one complete cluster", and a cluster is complete on ANY of the
+owner's four ways — the fourth being a non-breached household STR. A stale / unreadable /
+recipient-mismatched STR is **not breached**, so that predicate is satisfied by the very STR a
+fall-through exists to look past. The honest test is the salary reading's own
+`income_proof_present` marker. Pinned by name in `tests/test_income_evidence_homes.py` §8.
+
+**⚠ A CURRENT GENUINE STR IS SETTLED UPSTREAM AND PAYSLIPS NEVER TOUCH IT** (rules 1 and 2):
+`_str_precedence_verdict` returns before the route split is reached. Removing it reddens five
+tests; do not "simplify" the fall-through past it.
 
 **⚠ THE FROZEN GATE IS NOT TO BE TIDIED.** `services.application_completeness` keeps its legacy
 document-type arm OR-ed with `any_member_income_evidenced`; it is MORE permissive in four cases and

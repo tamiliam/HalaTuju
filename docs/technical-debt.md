@@ -4220,6 +4220,70 @@ household). pytest 6,954 → **6,970**; jest 2,603 → **2,610** / 144 suites. E
 `code_health` is unchanged (`fix%` 41, `big` 25, `long` 16, `dup` 4, `guard%` 11, `std` ok).
 **TD-262 is NOT resolved** — chunks R4 and 4 stand.
 
+**Item 1 DONE 2026-09-19 (the rule-4 gap) — the payslips on file are finally LOOKED AT when the
+STR does not settle income. FOUR bands can move, all of them UPWARDS; nothing can move down.**
+*What the code really did.* `_verdict_income`'s `str_unsure` (a Lulus STR from a PRIOR YEAR, or one
+whose approval never read) and `str_mismatch` (a current approved STR in a STRANGER'S name)
+branches **returned**, so the salary route below them was unreachable. Only a REJECTED or
+wrong-type STR opened that net (§6 rule 2, 2026-08-01). A household that had documented an earner
+properly — IC reading, patronymic linking, a payslip under the B40 line — was therefore capped at
+**Unsure by a screenshot from last year's cycle**, which is the opposite of the owner's rule 4
+(*"the stronger proof should be given preference"*, `docs/decisions.md` 2026-09-19).
+*The fix.* `verdict_engine._stronger_income_fact` runs the salary reading as well and keeps
+whichever of the two is stronger, by band (`_INCOME_BAND_ORDER`). **It can only ever RAISE:** the
+weaker reading is discarded, so the salary route's own `income_above_b40_line` RED is never taken
+over an amber STR answer (pinned). **The STR's unresolved items are CARRIED ONTO the raised fact**
+— the band moves and nothing else is lost, so the officer still reads why the STR did not settle
+it and the student's `str_not_current` re-upload ask stays open.
+*⚠ THE GATE IS THE SALARY ROUTE'S OWN `income_proof_present`, NOT `salary_income_satisfied`, and
+the difference is the finding of this chunk.* `salary_income_satisfied` reads like "is there
+salary evidence?" and is not: it is the submission gate's "one complete cluster", and a cluster is
+complete on ANY of the owner's four ways — the fourth being a **non-breached household STR**. A
+stale, unreadable or recipient-mismatched STR is not BREACHED, so that predicate is satisfied **by
+the very STR this chunk exists to look past**, and gating on it would have opened the door for a
+household with no payslip at all. The honest test is the salary reading's own marker, appended iff
+at least one member's income is SHOWN. Pinned by name in `test_income_evidence_homes.py`.
+*⚠ RULES 1 AND 2 ARE BYTE-UNTOUCHED.* A CURRENT genuine STR is settled by STR PRECEDENCE
+(`_str_precedence_verdict`) before the route split is even reached, so payslips still cannot lower
+it — pinned, and a bite that removes precedence reddens five existing tests.
+*The split came first, and it is what made the gap visible.* `_verdict_income_salary` was 198 lines
+of one straight run with no seam to ask a second question at. It is now four named steps —
+`_salary_relationship_docs` / `_salary_member_scan` / `_salary_unresolved` / `_salary_place_verdict`
+— in the new module **`apps/scholarship/verdict_income_salary.py`**. A new module, not four more
+functions, because `verdict_engine.py` sat EXACTLY on its 1,284-line oversize budget (+20
+allowance) and the split alone would have breached it — the same reason `income_shown.py` is its
+own module. The move was proven by the characterisation suites passing UNEDITED across it; the
+file fell to 1,146 lines and both budgets were lowered, and `verdict_engine.py::_verdict_income_salary`
+left the `long_functions` ledger. `code_health` `long` improved 16 → **15**; no reading is worse.
+*Stored vs computed.* The verdict is COMPUTED on every read; it is STORED only in
+`ai_verdict_snapshot` at the moment a reviewer records a verdict, and a snapshot is never
+regenerated (`test_THE_SNAPSHOT_IS_NEVER_REGENERATED`). **So no stored row changes** — only live
+cards repaint. **`VERDICT_ENGINE_VERSION` 2026-09-11.1 → 2026-09-19.1** per the rule at the
+constant (a change that can alter a fact's status bumps it). `results_doc.MODEL_VERSION` is NOT
+bumped and must not be: no document-recognition signature moved.
+*Tests.* Nine rows in a new section 8 of `test_income_evidence_homes.py`, written against the
+UNCHANGED tree and seen green, then the three that should rise edited and seen RED before the fix.
+**Four bite-checks, and one came back SILENT** — removing the gate broke nothing, because with no
+payslip the salary route bands 'unknown' and answers 'recommend', the same word. The missing case
+(a second earner's IC that did not read makes the salary route answer 'review' with no income
+figure anywhere) is now its own pinned row, and the bite bites. pytest 6,970 → **6,978**; no web
+file touched.
+*Blast radius.* STR-route applications holding BOTH an STR and payslips/EPF: **1 in review**, 33
+decided yes, 6 decided no (measured 2026-09-19). Only the one in review can have its card repaint,
+and only if its STR is stale / unreadable / mismatched; a decided case's decision was a human's and
+its stored snapshot is untouched. The lead has the read-only screening SQL.
+*Still open on TD-262:* **F8** — `str_not_breached` still never asks WHOSE STR it is, so a
+stranger's STR clears the SUBMISSION gate (the verdict correctly refuses it; owner ruled
+2026-09-19 that only the family's own STR counts, and the tightening needs its live count first).
+**F2 + W1** — the owner's fourth way (a declared amount + a supporting letter) still has NO upload
+slot anywhere: `income_requirements` / `salary_member_blocks` draw only a payslip and an EPF, and
+`incomeWizard`'s mononym birth-certificate arm has no api twin. **And one boundary this chunk did
+NOT cross:** when the STR cluster itself is incomplete (a missing earner IC, a missing birth
+certificate) `_verdict_income` still returns `gap` BEFORE either branch, so a household whose OTHER
+parent has a complete salary cluster stays red. Rule 4 arguably reaches that case too; it is a
+different failure (missing STR-cluster documents, not a failed STR) and wants the owner's word.
+**TD-262 is NOT resolved** — item 1 of the R4 chunk is done; F8, F2 and W1 stand.
+
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 
 **Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects
