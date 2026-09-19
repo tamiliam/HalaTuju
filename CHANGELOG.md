@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## Two owner rulings - the freeze lifts, and a payout account is counted in ASCII - 2026-09-19
+
+### Changed
+
+- **TD-264 RESOLVED - a payout account number is counted in ASCII `0-9`, on both sides.**
+  `BankAccountConfirmSerializer.validate_account_number` counted digits with Python's Unicode-aware
+  `str.isdigit()`, so `'12345'` in Arabic-Indic, superscript or subscript characters was five
+  digits to the server and none to the student's form: a POST that never came from the form was
+  ACCEPTED and stored as a payout target no bank could be paid through. The owner ruled: make the
+  api as strict as the form, not stricter. The count is now a plain `ch in '0123456789'`. **A
+  digit-like character is not counted, not separately refused** - exactly what the form does - so
+  five of them fall through the UNCHANGED five-digit floor with the UNCHANGED
+  `account_number_invalid`, while five real digits alongside a stray character still save. No new
+  message, no new error code, no i18n. Spaces and dashes are untouched: never counted, always
+  stored as typed. That serializer is the only place the api counts a payout account's digits, and
+  `_digits` in `offer_parse.py` (the NRIC OCR reader) was deliberately left alone. Production was
+  counted first: 9 stored accounts, 0 with a non-ASCII digit, 0 below five ASCII digits - no stored
+  row affected, no migration.
+- **The DEVELOPMENT FREEZE of 2026-09-18 is LIFTED.** At the code-health roadmap's "stabilised"
+  checkpoint the owner chose to lift it now rather than run to H19. Product work resumes (Overview
+  phase 2 Sprint B unparked; queued BrightPath builds open again). **Phases 4-6 (H11-H19) stay on
+  the roadmap and alternate with product work; H11 is next.** **The standing rule that came with
+  it: a feature sprint that must touch a file on the hotspot/oversize list runs that file's Phase-4
+  split sprint FIRST (moves only) instead of growing the file.** The ratchet standards in the
+  deploy gate are unchanged - a budget still only goes down.
+
+### Added
+
+- **Three api rows in `apps/scholarship/tests/test_bank_account.py`** - the three non-ASCII
+  fixtures refused with `account_number_invalid`; "not counted is not refused" (`'³12345'` saves);
+  and "no valid account may start failing" (`1234567890`, `12-3456 7890`, `5140 1234 5678` all save
+  and are stored verbatim). The tests were edited first and seen red. Three bite-checks, three bit:
+  revert to `isdigit()` -> the api row AND the drift test red; refuse any non-ASCII character ->
+  the "not counted" row red; refuse spaces and dashes -> the ordinary-accounts row red.
+- **A lookup table in the roadmap: "Which Phase-4 sprint owns which file"** - every oversize/hot
+  file against the sprint that splits it, so a sprint-start can check the standing rule in one
+  read. `vision.py` is flagged as deliberately out of scope, and the fifteen other 1,000-line files
+  that no Phase-4 sprint owns are named so nobody goes looking.
+
+### Docs
+
+- `docs/plans/2026-09-18-code-health-roadmap.md` - checkpoint marked DECIDED with the choice and
+  the rule; freeze section rewritten as LIFTED (the old text kept for the record); sequence
+  diagram, Phase 6 heading and "Owner decisions" brought up to date.
+- `halatuju_api/CLAUDE.md` - the freeze notice above `## Next Sprint` replaced with the lifted
+  notice and the standing rule; `## Next Sprint` now reads "product work may resume", with the open
+  owner items and H11 next on the code-health track. (`halatuju-web` has no CLAUDE.md of its own,
+  and there is no repo-root one - the api's is the only place the freeze was posted.)
+- `docs/decisions.md` - one dated entry per ruling, each with the alternatives and the trade-offs.
+- `docs/technical-debt.md` - TD-264 resolution block and index line.
+
 ## Code health H10 - de-mirror wave 2, and PHASE 3 IS COMPLETE - 2026-09-19
 
 Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H10 of H19. Retro

@@ -850,60 +850,77 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## ⛔ DEVELOPMENT FREEZE — owner ruling, 2026-09-18 (READ BEFORE STARTING ANY WORK)
+## ✅ FREEZE LIFTED — owner ruling, 2026-09-19 (READ BEFORE STARTING ANY WORK)
 
-The owner: *"I want to pause all other developments until this is stabilised or completed."*
-**The only development that may run is the code-health roadmap:
-`docs/plans/2026-09-18-code-health-roadmap.md`** (nineteen sprints, H1–H19, back to back).
+**The development freeze of 2026-09-18 is over.** At the code-health roadmap's "stabilised"
+checkpoint (after H10) the owner chose to lift it now rather than run to H19. Product work may
+resume: features, pages, models and polish are allowed again, Overview phase 2 Sprint B is
+unparked, and queued BrightPath builds are open (tell the requesters).
 
-- **Allowed:** a production defect with a user on the other side (hotfix lane); operations with no
-  code (payment runs, spending imports, invoices, support); security fixes; BrightPath request
-  triage and analysis.
-- **Not allowed:** any new feature, page, model or polish — including **Overview phase 2 Sprint B**
-  (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
-- **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
-  after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
+**⚠ THE STANDING RULE that came with it — a feature sprint does not grow a file that is waiting to
+be split.** If a sprint must touch a file on the hotspot/oversize list, it **runs that file's
+Phase-4 split sprint FIRST (moves only)** and builds on the split file. It does not add lines to
+the big file and leave the split for later. The lookup table — which sprint owns which file — is
+**"Which Phase-4 sprint owns which file"** in `docs/plans/2026-09-18-code-health-roadmap.md`.
+Read it at sprint start, before planning.
+
+- **Phases 4–6 (H11–H19) stay on the roadmap** and now **alternate** with product work. **H11 is
+  next** on the code-health track (`views_admin.py` becomes a package, wave 1).
+- **The ratchet standards in the gate are UNCHANGED.** `code-standards.json` on both sides is still
+  one-way: a budget may be tightened and never loosened, an exemption list may only shrink, and the
+  ten gate tests run on every deploy. What changed is *what may be built*, not *what the gate allows*.
+- **More than one agent in the checkout is possible again** → `AGENT-TERRITORY.log` is back in use.
+
+### The code-health arc — what has shipped (H1–H10, Phases 1–3 complete)
+
 - **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 SHIPPED 2026-09-19: money parsing/formatting has ONE home, `apps/scholarship/money.py` (`parse_money` / `format_money`; each caller keeps its own exception and blank answer through a named two-line wrapper); `text.py` (`id_list`, `digits_only`); `gemini.py` (the single-model metered core — the three `_gemini_generate` seams stay BY NAME). Any change to these helpers must answer to `tests/test_helper_characterisation.py` (417 assertions).** **TD-261 FIXED 2026-09-19 on the owner's order: a bill credit is written `RM-40.00` (chosen from its readers — see decisions.md); one-decimal figures keep their decimal; `money.parse_money` refuses `Infinity`/`NaN`; `sponsor_comms.render` defaults declared tokens; a payment-run line with a third decimal is REFUSED, not rounded.** **H8 (2026-09-19): PHASE A DELIVERED, PHASE B STOPPED AT ITS GATE — no production code changed. The income rule has ELEVEN homes and they disagree in sixteen places today: TD-262 (HIGH), awaiting the owner's rulings.** ⚠ **DO NOT "tidy" `application_completeness`: its legacy doc-type arm is more permissive ON PURPOSE (it may only ever widen); replacing it un-submits students and nulls their `requirements_snapshot`.** Any change to an income home answers to `tests/test_income_evidence_homes.py` and `src/lib/__tests__/incomeEvidenceHomes.test.ts`. **H9 SHIPPED 2026-09-19 — no production code changed: the six decision gates that said they MIRRORED a backend rule now have a test that reads the backend's own source in both directions (`applicationStatusDrift` · `requestStatusDrift` · `officerGateDrift` · `strCoachDrift` · `adminRoleDrift` · `payoutAccountDrift`, shared reader `halatuju-web/src/test/apiSource.ts`). `unguarded_mirrors` 58 → 41; a new `mirror` reading in `code_health.py` agrees with it exactly.** ⚠ **A CONSTANT IS GUARDED, NOT SERVED** (decisions.md 2026-09-19): serve a rule that can differ between two callers; for a module-level constant a drift test fails in the deploy gate where a served value could only fail at runtime. **Raised TD-264 (money path: the api counts payout-account digits with Unicode-aware `isdigit()`, the web with ASCII `\d`, so a direct POST of five superscripts is stored as a payout target — owner's call which side moves) and TD-263 (low: `requote` offered on a bug, unreachable today by one road only).** **H10 SHIPPED 2026-09-19 — PHASE 3 COMPLETE: the mirror ledger is 41 → 3 (nine more drift tests; 16 comments that were not rule claims reworded honestly). ⛔ The three survivors are `incomeWizard.ts` and stay by decision until TD-262 is settled. Raised TD-266 (`AdminResolutionItem` is a stale copy of the student-facing `ResolutionItem` and ONE serializer feeds both) and TD-265 (the finance summary computes a `programme` column nothing renders).** ⚠ **A test that reads another file's TEXT must normalise line endings** — the api sources are CRLF here and LF in the build container; `apiSource.readApi` does it once, at the seam.
 
-## Next Sprint — ⏸ OWNER CHECKPOINT after H10. **PHASE 3 IS COMPLETE. DO NOT START H11 WITHOUT THE OWNER'S WORD.**
+## Next Sprint — ▶ PRODUCT WORK MAY RESUME (freeze lifted 2026-09-19). H11 is next on the code-health track.
 
-**H10 SHIPPED 2026-09-19 — no production code changed.** The `unguarded_mirrors` ledger is
-**41 → 3**; nine drift tests (127 cases), 36 bite-checks, 36 behaved. Retro
-`docs/retrospective-2026-09-19-code-health-h10.md`. Gates: **7,000 pytest / 3 skipped** ·
-**2,895 jest / 159 suites** · tsc 0 · lint 0 errors · `next build` 0 · code_health `mirror` 41→3,
-0 FAIL. No migration.
+**The owner lifted the freeze at the checkpoint on 2026-09-19** (see the section above and the
+roadmap's "✅ CHECKPOINT" block). Two tracks now run alternately:
 
-**⏸ THE DECISION IN FRONT OF THE OWNER, and it is the one the freeze was written around:** the
-roadmap's *"stabilised"* checkpoint has been reached. `docs/plans/2026-09-18-code-health-roadmap.md`
-now carries a plain-language section — **"✅ CHECKPOINT — 'stabilised' (after H10)"** — setting out
-what Phases 1–3 delivered, the readings then and now, what H11–H19 would buy, and the honest trade
-between lifting the freeze and running on. **That section is the briefing; do not re-derive it.**
-The owner's standing word (2026-09-18) authorised the arc to run sprint to sprint *unless a
-decision is needed*. One is needed now, and it is named in the roadmap's own "Owner decisions"
-list as item 3.
+**1. Product work — open again.**
+- **Parked and ready to unpark: Overview phase 2, Sprint B** (widget order; roadmap
+  `docs/plans/2026-09-18-overview-phase-2-roadmap.md`). Sprint A is live and closed.
+- **Open items that need the OWNER, not an engineer:**
+  - **TD-262 — F2 + W1** (the last piece of the income-rule work): the owner's fourth way of
+    proving income has **no upload slot anywhere**. This is a design call first — **prototype the
+    slot in Stitch and get visual approval before coding any template.** Chunks 1, 2+3, R4 1/1b
+    and F8 are already done.
+  - **TD-260** — 604 of 674 IC-holding students have no verified contact: no self-service way to
+    reclaim an account, and support has no screen to do it for them. Two owner levers.
+  - **TD-255** — Node 18. **TD-257** — 22 wired endpoints no test drives (20 writes, two of them
+    disbursements). **TD-253** — findings must be complete.
+- **Ordinary engineering, no ruling needed:** TD-266 (~1h, delete one of the two `ResolutionItem`
+  types), TD-265 (a finance column nothing renders — a small design call).
+- **TD-264 is RESOLVED 2026-09-19** — the api's payout-account digit test is now ASCII `0-9`, the
+  same thing the student's form counts. Pinned by `payoutAccountDrift.test.ts`.
 
-- **⛔ THE THREE REMAINING LEDGER ENTRIES ARE A DECISION, NOT A BACKLOG.** `incomeWizard.ts` × 3
-  are the income rule. TD-262 pins **eleven** homes of it disagreeing in **sixteen** places, several
-  awaiting an owner ruling on eligibility. A drift test written today either fails on a
+**2. Code health — H11 is next.** `views_admin.py` (8,556 lines) becomes a package, wave 1.
+Phase 4's rule is **moves only** — no renames, no rewording, no "while I'm here". The proof of a
+move is a full green suite plus a diff `git diff -M --stat` reads as renames and re-exports.
+
+**⚠ THE STANDING RULE (owner, 2026-09-19) — check it before you plan.** A feature sprint that must
+touch a file on the hotspot/oversize list **runs that file's Phase-4 split sprint first (moves
+only)** rather than growing the file. The lookup table is **"Which Phase-4 sprint owns which file"**
+in `docs/plans/2026-09-18-code-health-roadmap.md`. **Never raise a budget; split the file first.**
+
+- **⛔ THE THREE REMAINING MIRROR-LEDGER ENTRIES ARE A DECISION, NOT A BACKLOG.** `incomeWizard.ts`
+  × 3 are the income rule. TD-262 pins **eleven** homes of it disagreeing in **sixteen** places,
+  several awaiting an owner ruling on eligibility. A drift test written today either fails on a
   disagreement nobody has ruled on, or passes and thereby BLESSES one. **They leave the ledger when
   TD-262 is settled, and whoever settles it writes the guard as part of that work.** The reason is
   at the top of `incomeWizard.ts` and beside the entries in `halatuju-web/code-standards.json`.
-- **Two findings are on the owner's desk and NEITHER is blocked by the freeze** — both can be
-  answered today: **TD-264** (the api accepts a payout account of five superscripts that no bank
-  could pay; the form refuses it — which side moves?) and **TD-262** (above). Also open, ordinary
-  engineering: **TD-266** (~1h, delete one of the two `ResolutionItem` types) and **TD-265** (a
-  finance column nothing renders — a design call).
-- **If the owner says RUN ON:** next is **H11**, `views_admin.py` (8,556 lines) becomes a package.
-  Phase 4's rule is **moves only** — no renames, no rewording, no "while I'm here". The proof of a
-  move is a full green suite plus a diff `git diff -M --stat` reads as renames and re-exports.
-- **If the owner says LIFT:** the roadmap's own rule applies — a feature sprint that must touch a
-  file on the hotspot list pulls that file's Phase-4 sprint forward instead of adding to it. The
-  ratchet in `code-standards.json` holds either way, and `AGENT-TERRITORY.log` comes back into use
-  the moment there is more than one agent in the checkout.
+- **H10 SHIPPED 2026-09-19 — no production code changed.** The `unguarded_mirrors` ledger is
+  **41 → 3**; nine drift tests (127 cases), 36 bite-checks, 36 behaved. Retro
+  `docs/retrospective-2026-09-19-code-health-h10.md`. Gates: **7,000 pytest / 3 skipped** ·
+  **2,895 jest / 159 suites** · tsc 0 · lint 0 errors · `next build` 0 · code_health `mirror` 41→3,
+  0 FAIL. No migration.
 - **Tooling the next sprint inherits:** `src/test/apiSource.ts` (`readApi` — line endings
   normalised, `pySeq` with an `indented` mode, `pyChoiceValues`, `pyTransitionTable`), fifteen
   drift tests, `factories.py`, the cockpit render harness, and ten standards enforced inside the
-  deploy gate. **Never raise a budget; split the file first.**
+  deploy gate. `AGENT-TERRITORY.log` is back in use whenever more than one agent is in the checkout.
 
 ## Superseded — previous Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

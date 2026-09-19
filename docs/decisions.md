@@ -1,5 +1,84 @@
 # Architectural Decisions — HalaTuju
 
+## The development freeze lifts at "stabilised", and a feature sprint splits before it grows — owner ruling, 2026-09-19
+
+**Decision (owner, at the code-health roadmap's Phase-3 checkpoint):** **lift the development
+freeze now**, rather than run the remaining nine sprints to H19 first. Three parts:
+1. Product work resumes today. Overview phase 2 Sprint B is unparked; queued BrightPath builds are
+   open again.
+2. **Phases 4–6 (H11–H19) stay on the roadmap and alternate with product work.** H11 is next on
+   the code-health track.
+3. **THE STANDING RULE: a feature sprint that must touch a file on the hotspot/oversize list runs
+   that file's Phase-4 split sprint FIRST (moves only), instead of growing the file.** The lookup
+   table — which sprint owns which file — is in the roadmap under *"Which Phase-4 sprint owns
+   which file"*, and belongs in `sprint-start.md` when H19 writes the standards into the workflows.
+
+**The ratchet standards in the deploy gate are UNCHANGED.** A budget still only goes down, an
+exemption list only shrinks, and the ten gate tests run on every deploy. What the ruling changed is
+*what may be built*, not *what the gate allows*.
+
+**Alternatives considered:** (a) run on to H19 and lift the freeze as its last act — roughly six
+more sprints before any product work; (b) lift with no rule at all, leaving the big files to be
+grown 20 lines at a time by whatever sprint happens to touch them.
+
+**Rationale:** the promise the freeze was written around has been kept — a red suite cannot ship,
+the standards are tests inside the gate, tests can fail, and every rule bar the income rule has one
+home. The things that *prevent* bugs are done; Phases 4–6 make the code cheaper to work in, which
+is a benefit to *future* changes and therefore can be bought alongside them. (b) was rejected
+because it is how the files got this big: the ratchet permits 20 lines, and twenty sprints of
+twenty lines is another `views_admin.py`.
+
+**Trade-offs:** the first feature sprint that lands on `views_admin.py`, `admin-api.ts`,
+`view.tsx`, `models.py`, `services.py`, `emails.py`, `income_engine.py` or `api.ts` pays for a
+split it did not ask for, and is therefore slower than it looks at planning time. Accepted — the
+split was always going to be paid for, and paying it at the moment of contact is the only version
+that cannot be deferred for ever. `vision.py` is deliberately exempt (out of the roadmap's scope).
+Also accepted: more than one agent in the checkout again, so `AGENT-TERRITORY.log` returns.
+
+**Revisit if:** the standing rule starts blocking an urgent product sprint outright (the answer
+then is to sequence the split as its own same-week sprint, not to waive the rule), or if Phase 4
+stalls so long that the table goes stale against `docs/code-health.md`.
+
+## A payout account number is counted in ASCII digits, on both sides (TD-264) — owner ruling, 2026-09-19
+
+**Decision:** the api's `BankAccountConfirmSerializer.validate_account_number` counts **ASCII `0-9`
+and nothing else**, exactly as the student's form does. A digit-LIKE character — an Arabic-Indic
+numeral, a superscript, a subscript — is **not counted, and is not a separate error**. If what
+remains is fewer than five real digits the existing five-digit floor refuses it with the existing
+`account_number_invalid`.
+
+**The problem:** Python's `str.isdigit()` is Unicode-aware and JavaScript's `\d` is not. The floor
+agreed at five on both sides; the word *digit* did not. `'³³³³³'` was five digits to the server and
+none to the form, so a POST that never came from the form **was accepted and stored as a payout
+target** — a number no bank could be paid through. Found by code health H9 while characterising the
+floor, pinned by `halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts`, and reported rather
+than fixed because it is the money path.
+
+**Alternatives considered:** widen the web to Unicode digits (rejected — it would let a student
+save an account no payment system can use); reject a digit-like character outright with a new
+error (rejected — see below); leave both sides as they were.
+
+**Rationale for "not counted" rather than "rejected":** the ruling was *make the api as strict as
+the form, not stricter*. The form counts ASCII digits and silently ignores everything else, so
+`'³12345'` saves there; an api that refused it would be a NEW rejection the student's own screen
+cannot predict, and would need a new message in three languages to explain. Not counting reaches
+the same place for the case that matters — five digit-like characters alone never reach the floor —
+without inventing a rule the form does not have.
+
+**Production checked before the change:** 9 stored bank accounts, **0** containing a non-ASCII
+digit, **0** with fewer than five ASCII digits. No stored row is affected and no migration is needed.
+
+**Trade-offs:** an account typed with a stray digit-like character is accepted and stored as typed,
+so what is stored can still contain a character a payment file may not like. That is unchanged
+behaviour (spaces and dashes are stored as typed too) and is the payment run's own validation to
+make, not the floor's.
+
+**Scope kept narrow:** `_digits` in `offer_parse.py` is the NRIC OCR reader and was deliberately
+left alone — H7 kept the two apart, and a document reader has different needs from a payout gate.
+
+**Revisit if:** a payment run fails on an account number that "looks right", or the payout account
+ever has to accept a non-Malaysian format.
+
 ## A mirrored rule is SERVED only when it varies; otherwise it is drift-tested — code health H9, 2026-09-19
 
 **Decision:** a front-end rule copied from the backend ends in one of two states, and which one is

@@ -1,7 +1,11 @@
 # Code health — the sprint roadmap
 
 **Written 2026-09-18** via `Settings/_workflows/implementation-planning.md`. **Revised the same
-day on two owner rulings (below). Awaiting the owner's word to start H1.**
+day on two owner rulings (below).**
+
+**Status 2026-09-19: Phases 1–3 shipped (H1–H10). The checkpoint has been DECIDED — the freeze is
+LIFTED, with a standing rule. See "The development freeze" and the checkpoint section below.
+H11 is next on the code-health track, and it now alternates with product work.**
 
 The owner, 2026-09-18: *"occasionally I find bugs being introduced during our coding, as the code
 base becomes more and more complicated. I'd like to audit the health of the codebase as we progress
@@ -19,9 +23,32 @@ covering all the sprints, and not like this piecemeal version."*
    the standards into the workflows every future sprint follows (H19). A standard that lives only
    in a document is a habit, and this project's own record says habits are what fail.
 
-## The development freeze
+## The development freeze — ✅ LIFTED 2026-09-19
 
-**In force from 2026-09-18 — the ruling is the owner's own words — until the owner lifts it.** It is posted at the top of `halatuju_api/CLAUDE.md` "Next Sprint", where every agent reads first.
+**The owner lifted it at the "stabilised" checkpoint, taking the third option the roadmap offered.
+Product work may resume today.** The ruling, in three parts:
+
+1. **The freeze is over.** Features, pages, models and polish are allowed again. Overview phase 2
+   Sprint B comes off the parked list; queued BrightPath builds are open again.
+2. **Phases 4–6 (H11–H19) stay on the roadmap** and **alternate** with product work rather than
+   running back to back. **H11 is next** on the code-health track.
+3. **THE STANDING RULE — a feature sprint does not grow a file that is waiting to be split.** If a
+   sprint must touch a file on the hotspot/oversize list, it **first runs that file's Phase-4
+   split sprint (moves only)**, and builds the feature on the split file afterwards. It does not
+   add lines to the big file and leave the split for later. The lookup table is in
+   **"Which Phase-4 sprint owns which file"** below, and `sprint-start.md` should be read against it.
+
+**The ratchet standards stay in force, unchanged.** `code-standards.json` on both sides is still a
+one-way ratchet: a budget may be tightened and never loosened, an exemption list may only shrink,
+and the ten gate tests keep running on every deploy. Lifting the freeze changed *what may be built*,
+not *what the gate allows*.
+
+**Also back in use:** `AGENT-TERRITORY.log`, the moment there is more than one agent in the
+checkout — the freeze was what made "one agent, one checkout" safe, and it no longer holds.
+
+### The freeze as it stood, 2026-09-18 to 2026-09-19 (kept for the record)
+
+**It was in force from 2026-09-18 — the ruling was the owner's own words — until the owner lifted it.** It was posted at the top of `halatuju_api/CLAUDE.md` "Next Sprint", where every agent reads first.
 
 | Allowed during the freeze | Not allowed |
 |---|---|
@@ -36,7 +63,7 @@ not started** and waits. TD-253 (findings must be complete) and TD-254 (IC-claim
 HIGH, security) were deferred by the owner earlier the same day. ⚠ **TD-254 is a security item:
 the owner may pull it forward at any point and the freeze does not argue.**
 
-**Two ways out, both the owner's call:**
+**Two ways out were offered, both the owner's call — the first was taken on 2026-09-19:**
 - **Stabilised** — the checkpoint after **Phase 3** (H10). By then a red suite cannot ship, the
   standards are enforced in the gate, tests can fail, and every rule has one home: the things that
   *prevent* bugs are done. What remains (Phases 4–5) makes the code easier to work in. The owner
@@ -337,10 +364,24 @@ feeds both) and **TD-265** (a finance column nothing renders).*
 
 ---
 
-## ✅ CHECKPOINT — "stabilised" (after H10). The owner's decision: lift the freeze, or run on.
+## ✅ CHECKPOINT — "stabilised" (after H10). **DECIDED 2026-09-19: LIFT, with a standing rule.**
 
 *Written 2026-09-19, at the end of Phase 3. Plain language, because this is the page the owner
-reads to make one decision.*
+read to make one decision.*
+
+> **THE DECISION — 2026-09-19.** The owner chose to **lift the freeze now**, taking the third
+> option set out under "The honest trade" below.
+>
+> - **Product work resumes today.** Overview phase 2 Sprint B is unparked; queued BrightPath
+>   builds are open again.
+> - **H11–H19 stay on the roadmap and alternate with product work.** H11 is next on the
+>   code-health track.
+> - **The standing rule:** a feature sprint that must touch a file on the hotspot/oversize list
+>   **runs that file's Phase-4 split sprint first — moves only — instead of growing the file.**
+>   Which sprint owns which file is in the table under Phase 4.
+> - **The ratchet standards in the gate are unchanged.** A budget still only goes down.
+
+*Everything below this line is the briefing the decision was made on, kept as written.*
 
 ### What was promised at this point
 
@@ -426,6 +467,8 @@ of adding to it. That trades a slower first few feature sprints for no pause at 
 
 **Not a factor either way:** TD-262 and TD-264 both need an owner ruling and neither is blocked by
 the freeze. They can be answered today, whichever way this goes.
+*(TD-264 was answered on 2026-09-19 — the api was narrowed to ASCII digits, and it is resolved.
+TD-262's F2 + W1 is still open.)*
 
 ---
 
@@ -436,9 +479,36 @@ wording changes. Lesson 173: *"the temptation is to improve the wording in the s
 would make the diff unreviewable."* The proof of a move is a full green suite plus a diff that
 `git diff -M --stat` reads as renames and re-exports.
 
-**The freeze means one agent in the checkout.** If the owner lifts it at the checkpoint, each
-remaining Phase-4 sprint opens with a line in `AGENT-TERRITORY.log` naming the files it holds and
-for how long, and lands in **one** day.
+**The freeze meant one agent in the checkout. It was lifted on 2026-09-19**, so each remaining
+Phase-4 sprint now opens with a line in `AGENT-TERRITORY.log` naming the files it holds and for
+how long, and lands in **one** day.
+
+### Which Phase-4 sprint owns which file
+
+**Read this at sprint start.** The standing rule of 2026-09-19: if the sprint you are about to
+start must change a file in this table, **run its sprint first (moves only), then build on the
+split file.** Do not add lines to the big file and leave the split for later. Sizes are the
+2026-09-19 reading; the live list is `big` in `docs/code-health.md`.
+
+| File | Lines | Split sprint |
+|---|---|---|
+| `halatuju_api/apps/scholarship/views_admin.py` | 8,556 | **H11** (six domains) then **H12** (the rest) |
+| `halatuju_api/apps/scholarship/models.py` | 4,756 | **H15** |
+| `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
+| `halatuju-web/src/lib/admin-api.ts` | 4,118 | **H13** |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 3,599 | **H14** (the Decision/Recommendation panel stays put — untangling it is design) |
+| `halatuju_api/apps/scholarship/income_engine.py` | 3,201 | **H16** — ⚠ also TD-262; settle the eligibility rulings before moving it |
+| `halatuju_api/apps/scholarship/services.py` | 2,946 | **H15** |
+| `halatuju-web/src/lib/api.ts` | 2,488 | **H13** |
+| `halatuju-web/src/components/ScholarshipDocuments.tsx` | 1,957 | **H14** (checklist family + `IncomeWizard` move out) |
+| `halatuju_api/apps/scholarship/vision.py` | 2,321 | **none — deliberately out of scope** (140 patch sites). Growing it is allowed; it is not waiting on a split |
+
+**Everything else over 1,000 lines has no Phase-4 sprint** — `views.py` (2,421), `courses/views.py`
+(2,309), `officerCockpit.ts` (1,632), `courses/models.py`, `stpm_quiz_data.py`, `profile/page.tsx`,
+`scholarship.ts`, `courses/views_admin.py`, `serializers_admin.py`, `serializers.py`,
+`verdict_engine.py`, `contracts.py`, `apply/page.tsx`, `org_requests.py`, `profile_engine.py`.
+The standing rule does not apply to them; **the ratchet in `code-standards.json` still does**, so a
+sprint that would push one past its budget splits it in its own commit first.
 
 ### H11 — `views_admin.py` becomes a package, wave 1
 - **Scope:** `views_admin/__init__.py` re-exports all 142 names, so `urls.py` is **byte-identical**.
@@ -547,7 +617,10 @@ for how long, and lands in **one** day.
 
 ---
 
-## Phase 6 — Lock it in, and lift the freeze
+## Phase 6 — Lock it in
+
+*(The freeze was lifted early, at the checkpoint on 2026-09-19, so H19's last act is no longer to
+lift it — it is to write the standing rule and the standards into the workflows for good.)*
 
 ### H19 — The standards move into how every future sprint is run
 - **Goal:** six months from now, an agent that has never seen this document still keeps to it.
@@ -565,9 +638,13 @@ for how long, and lands in **one** day.
   - **`system-audit.md`** — every fifth sprint, a **read-through** of the top three hotspots by an
     agent, recorded in `docs/code-health.md`. Numbers find growth; only reading finds a wrong idea.
   - **Tighten `code-standards.json` to the arc's targets** — the last turn of the ratchet.
+  - **Write the standing rule of 2026-09-19 into `sprint-start.md`** — a sprint that must touch a
+    file in the "Which Phase-4 sprint owns which file" table runs that split first. While any row
+    of that table is unsplit, the rule is live and belongs in the workflow, not only here.
   - Close out: final reading against the targets table; TD entries for anything missed; retro for
-    the whole arc; **lift the freeze** — update `CLAUDE.md` Next Sprint, the MEMORY.md registry,
-    Mission Control, and tell BrightPath their queued requests are open again.
+    the whole arc; update `CLAUDE.md` Next Sprint, the MEMORY.md registry and Mission Control.
+    *(The freeze itself was lifted at the checkpoint on 2026-09-19, and BrightPath's queued
+    requests opened then.)*
 - **Acceptance:** a dry run — a throwaway branch that adds a 700-line file, a mirrored rule, a
   hand-built fixture and a query in a loop is refused **four times, by four different tests**,
   without anyone remembering anything.
@@ -580,20 +657,22 @@ for how long, and lands in **one** day.
 ```
 Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
-Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT: "stabilised" - the owner may lift the freeze
-Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16
+Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
+Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- from here on, ALTERNATING with product work
 Phase 5   H17 -> H18
-Phase 6   H19                          <-- "completed" - the freeze lifts
+Phase 6   H19                          <-- "completed"
 ```
 
 - **H1 → H2 → H3 → H4 are strictly first.** Every later sprint is safer once a red suite cannot ship.
 - **H6 blocks H14.** H3 blocks H11. H5 should precede H7/H8 (their tests use the factory).
 - Phases 3 and 4 do not block each other; Phase 3 goes first because it is the half that prevents bugs.
-- **Back to back, by owner ruling.** With the product frozen there is one agent in the checkout,
-  which removes Phase 4's biggest risk (a file changing under a move).
-- **If the owner lifts the freeze at the checkpoint**, the remaining sprints alternate with product
-  work, and a feature sprint that must change a file still on the hotspot list pulls that file's
-  Phase-4 sprint forward instead of adding to it.
+- **Back to back through H10, by the owner's 2026-09-18 ruling.** With the product frozen there was
+  one agent in the checkout, which removed Phase 4's biggest risk (a file changing under a move).
+- **From H11 on, alternating with product work** — the owner lifted the freeze at the checkpoint on
+  2026-09-19. A feature sprint that must change a file still on the hotspot list **pulls that
+  file's Phase-4 sprint forward instead of adding to it**; the lookup table is under Phase 4. More
+  than one agent in the checkout means `AGENT-TERRITORY.log` is back in use, and each move lands
+  within one day.
 
 ## Deliberately NOT in scope
 
@@ -629,8 +708,14 @@ Phase 6   H19                          <-- "completed" - the freeze lifts
 
 **Settled 2026-09-18:** cadence — back to back, under a freeze. Standards — enforced in the gate.
 
-**Still needed:**
-1. **The word to start H1.** (The freeze is already in force.)
-2. **H2:** agree to switch the two Cloud Build triggers to committed config files — the one change
-   here that touches production infrastructure. Needed when H2 starts, not before.
-3. **At the checkpoint (after H10):** lift the freeze, or run to the end.
+**Settled 2026-09-19 — all three now answered:**
+1. **The word to start H1** — given; H1–H10 shipped.
+2. **H2's committed Cloud Build config** — agreed; both triggers run a committed `cloudbuild.yaml`.
+3. **At the checkpoint (after H10): lift the freeze, or run to the end** — **LIFT**, with the
+   standing rule that a feature sprint touching a file on the hotspot/oversize list runs that
+   file's Phase-4 split sprint first. H11–H19 alternate with product work. The ratchet standards
+   are unchanged.
+
+**Still on the owner's desk (none of them blocked by anything):** TD-262 (F2 + W1, the income
+rule's fourth way has no upload slot — needs a Stitch prototype), TD-260, TD-255, TD-257, TD-253,
+TD-265. TD-264 was ruled on 2026-09-19 and is resolved.

@@ -1121,8 +1121,16 @@ class BankAccountConfirmSerializer(serializers.Serializer):
     account_number = serializers.CharField(max_length=40, trim_whitespace=True)
     account_holder = serializers.CharField(max_length=200, trim_whitespace=True)
 
+    # TD-264 (owner ruling 2026-09-19): a digit here means ASCII 0-9 and nothing else —
+    # exactly what the student's own form counts (`/\d/g` is ASCII in JavaScript). The old
+    # `str.isdigit()` was Unicode-aware and read '³³³³³' or '١٢٣٤٥' as five digits, so a
+    # POST that never came from the form could store a payout target no bank can be paid
+    # through. A digit-LIKE character is NOT a separate error: it is simply not counted,
+    # so an account left with fewer than five real digits fails the floor below with the
+    # error code it always had. Spaces and dashes are untouched — never counted, always kept.
+    # drift-test: halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts
     def validate_account_number(self, v):
-        digits = ''.join(ch for ch in v if ch.isdigit())
+        digits = ''.join(ch for ch in v if ch in '0123456789')
         if len(digits) < 5:
             # A real Malaysian account number is well over 5 digits — guard a fat-finger
             # / OCR fragment from being saved as a payout target.

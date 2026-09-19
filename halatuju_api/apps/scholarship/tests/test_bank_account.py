@@ -219,6 +219,46 @@ class TestConfirmEndpoint(_Base):
         r = self._client('bank-c4').post(self.URL, _bank_fields(acct='12'), format='json')
         self.assertEqual(r.status_code, 400)
 
+    # ── TD-264 (owner ruling 2026-09-19): a DIGIT here means ASCII 0-9, the same
+    # thing the student's own form counts. A digit-LIKE character is not counted;
+    # it is not a new error, so an account that has too few ASCII digits left over
+    # falls through the existing five-digit floor with the existing code.
+    def test_non_ascii_digits_do_not_reach_the_floor(self):
+        """Five Arabic-Indic / superscript / subscript characters are five digits to
+        Python's Unicode-aware `str.isdigit()` and NONE to the form — and no bank can
+        be paid through any of them. They must not carry an account over the floor."""
+        app = self._make('bank-c7')
+        c = self._client('bank-c7')
+        for acct in ('١٢٣٤٥',   # Arabic-Indic ١٢٣٤٥
+                     '³³³³³',   # superscript ³³³³³
+                     '₅₅₅₅₅'):  # subscript ₅₅₅₅₅
+            r = c.post(self.URL, _bank_fields(acct=acct), format='json')
+            self.assertEqual(r.status_code, 400, acct)
+            self.assertEqual(r.json()['account_number'], ['account_number_invalid'])
+        self.assertFalse(BankAccount.objects.filter(application=app).exists())
+
+    def test_digit_like_character_is_not_counted_rather_than_refused(self):
+        """Exactly what the form does: it counts ASCII digits and ignores everything
+        else, so a stray superscript alongside five real digits still saves — and the
+        value is stored as typed."""
+        app = self._make('bank-c8')
+        r = self._client('bank-c8').post(
+            self.URL, _bank_fields(acct='³12345'), format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(BankAccount.objects.get(application=app).account_number,
+                         '³12345')
+
+    def test_ordinary_account_numbers_still_pass(self):
+        """The narrowing must not refuse anything a student can type today: spaces and
+        dashes were never digits on either side and are kept in the stored value."""
+        for uid, acct in (('bank-c9', '1234567890'),
+                          ('bank-c10', '12-3456 7890'),
+                          ('bank-c11', '5140 1234 5678')):
+            app = self._make(uid)
+            r = self._client(uid).post(self.URL, _bank_fields(acct=acct), format='json')
+            self.assertEqual(r.status_code, 200, acct)
+            self.assertEqual(BankAccount.objects.get(application=app).account_number, acct)
+
     def test_reconfirm_updates_in_place(self):
         app = self._make('bank-c5')
         c = self._client('bank-c5')

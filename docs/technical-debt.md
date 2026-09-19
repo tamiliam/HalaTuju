@@ -110,11 +110,13 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
 - **TD-265 (raised 2026-09-19 by code health H10) — low.** The finance funding summary computes a
   `programme` column on every row that the interface never declared and no screen draws. Not a
   leak; a design call (per-row column, or the page header, now that the breadcrumb scopes it).
-- **TD-264 (raised 2026-09-19 by code health H9) — medium, money path.** The api counts payout-account
-  digits with Unicode-aware `isdigit()`, the form with ASCII `\d`. The five-digit FLOOR agrees; the
-  word *digit* does not, so a direct POST of `³³³³³` is accepted and stored as a payout target. Both
-  sides pinned, neither changed — the owner's call which one moves (recommended: narrow the api,
-  after counting stored rows).
+- **TD-264 (raised 2026-09-19 by code health H9) — medium, money path — ✅ RESOLVED 2026-09-19.**
+  The api counted payout-account digits with Unicode-aware `isdigit()`, the form with ASCII `\d`,
+  so a direct POST of `³³³³³` was accepted and stored as a payout target. **Owner ruled: narrow the
+  api** — `BankAccountConfirmSerializer.validate_account_number` now counts ASCII `0-9` only, a
+  digit-like character is not counted rather than separately refused (exactly what the form does),
+  the five-digit floor and `account_number_invalid` are unchanged. 9 stored accounts, 0 affected;
+  no migration.
 - **TD-263 (raised 2026-09-19 by code health H9) — low.** The Requests screen offers `requote` at
   `deferred` for any kind; the service refuses a non-feature requote. Unreachable today by one road
   only, and the drift test asserts that road, so it goes red the moment it stops being true.
@@ -4059,21 +4061,55 @@ already scopes the page — that is the design question, and it is why this is n
 **Owner/design call, ~1h.** **Trigger:** the first organisation running two gifts through one
 payment run.
 
-### [TD-264] The api and the web do not agree on what a DIGIT is, on the payout account — medium (money path; the owner's call which side moves)
+### [TD-264] The api and the web do not agree on what a DIGIT is, on the payout account — medium (money path) — **RESOLVED 2026-09-19**
 
-**Found:** code health H9 (2026-09-19), characterising the payout-account floor before guarding it.
-**Nothing was changed.** Both behaviours are pinned, green on today's tree, by
-`halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts`.
+**Resolved 2026-09-19 on the owner's ruling: narrow the api to ASCII digits — make it as strict as
+the form, not stricter.** One line of production code moved.
+`apps/scholarship/serializers.py`, `BankAccountConfirmSerializer.validate_account_number`:
+`''.join(ch for ch in v if ch.isdigit())` → `''.join(ch for ch in v if ch in '0123456789')`.
+That serializer is the **only** place the api counts the digits of a payout account; the single
+writer (`views.BankAccountView.post`) validates through it, and there is no import path — Vircle
+relays a wallet id, not a bank account.
 
-The FLOOR agrees: five digits, on both sides, so a fat-finger or a truncated OCR fragment cannot
-become a payout target. The word *digit* does not agree:
+**A digit-LIKE character is NOT counted, and is NOT a new error.** That is exactly what the form
+does (`countDigits` = `/\d/g`, ASCII in JavaScript): it counts real digits and ignores everything
+else. So `'³³³³³'` now falls through the unchanged five-digit floor and is refused with the
+unchanged `account_number_invalid`, while `'³12345'` — five real digits with a stray character —
+still saves, as it always did on the form. Rejecting outright would have been *stricter* than the
+form: a new refusal the student's own screen could not predict, needing a new message in three
+languages. No i18n was added. Spaces and dashes are untouched: never counted, always stored as typed.
 
-| input | api `ch.isdigit()` | web `/\d/g` | outcome |
-|---|---|---|---|
-| `12345` | 5 | 5 | accepted by both |
-| `١٢٣٤٥` (Arabic-Indic) | 5 | 0 | **api ACCEPTS**, form refuses |
-| `³³³³³` (superscript) | 5 | 0 | **api ACCEPTS**, form refuses |
-| `₅₅₅₅₅` (subscript) | 5 | 0 | **api ACCEPTS**, form refuses |
+**Production was counted before the change:** 9 stored bank accounts, **0** with a non-ASCII digit,
+**0** below five ASCII digits. No stored row is affected. **No migration** (`makemigrations
+--check` clean).
+
+**Tests were edited first, and seen red.** The drift test's pinned disagreement block became a
+pinned AGREEMENT (`RESOLVED: both sides read a digit as ASCII 0-9`); three rows were added to
+`apps/scholarship/tests/test_bank_account.py` — the three non-ASCII fixtures refused with
+`account_number_invalid`, the "not counted is not refused" row (`³12345` saves), and the
+no-valid-account-may-start-failing row (`1234567890`, `12-3456 7890`, `5140 1234 5678` all save and
+are stored verbatim). **Three bite-checks, three bit:** revert to `isdigit()` → api row red *and*
+drift test red; refuse any non-ASCII character → the "not counted" row red; refuse spaces and
+dashes → the ordinary-accounts row red. 7,000 → **7,003 pytest**, 3 skipped. `code_health`
+unchanged on every reading.
+
+**Deliberately NOT touched:** `_digits` in `offer_parse.py` (the NRIC OCR reader). H7 kept the two
+apart on purpose — a document reader and a payout gate have different needs.
+
+**The finding, as reported.** *Found:* code health H9 (2026-09-19), characterising the
+payout-account floor before guarding it. Nothing was changed at the time; both behaviours were
+pinned, green, by `halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts`.
+
+The FLOOR agreed: five digits, on both sides, so a fat-finger or a truncated OCR fragment cannot
+become a payout target. The word *digit* did not agree (the right-hand column is the state the
+ruling put an end to):
+
+| input | api `ch.isdigit()` (was) | web `/\d/g` | outcome (before the fix) | now |
+|---|---|---|---|---|
+| `12345` | 5 | 5 | accepted by both | accepted by both |
+| `١٢٣٤٥` (Arabic-Indic) | 5 | 0 | **api ACCEPTS**, form refuses | refused by both |
+| `³³³³³` (superscript) | 5 | 0 | **api ACCEPTS**, form refuses | refused by both |
+| `₅₅₅₅₅` (subscript) | 5 | 0 | **api ACCEPTS**, form refuses | refused by both |
 
 Python's `str.isdigit()` is Unicode-aware; JavaScript's `\d` is ASCII `0-9`. The web is therefore
 the STRICTER side, so nothing a student's own form allows is refused by the server — **the exposure
@@ -4082,17 +4118,17 @@ would accept `³³³³³` and store it as the account a payment run reads. `acco
 `CharField(max_length=40)` with no other validation.
 
 This is the same class H7 pinned in `_digits` (`re.sub(r'\D')` drops a superscript, `str.isdigit()`
-keeps it) — now on the money path, which is why it is reported rather than fixed. Both candidate
-fixes change what the api accepts:
+keeps it) — but on the money path, which is why it was reported rather than fixed. Two candidate
+fixes were put to the owner:
 1. **Narrow the api** to ASCII digits. Matches the form, matches what a bank can be paid through.
-   Would reject any stored account that is not ASCII today — **count the stored rows first**.
 2. **Widen the web** to Unicode digits. Almost certainly wrong: it would let a student save an
    account number no payment system can use.
 
-**Owner decision needed.** Recommended: (1), after a count of `BankAccount.account_number` values
-containing a non-ASCII digit (expected zero, because the form has always blocked them).
-**Trigger:** any change to the payout-account validator, or a payment run failing on an account
-number that "looks right".
+**The owner chose (1) on 2026-09-19**, after the count of `BankAccount.account_number` values
+containing a non-ASCII digit came back at zero (as expected — the form has always blocked them).
+See the resolution at the top of this entry. **Still a trigger to re-read this:** a payment run
+failing on an account number that "looks right", or the payout account having to accept a
+non-Malaysian format.
 
 ### [TD-263] The Requests screen offers `requote` on a bug; the service refuses it — low (unreachable today, by one road only)
 

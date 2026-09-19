@@ -6,9 +6,10 @@
  * wrong inline, before the round-trip". The floor itself — five digits — is the api's, and it
  * exists so a fat-finger or a truncated OCR fragment can never become a **payout target**.
  *
- * Characterised first (the H8 rule). The FLOOR agrees: five on both sides. What does NOT agree is
- * the word *digit*, and that is pinned below as a disagreement, reported and NOT fixed — it is on
- * the money path, so which side moves is the owner's call (TD-264).
+ * Characterised first (the H8 rule). The FLOOR agrees: five on both sides. The word *digit* did
+ * NOT agree, and was pinned here as a disagreement (TD-264) rather than fixed, because it is the
+ * money path. The owner ruled on 2026-09-19: narrow the api to ASCII 0-9, the form's reading.
+ * Both sides now count the same characters, and the block below pins the agreement.
  */
 import * as fs from 'fs'
 import * as path from 'path'
@@ -65,39 +66,45 @@ describe('the payout-account floor', () => {
 })
 
 /**
- * ⚠ PINNED DISAGREEMENT (TD-264) — reported, not fixed, and no winner picked here. It is the
- * money path, so which side moves is the owner's.
+ * RESOLVED (TD-264, owner ruling 2026-09-19) — the api was narrowed to the form's reading, and
+ * these assertions pin the agreement so it cannot drift apart again.
  *
- * The two sides count different things:
- *   • api — `ch.isdigit()`, which is Unicode-aware. `'³³³³³'` and `'١٢٣٤٥'` are five digits, so a
- *     direct POST carrying either is ACCEPTED and stored as a payout target. Neither is a number
- *     anyone can pay into.
- *   • web — `/\d/g`, which is ASCII `0-9` only, so the form refuses all three.
+ * Both sides now count ASCII `0-9` only:
+ *   • api — a plain `ch in '0123456789'` membership test. `str.isdigit()` is Unicode-aware and
+ *     read `'³³³³³'` and `'١٢٣٤٥'` as five digits, so a direct POST of either was ACCEPTED and
+ *     stored as a payout target. Neither is a number anyone can be paid through.
+ *   • web — `/\d/g`, which is ASCII `0-9` in JavaScript.
  *
- * The web is the STRICTER side, so nothing the student's own form allows is refused by the server;
- * the exposure is the other way round, on a request that does not come from the form at all. This
- * is the same class H7 pinned in `_digits` (`re.sub(r'\D')` drops a superscript, `str.isdigit()`
- * keeps it) — now on the account a payment run reads.
- *
- * These assertions pin TODAY's behaviour on both sides. Either side changing turns one red, which
- * is what should happen: the fix must be a decision, not a drift.
+ * A digit-LIKE character is NOT a new error on either side: it is simply not counted, so an
+ * account that has fewer than five real digits left falls through the existing floor with the
+ * existing `account_number_invalid`. This is the same class H7 pinned in `_digits`, which is a
+ * different reader on the NRIC OCR path and was deliberately left alone.
  */
-describe('PINNED: the two sides do not agree on what a digit is (TD-264)', () => {
+describe('RESOLVED: both sides read a digit as ASCII 0-9 (TD-264)', () => {
   const NON_ASCII = {
     'arabic-indic': '١٢٣٤٥',
     superscript: '³³³³³',
     subscript: '₅₅₅₅₅',
   }
 
-  test('the api still counts digits with Unicode-aware isdigit()', () => {
-    expect(validator).toMatch(/ch\.isdigit\(\)/)
+  test('the api no longer counts with Unicode-aware isdigit()', () => {
+    expect(validator).not.toMatch(/isdigit\(\)/)
+    expect(validator).toMatch(/ch in '0123456789'/)
   })
 
-  test('the web still counts ASCII digits only — and so refuses what the api would take', () => {
+  test('neither side counts a digit-like character — five of them stay below the floor', () => {
     for (const [label, value] of Object.entries(NON_ASCII)) {
       expect(`${label}: ${countDigits(value)}`).toBe(`${label}: 0`)
-      // Five characters Python reads as five digits; the form reads none and blocks the save.
+      // Five characters Python's isdigit() once read as five digits; both sides now read none.
       expect(value.length).toBe(5)
+      expect(countDigits(value) < webFloor).toBe(true)
     }
+  })
+
+  test('not counted is not the same as refused — five real digits still pass', () => {
+    // Exactly the form's rule, so the api may not be stricter: the stray superscript is
+    // ignored and the five ASCII digits carry the account over the floor.
+    expect(countDigits('³12345')).toBe(5)
+    expect(countDigits('12-3456 7890')).toBe(10)
   })
 })
