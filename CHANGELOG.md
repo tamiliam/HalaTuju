@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Overview phase 2, Sprint B - an organisation arranges its own Overview - 2026-09-19
+
+### Added
+
+- **The five Overview panels can be put in any order, from the existing Customise screen.** Each
+  card carries an Up and a Down arrow; pressing one moves that panel one place and Save sends the
+  whole list in its new order to the endpoint Sprint A already built. No backend change, no
+  migration: the stored `sections` list was always ordered and always validated as a permutation.
+  A hidden panel keeps its position, so switching it back on returns it where it was.
+- **Accessibility, decided rather than inherited.** Real `<button>` elements. Each one is named for
+  the panel AND the direction ("Move Money up"), because ten controls all called "Move up" is what
+  a screen-reader user would otherwise be handed. The first row's Up and the last row's Down are
+  disabled. Each arrow is a 44px square. And the row that moved KEEPS the keyboard - including the
+  case that breaks by itself, where a row arriving at an end disables the arrow just pressed and
+  the browser blurs it to nothing; focus then lands on the arrow pointing back the way it came.
+- **Three locale keys x three languages** (`customise.orderHint`, `customise.moveUp`,
+  `customise.moveDown`), and the customise block as a whole is now enumerated in the i18n guard's
+  dynamic families - the editor builds every one of its keys off a `${K}` template, so the static
+  scan was blind to all of them, and an accessible name is invisible twice over.
+- **Eight tests**: three on the real Programme Overview page (the drawn order changes, the disabled
+  ends move with the row, the save carries the new order, every arrow's accessible name), five on
+  the editor (44px, the move itself, focus kept, focus handed over at an end, Save woken by a
+  reorder alone). Five bite-checks, five bit - reorder ignored, ends un-disabled, save sending the
+  original order, the focus end-flip removed, and a cosmetic no-cry-wolf edit that stayed green.
+
+### Changed
+
+- **Drag-and-drop was dropped from the sprint, deliberately.** The phase-2 roadmap named "up/down
+  buttons + native HTML5 drag-and-drop". Five rows do not earn a drag gesture, and a dragged card
+  is the one arrangement a test cannot honestly prove: jsdom's drag-and-drop is a stub, so a `drop`
+  the test fired itself shows the handler ran and nothing about the order a pointer promised - the
+  module's own docblock had said so since Sprint A. `overviewLayout.reorderByDrop` stays in the
+  module, unused and still tested, with a comment saying why it is kept.
+
 ## Two owner rulings - the freeze lifts, and a payout account is counted in ASCII - 2026-09-19
 
 ### Changed

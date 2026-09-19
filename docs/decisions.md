@@ -1,5 +1,33 @@
 # Architectural Decisions — HalaTuju
 
+## The Overview layout is reordered with arrows, not by dragging — Sprint B, 2026-09-19
+
+**Decision:** the Customise editor reorders its five panels with an Up and a Down button per row.
+**Native HTML5 drag-and-drop was NOT built**, although the phase-2 roadmap named it.
+`overviewLayout.reorderByDrop` — the arithmetic a drag would need — **stays in the module, unused
+and still unit-tested, with a comment at the site saying why it is kept**.
+
+**Alternatives considered:** (a) arrows *and* native drag-and-drop, as the roadmap's sprint row
+said; (b) a drag-and-drop library; (c) arrows only, deleting `reorderByDrop`.
+
+**Rationale:** five rows do not earn a drag gesture, and a dragged card is the one arrangement a
+test cannot honestly prove — jsdom's drag-and-drop is a stub, so a `drop` the test fires itself
+shows the handler ran and says nothing about the order the pointer promised. `overviewLayout.ts`
+had recorded exactly that since Sprint A, one paragraph above the helper the drag would have used.
+Buttons a person can tab to are testable end to end through the real page, work on a phone, and
+work for somebody who never uses a mouse. (b) adds a dependency to a five-row list. (c) was
+rejected because the arithmetic is written and tested; deleting it buys nothing and the next
+sprint would rewrite it worse.
+
+**Trade-offs:** a mouse user rearranging all five panels makes several clicks instead of one drag.
+Accepted: the screen is opened rarely, by one person per organisation. And the module keeps an
+exported function nothing imports — which a later reader could mistake for dead weight, hence the
+comment.
+
+**Revisit if:** the customisable catalogue grows beyond about eight panels, or an org admin asks
+for dragging. Then the drag sits ON TOP of the arrows (never instead of them — the arrows are the
+keyboard and touch path), and the rendered test still proves the ORDER through the buttons.
+
 ## The development freeze lifts at "stabilised", and a feature sprint splits before it grows — owner ruling, 2026-09-19
 
 **Decision (owner, at the code-health roadmap's Phase-3 checkpoint):** **lift the development

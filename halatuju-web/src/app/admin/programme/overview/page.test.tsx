@@ -559,6 +559,75 @@ describe('customising the layout', () => {
     expect(screen.queryByTestId('overview-funnel')).toBeNull()
     expect(screen.queryByTestId('overview-money-series')).toBeNull()
   })
+
+  /* ⚠⚠ THE REORDER, END TO END, THROUGH THE REAL SCREEN (Sprint B). Three claims in one test,
+   * because splitting them would let two of the three pass on a page that never re-rendered: the
+   * VISIBLE order moves, the ends stay disabled as the row that moved changes place, and the save
+   * carries the NEW order to the server. A component test that only asked whether the handler ran
+   * would pass on a list drawn from `initial` for ever. */
+  it('moves a panel down, keeps the ends disabled, and saves the new order', async () => {
+    authRole = { role: 'org_admin' }
+    mockApi.getProgrammeOverview.mockResolvedValue(ORG_ADMIN_PAYLOAD)
+    mockApi.saveOverviewLayout.mockResolvedValue({
+      organisation: { code: 'mynadi', name: 'MyNadi' },
+      sections: LAYOUT, updated_by_email: 'admin@example.com', updated_at: null,
+    })
+    render(<ProgrammeOverviewPage />)
+    fireEvent.click(await screen.findByTestId('customise-button'))
+
+    const arrow = (id: string) => screen.getByTestId(id) as HTMLButtonElement
+    const drawnOrder = () => Array.from(
+      document.querySelectorAll('[data-testid^="customise-card-"]'),
+    ).map((card) => card.getAttribute('data-testid'))
+
+    // The ends: the first row cannot go up, the last cannot go down.
+    expect(arrow('move-up-funnel').disabled).toBe(true)
+    expect(arrow('move-down-funnel').disabled).toBe(false)
+    expect(arrow('move-down-money_series').disabled).toBe(true)
+    expect(arrow('move-up-money_series').disabled).toBe(false)
+
+    fireEvent.click(arrow('move-down-funnel'))
+
+    // The cards on screen are in the new order…
+    expect(drawnOrder()).toEqual([
+      'customise-card-money', 'customise-card-funnel', 'customise-card-attention',
+      'customise-card-applications_series', 'customise-card-money_series',
+    ])
+    // …and the disabled end MOVED WITH THEM — a row that arrives at the top cannot climb further.
+    expect(arrow('move-up-money').disabled).toBe(true)
+    expect(arrow('move-up-funnel').disabled).toBe(false)
+
+    fireEvent.click(screen.getByTestId('save-layout'))
+    await waitFor(() => expect(mockApi.saveOverviewLayout).toHaveBeenCalled())
+    // ⚠ THE FULL LIST, IN THE NEW ORDER. The server validates a permutation, and the order is the
+    // whole point of the gesture.
+    expect(mockApi.saveOverviewLayout.mock.calls[0][0]).toEqual([
+      { key: 'money', on: true },
+      { key: 'funnel', on: true },
+      { key: 'attention', on: true },
+      { key: 'applications_series', on: true },
+      { key: 'money_series', on: true },
+    ])
+  })
+
+  /* ⚠ EVERY ARROW NAMES ITS PANEL AND ITS DIRECTION. Ten buttons all called "Move up" is what a
+   * screen-reader user would otherwise be handed, and an accessible name is invisible twice over
+   * — never drawn, and absent from all three locales identically, so parity cannot see it. */
+  it('gives every arrow an accessible name carrying the panel and the direction', async () => {
+    authRole = { role: 'org_admin' }
+    mockApi.getProgrammeOverview.mockResolvedValue(ORG_ADMIN_PAYLOAD)
+    render(<ProgrammeOverviewPage />)
+    fireEvent.click(await screen.findByTestId('customise-button'))
+    const K = 'admin.programmeOverview'
+    for (const key of ['funnel', 'money', 'attention', 'applications_series', 'money_series']) {
+      expect(screen.getByTestId(`move-up-${key}`).getAttribute('aria-label'))
+        .toBe(`${K}.customise.moveUp|${K}.sections.${key}`)
+      expect(screen.getByTestId(`move-down-${key}`).getAttribute('aria-label'))
+        .toBe(`${K}.customise.moveDown|${K}.sections.${key}`)
+      // A real <button>, not a div with a click handler — so the keyboard reaches it at all.
+      expect(screen.getByTestId(`move-up-${key}`).tagName).toBe('BUTTON')
+    }
+  })
 })
 
 describe('the intake picker', () => {

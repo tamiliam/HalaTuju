@@ -2,10 +2,9 @@
  * The Overview's per-organisation layout — the list arithmetic, kept OUT of the editor.
  *
  * Pure: no React, no fetch, no i18n. Node-testable exactly like `programmeOverview.ts`, and for the
- * same reason: reordering a list is the half of a drag-and-drop editor that can be silently wrong,
- * and proving it through a rendered card that a jsdom drop event never really fired is proving
- * nothing. The DOM test next door shows the switches and the Save bar reached the markup; the
- * ordering is settled here.
+ * same reason: reordering a list is the half of an editor that can be silently wrong, and the
+ * arithmetic deserves a test that names every end case rather than one buried in a click. The
+ * rendered tests next door then prove the SCREEN reaches this arithmetic and the save carries it.
  *
  * ⚠⚠ **THE LIST IS THE WHOLE LIST, ALWAYS.** The server validates `sections` as a PERMUTATION of
  * the five customisable widgets — no unknown key, no duplicate, nothing missing — so every helper
@@ -46,7 +45,7 @@ export function setOn(list: readonly LayoutRow[], key: string, on: boolean): Lay
 /**
  * Has the editor drifted from what was loaded?
  *
- * ⚠ ORDER COUNTS AS A CHANGE, not only the flags. Sprint B moves cards without touching a switch,
+ * ⚠ ORDER COUNTS AS A CHANGE, not only the flags. The arrows move cards without touching a switch,
  * and a Save that slept through a reorder would strand the one edit the person came to make
  * (request #6, 2026-08-01 — a sleeping Save is the dangerous direction).
  */
@@ -78,6 +77,10 @@ export function moveItem(list: readonly LayoutRow[], index: number, delta: numbe
 }
 
 /**
+ * ⚠ KEPT, UNUSED: the editor ships with arrows only (Sprint B, 2026-09-19 — five rows do not
+ * justify drag-and-drop, and a jsdom drop proves nothing), so this is the arithmetic a mouse-drag
+ * would need on the day one is added. It carries its own tests and costs nothing to keep.
+ *
  * Drop `fromKey` onto `toKey`: the dragged row is lifted out and re-inserted AT the target's
  * position, so dragging down lands after the target and dragging up lands before it — which is
  * what the pointer under the cursor promised.

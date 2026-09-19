@@ -322,6 +322,12 @@ const DYNAMIC: Array<[string, string[]]> = [
     ...SECTION_KEYS.map((k) => `${OV}.sections.${k}`),
     ...['draft', 'open', 'closed', 'finished'].map((s) => `${OV}.intakes.state.${s}`),
   ]],
+  // ⚠ The customise editor builds every one of these off `${K}`, so the static scan above is
+  //   blind to all of them — and `moveUp` / `moveDown` are ACCESSIBLE NAMES, invisible twice over
+  //   (never drawn, and missing from all three locales identically, so parity cannot see it).
+  ['admin.programmeOverview customise, arrows included',
+    ['button', 'title', 'hint', 'orderHint', 'moveUp', 'moveDown', 'hidden', 'visible',
+     'save', 'discard', 'saved', 'error', 'refused'].map((k) => `${OV}.customise.${k}`)],
   ['admin.programmeOverview chart accessible names',
     ['applicationsLabel', 'awardsLabel', 'moneyLabel', 'averageLabel', 'transactionsLabel',
      'categoryLabel', 'yRinggit', 'yTransactions', 'yApplications', 'yAwards']

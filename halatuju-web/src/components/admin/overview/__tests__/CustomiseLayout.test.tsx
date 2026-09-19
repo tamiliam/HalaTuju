@@ -86,6 +86,63 @@ describe('the cards', () => {
   })
 })
 
+/* ⚠⚠ THE ARROWS ARE THE WHOLE REORDER (Sprint B) — there is no drag-and-drop, on purpose. What
+ * this block guards is the part a page-level test cannot see: where the KEYBOARD ends up. */
+describe('the arrows', () => {
+  const up = (key: string) => screen.getByTestId(`move-up-${key}`) as HTMLButtonElement
+  const down = (key: string) => screen.getByTestId(`move-down-${key}`) as HTMLButtonElement
+  const order = () => Array.from(document.querySelectorAll('[data-testid^="customise-card-"]'))
+    .map((card) => (card.getAttribute('data-testid') ?? '').replace('customise-card-', ''))
+
+  /* ⚠ 44px SQUARE. An arrow is the smallest control on this screen and the likeliest to be used
+   * with a thumb; below the platform minimum it is the one thing here a phone cannot hit. */
+  it('is a 44px touch target', () => {
+    draw()
+    expect(up('money').getAttribute('class')).toContain('h-11')
+    expect(up('money').getAttribute('class')).toContain('w-11')
+    expect(down('money').getAttribute('class')).toContain('h-11')
+  })
+
+  it('moves a row up, through the pure helper', () => {
+    draw()
+    fireEvent.click(up('attention'))
+    expect(order())
+      .toEqual(['funnel', 'attention', 'money', 'applications_series', 'money_series'])
+  })
+
+  /* ⚠⚠ **THE MOVED ROW KEEPS THE KEYBOARD.** Pressing Up three times must move one panel three
+   * places; if the focus is dropped after the first press the person is back at the top of the
+   * page with no idea which row they were on. */
+  it('leaves the keyboard on the button that moved', () => {
+    draw()
+    up('attention').focus()
+    fireEvent.click(up('attention'))
+    expect(document.activeElement).toBe(up('attention'))
+  })
+
+  /* ⚠ THE ONE CASE THAT BREAKS BY ITSELF: a row arriving at an end disables the very arrow that
+   * was just pressed, and a browser blurs a disabled element to nothing. Focus lands on the arrow
+   * still pointing back the way the row came. */
+  it('hands focus to the other arrow when the row lands at an end', () => {
+    draw()
+    up('money').focus()
+    fireEvent.click(up('money'))
+    expect(order()[0]).toBe('money')
+    expect(up('money').disabled).toBe(true)
+    expect(document.activeElement).toBe(down('money'))
+  })
+
+  /* ⚠ ORDER COUNTS AS A CHANGE — `isDirty` already says so, and this proves the SCREEN asks it.
+   * A Save that slept through a reorder would strand the only edit the person came to make. */
+  it('wakes Save on a reorder alone, with no switch touched', () => {
+    draw()
+    expect(saveButton().disabled).toBe(true)
+    fireEvent.click(down('funnel'))
+    expect(saveButton().disabled).toBe(false)
+    expect(saveButton().getAttribute('title')).toBeNull()
+  })
+})
+
 describe('the save bar', () => {
   it('sleeps until a switch is flipped, with the reason on the button', () => {
     draw()
