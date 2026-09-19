@@ -66,6 +66,11 @@ silently crossed when the result is good get crossed again when it is not.
 non-string. No caller can pass one. Recorded in the characterisation file with its reason — the
 only expected value relaxed in the sprint.
 
+## The deploy
+
+api only. **`halatuju-api-01056-cwx`**, first attempt; 6,894 pytest passed inside the build. Site
+200; admin endpoint 401; no ERROR lines.
+
 ## Numbers
 
 | | Before | After |

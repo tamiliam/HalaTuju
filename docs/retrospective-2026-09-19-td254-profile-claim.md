@@ -79,6 +79,10 @@ resolver under real load is the suite, not production. The logs are to be read a
 are online; the resolver fails to "you are yourself" and logs an exception if the table is
 unreachable, which is what to look for.
 
+**Re-read, as promised, about two hours after the deploy:** 19 real API requests had been served
+by the new revisions — all 200; zero ERROR lines; zero alias warnings or resolver exceptions. Small
+traffic, but it is production traffic passing through the new look-up without incident.
+
 ## Owner review requested
 
 The Tamil copy (table in the agent's report, now in `ta.json`). The lead changed one thing:
