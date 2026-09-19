@@ -48,9 +48,11 @@ export function rmWhole(v: string | number | null | undefined): string {
  * The single lifecycle badge on a sponsored-student card, as token classes.
  *
  * ⚠ THIS USED TO EXIST TWICE — the same six-entry map in `my-students/[id]/page.tsx` and in the
- * My-students grid, the second carrying a comment saying it "mirrors" the first. `docs/lessons.md`
- * is blunt about that shape: the fix for a keep-in-sync pair is to DELETE ONE SIDE, not to sync
- * harder. A duplicated colour map is how one surface gets restyled and the other quietly does not.
+ * My-students grid, the second carrying a comment that pointed at the first as its source of
+ * truth. `docs/lessons.md` is blunt about that shape: the fix for a keep-in-sync pair is to DELETE
+ * ONE SIDE, not to sync harder. A duplicated colour map is how one surface gets restyled and the
+ * other quietly does not. One side was deleted; this is the survivor, and there is nothing left
+ * here for a drift test to hold.
  *
  * ⚠ `graduated` MOVED OFF INDIGO in Layer 1 F1, and it is the one deliberate visual change in that
  * sprint. Indigo was a fifth meaning the tone vocabulary does not name, on three uses against ~1,800

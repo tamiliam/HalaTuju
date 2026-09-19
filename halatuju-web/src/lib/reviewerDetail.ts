@@ -1,10 +1,10 @@
 /**
  * Reviewer detail — the pure decisions behind `/admin/organisation/reviewers[/id]` (#10, 2026-08-02).
  *
- * The server is authoritative on every figure, and on who may read this page at all. This mirrors
- * only what the SCREEN has to decide: how to phrase a measurement we may not have, what the
- * outcome bar is made of, and which credential lines are worth drawing. Nothing here re-derives a
- * rule the server enforces.
+ * The server is authoritative on every figure, and on who may read this page at all. What lives
+ * here is only what the SCREEN has to decide: how to phrase a measurement we may not have, what
+ * the outcome bar is made of, and which credential lines are worth drawing. Nothing here
+ * re-derives a rule the server enforces, so there is no pair to keep honest.
  *
  * **The governing constraint, and it is not a style note.** These are thirteen unpaid volunteers.
  * Everything on this page is read by the person who decides who gets the next case, so a figure

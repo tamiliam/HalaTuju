@@ -26,7 +26,8 @@ export type ThemeMode = 'light' | 'dark'
  *  straight `setProperty('--brand-50', triplet)` with no conversion. (Layer 1 A1.) */
 export type ThemeTokens = Record<ThemeMode, Record<string, string>>
 
-/** What a tenant may tint. Mirrors `TENANT_FAMILIES` in `apps/courses/theme_tokens.py`. */
+/** What a tenant may tint. Mirrors `TENANT_FAMILIES` in `apps/courses/theme_tokens.py`.
+ *  drift-test: halatuju-web/src/lib/__tests__/themeContrastDrift.test.ts */
 const TENANT_FAMILIES = ['brand']
 
 const TOKEN_NAME = /^([a-z]+)-([0-9]+)$/
@@ -169,10 +170,12 @@ export function brandingParams(branding: ResolvedBranding, locale: Locale): Reco
   }
 }
 
-/** Substitute `{var}` placeholders in a message string. Mirrors the old `i18n.tsx` engine
- *  exactly (per-key global replace, unknown placeholders left untouched) but uses a FUNCTION
- *  replacer so a `$` inside a replacement value is inserted literally (the old string form
- *  treated `$&`/`$1`/`$$` specially). A `'{'`-absent fast path skips the work entirely. */
+/** Substitute `{var}` placeholders in a message string. This REPLACED the engine that used to
+ *  live in `i18n.tsx`, which is gone — there is no second copy of it anywhere now. It kept that
+ *  engine's behaviour deliberately (per-key global replace, unknown placeholders left untouched)
+ *  so no caller had to change, and it fixed one thing: a FUNCTION replacer, so a `$` inside a
+ *  replacement value is inserted literally (the old string form treated `$&`/`$1`/`$$`
+ *  specially). A `'{'`-absent fast path skips the work entirely. */
 export function interpolateMessage(value: string, params?: Record<string, string>): string {
   if (!params || value.indexOf('{') === -1) return value
   let out = value

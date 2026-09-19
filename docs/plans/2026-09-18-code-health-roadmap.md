@@ -311,26 +311,121 @@ Reading `mirror` added to `code_health.py`, agreeing exactly with the in-repo le
   count error in a new place — a number carried into a plan without re-deriving it from what it
   counts.
 
-### H10 — De-mirror, wave 2: the rest
-*⚠ Re-estimated 2026-09-19 from what H9 measured. **41 ledger entries remain**, not 29, and they
-are NOT 29 rules: expect roughly 15–20 distinct rules across them. Budget **~8h**, not 6.*
-- **Scope:** `family.py` codes and `is_valid_person_name`, `clauseNumbering.ts`,
-  `REQUEST_COMPONENT_TREE` (its two entries are in `requestStatus.ts`, already open in H9's diff),
-  `invitations.status_of`, `reviewer_profile_complete`, `partner_comms.KINDS`, contrast + theme
-  token families (already asserted on both sides — confirm and mark). Same two end states, and
-  `apiSource.ts` already exists, so each conversion is a test file and a marker.
-- **⚠ THREE GROUPS THE SWEEP MUST NOT TREAT ALIKE** (measured in H9):
-  1. **`incomeWizard.ts` × 3 — DO NOT TOUCH.** These are the income rule, and TD-262 says the homes
-     disagree in places the owner has not yet ruled on. A drift test here would either fail or
-     falsely bless a disagreement. They leave the ledger when TD-262 does, not before.
-  2. **Roughly a third of the remaining claims are WEB-to-WEB** ("Mirrors the STR chip", "Mirrors
-     the Assignment card's guard", "Mirrors applicationStatus.ts"). There is no backend source to
-     read. The honest end state is a test against the OTHER WEB module, or a reword that stops
-     claiming a mirror — not a marker pointing at a test that guards something else.
-  3. The rest are genuine backend mirrors and convert exactly as H9's six did.
-- **Acceptance:** `mirror` = 0 or every remainder is a named, dated exception with its reason in
-  the ledger. Each converted rule bite-checked from the backend side, both directions.
-- **Complexity:** medium. **~8h.** Web only if nothing needs serving (H9 needed nothing).
+### H10 — De-mirror, wave 2: the rest ✅ SHIPPED 2026-09-19 — **PHASE 3 COMPLETE**
+*Retro: `docs/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** All 41
+remaining ledger entries resolved: 22 gained a drift test, 16 were comments that did not describe a
+copied rule and were reworded to say what the code actually does, and **3 stay on the ledger by
+decision** (the income rule — see below). Reading `mirror` **41 → 3**. Nine drift tests, 36 bites,
+36 behaved. Raised **TD-266** (the admin/student `ResolutionItem` pair has drifted; one serializer
+feeds both) and **TD-265** (a finance column nothing renders).*
+
+- **What the 41 turned out to be**, and this is the finding worth carrying forward: **fewer than
+  half were mirrors.** 22 were genuine copied rules. 16 were comments using the word *mirror* for
+  something else entirely — a retired engine, an external data source, a design consistency note,
+  a disclaimer ("this mirrors only what the SCREEN decides"), and one that QUOTED a comment
+  deleted years earlier. Those were reworded to describe the code honestly, which is not ledger
+  gaming: each one now says what it is, and several say plainly why there is nothing to guard.
+- **⛔ THE THREE THAT REMAIN ARE A DECISION, NOT A BACKLOG.** `incomeWizard.ts` × 3 are the income
+  rule. TD-262 pins **eleven** homes of it disagreeing in sixteen places, several awaiting an owner
+  ruling on eligibility. A drift test written today would either fail on a disagreement nobody has
+  ruled on, or pass and thereby BLESS one. The reason is written at the top of `incomeWizard.ts`
+  and in `code-standards.json` beside the entries. **They leave the ledger when TD-262 is settled,
+  and whoever settles it writes the guard as part of that work.**
+- **Acceptance:** met — `mirror` = 3, each remainder a named exception with its reason recorded in
+  two places. Every converted rule bite-checked from both sides.
+- **Complexity:** medium. **~8h.** Web only; no api file was edited.
+
+---
+
+## ✅ CHECKPOINT — "stabilised" (after H10). The owner's decision: lift the freeze, or run on.
+
+*Written 2026-09-19, at the end of Phase 3. Plain language, because this is the page the owner
+reads to make one decision.*
+
+### What was promised at this point
+
+> *"By then a red suite cannot ship, the standards are enforced in the gate, tests can fail, and
+> every rule has one home: the things that **prevent** bugs are done."*
+
+All four are true. Taken one at a time:
+
+**1. A red suite cannot ship.** Before H2, the two Cloud Build triggers deployed whatever was
+pushed; no test ran between a commit and production. Now both run a committed `cloudbuild.yaml`
+that executes the full suite first, and a failing test stops the deploy. That is the single
+biggest change in the arc, and it is the one that makes everything after it safe.
+
+**2. The standards are enforced in the gate.** Ten rules — no giant new file, no giant new
+function, one rule one home, no skipped tests, no new blind spots, every suppression carries a
+reason, no unguarded mirror, no dead dependency, the app boundary, new tests use the factory — are
+now *tests*, inside that gate. They are ratchets: a limit can be tightened and never loosened, and
+an exemption list can only shrink. Nobody has to remember them.
+
+**3. Tests can fail.** Both golden masters used to skip themselves on the run straight after a
+regenerate — the least supervised moment in the process passed green. That is gone. So is the
+hand-built fixture problem: `factories.py` builds only states the product can actually reach, and
+the cockpit — 3,600 lines, the most consequential screen we have — went from **no rendered test at
+all** to 59 of them.
+
+**4. Every rule has one home.** `_money` was eight functions with one name; it is now one module
+with named wrappers. 55 of the 58 front-end rules that were copied from the backend now have a
+test that reads the backend's own source and fails if either side moves.
+
+### The readings, then and now
+
+| Reading | 2026-09-18 | now | |
+|---|---|---|---|
+| Tests run before deploy | no | **yes, both services** | done |
+| Front-end rules mirrored with no guard | 58 | **3** | done bar the income rule |
+| `dup` — one function name, 3+ homes | 10 | **4** (all declared exceptions) | done |
+| `unused` npm packages | 4 | **0** | done |
+| `tsc` errors | 24 | **0** | done |
+| Skipped tests | 2 | **0** | done |
+| Rendered tests that mount the cockpit | 0 | **59** | done |
+| Standards enforced in the gate | 0 | **10** | done |
+| pytest / jest | 6,714 / 2,354 | **7,000 / 2,895** | +931 |
+| `big` — files over 1,000 lines | 25 | **25** | Phase 4 |
+| `hot#1` — the worst file's bug score | 290 | **274** | Phase 4 |
+| `fix%` — fixes ÷ all commits, 90 days | 41 | **42** | lags; re-read after Phase 4 |
+| First-load JS / query budgets | none | **none** | Phase 5 |
+
+**Findings the arc produced along the way, none of them created by it:** TD-258 (a sponsor view
+outside the org fence and a mock donation endpoint live in production — *fixed the same day*),
+TD-259, TD-261 (five defects in money code — *fixed*), TD-262 (the income rule has eleven homes
+and they disagree in sixteen places — **HIGH, eligibility, awaiting the owner**), TD-263, TD-264
+(a payout account the api accepts and no bank could pay — **money path, awaiting the owner**),
+TD-265, TD-266. Two of these are on the owner's desk and neither depends on the freeze.
+
+### What H11–H19 would buy, in plain terms
+
+- **Phase 4 (H11–H16) — make the big files small.** `views_admin.py` is 8,556 lines and was fixed
+  34 times in 90 days; `admin-api.ts` is 4,118. Nobody holds a file that size in one head, so
+  nobody reviews one properly, and that is where the next bug will be. This phase is *moves only* —
+  no renames, no rewording — and it is what the `hot#1` and `big` numbers above are waiting for.
+  **The benefit is speed and safety of every future change**, not a fix to anything broken today.
+- **Phase 5 (H17–H18) — what the visitor downloads, and what each page costs.** One locale per
+  visitor instead of three, then first-load-JS and database-query budgets that cannot grow. **The
+  benefit is a faster site for students on a phone**, and a limit that stops it slowly getting
+  worse again.
+- **Phase 6 (H19) — lock it in.** The standards become part of how every sprint is run, and the
+  freeze lifts as its last act.
+
+### The honest trade
+
+**Lifting the freeze now** means product work resumes and Phases 4–6 alternate with it. Everything
+that *prevents* bugs is already in place, so the risk of resuming is much lower than it was on
+2026-09-18. The cost is that the big files stay big, and each feature sprint that touches one
+either grows it (the ratchet allows 20 lines) or pulls its Phase-4 sprint forward.
+
+**Running on** means roughly six more sprints before product work resumes. The gain is a codebase
+where the next feature is cheaper to build and safer to review, and a measurable one — `hot#1`
+under 100, `big` at 12 or fewer.
+
+**There is a third option the roadmap already allows:** lift the freeze, and make the rule that any
+feature sprint touching a file on the hotspot list pulls that file's Phase-4 sprint forward instead
+of adding to it. That trades a slower first few feature sprints for no pause at all.
+
+**Not a factor either way:** TD-262 and TD-264 both need an owner ruling and neither is blocked by
+the freeze. They can be answered today, whichever way this goes.
 
 ---
 

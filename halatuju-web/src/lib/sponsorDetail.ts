@@ -2,9 +2,10 @@
  * Sponsor detail — the pure decisions behind `/admin/sponsors/[id]` (2026-07-27).
  *
  * The server is authoritative on everything that matters (who may see which money, whether
- * the finance step is armed, what a credit's status is). This mirrors only what the SCREEN
+ * the finance step is armed, what a credit's status is). What lives here is only what the SCREEN
  * has to decide: how to phrase a date, which sign-off steps to draw, and whether an action
- * is offered. Nothing here re-derives a rule the server would refuse.
+ * is offered. Nothing here re-derives a rule the server would refuse, so there is no pair to
+ * keep honest.
  */
 import type { AdminSponsorCredit, AdminSponsorDetail } from './admin-api'
 

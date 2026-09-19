@@ -12,7 +12,10 @@
  *
  * The maths is WCAG 2.1's relative luminance, mirrored from the Python. Both sides assert the same
  * golden fixture (`contrast.test.ts` here, `test_contrast.py` there) so a drift fails loudly on the
- * side that drifted.
+ * side that drifted — and since code health H10 the drift test below reads the api's pair table,
+ * its surfaces and its two bars directly, so "the same" is checked rather than intended.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/themeContrastDrift.test.ts
  */
 import { brandRamp, BRAND_ROLE } from '@/lib/branding'
 
@@ -27,7 +30,8 @@ export const AA_NON_TEXT = 3.0
 /** The platform surfaces, per mode. `white` and `ground-0` are separate on purpose — `text-white`
  *  is a literal in this codebase and deliberately never became `text-ground-0`. In light they are
  *  the same colour; in dark they are nothing like each other, which is why the table is per mode.
- *  Mirrors `PLATFORM_SURFACES` in `apps/courses/contrast.py`. */
+ *  Mirrors `PLATFORM_SURFACES` in `apps/courses/contrast.py`.
+ *  drift-test: halatuju-web/src/lib/__tests__/themeContrastDrift.test.ts */
 const SURFACES: Record<ThemeMode, Record<string, Rgb>> = {
   light: { white: [255, 255, 255], 'ground-0': [255, 255, 255], 'ground-50': [249, 250, 251] },
   dark: { white: [255, 255, 255], 'ground-0': [31, 41, 55], 'ground-50': [17, 24, 39] },

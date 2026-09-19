@@ -2,6 +2,7 @@
 // Mirrors halatuju_api/apps/scholarship/family.py — keep the codes IN SYNC.
 // Labels are i18n keys (`scholarship.family.profession.<code>`), rendered by the
 // form; this module is just codes, groups, and the pure helpers.
+// drift-test: halatuju-web/src/lib/__tests__/familyRosterDrift.test.ts
 
 export type ProfessionCode = string
 
@@ -43,6 +44,7 @@ export const FAMILY_ROLES: FamilyRole[] = ['brother', 'sister', 'guardian']
 
 // Professions that do NOT earn income — mirror of family.NON_EARNING. Used to
 // prefill the income wizard's "who works" select from the roster.
+// drift-test: halatuju-web/src/lib/__tests__/familyRosterDrift.test.ts
 export const NON_EARNING: ReadonlySet<ProfessionCode> = new Set([
   'homemaker', 'retired', 'unemployed', 'unable', 'deceased', 'no_contact',
 ])
@@ -106,6 +108,7 @@ export function cleanOtherMembers(raw: unknown): OtherMember[] {
 // and hyphens (NUR-AIN). It must contain NO digits — an IC / phone typed into a name box is exactly
 // the error this guards against (a real case: a father_name stored as an IC number). Mirrors
 // family.is_valid_person_name in the backend — keep IN SYNC.
+// drift-test: halatuju-web/src/lib/__tests__/familyRosterDrift.test.ts
 const PERSON_NAME_RE = /^[A-Za-z][A-Za-z\s./@'-]*$/
 
 export function isValidPersonName(name: string | null | undefined): boolean {

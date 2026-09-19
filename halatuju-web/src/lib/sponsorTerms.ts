@@ -23,7 +23,8 @@ export function isEditable(terms: Pick<SponsorTermsDetail, 'status'> | null): bo
 }
 
 /** A checkpoint is complete when it would survive the server's Q2 rule: three non-blank options
- *  and an answer marked. Mirrors `sponsor_terms.quiz_payload_valid`. */
+ *  and an answer marked. Mirrors `sponsor_terms.quiz_payload_valid`.
+ *  drift-test: halatuju-web/src/lib/__tests__/contractTermsDrift.test.ts */
 export function quizComplete(payload: SponsorQuizPayload | undefined | null): boolean {
   if (!payload) return false
   const opts = payload.options
@@ -114,6 +115,8 @@ export function renumber(sections: SponsorTermsSection[]): SponsorTermsSection[]
  * Doing it here as well is not belt-and-braces for its own sake: without it the editor would show
  * a section as "no checkpoint" while still holding the answers, and saving would then silently
  * discard work the user could still see on screen.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/contractTermsDrift.test.ts
  */
 export function setQuizFlag(section: SponsorTermsSection, on: boolean): SponsorTermsSection {
   if (on) return { ...section, is_quiz_candidate: true }

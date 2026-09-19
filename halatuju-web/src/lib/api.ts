@@ -1689,9 +1689,9 @@ export interface InterviewSchedule {
   booked_slot_id: number | null
   slots: InterviewSlot[]
   reschedule_cutoff_hours: number
-  /** The organisation's booking grid, SERVED (Org Config Sprint D). The student panel reads
-   *  only the cutoff today, but the field list must match the payload it actually receives —
-   *  the admin mirror of this interface is in `admin-api.ts`. */
+  /** The organisation's booking grid, SERVED (Org Config Sprint D). The VALUES are the server's;
+   *  only the SHAPE is written twice — the admin mirror is in `admin-api.ts`.
+   *  drift-test: halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts */
   slot_window_start_min?: number
   slot_window_end_min?: number
   slot_step_min?: number
@@ -2434,8 +2434,8 @@ export async function getStudentAward(
   return apiRequest('/api/v1/scholarship/award/', options)
 }
 
-/** Accept or decline the award. A minor's guardian must accept (name +
- *  relationship + NRIC), mirroring the share-consent guardian gate. When the
+/** Accept or decline the award. A minor's guardian must accept (name + relationship + NRIC) —
+ *  the same three facts the share-consent guardian gate asks for, enforced server-side. When the
  *  bursary flag is on, accepting also signs the contract in-session: an ADULT
  *  types their own signature (`student_signed_name` + optional `_nric`) AND a
  *  parent surety (`guarantor_*`); a MINOR's guardian IS the guarantor (the

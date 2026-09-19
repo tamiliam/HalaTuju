@@ -3,6 +3,18 @@
 // node-env Jest and so the student's dynamic checklist matches exactly what the
 // officer verdict will assemble. Keep the two in lockstep.
 //
+// ⛔ DELIBERATELY UNGUARDED, AND THIS IS THE REASON — do not attach a drift marker to any of the
+// three mirror claims in this file.
+// Code health H9 and H10 converted every other mirror in `src/lib` to a test that reads the
+// backend's own source. These three did not, on purpose: H8 characterised the income rule and
+// found it has ELEVEN homes which DISAGREE in sixteen places today (TD-262), several of them
+// awaiting an owner ruling on eligibility. A drift test written now would either fail on a
+// disagreement nobody has ruled on, or — worse — pass and thereby BLESS one. The three claims in
+// this file leave the `unguarded_mirrors` ledger when TD-262 is settled, not before, and whoever
+// settles it writes the guard as part of that work. The homes are already pinned, side by side,
+// by `apps/scholarship/tests/test_income_evidence_homes.py` and
+// `src/lib/__tests__/incomeEvidenceHomes.test.ts`.
+//
 // Two shapes under one wizard, split by Q1 (STR document?):
 //   - STR route    → a single earner (father/mother/guardian) + STR doc.
 //   - SALARY route → MULTIPLE working members, each with their own IC + payslip +

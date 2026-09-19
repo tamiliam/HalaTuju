@@ -885,8 +885,11 @@ export interface AdminScholarshipListItem {
   // refused should not look available.
   assignable: boolean
   // Server-computed first-assign readiness (services.is_ready_for_assignment): all student tasks
-  // done OR the 5-day window lapsed. The dropdown disables a FIRST assignment while false — the
-  // detail cockpit's firstAssignBlocked, mirrored so the list can't offer an assign the server refuses.
+  // done OR the 5-day window lapsed. The dropdown disables a FIRST assignment while false, so the
+  // list cannot offer an assign the server refuses.
+  // NOT a copied rule: this is the SERVED answer, and the detail cockpit reads the same field on
+  // its own payload (`firstAssignBlocked = !assigned_to_id && !ready_for_assignment`). Neither
+  // screen re-derives readiness, which is why there is nothing here for a drift test to hold.
   ready_for_assignment: boolean
   decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
@@ -1247,7 +1250,13 @@ export interface InterviewSchedule {
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
- *  src/lib/api.ts but kept separate — do not cross-import. */
+ *  src/lib/api.ts but kept separate — do not cross-import.
+ *  ⚠ THE COPY IS STALE, and both are fed by ONE serializer (`ResolutionItemSerializer`): the admin
+ *  payload returns system + officer + CHECK2 items, so `kind` can be `clarify`/`human`, `source`
+ *  can be `check2`, and `vircle_expected` is always sent. None of the three is declared here.
+ *  Pinned, not fixed — narrowing or widening a type the cockpit reads changes what that screen can
+ *  render (TD-266; the end state is to delete one side).
+ *  drift-test: halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts */
 export interface AdminResolutionItem {
   id: number
   fact: string
@@ -2914,8 +2923,10 @@ export interface PaymentRunItem {
   name: string
   nric: string
   vircle_id: string
-  /** Advisory: has Vircle activated this eWallet (mirrored from the relay sheet)? A false value
-   *  shows a "not yet activated" chip — it never blocks; the student stays payable regardless. */
+  /** Advisory: has Vircle activated this eWallet? The fact is HARVESTED from the relay sheet into
+   *  a stored column and served from there — an external data source, not a rule written twice.
+   *  A false value shows a "not yet activated" chip; it never blocks, and the student stays
+   *  payable regardless. */
   activated: boolean
   award_amount: string
   paid_to_date: string
@@ -2962,7 +2973,11 @@ export interface PaymentRunDetail {
 /** One student's line in the Payments funding summary. Mirrors the backend's
  *  FundingSummaryRowSerializer, which is an explicit allowlist — the only student data a
  *  `finance` admin can reach. Nothing identifying beyond the name, and no documents, income
- *  or verdicts; the backend pins the exact key set with a snapshot test. */
+ *  or verdicts.
+ *  ⚠ ONE FIELD BEHIND: the api also sends `programme` (P2b — which gift funds this student) and
+ *  this interface never gained it, so nothing renders it. Pinned, not fixed — adding a column to
+ *  a live finance table is a visible change (TD-265).
+ *  drift-test: halatuju-web/src/lib/__tests__/financeAllowlistDrift.test.ts */
 export interface FundingSummaryRow {
   application_id: number
   name: string

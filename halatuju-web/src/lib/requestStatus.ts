@@ -151,6 +151,11 @@ export function requestActionsFor(
  * (the B40 pipeline stages). A sub-component's stored VALUE is `${parent}_${sub}` (underscore — a
  * dot breaks the nested i18n lookup). Students + Course Data are deliberately ABSENT (super-only
  * surfaces, removed in 15.1). test_org_requests pins this against VALID_COMPONENTS + the i18n keys.
+ *
+ * ⚠ `_clean_choice` clamps an unknown value to `''` SILENTLY — there is no DB CHECK and no error —
+ * so a value this tree offers and the server does not know is not a 400 anybody sees: it is a
+ * request that arrives with its component quietly blanked.
+ * drift-test: halatuju-web/src/lib/__tests__/requestComponentDrift.test.ts
  */
 export const REQUEST_COMPONENT_TREE: Record<string, readonly string[]> = {
   applications: [
@@ -179,7 +184,9 @@ export function componentLabelKey(value: string): string {
   return `admin.requests.component.${value}`
 }
 
-/** Every valid component VALUE (parents + `${parent}_${sub}` children). Mirrors VALID_COMPONENTS. */
+/** Every valid component VALUE (parents + `${parent}_${sub}` children). Mirrors VALID_COMPONENTS,
+ *  which the api derives from the same tree.
+ *  drift-test: halatuju-web/src/lib/__tests__/requestComponentDrift.test.ts */
 export const REQUEST_COMPONENT_VALUES = REQUEST_COMPONENT_PARENTS.flatMap(
   (parent) => [parent, ...requestSubComponents(parent)],
 )

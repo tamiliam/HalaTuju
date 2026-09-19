@@ -15,6 +15,14 @@ import type { PartnerEmailOrg, PartnerEmailTemplate } from './admin-api'
  * `student_assigned` is last and is the ONE entry whose recipient is the student, not the
  * organisation — it is the other half of `assigned`, sent at the same moment. The card labels its
  * recipient from the server's `to_student`, never from this list, so the two cannot drift.
+ *
+ * ⚠ THIS LIST IS A SUBSET, and code health H10 is where that was measured. `partner_comms.KINDS`
+ * is FIFTEEN kinds across THREE screens: these six, the five in `REVIEWER_EMAIL_KINDS` below, and
+ * four `INVITE_KINDS` drawn by `InvitationEmailsCard.tsx`, which carries no list at all and renders
+ * whatever the endpoint sends. Do not "complete" this list with the invitation kinds — that card
+ * is the pattern the rest are moving towards.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/commsKindsDrift.test.ts
  */
 export const PARTNER_EMAIL_KINDS = [
   'weekly_summary',

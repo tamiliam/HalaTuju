@@ -252,7 +252,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'organisation', roles: ['super', 'org_admin'],
         gate: { mode: 'probe', probe: 'requests', dark: 'hide' },
         badge: 'requestsWaiting' },
-      // The organisation's own settings, mirroring Programme → Configuration one level up
+      // The organisation's own settings, echoing the shape of Programme → Configuration one level up
       // (owner, 2026-09-03: "each Org would have its own config/setting, and each programme would
       // likewise have its own"). Colours moved here from the Programme screen, where they had
       // never belonged: `OrganisationTheme` is ONE colour for the whole tenant, so setting it
@@ -486,9 +486,9 @@ export function visibleNav(ctx: NavContext): VisibleNavGroup[] {
  * ⚠ **TWO ROLES ARE EXEMPT, AND IT IS NOT A COURTESY.** A reviewer's and a QC's only menu row is
  * Applications, which lives in this group — fold it and they log in to an empty sidebar with no
  * way to their own queue. And a plain `admin` or `finance` cannot fold it either, for a subtler
- * reason: the Programmes page shows its gift cards only to super and org_admin (it mirrors the
- * programmes endpoint's own gate), so those two roles have **no door** into a gift; folding the
- * group would strand them on the outside for good.
+ * reason: the Programmes page shows its gift cards only to super and org_admin (it applies the
+ * programmes endpoint's own gate — that page's rule, not this module's), so those two roles have
+ * **no door** into a gift; folding the group would strand them on the outside for good.
  *
  * That is why the exemption is keyed on `programmeConfig`'s roles rather than on a role list:
  * whoever may open a gift's configuration is exactly whoever the Programmes page offers a gift

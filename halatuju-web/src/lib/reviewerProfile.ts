@@ -7,6 +7,8 @@ import type { ReviewerProfile } from '@/lib/admin-api'
  * after a completing save. Keep the two in step (owner set: credentials + one language + phone,
  * plus the PartnerAdmin name).
  *
+ * drift-test: halatuju-web/src/lib/__tests__/staffDrift.test.ts
+ *
  * Returns field keys (not labels); the profile page maps them to i18n. Empty = complete.
  */
 export const REQUIRED_REVIEWER_FIELDS = [

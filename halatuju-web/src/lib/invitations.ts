@@ -9,7 +9,10 @@ import type { AdminItem } from './admin-api'
  * about, and the ordering the two tables read in.
  */
 
-/** What an invitation is doing. Mirrors `invitations.status_of` — the server is the authority. */
+/** What an invitation is doing. Mirrors `invitations.status_of` — the server is the authority; this
+ *  union is what the screen can HANDLE, so a word it can emit and this cannot name falls through to
+ *  a default branch. ⚠ `no_reply` is NOT `expired` (the api's docstring is emphatic).
+ *  drift-test: halatuju-web/src/lib/__tests__/staffDrift.test.ts */
 export type InvitationStatus = 'invited' | 'expired' | 'no_reply' | 'accepted' | 'revoked'
 
 /** What a PERSON is doing. Derived here; see `standingOf` for the precedence and why. */

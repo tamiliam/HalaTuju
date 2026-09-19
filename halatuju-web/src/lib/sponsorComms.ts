@@ -1,10 +1,16 @@
 /**
  * Sponsor comms — the pure decisions behind the Emails panel (S3, 2026-07-28).
  *
- * The twin of `partnerComms.ts`. The server is authoritative on every rule that matters (who may
- * edit, which tokens a kind supplies, what the voice guard refuses); this mirrors only what the
- * SCREEN has to decide — the order the nine kinds are listed in, and which copy key a refusal maps
- * to.
+ * Built like `partnerComms.ts`. The server is authoritative on every rule that matters (who may
+ * edit, which tokens a kind supplies, what the voice guard refuses); what lives here is only what
+ * the SCREEN has to decide — the order the nine kinds are listed in, and which copy key a refusal
+ * maps to.
+ *
+ * The one thing that IS copied is the kind vocabulary itself, and it is guarded: a kind the server
+ * stores and this list does not name is an email going out to real people with no screen anywhere
+ * to change it.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/commsKindsDrift.test.ts
  */
 import type { SponsorEmailTemplate } from './admin-api'
 

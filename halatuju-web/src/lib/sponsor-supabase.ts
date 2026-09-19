@@ -8,7 +8,7 @@ let _sponsorSupabase: SupabaseClient | null = null
 export const SPONSOR_STORAGE_KEY = 'halatuju_sponsor_session'
 
 /**
- * Separate Supabase client for sponsor auth (mirrors the admin client pattern).
+ * Separate Supabase client for sponsor auth, built the same way as the admin client.
  * Its own storage key keeps the sponsor session isolated from the student and
  * admin sessions — a sponsor signs in with email/password or Google and never
  * touches the student anonymous-session / NRIC machinery.

@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 3eadcd9 | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-19 | 9c5024a | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 41 | 15 | 86 | 0 | - | - | ok |
 | 2026-09-19 | b7a1350 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 981ac18 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 84 | 0 | - | - | ok |
@@ -28,30 +29,30 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 9c5024a, window 2026-06-21 onward)
+## Latest run (2026-09-19, 3eadcd9, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8556 | 273.8 |
-| `halatuju-web/src/lib/admin-api.ts` | 26 | 4103 | 106.7 |
+| `halatuju-web/src/lib/admin-api.ts` | 26 | 4118 | 107.1 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3201 | 96 |
 | `halatuju_api/apps/scholarship/services.py` | 31 | 2946 | 91.3 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
-| `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1622 | 48.7 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1632 | 49 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 3599 | 32.4 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 303 fix / 424 feat commits since 2026-06-21
+- 303 fix / 423 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8556  halatuju_api/apps/scholarship/views_admin.py`
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
-- `4103  halatuju-web/src/lib/admin-api.ts`
+- `4118  halatuju-web/src/lib/admin-api.ts`
 - `3599  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3201  halatuju_api/apps/scholarship/income_engine.py`
 - `2946  halatuju_api/apps/scholarship/services.py`
@@ -60,11 +61,11 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
 - `1957  halatuju-web/src/components/ScholarshipDocuments.tsx`
-- `1622  halatuju-web/src/lib/officerCockpit.ts`
+- `1632  halatuju-web/src/lib/officerCockpit.ts`
 - `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
-- `1332  halatuju-web/src/lib/scholarship.ts`
+- `1342  halatuju-web/src/lib/scholarship.ts`
 - `1246  halatuju_api/apps/courses/views_admin.py`
 - `1229  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1195  halatuju_api/apps/scholarship/serializers.py`
@@ -113,68 +114,66 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Front-end rules mirrored from the backend with no drift test
-- 19 of 60 mirror claims in src/lib name a drift test
-- halatuju-web/src/lib/admin-api.ts:887  Server-computed first-assign readiness (services.is_ready_for_assignment): all student tas
-- halatuju-web/src/lib/admin-api.ts:1249  Admin-facing resolution item. Mirrors the student-facing ResolutionItem in src/lib/api.ts 
-- halatuju-web/src/lib/admin-api.ts:2917  Advisory: has Vircle activated this eWallet (mirrored from the relay sheet)? A false value
-- halatuju-web/src/lib/admin-api.ts:2962  One student's line in the Payments funding summary. Mirrors the backend's FundingSummaryRo
-- halatuju-web/src/lib/api.ts:1692  The organisation's booking grid, SERVED (Org Config Sprint D). The student panel reads onl
-- halatuju-web/src/lib/api.ts:2437  Accept or decline the award. A minor's guardian must accept (name + relationship + NRIC), 
-- halatuju-web/src/lib/branding.ts:29  What a tenant may tint. Mirrors `TENANT_FAMILIES` in `apps/courses/theme_tokens.py`. */
-- halatuju-web/src/lib/branding.ts:172  Substitute `{var}` placeholders in a message string. Mirrors the old `i18n.tsx` engine exa
-- halatuju-web/src/lib/clauseNumbering.ts:1  Contract clause numbering — MIRROR of `contracts.clause_numbers` / `contracts.normalise_le
-- halatuju-web/src/lib/contrast.ts:1   The contrast check, in the browser — Layer 1 A2.  ⚠ THIS IS NOT THE GATE. `apps/courses/c
-- halatuju-web/src/lib/contrast.ts:27  The platform surfaces, per mode. `white` and `ground-0` are separate on purpose — `text-wh
-- halatuju-web/src/lib/documentHelp.ts:53   Does this document have a soft problem worth a coach note? Mirrors the "non-good" states 
-- halatuju-web/src/lib/familyRoster.ts:1  Structured family roster (the "About your family" redesign, 2026-06). Mirrors halatuju_api
-- halatuju-web/src/lib/familyRoster.ts:44  Professions that do NOT earn income — mirror of family.NON_EARNING. Used to prefill the in
-- halatuju-web/src/lib/familyRoster.ts:104  A person's NAME may contain letters, spaces, and the connectors that appear in Malaysian n
+- 40 of 43 mirror claims in src/lib name a drift test
 - halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
-- halatuju-web/src/lib/incomeWizard.ts:72  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
-- halatuju-web/src/lib/incomeWizard.ts:99  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
-- halatuju-web/src/lib/invitations.ts:12  What an invitation is doing. Mirrors `invitations.status_of` — the server is the authority
-- halatuju-web/src/lib/navigation.ts:255  The organisation's own settings, mirroring Programme → Configuration one level up (owner, 
-- halatuju-web/src/lib/navigation.ts:479   Should the Programme group be hidden right now?  Owner, 2026-09-14: the Programme section
-- halatuju-web/src/lib/officerCockpit.ts:308   Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-f
-- halatuju-web/src/lib/officerCockpit.ts:479  IC No: an EPF statement always carries the member's number; a salary slip only sometimes (
-- halatuju-web/src/lib/officerCockpit.ts:1127   A `shortlisted` application is PRE-SUBMISSION by definition — submitting Step 2 is exactl
-- halatuju-web/src/lib/officerCockpit.ts:1183   Show the Interview Stage box?  The pre-submission half is `showsPostSubmissionCards` (no 
-- halatuju-web/src/lib/partnerComms.ts:12   The emails, in the order the card lists them. Mirrors `partner_comms.KINDS`.  `student_as
-- halatuju-web/src/lib/poolCard.ts:47   The single lifecycle badge on a sponsored-student card, as token classes.  ⚠ THIS USED TO
-- halatuju-web/src/lib/requestStatus.ts:148   The Requests COMPONENT tree (Sprint 15.1) — the FE mirror of models.REQUEST_COMPONENT_TRE
-- halatuju-web/src/lib/requestStatus.ts:182  Every valid component VALUE (parents + `${parent}_${sub}` children). Mirrors VALID_COMPONE
-- halatuju-web/src/lib/reviewerDetail.ts:1   Reviewer detail — the pure decisions behind `/admin/organisation/reviewers[/id]` (#10, 20
-- halatuju-web/src/lib/reviewerProfile.ts:3   Client mirror of the backend `reviewer_onboarding.reviewer_profile_complete` — which comp
-- halatuju-web/src/lib/scholarship.ts:64  Mirrors the onboarding state list (onboarding/profile/page.tsx). Static — a fixed set of M
-- halatuju-web/src/lib/scholarship.ts:205  ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ── Display order f
-- halatuju-web/src/lib/scholarship.ts:376  A ranked course choice (rank derived from array order). Sourced from the student's saved c
-- halatuju-web/src/lib/scholarship.ts:708   The caller's ONE live application, or null when that question has no single answer.  The 
-- halatuju-web/src/lib/scholarship.ts:1154   How a document card presents the file(s) it holds: - `none` — nothing uploaded yet; the c
-- halatuju-web/src/lib/sponsor-supabase.ts:10   Separate Supabase client for sponsor auth (mirrors the admin client pattern). Its own sto
-- halatuju-web/src/lib/sponsorComms.ts:1   Sponsor comms — the pure decisions behind the Emails panel (S3, 2026-07-28).  The twin of
-- halatuju-web/src/lib/sponsorDetail.ts:1   Sponsor detail — the pure decisions behind `/admin/sponsors/[id]` (2026-07-27).  The serv
-- halatuju-web/src/lib/sponsorTerms.ts:25  A checkpoint is complete when it would survive the server's Q2 rule: three non-blank optio
-- halatuju-web/src/lib/sponsorTerms.ts:111   Clearing the quiz flag WIPES the payloads, mirroring `replace_sections` on the server.  D
+- halatuju-web/src/lib/incomeWizard.ts:84  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
+- halatuju-web/src/lib/incomeWizard.ts:111  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 22 of 150 web test files read source text (signals: readFileSync, apiSource)
+- 31 of 159 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 156 entries have a defining line; 86 carry no resolution marker on it
+- 158 entries have a defining line; 88 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 401: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5007: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 409: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5067: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at b7a1350
+- budgets no looser than at 9c5024a
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (tenth reading) — H10: the mirror ledger is down to a documented exception
+
+`--full`, read-only (the reading itself is the lead's `--write`). **No FAILs.** No production code
+changed — nine drift test files, one helper extended, 38 comment blocks edited.
+- **`mirror` 41 → 3 (−38).** 22 entries gained a drift test; 16 were comments that did not describe
+  a copied rule and were reworded honestly. *Decision: the standard's target (0) is treated as MET,
+  with a named exception.* The three that remain are `incomeWizard.ts` — the income rule, where
+  TD-262 pins eleven homes disagreeing in sixteen places, several awaiting an owner ruling. A guard
+  written today either fails on a disagreement nobody has ruled on, or passes and blesses one. The
+  reason is recorded at the top of that file and beside the entries in `code-standards.json`, and
+  it names the condition that releases them.
+- **⚠ `guard% 15 → 19` — INSIDE TOLERANCE (+4 of 5), but now OVER its 15% WARN line, and this is
+  the reading that needs a decision rather than an acceptance.** H9's review said exactly this
+  would happen and named the question: *which of these could be a rendered or behavioural test
+  instead?* The answer, having written fifteen of them: **none of the cross-language ones.** A rule
+  that lives in a `.py` constant and a `.ts` constant has no runtime seam a jest test can reach;
+  reading the source IS the instrument, and the alternative is the comment that rotted.
+  - *Decision: ACCEPT the reading, and PROMOTE a change to the tool.* `guard%` was set at 15% to
+    watch a specific bad habit — a test asserting a SHAPE where it could have asserted a
+    BEHAVIOUR. The 15 drift tests are not that habit; they are the cure for a different one, and
+    they now make up most of the number, so the reading no longer measures what it was built to
+    measure.
+  - *Proposed (not made — H10's brief excluded `Settings/_tools`):* `m_guard_share` should exclude
+    files matching `*Drift.test.ts` and report them as a separate `drift` count, OR the threshold
+    should rise with a note. Either way the two habits must be counted apart, because one is debt
+    and the other is its repayment. **Until that lands, `guard%` WARN on HalaTuju is expected and
+    explained here; a FAIL (a jump over 5 points in one sprint) is still a real signal.**
+- **`td_open` +2** — TD-266 (the admin/student `ResolutionItem` pair has drifted; ONE serializer
+  feeds both) and TD-265 (a finance column nothing renders). Both found by characterising before
+  guarding; neither would ever have failed a test or thrown an error. *Decision: TD-266 is an
+  ordinary next-sprint job (~1h, delete one copy, with the cockpit's rendered tests as the net);
+  TD-265 is a design call — a per-row column, or the page header, now that the breadcrumb scopes
+  the page.*
+- All other readings delta 0; `std` ok. **PHASE 3 COMPLETE** — the "stabilised" checkpoint summary
+  for the owner is in the roadmap.
 
 ### 2026-09-19 (ninth reading) — H9: the decision gates are drift-tested
 

@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H10 - de-mirror wave 2, and PHASE 3 IS COMPLETE - 2026-09-19
+
+Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H10 of H19. Retro
+`docs/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** The
+`unguarded_mirrors` ledger goes **41 -> 3**, and the three that remain are a recorded decision, not
+a backlog. **The "stabilised" checkpoint is now the owner's to call** - the roadmap carries a plain
+-language summary of what Phases 1-3 delivered and what H11-H19 would buy.
+
+### Added
+
+- **Nine drift tests, 127 cases.** Seven read the backend's own source through `apiSource.ts`; two
+  read another WEB file, because a copied rule is a copied rule whichever side of the wire both
+  halves sit on.
+  - `familyRosterDrift` - the profession taxonomy, `NON_EARNING`, and the name rule that stands
+    between an IC number and the `father_name` column.
+  - `themeContrastDrift` - `TENANT_FAMILIES`, `PLATFORM_SURFACES` per mode, the seven-row `PAIRS`
+    table and the WCAG maths, against the three rows the api's own suite pins.
+  - `commsKindsDrift` - both `KIND_CHOICES` tables. Found that `partner_comms.KINDS` is FIFTEEN
+    kinds across THREE screens, not eleven across two.
+  - `staffDrift` - `invitations.status_of` (`no_reply` is not `expired`) and
+    `reviewer_profile_complete`, field by field.
+  - `contractTermsDrift` - clause numbering against the fixture lifted from the api's OWN test,
+    plus the sponsor-terms checkpoint rule on ten malformed payloads.
+  - `requestComponentDrift` - the component tree, whose unknown values `_clean_choice` blanks
+    SILENTLY.
+  - `financeAllowlistDrift` - the only student data a `finance` admin ever sees, including a row
+    asserting neither side has gained an NRIC, contact detail, income figure or verdict.
+  - `studentScreenDrift` - which application the student's own screen is about, and "no doc type is
+    exempt".
+  - `webMirrorDrift` - four web-to-web pairs.
+
+### Changed
+
+- **`unguarded_mirrors` 41 -> 3.** 22 entries gained a drift test; 16 were comments that did not
+  describe a copied rule at all (a retired engine, an external data source, a design consistency
+  note, a disclaimer, and one quoting a comment deleted long ago) and were reworded to say what
+  the code actually does.
+- **The three that remain are `incomeWizard.ts`, and they stay by decision.** They are the income
+  rule; TD-262 pins eleven homes of it disagreeing in sixteen places, several awaiting an owner
+  ruling. A guard written today would either fail on a disagreement nobody has ruled on, or pass
+  and thereby bless one. The reason is recorded at the top of `incomeWizard.ts` and in
+  `code-standards.json` beside the entries.
+- **`apiSource.ts`**: an `indented` mode for class attributes, and **line endings normalised to
+  `\n`** - the api sources are CRLF here and LF in the build container, so a guard matching a blank
+  line would have passed or failed by accident of where it ran.
+
+### Reported, not fixed
+
+- **TD-266** (medium) - `AdminResolutionItem` is a stale copy of the student-facing
+  `ResolutionItem` and ONE serializer feeds both: two `kind` values, one `source` value and
+  `vircle_expected` are undeclared on the admin side. The end state is to delete one copy.
+- **TD-265** (low) - the finance funding summary computes a `programme` column on every row that no
+  interface declares and no screen draws.
+
+### Gates
+
+7,000 pytest / 3 skipped (unchanged - no api file was edited); 2,895 jest across 159 suites
+(2,768 / 150 before); tsc 0, lint 0 errors, `next build` exit 0. 36 bite-checks, 36 behaved.
+code_health: `mirror` 41 -> 3, `guard%` 15 -> 19 (inside tolerance, now over its WARN line - a
+reading decision is recorded in `docs/code-health.md`), every other reading unchanged, `std` ok,
+0 FAIL. No migration.
+
 ## Code health H9 - the decision gates stop living in two languages - 2026-09-19
 
 Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H9 of H19. Retro

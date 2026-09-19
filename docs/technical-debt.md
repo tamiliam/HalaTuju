@@ -102,6 +102,14 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
+- **TD-266 (raised 2026-09-19 by code health H10) — medium.** `AdminResolutionItem` is a stale copy
+  of the student-facing `ResolutionItem`, and ONE serializer feeds both: the admin payload returns
+  `check2` items, so two `kind` values, one `source` value and `vircle_expected` are undeclared.
+  The end state is to delete the admin copy (lesson 290). ~1h, with the cockpit's rendered tests
+  as the net.
+- **TD-265 (raised 2026-09-19 by code health H10) — low.** The finance funding summary computes a
+  `programme` column on every row that the interface never declared and no screen draws. Not a
+  leak; a design call (per-row column, or the page header, now that the breadcrumb scopes it).
 - **TD-264 (raised 2026-09-19 by code health H9) — medium, money path.** The api counts payout-account
   digits with Unicode-aware `isdigit()`, the form with ASCII `\d`. The five-digit FLOOR agrees; the
   word *digit* does not, so a direct POST of `³³³³³` is accepted and stored as a payout target. Both
@@ -3998,6 +4006,58 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-266] The admin and student `ResolutionItem` types have fallen out of step, and ONE serializer feeds both — medium
+
+**Found:** code health H10 (2026-09-19), characterising the web-to-web mirrors before guarding
+them. **Nothing was changed.** Both shapes are pinned, green on today's tree, by
+`halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts`.
+
+`AdminResolutionItem` (`admin-api.ts`) says it *"Mirrors the student-facing ResolutionItem in
+src/lib/api.ts but kept separate — do not cross-import."* They are not two views of two payloads:
+`AdminApplicationDetailSerializer.get_resolution_items` uses **the same
+`ResolutionItemSerializer`**, and its own docstring says it returns *"system + officer + check2"*
+items. So the admin copy is not a deliberate narrowing — it is stale, in three places:
+
+| | student (`api.ts`) | admin (`admin-api.ts`) |
+|---|---|---|
+| `kind` | `doc \| confirm \| explanation \| clarify \| human` | `doc \| confirm \| explanation` |
+| `source` | `system \| officer \| check2` | `system \| officer` |
+| `vircle_expected` | declared | **absent** (the serializer always sends it) |
+
+Nothing crashes — TypeScript is erased at runtime, so a `clarify` item simply arrives in the
+cockpit's `caveats` list typed as something it is not. What the gap costs is the compiler: nobody
+writing a `switch` over `kind` in the cockpit is told there are two more cases.
+
+**The end state is lesson 290's: DELETE ONE SIDE.** `AdminResolutionItem` should go and the admin
+payload type should point at `ResolutionItem`, with the one place that reads it
+(`view.tsx:1761`, the `caveats` list) checked for the two `kind` values it has never had to
+handle. That is a type change under the cockpit and a possible visible change on a screen, so H10
+reported it rather than doing it. **~1h, with the cockpit's rendered tests (H6) as the safety
+net.** **Trigger:** any change to the resolution queue's shape, or the next sprint that opens
+`admin-api.ts`.
+
+### [TD-265] The finance funding summary sends a `programme` column nothing renders — low
+
+**Found:** code health H10 (2026-09-19), comparing the finance allowlist against its reader.
+**Nothing was changed.** Both shapes are pinned by
+`halatuju-web/src/lib/__tests__/financeAllowlistDrift.test.ts`.
+
+`FundingSummaryRowSerializer` gained `programme` (P2b — *which gift funds this student*, added so
+finance can reconcile per programme once an organisation runs more than one). The TypeScript
+`FundingSummaryRow` never gained it and the payments table never drew a column for it, so the
+field is computed on every row of every request and read by nothing.
+
+It is **not a leak** — `programme` is inside the finance boundary by design, and the allowlist is
+otherwise intact (the drift test asserts that neither side has gained `nric`, contact details,
+income, verdicts or documents). It is a column the server pays for and no officer can see.
+
+Not fixed here because adding a column to a live finance table is a **visible change**, and H10's
+rule was that no visible answer moves. The work is: add the field to the interface, add the column
+(or decide the gift belongs in the page header rather than per row, now that the breadcrumb
+already scopes the page — that is the design question, and it is why this is not a one-liner).
+**Owner/design call, ~1h.** **Trigger:** the first organisation running two gifts through one
+payment run.
 
 ### [TD-264] The api and the web do not agree on what a DIGIT is, on the payout account — medium (money path; the owner's call which side moves)
 

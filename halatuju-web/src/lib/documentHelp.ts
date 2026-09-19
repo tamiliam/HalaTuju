@@ -51,10 +51,13 @@ export const HELP_VERDICTS = [
 ] as const
 
 /**
- * Does this document have a soft problem worth a coach note? Mirrors the "non-good"
- * states of the existing chips (IC vision verdicts + supporting doc-assist / presence),
- * so the coach appears exactly where an amber/grey chip does — never under a green one.
- * Used to gate the network call so good/unchecked docs never hit the endpoint.
+ * Does this document have a soft problem worth a coach note?
+ *
+ * The answer must agree with the chips a student already sees — the coach appears exactly where
+ * an amber/grey chip does, never under a green one. That is not a rule copied from the chips: both
+ * read the SAME per-document check objects the server sent (`vision_*_verdict`, `academic_check`,
+ * `str_check`, …), so there is one set of facts and two renderings of it. Used to gate the network
+ * call as well, so good/unchecked docs never hit the endpoint.
  */
 export function shouldShowCoach(doc: ApplicantDocument): boolean {
   // IC / parent_ic — Vision OCR verdicts (only meaningful once Vision has run).

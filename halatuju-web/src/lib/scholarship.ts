@@ -63,6 +63,7 @@ export type CallLanguage = typeof CALL_LANGUAGE_OPTIONS[number] | ''
 
 // Mirrors the onboarding state list (onboarding/profile/page.tsx). Static — a
 // fixed set of Malaysian states/federal territories that does not change.
+// drift-test: halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts
 export const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
   'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah',
@@ -203,8 +204,12 @@ export function isValidPhone(s: string): boolean {
 }
 
 // ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ──
-// Display order for the "Sure" branch pathway dropdown (SPM leavers). Mirrors the
-// backend pathway_type taxonomy; iljtm/ilkbs are already split server-side.
+// Display ORDER for the "Sure" branch pathway dropdown (SPM leavers). The pathway VALUES are the
+// server's — the page renders the eligible pathways it was sent, and this list only says what
+// order to draw them in (iljtm/ilkbs arrive already split server-side). There is no taxonomy
+// constant on the api side to hold this against: `pathway_type` is a column of data, not an enum,
+// so a drift test would have nothing stable to read. ⚠ A pathway the server sends that is missing
+// from this list is not drawn at all — check this list when a new pathway is introduced.
 export const PATHWAY_ORDER = [
   'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs',
 ] as const
@@ -373,8 +378,9 @@ export const HELP_OPTIONS: Exclude<HelpChoice, ''>[] = ['yes', 'no', 'unsure']
 // Other scholarships applied/held → funding-overlap signal (labels via i18n).
 export const OTHER_SCHOLARSHIP_OPTIONS = ['jpa', 'khazanah', 'petronas', 'bnm', 'dermasiswa_b40', 'maybank', 'maxis', 'sime_darby', 'other'] as const
 
-// A ranked course choice (rank derived from array order). Sourced from the
-// student's saved courses; shape mirrors the backend `top_choices` entries.
+// A ranked course choice (rank derived from array order). Sourced from the student's saved
+// courses; this is the shape the backend's `top_choices` entries arrive in — a description of a
+// payload, not a rule written twice.
 export interface TopChoice {
   courseId: string
   courseName: string
@@ -721,6 +727,8 @@ export const APPLY_RETURN_KEY = 'halatuju_apply_return'
  * Live means the editable funnel plus the funded post-award states, mirroring the backend's
  * `POST_SHORTLIST_EDITABLE + _FUNDED_STATES`. ⚠ KEEP-IN-SYNC PAIR — if a status is added there,
  * add it here; a drift makes the two disagree about what the student is even working on.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/studentScreenDrift.test.ts
  */
 export const LIVE_APPLICATION_STATES = [
   'shortlisted', 'profile_complete', 'interviewing', 'interviewed',
@@ -1168,6 +1176,8 @@ export const INCOME_PROOF_TYPES = ['str', 'salary_slip', 'epf'] as const
  *
  * `list` is still reachable, and legitimately: during the TD-115 slot backfill an STR earner's
  * card also shows the legacy untagged copy beside the member-tagged one.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/studentScreenDrift.test.ts
  */
 export type DocFileLayout = 'none' | 'chip' | 'list'
 

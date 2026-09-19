@@ -22,7 +22,14 @@ import * as path from 'path'
 /** `halatuju_api/` — the sibling of `halatuju-web/` in the repository root. */
 export const API_ROOT = path.resolve(__dirname, '..', '..', '..', 'halatuju_api')
 
-/** Read a file by its path relative to `halatuju_api/`. Throws (loudly) if it has moved. */
+/**
+ * Read a file by its path relative to `halatuju_api/`. Throws (loudly) if it has moved.
+ *
+ * ⚠ LINE ENDINGS ARE NORMALISED TO `\n`. The api sources are CRLF on a Windows checkout and LF in
+ * the Cloud Build container, so a caller matching `\n\n` to find the end of a block would pass on
+ * one machine and fail on the other — a drift test that depends on which machine ran it is worse
+ * than none. Every caller sees `\n`.
+ */
 export function readApi(relpath: string): string {
   const full = path.join(API_ROOT, ...relpath.split('/'))
   if (!fs.existsSync(full)) {
@@ -30,7 +37,7 @@ export function readApi(relpath: string): string {
       `drift test: ${relpath} is not in halatuju_api. The rule it guards has MOVED — `
       + 'find its new home and update the path here, never delete the assertion.')
   }
-  return fs.readFileSync(full, 'utf8')
+  return fs.readFileSync(full, 'utf8').replace(/\r\n/g, '\n')
 }
 
 /** Strip a trailing `# comment` that is outside quotes, so a `#` inside a string survives. */
@@ -99,12 +106,12 @@ function literalsIn(text: string): string[] {
  * out of a narrower one (`STR_COACH_STATES = STR_RED_STATES + ('unreadable', 'unconfirmed')`) —
  * reading only the literal half would pin a SUBSET and pass while the real set drifted.
  */
-export function pySeq(src: string, name: string): string[] {
-  const text = assignment(src, name, false)
+export function pySeq(src: string, name: string, indented = false): string[] {
+  const text = assignment(src, name, indented)
   const out: string[] = []
   for (const part of text.split('+')) {
     const named = part.trim().match(/^([A-Z][A-Z0-9_]*)$/)
-    if (named) { out.push(...pySeq(src, named[1])); continue }
+    if (named) { out.push(...pySeq(src, named[1], indented)); continue }
     out.push(...literalsIn(part))
   }
   return out

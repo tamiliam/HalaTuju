@@ -306,9 +306,14 @@ function utilityCurrencyFact(s: string | undefined | null): DocumentFactLabel {
 }
 
 /**
- * Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-flag
- * logic: only a genuine 'mismatch' (a different home) is red; 'unconfirmed'/'unreadable' (and the
- * legacy 'not_found') mean "couldn't confirm" — amber, eyeball at interview, never a hard miss.
+ * Tone for a utility-bill ADDRESS check.
+ *
+ * The MATCHING is entirely the server's — a weighted matcher plus the officer flag — and it
+ * arrives here as one word in `address_status`. Nothing of that logic is repeated below; this is
+ * only how the screen COLOURS the word it was given: only a genuine 'mismatch' (a different home)
+ * is red; 'unconfirmed'/'unreadable' (and the legacy 'not_found') mean "couldn't confirm" — amber,
+ * eyeball at interview, never a hard miss; anything unrecognised falls to grey rather than
+ * inventing a verdict.
  */
 function addressFactStatus(s: string | undefined | null): FactStatus {
   switch (s) {
@@ -477,7 +482,8 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     const has = (k: string) => (c.points || []).some((p) => p.key === k && (p.value || '').trim())
     const facts: DocumentFactLabel[] = [{ key: 'name', status: cap ? 'not' : factStatus(c.name_status) }]
     // IC No: an EPF statement always carries the member's number; a salary slip only sometimes
-    // (hide it there when absent). Mirrors the STR chip — the number is the strong earner key.
+    // (hide it there when absent). Same treatment the STR chip gives it — the number is the strong
+    // earner key — and both read `nric` off the check object the server sent, not a rule of ours.
     if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) })
     if (dt === 'salary_slip') {
       // CONSISTENT chip set for every salary slip: Amount + Period always present, grey ('unknown')
@@ -1133,7 +1139,10 @@ export function isApproveReady(decisionReady: boolean, hasAssistance: boolean): 
  * Interview Stage capture, Recommendation (buttons permanently greyed), the funding
  * projection (no award decided yet) and the generated Final profile (only produced at the
  * verdict). Hidden rather than disabled — a disabled card still eats the screen and invites
- * clicking. Mirrors the Assignment card's long-standing `status !== 'shortlisted'` guard.
+ * clicking. Mirrors the Assignment card's long-standing `status !== 'shortlisted'` guard —
+ * which is now this same function: the cockpit holds no second copy of the test, and the drift
+ * test asserts that none comes back.
+ * drift-test: halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts
  * Owner decision 2026-07-22.
  *
  * What DOES stay at shortlisted: Blockers, Check 2 (chasing the student), Documents,
@@ -1184,8 +1193,9 @@ export function isCaseClosed(
  * Show the Interview Stage box?
  *
  * The pre-submission half is `showsPostSubmissionCards` (no interview can exist before Step 2
- * is submitted). The closed half is its mirror: on a case that expired or was rejected before
- * anyone reviewed it, this box offered a live "Suggest interview questions" (a billable Gemini
+ * is submitted) — called here, not restated. The closed half is its counterpart at the other end
+ * of the lifecycle: on a case that expired or was rejected before anyone reviewed it, this box
+ * offered a live "Suggest interview questions" (a billable Gemini
  * call), Save draft and Submit findings on a file nobody can act on — 44 production records on
  * 2026-08-18, none of which had ever held an interview.
  *
