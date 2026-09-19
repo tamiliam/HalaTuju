@@ -252,3 +252,40 @@ class TestServedPerEarnerAnswer(IncomeShownBase):
         slip = self._doc(app, 'salary_slip', fields=_SLIP_FIELDS)
         self.assertEqual(isx.income_shown_map(app, ('father',))['father'], {
             'shown': True, 'way': 'salary_slip', 'documents': [slip.id], 'unusable': []})
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 5. THE STUDENT'S OWN PAYLOAD — the same answer, on her side of the fence (TD-262 F2)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+class TestTheStudentPayloadServesIt(IncomeShownBase):
+    """Her income wizard decides whether to offer the cash/informal door. It used to decide from
+    document PRESENCE, so a payslip nothing could be read off closed the door on the very family
+    that needed it (F2, the lockout). It reads this instead — one shape, both screens."""
+
+    def _payload(self, app):
+        from apps.scholarship.serializers import ApplicationReadSerializer
+        return ApplicationReadSerializer(app).data
+
+    def test_her_payload_carries_one_entry_per_roster_member_code(self):
+        served = self._payload(self._app())['income_shown']
+        self.assertEqual(sorted(served), sorted(income_engine._MEMBER_ORDER))
+
+    def test_an_unusable_payslip_reads_as_not_shown_and_names_its_reason(self):
+        # ⚠ THE LOCKOUT ROW. Before F2 her screen saw a file and closed the cash door; the
+        # server saw nothing it could read. This is the disagreement, ended.
+        app = self._app()
+        slip = self._doc(app, 'salary_slip', fields=_SLIP_FIELDS, authenticity='not_salary')
+        self.assertEqual(self._payload(app)['income_shown']['father'], {
+            'shown': False, 'way': None, 'documents': [],
+            'unusable': [{'doc_id': slip.id, 'doc_type': 'salary_slip', 'reason': 'not_salary'}],
+        })
+
+    def test_both_payloads_answer_identically(self):
+        # One rule, one home: the officer's and the student's screens can never be told
+        # different things about the same earner.
+        from apps.scholarship.serializers import ApplicationReadSerializer
+        app = self._app(declared={'father': 1200})
+        self._doc(app, 'epf', fields=_EPF_BLANK)
+        self._doc(app, 'income_support_doc', fields={'employer': 'X'}, student_verdict='ok')
+        self.assertEqual(ApplicationReadSerializer(app).data['income_shown'],
+                         isx.income_shown_map(app, income_engine._MEMBER_ORDER))

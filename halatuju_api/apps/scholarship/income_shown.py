@@ -19,9 +19,17 @@ document the family sent does not.
 
 Its readers: ``income_engine.member_income_evidenced`` (the frozen gate answer, expressed as
 ``shown or str_not_breached``), ``income_engine._member_income_documented`` (the officer's chase
-list), ``verdict_engine._verdict_income_salary`` (the verdict's financial-evidence line), and
-the officer cockpit — which reads it SERVED on the applicant-detail payload rather than
-re-deriving it (``halatuju-web/src/lib/incomeShown.ts``).
+list), ``income_declared_gaps`` (the Check-2 ask about a declared wage — TD-262 F2),
+``verdict_engine._verdict_income_salary`` (the verdict's financial-evidence line), and BOTH
+screens — the officer cockpit and, since F2, the student's own income wizard — which read it
+SERVED on their payloads rather than re-deriving it (``halatuju-web/src/lib/incomeShown.ts``).
+
+⚠ THE STUDENT'S SCREEN READS IT FOR A REASON WORTH KEEPING (F2, the lockout). Her income wizard
+used to decide from document PRESENCE whether to offer the cash/informal door — so the moment
+ANY salary or EPF file existed for an earner, usable or not, the door closed. A family whose
+only payslip was a blurred photo, or whose EPF statement nothing could be read off, was left in
+a dead end: the server said their income was not shown, and the one screen that could fix it
+had hidden the way. Presence is not evidence on either screen now.
 
 It lives in its own module because ``income_engine.py`` sits on the oversize ledger
 (``halatuju_api/code-standards.json``) and a file that may not grow is not where a new rule goes.

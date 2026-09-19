@@ -33,6 +33,7 @@ import {
 import { earningMembers, sameMemberSet } from '@/lib/familyRoster'
 import DocumentHelpCoach from './DocumentHelpCoach'
 import IncomeClusterCoach from './IncomeClusterCoach'
+import MemberIncomeGroup, { type ServesIncomeShown } from './scholarship/MemberIncomeGroup'
 import { clusterAnchorKey, clusterDocKey } from '@/lib/documentHelp'
 import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
 
@@ -1204,11 +1205,9 @@ function IncomeWizard({
   // respect their choice). Source of truth: the persisted income_working_members is non-empty
   // once they save, and `touchedMembers` covers the moment before that save round-trips.
   const [touchedMembers, setTouchedMembers] = useState(false)
-  // Phase 2A: the declared-income field is a FALLBACK (payslip/EPF is the primary proof), so it
-  // stays behind a "can't get a payslip?" opt-in per member — never shown eagerly beside the
-  // upload cards. Seeded open for a member who already has a saved declared figure (returning user).
-  const [openDeclared, setOpenDeclared] = useState<Set<string>>(
-    () => new Set(Object.keys(app.income_declared || {})))
+  // TD-262 F2: the cash/informal door is no longer a FALLBACK behind a text link — it is the
+  // third card, and each `MemberIncomeGroup` owns whether its own card is open (seeded from that
+  // member's saved figure). Nothing about it is the wizard's business any more.
 
   const save = async (patch: Record<string, unknown>) => {
     setAns((a) => ({ ...a, ...patch }))
@@ -1314,7 +1313,11 @@ function IncomeWizard({
     else delete next[m]
     save({ income_declared: next })
   }
-  // Does this member already have a payslip / EPF on file? If so, no need to ask for a figure.
+  // ⚠ THE OLD, WRONG GATE ON THE CASH DOOR — kept ONLY as the fallback for a payload that
+  // predates the served answer. It asks whether a salary/EPF FILE exists, not whether it shows
+  // anything, so on its own it shut the cash door on a family whose payslip was a photo of the
+  // wrong thing (TD-262 F2, the lockout). `MemberIncomeGroup.cashDoorClosed` prefers
+  // `app.income_shown` and reaches this only when the api has served nothing.
   const memberHasProof = (m: WorkingMember) =>
     docs.some((d) => (d.doc_type === 'salary_slip' || d.doc_type === 'epf')
       && (d.household_member || '') === m)
@@ -1590,73 +1593,27 @@ function IncomeWizard({
                   {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
-              {/* Income — shown ANY ONE way (owner 2026-07-25): the payslip / EPF are OPTIONAL
-                  cards, and a cash / informal earner (Janani's mother) can instead declare an
-                  amount + add one simple letter. No lonely red-* box. Green once any one is shown. */}
-              {(() => {
-                const shown = memberIncomeShown(block.member)
-                return (
-                <div className={`rounded-lg border p-2.5 space-y-2 ${
-                  shown ? 'border-positive-200 bg-positive-50/40' : 'border-dashed border-ground-200 bg-ground-0'}`}>
-                  <div className="flex items-start gap-2">
-                    <span aria-hidden className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full ${
-                      shown ? 'bg-positive-fill text-positive-fill-ink' : 'border border-ground-300 text-ground-400'}`}>
-                      {shown ? (
-                        <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" /></svg>
-                      )}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-ground-700">{iq('incomeGroupTitle')}</p>
-                      <p className={`text-xs ${shown ? 'text-positive-700' : 'text-ground-500'}`}>
-                        {shown ? iq('incomeShown') : iq('incomeAnyOne')}
-                      </p>
-                    </div>
-                  </div>
-                  {block.optional.map(({ docType, member }) => (
-                    <div key={docKey(docType, member)}>
-                      {renderCard(docType, { required: false, member,
-                        helpOverride: memberHelp(docType, block.member),
-                        titleOverride: memberTitle(docType, block.member),
-                        suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
-                      {clusterDocKey(docType, member) === salAnchor && coach}
-                    </div>
-                  ))}
-                  {/* Cash / informal path — a warm, equal option (no "can't get" failure tone). */}
-                  {!memberHasProof(block.member) && !(openDeclared.has(block.member)
-                      || declaredAmount(ans.income_declared, block.member) > 0) && (
-                    <button
-                      type="button"
-                      onClick={() => setOpenDeclared((s) => new Set(s).add(block.member))}
-                      className="text-xs font-medium text-primary-600 hover:underline"
-                    >
-                      {iq('declared.cantGet')} →
-                    </button>
-                  )}
-                  {!memberHasProof(block.member) && (openDeclared.has(block.member)
-                      || declaredAmount(ans.income_declared, block.member) > 0) && (
-                    <div className="rounded-md bg-info-50 ring-1 ring-info-100 p-2.5 space-y-2">
-                      <p className="text-xs text-info-900/90">{iq('declared.prompt')}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-ground-500">RM</span>
-                        <input
-                          type="number" inputMode="numeric" min={0} step={50}
-                          defaultValue={declaredAmount(ans.income_declared, block.member) || ''}
-                          placeholder={iq('declared.placeholder')}
-                          onBlur={(e) => saveDeclared(block.member, e.target.value)}
-                          className="w-28 text-sm rounded border border-ground-300 px-2 py-1 focus:border-primary-400 focus:outline-none"
-                        />
-                        <span className="text-xs text-ground-400">{iq('declared.perMonth')}</span>
-                      </div>
-                      {declaredAmount(ans.income_declared, block.member) > 0 &&
-                        renderCard('income_support_doc', { required: false, member: block.member,
-                          titleOverride: iq('supportLetterTitle'), helpOverride: iq('declared.needsDoc') })}
-                    </div>
-                  )}
-                </div>
-                )
-              })()}
+              {/* Income — shown ANY ONE way (owner 2026-07-25), and since TD-262 F2 the screen
+                  finally SAYS so: three cards of equal weight, the third opening in place to the
+                  cash/informal amount + its one letter. Green once any one is shown. */}
+              <MemberIncomeGroup
+                block={block}
+                t={t}
+                iq={iq}
+                shown={memberIncomeShown(block.member)}
+                served={(app as ScholarshipApplication & ServesIncomeShown).income_shown}
+                presenceFallback={memberHasProof(block.member)}
+                declared={declaredAmount(ans.income_declared, block.member)}
+                onDeclare={saveDeclared}
+                renderCard={renderCard}
+                memberHelp={memberHelp}
+                memberTitle={memberTitle}
+                clusterCoachDocs={CLUSTER_COACH_DOCS}
+                docKeyOf={docKey}
+                clusterDocKeyOf={clusterDocKey}
+                salaryAnchor={salAnchor}
+                coach={coach}
+              />
             </div>
           )})}
         </div>

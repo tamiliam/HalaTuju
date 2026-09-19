@@ -677,6 +677,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     requirements = serializers.SerializerMethodField()
+    income_shown = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     # The address decision/comms emails are actually sent to (resolved at submit).
     notify_email = serializers.EmailField(read_only=True)
@@ -730,6 +731,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # ApplicationDetailsUpdateSerializer + save_application_details).
             'address', 'postal_code', 'city', 'preferred_state',
             'funding_need', 'completeness', 'requirements', 'notify_email', 'contact_phone',
+            'income_shown',
             'form_data', 'intake_snapshot',
         ]
 
@@ -751,6 +753,13 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         if obj.status == 'recommended':
             return 'interviewed'
         return obj.status
+
+    def get_income_shown(self, obj):
+        """TD-262 F2 — the per-earner answer (``income_shown.py``), served to the student's own
+        screen in exactly the shape the officer's payload serves. The reason is at that module."""
+        from .income_engine import _MEMBER_ORDER
+        from .income_shown import income_shown_map
+        return income_shown_map(obj, _MEMBER_ORDER)
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades

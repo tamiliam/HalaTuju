@@ -4601,6 +4601,152 @@ anywhere — `income_requirements` / `salary_member_blocks` draw only a payslip 
 `incomeWizard`'s mononym birth-certificate arm still has no api twin. Both are display/requirement
 work with no eligibility answer in them.
 
+**F2 + W1 DONE 2026-09-20 (the salary route) — the fourth way has a door, and the TRAP WITH TWO
+JAWS that stood behind it is gone. No eligibility answer moved: no blocker code added or removed,
+no verdict band can shift, `VERDICT_ENGINE_VERSION` and `results_doc.MODEL_VERSION` both
+UNBUMPED.**
+*⚠ THE FINDING, AND IT IS THE REASON THIS WAS WORTH A SPRINT: F2's two halves were not two bugs,
+they were one trap.* `income_engine.declared_income_gaps` fired on a declared amount alone, so a
+family who typed a figure and then uploaded a good payslip was chased for a letter they did not
+owe. `ScholarshipDocuments.memberHasProof` hid the whole cash panel whenever ANY salary/EPF FILE
+existed for that earner — document PRESENCE, the F4 / F5 reading this arc has been deleting
+everywhere else. Put together: a household whose only payslip was unreadable had their income
+judged **not shown** by the server, were **chased** for the letter, and found the one screen that
+could produce it **closed by the very document that proved nothing**. They could neither answer
+the chase nor retract the figure. Each half read as a minor display defect on its own; the dead
+end only exists because both were true at once.
+*The three doorways (the owner's mock, `docs/decisions.md` 2026-09-20).* The income box now draws
+three cards of equal weight — the earner's salary slip, their EPF (KWSP) statement, and **"Paid in
+cash or works informally?"**, which opens in place to the existing amount field and the existing
+supporting-letter card. Closed by default; no upload slot until an amount is typed (unchanged).
+Every string is the one that was already there (`…declared.cantGet` / `.prompt` / `.placeholder` /
+`.perMonth` / `.needsDoc`, `…supportLetterTitle`, `scholarship.docs.help.income_support_doc`), the
+group sub-lines and the green done state are untouched. **ONE new line, en / ms / ta:**
+`…income.wizard.declared.oneLetterWholeFamily` — *"One letter is enough for the whole family."*
+Nothing on the screen had ever said so, and a household with two cash earners had every reason to
+assume a letter each; the api has counted one untagged letter for every earner since chunk 1 (W7),
+so the sentence is true as well as kind.
+*The lockout (item 2).* `memberHasProof` is no longer the gate. The gate is the SERVED per-earner
+answer — `income_shown`, now on the STUDENT's payload as well as the officer's — read through the
+existing `src/lib/incomeShown.ts` (`answerFor`). ⚠ **The test is `shown && way !== 'declared_letter'`,
+not `shown`, and the exclusion is load-bearing**: `declared_letter` IS the cash way, so closing on
+it would hide the family's own typed figure and the letter card beneath it at the instant they
+finished — the door swinging shut behind them. Its own rendered row pins that. The old presence
+reading survives ONLY as the not-atomic-deploy fallback (an absent `income_shown` leaves the screen
+exactly as it was, rather than re-opening the door for every household at once); two rendered rows
+pin both directions of the fallback.
+*The chase (item 3).* `declared_income_gaps` raises no gap for a member whose income is already
+**shown** another way. Deliberately SHOWN and not PRESENT — a `not_salary` photo or a blank EPF
+documents nothing, so that household is still asked, which is the F4 / F5 rule applied here too.
+The old `has_income_support_doc` test was **subsumed, not kept beside it**: once a declared amount
+is known to exist, `income_shown`'s third arm *is* that predicate, and keeping both would have put
+one rule in two places in the very function TD-262 came to un-duplicate.
+*⚠ NOTHING ABOUT ELIGIBILITY IS IN REACH OF THIS.* `declared_income_gaps` is read by
+`check2_queries._gap_sets` and by nothing else — no gate, no blocker code, no verdict fact. The
+Check-2 request it raises (`declared_income_evidence_missing`) is a SOFT doc request, uncapped and
+auto-resolving. `services.application_completeness` was not touched, no STR arm was added to the
+per-earner tick, and `memberIncomeShown` — the student's green cue, ruled on in chunk 1 — is
+byte-unchanged on purpose: the door and the tick answer different questions ("is there still a way
+in?" and "is this earner done?").
+*⚠ THE STANDING RULE OF 2026-09-19 SHAPED THE WHOLE DIFF, AND ONE FILE STOPPED IT DEAD.* Three
+files on the Phase-4 oversize table were in the way. `income_engine.py` **3,201 → 3,188** (the
+function moved out to a new module, `income_declared_gaps.py`) and
+`ScholarshipDocuments.tsx` **1,957 → 1,914** (the whole income group box moved out to
+`src/components/scholarship/MemberIncomeGroup.tsx`) — both SMALLER, and the web budget was
+ratcheted 1,942 → 1,914. **`src/lib/api.ts` could not be touched at all**: it sits at 2,488,
+EXACTLY its recorded 2,468 plus the 20-line allowance, so a one-line type field failed the gate.
+The served field is therefore declared as `ServesIncomeShown` beside the only code that reads it,
+with the reason written at the declaration; **H13 folds it into `ScholarshipApplication` when that
+file is split.** Nothing is lost meanwhile — every entry read out of the map goes through
+`answerFor`, which validates the shape and answers `null` for anything else.
+*⚠ AND ONE FILE IS NOW ONE LINE FROM ITS CEILING.* `serializers.py` went 1,203 → 1,212 to serve the
+answer on the student's payload; its budget is 1,195, so the next nine lines are all that remain.
+It is not on the Phase-4 table, so no split sprint owns it — **whoever needs a tenth line splits it
+first.**
+*No suppression was added, and one was avoided on purpose.* The first cut re-exported
+`declared_income_gaps` from `income_engine` behind `# noqa: E402,F401` and the noqa ratchet went
+red — correctly. The importers (`check2_queries._gap_sets`) now name the new module directly, so
+the name has ONE home and no linter had to be silenced.
+*Tests.* New `tests/test_income_declared_gaps.py` — 18 rows over the whole scenario table,
+factory-built (H5), covering the six states the brief named plus the two short-circuits, the
+per-member split and the Check-2 wire. **Written against the UNCHANGED tree: 14 seen GREEN (they
+pin today's behaviour, unmoved) and the 4 that had to move seen RED before a line of production
+code changed.** `test_income_shown.py` gains a section 5 (the student's payload serves the same
+answer as the officer's, asserted identical). **Five `SimpleNamespace` rows MOVED — not dropped —
+out of `test_income_engine.py`**: the gap now asks a question that deserves real documents, and
+each has a named factory counterpart (a valid STR, an unproven amount, a gap cleared by a letter,
+a gap NOT cleared by a letter that never read, the non-salary route). Web: a new rendered block in
+`ScholarshipDocuments.test.tsx`, 9 rows — three doorways drawn, the third closed, opening on tap,
+the letter card waiting for an amount, the one-letter line, the lockout, its control, the
+`declared_letter` exclusion, and both directions of the absent-payload fallback. pytest **7,003 →
+7,019** / 3 skipped; jest **2,904 → 2,913** / 159 suites. **Five bite-checks, all five behaved:**
+revert item 2 (red), revert item 3 (red), make item 3 never raise a gap (red), hide the third door
+(red, 7 rows), and a cosmetic comment edit (GREEN — no cry wolf). Each injection was proved to
+occur exactly once, restored from a byte backup in a `finally`, and SHA-256 verified after.
+*Readings.* `code_health`: fix% 42 · big 25 · long 15 · dup 4 · mirror 3 · guard% 19 · **std ok**,
+0 fails — no reading worse (fix%, mirror and guard% are the values already standing at
+`724714d3`; the jest suite COUNT is unchanged at 159, so guard%'s denominator did not move).
+*⚠ THE THREE PARKED `unguarded_mirrors` ENTRIES STAY PARKED, and here is why.* They are
+`incomeWizard.ts`'s requirement-engine mirror, its `salaryMemberBlocks` mirror and its patronymic
+connector. **None became guardable through this work.** The first two describe
+`income_requirements` / `salary_member_blocks`, which this sprint deliberately did NOT change —
+and *option 4* (adding `income_support_doc` to them) is still an open question, so a guard written
+today would BLESS the very shape that is under review. The third belongs to **W1**, which is not
+built (below). The ledger note's own release condition — "when TD-262 is settled" — is not met.
+*Blast radius — NOT MEASURED HERE; the read-only screening SQL is with the lead.* Two buckets:
+**(a)** applications with an OPEN `declared_income_evidence_missing` item that this change makes
+unnecessary (every declared member now shown, at least one by an upload), split by application
+status; **(b)** members with a declared amount and an unusable-only document set — the families
+the lockout is trapping today. The SQL is deliberately a conservative SCREEN, not the engine:
+`_salary_slip_not_wrongtype` and `_epf_monthly_salary` are Python and re-implementing them in SQL
+would create the eleventh home this ticket exists to prevent. Bucket A removes a SOFT request and
+can block nobody; bucket B can only ever GIVE a not-yet-submitted student a way to answer.
+**W1 did NOT fall out for free, and was not built.** `incomeWizard.incomeRequirements` still
+offers a mononym student an optional birth certificate that `income_engine.income_requirements`
+has no arm for. Nothing in F2 goes near either function — the third door is a SCREEN affordance,
+not a requirement — so the extra arm is untouched and still un-mirrored.
+**⛔ THE STR ROUTE'S CASH DOOR IS DECLINED — owner ruling 2026-09-20, NOT an open gap. Do not
+re-raise it.** Verbatim: *"If STR has been fulfilled, there is no need for the student to complete
+the cash door. It is there primarily for those without STR or salary slip."* So the cash door is
+**salary route only**, and **`declared_income_gaps` keeps its STR short-circuit by decision** — a
+valid STR accepts every declared amount at once, and the off-salary-route early return is a
+ruling, not an unfinished edge (both have pinned rows in
+`test_income_declared_gaps.TestTheShortCircuits`). The fourth way exists for households with
+**neither a current STR nor a payslip**. Full entry in `docs/decisions.md`, 2026-09-20.
+
+**⚠ ONE CONSEQUENCE REPORTED, NOT BUILT — how an STR-route family reaches the salary evidence when
+their STR does not settle it.** Since item 1 / 1b the VERDICT reads such a household's payslips,
+but their own income step still draws the STR branch. Checked in the source, 2026-09-20:
+- **The STR route is not bare.** `income_requirements`'s STR branch already puts `salary_slip` and
+  `epf` in `optional`, and the wizard draws them in a "Supplementary" collapsible, **default
+  CLOSED** (`ScholarshipDocuments.tsx`, the `supplementaryTitle` section). A salary door exists
+  there; only the CASH door does not, which is exactly what the ruling above settles.
+- **Pre-submit the switch is one tap and LOSES NOTHING.** Q1 is the first question of the income
+  step, two always-visible pills (`ScholarshipDocuments.tsx`, `iq('q1')`), and the pill patches
+  `income_route` alone: `save_application_details` writes only the fields sent, so
+  `income_earner`, `income_working_members`, `income_declared` and **every uploaded document,
+  including the STR itself, survive**. Flipping back restores the STR view exactly.
+- **Post-submit the wizard is locked and a dedicated switch exists** — `IncomeRouteSwitch` →
+  `switch_income_route`, shown in the Action Centre only while an income task is open. It never
+  re-blocks the submission, and documents and `income_declared` are untouched — **but it DOES
+  clear the other route's identifying field** (to `salary`: `income_earner = ''`; to `str`:
+  `income_working_members = []`). Partly self-healing, because `effective_working_members`
+  reconstructs earners from tagged documents and then the family roster; an explicitly ticked
+  member with neither is genuinely lost and must be re-ticked.
+- **No un-submission risk either way.** `revert_if_profile_incomplete` fires only on the broad
+  details PATCH and only at `status == 'profile_complete'`, and the frozen doc-type arm of
+  `application_completeness` counts the STR document's PRESENCE — which nothing deletes (F9).
+- **⚠ THE REAL GAP IS THE QUESTION'S WORDING, and it is the owner's to rule on.** Q1 asks *"Do you
+  have an STR (Sumbangan Tunai Rahmah) document?"* — a question about **possession**. A family
+  whose STR is stale, unreadable or in a stranger's name answers **"Yes" truthfully** and stays on
+  the STR route for ever; nothing on their screen says their STR did not settle it, although the
+  officer's verdict knows. **No nudge was built** (out of scope, reported only).
+
+**TD-262 is STILL NOT resolved.** What stands: **option 4**, `income_support_doc` in the
+requirement engines, if it is still wanted; and **W1**, the mononym arm's missing api twin. Both
+are display/requirement work with no eligibility answer in them. The STR-route cash door is
+**closed as declined**, above.
+
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 
 **Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects

@@ -1478,7 +1478,8 @@
             "prompt": "Itu tidak mengapa. Beritahu kami lebih kurang berapa pendapatan mereka sebulan, dan tambah satu surat ringkas yang menyokongnya.",
             "placeholder": "cth. 1500",
             "perMonth": "sebulan",
-            "needsDoc": "Satu surat ringkas yang menyokongnya — daripada sekolah anda, ketua kampung atau penghulu anda, atau majikan."
+            "needsDoc": "Satu surat ringkas yang menyokongnya — daripada sekolah anda, ketua kampung atau penghulu anda, atau majikan.",
+            "oneLetterWholeFamily": "Satu surat sudah memadai untuk seluruh keluarga."
           },
           "incomeGroupTitle": "Pendapatan",
           "incomeAnyOne": "Tunjukkan dengan mana-mana satu cara — slip gaji, penyata KWSP, atau (jika dibayar tunai) beritahu kami jumlahnya dan tambah satu surat ringkas.",

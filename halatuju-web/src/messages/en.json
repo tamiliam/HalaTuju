@@ -1478,7 +1478,8 @@
             "prompt": "That's completely fine. Tell us roughly how much they earn each month, and add one simple letter that supports it.",
             "placeholder": "e.g. 1500",
             "perMonth": "per month",
-            "needsDoc": "One simple letter that supports it — from your school, your ketua kampung or penghulu, or employer."
+            "needsDoc": "One simple letter that supports it — from your school, your ketua kampung or penghulu, or employer.",
+            "oneLetterWholeFamily": "One letter is enough for the whole family."
           },
           "incomeGroupTitle": "Income",
           "incomeAnyOne": "Show it any one way — a payslip, an EPF (KWSP) statement, or (if paid in cash) tell us the amount and add one simple letter.",

@@ -276,7 +276,7 @@ def _gap_sets(application):
     ``gaps`` = clarify-able + status codes; ``proof_wanted`` = the (uncapped) doc-request codes."""
     from .income_engine import (
         utility_holder_unknown, utility_address_mismatch, household_status_gaps,
-        stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
+        stale_income_proof, sibling_tertiary_funding_unknown,
         unemployment_detail_gap, unemployment_epf_members,
         # V4 — promoted human ask-themes (audit §E).
         school_leaving_cert_gap, semester_result_gap, employed_epf_members,
@@ -293,6 +293,9 @@ def _gap_sets(application):
         # Owner 2026-07-08 — per-bill utility recheck + point-blank high-usage query.
         utility_bill_recheck, high_utility_expense_context,
     )
+    # TD-262 F2 — the declared-wage ask has its own module; it asks ``income_shown`` whether the
+    # member's income is already carried another way before chasing a letter nobody needs.
+    from .income_declared_gaps import declared_income_gaps
     from .pathway_engine import offer_reporting_date_unknown
     from .academic_engine import spm_exam_year_unknown
     gaps = {g['code'] for g in completeness_gaps(application)}

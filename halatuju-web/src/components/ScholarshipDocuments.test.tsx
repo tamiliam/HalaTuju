@@ -17,10 +17,11 @@
  * The second block arrived in code health H6, replacing the source-scanning half of
  * `lib/__tests__/docFileLayout.test.ts`. Its reason is written at the block.
  */
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import ScholarshipDocuments from './ScholarshipDocuments'
 import type { ApplicationRequirements, ScholarshipApplication } from '@/lib/api'
 import { sandboxApplication } from '@/sandbox/fixtures/scholarship'
+import type { ServesIncomeShown } from './scholarship/MemberIncomeGroup'
 import * as api from '@/lib/api'
 
 jest.mock('@/lib/api', () => ({
@@ -324,5 +325,154 @@ describe('the per-earner income tick counts what the server counts', () => {
     await salaryStudent(['father', 'mother'], { father: 900, mother: 700 }, [letter(15, '')])
     expect(screen.getAllByText(SHOWN)).toHaveLength(2)
     expect(screen.queryByText(NOT_SHOWN)).toBeNull()
+  })
+})
+
+/**
+ * THE THREE DOORWAYS — TD-262 F2, and the lockout that used to bolt the third one shut.
+ *
+ * The owner's rule since 2026-07-25 is that a household shows an earner's income ANY ONE way.
+ * The screen did not say that: it drew two upload cards and hid the third way — the amount a
+ * cash earner is paid, plus one simple letter — behind a text link reading like an admission of
+ * failure. It is now a card of equal weight beside the other two, closed until tapped.
+ *
+ * ⚠ AND THE HALF THAT MATTERED MOST. The cash panel was hidden whenever ANY salary or EPF FILE
+ * existed for that earner. So the family whose only payslip was a photograph of the wrong thing
+ * — the family this door was built for — had it closed by the very document that proved
+ * nothing. The gate is now the SERVED answer from `apps/scholarship/income_shown.py`, the same
+ * one the submission gate and the officer's chase list read, with the old presence reading kept
+ * as the fallback for a payload that predates it.
+ *
+ * Every assertion below reads what the student reads.
+ */
+describe('the third doorway: paid in cash, and the lockout that hid it', () => {
+  const CASH_DOOR = 'scholarship.docs.income.wizard.declared.cantGet'
+  const PROMPT = 'scholarship.docs.income.wizard.declared.prompt'
+  const ONE_LETTER = 'scholarship.docs.income.wizard.declared.oneLetterWholeFamily'
+  const LETTER_CARD = 'scholarship.docs.income.wizard.supportLetterTitle'
+  const SLIP_CARD = 'scholarship.docs.income.wizard.salaryTitle.father'
+  const EPF_CARD = 'scholarship.docs.income.wizard.epfTitle.father'
+  const SHOWN = 'scholarship.docs.income.wizard.incomeShown'
+
+  const slip = (id: number, member = 'father') => ({
+    id, doc_type: 'salary_slip', household_member: member,
+    original_filename: `slip-${id}.pdf`, content_type: 'application/pdf', size: 2048,
+    verification_status: 'pending', download_url: 'https://example.test/d',
+    uploaded_at: '2026-06-01',
+  }) as unknown as api.ApplicantDocument
+
+  /** A payslip the server judged unusable — a MyKad in the payslip slot (#47). */
+  const duffSlip = (id: number) => ({
+    ...slip(id), authenticity: { status: 'not_salary' },
+  }) as unknown as api.ApplicantDocument
+
+  /** What the api serves for the father: `apps/scholarship/income_shown.py`'s answer. */
+  const served = (a: { shown?: boolean; way?: string | null; documents?: number[]
+    unusable?: Array<{ doc_id: number; doc_type: string; reason: string }> }) => ({
+    father: { shown: false, way: null, documents: [], unusable: [], ...a },
+    mother: { shown: false, way: null, documents: [], unusable: [] },
+  }) as unknown as ServesIncomeShown['income_shown']
+
+  /** The third card's own toggle — the card is a button wrapping its title and help line. */
+  const cashDoorToggle = (): HTMLButtonElement => {
+    const btn = screen.getByText(CASH_DOOR).closest('button')
+    if (!btn) throw new Error('the cash door is not a button — it cannot be opened by tapping')
+    return btn as HTMLButtonElement
+  }
+
+  const student = async (opts: {
+    declared?: Record<string, number>
+    documents?: api.ApplicantDocument[]
+    income_shown?: ServesIncomeShown['income_shown']
+  }) => {
+    mockApi.listDocuments.mockResolvedValue({ documents: opts.documents ?? [] })
+    await render_({
+      ...sandboxApplication, requirements: FULL, income_route: 'salary', income_earner: '',
+      income_working_members: ['father'], income_declared: opts.declared ?? {},
+      ...('income_shown' in opts ? { income_shown: opts.income_shown } : {}),
+    } as unknown as ScholarshipApplication)
+  }
+
+  it('draws three doorways, and the third one starts closed', async () => {
+    await student({ income_shown: served({}) })
+    for (const card of [SLIP_CARD, EPF_CARD, CASH_DOOR]) {
+      expect(screen.getByText(card)).toBeTruthy()
+    }
+    // Closed: the card is there, its contents are not.
+    expect(screen.queryByText(PROMPT)).toBeNull()
+    expect(cashDoorToggle().getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('opens in place on a tap — the amount field, and nothing she has not asked for', async () => {
+    await student({ income_shown: served({}) })
+    act(() => { cashDoorToggle().click() })
+    expect(screen.getByText(PROMPT)).toBeTruthy()
+    expect(screen.getByPlaceholderText('scholarship.docs.income.wizard.declared.placeholder'))
+      .toBeTruthy()
+    // ⚠ The letter card waits for an amount to support. An upload slot with nothing behind it
+    // is one more thing to find, which is exactly the wall this door exists to avoid.
+    expect(screen.queryByText(LETTER_CARD)).toBeNull()
+  })
+
+  it('a family who already typed a figure finds their answer open, with the letter card', async () => {
+    await student({ declared: { father: 900 }, income_shown: served({}) })
+    expect(screen.getByText(PROMPT)).toBeTruthy()
+    expect(screen.getByText(LETTER_CARD)).toBeTruthy()
+  })
+
+  it('says, once, that one letter covers the whole family', async () => {
+    // Nothing on the screen said so, and a family with two cash earners had every reason to
+    // assume a letter each. The api counts one untagged letter for every earner (W7).
+    await student({ income_shown: served({}) })
+    expect(screen.getByText(ONE_LETTER)).toBeTruthy()
+  })
+
+  it('⚠ THE LOCKOUT: an UNUSABLE payslip no longer closes the door', async () => {
+    // The family this door was built for. Their one payslip is a photograph of the wrong thing;
+    // the server says their income is NOT shown, and before F2 the only screen that could fix
+    // that had hidden the way in. Presence is not evidence.
+    await student({
+      documents: [duffSlip(21)],
+      income_shown: served({ unusable: [{ doc_id: 21, doc_type: 'salary_slip', reason: 'not_salary' }] }),
+    })
+    expect(screen.getByText(CASH_DOOR)).toBeTruthy()
+  })
+
+  it('...and a payslip that DID read still closes it — nothing more is needed there', async () => {
+    // The control. Without this the test above also passes on a screen that simply offers the
+    // cash door to everybody for ever, and the rule would be untested in the only direction it
+    // can still vary.
+    await student({
+      documents: [slip(22)],
+      income_shown: served({ shown: true, way: 'salary_slip', documents: [22] }),
+    })
+    expect(screen.queryByText(CASH_DOOR)).toBeNull()
+    expect(screen.getByText(SHOWN)).toBeTruthy()
+  })
+
+  it('⚠ a declared amount that IS accepted keeps its own door open', async () => {
+    // `declared_letter` is the cash way itself. Closing on it would hide the family's own typed
+    // figure and the letter beneath it at the moment they finished — the door swinging shut
+    // behind them.
+    await student({
+      declared: { father: 900 },
+      documents: [],
+      income_shown: served({ shown: true, way: 'declared_letter', documents: [31] }),
+    })
+    expect(screen.getByText(CASH_DOOR)).toBeTruthy()
+    expect(screen.getByText(PROMPT)).toBeTruthy()
+  })
+
+  it('an api that serves nothing leaves the screen exactly as it was', async () => {
+    // The two services deploy together but not atomically. A cached payload, or an api one
+    // revision behind, must fall back to the OLD presence reading rather than re-opening a door
+    // for every household at once.
+    await student({ documents: [slip(23)] })          // no `income_shown` at all
+    expect(screen.queryByText(CASH_DOOR)).toBeNull()
+  })
+
+  it('...and with nothing on file that fallback still offers the door', async () => {
+    await student({ documents: [] })
+    expect(screen.getByText(CASH_DOOR)).toBeTruthy()
   })
 })

@@ -2396,23 +2396,10 @@ def household_size_accounted(application):
     }
 
 
-def declared_income_gaps(application):
-    """Working members who DECLARED an informal income (Phase 2A) that isn't yet accepted:
-    the household has NO valid STR and no supporting income document for them. Each →
-    a doc request for an ``income_support_doc`` (D1: flexible evidence). Returns
-    ``[{'member': m}, …]`` (empty when every declared amount is backed).
-
-    Salary route only. A valid STR accepts EVERY declared amount at once (no doc needed),
-    so it short-circuits to no gaps."""
-    if (getattr(application, 'income_route', '') or '').strip() != 'salary':
-        return []
-    if has_valid_str(application):
-        return []
-    gaps = []
-    for m in effective_working_members(application):
-        if declared_amount(application, m) is not None and not has_income_support_doc(application, m):
-            gaps.append({'member': m})
-    return gaps
+# ``declared_income_gaps`` — the Check-2 ask about a DECLARED informal wage — now lives in
+# ``income_declared_gaps.py`` (TD-262 F2), where it gained the "already shown another way" arm
+# that ends the dead-end chase. Its importers name that module directly: a re-export here would
+# have been a second home for the name, and a suppression to keep the linter quiet about it.
 
 
 # ── Stale income document (reviewer-query automation S2) ─────────────────────

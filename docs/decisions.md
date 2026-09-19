@@ -1,5 +1,92 @@
 # Architectural Decisions — HalaTuju
 
+## The cash door is NOT added to the STR route — owner ruling, 2026-09-20
+
+**The owner, verbatim:** *"If STR has been fulfilled, there is no need for the student to complete
+the cash door. It is there primarily for those without STR or salary slip."*
+
+**Decision: DECLINED, not deferred.** The cash door — a declared monthly amount plus one
+supporting letter — stays on the **salary route only**. The STR route's income step is **unchanged
+by this work**, and `income_engine.declared_income_gaps` **keeps its STR short-circuit**: a valid
+STR accepts every declared amount at once, so no household holding one is ever chased for a
+letter.
+
+**What the fourth way is FOR, in one line:** households that have **neither a current STR nor a
+payslip**. It is the way in for a family the other two doors turn away, not a third box for a
+family already through one of them.
+
+**Consequence for the code, so nobody re-raises this as a gap:**
+- `declared_income_gaps` returns `[]` off the salary route. That early return is now a RULING, not
+  an unfinished edge — it has a pinned row of its own
+  (`test_income_declared_gaps.TestTheShortCircuits`).
+- The amount field and the supporting-letter card render only under `income_route === 'salary'`.
+  Nothing is owed on the STR branch.
+- The STR route already offers `salary_slip` and `epf` as OPTIONAL cards (`income_requirements`,
+  the STR branch), folded into the "Supplementary" collapsible. That is untouched and remains the
+  STR-route way to add salary evidence.
+
+**Revisit if:** reviewers report STR-route households who can produce neither an STR that reads
+nor a payslip, in numbers that matter. Today that household is expected to answer Q1 differently —
+see the note below.
+
+**⚠ ONE THING THE RULING DOES NOT COVER, RAISED FOR THE OWNER, NOT BUILT.** A household whose STR
+turns out **stale, unreadable or in a stranger's name** has, since TD-262 item 1/1b, its payslips
+read by the verdict — but its own income step still shows the STR branch, and the only way to the
+cash door is to change the answer to Q1, *"Do you have an STR (Sumbangan Tunai Rahmah) document?"*
+**They do have one**, so the truthful answer keeps them where they are, and nothing on their screen
+says their STR did not settle it. The switch itself is cheap and safe (details below in the
+technical-debt entry): pre-submit it is one tap at the top of the income step and **nothing is
+lost** — no document, no declared amount, no earner selection. **No nudge was built.**
+
+## The fourth way gets a real door, and neither dead end survives — owner ruling, 2026-09-20
+
+**Decision (owner, on the mock of the income box):** the salary route's income box shows **three
+cards of equal weight** — the earner's salary slip, their EPF (KWSP) statement, and *"Paid in cash
+or works informally?"*, which opens in place to the amount field and the one supporting letter.
+The third card is **closed until tapped**, and no upload slot appears until an amount is typed.
+One new line sits under it: **"One letter is enough for the whole family."**
+
+**And the two dead ends are fixed in the same ruling:**
+1. The cash door is no longer hidden because a salary or EPF **file exists**. It is hidden only
+   when the SERVED answer says that earner's income is actually **shown** by one of those uploads.
+2. Check 2 no longer chases a family for a supporting letter when that member's income is already
+   shown another way.
+
+**The owner's reasoning, in his words:** *at Check 1 one track is enough; fuller documentation is
+asked at Check 2.* Check 1 is the door into the process, and a door that admits only two of the
+three ways a Malaysian household is actually paid is a door that turns away the families this
+scholarship exists for. The completeness of the picture is Check 2's job, and Check 2 has the
+whole apparatus for asking — per-member requests, the Action Centre, a reviewer.
+
+**Alternatives considered:** (a) leave the third way as the text link it was, and improve its
+wording; (b) show the amount field eagerly beside the two upload cards; (c) fix the chase but
+leave the lockout, since a family could in principle delete the bad payslip first.
+
+**Rationale.** (a) was the status quo and it had a measurable cost: the one way a cash-paid family
+can answer read as an admission of failure — *"can't get a payslip?"* — sitting below two cards
+that looked like the real answers. Three equal cards say what the rule has said since 25 July
+2026: **any one way.** (b) was rejected because a self-declared figure is not evidence and must
+not look like the first thing to reach for; it stays behind a deliberate tap. (c) was rejected
+flatly: the two dead ends were **one trap with two jaws**. A family whose only payslip was
+unreadable had their income judged *not shown* by the server, were chased for a letter, and found
+the screen that could produce that letter closed **by the very document that proved nothing**.
+Telling them to delete their own payslip first is not a route anybody would find.
+
+**What this ruling does NOT do, and it is deliberate.**
+- **The STR route's cash door is NOT built — and, ruled the same day, never will be.** See the
+  entry above: *"If STR has been fulfilled, there is no need for the student to complete the cash
+  door."* `declared_income_gaps` keeps its STR short-circuit by decision.
+- **`income_support_doc` is NOT added to the requirement engines.** `income_requirements` /
+  `salary_member_blocks` still draw only the payslip and the EPF. The letter is offered by the
+  screen when an amount is typed; making it a listed requirement would put a third upload slot in
+  front of every salary-route family, including the ones who never declare anything.
+- **No eligibility answer moves.** No submission blocker is added or removed, one complete earner
+  still clears the gate, and `VERDICT_ENGINE_VERSION` is not bumped — the Check-2 ask this
+  changes is read by no gate and no verdict.
+
+**Revisit if:** reviewers report that the letter arrives too rarely to be worth the amount field
+standing alone. (The STR route's cash door is settled — declined, same day, entry above.)
+
 ## The Overview layout is reordered with arrows, not by dragging — Sprint B, 2026-09-19
 
 **Decision:** the Customise editor reorders its five panels with an Up and a Down button per row.

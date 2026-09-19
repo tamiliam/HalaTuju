@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-262 F2 - the fourth way gets a real door - 2026-09-20
+
+### Added
+
+- **Three doorways of equal weight in a working earner's Income box.** The salary slip, the EPF
+  (KWSP) statement, and - now a card beside them rather than a text link below them - "Paid in
+  cash or works informally?", which opens in place to the amount field and the one supporting
+  letter. Closed until tapped; still no upload slot until an amount is typed. The rule has said
+  "any one way" since 25 July; the screen now says it too, instead of offering two real answers
+  and one apology.
+- **One new line, in English, Malay and Tamil:** "One letter is enough for the whole family."
+  Nothing had ever said so, and a household with two cash earners had every reason to assume a
+  letter each. The server has counted one untagged letter for every earner since chunk 1.
+- **The per-earner "is this income shown?" answer is now served to the student too**, not only to
+  the officer - the same `income_shown` the submission gate, the chase list and the AI verdict
+  read. Her screen and his now answer identically, asserted.
+
+### Fixed
+
+- **The trap with two jaws, and the two halves were one defect.** A family whose only payslip was
+  unreadable had their income judged "not shown" by the server, were chased by Check 2 for a
+  supporting letter - and found the screen that could produce that letter CLOSED, because it hid
+  the cash panel whenever any payslip or EPF file existed, usable or not. They could neither
+  answer the chase nor retract their figure. The panel now reads the served answer instead of
+  counting files, and the chase no longer fires for a member whose income is already shown
+  another way.
+- **No eligibility answer moved.** No submission blocker added or removed, one complete earner
+  still clears the gate, `application_completeness` untouched, and `VERDICT_ENGINE_VERSION` and
+  `results_doc.MODEL_VERSION` both unbumped - the Check-2 ask that changed is read by no gate and
+  no verdict.
+
+### Changed
+
+- **Two files on the Phase-4 oversize list got SMALLER, per the standing rule.**
+  `income_engine.py` 3,201 -> 3,188 (the gap moved to `income_declared_gaps.py`) and
+  `ScholarshipDocuments.tsx` 1,957 -> 1,914 (the income box moved to
+  `components/scholarship/MemberIncomeGroup.tsx`); the web budget was ratcheted down to 1,914.
+  `src/lib/api.ts` sits exactly on its ceiling and was left byte-untouched - the served field is
+  declared beside its only reader until H13 splits that file.
+- **Five `SimpleNamespace` rows moved out of `test_income_engine.py`** to factory-built
+  counterparts in the new `test_income_declared_gaps.py`. 18 new api rows, 9 new rendered web
+  rows; 7,003 -> 7,019 pytest, 2,904 -> 2,913 jest. Five bite-checks, all five behaved.
+
 ## Overview phase 2, Sprint B - an organisation arranges its own Overview - 2026-09-19
 
 ### Added

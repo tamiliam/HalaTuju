@@ -509,7 +509,6 @@ from apps.scholarship.income_engine import (  # noqa: E402
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
     earner_monthly_income, _epf_monthly_salary, _salary_monthly_amount,
     income_headroom, declared_amount, has_valid_str, has_income_support_doc,
-    declared_income_gaps,
     epf_confirms_unemployment, unemployment_status, unemployed_members,
     unemployment_detail_gap, unemployment_epf_gap, unemployment_corroborated_members,
     household_status_gaps, member_income_status, household_size_shortfall,
@@ -738,17 +737,13 @@ class TestDeclaredIncome(SimpleTestCase):
         self.assertFalse(has_valid_str(app))
         self.assertEqual(earner_monthly_income(app, 'father')[1], 'declared_unproven')
 
-    def test_gaps_empty_when_str_valid(self):
-        app = self._salary_app(declared={'father': 1500}, docs=[self._str_doc()])
-        self.assertEqual(declared_income_gaps(app), [])
-
-    def test_gaps_list_unproven_member(self):
-        self.assertEqual(declared_income_gaps(self._salary_app(declared={'father': 1500})),
-                         [{'member': 'father'}])
-
-    def test_gaps_cleared_by_support_doc(self):
-        app = self._salary_app(declared={'father': 1500}, docs=[_bill('income_support_doc', {})])
-        self.assertEqual(declared_income_gaps(app), [])
+    # ⚠ THE FIVE ``declared_income_gaps`` ROWS THAT SAT HERE MOVED, they were not dropped
+    # (TD-262 F2). The gap now asks ``income_shown`` whether the member's income is already
+    # carried another way, and that question deserves REAL documents rather than the
+    # ``SimpleNamespace`` stand-ins this file is built on. Every one has a named counterpart on
+    # the H5 factory in ``test_income_declared_gaps.py``: a valid STR short-circuit, an
+    # unproven declared amount, a gap cleared by a letter, a gap NOT cleared by a letter that
+    # never read, and the non-salary route — beside the rows that pin the fix itself.
 
     def test_blank_support_doc_does_not_accept_declared(self):
         # V1 (finding #2): a blank/wrong image uploaded as income_support_doc read nothing
@@ -757,18 +752,6 @@ class TestDeclaredIncome(SimpleTestCase):
                                docs=[_bill('income_support_doc', {}, verdict='wrong_doc')])
         self.assertFalse(has_income_support_doc(app, 'father'))
         self.assertEqual(earner_monthly_income(app, 'father'), (None, 'declared_unproven'))
-
-    def test_gaps_not_cleared_by_blank_support_doc(self):
-        # V1 (finding #2): the declared-income gap persists on a blank support doc, so Check 2
-        # keeps asking for real evidence instead of silently clearing.
-        app = self._salary_app(declared={'father': 1500},
-                               docs=[_bill('income_support_doc', {}, verdict='wrong_doc')])
-        self.assertEqual(declared_income_gaps(app), [{'member': 'father'}])
-
-    def test_gaps_empty_off_salary_route(self):
-        app = self._salary_app(declared={'father': 1500})
-        app.income_route = 'str'
-        self.assertEqual(declared_income_gaps(app), [])
 
 
 class TestUnemploymentDetail(SimpleTestCase):

@@ -433,10 +433,39 @@ str_not_breached(app)`, which is where the household arm lives and the ONLY plac
 `income_engine._member_income_documented` (the officer's chase list, and through it the pension /
 informal / formal-slip asks and the household-size tick) ·
 `verdict_income_salary._salary_member_scan` (`any_financial`, the verdict's financial-evidence
-line) · the officer cockpit, which reads it **SERVED** on the applicant-detail payload
-(`income_shown`) through `halatuju-web/src/lib/incomeShown.ts` — served, never mirrored, with an
-absent field falling back to the old presence reading so a half-deployed pair cannot paint a
-screen of red.
+line) · **`income_declared_gaps` (the Check-2 declared-wage ask — TD-262 F2)** · and **BOTH
+screens**, which read it **SERVED** — the officer on the applicant-detail payload, the student on
+her own `ApplicationReadSerializer` payload — through `halatuju-web/src/lib/incomeShown.ts`.
+Served, never mirrored, with an absent field falling back to each screen's old presence reading so
+a half-deployed pair cannot paint a screen of red.
+
+### The declared-wage ask (TD-262 F2) — `apps/scholarship/income_declared_gaps.py`
+
+`declared_income_gaps(application)` is the ONLY reader of "who still owes us evidence for a wage
+they declared", and `check2_queries._gap_sets` is its only caller → the soft, uncapped
+`declared_income_evidence_missing` request. **Salary route only; a valid STR accepts every
+declared amount at once.** It raises no gap for a member whose income is already **SHOWN** another
+way (`income_shown`).
+
+**⛔ THE FOURTH WAY IS FOR HOUSEHOLDS WITH NEITHER A CURRENT STR NOR A PAYSLIP** — owner ruling
+2026-09-20: *"If STR has been fulfilled, there is no need for the student to complete the cash
+door."* So **the cash door is never added to the STR route, and the two early returns above
+(off-salary-route, and a valid STR) are RULINGS, not unfinished edges.** Each has a pinned row in
+`tests/test_income_declared_gaps.py`. Do not "complete" them.
+
+**⚠ SHOWN, NOT PRESENT — and the `has_income_support_doc` test is SUBSUMED, not kept beside it.**
+Once a declared amount exists, `income_shown`'s third arm *is* that predicate, so testing both
+would put one rule in two places in the very function TD-262 came to un-duplicate. A `not_salary`
+photo or a blank EPF still leaves the ask standing, which is the F4 / F5 rule.
+
+**⚠ IT LIVES IN ITS OWN MODULE AND HAS NO RE-EXPORT.** `income_engine.py` is on the oversize
+ledger, so the function moved out rather than growing it (the Phase-4 standing rule). A re-export
+back into `income_engine` would have needed a `# noqa` and given the name two homes — the first
+cut did exactly that and the noqa ratchet caught it. **Import it from `income_declared_gaps`.**
+
+**⚠ NO ELIGIBILITY ANSWER IS IN REACH OF IT.** No gate, no blocker code and no verdict fact reads
+this function. A change here can never move a band, so `VERDICT_ENGINE_VERSION` is not bumped for
+it.
 
 ### The income verdict has two routes, and they live in two files
 
@@ -875,22 +904,35 @@ Read it at sprint start, before planning.
 
 - **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 SHIPPED 2026-09-19: money parsing/formatting has ONE home, `apps/scholarship/money.py` (`parse_money` / `format_money`; each caller keeps its own exception and blank answer through a named two-line wrapper); `text.py` (`id_list`, `digits_only`); `gemini.py` (the single-model metered core — the three `_gemini_generate` seams stay BY NAME). Any change to these helpers must answer to `tests/test_helper_characterisation.py` (417 assertions).** **TD-261 FIXED 2026-09-19 on the owner's order: a bill credit is written `RM-40.00` (chosen from its readers — see decisions.md); one-decimal figures keep their decimal; `money.parse_money` refuses `Infinity`/`NaN`; `sponsor_comms.render` defaults declared tokens; a payment-run line with a third decimal is REFUSED, not rounded.** **H8 (2026-09-19): PHASE A DELIVERED, PHASE B STOPPED AT ITS GATE — no production code changed. The income rule has ELEVEN homes and they disagree in sixteen places today: TD-262 (HIGH), awaiting the owner's rulings.** ⚠ **DO NOT "tidy" `application_completeness`: its legacy doc-type arm is more permissive ON PURPOSE (it may only ever widen); replacing it un-submits students and nulls their `requirements_snapshot`.** Any change to an income home answers to `tests/test_income_evidence_homes.py` and `src/lib/__tests__/incomeEvidenceHomes.test.ts`. **H9 SHIPPED 2026-09-19 — no production code changed: the six decision gates that said they MIRRORED a backend rule now have a test that reads the backend's own source in both directions (`applicationStatusDrift` · `requestStatusDrift` · `officerGateDrift` · `strCoachDrift` · `adminRoleDrift` · `payoutAccountDrift`, shared reader `halatuju-web/src/test/apiSource.ts`). `unguarded_mirrors` 58 → 41; a new `mirror` reading in `code_health.py` agrees with it exactly.** ⚠ **A CONSTANT IS GUARDED, NOT SERVED** (decisions.md 2026-09-19): serve a rule that can differ between two callers; for a module-level constant a drift test fails in the deploy gate where a served value could only fail at runtime. **Raised TD-264 (money path: the api counts payout-account digits with Unicode-aware `isdigit()`, the web with ASCII `\d`, so a direct POST of five superscripts is stored as a payout target — owner's call which side moves) and TD-263 (low: `requote` offered on a bug, unreachable today by one road only).** **H10 SHIPPED 2026-09-19 — PHASE 3 COMPLETE: the mirror ledger is 41 → 3 (nine more drift tests; 16 comments that were not rule claims reworded honestly). ⛔ The three survivors are `incomeWizard.ts` and stay by decision until TD-262 is settled. Raised TD-266 (`AdminResolutionItem` is a stale copy of the student-facing `ResolutionItem` and ONE serializer feeds both) and TD-265 (the finance summary computes a `programme` column nothing renders).** ⚠ **A test that reads another file's TEXT must normalise line endings** — the api sources are CRLF here and LF in the build container; `apiSource.readApi` does it once, at the seam.
 
-## Next Sprint — ▶ TD-262 **F2 + W1** (the income upload slot) — AWAITING THE OWNER'S DESIGN APPROVAL. H11 is the code-health track.
+## Next Sprint — ▶ H11 (the code-health track). TD-262's income work is closed except option 4 and W1.
 
-**What to build:** the owner's **fourth way of proving income** — a declared amount plus a
-supporting letter — has **no upload slot anywhere** in the product. F2 is the slot; W1 is the
-student-side wording that goes with it. Chunks 1, 2+3, R4 1/1b and F8 of TD-262 are already done;
-this is the last piece of the income-rule work.
+**TD-262 F2 + W1 SHIPPED 2026-09-20 for the SALARY route** — three doorways of equal weight, the
+presence-only lockout killed, the dead-end Check-2 chase killed. Retro:
+`docs/retrospective-2026-09-20-income-fourth-way.md`. Not yet deployed. Gates at close: **7,019
+pytest / 3 skipped · 2,913 jest / 159 suites** · tsc 0 · lint 0 errors · i18n parity ok ·
+`next build` 0 · `manage.py check` 0 issues · `makemigrations --check` clean · code_health 0 FAIL,
+`std` ok, no reading worse.
 
-**⚠ THIS IS A DESIGN CALL BEFORE IT IS A BUILD, AND IT IS OWNER-GATED.**
-- **Prototype the slot in Stitch and get visual approval BEFORE coding any template.** The standing
-  rule for a new page or component; several projects have wasted deploys coding UI blind.
-- It touches **eligibility evidence**, so the stop-gate rule applies (`docs/lessons.md`, H8): state
-  the stop condition in the brief, and name the smaller deliverable that ships if the sprint stops.
-- **No student's existing answer may change.** `application_completeness` keeps its legacy
-  doc-type arm — see the ⛔ warning below; it may only ever WIDEN.
-- Settling TD-262 is also what releases the **three remaining `unguarded_mirrors` entries**
-  (`incomeWizard.ts`): whoever settles it writes the drift guard as part of that work.
+**⛔ THE STR ROUTE'S CASH DOOR IS DECLINED** (owner, 2026-09-20): *"If STR has been fulfilled,
+there is no need for the student to complete the cash door. It is there primarily for those
+without STR or salary slip."* Not deferred — closed. `declared_income_gaps` keeps its STR
+short-circuit by decision. **Do not re-raise it as a gap.**
+
+**What is left, and it needs the owner before it needs an engineer:**
+- **Option 4 — `income_support_doc` in the requirement engines** (`income_requirements` /
+  `salary_member_blocks`), if it is still wanted. It was deliberately NOT built: the letter is
+  offered by the screen when an amount is typed, and listing it as a requirement puts a third
+  upload slot in front of every salary-route family, including those who declare nothing.
+- **W1** — `incomeWizard.incomeRequirements` offers a mononym student an optional birth
+  certificate that `income_engine.income_requirements` has no arm for. It did NOT fall out of F2
+  (the third door is a screen affordance, not a requirement) and is untouched.
+- ⛔ **The three `unguarded_mirrors` entries (`incomeWizard.ts`) STAY PARKED.** They describe the
+  requirement engines and the patronymic connector — exactly what option 4 and W1 are still
+  deciding, so a guard written now would BLESS a shape under review. They are released by settling
+  those two, not by settling F2.
+
+**Also still owner-gated:** `serializers.py` is now **1,212 against a 1,195 budget** — nine lines
+of allowance left, and no Phase-4 sprint owns it. Whoever needs a tenth line splits it first.
 
 **Code health — H11 is next on that track** (`views_admin.py`, 8,556 lines, becomes a package,
 wave 1). Phase 4's rule is **moves only** — no renames, no rewording, no "while I'm here". The
@@ -901,11 +943,20 @@ re-exports. The two tracks **alternate**; the owner picks the order.
 touch a file on the hotspot/oversize list **runs that file's Phase-4 split sprint first (moves
 only)** rather than growing the file. The lookup table is **"Which Phase-4 sprint owns which file"**
 in `docs/plans/2026-09-18-code-health-roadmap.md`. **Never raise a budget; split the file first.**
-⚠ **`income_engine.py` (3,201 lines) is on that table (H16)** — and F2's rule changes may well land
-in it. Read the table at sprint start and decide there, not halfway through.
+⚠ **F2 is the worked example of the rule's escape hatch**: `income_engine.py` (3,201 → **3,188**)
+and `ScholarshipDocuments.tsx` (1,957 → **1,914**) were both made SMALLER by moving the affected
+code into new modules, so the feature shipped without its split sprints. **But `src/lib/api.ts`
+sits EXACTLY on its ceiling (2,488 = 2,468 + the 20-line allowance) and could not take even a
+one-line type field** — read the numbers at sprint start, not halfway through.
 
 ### State of the codebase at this point
 
+- **TD-262's income work is DONE for the salary route** (F2 + W1, 2026-09-20). The student's income
+  box draws three doorways; the cash door reads the SERVED `income_shown` rather than counting
+  files; `declared_income_gaps` lives in `apps/scholarship/income_declared_gaps.py` and no longer
+  chases a member whose income is already shown. **No eligibility answer moved** — no blocker code
+  added or removed, `application_completeness` untouched, `VERDICT_ENGINE_VERSION` and
+  `results_doc.MODEL_VERSION` unbumped. The read-only blast-radius SQL is with the lead.
 - **Overview phase 2 is COMPLETE.** Sprint B shipped 2026-09-19: an org admin arranges the five
   Overview panels with **Up/Down arrows** on the existing Customise screen. **Drag-and-drop was
   deliberately NOT built** (`docs/decisions.md`; `overviewLayout.reorderByDrop` is kept unused, with
