@@ -4114,6 +4114,13 @@ the officer's web income panel (W2–W4) · **chunk 3** the api chase list and v
 stale / unreadable / mismatched — count live cases first · **chunk 4** the fourth way gets an upload slot
 (F2), W1, and STR ownership at the gate (F8, ruled).
 
+**Live blast radius, measured in production 2026-09-19 (read-only).** The 2026 intake is finished: of 143
+applications only **4 are still in review** (2 on the salary route, 2 on the STR route); 65 are decided yes,
+74 decided no. STR-route applications holding BOTH an STR and payslips/EPF: **1 in review**, 33 decided yes,
+6 decided no. So the remaining chunks can move the AI verdict or the chase list of at most a handful of
+live cases — and none of a decided case's decision, which was a human's. This is the cheapest moment there
+will be to fix the income homes; the next intake will not offer it.
+
 **Chunk 1 DONE 2026-09-19 — the two student screens now tell the truth; NO eligibility answer moved.**
 *One map, three readers (W5).* The three private copies of "which fact does this document type belong
 to" are gone: `src/lib/docCategory.ts` holds the one table (every value of
