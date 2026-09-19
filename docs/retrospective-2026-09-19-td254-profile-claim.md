@@ -68,6 +68,17 @@ much of it to buy back.
 **3. One more query on every authenticated request.** Deliberate and uncached — a stale cache
 would keep a revoked login working. Recorded for H18's query budget.
 
+## The deploy
+
+Migration first, then the push. Both builds passed the gate on the first attempt — 6,857 pytest
+inside the api build, 2,565 jest inside the web build. Serving **`halatuju-api-01055-4bn`** and
+**`halatuju-web-00906-nrz`**. Site 200; admin endpoint 401; zero ERROR lines and zero alias
+warnings on the new api revision at the time of checking. ⚠ **No authenticated traffic had reached
+the new revision yet, and the lead cannot sign in as a student** — so the evidence for the
+resolver under real load is the suite, not production. The logs are to be read again once students
+are online; the resolver fails to "you are yourself" and logs an exception if the table is
+unreachable, which is what to look for.
+
 ## Owner review requested
 
 The Tamil copy (table in the agent's report, now in `ta.json`). The lead changed one thing:
