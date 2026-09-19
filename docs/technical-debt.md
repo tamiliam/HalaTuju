@@ -4114,6 +4114,43 @@ the officer's web income panel (W2–W4) · **chunk 3** the api chase list and v
 stale / unreadable / mismatched — count live cases first · **chunk 4** the fourth way gets an upload slot
 (F2), W1, and STR ownership at the gate (F8, ruled).
 
+**Chunk 1 DONE 2026-09-19 — the two student screens now tell the truth; NO eligibility answer moved.**
+*One map, three readers (W5).* The three private copies of "which fact does this document type belong
+to" are gone: `src/lib/docCategory.ts` holds the one table (every value of
+`ApplicantDocument.DOC_TYPES`, pinned by name) and `officerCockpit.docTypeToFact`,
+`view.tsx` and `ScholarshipReview.tsx` all read it. Two folds are kept as EXPLICIT adapters with
+their reasons at them, because the vocabularies really do differ: the student read-back has five
+headings, not six, so `additional` → `other` (`docTypeToStudentGroup`); and a document REQUEST's
+stored `fact` is read back by the Action Centre, which knows only the four verdict facts plus
+`other`, so `additional` → `other` there too (`docTypeToRequestFact`). **Two types moved on a
+user-visible screen, both on the STUDENT's post-consent read-back:** `income_support_doc`
+"Additional documents" → **Household income** (the W5 defect — the one document proving an informal
+earner's wage), and `semester_result` "Additional documents" → **Academic results** (the second
+neglected type; both other copies already said `academic`). Nothing moved on the officer's screen.
+⚠ Noticed, NOT fixed and not this chunk: `scholarship.docs.type.semester_result` and
+`…type.other` have no i18n key, so those rows render a raw dotted path wherever they sit — a
+pre-existing gap, unchanged by the regrouping.
+*The tick counts what the server counts (W7).* `memberIncomeShown`'s support-letter arm now accepts a
+letter tagged to that earner **or untagged**, exactly as `has_income_support_doc` does — and requires
+it to have READ (`vision_fields.student_verdict === 'ok'`), the third drift the investigation found;
+the student document payload carries `vision_fields`, so no api change was needed. **Multi-earner,
+stated because it looks like a bug:** one untagged letter ticks EVERY earner who declared an amount,
+because the api counts the same row for each — the cue reads as the GATE reads rather than inventing a
+stricter rule. **No STR arm was added (W6), and the api's docstring now says why**:
+`member_income_evidenced`'s fourth `str_not_breached` arm is a submission-gate shortcut about the
+HOUSEHOLD, not a statement about this member (owner 2026-09-19, `docs/decisions.md`) — comment-only,
+no logic touched.
+*Residual drift, deliberate.* The student's per-earner cue differs from `member_income_evidenced` in
+exactly one way now — the fourth (STR) arm — and that difference is the owner's ruling, pinned as
+CORRECT by `incomeEvidenceHomes.test.ts` W6 and by a rendered case ("a household STR and nothing else
+leaves the earner un-ticked"). The OFFICER's panel still claims an untagged letter once where the api
+counts it for each earner; that is W-B and belongs to chunk 2.
+*Tests.* W5 and W7 stopped being source reads: W5 is now real imports over the whole doc-type table,
+and W7 moved to rendered assertions (`ScholarshipReview.test.tsx`, `ScholarshipDocuments.test.tsx`,
+`view.documents.test.tsx` — 20 new tests, 2,583 → **2,603** jest). W6 keeps its source-read pin, now
+worded as a deliberate difference. Every reading in `code_health` is unchanged (`guard%` 11, `big` 25,
+`std` ok). **TD-262 is NOT resolved** — chunks 2, 3, R4 and 4 stand.
+
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 
 **Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects

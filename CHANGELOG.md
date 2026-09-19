@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-262 chunk 1 - two student screens tell the truth about income evidence - 2026-09-19
+
+First chunk of TD-262, worked "easy ones first" on the owner's word. Web only, plus one api
+docstring. **No eligibility answer moved.** Built by an Opus 5 agent, pins edited first and seen
+red; gates re-run by the lead.
+
+- **The owner's income rules were restated and checked against the code first** (`docs/decisions.md`,
+  2026-09-19): a current STR predicts green and STAYS green; working adults' payslips are for the
+  full picture and the reviewer's judgement, never the AI verdict; one earner clears the gate; the
+  stronger proof is preferred. The July rulings stand.
+- **⚠ The lead's first advice was wrong and the owner's words showed it.** "Make the student's
+  per-earner tick go green for a household STR" contradicts the rule: an STR is evidence about the
+  HOUSEHOLD. The web was right; the api's `member_income_evidenced` is a gate shortcut with a
+  per-member name. **No STR arm was added**; a test now pins its absence as CORRECT.
+- **W5 - one map, three readers.** "Which group does this document belong to?" was spelt three
+  times; two copies were stale. New `src/lib/docCategory.ts` is the one home; the student
+  read-back and the cockpit's request resolver read it through two small, commented adapters
+  (each folds `additional` into `other` for a stated reason). On the student's pre-submit
+  read-back, `income_support_doc` moves from "Additional documents" to **Household income**, and
+  `semester_result` to **Academic results**. Nothing moved on the officer's screen.
+- **W7 - the student's tick counts what the server counts.** A support letter counts whether
+  tagged to the earner or untagged, and - newly aligned - only if it READ (`student_verdict ===
+  'ok'`), the same rule `has_income_support_doc` applies. One untagged letter satisfies every
+  earner, exactly as the api does; pinned.
+- Seven bite-checks red, one harmless edit green: removing the letter from the shared map turns
+  the student read-back, the cockpit AND the characterisation table red - proof of one home.
+- Noticed, not fixed: `scholarship.docs.type.semester_result` and `...type.other` have no i18n key.
+- Gates: 2,603 jest / 143 suites, tsc 0, lint 0 errors, i18n parity, `next build` 0; green on Node 18.
+
 ## Code health H8 - the income rule has ELEVEN homes; the sprint stopped at its own gate - 2026-09-19
 
 Sprint H8 of the code-health roadmap. **Phase A delivered, Phase B stopped - by design. NO
