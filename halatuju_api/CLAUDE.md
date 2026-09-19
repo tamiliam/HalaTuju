@@ -58,6 +58,50 @@ HalaTuju is becoming a multi-tenant platform (course selector = shared base; sch
 
 Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math`, `phy`, etc.). The single source of truth is `halatuju-web/src/lib/subjects.ts` which exports `SPM_SUBJECTS`, `SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, and `SPM_ALL_ELECTIVE_SUBJECTS`. No serializer mapping is needed — keys pass through as-is.
 
+### Profile claim (IC already registered) — TD-254, 2026-09-19
+
+A student who lost access to their sign-in email re-registers and finds their IC already taken.
+That path is legitimate and it survives — but it used to be an **account takeover**: the endpoint
+answered somebody else's IC with **that person's name**, and a second call carrying
+`confirm: true` moved the profile's primary key in raw SQL. `confirm: true` is GONE; a client
+still posting it gets a refusal.
+
+**⚠ NEVER RETURN THE HOLDER'S NAME.** `POST /api/v1/profile/claim-nric/` answers
+`{status: 'exists', channels: [...]}` — bare channel TYPES (`'phone'` / `'email'` / neither),
+never a name, never a masked address, never digits. The real owner knows their own phone. If you
+are adding a field to that response, this is the line to argue with first.
+
+**A claim is a LINK, not a move.** Proving control of a contact that is already on the target
+profile and already verified (`ProfileLoginAlias`, `profile_login_aliases`) writes ONE row
+meaning *"the login `alias_uid` acts as this profile"*. Nothing is moved, renumbered or deleted —
+the caller's own empty profile stays exactly where it is, merely unreachable.
+
+**The auth seam resolves it, once, for everything.** `SupabaseAuthMiddleware` sets
+`request.auth_sub` = the REAL JWT subject and `request.user_id` = the profile that login acts as
+(`resolve_login_alias`). One indexed primary-key look-up per authenticated request; deliberately
+NOT cached, because a stale cache would keep a revoked alias working. ⚠ **Staff and sponsor
+identity must resolve on `auth_sub`** (`PartnerAdminMixin.get_admin`, `SponsorMixin.get_sponsor`
+and the two account-creation sites already do) — an alias may never redirect one, and the seam
+re-checks in case a staff row was created after the alias.
+
+**Everything is audited** in `ProfileClaimEvent` (`profile_claim_events`), append-only: the
+plain look-up (`exists_shown`), each `code_sent` / `code_failed` / `claimed` /
+`refused_<reason>` / `alias_revoked`, with the real caller sub, the target profile id as a PLAIN
+value (so the line outlives the profile), the IC and the bare channel. Before this table, *"has
+a profile ever been taken over?"* had no answer. ⚠ The IC belongs in the TABLE and **never in an
+application log**.
+
+**To revoke a claim:** `profile_claim.revoke_alias(alias_uid, by='<who>')` — it deletes the row
+and writes the `alias_revoked` line, and the login is back on its own profile from its very next
+request. There is no UI for it yet.
+
+**The conservative policy, and where to widen it.** Only an ALREADY-VERIFIED contact may be
+challenged. Two owner rulings are still open (does an unverified contact count? does the phone
+count when the email is what was lost?) and both are one edit to
+**`apps/courses/profile_claim.claim_channels()`** — the only function that decides. Measured
+2026-09-18: of 674 profiles carrying an IC, 70 have a verified contact, so this returns `[]` for
+nine accounts in ten and the honest answer is `channels: []` and a route to a human.
+
 ## Deployment
 
 | Component | Platform | Region | Service |
@@ -719,7 +763,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** ⚠ **TD-259 awaits the owner: raw i18n keys on the IC-claim screen — fix WITH TD-254, never alone.** **H7 (money and text helpers) is next.**
+- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 (money and text helpers) is next.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

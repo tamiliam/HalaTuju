@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## Joining a new login to an existing student profile is a LINK row resolved at the auth seam, never a move of the primary key — 2026-09-19
+
+**Decision:** a verified IC claim writes one `ProfileLoginAlias(alias_uid → profile)` row.
+`SupabaseAuthMiddleware` resolves it: `request.auth_sub` is who holds the token, `request.user_id`
+is which student profile that login acts as. Student data reads `user_id`; staff and sponsor
+identity read `auth_sub`. No data is copied or re-keyed.
+
+**Alternatives:** (1) repair the old raw-SQL transfer that rewrote `supabase_user_id` and four
+child tables. Rejected: five foreign keys, `ON UPDATE NO ACTION`, four not deferrable — a correct
+order exists only on Postgres and the suite runs on SQLite, so it could not be proven; it is
+irreversible; and it had silently never worked for any profile with an application. (2) An
+admin-only transfer. Rejected by the owner's ruling: self-service survives, behind a second factor.
+
+**Rationale:** one row is reversible (delete it), self-auditing (the row is the record), covers
+endpoints that do not exist yet, and is fully testable. The failure mode of the resolver is "you
+are yourself", never "you are somebody else".
+
+**Trade-offs:** one uncached primary-key query on every authenticated request (a cache that
+outlived a revoked alias would keep a withdrawn login working); throttle buckets follow the alias;
+two identities now exist on every request and new code must pick the right one — `auth_sub` for
+who you ARE (staff, sponsor, audit), `user_id` for whose student data you act on.
+
+**Revisit if:** H18's query budget shows the look-up matters; or a second kind of identity link
+appears (a guardian acting for a student) — that would want a general delegation model, not a
+second alias table.
+
 ## A sponsor may ACT on exactly what they can SEE: the fence decides visibility, the service decides fundability — 2026-09-18
 
 **Decision:** every sponsor-facing endpoint that takes a student id resolves it through

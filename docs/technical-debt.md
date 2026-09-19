@@ -81,9 +81,21 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   student through `pool.for_sponsor`, the MOCK donation endpoint is behind
   `SPONSOR_MOCK_DONATIONS_ENABLED` (default OFF, **never set in production**), and a NULL-programme
   application can no longer be funded. Nothing had been exploited.
-- **TD-259 (raised 2026-09-19 by code health H6) — fix WITH TD-254, never alone.** Four labels on the
-  IC-claim screen render as raw i18n keys; the missing text is, by accident, hiding the holder's name
-  that TD-254's flow would otherwise show. Four more raw keys elsewhere are safe to fix alone.
+- *Closed 2026-09-19:* **TD-254** (security, auth + PII) — the IC claim no longer names the holder
+  and no longer transfers anything. `exists` answers with the challenge CHANNELS only; `confirm:
+  true` is removed and refused; a claim writes ONE `ProfileLoginAlias` row that the auth seam
+  resolves, so it is reversible by deleting that row; every branch that touches another person's
+  record writes a `ProfileClaimEvent`. **Conservative by policy:** only an ALREADY-VERIFIED contact
+  may be challenged, so ~90% of profiles get an honest refusal and a route to support. The owner's
+  two open rulings are one edit to `profile_claim.claim_channels()`. No evidence of past use — and
+  the new table is what makes that question answerable in future.
+- *Closed 2026-09-19 with TD-254:* **TD-259** — the missing-key ledger is **EMPTY**. The five
+  `authGate` keys were written for the new flow in EN/MS/TA (no holder name anywhere); the two admin
+  rows read `admin.familyIncome` / the new `admin.familySize`; the Story error names a question that
+  exists. The idiom behind all eight — `t(key) || 'fallback'`, which never fires because `t` echoes
+  the key — is now refused by a web code standard, with `tOr()` as the replacement.
+- **TD-260 (raised 2026-09-19)** — 604 of 674 IC-holding students have no verified contact, so no
+  self-service way to reclaim an account, and support has no screen to do it for them. Two owner levers.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
   backfill of the code-health roadmap, after the H5 factory.
 - *Closed 2026-09-18 by H3:* TD-219 (view/service seam), TD-240 (fence scan of `views_sponsor.py`),
@@ -3964,7 +3976,52 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
-### [TD-259] Eight i18n keys exist in no locale; four render RAW on the IC-claim screen — and the missing text is hiding TD-254's name leak — HIGH (fix WITH TD-254, never alone)
+### [TD-260] A student with no verified contact cannot reclaim their account, and support has no tool to help — medium
+
+**Found:** 2026-09-19, as the honest cost of closing TD-254 conservatively.
+
+Since TD-254 a student can join a new login to their existing profile only by answering a code sent
+to a contact **already on that profile and already verified**. Measured in production: **70 of 674**
+IC-holding profiles have one (17 phone, 63 email); of the 143 with a scholarship application, 47.
+Everyone else sees honest copy asking them to write to support — and support has **no screen**:
+only `profile_claim.revoke_alias()` and the database.
+
+**Two levers, both the owner's:**
+1. *Widen self-service.* The owner's two open rulings from TD-254 — may an UNVERIFIED contact
+   receive the code; does the phone count when the email is what was lost — are one function:
+   `apps/courses/profile_claim.py` → `claim_channels(profile)`. Accepting unverified contacts would
+   cover most students and is weaker: nobody proved that address.
+2. *Build the assisted path.* A super-admin action "link this login to that profile" on the admin
+   student page, writing the same `ProfileLoginAlias` + `ProfileClaimEvent` rows with `actor` set,
+   and a "remove link" beside it. ~4h. A screen → a sprint, with a design prototype first.
+
+**Trigger:** the first support email from a locked-out student — `profile_claim_events` rows with
+`refused_no_verified_contact` are the early-warning count.
+
+### [TD-259] Eight i18n keys exist in no locale; four render RAW on the IC-claim screen — and the missing text is hiding TD-254's name leak — HIGH (fix WITH TD-254, never alone) — **RESOLVED 2026-09-19**
+
+**Resolved 2026-09-19.** Fixed with TD-254, as the entry demanded. The `KNOWN_MISSING` ledger in
+`src/messages/__tests__/namespaces-i18n.test.ts` is now **empty**, and a third test asserts that
+emptiness so a future entry has to be a decision somebody took.
+
+* **The five `authGate` keys** were written for the NEW claim flow, in EN/MS/TA, with no holder
+  name anywhere — `icExistsMessage` now says only *"This IC number is already registered to an
+  account."* A `claim.*` block was added beside them (help lines per channel, the two channel
+  buttons, the code box, and eight refusal sentences). `profileClaimCodes.test.ts` asserts that no
+  message on this surface interpolates `{name}` or `{holder}` in any locale.
+* **`admin.householdIncome` / `admin.householdSize`** now read `admin.familyIncome` (which already
+  existed) and `admin.familySize` (added to all three locales).
+* **`scholarship.nextSteps.story.cardA.parentsOccupation`** points at `…cardA.parentsHeading`. The
+  field is DERIVED from the roster now (`scholarship/family.parents_occupation_summary`), so the
+  question to send the student back to is the parents/guardians block, not a leaf that was removed.
+* **The idiom.** `tOr(t, key, fallback)` lives in `src/lib/i18n.tsx` and knows about the key echo.
+  The five live `t(…) || '…'` sites are gone: four were in the IC step that TD-254 rebuilt, and
+  `actionCentre.ts` now calls `tOr`. A new web code standard — *"no key-echo fallback"*, a HARD
+  ZERO with no budget line — refuses the idiom in any non-test source file, and is bite-checked
+  both ways against fourteen real lines (six that must fire, eight `a || b` shapes that must not).
+* `node scripts/check-i18n.js`: all three locales in parity, **5,378 keys** each (+25).
+
+**What it was, kept as the record:**
 
 **Found:** code health H6 (2026-09-19), when the i18n guard was widened from 11 namespaces to all 35.
 Verified by the lead against `en.json` and `AuthGateModal.tsx`. **Not fixed — owner decision.**
@@ -4137,7 +4194,62 @@ Not part of the code-health arc by default; the owner may fold it into H17 or H1
 
 **Trigger:** the `node:18-alpine` tag is withdrawn, a dependency drops Node 18, or the arc reaches H17.
 
-### [TD-254] A signed-in student can CLAIM another student's profile with their IC number — HIGH (security)
+### [TD-254] A signed-in student can CLAIM another student's profile with their IC number — HIGH (security) — **RESOLVED 2026-09-19**
+
+**Resolved 2026-09-19.** Built to the owner's ruling (option 2 + the audit half of option 3): a
+second factor the real owner holds, and a line for every attempt.
+
+* **The name is gone.** `POST /api/v1/profile/claim-nric/` answers somebody else's IC with
+  `{status: 'exists', channels: [...]}` — bare channel TYPES only (`'phone'` / `'email'` / an
+  empty list). No name, no masked address, no digits: the real owner already knows their own
+  phone. A test asserts on the response's whole KEY SET and on the absence of the holder's name,
+  phone and email as sentinels, with a positive control proving those sentinels really are on the
+  target profile.
+* **`confirm: true` is removed, not merely unused.** It is refused with `confirm_removed`, and the
+  raw-SQL block is deleted. That block could never have worked for a real applicant anyway: it
+  repointed four child tables and left `scholarship_applications` behind, so any target with an
+  application would have failed at COMMIT — and it deleted the caller's own profile first.
+* **A claim is now a LINK, not a move.** Answering the challenge writes ONE row in the new
+  `profile_login_aliases` — *"the login `alias_uid` acts as this profile"*. Nothing is moved,
+  renumbered or deleted; the caller's own empty profile stays where it is, simply unreachable.
+* **The auth seam resolves it, once.** `SupabaseAuthMiddleware` now sets `request.auth_sub` (the
+  REAL JWT subject) and `request.user_id` (the profile that login acts as). One indexed
+  primary-key look-up per authenticated request, deliberately uncached — a stale cache would keep
+  a revoked alias alive. That is why every student endpoint follows without being edited one by
+  one, and why an endpoint written next year cannot forget. ⚠ Staff and sponsor identity resolve
+  on `auth_sub` (`get_admin`, `get_sponsor` and both account-creation sites), an alias may never
+  be created for such a subject, and the seam re-checks in case a staff row was created after the
+  alias — all three are tested.
+* **Everything is audited** in the new append-only `profile_claim_events`: `exists_shown`,
+  `code_sent`, `code_failed`, `claimed`, `refused_<reason>`, `alias_revoked`, each with the real
+  caller sub, the target profile id as a PLAIN value (so the line outlives the profile), the IC
+  and the bare channel. Even the plain look-up writes one, which is what makes *"has anybody been
+  probing IC numbers?"* answerable for the first time. ⚠ The IC lives in the TABLE and in no log —
+  a test drives the whole flow with a log handler attached and asserts that no IC, code, phone or
+  address reaches a record at INFO or above.
+* **Rate limits** on the claim surface, per caller AND per target IC, for look-ups, sends and
+  checks, on the same cache counter the phone-verify views already use. A generic 429 with the
+  stable code `rate_limited`.
+
+**THE CONSERVATIVE POLICY, AND THE ONE FUNCTION THAT WOULD WIDEN IT.** A claim may proceed only by
+proving control of a contact **already on the target profile and already verified**. An unverified
+contact is NOT accepted, because the owner has not ruled that it may be. Both of his open
+sub-decisions — *is an unverified contact good enough?* and *does the phone count when the email is
+what was lost?* — are a one-line edit inside **`apps/courses/profile_claim.claim_channels()`**,
+which is the only function that decides, and its docstring says exactly which line to change for
+which ruling. Measured 2026-09-18: of 674 profiles carrying an IC, 70 have a verified contact, so
+for roughly nine accounts in ten this returns `[]` and the product answers honestly — no
+self-service route, here is support. **That is a policy outcome, not a gap to patch.**
+
+**TO REVERSE A CLAIM:** `apps/courses/profile_claim.revoke_alias(alias_uid, by='<who>')`. It
+deletes the one row and writes the `alias_revoked` line; the login is back on its own profile from
+its next request. There is no UI for it, and none is needed until somebody asks for one.
+
+**NOT COVERED, stated plainly:** a student with no verified contact still has no self-service path
+(by policy); there is no admin-assisted transfer screen; and a claim cannot merge two real records
+— a caller who already holds a verified IC or an application is refused and routed to support.
+
+**What it was, kept as the record:**
 
 **Status:** Open (2026-09-18). **Owner ruling needed — this is a policy question before it is a code
 question.** Found while answering the owner's challenge to TD-253's sibling check ("how can another

@@ -38,6 +38,44 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Security: TD-254 and TD-259 closed - the IC claim is a LINK behind a second factor, and it never names the holder - 2026-09-19
+
+Ordered by the owner (*"Fix the two TDs first"*) under the freeze's security exception. Built by
+an Opus 5 agent, tests first and seen red; the lead investigated production, read the
+authentication change line by line, applied the migration, and closed.
+Retro: `docs/retrospective-2026-09-19-td254-profile-claim.md`.
+
+- **The endpoint never discloses the holder.** An IC that belongs to somebody else answers
+  `{"status":"exists","channels":[...]}` - two keys, bare channel types. Until today it returned
+  that person's NAME to anyone who typed their IC.
+- **A claim is a LINK, not a move.** One `ProfileLoginAlias` row says "this login acts as that
+  profile", resolved in `SupabaseAuthMiddleware`, the single place `request.user_id` is set - so
+  every student endpoint follows, including ones not yet written. Nothing is copied or re-keyed;
+  deleting the row is the undo. **The old raw-SQL primary-key move is deleted, and `confirm: true`
+  is refused.**
+- **Found by querying production first: the old transfer could never have succeeded for a target
+  with a scholarship application or a saved course** - the foreign keys are ON UPDATE NO ACTION, so
+  it raised. The 143 applicants were protected by an IntegrityError, not a rule. The name
+  disclosure was real for all 674 profiles; TD-254's entry overstated the takeover and says so now.
+- **A second factor the real owner holds:** a code to a contact already on the target profile AND
+  already verified - WhatsApp (Twilio Verify) or a hashed 6-digit email code, 10 minutes, five
+  attempts, through the metered email seam. The policy lives in ONE function,
+  `claim_channels(profile)`; the owner's two open rulings widen it there.
+- **Every touch is audited** in append-only `ProfileClaimEvent`, the plain look-up included.
+  Rate limits per caller and per target IC.
+- **Staff and sponsors fenced off in three layers.** They key on the same Supabase uid, so they
+  now resolve on `request.auth_sub`; the seam refuses to redirect such a subject; alias creation
+  refuses one. The agent found this hole in the lead's design before it shipped.
+- **TD-259:** all `authGate` copy written for the new flow, EN/MS/TA, no holder name; four other
+  raw keys fixed; `KNOWN_MISSING` is EMPTY. `tOr(t, key, fallback)` replaces `t(k) || '...'`
+  (a fallback that can never fire), with a hard-zero standard in the gate.
+- **Migration `courses/0075`, additive, applied MIGRATE-FIRST** with RLS and one `service_role`
+  policy per table; ledger 75 = 75; Security Advisor clean of errors.
+- **The honest cost - TD-260:** 604 of 674 IC-holding students have no verified contact, so no
+  self-service path, and support has no screen. The owner's rulings decide how much to buy back.
+- Six bite-checks, six red. Gates: 6,857 pytest, 2,565 jest, tsc 0, lint 0 errors, i18n parity
+  (5,378 keys), `next build` 0. One standards budget moved, and it TIGHTENED.
+
 ## Code health H6 - the cockpit gets a rendered test; the text guards retire; Phase 2 is complete - 2026-09-19
 
 Sprint H6 of the code-health roadmap, under the development freeze, on the owner's standing word.

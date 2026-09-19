@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 88c93f0 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 11 | 83 | 0 | 0 | ok | ok |
 | 2026-09-19 | 13274d7 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 10 | 84 | 0 | 0 | ok | ok |
 | 2026-09-19 | 5fbc6e1 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | - | - | ok |
 | 2026-09-19 | 1c24748 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | 0 | ok | ok |
@@ -22,7 +23,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 13274d7, window 2026-06-21 onward)
+## Latest run (2026-09-19, 88c93f0, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -39,7 +40,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 299 fix / 427 feat commits since 2026-06-21
+- 300 fix / 427 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8547  halatuju_api/apps/scholarship/views_admin.py`
@@ -49,18 +50,18 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `3590  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3187  halatuju_api/apps/scholarship/income_engine.py`
 - `2931  halatuju_api/apps/scholarship/services.py`
-- `2468  halatuju-web/src/lib/api.ts`
+- `2488  halatuju-web/src/lib/api.ts`
 - `2421  halatuju_api/apps/scholarship/views.py`
-- `2377  halatuju_api/apps/courses/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
+- `2309  halatuju_api/apps/courses/views.py`
 - `1942  halatuju-web/src/components/ScholarshipDocuments.tsx`
 - `1637  halatuju-web/src/lib/officerCockpit.ts`
+- `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
-- `1368  halatuju_api/apps/courses/models.py`
-- `1328  halatuju-web/src/lib/scholarship.ts`
+- `1332  halatuju-web/src/lib/scholarship.ts`
 - `1284  halatuju_api/apps/scholarship/verdict_engine.py`
-- `1244  halatuju_api/apps/courses/views_admin.py`
+- `1246  halatuju_api/apps/courses/views_admin.py`
 - `1214  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1195  halatuju_api/apps/scholarship/serializers.py`
 - `1155  halatuju_api/apps/scholarship/contracts.py`
@@ -79,7 +80,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `214  halatuju_api/apps/scholarship/verdict_engine.py:405 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services.py:1765 autofill_pathway_from_offer`
 - `189  halatuju_api/apps/scholarship/verdict_engine.py:621 _verdict_income_salary`
-- `183  halatuju_api/apps/courses/views_admin.py:641 post`
+- `183  halatuju_api/apps/courses/views_admin.py:643 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `155  halatuju_api/apps/courses/views.py:1000 get`
@@ -114,20 +115,20 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Source-text guard tests (web)
-- 14 of 137 web test files read source text
+- 15 of 140 web test files read source text
 
 ### Debt register
-- 151 entries have a defining line; 84 carry no resolution marker on it
+- 152 entries have a defining line; 83 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 366: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4224: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 378: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 4336: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 5fbc6e1
+- budgets no looser than at 13274d7
 
 ### tsc
 - 0 errors in 0 files
@@ -135,11 +136,22 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 5353
+- Total keys per locale: 5378
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (fourth reading) — TD-254 + TD-259 closed (security, on the owner's order)
+
+`--full`. No FAILs. Not a roadmap sprint; read because it touched the auth seam.
+- **td_open 84 → 83** — TD-254 and TD-259 closed; **TD-260** raised (604 of 674 IC-holding students
+  have no verified contact and support has no screen to help — two owner levers).
+- **guard% 10 → 11** — *accept.* One new source-reading test, and it is a drift test between the
+  api's refusal codes and the web's copy map — the kind the standards ask for.
+- **`std` ok** — one budget moved and it tightened (`courses/views.py` 2,377 → 2,309).
+- Flagged by the build, for the next sprint that touches it: `src/lib/api.ts` has **one line** of
+  its +20 allowance left. H13 (the barrel split) is the planned cure; anything sooner splits first.
 
 ### 2026-09-19 (third reading) — H6 closed: Phase 2 complete; `guard%` 18 → 10
 
