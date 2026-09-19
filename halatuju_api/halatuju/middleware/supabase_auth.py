@@ -29,6 +29,68 @@ def _get_jwks_client():
     return _jwks_client
 
 
+def auth_sub(request):
+    """The REAL JWT subject of this request — never an alias target.
+
+    ⚠ **STAFF AND SPONSOR IDENTITY MUST RESOLVE ON THIS, NEVER ON `request.user_id`.**
+    `PartnerAdmin` and `Sponsor` key on the same Supabase uid as a student profile, so reading
+    the aliased id would let a student's profile claim (TD-254) reach a console lookup. Falls
+    back to `user_id` so a hand-built test request that sets only that still behaves.
+    """
+    return getattr(request, 'auth_sub', None) or getattr(request, 'user_id', None)
+
+
+def is_staff_or_sponsor_sub(sub):
+    """True when `sub` belongs to a `PartnerAdmin` or a `Sponsor`.
+
+    ⚠ Such an identity may NEVER be redirected by a profile alias, and may never BE one
+    (TD-254). This lives in the middleware rather than in `apps/courses` because it is the one
+    place that legitimately has to see both apps — and because the app-boundary standard exists
+    precisely to stop `courses` growing more edges into `scholarship`.
+    """
+    if not sub:
+        return False
+    from apps.courses.models import PartnerAdmin
+    from apps.scholarship.models import Sponsor
+    return (PartnerAdmin.objects.filter(supabase_user_id=sub).exists()
+            or Sponsor.objects.filter(supabase_user_id=sub).exists())
+
+
+def resolve_login_alias(sub):
+    """The profile `sub` acts as: itself, unless a `ProfileLoginAlias` says otherwise (TD-254).
+
+    ⚠ **THIS IS WHY A CLAIM NEEDS NO ENDPOINT CHANGES.** One row here redirects every
+    authenticated student endpoint at once — including endpoints that do not exist yet, which
+    is the half a per-endpoint fix could never cover.
+
+    ⚠ **ONE INDEXED PRIMARY-KEY LOOK-UP PER AUTHENTICATED REQUEST, DELIBERATELY NOT CACHED.**
+    A cache whose staleness outlived a revoked alias would keep a withdrawn login working, and
+    revocation has to be instant — deleting the row IS the undo. (Query budgets arrive with
+    sprint H18; this is a knowing, recorded entry.)
+
+    Fails to the real sub on any error: the failure mode of this function must be "you are
+    yourself", never "you are somebody else".
+    """
+    if not sub:
+        return sub
+    from apps.courses.models import ProfileLoginAlias
+    try:
+        target = (ProfileLoginAlias.objects.filter(alias_uid=sub)
+                  .values_list('profile_id', flat=True).first())
+    except Exception:
+        logger.exception('Profile alias look-up failed; falling back to the real subject')
+        return sub
+    if not target or target == sub:
+        return sub
+    # A staff row can be created AFTER an alias (an admin is invited by email and backfilled on
+    # first login), so the creation-time refusal is not the whole guard — re-check here. Costs
+    # two queries only on the rare request that actually carries an alias.
+    if is_staff_or_sponsor_sub(sub):
+        logger.warning('Profile alias ignored: the subject is a staff or sponsor identity')
+        return sub
+    return target
+
+
 class SupabaseAuthMiddleware:
     """
     Middleware to verify Supabase JWT tokens.
@@ -46,6 +108,7 @@ class SupabaseAuthMiddleware:
     def __call__(self, request):
         # Initialize as anonymous
         request.user_id = None
+        request.auth_sub = None
         request.supabase_user = None
 
         # Extract token from Authorization header
@@ -88,7 +151,13 @@ class SupabaseAuthMiddleware:
                     # (TD audit 2026-06-14); Supabase carries it top-level or in user_metadata.
                     _um = payload.get('user_metadata') or {}
                     email_verified = bool(payload.get('email_verified', _um.get('email_verified', False)))
-                    request.user_id = payload.get('sub')
+                    # ⚠ TWO IDENTITIES FROM HERE ON, AND THEY ARE NOT THE SAME THING.
+                    # `auth_sub` is the REAL JWT subject — who is holding the token. `user_id`
+                    # is WHICH STUDENT PROFILE that login acts as, which a `ProfileLoginAlias`
+                    # may redirect (TD-254). Staff and sponsor identity resolve on `auth_sub`
+                    # (see `auth_sub()` below); student data resolves on `user_id`.
+                    request.auth_sub = payload.get('sub')
+                    request.user_id = resolve_login_alias(request.auth_sub)
                     request.supabase_user = {
                         'id': payload.get('sub'),
                         'email': payload.get('email'),
@@ -168,6 +237,10 @@ class SupabaseIsAuthenticated(BasePermission):
 NRIC_GATE_EXACT = [
     '/api/v1/profile/',           # GET to check NRIC status
     '/api/v1/profile/claim-nric/',# POST to claim NRIC
+    # TD-254: the two challenge doors. A student with no NRIC of their own is EXACTLY who needs
+    # them — gating these behind "you must already have an NRIC" would lock out the case.
+    '/api/v1/profile/claim-nric/send-code/',
+    '/api/v1/profile/claim-nric/confirm-code/',
     '/api/v1/sponsor-interest/',  # public sponsor-interest lead capture (no NRIC)
     '/api/v1/scholarship/intake/',# public "are applications open?" flag (no NRIC)
 ]

@@ -7,6 +7,7 @@
  */
 
 import type { ResolutionItem, ApplicantDocument } from '@/lib/api'
+import { tOr } from '@/lib/i18n'
 
 // ── Income cluster coach wiring (V6 / audit #15) ──────────────────────────────
 
@@ -355,7 +356,9 @@ export function localiseParams(
     } else if ((k === 'declared_pathway' || k === 'offer_pathway') && typeof v === 'string' && v) {
       // TD-161: render the pathway CODE (stpm/pismp/…) as its display label ("STPM"/"PISMP") so the
       // pathway_type_switch card reads naturally; fall back to the raw code for an unmapped value.
-      out[k] = t(`scholarship.actionCentre.pathwayName.${v}`) || String(v)
+      // ⚠ TD-259: this was `t(…) || String(v)`, which NEVER falls back — `t` returns the key
+      // itself when it cannot resolve one, and a key is a truthy string. `tOr` knows that.
+      out[k] = tOr(t, `scholarship.actionCentre.pathwayName.${v}`, String(v))
     } else if (k === 'programme' && typeof v === 'string' && params?.offer_pathway === 'pismp') {
       // PISMP: the generic "Program Ijazah…(PISMP)" isn't useful — the letter states the BIDANG. Show
       // the resolved course name (or the raw bidang) so the card names the actual specialisation.

@@ -260,7 +260,7 @@
       "apps/courses/models.py": 1368,
       "apps/courses/ranking_engine.py": 814,
       "apps/courses/stpm_quiz_data.py": 1371,
-      "apps/courses/views.py": 2377,
+      "apps/courses/views.py": 2309,
       "apps/courses/views_admin.py": 1244,
       "apps/scholarship/academic_engine.py": 882,
       "apps/scholarship/bursary.py": 890,

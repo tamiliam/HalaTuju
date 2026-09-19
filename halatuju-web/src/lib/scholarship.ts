@@ -1040,7 +1040,11 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
 // Maps a Story/Funding payload field key to the i18n key of the question label
 // the student sees, so a "too long" save error can name the exact answer to fix.
 export const STORY_FIELD_LABEL_KEYS: Record<string, string> = {
-  parents_occupation: 'scholarship.nextSteps.story.cardA.parentsOccupation',
+  // TD-259: this pointed at `…cardA.parentsOccupation`, a leaf the roster redesign removed, so
+  // a "that answer is too long" error named a raw dotted path instead of a question. The field
+  // is now DERIVED from the roster (`scholarship/family.parents_occupation_summary`), so the
+  // question to send the student back to is the parents/guardians block itself.
+  parents_occupation: 'scholarship.nextSteps.story.cardA.parentsHeading',
   family_context: 'scholarship.nextSteps.story.cardA.familyContext',
   aspirations: 'scholarship.nextSteps.story.cardB.aspirations',
   plans: 'scholarship.nextSteps.story.cardB.plans',

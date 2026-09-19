@@ -2,6 +2,7 @@
  * API client for HalaTuju Django backend.
  */
 import type { Locale } from './branding'
+import type { ClaimChannel } from './profileClaim'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -371,15 +372,34 @@ export async function updateSavedCourseStatus(
   })
 }
 
+// TD-254. ⚠ `exists` NO LONGER CARRIES A NAME — only the challenge CHANNELS; `confirm: true` is
+// gone (it moved the profile's primary key in raw SQL) and the server refuses it. A claim runs
+// through the two calls below; a refusal is a non-2xx whose `code` `apiRequest` puts on the Error.
 export async function claimNric(
   nric: string,
   confirm: boolean = false,
   options?: ApiOptions
-): Promise<{ status: 'created' | 'exists' | 'claimed' | 'linked'; name?: string }> {
+): Promise<{ status: 'created' | 'exists' | 'linked'; channels?: ClaimChannel[] }> {
   return apiRequest('/api/v1/profile/claim-nric/', {
     method: 'POST',
     body: JSON.stringify({ nric, confirm }),
     ...options,
+  })
+}
+
+export async function sendClaimCode(
+  nric: string, channel: ClaimChannel, lang: string, options?: ApiOptions
+): Promise<{ status: string; channel: ClaimChannel }> {
+  return apiRequest('/api/v1/profile/claim-nric/send-code/', {
+    method: 'POST', body: JSON.stringify({ nric, channel, lang }), ...options,
+  })
+}
+
+export async function confirmClaimCode(
+  nric: string, code: string, options?: ApiOptions
+): Promise<{ status: string }> {
+  return apiRequest('/api/v1/profile/claim-nric/confirm-code/', {
+    method: 'POST', body: JSON.stringify({ nric, code }), ...options,
   })
 }
 

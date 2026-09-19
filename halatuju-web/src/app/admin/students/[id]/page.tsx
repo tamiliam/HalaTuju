@@ -126,8 +126,12 @@ export default function AdminStudentDetail() {
             <span className="text-lg">&#128106;</span> {t('admin.familyBackground')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.householdIncome')}</dt><dd>{data.household_income != null ? `RM${data.household_income}` : '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.householdSize')}</dt><dd>{data.household_size ?? '\u2014'}</dd></div>
+            {/* TD-259: these two read `admin.householdIncome` / `admin.householdSize`, which
+                exist in no locale \u2014 both rows rendered their raw dotted key. `admin.familyIncome`
+                already existed and is what the first meant; `admin.familySize` was added beside
+                it for the second. */}
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.familyIncome')}</dt><dd>{data.household_income != null ? `RM${data.household_income}` : '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.familySize')}</dt><dd>{data.household_size ?? '\u2014'}</dd></div>
           </dl>
         </div>
 

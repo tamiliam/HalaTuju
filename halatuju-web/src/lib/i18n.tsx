@@ -86,3 +86,25 @@ export function useT() {
   if (!ctx) throw new Error('useT must be used within I18nProvider')
   return ctx
 }
+
+/**
+ * `t(key)`, or `fallback` when the key resolves to nothing.
+ *
+ * ⚠ **THE IDIOM THIS EXISTS TO KILL IS `t(key) || 'English fallback'`.** `t` returns THE KEY
+ * ITSELF when it cannot resolve one (see `getNestedValue`), and a key is a non-empty string, so
+ * `||` never fires and the student reads a raw dotted path. Four keys shipped exactly that way
+ * on the sign-in gate and nobody saw them for months (TD-259). The test that keeps the idiom out
+ * is `src/lib/__tests__/codeStandards.test.ts`, "no key-echo fallback".
+ *
+ * Use it only where a key may legitimately be absent — a value the SERVER chose, say. Where the
+ * key is known to exist, write a plain `t(key)`; the i18n ledger guards that.
+ */
+export function tOr(
+  t: (key: string, params?: Record<string, string>) => string,
+  key: string,
+  fallback: string,
+  params?: Record<string, string>,
+): string {
+  const value = t(key, params)
+  return value === key ? fallback : value
+}

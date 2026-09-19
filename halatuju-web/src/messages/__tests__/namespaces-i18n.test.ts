@@ -154,38 +154,28 @@ const isNamespaceProp = (key: string) => {
 }
 
 /**
- * ⚠ **THE MISSING-KEY LEDGER. IT MAY ONLY EVER SHRINK.**
+ * ⚠ **THE MISSING-KEY LEDGER. IT MAY ONLY EVER SHRINK — AND IT IS NOW EMPTY.**
  *
  * Extending this guard from eleven namespaces to all thirty-five found eight keys that production
- * source asks for and no locale has. They are NOT fixed here: adding a message changes what a
- * user reads, which is a content decision and its own change (code health H6 is test work under a
- * development freeze). Each is listed with what the reader sees today.
+ * source asked for and no locale had (TD-259). All eight are gone, on 2026-09-19:
+ *
+ *   * the five `authGate` keys were the IC step of the sign-in gate, which TD-254 rebuilt. Four
+ *     of them reached the screen as raw dotted paths, because they were written
+ *     `t(key) || 'English fallback'` and `t` returns THE KEY when it cannot resolve one — a
+ *     truthy string, so `||` never fires. The copy is written for the NEW flow, in three
+ *     languages, and deliberately without the holder's name that the old English fallback
+ *     interpolated. The idiom itself is now refused by `lib/__tests__/codeStandards.test.ts`;
+ *     `tOr` in `lib/i18n.tsx` is the replacement;
+ *   * `admin.householdIncome` / `admin.householdSize` now read `admin.familyIncome` (which
+ *     already existed) and `admin.familySize` (added in all three locales);
+ *   * the Story save-error map points at `…cardA.parentsHeading`, a leaf that exists, instead of
+ *     a leaf the roster redesign removed.
  *
  * Same manners as `NOT_YET_EXERCISED` in the api suite: a key listed here that STARTS resolving
- * fails with "remove me", so the ledger cannot quietly outlive the defect it records.
+ * fails with "remove me", so the ledger cannot quietly outlive the defect it records. Keep it
+ * empty. A new entry is a decision to ship a raw dotted path to a student.
  */
-const KNOWN_MISSING: Record<string, string> = {
-  // ── The NRIC step of the sign-in gate (src/components/AuthGateModal.tsx) ──
-  // ⚠ FOUR OF THESE FIVE REACH THE SCREEN. They are written `t(key) || 'English fallback'`, and
-  // `t` returns the KEY when it cannot resolve one — a non-empty string — so `||` never fires and
-  // the student reads the dotted path. Only `icError` is written `t(k) !== k ? t(k) : 'fallback'`,
-  // which is the form that actually works.
-  'authGate.claimError': 'the error under "This NRIC is already registered" reads the raw key',
-  'authGate.icExistsMessage': 'the whole "is this you?" question reads the raw key',
-  'authGate.icNotMe': 'the "No, not me" button is labelled with the raw key',
-  'authGate.icYesMe': 'the "Yes, that is me" button is labelled with the raw key',
-  'authGate.icError': 'falls back to English correctly — the key is still absent',
-  // ── The admin student-detail page (src/app/admin/students/[id]/page.tsx) ──
-  // The two <dt> labels of the "Family Background" card. `admin.familyIncome` exists and is
-  // almost certainly what was meant.
-  'admin.householdIncome': 'the household-income row label reads the raw key',
-  'admin.householdSize': 'the household-size row label reads the raw key',
-  // ── The Story save-error map (src/lib/scholarship.ts, STORY_FIELD_LABEL_KEYS) ──
-  // Names the question a "too long" answer belongs to. The roster redesign replaced this leaf;
-  // the map still points at the old one, so the error names a dotted path instead of a question.
-  'scholarship.nextSteps.story.cardA.parentsOccupation':
-    'a "that answer is too long" error names the raw key instead of the question',
-}
+const KNOWN_MISSING: Record<string, string> = {}
 
 // ── The namespace table ──────────────────────────────────────────────────────────────────────
 interface NamespaceSpec {
@@ -489,10 +479,15 @@ describe('admin.scholarship has no orphaned keys', () => {
 })
 
 describe('the missing-key ledger only shrinks', () => {
-  it.each(Object.keys(KNOWN_MISSING).sort())('%s is still missing, or REMOVE ME', (key) => {
+  // ⚠ Not `it.each`: jest refuses an empty table, and the ledger being EMPTY is the good state
+  // (TD-259 cleared it on 2026-09-19). One test over the whole ledger says the same thing and
+  // survives the day it holds nothing.
+  it('every listed key is still missing, or REMOVE ME', () => {
     // If this fails the key now resolves — delete its line from KNOWN_MISSING. A ledger that
     // outlives the defect it records is how an exemption becomes permanent.
-    expect(typeof resolve(en, key)).not.toBe('string')
+    const resolved = Object.keys(KNOWN_MISSING).sort()
+      .filter((key) => typeof resolve(en, key) === 'string')
+    expect(resolved).toEqual([])
   })
 
   it('every listed key is still referenced somewhere, or REMOVE ME', () => {
@@ -500,5 +495,12 @@ describe('the missing-key ledger only shrinks', () => {
     const referenced = new Set(REFERENCES.map((r) => r.key))
     const stale = Object.keys(KNOWN_MISSING).filter((k) => !referenced.has(k))
     expect(stale).toEqual([])
+  })
+
+  it('and today it is empty — every key production asks for now resolves', () => {
+    // The floor under the two rules above: they both pass trivially on an empty ledger, so the
+    // emptiness is asserted rather than assumed. If a future change has to add an entry, this
+    // line is the one that makes that a decision somebody took, not a drift.
+    expect(Object.keys(KNOWN_MISSING)).toEqual([])
   })
 })

@@ -1,18 +1,27 @@
+from django.core.cache import cache
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory
-from apps.courses.models import StudentProfile, SavedCourse, Course
+from apps.courses.models import ProfileLoginAlias, StudentProfile, SavedCourse, Course
 from apps.courses.views import NricClaimView
 
 
 class TestNricClaim(TestCase):
-    """NRIC claim/reclaim logic."""
+    """NRIC LOOK-UP logic.
+
+    ⚠ This file used to end with four tests of a TRANSFER — `confirm: true` moved the profile's
+    primary key in raw SQL. TD-254 removed that door (an account takeover with no challenge and
+    no record); those four are replaced below by the behaviour that took its place. The whole
+    new flow is tested in `test_profile_claim.py`.
+    """
 
     def setUp(self):
+        cache.clear()                    # the claim rate limits count in the cache
         self.factory = APIRequestFactory()
 
     def _post(self, user_id, data):
         request = self.factory.post('/api/v1/profile/claim-nric/', data, format='json')
         request.user_id = user_id
+        request.auth_sub = user_id
         request.supabase_user = {'id': user_id, 'email': f'{user_id}@test.com'}
         return NricClaimView.as_view()(request)
 
@@ -23,27 +32,31 @@ class TestNricClaim(TestCase):
         profile = StudentProfile.objects.get(nric='040815-01-2022')
         self.assertEqual(profile.supabase_user_id, 'user-a')
 
-    def test_claim_existing_nric_returns_exists(self):
+    def test_claim_existing_nric_returns_exists_and_names_nobody(self):
         StudentProfile.objects.create(
             supabase_user_id='user-a', nric='040815-01-2022', name='Student A'
         )
         resp = self._post('user-b', {'nric': '040815-01-2022'})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data['status'], 'exists')
-        self.assertEqual(resp.data['name'], 'STUDENT A')   # CAPS-normalised on save
-        # Profile NOT transferred yet
+        # ⚠ TD-254: the holder's NAME used to be returned right here. That is a disclosure to
+        # anyone who can type an IC, so the answer is now the challenge CHANNELS and nothing
+        # else — and this profile has no verified contact, so there are none.
+        self.assertEqual(sorted(resp.data.keys()), ['channels', 'status'])
+        self.assertEqual(resp.data['channels'], [])
         profile = StudentProfile.objects.get(nric='040815-01-2022')
         self.assertEqual(profile.supabase_user_id, 'user-a')
 
-    def test_confirm_claim_transfers_profile(self):
+    def test_confirm_transfers_nothing_any_more(self):
         StudentProfile.objects.create(
             supabase_user_id='user-a', nric='040815-01-2022', name='Student A'
         )
         resp = self._post('user-b', {'nric': '040815-01-2022', 'confirm': True})
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data['status'], 'claimed')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.data['code'], 'confirm_removed')
         profile = StudentProfile.objects.get(nric='040815-01-2022')
-        self.assertEqual(profile.supabase_user_id, 'user-b')
+        self.assertEqual(profile.supabase_user_id, 'user-a')
+        self.assertFalse(ProfileLoginAlias.objects.exists())
 
     def test_claim_own_nric_no_op(self):
         StudentProfile.objects.create(
@@ -53,14 +66,15 @@ class TestNricClaim(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data['status'], 'linked')
 
-    def test_claim_cleans_up_empty_profile(self):
+    def test_the_caller_own_empty_profile_is_never_deleted(self):
+        """⚠ The old confirm path DELETED it before moving the other record over. A claim now
+        deletes nothing at all, which is what makes revoking an alias a complete undo."""
         StudentProfile.objects.create(supabase_user_id='user-b', nric='')
         StudentProfile.objects.create(
             supabase_user_id='user-a', nric='040815-01-2022', name='Student A'
         )
-        resp = self._post('user-b', {'nric': '040815-01-2022', 'confirm': True})
-        self.assertEqual(resp.status_code, 200)
-        self.assertFalse(
+        self._post('user-b', {'nric': '040815-01-2022', 'confirm': True})
+        self.assertTrue(
             StudentProfile.objects.filter(supabase_user_id='user-b', nric='').exists()
         )
 
@@ -100,20 +114,19 @@ class TestNricClaim(TestCase):
         resp = self._post('user-a', {})
         self.assertEqual(resp.status_code, 400)
 
-    def test_claim_preserves_saved_courses(self):
-        """Saved courses must survive profile transfer (no CASCADE delete)."""
+    def test_a_refused_confirm_leaves_every_child_row_where_it_was(self):
+        """The old path re-parented saved courses, outcomes, reports and email verifications by
+        hand — and silently left the scholarship application behind, which is why it could not
+        have worked for a real applicant. Nothing is re-parented now."""
         profile = StudentProfile.objects.create(
             supabase_user_id='user-a', nric='040815-01-2022', name='Student A'
         )
         course = Course.objects.first()  # Use any existing course from fixtures
         if course:
-            SavedCourse.objects.create(student=profile, course=course)
-            resp = self._post('user-b', {'nric': '040815-01-2022', 'confirm': True})
-            self.assertEqual(resp.status_code, 200)
-            # Saved course still exists under the transferred profile
-            self.assertEqual(
-                SavedCourse.objects.filter(student__nric='040815-01-2022').count(), 1
-            )
+            saved = SavedCourse.objects.create(student=profile, course=course)
+            self._post('user-b', {'nric': '040815-01-2022', 'confirm': True})
+            saved.refresh_from_db()
+            self.assertEqual(saved.student_id, 'user-a')
 
     def test_new_nric_updates_existing_empty_profile(self):
         """If caller already has a profile with blank NRIC, update it."""

@@ -27,7 +27,7 @@ from django.db import connection
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
 from apps.scholarship.emails import send_partner_welcome_email
@@ -128,7 +128,9 @@ class PartnerAdminMixin:
     permission_classes = [SupabaseIsAuthenticated]
 
     def get_admin(self, request):
-        user_id = request.user_id
+        # ⚠ THE REAL JWT SUBJECT, NEVER `request.user_id` (TD-254). A student's profile alias
+        # redirects `user_id` at the auth seam; staff identity must not follow it.
+        user_id = auth_sub(request)
         if not user_id:
             return None
 

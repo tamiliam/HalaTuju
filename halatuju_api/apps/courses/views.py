@@ -67,7 +67,7 @@ from .stpm_quiz_engine import (
 )
 from .stpm_quiz_data import SUPPORTED_LANGUAGES as STPM_SUPPORTED_LANGUAGES
 from rest_framework.permissions import AllowAny
-from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 
 logger = logging.getLogger(__name__)
 
@@ -1037,10 +1037,10 @@ class ProfileView(APIView):
         # on the profile (the durable home), so it's read from the profile columns below.
         application_open = False
         try:
-            from apps.scholarship.models import ScholarshipApplication
+            # Read through the reverse relation rather than importing the model: one fewer
+            # `courses -> scholarship` edge for an identical queryset (app-boundary standard).
             from apps.scholarship.family import DECIDED_STATUSES
-            latest_app = (ScholarshipApplication.objects
-                          .filter(profile=profile).order_by('-id').first())
+            latest_app = profile.scholarship_applications.order_by('-id').first()
             if latest_app is not None:
                 application_open = latest_app.status not in DECIDED_STATUSES
         except Exception:
@@ -1199,9 +1199,9 @@ class ProfileView(APIView):
         family_changed = any(f in vd for f in PROFILE_FAMILY_FIELDS)
         pathway_changed = any(f in vd for f in PROFILE_PATHWAY_FIELDS)
         if family_changed or pathway_changed:
-            from apps.scholarship.models import ScholarshipApplication
-            open_app = (ScholarshipApplication.objects
-                        .filter(profile=profile)
+            # Reverse relation, not an import: one fewer `courses -> scholarship` edge for an
+            # identical queryset (app-boundary standard).
+            open_app = (profile.scholarship_applications
                         .exclude(status__in=DECIDED_STATUSES)
                         .order_by('-id').first())
             if open_app is not None:
@@ -1275,122 +1275,54 @@ class NricClaimView(APIView):
     """
     POST /api/v1/profile/claim-nric/
 
-    Claim or reclaim an NRIC. Outcomes:
-    - NRIC is new → create/update profile, status='created'
-    - NRIC owned by caller → status='linked' (no-op)
-    - NRIC owned by someone else → status='exists' (needs confirm=True)
-    - confirm=True → transfer profile, status='claimed'
+    Look an IC up. Outcomes:
+    - the IC is new              → it is written to the caller's profile, status='created'
+    - the IC is already theirs   → status='linked' (no-op)
+    - the IC belongs to somebody → status='exists' + the challenge CHANNELS, never a name
+
+    ⚠ `confirm: true` IS GONE (TD-254). It used to move the profile's primary key in raw SQL —
+    an account takeover with no challenge and no record. A client still posting it gets a
+    refusal; the claim now runs through the two challenge doors below. All of the logic lives
+    in `profile_claim.py`; this view only carries the request in and the answer out.
     """
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
-        import re
-        nric = request.data.get('nric', '').strip()
-        confirm = request.data.get('confirm', False)
+        # ⚠ `auth_sub`, never `request.user_id`: a caller who already holds an alias must act
+        # as THEMSELVES here, or a second claim would be filed under the profile they claimed.
+        from . import profile_claim
+        payload, code = profile_claim.handle_claim(auth_sub(request), request.user_id, request.data)
+        return Response(payload, status=code)
 
-        if not nric:
-            return Response({'error': 'NRIC is required'},
-                            status=status.HTTP_400_BAD_REQUEST)
 
-        if not re.match(r'^\d{6}-\d{2}-\d{4}$', nric):
-            return Response({'error': 'Invalid NRIC format'},
-                            status=status.HTTP_400_BAD_REQUEST)
+class NricClaimSendCodeView(APIView):
+    """
+    POST /api/v1/profile/claim-nric/send-code/  {nric, channel, lang}
 
-        # Validate date portion (YYMMDD)
-        yy, mm, dd = int(nric[:2]), int(nric[2:4]), int(nric[4:6])
-        if not (1 <= mm <= 12 and 1 <= dd <= 31):
-            return Response({'error': 'Invalid NRIC: date portion is not valid'},
-                            status=status.HTTP_400_BAD_REQUEST)
+    Send a one-time code to a contact that is ALREADY ON the target profile and ALREADY
+    VERIFIED — the second factor the real owner holds (owner ruling 2026-09-18).
+    """
+    permission_classes = [SupabaseIsAuthenticated]
 
-        # Age check: must be 15-23 (matches frontend ic-utils.ts)
-        from datetime import date
-        year = 2000 + yy if yy <= 11 else 1900 + yy
-        age = date.today().year - year
-        if not (15 <= age <= 23):
-            return Response({'error': 'IC number must belong to a student aged 15-23'},
-                            status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        from . import profile_claim
+        payload, code = profile_claim.send_code(auth_sub(request), request.user_id, request.data)
+        return Response(payload, status=code)
 
-        # State code check (digits 7-8)
-        state_code = nric[7:9]
-        valid_state_codes = {
-            '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
-            '11', '12', '13', '14', '15', '16',
-            '21', '22', '23', '24',
-            '71', '72',
-            '82',
-        }
-        if state_code not in valid_state_codes:
-            return Response({'error': 'Invalid state code in IC number'},
-                            status=status.HTTP_400_BAD_REQUEST)
 
-        # Soft-NRIC lock (Option A): once an admin has verified the caller's NRIC it
-        # locks — the student can no longer change it (only an admin can). Until then
-        # it stays editable. Re-submitting the same verified NRIC is harmless and falls
-        # through to the 'linked' no-op below.
-        caller = StudentProfile.objects.filter(supabase_user_id=request.user_id).first()
-        if caller and caller.nric and caller.nric_verified and caller.nric != nric:
-            return Response(
-                {'error': 'Your NRIC is verified and locked. Contact support to change it.',
-                 'code': 'nric_locked'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+class NricClaimConfirmCodeView(APIView):
+    """
+    POST /api/v1/profile/claim-nric/confirm-code/  {nric, code}
 
-        # `.get()` here caught DoesNotExist only — and the uniqueness index is PARTIAL
-        # (WHERE nric_verified AND nric <> ''), so two UNVERIFIED profiles may legally hold the
-        # same number and this raised MultipleObjectsReturned → 500. Nothing hit it while the
-        # only callers were registration and the apply form; opening the field to every student
-        # on /profile is exactly what makes it reachable. Prefer a VERIFIED holder when several
-        # exist, since that is the one whose claim actually stands.
-        existing = (StudentProfile.objects.filter(nric=nric)
-                    .order_by('-nric_verified', 'supabase_user_id').first())
+    Answer the challenge. On success ONE `ProfileLoginAlias` row is written — a link, not a
+    move: nothing is renumbered and nothing is deleted, and deleting that row reverses it.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
 
-        if existing is None:
-            # New NRIC — create or update caller's profile
-            profile, created = StudentProfile.objects.get_or_create(
-                supabase_user_id=request.user_id
-            )
-            profile.nric = nric
-            profile.save(update_fields=['nric'])
-            return Response({'status': 'created'})
-
-        if existing.supabase_user_id == request.user_id:
-            return Response({'status': 'linked'})
-
-        if not confirm:
-            return Response({
-                'status': 'exists',
-                'name': existing.name or None,
-            })
-
-        # Confirmed — delete caller's empty profile, transfer existing one
-        # Use raw SQL to update PK + all FK references in a transaction.
-        # Django ORM can't update PKs, and delete+re-insert would CASCADE
-        # delete saved courses, outcomes, and reports.
-        from django.db import connection, transaction
-        StudentProfile.objects.filter(
-            supabase_user_id=request.user_id, nric=''
-        ).delete()
-        old_pk = existing.supabase_user_id
-        with transaction.atomic():
-            with connection.cursor() as cursor:
-                # Update FK references first
-                for table, col in [
-                    ('saved_courses', 'student_id'),
-                    ('admission_outcomes', 'student_id'),
-                    ('generated_reports', 'student_id'),
-                    ('email_verifications', 'profile_id'),
-                ]:
-                    cursor.execute(
-                        f'UPDATE {table} SET {col} = %s WHERE {col} = %s',
-                        [request.user_id, old_pk],
-                    )
-                # Update the profile PK last
-                cursor.execute(
-                    'UPDATE api_student_profiles SET supabase_user_id = %s'
-                    ' WHERE supabase_user_id = %s',
-                    [request.user_id, old_pk],
-                )
-        return Response({'status': 'claimed'})
+    def post(self, request):
+        from . import profile_claim
+        payload, code = profile_claim.confirm_code(auth_sub(request), request.data)
+        return Response(payload, status=code)
 
 
 VERIFICATION_EMAIL_SUBJECTS = {

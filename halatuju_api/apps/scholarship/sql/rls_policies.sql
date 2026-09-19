@@ -23,6 +23,17 @@ ALTER TABLE sponsor_donations ENABLE ROW LEVEL SECURITY; -- Phase E3 (migration 
 ALTER TABLE sponsorships ENABLE ROW LEVEL SECURITY;      -- Phase E3 (migration 0034)
 ALTER TABLE resolution_items ENABLE ROW LEVEL SECURITY;  -- Verification-verdict S3 (migration 0036)
 
+-- TD-254 (courses/0075): the profile-claim identity tables. Platform identity, not programme
+-- data, but the posture is the same — deny-by-default plus the one service_role policy this
+-- project requires of every new table (the `rls_auto_enable` event trigger switches RLS on and
+-- adds no policy, so the policy is still written by hand).
+ALTER TABLE profile_claim_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_login_aliases ENABLE ROW LEVEL SECURITY;
+CREATE POLICY service_role_all ON profile_claim_events
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY service_role_all ON profile_login_aliases
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
+
 -- No GRANTs / policies for anon or authenticated roles: direct PostgREST access
 -- is intentionally denied. If a future sprint needs direct client reads (e.g. a
 -- public, non-sensitive cohort listing), add a narrowly-scoped SELECT policy

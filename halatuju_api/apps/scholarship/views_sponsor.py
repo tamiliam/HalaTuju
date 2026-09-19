@@ -18,7 +18,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.throttling import PublicCountRateThrottle
 
 from . import pool
@@ -117,7 +117,9 @@ class SponsorMixin:
     permission_classes = [SupabaseIsAuthenticated]
 
     def get_sponsor(self, request):
-        user_id = getattr(request, 'user_id', None)
+        # ⚠ THE REAL JWT SUBJECT, NEVER `request.user_id` (TD-254). A student's profile alias
+        # redirects `user_id` at the auth seam; sponsor identity must not follow it.
+        user_id = auth_sub(request)
         if not user_id:
             return None
         return Sponsor.objects.filter(supabase_user_id=user_id).first()
@@ -139,7 +141,9 @@ class SponsorRegisterView(SponsorMixin, APIView):
     sponsor. An already-complete sponsor is an idempotent no-op (returns unchanged)."""
     def post(self, request):
         supa = getattr(request, 'supabase_user', None) or {}
-        user_id = getattr(request, 'user_id', None)
+        # ⚠ The REAL JWT subject (TD-254): a new Sponsor row must be keyed on the login that is
+        # actually registering, never on a profile a student alias redirects to.
+        user_id = auth_sub(request)
         # A sponsor must be a real signed-in account — reject anonymous guests.
         if not user_id or supa.get('is_anonymous', False):
             return Response({'error': 'not_signed_in'}, status=status.HTTP_400_BAD_REQUEST)

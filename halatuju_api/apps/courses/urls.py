@@ -59,6 +59,11 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('profile/sync/', views.ProfileSyncView.as_view(), name='profile-sync'),
     path('profile/claim-nric/', views.NricClaimView.as_view(), name='profile-claim-nric'),
+    # TD-254 — the two challenge doors that replaced `confirm: true`.
+    path('profile/claim-nric/send-code/', views.NricClaimSendCodeView.as_view(),
+         name='profile-claim-send-code'),
+    path('profile/claim-nric/confirm-code/', views.NricClaimConfirmCodeView.as_view(),
+         name='profile-claim-confirm-code'),
     path('profile/verify-email/send/', views.SendVerificationView.as_view(), name='verify-email-send'),
     path('profile/verify-email/<uuid:token>/', views.VerifyEmailView.as_view(), name='verify-email'),
     path('profile/verify-phone/send/', views.PhoneVerifyStartView.as_view(), name='verify-phone-send'),

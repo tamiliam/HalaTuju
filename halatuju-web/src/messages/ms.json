@@ -2739,7 +2739,35 @@
     "icSubtitle": "Kami memerlukan nombor IC anda untuk menyesuaikan pengalaman anda. Data anda dirahsiakan.",
     "icLabel": "Nombor IC (MyKad)",
     "icContinue": "Teruskan",
-    "icPrivacy": "IC anda dienkripsi dan tidak dikongsi dengan pihak ketiga."
+    "icPrivacy": "IC anda dienkripsi dan tidak dikongsi dengan pihak ketiga.",
+    "icError": "Kami tidak dapat menyemak nombor KP itu. Sila cuba lagi.",
+    "claimError": "Ada sesuatu yang tidak kena. Sila cuba lagi, atau e-mel kami di {supportEmail}.",
+    "icExistsMessage": "Nombor KP ini sudah didaftarkan pada satu akaun.",
+    "icYesMe": "Ya, ini akaun saya",
+    "icNotMe": "Ini bukan saya",
+    "claim": {
+      "helpBoth": "Jika akaun itu milik anda, kami boleh menghantar kod kepada anda — melalui WhatsApp ke nombor telefon yang sedia ada padanya, atau melalui e-mel ke alamat yang sedia ada padanya.",
+      "helpPhone": "Jika akaun itu milik anda, kami boleh menghantar kod melalui WhatsApp, ke nombor telefon yang sedia ada padanya.",
+      "helpEmail": "Jika akaun itu milik anda, kami boleh menghantar kod melalui e-mel, ke alamat yang sedia ada padanya.",
+      "channelPhone": "Hantar kod melalui WhatsApp",
+      "channelEmail": "Hantar kod melalui e-mel",
+      "sending": "Menghantar...",
+      "codeLabel": "Masukkan kod",
+      "codeHelpPhone": "Kami telah menghantar kod melalui WhatsApp ke nombor telefon pada akaun itu. Ia tamat tempoh tidak lama lagi, jadi gunakannya segera.",
+      "codeHelpEmail": "Kami telah menghantar kod ke alamat e-mel pada akaun itu. Ia tamat tempoh tidak lama lagi, jadi gunakannya segera.",
+      "confirm": "Sahkan",
+      "confirming": "Menyemak...",
+      "refusal": {
+        "noContact": "Akaun itu tiada nombor telefon atau alamat e-mel yang disahkan, jadi kami tidak dapat menghantar kod kepadanya. Sila e-mel kami di {supportEmail} dan kami akan bantu anda masuk semula.",
+        "cannotMerge": "Log masuk ini tidak boleh digabungkan dengan akaun itu. Sila e-mel kami di {supportEmail} dan kami akan bantu.",
+        "unavailable": "Kami tidak dapat meneruskan dengan cara itu. Sila kembali dan cuba lagi, atau e-mel kami di {supportEmail}.",
+        "tooMany": "Terlalu banyak percubaan dalam masa yang singkat. Sila tunggu sebentar dan cuba lagi.",
+        "sendFailed": "Kami tidak dapat menghantar kod buat masa ini. Sila cuba pilihan yang satu lagi jika ada, atau e-mel kami di {supportEmail}.",
+        "codeIncorrect": "Kod itu tidak betul. Sila semak dan cuba lagi.",
+        "codeExpired": "Kod itu telah tamat tempoh. Sila minta kod baharu.",
+        "tooManyAttempts": "Terlalu banyak kod yang salah. Sila mula semula dan minta kod baharu."
+      }
+    }
   },
   "profile": {
     "title": "Profil Saya",
@@ -4873,6 +4901,7 @@
     "school": "Sekolah",
     "familyBackground": "Latar Belakang Keluarga",
     "familyIncome": "Pendapatan Keluarga",
+    "familySize": "Saiz Keluarga",
     "siblings": "Bilangan Adik-Beradik",
     "healthEligibility": "Kesihatan & Kelayakan",
     "colorblind": "Buta Warna",

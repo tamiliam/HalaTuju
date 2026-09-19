@@ -2739,7 +2739,35 @@
     "icSubtitle": "We need your IC number to personalise your experience. Your data is kept private.",
     "icLabel": "IC Number (MyKad)",
     "icContinue": "Continue",
-    "icPrivacy": "Your IC is encrypted and never shared with third parties."
+    "icPrivacy": "Your IC is encrypted and never shared with third parties.",
+    "icError": "We couldn't check that IC number. Please try again.",
+    "claimError": "Something went wrong. Please try again, or write to us at {supportEmail}.",
+    "icExistsMessage": "This IC number is already registered to an account.",
+    "icYesMe": "Yes, this is my account",
+    "icNotMe": "This is not me",
+    "claim": {
+      "helpBoth": "If the account is yours, we can send you a code — by WhatsApp to the phone number already on it, or by email to the address already on it.",
+      "helpPhone": "If the account is yours, we can send you a code by WhatsApp, to the phone number already on it.",
+      "helpEmail": "If the account is yours, we can send you a code by email, to the address already on it.",
+      "channelPhone": "Send the code by WhatsApp",
+      "channelEmail": "Send the code by email",
+      "sending": "Sending...",
+      "codeLabel": "Enter the code",
+      "codeHelpPhone": "We've sent a code by WhatsApp to the phone number on that account. It expires shortly, so use it soon.",
+      "codeHelpEmail": "We've sent a code to the email address on that account. It expires shortly, so use it soon.",
+      "confirm": "Confirm",
+      "confirming": "Checking...",
+      "refusal": {
+        "noContact": "That account has no verified phone number or email address, so we cannot send a code to it. Please write to us at {supportEmail} and we will help you get back in.",
+        "cannotMerge": "This login cannot be joined to that account. Please write to us at {supportEmail} and we will help.",
+        "unavailable": "We cannot continue that way. Please go back and try again, or write to us at {supportEmail}.",
+        "tooMany": "That is a lot of tries in a short time. Please wait a while and try again.",
+        "sendFailed": "We could not send the code just now. Please try the other option if there is one, or write to us at {supportEmail}.",
+        "codeIncorrect": "That code is not right. Please check it and try again.",
+        "codeExpired": "That code has expired. Please ask for a new one.",
+        "tooManyAttempts": "Too many wrong codes. Please start again and ask for a new one."
+      }
+    }
   },
   "profile": {
     "title": "My Profile",
@@ -4873,6 +4901,7 @@
     "school": "School",
     "familyBackground": "Family Background",
     "familyIncome": "Family Income",
+    "familySize": "Family Size",
     "siblings": "Number of Siblings",
     "healthEligibility": "Health & Eligibility",
     "colorblind": "Colour Blindness",

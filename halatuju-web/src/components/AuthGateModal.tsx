@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import IcInput from './IcInput'
+import IcClaimPanel from './IcClaimPanel'
+import type { ClaimChannel } from '@/lib/profileClaim'
 import { validateIc, formatIc } from '@/lib/ic-utils'
 import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
 
@@ -16,7 +18,7 @@ type ModalStep = 'login' | 'otp' | 'ic'
 export default function AuthGateModal() {
   const router = useRouter()
   const pathname = usePathname()
-  const { t } = useT()
+  const { t, locale } = useT()
   const {
     authGateReason,
     authGateCourseId,
@@ -39,8 +41,10 @@ export default function AuthGateModal() {
   const [loading, setLoading] = useState(false)
   const [pendingProfileRedirect, setPendingProfileRedirect] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [existingName, setExistingName] = useState<string | null>(null)
+  // TD-254: the IC belongs to an existing account, and these are the challenge channels the
+  // SERVER says exist on it. ⚠ There is deliberately no holder name here any more — returning
+  // one was a disclosure to anybody who could type an IC.
+  const [claimChannels, setClaimChannels] = useState<ClaimChannel[] | null>(null)
 
   // Reset when modal opens; if already authenticated (has NRIC), sync and resume
   useEffect(() => {
@@ -52,8 +56,7 @@ export default function AuthGateModal() {
       setIcValid(false)
       setError(null)
       setLoading(false)
-      setShowConfirm(false)
-      setExistingName(null)
+      setClaimChannels(null)
 
       if (isAuthenticated) {
         // Already has identity — sync localStorage to backend and resume action
@@ -262,29 +265,24 @@ export default function AuthGateModal() {
         await refreshProfile()
         finishAndClose()
       } else if (result.status === 'exists') {
-        setExistingName(result.name || null)
-        setShowConfirm(true)
+        // ⚠ Whatever else the response carries (an older API still sends `name`), only the
+        // channels are read. There is nowhere in the new step to put a person's name.
+        setClaimChannels(result.channels ?? [])
         setLoading(false)
       }
     } catch {
-      setError(t('authGate.icError') !== 'authGate.icError' ? t('authGate.icError') : 'Failed to verify NRIC')
+      setError(t('authGate.icError'))
       setLoading(false)
     }
   }
 
-  const handleConfirmClaim = async () => {
+  /** The claim finished: resume EXACTLY as a plain `created` / `linked` sign-in does, so
+   *  nothing downstream has to know a claim happened. */
+  const handleClaimed = async () => {
     if (!token) return
-    setLoading(true)
-    setError(null)
-    try {
-      await claimNric(formatIc(ic), true, { token })
-      await syncLocalStorageToBackend(token)
-      await refreshProfile()
-      finishAndClose()
-    } catch {
-      setError(t('authGate.claimError') || 'Failed to claim NRIC')
-      setLoading(false)
-    }
+    await syncLocalStorageToBackend(token)
+    await refreshProfile()
+    finishAndClose()
   }
 
   const handleDismiss = () => {
@@ -425,27 +423,15 @@ export default function AuthGateModal() {
           {/* IC Step */}
           {step === 'ic' && (
             <>
-              {showConfirm ? (
-                <div className="space-y-4">
-                  <p className="text-ground-600 text-center">
-                    {t('authGate.icExistsMessage') || `This NRIC is already registered${existingName ? ` to ${existingName}` : ''}. Is this you?`}
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => { setShowConfirm(false); setIc(''); setError(null) }}
-                      className="flex-1 px-4 py-2 border border-ground-300 rounded-lg text-ground-700 hover:bg-ground-50"
-                    >
-                      {t('authGate.icNotMe') || 'No, not me'}
-                    </button>
-                    <button
-                      onClick={handleConfirmClaim}
-                      disabled={loading}
-                      className="flex-1 btn-primary disabled:opacity-50"
-                    >
-                      {loading ? '...' : (t('authGate.icYesMe') || "Yes, that's me")}
-                    </button>
-                  </div>
-                </div>
+              {claimChannels ? (
+                <IcClaimPanel
+                  ic={formatIc(ic)}
+                  token={token || ''}
+                  lang={locale}
+                  channels={claimChannels}
+                  onClaimed={handleClaimed}
+                  onNotMe={() => { setClaimChannels(null); setIc(''); setError(null) }}
+                />
               ) : (
                 <form onSubmit={handleIcSubmit} className="space-y-4">
                   <p className="text-ground-600 text-center mb-2">

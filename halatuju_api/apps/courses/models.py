@@ -1366,3 +1366,10 @@ class CourseDataStatus(models.Model):
 
     def __str__(self):
         return f"{self.key} @ {self.last_run_at:%Y-%m-%d %H:%M}"
+
+
+# TD-254 — the profile-claim identity tables (`ProfileClaimEvent`, `ProfileLoginAlias`).
+# They live in their own module because THIS file is a ledgered oversize file (see
+# `halatuju_api/CLAUDE.md`, `## Code standards`); the import is what makes Django's app
+# registry discover them, so it is a USE, not a leftover.
+from .models_claim import ProfileClaimEvent, ProfileLoginAlias

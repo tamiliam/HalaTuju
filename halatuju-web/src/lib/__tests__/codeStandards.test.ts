@@ -239,6 +239,27 @@ function stripMarkers(line: string): string {
  */
 const MIN_REASON_WORDS = 3
 
+/**
+ * ⚠ **THE KEY-ECHO FALLBACK: `t('some.key') || 'English fallback'`.**
+ *
+ * `t` returns THE KEY ITSELF when it cannot resolve one (`getNestedValue` in `lib/i18n.tsx`),
+ * and a dotted key is a non-empty string — so `||` never fires and the student reads
+ * `authGate.icNotMe` where a button label should be. Four keys shipped exactly that way on the
+ * sign-in gate and rendered as raw dotted paths for months; nothing was red, because every
+ * other use of the idiom happened to have a key that existed (TD-259). The fallback was not
+ * broken in one place, it was never a fallback anywhere.
+ *
+ * `tOr(t, key, fallback)` in `lib/i18n.tsx` is the replacement, and it knows about the echo.
+ *
+ * ⚠ **THIS MUST NOT CRY WOLF ON `a || b`.** It matches only a call to a bare `t(` — not
+ * `count(x) || 0`, not `searchParams.get('q') || ''`, not `tOr(…)` — immediately followed by
+ * `||`. `(?:[^()]|\([^()]*\))*` allows ONE level of nesting inside the argument, which is what
+ * a template literal like `t(\`a.${b}\`)` needs. Known limit, stated: a `t(` whose `||` is on
+ * the NEXT line is not seen (the scan is line by line), and neither is `obj.t(k) || x` — both
+ * are shapes nothing in `src` uses. `the idiom rule, proven both ways` pins both directions.
+ */
+const KEY_ECHO_FALLBACK = /(^|[^\w.$])t\((?:[^()]|\([^()]*\))*\)\s*\|\|/
+
 function hasReason(lines: string[], mask: boolean[], index: number, after: string): boolean {
   if (after.includes('--')) return true
   const above: string[] = []
@@ -370,6 +391,7 @@ export interface WebScan {
   unusedDependencies: string[]
   skipSites: string[]
   brokenDriftTestMarkers: string[]
+  keyEchoFallbacks: string[]
   counts: Record<string, number>
 }
 
@@ -412,6 +434,7 @@ export function scanWeb(): WebScan {
   const eslintDisables: Disable[] = []
   const mirrors: MirrorClaim[] = []
   const brokenDriftTestMarkers: string[] = []
+  const keyEchoFallbacks: string[] = []
   let tsIgnore = 0
   let tsExpectError = 0
   let anyUses = 0
@@ -425,6 +448,14 @@ export function scanWeb(): WebScan {
     tsExpectError += countOf(text, TS_EXPECT_ERROR)
     anyUses += countOf(text, ANY_ANNOTATION) + countOf(text, ANY_CAST)
     eslintDisables.push(...disablesIn(relpath, text))
+    const mask = commentMask(text.split('\n'))
+    text.split('\n').forEach((line, i) => {
+      // A comment explaining the idiom is prose, not a use of it — the same rule the i18n
+      // guard applies, and the reason this file can document what it refuses.
+      if (!mask[i] && KEY_ECHO_FALLBACK.test(line)) {
+        keyEchoFallbacks.push(`${relpath}:${i + 1}  ${line.trim().slice(0, 110)}`)
+      }
+    })
     if (relpath.startsWith('src/lib/')) {
       for (const claim of mirrorsIn(relpath, text)) {
         mirrors.push(claim)
@@ -461,6 +492,7 @@ export function scanWeb(): WebScan {
     unusedDependencies,
     skipSites,
     brokenDriftTestMarkers,
+    keyEchoFallbacks,
     counts: {
       ts_ignore: tsIgnore,
       ts_expect_error: tsExpectError,
@@ -716,6 +748,21 @@ describe('no dead weight', () => {
   })
 })
 
+// ── STANDARD: no key-echo fallback ───────────────────────────────────────────────────────────
+describe('no key-echo fallback', () => {
+  test('the `t(…) || \'fallback\'` idiom appears in no non-test source file', () => {
+    // ⚠ HARD ZERO, with no budget line: there is no number of these that is acceptable, because
+    // every one of them is a fallback that cannot fire. Four shipped to students (TD-259).
+    expect(say(SCAN.keyEchoFallbacks.length > 0, [
+      '`t(key) || \'fallback\'` found. `t` returns THE KEY when it cannot resolve one, and a key',
+      'is a truthy string — so the `||` never fires and the student reads a raw dotted path.',
+      'Use `tOr(t, key, fallback)` from `@/lib/i18n` where the key may legitimately be absent,',
+      'or a plain `t(key)` where it exists (the i18n ledger guards that it does).',
+      `\n${SCAN.keyEchoFallbacks.join('\n')}`,
+    ])).toBe('')
+  })
+})
+
 // ── STANDARD: tests can fail ─────────────────────────────────────────────────────────────────
 describe('tests can fail', () => {
   test('no test is skipped, todo, xit or xdescribe', () => {
@@ -795,6 +842,42 @@ describe('the ratchet itself', () => {
 //
 // The standards above can only exercise the scanners against the REAL tree, where everything
 // happens to pass. These prove the rules themselves fire, without anyone having to break the repo.
+describe('the key-echo rule, proven both ways', () => {
+  // ⚠ A guard that only ever says "clean" is indistinguishable from a guard that matches
+  // nothing. These are the exact shapes `src` contained before TD-259, and the exact shapes it
+  // contains now and must never be accused of.
+  const FIRES = [
+    "      setError(t('authGate.claimError') || 'Failed to claim NRIC')",
+    "                      {t('authGate.icNotMe') || 'No, not me'}",
+    '                      {loading ? \'...\' : (t(\'authGate.icYesMe\') || "Yes, that\'s me")}',
+    '      out[k] = t(`scholarship.actionCentre.pathwayName.${v}`) || String(v)',
+    "  const label = t('a.b') ||",
+    "  {t('authGate.icExistsMessage') || `This NRIC is already registered. Is this you?`}",
+  ]
+  const QUIET = [
+    "  const [query, setQuery] = useState(searchParams.get('q') || '')",
+    '  out[k] = tOr(t, `scholarship.actionCentre.pathwayName.${v}`, String(v))',
+    "  <p>{t('authGate.icExistsMessage')}</p>",
+    '  const n = count(rows) || 0',
+    '  return a || b',
+    "  const x = format(t('a.b')) // no fallback at all",
+    "  title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}",
+    "  const name = first || last || 'anonymous'",
+  ]
+
+  test.each(FIRES)('fires on %s', (line) => {
+    expect(KEY_ECHO_FALLBACK.test(line)).toBe(true)
+  })
+
+  test.each(QUIET)('stays quiet on %s', (line) => {
+    expect(KEY_ECHO_FALLBACK.test(line)).toBe(false)
+  })
+
+  test('and the live scan agrees the codebase is clean', () => {
+    expect(SCAN.keyEchoFallbacks).toEqual([])
+  })
+})
+
 describe('the reason rule, proven both ways', () => {
   const at = (src: string) => disablesIn('x.ts', src)
 
