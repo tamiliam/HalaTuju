@@ -4651,6 +4651,15 @@
           "superseded": "LAMA / DIGANTI"
         },
         "notUploaded": "belum dimuat naik",
+        "notUsable": {
+          "label": "Tidak boleh digunakan sebagai bukti pendapatan",
+          "reason": {
+            "not_salary": "ini bukan slip gaji",
+            "no_value": "tiada angka caruman yang dapat dibaca",
+            "letter_unread": "surat itu tidak dapat dibaca",
+            "no_declared_amount": "tiada jumlah diisytiharkan untuk disokong"
+          }
+        },
         "view": "Lihat",
         "rerun": "Jalankan semula",
         "examYear": "SPM {year}",

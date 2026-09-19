@@ -37,6 +37,7 @@ import {
 import { groupDocumentsByFact, incomeSubSections } from '@/lib/officerCockpit'
 import { incomeRequirements, salaryMemberBlocks, workingMembers } from '@/lib/incomeWizard'
 import type { AdminApplicantDocument } from '@/lib/admin-api'
+import type { IncomeShownAnswer, IncomeShownMap } from '@/lib/incomeShown'
 
 const WEB_ROOT = join(__dirname, '..', '..', '..')
 
@@ -67,7 +68,23 @@ function doc(over: Partial<AdminApplicantDocument> = {}): AdminApplicantDocument
 const salaryRows = (app: Parameters<typeof incomeSubSections>[0], docs: AdminApplicantDocument[]) =>
   incomeSubSections(app, docs).salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])
 
+/** The served reason codes, keyed by the document they were served against. */
+const salaryUnusable = (app: Parameters<typeof incomeSubSections>[0], docs: AdminApplicantDocument[]) =>
+  Object.fromEntries(incomeSubSections(app, docs).salary
+    .filter((s) => s.doc && s.unusable)
+    .map((s) => [s.doc!.id, s.unusable]))
+
 const SALARY_FATHER = { income_route: 'salary', income_earner: '', income_working_members: ['father'] }
+
+/** `SALARY_FATHER` plus the api's served per-earner answer for the father (TD-262 chunks 2+3).
+ *  Its shape is pinned against the real api by
+ *  `test_income_evidence_homes.TestServedPerEarnerAnswer`. */
+const served = (answer: Partial<IncomeShownAnswer>) => ({
+  ...SALARY_FATHER,
+  income_shown: {
+    father: { shown: false, way: null, documents: [], unusable: [], ...answer },
+  } as IncomeShownMap,
+})
 
 // ════════════════════════════════════════════════════════════════════════════════════════════
 // W-A — the requirement engine, and where the "pure mirror" is not one
@@ -157,37 +174,78 @@ describe('W-B incomeSubSections — what the officer chases', () => {
     expect(rows[0]).toEqual(['salary_slip', 'father', 7])
   })
 
-  it('H8-FINDING (W2): a not_salary photo fills the officer slot that the gate refuses', () => {
+  it('W2 FIXED: a not_salary photo is LISTED, marked not usable, and the Missing row stands', () => {
     // api twin: TestNearMisses.test_not_salary_photo_in_the_payslip_slot_is_not_evidence —
     // `usable_salary_slip` refuses it (the #47 fix) and the gate emits
-    // `income_evidence_missing:father`. The cockpit asks only `find('salary_slip', m)`, which is
-    // PRESENCE. So the officer's panel shows the father's income evidence as satisfied, with no
-    // Missing row, about a household the submission gate is holding shut.
+    // `income_evidence_missing:father`. This panel used to ask only `find('salary_slip', m)`,
+    // which is PRESENCE, so it showed the father's income evidence as satisfied with no Missing
+    // row about a household the submission gate was holding shut.
     // Real student: application 73 — a MyKad photographed into the payslip slot.
-    const rows = salaryRows(SALARY_FATHER, [
-      doc({ id: 7, doc_type: 'salary_slip', household_member: 'father',
-            authenticity: { status: 'not_salary', reason: 'reads as a MyKad' } })])
-    expect(rows[0]).toEqual(['salary_slip', 'father', 7])      // ← no Missing row
+    const docs = [doc({ id: 7, doc_type: 'salary_slip', household_member: 'father',
+                        authenticity: { status: 'not_salary', reason: 'reads as a MyKad' } })]
+    const app = served({ unusable: [{ doc_id: 7, doc_type: 'salary_slip', reason: 'not_salary' }] })
+    // The document STILL SHOWS — the officer must see what the family sent — and the red
+    // Missing row appears beside it.
+    expect(salaryRows(app, docs).slice(0, 2)).toEqual([
+      ['salary_slip', 'father', 7],
+      ['income_evidence', 'father', null],
+    ])
+    expect(salaryUnusable(app, docs)).toEqual({ 7: 'not_salary' })
   })
 
-  it('H8-FINDING (W3): an EPF that reads nothing fills the officer slot that the gate refuses', () => {
+  it('W3 FIXED: an EPF that reads nothing is LISTED as not usable, with the Missing row', () => {
     // api twin: TestNearMisses.test_unreadable_epf_is_not_evidence — `_member_has_epf_value`
     // requires a derivable monthly figure (owner 2026-07-25: "a readable EPF"), so the gate
-    // blocks. The cockpit asks only `find('epf', m)`.
-    const rows = salaryRows(SALARY_FATHER, [
-      doc({ id: 8, doc_type: 'epf', household_member: 'father' })])
-    expect(rows[0]).toEqual(['epf', 'father', 8])
+    // blocks. This panel used to ask only `find('epf', m)`.
+    const docs = [doc({ id: 8, doc_type: 'epf', household_member: 'father' })]
+    const app = served({ unusable: [{ doc_id: 8, doc_type: 'epf', reason: 'no_value' }] })
+    expect(salaryRows(app, docs).slice(0, 2)).toEqual([
+      ['epf', 'father', 8],
+      ['income_evidence', 'father', null],
+    ])
+    expect(salaryUnusable(app, docs)).toEqual({ 8: 'no_value' })
   })
 
-  it('H8-FINDING (W4): a support letter fills the slot with NO declared amount and NO read', () => {
+  it('W4 FIXED: a support letter with NO declared amount and NO read is not usable', () => {
     // api twin: TestNearMisses.test_letter_without_a_declared_amount_is_not_evidence (served
     // False) and `has_income_support_doc`, which additionally requires the letter to have READ
     // (`student_verdict == 'ok'` — the V1 finding #2 fix, so a blank image cannot "prove" a wage).
-    // The cockpit requires neither. A student who uploads a blank letter and declares nothing
-    // therefore sees her submission blocked while the officer's panel shows her income evidenced.
-    const rows = salaryRows(SALARY_FATHER, [
-      doc({ id: 9, doc_type: 'income_support_doc', household_member: 'father' })])
-    expect(rows[0]).toEqual(['income_support_doc', 'father', 9])
+    // This panel required neither, so a student who uploaded a blank letter and declared nothing
+    // saw her submission blocked while the officer's panel showed her income evidenced.
+    const docs = [doc({ id: 9, doc_type: 'income_support_doc', household_member: 'father' })]
+    const app = served({
+      unusable: [{ doc_id: 9, doc_type: 'income_support_doc', reason: 'letter_unread' }] })
+    expect(salaryRows(app, docs).slice(0, 2)).toEqual([
+      ['income_support_doc', 'father', 9],
+      ['income_evidence', 'father', null],
+    ])
+    expect(salaryUnusable(app, docs)).toEqual({ 9: 'letter_unread' })
+  })
+
+  it('a usable document served as SHOWN draws no Missing row and carries no reason', () => {
+    const docs = [doc({ id: 7, doc_type: 'salary_slip', household_member: 'father' })]
+    const app = served({ shown: true, way: 'salary_slip', documents: [7] })
+    expect(salaryRows(app, docs)).toEqual([
+      ['salary_slip', 'father', 7],
+      ['parent_ic', 'father', null],
+    ])
+    expect(salaryUnusable(app, docs)).toEqual({})
+  })
+
+  it('⚠ NO SERVED ANSWER → TODAY\'S PRESENCE READING, never a screen full of red', () => {
+    // The two services deploy together but NOT atomically, so a cached payload or an api one
+    // revision behind must leave this panel exactly as it was — a per-earner answer that is
+    // absent means "we were not told", never "nothing is evidenced".
+    const docs = [doc({ id: 7, doc_type: 'salary_slip', household_member: 'father',
+                        authenticity: { status: 'not_salary', reason: 'reads as a MyKad' } })]
+    expect(salaryRows(SALARY_FATHER, docs)).toEqual([
+      ['salary_slip', 'father', 7],
+      ['parent_ic', 'father', null],
+    ])
+    expect(salaryUnusable(SALARY_FATHER, docs)).toEqual({})
+    // …and a malformed one degrades the same way rather than throwing.
+    const junk = { ...SALARY_FATHER, income_shown: { father: null } as unknown as IncomeShownMap }
+    expect(salaryRows(junk, docs)[0]).toEqual(['salary_slip', 'father', 7])
   })
 
   it('agrees with the api that an untagged household letter may carry an earner', () => {

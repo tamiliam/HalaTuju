@@ -212,12 +212,13 @@ class TestEachWayAlone(IncomeHomesBase):
         d.save(update_fields=['vision_fields'])
         self.assertIs(self.served(app), True)
         self.assertIs(self.live_gate(app), False)
-        # H8-FINDING (F1): the served answer says her income IS shown; the officer-side
-        # completeness engine says it is NOT and keeps asking the father for a payslip. The
-        # fourth way has no document type, and `_member_income_documented` reads document
-        # types. Real student: Janani's household (TD-235 incident 2) — a ketua-kampung
-        # letter clears the submission gate, then Check 2 chases a payslip she cannot get.
-        self.assertEqual(self.chased(app), (False, 'need_proof'))
+        # F1 FIXED (TD-262 chunks 2+3). It used to read (False, 'need_proof'): the served answer
+        # said her income IS shown while the officer-side completeness engine said it was NOT and
+        # kept chasing the father for a payslip, because the owner's third way has no document
+        # TYPE and `_member_income_documented` read document types. Real student: Janani's
+        # household (TD-235 incident 2) — a ketua-kampung letter clears the submission gate, then
+        # Check 2 chased a payslip she cannot get. Both homes now read `income_shown`.
+        self.assertEqual(self.chased(app), (True, 'satisfied'))
         # H8-FINDING (F2): the requirement engine still draws only a payslip and an EPF as
         # this earner's optional documents. There is no slot for the letter that actually
         # satisfied the gate — the api-side face of TD-235 incident 2.
@@ -267,12 +268,13 @@ class TestNearMisses(IncomeHomesBase):
         _doc(app, 'epf', 'father', fields=_EPF_BLANK)
         self.assertIs(self.served(app), False)
         self.assertIs(self.live_gate(app), True)
-        # H8-FINDING (F4): the officer-side engine counts a BLANK EPF as documented income
-        # and stops asking; the gate does not. `_member_income_documented` tests PRESENCE
-        # (`_cluster_docs(...).exists()`), the served answer tests READABILITY. Real student:
-        # anyone who uploads a black/cropped KWSP page — she is still blocked from submitting
-        # while the officer's chase list has gone quiet about her father.
-        self.assertEqual(self.chased(app), (True, 'satisfied'))
+        # F4 FIXED (TD-262 chunks 2+3). It used to read (True, 'satisfied'): the officer-side
+        # engine counted a BLANK EPF as documented income and stopped asking while the gate went
+        # on refusing it, because `_member_income_documented` tested PRESENCE
+        # (`_cluster_docs(...).exists()`) where the served answer tests READABILITY. Real student:
+        # anyone who uploads a black/cropped KWSP page — she was blocked from submitting while the
+        # officer's chase list had gone quiet about her father.
+        self.assertEqual(self.chased(app), (False, 'need_proof'))
 
     def test_not_salary_photo_in_the_payslip_slot_is_not_evidence(self):
         app = self._app()
@@ -280,10 +282,11 @@ class TestNearMisses(IncomeHomesBase):
         _doc(app, 'salary_slip', 'father', fields=_SLIP_FIELDS, authenticity='not_salary')
         self.assertIs(self.served(app), False)
         self.assertIs(self.live_gate(app), True)
-        # H8-FINDING (F5): same split as F4, and this is the one BrightPath #20 is about — a
-        # `not_salary` photo. The served answer refuses it (`usable_salary_slip`, the #47 fix);
-        # the officer-side engine counts it and marks the father satisfied.
-        self.assertEqual(self.chased(app), (True, 'satisfied'))
+        # F5 FIXED (TD-262 chunks 2+3). It used to read (True, 'satisfied') — the same split as
+        # F4, and this is the one BrightPath #20 is about: a `not_salary` photo. The served answer
+        # always refused it (`usable_salary_slip`, the #47 fix); the officer-side engine counted it
+        # and marked the father satisfied. One answer now, and it is the gate's.
+        self.assertEqual(self.chased(app), (False, 'need_proof'))
 
     def test_superseded_payslip_is_not_evidence_anywhere(self):
         app = self._app()
@@ -551,14 +554,21 @@ class TestVerdictHome(IncomeHomesBase):
         _doc(app, 'salary_slip', 'father', fields=_SLIP_FIELDS, authenticity='not_salary')
         self.assertIs(self.served(app), False)
         status, codes = self.verdict(app)
-        # H8-FINDING (F10): the verdict's `any_financial` is document PRESENCE
+        # F10 FIXED (TD-262 chunk 3). The verdict's `any_financial` was document PRESENCE
         # (`_latest_doc_for_member(application, 'salary_slip', m)`), with no `usable_salary_slip`
-        # filter — so a MyKad photographed into the payslip slot reads as financial evidence to
-        # the verdict while the gate refuses it. The two disagree about the same document, in
-        # the direction that matters least (it cannot block a student) but that still paints an
-        # officer's screen with an income fact nothing supports. Real student: application 73.
+        # filter — so a MyKad photographed into the payslip slot read as financial evidence to the
+        # verdict while the gate refused it, and this household (father's IC reads and links, slip
+        # reads RM1,800 gross, household of five) came out 'verified' — a GREEN income fact off a
+        # document the system has judged is not a payslip. Real student: application 73.
+        #
+        # ⚠ THE BAND MOVED DOWN, AND ONLY DOWN. 'verified' → 'recommend': the cluster is confirmed
+        # but nothing shows what he earns, so a human places it. The `income_above_b40_line` RED is
+        # deliberately still reachable without `any_financial` (see `_verdict_income_salary`), so
+        # no household loses a red by this change.
+        self.assertEqual(status, 'recommend')
         self.assertNotIn('income_declared_needs_evidence', codes)
-        self.assertIn(status, ('recommend', 'review', 'verified'))
+        self.assertNotIn('income_proof_present',
+                         [i['code'] for i in verdict_engine._verdict_income(app)['evidence']])
 
     def test_declared_without_a_letter_reaches_the_verdict_as_amber(self):
         app = self._app(declared={'father': 1200})

@@ -1098,16 +1098,16 @@ def member_income_evidenced(application, member) -> bool:
     ``member_cluster_complete`` and ``services.income_doc_blockers`` so the gate and the wizard
     can never disagree. A declared amount ALONE (no letter) does NOT count: it stays 'unproven'
     (Unsure) until the letter lands (owner decision, mirroring ``earner_monthly_income``'s
-    ``declared_unproven``) — the assessment never inflates income on an unbacked self-report."""
-    if usable_salary_slip(application, member):
-        return True
-    if _member_has_epf_value(application, member):
-        return True
-    if declared_amount(application, member) is not None and has_income_support_doc(application, member):
-        return True
-    if str_not_breached(application):
-        return True
-    return False
+    ``declared_unproven``) — the assessment never inflates income on an unbacked self-report.
+
+    ⚠ THE FIRST THREE ARMS NOW LIVE IN ``income_shown`` AND THIS IS A PURE RE-EXPRESSION (TD-262
+    chunks 2+3). The gate's answer did not move by a single row — ``income_shown(...).shown`` IS
+    the OR of the same three predicates, in the same order, and the fourth arm is still OR-ed on
+    here and ONLY here. That split is the whole point: the per-earner answer has no STR arm, so
+    every per-earner reader (the officer's slot, the chase list, the verdict's evidence line)
+    gets the owner's rule, while the household gate keeps the shortcut it has always had."""
+    from .income_shown import income_shown
+    return income_shown(application, member).shown or str_not_breached(application)
 
 
 def any_member_income_evidenced(application) -> bool:
@@ -1249,16 +1249,12 @@ def has_income_support_doc(application, member):
     a declared informal income. The doc must have been READ: its stored ``student_verdict``
     (from the field-extraction on upload) is ``'ok'`` (a real support document with at least
     one field). A doc that read nothing (``'wrong_doc'``) or was never scanned does NOT clear
-    the gap, so Check 2 keeps asking for real evidence."""
-    docs = getattr(application, 'documents', None)
-    if docs is None:
-        return False
-    for d in docs.filter(doc_type='income_support_doc', household_member__in=[member, ''],
-                         superseded_at__isnull=True):
-        sv = (getattr(d, 'vision_fields', None) or {}).get('student_verdict', '')
-        if sv == 'ok':
-            return True
-    return False
+    the gap, so Check 2 keeps asking for real evidence.
+
+    The reading lives in ``income_shown`` (TD-262 chunks 2+3) so the per-earner answer and this
+    predicate can never disagree about which letters are in scope."""
+    from .income_shown import income_support_doc_read, income_support_docs
+    return any(income_support_doc_read(d) for d in income_support_docs(application, member))
 
 
 # Foreign (Singapore) salary → MYR for the B40 means-test (owner 2026-07-05). A Malaysian working
@@ -2123,18 +2119,29 @@ def income_requirements(application) -> dict:
 # parent must be EITHER marked non-earning (status known) OR have income evidence on file.
 
 def _member_income_documented(application, member):
-    """True when an income-QUANTIFYING document is on file for this member — a salary slip / EPF
-    tagged to them, or the IC-number chain confirms them.
+    """True when this member's income has been SHOWN — the per-earner answer (``income_shown``:
+    a usable payslip, a readable EPF, or a declared amount backed by a letter that read) — or the
+    IC-number chain confirms them.
 
-    Deliberately does NOT count an STR. An STR (Sumbangan Tunai Rahmah) proves the HOUSEHOLD's
-    B40 / welfare status; it neither quantifies nor even mentions this member's own pay or pension.
-    So for building the household's SALARY PICTURE (owner 2026-07-16 — "the STR route shouldn't
-    prevent the system from getting a complete salary picture of the household"), an STR-recipient
-    parent is still 'undocumented' and IS inquired about. This governs only the soft completeness
-    ASKS (pension / informal / formal-slip); it never touches the income verdict or the submission
-    gate, where the STR stays dispositive."""
-    if (_cluster_docs(application, member, 'salary_slip').exists()
-            or _cluster_docs(application, member, 'epf').exists()):
+    ⚠ IT READS, IT NO LONGER COUNTS (TD-262 chunks 2+3, findings F1 / F4 / F5). It used to ask
+    ``_cluster_docs(...).exists()`` — document PRESENCE — while the submission gate asked whether
+    the document could be READ, so the two answered differently about the same household and the
+    chase list went quiet on exactly the families the gate was holding shut: a BLANK EPF and a
+    ``not_salary`` photo each read 'satisfied' (F4 / F5), and income proved the owner's third way
+    (a declared amount + a letter that read) read 'need_proof' and was chased for a payslip the
+    family cannot produce (F1, application 144 / Janani). Both directions are now the gate's own
+    answer.
+
+    ⚠ IT STILL DOES NOT COUNT AN STR, AND THAT IS THE OWNER'S RULING, NOT AN OVERSIGHT. An STR
+    (Sumbangan Tunai Rahmah) proves the HOUSEHOLD's B40 / welfare status; it neither quantifies
+    nor even mentions this member's own pay or pension. So for building the household's SALARY
+    PICTURE (owner 2026-07-16 — "the STR route shouldn't prevent the system from getting a
+    complete salary picture of the household") an STR-recipient parent is still 'undocumented'
+    and IS inquired about. It falls out for free here: ``income_shown`` has no STR arm. This
+    governs only the soft completeness ASKS (pension / informal / formal-slip); it never touches
+    the income verdict or the submission gate, where the STR stays dispositive."""
+    from .income_shown import income_shown
+    if income_shown(application, member).shown:
         return True
     if member in ('mother', 'father') and chain_verified_earner(application, member):
         return True
@@ -2142,7 +2149,7 @@ def _member_income_documented(application, member):
 
 
 def _parent_has_income_evidence(application, member):
-    """True when income evidence covers this parent for the MEANS TEST: an income document
+    """True when income evidence covers this parent for the MEANS TEST: their income is SHOWN
     (``_member_income_documented``) OR — on the STR route — they are the single STR earner with an
     STR doc on file. Used by ``parent_income_status`` / ``member_income_status`` (whether a member's
     economic status is 'known', which the household-size tick keys off) and the STR-route reads.
@@ -3107,7 +3114,7 @@ def str_earner_income_document_gap(application):
     if not occ or occ in NON_EARNING or occ in INFORMAL_OCC:
         return None                                  # non-earning / retired-unable / informal → other paths
     if _member_income_documented(application, earner):
-        return None                                  # their salary slip / EPF is already on file
+        return None                                  # their income is already SHOWN (income_shown)
     return earner
 
 

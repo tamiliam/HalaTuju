@@ -447,6 +447,11 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # DOCUMENT-derived household income / itemised roster corroborate the student's stated income
     # and size? Non-mutating — a mismatch is flagged for the reviewer, never auto-applied.
     household_check = serializers.SerializerMethodField()
+    # TD-262 chunks 2+3: the per-earner "has this earner's income been SHOWN?" answer, one entry
+    # per roster member code. SERVED, NOT MIRRORED — the cockpit's income panel used to decide
+    # evidence from document PRESENCE and so disagreed with the submission gate about the same
+    # household (W2/W3/W4). Additive: a build that predates it falls back to that old reading.
+    income_shown = serializers.SerializerMethodField()
     # Read-time institution fill for a multi-campus POLY diploma (see get_chosen_programme).
     chosen_programme = serializers.SerializerMethodField()
     # The display split {title, stream}: a degree+specialisation pathway (PISMP) shows the CONSTANT
@@ -531,7 +536,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'reporting_date',
             # Income wizard answers — drive the cockpit's route-aware income document panel.
             'income_route', 'income_earner', 'income_working_members',
-            'household_check',
+            'household_check', 'income_shown',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'interview_agenda',
@@ -712,6 +717,16 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'income': income_engine.household_income_reconciliation(obj),
             'size': size,
         }
+
+    def get_income_shown(self, obj):
+        """The per-earner income answer the cockpit reads instead of re-deriving evidence from
+        document presence (TD-262 chunks 2+3). One entry per roster member code — the officer's
+        panel draws a member as soon as a document is TAGGED to them, which can be someone the
+        wizard never listed, so narrowing this to the declared working members would leave the
+        panel without an answer for exactly the earner an officer is looking at."""
+        from .income_engine import _MEMBER_ORDER
+        from .income_shown import income_shown_map
+        return income_shown_map(obj, _MEMBER_ORDER)
 
     def get_chosen_programme(self, obj):
         """Serve the stored chosen_programme, but fill a BLANK institution for a multi-campus

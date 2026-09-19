@@ -2268,7 +2268,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               ? t('admin.scholarship.docsDrawer.parentIcOf', { member: m })
               : t('admin.scholarship.docsDrawer.ofMember', { member: m, doc: base })
           }
-          const docRow = (d: AdminApplicantDocument) => {
+          // `unusable` (TD-262) is a SERVED reason code: this document was offered as an earner's
+          // income evidence and cannot carry it. The row still shows — the officer must see what
+          // the family sent — with a red "not usable" line naming why, and the Missing row beside.
+          const docRow = (d: AdminApplicantDocument, unusable = '') => {
             const p = documentPill(d)
             return (
               <li key={d.id} className="flex items-start gap-2 rounded-lg border border-ground-100 p-2.5 hover:bg-ground-50">
@@ -2329,6 +2332,13 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     </p>
                   )}
                   {factLine(d)}
+                  {unusable && (
+                    <p className="text-[11px] font-medium text-critical-600 mt-0.5">
+                      {t('admin.scholarship.docsDrawer.notUsable.label')}
+                      {' — '}
+                      {t(`admin.scholarship.docsDrawer.notUsable.reason.${unusable}`)}
+                    </p>
+                  )}
                   {/* Key values FIRST (directly under the facts), so every note falls below them —
                       consistent for both water and electricity. */}
                   {(() => {
@@ -2423,7 +2433,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                       <div key={headKey}>
                         <p className={subHead}>{t(`admin.scholarship.docsDrawer.group.${headKey}`)}</p>
                         <ul className="space-y-1.5">
-                          {slots.map((s) => (s.doc ? docRow(s.doc) : placeholderRow(s)))}
+                          {slots.map((s) => (s.doc ? docRow(s.doc, s.unusable) : placeholderRow(s)))}
                         </ul>
                       </div>
                     )
@@ -2442,7 +2452,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 return (
                   <div key={key}>
                     <p className={subLabel}>{t(`admin.scholarship.docsDrawer.group.${key}`)}</p>
-                    <ul className="space-y-1.5">{docs.map(docRow)}</ul>
+                    <ul className="space-y-1.5">{docs.map((d) => docRow(d))}</ul>
                   </div>
                 )
               })}
@@ -2451,7 +2461,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               {groups.superseded.length > 0 && (
                 <div key="superseded" className="pt-2 mt-2 border-t border-ground-100">
                   <p className={subLabel}>{t('admin.scholarship.docsDrawer.group.superseded')}</p>
-                  <ul className="space-y-1.5 opacity-60">{groups.superseded.map(docRow)}</ul>
+                  <ul className="space-y-1.5 opacity-60">{groups.superseded.map((d) => docRow(d))}</ul>
                 </div>
               )}
               {app.documents.length === 0 && (

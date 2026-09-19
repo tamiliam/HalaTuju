@@ -707,8 +707,14 @@ def _verdict_income_salary(application, student_name, present, any_route=False):
         else:                       # 'unknown' (no patronymic) / 'pending' (not read) — no claim
             all_confirmed = False
 
-        if (_latest_doc_for_member(application, 'salary_slip', m)
-                or _latest_doc_for_member(application, 'epf', m)):
+        # ⚠ SHOWN, NOT PRESENT (TD-262 chunk 3, F10). This asked whether a payslip/EPF ROW exists,
+        # so a MyKad photographed into the payslip slot painted the officer's screen with financial
+        # evidence about a household the gate was holding shut (application 73). It now reads the
+        # gate's own answer. The DECLARED arm below is UNCHANGED and still owns the third way
+        # ('declared_evidenced' IS a declared amount + a letter that read) plus the one household
+        # fact a per-earner answer cannot see — a declared amount accepted on a valid STR.
+        from .income_shown import income_shown
+        if income_shown(application, m).way in ('salary_slip', 'epf'):
             any_financial = True
         else:
             # Phase 2A: no payslip/EPF for this member — a DECLARED informal amount may still
@@ -781,7 +787,13 @@ def _verdict_income_salary(application, student_name, present, any_route=False):
     # ceiling primary, per-capita a safety net — so the two routes could give opposite
     # answers for one household, and pc == ceiling read as "over"). Never blocks —
     # over-the-line or uncomputable goes to the officer/interview.
-    if any_financial and all_confirmed:
+    # ⚠ THE 'over' RED IS TESTED WITHOUT `any_financial`, AND THAT KEEPS F10 ONE-WAY (TD-262
+    # chunk 3). Tightening `any_financial` to READABILITY must only ever paint a household LESS
+    # confidently, never more; left inside the old `any_financial and all_confirmed` guard it
+    # would have taken a RED off the one household whose unusable payslip still reads a figure
+    # over the line, turning a red advisory amber. Reachable only there: with no readable income
+    # at all, `income_per_capita` cannot compute and the band is 'unknown'.
+    if all_confirmed:
         from .income_engine import income_headroom
         band, ctx = income_headroom(application, members)
         pc = ctx.get('per_capita')
@@ -793,19 +805,16 @@ def _verdict_income_salary(application, student_name, present, any_route=False):
             # still places the final verdict; circumstances may apply at interview.
             return _fact('income', 'gap', evidence,
                          [_item('income_above_b40_line', amount=pc, ceiling=ceiling)])
-        if band in ('probable', 'unsure'):
+        if any_financial and band in ('probable', 'unsure'):
             # Under the (two-test) line — I4 keeps its historical binary green here: the
             # cluster is fully confirmed on this path, so the fall-through's thin-margin
             # 'unsure' demotion deliberately does NOT apply (that grading compensates for
             # an UNverified household; the salary-track redesign will revisit).
             evidence.append(_item('income_per_capita_ok', amount=pc, ceiling=ceiling))
             return _fact('income', 'verified', evidence, [])
-        # 'unknown' — couldn't compute (unreadable income / no household size) and no dispositive STR
-        # (precedence would have settled one) → a human places it at interview.
-        return _fact('income', 'recommend', evidence, [_income_open_item(application)])
-    # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
-    # we couldn't machine-confirm. Never blocks. (A dispositive STR would already have been
-    # settled by STR precedence upstream, so there is none to lean on here.)
+    # A human places it: income not shown (an unusable document, or informal with no payslip/EPF),
+    # a relationship we couldn't machine-confirm, or a household income that couldn't be computed.
+    # Never blocks. (A dispositive STR would have been settled by STR precedence upstream.)
     return _fact('income', 'recommend', evidence, [_income_open_item(application)])
 
 

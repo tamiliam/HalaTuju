@@ -10,6 +10,7 @@ import type {
   StrCheck, UtilityCheck, BcCheck, GuardianshipCheck, SupportDocCheck, SemesterCheck,
   SchoolLeavingCheck, BursaryAgreement,
 } from '@/lib/api'
+import type { IncomeShownMap } from '@/lib/incomeShown'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -969,6 +970,9 @@ export interface AdminScholarshipDetail {
   income_route?: string | null
   income_earner?: string | null
   income_working_members?: string[] | null
+  /** TD-262: the per-earner "income SHOWN?" answer, served — see `@/lib/incomeShown`. Optional
+   *  because the cockpit must keep working against an api revision that predates it. */
+  income_shown?: IncomeShownMap | null
   receives_jkm: boolean
   intended_pathway: string
   intends_tertiary_2026: boolean

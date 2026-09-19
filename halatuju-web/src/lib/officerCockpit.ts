@@ -727,17 +727,26 @@ export function documentPill(doc: AdminApplicantDocument): DocumentPill {
 // a fix applied to it alone would have passed every gate and changed nothing on screen.)
 
 import { workingMembers, relationshipDocFor, MEMBER_ORDER, type WorkingMember } from '@/lib/incomeWizard'
+import { answerFor, unusableReason, type IncomeShownMap, type IncomeShownReason } from '@/lib/incomeShown'
 
 export interface IncomeSlot {
   docType: string
   member: string                       // '' for STR / untagged household docs
   doc: AdminApplicantDocument | null   // the uploaded doc, or null = missing → placeholder
+  /** A served reason code (`income_shown.REASONS`) when this document was offered as the
+   *  earner's income evidence and cannot carry it; '' otherwise. The row still SHOWS — the
+   *  officer must see what the family sent — marked as not usable, with the red Missing row
+   *  beside it. */
+  unusable?: IncomeShownReason
 }
 
 interface IncomeAnswerSource {
   income_route?: string | null
   income_earner?: string | null
   income_working_members?: string[] | null
+  /** TD-262 chunks 2+3 — the served per-earner answer. Absent on an old/cached payload, which
+   *  falls back to the presence reading this panel used to do on its own. */
+  income_shown?: IncomeShownMap | null
 }
 
 // ── Income sub-sections (STR ROUTE / SALARY ROUTE / UTILITY) ──────────────────────────
@@ -843,8 +852,9 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     return true
   })
   const salaryRequired = (app.income_route || '') !== 'str' && !strNotBreached
-  const pushSlot = (docType: string, member: string, doc: AdminApplicantDocument | null) => {
-    if (doc || salaryRequired) salary.push({ docType, member, doc })
+  const pushSlot = (docType: string, member: string, doc: AdminApplicantDocument | null,
+                    unusable: IncomeShownReason = '') => {
+    if (doc || salaryRequired) salary.push({ docType, member, doc, unusable })
   }
   // ⚠ ONE INCOME SLOT PER EARNER, SATISFIED ANY ONE WAY — NOT A SALARY-SLIP SLOT.
   // This asked for `salary_slip` by name and rendered a red "Missing" when it was absent, which
@@ -869,7 +879,15 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     const slip = find('salary_slip', m)
     const epfDoc = find('epf', m)
     const evidence = slip || epfDoc || supportFor(m)
-    pushSlot(evidence ? evidence.doc_type : 'income_evidence', m, evidence)
+    // ⚠ EVIDENCE IS THE SERVED ANSWER, NOT THE PRESENCE OF A FILE (TD-262, W2/W3/W4). A document
+    // that cannot carry this earner's income is STILL LISTED — the officer must see what the
+    // family sent, and why it does not count — and the red Missing row appears beside it. With no
+    // served answer (an old or cached payload) `shown` degrades to the presence reading this panel
+    // used to do on its own, so the panel never gets WORSE than it was.
+    const answer = answerFor(app.income_shown, m)
+    const shown = answer ? answer.shown : Boolean(evidence)
+    if (evidence) pushSlot(evidence.doc_type, m, evidence, unusableReason(answer, evidence.id))
+    if (!shown) pushSlot('income_evidence', m, null)
     if (m !== strParent) {
       pushSlot('parent_ic', m, find('parent_ic', m))
       // Relationship proof sits DIRECTLY BELOW the person's IC (guardian → guardianship letter,
@@ -883,7 +901,10 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     // The EPF still shows as supporting evidence BELOW the IC — unless it was already used as
     // this member's income evidence above (no payslip), in which case showing it twice would
     // read as two documents.
-    if (epfDoc && epfDoc !== evidence) salary.push({ docType: 'epf', member: m, doc: epfDoc })
+    if (epfDoc && epfDoc !== evidence) {
+      salary.push({ docType: 'epf', member: m, doc: epfDoc,
+                    unusable: unusableReason(answer, epfDoc.id) })
+    }
   }
   mark(salary)
   // Catch-all: EVERY income doc not already placed is appended here (known types ordered, others

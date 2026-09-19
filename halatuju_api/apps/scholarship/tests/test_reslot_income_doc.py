@@ -122,10 +122,21 @@ class TestTheRequestClearsOnEitherDocument(TestCase):
     def _add(self, app, doc_type):
         from django.utils import timezone
         from apps.scholarship.models import ApplicantDocument
+        fields = {'name': 'R KANNAN A/L RAMU'}
+        if doc_type == 'epf':
+            # ⚠ A READABLE EPF, AND THAT IS NOW LOAD-BEARING (TD-262 chunks 2+3, finding F4).
+            # This fixture used to carry a NAME and nothing else, so what it proved was that a
+            # PRESENT EPF row cleared the request — a loophole, not the re-slot. The re-slot's
+            # claim is that an EPF in the EPF slot COUNTS, and an EPF counts when a monthly
+            # figure can be derived from it (owner 2026-07-25: "a readable EPF"), so the fixture
+            # now carries one. The blank-EPF case is pinned where it belongs, in
+            # `test_income_evidence_homes.test_unreadable_epf_is_not_evidence`.
+            fields.update({'employee_contribution_total': 'RM 1,188.00', 'months_counted': '6',
+                           'statement_date': '07/2026'})
         return ApplicantDocument.objects.create(
             application=app, doc_type=doc_type, household_member='father',
             storage_path=f'{app.id}/{doc_type}/x', vision_run_at=timezone.now(),
-            vision_fields={'fields': {'name': 'R KANNAN A/L RAMU'}, 'warnings': [],
+            vision_fields={'fields': fields, 'warnings': [],
                            'student_verdict': 'ok', 'error': ''},
         )
 
