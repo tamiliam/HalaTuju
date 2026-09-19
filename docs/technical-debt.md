@@ -4284,6 +4284,89 @@ parent has a complete salary cluster stays red. Rule 4 arguably reaches that cas
 different failure (missing STR-cluster documents, not a failed STR) and wants the owner's word.
 **TD-262 is NOT resolved** — item 1 of the R4 chunk is done; F8, F2 and W1 stand.
 
+**Item 1b DONE 2026-09-19 (the incomplete STR cluster) — the boundary item 1 named, crossed on the
+owner's word the same day. Raise-only again; nothing can move down.**
+*The ruling.* Owner, 2026-09-19: *"the stronger proof wins" also applies when the STR cluster is
+INCOMPLETE (missing earner IC, missing birth certificate, etc.). Today `_verdict_income` returns
+`gap` before either branch. Now: if the salary reading on its own is better than that gap, the
+verdict keeps the stronger one. Same guard as before: gate on the salary reading's own
+`income_proof_present`, not on `salary_income_satisfied`.*
+*What the code really did.* `if gap: return _fact('income', 'gap', …)` sat ABOVE both
+fall-throughs, so a missing earner IC or birth certificate ended the income assessment outright.
+**That is a red about the STR CLUSTER being unfinished, read as though the household had shown
+nothing about what it earns** — and the two are not the same statement. The shape is ordinary
+rather than exotic: the MOTHER is often the STR recipient while the FATHER is the parent whose
+payslip is on file, so her missing IC and the absent birth certificate reddened a household that
+had answered the income question through him.
+*The fix.* The same `_stronger_income_fact` item 1 introduced, called from that `gap` return.
+Nothing new was invented: the band comparison (`_INCOME_BAND_ORDER`), the raise-only discard of the
+weaker reading and the `income_proof_present` gate are item 1's, unchanged and now shared by three
+call sites.
+*⚠ THE CARRY IS LOAD-BEARING HERE, NOT TIDY.* Item 1 carried the STR's unresolved items onto the
+raised fact so the officer still read why the STR had not settled it. Under 1b the carried items
+are `earner_ic_missing` / `birth_cert_missing` — **the very asks that made the band red**, and each
+one is a row in `resolution.CODE_TO_TICKET` (→ `parent_ic`, `birth_certificate`). Drop the carry
+and a raised household silently stops being asked for documents it still owes. Its own test says
+so, and the bite that removes the carry reddens six rows.
+*⚠ THE GATE IS AGAIN `income_proof_present`, AND 1b IS WHERE IT EARNS ITS KEEP.* With the father's
+IC alone the salary reading bands **'recommend'** — STRONGER than the cluster's 'gap' — off nothing
+but an identity document. Un-gated, a household that has shown NOTHING about what it earns would be
+lifted a whole band by its own MyKad. That is a louder bite than item 1's (where both paths
+answered the same word and the first bite came back silent), and it bites here on the first try.
+*⚠⚠ AND THE REAL FINDING: THE BRANCH ONLY RUNS WHERE AN STR ACTUALLY EXISTS.* The first cut offered
+the salary reading from every `gap`, and **an existing eligibility test went red** —
+`test_verdict_engine.…test_unrelated_earner_ic_does_not_open_the_fall_through`, which pins the
+fraud floor for a household whose earner's IC carries no link to the student. It had turned AMBER.
+The cause is worth writing down because it is the class of mistake this whole area keeps making:
+with NO STR letter at all, **§6 rule 2 (2026-08-01) has already decided that household one screen
+up**, on `salary_income_satisfied` — a deliberately STRICTER gate, chosen to hold §8's red row for
+a family with nothing to fall through to. Offering item 1b's looser `income_proof_present` reading
+from the same `gap` quietly overruled a gate somebody had chosen on purpose. The owner's ruling is
+about an **incomplete cluster around an STR that exists**, so the branch is now conditioned on
+`str_doc is not None` and the red test was **restored by narrowing the code, never by editing its
+expectation**. Its own pinned row (`test_with_no_str_at_all_item_1b_stands_aside_for_the_rule_2_gate`)
+records the boundary from this side, where the salary reading is 'review' — TWO bands above the
+cluster's gap — and is still not taken.
+*The extraction came first, and the standard is what asked for it.* Item 1b adds ONE branch, and
+`_verdict_income` was one line over its 224-line allowance. The standard's own instruction for that
+is to extract into the smaller module and never to raise the number, so the §6 failed-STR headroom
+block moved VERBATIM out into `verdict_income_salary.py` as **`_failed_str_headroom_fact`** — an
+STR-route branch living in the salary module, which is consistent rather than contradictory: what
+stays in `verdict_engine` is the ORDER OF PRECEDENCE that decides a failed STR falls through at
+all; what it falls through TO is a salary reading. `_verdict_income` ends at **210** and its
+budget was lowered 214 → 210 to match. **`verdict_engine.py` ends at 1,151 — LARGER than before,
+not smaller — so its 1,146 entry STAYS**: a file that grew is never the occasion to touch its
+number, and 1,151 sits inside the +20 allowance. (An earlier mid-work measurement lowered it to
+1,145; that was premature and was reverted once the boundary fix landed.) No behaviour moved across
+the extraction — the characterisation suites passed unedited.
+*Stored vs computed.* Unchanged from item 1: the verdict is computed on every read and stored only
+in `ai_verdict_snapshot`, which is never regenerated — **so no stored row changes**, only live cards
+repaint. **`VERDICT_ENGINE_VERSION` 2026-09-19.1 → 2026-09-19.2** per the rule at the constant.
+`results_doc.MODEL_VERSION` is NOT bumped and must not be.
+*Tests.* Six rows in a new section 9 of `test_income_evidence_homes.py`. Five were written against
+the unchanged tree — **three seen GREEN** (the two that must not move, plus the asks-survive row)
+and **two seen RED** before the fix; the sixth is the rule-2 boundary the failing existing test
+taught us. **Four bite-checks, all four bit** — revert the branch (2 red), drop the
+`income_proof_present` gate (2 red, one of them item 1's own row), drop the unresolved carry
+(6 red), widen the branch back over the absent-STR case (2 red, one of them the existing
+`test_verdict_engine` row). Each injection was verified on disk and each restored by writing the
+original bytes back, SHA-256 matched, with the suite re-run green after every restore.
+*Gates.* pytest **6,985** / 3 skipped / 0 failed (baseline 6,979 + 6). `manage.py check` clean,
+`makemigrations --check --dry-run` clean. `code_health`: fix% 41 · big 25 · long 15 · dup 4 ·
+guard% 11 · **std ok**, 0 fails — no reading worse.
+*Web.* **No web file touched.** No new reason code, and `officerCockpit.factTileTone` keys on
+`fact.status` and `evidence` and never on `unresolved`, so a `verified` income fact carrying open
+asks renders exactly as item 1 already made it render. The two api-reading jest guards
+(`soft-evidence-drift.test.ts`, `incomeEvidenceHomes.test.ts`) pass untouched.
+*Blast radius — NOT MEASURED HERE; the screening SQL is with the lead.* It is read-only and names
+the population: STR route · an incomplete STR cluster (no member-tagged `parent_ic` for the earner,
+or, for a mother/guardian earner, no relationship document) · at least one salary/EPF document on
+file. Only an application still IN REVIEW can repaint; a decided case's decision was a human's and
+its snapshot is untouched.
+**TD-262 is STILL NOT resolved** — items 1 and 1b of the R4 chunk are done; **F8, F2 and W1
+stand** (a stranger's STR still clears the submission gate; the owner's fourth way still has no
+upload slot).
+
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 
 **Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects

@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-262 item 1b - an unfinished STR cluster no longer hides the payslips behind it - 2026-09-19
+
+The owner extended rule 4 the same day: *"'the stronger proof wins' also applies when the STR
+cluster is INCOMPLETE (missing earner IC, missing birth certificate, etc.)."* A missing earner IC
+or birth certificate returned RED from `_verdict_income`'s `gap` branch, ahead of both
+fall-throughs - a red about the STR CLUSTER being unfinished, read as though the household had
+shown nothing about what it earns. The ordinary shape is a mother named on the STR with no IC on
+file beside a father whose payslip is. No migration. No web file changed. No student-facing screen
+or copy changed.
+
+- **The same `_stronger_income_fact` item 1 introduced**, now called from the `gap` return as well.
+  Nothing new was invented: the band comparison, the raise-only discard of the weaker reading and
+  the `income_proof_present` gate are item 1's, shared by three call sites.
+- **⚠ The carry is load-bearing here, not tidy.** The items carried onto the raised fact are
+  `earner_ic_missing` / `birth_cert_missing` - the very asks that made the band red, and each a row
+  in `resolution.CODE_TO_TICKET`. Drop the carry and a raised household silently stops being asked
+  for documents it still owes. A bite that removes it reddens six rows.
+- **⚠⚠ The branch only runs where an STR actually EXISTS, and an existing test taught us that.**
+  The first cut offered the salary reading from every `gap`, and
+  `test_verdict_engine.…test_unrelated_earner_ic_does_not_open_the_fall_through` turned amber - the
+  fraud floor for a household whose earner has no link to the student. With no STR letter at all,
+  §6 rule 2 has already decided that household on `salary_income_satisfied`, a deliberately
+  stricter gate holding §8's red row, and a second looser reading from the same `gap` overruled it.
+  The branch is now conditioned on `str_doc is not None`; **the red test was restored by narrowing
+  the code, never by editing its expectation.**
+- **The extraction came first, because the standard asked for it.** Item 1b adds one branch and
+  `_verdict_income` was one line over its allowance, so the §6 failed-STR headroom block moved
+  verbatim into `verdict_income_salary.py` as `_failed_str_headroom_fact`. `_verdict_income` ends
+  at 210 lines and its budget was lowered 214 -> 210; `verdict_engine.py` ends at 1,151, larger
+  than before, so its 1,146 entry stays untouched (inside the +20 allowance - a file that grew is
+  never the occasion to touch its number). No behaviour moved across the move - the
+  characterisation suites passed unedited.
+- **`VERDICT_ENGINE_VERSION` 2026-09-19.1 -> 2026-09-19.2.** The verdict is computed on every read
+  and stored only in `ai_verdict_snapshot`, which is never regenerated, so no stored row changes -
+  only live cards repaint. `results_doc.MODEL_VERSION` is NOT bumped.
+- Six rows in a new section 9 of `test_income_evidence_homes.py`; **four bite-checks, all four
+  bit**. pytest 6,979 -> **6,985**, 3 skipped, 0 failed. `code_health` unchanged (std ok, 0 fails).
+
 ## TD-262 item 1 - a stale STR no longer hides the payslips behind it - 2026-09-19
 
 The owner's rule 4 (2026-09-19): *"The stronger proof should be given preference."* An STR-route

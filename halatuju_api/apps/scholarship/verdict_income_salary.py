@@ -257,3 +257,42 @@ def verdict_income_salary(application, student_name, present, any_route=False):
         evidence.append(_item('income_proof_present'))
     gap, review = _salary_unresolved(members, rel_docs, found)
     return _salary_place_verdict(application, members, evidence, found, gap, review)
+
+
+def _failed_str_headroom_fact(application, earner, evidence, review):
+    """The §6 evidence-driven fall-through for a FAILED STR (rejected / wrong-type): the STR is
+    not a current STR, but salary/benefit documents on file may still show B40 — assess them and
+    let the ``income_headroom`` band drive the income tile.
+
+    ⚠ IT IS AN STR-ROUTE BRANCH LIVING IN THE SALARY MODULE, and the module docstring's line —
+    *"the STR route stays in ``verdict_engine``"* — still holds: what stays there is the ORDER OF
+    PRECEDENCE, which decides that a failed STR falls through at all. What it falls through TO is
+    a salary reading, and that is this file. Moved here VERBATIM for TD-262 item 1b, with no
+    behaviour change: `_verdict_income` is on the long-function ledger and `verdict_engine.py` on
+    the oversize one, and neither number is ever raised — so the room for item 1b's branch was
+    made by moving a self-contained block into the smaller module, not by lengthening the body.
+
+    NB unsure/over return 'recommend' (→ amber) rather than 'review': a review tile reads BLUE off
+    the verified earner-IC/relationship greens, which would overstate an unsure income."""
+    # Code-health S4 #19: assess EVERY member with income evidence, not just the single
+    # STR-route earner — after a route switch, tagged payslips/EPF for other members can
+    # exist, and excluding them understates the household gross (a genuinely-over
+    # household could band 'probable' off one earner's slip).
+    from .income_engine import effective_working_members, income_headroom
+    hh_members = list(dict.fromkeys([earner] + list(effective_working_members(application))))
+    band, ctx = income_headroom(application, hh_members)
+    if band == 'over':
+        # Salary route FAILS — household income is over the B40 line → income fact FAILS (RED).
+        # (Advisory only: the tiles guide, the officer still places the final verdict — not an
+        # auto-reject; circumstances may still apply at interview.)
+        return _fact('income', 'gap', evidence, review + [
+            _item('income_above_b40_line', amount=ctx['per_capita'], ceiling=ctx['per_capita_ceiling'])])
+    if band == 'unsure':
+        return _fact('income', 'recommend', evidence, review + [
+            _item('income_salary_unsure', amount=ctx['gross'])])
+    if band == 'probable':
+        evidence.append(_item('income_salary_probable', amount=ctx['gross']))
+        return _fact('income', 'review', evidence, review)
+    # 'unknown' — the STR failed AND there are no usable salary docs to assess → Unsure (amber):
+    # we simply can't confirm B40, a human looks. NOT a blue review off incidental earner greens.
+    return _fact('income', 'recommend', evidence, review)

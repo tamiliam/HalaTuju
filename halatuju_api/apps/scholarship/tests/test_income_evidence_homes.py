@@ -749,3 +749,132 @@ class TestStrRouteFallThrough(IncomeHomesBase):
         self.assertEqual(salary['status'], 'gap')
         self.assertIn('income_above_b40_line', [i['code'] for i in salary['unresolved']])
         self.assertEqual(self.verdict(app), ('recommend', ['str_not_current']))
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 9. AN INCOMPLETE STR CLUSTER  (TD-262 item 1b — owner ruling, 2026-09-19)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+class TestIncompleteStrCluster(IncomeHomesBase):
+    """Owner, 2026-09-19: *"the stronger proof wins"* reaches an INCOMPLETE STR cluster too — a
+    missing earner IC, a missing birth certificate. Those reds are about the STR CLUSTER; they are
+    not a statement that the household has shown nothing about what it earns.
+
+    The household in this section is one the STR route cannot finish and the salary route can: the
+    MOTHER is the declared STR recipient with neither her IC nor a birth certificate on file, while
+    the FATHER is documented properly. That is the real shape of the case — a family that papered
+    the working parent and not the one whose name is on the STR.
+
+    ⚠ EVERY ROW IS AN ELIGIBILITY ANSWER. Read the file header: no expectation here may be edited
+    to make a refactor green. The rows that MOVED for item 1b were edited FIRST, seen red against
+    the unfixed tree, and say so at the assertion."""
+
+    #: The mother, obviously fake. Her name reaches the fixture through ``_app``'s ``mother_name``.
+    MOTHER_NAME = 'Kamala A/P Suppiah'
+    MOTHER_NRIC = '750808-14-5002'
+
+    def _household(self, app):
+        """Five people at home — without a household size ``income_headroom`` cannot compute and
+        every salary reading bands 'unknown' (see section 8's note)."""
+        app.profile.household_size = 5
+        app.profile.save(update_fields=['household_size'])
+        return app
+
+    def _incomplete_cluster(self, **str_kw):
+        """The STR route with the mother's half of the cluster absent: no ``parent_ic`` tagged to
+        her (→ `earner_ic_missing`) and no birth certificate (→ `birth_cert_missing`). The
+        FATHER's IC IS on file — the salary reading reconstructs its earners from the documents a
+        student actually tagged, and this household tagged him."""
+        app = self._household(self._app(route='str', members=(), earner='mother'))
+        self._ic(app)                       # the FATHER's IC, patronymic-linked to the student
+        _str_doc(app, recipient_name=self.MOTHER_NAME, recipient_nric=self.MOTHER_NRIC, **str_kw)
+        return app
+
+    def _payslip(self, app, gross='RM 1,800.00'):
+        """⚠ ``gross_income`` / ``net_income`` — the keys ``_salary_monthly_amount`` actually
+        reads. The older scenarios' ``gross`` / ``net`` read as a payslip but carry no FIGURE."""
+        return _doc(app, 'salary_slip', 'father',
+                    fields={'gross_income': gross, 'net_income': gross, 'period': '08/2026'})
+
+    def _salary_reading(self, app):
+        """The salary route's OWN answer for this household — the reading item 1b offers."""
+        present = set(app.documents.filter(superseded_at__isnull=True)
+                      .values_list('doc_type', flat=True))
+        return verdict_income_salary(
+            app, income_engine.student_name_for_link(app), present, any_route=True)
+
+    # ── the row that moves: a complete salary cluster behind an unfinished STR one ───────────
+    def test_an_incomplete_cluster_with_a_good_payslip_takes_the_salary_reading(self):
+        app = self._incomplete_cluster(status='Lulus', year='2024')
+        self._payslip(app)
+        self.assertEqual(self.verdict(app),
+                         ('verified', ['birth_cert_missing', 'earner_ic_missing',
+                                       'str_not_current']))
+
+    def test_the_str_clusters_asks_survive_the_raise(self):
+        """⚠ THE LOAD-BEARING HALF OF THE RULING. The band moves; the officer note and the
+        student's re-upload ask do NOT disappear, or a raised household silently stops being
+        asked for the documents it still owes."""
+        app = self._incomplete_cluster(status='Lulus', year='2024')
+        self._payslip(app)
+        fact = verdict_engine._verdict_income(app)
+        codes = [i['code'] for i in fact['unresolved']]
+        self.assertIn('earner_ic_missing', codes)
+        self.assertIn('birth_cert_missing', codes)
+
+    def test_a_current_str_with_an_unfinished_cluster_also_takes_the_salary_reading(self):
+        """A CURRENT approved STR whose recipient cannot be confirmed (her IC is not on file, so
+        STR PRECEDENCE declines it) is no better off than a stale one — the cluster is what is
+        unfinished, and the salary reading answers past it either way."""
+        app = self._incomplete_cluster(status='Lulus', year='2026')
+        self._payslip(app)
+        self.assertEqual(self.verdict(app),
+                         ('verified', ['birth_cert_missing', 'earner_ic_missing',
+                                       'str_recipient_mismatch']))
+
+    # ── the rows that must NOT move ──────────────────────────────────────────────────────────
+    def test_an_incomplete_cluster_with_no_payslip_never_raises(self):
+        """⚠ THE GATE, AND THE REASON IT IS `income_proof_present` AND NOT THE BAND. With the
+        father's IC alone the salary reading bands 'recommend' — STRONGER than the STR cluster's
+        'gap' — off nothing but an identity document. Un-gated, a household that has shown NOTHING
+        about what it earns would be lifted a band by its own MyKad."""
+        app = self._incomplete_cluster(status='Lulus', year='2024')
+        salary = self._salary_reading(app)
+        self.assertEqual(salary['status'], 'recommend')          # stronger by BAND...
+        self.assertNotIn('income_proof_present', [i['code'] for i in salary['evidence']])
+        self.assertEqual(self.verdict(app),                      # ...and not taken
+                         ('gap', ['birth_cert_missing', 'earner_ic_missing', 'str_not_current']))
+
+    def test_with_no_str_at_all_item_1b_stands_aside_for_the_rule_2_gate(self):
+        """⚠ THE BOUNDARY, AND IT WAS FOUND BY AN EXISTING TEST GOING RED, not by design.
+
+        With NO STR letter at all, §6 rule 2 (2026-08-01) has ALREADY decided this household one
+        screen up, on `salary_income_satisfied` — a deliberately STRICTER gate, chosen to hold §8's
+        red row for a household with nothing to fall through to. Item 1b's looser
+        `income_proof_present` reading must NOT be offered there as well, or it silently overrules
+        that gate: `test_verdict_engine.…test_unrelated_earner_ic_does_not_open_the_fall_through`
+        turned amber, lifting a household whose earner has no provable link to the student off the
+        fraud floor. The owner's ruling is about an INCOMPLETE CLUSTER around an STR that exists.
+
+        Here: an earner whose IC name contradicts the student's patronymic, a payslip, and no STR.
+        The salary reading is 'review' — TWO bands above the cluster's 'gap', and carrying
+        `income_proof_present` — and it is still not taken."""
+        app = self._household(self._app(route='str', members=(), earner='father',
+                                        father_occupation='private'))
+        _doc(app, 'parent_ic', 'father', name='Tan Ah Kow', nric=FATHER_NRIC)   # no patronymic
+        self._payslip(app)
+        salary = self._salary_reading(app)
+        self.assertEqual(salary['status'], 'review')
+        self.assertIn('income_proof_present', [i['code'] for i in salary['evidence']])
+        self.assertEqual(self.verdict(app),
+                         ('gap', ['father_patronymic_mismatch', 'income_proof_missing']))
+
+    def test_an_over_the_line_salary_never_raises_an_incomplete_cluster(self):
+        """The salary route's own answer here is RED (`income_above_b40_line`) — equal to the
+        cluster's 'gap', so nothing is stronger and nothing moves. Item 1b can only ever RAISE."""
+        app = self._incomplete_cluster(status='Lulus', year='2024')
+        self._payslip(app, gross='RM 20,000.00')
+        salary = self._salary_reading(app)
+        self.assertEqual(salary['status'], 'gap')
+        self.assertIn('income_above_b40_line', [i['code'] for i in salary['unresolved']])
+        self.assertEqual(self.verdict(app),
+                         ('gap', ['birth_cert_missing', 'earner_ic_missing', 'str_not_current']))

@@ -443,17 +443,37 @@ screen of red.
 `verdict_engine._verdict_income` owns the STR route and the order of precedence; the SALARY route
 is `apps/scholarship/verdict_income_salary.py` (`verdict_income_salary`, split into
 `_salary_relationship_docs` / `_salary_member_scan` / `_salary_unresolved` /
-`_salary_place_verdict`). It is a separate module because `verdict_engine.py` is on the oversize
-ledger — the same reason `income_shown.py` is one — and the edge is one-way: the salary module
-imports `verdict_engine`'s `_fact` / `_item` primitives at module level, `verdict_engine` imports
-it lazily inside the function.
+`_salary_place_verdict`, plus `_failed_str_headroom_fact`). It is a separate module because
+`verdict_engine.py` is on the oversize ledger — the same reason `income_shown.py` is one — and the
+edge is one-way: the salary module imports `verdict_engine`'s `_fact` / `_item` primitives at
+module level, `verdict_engine` imports it lazily inside the function.
 
 **⚠ "THE STRONGER PROOF IS PREFERRED" (owner rule 4, `docs/decisions.md` 2026-09-19).** When the
-STR is stale, unreadable or in a stranger's name, `_stronger_income_fact` assesses the salary
-evidence too and answers with whichever reading is stronger. **It can only ever RAISE a band** —
-the weaker reading is discarded, so the salary route's own `income_above_b40_line` RED is never
-taken over an amber STR answer — and the STR's unresolved items are carried onto the raised fact,
-so nothing the officer or the student was told disappears.
+STR is stale, unreadable or in a stranger's name (item 1), **or when the cluster around it is
+unfinished — a missing earner IC, a missing birth certificate (item 1b)** — `_stronger_income_fact`
+assesses the salary evidence too and answers with whichever reading is stronger. **It can only ever
+RAISE a band** — the weaker reading is discarded, so the salary route's own `income_above_b40_line`
+RED is never taken over an amber STR answer — and the cluster's unresolved items are carried onto
+the raised fact, so nothing the officer or the student was told disappears. Under item 1b that
+carry is load-bearing: `earner_ic_missing` / `birth_cert_missing` are rows in
+`resolution.CODE_TO_TICKET`, so dropping it would stop asking a raised household for documents it
+still owes.
+
+**⚠ ITEM 1b RUNS ONLY WHERE AN STR DOCUMENT EXISTS (`str_doc is not None`), AND THAT IS NOT
+FUSSINESS.** With NO STR at all, **§6 rule 2 has already decided the household** one branch up, on
+`salary_income_satisfied` — a deliberately STRICTER gate that holds §8's red row for a family with
+nothing to fall through to. Offering item 1b's looser reading from the same `gap` overruled it and
+lifted an unlinked earner off the fraud floor; an existing test
+(`test_verdict_engine.…test_unrelated_earner_ic_does_not_open_the_fall_through`) caught it, and it
+was restored by narrowing the code, never by editing the expectation. A pinned row on each side of
+the line records it. **Do not widen the branch without re-opening rule 2's gate with the owner.**
+
+**⚠ THE §6 FAILED-STR HEADROOM BLOCK LIVES IN `verdict_income_salary._failed_str_headroom_fact`.**
+An STR-route branch in the salary module, and consistent rather than contradictory: `verdict_engine`
+keeps the ORDER OF PRECEDENCE that decides a failed STR falls through at all; what it falls through
+TO is a salary reading. It moved there verbatim for item 1b because `_verdict_income` sat one line
+over its allowance and the standard's answer to that is to extract into the smaller module, never
+to raise the number.
 
 **⚠ `salary_income_satisfied` IS NOT "is there salary evidence?" AND MUST NOT BE USED AS THAT
 GATE.** It is the submission gate's "one complete cluster", and a cluster is complete on ANY of the

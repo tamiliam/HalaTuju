@@ -34,6 +34,51 @@ that earner; per-earner cues (the student's tick, the officer's slot) must not r
 
 **Revisit if:** STR eligibility widens to clearly include M40 households.
 
+### Rule 4 reaches an INCOMPLETE STR cluster too, not only a failed STR — 2026-09-19 (TD-262 item 1b)
+
+**Decision (owner, in their words):** *"'the stronger proof wins' also applies when the STR cluster
+is INCOMPLETE (missing earner IC, missing birth certificate, etc.). Today `_verdict_income` returns
+`gap` before either branch. Now: if the salary reading on its own is better than that gap, the
+verdict keeps the stronger one. Same guard as before: gate on the salary reading's own
+`income_proof_present`, not on `salary_income_satisfied`."*
+
+**Why it is a distinct ruling.** Item 1 opened the net for a FAILED STR — stale, unreadable, in a
+stranger's name. A missing earner IC or birth certificate is a different failure: the STR itself may
+be perfectly good and simply unattributable, because the CLUSTER around it is unfinished. The `gap`
+return sat above both fall-throughs, so that red ended the income assessment outright — a statement
+about missing STR-cluster documents, read as though the household had shown nothing about what it
+earns. The ordinary shape is a mother named on the STR with no IC on file and a father whose payslip
+is: a household that answered the income question through the other parent.
+
+**What must not be "tidied".** Three things, all of them item 1's and all now load-bearing in a
+second place:
+- **It may only ever RAISE.** The weaker reading is discarded by band, so the salary route's own
+  `income_above_b40_line` RED is never taken over the cluster's gap.
+- **The cluster's unresolved items are CARRIED onto the raised fact.** Here they are
+  `earner_ic_missing` / `birth_cert_missing`, each a row in `resolution.CODE_TO_TICKET` — so the
+  officer note and the student's re-upload ask survive the band moving. Drop the carry and a raised
+  household silently stops being asked for documents it still owes.
+- **The gate is `income_proof_present`, never `salary_income_satisfied`** (the reasoning is under
+  item 1: the latter is the submission gate's "one complete cluster", satisfied by the very STR this
+  exists to look past). 1b is where that gate earns its keep — with an IC and no payslip the salary
+  reading already bands 'recommend', stronger than 'gap', off a document that says nothing about
+  money.
+
+**⚠ THE SCOPE IS AN INCOMPLETE CLUSTER AROUND AN STR THAT EXISTS, and that boundary was learned
+the hard way.** Offering the salary reading from EVERY `gap` turned an existing eligibility test
+amber: a household with no STR at all and an earner whose IC carries no link to the student came
+off the fraud floor. With no STR letter, **§6 rule 2 (2026-08-01) has already decided that
+household** on `salary_income_satisfied` — a deliberately stricter gate that holds §8's red row —
+so a second, looser reading from the same `gap` silently overrules it. The branch is therefore
+conditioned on an STR document being present. Do not widen it without re-opening rule 2's gate
+with the owner; a pinned row on each side records the line.
+
+**Rules 1 and 2 stay untouched:** a current genuine STR is settled by STR PRECEDENCE before the
+route split, so payslips still cannot lower it.
+
+**Revisit if:** the owner ever wants an incomplete cluster to BLOCK rather than merely to be
+out-argued by better evidence — it does not block today and this ruling does not make it block.
+
 ## Only the household's OWN STR counts as income evidence — at the gate as well as in the verdict — 2026-09-19
 
 **Decision (owner):** *"only the family's own STR count."* An STR document clears the income

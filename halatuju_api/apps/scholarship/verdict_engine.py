@@ -71,7 +71,10 @@ from .genuineness.bands import canonical_status
 #   2026-09-19.1 — TD-262 item 1 (rule 4): an STR-route household whose STR is stale, unreadable
 #   or recipient-mismatched now has its salary evidence assessed too, and the STRONGER of the two
 #   readings is the income fact. It can only ever RAISE a band, but it moves one, so it bumps.
-VERDICT_ENGINE_VERSION = '2026-09-19.1'
+#   2026-09-19.2 — TD-262 item 1b (rule 4, same day): the same preference now reaches an
+#   INCOMPLETE STR cluster (a missing earner IC or birth certificate), which returned RED ahead of
+#   both fall-throughs. Raise-only again, and again it moves a band, so it bumps.
+VERDICT_ENGINE_VERSION = '2026-09-19.2'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -411,12 +414,18 @@ _INCOME_BAND_ORDER = ('gap', 'recommend', 'review', 'verified')
 
 
 def _stronger_income_fact(current, application, student_name, present):
-    """TD-262 item 1 — **"the stronger proof should be given preference"** (owner 2026-09-19,
-    `docs/decisions.md`). An STR-route household whose STR was stale, unreadable or in somebody
-    else's name was capped at Unsure with the payslips on file NEVER ASSESSED: the `str_unsure` /
-    `str_mismatch` branches returned before the salary route was ever reached. Only a REJECTED or
-    wrong-type STR opened that net. So assess the salary evidence too, and answer with whichever
-    of the two readings is stronger.
+    """TD-262 items 1 and 1b — **"the stronger proof should be given preference"** (owner
+    2026-09-19, `docs/decisions.md`). An STR-route household whose STR was stale, unreadable or in
+    somebody else's name was capped at Unsure with the payslips on file NEVER ASSESSED: the
+    `str_unsure` / `str_mismatch` branches returned before the salary route was ever reached. Only
+    a REJECTED or wrong-type STR opened that net. So assess the salary evidence too, and answer
+    with whichever of the two readings is stronger.
+
+    ⚠ ITEM 1b EXTENDS THAT TO AN INCOMPLETE CLUSTER (owner, same day). A missing earner IC or
+    birth certificate returned RED from the `gap` branch, ahead of both fall-throughs — a red
+    about the STR CLUSTER, read as though the household had shown nothing about what it earns.
+    The mother is often the STR recipient while the FATHER is the one whose payslip is on file;
+    that household answers the income question, and it now reads as having answered it.
 
     ⚠ IT CAN ONLY EVER RAISE. The readings are compared by band and the weaker is discarded, so
     no household comes out below the answer it had before — the salary route's own
@@ -424,7 +433,10 @@ def _stronger_income_fact(current, application, student_name, present):
 
     ⚠ THE STR'S UNRESOLVED ITEMS ARE CARRIED ONTO THE RAISED FACT, deliberately. The band moves
     and nothing else is lost: the officer still reads why the STR did not settle it, and the
-    student's `str_not_current` re-upload ask stays open (`resolution.CODE_TO_TICKET`).
+    student's `str_not_current` re-upload ask stays open (`resolution.CODE_TO_TICKET`). Under
+    item 1b that carry is load-bearing rather than tidy — the cluster's `earner_ic_missing` /
+    `birth_cert_missing` asks are the whole reason the band was red, and a raised household must
+    still be asked for the documents it owes.
 
     ⚠ THERE MUST BE SOMETHING TO PREFER, and the test for that is the salary route's OWN
     `income_proof_present` marker — appended iff at least one member's income is SHOWN by a
@@ -590,7 +602,7 @@ def _verdict_income(application):
     # unreadable (cropped) / unconfirmed (approved, no date → confirm currency). Anything that isn't
     # a CURRENT approved STR keeps the income fact off green — a human looks (and, post Sprint-2, the
     # salary route is assessed when the STR is wrong_type/rejected).
-    from .income_engine import student_str_check, income_headroom
+    from .income_engine import student_str_check
     sc = student_str_check(str_doc) if str_doc is not None else None
     str_verified = False
     # A wrong_type (not an STR at all) or rejected (Ditolak) STR is definitively NOT a current STR;
@@ -625,35 +637,25 @@ def _verdict_income(application):
         review.append(_item('str_present_unverified'))
 
     # ── Place the verdict ─────────────────────────────────────────────────────
+    # ⚠ TD-262 item 1b (R4, owner 2026-09-19): an INCOMPLETE STR cluster — a missing earner IC or
+    # birth certificate — used to RETURN here, ahead of BOTH fall-throughs below, so the payslips
+    # on file were never looked at. It now offers the salary reading too and keeps whichever is
+    # stronger; see `_stronger_income_fact`, which can only RAISE and carries these asks onward.
+    # ⚠ AND ONLY WHERE AN STR ACTUALLY EXISTS. With NO STR letter at all, §6 rule 2 above has
+    # ALREADY decided this household — on `salary_income_satisfied`, a deliberately STRICTER gate
+    # that holds §8's red row for a household with nothing to fall through to. Offering a second,
+    # looser reading here would quietly overrule a gate somebody chose on purpose (an unlinked
+    # adult's payslip would lift the card off the floor `test_unrelated_earner_ic_...` pins).
     if gap:
-        return _fact('income', 'gap', evidence, gap + review)
-    # Evidence-driven fall-through (§6): the STR isn't a current STR, but salary/benefit docs on file
-    # may still show B40 — assess the salary route and let the headroom band drive the income tile.
-    # NB unsure/over return 'recommend' (→ amber) rather than 'review': a review tile reads BLUE off
-    # the verified earner-IC/relationship greens, which would overstate an unsure income.
+        red = _fact('income', 'gap', evidence, gap + review)
+        return (_stronger_income_fact(red, application, student_name, present)
+                if str_doc is not None else red)
     if str_failed:
-        # Code-health S4 #19: assess EVERY member with income evidence, not just the single
-        # STR-route earner — after a route switch, tagged payslips/EPF for other members can
-        # exist, and excluding them understates the household gross (a genuinely-over
-        # household could band 'probable' off one earner's slip).
-        from .income_engine import effective_working_members
-        hh_members = list(dict.fromkeys([earner] + list(effective_working_members(application))))
-        band, ctx = income_headroom(application, hh_members)
-        if band == 'over':
-            # Salary route FAILS — household income is over the B40 line → income fact FAILS (RED).
-            # (Advisory only: the tiles guide, the officer still places the final verdict — not an
-            # auto-reject; circumstances may still apply at interview.)
-            return _fact('income', 'gap', evidence, review + [
-                _item('income_above_b40_line', amount=ctx['per_capita'], ceiling=ctx['per_capita_ceiling'])])
-        if band == 'unsure':
-            return _fact('income', 'recommend', evidence, review + [
-                _item('income_salary_unsure', amount=ctx['gross'])])
-        if band == 'probable':
-            evidence.append(_item('income_salary_probable', amount=ctx['gross']))
-            return _fact('income', 'review', evidence, review)
-        # 'unknown' — the STR failed AND there are no usable salary docs to assess → Unsure (amber):
-        # we simply can't confirm B40, a human looks. NOT a blue review off incidental earner greens.
-        return _fact('income', 'recommend', evidence, review)
+        # §6 evidence-driven fall-through, in the salary module for the usual reason (this file is
+        # on the oversize ledger): a rejected / wrong-type STR is no STR, so band the household on
+        # the salary/benefit documents it did supply. Same one-way edge as the two calls above.
+        from .verdict_income_salary import _failed_str_headroom_fact
+        return _failed_str_headroom_fact(application, earner, evidence, review)
     # Two states, one answer (they are mutually exclusive — a mismatch is only read off a CURRENT
     # STR). `str_unsure`: Lulus-but-stale or approval-unread → Unsure (amber), not a blue review
     # off incidental greens. `str_mismatch`: an approved STR provably in someone ELSE'S name
