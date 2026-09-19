@@ -7,18 +7,17 @@ import {
   type ApplicantDocument, type ConsentStatus,
 } from '@/lib/api'
 import { formatNricDisplay, asksForQuestion } from '@/lib/scholarship'
+import { docTypeToStudentGroup, STUDENT_DOC_GROUP_ORDER } from '@/lib/docCategory'
 import { SUBJECT_NAMES } from '@/lib/subjects'
 import type { NextStepKey } from '@/lib/scholarship'
 
 // Documents grouped + ordered like the rest of the pipeline: Identity → Results →
-// Pathway → Income (many) → Other (optional, many).
-const DOC_GROUP_ORDER = ['identity', 'academic', 'pathway', 'income', 'other'] as const
-const DOC_CATEGORY: Record<string, string> = {
-  ic: 'identity', results_slip: 'academic', offer_letter: 'pathway',
-  parent_ic: 'income', str: 'income', salary_slip: 'income', epf: 'income',
-  birth_certificate: 'income', guardianship_letter: 'income',
-  water_bill: 'income', electricity_bill: 'income',
-}
+// Pathway → Income (many) → Other (optional, many). Both the ORDER and the grouping come from
+// `@/lib/docCategory`, the one home for "which fact does this document belong to". A private
+// `DOC_CATEGORY` literal lived here until TD-262 chunk 1 and had never gained
+// `income_support_doc` or `semester_result`, so this read-back filed the one document proving an
+// informal earner's wage under "Additional documents" (TD-235 incident 2, fixed in the officer
+// cockpit on 2026-09-07 and nowhere else).
 
 // The post-consent read-back. Builds a one-glance recap of everything the student
 // entered, from data already in the client (the application + profile) plus the
@@ -98,8 +97,8 @@ export default function ScholarshipReview({
   const activeConsent = consent?.consents?.find((c) => c.is_active)
 
   // Documents grouped + ordered.
-  const grouped = DOC_GROUP_ORDER
-    .map((cat) => ({ cat, items: docs.filter((d) => (DOC_CATEGORY[d.doc_type] || 'other') === cat) }))
+  const grouped = STUDENT_DOC_GROUP_ORDER
+    .map((cat) => ({ cat, items: docs.filter((d) => docTypeToStudentGroup(d.doc_type) === cat) }))
     .filter((g) => g.items.length > 0)
 
   return (

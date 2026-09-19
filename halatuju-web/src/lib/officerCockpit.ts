@@ -6,6 +6,7 @@
  * re-implements them.
  */
 
+import { docTypeToFact } from '@/lib/docCategory'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
 
 // ── Verdict item i18n key ─────────────────────────────────────────────────────
@@ -85,55 +86,10 @@ export const TONE_BAND_KEY: Record<FactTileTone, string> = {
 
 // ── Document grouping ────────────────────────────────────────────────────────
 
-export type DocFact = 'identity' | 'academic' | 'pathway' | 'income' | 'additional' | 'other'
-
-/** Map a document's doc_type to the verification-fact section it belongs to. */
-function docTypeToFact(docType: string): DocFact {
-  switch (docType) {
-    case 'ic':
-      return 'identity'
-    // Academic = the SPM slip AND the continuing-student current-CGPA slip.
-    case 'results_slip':
-    case 'semester_result':
-      return 'academic'
-    case 'offer_letter':
-      return 'pathway'
-    // The parent/guardian IC sits with INCOME: the income docs (STR / salary slip /
-    // EPF) are issued in a parent's name, and the parent IC is what confirms that
-    // earner's identity. The relationship docs (birth cert / guardianship letter) link
-    // that earner to the student, so they belong to the income cluster too. Utility bills
-    // lend credibility to the income claim (rendered in the UTILITY sub-section).
-    case 'parent_ic':
-    case 'str':
-    case 'epf':
-    case 'salary_slip':
-    // ⚠ THE SUPPORT LETTER IS INCOME EVIDENCE, NOT AN EXTRA — DO NOT MOVE IT BACK TO 'other'.
-    // It was filed under 'other' until 2026-09-07, beneath a comment calling it a
-    // "reviewer-requested extra". That was true when it was written and stopped being true on
-    // 2026-07-25, when `income_engine.member_income_evidenced` made a DECLARED amount backed by
-    // this letter one of the four ways a family may prove what it earns. An informally-employed
-    // parent has no payslip and no EPF — the letter IS their income document, and filing it in
-    // the junk drawer hid the only evidence there was while the panel above it printed the
-    // salary slip as "Missing" in red. Found on application 144 (BrightPath #21).
-    case 'income_support_doc':
-    case 'birth_certificate':
-    case 'guardianship_letter':
-    case 'water_bill':
-    case 'electricity_bill':
-      return 'income'
-    // Supporting context the student attaches to their case (not a verification fact).
-    case 'statement_of_intent':
-    case 'photo':
-    case 'school_leaving_cert':
-      return 'additional'
-    // Everything else — reviewer-requested extras, bank/reference docs.
-    case 'bank_statement':
-    case 'reference_letter':
-    case 'other':
-    default:
-      return 'other'
-  }
-}
+// Which fact a doc_type belongs to now has ONE home, `@/lib/docCategory`, because three screens
+// answered the question and only this one had been corrected (TD-262 / W5). The type is
+// re-exported so the cockpit's own consumers keep importing it from here.
+export type { DocFact } from '@/lib/docCategory'
 
 export interface GroupedDocuments {
   identity: AdminApplicantDocument[]

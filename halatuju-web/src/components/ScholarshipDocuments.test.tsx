@@ -220,3 +220,109 @@ describe('no income-proof document gets its own layout', () => {
     }
   })
 })
+
+/**
+ * THE PER-EARNER INCOME TICK — what a student SEES, against what the server counts.
+ *
+ * This is TD-262 / W7 (and W6), moved out of `lib/__tests__/incomeEvidenceHomes.test.ts`, where it
+ * could only be a SOURCE READ: `memberIncomeShown` is a closure inside this component. Every
+ * assertion below reads the cue the student reads — the "income shown" line that replaces "add any
+ * one of these" and turns the block green — never an internal flag.
+ *
+ * The rule, which is the server's (`income_engine.member_income_evidenced`, arms 1-3, and
+ * `has_income_support_doc`): a salary slip, an EPF, or a declared amount backed by a supporting
+ * letter that is tagged to this earner OR UNTAGGED and that READ.
+ *
+ * ⚠ AND NO STR ARM. `member_income_evidenced` has a fourth, `str_not_breached`, which is about the
+ * HOUSEHOLD; the owner ruled on 2026-09-19 that an STR must not tick an individual EARNER (the
+ * working adults' proofs are ADDITIONAL to it). The STR case below pins that as CORRECT.
+ */
+describe('the per-earner income tick counts what the server counts', () => {
+  const SHOWN = 'scholarship.docs.income.wizard.incomeShown'
+  const NOT_SHOWN = 'scholarship.docs.income.wizard.incomeAnyOne'
+
+  /** A supporting letter, with the read-verdict the extractor stored for it. */
+  const letter = (id: number, member: string, studentVerdict = 'ok') => ({
+    id, doc_type: 'income_support_doc', household_member: member,
+    original_filename: `letter-${id}.pdf`, content_type: 'application/pdf', size: 2048,
+    verification_status: 'pending', download_url: 'https://example.test/d',
+    uploaded_at: '2026-06-01', vision_fields: { student_verdict: studentVerdict },
+  }) as unknown as api.ApplicantDocument
+
+  /** A current, matching STR for the father — everything the household needs for the gate. */
+  const householdStr = () => ({
+    id: 90, doc_type: 'str', household_member: 'father',
+    original_filename: 'household-str.pdf', content_type: 'application/pdf', size: 2048,
+    verification_status: 'pending', download_url: 'https://example.test/d',
+    uploaded_at: '2026-06-01',
+    str_check: { current_status: 'current', name_status: 'match', nric_status: 'match' },
+  }) as unknown as api.ApplicantDocument
+
+  /** A salary-route student: who works, what each declared, and what is on file. */
+  const salaryStudent = async (
+    members: Array<'father' | 'mother'>,
+    declared: Record<string, number>,
+    documents: api.ApplicantDocument[],
+  ) => {
+    mockApi.listDocuments.mockResolvedValue({ documents })
+    await render_({
+      ...sandboxApplication, requirements: FULL, income_route: 'salary', income_earner: '',
+      income_working_members: members, income_declared: declared,
+    } as unknown as ScholarshipApplication)
+  }
+
+  it('a declared amount + an UNTAGGED letter that read: the earner reads as shown', async () => {
+    // W7. `has_income_support_doc` filters `household_member__in=[member, '']` — an Action-Centre
+    // upload routinely lands untagged, and one family-level letter is enough (D1). Before this
+    // fix the server counted it, the officer saw it, and her own screen went on asking.
+    await salaryStudent(['father'], { father: 900 }, [letter(11, '')])
+    expect(screen.getByText(SHOWN)).toBeTruthy()
+    expect(screen.queryByText(NOT_SHOWN)).toBeNull()
+  })
+
+  it('a declared amount + a letter TAGGED to that earner: shown', async () => {
+    await salaryStudent(['father'], { father: 900 }, [letter(12, 'father')])
+    expect(screen.getByText(SHOWN)).toBeTruthy()
+  })
+
+  it('a letter tagged to a DIFFERENT earner does not tick this one', async () => {
+    // The untagged arm widens the rule to household-level; it does not erase whose letter it is.
+    await salaryStudent(['father'], { father: 900 }, [letter(13, 'mother')])
+    expect(screen.getByText(NOT_SHOWN)).toBeTruthy()
+    expect(screen.queryByText(SHOWN)).toBeNull()
+  })
+
+  it('a declared amount with NO letter is not shown — a self-report is not evidence', async () => {
+    await salaryStudent(['father'], { father: 900 }, [])
+    expect(screen.getByText(NOT_SHOWN)).toBeTruthy()
+  })
+
+  it('a letter that did NOT read is not evidence either', async () => {
+    // The api's V1 finding-#2 rule: `has_income_support_doc` requires `student_verdict == 'ok'`,
+    // so a blank or wrong image cannot "prove" a declared informal wage. The student payload
+    // carries `vision_fields`, so the cue asks the same question rather than counting presence.
+    await salaryStudent(['father'], { father: 900 }, [letter(14, '', 'wrong_doc')])
+    expect(screen.getByText(NOT_SHOWN)).toBeTruthy()
+    expect(screen.queryByText(SHOWN)).toBeNull()
+  })
+
+  it('⚠ A HOUSEHOLD STR AND NOTHING ELSE LEAVES THE EARNER UN-TICKED — the owner\'s rule', async () => {
+    // W6, pinned as CORRECT (owner 2026-09-19, docs/decisions.md). The STR clears the submission
+    // gate and predicts green; it is not a statement about what this father earns, and his income
+    // proof is ADDITIONAL to it. DO NOT "fix" this by adding an STR arm to `memberIncomeShown`.
+    await salaryStudent(['father'], {}, [householdStr()])
+    expect(screen.getByText(NOT_SHOWN)).toBeTruthy()
+    expect(screen.queryByText(SHOWN)).toBeNull()
+  })
+
+  it('⚠ ONE UNTAGGED LETTER TICKS BOTH EARNERS — the api counts the same row for each', async () => {
+    // Stated because it looks like a bug. `has_income_support_doc` filters per member and never
+    // claims a document, so the identical row satisfies the father AND the mother. The cue reads
+    // as the GATE reads; it must not invent a stricter rule than the one that lets her submit.
+    // (The OFFICER's panel does claim an untagged letter once — that disagreement is TD-262
+    // chunk 2, and `incomeEvidenceHomes.test.ts` W-B pins the cockpit's side of it.)
+    await salaryStudent(['father', 'mother'], { father: 900, mother: 700 }, [letter(15, '')])
+    expect(screen.getAllByText(SHOWN)).toHaveLength(2)
+    expect(screen.queryByText(NOT_SHOWN)).toBeNull()
+  })
+})

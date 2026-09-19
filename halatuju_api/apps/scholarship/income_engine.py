@@ -1087,6 +1087,13 @@ def member_income_evidenced(application, member) -> bool:
         ketua-kampung / penghulu / employer letter), OR
       - a non-breached household STR (the government means-test standing in, P3 precedence).
 
+    ⚠ THE FOURTH ARM IS A SUBMISSION-GATE SHORTCUT ABOUT THE HOUSEHOLD, NOT A STATEMENT ABOUT
+    THIS MEMBER (owner 2026-09-19, ``docs/decisions.md``). An STR is evidence that the HOUSEHOLD
+    is B40; it says nothing about what this earner earns, and a working adult's income proof is
+    ADDITIONAL to a proven STR, never replaced by it. So a PER-EARNER cue — the student's green
+    tick, the officer's per-member slot — must NOT read this predicate as "this member's income
+    is shown". The web's student-side cue deliberately carries only the first three arms.
+
     The SINGLE source for the salary-route "income proof" requirement — read by both
     ``member_cluster_complete`` and ``services.income_doc_blockers`` so the gate and the wizard
     can never disagree. A declared amount ALONE (no letter) does NOT count: it stays 'unproven'

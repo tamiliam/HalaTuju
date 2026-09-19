@@ -98,6 +98,7 @@ import {
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
+import { docTypeToRequestFact } from '@/lib/docCategory'
 import { formatDate } from '@/lib/formatDate'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
@@ -151,13 +152,11 @@ function resolveReq(catKey: string, qual: string): { docType: string; member: st
   const opt = c.options!.find((o) => o.value === qual)
   return opt ? { docType: opt.docType, member: '' } : null
 }
-const DOC_FACT: Record<string, string> = {
-  ic: 'identity', results_slip: 'academic', semester_result: 'academic', offer_letter: 'pathway',
-  parent_ic: 'income', str: 'income', salary_slip: 'income', epf: 'income',
-  birth_certificate: 'income', guardianship_letter: 'income',
-  water_bill: 'income', electricity_bill: 'income',
-  school_leaving_cert: 'other', statement_of_intent: 'other', photo: 'other', other: 'other',
-}
+// The fact a requested document belongs to comes from `@/lib/docCategory` — see
+// `docTypeToRequestFact`. A private `DOC_FACT` literal lived here until TD-262 chunk 1 and had
+// never gained `income_support_doc`, so a request for the one document that proves an informal
+// earner's wage would have been stamped 'other'. Latent only: `REQUEST_CATEGORIES` above offers
+// no such request today.
 
 // #9 sync: an interview anomaly is SUPPRESSED from the agenda when the same concern is
 // already a Check-2 query the student is being asked (Check-2 fires first; no repeat).
@@ -868,7 +867,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     try {
       setApp(await raiseResolutionItem(
         id,
-        { kind: 'doc', doc_type: docType, household_member: member, prompt, fact: DOC_FACT[docType] || 'other' },
+        { kind: 'doc', doc_type: docType, household_member: member, prompt, fact: docTypeToRequestFact(docType) },
         { token },
       ))
       setReqDocNote(''); setReqCategory(''); setReqQualifier('')

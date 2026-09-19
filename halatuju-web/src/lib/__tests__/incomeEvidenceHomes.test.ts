@@ -17,11 +17,13 @@
  *        backend income requirement engine". What shall we ASK FOR.
  *   W-B  `officerCockpit.incomeSubSections` — what the OFFICER is shown, including which earners
  *        get a red "Missing" row. Imports W-A for the member list, then decides evidence itself.
- *   W-C  `officerCockpit.docTypeToFact` (via `groupDocumentsByFact`) — which fact section a
- *        document is filed under. TWO further copies of this map exist and this file pins the gap.
+ *   W-C  `docCategory.docTypeToFact` (via `groupDocumentsByFact`) — which fact section a document
+ *        is filed under. TWO further copies of this map existed until TD-262 chunk 1; all three
+ *        readers now share one home and this file pins the whole table plus both folds.
  *   W-D  `ScholarshipDocuments.memberIncomeShown` — the STUDENT's green cue. Not exported (it is a
- *        closure inside the component), so it is characterised here by the api answer it claims to
- *        mirror plus a source-read pin; see the block at the foot of this file.
+ *        closure inside the component), so its SHAPE is characterised here by a source-read pin;
+ *        what a student actually sees is asserted by rendering the tab in
+ *        `src/components/ScholarshipDocuments.test.tsx`.
  *
  * The api answers quoted below are not guesses: each is the value asserted by the named test in
  * `test_income_evidence_homes.py`, which runs against the real engine.
@@ -29,6 +31,9 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
+import {
+  docTypeToFact, docTypeToRequestFact, docTypeToStudentGroup, STUDENT_DOC_GROUP_ORDER,
+} from '@/lib/docCategory'
 import { groupDocumentsByFact, incomeSubSections } from '@/lib/officerCockpit'
 import { incomeRequirements, salaryMemberBlocks, workingMembers } from '@/lib/incomeWizard'
 import type { AdminApplicantDocument } from '@/lib/admin-api'
@@ -215,82 +220,129 @@ describe('W-B incomeSubSections — what the officer chases', () => {
 })
 
 // ════════════════════════════════════════════════════════════════════════════════════════════
-// W-C — WHICH FACT a document is filed under, and the two copies that were never updated
+// W-C — WHICH FACT a document is filed under. ONE map now, and the readers that fold it
 // ════════════════════════════════════════════════════════════════════════════════════════════
-describe('W-C the fact grouping — one rule, three copies', () => {
+/**
+ * ⚠ W5 IS FIXED (TD-262 chunk 1) AND THIS BLOCK IS NO LONGER A SOURCE READ. There were three
+ * copies of "which fact does this document type belong to" — `officerCockpit.docTypeToFact`,
+ * `view.tsx`'s `DOC_FACT` (a document REQUEST's stored fact) and `ScholarshipReview.tsx`'s
+ * `DOC_CATEGORY` (the student's post-consent read-back) — and only the first had gained
+ * `income_support_doc` when TD-235 incident 2 was fixed on 2026-09-07. The student's own
+ * confirmation screen therefore filed the one document proving her family's informal income
+ * under "Additional documents". All three now read `@/lib/docCategory`, so this pins BEHAVIOUR
+ * through real imports rather than grepping two module-private consts.
+ *
+ * The table below is the characterisation: every value of `ApplicantDocument.DOC_TYPES`
+ * (`halatuju_api/apps/scholarship/models.py`) with the officer-drawer bucket it lands in. The
+ * two student-facing readers fold `additional` into `other` and are asserted against that fold,
+ * so a difference has to be a decision rather than a map somebody forgot.
+ */
+const DOC_TYPE_FACT: Record<string, ReturnType<typeof docTypeToFact>> = {
+  ic: 'identity',
+  results_slip: 'academic',
+  semester_result: 'academic',
+  offer_letter: 'pathway',
+  parent_ic: 'income',
+  str: 'income',
+  epf: 'income',
+  salary_slip: 'income',
+  income_support_doc: 'income',
+  birth_certificate: 'income',
+  guardianship_letter: 'income',
+  water_bill: 'income',
+  electricity_bill: 'income',
+  school_leaving_cert: 'additional',
+  statement_of_intent: 'additional',
+  photo: 'additional',
+  bank_statement: 'other',
+  reference_letter: 'other',
+  other: 'other',
+}
+
+describe('W-C the fact grouping — one rule, one home, three readers', () => {
   it('the cockpit files the support letter under income (the 2026-09-07 fix)', () => {
     const groups = groupDocumentsByFact([doc({ id: 1, doc_type: 'income_support_doc' })])
     expect(groups.income).toHaveLength(1)
     expect(groups.other).toHaveLength(0)
   })
 
-  it('H8-FINDING (W5): two further copies of that map still leave the letter out', () => {
-    // TD-235 incident 2 was fixed in `officerCockpit.docTypeToFact` and NOWHERE ELSE. Two more
-    // maps spell the same rule and neither gained the fourth way:
-    //
-    //   `src/app/admin/scholarship/[id]/view.tsx`      → DOC_FACT      (stamps a doc REQUEST's fact)
-    //   `src/components/ScholarshipReview.tsx`         → DOC_CATEGORY  (the student's read-back)
-    //
-    // The second is LIVE and student-facing: `DOC_CATEGORY[d.doc_type] || 'other'` puts the one
-    // document that proves her family's income under "Other" on the confirmation screen she reads
-    // after giving consent. Real student: Janani — the same letter, the same word, the same
-    // mistake, one component away from where it was corrected.
-    // The first is LATENT: `view.tsx`'s REQUEST_CATEGORIES offers no `income_support_doc` request,
-    // so no ticket can reach that line today — it becomes live the moment one is added.
-    //
-    // ⚠ This is a SOURCE READ because both maps are module-private consts with no export and no
-    // seam. It pins the gap so it cannot widen silently; it is not a substitute for the rendered
-    // test that should exist once the owner rules on the finding.
-    const cockpit = readFileSync(join(WEB_ROOT, 'src/lib/officerCockpit.ts'), 'utf8')
-    const view = readFileSync(
-      join(WEB_ROOT, 'src/app/admin/scholarship/[id]/view.tsx'), 'utf8')
-    const review = readFileSync(join(WEB_ROOT, 'src/components/ScholarshipReview.tsx'), 'utf8')
+  it('W5 RESOLVED: all three readers now file the support letter under income', () => {
+    // The officer's drawer, the student's read-back, and the fact stamped on a document REQUEST.
+    // Real student: Janani — the same letter, the same word, in three components, corrected in
+    // one of them.
+    expect(docTypeToFact('income_support_doc')).toBe('income')
+    expect(docTypeToStudentGroup('income_support_doc')).toBe('income')
+    expect(docTypeToRequestFact('income_support_doc')).toBe('income')
+  })
 
-    // The scan can only mean anything if the maps are still where it looks — assert that first,
-    // or a rename turns this test into a no-op that passes for ever.
-    expect(cockpit).toContain('function docTypeToFact')
-    expect(view).toContain('const DOC_FACT: Record<string, string>')
-    expect(review).toContain('const DOC_CATEGORY: Record<string, string>')
-
-    const factMap = (src: string, name: string) => {
-      const start = src.indexOf(name)
-      return src.slice(start, src.indexOf('}', start))
+  it('places every document type the api can store, and every one is accounted for', () => {
+    for (const [docType, fact] of Object.entries(DOC_TYPE_FACT)) {
+      expect([docType, docTypeToFact(docType)]).toEqual([docType, fact])
     }
-    expect(cockpit).toContain("case 'income_support_doc':")
+    // A type the table forgot would otherwise read 'other' and look deliberate.
+    expect(Object.keys(DOC_TYPE_FACT)).toHaveLength(19)
+  })
 
-    const viewMap = factMap(view, 'const DOC_FACT: Record<string, string>')
-    const reviewMap = factMap(review, 'const DOC_CATEGORY: Record<string, string>')
-    // ⚠ A negative assertion over a slice is worthless until the slice is proved to hold the
-    // thing it is supposed to be missing FROM. Each map must really carry the income group.
-    expect(viewMap).toContain("salary_slip: 'income'")
-    expect(reviewMap).toContain("salary_slip: 'income'")
-    expect(viewMap).not.toContain('income_support_doc')
-    expect(reviewMap).not.toContain('income_support_doc')
+  it('the student read-back folds `additional` into `other`, and renders every group it can answer', () => {
+    // Her screen has five headings, not six (`scholarship.docs.section.*`). A group outside the
+    // display order would not be merely unlabelled — the read-back iterates the ORDER, so the
+    // document would vanish from the confirmation screen she is asked to check.
+    for (const [docType, fact] of Object.entries(DOC_TYPE_FACT)) {
+      const expected = fact === 'additional' ? 'other' : fact
+      expect([docType, docTypeToStudentGroup(docType)]).toEqual([docType, expected])
+      expect(STUDENT_DOC_GROUP_ORDER).toContain(docTypeToStudentGroup(docType))
+    }
+  })
+
+  it('a document REQUEST folds `additional` into `other` too — the stored value stays one of five', () => {
+    // `ResolutionItem.fact` is read back by the Action Centre (`item.fact === 'income'`) and by
+    // `confirmTargetFor`; a sixth word would land in the database with nothing to read it.
+    for (const [docType, fact] of Object.entries(DOC_TYPE_FACT)) {
+      const expected = fact === 'additional' ? 'other' : fact
+      expect([docType, docTypeToRequestFact(docType)]).toEqual([docType, expected])
+    }
+  })
+
+  it('an unknown doc_type is "other" everywhere, never an error', () => {
+    // A payload from a future api release must still show the student her own upload.
+    expect(docTypeToFact('a_type_this_build_has_never_heard_of')).toBe('other')
+    expect(docTypeToStudentGroup('a_type_this_build_has_never_heard_of')).toBe('other')
+    expect(docTypeToRequestFact('a_type_this_build_has_never_heard_of')).toBe('other')
   })
 })
 
 // ════════════════════════════════════════════════════════════════════════════════════════════
 // W-D — the student's green cue, and the arm it does not have
 // ════════════════════════════════════════════════════════════════════════════════════════════
+/**
+ * ⚠ W7 HAS LEFT THIS FILE, because it is FIXED and no longer a drift to pin. The student's cue
+ * required the supporting letter to be TAGGED to the earner while the api and the cockpit accept
+ * it untagged; it now accepts an untagged letter (and requires the letter to have READ) exactly
+ * as `income_engine.has_income_support_doc` does. What a student SEES is asserted where it can be
+ * seen — `src/components/ScholarshipDocuments.test.tsx`, "the per-earner income tick counts what
+ * the server counts", which mounts the tab and reads the green cue rather than the source.
+ *
+ * W6 stays, and it is now pinned as CORRECT rather than as a defect: see the comment inside it.
+ */
 describe('W-D memberIncomeShown — the student side', () => {
-  it('H8-FINDING (W6): it claims to mirror the api rule and is missing the STR arm', () => {
-    // `ScholarshipDocuments.tsx` says, above `memberIncomeShown`:
-    //   "mirrors income_engine.member_income_evidenced … a salary slip, an EPF, or a declared
-    //    amount + a supporting letter. (STR would satisfy too, but an STR household is on the STR
-    //    route, not here.)"
-    // The parenthesis is the assumption that fails. `member_income_evidenced`'s fourth arm is
-    // `str_not_breached(application)`, which is ROUTE-AGNOSTIC — pinned by the api twin
-    // TestEachWayAlone.test_way4_non_breached_household_str, whose household is on the SALARY
-    // route and whose gate clears on the STR alone. `income_doc_blockers` honours it too
-    // (`household_str_status` short-circuits the salary branch).
-    // So a salary-route student holding a genuine STR: the server has already decided her income
-    // is shown and will let her submit, while her own Documents tab keeps the income block open
-    // and un-green, asking for a payslip. Real student: #63 and #116 — both salary-route,
-    // both holding a real STR.
+  it('W6 — the cue has THREE arms and no STR arm, and the owner says that is right', () => {
+    // The original H8 finding called this drift: `member_income_evidenced`'s fourth arm is
+    // `str_not_breached(application)`, which is ROUTE-AGNOSTIC (api twin
+    // TestEachWayAlone.test_way4_non_breached_household_str — a SALARY-route household whose gate
+    // clears on the STR alone), so a salary-route student holding a genuine STR is accepted by the
+    // server while her Documents tab still asks for a payslip.
     //
-    // ⚠ SOURCE READ, for the same reason as W5: `memberIncomeShown` is a closure inside a 1,942-
-    // line component with no export. The assertion is that the three arms are these three and
-    // that no STR arm exists.
+    // ⚠ THE OWNER SETTLED IT THE OTHER WAY, 2026-09-19 (docs/decisions.md). An STR is evidence
+    // about the HOUSEHOLD: it clears the gate and predicts green, and the working adults' income
+    // proofs are ADDITIONAL to it, never replaced by it. So a household STR must NOT turn an
+    // individual EARNER's tick green. The WEB is the side that matches the owner; the api's
+    // fourth arm is a gate shortcut wearing a per-member name, and its docstring now says so.
+    // DO NOT "fix" this by adding an STR arm. The disagreement is deliberate and this pins it.
+    //
+    // ⚠ SOURCE READ, and the reason is unchanged: `memberIncomeShown` is a closure inside a
+    // ~1,960-line component with no export. It asserts the three arms are these three and that no
+    // fourth appears. The rendered half — a household STR and nothing else leaves the earner
+    // un-ticked — is in `ScholarshipDocuments.test.tsx`.
     const src = readFileSync(
       join(WEB_ROOT, 'src/components/ScholarshipDocuments.tsx'), 'utf8')
     expect(src).toContain('const memberIncomeShown = (m: WorkingMember): boolean =>')
@@ -300,18 +352,5 @@ describe('W-D memberIncomeShown — the student side', () => {
     expect(body).toContain("slotVerified('epf', m)")
     expect(body).toContain("d.doc_type === 'income_support_doc'")
     expect(body).not.toContain('str')          // ← no fourth arm, on either spelling
-  })
-
-  it('H8-FINDING (W7): the student side requires the letter TAGGED; the api accepts untagged', () => {
-    // api: `has_income_support_doc` filters `household_member__in=[member, '']` — "one family-level
-    // supporting letter is enough under the flexible-evidence rule", and an Action-Centre upload
-    // routinely lands untagged. The cockpit agrees (see W-B's untagged test). The STUDENT's cue
-    // does not: `(d.household_member || '') === m`. So after she answers an officer's request for
-    // a supporting letter, the server counts it, the officer sees it, and her own screen does not.
-    const src = readFileSync(
-      join(WEB_ROOT, 'src/components/ScholarshipDocuments.tsx'), 'utf8')
-    const start = src.indexOf('const memberIncomeShown')
-    const body = src.slice(start, src.indexOf('const salaryComplete', start))
-    expect(body).toContain("(d.household_member || '') === m")
   })
 })

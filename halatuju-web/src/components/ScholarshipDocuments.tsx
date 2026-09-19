@@ -1371,16 +1371,31 @@ function IncomeWizard({
   }
   const strComplete = ans.income_route === 'str' && !!strEarner
     && reqs.compulsory.every((dt) => slotVerified(dt, STR_EARNER_DOCS.has(dt) ? strEarner : ''))
-  // A member's income is SHOWN any one way (mirrors income_engine.member_income_evidenced — the
-  // backend gate is authoritative; this drives the green cue + the income-collapse trigger): a
-  // salary slip, an EPF, or a declared amount + a supporting letter. (STR would satisfy too, but
-  // an STR household is on the STR route, not here.)
+  // A supporting letter the SERVER would count for this earner, asking what
+  // `income_engine.has_income_support_doc` asks: tagged to THIS earner OR UNTAGGED (an
+  // Action-Centre upload lands untagged, and one family-level letter is enough — D1), not flagged
+  // non-genuine, and READ (`student_verdict === 'ok'` — V1 #2: a blank image must not "prove" a
+  // declared wage; the student payload carries `vision_fields`). ⚠ One untagged letter therefore
+  // ticks EVERY earner who declared an amount, exactly as the api counts the same row for each;
+  // this cue reads as the GATE reads (the officer's panel claims it once — TD-262 chunk 2).
+  const supportLetterCounts = (d: ApplicantDocument, m: WorkingMember): boolean =>
+    ((d.household_member || '') === m || (d.household_member || '') === '')
+    && notFlaggedFake(d)
+    && (d.vision_fields?.student_verdict || '') === 'ok'
+  // A member's income is SHOWN any one way — the three ways the server counts for THIS EARNER
+  // (income_engine.member_income_evidenced, arms 1-3; the backend gate is authoritative, and this
+  // drives the green cue + the income-collapse trigger): a salary slip, an EPF, or a declared
+  // amount backed by a supporting letter. ⚠ THERE IS NO STR ARM, AND THAT IS THE OWNER'S RULE,
+  // NOT AN OVERSIGHT (2026-09-19, docs/decisions.md): a household STR clears the gate and predicts
+  // green but says nothing about what THIS earner earns — a working adult's proof is ADDITIONAL
+  // to a proven STR. The engine's fourth `str_not_breached` arm is a gate shortcut wearing a
+  // per-member name; do not copy it here.
+  // drift-test: halatuju-web/src/lib/__tests__/incomeEvidenceHomes.test.ts
   const memberIncomeShown = (m: WorkingMember): boolean =>
     slotVerified('salary_slip', m)
     || slotVerified('epf', m)
     || (declaredAmount(ans.income_declared, m) > 0
-        && docs.some((d) => d.doc_type === 'income_support_doc'
-             && (d.household_member || '') === m && notFlaggedFake(d)))
+        && docs.some((d) => d.doc_type === 'income_support_doc' && supportLetterCounts(d, m)))
   // Salary route is "satisfied" once AT LEAST ONE ticked earner is complete: their IC (+ any
   // relationship doc) verified AND their income shown (owner 2026-07-24/25). The rest may come now
   // or at Check 2, and other earners stay optional.
