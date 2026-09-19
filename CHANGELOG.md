@@ -37,6 +37,7 @@ reviewed the diff, re-ran the suite. No migration. Web app untouched.
   Repair = the cockpit's Re-run on a bill that looks wrong. Never a local re-extraction.
 - `MODEL_VERSION` not bumped: this is field EXTRACTION, not a genuineness signature.
 - Ten bite-checks, ten red. Gates: **6,917 pytest**, 0 failed; no reading worse; `std` ok.
+- **Live:** `halatuju-api-01057-pg2`, first attempt, 6,917 passed inside the deploy build; no ERROR lines.
 - Still open, recorded in the entry: the water parser's own reader blanks a credit (safe - reads as
   no arrears); a `CR`-suffixed credit still reads positive (no evidence any Malaysian bill prints one).
 
