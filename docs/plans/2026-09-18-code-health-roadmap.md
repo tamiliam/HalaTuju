@@ -247,7 +247,8 @@ chasing them is how a health arc turns into a rewrite.
 
 ## Phase 3 — One rule, one home
 
-### H7 — Money and text helpers ⚠ touches money
+### H7 — Money and text helpers ⚠ touches money ✅ SHIPPED 2026-09-19
+*Retro: `docs/retrospective-2026-09-19-code-health-h7.md`. No behaviour change, proven by 417 characterisation assertions written first. `dup` 10 → 4 (the four are declared exceptions). `money.py`, `text.py`, `gemini.py`. Raised **TD-261**: five defects in money helpers, pinned, not fixed — the owner's call.*
 - **Goal:** no two functions share a name and differ in behaviour.
 - **What the survey found — this is not the merge it looked like:** `_money` is **eight functions
   doing three jobs** (extract a figure from OCR text; parse to `Decimal`; format for display). No

@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 7977547 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 88c93f0 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 11 | 83 | 0 | 0 | ok | ok |
 | 2026-09-19 | 13274d7 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 10 | 84 | 0 | 0 | ok | ok |
 | 2026-09-19 | 5fbc6e1 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | - | - | ok |
@@ -23,12 +24,12 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 88c93f0, window 2026-06-21 onward)
+## Latest run (2026-09-19, 7977547, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8547 | 273.5 |
+| `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8556 | 273.8 |
 | `halatuju-web/src/lib/admin-api.ts` | 25 | 4099 | 102.5 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 29 | 3187 | 92.4 |
 | `halatuju_api/apps/scholarship/services.py` | 31 | 2931 | 90.9 |
@@ -43,7 +44,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 300 fix / 427 feat commits since 2026-06-21
 
 ### Files over 1000 lines
-- `8547  halatuju_api/apps/scholarship/views_admin.py`
+- `8556  halatuju_api/apps/scholarship/views_admin.py`
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
 - `4099  halatuju-web/src/lib/admin-api.ts`
@@ -64,7 +65,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `1246  halatuju_api/apps/courses/views_admin.py`
 - `1214  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1195  halatuju_api/apps/scholarship/serializers.py`
-- `1155  halatuju_api/apps/scholarship/contracts.py`
+- `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
 - `1023  halatuju_api/apps/scholarship/profile_engine.py`
@@ -88,15 +89,9 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `151  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
 
 ### Function names with 3+ homes in one app
-- _money x7 (scholarship): doc_parse.py, invoice_parsers.py, invoicing.py, import_vircle_csv.py, payments.py, sponsor_comms.py, sponsorship.py
-- _any x4 (scholarship): electricity_doc.py, salary_doc.py, school_leaving_doc.py, water_doc.py
-- _ids x4 (scholarship): award_students_batch.py, send_award_offer_emails.py, send_sign_invitation_emails.py, send_vircle_install_emails.py
-- _norm x4 (scholarship): academic_engine.py, bc_parse.py, funding_estimate.py, results_doc.py
-- _digits x3 (scholarship): import_vircle_csv.py, offer_parse.py, vircle_airtable.py
 - _gemini_generate x3 (scholarship): apply_copy_draft.py, contracts.py, sponsor_terms.py
 - banned_phrases x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 - render x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
-- score_markers x3 (scholarship): electricity_doc.py, school_leaving_doc.py, water_doc.py
 - unknown_placeholders x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 
 ### Cross-app imports
@@ -118,29 +113,34 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 15 of 140 web test files read source text
 
 ### Debt register
-- 152 entries have a defining line; 83 carry no resolution marker on it
+- 153 entries have a defining line; 84 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 378: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4336: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 381: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 4367: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 13274d7
-
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5378
+- budgets no looser than at 88c93f0
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (fifth reading) — H7 closed: `dup` 10 → 4
+
+Plain run after sprint H7. No FAILs.
+- **dup 10 → 4** — *done, and the four that remain are ACCEPTED, permanently.* `_gemini_generate` ×3
+  are the metering seams tenancy rule 6 names; `render` / `banned_phrases` /
+  `unknown_placeholders` ×3 are one engine and two thin per-audience adapters. The reading will
+  keep WARNing at 4; that WARN is decided — do not chase it to zero by renaming adapters. The
+  roadmap's target ("0 true duplicates") is met.
+- **td_open 83 → 84** — **TD-261**: five defects in money/figure helpers found by characterising
+  today's behaviour. *Decision: owner's — they change what money code returns.*
+- **`std` ok** — six names left the budget; it tightened.
+- All other WARNs unchanged; decisions stand as in the baseline.
 
 ### 2026-09-19 (fourth reading) — TD-254 + TD-259 closed (security, on the owner's order)
 

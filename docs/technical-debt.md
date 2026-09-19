@@ -94,6 +94,9 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   rows read `admin.familyIncome` / the new `admin.familySize`; the Story error names a question that
   exists. The idiom behind all eight — `t(key) || 'fallback'`, which never fires because `t` echoes
   the key — is now refused by a web code standard, with `tOr()` as the replacement.
+- **TD-261 (raised 2026-09-19 by code health H7)** — five defects in money/figure helpers, pinned
+  not fixed: a dropped minus sign and dropped decimals when reading a bill figure; `Infinity`/`NaN`
+  in two admin amount boxes give a 500; a latent raw `{token}` in sponsor email. ~2h, owner's word.
 - **TD-260 (raised 2026-09-19)** — 604 of 674 IC-holding students have no verified contact, so no
   self-service way to reclaim an account, and support has no screen to do it for them. Two owner levers.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
@@ -3975,6 +3978,34 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns)
+
+**Found:** code health H7 (2026-09-19). Each is pinned, exactly as it behaves today, in
+`apps/scholarship/tests/test_helper_characterisation.py` with an `# H7-FINDING:` comment. **None was
+fixed** — H7's rule was "no behaviour change, proven".
+
+| # | Defect | Where | Reachable |
+|---|---|---|---|
+| 1 | **Drops a minus sign:** `'-5.00'` → `'RM5.00'`. A credit line on a utility bill reads back as a charge. | `doc_parse._first_rm_figure` | any OCR'd bill |
+| 2 | **Drops the decimals of a one-decimal figure:** `'1234.5'` → `'RM1234'` (the pattern admits two decimals or none). | same | any OCR'd bill |
+| 3 | **`'Infinity'` in the receipt box is a 500, not a 400 `bad_amount`** — `Decimal('Infinity')` parses, so the guard is already behind us when `quantize` raises. | `invoicing._receipt_amount` → `record_receipt` | admin request body |
+| 4 | **`'NaN'` on a payment-run line, same escape** — comparing a NaN raises outside the guard. | `payments._payment_amount` → `set_run_item` | admin request body |
+| 5 | **A raw `{student_cards}` can reach a sponsor's inbox** — `partner_comms.render` defaults every declared structural token to empty; `sponsor_comms.render` does not. **Not reachable today**: `send_student_alert` returns before rendering when it has no cards (proven by test). A latent gap. | `sponsor_comms.render` | not today |
+
+Also pinned as *surprises*, not defects — decide whether they are wanted: `'1,2,3'` parses as 123 in
+`invoice_parsers`; `payments` silently ROUNDS a third decimal place where `invoicing` refuses the
+same input; the Vircle CSV import accepts a NEGATIVE monthly amount.
+
+**Shape of the fix (~2h, touches money → the owner's word, then a small sprint):**
+- 3 and 4: move the finite/range check inside the guard in `money.parse_money` (`is_finite()`), so
+  both answer `bad_amount`. Pure robustness; no legitimate input changes. **Safest to do first.**
+- 1 and 2: widen the extraction pattern (optional sign, one-or-two decimals). ⚠ This changes what
+  the officer sees on a bill and what `vision_fields` stores for NEW extractions — state how many
+  stored rows carry an affected figure before shipping (the backward-repair rule), and do not
+  re-extract old documents from a local checkout.
+- 5: give `sponsor_comms.render` the same defaulting as `partner_comms.render`.
+- Each fix EDITS its row in the characterisation table — that edit is the review.
 
 ### [TD-260] A student with no verified contact cannot reclaim their account, and support has no tool to help — medium
 

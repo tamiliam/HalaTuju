@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H7 - `_money` was eight functions doing three jobs; now it is three - 2026-09-19
+
+Sprint H7 of the code-health roadmap, under the development freeze. ⚠ **This sprint touched money
+parsing and formatting, and the rule was NO BEHAVIOUR CHANGE, PROVEN.** 417 characterisation
+assertions were written against the UNTOUCHED tree first and pass UNCHANGED after
+(`tests/test_helper_characterisation.py`). Exactly one behaviour moved anywhere, it is named
+below, and no caller can reach it.
+
+- **`apps/scholarship/money.py`** - `parse_money` and `format_money`, whose parameters were
+  designed FROM the seven real behaviours rather than chosen. Four parse callers keep their own
+  exception, their own code and their own message through a two-line local wrapper named for what
+  it reads (`_invoice_amount`, `_receipt_amount`, `_payment_amount`, `_monthly_amount`); three
+  format callers keep their own answer for an absent figure (`'0.00'` / `''` / `None`). Those
+  three answers are all correct and all different, which is why the shared name had to go.
+  `doc_parse._money` - which shared only the NAME, extracting a figure from OCR text - is now
+  `_first_rm_figure`.
+- **⚠ FOUR FINDINGS IN MONEY CODE, PINNED AND NOT FIXED** (owner's call): `doc_parse` drops a
+  MINUS sign, so a `-5.00` credit line on a bill reads back as a charge of RM5.00; the same
+  function drops the decimals of a one-decimal figure (`1234.5` reads RM1234); and `'Infinity'`
+  into the receipt box, or `'NaN'` into a payment-run line, escapes as a raw
+  `decimal.InvalidOperation` - a 500 - because the range check sits outside the parse guard.
+  Both are reachable from an admin request body. Each carries an `H7-FINDING` comment.
+- **`_norm` x4 RENAMED, never merged** - `_norm_lower_alnum`, `_norm_letters_upper`,
+  `_norm_strip_lower`, `_norm_fold_upper_alnum`. One string, four answers: 'Café 2' reads
+  `caf 2` / `CAF` / `café 2` / `CAFE 2`. Merging any two would have silently changed a name match
+  in an eligibility or genuineness path. `score_markers` x3 likewise became
+  `score_<doc type>_markers`, following `salary_doc.score_family`, which already had a real name.
+  **MODEL_VERSION deliberately NOT bumped** - a rename must not trigger a cohort-wide re-score.
+- **True duplicates given one home:** `_ids` (byte-identical in four management commands) and
+  `digits_only` are now `apps/scholarship/text.py`; `_any` (byte-identical in four genuineness doc
+  modules) is `results_doc._any_token`, beside the normaliser it depends on. `offer_parse` keeps
+  its OWN digit reader, renamed `_decimal_digits`: it reads raw OCR on the way to an NRIC, and the
+  `isdigit()` rule would KEEP a superscript that `\D` drops.
+- **The one deliberate widening:** the Vircle CSV import's digit reader no longer raises
+  `TypeError` on a non-string. Its three call sites pass a CSV cell or a profile NRIC, so no
+  caller could reach that branch.
+- **`apps/scholarship/gemini.py`** - one single-model, no-fallback, metered Gemini call instead of
+  three copies. **All three `_gemini_generate` seams stay, by name**, because that is the boundary
+  tenancy rule 6 names and the string ~30 `patch()` calls point at. Registered in the AI registry's
+  `_NOT_A_JOB` with a reason.
+- **⚠ REPORTED, NOT FIXED: `sponsor_comms.render` can leak a raw `{student_cards}` into a
+  sponsor's inbox** where `partner_comms.render` cannot - the partner renderer defaults every
+  declared structural token to `('', '')` and the sponsor one does not. Four tests prove both the
+  leak and that no production path reaches it today (`send_student_alert` returns before rendering
+  when it has no cards). A fix changes what a sponsor receives.
+- **Left alone on purpose:** `render` / `banned_phrases` / `unknown_placeholders` x3 are one
+  engine and two thin per-audience adapters - already correctly factored. They stay in
+  `duplicated_names` with their counts, because that ledger exists to list accepted exceptions,
+  not to be emptied by renaming adapters.
+- Eight bite-checks, eight red, none silent. Gates: **6,894 pytest** (6,857 + 37 new), 3 skipped,
+  0 failed; `manage.py check` clean; `makemigrations --check` no changes; email golden
+  byte-unchanged. Readings: **`dup` 10 to 4** (the 4 are the declared exceptions), `big` 25
+  unchanged, `std` ok, nothing worse. Six names left the standards budget and it TIGHTENED.
+
 ## The Overview, phase 2 Sprint A - the organisation chooses its panels, and a round can be picked - 2026-09-18
 
 Owner rulings: the layout is **per organisation** (not per person); intake-year filter first,
