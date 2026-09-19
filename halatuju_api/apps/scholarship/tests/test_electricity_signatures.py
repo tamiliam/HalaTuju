@@ -7,7 +7,7 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.electricity_doc import (
-    MODEL_VERSION, electricity_genuineness, score_markers)
+    MODEL_VERSION, electricity_genuineness, score_electricity_markers)
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 
 
@@ -60,8 +60,8 @@ class TestElectricitySignatures(SimpleTestCase):
                 "Tarikh Bil 01.06.2026\nTarif Domestik\nKegunaan 200 kWj")
         self.assertEqual(self._g(text)['status'], 'genuine')
 
-    def test_score_markers_tallies(self):
-        m = score_markers("TNB No. Akaun Caj Semasa Tarikh Bil Tarif Kegunaan kWj")
+    def test_score_electricity_markers_tallies(self):
+        m = score_electricity_markers("TNB No. Akaun Caj Semasa Tarikh Bil Tarif Kegunaan kWj")
         self.assertEqual(m['issuer'], 'tnb')
         self.assertGreaterEqual(m['labels'], 4)
 

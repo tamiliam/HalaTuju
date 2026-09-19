@@ -17,17 +17,14 @@ from django.core.management.base import BaseCommand
 
 from apps.scholarship.emails import send_award_offer_email
 from apps.scholarship.models import ScholarshipApplication, Sponsorship
-
-
-def _ids(raw):
-    return [int(x) for x in str(raw or '').replace(' ', '').split(',') if x.isdigit()]
+from apps.scholarship.text import id_list
 
 
 class Command(BaseCommand):
     help = 'Send the award good-news email to explicit awarded application IDs (env AWARD_EMAIL_APP_IDS).'
 
     def handle(self, *args, **options):
-        app_ids = _ids(getattr(settings, 'AWARD_EMAIL_APP_IDS', ''))
+        app_ids = id_list(getattr(settings, 'AWARD_EMAIL_APP_IDS', ''))
         if not app_ids:
             self.stdout.write('AWARD_EMAIL_APP_IDS not set — nothing sent.')
             return

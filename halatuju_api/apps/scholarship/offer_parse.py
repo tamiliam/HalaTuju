@@ -26,12 +26,23 @@ _DMY_RE = re.compile(r'(\d{1,2}\s+' + _MALAY_MONTH + r'\s+20\d{2})', re.IGNORECA
 _NAME_MARKER = re.compile(r'\b(A\s*/\s*[LP]|BIN|BINTI)\b', re.IGNORECASE)
 
 
-def _digits(s: str) -> str:
+def _decimal_digits(s: str) -> str:
+    """Every DECIMAL digit in `s`, in order. '' for a blank.
+
+    ⚠ NOT `text.digits_only`, and not a candidate to become it. That one filters on
+    `str.isdigit()`, which also admits superscripts and other digit-LIKE characters; this one
+    filters on `\\d`, which does not. The input here is raw OCR text on its way to becoming an
+    NRIC, and the difference is not academic: a stray `³` in a scan would be KEPT by the other
+    rule, could carry the string to twelve characters, and would be written onto an application
+    as part of somebody's identity number. Dropping it is the only safe answer for this caller.
+
+    Code health H7 merged the other two copies of `_digits` and deliberately left this one.
+    """
     return re.sub(r'\D', '', s or '')
 
 
 def _norm_nric(raw: str) -> str:
-    d = _digits(raw)
+    d = _decimal_digits(raw)
     return f'{d[:6]}-{d[6:8]}-{d[8:12]}' if len(d) == 12 else ''
 
 

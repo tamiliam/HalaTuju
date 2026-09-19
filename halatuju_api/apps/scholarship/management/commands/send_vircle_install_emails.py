@@ -28,12 +28,9 @@ from django.core.management.base import BaseCommand
 from apps.scholarship.emails import send_vircle_install_email
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.resolution import VIRCLE_CODE, VIRCLE_SETUP_STATES
+from apps.scholarship.text import id_list
 from apps.scholarship.vircle import (birth_year_from_nric, can_register,
                                      raise_setup_task, sync_relay_sheet)
-
-
-def _ids(raw):
-    return [int(x) for x in str(raw or '').replace(' ', '').split(',') if x.isdigit()]
 
 
 class Command(BaseCommand):
@@ -46,7 +43,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         dry = options['dry_run']
-        app_ids = _ids(getattr(settings, 'VIRCLE_EMAIL_APP_IDS', ''))
+        app_ids = id_list(getattr(settings, 'VIRCLE_EMAIL_APP_IDS', ''))
         if not app_ids:
             self.stdout.write('VIRCLE_EMAIL_APP_IDS not set — nothing sent.')
             return

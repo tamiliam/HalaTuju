@@ -223,7 +223,7 @@ def parse_amount(raw) -> Decimal | None:
     """`2` · `12.4` · `"RM26.90"` · `"RM1,234.50"` → `Decimal`. Anything else → `None`.
 
     ⚠ Returns `Decimal`, never `float`. This is money; it is summed, compared against a released
-    total and shown to a sponsor. `payments._money` makes the same choice for the same reason.
+    total and shown to a sponsor. `payments._payment_amount` makes the same choice for the same reason.
     ⚠ `None` is a FINDING, not a shrug — every caller counts it. See the module docstring.
     """
     if isinstance(raw, bool):          # bool is an int subclass; never a valid amount

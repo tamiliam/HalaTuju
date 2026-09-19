@@ -13,11 +13,10 @@ became the second family, so there is one renderer and not two drifting copies.
 This module stays PURE: it decides what an email should say and whether it may be sent. It never
 touches SMTP. `sponsor_notify` does the sending, and nothing here can put a message in an inbox.
 """
-from decimal import Decimal
-
 from django.conf import settings
 
 from . import email_templates
+from . import money
 from .models import SponsorEmailLog, SponsorEmailTemplate
 
 # ── the nine kinds ────────────────────────────────────────────────────────────
@@ -148,12 +147,16 @@ def recipient_for(sponsor):
 
 # ── rendering ─────────────────────────────────────────────────────────────────
 
-def _money(value):
-    """Money as a 2-decimal string, matching `sponsorship._money`, so a figure in an email and
-    the same figure on the screen can never render two different ways."""
-    if value in (None, ''):
-        return ''
-    return str(Decimal(str(value)).quantize(Decimal('0.01')))
+def _amount_str(value):
+    """Money as a 2-decimal string, so a figure in an email and the same figure on the screen can
+    never render two different ways.
+
+    ⚠ It matches `sponsorship._amount_str` for a REAL figure and deliberately not for an absent
+    one: the card prints `0.00` where this prints nothing at all, because a sentence reading
+    "your balance is RM0.00" when we simply have no figure would be a statement about someone's
+    money that we cannot stand behind. (The old docstring here claimed the two matched outright;
+    they never did, and code health H7 corrected the claim rather than the behaviour.)"""
+    return money.format_money(value, blank='')
 
 
 def student_cards_blocks(cards, lang='en', organisation=None):
@@ -206,8 +209,8 @@ def _scalars(context):
         'team_signoff': context.get('team_signoff') or platform.team_signoff('en'),
         'portal_link': context.get('portal_link') or f'{frontend}/sponsor',
         'count': context.get('count', ''),
-        'amount': _money(context.get('amount')),
-        'available': _money(context.get('available')),
+        'amount': _amount_str(context.get('amount')),
+        'available': _amount_str(context.get('available')),
         'bank_ref': context.get('bank_ref', ''),
         'inviter_name': context.get('inviter_name', ''),
         'invitee_name': (context.get('invitee_name') or '').strip() or NO_NAME_GREETING,

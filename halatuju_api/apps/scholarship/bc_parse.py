@@ -64,16 +64,23 @@ def _rows(words):
     return out
 
 
-def _norm(s):
+def _norm_letters_upper(s):
+    """Upper-case, LETTERS ONLY — every digit, space and separator deleted outright.
+
+    Named for its exact rule by code health H7: this app had four `_norm`s and no two agreed.
+    This is the aggressive one, and the deletion of digits is the point — a birth-certificate row
+    is located by its label wording, and the OCR's stray column numbers must not break the match.
+    It is therefore the one that must NEVER be merged with a normaliser that keeps digits.
+    """
     return re.sub(r'[^A-Z]', '', (s or '').upper())
 
 
 def _find(rows, *needles, start=0, end=None):
     """First row index in [start, end) whose normalised text contains any needle (also normalised)."""
     end = len(rows) if end is None else end
-    needles = [_norm(n) for n in needles]
+    needles = [_norm_letters_upper(n) for n in needles]
     for i in range(start, end):
-        t = _norm(rows[i]['text'])
+        t = _norm_letters_upper(rows[i]['text'])
         if any(n in t for n in needles):
             return i
     return -1
@@ -158,12 +165,12 @@ def parse_bc(words) -> Optional[dict]:
     rows = _rows(words)
     if not rows:
         return None
-    full = _norm(' '.join(r['text'] for r in rows))
+    full = _norm_letters_upper(' '.join(r['text'] for r in rows))
     if 'SIJILKELAHIRAN' not in full and 'BIRTHCERTIFICATE' not in full:
         return None                                            # not a BC → Gemini/genuineness
 
     # ── classify version ──────────────────────────────────────────────────────
-    bilingual = any(_norm(n) in full for n in ('CHILD', 'FATHER', 'MOTHER', 'FULL NAME', 'BIRTH CERTIFICATE'))
+    bilingual = any(_norm_letters_upper(n) in full for n in ('CHILD', 'FATHER', 'MOTHER', 'FULL NAME', 'BIRTH CERTIFICATE'))
     version = 'bilingual' if bilingual else 'mono'
 
     # ── section headers (Malay tokens — present in BOTH versions) ──────────────

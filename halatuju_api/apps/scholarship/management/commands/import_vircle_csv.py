@@ -21,19 +21,16 @@ Expected columns: No, Student NRIC, Vircle ID, Phone, Student Name, Monthly, Bat
 """
 import csv
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Max
 from django.utils import timezone
 
-from apps.scholarship import payments
+from apps.scholarship import money, payments
 from apps.scholarship.models import Disbursement, PaymentRun, PaymentRunItem, ScholarshipApplication
-
-
-def _digits(value):
-    return ''.join(ch for ch in (value or '') if ch.isdigit())
+from apps.scholarship.text import digits_only
 
 
 def _parse_batch_date(raw):
@@ -49,10 +46,16 @@ def _parse_batch_date(raw):
     raise CommandError(f'Unrecognised Batch date: {raw!r}')
 
 
-def _money(raw):
+def _monthly_amount(raw):
+    """A Monthly cell out of the owner's backfill CSV → a 2dp `Decimal`.
+
+    The only money reader in the app for which a BLANK is a legal value: an empty cell means the
+    student was not paid that month, not that the file is unreadable.
+
+    Was `_money` until code health H7; the mechanics moved to `money.parse_money`."""
     try:
-        return Decimal(str(raw or '0').strip() or '0').quantize(Decimal('0.01'))
-    except (InvalidOperation, ValueError):
+        return money.parse_money(raw, blank_as='0', quantize=True)
+    except money.MoneyError:
         raise CommandError(f'Unrecognised Monthly amount: {raw!r}')
 
 
@@ -77,21 +80,21 @@ class Command(BaseCommand):
         by_nric = {}
         for app in (ScholarshipApplication.objects
                     .select_related('profile', 'cohort').all()):
-            nric = _digits(getattr(app.profile, 'nric', '') if app.profile_id else '')
+            nric = digits_only(getattr(app.profile, 'nric', '') if app.profile_id else '')
             if nric:
                 by_nric.setdefault(nric, app)
 
         parsed, unmatched = [], []
         for r in rows:
-            nric = _digits(r.get('Student NRIC'))
+            nric = digits_only(r.get('Student NRIC'))
             app = by_nric.get(nric)
             if app is None:
                 unmatched.append((r.get('No'), r.get('Student NRIC')))
                 continue
             parsed.append({
                 'app': app,
-                'vircle_id': _digits(r.get('Vircle ID')),
-                'monthly': _money(r.get('Monthly')),
+                'vircle_id': digits_only(r.get('Vircle ID')),
+                'monthly': _monthly_amount(r.get('Monthly')),
                 'batch': _parse_batch_date(r.get('Batch')),
             })
 

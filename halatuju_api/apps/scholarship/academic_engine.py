@@ -143,8 +143,13 @@ def _band_to_grade(phrase: str) -> str:
     return _BAND_TO_GRADE.get(' '.join((phrase or '').lower().split()), '')
 
 
-def _norm(name: str) -> str:
-    """Lowercase, collapse runs of non-alphanumerics to single spaces, strip."""
+def _norm_lower_alnum(name: str) -> str:
+    """Lowercase, collapse runs of non-alphanumerics to single spaces, strip.
+
+    Named for its exact rule by code health H7: this app had four `_norm`s and no two agreed.
+    Note that an accented letter is DELETED here rather than folded, so 'Café' reads as 'caf' —
+    which is why this cannot be swapped for `results_doc._norm_fold_upper_alnum`.
+    """
     return re.sub(r'[^a-z0-9]+', ' ', (name or '').lower()).strip()
 
 
@@ -179,7 +184,7 @@ _BAND_MODS = frozenset({'tertinggi', 'tinggi', 'atas'})
 # Every known SPM subject as (canonical_name, token_set), LONGEST first so e.g.
 # "Matematik Tambahan" wins over "Matematik" on a subset match.
 _KNOWN_SUBJECTS = sorted(
-    ((name, frozenset(_norm(name).split())) for name in set(_SUBJECT_BM.values())),
+    ((name, frozenset(_norm_lower_alnum(name).split())) for name in set(_SUBJECT_BM.values())),
     key=lambda t: -len(t[1]),
 )
 
@@ -191,7 +196,7 @@ def _match_known_subject(raw: str) -> str:
     subject's words are all present in it, and return that subject's clean name. Strips
     codes/noise for free, and drops non-subject rows (an "Ujian Lisan" oral line, a
     watermark fragment). '' when no known subject matches."""
-    tokens = set(_norm(raw).split())
+    tokens = set(_norm_lower_alnum(raw).split())
     if not tokens:
         return ''
     for name, kt in _KNOWN_SUBJECTS:
@@ -413,7 +418,7 @@ def parse_spm_slip(words):
         gr = _parse_grade_row(row)
         if not gr:
             continue
-        nn = _norm(gr['subject'])
+        nn = _norm_lower_alnum(gr['subject'])
         if nn in seen:
             continue
         seen.add(nn)
@@ -550,7 +555,7 @@ def read_slip(doc) -> dict:
                 g = band_grade or letter
                 if s:
                     names.append(s)
-                    nn = _norm(s)
+                    nn = _norm_lower_alnum(s)
                     if g:
                         grades[nn] = g
                     if band_grade:
@@ -579,11 +584,11 @@ def compare_academics(profile_grades, slip) -> dict:
     for key, grade in (profile_grades or {}).items():
         nm = _SUBJECT_BM.get(key)
         if nm and grade:
-            prof_by_name[_norm(nm)] = grade
+            prof_by_name[_norm_lower_alnum(nm)] = grade
 
     slip_norm = {}  # normname → first readable form
     for n in slip['names']:
-        slip_norm.setdefault(_norm(n), n)
+        slip_norm.setdefault(_norm_lower_alnum(n), n)
     bands = slip.get('bands', {})
     letters = slip.get('letters', {})
 

@@ -39,7 +39,7 @@ BUMP MODEL_VERSION on ANY change to the marker groups, thresholds, or the decisi
 discipline as electricity_doc.MODEL_VERSION / salary_doc.MODEL_VERSION) — it is persisted on the
 document and gates re-scoring.
 """
-from .results_doc import _norm
+from .results_doc import _any_token, _norm_fold_upper_alnum
 
 # Version of the water-bill signature model. History:
 #   1.0.0 (2026-07-10) — initial grammar-first + operator-bonus cascade; 13 operator families +
@@ -47,7 +47,7 @@ from .results_doc import _norm
 MODEL_VERSION = '1.0.0'
 
 # ── Operator identity (bonus signal — names the family, never gates 'genuine') ───────────────────
-# In corpus-prevalence order. Markers are chosen to be DISTINCTIVE after _norm (uppercased, accents
+# In corpus-prevalence order. Markers are chosen to be DISTINCTIVE after _norm_fold_upper_alnum (uppercased, accents
 # stripped, non-alphanumerics → single space) so they don't collide with ordinary Malay words —
 # hence 'AIR TERENGGANU' not the bare 'SATU' (= "one"), 'LEMBAGA AIR PERAK' not the bare 'LAP',
 # 'KUCHING WATER' not the bare 'LAKU' (substring of "berlaku"). Peninsular first, then East Malaysia.
@@ -92,27 +92,30 @@ _ELECTRICITY_TERM = ['ELEKTRIK', 'ELECTRICITY', 'TENAGA NASIONAL', 'KWJ', 'KWH',
 _MYKAD = ['WARGANEGARA', 'PENGARAH PENDAFTARAN', 'PENDAFTARAN NEGARA']
 
 
-def _any(tokens, tn):
-    return any(_norm(t) in tn for t in tokens)
-
-
-def score_markers(ocr_text: str) -> dict:
+def score_water_markers(ocr_text: str) -> dict:
     """The raw marker tallies for OCR text (transparent, for tests + calibration):
     ``{operator, labels, water, m3, electricity, mykad}``. ``operator`` names the recognised utility
-    or ''. Pure."""
-    tn = _norm(ocr_text)
+    or ''. Pure.
+
+    Named for its document type by code health H7. Three modules called this `score_markers`
+    and returned three DIFFERENT dictionaries; `salary_doc` already had its own name
+    (`score_family`), so this follows the convention that was already here. No marker group,
+    threshold or cascade changed, so MODEL_VERSION is deliberately NOT bumped — a rename must
+    not trigger a cohort-wide re-score.
+    """
+    tn = _norm_fold_upper_alnum(ocr_text)
     operator = ''
     for name, markers in _OPERATORS:
-        if _any(markers, tn):
+        if _any_token(markers, tn):
             operator = name
             break
     return {
         'operator': operator,
-        'labels': sum(1 for g in _BILL_LABELS if _any(g, tn)),
-        'water': _any(_WATER_TERM, tn),
-        'm3': _any(_M3, tn),
-        'electricity': _any(_ELECTRICITY_TERM, tn),
-        'mykad': _any(_MYKAD, tn),
+        'labels': sum(1 for g in _BILL_LABELS if _any_token(g, tn)),
+        'water': _any_token(_WATER_TERM, tn),
+        'm3': _any_token(_M3, tn),
+        'electricity': _any_token(_ELECTRICITY_TERM, tn),
+        'mykad': _any_token(_MYKAD, tn),
     }
 
 
@@ -122,7 +125,7 @@ def water_genuineness(ocr_text: str) -> dict:
     cap vocabulary); ``family`` names the recognised operator (air_selangor/saj_johor/…), or
     'unrecognised' (genuine water grammar, unknown operator), or a reject family (electricity_bill/
     not_water_bill). Pure + deterministic; never raises."""
-    m = score_markers(ocr_text)
+    m = score_water_markers(ocr_text)
     operator, labels = m['operator'], m['labels']
     # Any water signal — a water term, an m³ unit, or a recognised operator — anchors the doc as a
     # water bill and guarantees it is never rejected (corpus: every genuine bill carried one).

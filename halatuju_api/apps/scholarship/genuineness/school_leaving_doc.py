@@ -36,7 +36,7 @@ BUMP MODEL_VERSION on ANY change to the marker groups, thresholds, or the decisi
 discipline as water_doc / electricity_doc / salary_doc MODEL_VERSION) — it is persisted on the
 document and gates re-scoring.
 """
-from .results_doc import _norm, misfiled_as
+from .results_doc import _any_token, _norm_fold_upper_alnum, misfiled_as
 
 # Version of the school-leaving-cert signature model. History:
 #   1.0.0 (2026-07-15) — initial leaver-anchor-first + structural-labels cascade; testimonial letters
@@ -81,24 +81,27 @@ _SCHOOL_WORDS = ['SEKOLAH MENENGAH', 'SMK', 'PENGETUA', 'TANDATANGAN PENGETUA', 
 _MYKAD = ['WARGANEGARA', 'PENGARAH PENDAFTARAN', 'PENDAFTARAN NEGARA', 'MYKAD']
 
 
-def _any(tokens, tn):
-    return any(_norm(t) in tn for t in tokens)
-
-
-def score_markers(ocr_text: str) -> dict:
+def score_school_leaving_markers(ocr_text: str) -> dict:
     """The raw marker tallies for OCR text (transparent, for tests + calibration):
     ``{title, leaver, labels, label_names, school, mykad}``. ``labels`` = how many of the standard
     field-label GROUPS are present; ``label_names`` names which ones (the calibration readout — the
-    raw OCR text is not persisted, so this per-doc hit list is what we read back to tune). Pure."""
-    tn = _norm(ocr_text)
-    hit = [g[0] for g in _FIELD_LABELS if _any(g, tn)]
+    raw OCR text is not persisted, so this per-doc hit list is what we read back to tune). Pure.
+
+    Named for its document type by code health H7. Three modules called this `score_markers`
+    and returned three DIFFERENT dictionaries; `salary_doc` already had its own name
+    (`score_family`), so this follows the convention that was already here. No marker group,
+    threshold or cascade changed, so MODEL_VERSION is deliberately NOT bumped — a rename must
+    not trigger a cohort-wide re-score.
+    """
+    tn = _norm_fold_upper_alnum(ocr_text)
+    hit = [g[0] for g in _FIELD_LABELS if _any_token(g, tn)]
     return {
-        'title': _any(_TITLE, tn),
-        'leaver': _any(_LEAVER_ANCHOR, tn),
+        'title': _any_token(_TITLE, tn),
+        'leaver': _any_token(_LEAVER_ANCHOR, tn),
         'labels': len(hit),
         'label_names': hit,
-        'school': _any(_SCHOOL_WORDS, tn),
-        'mykad': _any(_MYKAD, tn),
+        'school': _any_token(_SCHOOL_WORDS, tn),
+        'mykad': _any_token(_MYKAD, tn),
     }
 
 
@@ -108,7 +111,7 @@ def school_leaving_genuineness(ocr_text: str) -> dict:
     'not_school_leaving_cert'} (the canonical cap vocabulary); ``family`` names the form
     ('sijil_berhenti' standard numbered / 'testimonial' free-form letter) or a reject family. Pure +
     deterministic; never raises."""
-    m = score_markers(ocr_text)
+    m = score_school_leaving_markers(ocr_text)
     labels = m['labels']
     is_leaver = bool(m['title'] or m['leaver'])
 

@@ -8,7 +8,7 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.water_doc import (
-    MODEL_VERSION, water_genuineness, score_markers)
+    MODEL_VERSION, water_genuineness, score_water_markers)
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 
 
@@ -79,11 +79,11 @@ class TestWaterSignatures(SimpleTestCase):
 
     def test_operator_never_collides_with_common_malay_word(self):
         # 'satu' (= "one") must NOT be read as the Terengganu operator; a bare word is not a marker.
-        m = score_markers("Bayar satu kali sahaja")
+        m = score_water_markers("Bayar satu kali sahaja")
         self.assertEqual(m['operator'], '')
 
-    def test_score_markers_tallies(self):
-        m = score_markers("AIR SELANGOR No. Akaun Tunggakan Tarif Jumlah Perlu Dibayar meter padu")
+    def test_score_water_markers_tallies(self):
+        m = score_water_markers("AIR SELANGOR No. Akaun Tunggakan Tarif Jumlah Perlu Dibayar meter padu")
         self.assertEqual(m['operator'], 'air_selangor')
         self.assertTrue(m['m3'])
         self.assertGreaterEqual(m['labels'], 3)

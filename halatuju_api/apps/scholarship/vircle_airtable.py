@@ -36,6 +36,8 @@ import logging
 from django.conf import settings
 from django.utils import timezone
 
+from .text import digits_only
+
 logger = logging.getLogger(__name__)
 
 # Aliases for the fields Vircle's automation may send back. Their Airtable columns are named by
@@ -55,14 +57,10 @@ _STATUS_KEYS = ('Status', 'status')
 _ACTIVE_STATUS = 'done'
 
 
-def _digits(value) -> str:
-    return ''.join(ch for ch in str(value or '') if ch.isdigit())
-
-
 def format_nric(value) -> str:
     """`080805081489` → `080805-08-1489` (the shape Vircle's guide shows). A value that is not
     12 digits is passed through untouched — better to send what we hold than to mangle it."""
-    d = _digits(value)
+    d = digits_only(value)
     if len(d) == 12:
         return f'{d[:6]}-{d[6:8]}-{d[8:]}'
     return str(value or '').strip()
@@ -127,7 +125,7 @@ def _match_application(nric: str):
     write onto a rejected or expired file."""
     from .models import ScholarshipApplication
     from .resolution import VIRCLE_SETUP_STATES
-    want = _digits(nric)
+    want = digits_only(nric)
     if len(want) != 12:
         return None
     candidates = (ScholarshipApplication.objects
@@ -135,7 +133,7 @@ def _match_application(nric: str):
                   .select_related('profile')
                   .order_by('-id'))
     for app in candidates:
-        if _digits(getattr(app.profile, 'nric', '')) == want:
+        if digits_only(getattr(app.profile, 'nric', '')) == want:
             return app
     return None
 
@@ -204,14 +202,14 @@ def apply_update(payload: dict) -> dict:
     nric = _first(payload, _NRIC_KEYS)
     app = _match_application(nric)
     if app is None:
-        logger.warning('Vircle Airtable inbound: no_match nric_digits=%s…', _digits(nric)[:6])
+        logger.warning('Vircle Airtable inbound: no_match nric_digits=%s…', digits_only(nric)[:6])
         return {'ok': False, 'reason': 'no_match'}
 
     result = {'ok': True, 'application': app.id, 'wallet': 'none', 'activated': 'none'}
     fields = []
     pending_alert = None
 
-    wallet = _digits(_first(payload, _WALLET_KEYS))
+    wallet = digits_only(_first(payload, _WALLET_KEYS))
     if wallet:
         if app.vircle_id and app.vircle_id == wallet:
             result['wallet'] = 'kept'

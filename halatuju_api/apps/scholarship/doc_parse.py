@@ -235,8 +235,14 @@ def _parse_str(text: str) -> Optional[dict]:
 #   Baki Terdahulu — matches the convention the income_engine utility_check already reads.
 
 
-def _money(v: str) -> str:
-    """First currency figure in ``v`` → ``RM<n>`` (commas stripped). '' if none."""
+def _first_rm_figure(v: str) -> str:
+    """First currency figure in ``v`` → ``RM<n>`` (commas stripped). '' if none.
+
+    ⚠ Named for what it does since code health H7. It used to be called `_money`, which it shared
+    with seven other functions in this app that PARSED or FORMATTED money; this one does neither.
+    It reads OCR text and returns a display string, it refuses nothing, and it has no opinion
+    about zero, negatives or decimal places — see `money.py` for the functions that do.
+    """
     m = re.search(r'([\d,]+(?:\.\d{2})?)', v or '')
     return f'RM{m.group(1).replace(",", "")}' if m else ''
 
@@ -255,11 +261,11 @@ def _parse_electricity(text: str) -> Optional[dict]:
             block = [ln for ln in lines[idx + 1:end] if ln]
             if block:
                 name, address_lines = block[0], block[1:]
-        amount = _money(find_value(text, r'caj\s+semasa\s*\(?\s*rm\s*\)?'))
+        amount = _first_rm_figure(find_value(text, r'caj\s+semasa\s*\(?\s*rm\s*\)?'))
         if not (name or amount):             # didn't lock onto the bill → Gemini
             return None
         return {'name': name, 'address': ', '.join(address_lines), 'amount': amount,
-                'unpaid_balance': _money(find_value(text, r'baki\s+terdahulu\s*\(?\s*rm\s*\)?')),
+                'unpaid_balance': _first_rm_figure(find_value(text, r'baki\s+terdahulu\s*\(?\s*rm\s*\)?')),
                 'billing_period': find_value(text, r'tempoh\s+bil')}
 
     # Format B — the myTNB "Express Payment / Verify Your Account" screenshot. Students often
@@ -268,7 +274,7 @@ def _parse_electricity(text: str) -> Optional[dict]:
     # billing period). Capturing the amount + address deterministically beats Gemini's blank
     # read (which mis-cascaded into "electricity not provided" + a wall of "not found" notes).
     if has(text, r'express\s+payment') and has(text, r'amount\s+due'):
-        amount = _money(find_value(text, r'amount\s+due'))
+        amount = _first_rm_figure(find_value(text, r'amount\s+due'))
         if not amount:
             return None
         lines = _lines(text)
@@ -335,7 +341,7 @@ def _parse_epf(text: str) -> Optional[dict]:
     # adjacency broken by image OCR yields '' rather than junk ("RINGKASAN", ":").
     em = re.search(r'\d{6,}', find_value(text, r'no\.?\s*majikan'))
     employer = em.group(0) if em else ''
-    balance = _money(find_value(text, r'jumlah\s+simpanan'))
+    balance = _first_rm_figure(find_value(text, r'jumlah\s+simpanan'))
     ym = re.search(r'penyata\s+ahli\s+tahun\s+(20\d{2})', text, re.IGNORECASE)
     year = ym.group(1) if ym else ''
     statement_date = find_value(text, r'tarikh\s+penyata') or year

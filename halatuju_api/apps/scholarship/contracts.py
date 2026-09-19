@@ -26,6 +26,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import award
+from . import gemini
 from .models import ContractClause, ContractTemplate, PaymentScheduleRow
 
 # The three languages the module carries. English is authoritative.
@@ -441,26 +442,15 @@ def _gemini_generate(prompt, model, images=None):
 
     Note the part ORDER: images first, then the prompt, matching ``vision._call_gemini_json`` —
     the model attends better to instructions that follow the evidence.
+
+    ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to ``gemini`` (one copy
+    instead of three) and kept this name, because this is the boundary tenancy rule 6 names BY
+    NAME and the string nineteen ``patch()`` calls in the suite point at. Do not "simplify" it
+    into a direct call.
     """
-    api_key = getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        raise ContractsError('quiz_ai_unconfigured')
-    try:
-        from google import genai
-        from google.genai import types
-    except ImportError:
-        raise ContractsError('quiz_ai_unavailable')
-    client = genai.Client(api_key=api_key)
-    if images:
-        contents = [types.Part.from_bytes(data=data, mime_type=mime) for data, mime in images]
-        contents.append(prompt)
-    else:
-        contents = prompt
-    response = client.models.generate_content(model=model, contents=contents)
-    from . import usage   # billable Gemini call — best-effort meter
-    _it, _ot = usage.gemini_tokens(response)
-    usage.record_usage(usage.GEMINI, model=model, input_tokens=_it, output_tokens=_ot)
-    return response.text
+    return gemini.generate_text(prompt, model, images=images, exc=ContractsError,
+                                unconfigured='quiz_ai_unconfigured',
+                                unavailable='quiz_ai_unavailable')
 
 
 def _clause_and_descendants(clause):

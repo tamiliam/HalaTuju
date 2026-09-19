@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from apps.scholarship.academic_engine import parse_spm_slip, _norm
+from apps.scholarship.academic_engine import parse_spm_slip, _norm_lower_alnum
 
 FIXDIR = Path(__file__).parent / 'fixtures' / 'slips'
 FIXTURES = sorted(FIXDIR.glob('*.json'))
@@ -48,8 +48,8 @@ def test_slip_parses_to_expected_grades(path):
             f"{len(parsed.get('results', []))} subjects — declared {fx.get('declared_subjects')}")
         return
     assert parsed is not None, f"{fx['student']}: parse returned None (fell back to Gemini)"
-    got = {_norm(r['subject']): r['grade'] for r in parsed['results']}
-    expected = {_norm(k): v for k, v in fx['expected_grades'].items()}
+    got = {_norm_lower_alnum(r['subject']): r['grade'] for r in parsed['results']}
+    expected = {_norm_lower_alnum(k): v for k, v in fx['expected_grades'].items()}
     missing = [k for k in expected if k not in got]
     assert not missing, f"{fx['student']}: subjects not parsed: {missing}\n got={got}"
     wrong = {k: (got[k], expected[k]) for k in expected if got[k] != expected[k]}

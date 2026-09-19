@@ -62,7 +62,13 @@ _PROGRAMME_NAME_KEYWORDS = (
 )
 
 
-def _norm(value) -> str:
+def _norm_strip_lower(value) -> str:
+    """Strip and lower-case, and nothing else — punctuation and accents survive intact.
+
+    Named for its exact rule by code health H7: this app had four `_norm`s and no two agreed.
+    This is the gentlest, because it compares course-name and pathway substrings rather than
+    people's names, and a course id like `poly-dip.01` must keep its punctuation to match.
+    """
     return (value or '').strip().lower()
 
 
@@ -72,10 +78,10 @@ def _classify_programme(programme) -> str | None:
     an un-estimated cost structure. course_id prefix first, then a course_name scan."""
     if not isinstance(programme, dict):
         return None
-    cid = _norm(programme.get('course_id'))
+    cid = _norm_strip_lower(programme.get('course_id'))
     if any(cid.startswith(p) for p in _NO_ESTIMATE_ID_PREFIXES):
         return None
-    name = _norm(programme.get('course_name'))
+    name = _norm_strip_lower(programme.get('course_name'))
     if 'kolej komuniti' in name:
         return None
     # A foundation LEVEL named in the course (Asasi / Foundation) DEFINES the pathway even
@@ -102,13 +108,13 @@ def classify_pathway(application) -> str:
     concrete course — e.g. auto-filled from the offer letter — which pins the pathway
     type even when the pathway-type fields are blank), then a single pathways_considered
     entry."""
-    if _norm(getattr(application, 'pathway_certainty', '')) == 'sure':
-        cat = _PATHWAY_MAP.get(_norm(application.chosen_pathway))
+    if _norm_strip_lower(getattr(application, 'pathway_certainty', '')) == 'sure':
+        cat = _PATHWAY_MAP.get(_norm_strip_lower(application.chosen_pathway))
         if cat:
             return cat
     # chosen_pathway even without the 'sure' flag (older rows), then intended_pathway.
     for raw in (getattr(application, 'chosen_pathway', ''), getattr(application, 'intended_pathway', '')):
-        cat = _PATHWAY_MAP.get(_norm(raw))
+        cat = _PATHWAY_MAP.get(_norm_strip_lower(raw))
         if cat:
             return cat
     # A concrete chosen programme beats a list of merely-considered pathways.
@@ -117,7 +123,7 @@ def classify_pathway(application) -> str:
         return cat
     considered = application.pathways_considered
     if isinstance(considered, list) and len(considered) == 1:
-        cat = _PATHWAY_MAP.get(_norm(considered[0]))
+        cat = _PATHWAY_MAP.get(_norm_strip_lower(considered[0]))
         if cat:
             return cat
     return 'unknown'

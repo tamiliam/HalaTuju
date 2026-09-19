@@ -384,11 +384,32 @@ _IDENTITY = {'str': {
 }}
 
 
-def _norm(s: str) -> str:
-    """Upper-case, strip accents, collapse runs of non-alphanumerics to a single space."""
+def _norm_fold_upper_alnum(s: str) -> str:
+    """Upper-case, strip accents, collapse runs of non-alphanumerics to a single space.
+
+    ⚠ Named for its exact rule since code health H7, because this app had FOUR functions called
+    `_norm` and they were four different contracts: `academic_engine` lower-cases and DELETES
+    accented letters, `bc_parse` keeps letters only and drops every digit, `funding_estimate`
+    merely strips and lower-cases. Merging any two would have silently changed a name match in an
+    eligibility or genuineness path, so they were renamed instead. This is the accent-FOLDING one
+    — 'Café' becomes 'CAFE', not 'CAF' — and every marker probe in this package matches through
+    it, which is why it is shared with the four sibling doc modules rather than copied.
+    """
     s = unicodedata.normalize('NFKD', s or '')
     s = ''.join(c for c in s if not unicodedata.combining(c))
     return re.sub(r'[^A-Z0-9]+', ' ', s.upper()).strip()
+
+
+def _any_token(tokens, tn):
+    """True when any of `tokens`, normalised, appears in the already-normalised text `tn`.
+
+    ⚠ ONE HOME since code health H7. This was defined four times, byte-identical, in
+    `electricity_doc`, `salary_doc`, `school_leaving_doc` and `water_doc` — all four of which
+    already imported the normaliser above from here, so this is where it belonged all along. It
+    lives beside `_norm_fold_upper_alnum` because the two are one rule: a probe and the text it
+    is matched against must be normalised the same way or the probe silently never fires.
+    """
+    return any(_norm_fold_upper_alnum(t) in tn for t in tokens)
 
 
 def _score_list(signatures, text_norm, has_qr, has_crest, has_seal=False):
@@ -405,7 +426,7 @@ def _score_list(signatures, text_norm, has_qr, has_crest, has_seal=False):
             else:
                 hit = has_qr
         else:
-            hit = any(_norm(p) in text_norm for p in patterns)
+            hit = any(_norm_fold_upper_alnum(p) in text_norm for p in patterns)
         (present if hit else missing).append(label)
         if hit:
             got += weight
@@ -419,7 +440,7 @@ def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = Fals
     """Score OCR text against the slip + certificate signature lists. Returns
     ``{type, probability, weight_got, weight_total, present, missing, scores}`` for the
     better-fitting list. Pure + deterministic for the text signatures."""
-    tn = _norm(ocr_text)
+    tn = _norm_fold_upper_alnum(ocr_text)
     lists = _FAMILIES.get(doc_type, _LISTS)
     scores = {name: _score_list(sig, tn, has_qr, has_crest, has_seal) for name, sig in lists.items()}
     best = max(scores, key=lambda k: scores[k]['probability'])
@@ -468,7 +489,7 @@ def _private_arm_offer(ocr_text: str) -> bool:
     """True when an offer is from a public university's PRIVATE continuing-education arm (SPACE /
     Pendidikan Berterusan / Continuing Education) or a Sdn. Bhd. operator — an IPTS option. Read off
     the OCR text; pure + deterministic."""
-    tn = _norm(ocr_text)
+    tn = _norm_fold_upper_alnum(ocr_text)
     if any(p in tn for p in _PRIVATE_ARM_PHRASES):
         return True
     return ' SPACE ' in f' {tn} '
@@ -501,8 +522,8 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
         # form's DISTINCTIVE page marker is present; otherwise defer to the holistic check — an LHDN
         # SALINAN application copy / a SARA letter carries the generic strings but no form marker and
         # must never pass as a genuine STR. Recognised-but-incomplete → suspect, never not_<type>.
-        tn = _norm(ocr_text)
-        recognised = any(_norm(p) in tn for p in identity.get(r['type'], []))
+        tn = _norm_fold_upper_alnum(ocr_text)
+        recognised = any(_norm_fold_upper_alnum(p) in tn for p in identity.get(r['type'], []))
         if not recognised:
             return {'status': 'unrecognised', 'probability': r['probability'], 'type': r['type'],
                     'present': r['present'], 'missing': r['missing'],
@@ -547,7 +568,7 @@ def misfiled_as(declared_type: str, ocr_text: str) -> dict:
     signatures — e.g. an EPF statement filed as a salary slip) — else ``{}`` (no signal). It does
     NOT try to positively confirm the declared type (that's the future full signature list); it only
     catches a clear misfile. Pure + deterministic; a real payslip matches no other family."""
-    tn = _norm(ocr_text)
+    tn = _norm_fold_upper_alnum(ocr_text)
     if not tn:
         return {}
     best_type, best_p = '', 0.0

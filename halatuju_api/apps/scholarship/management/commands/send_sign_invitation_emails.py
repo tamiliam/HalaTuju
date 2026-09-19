@@ -19,10 +19,7 @@ from django.core.management.base import BaseCommand
 from apps.scholarship.emails import send_sign_invitation_email
 from apps.scholarship.models import ScholarshipApplication, Sponsorship
 from apps.scholarship.sponsorship import arm_sign_deadline
-
-
-def _ids(raw):
-    return [int(x) for x in str(raw or '').replace(' ', '').split(',') if x.isdigit()]
+from apps.scholarship.text import id_list
 
 
 class Command(BaseCommand):
@@ -36,7 +33,7 @@ class Command(BaseCommand):
             self.stdout.write('BURSARY_AGREEMENT_ENABLED is off — the signing chain is dark; '
                               'nothing sent.')
             return
-        app_ids = _ids(getattr(settings, 'SIGN_INVITE_APP_IDS', ''))
+        app_ids = id_list(getattr(settings, 'SIGN_INVITE_APP_IDS', ''))
         if not app_ids:
             self.stdout.write('SIGN_INVITE_APP_IDS not set — nothing sent.')
             return

@@ -29,13 +29,14 @@ business).
 """
 import logging
 from datetime import date, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
+from . import money
 from .models import Disbursement, PaymentRun, PaymentRunItem, ScholarshipApplication
 
 logger = logging.getLogger(__name__)
@@ -87,15 +88,19 @@ class PaymentsError(Exception):
 
 # ── amounts ───────────────────────────────────────────────────────────────────
 
-def _money(value):
-    """Normalise to a non-negative 2dp Decimal (0 is allowed — a credit line can be RM0)."""
+def _payment_amount(value):
+    """Normalise to a non-negative 2dp Decimal (0 is allowed — a credit line can be RM0).
+
+    Rounds to two places rather than refusing a third: a payment-run line is a figure WE compute
+    and an officer adjusts, so the sen it lands on is ours to decide. (`invoicing._receipt_amount`
+    refuses the same input, because a receipt records a figure a bank already decided.)
+
+    Was `_money` until code health H7; the mechanics moved to `money.parse_money`."""
     try:
-        v = Decimal(str(value)).quantize(_CENTS)
-    except (InvalidOperation, ValueError, TypeError):
+        return money.parse_money(value, strip_whitespace=False, quantize=True,
+                                 allow_negative=False)
+    except money.MoneyError:
         raise PaymentsError('bad_amount')
-    if v < 0:
-        raise PaymentsError('bad_amount')
-    return v
 
 
 def paid_to_date(application):
@@ -462,7 +467,7 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
         raise PaymentsError('reason_required')
 
     if amount is not None:
-        val = _money(amount)
+        val = _payment_amount(amount)
         cap = run_item.award_amount_snapshot - run_item.paid_to_date_snapshot
         if cap < 0:
             cap = _ZERO

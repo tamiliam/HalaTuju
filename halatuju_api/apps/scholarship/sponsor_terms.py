@@ -24,6 +24,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from . import gemini
 from .models import SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion
 
 LANGUAGES = ('en', 'ms', 'ta')
@@ -167,20 +168,14 @@ def _gemini_generate(prompt, model):
 
     NO downgrade fallback, matching the contract module's owner decision: an unconfigured or
     unavailable model raises rather than quietly producing something from a weaker one.
+
+    ⚠ THE SEAM STAYS HERE, THREE LINES LONG. Code health H7 moved the body to `gemini` (one copy
+    instead of three) and kept this name, because this is the boundary tenancy rule 6 names and
+    the string every `patch()` in the suite points at. Do not "simplify" it into a direct call.
     """
-    api_key = getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        raise SponsorTermsError('quiz_ai_unconfigured')
-    try:
-        from google import genai
-    except ImportError:
-        raise SponsorTermsError('quiz_ai_unavailable')
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(model=model, contents=prompt)
-    from . import usage   # billable — best-effort meter
-    _it, _ot = usage.gemini_tokens(response)
-    usage.record_usage(usage.GEMINI, model=model, input_tokens=_it, output_tokens=_ot)
-    return response.text
+    return gemini.generate_text(prompt, model, exc=SponsorTermsError,
+                                unconfigured='quiz_ai_unconfigured',
+                                unavailable='quiz_ai_unavailable')
 
 
 def _build_quiz_prompt(section):

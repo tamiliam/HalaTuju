@@ -21,7 +21,7 @@ authority; nothing here hard-blocks on its own. Pure + deterministic given the O
 BUMP MODEL_VERSION on ANY change to the marker groups, weights, or the decision cascade (same
 discipline as results_doc.MODEL_VERSION) — it is persisted on the document and gates re-scoring.
 """
-from .results_doc import _norm
+from .results_doc import _any_token, _norm_fold_upper_alnum
 
 # Version of the salary signature model. History:
 #   1.0.0 (2026-07-09) — initial statutory-grammar cascade; six families.
@@ -29,7 +29,7 @@ from .results_doc import _norm
 #                        whether an EPF statement is worth asking for (owner). Bands unchanged.
 MODEL_VERSION = '1.1.0'
 
-# ── Marker groups (normalised substring probes; matched via _norm) ───────────────────────────
+# ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────
 # Statutory scaffold — the private-payslip discriminator. Each GROUP counts once.
 _STATUTORY = {
     'KWSP/EPF':      ['KWSP', 'KUMPULAN WANG SIMPANAN', 'EPF'],
@@ -61,12 +61,8 @@ _GIG = ['GRAB', 'FOODPANDA', 'LALAMOVE', 'MAXIM', 'SHOPEEFOOD', 'PANDA']
 _MYKAD = ['WARGANEGARA', 'PENGARAH PENDAFTARAN', 'PENDAFTARAN NEGARA']
 
 
-def _any(tokens, tn):
-    return any(_norm(t) in tn for t in tokens)
-
-
 def _count_groups(groups, tn):
-    return sum(1 for g in groups for _ in [0] if _any(g, tn))
+    return sum(1 for g in groups for _ in [0] if _any_token(g, tn))
 
 
 def score_family(ocr_text: str) -> dict:
@@ -79,15 +75,15 @@ def score_family(ocr_text: str) -> dict:
     means he doesn't — asking would be another dead end. The count alone couldn't distinguish a
     KWSP line from a SOCSO one.
     """
-    tn = _norm(ocr_text)
+    tn = _norm_fold_upper_alnum(ocr_text)
     return {
-        'statutory': sum(1 for g in _STATUTORY.values() if _any(g, tn)),
-        'kwsp': _any(_STATUTORY['KWSP/EPF'], tn),
-        'wage': sum(1 for g in _WAGE_LABELS if _any(g, tn)),
-        'govt': _any(_GOVT_FORMAT, tn),
-        'singapore': _any(_SINGAPORE, tn),
-        'gig': _any(_GIG, tn),
-        'mykad': _any(_MYKAD, tn),
+        'statutory': sum(1 for g in _STATUTORY.values() if _any_token(g, tn)),
+        'kwsp': _any_token(_STATUTORY['KWSP/EPF'], tn),
+        'wage': sum(1 for g in _WAGE_LABELS if _any_token(g, tn)),
+        'govt': _any_token(_GOVT_FORMAT, tn),
+        'singapore': _any_token(_SINGAPORE, tn),
+        'gig': _any_token(_GIG, tn),
+        'mykad': _any_token(_MYKAD, tn),
     }
 
 

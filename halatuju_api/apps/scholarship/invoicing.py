@@ -29,9 +29,9 @@ from decimal import Decimal
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-logger = logging.getLogger(__name__)
+from . import money
 
-TWO_PLACES = Decimal('0.01')
+logger = logging.getLogger(__name__)
 
 #: A real calendar month. `2026-00` must not slip through: index -1 would print it as December.
 MONTH_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])$')
@@ -412,15 +412,26 @@ def void_invoice(invoice, *, reason, voided_by_email=''):
     return invoice
 
 
-def _money(value):
-    from decimal import InvalidOperation
+#: The two sentences the receipt box shows. One code, two messages: "that is not a number" and
+#: "that number is not allowed" need different corrections, and the message is the only part of a
+#: 400 the person reads.
+_RECEIPT_UNREADABLE = 'Enter the amount received, like 1552.50.'
+_RECEIPT_OUT_OF_RANGE = 'Enter an amount above zero with at most two decimals.'
+
+
+def _receipt_amount(value):
+    """Money that ARRIVED, as typed into the receipt box → `Decimal`. Above zero, at most two
+    decimal places, and not rounded to get there — a receipt records a figure that moved through
+    a bank, so a third decimal place is a typo to correct rather than a number to round.
+
+    Was `_money` until code health H7; the mechanics moved to `money.parse_money`, which this
+    hands its own code and its own two sentences."""
     try:
-        amount = Decimal(str(value).strip())
-    except (InvalidOperation, ValueError, TypeError):
-        raise InvoicingError('bad_amount', 'Enter the amount received, like 1552.50.')
-    if amount != amount.quantize(TWO_PLACES) or amount <= 0:
-        raise InvoicingError('bad_amount', 'Enter an amount above zero with at most two decimals.')
-    return amount
+        return money.parse_money(value, places_exact=True, allow_zero=False,
+                                 allow_negative=False)
+    except money.MoneyError as exc:
+        raise InvoicingError('bad_amount', _RECEIPT_UNREADABLE if exc.reason == 'syntax'
+                             else _RECEIPT_OUT_OF_RANGE)
 
 
 def record_receipt(invoice, *, received_on, amount_myr, reference, method='bank_transfer',
@@ -442,7 +453,7 @@ def record_receipt(invoice, *, received_on, amount_myr, reference, method='bank_
             raise InvoicingError('bad_date', 'Enter the date the money arrived.')
     if not isinstance(received_on, date) or received_on > today:
         raise InvoicingError('bad_date', 'The date received cannot be in the future.')
-    amount = _money(amount_myr)
+    amount = _receipt_amount(amount_myr)
 
     with transaction.atomic():
         # Lock the invoice so two receipts recorded at once cannot both fit under the balance.

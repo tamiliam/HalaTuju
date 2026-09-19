@@ -24,6 +24,7 @@ from apps.courses.search import apply_people_search
 from apps.courses.views_admin import PartnerAdminMixin
 
 from . import branding
+from . import money
 from . import pool
 from . import reopen as reopen_service
 from . import disbursement as disbursement_service
@@ -1186,7 +1187,7 @@ def _sponsor_dict(s):
         # is what an admin actually looks for. `given` + `students` are annotated THROUGH THE
         # SAME FENCE as the detail page — an org sees its own share, never another tenant's.
         'last_seen_at': s.last_seen_at,
-        'given': sponsorship_service._money(getattr(s, 'given_total', None)),
+        'given': sponsorship_service._amount_str(getattr(s, 'given_total', None)),
         # Money given says what they have put in; students says what it is DOING. The pair is
         # the whole point of the row — a large balance with no students is the case an admin
         # most needs to spot. Counted the same way the detail page's per-wallet `students` is
@@ -4378,7 +4379,11 @@ class AdminPlatformCostsView(_AdminBase):
         costs = platform_cost.reconcile(month)
 
         def _money(v):
-            return str(v) if v is not None else None
+            # ⚠ `None` SURVIVES, and nothing is quantised. This payload distinguishes "no figure
+            # entered for that source yet" from "the figure is zero", and the only job here is to
+            # stop DRF rendering a bare `Decimal` inside a nested dict as a float.
+            return money.format_money(v, blank=None, blank_when=money.BLANK_NONE,
+                                      quantize=False, coerce=False)
 
         payload = {
             'month': month,
@@ -4591,7 +4596,11 @@ class AdminBillingRatesView(_AdminBase):
 def _invoice_money(v):
     # Money crosses as a STRING. A bare Decimal in a nested dict renders as a float (sponsor-card
     # lesson), and a float in an invoice payload is how RM30.00 becomes RM30.0 on a bill.
-    return None if v is None else str(v)
+    # ⚠ Same rule, same parameters, as the platform-cost payload's own formatter further up this
+    # file — code health H7 found the two were byte-identical copies written four days apart and
+    # routed both through `money.format_money` rather than leaving a third to appear next.
+    return money.format_money(v, blank=None, blank_when=money.BLANK_NONE,
+                              quantize=False, coerce=False)
 
 
 def _invoice_payload(inv, *, for_super):

@@ -22,7 +22,9 @@ text to `test_invoice_parsers.py`. Nothing else needs to change.
 """
 import re
 from dataclasses import dataclass, field
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
+
+from . import money
 
 MONTHS = {
     'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
@@ -61,10 +63,16 @@ def normalise(text: str) -> str:
     return text
 
 
-def _money(text) -> Decimal:
+def _invoice_amount(text) -> Decimal:
+    """A printed figure off a vendor invoice → `Decimal`. Thousands separators and a `$` are
+    stripped; nothing else is tolerated and nothing is rounded — an invoice line must reconcile
+    to the total the vendor printed, so a figure we cannot read exactly is a refusal.
+
+    Was `_money` until code health H7; the mechanics moved to `money.parse_money` and this keeps
+    the refusal, which is the part `invoice_import` catches by type."""
     try:
-        return Decimal(str(text).replace(',', '').replace('$', '').strip())
-    except (InvalidOperation, AttributeError) as exc:
+        return money.parse_money(text, strip_chars=',$')
+    except money.MoneyError as exc:
         raise InvoiceParseError(f'Not a money figure: {text!r}') from exc
 
 
@@ -159,8 +167,8 @@ def parse_workspace(text: str) -> ParsedInvoice:
             'Google Workspace: could not find the invoice number, the billed period and the '
             'subtotal/tax/total block. All three are required.')
     subtotal, tax, total, tax_pct = (
-        _money(totals.group(1)), _money(totals.group(2)),
-        _money(totals.group(3)), totals.group(4))
+        _invoice_amount(totals.group(1)), _invoice_amount(totals.group(2)),
+        _invoice_amount(totals.group(3)), totals.group(4))
     plan = _WS_PLAN.search(text)
     plan_name = plan.group(1) if plan else 'Subscription'
     return ParsedInvoice(
@@ -203,7 +211,7 @@ def parse_supabase(text: str) -> ParsedInvoice:
         raise InvoiceParseError(
             'Supabase: could not find the invoice number, the amount paid, the subtotal and '
             'the billed window. All four are required.')
-    total, sub = _money(paid.group(1)), _money(subtotal.group(1))
+    total, sub = _invoice_amount(paid.group(1)), _invoice_amount(subtotal.group(1))
     if total != sub:
         raise InvoiceParseError(
             f'Supabase {ref.group(1)}: subtotal {sub} and amount paid {total} disagree.')
@@ -262,7 +270,7 @@ def parse_anthropic(text: str) -> ParsedInvoice:
 
     plan = _AN_PLAN.search(text)
     plan_name = plan.group(1).strip() if plan else 'Plan'
-    lines = [InvoiceLine('Anthropic', plan_name, _money(subtotal.group(1)))]
+    lines = [InvoiceLine('Anthropic', plan_name, _invoice_amount(subtotal.group(1)))]
 
     tax = _AN_TAX.search(text)
     if tax:
@@ -272,7 +280,7 @@ def parse_anthropic(text: str) -> ParsedInvoice:
         # "innovate", so it would silently turn real charges into tax. Naming the line correctly
         # is precise; loosening the matcher is not.
         lines.append(InvoiceLine(
-            'Invoice', f'Sales tax ({tax.group(1)} {tax.group(2)}%)', _money(tax.group(3))))
+            'Invoice', f'Sales tax ({tax.group(1)} {tax.group(2)}%)', _invoice_amount(tax.group(3))))
 
     start_mon, start_day, end_mon, end_day, year = window.groups()
     # ⚠ THE MONTH THE SERVICE PERIOD OPENS, not the date paid — the same rule as Supabase. The
@@ -284,7 +292,7 @@ def parse_anthropic(text: str) -> ParsedInvoice:
         invoice_ref=ref.group(1),
         currency='USD',
         period_month=_period_month(start_mon, year),
-        total=_money(paid.group(1)),
+        total=_invoice_amount(paid.group(1)),
         lines=lines,
         period_note=(f'Anthropic bills {start_mon} {start_day} to {end_mon} {end_day}, '
                      f'not the calendar month.'),
@@ -317,7 +325,7 @@ def parse_twilio(text: str) -> ParsedInvoice:
         raise InvoiceParseError(
             'Twilio: could not find the invoice number and the invoice amount.')
     ref_value = ref.group(1)
-    total = _money(total_m.group(1))
+    total = _invoice_amount(total_m.group(1))
 
     # The month is in the invoice number itself ('MTSOJA-2026-08'), which is the most stable
     # thing on the page. The printed period is the cross-check, not the source.
@@ -339,7 +347,7 @@ def parse_twilio(text: str) -> ParsedInvoice:
         name = name.strip()
         if name.lower() in ('invoice amount', 'services total', 'quantity', 'amount'):
             continue
-        lines.append(InvoiceLine('Twilio', name, _money(amount)))
+        lines.append(InvoiceLine('Twilio', name, _invoice_amount(amount)))
 
     return ParsedInvoice(
         source='twilio',
@@ -377,7 +385,7 @@ def parse_gcp_statement(text: str):
     if not (summary and activity):
         return None
     try:
-        return _period_month(summary.group(1), summary.group(2)), _money(activity.group(1))
+        return _period_month(summary.group(1), summary.group(2)), _invoice_amount(activity.group(1))
     except InvoiceParseError:
         return None
 

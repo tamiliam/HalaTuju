@@ -21,10 +21,7 @@ from django.core.management.base import BaseCommand
 
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import ScholarshipApplication, Sponsor
-
-
-def _ids(raw):
-    return [int(x) for x in str(raw or '').replace(' ', '').split(',') if x.isdigit()]
+from apps.scholarship.text import id_list
 
 
 class Command(BaseCommand):
@@ -32,7 +29,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sponsor_id = str(getattr(settings, 'SEED_SPONSOR_ID', '') or '').strip()
-        app_ids = _ids(getattr(settings, 'SEED_AWARD_APP_IDS', ''))
+        app_ids = id_list(getattr(settings, 'SEED_AWARD_APP_IDS', ''))
         if not sponsor_id.isdigit() or not app_ids:
             self.stdout.write('SEED_SPONSOR_ID / SEED_AWARD_APP_IDS not set — nothing done.')
             return

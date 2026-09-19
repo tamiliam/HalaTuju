@@ -15,6 +15,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from . import money
 from . import pool
 from . import usage as _usage
 
@@ -413,15 +414,14 @@ def _credit_org(credit):
     return credit.programme.organisation if credit.programme_id else None
 
 
-def _money(value):
-    """Money as a 2-decimal string, ALWAYS.
+def _amount_str(value):
+    """Money as a 2-decimal string, ALWAYS; an absent figure is RM0 on a sponsor card.
 
-    A `DecimalField` read gives `'3000.00'` but a `Sum()` aggregate over the same column
-    gives `'20000'` — so a payload mixing the two renders "RM 20000" beside "RM 3,000.00"
-    on the same card. Quantising here rather than in the template keeps every money string
-    the API emits the same shape.
+    A `DecimalField` read gives `'3000.00'` but a `Sum()` over the same column gives `'20000'`,
+    so a payload mixing the two renders "RM 20000" beside "RM 3,000.00" on one card. Was `_money`
+    until code health H7; `coerce=False` keeps it refusing anything not already a `Decimal`.
     """
-    return str((value or Decimal('0')).quantize(Decimal('0.01')))
+    return money.format_money(value, blank='0.00', blank_when=money.BLANK_FALSY, coerce=False)
 
 
 def _wallet_programmes(sponsor):
@@ -468,9 +468,9 @@ def programme_ledger(sponsor):
             status__in=Sponsorship.HOLDING, application__programme=programme)
         out.append({
             'programme': programme,
-            'given': _money(confirmed.aggregate(s=Sum('amount'))['s']),
-            'committed': _money(holding.aggregate(s=Sum('amount'))['s']),
-            'available': _money(sponsor_balance(sponsor, programme)),
+            'given': _amount_str(confirmed.aggregate(s=Sum('amount'))['s']),
+            'committed': _amount_str(holding.aggregate(s=Sum('amount'))['s']),
+            'available': _amount_str(sponsor_balance(sponsor, programme)),
             'credits': confirmed.count(),
             'students': holding.count(),
         })

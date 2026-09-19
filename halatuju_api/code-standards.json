@@ -2,7 +2,8 @@
   "_how_this_works": "The code standards this service is held to, as numbers. `baseline` is FROZEN: it records every limit and every ledger exactly as code health H4 found them on 2026-09-19, and it is never maintained. `budget` is the live limit; it starts identical to `baseline` and may only ever get TIGHTER. `apps/scholarship/tests/test_code_standards.py` asserts all of it on every run, and since H2 that suite runs inside the Cloud Build deploy gate, so a change that breaks a standard cannot ship. If a test here told you to lower a number or remove a line, edit `budget` and only `budget` — never raise a limit, and never add a name to a ledger.",
   "_history": [
     "2026-09-19 H4: created. Every limit and ledger frozen as H4 found them; BASELINE_SHA256 pinned in test_code_standards.py.",
-    "2026-09-19 H5: added the hand_built_application_fixtures standard; baseline re-pinned. The new ledger records the 154 test files that hand-built a ScholarshipApplication before the factory existed (306 calls), which is the honest frozen record of what H5 found. `budget` then falls as files convert. No other baseline number was touched."
+    "2026-09-19 H5: added the hand_built_application_fixtures standard; baseline re-pinned. The new ledger records the 154 test files that hand-built a ScholarshipApplication before the factory existed (306 calls), which is the honest frozen record of what H5 found. `budget` then falls as files convert. No other baseline number was touched.",
+    "2026-09-19 H7: six names left `budget.duplicated_names` — `_money`, `_norm`, `_digits`, `_ids`, `_any`, `score_markers`. Three were TRUE duplicates and now have one home (`_ids` and `_any` byte-identical in four files each; two of the three `_digits`). Three were one name over several contracts and were RENAMED to say what each does, which is the other half of the standard's own instruction. `_gemini_generate` STAYS at 3 on purpose and is not a failure to finish: its body is now in `gemini.py` once, and the three same-named wrappers are the per-feature metering seams tenancy rule 6 names and the strings ~30 `patch()` calls point at — removing them would move a boundary a convention depends on. `render` / `banned_phrases` / `unknown_placeholders` also stay at 3: `email_templates` is the engine and the other two are thin per-audience adapters closing over their own vocabularies. They are what this ledger is FOR — accepted exceptions, written down. No number was raised and no name added."
   ],
   "baseline": {
     "recorded_on": "2026-09-19",
@@ -311,15 +312,9 @@
       "apps/scholarship/vision.py::_run_field_extraction_impl": 306
     },
     "duplicated_names": {
-      "scholarship::_any": 4,
-      "scholarship::_digits": 3,
       "scholarship::_gemini_generate": 3,
-      "scholarship::_ids": 4,
-      "scholarship::_money": 7,
-      "scholarship::_norm": 4,
       "scholarship::banned_phrases": 3,
       "scholarship::render": 3,
-      "scholarship::score_markers": 3,
       "scholarship::unknown_placeholders": 3
     },
     "runtime_skips": {

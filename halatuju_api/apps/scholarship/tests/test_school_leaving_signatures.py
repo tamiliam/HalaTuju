@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.school_leaving_doc import (
-    MODEL_VERSION, school_leaving_genuineness, score_markers)
+    MODEL_VERSION, school_leaving_genuineness, score_school_leaving_markers)
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 
 # A full standard numbered Sijil Berhenti Sekolah (synthetic, modelled on the real form structure —
@@ -85,8 +85,8 @@ class TestSchoolLeavingSignatures(SimpleTestCase):
         # the results-slip misfile path (which only runs when NO leaver signal is present).
         self.assertEqual(self._g(FULL_CERT)['status'], 'genuine')
 
-    def test_score_markers_expose_label_names(self):
-        m = score_markers(FULL_CERT)
+    def test_score_school_leaving_markers_expose_label_names(self):
+        m = score_school_leaving_markers(FULL_CERT)
         self.assertTrue(m['title'])
         self.assertTrue(m['leaver'])
         self.assertGreaterEqual(m['labels'], 5)

@@ -29,13 +29,13 @@ BUMP MODEL_VERSION on ANY change to the marker groups, thresholds, or the decisi
 discipline as results_doc.MODEL_VERSION / salary_doc.MODEL_VERSION) — it is persisted on the document
 and gates re-scoring.
 """
-from .results_doc import _norm
+from .results_doc import _any_token, _norm_fold_upper_alnum
 
 # Version of the electricity-bill signature model. History:
 #   1.0.0 (2026-07-10) — initial issuer-identity + bill-grammar cascade; tnb/sesb/sesco/unrecognised.
 MODEL_VERSION = '1.0.0'
 
-# ── Marker groups (normalised substring probes; matched via _norm) ───────────────────────────
+# ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────
 # Issuer identity — the dominant discriminator (TNB is a near-monopoly in the corpus).
 _TNB = ['TENAGA NASIONAL', 'TNB', 'BIL ELEKTRIK']            # 'Bil Elektrik Anda' header
 _SESB = ['SABAH ELECTRICITY', 'SESB']                        # East Malaysia — Sabah
@@ -64,23 +64,26 @@ _WATER_TERM = ['BEKALAN AIR', 'AIR SELANGOR', 'BIL AIR', 'METER AIR', 'PBAPP', '
 _MYKAD = ['WARGANEGARA', 'PENGARAH PENDAFTARAN', 'PENDAFTARAN NEGARA']
 
 
-def _any(tokens, tn):
-    return any(_norm(t) in tn for t in tokens)
-
-
-def score_markers(ocr_text: str) -> dict:
+def score_electricity_markers(ocr_text: str) -> dict:
     """The raw marker tallies for OCR text (transparent, for tests + calibration):
     ``{issuer, labels, electricity, water, mykad}``. ``issuer`` names the recognised utility or ''.
-    Pure."""
-    tn = _norm(ocr_text)
-    issuer = ('tnb' if _any(_TNB, tn) else 'sesb' if _any(_SESB, tn)
-              else 'sesco' if _any(_SESCO, tn) else '')
+    Pure.
+
+    Named for its document type by code health H7. Three modules called this `score_markers`
+    and returned three DIFFERENT dictionaries; `salary_doc` already had its own name
+    (`score_family`), so this follows the convention that was already here. No marker group,
+    threshold or cascade changed, so MODEL_VERSION is deliberately NOT bumped — a rename must
+    not trigger a cohort-wide re-score.
+    """
+    tn = _norm_fold_upper_alnum(ocr_text)
+    issuer = ('tnb' if _any_token(_TNB, tn) else 'sesb' if _any_token(_SESB, tn)
+              else 'sesco' if _any_token(_SESCO, tn) else '')
     return {
         'issuer': issuer,
-        'labels': sum(1 for g in _BILL_LABELS if _any(g, tn)),
-        'electricity': _any(_ELECTRICITY_TERM, tn),
-        'water': _any(_WATER_TERM, tn),
-        'mykad': _any(_MYKAD, tn),
+        'labels': sum(1 for g in _BILL_LABELS if _any_token(g, tn)),
+        'electricity': _any_token(_ELECTRICITY_TERM, tn),
+        'water': _any_token(_WATER_TERM, tn),
+        'mykad': _any_token(_MYKAD, tn),
     }
 
 
@@ -89,7 +92,7 @@ def electricity_genuineness(ocr_text: str) -> dict:
     model_version, markers}``. ``status`` ∈ {'genuine', 'suspect', 'not_electricity_bill'} (the
     canonical cap vocabulary); ``family`` names the recognised kind (tnb/sesb/sesco/unrecognised/
     not_electricity_bill). Pure + deterministic; never raises."""
-    m = score_markers(ocr_text)
+    m = score_electricity_markers(ocr_text)
     issuer, labels = m['issuer'], m['labels']
 
     def out(status, family, prob, reason):
