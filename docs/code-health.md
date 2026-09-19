@@ -10,24 +10,25 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 **The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases, run back to back under a development freeze; awaiting the owner's word to start H1).
 
 ## Trend
-| date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-09-19 | b7a1350 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
-| 2026-09-19 | 981ac18 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
-| 2026-09-19 | 93761ad | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 83 | 0 | - | - | ok |
-| 2026-09-19 | 7977547 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
-| 2026-09-19 | 88c93f0 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 11 | 83 | 0 | 0 | ok | ok |
-| 2026-09-19 | 13274d7 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 10 | 84 | 0 | 0 | ok | ok |
-| 2026-09-19 | 5fbc6e1 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | - | - | ok |
-| 2026-09-19 | 1c24748 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | 0 | ok | ok |
-| 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | - | - | - |
-| 2026-09-18 | cc4406f | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 84 | 0 | 0 | ok | - |
-| 2026-09-18 | 257fcd4 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 85 | 0 | - | - | - |
-| 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | 0 | ok | - |
-| 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
-| 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
+| date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 9c5024a | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 41 | 15 | 86 | 0 | - | - | ok |
+| 2026-09-19 | b7a1350 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 84 | 0 | - | - | ok |
+| 2026-09-19 | 981ac18 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 84 | 0 | - | - | ok |
+| 2026-09-19 | 93761ad | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 83 | 0 | - | - | ok |
+| 2026-09-19 | 7977547 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 84 | 0 | - | - | ok |
+| 2026-09-19 | 88c93f0 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | - | 11 | 83 | 0 | 0 | ok | ok |
+| 2026-09-19 | 13274d7 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | - | 10 | 84 | 0 | 0 | ok | ok |
+| 2026-09-19 | 5fbc6e1 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | - | 18 | 83 | 0 | - | - | ok |
+| 2026-09-19 | 1c24748 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | - | 18 | 83 | 0 | 0 | ok | ok |
+| 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | - | 17 | 83 | 0 | - | - | - |
+| 2026-09-18 | cc4406f | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | - | 17 | 84 | 0 | 0 | ok | - |
+| 2026-09-18 | 257fcd4 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | - | 17 | 85 | 0 | - | - | - |
+| 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | - | 17 | 83 | 0 | 0 | ok | - |
+| 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
+| 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, b7a1350, window 2026-06-21 onward)
+## Latest run (2026-09-19, 9c5024a, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -35,16 +36,16 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8556 | 273.8 |
 | `halatuju-web/src/lib/admin-api.ts` | 26 | 4103 | 106.7 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3201 | 96 |
-| `halatuju_api/apps/scholarship/services.py` | 31 | 2931 | 90.9 |
+| `halatuju_api/apps/scholarship/services.py` | 31 | 2946 | 91.3 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
-| `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1614 | 48.4 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1622 | 48.7 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 3599 | 32.4 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 302 fix / 427 feat commits since 2026-06-21
+- 303 fix / 424 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8556  halatuju_api/apps/scholarship/views_admin.py`
@@ -53,21 +54,21 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `4103  halatuju-web/src/lib/admin-api.ts`
 - `3599  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3201  halatuju_api/apps/scholarship/income_engine.py`
-- `2931  halatuju_api/apps/scholarship/services.py`
+- `2946  halatuju_api/apps/scholarship/services.py`
 - `2488  halatuju-web/src/lib/api.ts`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
 - `1957  halatuju-web/src/components/ScholarshipDocuments.tsx`
-- `1614  halatuju-web/src/lib/officerCockpit.ts`
+- `1622  halatuju-web/src/lib/officerCockpit.ts`
 - `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1332  halatuju-web/src/lib/scholarship.ts`
-- `1293  halatuju_api/apps/scholarship/verdict_engine.py`
 - `1246  halatuju_api/apps/courses/views_admin.py`
 - `1229  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1195  halatuju_api/apps/scholarship/serializers.py`
+- `1151  halatuju_api/apps/scholarship/verdict_engine.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
@@ -81,8 +82,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `290  halatuju_api/apps/courses/engine.py:569 check_eligibility`
 - `245  halatuju_api/apps/courses/views.py:118 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
-- `214  halatuju_api/apps/scholarship/verdict_engine.py:405 _verdict_income`
-- `198  halatuju_api/apps/scholarship/verdict_engine.py:621 _verdict_income_salary`
+- `210  halatuju_api/apps/scholarship/verdict_engine.py:467 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services.py:1765 autofill_pathway_from_offer`
 - `183  halatuju_api/apps/courses/views_admin.py:643 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
@@ -112,25 +112,97 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ### Skipped tests
 - none
 
+### Front-end rules mirrored from the backend with no drift test
+- 19 of 60 mirror claims in src/lib name a drift test
+- halatuju-web/src/lib/admin-api.ts:887  Server-computed first-assign readiness (services.is_ready_for_assignment): all student tas
+- halatuju-web/src/lib/admin-api.ts:1249  Admin-facing resolution item. Mirrors the student-facing ResolutionItem in src/lib/api.ts 
+- halatuju-web/src/lib/admin-api.ts:2917  Advisory: has Vircle activated this eWallet (mirrored from the relay sheet)? A false value
+- halatuju-web/src/lib/admin-api.ts:2962  One student's line in the Payments funding summary. Mirrors the backend's FundingSummaryRo
+- halatuju-web/src/lib/api.ts:1692  The organisation's booking grid, SERVED (Org Config Sprint D). The student panel reads onl
+- halatuju-web/src/lib/api.ts:2437  Accept or decline the award. A minor's guardian must accept (name + relationship + NRIC), 
+- halatuju-web/src/lib/branding.ts:29  What a tenant may tint. Mirrors `TENANT_FAMILIES` in `apps/courses/theme_tokens.py`. */
+- halatuju-web/src/lib/branding.ts:172  Substitute `{var}` placeholders in a message string. Mirrors the old `i18n.tsx` engine exa
+- halatuju-web/src/lib/clauseNumbering.ts:1  Contract clause numbering — MIRROR of `contracts.clause_numbers` / `contracts.normalise_le
+- halatuju-web/src/lib/contrast.ts:1   The contrast check, in the browser — Layer 1 A2.  ⚠ THIS IS NOT THE GATE. `apps/courses/c
+- halatuju-web/src/lib/contrast.ts:27  The platform surfaces, per mode. `white` and `ground-0` are separate on purpose — `text-wh
+- halatuju-web/src/lib/documentHelp.ts:53   Does this document have a soft problem worth a coach note? Mirrors the "non-good" states 
+- halatuju-web/src/lib/familyRoster.ts:1  Structured family roster (the "About your family" redesign, 2026-06). Mirrors halatuju_api
+- halatuju-web/src/lib/familyRoster.ts:44  Professions that do NOT earn income — mirror of family.NON_EARNING. Used to prefill the in
+- halatuju-web/src/lib/familyRoster.ts:104  A person's NAME may contain letters, spaces, and the connectors that appear in Malaysian n
+- halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
+- halatuju-web/src/lib/incomeWizard.ts:72  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
+- halatuju-web/src/lib/incomeWizard.ts:99  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
+- halatuju-web/src/lib/invitations.ts:12  What an invitation is doing. Mirrors `invitations.status_of` — the server is the authority
+- halatuju-web/src/lib/navigation.ts:255  The organisation's own settings, mirroring Programme → Configuration one level up (owner, 
+- halatuju-web/src/lib/navigation.ts:479   Should the Programme group be hidden right now?  Owner, 2026-09-14: the Programme section
+- halatuju-web/src/lib/officerCockpit.ts:308   Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-f
+- halatuju-web/src/lib/officerCockpit.ts:479  IC No: an EPF statement always carries the member's number; a salary slip only sometimes (
+- halatuju-web/src/lib/officerCockpit.ts:1127   A `shortlisted` application is PRE-SUBMISSION by definition — submitting Step 2 is exactl
+- halatuju-web/src/lib/officerCockpit.ts:1183   Show the Interview Stage box?  The pre-submission half is `showsPostSubmissionCards` (no 
+- halatuju-web/src/lib/partnerComms.ts:12   The emails, in the order the card lists them. Mirrors `partner_comms.KINDS`.  `student_as
+- halatuju-web/src/lib/poolCard.ts:47   The single lifecycle badge on a sponsored-student card, as token classes.  ⚠ THIS USED TO
+- halatuju-web/src/lib/requestStatus.ts:148   The Requests COMPONENT tree (Sprint 15.1) — the FE mirror of models.REQUEST_COMPONENT_TRE
+- halatuju-web/src/lib/requestStatus.ts:182  Every valid component VALUE (parents + `${parent}_${sub}` children). Mirrors VALID_COMPONE
+- halatuju-web/src/lib/reviewerDetail.ts:1   Reviewer detail — the pure decisions behind `/admin/organisation/reviewers[/id]` (#10, 20
+- halatuju-web/src/lib/reviewerProfile.ts:3   Client mirror of the backend `reviewer_onboarding.reviewer_profile_complete` — which comp
+- halatuju-web/src/lib/scholarship.ts:64  Mirrors the onboarding state list (onboarding/profile/page.tsx). Static — a fixed set of M
+- halatuju-web/src/lib/scholarship.ts:205  ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ── Display order f
+- halatuju-web/src/lib/scholarship.ts:376  A ranked course choice (rank derived from array order). Sourced from the student's saved c
+- halatuju-web/src/lib/scholarship.ts:708   The caller's ONE live application, or null when that question has no single answer.  The 
+- halatuju-web/src/lib/scholarship.ts:1154   How a document card presents the file(s) it holds: - `none` — nothing uploaded yet; the c
+- halatuju-web/src/lib/sponsor-supabase.ts:10   Separate Supabase client for sponsor auth (mirrors the admin client pattern). Its own sto
+- halatuju-web/src/lib/sponsorComms.ts:1   Sponsor comms — the pure decisions behind the Emails panel (S3, 2026-07-28).  The twin of
+- halatuju-web/src/lib/sponsorDetail.ts:1   Sponsor detail — the pure decisions behind `/admin/sponsors/[id]` (2026-07-27).  The serv
+- halatuju-web/src/lib/sponsorTerms.ts:25  A checkpoint is complete when it would survive the server's Q2 rule: three non-blank optio
+- halatuju-web/src/lib/sponsorTerms.ts:111   Clearing the quiz flag WIPES the payloads, mirroring `replace_sections` on the server.  D
+
 ### Source-text guard tests (web)
-- 16 of 144 web test files read source text
+- 22 of 150 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 154 entries have a defining line; 84 carry no resolution marker on it
+- 156 entries have a defining line; 86 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 391: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4722: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 401: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5007: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 981ac18
+- budgets no looser than at b7a1350
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (ninth reading) — H9: the decision gates are drift-tested
+
+`--full`, read-only (the reading itself is the lead's `--write`). **No FAILs.** No production code
+changed — six drift test files, one shared test reader, seventeen comment blocks marked.
+- **`mirror` — NEW READING, 41.** Front-end `src/lib` comments claiming a rule is mirrored, with no
+  `drift-test:` marker. Added by this sprint at the roadmap's request, written to the same
+  definition as `codeStandards.test.ts`, which is the authority; both read 41 on the day, so the
+  tool's trend and the in-repo ledger are the same number. *Decision: promote* — H10's work list.
+- **`unguarded_mirrors` 58 → 41** in `budget` (`baseline` untouched). The six rules H9 named were
+  seventeen ledger entries; "rules" and "entries" are different units and the roadmap now says so.
+- **`guard% 11 → 15` (+4, inside tolerance).** Two things, and only one of them is code.
+  (a) Six new tests read the backend's source on purpose — that IS the H9 end state, and for a
+  module-level constant it is the right instrument (a served constant could only fail at runtime;
+  this fails in the deploy gate). *Accept, with the reason recorded in `docs/decisions.md`.*
+  (b) The metric's definition was **widened** in the same sprint: it matched the literal
+  `readFileSync`, so the six new tests — which delegate to `src/test/apiSource.ts` — were invisible
+  to the reading that exists to watch them. `GUARD_SIGNALS` now counts a delegated read, dated in
+  the source. Part of the step is the definition catching up, not the code getting worse.
+  ⚠ **H10 adds ~15–20 more such tests. If `guard%` approaches the 15% WARN line, that is the
+  signal to ask which of them could be a rendered or behavioural test instead** — the drift test is
+  right for a constant and wrong for anything with a seam.
+- **`td_open` +2** — TD-264 (medium, money path: the api and the web disagree on what a *digit* is
+  on the payout account, and the api is the permissive side) and TD-263 (low). *Decision: TD-264 is
+  the owner's — both candidate fixes change what the api accepts, and one of them needs a count of
+  stored rows first.* Neither was found by a reading; both fell out of characterising before
+  guarding, which is now three sprints running (H7's `_money`, H8's eleven homes, this).
+- All other readings delta 0; `std` ok.
 
 ### 2026-09-19 (eighth reading) — TD-262 chunks 1–3 shipped
 

@@ -285,28 +285,52 @@ chasing them is how a health arc turns into a rewrite.
   STPM 2026 golden masters unchanged; stored-row count reported.
 - **Complexity:** medium–high. **~9h.** Both services deploy.
 
-### H9 — De-mirror the front end, wave 1: the decision gates
-*⚠ Re-estimated 2026-09-19: H4 measured **60** mirrored rules (58 unguarded), not ~34. Waves H9 and H10 are therefore ~29 rules each, not ~17 — expect ~10h each, not 6–7h. The cheap end state (a drift test that reads the backend source) is the default; *serving* a rule is reserved for the decision gates listed below. The ledger in `halatuju-web/code-standards.json` → `unguarded_mirrors` is the work list.*
+### H9 — De-mirror the front end, wave 1: the decision gates ✅ SHIPPED 2026-09-19
+*Retro: `docs/retrospective-2026-09-19-code-health-h9.md`. **No production code changed.** All six
+named rules characterised side by side first and converted: six drift tests, 153 assertions, 17
+bites (both directions + two no-cry-wolf), every one behaved. Ledger `unguarded_mirrors` **58 → 41**.
+Reading `mirror` added to `code_health.py`, agreeing exactly with the in-repo ledger (41). Raised
+**TD-264** (money path: the api and the web disagree on what a digit is, on the payout account) and
+**TD-263** (low: `requote` offered on a bug). **Nothing was served** — see the decision below.*
+
 - **Goal:** the rules that decide what an officer may do stop living in two languages.
-- **Scope:** the template exists — `documentLimits.ts` and `interviewSlots.ts` are headed
-  *"⚠ THE RULES ARE SERVED, NOT MIRRORED."* Apply it to: `ORG_REJECT_FROM`, the 13 application
-  statuses, `OrgRequest` statuses + `TRANSITIONS`, `STR_COACH_STATES`, `PartnerAdmin.ROLE_CHOICES`,
-  the assignment `bad_assignee` rule. One small `GET …/meta/` payload, cached, or the value on a
-  payload the screen already loads.
-  **Every mirror ends the sprint in one of two states: served, or drift-tested** (a test that
-  reads the backend source, as `soft-evidence-drift.test.ts` does). None stays a comment.
-  Add one reading to `code_health.py`: `mirror` = mirror comments in `src/lib` with no guard.
-- **Acceptance:** each converted rule bite-checked from the **backend** side (change the Python,
-  the web test or the screen follows); reading: `mirror` roughly halves.
-- **Complexity:** medium. **~7h.** Both services deploy.
+- **What shipped, against the named scope:** `ORG_REJECT_FROM` ✓, the 13 application statuses ✓,
+  `OrgRequest` statuses + `TRANSITIONS` ✓, `STR_COACH_STATES` ✓, `PartnerAdmin.ROLE_CHOICES` ✓, the
+  assignment `bad_assignee` rule ✓ — plus the payout-account floor, taken because it is a money gate
+  in the same shape. Each guarded by a test that reads the backend's **own source**, in both
+  directions, plus a shared reader (`halatuju-web/src/test/apiSource.ts`).
+- **⚠ THE DECISION: DRIFT-TESTED, NOT SERVED — and this is the right answer for these six.** The
+  roadmap reserved *serving* for the decision gates. Every one of them turned out to be a Python
+  module-level CONSTANT with no per-org, per-request variation. Serving such a value needs a new
+  endpoint (org-fence + endpoint-exercise ledgers, a deploy of both services, during a freeze) and
+  buys nothing: a served value can only fail at RUNTIME, in front of a user, whereas a drift test
+  fails in the deploy gate before the change ships. Serve a rule that VARIES; guard a rule that is
+  a constant. `documentLimits.ts` / `interviewSlots.ts` remain the template for the first kind.
+- **⚠ THE SIZE LESSON, for H10 to plan against.** "Six rules" and "29 ledger entries" are different
+  units. The ledger counts comment BLOCKS; the six named rules were **17** of them. This is H4's
+  count error in a new place — a number carried into a plan without re-deriving it from what it
+  counts.
 
 ### H10 — De-mirror, wave 2: the rest
+*⚠ Re-estimated 2026-09-19 from what H9 measured. **41 ledger entries remain**, not 29, and they
+are NOT 29 rules: expect roughly 15–20 distinct rules across them. Budget **~8h**, not 6.*
 - **Scope:** `family.py` codes and `is_valid_person_name`, `clauseNumbering.ts`,
-  `REQUEST_COMPONENT_TREE`, `invitations.status_of`, `reviewer_profile_complete`,
-  `partner_comms.KINDS`, contrast + theme token families (already asserted on both sides — confirm
-  and mark). Same two end states.
-- **Acceptance:** `mirror` = 0.
-- **Complexity:** medium. **~6h.** Both services deploy.
+  `REQUEST_COMPONENT_TREE` (its two entries are in `requestStatus.ts`, already open in H9's diff),
+  `invitations.status_of`, `reviewer_profile_complete`, `partner_comms.KINDS`, contrast + theme
+  token families (already asserted on both sides — confirm and mark). Same two end states, and
+  `apiSource.ts` already exists, so each conversion is a test file and a marker.
+- **⚠ THREE GROUPS THE SWEEP MUST NOT TREAT ALIKE** (measured in H9):
+  1. **`incomeWizard.ts` × 3 — DO NOT TOUCH.** These are the income rule, and TD-262 says the homes
+     disagree in places the owner has not yet ruled on. A drift test here would either fail or
+     falsely bless a disagreement. They leave the ledger when TD-262 does, not before.
+  2. **Roughly a third of the remaining claims are WEB-to-WEB** ("Mirrors the STR chip", "Mirrors
+     the Assignment card's guard", "Mirrors applicationStatus.ts"). There is no backend source to
+     read. The honest end state is a test against the OTHER WEB module, or a reword that stops
+     claiming a mirror — not a marker pointing at a test that guards something else.
+  3. The rest are genuine backend mirrors and convert exactly as H9's six did.
+- **Acceptance:** `mirror` = 0 or every remainder is a named, dated exception with its reason in
+  the ledger. Each converted rule bite-checked from the backend side, both directions.
+- **Complexity:** medium. **~8h.** Web only if nothing needs serving (H9 needed nothing).
 
 ---
 

@@ -376,6 +376,11 @@ export function localiseParams(
 // (a fat-finger / truncated-OCR fragment must never become a payout target). The
 // form mirrors that floor client-side so the student sees WHICH field is wrong
 // inline, before the round-trip.
+// ⚠ The FLOOR matches; the word DIGIT does not. The api counts with Unicode-aware
+// `isdigit()`, this counts ASCII `0-9` — so the form is the stricter side and a
+// direct POST of five superscripts is accepted as a payout target. Pinned, not
+// fixed: it is the money path, so it is the owner's call (TD-264).
+// drift-test: halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts
 export function countDigits(s: string): number {
   return (s.match(/\d/g) || []).length
 }

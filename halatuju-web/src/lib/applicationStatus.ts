@@ -15,11 +15,15 @@
  * (deepening down the funnel), grey = ended, red = rejected. Amber is RESERVED for "needs
  * attention" (`reopened`), matching what amber means everywhere else in the product, and is no
  * longer spent on ordinary in-progress stages.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/applicationStatusDrift.test.ts
  */
 
 /** The 13 real DB statuses in funnel order. Mirrors `STATUS_CHOICES` in
- *  halatuju_api/apps/scholarship/models.py. Also drives the list's filter dropdown, which used to
- *  silently omit `withdrawn` and `expired`. */
+ *  halatuju_api/apps/scholarship/models.py — MEMBERSHIP only; the order here is the funnel's and
+ *  is the web's own. Also drives the list's filter dropdown, which used to silently omit
+ *  `withdrawn` and `expired` — a status missing here is a cohort no filter can reach.
+ *  drift-test: halatuju-web/src/lib/__tests__/applicationStatusDrift.test.ts */
 export const APPLICATION_STATUSES = [
   'submitted',
   'shortlisted',

@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H9 - the decision gates stop living in two languages - 2026-09-19
+
+Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H9 of H19. Retro
+`docs/retrospective-2026-09-19-code-health-h9.md`. **No production code changed** - six front-end
+rules that said they mirrored a backend rule now have a test that reads the backend's own source
+and fails if either side moves. Every one was characterised side by side first (the H8 rule), on
+the untouched tree, before anything was written.
+
+### Added
+
+- **`halatuju-web/src/test/apiSource.ts`** - the shared half of every drift test: find
+  `halatuju_api`, read a `.py`, lift a Python literal out of it. Deliberately not a parser; it
+  THROWS when a name has moved, so an api refactor turns a web test red instead of silently making
+  it assert nothing. Resolves one level of `A + ('b',)` concatenation, because that is how the api
+  composes a band out of a narrower one.
+- **Six drift tests, 153 assertions**, each named by a `drift-test:` marker in the comment it
+  discharges:
+  - `applicationStatusDrift.test.ts` - the 13 DB statuses vs `ScholarshipApplication.STATUS_CHOICES`,
+    both directions, plus "every DB status carries a tone" and "no synthetic status is a DB value".
+  - `requestStatusDrift.test.ts` (115) - the 8 request statuses, the terminal set, the shaping
+    window, and a full sweep of every status x role x kind x question-state against
+    `org_requests.TRANSITIONS`: no button outside the server's window, and no road out of a status
+    without a button.
+  - `officerGateDrift.test.ts` - `ORG_REJECT_FROM` and the role narrowing in `AdminOrgRejectView`;
+    the assignment picker against the `bad_assignee` rule.
+  - `strCoachDrift.test.ts` - all seven rungs of the STR-currency ladder through
+    `shouldShowCoach`, including the two that must stay QUIET.
+  - `adminRoleDrift.test.ts` - the seven admin roles vs `PartnerAdmin.ROLE_CHOICES`, plus "every
+    stored role reaches at least one page".
+  - `payoutAccountDrift.test.ts` - the five-digit payout-account floor.
+- **A `mirror` reading in `Settings/_tools/code_health.py`** - mirror claims in `src/lib` with no
+  `drift-test:` marker, written to the same definition as the in-repo standards test (both read 41
+  on the day it was added). The in-repo test remains the authority; this gives the number a trend.
+
+### Changed
+
+- **The `unguarded_mirrors` ledger: 58 -> 41.** Seventeen entries discharged. `budget` only; the
+  frozen `baseline` is untouched.
+- **`code_health.m_guard_share` now counts a test that delegates its file reading to a helper**, not
+  only one calling `readFileSync` itself - otherwise six new source-text tests would have been
+  invisible to the reading that exists to watch them. 11% -> 15% is the definition catching up.
+- Three comments corrected against the code they describe: the `answer` window is
+  submitted/triaged/quoted/deferred (not submitted/triaged), `ask` is NARROWER than `answer` (not
+  "the same window"), and the application-status mirror is MEMBERSHIP only (the order is the
+  funnel's).
+
+### Reported, not fixed
+
+- **TD-264** (medium, money path) - the api counts payout-account digits with Unicode-aware
+  `isdigit()`, the form with ASCII `\d`. The five-digit floor agrees; the word *digit* does not, so
+  a direct POST of five superscripts is accepted and stored as a payout target.
+- **TD-263** (low) - the Requests screen offers `requote` on a bug; the service refuses it.
+  Unreachable today by one road only, and the drift test asserts that road.
+
+### Gates
+
+7,000 pytest / 3 skipped (unchanged - no api file was edited); 2,768 jest across 150 suites
+(2,615 / 144 before); tsc 0, lint 0 errors, `next build` exit 0. code_health: `mirror` 41 (new),
+`guard%` 11 -> 15, every other reading unchanged, `std` ok, 0 FAIL. No migration.
+
 ## TD-262 F8 - only the family's own STR opens the submission gate - 2026-09-19
 
 Owner ruling, 2026-09-19 (`docs/decisions.md`): *"only the family's own STR count."* The gate's

@@ -7,6 +7,7 @@ import { relationshipDocFor, type WorkingMember } from './incomeWizard'
 // V2 (#16): mirror of the backend `income_engine.STR_COACH_STATES` (STR_RED_STATES +
 // unreadable + unconfirmed) — the STR currency states for which the doc-anchored Gopal coaches.
 // Keep in step with income_engine.py / help_engine.py.
+// drift-test: halatuju-web/src/lib/__tests__/strCoachDrift.test.ts
 const STR_COACH_STATES = new Set(['wrong_type', 'rejected', 'stale', 'unreadable', 'unconfirmed'])
 
 // Verdict codes the backend + these fallbacks share (same set as help_engine.VERDICT_GUIDANCE).
@@ -100,6 +101,7 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
   // voiced by the earner-IC cluster coach. Also nudge if no earner IC yet. V2 (#16): mirror the
   // backend STR_COACH_STATES (income_engine / help_engine) so a wrong_type / unreadable /
   // unconfirmed STR re-upload also shows the doc-anchored coach — not just stale/rejected.
+  // drift-test: halatuju-web/src/lib/__tests__/strCoachDrift.test.ts
   if (doc.str_check) {
     const s = doc.str_check
     return STR_COACH_STATES.has(s.current_status) || !s.ic_present

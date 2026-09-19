@@ -102,6 +102,14 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
+- **TD-264 (raised 2026-09-19 by code health H9) — medium, money path.** The api counts payout-account
+  digits with Unicode-aware `isdigit()`, the form with ASCII `\d`. The five-digit FLOOR agrees; the
+  word *digit* does not, so a direct POST of `³³³³³` is accepted and stored as a payout target. Both
+  sides pinned, neither changed — the owner's call which one moves (recommended: narrow the api,
+  after counting stored rows).
+- **TD-263 (raised 2026-09-19 by code health H9) — low.** The Requests screen offers `requote` at
+  `deferred` for any kind; the service refuses a non-feature requote. Unreachable today by one road
+  only, and the drift test asserts that road, so it goes red the moment it stops being true.
 - **TD-262 (raised 2026-09-19 by code health H8) — HIGH, eligibility.** The income rule has ELEVEN
   homes (TD-235 said four) and they disagree in sixteen places today: a student's own screen files her
   income letter under "Other" and ignores her STR; the officer's panel shows income proved for a
@@ -3990,6 +3998,66 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-264] The api and the web do not agree on what a DIGIT is, on the payout account — medium (money path; the owner's call which side moves)
+
+**Found:** code health H9 (2026-09-19), characterising the payout-account floor before guarding it.
+**Nothing was changed.** Both behaviours are pinned, green on today's tree, by
+`halatuju-web/src/lib/__tests__/payoutAccountDrift.test.ts`.
+
+The FLOOR agrees: five digits, on both sides, so a fat-finger or a truncated OCR fragment cannot
+become a payout target. The word *digit* does not agree:
+
+| input | api `ch.isdigit()` | web `/\d/g` | outcome |
+|---|---|---|---|
+| `12345` | 5 | 5 | accepted by both |
+| `١٢٣٤٥` (Arabic-Indic) | 5 | 0 | **api ACCEPTS**, form refuses |
+| `³³³³³` (superscript) | 5 | 0 | **api ACCEPTS**, form refuses |
+| `₅₅₅₅₅` (subscript) | 5 | 0 | **api ACCEPTS**, form refuses |
+
+Python's `str.isdigit()` is Unicode-aware; JavaScript's `\d` is ASCII `0-9`. The web is therefore
+the STRICTER side, so nothing a student's own form allows is refused by the server — **the exposure
+is the other way round**, on a request that does not come from the form: `BankAccountSerializer`
+would accept `³³³³³` and store it as the account a payment run reads. `account_number` is a plain
+`CharField(max_length=40)` with no other validation.
+
+This is the same class H7 pinned in `_digits` (`re.sub(r'\D')` drops a superscript, `str.isdigit()`
+keeps it) — now on the money path, which is why it is reported rather than fixed. Both candidate
+fixes change what the api accepts:
+1. **Narrow the api** to ASCII digits. Matches the form, matches what a bank can be paid through.
+   Would reject any stored account that is not ASCII today — **count the stored rows first**.
+2. **Widen the web** to Unicode digits. Almost certainly wrong: it would let a student save an
+   account number no payment system can use.
+
+**Owner decision needed.** Recommended: (1), after a count of `BankAccount.account_number` values
+containing a non-ASCII digit (expected zero, because the form has always blocked them).
+**Trigger:** any change to the payout-account validator, or a payment run failing on an account
+number that "looks right".
+
+### [TD-263] The Requests screen offers `requote` on a bug; the service refuses it — low (unreachable today, by one road only)
+
+**Found:** code health H9 (2026-09-19), sweeping every status × role × kind through
+`requestActionsFor` against `org_requests.TRANSITIONS`. One row of the sweep disagreed; **nothing
+was changed**, and both behaviours are pinned by
+`halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts`.
+
+`org_requests.quote` and `requote` both raise `bug_is_free` unless the effective kind is `feature`
+— a bug is never priced, it goes straight to scheduling. `requestStatus.requestActionsFor` applies
+that kind gate to `quote` and to `schedule`, and **not** to `requote`: at `deferred` it offers
+Re-quote whatever the kind is.
+
+It cannot be reached today, and the drift test is what says so: the only transition landing on
+`deferred` is `defer`, whose only from-status is `quoted`, and the only transitions landing on
+`quoted` are `quote` and `requote` — both feature-only. So every deferred request has been quoted,
+and every quoted request is a feature. The test asserts that chain, so **adding a second road into
+`deferred`, or a way to re-triage a quoted request to a bug, turns it red** at exactly the moment
+the button becomes a 400.
+
+The fix is one condition (`triagedKind === 'feature'`) on the `requote` line, and it is deliberately
+NOT applied here: H9's rule was that a mirror is only touched where the two sides already agree, and
+picking a winner on a row that disagrees is how a "tidy-up" changes behaviour. It is a one-line
+change for whoever next opens that file.
+**Trigger:** the transition table gains a second road into `deferred`, or triage becomes re-runnable.
 
 ### [TD-262] The income rule has ELEVEN homes and they disagree in sixteen places today — HIGH (eligibility; every fix is the owner's ruling)
 

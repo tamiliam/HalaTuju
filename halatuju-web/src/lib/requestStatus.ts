@@ -12,9 +12,16 @@
  * the transition/actor matrix. The FE reads the payload and this pure helper; it never re-encodes
  * a business rule the server doesn't also enforce (the server is authoritative — this only decides
  * which BUTTONS to show).
+ *
+ * Since code health H9 that request is a RULE: the drift test reads `org_requests.py` itself and
+ * sweeps every status × role × kind × question-state in both directions, so neither an offer the
+ * server refuses nor a transition no screen offers can survive a run.
+ * drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
  */
 
-/** The 8 statuses in flow order. Mirrors OrgRequest.STATUS_CHOICES in models.py. */
+/** The 8 statuses in flow order. Mirrors OrgRequest.STATUS_CHOICES in models.py — same members,
+ *  same order, asserted on every run.
+ *  drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts */
 export const REQUEST_STATUSES = [
   'submitted',
   'triaged',
@@ -86,11 +93,17 @@ export type RequestAction =
  * is waiting. The server re-gates every one of these — this only decides what to show.
  *
  * Mirrors org_requests.TRANSITIONS + the actor rules:
- *   org_admin (requestee) — answer (submitted/triaged, question waiting); accept (quoted/deferred);
- *     defer (quoted); modify (quoted/deferred); withdraw (submitted/triaged/quoted/deferred).
+ *   org_admin (requestee) — answer (submitted/triaged/quoted/deferred, question waiting); accept
+ *     (quoted/deferred); defer (quoted); modify (quoted/deferred); withdraw
+ *     (submitted/triaged/quoted/deferred).
  *   super (owner) — triage (submitted); quote (triaged + feature); schedule (triaged + bug, or
  *     approved); requote (deferred); done (scheduled); decline (submitted/triaged/quoted/deferred);
  *     ai_rerun (submitted/triaged).
+ *
+ * Two of these names are the web's own: `accept` is the api's `approve` transition, and `withdraw`
+ * is the api's `decline` performed BY the requester (one status change, distinguished on the api
+ * side by `declined_by_role`). The drift test holds that map.
+ * drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
  */
 export function requestActionsFor(
   role: RequestRole,
@@ -107,6 +120,7 @@ export function requestActionsFor(
     // Answering stays open until the quote is ACCEPTED — wider than 'ask' deliberately. A question
     // asked before the quote was priced into it, so replying completes the record; a NEW question
     // after quoting could re-price it. Mirrors TRANSITIONS['answer'] in org_requests.py.
+    // drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
     if (hasUnansweredQuestions
         && (REQUEST_OPEN_FOR_SHAPING as readonly string[]).includes(status)) out.push('answer')
     if (status === 'quoted' || status === 'deferred') out.push('accept')
@@ -123,9 +137,10 @@ export function requestActionsFor(
   if (status === 'scheduled') out.push('done')
   if (['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('decline')
   if (status === 'submitted' || status === 'triaged') out.push('ai_rerun')
-  // The owner asking the requester something — same window as the AI's own questions and the
-  // answer path. A quoted request must not grow new questions: the quote was priced against
-  // what was known when it was sent. Mirrors TRANSITIONS['ask'] in org_requests.py.
+  // The owner asking the requester something — NARROWER than the answer path: a quoted request
+  // must not grow new questions, because the quote was priced against what was known when it was
+  // sent. Mirrors TRANSITIONS['ask'] in org_requests.py.
+  // drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
   if (status === 'submitted' || status === 'triaged') out.push('ask')
   return out
 }
@@ -188,6 +203,7 @@ export function canAttach(status: string): boolean {
 /**
  * The statuses in which the request is OVER — nothing more is said about it.
  * Mirrors org_requests.TERMINAL_STATUSES.
+ * drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
  */
 export const REQUEST_TERMINAL = ['done', 'declined'] as const
 
@@ -204,6 +220,7 @@ export const REQUEST_TERMINAL = ['done', 'declined'] as const
  *     can re-price a quote that has already gone out.
  *
  * Mirrors org_requests.can_comment.
+ * drift-test: halatuju-web/src/lib/__tests__/requestStatusDrift.test.ts
  */
 export function canComment(status: string): boolean {
   return !(REQUEST_TERMINAL as readonly string[]).includes(status)

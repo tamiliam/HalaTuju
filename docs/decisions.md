@@ -1,5 +1,33 @@
 # Architectural Decisions — HalaTuju
 
+## A mirrored rule is SERVED only when it varies; otherwise it is drift-tested — code health H9, 2026-09-19
+
+**Decision:** a front-end rule copied from the backend ends in one of two states, and which one is
+decided by a single question — *can this value differ between two callers?*
+- **It can** (per organisation, per programme, per request): **SERVE it.** The template is
+  `documentLimits.ts` / `interviewSlots.ts`, headed *"⚠ THE RULES ARE SERVED, NOT MIRRORED."*
+- **It cannot** (a module-level constant, a transition table, an enum): **GUARD it** with a test
+  that reads the backend's own source and fails in both directions, marked `drift-test: <path>` in
+  the comment that makes the claim.
+
+**Alternatives considered:** serving everything, as H9's roadmap section originally implied for the
+decision gates; and leaving the cheap cases as comments with a review convention.
+
+**Rationale:** for a constant, serving is strictly worse. It costs a new endpoint (the org-fence
+and endpoint-exercise ledgers, a deploy of both services — during a development freeze) and buys a
+failure mode that is *later and worse*: a served value can only disagree at RUNTIME, in front of a
+user, while a drift test disagrees inside the deploy gate before the change ships. Serving earns
+its cost when the value genuinely varies, because then no constant can be right.
+
+**Trade-offs:** a drift test reads source TEXT, so it asserts a shape rather than a behaviour and
+can break on a harmless rename — which is why `code_health.guard%` watches the share of such tests
+and why each one carries a parse-sanity assertion (a minimum count) so a refactor cannot turn it
+into a silent no-op. Accepted: for a constant, a noisy guard beats a silent drift.
+
+**Revisit if:** one of these constants becomes per-organisation (the most likely candidate is the
+application status list, if a tenant is ever allowed to hide a stage), or if the drift tests start
+failing on renames often enough that people begin deleting assertions to get a build through.
+
 ## The income rules, restated by the owner and confirmed against the code — 2026-09-19
 
 **Decision (owner, in their words):**

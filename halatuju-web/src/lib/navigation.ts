@@ -16,8 +16,14 @@
  * KEEP-IN-SYNC PAIR: `NavItem.roles` mirrors the authority in
  * `docs/scholarship/role-matrix.md` and `PartnerAdmin.ROLE_CHOICES`
  * (`halatuju_api/apps/courses/models.py`). A role's powers change in the matrix FIRST, then
- * here, then in the page guard — all in one commit. `navigation.test.ts` pins the role sets
- * as a snapshot so a change has to be deliberate.
+ * here, then in the page guard — all in one commit.
+ *
+ * Both halves are held by a test, each by the right instrument (code health H9): the drift test
+ * below reads `ROLE_CHOICES` itself, so the two sides cannot know different roles and no stored
+ * role can end up with an empty console; and `navigation.test.ts` pins the per-role visibility as
+ * a snapshot, so a change to WHICH pages a role sees has to be deliberate. The matrix document
+ * stays prose — it is written for people, and a guard over it could only cry wolf.
+ * drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts
  */
 
 /** The scope a page belongs to. Platform → Organisation → Programme is the platform hierarchy
@@ -27,7 +33,9 @@ export type NavScope = 'platform' | 'organisation' | 'programme' | 'utility'
 /** Scopes the sidebar renders as groups (N2). `utility` lives in the help/account menus. */
 export const SIDEBAR_SCOPES: readonly NavScope[] = ['platform', 'organisation', 'programme']
 
-/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models.py). */
+/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models.py) — same seven, same
+ *  order, asserted on every run.
+ *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance'
 

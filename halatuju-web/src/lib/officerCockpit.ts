@@ -1328,6 +1328,8 @@ export function headerTimeline(app: TimelineSource): HeaderTimelineStep[] | null
  * action is immediate and irreversible, so a card rendered outside this set is not a
  * cosmetic bug: it is a button that looks live and answers 400 (lessons.md 2026-07-16 —
  * the offer-set and the accept-set are one unit of change).
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
  */
 export const ORG_REJECT_FROM = new Set<string>(['shortlisted'])
 
@@ -1339,6 +1341,8 @@ export const ORG_REJECT_FROM = new Set<string>(['shortlisted'])
  * `AdminOrgRejectView` then narrows to super/org_admin — "rejection is a super feature;
  * the org admin is the super of the organisation" (owner). Mirror that narrowing here so
  * the card never offers what the endpoint refuses.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
  */
 export function canOrgReject(
   opts: { isSuper: boolean; role: string | null | undefined; status: string }
@@ -1579,7 +1583,11 @@ export interface AssignOption {
  * all — this is an offer, not a fence.
  *
  * Who is offered at all mirrors the server's `bad_assignee` rule: a super may pick any review-
- * capable person, a non-super delegates only to their own organisation's reviewers.
+ * capable person, a non-super delegates only to their own organisation's reviewers. The org fence
+ * and `is_active` are the LIST endpoint's job (`AdminAssignableAdminsView` filters both), so what
+ * this function must get right is the ROLE narrowing — the list is deliberately wider.
+ *
+ * drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
  */
 export function assignOptions<T extends {
   id: number; name: string; role: string; paused?: boolean
