@@ -31,9 +31,13 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
+import { blockerLabelKey, stepOf } from '@/lib/blockers'
 import {
   docTypeToFact, docTypeToRequestFact, docTypeToStudentGroup, STUDENT_DOC_GROUP_ORDER,
 } from '@/lib/docCategory'
+import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
 import { groupDocumentsByFact, incomeSubSections } from '@/lib/officerCockpit'
 import { incomeRequirements, salaryMemberBlocks, workingMembers } from '@/lib/incomeWizard'
 import type { AdminApplicantDocument } from '@/lib/admin-api'
@@ -411,4 +415,65 @@ describe('W-D memberIncomeShown — the student side', () => {
     expect(body).toContain("d.doc_type === 'income_support_doc'")
     expect(body).not.toContain('str')          // ← no fourth arm, on either spelling
   })
+})
+
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// W-E — THE GATE'S F8 REASON REACHES THE STUDENT, IN HER OWN LANGUAGE
+// ════════════════════════════════════════════════════════════════════════════════════════════
+/**
+ * TD-262 F8 (owner 2026-09-19): only the family's own STR counts at the SUBMISSION gate. The api
+ * now emits `str_not_household` (api twin: `test_income_evidence_homes.TestWhoseStrIsIt.
+ * test_a_strangers_str_no_longer_clears_the_gate`). A blocker the student cannot READ is a wall
+ * with no sign on it, so this section is the cross-language half of the ruling: the code the api
+ * emits must be a code both catalogues have copy for, in all three languages.
+ *
+ * ⚠ THERE IS NO WEB MIRROR OF THIS RULE AND THERE MUST NOT BE ONE. The blocker LIST is SERVED
+ * (`services.income_doc_blockers` → `consent_blockers` on the payload); the web only maps codes to
+ * copy. The ownership test itself stays in the api, next to the matching rule it reads.
+ */
+const API_F8 = join(
+  WEB_ROOT, '..', 'halatuju_api', 'apps', 'scholarship', 'income_str_ownership.py',
+)
+
+/** The api's own constant, so a rename there cannot leave the student looking at a raw key. */
+function apiBlockerCode(): string {
+  const m = readFileSync(API_F8, 'utf8').match(/^STR_NOT_HOUSEHOLD = '([a-z_]+)'$/m)
+  return m ? m[1] : ''
+}
+
+function messageAt(bundle: unknown, key: string): string {
+  return key.split('.').reduce<unknown>(
+    (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+    bundle) as string
+}
+
+describe('W-E the F8 blocker — served by the api, spoken by the web', () => {
+  const code = apiBlockerCode()
+
+  it('the api emits the code this catalogue answers', () => {
+    expect(code).toBe('str_not_household')
+  })
+
+  it('it is a bare code: the officer key has no `_member` variant and it routes to Documents', () => {
+    // It is a HOUSEHOLD document, not one person's, so it is never member-qualified.
+    expect(blockerLabelKey(code)).toBe('admin.scholarship.blockers.item.str_not_household')
+    expect(stepOf(code)).toBe('documents')
+  })
+
+  it.each([['en', en], ['ms', ms], ['ta', ta]] as const)(
+    '%s: the student and the officer each have their own sentence for it', (_loc, bundle) => {
+      const student = messageAt(bundle, `scholarship.consent.blocker.${code}`)
+      const officer = messageAt(bundle, `admin.scholarship.blockers.item.${code}`)
+      for (const s of [student, officer]) {
+        expect(typeof s).toBe('string')
+        expect(s.length).toBeGreaterThan(20)
+        expect(s).toContain('STR')                       // the document is named in every locale
+        expect(s).not.toMatch(/\{[a-zA-Z0-9_]+\}/)       // bare code → nothing to interpolate
+      }
+      // ⚠ IT MUST NOT READ LIKE "upload your STR". She HAS uploaded one; the sentence has to say
+      // whose it is and offer her the OTHER way out, or she re-uploads the same screenshot.
+      const strMissing = messageAt(bundle, 'scholarship.consent.blocker.str_missing')
+      expect(student).not.toBe(strMissing)
+      expect(student.length).toBeGreaterThan(strMissing.length)
+    })
 })

@@ -486,6 +486,28 @@ fall-through exists to look past. The honest test is the salary reading's own
 `_str_precedence_verdict` returns before the route split is reached. Removing it reddens five
 tests; do not "simplify" the fall-through past it.
 
+### Only the family's own STR opens the submission gate
+
+**`apps/scholarship/income_str_ownership.py`** (TD-262 F8, owner 2026-09-19) holds
+`str_recipient_is_stranger` and `stranger_str_blocks_submission`. `services.income_doc_blockers`
+reads the second, guards BOTH of its `salary_income_satisfied` early returns with it, and emits
+the blocker code `str_not_household` (student + officer copy in en / ms / ta).
+
+**⚠ `str_not_breached` IS DELIBERATELY LEFT RECIPIENT-AGNOSTIC AND MUST STAY SO.** It is the
+obvious place to put the ownership test and the wrong one: it feeds `member_income_evidenced` →
+`member_cluster_complete` → `salary_income_satisfied`, which `verdict_engine._verdict_income` reads
+at str-proof-spec §6 rule 2, so tightening it moves a verdict BAND as well as the gate. It also has
+a web mirror (`officerCockpit.strNotBreached`) that stays honest only while the api does not move
+under it. F8 is a GATE ruling, applied at the gate.
+
+**⚠ TWO LINES BOUND THE TEST.** *Absence is not a mismatch* — `no_ref` (the STR read nothing, or no
+household IC is on file to compare against) never blocks; only a positive `mismatch` with no match
+anywhere does. And *matching is exhausted first* — name OR nric, independently, against every
+parent/guardian, which `income_engine._str_recipient_household_match` already does; this module
+only reads its verdict, so a second matching rule can never appear. The block also fires ONLY where
+no working member's income is shown on its own (`income_shown`), so it can never newly block a
+household that documented an earner properly.
+
 **⚠ THE FROZEN GATE IS NOT TO BE TIDIED.** `services.application_completeness` keeps its legacy
 document-type arm OR-ed with `any_member_income_evidenced`; it is MORE permissive in four cases and
 replacing it un-submits students and nulls their `requirements_snapshot` (TD-262 F9). Any change to

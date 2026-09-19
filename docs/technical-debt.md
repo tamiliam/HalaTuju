@@ -107,6 +107,8 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   income letter under "Other" and ignores her STR; the officer's panel shows income proved for a
   household the gate is holding shut, and chases a payslip from one that proved income the fourth
   way. Nothing was changed — every fix moves an eligibility answer and is the owner's ruling.
+  *Chunks 1, 2+3, R4 items 1 and 1b, and F8 (only the family's own STR opens the gate) are DONE,
+  2026-09-19. What stands is **F2 + W1**: the owner's fourth way has no upload slot anywhere.*
 - **TD-260 (raised 2026-09-19)** — 604 of 674 IC-holding students have no verified contact, so no
   self-service way to reclaim an account, and support has no screen to do it for them. Two owner levers.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
@@ -4366,6 +4368,74 @@ its snapshot is untouched.
 **TD-262 is STILL NOT resolved** — items 1 and 1b of the R4 chunk are done; **F8, F2 and W1
 stand** (a stranger's STR still clears the submission gate; the owner's fourth way still has no
 upload slot).
+
+**F8 DONE 2026-09-19 — the submission gate finally asks WHOSE STR it is. It can only ever BLOCK
+a not-yet-submitted student, it blocks only on a POSITIVE mismatch, and only where nothing else
+shows what the household earns. No verdict band moves and no submitted student is touched.**
+*What the gate really did.* Every STR arm at the gate runs through `income_engine.str_not_breached`,
+whose question is *has this household's STR FAILED?* — approved-ish, not judged non-genuine — and
+which never asks whose it is. It is the fourth arm of `member_income_evidenced`, so an unrelated
+person's screenshot satisfied `services.income_doc_blockers` (and, through
+`member_cluster_complete` → `salary_income_satisfied`, both of that function's early returns)
+while `verdict_engine`'s `str_mismatch` branch correctly refused the same document. **The lead's
+F8 description above matched the code exactly** — the one thing it does not say is that the STR
+ROUTE's branch tests only whether a document of type `str` is PRESENT, so the hole is on both
+routes for different reasons.
+*The fix.* A new module **`apps/scholarship/income_str_ownership.py`**: `str_recipient_is_stranger`
+(the latest live STR's recipient matched NO parent/guardian, on name or nric, after the exhaustive
+match `student_str_check` already performs) and `stranger_str_blocks_submission` (that, AND no
+working member's income is SHOWN on its own — `income_shown`, the per-earner answer with no STR
+arm). `income_doc_blockers` reads the second, guards its two `salary_income_satisfied` early
+returns with it, and emits a new blocker code **`str_not_household`**.
+*⚠ WHY THE TEST IS NOT INSIDE `str_not_breached`, WHICH IS WHERE IT LOOKS LIKE IT BELONGS.* That
+predicate feeds `member_income_evidenced` → `member_cluster_complete` → `salary_income_satisfied`,
+and `verdict_engine._verdict_income` reads the last one at §6 rule 2 — so tightening it would move
+a verdict BAND as well as the gate, which this ruling does not authorise. It also has a web mirror
+(`officerCockpit.strNotBreached`, which decides whether the officer's salary rows are drawn as
+supportive), and that mirror stays honest precisely by the api not moving under it. F8 is a ruling
+about the GATE; the ownership test is applied at the gate. **`str_not_breached` is byte-untouched
+and a pinned row says so.**
+*⚠ ABSENCE IS NOT A MISMATCH, AND THIS IS THE HALF THAT COULD HAVE GONE WRONG QUIETLY.*
+`student_str_check` returns `no_ref` — not `mismatch` — when the STR itself read nothing, or when
+no household IC is on file to compare against. Both keep clearing the gate exactly as before. A
+family is never refused for a gap in OUR reading of their document; two rows pin it and a bite
+that widens the test to `no_ref` reddens both.
+*⚠ THE ESCAPE HATCH IS LOAD-BEARING.* The block fires only where the STR is the ONLY thing
+carrying the income. A household with a payslip on file keeps clearing the gate with a useless STR
+sitting beside it, so a tightening about STR OWNERSHIP can never newly block a family that
+documented an earner properly (pinned; the bite that removes the hatch reddens that row).
+*⚠ THE FROZEN GATE IS UNTOUCHED (F9).* `application_completeness` takes its 5-June-2026
+document-TYPE arm once `profile_completed_at` is set, and that arm passes on `str` whoever it
+names — so no submitted student is un-submitted and no `requirements_snapshot` is nulled. Its own
+row pins it, and the bite that points the frozen branch at the live gate reddens four rows.
+*What the student is told.* A new blocker code needs a sentence on her own screen or it is a wall
+with no sign on it. `str_not_household` gets student copy (`scholarship.consent.blocker.*`) and
+officer copy (`admin.scholarship.blockers.item.*`) in **en / ms / ta**; the wording names whose STR
+it is and offers BOTH ways out (the family's own STR, or a working member's income), because
+"upload your STR" would send back the same screenshot. The blocker LIST is SERVED, so no web logic
+changed — `src/lib/blockers.ts` maps codes to copy and already handles an unknown one.
+*Tests.* Section 10 of `test_income_evidence_homes.py`, 15 rows. Thirteen were written against the
+unchanged tree and seen GREEN; the two that must move were EDITED FIRST and seen RED before a line
+of production code changed. **Five bite-checks, and one came back SILENT** — demanding the
+recipient match on name AND nric broke nothing, because on the SALARY route `income_doc_blockers`
+clears the household on `household_str_status` (itself an OR of those two fields) several lines
+ABOVE the new test. The missing case is the STR route, which has no such early return; it is now
+two pinned rows and the bite bites. pytest 6,985 → **7,000**; jest 2,610 → **2,615** / 144 suites
+(a new `W-E` section in `incomeEvidenceHomes.test.ts` reads the api's own constant and asserts both
+catalogues answer it in three languages). Every `code_health` reading unchanged (fix% 41, big 25,
+long 15, dup 4, guard% 11, **std ok**); no budget raised, no suppression added.
+*Blast radius — NOT MEASURED HERE; the read-only screening SQL is with the lead.* It names the
+population in two buckets: **(a)** not-yet-submitted applications (`profile_completed_at IS NULL`)
+holding an STR whose recipient matches no household member and holding no other income document —
+these students meet the new block; **(b)** already-submitted ones with the same pattern, for
+information only, because the frozen arm keeps them complete. `VERDICT_ENGINE_VERSION` is NOT
+bumped (no fact's status can move) and `results_doc.MODEL_VERSION` is NOT bumped (no
+document-recognition signature moved).
+**TD-262 is STILL NOT resolved — but the R4 chunk and the gate ruling are.** What stands is
+**F2 + W1**: the owner's fourth way (a declared amount + a supporting letter) has NO upload slot
+anywhere — `income_requirements` / `salary_member_blocks` draw only a payslip and an EPF — and
+`incomeWizard`'s mononym birth-certificate arm still has no api twin. Both are display/requirement
+work with no eligibility answer in them.
 
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 

@@ -878,3 +878,183 @@ class TestIncompleteStrCluster(IncomeHomesBase):
         self.assertIn('income_above_b40_line', [i['code'] for i in salary['unresolved']])
         self.assertEqual(self.verdict(app),
                          ('gap', ['birth_cert_missing', 'earner_ic_missing', 'str_not_current']))
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 10. WHOSE STR IS IT?  (TD-262 F8 — owner 2026-09-19: "only the family's own STR count")
+# ════════════════════════════════════════════════════════════════════════════════════════════
+class TestWhoseStrIsIt(IncomeHomesBase):
+    """The SUBMISSION gate's STR arm, asked the one question it never asked: whose STR is this?
+
+    ``str_not_breached`` answers *has this household's STR failed?* and is recipient-agnostic by
+    design, so until F8 an unrelated person's STR cleared the gate while the verdict's
+    ``household_str_status`` correctly refused it — two bars, one function apart.
+
+    ⚠ TWO LINES BOUND THIS SECTION AND NEITHER IS NEGOTIABLE.
+    - **Absence is not a mismatch.** An STR nothing could be read off, or one uploaded before any
+      household IC, produces ``no_ref`` — not ``mismatch``. It must never block: we do not refuse
+      a family for a gap in OUR reading.
+    - **Matching is exhausted first** (owner, ``feedback_str_precedence``): name OR nric,
+      independently, against EVERY parent/guardian. A hit on any member, on either field, is the
+      family's own STR."""
+
+    STRANGER_NAME = 'Roslan Bin Ahmad'
+    STRANGER_NRIC = '880808-10-5533'
+    MOTHER_NAME = 'Kamala A/P Suppiah'
+    MOTHER_NRIC = '750808-14-5002'
+    GUARDIAN_NAME = 'Selvi A/P Ramasamy'
+    GUARDIAN_NRIC = '681212-14-5044'
+
+    def blockers(self, app):
+        """H-B in full — every code the LIVE submission gate emits, sorted."""
+        return sorted(services.income_doc_blockers(app))
+
+    def _mother_ic(self, app):
+        return _doc(app, 'parent_ic', 'mother', name=self.MOTHER_NAME, nric=self.MOTHER_NRIC)
+
+    # ── the family's own STR, matched every way the rule allows ─────────────────────────────
+    def test_the_familys_own_str_clears_the_gate(self):
+        app = self._app()
+        self._ic(app)
+        _str_doc(app, recipient_name=FATHER_NAME, recipient_nric=FATHER_NRIC)
+        self.assertIs(self.served(app), True)
+        self.assertEqual(self.blockers(app), [])
+
+    def test_a_name_only_match_is_the_familys_own_str(self):
+        # The NRIC read wrong (or the letter carries a different one); the NAME hits the father.
+        # Each field settles on its own — a name hit alone is a household match.
+        app = self._app()
+        self._ic(app)
+        _str_doc(app, recipient_name=FATHER_NAME, recipient_nric='990101-10-1111')
+        sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
+        self.assertEqual((sc['name_status'], sc['nric_status']), ('match', 'mismatch'))
+        self.assertEqual(self.blockers(app), [])
+
+    def test_an_nric_only_match_is_the_familys_own_str(self):
+        # A spelling variant the name matcher cannot see, but the NRIC is his.
+        app = self._app()
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=FATHER_NRIC)
+        sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
+        self.assertEqual((sc['name_status'], sc['nric_status']), ('mismatch', 'match'))
+        self.assertEqual(self.blockers(app), [])
+
+    def test_a_name_only_match_is_the_familys_own_str_on_the_str_route(self):
+        """⚠ THIS ROW EXISTS BECAUSE A BITE CAME BACK SILENT, and the silence was informative.
+
+        Demanding BOTH fields match (``and`` instead of ``or`` in ``str_recipient_is_stranger``)
+        broke nothing on the SALARY route: `income_doc_blockers` clears that route on
+        ``household_str_status`` first, which is itself ``or``-based, so the household was rescued
+        one line above the ownership test. The STR route has no such early return, so it is the
+        only place where an over-strict reading of "the family's own STR" actually shows."""
+        app = self._app(route='str', members=(), earner='father')
+        self._ic(app)
+        _str_doc(app, recipient_name=FATHER_NAME, recipient_nric='990101-10-1111')
+        self.assertEqual(self.blockers(app), [])
+
+    def test_an_nric_only_match_is_the_familys_own_str_on_the_str_route(self):
+        app = self._app(route='str', members=(), earner='father')
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=FATHER_NRIC)
+        self.assertEqual(self.blockers(app), [])
+
+    def test_the_mothers_str_counts_on_a_father_earner_household(self):
+        # ⚠ MATCHING IS EXHAUSTED ACROSS EVERY PARENT/GUARDIAN, not read off the declared earner.
+        # The father is the working member; the STR is in the MOTHER's name and her IC is on file.
+        app = self._app()
+        self._ic(app)
+        self._mother_ic(app)
+        _str_doc(app, recipient_name=self.MOTHER_NAME, recipient_nric=self.MOTHER_NRIC)
+        self.assertEqual(income_engine.household_str_status(app), ('current', 'mother'))
+        self.assertEqual(self.blockers(app), [])
+
+    def test_a_guardians_str_counts_on_the_str_route(self):
+        app = self._app(route='str', members=(), earner='guardian')
+        _doc(app, 'parent_ic', 'guardian', name=self.GUARDIAN_NAME, nric=self.GUARDIAN_NRIC)
+        _doc(app, 'guardianship_letter', 'guardian')
+        _str_doc(app, recipient_name=self.GUARDIAN_NAME, recipient_nric=self.GUARDIAN_NRIC,
+                 member='guardian')
+        self.assertEqual(self.blockers(app), [])
+
+    # ── a stranger's STR ────────────────────────────────────────────────────────────────────
+    def test_a_strangers_str_no_longer_clears_the_gate(self):
+        # F8 FIXED (owner 2026-09-19). Nobody in this household is on this letter. It used to
+        # read `[]` — the gate let her submit on it while the verdict refused it, so the officer
+        # opened an income fact with no STR behind it. Real student: anyone who uploads a
+        # relative's or a neighbour's screenshot. She is now told so, before she submits.
+        app = self._app()
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        self.assertEqual(income_engine.household_str_status(app), (None, None))
+        self.assertEqual(self.blockers(app), ['str_not_household'])
+
+    def test_a_strangers_str_no_longer_clears_the_gate_on_the_str_route(self):
+        # Used to read `[]`: the STR branch asked only whether a document of type `str` was
+        # PRESENT, so a stranger's letter satisfied "the primary income proof".
+        app = self._app(route='str', members=(), earner='father')
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        self.assertEqual(self.blockers(app), ['str_not_household'])
+
+    # ── the two things that must NEVER be read as a stranger's STR ──────────────────────────
+    def test_an_unreadable_str_is_not_a_strangers_str(self):
+        # ⚠ ABSENCE IS NOT A MISMATCH. Vision read no recipient at all, so there is nothing to
+        # compare — `no_ref`, never `mismatch`. A family is not refused for a gap in OUR reading.
+        app = self._app()
+        self._ic(app)
+        _str_doc(app, recipient_name='', recipient_nric='')
+        sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
+        self.assertEqual((sc['name_status'], sc['nric_status']), ('no_ref', 'no_ref'))
+        self.assertEqual(self.blockers(app), [])
+
+    def test_a_str_uploaded_before_any_household_ic_is_not_a_strangers_str(self):
+        # Nothing has been compared yet — the ICs simply are not in. The gate asks for the IC
+        # (it always did); it must not ALSO call the STR somebody else's.
+        app = self._app()
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
+        self.assertEqual((sc['name_status'], sc['nric_status']), ('no_ref', 'no_ref'))
+        self.assertEqual(self.blockers(app), ['parent_ic_missing:father'])
+
+    # ── the other evidence, and the submitted student ───────────────────────────────────────
+    def test_a_strangers_str_beside_a_good_salary_cluster_still_clears(self):
+        # The household HAS shown what it earns — the useless STR is beside the point, and the
+        # gate must not newly block a family that proved its income the salary way.
+        app = self._app()
+        self._ic(app)
+        _doc(app, 'salary_slip', 'father', fields=_SLIP_FIELDS)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        self.assertEqual(self.blockers(app), [])
+
+    def test_a_submitted_student_on_a_strangers_str_stays_complete(self):
+        # ⚠ THE FROZEN GATE (F9). `application_completeness` reads a 5-June-2026 set of DOCUMENT
+        # TYPES OR-ed with the served answer, and an STR is an STR by type whoever it names. A
+        # student who already submitted must never be un-submitted by a rule tightened after her
+        # (`revert_if_profile_incomplete` also nulls `requirements_snapshot`).
+        app = self._app(submitted=True)
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        self.assertIs(self.frozen_gate(app), True)
+
+    # ── the predicates F8 must NOT disturb ──────────────────────────────────────────────────
+    def test_the_shared_str_predicate_and_the_verdict_are_untouched_by_f8(self):
+        """⚠ `str_not_breached` STAYS RECIPIENT-AGNOSTIC, and that is deliberate. It feeds
+        `member_income_evidenced` → `member_cluster_complete` → `salary_income_satisfied`, which
+        `verdict_engine._verdict_income` reads at §6 rule 2. Tightening it there would move a
+        BAND; F8 is a gate ruling, so the ownership test lives at the gate."""
+        app = self._app()
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        self.assertIs(income_engine.str_not_breached(app), True)
+        self.assertIs(self.served(app), True)
+        self.assertIs(income_engine.salary_income_satisfied(app), True)
+        self.assertEqual(self.verdict(app), ('recommend', ['income_unverified_needs_interview']))
+
+    def test_the_verdict_already_refuses_a_strangers_str_on_the_str_route(self):
+        """The other half of the same pin: on the STR route the verdict has ALWAYS read the
+        recipient (`str_mismatch` → §8's amber). F8 brings the gate up to that bar; it must not
+        move this answer by a word."""
+        app = self._app(route='str', members=(), earner='father')
+        self._ic(app)
+        _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+        self.assertEqual(self.verdict(app), ('recommend', ['str_recipient_mismatch']))

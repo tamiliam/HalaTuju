@@ -2426,6 +2426,13 @@ def income_doc_blockers(application):
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
+    # ⚠ F8 — ONLY THE FAMILY'S OWN STR COUNTS (owner 2026-09-19, `docs/decisions.md`). Every STR
+    # arm below runs through `str_not_breached`, which asks whether the household's STR has FAILED
+    # and never WHOSE it is, so a stranger's letter used to clear this gate. The ownership test is
+    # applied here rather than inside that predicate because it also feeds the verdict — see
+    # `income_str_ownership`, which also documents why an UNREAD STR is not a stranger's one.
+    from .income_str_ownership import STR_NOT_HOUSEHOLD, stranger_str_blocks_submission
+    strangers_str = stranger_str_blocks_submission(application)
     present = set(application.documents.filter(superseded_at__isnull=True)
                   .values_list('doc_type', flat=True))
     out = []
@@ -2433,7 +2440,9 @@ def income_doc_blockers(application):
         # EITHER route satisfies (owner 2026-07-22): a fully documented earner settles income on
         # its own, so don't go on to demand the STR triplet from a student whose STR is missing or
         # failed the format gate. Mirrors the salary branch's identical early-return below.
-        if salary_income_satisfied(application):
+        # (`salary_income_satisfied` reads the un-tightened STR arm, so a stranger's STR could
+        # satisfy it — hence the F8 guard on both of its call sites in this function.)
+        if not strangers_str and salary_income_satisfied(application):
             return []
         earner = (getattr(application, 'income_earner', '') or '').strip()
         if not earner:
@@ -2442,6 +2451,8 @@ def income_doc_blockers(application):
         # relationship doc — matches the Documents-UI DISPLAY_ORDER (str before parent_ic).
         if 'str' not in present:
             out.append('str_missing')
+        elif strangers_str:
+            out.append(STR_NOT_HOUSEHOLD)      # present, but it belongs to somebody else
         if _member_ic_doc(application, earner) is None:
             out.append(f'parent_ic_missing:{earner}')   # names the single STR earner
         rel = relationship_doc_for(earner)          # birth_certificate / guardianship_letter / ''
@@ -2463,8 +2474,12 @@ def income_doc_blockers(application):
     # If any selected member's cluster is complete + coherent, the income requirement is met and
     # every OTHER member's gaps become soft Check-2 follow-ups — so a family that has fully
     # documented one earner is never trapped over a second earner's missing/partial docs.
-    if salary_income_satisfied(application):
+    if not strangers_str and salary_income_satisfied(application):
         return []
+    if strangers_str:
+        # F8. Nothing else in this household shows what it earns (`stranger_str_blocks_submission`
+        # checked), so the STR is carrying the gate and it is not this family's.
+        out.append(STR_NOT_HOUSEHOLD)
     # No cluster complete yet — list what's still needed so the student can finish at least one.
     # Income is shown ANY ONE way (owner 2026-07-25): a payslip, an EPF statement, a declared amount
     # backed by a supporting letter, OR a non-breached household STR (means-test, P3). So a cash /

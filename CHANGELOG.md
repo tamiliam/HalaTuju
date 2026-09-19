@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-262 F8 - only the family's own STR opens the submission gate - 2026-09-19
+
+Owner ruling, 2026-09-19 (`docs/decisions.md`): *"only the family's own STR count."* The gate's
+STR arm runs through `income_engine.str_not_breached`, which asks whether the household's STR has
+FAILED and never WHOSE it is - so an unrelated person's screenshot cleared the submission gate
+while the verdict's `household_str_status` correctly refused it. Two bars, one function apart.
+No migration. No verdict band moves. No already-submitted student is affected.
+
+- **New `apps/scholarship/income_str_ownership.py`** - `str_recipient_is_stranger` (the STR is
+  PROVABLY in someone else's name) and `stranger_str_blocks_submission` (and nothing else shows
+  what this household earns). `services.income_doc_blockers` consults the second one and emits a
+  new blocker code **`str_not_household`**; the two `salary_income_satisfied` early-returns inside
+  that function are guarded, because that predicate is itself satisfied by the very STR being
+  refused.
+- **⚠ Absence is not a mismatch.** An STR nothing could be read off, or one uploaded before any
+  household IC is on file, reads `no_ref` - never `mismatch` - and keeps clearing the gate exactly
+  as before. We do not refuse a family for a gap in OUR reading of their document.
+- **⚠ Matching is exhausted first** (owner, `feedback_str_precedence`): name OR NRIC,
+  independently, against every parent/guardian. That work already lives in
+  `income_engine._str_recipient_household_match`; this module only reads its verdict, so a second
+  matching rule can never appear. A name-only or NRIC-only hit is the family's own STR.
+- **⚠ Nothing else newly blocks.** The test fires only when no working member's income is SHOWN on
+  its own (`income_shown` - payslip / EPF / declared amount + a letter that read), so a household
+  that documented an earner properly is untouched by the tightening.
+- **⚠ `str_not_breached` is byte-untouched, and that is the design.** It feeds
+  `member_income_evidenced` -> `member_cluster_complete` -> `salary_income_satisfied`, which
+  `verdict_engine._verdict_income` reads at str-proof-spec §6 rule 2, so tightening it there would
+  move a verdict BAND as well as the gate. It also has a web mirror
+  (`officerCockpit.strNotBreached`), which stays honest by being left alone. F8 is a GATE ruling,
+  so the ownership test is applied at the gate.
+- **⚠ The frozen gate is untouched (F9).** `application_completeness` takes its 5-June-2026
+  document-TYPE arm for an already-submitted student, which passes on `str` whoever it names - so
+  nobody is un-submitted and no `requirements_snapshot` is nulled. Pinned by its own row, and a
+  bite that points the frozen branch at the live gate reddens four.
+- **The student is told, in her own language.** `str_not_household` gets student copy
+  (`scholarship.consent.blocker.*`) and officer copy (`admin.scholarship.blockers.item.*`) in
+  **en / ms / ta**. The sentence says whose STR it is and offers BOTH ways out - the family's own
+  STR, or a working member's income - because she has already uploaded an STR and "upload your
+  STR" would send her back with the same screenshot.
+- **Tests.** A new section 10 in `apps/scholarship/tests/test_income_evidence_homes.py`
+  (15 rows: own STR, name-only and NRIC-only matches on both routes, the mother's STR on a
+  father-earner household, a guardian's STR, a stranger's STR on both routes, the unreadable STR,
+  the STR uploaded before any IC, a stranger's STR beside a good salary cluster, the submitted
+  student, and two rows pinning that `str_not_breached` and the verdict did not move). Thirteen
+  were written against the unchanged tree and seen GREEN; the two that must move were edited
+  first and seen RED. A new `W-E` section in `src/lib/__tests__/incomeEvidenceHomes.test.ts`
+  reads the api's own constant and asserts both catalogues answer it in all three languages.
+  pytest 6,985 -> **7,000**; jest 2,610 -> **2,615** / 144 suites. Every `code_health` reading
+  unchanged (fix% 41, big 25, long 15, dup 4, guard% 11, **std ok**).
+- **Still open on TD-262: F2 and W1** - the owner's fourth way (a declared amount + a supporting
+  letter) still has no upload slot anywhere, and `incomeWizard`'s mononym birth-certificate arm
+  has no api twin.
+
 ## TD-262 item 1b - an unfinished STR cluster no longer hides the payslips behind it - 2026-09-19
 
 The owner extended rule 4 the same day: *"'the stronger proof wins' also applies when the STR
