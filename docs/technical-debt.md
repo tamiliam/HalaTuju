@@ -4074,6 +4074,36 @@ in the api (F1, F4, F5, F10) — needs a live-case count · **chunk 4** the four
 slot anywhere (F2), the mirror's extra arm (W1), and STR ownership at the gate (F8, ruled above).
 No action: F3, F7 (deliberate), F9 (frozen on purpose).
 
+**⚠ CORRECTION 2026-09-19 — the lead's chunk-1 advice on W6 was WRONG, and the owner's own words showed it.**
+The owner restated the domain rule: *(R1)* "STR is preferred to Income pathway"; *(R2)* "STR must be
+current, else it is marked only probably"; *(R3)* "For income, all working adults in the household must
+provide their salary details. So it is not just one document that proves"; *(R4)* "If a student who is on an
+Income pathway could provide STR docs that is higher probability, the system should switch; likewise, STR to
+Income, if the latter is better"; *(R5)* "While a current STR is good; it may not be enough if one or more of
+the parents and or siblings living in the household were to work. So the income proofs are additional
+documentation for a proven current STR."
+- **W6 is NOT a student-screen bug.** Under R5 a working member's proof is ADDITIONAL to a household STR, so a
+  household STR must NOT turn an individual EARNER's tick green. The web (`memberIncomeShown`, three arms, no
+  STR) is the side that matches the owner; the api's `member_income_evidenced` is the one that returns True
+  for a member merely because a household STR exists (`income_engine.py`, the fourth arm) — a gate shortcut
+  wearing a per-member name. **Do not add an STR arm to the web.** W7 (the untagged letter) stands.
+- **W5 is real but narrow.** The owner's screenshot (#144, request #21) is the OFFICER cockpit, which IS
+  fixed. The unfixed copy is the student's pre-submit read-back, reachable only when she used the
+  "can't get a payslip?" path herself and then pressed Review & submit. A letter obtained through an officer's
+  request (as #144's was) can never appear there — that page is gone after submission.
+- **Code against the owner's five rules (read 2026-09-19, file:line in the H8 follow-up):** R2 AGREES (current →
+  Certain, undated/dashboard → Probable, stale/unreadable → Unsure). R1 PARTLY (precedence needs current/undated
+  + recipient matches a parent/guardian + that member's relationship independently confirmed). R3 PARTLY — the
+  submission gate needs only ONE complete earner (owner decision 2026-07-08); every working member is ASKED
+  (soft); verdict GREEN needs every member's income readable, implicitly, through the per-capita sum. R4 PARTLY
+  — `reconcile_income_route` switches only when the declared route has FAILED, once, at consent; and an
+  STR-route case whose STR is stale / unreadable / in a stranger's name is capped at amber WITHOUT the payslips
+  ever being looked at (`verdict_engine.py`, the `str_unsure` / `str_mismatch` branches return first).
+  **R5 DISAGREES with the decisions on file:** 2026-07-06 "a valid STR settles income B40 on EITHER route … a
+  current STR overrides an over-line salary (accepted)"; 2026-07-16 option C rejected — "not moving anyone out
+  of STR". Today the working members ARE asked (F3, deliberate) but nothing they answer can move a dispositive
+  STR's verdict. **The owner must say which stands before any of this is built.**
+
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 
 **Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects
