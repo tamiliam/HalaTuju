@@ -4060,6 +4060,19 @@ or stop the two vocabularies colliding, before budgeting it.
 3. *One served answer + a named frozen arm*, then the web reads it (`incomeWizard`,
    `incomeSubSections`) — the original H8 goal, now safe because 1 and 2 removed the disagreements.
 4. F8: a ruling — may any STR open the gate, or only the household's?
+   **✅ OWNER RULING 2026-09-19: "only the family's own STR count."** The submission gate must apply
+   the same ownership test the verdict already applies (`household_str_status`: the recipient matches
+   a parent/guardian by name OR NRIC). ⚠ This TIGHTENS a gate — before shipping, count the submitted
+   applications whose only income evidence is an STR that fails the ownership test, and do not
+   un-submit anybody silently: grandfather or route to the officer, the owner to choose.
+
+**Owner, 2026-09-19:** *"I thought we have settled the income question."* — The RULE is settled
+(25 July: any one way). What is not settled is that not every screen follows it. Work through the
+findings in chunks, easy ones first: **chunk 1** student screens (W5, W6, W7) · **chunk 2** the
+officer's income panel on the web (W2, W3, W4) · **chunk 3** the officer's chase list and the verdict
+in the api (F1, F4, F5, F10) — needs a live-case count · **chunk 4** the fourth way has no upload
+slot anywhere (F2), the mirror's extra arm (W1), and STR ownership at the gate (F8, ruled above).
+No action: F3, F7 (deliberate), F9 (frozen on purpose).
 
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 

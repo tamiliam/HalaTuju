@@ -1,5 +1,25 @@
 # Architectural Decisions — HalaTuju
 
+## Only the household's OWN STR counts as income evidence — at the gate as well as in the verdict — 2026-09-19
+
+**Decision (owner):** *"only the family's own STR count."* An STR document clears the income
+requirement only when its recipient is a parent or guardian of the applicant.
+
+**Context:** code health H8 found (F8) that `str_not_breached` asks "has this household's STR
+failed?" and never "whose STR is this?", so any person's STR cleared the SUBMISSION gate, while the
+verdict's `household_str_status` correctly refused it. Two bars, one function apart.
+
+**Rationale:** an STR is evidence about a household. Somebody else's says nothing about this one.
+The matching rule already exists and is the owner's own (`feedback_str_precedence`: match against
+ALL parents/guardians, by name OR NRIC, before declaring a mismatch) — the gate adopts it; it does
+not invent a second one.
+
+**Trade-offs:** this TIGHTENS a gate. Students already submitted on a stranger's STR must not be
+silently un-submitted; the count is taken first and the owner chooses grandfather or officer review.
+
+**Revisit if:** a legitimate STR recipient turns out to be someone the family roster cannot hold
+(e.g. a grandparent who is not the guardian).
+
 ## A credit read off a bill is written `RM-40.00` — the shape is chosen by its readers — 2026-09-19
 
 **Decision:** the deterministic bill parser writes a negative figure as `RM-<n>` (sign after the
