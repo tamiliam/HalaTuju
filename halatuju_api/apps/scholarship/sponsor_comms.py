@@ -225,8 +225,19 @@ def render(kind, template, context):
     `html_body` is the INNER html; the sender wraps it in the shared email shell. The mechanics
     live in `email_templates.render`; what stays here is the sponsor vocabulary.
     """
+    # ⚠ EVERY structural token this kind DECLARES gets a block, even when the caller supplied no
+    # data for it — the same line `partner_comms.render` has carried since its first block-valued
+    # token. Without it a caller that omits one leaves `{student_cards}` sitting literally in a
+    # DONOR's inbox, and no exception reports it. H7 found the asymmetry and proved no production
+    # path reached it (`sponsor_notify.send_student_alert` returns before rendering when it has
+    # no cards); TD-261 closed it on the owner's order, because "unreachable today" is a fact
+    # about today and this is the family that writes to people who have given us money.
+    blocks = _blocks_for(context)
+    for token in PLACEHOLDERS.get(kind, ()):
+        if token in STRUCTURAL_TOKENS:
+            blocks.setdefault(token, ('', ''))
     return email_templates.render(
-        template.subject, template.body, _scalars(context), _blocks_for(context))
+        template.subject, template.body, _scalars(context), blocks)
 
 
 # ── the log ───────────────────────────────────────────────────────────────────

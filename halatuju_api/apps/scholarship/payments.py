@@ -91,14 +91,20 @@ class PaymentsError(Exception):
 def _payment_amount(value):
     """Normalise to a non-negative 2dp Decimal (0 is allowed — a credit line can be RM0).
 
-    Rounds to two places rather than refusing a third: a payment-run line is a figure WE compute
-    and an officer adjusts, so the sen it lands on is ours to decide. (`invoicing._receipt_amount`
-    refuses the same input, because a receipt records a figure a bank already decided.)
+    ⚠ REFUSES A THIRD DECIMAL PLACE, it does not round one (TD-261, owner's order 2026-09-19).
+    The old docstring said a run line is "a figure WE compute and an officer adjusts, so the sen
+    it lands on is ours to decide" — and the first half is not true of anything that reaches
+    here. The one figure the product computes, ``default_amount``, quantises at its own site and
+    is written straight onto the item; the ONLY caller of this function is ``set_item``, and the
+    only caller of that is the run-item PATCH endpoint, i.e. an officer typing. Money going OUT
+    to a student's wallet is the last place to silently round somebody's typing, so it now
+    refuses exactly as ``invoicing._receipt_amount`` always has. The quantise stays and does the
+    other half of the job: an accepted figure is stored as 2dp (``'200'`` → ``200.00``).
 
     Was `_money` until code health H7; the mechanics moved to `money.parse_money`."""
     try:
         return money.parse_money(value, strip_whitespace=False, quantize=True,
-                                 allow_negative=False)
+                                 places_exact=True, allow_negative=False)
     except money.MoneyError:
         raise PaymentsError('bad_amount')
 

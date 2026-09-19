@@ -242,8 +242,21 @@ def _first_rm_figure(v: str) -> str:
     with seven other functions in this app that PARSED or FORMATTED money; this one does neither.
     It reads OCR text and returns a display string, it refuses nothing, and it has no opinion
     about zero, negatives or decimal places — see `money.py` for the functions that do.
+
+    ⚠ TWO THINGS IT USED TO GET WRONG, fixed on the owner's order 2026-09-19 (TD-261):
+
+    * **The minus sign was dropped**, so a CREDIT ('-40.00' — the household is ahead on the
+      account) was stored as a charge of RM40.00. The sign is kept now, and kept AFTER the ``RM``
+      (``RM-40.00``): that is the shape both readers of the stored string already handle —
+      ``income_engine._arrears_amount`` spots a credit by matching ``-\\s*\\d``, which
+      ``-RM40.00`` would NOT satisfy, and the cockpit's ``_arrearsAmount`` reads either. Only the
+      LEADING minus is a sign; no fixture or corpus here shows a Malaysian bill printing a credit
+      as ``40.00-``, ``40.00 CR`` or ``(40.00)``, and an unseen shape cannot be tested.
+    * **One decimal place was dropped** ('1234.5' → 'RM1234'): the pattern admitted two decimals
+      or none, and ``[\\d,]+`` then matched the integer part alone. One OR two now, reported as
+      the document prints it ('RM1234.5') rather than padded — this extracts, it does not format.
     """
-    m = re.search(r'([\d,]+(?:\.\d{2})?)', v or '')
+    m = re.search(r'(-?[\d,]+(?:\.\d{1,2})?)', v or '')
     return f'RM{m.group(1).replace(",", "")}' if m else ''
 
 

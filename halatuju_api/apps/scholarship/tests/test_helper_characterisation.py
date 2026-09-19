@@ -13,6 +13,13 @@ one concession is `_fn` below: H7 RENAMES several of these helpers (that is the 
 `_norm`s were four different contracts wearing one name), so the table reaches its subject through
 a list of names rather than one. The names may move. **The expected values may not.**
 
+**TD-261, 2026-09-19 — the one sanctioned exception, and how it was taken.** The owner ordered the
+five findings and the three surprises fixed. A fix is made HERE FIRST, by editing the pinned row
+to the value the fixed code must produce and watching it go red against the unfixed tree; the
+edited row IS the review, and every one of them carries a `TD-261` comment saying what it used to
+be and why it moved. Nothing else in the table was touched. Any future change to these helpers
+answers to the table the same way: edit the row, in the open, or do not change the behaviour.
+
 Nothing here touches the database: every subject is a pure function, and the two that are not
 (the Gemini seams) are exercised against a fake client.
 """
@@ -92,10 +99,11 @@ class TestFirstRmFigure(_Table):
             ('0', 'RM0'),
             ('0.00', 'RM0.00'),
             ('1234', 'RM1234'),
-            # H7-FINDING 2: a figure with ONE decimal place loses its decimals entirely — the
-            # pattern admits exactly two or none, and `[\d,]+` then matches the integer part
-            # alone. A bill printing 'RM 1234.5' reads as RM1234.
-            ('1234.5', 'RM1234'),
+            # TD-261 defect 2, FIXED 2026-09-19: a figure with ONE decimal place used to lose its
+            # decimals entirely ('1234.5' → 'RM1234') because the pattern admitted exactly two or
+            # none. It now admits one OR two, and reports what the document says rather than
+            # normalising — this helper extracts, it does not format.
+            ('1234.5', 'RM1234.5'),
             ('1234.56', 'RM1234.56'),
             ('1234.567', 'RM1234.56'),
             ('12.345678', 'RM12.34'),
@@ -103,10 +111,15 @@ class TestFirstRmFigure(_Table):
             ('$1,234.56', 'RM1234.56'),
             ('RM1,234.56', 'RM1234.56'),
             (' 12.34 ', 'RM12.34'),
-            # H7-FINDING 1: the minus sign is DROPPED. A credit line on a bill ('-5.00') reads
-            # back as a charge of RM5.00. The pattern starts at the first digit.
-            ('-5.00', 'RM5.00'),
-            ('-0.01', 'RM0.01'),
+            # TD-261 defect 1, FIXED 2026-09-19: the minus sign used to be DROPPED, so a credit
+            # line on a bill ('-5.00') read back as a charge of RM5.00. The sign is now kept, and
+            # it is kept AFTER the 'RM' — the shape both consumers of the stored string already
+            # read correctly (`income_engine._arrears_amount` matches `-\s*\d`, which '-RM40.00'
+            # would NOT satisfy; the web's `officerCockpit._arrearsAmount` reads either). Only the
+            # LEADING minus is supported: no fixture, corpus or test in this repo shows a
+            # Malaysian utility bill printing a credit as '40.00-', '40.00 CR' or '(40.00)'.
+            ('-5.00', 'RM-5.00'),
+            ('-0.01', 'RM-0.01'),
             ('Caj Semasa (RM) 88.20', 'RM88.20'),
             # Pinned surprise: the comma-strip runs AFTER the match, so a non-thousands comma
             # run is swallowed whole rather than rejected.
@@ -138,7 +151,8 @@ class TestFirstRmFigure(_Table):
 
 class TestParseInvoiceParsers(_Table):
     """`invoice_parsers`: a vendor invoice PDF. Strips `,` and `$`; accepts anything else a
-    `Decimal` accepts, including negatives, NaN, Infinity and unlimited decimal places."""
+    `Decimal` accepts, including negatives and unlimited decimal places. Since TD-261 a comma
+    must be a THOUSANDS separator (`1,234.56`) and a non-finite figure is refused."""
 
     def test_the_table(self):
         bad = lambda v: Raises(invoice_parsers.InvoiceParseError,  # noqa: E731
@@ -168,21 +182,30 @@ class TestParseInvoiceParsers(_Table):
             (Decimal('0'), Decimal('0')),
             ('1e3', Decimal('1E+3')),
             ('abc', bad('abc')),
-            # Pinned surprise: comma-stripping is unconditional, so '1,2,3' is read as 123.
-            ('1,2,3', Decimal('123')),
+            # TD-261 oddity (a), FIXED 2026-09-19: comma-stripping used to be unconditional, so
+            # '1,2,3' was read as 123. A comma must now group thousands properly or the figure is
+            # refused. No real fixture in `test_invoice_parsers.py` carries a comma at all (every
+            # printed figure on the eight invoices is under 1,000), so nothing real changes.
+            ('1,2,3', bad('1,2,3')),
             ('99999999999999999999.99', Decimal('99999999999999999999.99')),
             ('٣', Decimal('3')),
             ('³', bad('³')),
             (True, bad(True)),
         ])
 
-    def test_the_two_decimal_specials_pass_straight_through(self):
-        """Pinned separately because `Decimal('NaN') == Decimal('NaN')` is False, so the table's
-        `assertEqual` cannot express it. Nothing here rejects a special — it is the two callers
-        that quantise or compare (below) where a special turns into something else."""
+    def test_the_two_decimal_specials_are_refused(self):
+        """⚠ TD-261 defects 3/4, FIXED 2026-09-19 at the one home. `Decimal('NaN')` and
+        `Decimal('Infinity')` PARSE, and used to pass straight through here — an invoice line that
+        cannot reconcile to a printed total. `money.parse_money` now refuses a non-finite figure
+        as a syntax error inside its guard, so this caller answers with its own refusal like any
+        other unreadable figure. Pinned separately from the table because `Decimal('NaN')` is not
+        equal to itself."""
         parse = _fn(invoice_parsers, '_invoice_amount', '_money')
-        self.assertTrue(parse('NaN').is_nan())
-        self.assertTrue(parse('Infinity').is_infinite())
+        for value in ('NaN', 'Infinity', '-Infinity', 'sNaN'):
+            with self.subTest(value=value):
+                with self.assertRaises(invoice_parsers.InvoiceParseError) as caught:
+                    parse(value)
+                self.assertEqual(str(caught.exception), f'Not a money figure: {value!r}')
 
 
 class TestParseInvoicing(_Table):
@@ -225,25 +248,39 @@ class TestParseInvoicing(_Table):
             ('abc', syntax),
             ('1,2,3', syntax),
             ('99999999999999999999.99', Decimal('99999999999999999999.99')),
-            ('NaN', out_of_range),
+            # TD-261 defect 3: 'NaN' used to read as out-of-range (a NaN is not equal to its own
+            # quantise, so the places check tripped on it). It is now refused for what it is —
+            # not a number — which is also the sentence the person in front of the receipt box
+            # needs.
+            ('NaN', syntax),
             ('٣', Decimal('3')),
             ('³', syntax),
             (True, syntax),
         ])
 
-    def test_infinity_escapes_as_a_raw_decimal_error(self):
-        """⚠ H7-FINDING 3. `Decimal('Infinity')` PARSES, so the guarded try/except is already
-        behind us when `amount.quantize(TWO_PLACES)` raises `InvalidOperation` on it. The caller
-        (`record_receipt`, reached from an admin request body) therefore gets an unhandled
-        `decimal.InvalidOperation` — a 500 — where every other bad input gets a 400 carrying
-        `bad_amount`. PINNED, NOT FIXED: money code, owner's call."""
-        with self.assertRaises(InvalidOperation):
-            _fn(invoicing, '_receipt_amount', '_money')('Infinity')
+    def test_a_non_finite_figure_is_a_bad_amount_not_a_crash(self):
+        """⚠ TD-261 defect 3, FIXED 2026-09-19. `Decimal('Infinity')` PARSES, so the guarded
+        try/except used to be already behind us when `amount.quantize(CENTS)` raised
+        `InvalidOperation` on it — and `record_receipt`, reached from an admin request body,
+        therefore returned a 500 where every other bad input returns a 400 carrying `bad_amount`.
+        `money.parse_money` now refuses a non-finite figure inside the guard. The endpoint proof
+        is `test_invoicing.TestReceiptEndpointRefusals`."""
+        amount = _fn(invoicing, '_receipt_amount', '_money')
+        for value in ('Infinity', '-Infinity', 'NaN', 'sNaN'):
+            with self.subTest(value=value):
+                with self.assertRaises(invoicing.InvoicingError) as caught:
+                    amount(value)
+                self.assertEqual(caught.exception.code, 'bad_amount')
+                self.assertEqual(str(caught.exception), self.SYNTAX_MSG)
 
 
 class TestParsePayments(_Table):
-    """`payments`: an amount on a payment-run line. Quantised to 2dp (so it ROUNDS rather than
-    refusing), zero is legal — an RM0 credit line is a real thing — and negatives are not."""
+    """`payments`: an amount on a payment-run line. Zero is legal — an RM0 credit line is a real
+    thing — and negatives are not. Since TD-261 a third decimal place is REFUSED rather than
+    rounded (the only path that reaches this is an officer typing into the run-item box; the one
+    figure the product computes, `default_amount`, quantises at its own site and never comes
+    through here); the 2dp quantise that remains only normalises the REPRESENTATION of a figure
+    that already passed that check, so 'RM12' is stored as 12.00."""
 
     def test_the_table(self):
         bad = Raises(payments.PaymentsError, code='bad_amount', message='bad_amount')
@@ -258,11 +295,12 @@ class TestParsePayments(_Table):
             ('1234', Decimal('1234.00')),
             ('1234.5', Decimal('1234.50')),
             ('1234.56', Decimal('1234.56')),
-            # Pinned surprise: a third decimal place is silently ROUNDED (banker's rounding, the
-            # default decimal context), not refused. `invoicing` refuses the same input.
-            ('1234.567', Decimal('1234.57')),
-            ('12.345678', Decimal('12.35')),
-            (Decimal('12.345'), Decimal('12.34')),
+            # TD-261 oddity (b), FIXED 2026-09-19: a third decimal place used to be silently
+            # ROUNDED (banker's rounding, the default decimal context) on money going OUT to a
+            # student's wallet. It is refused now, as `invoicing` always refused the same input.
+            ('1234.567', bad),
+            ('12.345678', bad),
+            (Decimal('12.345'), bad),
             ('1,234.56', bad),
             ('$1,234.56', bad),
             ('RM1,234.56', bad),
@@ -282,18 +320,26 @@ class TestParsePayments(_Table):
             (True, bad),
         ])
 
-    def test_nan_escapes_as_a_raw_decimal_error(self):
-        """⚠ H7-FINDING 4 — the twin of finding 3, in the other direction. `Decimal('NaN')`
-        quantises to NaN without raising, so the try/except is behind us when `v < 0` compares
-        against a NaN and raises `InvalidOperation`. `set_run_item` is reached from an admin
-        request body. PINNED, NOT FIXED."""
-        with self.assertRaises(InvalidOperation):
-            _fn(payments, '_payment_amount', '_money')('NaN')
+    def test_a_non_finite_figure_is_a_bad_amount_not_a_crash(self):
+        """⚠ TD-261 defect 4, FIXED 2026-09-19 — the twin of defect 3, in the other direction.
+        `Decimal('NaN')` quantises to NaN without raising, so the try/except was behind us when
+        the `amount < 0` range check compared against a NaN and raised `InvalidOperation`.
+        `payments.set_item` (the entry the debt entry calls `set_run_item`) is reached from an
+        admin request body. The endpoint proof is
+        `test_payment_endpoints.TestRunItemAmountRefusals`."""
+        amount = _fn(payments, '_payment_amount', '_money')
+        for value in ('NaN', 'sNaN', 'Infinity', '-Infinity'):
+            with self.subTest(value=value):
+                with self.assertRaises(payments.PaymentsError) as caught:
+                    amount(value)
+                self.assertEqual(caught.exception.code, 'bad_amount')
 
 
 class TestParseVircleImport(_Table):
     """`import_vircle_csv`: a Monthly column out of the owner's CSV. The only one of the four for
-    which a BLANK is a legal value — it means zero, not "unreadable"."""
+    which a BLANK is a legal value — it means zero, not "unreadable". Since TD-261 a NEGATIVE
+    monthly amount is refused by name and row (a bursary paid to a student is money out; a
+    negative one describes nothing the column can mean), and so is a non-finite figure."""
 
     def test_the_table(self):
         bad = lambda v: Raises(import_vircle_csv.CommandError,  # noqa: E731
@@ -315,9 +361,10 @@ class TestParseVircleImport(_Table):
             ('1,234.56', bad('1,234.56')),
             ('$1,234.56', bad('$1,234.56')),
             ('RM1,234.56', bad('RM1,234.56')),
-            # Pinned surprise: a NEGATIVE monthly amount is accepted without comment.
-            ('-5.00', Decimal('-5.00')),
-            ('-0.01', Decimal('-0.01')),
+            # TD-261 oddity (c), FIXED 2026-09-19: a NEGATIVE monthly amount used to be accepted
+            # without comment.
+            ('-5.00', bad('-5.00')),
+            ('-0.01', bad('-0.01')),
             (' 12.34 ', Decimal('12.34')),
             (12, Decimal('12.00')),
             (12.5, Decimal('12.50')),
@@ -332,9 +379,17 @@ class TestParseVircleImport(_Table):
             (True, bad(True)),
         ])
 
-    def test_nan_is_accepted_and_returned_as_nan(self):
-        """Pinned because NaN is not equal to itself. Nothing downstream range-checks it."""
-        self.assertTrue(_fn(import_vircle_csv, '_monthly_amount', '_money')('NaN').is_nan())
+    def test_a_non_finite_figure_is_refused_by_name(self):
+        """TD-261: 'NaN' used to be ACCEPTED and returned as a NaN, and nothing downstream
+        range-checked it — a row that would have summed every batch total to NaN. Pinned here
+        rather than in the table because NaN is not equal to itself."""
+        amount = _fn(import_vircle_csv, '_monthly_amount', '_money')
+        for value in ('NaN', 'sNaN', 'Infinity', '-Infinity'):
+            with self.subTest(value=value):
+                with self.assertRaises(import_vircle_csv.CommandError) as caught:
+                    amount(value)
+                self.assertEqual(str(caught.exception),
+                                 f'Unrecognised Monthly amount: {value!r}')
 
 
 # ── Money, job 3 of 3: FORMAT for display ────────────────────────────────────────────────────
@@ -769,7 +824,7 @@ class TestGeminiSeams(SimpleTestCase):
                     module._gemini_generate('p', 'm', images=[(b'x', 'image/png')])
 
 
-# ── The one asymmetry H7 was told to investigate and REPORT, not fix ─────────────────────────
+# ── The one asymmetry H7 reported and TD-261 closed ──────────────────────────────────────────
 
 class _Template:
     def __init__(self, subject, body):
@@ -777,26 +832,49 @@ class _Template:
 
 
 class TestStructuralTokenLeak(SimpleTestCase):
-    """⚠ H7-FINDING 5, reported for the owner's decision. `partner_comms.render` gives every
+    """⚠ H7-FINDING 5, FIXED by TD-261 on 2026-09-19. `partner_comms.render` gives every
     structural token its kind DECLARES an empty `('', '')` block, so a caller that omits one
-    cannot leave a literal `{token}` in an inbox. `sponsor_comms.render` has no such line.
+    cannot leave a literal `{token}` in an inbox. `sponsor_comms.render` had no such line; it
+    has the same three now.
 
-    These tests establish BOTH halves of the answer: the asymmetry is real at the render layer,
-    and no production path reaches it. Fixing it would change what a sponsor receives, which is
-    not a refactor's call."""
+    The two halves the finding established are both kept: the render layer no longer leaks, and
+    no production path ever omitted the block in the first place."""
 
-    def test_the_sponsor_renderer_leaks_a_raw_token_when_the_block_is_missing(self):
+    def test_the_sponsor_renderer_renders_a_missing_block_as_nothing(self):
         template = _Template('Your students', 'Hello {sponsor_name}\n\n{student_cards}\n\nBye')
-        subject, text, html = sponsor_comms.render(
+        _subject, text, html = sponsor_comms.render(
             'new_students', template, {'sponsor_name': 'Ravi'})
-        self.assertIn('{student_cards}', text)
-        self.assertIn('{student_cards}', html)
+        self.assertNotIn('{student_cards}', text)
+        self.assertNotIn('{student_cards}', html)
+        # …and the rest of the letter is untouched. The empty block still occupies its slot in
+        # the text join (hence the wider gap) and contributes nothing to the html — byte for
+        # byte what `partner_comms.render` has always produced for an omitted block, which is
+        # the point: the two families now answer the same way.
+        self.assertEqual(text, 'Hello Ravi\n\n\n\nBye')
+        self.assertEqual(html, '<p style="margin:0 0 14px;">Hello Ravi</p>'
+                               '<p style="margin:0 0 14px;">Bye</p>')
 
-    def test_the_sponsor_renderer_leaks_it_into_the_subject_line_too(self):
+    def test_the_sponsor_renderer_does_not_leak_it_into_the_subject_line_either(self):
         template = _Template('{student_cards} for you', 'Hello {sponsor_name}')
         subject, _text, _html = sponsor_comms.render(
             'new_students', template, {'sponsor_name': 'Ravi'})
-        self.assertIn('{student_cards}', subject)
+        self.assertNotIn('{student_cards}', subject)
+        self.assertEqual(subject, ' for you')
+
+    def test_a_declared_and_supplied_block_still_renders_exactly_as_before(self):
+        """The other half of the defaulting: filling the gap must not touch the filled case. The
+        card builder is stubbed because it reads an organisation's card cap and the tax-name map;
+        what is under test here is where the block LANDS, not what a card looks like."""
+        template = _Template('{student_cards} for you',
+                             'Hello {sponsor_name}\n\n{student_cards}\n\nBye')
+        with patch.object(sponsor_comms, 'student_cards_blocks',
+                          return_value=('<p>CARDS</p>', 'CARDS')) as build:
+            subject, text, html = sponsor_comms.render(
+                'new_students', template, {'sponsor_name': 'Ravi', 'cards': [{'ref': 'A1'}]})
+        self.assertEqual(build.call_count, 1)
+        self.assertEqual(subject, 'CARDS for you')
+        self.assertEqual(text, 'Hello Ravi\n\nCARDS\n\nBye')
+        self.assertIn('<p>CARDS</p>', html)
 
     def test_the_partner_renderer_does_not(self):
         """The same shape on the other family: the declared token renders as nothing at all."""
@@ -810,11 +888,13 @@ class TestStructuralTokenLeak(SimpleTestCase):
         self.assertNotIn('{%s}' % token, text)
         self.assertNotIn('{%s}' % token, html)
 
-    def test_no_production_path_can_reach_the_leak_today(self):
-        """Why this is a finding and not an incident. `{student_cards}` is allowed in exactly two
-        kinds; both are sent only by `sponsor_notify.send_student_alert`, which returns before
-        rendering when it has no cards and always puts them in the context when it has. The
-        save-time allowlist keeps the token out of every other kind's template."""
+    def test_no_production_path_ever_omitted_the_block_in_the_first_place(self):
+        """Why H7-FINDING 5 was a latent gap and not an incident, kept as the record — and kept
+        as a live guard, because the defaulting above is the second line of defence, not the
+        first. `{student_cards}` is allowed in exactly two kinds; both are sent only by
+        `sponsor_notify.send_student_alert`, which returns before rendering when it has no cards
+        and always puts them in the context when it has. The save-time allowlist keeps the token
+        out of every other kind's template."""
         from apps.scholarship import sponsor_notify
         allowed = {kind for kind, tokens in sponsor_comms.PLACEHOLDERS.items()
                    if 'student_cards' in tokens}

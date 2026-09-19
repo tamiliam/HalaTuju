@@ -433,3 +433,50 @@ class TestFundingSummaryEndpoint(_FinanceBase):
         row = next(r for r in self.client.get(self.URL).json()['rows']
                    if r['application_id'] == self.app_a.id)
         self.assertIsNone(row['last_run'])
+
+
+# ── TD-261: what the run-item box refuses, over the wire ─────────────────────
+# Defect 4: 'NaN' on a run line used to be a 500 — `Decimal('NaN')` quantises without raising,
+# so the try/except was behind us when the range check compared it and raised.
+# Oddity (b): a third decimal place used to be silently ROUNDED. This box is the ONLY path that
+# reaches `_payment_amount` (the computed figure, `default_amount`, quantises at its own site and
+# is written straight onto the item), and this is money going OUT to a student's wallet.
+
+class TestRunItemAmountRefusals(_Base):
+
+    def _item_url(self):
+        run = self._create_run('pe-mk').json()
+        return (f"/api/v1/admin/scholarship/payment-runs/{run['id']}/"
+                f"items/{run['items'][0]['id']}/")
+
+    def _patch(self, url, amount):
+        self._auth('pe-mk')
+        return self.client.patch(url, {'amount': amount}, format='json')
+
+    def test_a_non_finite_amount_is_a_400_bad_amount(self):
+        url = self._item_url()
+        for amount in ('NaN', 'sNaN', 'Infinity', '-Infinity'):
+            with self.subTest(amount=amount):
+                response = self._patch(url, amount)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()['code'], 'bad_amount')
+
+    def test_a_third_decimal_place_is_refused_not_rounded(self):
+        url = self._item_url()
+        for amount in ('150.005', '150.001', '12.345678'):
+            with self.subTest(amount=amount):
+                response = self._patch(url, amount)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()['code'], 'bad_amount')
+        # …and nothing was written on the way past: the line still holds its computed figure.
+        self.assertEqual(self.client.get(url.rsplit('/items/', 1)[0] + '/')
+                         .json()['items'][0]['amount'], '200.00')
+
+    def test_two_decimal_places_and_fewer_are_still_accepted_and_stored_as_cents(self):
+        url = self._item_url()
+        for amount, stored in (('150.25', '150.25'), ('150.5', '150.50'), ('150', '150.00'),
+                               ('0', '0.00')):
+            with self.subTest(amount=amount):
+                response = self._patch(url, amount)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()['items'][0]['amount'], stored)

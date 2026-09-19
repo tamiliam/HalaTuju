@@ -1259,6 +1259,75 @@ class TestArrearsCredit(SimpleTestCase):
         self.assertFalse(utility_hardship(app))
 
 
+# ── TD-261: the two figure shapes `doc_parse._first_rm_figure` can now store ──────────
+# Before 2026-09-19 it dropped a minus sign and dropped the decimals of a one-decimal figure, so
+# neither shape below could reach `vision_fields` from the deterministic parser (the Gemini path
+# has always produced bare '-40.00'). These are the CONSUMER-side proofs the owner asked for: one
+# test per reader of the stored string, saying what a credit and a one-decimal figure mean to it.
+
+class TestTd261StoredFigureShapes(SimpleTestCase):
+    TODAY = datetime.date(2026, 6, 5)
+
+    # -- consumer 1: `_arrears_amount`, which decides arrears vs credit ---------------------
+    def test_a_credit_in_the_new_rm_shape_reads_as_nothing_owed(self):
+        """`RM-40.00` is the shape chosen precisely because this reader already handles it: it
+        spots a credit by matching `-\\s*\\d`, which `-RM40.00` would NOT satisfy."""
+        self.assertEqual(_arrears_amount('RM-40.00'), 0.0)
+        self.assertEqual(_arrears_amount('RM-0.01'), 0.0)
+
+    def test_a_one_decimal_figure_keeps_its_decimals(self):
+        self.assertEqual(_arrears_amount('RM1234.5'), 1234.5)
+        from apps.scholarship.income_engine import _parse_rm
+        self.assertEqual(_parse_rm('RM1234.5'), 1234.5)
+
+    # -- consumer 2: the officer's bill row ------------------------------------------------
+    def test_a_credit_never_shows_as_arrears_on_the_bill_row(self):
+        doc = _bill('electricity_bill', {'amount': 'RM88.20', 'unpaid_balance': 'RM-40.00'})
+        _app([doc], household_size=4)
+        chk = utility_check(doc, today=self.TODAY)
+        self.assertEqual(chk['outstanding_status'], '')
+        # …and the officer is shown what the bill says, sign and all.
+        self.assertEqual(chk['unpaid_balance'], 'RM-40.00')
+
+    # -- consumer 3: the hardship signal ---------------------------------------------------
+    def test_a_credit_on_both_bills_is_not_hardship(self):
+        from apps.scholarship.income_engine import utility_hardship
+        app = _app([_bill('water_bill', {'amount': 'RM31.00', 'unpaid_balance': 'RM-200.00'}),
+                    _bill('electricity_bill', {'amount': 'RM50.00',
+                                               'unpaid_balance': 'RM-200.00'})],
+                   household_size=4)
+        self.assertFalse(utility_hardship(app))
+
+    # -- consumer 4: the B40 proxy, which compares the CURRENT CHARGE to a threshold --------
+    def test_a_negative_current_charge_is_neither_a_huge_bill_nor_a_missing_one(self):
+        """⚠ DELIBERATE, AND UNCHANGED BY TD-261. `_parse_rm` reads the MAGNITUDE of a figure —
+        it always has, for every income figure in the app, and the sign was already gone before
+        it ever saw one. So a negative `amount` reads as a small positive charge: it does not
+        read as a missing bill (which would re-ask the student for an upload), and it cannot
+        read as a huge one (which is the only direction that costs an applicant anything — the
+        'high per-capita' band is an officer's-eye signal). Keeping the sign in the stored
+        string makes the officer's row honest; making `_parse_rm` signed would change what every
+        payslip, EPF and STR figure in the engine means, which is not this fix."""
+        from apps.scholarship.income_engine import _parse_rm, utility_per_capita
+        self.assertEqual(_parse_rm('RM-40.00'), 40.0)
+        app = _app([_bill('water_bill', {'amount': 'RM-40.00'}, address_match='found'),
+                    _bill('electricity_bill', {'amount': 'RM-40.00'}, address_match='found')],
+                   household_size=4)
+        self.assertEqual(utility_reasonable(app)['status'], 'reasonable')
+        self.assertEqual(utility_per_capita(app)['signal'], 'b40')
+
+    def test_a_negative_current_charge_does_not_re_ask_the_student(self):
+        """The one path where an unreadable amount costs the student something: it re-asks for
+        the bill. A credited bill is READ, so it must not land in `amount_unreadable`."""
+        app = _app([_bill('electricity_bill',
+                          {'amount': 'RM-40.00', 'address': '1 Jalan Ujian',
+                           'billing_period': 'Mei 2026'}, address_match='found')],
+                   household_size=4)
+        self.assertNotEqual(
+            utility_bill_recheck(app, today=self.TODAY).get('electricity_bill'),
+            'amount_unreadable')
+
+
 class TestUtilityCheck(SimpleTestCase):
     TODAY = datetime.date(2026, 6, 5)
 

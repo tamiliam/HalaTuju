@@ -410,3 +410,43 @@ class TestDispatch(SimpleTestCase):
     def test_an_unreadable_statement_returns_None_and_does_not_raise(self):
         """Nothing depends on it: a failure costs a cross-check, not a ledger row."""
         self.assertIsNone(ip.parse_gcp_statement('Google Cloud\nThis is not a bill.'))
+
+
+class TestTheFigureReader(SimpleTestCase):
+    """TD-261 oddity (a): the comma strip used to be unconditional, so `'1,2,3'` read as 123 —
+    a shape no invoice prints, silently given a value. A comma must now group thousands."""
+
+    def test_every_real_invoice_still_parses_after_the_tightening(self):
+        """The guard on the change. Whatever the rule, these five documents — the real July,
+        August and September 2026 PDFs — must still read exactly as they did."""
+        self.assertEqual(ip.parse_text(WORKSPACE_AUG).total, Decimal('18.90'))
+        self.assertEqual(ip.parse_text(SUPABASE_AUG).total, Decimal('25.00'))
+        self.assertEqual(ip.parse_text(TWILIO_AUG).total, Decimal('1.77'))
+        self.assertEqual(ip.parse_text(TWILIO_JUL).total, Decimal('4.29'))
+        self.assertEqual(ip.parse_text(ANTHROPIC_SEP).total, Decimal('108.00'))
+        self.assertEqual(ip.parse_gcp_statement(GCP_STATEMENT_AUG)[1], Decimal('23.92'))
+
+    def test_a_properly_grouped_thousands_figure_is_read(self):
+        """Not hypothetical for long: the ledger is in ringgit and a four-figure month is one
+        busy invoice away."""
+        for text, expected in (('1,234.56', Decimal('1234.56')),
+                               ('$1,234.56', Decimal('1234.56')),
+                               ('12,345', Decimal('12345')),
+                               ('1,234,567.89', Decimal('1234567.89')),
+                               ('-1,234.56', Decimal('-1234.56'))):
+            with self.subTest(text=text):
+                self.assertEqual(ip._invoice_amount(text), expected)
+
+    def test_a_comma_that_groups_nothing_is_refused(self):
+        for text in ('1,2,3', '1,23', '1,2345', ',123', '123,', '1,234,56'):
+            with self.subTest(text=text):
+                with self.assertRaises(ip.InvoiceParseError) as caught:
+                    ip._invoice_amount(text)
+                self.assertEqual(str(caught.exception), f'Not a money figure: {text!r}')
+
+    def test_a_figure_with_no_comma_is_untouched_by_the_rule(self):
+        for text, expected in (('0.00', Decimal('0.00')), ('4.29', Decimal('4.29')),
+                               ('108', Decimal('108')), ('-5.00', Decimal('-5.00')),
+                               ('0.01344', Decimal('0.01344'))):
+            with self.subTest(text=text):
+                self.assertEqual(ip._invoice_amount(text), expected)

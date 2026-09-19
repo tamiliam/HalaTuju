@@ -26,12 +26,12 @@ this module existed.
 translates it into its own exception with its own code in two or three lines, because those codes
 are read by a view, a command and a browser, and a shared module has no business knowing them.
 
-⚠ **Two escapes are preserved on purpose, not overlooked.** `Decimal('Infinity')` and
-`Decimal('NaN')` parse successfully and then raise `InvalidOperation` from the quantise or the
-comparison that follows — which today reaches the caller raw, as a 500 rather than a 400. That is
-H7-FINDING 3/4, reported to the owner and pinned by a test. This module reproduces it exactly
-rather than quietly repairing it: a refactor that touches money proves it changed nothing, and a
-fix to money behaviour is the owner's decision, not a side-effect.
+⚠ **The two escapes are closed (TD-261, owner's order, 2026-09-19).** `Decimal('Infinity')` and
+`Decimal('NaN')` parse successfully, and the quantise or the range comparison that followed then
+raised `InvalidOperation` from OUTSIDE the guard — reaching the caller raw, as a 500 rather than a
+400. That was H7-FINDING 3/4. A non-finite figure is now refused as a `'syntax'` `MoneyError`
+before anything else looks at it, so all four callers answer with their own refusal and their own
+code. It is the honest reason as well as the safe one: `Infinity` is not an amount of money.
 """
 from decimal import Decimal, InvalidOperation
 
@@ -72,10 +72,12 @@ def parse_money(value, *, strip_chars='', strip_whitespace=True, blank_as=None,
       sets it (`'0'`): a blank Monthly cell means nothing was paid. Everywhere else a blank is an
       unreadable figure and must refuse.
     * `quantize` — round to two places. `places_exact` — refuse anything that is not already
-      exactly two places. A caller wants one or the other, never both: rounding silently accepts
-      what the check exists to reject.
-    * `allow_zero` / `allow_negative` — the range rule. Both checks run AFTER the parse and
-      outside its guard, exactly where they have always run.
+      exactly two places. ORDER MATTERS AND IS FIXED HERE: `places_exact` is answered against the
+      figure AS READ, before any rounding, so a caller may ask for both. `payments` does since
+      TD-261 — it refuses a third decimal place (nothing it accepts may be silently rounded) and
+      still quantises, which then only normalises the REPRESENTATION of a figure that has already
+      passed the check (`'12'` → `12.00`). Asking for `quantize` alone keeps the old rounding.
+    * `allow_zero` / `allow_negative` — the range rule, answered after the parse.
     """
     text = value
     if blank_as is not None and not text:
@@ -90,14 +92,29 @@ def parse_money(value, *, strip_chars='', strip_whitespace=True, blank_as=None,
 
     try:
         amount = Decimal(text)
-        if quantize:
-            amount = amount.quantize(CENTS)
     except (InvalidOperation, ValueError, TypeError, AttributeError) as exc:
         raise MoneyError('syntax', value) from exc
 
-    # ⚠ Outside the guard, deliberately — see the module docstring's note on Infinity and NaN.
+    # ⚠ FIRST, AND BEFORE ANYTHING TOUCHES IT (TD-261). `Decimal('Infinity')`, `'-Infinity'`,
+    # `'NaN'` and `'sNaN'` all PARSE. Every operation below them — quantising, comparing to zero —
+    # then raises `InvalidOperation` from outside any guard, which is how an admin request body
+    # used to produce a 500 instead of a 400. A non-finite figure is not a figure: it is a syntax
+    # refusal, and it is one here rather than four times over in the callers.
+    if not amount.is_finite():
+        raise MoneyError('syntax', value)
+
+    # Answered against the figure as READ, before `quantize` rounds anything — see the docstring.
     if places_exact and amount != amount.quantize(CENTS):
         raise MoneyError('range', value)
+    if quantize:
+        try:
+            amount = amount.quantize(CENTS)
+        except InvalidOperation as exc:
+            # A figure with more digits than the decimal context can hold at two places. It has
+            # always been a `'syntax'` refusal (the quantise used to sit inside the guard above)
+            # and it stays one.
+            raise MoneyError('syntax', value) from exc
+
     if not allow_zero and amount == 0:
         raise MoneyError('range', value)
     if not allow_negative and amount < 0:

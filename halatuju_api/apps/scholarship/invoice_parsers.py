@@ -63,13 +63,27 @@ def normalise(text: str) -> str:
     return text
 
 
+#: A comma in a printed figure may only be a THOUSANDS separator (TD-261). Before that, the comma
+#: strip was unconditional, so `'1,2,3'` read as 123 — a shape no invoice prints, silently given a
+#: value. Every parser above feeds this a `[\d,.]+` regex group, and no figure on any of the eight
+#: real invoices in `test_invoice_parsers.py` carries a comma at all (they are all under 1,000),
+#: so nothing that occurs is affected; what changes is that a malformed group now refuses instead
+#: of inventing a total. The optional sign keeps this coherent with the un-separated case, which
+#: has always accepted `-5.00`.
+_GROUPED_THOUSANDS = re.compile(r'-?\d{1,3}(?:,\d{3})+(?:\.\d+)?')
+
+
 def _invoice_amount(text) -> Decimal:
-    """A printed figure off a vendor invoice → `Decimal`. Thousands separators and a `$` are
-    stripped; nothing else is tolerated and nothing is rounded — an invoice line must reconcile
-    to the total the vendor printed, so a figure we cannot read exactly is a refusal.
+    """A printed figure off a vendor invoice → `Decimal`. A `$` is stripped and a comma is
+    accepted only where it groups thousands; nothing else is tolerated and nothing is rounded —
+    an invoice line must reconcile to the total the vendor printed, so a figure we cannot read
+    exactly is a refusal.
 
     Was `_money` until code health H7; the mechanics moved to `money.parse_money` and this keeps
     the refusal, which is the part `invoice_import` catches by type."""
+    figure = str(text).strip().replace('$', '')
+    if ',' in figure and not _GROUPED_THOUSANDS.fullmatch(figure):
+        raise InvoiceParseError(f'Not a money figure: {text!r}')
     try:
         return money.parse_money(text, strip_chars=',$')
     except money.MoneyError as exc:

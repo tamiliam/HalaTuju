@@ -13,10 +13,12 @@ The load-bearing behaviours, in the order they can hurt someone:
 
 The confirmation is a CLAIM, never a verification — nothing here asserts otherwise.
 """
+import os
 from unittest import mock
 
 import jwt
 from django.conf import settings
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -525,6 +527,49 @@ class TestInstallEmail(TestCase):
         # imply we have checked it.
         from apps.scholarship.emails import VIRCLE_INSTALL_BODIES
         self.assertNotIn('verif', VIRCLE_INSTALL_BODIES['en'].lower())
+
+
+# ── The backfill CSV: a Monthly cell that means nothing stops the file ────────
+# TD-261 oddity (c). The column is what a student was PAID that month; the import writes it to
+# `Disbursement.amount` and sums it into a batch total, so a negative there is a typo or the
+# wrong column pasted in — and either way the owner needs to know WHICH row.
+
+class TestBackfillMonthlyColumn(_Base):
+    HEADER = 'No,Student NRIC,Vircle ID,Monthly,Batch\n'
+
+    def setUp(self):
+        super().setUp()
+        self._make('vc-monthly-1', nric='080214-08-1234')
+
+    def _run(self, monthly, row_no='7'):
+        import tempfile
+        from django.core.management import call_command
+        with tempfile.NamedTemporaryFile('w', suffix='.csv', delete=False,
+                                         encoding='utf-8', newline='') as fh:
+            fh.write(self.HEADER)
+            fh.write(f'{row_no},080214-08-1234,8000400175001,{monthly},01/08/2026\n')
+            path = fh.name
+        try:
+            call_command('import_vircle_csv', path, '--dry-run')
+        finally:
+            os.unlink(path)
+
+    def test_a_negative_monthly_amount_stops_the_file_and_names_the_row(self):
+        with self.assertRaises(CommandError) as caught:
+            self._run('-5.00')
+        self.assertEqual(str(caught.exception),
+                         "Row 7: Unrecognised Monthly amount: '-5.00'")
+
+    def test_a_non_finite_monthly_amount_stops_the_file_too(self):
+        with self.assertRaises(CommandError) as caught:
+            self._run('NaN')
+        self.assertEqual(str(caught.exception),
+                         "Row 7: Unrecognised Monthly amount: 'NaN'")
+
+    def test_an_ordinary_amount_and_a_blank_cell_are_both_still_accepted(self):
+        for monthly in ('200.00', '200', ''):
+            with self.subTest(monthly=monthly):
+                self._run(monthly)                      # no raise is the assertion
 
 
 # ── The 48h activation request is GONE (owner, 2026-09-11) ────────────────────

@@ -25,6 +25,7 @@ from apps.scholarship.models import (
     BillingRate, BillingSequence, Invoice, InvoiceIssuer, InvoiceLine, OrgBillingAdjustment,
     OrgBillingDetails, OrgBuildHours, PlatformCost,
 )
+from apps.scholarship.tests import factories
 
 SEPT_15 = date(2026, 9, 15)
 
@@ -575,3 +576,48 @@ class TestTheDocument(InvoiceWorld):
         html = invoice_pdf.render_invoice_html(inv)
         self.assertIn('VOID', html)
         self.assertIn('Hours were for September', html)
+
+
+# ── The receipt box, over the wire ───────────────────────────────────────────
+# TD-261 defect 3: 'Infinity' typed into the receipt box used to be a 500, because
+# `Decimal('Infinity')` parses and the quantise that followed raised from outside the guard.
+# The service-level proof is in `test_helper_characterisation`; this is the one that matters to
+# the person holding the mouse — the endpoint answers 400 with the code the screen reads.
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=factories.TEST_JWT_SECRET)
+class TestReceiptEndpointRefusals(InvoiceWorld):
+
+    def setUp(self):
+        super().setUp()
+        self.super_admin = factories.make_admin('super', super_admin=True)
+        self.client = factories.authed_client(self.super_admin)
+
+    def post(self, inv, amount):
+        return self.client.post(
+            f'/api/v1/admin/scholarship/billing/invoices/{inv.pk}/receipt/',
+            {'received_on': SEPT_15.isoformat(), 'amount_myr': amount,
+             'reference': 'MBB-TRX-001'}, format='json')
+
+    def test_a_non_finite_amount_is_a_400_bad_amount_and_records_nothing(self):
+        inv = self.issue()
+        for amount in ('Infinity', '-Infinity', 'NaN', 'sNaN'):
+            with self.subTest(amount=amount):
+                response = self.post(inv, amount)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()['code'], 'bad_amount')
+        self.assertEqual(inv.receipts.count(), 0)
+
+    def test_an_ordinary_bad_amount_still_answers_the_same_way(self):
+        """The control: the new refusal must be indistinguishable from the old ones, or the
+        screen would have to learn a second shape."""
+        inv = self.issue()
+        for amount in ('abc', '0', '-5', '1.234'):
+            with self.subTest(amount=amount):
+                response = self.post(inv, amount)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json()['code'], 'bad_amount')
+
+    def test_a_good_amount_still_records_a_receipt(self):
+        inv = self.issue()
+        self.assertEqual(self.post(inv, '500.00').status_code, 200)
+        self.assertEqual(inv.receipts.count(), 1)

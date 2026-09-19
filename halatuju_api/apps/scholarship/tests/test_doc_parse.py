@@ -290,6 +290,29 @@ class TestElectricityParser(SimpleTestCase):
     def test_no_text_layer_falls_to_gemini(self):
         self.assertIsNone(parse_by_labels('electricity_bill', 'CamScanner'))
 
+    def test_a_credit_baki_terdahulu_keeps_its_minus_sign(self):
+        """TD-261 defect 1. A household IN CREDIT has a negative Baki Terdahulu; the reader used
+        to drop the sign and store it as arrears of RM40.00. The sign sits AFTER the 'RM' —
+        `income_engine._arrears_amount` and the cockpit both read that shape as a credit."""
+        r = parse_by_labels('electricity_bill', _TNB.replace('Baki Terdahulu (RM)\n268.45',
+                                                             'Baki Terdahulu (RM)\n-40.00'))
+        self.assertEqual(r['unpaid_balance'], 'RM-40.00')
+        self.assertEqual(r['amount'], 'RM308.22')      # the current charge is untouched
+
+    def test_a_one_decimal_figure_keeps_its_decimals(self):
+        """TD-261 defect 2. 'RM 1234.5' used to read as RM1234 — the pattern admitted two
+        decimals or none. Reported as printed, not padded to two places."""
+        r = parse_by_labels('electricity_bill', _TNB.replace('Caj Semasa (RM)\n308.22',
+                                                             'Caj Semasa (RM)\n308.2'))
+        self.assertEqual(r['amount'], 'RM308.2')
+
+    def test_a_hyphen_between_figures_is_not_read_as_a_sign(self):
+        """The guard on defect 1's fix: the minus must bind to the digits that follow it. A
+        dash used as a separator ('RM 88.20 - 30/04') leaves the figure positive."""
+        r = parse_by_labels('electricity_bill', _TNB.replace('Caj Semasa (RM)\n308.22',
+                                                             'Caj Semasa (RM)\n- 308.22'))
+        self.assertEqual(r['amount'], 'RM308.22')
+
     def test_mytnb_express_payment_screenshot(self):
         # Students often submit the myTNB "Express Payment / Verify Your Account" screen
         # instead of the full bill — account + address + a single AMOUNT DUE, no name/arrears.

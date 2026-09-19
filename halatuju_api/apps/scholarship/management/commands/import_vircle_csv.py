@@ -52,9 +52,15 @@ def _monthly_amount(raw):
     The only money reader in the app for which a BLANK is a legal value: an empty cell means the
     student was not paid that month, not that the file is unreadable.
 
+    ⚠ A NEGATIVE CELL IS REFUSED (TD-261, owner's order 2026-09-19). The column is what a student
+    was PAID that month; the import writes it to `Disbursement.amount` and sums it into each
+    batch total. There is no reading of "the student was paid minus five ringgit" — a minus in
+    that cell is a typo or a refund column pasted into the wrong place, and either way the row
+    should stop the file and be looked at rather than quietly subtract from a batch.
+
     Was `_money` until code health H7; the mechanics moved to `money.parse_money`."""
     try:
-        return money.parse_money(raw, blank_as='0', quantize=True)
+        return money.parse_money(raw, blank_as='0', quantize=True, allow_negative=False)
     except money.MoneyError:
         raise CommandError(f'Unrecognised Monthly amount: {raw!r}')
 
@@ -91,10 +97,16 @@ class Command(BaseCommand):
             if app is None:
                 unmatched.append((r.get('No'), r.get('Student NRIC')))
                 continue
+            # TD-261: say WHICH row. A whole-file refusal that names only the offending value
+            # leaves the owner grepping a PII spreadsheet for it.
+            try:
+                monthly = _monthly_amount(r.get('Monthly'))
+            except CommandError as exc:
+                raise CommandError(f'Row {r.get("No") or "?"}: {exc}')
             parsed.append({
                 'app': app,
                 'vircle_id': digits_only(r.get('Vircle ID')),
-                'monthly': _monthly_amount(r.get('Monthly')),
+                'monthly': monthly,
                 'batch': _parse_batch_date(r.get('Batch')),
             })
 
