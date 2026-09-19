@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 93761ad | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 83 | 0 | - | - | ok |
 | 2026-09-19 | 7977547 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 88c93f0 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 11 | 83 | 0 | 0 | ok | ok |
 | 2026-09-19 | 13274d7 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 10 | 84 | 0 | 0 | ok | ok |
@@ -24,7 +25,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 7977547, window 2026-06-21 onward)
+## Latest run (2026-09-19, 93761ad, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -41,7 +42,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 300 fix / 427 feat commits since 2026-06-21
+- 301 fix / 427 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8556  halatuju_api/apps/scholarship/views_admin.py`
@@ -113,21 +114,30 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 15 of 140 web test files read source text
 
 ### Debt register
-- 153 entries have a defining line; 84 carry no resolution marker on it
+- 153 entries have a defining line; 83 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 381: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4367: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 386: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 4486: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 88c93f0
+- budgets no looser than at 7977547
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (sixth reading) — TD-261 closed (on the owner's order)
+
+Plain run. No FAILs. Not a roadmap sprint.
+- **td_open 84 → 83** — TD-261 closed: five defects in money/figure helpers and three oddities,
+  each fixed by EDITING its pinned characterisation row and seeing it red first.
+- **`std` ok** — `doc_parse.py` 669 → 688 of 689 allowed: **one line of headroom left.** The next
+  change to it splits the file first. Same standing as `src/lib/api.ts`.
+- All other readings unchanged.
 
 ### 2026-09-19 (fifth reading) — H7 closed: `dup` 10 → 4
 

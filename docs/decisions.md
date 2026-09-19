@@ -1,5 +1,27 @@
 # Architectural Decisions — HalaTuju
 
+## A credit read off a bill is written `RM-40.00` — the shape is chosen by its readers — 2026-09-19
+
+**Decision:** the deterministic bill parser writes a negative figure as `RM-<n>` (sign after the
+currency). The arrears reader (`income_engine._arrears_amount`) treats it as nothing owed; the
+current-charge reader (`_parse_rm`) stays magnitude-only.
+
+**Alternatives:** `-RM40.00` (reads naturally). Rejected: `_arrears_amount` detects a credit by a
+minus directly before a digit, so it would have read `-RM40.00` as RM40 of arrears — the very
+defect being fixed, moved one function along. `RM40.00 CR`: the one shape the web would mis-read.
+Making `_parse_rm` signed: rejected — it reads every payslip, EPF and STR figure in the engine.
+
+**Rationale:** two writers feed these fields (the deterministic parser, `RM187.47`; the Gemini
+path, `187.47` / `-40.00`) and three readers consume them (api arrears, api charge, web display).
+The only honest way to pick an output format for a value with several readers is to read the
+readers. `RM-40.00` is the single shape all of them already handled.
+
+**Trade-offs:** it reads slightly oddly to a human in the cockpit. Accepted: the cockpit renders
+arrears as the word "none" for a credit, so the raw string is rarely what an officer sees.
+
+**Revisit if:** the two writers are ever unified behind one normalised numeric field — then the
+display shape stops mattering and the sign lives in a number.
+
 ## Joining a new login to an existing student profile is a LINK row resolved at the auth seam, never a move of the primary key — 2026-09-19
 
 **Decision:** a verified IC claim writes one `ProfileLoginAlias(alias_uid → profile)` row.

@@ -94,9 +94,14 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   rows read `admin.familyIncome` / the new `admin.familySize`; the Story error names a question that
   exists. The idiom behind all eight — `t(key) || 'fallback'`, which never fires because `t` echoes
   the key — is now refused by a web code standard, with `tOr()` as the replacement.
-- **TD-261 (raised 2026-09-19 by code health H7)** — five defects in money/figure helpers, pinned
-  not fixed: a dropped minus sign and dropped decimals when reading a bill figure; `Infinity`/`NaN`
-  in two admin amount boxes give a 500; a latent raw `{token}` in sponsor email. ~2h, owner's word.
+- *Closed 2026-09-19 on the owner's order:* **TD-261** — all five money/figure defects fixed, and
+  the three pinned surprises decided. A bill figure keeps its minus sign (`RM-40.00`) and its one
+  decimal place; a non-finite figure is refused once, in `money.parse_money`, so the receipt box
+  and the payment-run line answer 400 `bad_amount` instead of 500; `sponsor_comms.render` defaults
+  every declared structural token, as `partner_comms.render` always has. The surprises: an invoice
+  comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
+  it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
+  pinned row in `test_helper_characterisation.py` first and watching it go red.
 - **TD-260 (raised 2026-09-19)** — 604 of 674 IC-holding students have no verified contact, so no
   self-service way to reclaim an account, and support has no screen to do it for them. Two owner levers.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
@@ -3979,7 +3984,121 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
-### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns)
+### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
+
+**Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects
+identified. Look into the oddities as well."* All five defects fixed and all three surprises
+decided. **Every fix was made by EDITING its pinned row in
+`apps/scholarship/tests/test_helper_characterisation.py` first**, running the table against the
+unfixed tree (22 red), and only then changing the code — the edited row is the review. 6,894 →
+**6,917 pytest**, 3 skipped, 0 failed. No migration. `code_health` unchanged on every reading
+(`big` 25, `std` ok). The email byte-identity golden is untouched and `UPDATE_EMAIL_GOLDEN` was
+never set.
+
+**1 · The minus sign is kept, and it is kept after the `RM`.** `doc_parse._first_rm_figure` now
+reads `-?[\d,]+(?:\.\d{1,2})?`, so a credit on a bill (`-40.00` — the household is AHEAD on the
+account) is stored as `RM-40.00` instead of a charge of `RM40.00`. **The shape was chosen from the
+consumers, not from taste.** `income_engine._arrears_amount` recognises a credit by matching
+`-\s*\d`, which `RM-40.00` satisfies and `-RM40.00` would not; the cockpit's
+`officerCockpit._arrearsAmount` strips everything but `[0-9.-]` and reads either. So `RM-40.00` is
+the only shape both already handle. Proven per consumer in `test_income_engine`
+(`TestTd261StoredFigureShapes`): a credit reads as nothing owed, never shows `arrears` on the
+officer's row, and does not trip `utility_hardship`. **Only the LEADING minus is read as a sign** —
+no fixture, corpus or test in this repo shows a Malaysian bill printing a credit as `40.00-`,
+`40.00 CR` or `(40.00)`, so no other shape was invented (see *Still open*, below).
+⚠ **What a negative CURRENT CHARGE means is deliberately unchanged:** `income_engine._parse_rm`
+reads the MAGNITUDE of a figure — it always has, for every payslip, EPF and STR figure in the
+engine — so a negative `amount` reads as a small positive charge. It therefore cannot read as a
+huge bill (the only direction that costs an applicant anything, and even then it is an officer's
+-eye signal, never a gate) and cannot read as a missing one (which would re-ask the student for an
+upload). Making `_parse_rm` signed would change what every income figure in the engine means and
+is not this fix.
+
+**2 · One decimal place survives.** `1234.5` read as `RM1234`, because the pattern admitted
+exactly two decimals or none and `[\d,]+` then matched the integer part alone. One OR two now, and
+the reading is reported **as the document prints it** (`RM1234.5`), not padded to `RM1234.50`:
+this helper extracts, it does not format, and every consumer parses either shape identically. A
+thousands-separated figure (`1,234.50`), a figure followed by more digits (`1234.567` → `RM1234.56`)
+and a hyphen used as a separator (`- 308.22` → `RM308.22`) all behave exactly as pinned.
+
+**3 and 4 · One home, one refusal.** `money.parse_money` now refuses any non-finite `Decimal`
+(`Infinity`, `-Infinity`, `NaN`, `sNaN`) as a `'syntax'` `MoneyError` **before anything touches
+it**. These values PARSE, and every operation after the parse — the quantise, the comparison with
+zero — then raised `InvalidOperation` from outside the guard. `_receipt_amount` now answers
+`InvoicingError('bad_amount', …)` and `_payment_amount` answers `PaymentsError('bad_amount')`, so
+both endpoints answer **400 with the stable code** instead of 500. Proven at the endpoint, not
+just the unit: `test_invoicing.TestReceiptEndpointRefusals` and
+`test_payment_endpoints.TestRunItemAmountRefusals`, each with a control proving an ordinary bad
+amount still answers identically. The other two parse callers were checked and both are right to
+refuse as well: an invoice line that cannot reconcile to a printed total is a refusal by this
+module's own rule, and the Vircle import's `Decimal('NaN')` (pinned as a surprise) would have
+summed a whole batch total to NaN.
+
+**5 · The sponsor renderer defaults its declared blocks.** `sponsor_comms.render` carries the same
+four lines `partner_comms.render` has: every structural token the kind DECLARES gets an empty
+`('', '')` block, so an omitted one renders as nothing in the text body, the HTML body AND the
+subject line. The two leak tests are flipped, a third proves a declared-and-supplied block still
+lands exactly where it did, and the reachability test is kept and renamed
+(`test_no_production_path_ever_omitted_the_block_in_the_first_place`) — it is now the first line of
+defence with the defaulting as the second, rather than the reason not to fix anything.
+
+**The three surprises, each decided on what actually reaches it.**
+- **(a) `invoice_parsers._invoice_amount('1,2,3')` → 123.** What reaches it: every call site feeds
+  it a `[\d,.]+` regex group off a provider's own PDF, and **no figure on any of the eight real
+  invoices in `test_invoice_parsers.py` carries a comma at all** (every one is under 1,000; the
+  conventions in use are `18.90`, `$25.00`, `MYR 23.92` — no European decimal comma anywhere). So
+  a comma must now group thousands (`-?\d{1,3}(,\d{3})+(\.\d+)?`) or the figure is an
+  `InvoiceParseError`. The optional sign keeps it coherent with the un-separated case, which has
+  always accepted `-5.00`. A test asserts all five real documents still read to the cent.
+- **(b) `payments._payment_amount` silently ROUNDED a third decimal.** Every path was traced:
+  `_payment_amount` has exactly one caller (`set_item`), which has exactly one caller (the run-item
+  PATCH endpoint) — i.e. an officer typing. The one figure the product COMPUTES, `default_amount`,
+  quantises at its own site (`due.quantize(_CENTS)`) and is written straight onto the item without
+  passing through here. No legitimate path produces >2 dp, so it is refused (`places_exact=True`)
+  on money going OUT to a student's wallet. The 2dp quantise stays and now only normalises the
+  representation of a figure that already passed (`'150'` → `150.00`) — `parse_money` answers
+  `places_exact` against the figure as READ, before any rounding, which is the one ordering change
+  inside the shared module.
+- **(c) The Vircle CSV import accepted a NEGATIVE monthly amount.** The column is what a student
+  was PAID that month; the import writes it to `Disbursement.amount` and sums it into a batch
+  total. There is no reading of "paid minus five ringgit", so it is a `CommandError` — **and it
+  names the row** (`Row 7: Unrecognised Monthly amount: '-5.00'`), because a whole-file refusal
+  that names only the value leaves the owner grepping a PII spreadsheet for it.
+
+**BACKWARD REPAIR — what is already stored, in plain words.**
+- **Defect 2 (dropped decimals): zero rows affected, provably.** Every stored value was read
+  (read-only) before the change: not one is `RM<digits>` without decimals. Nothing to repair.
+- **Defect 1 (dropped minus): unknowable, and small.** Dropping the sign left no trace, so old and
+  new cannot be recomputed over history — **the raw OCR text is not stored**, only the extracted
+  fields. Of the 126 RM-shaped electricity figures written by the deterministic parser, the Gemini
+  path's own rate (~4 credits in ~283 values) suggests **one or two** carry a credit recorded as a
+  positive figure. **The impact of each is low and bounded**, from the consumer reading above: a
+  credit wrongly sitting in `unpaid_balance` can show an `arrears` chip on that bill row and add to
+  the soft `utility_hardship` sum — and hardship SUPPORTS need, so the error can only ever have
+  been generous to the applicant, never adverse. It is never a gate, and it never touches the
+  verdict.
+- **The repair path is the cockpit's Re-run on a bill that looks wrong — never a local
+  re-extraction.** A local checkout has no Storage access: re-running extraction from one reads
+  "no text" and DESTROYS `vision_fields`. Nothing was re-extracted for this change and no database
+  was touched.
+
+**`MODEL_VERSION` was NOT bumped, and that is the rule as written.** The rule (project `CLAUDE.md`,
+and the memory note `feedback_doc_recognition_versioning`) bumps `genuineness/results_doc.py`'s
+`MODEL_VERSION` on any change to the doc-recognition **signature** model — the marker scoring that
+decides genuine/suspect/fake. This change is to field EXTRACTION (which characters come out of a
+bill's amount line). No signature, marker, threshold or scorer was touched, so a cohort-wide
+re-score would be noise. H7 declined the same bump for the same reason when it renamed
+`score_markers`.
+
+**Still open, noticed and deliberately not changed** (reported, not fixed — no evidence, and the
+failure mode is safe): `doc_parse._labelled_rm`, the water bill's own figure reader, has the same
+blind spot, but its failure on a credit is a BLANK (`RM\s*[\d,]+` simply does not match `-1.29`),
+which reads downstream as "no arrears" — safe, unlike a sign flip. And a `CR`-suffixed credit
+(`40.00 CR`) still reads as a positive `RM40.00` from the deterministic path; `_arrears_amount`
+would catch it if the marker survived, but preserving it (`RM40.00 CR`) is the one shape the WEB
+would misread as arrears, and no corpus here shows a TNB bill printing one.
+
+**What it was, kept as the record:**
 
 **Found:** code health H7 (2026-09-19). Each is pinned, exactly as it behaves today, in
 `apps/scholarship/tests/test_helper_characterisation.py` with an `# H7-FINDING:` comment. **None was

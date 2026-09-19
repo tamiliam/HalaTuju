@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-261 closed - five defects in money and figure helpers, and three oddities, fixed - 2026-09-19
+
+Ordered by the owner (*"Proceed with TD261. You may fix all the defects identified. Look into the
+oddities as well."*). Built by an Opus 5 agent, red-first: the pinned rows from H7 were EDITED to
+the correct values and seen failing (22 red) before any fix. The lead measured production first,
+reviewed the diff, re-ran the suite. No migration. Web app untouched.
+
+- **A credit on a bill is read as a credit.** `_first_rm_figure` kept no minus sign, so `-40.00`
+  on a TNB previous balance read as RM40 OWED. It now returns **`RM-40.00`** - the shape chosen
+  from the CONSUMERS, not from taste: `income_engine._arrears_amount` detects a credit by a minus
+  before a digit, and the web's `_arrearsAmount` strips to `[0-9.-]`; both read `RM-40.00` as
+  nothing owed. `-RM40.00` would have been read by the api as RM40 of ARREARS. `_parse_rm` (the
+  current-charge reader) stays magnitude-only on purpose - making it signed would touch every
+  payslip, EPF and STR figure in the engine.
+- **A one-decimal figure keeps its decimal** (`1234.5` read `RM1234`; now `RM1234.5`).
+- **`Infinity` / `NaN` in an amount box are a 400 `bad_amount`, not a 500.** Fixed at the one home:
+  `money.parse_money` refuses any non-finite Decimal inside the guard, so all four callers inherit
+  it. Endpoint tests prove the 400 on the receipt box and the payment-run line.
+- **A sponsor email can no longer carry a raw `{student_cards}`.** `sponsor_comms.render` now
+  defaults every declared structural token to an empty block, as `partner_comms.render` always
+  did. Email golden byte-unchanged.
+- **Oddities, each traced to its callers first.** `'1,2,3'` no longer parses as 123 on a supplier
+  invoice: a comma must group thousands (all eight real invoices still read to the cent; none
+  carries a comma at all). **A payment-run line with a third decimal is REFUSED, not silently
+  rounded** - the only path to it is an officer typing; the computed default quantises at its own
+  site. The Vircle CSV import refuses a negative monthly amount and names the row.
+- **Backward repair, in plain words.** Production keeps extracted values, not raw OCR text, so
+  history cannot be recomputed. Lost decimals: **0** stored values carry the mark - provably none.
+  Lost minus: **unknowable** (the sign left no trace); real bills do carry credits (four came
+  through the Gemini path with their sign), so expect one or two of 126 electricity values. Impact
+  bounded and one-directional: a credit read as arrears could show an arrears chip and add to the
+  soft hardship sum - an error GENEROUS to the applicant, never a gate, never in the verdict.
+  Repair = the cockpit's Re-run on a bill that looks wrong. Never a local re-extraction.
+- `MODEL_VERSION` not bumped: this is field EXTRACTION, not a genuineness signature.
+- Ten bite-checks, ten red. Gates: **6,917 pytest**, 0 failed; no reading worse; `std` ok.
+- Still open, recorded in the entry: the water parser's own reader blanks a credit (safe - reads as
+  no arrears); a `CR`-suffixed credit still reads positive (no evidence any Malaysian bill prints one).
+
 ## Code health H7 - `_money` was eight functions doing three jobs; now it is three - 2026-09-19
 
 Sprint H7 of the code-health roadmap, under the development freeze. ⚠ **This sprint touched money
