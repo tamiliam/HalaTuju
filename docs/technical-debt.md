@@ -4104,6 +4104,16 @@ documentation for a proven current STR."
   of STR". Today the working members ARE asked (F3, deliberate) but nothing they answer can move a dispositive
   STR's verdict. **The owner must say which stands before any of this is built.**
 
+**✅ OWNER, 2026-09-19 — settled; see `docs/decisions.md` of the same date.** A current STR predicts green
+and stays green; the payslips of working adults are for the full picture and the reviewer's judgement, never
+the AI verdict. One earner clears the gate; Check 2 asks all working adults. **The July rulings stand, and
+R5 needs NO build.** What remains of TD-262, in order: **chunk 1** (student read-back files the support
+letter under Income, from ONE shared map; the untagged letter counts in the student's tick) · **chunk 2**
+the officer's web income panel (W2–W4) · **chunk 3** the api chase list and verdict paint (F1, F4, F5, F10)
+· **chunk R4** "the stronger proof is preferred": the verdict must assess the payslips when the STR is
+stale / unreadable / mismatched — count live cases first · **chunk 4** the fourth way gets an upload slot
+(F2), W1, and STR ownership at the gate (F8, ruled).
+
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 
 **Resolved 2026-09-19.** The owner's word: *"Proceed with TD261. You may fix all the defects

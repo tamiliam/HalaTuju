@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## The income rules, restated by the owner and confirmed against the code — 2026-09-19
+
+**Decision (owner, in their words):**
+- **A current STR predicts GREEN, and stays green.** *"When a student has current STR, the AI card
+  should predict green. That doesn't mean Check 2 or the reviewer may not ask additional documents to
+  get additional details on all working adults. The student may or may not submit the requested docs,
+  and the reviewer will consider all these in arriving at her recommendation."* And: *"Should the
+  verdict drop from Certain? No. STR is a government document that essentially proves a family is
+  B40. The reviewer may not recommend, but that is a subjective matter."*
+- **STR is preferred** — *"it tells the government has reviewed all evidence and has determined the
+  family to be B40."* An STR that is not current is only Probable / Unsure.
+- **One complete earner is enough to cross the submission gate**; Check 2 asks about ALL working
+  adults *"to get the full picture"*.
+- **The stronger proof is preferred** — *"Better to be flexible. The stronger proof should be given
+  preference is the most logical way."*
+
+**What this confirms (no change needed):** the 2026-07-06 ruling (a valid STR settles income on
+either route, even over an over-line salary), the 2026-07-08 ruling (one earner clears the gate),
+and the 2026-07-16 ruling (the salary asks survive an STR but never move its verdict; "not moving
+anyone out of STR"). The AI verdict is a PREDICTION; the reviewer's recommendation is a judgement
+that may weigh everything the household sent.
+
+**What it newly requires:** "the stronger proof is preferred" is not fully true today. An STR-route
+case whose STR is stale, unreadable, or in somebody else's name is capped at amber WITHOUT the
+household's payslips ever being assessed (`verdict_engine._verdict_income`, the `str_unsure` and
+`str_mismatch` branches return first). Only a rejected / wrong-type STR opens the salary net. That
+is TD-262's next chunk, after a count of live cases.
+
+**Consequence for the code's vocabulary:** `member_income_evidenced(app, member)` returns True for a
+member because the HOUSEHOLD has an STR. That is a submission-gate shortcut, not a statement about
+that earner; per-earner cues (the student's tick, the officer's slot) must not read it that way.
+
+**Revisit if:** STR eligibility widens to clearly include M40 households.
+
 ## Only the household's OWN STR counts as income evidence — at the gate as well as in the verdict — 2026-09-19
 
 **Decision (owner):** *"only the family's own STR count."* An STR document clears the income
