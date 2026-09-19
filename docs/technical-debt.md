@@ -4001,9 +4001,11 @@ today's tree: `apps/scholarship/tests/test_income_evidence_homes.py` (`F*`) and
 `income_doc_blockers` (may she submit — reads the answer ✓) · `application_completeness` (frozen
 gate — an OR of a private doc-type set and the answer) · `income_requirements` /
 `salary_member_blocks` (what to draw/ask — private literals) · `verdict_engine._verdict_income_salary`
-(re-derives from PRESENCE) · `_member_income_documented` / `member_income_status` (what the officer
-chases — re-derives). web: `incomeWizard` (declared mirror, plus one arm the api lacks) ·
-`officerCockpit.incomeSubSections` (client evidence rule) · THREE copies of the doc-type→category
+(~~re-derives from PRESENCE~~ — reads `income_shown` since chunk 3) · `_member_income_documented` /
+`member_income_status` (what the officer chases — ~~re-derives~~ reads `income_shown` since chunk 2).
+web: `incomeWizard` (declared mirror, plus one arm the api lacks) ·
+`officerCockpit.incomeSubSections` (~~client evidence rule~~ — reads the SERVED
+`income_shown` since chunk 2) · THREE copies of the doc-type→category
 map (`docTypeToFact`, `view.tsx` `DOC_FACT`, `ScholarshipReview.tsx` `DOC_CATEGORY`) ·
 `ScholarshipDocuments.memberIncomeShown` (3 of 4 arms) · six "income doc" sets across five files,
 no two agreeing on `income_support_doc` or `str`.
@@ -4157,6 +4159,66 @@ and W7 moved to rendered assertions (`ScholarshipReview.test.tsx`, `ScholarshipD
 `view.documents.test.tsx` — 20 new tests, 2,583 → **2,603** jest). W6 keeps its source-read pin, now
 worded as a deliberate difference. Every reading in `code_health` is unchanged (`guard%` 11, `big` 25,
 `std` ok). **TD-262 is NOT resolved** — chunks 2, 3, R4 and 4 stand.
+
+**Chunks 2+3 DONE 2026-09-19 — the officer's panel, the chase list and the verdict's evidence line
+all read the GATE'S OWN ANSWER. No student's ability to submit changed; ONE verdict band moved, and
+only downwards.**
+*One per-earner answer.* `apps/scholarship/income_shown.py` — `income_shown(application, member)` →
+`{shown, way, documents, unusable}`. It is the owner's three PER-EARNER ways and nothing else (a
+usable payslip · a readable EPF · a declared amount + a letter that READ) and it **has no STR arm**,
+because an STR is evidence about the HOUSEHOLD (owner 2026-09-19, `decisions.md`). It decides
+nothing new: every arm calls the predicate that already owned it (`usable_salary_slip`,
+`_member_has_epf_value`, `declared_amount` + `has_income_support_doc`), so the SUBMISSION GATE did
+not move by a single row — `member_income_evidenced` is now literally `shown or
+str_not_breached(app)`, and the characterisation suite's gate rows are byte-unchanged. It lives in
+its own module because `income_engine.py` is on the oversize ledger. **`unusable` names a document
+that was sent and cannot carry the income, in a stable code from a FOUR-word vocabulary**
+(`not_salary`, `no_value`, `letter_unread`, `no_declared_amount`) — one code per state the existing
+predicates can actually detect; there is deliberately no `unreadable` and no `flagged_not_genuine`,
+because nothing in the code can produce them.
+*What each home reads now.* `_member_income_documented` (the officer's chase list, F1/F4/F5) and
+`officerCockpit.incomeSubSections` (the officer's panel, W2/W3/W4) both read the answer instead of
+document PRESENCE; the api's answer is **SERVED** on the applicant-detail payload as `income_shown`
+and the cockpit reads it through `src/lib/incomeShown.ts`, following `documentLimits.ts` /
+`interviewSlots.ts` — **served, never mirrored**. `verdict_engine._verdict_income_salary`'s
+`any_financial` reads it too (F10). ⚠ **The `income_above_b40_line` RED is now tested WITHOUT
+`any_financial`**, on purpose: tightening evidence to readability must only ever paint a household
+LESS confidently, and left inside the old guard it would have taken a red off the one household
+whose unusable payslip still reads a figure over the line.
+*What reviewers will notice.* A `not_salary` photo or a blank EPF: the document is **still listed**
+(the officer must see what was sent), marked *not usable* with its reason, and the red **Missing**
+row now appears beside it — and Check 2 asks for that earner's proof again (it had gone quiet). A
+declared amount + a letter that read: the earner reads **satisfied** and is no longer chased for a
+payslip the family cannot produce (application 144 / Janani). On the AI card, a household whose only
+"evidence" is an unusable document loses its `income_proof_present` line and its income fact falls
+from green to amber — **one band, downwards, and no red is lost**.
+*Every OTHER caller of the presence predicate was switched too, and each asks "is income
+ESTABLISHED?" rather than "is there a file to look at?":* `_parent_has_income_evidence` (→
+`member_income_status` / `household_status_gaps` / the household-size "accounted" tick),
+`informal_income_members`, `pension_members` and `str_earner_income_document_gap`. None is a
+presence question — each exists to decide whether the household's income picture is still missing —
+so leaving any of them on presence would have kept exactly the F4/F5 silence one ask away. **Nothing
+was left on presence.**
+*F3 is untouched and now falls out for free:* `_member_income_documented` still ignores the STR
+because the per-earner answer has no STR arm, so an STR household's working members are still asked
+for their salary picture (owner 2026-07-16). Its pinned rows — and F7, F8, F9 and every gate row —
+are byte-identical in `test_income_evidence_homes.py`; only F1, F4, F5 and F10 moved.
+*Backward compatibility.* The two services deploy together but not atomically, so an ABSENT
+`income_shown` (a cached payload, or an api revision behind) falls back to the OLD presence reading
+rather than painting every earner red; a rendered test and a characterisation test pin that.
+*Residual drift.* `income_requirements` / `salary_member_blocks` still draw only a payslip and an EPF
+— the third way has no upload slot anywhere (F2, chunk 4). `incomeWizard`'s mononym birth-certificate
+arm (W1) still has no api twin. The officer's panel still claims one untagged letter for a single
+earner where the api counts the same row for each (W-B, the remaining half of chunk 2's original
+scope — it is a display nicety, not an eligibility answer).
+*Tests.* The four pinned rows F1 / F4 / F5 / F10 moved to the corrected answers and were EDITED
+FIRST, seen red, then fixed; F3, F7, F8, F9 and every gate row are byte-identical (the file's diff
+touches those four rows and nothing else). New `tests/test_income_shown.py` walks the scenario table
+including every `unusable` reason and asserts the gate equivalence over twelve document sets; the
+cockpit gains `view.income.test.tsx` (5 rendered cases, incl. the absent-payload fallback and an STR
+household). pytest 6,954 → **6,970**; jest 2,603 → **2,610** / 144 suites. Every reading in
+`code_health` is unchanged (`fix%` 41, `big` 25, `long` 16, `dup` 4, `guard%` 11, `std` ok).
+**TD-262 is NOT resolved** — chunks R4 and 4 stand.
 
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 

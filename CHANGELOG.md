@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-262 chunks 2+3 - the reviewer's screens test READABILITY, as the gate always did - 2026-09-19
+
+Approved by the owner ("1": do both together). Built by an Opus 5 agent, pinned rows edited first
+and seen red; the lead checked every application in review against production BEFORE shipping, and
+re-ran both suites. No migration. No student-facing screen or copy changed.
+
+- **One per-earner answer.** New `apps/scholarship/income_shown.py`: `income_shown(app, member)`
+  returns `{shown, way, documents, unusable:[{doc_id, doc_type, reason}]}` from the EXISTING leaf
+  predicates. Three ways - a usable payslip, a readable EPF, a declared amount plus a letter that
+  read. **No STR arm**: an STR is evidence about the household (owner, 2026-09-19).
+  `member_income_evidenced` is now literally `income_shown(...).shown or str_not_breached(app)`, so
+  the submission gate is provably unchanged; the frozen gate is untouched.
+- **The chase list reads it.** A BLANK EPF page or a photo that is not a payslip no longer reads
+  `satisfied`; a household that showed income the third way is no longer chased for a payslip. All
+  four callers of the old presence predicate asked "is income established?", so all four switched.
+  F3 stands: an STR household's working members are still asked.
+- **The verdict's evidence line reads it - and a band can only go DOWN or stay.** `any_financial`
+  was document PRESENCE. Naively tightening it would have taken a RED off a household whose
+  unusable payslip still reads a figure over the B40 line; the agent restructured so the `over`
+  test runs on `all_confirmed` alone and `any_financial` gates only the green.
+- **Served, not mirrored.** The officer payload carries `income_shown`; the cockpit's income panel
+  reads it. An unusable document is STILL LISTED, marked "not usable as income evidence" with its
+  reason, and the red Missing row appears beside it. If the field is absent the web falls back to
+  today's behaviour (the two services do not deploy atomically) - tested.
+- **Four reason codes, each one a state the code can actually detect:** `not_salary`, `no_value`,
+  `letter_unread`, `no_declared_amount`. One existing i18n key reused, five new officer-facing
+  keys in EN/MS/TA (Tamil flagged for the owner: the words for EPF "contribution" and "declared").
+- **⚠ Checked against production before shipping.** Four applications are in review. Three do not
+  change. **#140 changes, on the reviewer's screen only:** the father's EPF carries no figures and
+  his "payslip" is not one; his slot read satisfied and now reads Missing. His verdict stays
+  green - the family's genuine STR settles it. **No student receives a new request:** #140 is past
+  interview, where the machine may no longer ask; the two cases where it may are unchanged.
+- A test that had been proving the loophole was corrected: `test_reslot_income_doc`'s EPF fixture
+  held a name and nothing else, so what it showed was that a PRESENT row cleared the request.
+- Bites: one api edit reddens the chase list AND the verdict; one web edit reddens the rendered
+  cockpit AND the characterisation; an STR arm reddens F3; dropping the STR OR reddens six gate
+  rows; dropping the fallback reddens both absent-payload tests.
+- Gates: 6,970 pytest, 2,610 jest / 144 suites, tsc 0, lint 0 errors, i18n parity (5,383 keys),
+  `next build` 0, golden masters unchanged; every code-health reading delta 0.
+- ⚠ `_verdict_income_salary` is 198 lines of a 199 allowance; `src/lib/api.ts` and `doc_parse.py`
+  each have one line left. The next change to any of them splits it first.
+
 ## TD-262 chunk 1 - two student screens tell the truth about income evidence - 2026-09-19
 
 First chunk of TD-262, worked "easy ones first" on the owner's word. Web only, plus one api

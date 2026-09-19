@@ -414,6 +414,35 @@ raise a number, because there is no case in which that is the right answer.
 budgets arrive with H18. Style and formatting are deliberately out of scope for ever — a formatter
 pass rewrites every file and proves nothing about bugs.
 
+### Income evidence — one per-earner answer
+
+**`apps/scholarship/income_shown.py` → `income_shown(application, member)`** answers *has this
+earner's income been SHOWN?* — `{shown, way, documents, unusable}`. It is the owner's three
+PER-EARNER ways and nothing else (a usable payslip · a readable EPF · a declared amount + a
+supporting letter that READ), and `unusable` names a document that was sent and cannot carry the
+income, in a stable code (`not_salary` · `no_value` · `letter_unread` · `no_declared_amount`).
+
+**⚠ AN STR IS NEVER A PER-EARNER WAY.** An STR is evidence about the HOUSEHOLD: it clears the
+submission gate and settles the verdict by precedence, and a working adult's income proof is
+ADDITIONAL to it (owner 2026-09-19, `docs/decisions.md`). This function has NO STR arm, and that
+absence is the ruling — adding one silences the salary-picture asks the owner asked for (F3) and
+turns a per-earner cue green on a fact about somebody else.
+
+**Who reads it.** `income_engine.member_income_evidenced` (the gate — literally `shown or
+str_not_breached(app)`, which is where the household arm lives and the ONLY place it lives) ·
+`income_engine._member_income_documented` (the officer's chase list, and through it the pension /
+informal / formal-slip asks and the household-size tick) · `verdict_engine._verdict_income_salary`
+(`any_financial`, the verdict's financial-evidence line) · the officer cockpit, which reads it
+**SERVED** on the applicant-detail payload (`income_shown`) through
+`halatuju-web/src/lib/incomeShown.ts` — served, never mirrored, with an absent field falling back
+to the old presence reading so a half-deployed pair cannot paint a screen of red.
+
+**⚠ THE FROZEN GATE IS NOT TO BE TIDIED.** `services.application_completeness` keeps its legacy
+document-type arm OR-ed with `any_member_income_evidenced`; it is MORE permissive in four cases and
+replacing it un-submits students and nulls their `requirements_snapshot` (TD-262 F9). Any change to
+an income home answers to `tests/test_income_evidence_homes.py`, `tests/test_income_shown.py` and
+`halatuju-web/src/lib/__tests__/incomeEvidenceHomes.test.ts`.
+
 ### Test fixtures
 
 `apps/scholarship/tests/factories.py` builds the supporting rows (`make_org`, `make_programme`,
