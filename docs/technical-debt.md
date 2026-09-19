@@ -102,6 +102,11 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
+- **TD-262 (raised 2026-09-19 by code health H8) — HIGH, eligibility.** The income rule has ELEVEN
+  homes (TD-235 said four) and they disagree in sixteen places today: a student's own screen files her
+  income letter under "Other" and ignores her STR; the officer's panel shows income proved for a
+  household the gate is holding shut, and chases a payslip from one that proved income the fourth
+  way. Nothing was changed — every fix moves an eligibility answer and is the owner's ruling.
 - **TD-260 (raised 2026-09-19)** — 604 of 674 IC-holding students have no verified contact, so no
   self-service way to reclaim an account, and support has no screen to do it for them. Two owner levers.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
@@ -3983,6 +3988,78 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-262] The income rule has ELEVEN homes and they disagree in sixteen places today — HIGH (eligibility; every fix is the owner's ruling)
+
+**Found:** code health H8 (2026-09-19), which was planned to unify TD-235's "four homes" and
+stopped at its own gate: no home could be unified without changing some household's answer.
+**No production code was changed.** Every disagreement below is pinned by a named test, green on
+today's tree: `apps/scholarship/tests/test_income_evidence_homes.py` (`F*`) and
+`halatuju-web/src/lib/__tests__/incomeEvidenceHomes.test.ts` (`W*`). This entry extends TD-235.
+
+**The homes.** api: `member_income_evidenced` / `any_member_income_evidenced` (THE answer) ·
+`income_doc_blockers` (may she submit — reads the answer ✓) · `application_completeness` (frozen
+gate — an OR of a private doc-type set and the answer) · `income_requirements` /
+`salary_member_blocks` (what to draw/ask — private literals) · `verdict_engine._verdict_income_salary`
+(re-derives from PRESENCE) · `_member_income_documented` / `member_income_status` (what the officer
+chases — re-derives). web: `incomeWizard` (declared mirror, plus one arm the api lacks) ·
+`officerCockpit.incomeSubSections` (client evidence rule) · THREE copies of the doc-type→category
+map (`docTypeToFact`, `view.tsx` `DOC_FACT`, `ScholarshipReview.tsx` `DOC_CATEGORY`) ·
+`ScholarshipDocuments.memberIncomeShown` (3 of 4 arms) · six "income doc" sets across five files,
+no two agreeing on `income_support_doc` or `str`.
+
+**On a STUDENT'S own screen (verified by the lead in the source):**
+- **W5** — `ScholarshipReview.tsx` `DOC_CATEGORY` has no `income_support_doc`, so the one letter
+  proving a family's income is filed under **"Other"** on her post-consent read-back. TD-235
+  incident 2 was fixed in one of three copies.
+- **W6** — the Documents tab's green cue has no STR arm (its comment: *"an STR household is on the
+  STR route, not here"* — false; `str_not_breached` is route-agnostic). A salary-route student with
+  a genuine STR is ACCEPTED by the server while her screen still asks for a payslip.
+- **W7** — the same cue requires the support letter TAGGED to the earner; the api and the cockpit
+  accept it untagged. She answers an officer's request, the server counts it, her screen does not.
+
+**On the OFFICER'S screen:**
+- **F1** — income proved the owner's fourth way (declared amount + a read letter): the gate lets
+  her submit; `member_income_status` still says `need_proof` and Check 2 chases a payslip.
+- **F4 / F5, W2 / W3 / W4** — a BLANK EPF, a `not_salary` photo, or a blank support letter with
+  nothing declared each fills the earner's slot / reads `satisfied`, because those homes test
+  PRESENCE where the gate tests READABILITY. The chase list goes quiet about a household the gate
+  is holding shut.
+- **F10** — the verdict's `any_financial` is presence-only, so a `not_salary` photo paints as
+  financial evidence while the gate blocks her.
+
+**On the GATE itself:**
+- **F8** — `str_not_breached` never asks WHOSE STR it is, so an unrelated person's STR clears the
+  submission gate (the verdict's `household_str_status` correctly refuses it). Possibly intended —
+  the gate admits for review — but nothing says so.
+- **F9 — DO NOT "TIDY" THE FROZEN GATE.** `application_completeness` is
+  `bool(present & {'str','salary_slip','epf'}) or any_member_income_evidenced(app)`. The legacy arm
+  is MORE permissive in four cases (blank EPF, `not_salary` slip, rejected STR, wrong-type STR).
+  Replacing it with the served answer would make those submitted households incomplete, and
+  `revert_if_profile_incomplete` un-submits AND nulls their `requirements_snapshot`. The 2026-06-05
+  gate decision, the inline comment and TD-235 incident 1 agree: the OR exists so the frozen copy
+  can only ever WIDEN. The only safe move is to lift the literal into a named function (pure move).
+
+**Deliberate, pinned so nobody erases them:** F3 (an STR satisfies the gate but leaves the salary
+asks standing — owner, 2026-07-16) and F7 (a STALE STR clears the gate but is not dispositive).
+**W1:** `incomeWizard` offers an optional birth certificate for a mononym student (#55); the api's
+`income_requirements` has no such arm — benign, but the "pure mirror" has been out of step since.
+
+**A finding about the guard.** A "no fifth home" AST guard would flag 73 sites, but `'str'` is both
+a DOCUMENT TYPE and an income ROUTE: 15 of 29 `== 'str'` comparisons are `income_route == 'str'`.
+A naive guard cries wolf on half its hits. Disambiguate (count only comparisons against `doc_type`)
+or stop the two vocabularies colliding, before budgeting it.
+
+**Shape of the work, in the order the lead recommends — each step the owner's word:**
+1. *Student screens tell the truth* (W5, W6, W7): ~2h, web only. Display follows what the server
+   already decided; no eligibility answer moves.
+2. *Officer screens follow the gate's rule* (F1, F4, F5, F10, W2–W4): readable evidence, all four
+   ways. ⚠ This changes what officers see and chase on LIVE cases, and `salary_income_satisfied`'s
+   docstring warns that widening moves a verdict band — it needs a production blast-radius count
+   first, through a door that exists (not exported credentials).
+3. *One served answer + a named frozen arm*, then the web reads it (`incomeWizard`,
+   `incomeSubSections`) — the original H8 goal, now safe because 1 and 2 removed the disagreements.
+4. F8: a ruling — may any STR open the gate, or only the household's?
 
 ### [TD-261] Five defects in money and figure helpers, found by pinning today's behaviour — medium (owner's call: they change what money code returns) — **RESOLVED 2026-09-19**
 

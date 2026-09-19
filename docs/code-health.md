@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 981ac18 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 93761ad | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 83 | 0 | - | - | ok |
 | 2026-09-19 | 7977547 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 88c93f0 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 11 | 83 | 0 | 0 | ok | ok |
@@ -25,7 +26,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 93761ad, window 2026-06-21 onward)
+## Latest run (2026-09-19, 981ac18, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -111,24 +112,35 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Source-text guard tests (web)
-- 15 of 140 web test files read source text
+- 16 of 141 web test files read source text
 
 ### Debt register
-- 153 entries have a defining line; 83 carry no resolution marker on it
+- 154 entries have a defining line; 84 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 386: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4486: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 391: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 4563: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 7977547
+- budgets no looser than at 93761ad
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (seventh reading) — H8: Phase A delivered, Phase B stopped at its gate
+
+Plain run. No FAILs. **No production code changed** — two characterisation test files.
+- **td_open → +1** — **TD-262 (HIGH, eligibility):** the income rule has eleven homes, not four, and
+  they disagree in sixteen places today. *Decision: owner's, step by step — every fix moves an
+  eligibility answer.* This is the largest finding the arc has produced, and no reading could have
+  found it: the numbers measure shape; only running the homes side by side measures agreement.
+- **guard%** — one new web test reads source, to pin three module-private maps that have no seam.
+  *Accept* — they are ledger pins, to be replaced by rendered tests once the owner rules.
+- All other readings delta 0.
 
 ### 2026-09-19 (sixth reading) — TD-261 closed (on the owner's order)
 

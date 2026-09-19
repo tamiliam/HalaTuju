@@ -272,7 +272,8 @@ chasing them is how a health arc turns into a rewrite.
   byte-identical; reading: `dup` has no true duplicates.
 - **Complexity:** medium. **~7h.** api deploy.
 
-### H8 — The income rule gets one served answer (TD-235) ⚠ touches eligibility
+### H8 — The income rule gets one served answer (TD-235) ⚠ touches eligibility — ⛔ PHASE A DELIVERED 2026-09-19, PHASE B STOPPED AT ITS GATE
+*Retro: `docs/retrospective-2026-09-19-code-health-h8.md`. The rule has **eleven** homes, not four, and they disagree in sixteen places today (**TD-262**). No production code changed. **The goal as written below is NOT achievable:** "the frozen gate reads the single answer" would un-submit real students — the frozen arm is more permissive on purpose and may only ever widen. What remains is owner-ruled and ordered in TD-262: (1) student screens tell the truth, (2) officer screens follow the gate's rule — needs a production count first, (3) one served answer plus a NAMED frozen arm, then the web reads it, (4) a ruling on whose STR may open the gate. **H9–H10 inherit the rule: characterise first; a mirror is deleted only where the two sides already agree.***
 - **Goal:** "is this household's income evidenced?" is answered in one place and *served*.
 - **Scope:** `income_engine.any_member_income_evidenced` becomes the single answer; the frozen
   gate, the cockpit display and the de-dup sweep read it. `src/lib/incomeWizard.ts` — a declared

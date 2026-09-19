@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H8 - the income rule has ELEVEN homes; the sprint stopped at its own gate - 2026-09-19
+
+Sprint H8 of the code-health roadmap. **Phase A delivered, Phase B stopped - by design. NO
+PRODUCTION CODE CHANGED.** Two test files added. Built by an Opus 5 agent under a hard stop gate
+(*"no student's answer may change, and that must be proven before any code moves"*); the lead
+verified the two most visible findings in the source and recorded the rest as **TD-262**.
+Retro: `docs/retrospective-2026-09-19-code-health-h8.md`.
+
+- **TD-235 said four homes. There are eleven** - six api, five web - and characterising them side
+  by side on the untouched tree pinned **sixteen disagreements about the same household**.
+- **On a student's own screen:** her income-support letter is filed under "Other" on the consent
+  read-back (`ScholarshipReview.tsx` - TD-235 incident 2 was fixed in ONE of three copies); and the
+  Documents tab's green cue has no STR arm, so a salary-route student with a genuine STR is accepted
+  by the server while her screen still asks for a payslip.
+- **On the officer's screen:** a blank EPF or a `not_salary` photo reads as income evidenced -
+  those homes test PRESENCE where the gate tests READABILITY - while a household that proved income
+  the owner's fourth way is still chased for a payslip.
+- **⛔ The frozen gate must not be tidied.** The roadmap's H8 goal would have UN-SUBMITTED real
+  students: the legacy document-type arm is more permissive than the live rule in four cases, and a
+  failed check also nulls the student's `requirements_snapshot`. The OR exists so the frozen copy
+  can only ever widen. Settled from the decisions on file, not escalated.
+- **The proof TD-235 never had:** breaking the served api answer turned the api table red and left
+  the web table GREEN. The web does not read it.
+- **The "no fifth home" guard was measured, not built:** `'str'` is both a document type and an
+  income route; 15 of 29 comparisons are the route. A naive guard would cry wolf on half its hits.
+- Gates: 6,954 pytest, 2,583 jest, every code-health reading delta 0.
+
 ## TD-261 closed - five defects in money and figure helpers, and three oddities, fixed - 2026-09-19
 
 Ordered by the owner (*"Proceed with TD261. You may fix all the defects identified. Look into the
