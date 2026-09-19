@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | b7a1350 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 981ac18 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
 | 2026-09-19 | 93761ad | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 83 | 0 | - | - | ok |
 | 2026-09-19 | 7977547 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | 11 | 84 | 0 | - | - | ok |
@@ -26,46 +27,46 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 981ac18, window 2026-06-21 onward)
+## Latest run (2026-09-19, b7a1350, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8556 | 273.8 |
-| `halatuju-web/src/lib/admin-api.ts` | 25 | 4099 | 102.5 |
-| `halatuju_api/apps/scholarship/income_engine.py` | 29 | 3187 | 92.4 |
+| `halatuju-web/src/lib/admin-api.ts` | 26 | 4103 | 106.7 |
+| `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3201 | 96 |
 | `halatuju_api/apps/scholarship/services.py` | 31 | 2931 | 90.9 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
-| `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1637 | 45.8 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1614 | 48.4 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 7 | 3590 | 25.1 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 3599 | 32.4 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 301 fix / 427 feat commits since 2026-06-21
+- 302 fix / 427 feat commits since 2026-06-21
 
 ### Files over 1000 lines
 - `8556  halatuju_api/apps/scholarship/views_admin.py`
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
-- `4099  halatuju-web/src/lib/admin-api.ts`
-- `3590  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `3187  halatuju_api/apps/scholarship/income_engine.py`
+- `4103  halatuju-web/src/lib/admin-api.ts`
+- `3599  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
+- `3201  halatuju_api/apps/scholarship/income_engine.py`
 - `2931  halatuju_api/apps/scholarship/services.py`
 - `2488  halatuju-web/src/lib/api.ts`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
-- `1942  halatuju-web/src/components/ScholarshipDocuments.tsx`
-- `1637  halatuju-web/src/lib/officerCockpit.ts`
+- `1957  halatuju-web/src/components/ScholarshipDocuments.tsx`
+- `1614  halatuju-web/src/lib/officerCockpit.ts`
 - `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1332  halatuju-web/src/lib/scholarship.ts`
-- `1284  halatuju_api/apps/scholarship/verdict_engine.py`
+- `1293  halatuju_api/apps/scholarship/verdict_engine.py`
 - `1246  halatuju_api/apps/courses/views_admin.py`
-- `1214  halatuju_api/apps/scholarship/serializers_admin.py`
+- `1229  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1195  halatuju_api/apps/scholarship/serializers.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
@@ -81,8 +82,8 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `245  halatuju_api/apps/courses/views.py:118 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `214  halatuju_api/apps/scholarship/verdict_engine.py:405 _verdict_income`
+- `198  halatuju_api/apps/scholarship/verdict_engine.py:621 _verdict_income_salary`
 - `192  halatuju_api/apps/scholarship/services.py:1765 autofill_pathway_from_offer`
-- `189  halatuju_api/apps/scholarship/verdict_engine.py:621 _verdict_income_salary`
 - `183  halatuju_api/apps/courses/views_admin.py:643 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
@@ -112,24 +113,33 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Source-text guard tests (web)
-- 16 of 141 web test files read source text
+- 16 of 144 web test files read source text
 
 ### Debt register
 - 154 entries have a defining line; 84 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 391: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4563: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 4722: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 93761ad
+- budgets no looser than at 981ac18
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (eighth reading) — TD-262 chunks 1–3 shipped
+
+Plain run. No FAILs. Every reading delta 0 — the income work added small modules instead of growing
+listed files (`docCategory.ts`, `incomeShown.ts`, `income_shown.py`).
+- **Three files are at the edge of their allowance, and one function:** `src/lib/api.ts` (1 line
+  left), `doc_parse.py` (1), `_verdict_income_salary` (1 of its +10), `view.tsx` (8). *Decision:
+  promote* — H13 (api barrels) and H14 (cockpit panels) are the planned cures; `verdict_engine`'s
+  salary branch wants splitting before TD-262 chunk R4 touches it.
 
 ### 2026-09-19 (seventh reading) — H8: Phase A delivered, Phase B stopped at its gate
 
