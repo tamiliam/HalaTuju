@@ -9,7 +9,7 @@
  * It is not a substitute for looking at it: this asserts structure, not whether the thing is
  * pleasant to use. The browser pass is still owed (see the sprint notes).
  */
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { AppShell } from './AppShell'
 import type { AdminRoleName } from '@/lib/navigation'
@@ -309,9 +309,14 @@ describe('the rail waits for a gift before offering Configuration', () => {
     asRole('org_admin')
     render(<AppShell>content</AppShell>)
     // Applications STAYS — a list of every gift is a true answer, and it is the row that keeps
-    // the group from emptying. Awaited first, so the assertion below runs after the fetch lands.
+    // the group from emptying.
     expect(await screen.findByText('admin.scholarship.nav')).toBeTruthy()
-    expect(screen.queryByText('admin.programme.config.nav')).toBeNull()
+    // ⚠ Await the REMOVAL itself, not a neighbour. Configuration is on screen from the first
+    // paint by design (see the third case below), so "the fetch has landed" is the moment this
+    // row goes, and no other row marks it: Applications is painted before the fetch too, so
+    // finding it proved nothing and this assertion was a race. It passed on a fast machine and
+    // failed in the deploy gate on Node 18 after H13 made the import graph wider (2026-09-20).
+    await waitFor(() => expect(screen.queryByText('admin.programme.config.nav')).toBeNull())
   })
 
   it('shows Configuration when the tenant has exactly one gift — nothing to choose', async () => {
