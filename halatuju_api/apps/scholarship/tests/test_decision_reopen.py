@@ -174,7 +174,7 @@ class TestDecisionReopen(TestCase):
         self.assertEqual(r.json()['code'], 'not_reopened')
 
     # ── re-record (real change → correction counts) ──────────────────────────
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
     def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine):
         mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-2.5-pro'}
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now())
@@ -202,7 +202,7 @@ class TestDecisionReopen(TestCase):
         # QC clears the corrected case → NOW it publishes and returns to the pool. (This fixture
         # carries no documents, so the V5 QC gap floor would refuse on an all-gaps verdict; patch
         # the verdict seam to a clean read — the floor itself is covered in test_qc_gate.py.)
-        with patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+        with patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             qc = self.client.post(
                 f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
                 {'decision': 'accept'}, format='json')

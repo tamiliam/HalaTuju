@@ -7,11 +7,12 @@ that got WORSE than the last run by more than a tolerance — the only thing tha
 
 Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` at sprint close).
 
-**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases). H1-H11 are shipped. The development freeze was lifted at the H10 checkpoint on 2026-09-19; on 2026-09-20 the owner asked for H11-H19 to run back to back again, stopping only for a decision that is the owner's.
+**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases). H1-H12 are shipped. The development freeze was lifted at the H10 checkpoint on 2026-09-19; on 2026-09-20 the owner asked for H11-H19 to run back to back again, stopping only for a decision that is the owner's.
 
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 0694ae2 | 90 | 42 | admin-api.ts 107.1 | 24 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-20 | 2b6274e | 90 | 42 | admin-api.ts 107.1 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-19 | 3eadcd9 | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-19 | 9c5024a | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 41 | 15 | 86 | 0 | - | - | ok |
@@ -30,7 +31,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 2b6274e, window 2026-06-22 onward)
+## Latest run (2026-09-20, 0694ae2, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -50,7 +51,6 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 304 fix / 418 feat commits since 2026-06-22
 
 ### Files over 1000 lines
-- `5093  halatuju_api/apps/scholarship/views_admin/__init__.py`
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
 - `4118  halatuju-web/src/lib/admin-api.ts`
@@ -100,10 +100,10 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - unknown_placeholders x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 
 ### Cross-app imports
-- courses -> scholarship: 25
-- reports -> courses: 2
-- reports -> scholarship: 2
-- scholarship -> courses: 104
+- courses -> scholarship: 21 edges (29 import statements)
+- reports -> courses: 2 edges (2 import statements)
+- reports -> scholarship: 1 edges (2 import statements)
+- scholarship -> courses: 22 edges (119 import statements)
 
 ### Suppressions
 - # noqa: 80
@@ -124,21 +124,66 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 31 of 159 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 159 entries have a defining line; 88 carry no resolution marker on it
+- 160 entries have a defining line; 88 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 415: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5275: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 419: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5313: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- renamed in halatuju_api/code-standards.json — budget.oversize_files.apps/scholarship/views_admin/__init__.py: renamed from one of apps/scholarship/views_admin.py (8547 -> 5093); the list did not grow
+- budgets no looser than at 2b6274e
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-20 (twelfth reading) — H12: `views_admin` wave 2; `big` falls, and `xapp` changes meaning
+
+Read-only (`--write` was excluded by the brief). **0 FAIL, 6 WARN — the same six as the eleventh
+reading.** `std` reads **ok**, so the tool fix the lead built after H11 works on a real split: the
+oversize entry for `views_admin/__init__.py` was REMOVED (the root is 154 lines, under the
+standard) and `loosened()` passed it in silence, as a tightening should be.
+
+- **`big` 25 → 24.** `views_admin/__init__.py` left the over-1,000-lines list. This is the honest
+  reading for this sprint and the one the roadmap asked for. `hot#1` is unchanged at
+  `admin-api.ts` 107.1 and is still not evidence of anything here (see the H11 note below).
+- **⚠ `xapp` 133 → 135 (+2), inside `TOL_COUNT` so it does not FAIL — but it is a real +2 and is
+  recorded here rather than passed over.** *Decision: ACCEPTED, with the arithmetic.* The old root
+  carried exactly two module-level imports into `apps.courses`:
+  `from apps.courses.models import PartnerAdmin, PartnerOrganisation` and
+  `from apps.courses.search import apply_people_search`. Those two lines fed **four** call sites
+  that the split put in four different modules — `AdminScopeListView` and
+  `AdminAssignableAdminsView` (`lifecycle.py`), `_ReviewersBase` (`reviewers.py`),
+  `AdminAssignReviewerView` (`verdict.py`) and the people-search in `applications.py`. Four
+  modules, four import lines, two lines removed from the root: 133 − 2 + 4 = 135.
+  - **H11's rule was applied first and it removed nothing this time.** Every one of the other 22
+    `apps.courses` imports in the package already sits inside the function that uses it, and each
+    was checked against its own body before a header line was written; no header import is
+    redundant, and no import was left behind in the root (the root has no imports at all now).
+  - *Why it was not engineered away.* Two routes would have held the number at 133 and both were
+    rejected: re-exporting `PartnerAdmin` through `base.py` (which hides a real dependency behind
+    the org-fence module and makes `base.py` an import hub it is not), and regrouping four views
+    into one module purely to share one import line (which would have made `reviewers.py` a
+    four-span grab-bag of 640 lines). **A number held by hiding the thing it measures is worse
+    than a number that went up honestly.**
+  - *Proposed (not made — `Settings/_tools` was out of this sprint's scope):* `m_cross_app_imports`
+    counts import STATEMENTS, so a pure file split can only ever inflate it, and the more
+    faithfully a package is decomposed the worse it reads. Counting distinct `(app → app, name)`
+    EDGES per source app would have read 133 → 133 here, because the same two names are read by
+    the same four call sites as before. Raised as **TD-268**.
+  - **✅ BUILT BY THE LEAD THE SAME DAY, before this row was recorded. TD-268 is resolved.**
+    `xapp` is now the number of distinct `(from app → to app, imported name)` edges, and the old
+    statement count stays beside it in the detail (`46 edges (133 import statements)`), because a
+    name pulled in from twenty places is still worth seeing. Two cases pin it in
+    `Settings/_tools/tests/test_code_health.py`: one module split into six must not move the
+    reading, and reaching for a second name must. **⚠ THE TREND STEPS 133 → 46 AT THIS ROW AND
+    THAT IS THE DEFINITION, NOT THE CODE.** Nothing was decoupled today. Read no improvement into
+    it, and compare later rows only with rows from 2026-09-20 onward.
+- **Everything else delta 0**, `supp` 139, `skip` 0, `unused` 0, `dup` 4, `long` 15, `mirror` 3,
+  `guard%` 19, `fix%` 42.
 
 ### 2026-09-20 (eleventh reading) — H11: `views_admin.py` is a package; `std` FAILs on a rename
 

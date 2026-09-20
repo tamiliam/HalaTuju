@@ -476,13 +476,19 @@ class TestFormatPlatformCosts(_Table):
     def _subject():
         """Read the nested function out of its enclosing view. It has no module-level name, so
         `_fn` cannot reach it; after H7 it delegates to the shared formatter and this still
-        exercises the real thing the payload is built with."""
+        exercises the real thing the payload is built with.
+
+        ⚠ The globals it is rebuilt with must be the globals it was COMPILED against. At code
+        health H12 the view moved into `views_admin.billing`, so `money` — the shared formatter
+        this function delegates to — is a name in that module, not in the package root any more.
+        Handing it `vars(views_admin)` would rebuild a function whose one dependency is missing.
+        """
         from apps.scholarship import views_admin
         view = views_admin.AdminPlatformCostsView()
         for const in view.get.__code__.co_consts:
             if getattr(const, 'co_name', '') in ('_money', '_str_or_none'):
                 import types
-                return types.FunctionType(const, vars(views_admin))
+                return types.FunctionType(const, vars(views_admin.billing))
         raise AssertionError('the platform-cost payload no longer defines its money formatter')
 
     def test_the_invoice_payload_formatter_is_the_same_rule(self):

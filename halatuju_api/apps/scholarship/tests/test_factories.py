@@ -17,7 +17,7 @@ between a factory and the stale fixture it replaces.
 `test_the_decline_road_leaves_no_verify_stamps` is the one that would have caught #24: the
 decline road must leave `verified_at` NULL, because `submit-decline` never writes it.
 
-WHAT IS MOCKED: `views_admin.build_verdict` (the verdict engine's read of the applicant's
+WHAT IS MOCKED: `views_admin.verdict.build_verdict` (the verdict engine's read of the applicant's
 documents) — the same seam `test_qc_gate.py` already patches, and for the same reason: these
 fixtures carry stub documents, so the real verdict would be all-gaps and the QC gap floor would
 refuse every accept. Emails go to Django's locmem backend as everywhere else. Nothing else is
@@ -98,7 +98,7 @@ class TestTheFactoryMatchesTheProduct(TestCase):
         cls.superadmin = make_admin('super', super_admin=True)
         # ONE patch around both walks: the verdict engine's document read. See the module
         # docstring — the same seam test_qc_gate.py patches, for the same reason.
-        patcher = mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[])
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
         patcher.start()
         try:
             cls.walked = {}

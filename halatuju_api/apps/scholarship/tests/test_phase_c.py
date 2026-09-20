@@ -459,7 +459,7 @@ class TestInterview(PhaseCBase):
 
 
 class TestRequestInfo(PhaseCBase):
-    @patch('apps.scholarship.views_admin.send_request_info_email')
+    @patch('apps.scholarship.views_admin.resolution.send_request_info_email')
     def test_request_info_stores_note_and_emails(self, mock_email):
         app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(REVIEWER)

@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H12 - `views_admin` wave 2: the root is a re-export shell - 2026-09-20
+
+**Moves only. No behaviour changed, no migration, no endpoint touched, `urls.py` byte-identical.**
+All twenty moved bodies were read back off disk and compared, line by line, with the original at
+`HEAD`: twenty YESes, 4,914 lines, not one character different.
+
+### Changed
+
+- **`views_admin/__init__.py` fell from 5,093 lines to 154, and holds no code at all.** The
+  remaining nineteen domains moved out as twenty modules - `applications` 467, `verdict` 468,
+  `reviewers` 475, `sponsors` 429, `billing` 346, `org_config` 341, `lifecycle` 326, `org_emails`
+  301, `theme` 267, `interviews` 246, `spending` 210, `sources` 203, `invitations` 195, `overview`
+  187, `credits` 174, `profiles` 173, `sponsorships` 168, `graduation` 141, `resolution` 113,
+  `interview_slots` 98. The package is now thirty modules, **none over 600 lines** (the largest is
+  `requests.py` at 480, from H11). The root re-exports every module-level name each one defines, so
+  `urls.py` did not change by one byte and every `from apps.scholarship.views_admin import ...`
+  still resolves.
+- **23 `mock.patch(...)` strings now name the module that holds the code**, because the root's
+  import block is gone and its dependencies are no longer attributes of the package: 11
+  `build_verdict` and 3 `refine_sponsor_profile` to `.verdict`, 6 `refine_sponsor_profile` to
+  `.profiles`, 2 `timezone.localtime` to `.billing`, 1 `send_request_info_email` to `.resolution`.
+  Found by grepping the whole tree for `views_admin.` followed by a dependency name, then reading
+  each site to see which of the two `refine_sponsor_profile` call sites it exercises. A string left
+  behind would raise `AttributeError`, never patch nothing silently - bite-checked.
+- **`test_helper_characterisation.py` rebuilds the nested platform-cost formatter against
+  `vars(views_admin.billing)`**, not `vars(views_admin)`. The function is reconstructed from a code
+  constant, so it must be handed the globals it was compiled against; the shared `money` formatter
+  it delegates to is a name in `billing.py` now.
+- **The oversize ledger entry for `views_admin/__init__.py` was REMOVED** from `budget` in
+  `halatuju_api/code-standards.json` - at 154 lines the root is under the standard, so the ratchet
+  asks for the line to go rather than fall. The frozen `baseline` was NOT touched and
+  `BASELINE_SHA256` did not move: H11's key rename was the exception, not a habit.
+
+### Removed
+
+- **Nothing.** `interview_agenda_full` was NOT deleted. The roadmap and the brief both recorded it
+  as having "zero callers outside one test"; it is in fact called on every cockpit detail load -
+  `serializers_admin.py:756` imports it lazily to serve the `interview_agenda` field, which is
+  typed in `admin-api.ts` and rendered in `view.tsx`. The phase's one permitted deletion was not
+  spent.
+- The three dead imports of **TD-267** (`Exists`, `OuterRef`, `OrgRequestAttachment`) went with the
+  rest of the root's import block, as that entry said they would. **TD-267 is resolved.**
+
+### Fixed
+
+- Nothing. No defect was fixed and none was introduced. One finding was written up rather than
+  patched: **TD-268** (the cross-app import metric counts statements, so a split can only inflate
+  it), recorded under `## Reviews` in `docs/code-health.md` with the arithmetic.
+
+### Gates
+
+7,021 pytest / 3 skipped (identical to the H11 baseline - no test was added or removed) ·
+`manage.py check` 0 issues · `makemigrations --check` clean · `urls.py` byte-identical ·
+code_health **0 FAIL**, `std` ok, `big` 25 -> 24, `xapp` 133 -> 135 (accepted, with the
+arithmetic). Five bite-checks, all five behaved. Web untouched.
+
 ## Code health H11 - `views_admin.py` becomes a package, wave 1 - 2026-09-20
 
 **Moves only. No behaviour changed, no migration, no endpoint touched, `urls.py` byte-identical.**

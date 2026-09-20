@@ -238,7 +238,7 @@ class TestOrgFenceProof(TestCase):
 
     def test_org_admin_same_org_qc_accepts(self):
         # org_admin has QC powers (owner decision) — a same-org QC accept works.
-        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self._auth('a-oa')
             r = self.client.post(
                 f"/api/v1/admin/scholarship/applications/{self.a['app'].id}/qc-decision/",

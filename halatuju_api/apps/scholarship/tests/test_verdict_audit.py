@@ -166,7 +166,7 @@ class TestRecordVerdictEndpoint(TestCase):
         self.assertIn('academic', r.json()['facts'])
         self.assertIsNone(ScholarshipApplication.objects.get(pk=self.app.id).verdict_decided_at)
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
     def test_finalise_runs_when_draft_and_interview_exist(self, mock_refine):
         mock_refine.return_value = {'markdown': '## Final v2', 'model_used': 'gemini-2.5-flash'}
         SponsorProfile.objects.create(application=self.app, draft_markdown='## Draft')
@@ -180,7 +180,7 @@ class TestRecordVerdictEndpoint(TestCase):
         # One profile: the final is mirrored onto the sponsor/pool field too.
         self.assertEqual(sp.anon_markdown, '## Final v2')
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
     def test_finalise_skipped_without_draft_but_verdict_still_recorded(self, mock_refine):
         # No draft profile → finalise can't run, but the verdict audit must still persist.
         self._auth(REVIEWER)

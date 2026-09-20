@@ -183,7 +183,7 @@ class TestQcGateOrg(OrgFenceMixin, TestCase):
             app.verdict_decided_at = timezone.now()
             app.assigned_to = rev
             app.save(update_fields=['status', 'verdict_decided_at', 'assigned_to'])
-        patcher = mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[])
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
         patcher.start(); self.addCleanup(patcher.stop)
 
     def _qc(self, app, payload):

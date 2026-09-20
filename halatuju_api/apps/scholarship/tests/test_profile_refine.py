@@ -168,7 +168,7 @@ class TestFinaliseProfileEndpoint(TestCase):
     def _draft(self):
         return SponsorProfile.objects.create(application=self.app, draft_markdown='## Background\nDraft.')
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
     def test_reviewer_stores_final(self, mock_refine):
         mock_refine.return_value = {'markdown': '## Background\nFinal v2.', 'model_used': 'gemini-2.5-flash'}
         self._draft(); _submitted_session(self.app)
@@ -180,14 +180,14 @@ class TestFinaliseProfileEndpoint(TestCase):
         self.assertEqual(sp.final_model_used, 'gemini-2.5-flash')
         self.assertIsNotNone(sp.finalised_at)
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
     def test_viewer_forbidden(self, mock_refine):
         self._draft(); _submitted_session(self.app)
         self._auth(VIEWER)
         self.assertEqual(self.client.post(self._url()).status_code, 403)
         mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
     def test_no_draft_400(self, mock_refine):
         _submitted_session(self.app)   # interview exists, but no draft profile
         self._auth(REVIEWER)
@@ -196,7 +196,7 @@ class TestFinaliseProfileEndpoint(TestCase):
         self.assertEqual(r.json()['code'], 'no_draft')
         mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
     def test_no_submitted_interview_400(self, mock_refine):
         self._draft()
         InterviewSession.objects.create(application=self.app, status='draft')  # draft only, not submitted
@@ -206,14 +206,14 @@ class TestFinaliseProfileEndpoint(TestCase):
         self.assertEqual(r.json()['code'], 'no_interview')
         mock_refine.assert_not_called()
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
     def test_engine_error_503(self, mock_refine):
         mock_refine.return_value = {'error': 'down'}
         self._draft(); _submitted_session(self.app)
         self._auth(REVIEWER)
         self.assertEqual(self.client.post(self._url()).status_code, 503)
 
-    @patch('apps.scholarship.views_admin.refine_sponsor_profile')
+    @patch('apps.scholarship.views_admin.profiles.refine_sponsor_profile')
     def test_get_detail_does_not_call_gemini(self, mock_refine):
         self._draft(); _submitted_session(self.app)
         self.app.assigned_to = PartnerAdmin.objects.get(supabase_user_id=REVIEWER)

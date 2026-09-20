@@ -49,7 +49,7 @@ class TestQcGate(TestCase):
         # These fixtures carry no documents, so the REAL build_verdict would be all-gaps and the
         # V5 gap floor would refuse every accept. This class tests the gate mechanics, not the
         # floor — patch the seam to a clean verdict. The floor has its own class below.
-        patcher = mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[])
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -238,7 +238,7 @@ class TestPublishBoundToQc(TestCase):
         Consent.objects.create(application=self.app, consent_type='share_with_sponsors',
                                version='e2', is_active=True)
         # No documents on the fixture → patch the V5 gap floor's verdict seam (see TestQcGate).
-        patcher = mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[])
+        patcher = mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[])
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -374,7 +374,7 @@ class TestDeclineToQc(TestCase):
         # Guard: a recommend verdict at QC still → recommended (the branch only diverts declines).
         ScholarshipApplication.objects.filter(pk=self.app.id).update(
             status='interviewed', officer_verdict={'overall': 'accept'})
-        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self._auth('qc-uid')
             r = self._qc({'decision': 'accept'})
         self.assertEqual(r.status_code, 200)
@@ -465,7 +465,7 @@ class TestQcGapFloor(TestCase):
 
     def test_accept_passes_when_no_fact_is_gap(self):
         # Amber/blue facts are NOT floor-blocked — the floor is gap-only (soft floor by design).
-        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[
                 {'fact': 'identity', 'status': 'verified', 'evidence': [], 'unresolved': []},
                 {'fact': 'income', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
             self._auth('qc-uid')

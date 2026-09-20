@@ -492,7 +492,7 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 
 | File | Lines | Split sprint |
 |---|---|---|
-| `halatuju_api/apps/scholarship/views_admin/__init__.py` | ~~8,556~~ **5,093** | ~~H11~~ ✅ done 2026-09-20 → **H12** (the rest). ⚠ The ten submodules are each under 600 and are NOT on the list |
+| ~~`halatuju_api/apps/scholarship/views_admin/__init__.py`~~ | ~~8,556~~ ~~5,093~~ **154** | ~~H11~~ ~~H12~~ ✅ **DONE 2026-09-20.** The package is thirty modules, none over 600, and the root left the `big` list. Nothing here is waiting on a split any more |
 | `halatuju_api/apps/scholarship/models.py` | 4,756 | **H15** |
 | `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
 | `halatuju-web/src/lib/admin-api.ts` | 4,118 | **H13** |
@@ -556,24 +556,54 @@ pre-existing test is unchanged and green) · `manage.py check` 0 · `makemigrati
 by path and does not follow a rename, so the split reads as a hotspot vanishing rather than
 shrinking. **Retro:** `docs/retrospective-2026-09-20-code-health-h11.md`.
 
-### H12 — `views_admin` wave 2
-- **Scope:** the remaining nineteen domains (applications/verdict/QC, interviews, sponsors,
-  sources, reviewers, billing, org configuration, spending, overview…). The 19 patch strings move
-  with `build_verdict` and `refine_sponsor_profile`. `interview_agenda_full` has zero callers
-  outside one test — confirm dead, delete (the only deletion in the phase). Also delete the twelve
-  now-dead names in the root's import block: the nine H11 kept on purpose (still addressed by
-  `patch(...)` strings and lazy importers until their code moves) and TD-267's three.
-- **Acceptance:** `__init__.py` holds re-exports only; **no file in the package over 600 lines**
-  (corrected — see H11 note 1); pytest count identical bar any guard the bite-checks prove missing;
-  `urls.py` still byte-identical. ⚠ **Do not use `hot#1` as evidence** (H11 note 3 in
-  `docs/code-health.md`); `big` falling by one — the package root leaving the list — is the honest
-  reading for this sprint.
-- **Complexity:** medium. **~7h → ~9h.** The re-estimate is H11's measured cost, not a guess:
-  the slicing and the suite were about four hours; the other two went on the ledger conflict, the
-  `xapp` regression a naive split caused (three repeated `apps.courses` imports and one left
-  behind — **budget an hour for the app-boundary count on every split from here**), and the
-  silent bite. H12 has 5,093 lines to place against H11's 3,532, nineteen domains against six,
-  and the 19 patch strings to move for real. api deploy.
+### H12 — `views_admin` wave 2 ✅ SHIPPED 2026-09-20
+
+**What moved.** `views_admin/__init__.py` (5,093) is **154 lines of re-export and no code**. The
+nineteen domains moved out as twenty modules, 4,914 lines, average 246, none over 600. The package
+is thirty modules plus the root. `urls.py` byte-identical; all twenty moved bodies byte-identical
+to the lines they came from, proved by reading them back off disk against `git show HEAD:…`.
+
+| module | lines | module | lines |
+|---|---|---|---|
+| `reviewers` | 475 | `overview` | 187 |
+| `verdict` | 468 | `credits` | 174 |
+| `applications` | 467 | `profiles` | 173 |
+| `sponsors` | 429 | `sponsorships` | 168 |
+| `billing` | 346 | `graduation` | 141 |
+| `org_config` | 341 | `resolution` | 113 |
+| `lifecycle` | 326 | `interview_slots` | 98 |
+| `org_emails` | 301 | `theme` | 267 |
+| `interviews` | 246 | `spending` | 210 |
+| `sources` | 203 | `invitations` | 195 |
+
+**Three things this sprint corrects for whoever reads it next:**
+
+1. ⛔ **`interview_agenda_full` IS NOT DEAD AND WAS NOT DELETED.** This roadmap, the H12 brief and
+   `halatuju_api/CLAUDE.md` all said it had "zero callers outside one test". It is served on every
+   admin cockpit load: `serializers_admin.py:756` imports it lazily for the `interview_agenda`
+   field (listed at `:542`), typed at `admin-api.ts:1066`, rendered at `view.tsx:1052`. The claim
+   came from a symbol search, which answers "who IMPORTS this" — a different question from "who
+   CALLS this" in a codebase that uses lazy imports deliberately. **The phase's one permitted
+   deletion was not spent, and does not transfer.**
+2. **The patch strings were 23, not 19** — 11 `build_verdict` + 9 `refine_sponsor_profile` (6 of
+   them `.profiles`, 3 `.verdict`; the two call sites are in different modules, so each site had
+   to be read) + 2 `timezone.localtime` → `.billing` + 1 `send_request_info_email` →
+   `.resolution`. Plus one reflection target (`vars(views_admin)` → `vars(views_admin.billing)`,
+   a function rebuilt from a code constant needs the globals it was compiled against) and one
+   docstring. Found by grepping the whole tree for `views_admin.` followed by a dependency name.
+3. **A pure split raises `xapp` and there is no honest way round it.** 133 → 135: two module-level
+   `apps.courses` imports served four call sites, and the four call sites landed in four modules.
+   H11's rule was applied and removed nothing (every other cross-app import in the package already
+   sits inside its own function). ACCEPTED with the arithmetic; **TD-268** proposes the metric
+   count `(app → app, name)` edges instead. ⚠ **H15 and H16 should expect the same and say what
+   their rise is made of, not engineer it away.**
+
+**Held:** pytest **7,021 / 3 skipped** (identical — no test added or removed) · `manage.py check`
+0 · `makemigrations --check` clean · `urls.py` byte-identical · code_health **0 FAIL**, `std` ok,
+**`big` 25 → 24**, `hot#1` unchanged. Five bite-checks, all five behaved.
+**Retro:** `docs/retrospective-2026-09-20-code-health-h12.md`. **Cost: ~6h** against the ~9h
+estimate — the ledger was an ordinary tightening this time (no baseline re-pin), and a `symtable`
+pass rather than an AST name walk got every import header right first time.
 
 ### H13 — `admin-api.ts` and `api.ts` become barrels
 - **Scope:** `src/lib/http.ts` takes the four private fetch helpers (they are *not* shared today:
@@ -586,7 +616,22 @@ shrinking. **Retro:** `docs/retrospective-2026-09-20-code-health-h11.md`.
   since today it is a real one). And 30 tests `jest.mock('@/lib/admin-api')` — **first task:
   convert one small file and run the full suite** before doing the rest.
 - **Acceptance:** zero importer edits; jest, tsc, lint, `next build` green; bundle size not larger.
-- **Complexity:** low–medium. **~5h.** web deploy.
+- **Complexity:** low–medium. **~5h → ~6h**, re-estimated on H12's measured cost. What H12 learnt
+  that H13 should budget for:
+  - **Cut the bodies BY LINE RANGE from the file's own bytes and prove it**, then read every new
+    file back off disk and diff it against `git show HEAD:<path>`. Twenty modules were verified in
+    one pass and the checker also named the one original line that had NOT moved. Cheap, and it
+    is the whole evidence that "moves only" is true. TypeScript has no `symtable`, so the import
+    headers will need `tsc` as the oracle instead — **convert one small file and run tsc + the
+    full jest suite before cutting the rest**, as this section already says.
+  - **`jest.mock('@/lib/admin-api')` is H13's equivalent of H12's patch strings.** H12 found 23
+    where the brief said 19, and two of them pointed at call sites in *different* modules with the
+    same function name. Grep for the module path followed by any dependency name, then READ each
+    site — do not assume a name maps to one destination. Budget an hour for this alone.
+  - **`xapp` does not apply to web**, so H13 has no cross-app arithmetic to explain. It does have
+    a bundle-size acceptance, which is the same kind of trap: say what any rise is made of.
+  - **Check line endings after any hand edit** (`\n` vs `\r\n` over `git diff --name-only`). Three
+    files were silently normalised in H12 and every gate accepted it.
 
 ### H14 — The cockpit and the documents component, panel by panel
 - **Depends on H6** — not negotiable.

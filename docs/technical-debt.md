@@ -102,10 +102,14 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
-- **TD-267 (raised 2026-09-20 by code health H11) — low.** Three names were imported at the top of
-  `views_admin.py` and used nowhere: `Exists`, `OuterRef` and `OrgRequestAttachment`. Found by the
-  H11 move, not caused by it, and deliberately left alone — H11's rule was moves only. They now sit
-  in `views_admin/__init__.py` and H12 deletes them with the rest of that header.
+- **TD-268 (raised 2026-09-20 by code health H12) — low.** `xapp` counts cross-app import
+  STATEMENTS, so splitting one file into twenty turned two import lines feeding four call sites
+  into four import lines: 133 → 135 with the coupling unchanged. A metric that punishes
+  decomposition is the wrong incentive for Phase 4. Counting distinct `(app → app, name)` edges
+  reads 133 either side. ~1h in `Settings/_tools`.
+- ~~**TD-267 (raised 2026-09-20 by code health H11) — low.**~~ **RESOLVED at code health H12
+  (2026-09-20)** — `Exists`, `OuterRef` and `OrgRequestAttachment` went with the rest of the root's
+  import block when H12 emptied `views_admin/__init__.py`, in the sprint the entry named.
 - **TD-266 (raised 2026-09-19 by code health H10) — medium.** `AdminResolutionItem` is a stale copy
   of the student-facing `ResolutionItem`, and ONE serializer feeds both: the admin payload returns
   `check2` items, so two `kind` values, one `source` value and `vircle_expected` are undeclared.
@@ -4013,7 +4017,41 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
-### [TD-267] Three imports at the head of `views_admin` that nothing reads — low
+### [TD-268] The cross-app import metric counts statements, so a file split can only inflate it — low
+
+**Found:** code health H12 (2026-09-20), reading `xapp` after `views_admin/__init__.py` was split
+into twenty modules. **Nothing was changed** — `Settings/_tools` was out of the sprint's scope.
+
+`m_cross_app_imports` in `Settings/_tools/code_health.py` walks every source file and counts each
+`import` node whose module begins `apps.<other app>`. The count is therefore **per statement, per
+file**. The old `views_admin` root carried two such statements
+(`from apps.courses.models import PartnerAdmin, PartnerOrganisation` and
+`from apps.courses.search import apply_people_search`) feeding four call sites. The split put
+those four call sites in four modules, so the identical dependency now reads as four statements:
+133 − 2 + 4 = **135**.
+
+Nothing about the coupling changed. The same package reads the same two names from
+`apps.courses` at the same four places. **The more faithfully a package is decomposed, the worse
+this metric reads**, which is the wrong incentive for a phase whose entire job is decomposition —
+and the two ways to hold the number down (re-export the name through a base module; group
+unrelated views into one file to share an import line) both make the code worse to read.
+
+**Fix:** count distinct `(source app → target app, imported name)` EDGES rather than raw import
+statements, de-duplicated across the source app. On this tree that reading is 133 before the split
+and 133 after. Keep the statement count as a secondary detail line if it is useful for spotting a
+module that imports the same thing five times.
+
+**Trigger:** the next Phase-4 sprint that splits a file with a module-level cross-app import —
+H13 (web, so `xapp` does not apply), then **H15** (`models.py`, `services.py`) and **H16**
+(`emails.py`, `income_engine.py`), which is also where the `courses → scholarship` back-edge work
+lives and where a wrong reading would be actively misleading.
+
+### ~~[TD-267] Three imports at the head of `views_admin` that nothing reads~~ — RESOLVED at code health H12 (2026-09-20)
+
+**Resolved:** H12 emptied `views_admin/__init__.py`. The whole import block went with the code that
+needed it, `Exists`, `OuterRef` and `OrgRequestAttachment` included — exactly as the entry below
+said it would, and in the sprint it named. The package root now holds thirty `from .<module> import`
+lines and nothing else.
 
 **Found:** code health H11 (2026-09-20), mapping every name in `views_admin.py` before slicing it
 into a package. **Nothing was changed** — H11's rule was moves only, and deleting a name from that

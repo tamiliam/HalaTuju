@@ -145,7 +145,7 @@ class TestQcRecorderGuard(_Base):
     def test_other_org_admin_may_qc_the_recorded_case(self):
         self.app.verdict_decided_by = 'poa@x.com'
         self.app.save(update_fields=['verdict_decided_by'])
-        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self._auth('pow-oa2')
             r = self._qc(self.app.id)
         self.assertEqual(r.status_code, 200)
@@ -155,7 +155,7 @@ class TestQcRecorderGuard(_Base):
     def test_qc_role_may_qc_another_recorders_case(self):
         self.app.verdict_decided_by = 'poa@x.com'
         self.app.save(update_fields=['verdict_decided_by'])
-        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self._auth('pow-qc')
             r = self._qc(self.app.id)
         self.assertEqual(r.status_code, 200)
@@ -164,7 +164,7 @@ class TestQcRecorderGuard(_Base):
         # Super is the owner override — exempt from the recorder guard.
         self.app.verdict_decided_by = 'psuper@x.com'
         self.app.save(update_fields=['verdict_decided_by'])
-        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self._auth('pow-super')
             r = self._qc(self.app.id)
         self.assertEqual(r.status_code, 200)

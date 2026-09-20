@@ -238,7 +238,7 @@ class TestTheMonthTheScreenOpensOn(TestCase):
         from datetime import UTC, datetime
         from unittest import mock
         inside = datetime(2026, 8, 31, 18, 0, tzinfo=UTC)     # = 2026-09-01 02:00 MYT
-        with mock.patch('apps.scholarship.views_admin.timezone.localtime',
+        with mock.patch('apps.scholarship.views_admin.billing.timezone.localtime',
                         return_value=timezone.localtime(inside)):
             self.assertEqual(self._payload()['month'], '2026-09')
 
@@ -250,7 +250,7 @@ class TestTheMonthTheScreenOpensOn(TestCase):
         inside = datetime(2026, 8, 31, 18, 0, tzinfo=UTC)
         ev = UsageEvent.objects.create(organisation=self.org, service='email')
         UsageEvent.objects.filter(pk=ev.pk).update(created_at=inside)
-        with mock.patch('apps.scholarship.views_admin.timezone.localtime',
+        with mock.patch('apps.scholarship.views_admin.billing.timezone.localtime',
                         return_value=timezone.localtime(inside)):
             data = self._payload()
         self.assertEqual(data['month'], '2026-09')
