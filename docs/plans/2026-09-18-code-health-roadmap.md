@@ -496,11 +496,11 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 | `halatuju_api/apps/scholarship/models.py` | 4,756 | **H15** |
 | `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
 | ~~`halatuju-web/src/lib/admin-api.ts`~~ | ~~4,118~~ **241** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 28 modules in `src/lib/admin-api/`, none over 450. Nothing here is waiting on a split any more |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 3,599 | **H14** (the Decision/Recommendation panel stays put — untangling it is design) |
+| ~~`halatuju-web/src/app/admin/scholarship/[id]/view.tsx`~~ | ~~3,599~~ **1,338** | ~~H14~~ ✅ **DONE 2026-09-20.** Thirteen panels + the shared furniture are 14 modules in `[id]/view/`, none over 350. ⚠ It is STILL over 1,000 and always will be until the Decision panel is untangled — that is design work, not a move |
 | `halatuju_api/apps/scholarship/income_engine.py` | 3,201 | **H16** — ⚠ also TD-262; settle the eligibility rulings before moving it |
 | `halatuju_api/apps/scholarship/services.py` | 2,946 | **H15** |
 | ~~`halatuju-web/src/lib/api.ts`~~ | ~~2,488~~ **132** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 14 modules in `src/lib/api/`, none over 420. ⚠ Its size ceiling was the stated reason `income_shown` is declared locally — TD-271 |
-| `halatuju-web/src/components/ScholarshipDocuments.tsx` | 1,957 | **H14** (checklist family + `IncomeWizard` move out) |
+| ~~`halatuju-web/src/components/ScholarshipDocuments.tsx`~~ | ~~1,957~~ **825** | ~~H14~~ ✅ **DONE 2026-09-20.** The checklists + card furniture are 3 modules in `ScholarshipDocuments/`. ⚠ `IncomeWizard` did NOT move — the frozen disable ledger refuses it (TD-272) |
 | `halatuju_api/apps/scholarship/vision.py` | 2,321 | **none — deliberately out of scope** (140 patch sites). Growing it is allowed; it is not waiting on a split |
 
 **Everything else over 1,000 lines has no Phase-4 sprint** — `views.py` (2,421), `courses/views.py`
@@ -678,40 +678,77 @@ fix history yet.
 **Retro:** `docs/retrospective-2026-09-20-code-health-h13.md`. **Cost: ~6h** against the ~6h
 estimate.
 
-### H14 — The cockpit and the documents component, panel by panel
-- **Depends on H6** — not negotiable.
-- **Scope:** `view.tsx`: about 1,300 of 2,528 JSX lines sit in panels coupled only to `app`, `t`,
-  `token` and one to three handlers — documents drawer (304), disbursement ledger (122), org-admin
-  reject wizard (98), QC (98), blockers (88), bursary agreement, witness, assign, closure,
-  reporting date. They move to `src/components/admin/cockpit/`. **The Decision/Recommendation
-  panel (264 lines, ~9 handlers, the tangle) stays put** — untangling it is design, not a move.
-  `ScholarshipDocuments.tsx`: the checklist family (616 lines, all `(doc, t) => JSX`, no state)
-  and `IncomeWizard` (539) move out.
-  `useApiLoad(token, fn)`: ~26 of the 33 `exhaustive-deps` disables are one shape (the omitted dep
-  is always `t`). One hook retires them; the four with a written reason stay.
-- **Acceptance:** H6's rendered tests green unchanged; `theme.test.ts` path list re-pointed and
-  bite-checked; `view.tsx` under ~2,000 lines; `supp` down ~25.
-- **Complexity:** medium–high. **~9h → ~8h**, re-estimated on H13's measured cost. What H13 learnt
-  that H14 should budget for:
-  - **Take the jest baseline YOURSELF before touching anything**, even though this section will
-    quote one. H13's brief said 2,913/159 and the tree stood at 2,900/158 with a dead suite. The
-    ten minutes turned "did I break this?" into a finding with a repair.
-  - **H14 moves JSX out of `view.tsx`, so the barrel trick does not apply** — a component's
-    importers name the component. But the same PROOF does: cut by line range from the file's own
-    bytes, read every new file back off disk against `git show HEAD:…`, and declare in advance the
-    lines that will NOT move (the import header, and here the props each panel needs). H13 cut
-    6,586 lines that way and the checker named all twenty exceptions.
-  - **`theme.test.ts` carries an explicit path list and `webMirrorDrift.test.ts` reads
-    `view.tsx` by path** (the `isPreSubmissionStage` pair). Both follow the code, and both need a
-    bite at their NEW path — H13 bit two re-pointed guards and both behaved, which is the only
-    thing that proves a re-pointed reader is still reading something real.
-  - **TD-271 is H14-sized and now unblocked**: fold `income_shown` onto `ScholarshipApplication`
-    (`src/lib/api/application.ts`, 257 lines) and delete the local `ServesIncomeShown`. It is a
-    type-shape change, so it needs a test and a bite — which is exactly why H13 could not do it.
-  - **Check line endings after any hand edit** (`\n` vs `\r\n` over `git diff --name-only`). H13
-    flipped nothing, but only because it was checked byte by byte at the end; and one bite-check
-    still tripped on a `\n` needle in a CRLF file, the second sprint running.
-  - web deploy.
+### H14 — The cockpit and the documents component, panel by panel ✅ SHIPPED 2026-09-20
+
+**What moved.** `view.tsx` (3,599) is **1,338 lines**: the cockpit's state, its thirty handlers,
+the derived readings, the layout, and the Decision panel. Thirteen panels plus the shared
+furniture moved to `src/app/admin/scholarship/[id]/view/` — 14 modules, 2,359 moved lines,
+average 181, **none over 350**. `ScholarshipDocuments.tsx` (1,914) is **825 lines**; the
+checklists and the card furniture moved to `src/components/ScholarshipDocuments/` — 3 modules,
+900 moved lines, none over 512. Every moved line was rebuilt from the pre-cut file's own bytes
+and compared back against it; the lines that did NOT move were declared in advance (108 in the
+cockpit, 44 in the documents tab — each file's `'use client'` and its import header, the one part
+of a split that must be re-derived per module).
+
+| cockpit module | lines | | lines | documents module | lines |
+|---|---|---|---|---|---|
+| `DocumentsDrawer` | 346 | `AssignAndWitness` | 175 | `cards` | 512 |
+| `PostAwardPanels` | 317 | `VerificationVerdict` | 173 | `checklists` | 492 |
+| `InterviewPanels` | 291 | `GeneratedProfile` | 171 | `checklistsPathway` | 150 |
+| `ApplicantCards` | 281 | `CockpitHeader` | 155 | | |
+| `OutstandingPanel` | 252 | `QcPanel` | 139 | | |
+| `RateAndEstimate` | 220 | `OrgRejectPanel` | 136 | | |
+| `shared` | 181 | `BlockersPanel` | 122 | | |
+
+**Five things this sprint corrects or adds for whoever reads it next:**
+
+1. ⛔ **`big` FELL BY ONE, NOT TWO, AND IT COULD NOT HAVE FALLEN BY TWO.** The brief's acceptance
+   assumed `view.tsx` could become a thin shell the way H13's barrels did. It cannot, and the
+   arithmetic is fixed, not a matter of effort: what must STAY in that file is 784 lines of state
+   and handlers, 137 of derived readings, the 263-line Decision panel the roadmap rules out of
+   scope, ~75 of imports and ~150 of panel call sites — about 1,300 whatever else moves. Moving
+   the component body to `view/CockpitView.tsx` and leaving a shell does not help either: a new
+   file over 600 lines is refused by the in-repo standard with no ledger line to record it (H11's
+   note 1). **`view.tsx` goes under 1,000 only when the Decision panel is untangled, which is
+   design work.** 3,599 → 1,338 is what a moves-only sprint can do here.
+2. **`IncomeWizard` DID NOT MOVE, AND THE STANDARD REFUSED IT — TD-272.** Its two reasonless
+   `exhaustive-deps` disables are recorded in `code-standards.json` under
+   `src/components/ScholarshipDocuments.tsx`. Move the wizard and they sit at a path the frozen
+   ledger has no line for: unlisted → FAIL, add the line → "a ledger has gained a member" → FAIL,
+   re-pin the baseline → `std: FAIL` from the external tool. H11's ledger-key trap in a SECOND
+   ledger, and the one H13's keep-the-path trick cannot dodge, because the exemption is inside
+   the moved body. ⚠ **H15 and H16: grep the ledger for the file you are about to split, before
+   planning the cut.**
+3. **A fragment wrapper is what makes a JSX lift a pure move.** Every panel is
+   `export function X(props) { return (<> …the exact lines… </>) }`. A fragment renders no DOM
+   node, so `space-y-4`'s direct-child selector still sees the same children in the same order —
+   which is why all 59 of H6's rendered tests passed with no edit at all, first run.
+4. **The two re-pointed guards read a WALK, not a list.** `theme.test.ts`'s F5 block and
+   `webMirrorDrift.test.ts`'s Assignment-card pair now read `view.tsx` plus every file in
+   `view/`. Two of `webMirrorDrift`'s assertions are `not.toMatch` — had the path stayed on one
+   file they would have gone GREEN because the code had moved elsewhere, which is the most
+   dangerous way for a guard to pass. Each has a floor (`>= 15 files`, `>= 14 modules`) folded
+   into an existing test, so the count of tests is unchanged and the guard cannot silently narrow
+   back.
+5. **The bundle was MEASURED, and one route grew.** Against a rebuild of the parked old tree: 87
+   routes, 86 unchanged, **the cockpit 32.8 → 34.8 kB** (First Load JS 513 → 515), shared chunk
+   identical at 87.1 kB. The +2 kB is the mechanical cost of turning inline JSX into thirteen
+   components with ~180 explicit props. Say it rather than round it away — H13's split shrank 53
+   routes, this one grows one, and both are what the change actually does.
+
+**Held:** jest **2,913 / 159 suites** (the measured baseline, unchanged — it matched this section
+this time) · tsc 0 · lint 0 errors · i18n ok · `npx next build` exit 0 · `manage.py check` 0 ·
+`makemigrations --check` clean · pytest **7,021 / 3 skipped** (run anyway, though no api file was
+touched) · code_health **0 FAIL**, `std` ok, **`big` 22 → 21**, `hot#1` holds at
+`income_engine.py` 95.6, `xapp`/`supp`/`skip`/`guard%` unchanged. Six bite-checks, all six
+behaved. **TD-271 CLOSED** (the sprint's one declared exception). **Findings raised: TD-272,
+TD-273.**
+⚠ **`supp` did NOT fall by ~25.** The `useApiLoad` hook that would have retired ~26
+`exhaustive-deps` disables was cut from this sprint's brief: a new shared hook is a design
+change, not a move, and Phase 4 is moves only. It is still worth doing and is now the obvious
+companion to TD-272 — one hook would retire the disables AND unblock `IncomeWizard`'s move.
+**Retro:** `docs/retrospective-2026-09-20-code-health-h14.md`. **Cost: ~7h** against the ~8h
+estimate.
 
 ### H15 — `models.py` and `services.py`
 - **Scope:** `models/` package with full re-export — `ScholarshipApplication` is a wide table
@@ -720,7 +757,22 @@ estimate.
   seams (blockers, assignment, decline, confirmation, consent) behind a re-exporting shim.
 - **Acceptance:** `makemigrations --check` clean — **a models move that generates a migration is a
   failed move**; pytest green.
-- **Complexity:** low–medium. **~6h.** api deploy.
+- **Complexity:** low–medium. **~6h → ~8h**, re-estimated on H14's measured cost. The +2h is not
+  the move; it is the four checks H11–H14 have each paid for separately and H15 must do up front:
+  - ⚠ **DO TD-269 FIRST, OR H15 REPEATS H11 EXACTLY.** `officerGateDrift.test.ts` reads
+    `services.py` BY PATH from the web tree. H11 and H12 killed that same test by moving
+    `views_admin.py` and neither could see it, because a backend sprint runs pytest and not jest.
+    **H15 must run BOTH suites**, whatever it touches, and should grep the web tree for
+    `services.py` and `models.py` before cutting anything.
+  - ⚠ **Grep `code-standards.json` and the api's own exemption ledgers for both files before
+    planning the cut — TD-272.** H14 was refused a scoped move because a suppression inside the
+    moved body was recorded under the parent file's path. `models.py` and `services.py` are
+    prime candidates for the same trap.
+  - **Expect `xapp` to rise and say what the rise is made of** — H12's lesson, unchanged, and
+    TD-268 is still open.
+  - **Take BOTH baselines yourself before touching anything.** H13's brief was wrong by 13
+    tests; H14's was right. The ten minutes is the point either way.
+- **api deploy.**
 
 ### H16 — `emails.py`, `income_engine.py`, and the back-edge
 - **Scope:** `emails.py`: copy constants (1,005 lines of EN/BM/TA) out to `email_copy/`; senders
@@ -807,15 +859,20 @@ lift it — it is to write the standing rule and the standards into the workflow
 Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
 Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
-Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- H11-H13 shipped 2026-09-20; ALTERNATING with product work
+Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- H11-H14 shipped 2026-09-20; ALTERNATING with product work
 Phase 5   H17 -> H18
 Phase 6   H19                          <-- "completed"
 ```
 
 - **H1 → H2 → H3 → H4 are strictly first.** Every later sprint is safer once a red suite cannot ship.
 - **H6 blocks H14.** H3 blocks H11. H5 should precede H7/H8 (their tests use the factory).
+  H6 paid for itself here: its 59 rendered tests passed unedited through a 2,359-line lift, which
+  is the only reason H14 could claim the moved code is the code that runs.
 - ⚠ **TD-269 should block H15.** H15 moves `services.py`, which a WEB drift test reads by
   path; H11 broke exactly that way and nobody saw it for two sprints (see H13, note 1).
+- ⚠ **TD-272 constrains H15 and H16.** A frozen exemption ledger keyed on a file path refuses to
+  let a listed suppression move; H14 was refused a scoped move by it and did not split that file.
+  Grep the ledgers for the file BEFORE planning the cut, not after the gate says no.
 - Phases 3 and 4 do not block each other; Phase 3 goes first because it is the half that prevents bugs.
 - **Back to back through H10, by the owner's 2026-09-18 ruling.** With the product frozen there was
   one agent in the checkout, which removed Phase 4's biggest risk (a file changing under a move).

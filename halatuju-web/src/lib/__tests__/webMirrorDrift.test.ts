@@ -105,12 +105,27 @@ describe('the booking-grid fields are declared identically on both sides of the 
 
 // ── 3. The pre-submission card group ──────────────────────────────────────────────────────────
 describe('isPreSubmissionStage vs the Assignment card\'s own guard in view.tsx', () => {
-  const cockpit = read('app', 'admin', 'scholarship', '[id]', 'view.tsx')
+  // ⚠ THE WHOLE COCKPIT, NOT JUST `view.tsx` (code health H14). The screen's panels moved to
+  // `[id]/view/`, and the Assignment card — the very card this pair is about — moved with them.
+  // Reading only `view.tsx` would have made the two `not.toMatch` assertions below pass because
+  // the code is somewhere else, which is the most dangerous way for a guard to be green. It is a
+  // WALK, so a panel added or split tomorrow is read the day it lands.
+  const COCKPIT_DIR = path.join(SRC, 'app', 'admin', 'scholarship', '[id]', 'view')
+  const cockpit = [
+    read('app', 'admin', 'scholarship', '[id]', 'view.tsx'),
+    ...fs.readdirSync(COCKPIT_DIR)
+      .filter((f) => /\.tsx?$/.test(f))
+      .map((f) => read('app', 'admin', 'scholarship', '[id]', 'view', f)),
+  ].join('\n')
+
 
   test('the cockpit no longer carries a second `status !== shortlisted` test of its own', () => {
     // The comment says this function "Mirrors the Assignment card's long-standing
     // `status !== 'shortlisted'` guard". The end state a mirror wants is one home: the card now
     // calls the pure helper, so there is nothing left to drift. This asserts that it stays so.
+    // The floor that stops this reading one file again: the screen plus fourteen panel modules.
+    expect(fs.readdirSync(COCKPIT_DIR).filter((f) => /\.tsx?$/.test(f)).length)
+      .toBeGreaterThanOrEqual(14)
     expect(cockpit).toMatch(/isPreSubmissionStage|showsPostSubmissionCards/)
     expect(cockpit).not.toMatch(/status\s*!==\s*'shortlisted'/)
     expect(cockpit).not.toMatch(/status\s*===\s*'shortlisted'/)

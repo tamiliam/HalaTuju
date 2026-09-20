@@ -134,7 +134,7 @@
     ]
   },
   "budget": {
-    "last_tightened_on": "2026-09-20",
+    "last_tightened_on": "2026-09-20 (code health H14)",
     "counts": {
       "ts_ignore": 0,
       "ts_expect_error": 0,
@@ -146,14 +146,14 @@
     "oversize_files": {
       "src/app/admin/billing/page.tsx": 714,
       "src/app/admin/requests/[id]/page.tsx": 663,
-      "src/app/admin/scholarship/[id]/view.tsx": 3587,
+      "src/app/admin/scholarship/[id]/view.tsx": 1338,
       "src/app/dashboard/page.tsx": 799,
       "src/app/onboarding/stpm-grades/page.tsx": 647,
       "src/app/profile/page.tsx": 1371,
       "src/app/scholarship/apply/page.tsx": 1142,
       "src/app/scholarship/award/page.tsx": 697,
       "src/components/ActionCentre.tsx": 990,
-      "src/components/ScholarshipDocuments.tsx": 1914,
+      "src/components/ScholarshipDocuments.tsx": 825,
       "src/components/ScholarshipNextSteps.tsx": 828,
       "src/components/admin/GiftProgrammes.tsx": 602,
       "src/components/admin/IntakeYearTab.tsx": 718,

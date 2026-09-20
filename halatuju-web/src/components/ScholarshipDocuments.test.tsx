@@ -21,7 +21,6 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import ScholarshipDocuments from './ScholarshipDocuments'
 import type { ApplicationRequirements, ScholarshipApplication } from '@/lib/api'
 import { sandboxApplication } from '@/sandbox/fixtures/scholarship'
-import type { ServesIncomeShown } from './scholarship/MemberIncomeGroup'
 import * as api from '@/lib/api'
 
 jest.mock('@/lib/api', () => ({
@@ -371,7 +370,7 @@ describe('the third doorway: paid in cash, and the lockout that hid it', () => {
     unusable?: Array<{ doc_id: number; doc_type: string; reason: string }> }) => ({
     father: { shown: false, way: null, documents: [], unusable: [], ...a },
     mother: { shown: false, way: null, documents: [], unusable: [] },
-  }) as unknown as ServesIncomeShown['income_shown']
+  }) as unknown as ScholarshipApplication['income_shown']
 
   /** The third card's own toggle — the card is a button wrapping its title and help line. */
   const cashDoorToggle = (): HTMLButtonElement => {
@@ -383,7 +382,7 @@ describe('the third doorway: paid in cash, and the lockout that hid it', () => {
   const student = async (opts: {
     declared?: Record<string, number>
     documents?: api.ApplicantDocument[]
-    income_shown?: ServesIncomeShown['income_shown']
+    income_shown?: ScholarshipApplication['income_shown']
   }) => {
     mockApi.listDocuments.mockResolvedValue({ documents: opts.documents ?? [] })
     await render_({

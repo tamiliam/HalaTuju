@@ -27,18 +27,11 @@ import { useState, type ReactNode } from 'react'
 import type { MemberBlock, WorkingMember } from '@/lib/incomeWizard'
 import { answerFor, type IncomeShownMap } from '@/lib/incomeShown'
 
-/** The student's application payload also carries the served per-earner answer.
- *
- *  ⚠ IT IS DECLARED HERE, NOT ON `ScholarshipApplication`, AND THAT IS THE PHASE-4 STANDING RULE
- *  OF 2026-09-19, NOT AN OVERSIGHT. `src/lib/api.ts` sits EXACTLY on its oversize ceiling (2,488
- *  lines, recorded 2,468 + the 20-line allowance) and is waiting on H13 to become a barrel; a
- *  feature sprint does not add lines to a file whose split is already scheduled. So the field is
- *  declared beside the only code that reads it, and H13 folds it into `ScholarshipApplication`
- *  when that file is split. Nothing is lost in the meantime: every entry read out of this map
- *  goes through `answerFor`, which validates the shape and answers `null` for anything else. */
-export interface ServesIncomeShown {
-  income_shown?: IncomeShownMap | null
-}
+/** ⚠ `ServesIncomeShown` USED TO BE DECLARED HERE AND IS GONE (TD-271, code health H14). The
+ *  served `income_shown` field now sits on `ScholarshipApplication` in `src/lib/api/application.ts`
+ *  where it belongs. It was ever only local because `src/lib/api.ts` sat EXACTLY on its oversize
+ *  ceiling and a one-line type declaration counts as growth; H13 turned that file into a 132-line
+ *  barrel, so the reason is gone and the local declaration with it. */
 
 /** Is this earner's income already carried by an upload, so the cash door has nothing to add?
  *

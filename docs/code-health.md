@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 1a23b52 | 90 | 42 | income_engine.py 95.6 | 21 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-20 | d8e9571 | 90 | 42 | income_engine.py 95.6 | 22 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 0694ae2 | 90 | 42 | admin-api.ts 107.1 | 24 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-20 | 2b6274e | 90 | 42 | admin-api.ts 107.1 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
@@ -32,7 +33,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, d8e9571, window 2026-06-22 onward)
+## Latest run (2026-09-20, 1a23b52, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -43,29 +44,28 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1632 | 49 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 3599 | 32.4 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
-| `halatuju-web/src/components/ScholarshipDocuments.tsx` | 11 | 1914 | 21.1 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 1338 | 12 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1229 | 11.1 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 9 | 1151 | 10.4 |
 
 ### Fix ratio
-- 304 fix / 418 feat commits since 2026-06-22
+- 305 fix / 418 feat commits since 2026-06-22
 
 ### Files over 1000 lines
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
-- `3599  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3188  halatuju_api/apps/scholarship/income_engine.py`
 - `2946  halatuju_api/apps/scholarship/services.py`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
-- `1914  halatuju-web/src/components/ScholarshipDocuments.tsx`
 - `1632  halatuju-web/src/lib/officerCockpit.ts`
 - `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1342  halatuju-web/src/lib/scholarship.ts`
+- `1338  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1246  halatuju_api/apps/courses/views_admin.py`
 - `1229  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1212  halatuju_api/apps/scholarship/serializers.py`
@@ -123,17 +123,17 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 31 of 159 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 163 entries have a defining line; 91 carry no resolution marker on it
+- 165 entries have a defining line; 92 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 419: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5313: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 430: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5324: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 0694ae2
+- budgets no looser than at d8e9571
 
 ## Reviews
 

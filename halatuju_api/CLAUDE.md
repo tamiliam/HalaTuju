@@ -904,7 +904,7 @@ Read it at sprint start, before planning.
 
 - **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 SHIPPED 2026-09-19: money parsing/formatting has ONE home, `apps/scholarship/money.py` (`parse_money` / `format_money`; each caller keeps its own exception and blank answer through a named two-line wrapper); `text.py` (`id_list`, `digits_only`); `gemini.py` (the single-model metered core — the three `_gemini_generate` seams stay BY NAME). Any change to these helpers must answer to `tests/test_helper_characterisation.py` (417 assertions).** **TD-261 FIXED 2026-09-19 on the owner's order: a bill credit is written `RM-40.00` (chosen from its readers — see decisions.md); one-decimal figures keep their decimal; `money.parse_money` refuses `Infinity`/`NaN`; `sponsor_comms.render` defaults declared tokens; a payment-run line with a third decimal is REFUSED, not rounded.** **H8 (2026-09-19): PHASE A DELIVERED, PHASE B STOPPED AT ITS GATE — no production code changed. The income rule has ELEVEN homes and they disagree in sixteen places today: TD-262 (HIGH), awaiting the owner's rulings.** ⚠ **DO NOT "tidy" `application_completeness`: its legacy doc-type arm is more permissive ON PURPOSE (it may only ever widen); replacing it un-submits students and nulls their `requirements_snapshot`.** Any change to an income home answers to `tests/test_income_evidence_homes.py` and `src/lib/__tests__/incomeEvidenceHomes.test.ts`. **H9 SHIPPED 2026-09-19 — no production code changed: the six decision gates that said they MIRRORED a backend rule now have a test that reads the backend's own source in both directions (`applicationStatusDrift` · `requestStatusDrift` · `officerGateDrift` · `strCoachDrift` · `adminRoleDrift` · `payoutAccountDrift`, shared reader `halatuju-web/src/test/apiSource.ts`). `unguarded_mirrors` 58 → 41; a new `mirror` reading in `code_health.py` agrees with it exactly.** ⚠ **A CONSTANT IS GUARDED, NOT SERVED** (decisions.md 2026-09-19): serve a rule that can differ between two callers; for a module-level constant a drift test fails in the deploy gate where a served value could only fail at runtime. **Raised TD-264 (money path: the api counts payout-account digits with Unicode-aware `isdigit()`, the web with ASCII `\d`, so a direct POST of five superscripts is stored as a payout target — owner's call which side moves) and TD-263 (low: `requote` offered on a bug, unreachable today by one road only).** **H10 SHIPPED 2026-09-19 — PHASE 3 COMPLETE: the mirror ledger is 41 → 3 (nine more drift tests; 16 comments that were not rule claims reworded honestly). ⛔ The three survivors are `incomeWizard.ts` and stay by decision until TD-262 is settled. Raised TD-266 (`AdminResolutionItem` is a stale copy of the student-facing `ResolutionItem` and ONE serializer feeds both) and TD-265 (the finance summary computes a `programme` column nothing renders).** ⚠ **A test that reads another file's TEXT must normalise line endings** — the api sources are CRLF here and LF in the build container; `apiSource.readApi` does it once, at the seam. **H11 SHIPPED 2026-09-20 — PHASE 4 BEGUN: `views_admin.py` (8,556) is the package `apps/scholarship/views_admin/` (root 5,093 + ten modules, all under 500). Moves only, ten bodies byte-identical, `urls.py` untouched, 142 names re-exported. Raised TD-267 and two tool shortcomings (`std` cannot tell a ledger-key RENAME from a new exemption; `hot#1` does not follow a rename) — both written up under `## Reviews` in `docs/code-health.md`. A trip-wire the brief named did NOT exist: `assertLogs` on a parent logger records its children, so twelve tests would have sat green while every audit line moved off the scrape metric — H11 added the guard that catches it.** **H12 SHIPPED 2026-09-20: the package root is 154 lines of re-export and no code; thirty modules, none over 600; `urls.py` byte-identical; pytest unchanged at 7,021; `big` 25 → 24.** ⚠ **A `patch('apps.scholarship.views_admin.<dependency>')` string no longer resolves** — 23 were moved to the module that reads the dependency, and a stale one raises `AttributeError`. ⛔ **`interview_agenda_full` was NOT dead and was NOT deleted** — it serves the cockpit's `interview_agenda` field through a LAZY import, which is why a symbol search called it unused. Raised **TD-268** (`xapp` counts import statements, so a split can only inflate it: 133 → 135 with the coupling unchanged — accepted with the arithmetic); **TD-267 resolved.**
 
-## Next Sprint — ▶ H14 (the cockpit and the documents component, panel by panel — WEB). H13 shipped 2026-09-20; TD-262's income work is closed except option 4 and W1.
+## Next Sprint — ▶ H15 (`models.py` and `services.py` — api). H14 shipped 2026-09-20; TD-262's income work is closed except option 4 and W1.
 
 **H12 SHIPPED 2026-09-20 — `views_admin/__init__.py` (5,093 lines) is 154 lines of re-export and
 no code.** Moves only; **no behaviour changed and all twenty moved bodies are byte-identical** to
@@ -965,21 +965,51 @@ which `officerGateDrift` also reads — do TD-269 first, or H15 repeats H11 exac
 exists, the manual rule is: **before moving or renaming any api file, grep `halatuju-web/src` for
 its path.**
 
-**H14's scope** (roadmap `docs/plans/2026-09-18-code-health-roadmap.md`): **web, not api.**
-Depends on H6 — not negotiable. About 1,300 of `view.tsx`'s 2,528 JSX lines sit in panels coupled
-only to `app`, `t`, `token` and one to three handlers; they move to
-`src/components/admin/cockpit/`. **The Decision/Recommendation panel stays put** — untangling it is
-design, not a move. `ScholarshipDocuments.tsx` loses the checklist family (616 lines) and
-`IncomeWizard` (539). One `useApiLoad(token, fn)` hook retires ~26 of the 33 `exhaustive-deps`
-disables. Acceptance: H6's rendered tests green unchanged, `theme.test.ts`'s path list re-pointed
-and bite-checked, `view.tsx` under ~2,000 lines, `supp` down ~25. Re-estimated **~8h** on H13's
-measured cost. Phase 4's rule is still **moves only**: the proof is a full green suite plus bodies
-byte-identical to the lines they came from. ⚠ **Take the jest baseline yourself before touching
-anything** — H13's brief quoted 2,913/159 and the tree stood at 2,900/158. **TD-271 is H14-sized
-and now unblocked**: fold `income_shown` onto `ScholarshipApplication` (now in
-`src/lib/api/application.ts`, 257 lines) and delete the local `ServesIncomeShown` in
-`MemberIncomeGroup.tsx`; it is a type-shape change, so it needs a test and a bite, which is why
-H13 could not do it.
+**H14 SHIPPED 2026-09-20 — `view.tsx` (3,599 lines) is 1,338 and `ScholarshipDocuments.tsx`
+(1,914) is 825.** Web only; no api file was touched (pytest was run anyway: 7,021 / 3 skipped,
+unchanged). Thirteen cockpit panels plus the shared furniture are 14 modules in
+`src/app/admin/scholarship/[id]/view/` (max 346); the checklists and card furniture are 3 modules
+in `src/components/ScholarshipDocuments/` (max 512). Every moved line is byte-identical to the
+line it came from, and **all 59 of H6's rendered cockpit tests passed UNEDITED**. Both original
+files kept their own paths, so no importer moved and no ledger key was renamed. Not yet deployed.
+Retro: `docs/retrospective-2026-09-20-code-health-h14.md`. Gates at close: **2,913 jest / 159
+suites** · tsc 0 · lint 0 errors · i18n ok · `next build` 0 · `manage.py check` 0 ·
+`makemigrations --check` clean · code_health **0 FAIL**, `std` ok, **`big` 22 → 21**, `hot#1`
+holds at 95.6. Six bite-checks, all six behaved. **Bundle: 86 of 87 routes unchanged; the cockpit
+route 32.8 → 34.8 kB.** **TD-271 closed**; **TD-272 and TD-273 raised.**
+
+**Three things to know before the next Phase-4 cut:**
+- ⛔ **A FROZEN EXEMPTION LEDGER KEYED ON A FILE PATH CAN REFUSE YOUR SPLIT — TD-272.**
+  `IncomeWizard` was in H14's scope and DID NOT MOVE: its two reasonless `exhaustive-deps`
+  disables are recorded in `halatuju-web/code-standards.json` under
+  `src/components/ScholarshipDocuments.tsx`, and at a new path they are unlisted (FAIL), cannot
+  be added (a ledger may not gain a member), and rewriting the frozen baseline makes
+  `code_health.py` report `std: FAIL`. This is H11's ledger-key trap in a SECOND ledger, and
+  H13's keep-the-path trick does not help, because the exemption is INSIDE the moved body.
+  ⚠ **H15 and H16: grep every ledger for the file you are about to split, BEFORE planning the
+  cut.** The reason is also written at the top of `ScholarshipDocuments.tsx`.
+- **`view.tsx` is still 1,338 lines and that is the floor for a moves-only sprint.** 784 lines of
+  state and handlers, 137 of derived readings and the **263-line Decision / Recommendation
+  panel** must stay — the roadmap rules untangling that panel DESIGN work, not a move — and a new
+  file over 600 lines is refused by the standard with no ledger line to record it, so a thin
+  shell plus one big module is not available either. It goes under 1,000 when the Decision panel
+  is designed, not before.
+- **`supp` is unchanged at 139, correctly.** The `useApiLoad(token, fn)` hook the roadmap
+  predicted would retire ~26 `exhaustive-deps` disables was cut from H14's brief: a new shared
+  hook is a design change, not a move. It is now worth MORE than it was, because one hook would
+  retire those disables and unblock `IncomeWizard` (TD-272) in the same stroke.
+
+**H15's scope** (roadmap `docs/plans/2026-09-18-code-health-roadmap.md`): **api, not web.**
+`models.py` (4,756) becomes a `models/` package with full re-export — `ScholarshipApplication` is
+a wide table (159 fields, 3 methods), not a fat class, so this is a file move; 310 importers, 3
+patch sites, and migrations address models by label, not by file. `services.py` (2,946) splits on
+its existing seams (blockers, assignment, decline, confirmation, consent) behind a re-exporting
+shim. Acceptance: **`makemigrations --check` clean — a models move that generates a migration is
+a failed move** — and pytest green. Re-estimated **~8h** on H14's measured cost. Phase 4's rule is
+still **moves only**: the proof is a full green suite plus bodies byte-identical to the lines they
+came from. ⚠ **Take BOTH baselines yourself before touching anything**, and ⚠ **run BOTH suites at
+the end whatever you touched** — see the TD-269 warning above; `officerGateDrift.test.ts` reads
+`services.py` by path from the WEB tree, so H15 can repeat H11 exactly.
 
 **TD-262 F2 + W1 SHIPPED 2026-09-20 for the SALARY route** — three doorways of equal weight, the
 presence-only lockout killed, the dead-end Check-2 chase killed. Retro:

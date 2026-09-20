@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H14 - the cockpit and the documents component, panel by panel - 2026-09-20
+
+**Moves only, with ONE declared exception (TD-271). No behaviour changed, no migration, no api
+file touched.** Every moved line was rebuilt from the pre-cut file's own bytes and compared back
+against it: 2,359 lines out of the cockpit across fourteen modules and 900 lines out of the
+documents tab across three, byte for byte, with every line that did NOT move listed in advance
+(the `'use client'` directive and the import header of each file - 108 lines in the cockpit, 44
+in the documents tab) rather than discovered afterwards.
+
+### Changed
+
+- **`src/app/admin/scholarship/[id]/view.tsx` fell from 3,599 lines to 1,338.** Thirteen panels
+  and the shared furniture moved to `src/app/admin/scholarship/[id]/view/`, **none over 350
+  lines** - `DocumentsDrawer` 346, `PostAwardPanels` 317, `InterviewPanels` 291, `ApplicantCards`
+  281, `OutstandingPanel` 252, `RateAndEstimate` 220, `AssignAndWitness` 175,
+  `VerificationVerdict` 173, `GeneratedProfile` 171, `shared` 181, `CockpitHeader` 155, `QcPanel`
+  139, `OrgRejectPanel` 136, `BlockersPanel` 122.
+- **The Decision / Recommendation panel did NOT move, and that is the roadmap's ruling.** It
+  reads thirty-five names out of the component and writes through nine handlers; Phase 4 says
+  untangling it is design work, not a move. It is still drawn inline, with the reason written
+  above it.
+- **`src/components/ScholarshipDocuments.tsx` fell from 1,914 lines to 825.** The per-document
+  checklists and the card furniture moved to `src/components/ScholarshipDocuments/` -
+  `cards` 512, `checklists` 492, `checklistsPathway` 150.
+- **`IncomeWizard` did NOT move, and the STANDARD is why (TD-272).** Its two reasonless
+  `react-hooks/exhaustive-deps` disables are recorded in `code-standards.json` under the parent
+  file's path, and that ledger is frozen: moving the wizard would put two reasonless disables at
+  a path no line can be added for, which the gate refuses outright. The wizard leaves that file
+  on the day those two disables get a written reason - not before.
+- **Both original files KEPT their own paths.** `./view`, `@/app/admin/scholarship/[id]/view` and
+  `@/components/ScholarshipDocuments` resolve exactly as before, so `page.tsx`,
+  `sandbox/surfaces.tsx`, `test/renderCockpit.tsx`, `ScholarshipNextSteps.tsx` and every other
+  importer are untouched. Keeping the paths also means **no ledger key was renamed** - H13's rule,
+  applied twice more.
+- **Twenty-three file-private names became folder-private** - fourteen in the cockpit's `shared`
+  module (`Field`, `Card`, `GroupLabel`, `Grades`, `QcOverrideNote`, `yn`, `joinOr`,
+  `REQUEST_CATEGORIES`, `REQ_CAT`, `resolveReq`, `ANOMALY_CHECK2_OWNER`, `EMPTY_REFEREE`,
+  `NON_PARENT_RELATIONSHIPS`, `SHOW_REFEREES`) and eighteen across the documents modules. Neither
+  original file's PUBLIC surface changed: `view.tsx` still exports exactly
+  `AdminScholarshipDetailView`, and `ScholarshipDocuments.tsx` still exports exactly its default.
+- **Two drift tests followed the code, and each was bite-checked at its new path.**
+  `theme.test.ts`'s F5 block and `webMirrorDrift.test.ts`'s Assignment-card pair each read the
+  cockpit as a WALK of fifteen files now, not one path, with a floor assertion inside an existing
+  test so the count of tests is unchanged. `theme.test.ts`'s F3 list gained a walk of the
+  documents folder for the same reason. No guard was deleted or weakened.
+
+### Fixed
+
+- **TD-271 - the served `income_shown` field is declared where it belongs.** It sat on a local
+  `ServesIncomeShown` interface inside `MemberIncomeGroup.tsx` because `src/lib/api.ts` was
+  EXACTLY on its oversize ceiling and a one-line type declaration counts as growth. H13 made that
+  file a 132-line barrel, so the reason is gone: the field is now on `ScholarshipApplication` in
+  `src/lib/api/application.ts`, the local interface is deleted, and the cast
+  `(app as ScholarshipApplication & ServesIncomeShown).income_shown` is simply `app.income_shown`.
+  No runtime behaviour changed - the value read, and the `answerFor` validation it goes through,
+  are identical.
+
+### Held
+
+jest **2,913 passed / 159 suites** (the measured baseline, unchanged) - tsc 0 - lint 0 errors (17
+pre-existing warnings) - i18n ok - `npx next build` exit 0 - `manage.py check` 0 -
+`makemigrations --check` clean - pytest **7,021 passed / 3 skipped** (unchanged; no api file was
+touched, and the suite was run anyway) - code_health **0 FAIL**, `std` ok, **`big` 22 -> 21**,
+`hot#1` holds at `income_engine.py` 95.6, `xapp`/`supp`/`skip`/`guard%` all unchanged.
+**Bundle measured against a rebuild of the old tree: 87 routes, 86 unchanged, one moved** - the
+cockpit route 32.8 -> 34.8 kB (First Load JS 513 -> 515 kB), the shared chunk identical at 87.1
+kB. Six bite-checks, all six behaved.
+
 ## Code health H13 - `admin-api.ts` and `api.ts` become barrels - 2026-09-20
 
 **Moves only. No behaviour changed, no type's shape changed, no migration, no api file touched -

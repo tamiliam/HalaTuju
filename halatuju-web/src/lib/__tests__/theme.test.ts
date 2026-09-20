@@ -917,7 +917,13 @@ const F3_DIRS = [
 
 export const F3_FILES = [
   ...F3_DIRS.flatMap((d) => walkFiles(d)).map((f) => f.split(path.sep).join('/')),
+  // ⚠ THE GUARD FOLLOWED THE CODE (code health H14). `ScholarshipDocuments.tsx` was 1,914 lines
+  // and its checklists + card furniture moved to the folder beside it — a WALK, so the three
+  // modules are covered the way the file was, and a fourth added tomorrow is covered the day it
+  // lands. Naming only the parent would have quietly dropped 1,100 converted lines out of the
+  // one guard that keeps this student surface out of a light-mode island.
   'src/components/ScholarshipDocuments.tsx',
+  ...walkFiles('src/components/ScholarshipDocuments').map((f) => f.split(path.sep).join('/')),
   'src/app/error.tsx', 'src/app/loading.tsx', 'src/app/not-found.tsx',
 ]
 
@@ -998,10 +1004,26 @@ describe('the F5 semantic corrections the codemod could not make', () => {
   // ⚠ THE VIEW, NOT THE PAGE. F7c moved the 3,500-line screen into `view.tsx` because Next forbids
   // a page module from exporting anything but its default, and the sandbox had to import it to
   // mount it at all. The route file is 22 lines now; the body did not change.
-  const cockpit = 'src/app/admin/scholarship/[id]/view.tsx'
+  //
+  // ⚠ AND THE GUARD FOLLOWED THE CODE AGAIN AT CODE HEALTH H14. The screen's panels moved to
+  // `[id]/view/` — a folder beside the file — so four of the five claims below now live in a
+  // sibling module. Reading only `view.tsx` would have left each of them asserting against a
+  // file that no longer contains the thing, which is a dead guard, not a passing one. It is a
+  // WALK, not a list, so a panel added or split tomorrow is covered the day it lands. Never
+  // narrow this back to one path, and never delete an assertion because it went red — find
+  // where its rule moved to.
+  const COCKPIT_FILES = [
+    'src/app/admin/scholarship/[id]/view.tsx',
+    ...walkFiles('src/app/admin/scholarship/[id]/view').map((f) => f.split(path.sep).join('/')),
+  ]
+  /** The cockpit's source, all fifteen files of it, as one string. */
+  const cockpit = () => COCKPIT_FILES.map((f) => read(f)).join('\n')
 
   it('paints its two Save buttons with the BRAND, like the other 38 in the console', () => {
-    const src = withoutComments(read(cockpit))
+    // The floor that stops this guard quietly reading one file again: fourteen panel modules
+    // plus the screen. If a future sprint folds them back in, lower it deliberately.
+    expect(COCKPIT_FILES.length).toBeGreaterThanOrEqual(15)
+    const src = withoutComments(cockpit())
     expect(src).not.toMatch(/bg-info-600[^"']*text-brand-fill-ink/)
     // ⚠ `bg-brand-fill` since F7a, not `bg-primary-600`. The stop did not change in light — the
     // ROLE did, because in dark a button and a link cannot share one number. See globals.css.
@@ -1021,7 +1043,7 @@ describe('the F5 semantic corrections the codemod could not make', () => {
     // because `-600` measured **3.19** on a card; `critical-600` already passed at 4.83 and did
     // not move. The DISTINCTION — two different tones, so the officer can tell an unrelated name
     // from a routine warning — is what this pins, and it is unchanged.
-    const src = read(cockpit)
+    const src = cockpit()
     expect(src).toMatch(/text-critical-600[^]{0,400}utilityNote\.unrelated/)
     expect(src).toMatch(/text-caution-700[^]{0,120}vision_fields\.warnings/)
   })
@@ -1031,7 +1053,7 @@ describe('the F5 semantic corrections the codemod could not make', () => {
     // keeps the ground and the other takes one swatch. The Check-2 case summary is a different
     // thing: a briefing whose JOB is to inform, so it is the info tone and its heading carries the
     // "a model wrote this" claim. Colour should not be doing that work.
-    const src = read(cockpit)
+    const src = cockpit()
     expect(src).toMatch(/bg-category-1-surface text-category-1-ink/)
     expect(src).toMatch(/border-info-100 bg-info-50\/60/)
   })
@@ -1040,7 +1062,7 @@ describe('the F5 semantic corrections the codemod could not make', () => {
     // A circuit-breaker stopped the loop and a human has to look. It sits beside a grey `kind`
     // chip, so a tint would have read as its quiet neighbour.
     // ⚠ Respelled onto the F7e fill role; the claim (FILLED, not tinted) is what is pinned.
-    expect(read(cockpit)).toMatch(
+    expect(cockpit()).toMatch(
       /bg-caution-fill px-1\.5 py-0\.5 text-\[11px\] font-semibold text-caution-fill-ink/)
   })
 })

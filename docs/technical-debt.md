@@ -102,6 +102,17 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
+- **TD-272 (raised 2026-09-20 by code health H14) — medium.** The reasonless-eslint-disable ledger
+  in `code-standards.json` is keyed on a FILE PATH and frozen, so a disable INSIDE a moved body
+  has nowhere to go: `IncomeWizard` could not leave `ScholarshipDocuments.tsx` because two of its
+  disables are recorded under that file's name. H11's ledger-key lesson, in a second ledger, and
+  the one H13's keep-the-path trick cannot dodge. **H15 and H16 should grep the ledger for the
+  file they are about to split, before planning the cut.** Fix is H19's: key on the rule plus the
+  line, or teach the ratchet a `moved_to`.
+- **TD-273 (raised 2026-09-20 by code health H14) — low.** The cockpit's thirteen panels now take
+  ~180 hand-written props. `tsc` proves every prop a panel USES is declared; nothing proves a
+  declared prop is still read, so a stale one would sit there reading as a dependency that is not
+  one. `noUnusedParameters` on destructured props, or a small per-panel check. ~1h.
 - **TD-268 (raised 2026-09-20 by code health H12) — low.** `xapp` counts cross-app import
   STATEMENTS, so splitting one file into twenty turned two import lines feeding four call sites
   into four import lines: 133 → 135 with the coupling unchanged. A metric that punishes
@@ -5474,7 +5485,29 @@ hand.
 **Trigger:** the first time a function (not a type) in one of these five modules needs to call a
 function in another. That WOULD be a value cycle, and nothing currently would say so.
 
-### [TD-271] The served `income_shown` field still is not on `ScholarshipApplication`, and the reason it was deferred has gone - low
+### [TD-271] ~~The served `income_shown` field still is not on `ScholarshipApplication`~~ - RESOLVED 2026-09-20 (code health H14)
+
+**RESOLVED by code health H14**, as its one declared exception to a moves-only sprint.
+`income_shown?: IncomeShownMap | null` is now on `ScholarshipApplication` in
+`src/lib/api/application.ts`; `ServesIncomeShown` is deleted from `MemberIncomeGroup.tsx` (a note
+in its place says where the field went and why it was ever local); and its one reader in
+`ScholarshipDocuments.tsx` reads `app.income_shown` instead of casting through an intersection
+type. `ScholarshipDocuments.test.tsx` now takes the served shape off
+`ScholarshipApplication['income_shown']`, so the fixture and the payload cannot drift apart.
+
+**No runtime behaviour changed** - the value read and the `answerFor` validation it passes
+through are identical, and it is a type declaration either way.
+
+**Proved:** `tsc` 0 - the 30 income tests in `ScholarshipDocuments.test.tsx` and the cockpit's 59
+rendered tests green, unchanged - and bite (d): deleting the field from `ScholarshipApplication`
+turns `tsc` red in three named places (the component's one reader and the test's two fixture
+sites), so the declaration is load-bearing rather than decorative.
+
+**The general lesson stands and is the bigger half** - see below, and `docs/lessons.md`.
+
+---
+
+**Original entry, kept for the record.**
 
 **Found:** code health H13 (2026-09-20). **Deliberately not done**, and this entry exists so the
 instruction is not lost now that the sprint it named has shipped.
@@ -5504,4 +5537,71 @@ written where that sprint will read it - the roadmap's own section for it - not 
 a component that sprint never opens. This was found only because a now-stale sentence about
 `api.ts`'s line count turned up in a grep for the file being split.
 
-**Trigger:** H14, or any small change that touches the income screens.
+**Trigger:** ~~H14, or any small change that touches the income screens.~~ Done in H14.
+
+---
+
+### [TD-272] A frozen exemption ledger keyed on a PATH refuses the very split it exists to encourage - medium
+
+**Found:** code health H14 (2026-09-20). **Reported, not fixed** - fixing it is a change to the
+standard, which is H19's job, not a move sprint's.
+
+`IncomeWizard` (524 lines) was scoped by the roadmap to move out of `ScholarshipDocuments.tsx`
+and **could not**. It carries two `react-hooks/exhaustive-deps` disables with no written reason,
+and those are recorded in `halatuju-web/code-standards.json` as:
+
+```
+"src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::1"
+"src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::2"
+```
+
+Move the wizard and those two disables are at
+`src/components/ScholarshipDocuments/IncomeWizard.tsx`, which is not a key in the ledger. Then:
+
+- `a reasonless disable is not in the ledger` FAILS - the new path is unlisted;
+- `no ledger has gained a member` FAILS if you add it - the budget may only ever shrink, and a
+  name not in the frozen `baseline` may never appear in `budget`;
+- the H11 escape (edit the frozen baseline, re-pin `BASELINE_SHA256`) would make
+  `Settings/_tools/code_health.py` report **`std: FAIL - a NEW exemption`**, which is exactly the
+  false FAIL H11's lesson 2 asked not to be accepted a fifth time.
+
+So the only routes are "write the reason" or "don't split". H14 chose not to split, because
+authoring a justification for why a dependency array is deliberately incomplete is analysis, not
+a move - and a *wrong* justification written into the code is worse than the recorded debt.
+
+**This is H11's ledger-key lesson in a second ledger.** H11 hit it on `oversize_files`; H13
+dodged that one by keeping the original file's path, which works for a FILE but cannot work for
+a disable *inside a moved body*. Any Phase-4 sprint that moves code containing a listed
+exemption will hit this, and H15/H16 should check before planning a cut: **grep the ledger for
+the file you are about to split.**
+
+**Two candidate fixes, both for H19:**
+
+1. Key the disable ledger on `rule + a hash of the surrounding line`, not on the path, so a pure
+   move carries its own entry with it and only a NEW disable is unlisted.
+2. Teach the ratchet a `moved_to` field: a budget line may name a new path when the old path is
+   simultaneously removed and the count does not rise. That keeps "the list may only shrink"
+   exactly true while letting a move through.
+
+**Trigger:** H19; and any sprint that must split a file naming a listed exemption.
+
+---
+
+### [TD-273] The cockpit's panel props are hand-written, and nothing proves they are complete - low
+
+**Found:** code health H14 (2026-09-20). **Reported, not fixed.**
+
+Lifting thirteen panels out of `view.tsx` turned ~180 implicit closure references into explicit
+props. `tsc` proves every prop a panel USES is declared and passed. Nothing proves the reverse:
+a prop that is declared, passed, and no longer read by anything is invisible - it costs a little
+bundle and, worse, it reads as a dependency the panel has when it does not.
+
+`next lint` will not see it (the prop is destructured and "used" as far as the rule is
+concerned, because it is in the parameter list). The honest instrument is the compiler's own
+`noUnusedParameters` on destructured props, which the project does not enable, or a small check
+that each panel's declared prop names appear in its body below the signature.
+
+Cheap to fix and not urgent: the cost of a stale prop is a misleading read of what a panel
+depends on, not a defect.
+
+**Trigger:** H19, or the next sprint that changes a cockpit panel's props.

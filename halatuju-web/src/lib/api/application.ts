@@ -6,6 +6,7 @@
  * middle of the application's own functions; they are now `./interview`.
  */
 import type { Locale } from '@/lib/branding'
+import type { IncomeShownMap } from '@/lib/incomeShown'
 
 import { apiRequest } from './client'
 import type { ApiOptions } from './client'
@@ -151,6 +152,16 @@ export interface ScholarshipApplication {
   intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
   // F8b: set once the student finishes post-award onboarding (null until then).
   onboarded_at?: string | null
+  /**
+   * The served per-earner "has this earner's income been SHOWN?" answer (TD-262 chunks 2+3),
+   * from `apps/scholarship/income_shown.py` — the same function the submission gate, the
+   * officer's chase list and the AI verdict read.
+   *
+   * OPTIONAL because the two services deploy together but not atomically: an older payload has
+   * no such key, and every read goes through `answerFor`, which answers `null` for anything it
+   * does not recognise. Absent means "no served answer", never "nothing is shown".
+   */
+  income_shown?: IncomeShownMap | null
 }
 
 export async function submitScholarshipApplication(
