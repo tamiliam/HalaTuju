@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | d8e9571 | 90 | 42 | income_engine.py 95.6 | 22 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 0694ae2 | 90 | 42 | admin-api.ts 107.1 | 24 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-20 | 2b6274e | 90 | 42 | admin-api.ts 107.1 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-19 | 3eadcd9 | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
@@ -31,12 +32,11 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 0694ae2, window 2026-06-22 onward)
+## Latest run (2026-09-20, d8e9571, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju-web/src/lib/admin-api.ts` | 26 | 4118 | 107.1 |
 | `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3188 | 95.6 |
 | `halatuju_api/apps/scholarship/services.py` | 31 | 2946 | 91.3 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
@@ -46,6 +46,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 3599 | 32.4 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 | `halatuju-web/src/components/ScholarshipDocuments.tsx` | 11 | 1914 | 21.1 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1229 | 11.1 |
 
 ### Fix ratio
 - 304 fix / 418 feat commits since 2026-06-22
@@ -53,11 +54,9 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ### Files over 1000 lines
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
-- `4118  halatuju-web/src/lib/admin-api.ts`
 - `3599  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3188  halatuju_api/apps/scholarship/income_engine.py`
 - `2946  halatuju_api/apps/scholarship/services.py`
-- `2488  halatuju-web/src/lib/api.ts`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
@@ -115,7 +114,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Front-end rules mirrored from the backend with no drift test
-- 40 of 43 mirror claims in src/lib name a drift test
+- 44 of 47 mirror claims in src/lib name a drift test
 - halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
 - halatuju-web/src/lib/incomeWizard.ts:84  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
 - halatuju-web/src/lib/incomeWizard.ts:111  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
@@ -124,7 +123,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 31 of 159 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 160 entries have a defining line; 88 carry no resolution marker on it
+- 163 entries have a defining line; 91 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 419: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
@@ -134,7 +133,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 2b6274e
+- budgets no looser than at 0694ae2
 
 ## Reviews
 

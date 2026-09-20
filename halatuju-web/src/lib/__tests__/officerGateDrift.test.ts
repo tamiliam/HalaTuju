@@ -21,9 +21,18 @@ import { ROLE_NAMES } from '@/lib/navigation'
 import { pySeq, readApi } from '@/test/apiSource'
 
 const SERVICES = 'apps/scholarship/services.py'
-const VIEWS = 'apps/scholarship/views_admin.py'
+/**
+ * ⚠ `views_admin.py` became the PACKAGE `views_admin/` at code health H11/H12, and the two gates
+ * this file reads landed in two different modules. The path followed the code (H13) — the rule is
+ * never to delete the assertion. Both files are read and joined, so `viewBody` still asserts the
+ * class appears EXACTLY once across them; a class that moves again, or is duplicated, still throws.
+ */
+const VIEWS = [
+  'apps/scholarship/views_admin/applications.py',   // AdminOrgRejectView
+  'apps/scholarship/views_admin/verdict.py',        // AdminAssignReviewerView
+]
 const servicesSrc = readApi(SERVICES)
-const viewsSrc = readApi(VIEWS)
+const viewsSrc = VIEWS.map(readApi).join('\n')
 
 const backendRejectFrom = pySeq(servicesSrc, 'ORG_REJECT_FROM')
 const reviewRoles = pySeq(servicesSrc, 'REVIEW_ROLES')
@@ -31,7 +40,7 @@ const reviewRoles = pySeq(servicesSrc, 'REVIEW_ROLES')
 /** The body of a view class, for reading a gate that lives in code rather than in a constant. */
 function viewBody(name: string): string {
   const parts = viewsSrc.split(`\nclass ${name}(`)
-  if (parts.length !== 2) throw new Error(`drift test: no single class ${name} in ${VIEWS}`)
+  if (parts.length !== 2) throw new Error(`drift test: no single class ${name} in ${VIEWS.join(', ')}`)
   return parts[1].split('\nclass ')[0]
 }
 

@@ -134,7 +134,7 @@
     ]
   },
   "budget": {
-    "last_tightened_on": "2026-09-19",
+    "last_tightened_on": "2026-09-20",
     "counts": {
       "ts_ignore": 0,
       "ts_expect_error": 0,
@@ -158,8 +158,6 @@
       "src/components/admin/GiftProgrammes.tsx": 602,
       "src/components/admin/IntakeYearTab.tsx": 718,
       "src/components/admin/InvoicesSection.tsx": 681,
-      "src/lib/admin-api.ts": 4099,
-      "src/lib/api.ts": 2468,
       "src/lib/navigation.ts": 655,
       "src/lib/officerCockpit.ts": 1637,
       "src/lib/scholarship.ts": 1328,

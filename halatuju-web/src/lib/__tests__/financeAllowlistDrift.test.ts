@@ -33,10 +33,16 @@ const apiFields = (() => {
   return [...cls.matchAll(/^ {4}([a-z_]+) = serializers\./gm)].map((m) => m[1])
 })()
 
-/** The interface's declared keys, read from `admin-api.ts` itself (an interface has no runtime). */
+/**
+ * The interface's declared keys, read from the source itself (an interface has no runtime).
+ *
+ * ⚠ MOVED at code health H13: `admin-api.ts` is a barrel and `FundingSummaryRow` now lives in
+ * `admin-api/payments.ts`, beside the payment run it reconciles. The path followed the code —
+ * never delete the assertion.
+ */
 const webKeys = (() => {
   const text = fs.readFileSync(
-    path.join(__dirname, '..', 'admin-api.ts'), 'utf8')
+    path.join(__dirname, '..', 'admin-api', 'payments.ts'), 'utf8')
   const block = text.match(/export interface FundingSummaryRow \{([\s\S]*?)\n\}/)
   if (!block) throw new Error('drift test: `export interface FundingSummaryRow { … }` not found')
   return [...block[1].matchAll(/^\s{2}([a-z_]+)\??:/gm)].map((m) => m[1])

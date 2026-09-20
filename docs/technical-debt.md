@@ -5398,3 +5398,110 @@ ruled on 2026-09-11 that a row reading Done IS the activation.
 
 **Trigger:** the next student Vircle activates, or the first payment run where a "Not yet
 activated" flag has to be explained away.
+
+### [TD-269] An api refactor can kill a web drift test, and every api gate stays green - medium
+
+**Found:** code health H13 (2026-09-20), on the baseline run taken before touching anything. The
+broken test was REPAIRED in H13; this entry is the systemic half, which was not.
+
+`halatuju-web/src/lib/__tests__/officerGateDrift.test.ts` reads
+`apps/scholarship/views_admin.py` through `src/test/apiSource.ts` to check two officer gates
+against the api's own source. **H11 turned that file into a package and H12 finished the job.** The
+test has been dead at import ever since - not failing an assertion, failing to load - so the web
+suite has been **2,900 tests / 158 suites** while the record said 2,913 / 159, and the whole
+`officerGateDrift` file (13 tests, covering the irreversible org-admin reject gate and the
+assignment picker) has been enforcing nothing for two sprints.
+
+Nothing was at fault in either sprint's process. H11 and H12 were backend-only: they ran `pytest`,
+`manage.py check` and `makemigrations --check`, all green, and did not run `jest`, because they
+touched no web file. **The break was structurally invisible from the side that caused it**, and
+the guard's own error message - *"The rule it guards has MOVED - find its new home and update the
+path here, never delete the assertion"* - was printed to nobody.
+
+This is not one test. **31 of 159 web test files read source text**, and several of them read
+`halatuju_api/**` through `readApi(...)`: `officerGateDrift`, `adminRoleDrift`,
+`applicationStatusDrift`, `commsKindsDrift`, `contractTermsDrift`, `familyRosterDrift`,
+`financeAllowlistDrift`, `soft-evidence-drift`, `staffDrift`, `incomeEvidenceHomes`,
+`profileClaimCodes` and more. Every one is a path from the api tree into the web suite that no api
+gate walks.
+
+**Fix:** a cheap check on the API side, inside the api's own gate, that greps the web tree for
+`readApi('...')` string literals (and the `join(WEB_ROOT, '..', 'halatuju_api', ...)` form) and
+fails if any names a file that is not in `halatuju_api/`. It needs no jest, no node and no web
+install - it is a directory listing against a list of strings - and it puts the alarm on the side
+that does the moving. A second, weaker option is to run the web suite in the api's pre-push gate,
+which is far more expensive and still would not have run here, since neither sprint pushed.
+
+**Trigger:** **H15** and **H16** both move api files that web drift tests read by path
+(`models.py`, `services.py`, `emails.py`, `income_engine.py`) - `services.py` is read by
+`officerGateDrift` itself. Do this before H15, or H15 will repeat H11 exactly.
+
+### [TD-270] `src/lib/admin-api/` has 24 type-only import cycles, and nothing reports them - low
+
+**Found:** code health H13 (2026-09-20), by a cycle report run over the new folders as part of the
+split. **Nothing was changed** - naming it was the right answer, not restructuring around it.
+
+`AdminScholarshipDetail` in `admin-api/applications.ts` is the widest type in the app and
+references types owned by four other modules (`InterviewSchedule` from `interviews`,
+`AdminDisbursement`/`MaintenanceSubstate` from `lifecycle`, `AdminResolutionItem` from
+`resolution`, and the anomaly/ledger/fact family from `verdict`). Those four modules' functions in
+turn return `AdminScholarshipDetail`. That is a cycle in each direction: 24 in all.
+
+**Every edge in every one of them is an `import type`.** TypeScript erases those entirely, so
+there is no runtime cycle and no initialisation hazard. The VALUE graph was checked separately and
+is a clean star: all 28 modules import from `./client`, plus one edge
+(`applications` -> `partners` for `DEFAULT_ADMIN_PAGE_SIZE`), and `client` imports nothing. 28
+value edges, zero value cycles - so the "zero" is a real reading, not a vacuous one.
+`src/lib/api/` has no cycles of either kind.
+
+The three ways to remove the type cycles were considered and rejected in writing, because each
+makes the code worse to read:
+1. Move `AdminScholarshipDetail` to a shared `detail.ts` - the cycle simply moves with it, since
+   `detail.ts` would still import from four modules that still return it.
+2. Move every type `AdminScholarshipDetail` touches into `applications.ts` - this separates each
+   domain's types from its own functions, so `interviews.ts` would no longer declare
+   `InterviewSchedule`.
+3. Split `AdminScholarshipDetail` itself - a 240-line type whose halves live in two files is a type
+   nobody can read in one sitting, and every field on it comes from one serializer.
+
+**Fix (if ever wanted):** not a restructure. Add `import/no-cycle` to the eslint config with
+`allowUnsafeDynamicCyclicDependency` off and **type-only edges ignored**
+(`eslint-plugin-import` reports these separately), so the rule guards the thing that can actually
+break - a value cycle - and stays quiet about the thing that cannot. Today the config is bare
+`next/core-web-vitals` and no rule looks at cycles at all, which is why this had to be measured by
+hand.
+
+**Trigger:** the first time a function (not a type) in one of these five modules needs to call a
+function in another. That WOULD be a value cycle, and nothing currently would say so.
+
+### [TD-271] The served `income_shown` field still is not on `ScholarshipApplication`, and the reason it was deferred has gone - low
+
+**Found:** code health H13 (2026-09-20). **Deliberately not done**, and this entry exists so the
+instruction is not lost now that the sprint it named has shipped.
+
+`src/components/scholarship/MemberIncomeGroup.tsx:31-38` declares a local
+`interface ServesIncomeShown { income_shown?: IncomeShownMap | null }` and explains why it is not
+on `ScholarshipApplication` where it belongs:
+
+> `src/lib/api.ts` sits EXACTLY on its oversize ceiling (2,488 lines, recorded 2,468 + the 20-line
+> allowance) and is waiting on H13 to become a barrel; a feature sprint does not add lines to a
+> file whose split is already scheduled. So the field is declared beside the only code that reads
+> it, **and H13 folds it into `ScholarshipApplication` when that file is split.**
+
+H13 could not do it. H13's brief is moves only with **"no change to any type's shape"** in terms,
+and folding a field onto `ScholarshipApplication` is exactly that; it would also have put a
+behaviour-adjacent edit inside a 6,586-line move diff, which is the thing Phase 4 exists to
+prevent. The two instructions conflict and the sprint brief wins.
+
+**The blocker is now gone.** `api.ts` is a 132-line barrel, `ScholarshipApplication` lives in
+`src/lib/api/application.ts` at 257 lines, and there is no ceiling in the way. The job is: add
+`income_shown?: IncomeShownMap | null` to `ScholarshipApplication`, delete `ServesIncomeShown`, and
+re-point its one reader. It needs a test and a bite-check because it changes a type the apply
+screens read - which is precisely why it is not a move.
+
+**The general lesson, which is the bigger half:** a task deferred INTO a named sprint must be
+written where that sprint will read it - the roadmap's own section for it - not in a comment inside
+a component that sprint never opens. This was found only because a now-stale sentence about
+`api.ts`'s line count turned up in a grep for the file being split.
+
+**Trigger:** H14, or any small change that touches the income screens.

@@ -2,6 +2,77 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H13 - `admin-api.ts` and `api.ts` become barrels - 2026-09-20
+
+**Moves only. No behaviour changed, no type's shape changed, no migration, no api file touched -
+and NOT ONE of the 231 files that import these two modules was edited.** Every moved line was read
+back off disk and compared with the original at `HEAD`: 6,586 lines across 42 modules, byte for
+byte, with the twenty lines that did NOT move (two file docstrings, two import headers) declared
+in advance rather than discovered afterwards.
+
+### Changed
+
+- **`src/lib/admin-api.ts` fell from 4,118 lines to 241, and holds no code at all.** The bodies
+  moved to `src/lib/admin-api/` as 28 modules, 4,385 lines, **none over 450** - `applications` 443,
+  `requests` 315, `programmes` 273, `overview` 222, `billing` 221, `invoices` 215, `sponsors` 194,
+  `verdict` 187, `payments` 176, `admins` 172, `sponsorTerms` 159, `emails` 156, `contracts` 151,
+  `partners` 136, `reviewers` 135, `orgConfig` 129, `lifecycle` 125, `interviews` 111, `documents`
+  111, `spending` 103, `client` 97, `profiles` 95, `decisions` 92, `theme` 91, `sources` 90,
+  `invitations` 72, `resolution` 66, `courseData` 48.
+- **`src/lib/api.ts` fell from 2,488 lines to 132, and holds no code at all.** The bodies moved to
+  `src/lib/api/` as 14 modules, 2,604 lines, **none over 420** - `documents` 417, `sponsor` 372,
+  `stpm` 262, `application` 257, `courses` 243, `profile` 217, `guidance` 187, `award` 134,
+  `calculations` 111, `bank` 99, `interview` 87, `inProgramme` 84, `resolution` 79, `client` 55.
+- **Both barrels KEPT their own paths.** `@/lib/api` and `@/lib/admin-api` resolve exactly as
+  before, so all 231 importers - 122 by `@/lib/admin-api`, 85 by `@/lib/api`, 24 by a relative
+  path, and 33 test files that `jest.mock()` one of them by automock - are untouched. There are
+  zero deep imports into the new folders from outside them. Keeping the paths also means **no
+  ledger key was renamed**, which is the trap H11 hit and H12 warned about.
+- **Two domains that were split across non-contiguous spans came back together**, as the roadmap
+  predicted they would for free: the Requests space (the billing and invoicing module had been
+  written between its types and its actions) and Payments (the Overview and spending screens had
+  been written between the payment types and the payment actions).
+- **Eight file-private names became folder-private** (`API_BASE`, `ApiOptions`, `adminFetch`,
+  `adminMutate`, `adminBursaryPost`, `giftQuery`; `apiRequest`, `ApiOptions` on the student side).
+  **No barrel re-exports any of them**, because the old files did not export them - the app's
+  public surface is byte-for-byte the same set of names it was before.
+- **Three drift tests followed the code, and each was bite-checked at its new path.**
+  `webMirrorDrift.test.ts` reads `InterviewSchedule` from `api/interview.ts` and
+  `admin-api/interviews.ts`, and `ResolutionItem`/`AdminResolutionItem` from the two
+  `resolution.ts`; `financeAllowlistDrift.test.ts` reads `FundingSummaryRow` from
+  `admin-api/payments.ts`. No guard was deleted or weakened.
+- **The two oversize ledger entries were REMOVED** from `budget` in
+  `halatuju-web/code-standards.json`. At 241 and 132 lines both barrels are under the 600-line
+  standard, so the ratchet asks for the lines to go rather than fall. The frozen `baseline` was NOT
+  touched and `BASELINE_SHA256` did not move.
+
+### Fixed
+
+- **`officerGateDrift.test.ts` had been dead since H11, and the web suite with it.** The test reads
+  `apps/scholarship/views_admin.py` to check the two officer gates against the api's own source;
+  H11 and H12 turned that file into a package. Both were backend-only sprints, so both ran pytest
+  and neither ran jest, and **the break was invisible from the side that caused it** - the web
+  baseline was 2,900 tests / 158 suites, not the 2,913 / 159 on record. `VIEWS` now names the two
+  package modules that hold the classes (`applications.py`, `verdict.py`), read and joined;
+  `viewBody` still asserts each class appears exactly once across them. 13 tests restored. The
+  systemic half is **TD-269**.
+
+### Performance
+
+- **Not one route's First Load JS grew: 53 of 72 shrank and 19 were unchanged**, measured by
+  building the tree at `HEAD` and again with the split (total across routes 30,665 kB to 30,505 kB;
+  the shared chunk identical at 87.1 kB). A page that imports three admin calls used to drag a
+  4,118-line module into its chunk and now drags only the modules those calls live in. `/admin`
+  fell 7 kB and the officer cockpit 4 kB.
+
+### Added
+
+- Nothing. No new dependency, no new test, no new suppression.
+
+### Removed
+
+- **Nothing.** No code was deleted in this sprint.
+
 ## Code health H12 - `views_admin` wave 2: the root is a re-export shell - 2026-09-20
 
 **Moves only. No behaviour changed, no migration, no endpoint touched, `urls.py` byte-identical.**

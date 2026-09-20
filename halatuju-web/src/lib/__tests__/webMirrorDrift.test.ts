@@ -82,8 +82,13 @@ describe('the booking-grid fields are declared identically on both sides of the 
     'slot_window_start_min', 'slot_window_end_min', 'slot_step_min',
     'slot_min_lead_hours', 'interview_duration_min',
   ]
-  const student = interfaceFields(read('lib', 'api.ts'), 'InterviewSchedule', 'lib/api.ts')
-  const admin = interfaceFields(read('lib', 'admin-api.ts'), 'InterviewSchedule', 'lib/admin-api.ts')
+  // ⚠ Both sides MOVED at code health H13: `api.ts` and `admin-api.ts` are now barrels and the
+  // interfaces live in the module that owns their domain. The paths followed the code — never
+  // delete the assertion. `read()` throws loudly if either moves again.
+  const student = interfaceFields(
+    read('lib', 'api', 'interview.ts'), 'InterviewSchedule', 'lib/api/interview.ts')
+  const admin = interfaceFields(
+    read('lib', 'admin-api', 'interviews.ts'), 'InterviewSchedule', 'lib/admin-api/interviews.ts')
 
   test('parse sanity: both interfaces parsed and carry the grid', () => {
     expect(Object.keys(student).length).toBeGreaterThan(5)
@@ -135,8 +140,11 @@ describe('isPreSubmissionStage vs the Assignment card\'s own guard in view.tsx',
  * cockpit, so it is the next sprint's, not this one's. These rows pin the gap so it cannot widen.
  */
 describe('PINNED: the two ResolutionItem interfaces have fallen out of step (TD-266)', () => {
-  const student = interfaceFields(read('lib', 'api.ts'), 'ResolutionItem', 'lib/api.ts')
-  const admin = interfaceFields(read('lib', 'admin-api.ts'), 'AdminResolutionItem', 'lib/admin-api.ts')
+  // ⚠ Both sides MOVED at code health H13 — see the note on the booking grid above.
+  const student = interfaceFields(
+    read('lib', 'api', 'resolution.ts'), 'ResolutionItem', 'lib/api/resolution.ts')
+  const admin = interfaceFields(
+    read('lib', 'admin-api', 'resolution.ts'), 'AdminResolutionItem', 'lib/admin-api/resolution.ts')
 
   test('parse sanity: both interfaces parsed', () => {
     expect(Object.keys(student).length).toBeGreaterThan(10)

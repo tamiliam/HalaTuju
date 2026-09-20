@@ -495,11 +495,11 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 | ~~`halatuju_api/apps/scholarship/views_admin/__init__.py`~~ | ~~8,556~~ ~~5,093~~ **154** | ~~H11~~ ~~H12~~ ✅ **DONE 2026-09-20.** The package is thirty modules, none over 600, and the root left the `big` list. Nothing here is waiting on a split any more |
 | `halatuju_api/apps/scholarship/models.py` | 4,756 | **H15** |
 | `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
-| `halatuju-web/src/lib/admin-api.ts` | 4,118 | **H13** |
+| ~~`halatuju-web/src/lib/admin-api.ts`~~ | ~~4,118~~ **241** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 28 modules in `src/lib/admin-api/`, none over 450. Nothing here is waiting on a split any more |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 3,599 | **H14** (the Decision/Recommendation panel stays put — untangling it is design) |
 | `halatuju_api/apps/scholarship/income_engine.py` | 3,201 | **H16** — ⚠ also TD-262; settle the eligibility rulings before moving it |
 | `halatuju_api/apps/scholarship/services.py` | 2,946 | **H15** |
-| `halatuju-web/src/lib/api.ts` | 2,488 | **H13** |
+| ~~`halatuju-web/src/lib/api.ts`~~ | ~~2,488~~ **132** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 14 modules in `src/lib/api/`, none over 420. ⚠ Its size ceiling was the stated reason `income_shown` is declared locally — TD-271 |
 | `halatuju-web/src/components/ScholarshipDocuments.tsx` | 1,957 | **H14** (checklist family + `IncomeWizard` move out) |
 | `halatuju_api/apps/scholarship/vision.py` | 2,321 | **none — deliberately out of scope** (140 patch sites). Growing it is allowed; it is not waiting on a split |
 
@@ -605,33 +605,78 @@ to the lines they came from, proved by reading them back off disk against `git s
 estimate — the ledger was an ordinary tightening this time (no baseline re-pin), and a `symtable`
 pass rather than an AST name walk got every import header right first time.
 
-### H13 — `admin-api.ts` and `api.ts` become barrels
-- **Scope:** `src/lib/http.ts` takes the four private fetch helpers (they are *not* shared today:
-  `apiRequest` handles `nric_required` and field errors; `adminFetch` does not — keep both
-  behaviours). `src/lib/admin-api/{applications,billing,requests,…}.ts` behind
-  `admin-api/index.ts`; same for `api/`. All 133 + 78 importers use the alias
-  `'@/lib/admin-api'` with zero deep imports → **no importer changes.** Two domains split across
-  non-contiguous spans today (Requests, Payments) come back together for free.
-- **⚠ Two gotchas:** `isolatedModules` is on, so types need `export type *` (tsc is the gate, and
-  since today it is a real one). And 30 tests `jest.mock('@/lib/admin-api')` — **first task:
-  convert one small file and run the full suite** before doing the rest.
-- **Acceptance:** zero importer edits; jest, tsc, lint, `next build` green; bundle size not larger.
-- **Complexity:** low–medium. **~5h → ~6h**, re-estimated on H12's measured cost. What H12 learnt
-  that H13 should budget for:
-  - **Cut the bodies BY LINE RANGE from the file's own bytes and prove it**, then read every new
-    file back off disk and diff it against `git show HEAD:<path>`. Twenty modules were verified in
-    one pass and the checker also named the one original line that had NOT moved. Cheap, and it
-    is the whole evidence that "moves only" is true. TypeScript has no `symtable`, so the import
-    headers will need `tsc` as the oracle instead — **convert one small file and run tsc + the
-    full jest suite before cutting the rest**, as this section already says.
-  - **`jest.mock('@/lib/admin-api')` is H13's equivalent of H12's patch strings.** H12 found 23
-    where the brief said 19, and two of them pointed at call sites in *different* modules with the
-    same function name. Grep for the module path followed by any dependency name, then READ each
-    site — do not assume a name maps to one destination. Budget an hour for this alone.
-  - **`xapp` does not apply to web**, so H13 has no cross-app arithmetic to explain. It does have
-    a bundle-size acceptance, which is the same kind of trap: say what any rise is made of.
-  - **Check line endings after any hand edit** (`\n` vs `\r\n` over `git diff --name-only`). Three
-    files were silently normalised in H12 and every gate accepted it.
+### H13 — `admin-api.ts` and `api.ts` become barrels ✅ SHIPPED 2026-09-20
+
+**What moved.** `admin-api.ts` (4,118) is **241 lines of re-export and no code**; `api.ts` (2,488)
+is **132**. The bodies are 42 modules — 28 in `src/lib/admin-api/` (4,385 lines, avg 157, max 443)
+and 14 in `src/lib/api/` (2,604 lines, avg 186, max 417) — all under the 600-line standard. Every
+moved line is byte-identical to the line it came from, proved by reading each module back off disk
+against `git show HEAD:…`; the twenty lines that did NOT move (two file docstrings, two import
+headers) were declared in the cut spec in advance, with the reason.
+
+| admin-api | lines | | lines | api | lines |
+|---|---|---|---|---|---|
+| `applications` | 443 | `partners` | 136 | `documents` | 417 |
+| `requests` | 315 | `reviewers` | 135 | `sponsor` | 372 |
+| `programmes` | 273 | `orgConfig` | 129 | `stpm` | 262 |
+| `overview` | 222 | `lifecycle` | 125 | `application` | 257 |
+| `billing` | 221 | `interviews` | 111 | `courses` | 243 |
+| `invoices` | 215 | `documents` | 111 | `profile` | 217 |
+| `sponsors` | 194 | `spending` | 103 | `guidance` | 187 |
+| `verdict` | 187 | `client` | 97 | `award` | 134 |
+| `payments` | 176 | `profiles` | 95 | `calculations` | 111 |
+| `admins` | 172 | `decisions` | 92 | `bank` | 99 |
+| `sponsorTerms` | 159 | `theme` | 91 | `interview` | 87 |
+| `emails` | 156 | `sources` | 90 | `inProgramme` | 84 |
+| `contracts` | 151 | `invitations` | 72 | `resolution` | 79 |
+| | | `resolution` 66 · `courseData` 48 | | `client` | 55 |
+
+**Zero importer edits, which was the whole acceptance.** 231 files import these two modules — 122
+by `@/lib/admin-api`, 85 by `@/lib/api`, 24 by a relative path, and 33 of them `jest.mock()` a
+barrel by automock. **Not one changed**, and there are no deep imports into the new folders from
+outside them. The diff is six modified files (two barrels, three drift tests, the standards file)
+plus two new folders.
+
+**Four things this sprint corrects or adds for whoever reads it next:**
+
+1. ⛔ **THE WEB SUITE HAD BEEN RED SINCE H11 AND NOBODY COULD SEE IT.** The real baseline was
+   **2,900 tests / 158 suites**, not the 2,913 / 159 on record: `officerGateDrift.test.ts` reads
+   `views_admin.py` by path and H11/H12 turned that file into a package, so it died at import,
+   taking 13 tests with it — including the guard on the irreversible org-admin reject gate. Both
+   sprints were backend-only, ran pytest and passed. **Repaired here** (the path follows the code
+   to `views_admin/applications.py` + `verdict.py`), and the systemic half is **TD-269**: 31 of 159
+   web test files read source text and several read `halatuju_api/**`, so **any api refactor can
+   kill a web guard with every api gate green.** ⚠ **H15 and H16 both move files that web drift
+   tests read by path — `services.py` is read by `officerGateDrift` itself. Do TD-269 before H15,
+   or H15 repeats H11 exactly.**
+2. **Keep the barrel at the ORIGINAL file's path and the ledger-key problem simply does not
+   arise.** The plan said `admin-api/index.ts`; that would have renamed the key
+   `src/lib/admin-api.ts` and walked back into H11's frozen-baseline trap. `admin-api.ts` stayed
+   `admin-api.ts` and the bodies went beside it, so `std` read **ok**, the two entries were merely
+   REMOVED as under-standard, and `BASELINE_SHA256` never moved. `foo.ts` next to `foo/` resolves
+   to the file in both webpack and jest — proved with a one-module pilot before anything was cut.
+3. **`src/lib/http.ts` was NOT created, deliberately.** The plan proposed one shared home for the
+   four fetch helpers while also saying the two behaviours must stay apart (`apiRequest` raises
+   `nric-required` and carries DRF field errors; `adminFetch` does neither). The surest way to keep
+   two behaviours apart is not to file them under one name, so each folder has its own
+   `client.ts`, each says in its header that it is not the other, and **neither is re-exported by
+   its barrel** — the eight promoted names are folder-private, and the app's public surface is
+   exactly the set of names it was before.
+4. **The bundle acceptance was measured against a rebuild of the old tree, not argued.** **0 of 72
+   routes grew; 53 shrank, 19 unchanged**; total First Load JS across routes 30,665 → 30,505 kB,
+   shared chunk identical at 87.1 kB. A page that imports three admin calls used to drag a
+   4,118-line module into its chunk and now drags only the modules those calls live in.
+
+**Held:** jest **2,913 passed / 159 suites** (2,900/158 as found — see 1) · tsc 0 · lint 0 errors ·
+i18n ok · `npx next build` exit 0 · `manage.py check` 0 · `makemigrations --check` clean (no api
+file touched, so no pytest) · code_health **0 FAIL**, `std` ok, **`big` 24 → 22**, **`hot#1` 107.1
+`admin-api.ts` → 95.6 `income_engine.py`**, `xapp`/`supp`/`skip`/`guard%` all unchanged. Six
+bite-checks, all six behaved. **Findings raised: TD-269, TD-270, TD-271.**
+⚠ Read the `hot#1` caveat in the retro before quoting it: the fix COUNT is unchanged at 26; only
+KLOC moved (4.118 → 0.241). The 4,000 lines did not get safer today, they moved to 28 files with no
+fix history yet.
+**Retro:** `docs/retrospective-2026-09-20-code-health-h13.md`. **Cost: ~6h** against the ~6h
+estimate.
 
 ### H14 — The cockpit and the documents component, panel by panel
 - **Depends on H6** — not negotiable.
@@ -646,7 +691,27 @@ pass rather than an AST name walk got every import header right first time.
   is always `t`). One hook retires them; the four with a written reason stay.
 - **Acceptance:** H6's rendered tests green unchanged; `theme.test.ts` path list re-pointed and
   bite-checked; `view.tsx` under ~2,000 lines; `supp` down ~25.
-- **Complexity:** medium–high. **~9h.** web deploy.
+- **Complexity:** medium–high. **~9h → ~8h**, re-estimated on H13's measured cost. What H13 learnt
+  that H14 should budget for:
+  - **Take the jest baseline YOURSELF before touching anything**, even though this section will
+    quote one. H13's brief said 2,913/159 and the tree stood at 2,900/158 with a dead suite. The
+    ten minutes turned "did I break this?" into a finding with a repair.
+  - **H14 moves JSX out of `view.tsx`, so the barrel trick does not apply** — a component's
+    importers name the component. But the same PROOF does: cut by line range from the file's own
+    bytes, read every new file back off disk against `git show HEAD:…`, and declare in advance the
+    lines that will NOT move (the import header, and here the props each panel needs). H13 cut
+    6,586 lines that way and the checker named all twenty exceptions.
+  - **`theme.test.ts` carries an explicit path list and `webMirrorDrift.test.ts` reads
+    `view.tsx` by path** (the `isPreSubmissionStage` pair). Both follow the code, and both need a
+    bite at their NEW path — H13 bit two re-pointed guards and both behaved, which is the only
+    thing that proves a re-pointed reader is still reading something real.
+  - **TD-271 is H14-sized and now unblocked**: fold `income_shown` onto `ScholarshipApplication`
+    (`src/lib/api/application.ts`, 257 lines) and delete the local `ServesIncomeShown`. It is a
+    type-shape change, so it needs a test and a bite — which is exactly why H13 could not do it.
+  - **Check line endings after any hand edit** (`\n` vs `\r\n` over `git diff --name-only`). H13
+    flipped nothing, but only because it was checked byte by byte at the end; and one bite-check
+    still tripped on a `\n` needle in a CRLF file, the second sprint running.
+  - web deploy.
 
 ### H15 — `models.py` and `services.py`
 - **Scope:** `models/` package with full re-export — `ScholarshipApplication` is a wide table
@@ -742,13 +807,15 @@ lift it — it is to write the standing rule and the standards into the workflow
 Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
 Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
-Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- from here on, ALTERNATING with product work
+Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- H11-H13 shipped 2026-09-20; ALTERNATING with product work
 Phase 5   H17 -> H18
 Phase 6   H19                          <-- "completed"
 ```
 
 - **H1 → H2 → H3 → H4 are strictly first.** Every later sprint is safer once a red suite cannot ship.
 - **H6 blocks H14.** H3 blocks H11. H5 should precede H7/H8 (their tests use the factory).
+- ⚠ **TD-269 should block H15.** H15 moves `services.py`, which a WEB drift test reads by
+  path; H11 broke exactly that way and nobody saw it for two sprints (see H13, note 1).
 - Phases 3 and 4 do not block each other; Phase 3 goes first because it is the half that prevents bugs.
 - **Back to back through H10, by the owner's 2026-09-18 ruling.** With the product frozen there was
   one agent in the checkout, which removed Phase 4's biggest risk (a file changing under a move).
