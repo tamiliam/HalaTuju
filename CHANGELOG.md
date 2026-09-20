@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H11 - `views_admin.py` becomes a package, wave 1 - 2026-09-20
+
+**Moves only. No behaviour changed, no migration, no endpoint touched, `urls.py` byte-identical.**
+The ten moved bodies were checked back off disk against the lines they came from and are
+byte-identical, the relative-import depth aside.
+
+### Changed
+
+- **`apps/scholarship/views_admin.py` (8,556 lines) is now the package
+  `apps/scholarship/views_admin/`.** Six domains moved out whole - requests, gift programmes and
+  intake years, invoices, contracts, payments and sponsor terms - as ten modules averaging 370
+  lines, none over 500. The package root fell to 5,093 lines and re-exports all 142 names, so
+  `urls.py` did not change by one byte and no importer, test or `patch(...)` string was touched.
+- **`_AdminBase` lives in `views_admin/base.py`.** Tenancy rule 3 puts the organisation scoping in
+  the base gates, and every moved view still inherits it - bite-checked by dropping a fence inside
+  a moved file and watching `test_org_fence.py` go red.
+- **Every submodule spells its logger name out** - `logging.getLogger('apps.scholarship.views_admin')`,
+  never `__name__` - so every audit line still arrives on the one logger the Cloud Logging scrape
+  metric counts.
+- **`test_org_fence.py`'s `SCANNED` tuple changed by one character**, `views_admin.py` ->
+  `views_admin/`, which is what H3 built `scan_targets()` for. The static guard now walks the
+  package recursively.
+- **The oversize ledger key in `halatuju_api/code-standards.json` followed the file** to
+  `views_admin/__init__.py`: baseline unchanged at 8,547 (the same file, new path), budget lowered
+  8,547 -> 5,093. `BASELINE_SHA256` was re-pinned in the same change, with the reason written in
+  both files. No ledger gained a member - all ten new modules are under the 600-line standard
+  deliberately, which is why `requests` is two modules and the gift domain is three.
+
+### Added
+
+- **A guard on the audit logger's name** (`test_access_audit.py`), written because a bite-check
+  came back silent. The sprint brief named twelve `assertLogs('apps.scholarship.views_admin')`
+  sites as the thing that would catch a submodule logger; switching one to `__name__` turned none
+  of them red, because `assertLogs` on a parent records whatever propagates up from its children.
+  The new test asserts every module in the package logs under the package's own name, and carries
+  a floor so it cannot go vacuous.
+
+### Fixed
+
+- Nothing. No defect was fixed and none was introduced. Two findings were written up rather than
+  patched: **TD-267** (three dead imports at the head of the old file) and two shortcomings in the
+  sprint-close reading tool, recorded under `## Reviews` in `docs/code-health.md`.
+
 ## TD-262 F2 - the fourth way gets a real door - 2026-09-20
 
 ### Added

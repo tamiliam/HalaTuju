@@ -618,7 +618,7 @@ class TestOrgFenceStaticGuard(TestCase):
     #: walks a directory recursively, so when H11 turns `views_admin.py` into
     #: `views_admin/`, this tuple changes by one character and the guard keeps seeing every
     #: query — including ones in submodules that did not exist when it was written.
-    SCANNED = ('views_admin.py', 'spend_report.py', 'spend_category.py',
+    SCANNED = ('views_admin/', 'spend_report.py', 'spend_category.py',
                'spending_import.py', 'spend_summary.py', 'spend_sponsor.py', 'invoicing.py',
                # Programme Overview (2026-09-15) — a pure aggregation module that queries
                # ScholarshipApplication and BursarySpendTxn for an admin surface, so it joined

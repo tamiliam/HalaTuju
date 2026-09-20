@@ -102,6 +102,10 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
+- **TD-267 (raised 2026-09-20 by code health H11) — low.** Three names were imported at the top of
+  `views_admin.py` and used nowhere: `Exists`, `OuterRef` and `OrgRequestAttachment`. Found by the
+  H11 move, not caused by it, and deliberately left alone — H11's rule was moves only. They now sit
+  in `views_admin/__init__.py` and H12 deletes them with the rest of that header.
 - **TD-266 (raised 2026-09-19 by code health H10) — medium.** `AdminResolutionItem` is a stale copy
   of the student-facing `ResolutionItem`, and ONE serializer feeds both: the admin payload returns
   `check2` items, so two `kind` values, one `source` value and `vircle_expected` are undeclared.
@@ -4008,6 +4012,28 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-267] Three imports at the head of `views_admin` that nothing reads — low
+
+**Found:** code health H11 (2026-09-20), mapping every name in `views_admin.py` before slicing it
+into a package. **Nothing was changed** — H11's rule was moves only, and deleting a name from that
+header is a change to the module's public surface rather than tidying.
+
+`Exists`, `OuterRef` (both from `django.db.models`) and `OrgRequestAttachment` (from `.models`) are
+imported at module level and referenced nowhere in the 8,556 lines that followed. The word
+"Exists" does appear at `__init__.py:450`, but in a docstring sentence, which is exactly why an
+eye never caught this and an AST walk did in one pass.
+
+They cost nothing at runtime beyond three attribute lookups at import, and they cost a reader the
+usual thing a dead import costs: a name in the header that suggests this module works with
+attachments and subquery existence, which it does not.
+
+**Fix:** delete the three names when H12 empties `views_admin/__init__.py`. That sprint rewrites
+the header anyway, and by then the nine names H11 left in place *on purpose* (read only by a
+submodule now, but still addressed by nineteen `patch(...)` strings and several lazy importers)
+can go in the same pass — see the note above the package's import block.
+
+**Trigger:** H12, or the next time anyone edits that import block for any reason.
 
 ### [TD-266] The admin and student `ResolutionItem` types have fallen out of step, and ONE serializer feeds both — medium
 

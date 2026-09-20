@@ -21,30 +21,31 @@ from halatuju.pagination import FlexiblePageNumberPagination
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.courses.search import apply_people_search
-from apps.courses.views_admin import PartnerAdminMixin
+# `from apps.courses.views_admin import PartnerAdminMixin` moved to `base.py` at H11 with
+# `_AdminBase`, its only reader. Nothing here imports it now.
 
-from . import branding
-from . import money
-from . import pool
-from . import reopen as reopen_service
-from . import disbursement as disbursement_service
-from . import maintenance as maintenance_service
-from . import closure as closure_service
-from .anomaly_engine import detect_anomalies
-from .emails import send_request_info_email
-from .verdict_engine import build_verdict
-from .models import (
+from .. import branding
+from .. import money
+from .. import pool
+from .. import reopen as reopen_service
+from .. import disbursement as disbursement_service
+from .. import maintenance as maintenance_service
+from .. import closure as closure_service
+from ..anomaly_engine import detect_anomalies
+from ..emails import send_request_info_email
+from ..verdict_engine import build_verdict
+from ..models import (
     ApplicantDocument, Disbursement, Donation, GraduationMessage, InterviewSession,
     InterviewSlot, OrgRequest, OrgRequestAttachment, Referee, ReviewerProfile,
     Programme, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
-from . import scheduling
-from . import sponsor_comms as sponsor_comms_mod
-from . import sponsor_terms as sponsor_terms_mod
-from .profile_engine import generate_anon_blurb, refine_sponsor_profile
-from . import in_programme as in_programme_service
-from .serializers import ApplicantDocumentSerializer, RefereeSerializer
-from .serializers_admin import (
+from .. import scheduling
+from .. import sponsor_comms as sponsor_comms_mod
+from .. import sponsor_terms as sponsor_terms_mod
+from ..profile_engine import generate_anon_blurb, refine_sponsor_profile
+from .. import in_programme as in_programme_service
+from ..serializers import ApplicantDocumentSerializer, RefereeSerializer
+from ..serializers_admin import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
     AdminGraduationMessageSerializer,
@@ -55,13 +56,82 @@ from .serializers_admin import (
     ReviewerProfileSerializer,
     SponsorProfileSerializer,
 )
-from .services import (
+from ..services import (
     AssignmentError, PauseError, admin_reject, application_completeness, assign_reviewer,
     cancel_pending_decline, org_admin_reject, review_writes_closed, set_paused,
     set_reporting_date_by_officer, submit_interview,
 )
-from . import sponsorship as sponsorship_service
-from .sponsorship import hold_pending_award
+from .. import sponsorship as sponsorship_service
+from ..sponsorship import hold_pending_award
+
+# ── THE views_admin PACKAGE (code health H11, 2026-09-20) ────────────────────────
+# Six domains moved out to the submodules below, verbatim. EVERY name they define is
+# re-exported here, so `urls.py` is byte-identical and no importer changed — including
+# the tests that reach for a private helper by name. `_AdminBase` lives in `base.py`:
+# tenancy rule 3 puts the org scoping in the base gates, and every moved view still
+# inherits it. The rest of this file is wave 2 (H12) and has not moved.
+#
+# ⚠ THE IMPORT BLOCK ABOVE WAS LEFT EXACTLY AS IT WAS, dead names and all. Nine of those
+# names are now read only by a submodule, so nothing HERE uses them — but each is still an
+# attribute of `apps.scholarship.views_admin`, which is what nineteen `patch(...)` strings
+# and several lazy importers address. Deleting a name from this block is a change to the
+# module's public surface, not tidying, so wave 2 removes them along with the code that
+# needed them. (`Exists`, `OuterRef` and `OrgRequestAttachment` were dead BEFORE this move —
+# TD-267.)
+from .base import (
+    _AdminBase, _MONTH_RE, _org_or_none,
+)
+from .contracts import (
+    _CONTRACT_RULE_LABELS, _ContractsBase, _contract_clause_dict, _contract_schedule_dict,
+    _contract_template_detail, _contract_template_summary, _contract_validation_dict,
+    _contracts_err, AdminContractClausesView, AdminContractDeployView,
+    AdminContractGenerateQuizView, AdminContractImportDocxView, AdminContractPreviewView,
+    AdminContractQuizPreviewView, AdminContractRevertView, AdminContractScheduleView,
+    AdminContractSubmitView, AdminContractTemplateDetailView, AdminContractTemplateListView,
+    AdminContractValidateView, AdminContractVettingView,
+)
+from .gifts import (
+    REQUIREMENT_FIELDS, _apply_copy_terms, _cohort_row, _programme_row, _window_from,
+    programme_delete_blocker, programme_lifecycle, programme_student_queryset, round_state,
+)
+from .gift_programmes import (
+    CODE_RE, _ProgrammeScopedBase, AdminApplyCopyDraftView, AdminProgrammeDetailView,
+    AdminProgrammeListView,
+)
+from .intake_years import (
+    _requirements_from, AdminIntakeYearDetailView, AdminIntakeYearFinishView,
+    AdminIntakeYearListView,
+)
+from .invoices import (
+    _InvoiceBase, _invoice_money, _invoice_payload, AdminInvoiceActionView, AdminInvoicePdfView,
+    AdminInvoiceSettingsView, AdminInvoicesView, AdminOrgBuildHoursView,
+)
+from .payments import (
+    _PAYMENTS_READ_ROLES, _PAYMENTS_WRITE_ROLES, _PaymentsBase, _payment_item_dict,
+    _payment_run_detail, _payment_run_summary, _run_programme, _sig,
+    AdminPaymentFundingSummaryView, AdminPaymentRunCancelView, AdminPaymentRunCsvView,
+    AdminPaymentRunDetailView, AdminPaymentRunItemView, AdminPaymentRunListView,
+    AdminPaymentRunSignView,
+)
+from .requests import (
+    _OrgRequestsBase, _org_request_err, AdminOrgRequestAnswerView, AdminOrgRequestApproveView,
+    AdminOrgRequestAskView, AdminOrgRequestCommentView, AdminOrgRequestCountView,
+    AdminOrgRequestDeclineView, AdminOrgRequestDeferView, AdminOrgRequestDetailView,
+    AdminOrgRequestListView, AdminOrgRequestModifyView,
+)
+from .requests_delivery import (
+    AdminOrgRequestAiRerunView, AdminOrgRequestAnalysisApproveView, AdminOrgRequestAnalysisView,
+    AdminOrgRequestAttachmentCreateView, AdminOrgRequestAttachmentDeleteView,
+    AdminOrgRequestAttachmentSignUploadView, AdminOrgRequestDoneView, AdminOrgRequestQuoteView,
+    AdminOrgRequestRequoteView, AdminOrgRequestScheduleView, AdminOrgRequestTriageView,
+    AdminOrgRequestWithdrawAnalysisView,
+)
+from .sponsor_terms import (
+    _SponsorTermsBase, _terms_detail_dict, _terms_err, _terms_section_dict, _terms_summary_dict,
+    _terms_validation_dict, AdminSponsorTermsDetailView, AdminSponsorTermsGenerateQuizView,
+    AdminSponsorTermsImportDocxView, AdminSponsorTermsListView, AdminSponsorTermsPreviewView,
+    AdminSponsorTermsPublishView, AdminSponsorTermsSectionsView, AdminSponsorTermsValidateView,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,300 +141,6 @@ logger = logging.getLogger(__name__)
 # Save-draft and lost the reviewer's notes. A draft finding may carry just a rationale.
 _VALID_VERDICTS = {'', 'resolved', 'still_unclear', 'new_concern', 'deleted'}
 _RATIONALE_MAX = 140
-
-
-class _AdminBase(PartnerAdminMixin, APIView):
-    """Shared 403-if-not-admin guard + own-application lookup."""
-
-    def _deny(self):
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
-
-    def _deny_role(self):
-        return Response({'error': 'Your admin role cannot perform this action.'},
-                        status=status.HTTP_403_FORBIDDEN)
-
-    def _require_reviewer(self, request):
-        """Auth prologue for reviewer-gated admin WRITES: returns ``(admin, None)`` when the
-        caller is an active admin with the reviewer role, else ``(None, error_response)``.
-        Centralises the get_admin + reviewer-role check (TD audit 2026-06-14) so a write
-        endpoint can't silently forget the role gate and under-protect PII/consent actions
-        (a plain 'admin' has full B40 scope but is read-only — the role check is the guard)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return None, self._deny_role()
-        return admin, None
-
-    def _get_application(self, pk):
-        # org-fence: the shared lookup; every caller re-gates via _org_allows /
-        # _scoped_application / _require_app_write / _require_qc before use.
-        return ScholarshipApplication.objects.select_related('profile', 'cohort').filter(pk=pk).first()
-
-    def _b40_scope(self, admin):
-        """B40 Applications access by role:
-          'all'      — super + admin + qc + org_admin (see every application in scope, read)
-          'assigned' — reviewer (only the applicants assigned to them)
-          'none'     — partner / finance / anyone else (B40 is not their page)
-        'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
-        see only their own org). qc + org_admin are org-wide WRITERS via _can_review_app
-        (review-all within their org); a plain 'admin' stays assigned-only for writes.
-
-        `finance` is 'none' BY DECISION (role matrix 2026-07-23), not by omission: it never
-        sees an applicant file, document, income figure or verdict. Its only student data is
-        the award/paid/remaining/eWallet allowlist served by the Payments funding summary,
-        which is a Payments endpoint and does not read this scope.
-        """
-        if admin is None or admin.role in ('partner', 'finance'):
-            return 'none'
-        if self.has_role(admin, 'admin') or admin.role in ('qc', 'org_admin'):  # super + admin + qc + org_admin
-            return 'all'
-        if admin.role == 'reviewer':
-            return 'assigned'
-        return 'none'
-
-    # ── Organisation fence (platform Sprint 3a) ────────────────────────────────
-    # The tenant wall on the B40 admin surface. Access control keys off
-    # PartnerAdmin.owning_organisation (NOT the referral `org`). Invisible while
-    # BrightPath is the only organisation (every staff/application pair is same-org),
-    # and the real fence the moment a second organisation exists. NULL owning_org is
-    # a safe degenerate bucket (=None → IS NULL) so bare test fixtures self-partition.
-    def _org_scoped(self, qs, admin, field='owning_organisation_id'):
-        """Fence an applications queryset (or any model reaching an application by
-        ``field``, e.g. 'application__owning_organisation_id') to the caller's
-        organisation. Super is global; everyone else is filtered to their own org."""
-        if admin is not None and self.has_role(admin, 'super'):
-            return qs
-        org_id = admin.owning_organisation_id if admin is not None else None
-        return qs.filter(**{field: org_id})
-
-    def _programme_by_code(self, admin, code):
-        """Resolve a `?programme=<code>` narrowing INSIDE the caller's own organisation.
-
-        ⚠ THIS IS NOT A FENCE AND MUST NOT BECOME ONE. The organisation wall stays
-        `_org_scoped` / `_org_allows`; this only says WHICH of the caller's own gifts a list
-        was asked to narrow to. It is derived from the same `owning_organisation` the fence
-        uses, so it can never widen anything — a client that omits the parameter reaches
-        exactly the rows the fence already allowed.
-
-        Returns None for an unknown code AND for another tenant's code — the caller turns both
-        into a 404, never a 403, so a cross-tenant code cannot confirm that gift exists.
-        `_ProgrammeScopedBase._programmes_for` runs the same query, but its ROLES gate is
-        org_admin-only; the Applications list is read by reviewers and admins too, so the
-        lookup lives here where the role gate is the reading view's own.
-        """
-        from .models import Programme
-        qs = Programme.objects.all()
-        if not self.has_role(admin, 'super'):
-            org_id = admin.owning_organisation_id if admin is not None else None
-            qs = qs.filter(organisation_id=org_id) if org_id else qs.none()
-        return qs.filter(code=code).first()
-
-    def _gift_narrowing(self, request, admin):
-        """Read `?programme=<code>` and resolve it. Returns `(programme|None, error|None)`.
-
-        **The ONE place a Programme-scope page asks "which gift is this request about?"** —
-        added for TD-241 (2026-09-11), when Payments and Spending moved from the Organisation
-        section to the Programme section. Both screens go through here so they cannot drift into
-        two different answers, which is the whole reason the owner's request was one request.
-
-        ⚠⚠ **AN ABSENT PARAMETER MEANS "DO NOT NARROW", NOT "PICK ONE FOR THEM".** Choosing a
-        gift server-side when none was named is the 2026-09-03 defect exactly: the console showed
-        the owner a DIFFERENT programme's settings than the one they had opened. `programmeScope`
-        on the client already resolves the single-gift case and refuses to guess between several
-        (`chosen` stays `''`), so a missing value here means the client genuinely could not say —
-        and the honest response to that is every gift the fence already allows, not a guess.
-
-        ⚠ **IT NARROWS INSIDE THE FENCE AND CAN NEVER WIDEN.** `_programme_by_code` resolves only
-        within the caller's own organisation, so an unknown code and another tenant's code are
-        indistinguishable — both `None` — and both become a 404 here, never a 403: a cross-tenant
-        code must not confirm that gift exists.
-        """
-        code = (request.query_params.get('programme') or '').strip()
-        if not code:
-            return None, None
-        programme = self._programme_by_code(admin, code)
-        if programme is None:
-            return None, Response({'error': 'not_found', 'code': 'not_found'},
-                                  status=status.HTTP_404_NOT_FOUND)
-        return programme, None
-
-    def _intake_narrowing(self, request, admin, programme):
-        """Read `?intake=<cohort id>` and resolve it. Returns `(cohort|None, error|None)`.
-
-        The intake-round sibling of `_gift_narrowing` (Programme Overview phase 2, 2026-09-18),
-        and on `_AdminBase` for the same reason: the Applications list is the obvious next
-        caller, and two pages must not answer "which round?" two ways.
-
-        ⚠ AN ABSENT PARAMETER MEANS "DO NOT NARROW". ⚠ IT NARROWS INSIDE THE FENCE AND CAN
-        NEVER WIDEN: a non-super resolves only within their own organisation, and when a gift
-        was named the round must belong to it. An unknown id, another tenant's, another gift's
-        and a non-integer are all one answer — 404, never 403 and never 400 — because a
-        cross-tenant id must not confirm that round exists.
-        """
-        from .models import ScholarshipCohort
-
-        raw = (request.query_params.get('intake') or '').strip()
-        if not raw:
-            return None, None
-        not_found = Response({'error': 'not_found', 'code': 'not_found'},
-                             status=status.HTTP_404_NOT_FOUND)
-        try:
-            cohort_id = int(raw)
-        except ValueError:
-            return None, not_found
-        # org-fence: owning_organisation for every non-super; a super is fenced by the gift below
-        # (and sees every tenant without one, which is the platform scope this page gives them).
-        qs = ScholarshipCohort.objects.filter(pk=cohort_id)
-        if not self.has_role(admin, 'super'):
-            qs = qs.filter(owning_organisation_id=admin.owning_organisation_id)
-        if programme is not None:
-            qs = qs.filter(programme=programme)
-        cohort = qs.first()
-        if cohort is None:
-            return None, not_found
-        return cohort, None
-
-    def _org_allows(self, admin, app):
-        """Row-level org fence: True if this admin's organisation owns ``app``.
-        Super is global; everyone else must match owning_organisation. A cross-org
-        answer must surface as 404 (never 403) so existence isn't leaked."""
-        if admin is None or app is None:
-            return False
-        if self.has_role(admin, 'super'):
-            return True
-        return app.owning_organisation_id == admin.owning_organisation_id
-
-    def _scoped_application(self, request, pk):
-        """The application IFF this admin may access it (reviewer assignment-scoped;
-        partner none). Returns (app, error_response|None)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        scope = self._b40_scope(admin)
-        if scope == 'none':
-            return None, self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not self._org_allows(admin, app):
-            # Cross-org: 404, not 403 — don't leak that another org's app exists.
-            return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if scope == 'assigned' and app.assigned_to_id != admin.id:
-            return None, self._deny_role()   # reviewer, not assigned to them
-        return app, None
-
-    def _can_review_app(self, admin, app):
-        """True if this admin may WRITE (review-act) on this application:
-          super              — acts on any application;
-          org_admin / qc     — act on ANY application in their OWN org (org_admin = the
-                               organisation superadmin; qc = the hybrid review-all role);
-          admin / reviewer   — act ONLY on applications ASSIGNED to them;
-          partner            — never.
-        (Assignment-based review permission, 2026-07 — a plain 'admin' has full READ scope
-        via _b40_scope='all' but assigned-only WRITE, so a view-all admin can be given a
-        selective review remit. org_admin/qc write across the org is safe because the QC
-        recorder guard in _require_qc stops anyone QC-ing a verdict they themselves recorded.
-        `finance` never reaches here: its _b40_scope is 'none', so the first test refuses it.)"""
-        if admin is None or app is None:
-            return False
-        if self._b40_scope(admin) == 'none':          # partner / non-B40
-            return False
-        if self.has_role(admin, 'super'):
-            return True
-        if not self._org_allows(admin, app):          # cross-org (Sprint 3a)
-            return False
-        if admin.role in ('org_admin', 'qc'):         # org-wide write (same-org guaranteed above)
-            return True
-        return app.assigned_to_id == admin.id
-
-    def _require_app_write(self, request, pk):
-        """Auth prologue for a per-application WRITE. Returns (app, admin, None) when the caller
-        may act on this application (super, or the assigned admin/reviewer), else
-        (None, None, error_response). Replaces the old _require_reviewer + _scoped_application
-        pair for per-application mutations (the role-only _require_reviewer stays for the few
-        non-application writes: sponsor review, graduation review, reviewer profile)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, None, self._deny()
-        app = self._get_application(pk)
-        if app is None:
-            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not self._org_allows(admin, app):
-            # Cross-org: 404 (don't leak existence). Distinct from the 403 below, which
-            # is a SAME-org app the caller simply isn't assigned to.
-            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not self._can_review_app(admin, app):
-            return None, None, self._deny_role()
-        return app, admin, None
-
-    def _require_open_case(self, request, pk):
-        """Auth prologue for a REVIEW-track write (interview capture, gap suggestion, verdict).
-
-        `_require_app_write` plus one thing it deliberately does not check: whether there is
-        still a review to write into. It has no status gate at all, so on a case that expired
-        or was rejected before anyone reviewed it, every one of these endpoints answered 200 —
-        `record-verdict` would have stamped a verdict AND an award amount onto a rejected file
-        (the same defect the 2026-07-30 sprint fixed, reached through a different door), and
-        `suggest-gaps` would have spent a Gemini call on it.
-
-        ⚠ ADD A NEW REVIEW-TRACK WRITE HERE, NOT TO `_require_app_write`. The two are separate
-        because the majority of per-application writes are legitimate on a closed case
-        (cancelling a decline, correcting a reporting date, re-running a document read); making
-        the status gate universal would break them. See `services.review_writes_closed` for why
-        a REOPENED case is open however terminal its status reads.
-        """
-        app, admin, err = self._require_app_write(request, pk)
-        if err:
-            return None, None, err
-        if review_writes_closed(app):
-            return None, None, Response(
-                {'error': 'This case is closed — there is no review left to record.',
-                 'code': 'case_closed', 'status': app.status},
-                status=status.HTTP_400_BAD_REQUEST)
-        return app, admin, None
-
-    def _require_qc(self, request, pk):
-        """Auth prologue for the QC gate. Returns (app, admin, None) when the caller may QC this
-        application — a `super` or a `qc`-role admin, and the app is in the AWAITING-QC stage
-        (`interviewed`) — else (None, None, error_response). QC is deliberately NOT assignment-
-        scoped (it checks a reviewer's work across the queue) and is distinct from reviewer writes.
-
-        Self-QC guard: the senior `qc`/`org_admin` roles can also REVIEW their assigned cases, so
-        they must NOT QC a case they were the assigned reviewer of — that routes to another QC /
-        super. (Super is the owner override and is exempt.)
-
-        `finance` is refused by the role list below — it is a money checker, not a case checker,
-        and has no B40 scope to QC with."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role in ('qc', 'org_admin')):
-            return None, None, self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if not self._org_allows(admin, app):
-            # Cross-org QC: 404, don't leak existence (super is exempt via _org_allows).
-            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if app.status != 'interviewed':
-            return None, None, Response(
-                {'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
-                status=status.HTTP_400_BAD_REQUEST)
-        if not self.has_role(admin, 'super') and app.assigned_to_id == admin.id:
-            return None, None, Response(
-                {'error': 'You reviewed this case — it must be QC-checked by someone else.',
-                 'code': 'self_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
-        # Recorder guard (2026-07-15): with org_admin/qc able to record a verdict on ANY
-        # own-org case, assignment no longer proves who recorded it. Two-person control
-        # (models.py:482) means the person who RECORDED the verdict must never QC it —
-        # match on the recorder's email (the stable staff key). Super is the owner override.
-        recorder = (app.verdict_decided_by or '').strip().lower()
-        if not self.has_role(admin, 'super') and recorder and recorder == (getattr(admin, 'email', '') or '').strip().lower():
-            return None, None, Response(
-                {'error': 'You recorded this verdict — it must be QC-checked by someone else.',
-                 'code': 'self_verdict_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
-        return app, admin, None
 
 
 class AdminApplicationListView(_AdminBase):
@@ -464,7 +240,7 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.order_by('-submitted_at' if desc else 'submitted_at')
             page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'merit':
-            from .serializers_admin import _application_merit_score
+            from ..serializers_admin import _application_merit_score
             rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
             page = paginator.paginate_queryset(rows, request, view=self)
         else:
@@ -511,7 +287,7 @@ class AdminApplicationDetailView(_AdminBase):
         if 'vircle_id' in request.data:
             if not (admin.is_super or admin.role == 'org_admin'):
                 return self._deny_role()
-            from . import payments
+            from .. import payments
             vid = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())
             if vid and not payments.valid_vircle_id(vid):
                 return Response({'error': 'bad_vircle_id', 'code': 'bad_vircle_id',
@@ -539,7 +315,7 @@ class AdminVerdictSummaryView(_AdminBase):
         app, err = self._scoped_application(request, pk)
         if err:
             return err
-        from .verdict_narrative import verdict_case_summary
+        from ..verdict_narrative import verdict_case_summary
         return Response(verdict_case_summary(app))
 
 
@@ -720,7 +496,7 @@ class AdminNudgeStudentView(_AdminBase):
             return err
         if not (admin.is_super or admin.role == 'org_admin'):
             return self._deny_role()
-        from .nudge import is_applicable, nudge_state, send_nudge
+        from ..nudge import is_applicable, nudge_state, send_nudge
         if not is_applicable(app):
             return Response(
                 {'error': 'This reminder only applies to a shortlisted student who has given '
@@ -820,7 +596,7 @@ class AdminRunVisionView(_AdminBase):
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         # Shared with the bulk reextract command so the per-doc + batch reads can't drift.
-        from .reextract import reextract_document
+        from ..reextract import reextract_document
         if not reextract_document(doc):
             return Response({'error': 'This document type has no automatic check to re-run.'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -834,7 +610,7 @@ class AdminGenerateProfileView(_AdminBase):
             return err
         # Optional output language ('en'/'ms'); defaults to the applicant's locale.
         # Shared store path (Check 2 STEP 3): same as the auto-trigger, with claim-gating.
-        from .services import generate_ready_profile
+        from ..services import generate_ready_profile
         sp, error = generate_ready_profile(app, language=request.data.get('language'))
         if error is not None:
             return Response({'error': error}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -912,7 +688,7 @@ class AdminSuggestGapsView(_AdminBase):
         app, admin, err = self._require_open_case(request, pk)
         if err:
             return err
-        from .gap_engine import generate_interview_gaps
+        from ..gap_engine import generate_interview_gaps
         append = bool(request.data.get('append'))
         existing = app.interview_gaps or []
         result = generate_interview_gaps(
@@ -990,8 +766,8 @@ def interview_agenda_full(application):
     "carried-over" items. They stay in Check-2 Outstanding (a pending upload isn't an interview
     talking point, and the generic echo was noise the reviewer deleted every time). V3 #9's "nothing
     evaporates" is served by Check-2 remaining open — not by duplicating it onto the agenda."""
-    from .submission_review import completeness_gaps as _submission_gaps
-    from .verdict_engine import build_verdict
+    from ..submission_review import completeness_gaps as _submission_gaps
+    from ..verdict_engine import build_verdict
     agenda = [{'code': a['code'], 'kind': 'anomaly', 'params': a.get('params', {})}
               for a in detect_anomalies(application)]
     seen = {(e['kind'], e['code']) for e in agenda}
@@ -1377,7 +1153,7 @@ class AdminSponsorReviewView(_AdminBase):
         # were approved and never told. `previous_status` is read BEFORE the write because an
         # approval that lifts a suspension is a REINSTATEMENT, and the two read very differently
         # to the person receiving them. Dark until the template is switched on; best-effort.
-        from . import sponsor_notify
+        from .. import sponsor_notify
         sponsor_notify.send_vetting_outcome(sponsor, new_status, previous_status=previous_status)
         return Response(_sponsor_dict(sponsor))
 
@@ -1412,7 +1188,7 @@ def _sponsor_detail_dict(sponsor, admin, base):
     everything with money or a student in it is fenced through ``base`` — the same split
     the credit endpoints already make. `fenced` tells the screen to say whose share it is.
     """
-    from . import payments as payments_service
+    from .. import payments as payments_service
 
     programmes = base.programmes
     ledger = [
@@ -1675,7 +1451,7 @@ class AdminSetAwardAmountView(_AdminBase):
         if _err:
             return _err
         from decimal import Decimal, InvalidOperation
-        from . import award as award_rule
+        from .. import award as award_rule
         raw = request.data.get('amount')
         try:
             amount = Decimal(str(raw)) if raw not in (None, '') else None
@@ -1784,7 +1560,7 @@ def _source_application_counts():
     residual split if applications ever span multiple house tenants.
     """
     from apps.courses.models import PartnerOrganisation
-    from . import partner_comms
+    from .. import partner_comms
     # chip -> number of applications carrying it (NULL/'' collapse to ''). The tally comes from
     # `partner_comms.chip_tally()`, the SAME definition `partner_comms.partner_applications(org)`
     # filters on, so this screen and the partner weekly digest cannot report different numbers
@@ -1916,8 +1692,8 @@ class AdminSourceDetailView(_SourcesBase):
 def _partner_email_dict(tpl, last=None):
     """One partner-email template as the admin screen sees it: the wording, its switch, the
     placeholders it may use, and when it last went out."""
-    from . import partner_comms
-    from .models import PartnerEmailTemplate
+    from .. import partner_comms
+    from ..models import PartnerEmailTemplate
     return {
         'kind': tpl.kind,
         'enabled': bool(tpl.enabled),
@@ -1954,8 +1730,8 @@ class AdminPartnerEmailsView(_SourcesBase):
             return err
         from django.conf import settings as _settings
         from apps.courses.models import PartnerOrganisation
-        from . import partner_comms
-        from .models import PartnerEmailLog, PartnerEmailTemplate
+        from .. import partner_comms
+        from ..models import PartnerEmailLog, PartnerEmailTemplate
 
         by_kind = {t.kind: t for t in PartnerEmailTemplate.objects.all()}
         last = {}
@@ -2021,8 +1797,8 @@ class AdminPartnerEmailDetailView(_SourcesBase):
         admin, err = self._sources_admin(request)
         if err:
             return err
-        from . import partner_comms
-        from .models import PartnerEmailTemplate
+        from .. import partner_comms
+        from ..models import PartnerEmailTemplate
 
         tpl = PartnerEmailTemplate.objects.filter(kind=kind).first()
         if tpl is None:
@@ -2121,7 +1897,7 @@ class AdminSponsorEmailsView(_SponsorEmailsBase):
         admin, err = self._emails_admin(request)
         if err:
             return err
-        from .models import SponsorEmailLog, SponsorEmailTemplate
+        from ..models import SponsorEmailLog, SponsorEmailTemplate
 
         by_kind = {t.kind: t for t in SponsorEmailTemplate.objects.all()}
         last = {}
@@ -2156,7 +1932,7 @@ class AdminSponsorEmailDetailView(_SponsorEmailsBase):
         admin, err = self._emails_admin(request)
         if err:
             return err
-        from .models import SponsorEmailTemplate
+        from ..models import SponsorEmailTemplate
 
         tpl = SponsorEmailTemplate.objects.filter(kind=kind).first()
         if tpl is None:
@@ -2235,7 +2011,7 @@ class AdminApplicationWitnessView(_SourcesBase):
         # best-effort, so an email problem can never fail the assignment. A CLEARED witness
         # (None) emails nobody; a reassignment emails the NEW organisation only.
         if app.witness_org is not None:
-            from . import partner_notify
+            from .. import partner_notify
             partner_notify.notify_partner_assigned(app, app.witness_org)
         # Request #3 (2026-08-01): tell the STUDENT too. That organisation may witness their
         # bursary contract and can see details of their application in order to do it, and until
@@ -2251,7 +2027,7 @@ class AdminApplicationWitnessView(_SourcesBase):
         # organisation has been removed" is a different message, and one the requester has not
         # asked for — they do not intend to reassign at all.
         if app.witness_org is not None and app.witness_org_id != previous_org_id:
-            from . import partner_notify
+            from .. import partner_notify
             partner_notify.notify_student_assigned(app, app.witness_org)
         return Response({
             'id': app.id,
@@ -2764,7 +2540,7 @@ class AdminReviewerDetailView(_ReviewersBase):
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         work = _reviewer_workloads([target], organisation_id=org_id)[target.id]
         rp = getattr(target, 'reviewer_profile', None)
-        from . import reopen as reopen_service
+        from .. import reopen as reopen_service
         payload = _reviewer_dict(target, work)
         payload.update({
             # The four outcome bands. They partition the decided cases, so they sum to `completed`
@@ -2901,7 +2677,7 @@ class AdminReviewerSystemEmailsView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        from . import reviewer_system_emails
+        from .. import reviewer_system_emails
         return Response({'emails': reviewer_system_emails.rendered()})
 
 
@@ -2932,8 +2708,8 @@ class AdminInvitationsView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        from . import invitations as inv_service
-        from .models import Invitation
+        from .. import invitations as inv_service
+        from ..models import Invitation
 
         # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
         qs = Invitation.objects.select_related('partner_admin', 'invited_by', 'programme').all()
@@ -3026,7 +2802,7 @@ class AdminInvitationsView(_ReviewersBase):
         if not (admin.is_super or self.has_role(admin, 'org_admin')):
             return self._deny_role()
 
-        from . import invitations as inv_service
+        from .. import invitations as inv_service
         audience = (request.data.get('audience') or '').strip()
         if audience != 'sponsor':
             return Response({'error': 'unsupported_audience', 'code': 'unsupported_audience'},
@@ -3079,7 +2855,7 @@ class AdminInvitationsView(_ReviewersBase):
             organisation=org, invited_by=admin, programme=programme,
             ttl_days=inv_service.PII_RETENTION_DAYS)
 
-        from .emails import send_sponsor_invitation_email
+        from ..emails import send_sponsor_invitation_email
         ok, error = send_sponsor_invitation_email(
             email, org_name=(org.name if org else ''), note=(request.data.get('note') or ''),
             code=inv.code, invited_by=admin.name)
@@ -3122,7 +2898,7 @@ class AdminResolutionItemView(_AdminBase):
         # raised there is invisible: a question nobody can see or answer. And blocks `interviewed`
         # onward — the interview is concluded, it's decision time. (Was gated on querying_locked,
         # which let an officer raise an unseeable ticket at `shortlisted`.)
-        from .services import officer_queries_allowed
+        from ..services import officer_queries_allowed
         if not officer_queries_allowed(app):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         kind = (request.data.get('kind') or '').strip()
@@ -3134,7 +2910,7 @@ class AdminResolutionItemView(_AdminBase):
         member = (request.data.get('household_member') or '').strip()
         if member and member not in ('father', 'mother', 'guardian', 'brother', 'sister'):
             return Response({'error': 'bad_member'}, status=status.HTTP_400_BAD_REQUEST)
-        from .resolution import add_officer_item
+        from ..resolution import add_officer_item
         add_officer_item(app, kind=kind, prompt=prompt,
                          admin_email=getattr(admin, 'email', '') or '',
                          doc_type=(request.data.get('doc_type') or '').strip(),
@@ -3163,14 +2939,14 @@ class AdminResolutionItemActionView(_AdminBase):
             return self._deny()
         if action not in ('waive', 'resolve', 'reopen'):
             return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
-        from .models import ResolutionItem
+        from ..models import ResolutionItem
         item = ResolutionItem.objects.filter(pk=item_id).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         # Assignment-based write: super, or the admin/reviewer assigned to the item's application.
         if not self._can_review_app(admin, item.application):
             return self._deny_role()
-        from .services import querying_locked
+        from ..services import querying_locked
         if querying_locked(item.application):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         if action == 'reopen':
@@ -3210,7 +2986,7 @@ class AdminRecordVerdictView(_AdminBase):
         if not isinstance(raw, dict):
             return Response({'error': 'officer_verdict object required', 'code': 'verdict_required'},
                             status=status.HTTP_400_BAD_REQUEST)
-        from .audit import FACTS
+        from ..audit import FACTS
         officer_verdict = {}
         for fact in FACTS:
             val = (raw.get(fact) or '')
@@ -3238,7 +3014,7 @@ class AdminRecordVerdictView(_AdminBase):
         # ⚠ STAMP THE PREDICTOR WITH ITS SNAPSHOT, IN THE SAME BREATH. The two are one fact: what
         # the AI said, and which engine said it. Splitting them (stamping elsewhere, or later)
         # re-creates the gap this exists to close — a snapshot whose generation is unknowable.
-        from .verdict_engine import VERDICT_ENGINE_VERSION
+        from ..verdict_engine import VERDICT_ENGINE_VERSION
         app.ai_verdict_snapshot = build_verdict(app)
         app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
         app.officer_verdict = officer_verdict
@@ -3257,7 +3033,7 @@ class AdminRecordVerdictView(_AdminBase):
         # income_above_b40_line) the proposal is None, so award_amount STAYS unset — a super
         # may set a value if the system has erred. On DECLINE, clear it. See
         # apps.scholarship.award; reuse the verdict just snapshotted, don't recompute.
-        from . import award as award_rule
+        from .. import award as award_rule
         if overall == 'accept':
             if app.award_amount is None:
                 proposed = award_rule.proposed_award_amount(app, verdict=app.ai_verdict_snapshot)
@@ -3490,7 +3266,7 @@ class AdminQcDecisionView(_AdminBase):
                 return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             reviewer = app.assigned_to
             if reviewer is not None and getattr(reviewer, 'email', ''):
-                from .emails import send_qc_returned_email
+                from ..emails import send_qc_returned_email
                 name = getattr(getattr(app, 'profile', None), 'name', '') or ''
                 send_qc_returned_email(
                     to_email=reviewer.email,
@@ -3529,7 +3305,7 @@ class AdminQcDecisionView(_AdminBase):
             app.refresh_from_db()
             reviewer = app.assigned_to
             if reviewer is not None and getattr(reviewer, 'email', ''):
-                from .emails import send_qc_rejected_email
+                from ..emails import send_qc_rejected_email
                 name = getattr(getattr(app, 'profile', None), 'name', '') or ''
                 send_qc_rejected_email(
                     to_email=reviewer.email,
@@ -3572,7 +3348,7 @@ class AdminVerdictMetricsView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        from .audit import override_metrics
+        from ..audit import override_metrics
         # org-fence: _org_scoped applied below (fences the metrics roll-up).
         qs = (ScholarshipApplication.objects
               .filter(verdict_decided_at__isnull=False)
@@ -3832,7 +3608,7 @@ class _BursaryAdminBase(_AdminBase):
     """Shared lookup for the bursary-agreement admin actions."""
 
     def _agreement(self, pk):
-        from .models import BursaryAgreement
+        from ..models import BursaryAgreement
         return BursaryAgreement.objects.select_related(
             'application', 'application__profile', 'witness_org').filter(application_id=pk).first()
 
@@ -3851,8 +3627,8 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
         agreement = self._agreement(pk)
         if agreement is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import bursary
-        from .serializers import BursaryAgreementSerializer
+        from .. import bursary
+        from ..serializers import BursaryAgreementSerializer
         bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '')
         return Response(BursaryAgreementSerializer(agreement).data)
 
@@ -3880,380 +3656,13 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             org is not None and admin.org_id is not None and admin.org_id == org.id)
         if not (is_super or is_referring_partner):
             return self._deny_role()
-        from . import bursary
-        from .serializers import BursaryAgreementSerializer
+        from .. import bursary
+        from ..serializers import BursaryAgreementSerializer
         bursary.record_witness(
             agreement, org=org,
             by_name=getattr(admin, 'name', '') or '',
             witness_name=request.data.get('witness_name', '') or '')
         return Response(BursaryAgreementSerializer(agreement).data)
-
-
-# ── Payments module (Vircle payment runs) — admin + org_admin, org-fenced (P2) ────
-# Access: an `admin` or `org_admin` (super passes), and the run is org-fenced (a
-# cross-org run is 404, never 403). Reviewer/qc/partner -> 403. The service
-# (apps.scholarship.payments) owns the state machine; these views are thin.
-from decimal import Decimal as _Decimal
-
-
-def _payment_item_dict(item):
-    app = item.application
-    profile = getattr(app, 'profile', None)
-    return {
-        'id': item.id, 'application_id': app.id,
-        'name': getattr(profile, 'name', '') or '',
-        'nric': getattr(profile, 'nric', '') or '',
-        'vircle_id': item.vircle_id_snapshot or (app.vircle_id or ''),
-        # Advisory: has Vircle activated this eWallet? (mirrored from the relay sheet). Shown as a
-        # "not yet activated" chip on the run; never blocks — a run item stays payable regardless.
-        'activated': app.vircle_activated_at is not None,
-        'award_amount': str(item.award_amount_snapshot),
-        'paid_to_date': str(item.paid_to_date_snapshot),
-        'amount': str(item.amount),
-        'credit_applied': str(item.credit_applied),
-        'included': item.included,
-        'exclude_reason': item.exclude_reason,
-    }
-
-
-def _sig(name, email, at):
-    return {'name': name, 'email': email, 'at': at} if at else None
-
-
-def _run_programme(run):
-    """The gift a run pays from — ``{id, name}`` or None for a pre-P2b run. Shown beside the
-    reference so an operator can tell two same-dated runs apart (references disambiguate with a
-    `-02` suffix, which says there are two but not which is which)."""
-    p = getattr(run, 'programme', None)
-    if p is None:
-        return None
-    return {'id': p.id, 'name': (p.name_en or '').strip()}
-
-
-def _payment_run_summary(run):
-    included = [i for i in run.items.all() if i.included]
-    total = sum((i.amount for i in included), _Decimal('0'))
-    return {
-        'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
-        'period_month': run.period_month, 'programme': _run_programme(run),
-        'status': run.status, 'students': len(included), 'total': str(total),
-        'created_at': run.created_at,
-    }
-
-
-def _payment_run_detail(run):
-    items = list(run.items.select_related('application', 'application__profile').all())
-    included = [i for i in items if i.included]
-    total = sum((i.amount for i in included), _Decimal('0'))
-    # "Skipped this run" -- payable-status + started students who fail D4-4/5/6 (greyed,
-    # shown not hidden). Computed live from the eligibility choke-point. A student who IS
-    # an item of this run is never "skipped" by it -- without this, a COMPLETED run's own
-    # students re-enter as already_paid (they now sit in a completed run for the period).
-    from . import payments
-    item_app_ids = {i.application_id for i in items}
-    skipped = []
-    # Narrowed to the run's own programme (P2b) — a run pays ONE gift, so a student of another
-    # gift was never a candidate and must not read as "skipped by this run". A legacy run with
-    # no programme passes None and keeps the pre-P2b whole-org behaviour.
-    for row in payments.eligible_rows(run.organisation, run.payment_date,
-                                      period_month=run.period_month,
-                                      programme=run.programme):
-        if not row['eligible'] and row['application'].id not in item_app_ids:
-            a = row['application']
-            p = getattr(a, 'profile', None)
-            skipped.append({'application_id': a.id, 'name': getattr(p, 'name', '') or '',
-                            'nric': getattr(p, 'nric', '') or '', 'reasons': row['reasons']})
-    from django.conf import settings as _settings
-    return {
-        'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
-        'period_month': run.period_month, 'programme': _run_programme(run),
-        'vircle_email': getattr(_settings, 'VIRCLE_PAYMENTS_EMAIL', ''),
-        'status': run.status, 'note': run.note, 'drive_file_url': run.drive_file_url,
-        'created_by': run.created_by, 'created_at': run.created_at,
-        'admin_signed': _sig(run.admin_signed_name, run.admin_signed_email, run.admin_signed_at),
-        'finance_signed': _sig(run.finance_signed_name, run.finance_signed_email, run.finance_signed_at),
-        # Whether THIS org's chain includes the finance check, computed server-side and read
-        # verbatim by the frontend. The activation rule lives in exactly one place
-        # (payments.finance_check_required); mirroring it in TypeScript would make it the sixth
-        # keep-in-sync pair this codebase has had to un-drift (see docs/lessons.md).
-        'finance_check_required': payments.finance_check_required(run.organisation),
-        'org_admin_signed': _sig(run.org_admin_signed_name, run.org_admin_signed_email, run.org_admin_signed_at),
-        'items': [_payment_item_dict(i) for i in items],
-        'skipped': skipped,
-        'students': len(included), 'total': str(total),
-    }
-
-
-_PAYMENTS_READ_ROLES = ('admin', 'org_admin', 'finance')
-_PAYMENTS_WRITE_ROLES = ('admin', 'org_admin')
-
-
-class _PaymentsBase(_AdminBase):
-    """Shared gate + org-fenced run lookup for the Payments endpoints."""
-    def _payments_admin(self, request, roles=_PAYMENTS_READ_ROLES):
-        """Gate a Payments endpoint. The default admits `finance` — correct for the READ
-        endpoints (list, detail, CSV) and for Sign, whose per-step role logic lives in
-        `payments.sign`. The MUTATING endpoints (create a run, edit an item, cancel) pass
-        ``roles=_PAYMENTS_WRITE_ROLES`` explicitly: finance checks a run, it never authors one.
-        `payments.sign`'s `wrong_role` remains the backstop on the signing step."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not (admin.is_super or admin.role in roles):
-            return None, self._deny_role()
-        return admin, None
-
-    def _run_for(self, admin, pk):
-        """The run IFF this admin's organisation owns it (super global); else None -> 404."""
-        from .models import PaymentRun
-        run = PaymentRun.objects.filter(pk=pk).select_related('organisation').first()
-        if run is None:
-            return None
-        if admin.is_super:
-            return run
-        if run.organisation_id != admin.owning_organisation_id:
-            return None   # cross-org -> 404, no existence leak
-        return run
-
-
-class AdminPaymentRunListView(_PaymentsBase):
-    """GET list (org-fenced, newest first, gift-narrowed) . POST create a draft run.
-
-    ⚠ `?programme=<code>` narrows the list (TD-241, 2026-09-11, when Payments moved to the
-    Programme section). It narrows INSIDE the organisation filter and can never widen it —
-    `_gift_narrowing` only ever resolves a gift the caller's own organisation owns, and an
-    unknown or cross-tenant code is a 404. Omitted means every gift the fence already allowed.
-    """
-    def get(self, request):
-        admin, err = self._payments_admin(request)
-        if err:
-            return err
-        programme, gift_err = self._gift_narrowing(request, admin)
-        if gift_err:
-            return gift_err
-        from .models import PaymentRun
-        qs = PaymentRun.objects.all().prefetch_related('items').order_by('-payment_date', '-id')
-        if not admin.is_super:
-            qs = qs.filter(organisation_id=admin.owning_organisation_id)
-        if programme is not None:
-            qs = qs.filter(programme=programme)
-        return Response({'runs': [_payment_run_summary(r) for r in qs]})
-
-    def post(self, request):
-        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
-        if err:
-            return err
-        org = admin.owning_organisation
-        if org is None:
-            # The payments module is org-scoped; a caller with no owning organisation
-            # (e.g. a bare super) has no org context to create a run in.
-            return Response({'error': 'no_org', 'code': 'no_org'}, status=status.HTTP_400_BAD_REQUEST)
-        from django.utils.dateparse import parse_date
-        pd = parse_date((request.data.get('payment_date') or '').strip())
-        if pd is None:
-            return Response({'error': 'bad_date', 'code': 'bad_date'}, status=status.HTTP_400_BAD_REQUEST)
-        # The MONTH this run pays for (dedup key). Accepts 'YYYY-MM' or a full date; defaults to
-        # the payment date's own month when omitted.
-        pm_raw = (request.data.get('payment_month') or '').strip()
-        if len(pm_raw) == 7:
-            pm_raw += '-01'
-        pm = parse_date(pm_raw) if pm_raw else pd
-        if pm is None:
-            return Response({'error': 'bad_month', 'code': 'bad_month'}, status=status.HTTP_400_BAD_REQUEST)
-        # The GIFT this run pays from (P2b). Re-fenced on the caller's own organisation, so an
-        # admin cannot create a run against another tenant's programme even by id. Omitted +
-        # the org runs exactly one programme → that one is used; omitted + more than one → the
-        # operator must say which (`programme_required`), never a silent pick.
-        # ⚠ BY CODE, FROM THE BREADCRUMB — the page's own gift picker was REMOVED with this
-        # change (owner, 2026-09-11). Two controls answering "which gift" is two chances to
-        # create a run against a gift you are not looking at, and the money moves either way.
-        from .models import Programme
-        org_programmes = Programme.objects.filter(organisation=org, is_active=True)
-        code = (request.query_params.get('programme')
-                or request.data.get('programme') or '').strip()
-        if code:
-            programme = org_programmes.filter(code=code).first()
-            if programme is None:
-                return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            candidates = list(org_programmes[:2])
-            if len(candidates) != 1:
-                return Response({'error': 'programme_required', 'code': 'programme_required'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            programme = candidates[0]
-        from . import payments
-        try:
-            run = payments.create_run(org, programme, pd, pm,
-                                      by_email=getattr(admin, 'email', '') or '')
-        except payments.PaymentsError as e:
-            body = {'error': e.code, 'code': e.code}
-            if e.code == 'too_early':
-                # Return the earliest valid pay date so the UI can name it in the message. The
-                # rule lives ONLY in payments.earliest_payment_date — deliberately not mirrored
-                # in the frontend, which would make it a keep-in-sync pair that drifts.
-                body['earliest'] = payments.earliest_payment_date(pm).isoformat()
-            return Response(body, status=status.HTTP_400_BAD_REQUEST)
-        return Response(_payment_run_detail(run), status=status.HTTP_201_CREATED)
-
-
-class AdminPaymentRunDetailView(_PaymentsBase):
-    """GET a run's detail: items + greyed skipped list + totals + signatures."""
-    def get(self, request, pk):
-        admin, err = self._payments_admin(request)
-        if err:
-            return err
-        run = self._run_for(admin, pk)
-        if run is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response(_payment_run_detail(run))
-
-
-class AdminPaymentRunItemView(_PaymentsBase):
-    """PATCH a run item -- toggle include/exclude(+reason), edit amount (draft only)."""
-    def patch(self, request, pk, item_id):
-        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
-        if err:
-            return err
-        run = self._run_for(admin, pk)
-        if run is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from .models import PaymentRunItem
-        item = (PaymentRunItem.objects.filter(pk=item_id, run=run)
-                .select_related('application', 'run').first())
-        if item is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        kwargs = {}
-        if 'included' in request.data:
-            kwargs['included'] = bool(request.data.get('included'))
-        if 'exclude_reason' in request.data:
-            kwargs['exclude_reason'] = request.data.get('exclude_reason')
-        if 'amount' in request.data:
-            kwargs['amount'] = request.data.get('amount')
-        from . import payments
-        try:
-            payments.set_item(item, **kwargs)
-        except payments.PaymentsError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        run.refresh_from_db()
-        return Response(_payment_run_detail(run))
-
-
-class AdminPaymentRunSignView(_PaymentsBase):
-    """POST {typed_name} -- admin (maker) sign, finance (checker) sign when the org's chain
-    includes that step, or org_admin (approver) countersign (which completes the run). The
-    per-step role logic + name/pairwise-distinctness checks live in payments.sign; this view
-    admits every payments role and lets the service refuse the wrong step."""
-    def post(self, request, pk):
-        admin, err = self._payments_admin(request)
-        if err:
-            return err
-        run = self._run_for(admin, pk)
-        if run is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import payments
-        try:
-            payments.sign(run, admin, request.data.get('typed_name') or '')
-        except payments.PaymentsError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        run.refresh_from_db()
-        return Response(_payment_run_detail(run))
-
-
-class AdminPaymentRunCancelView(_PaymentsBase):
-    """POST -- cancel a run at any pre-completion status. admin/org_admin only."""
-    def post(self, request, pk):
-        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
-        if err:
-            return err
-        run = self._run_for(admin, pk)
-        if run is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import payments
-        try:
-            payments.cancel(run, by=getattr(admin, 'email', '') or '')
-        except payments.PaymentsError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        run.refresh_from_db()
-        return Response(_payment_run_detail(run))
-
-
-class AdminPaymentRunCsvView(_PaymentsBase):
-    """GET the run's payment CSV (any status >= admin_signed) as a download."""
-    def get(self, request, pk):
-        admin, err = self._payments_admin(request)
-        if err:
-            return err
-        run = self._run_for(admin, pk)
-        if run is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # finance_checked included: the checker must be able to READ the payment file to check
-        # it, and a run stays at that status while awaiting countersignature.
-        if run.status not in ('admin_signed', 'finance_checked', 'completed'):
-            return Response({'error': 'not_ready', 'code': 'not_ready'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        from django.http import HttpResponse
-        from . import sheets
-        resp = HttpResponse(sheets.payment_csv_text(run), content_type='text/csv')
-        resp['Content-Disposition'] = f'attachment; filename="{run.reference}.csv"'
-        return resp
-
-
-class AdminPaymentFundingSummaryView(_PaymentsBase):
-    """GET /api/v1/admin/payments/funding-summary/ — the org's payable students with award /
-    paid / remaining / eWallet, plus org totals for the footer (Sprint 14).
-
-    Rides `_PaymentsBase` with the DEFAULT read gate, so it is visible to super / admin /
-    org_admin / finance and refused to reviewer / qc / partner. It lives inside the Payments
-    module by design: it is the funding-side view of the same cohort the runs pay, and it is the
-    only student data a `finance` admin can reach (`_b40_scope` = 'none').
-
-    Serialised by `FundingSummaryRowSerializer` — an explicit allowlist, NOT a model dump.
-
-    tenancy: org-fenced on `owning_organisation`, the same fence `payments.eligible_rows` uses;
-    a super with no org context gets `no_org` (there is no "every tenant's students" reading of
-    this page). Classified in test_org_fence.py.
-    """
-    def get(self, request):
-        admin, err = self._payments_admin(request)
-        if err:
-            return err
-        programme, gift_err = self._gift_narrowing(request, admin)
-        if gift_err:
-            return gift_err
-        # ⚠⚠ **A SUPER SEES EVERY ORGANISATION HERE TOO (2026-09-12).** This endpoint returned
-        # `400 no_org` to a super, which is the SAME defect the owner reported on the Spending
-        # page the day before — found in the live logs rather than reported, because the page
-        # around it still renders and only the money summary comes back empty. Fixing one screen
-        # and not its neighbour is how a console teaches people that some pages "just do not work
-        # for you". `owning_organisation` stays the fence for everybody else.
-        org = admin.owning_organisation
-        every_org = admin.is_super and org is None
-        if org is None and not every_org:
-            return Response({'error': 'no_org', 'code': 'no_org'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        from . import payments
-        from .serializers_admin import FundingSummaryRowSerializer
-        # A caller with no org context was refused with `no_org` above, so the filter below
-        # can never be a no-op and this can never run unfenced.
-        # org-fence: owning_organisation=org (the fence payments.eligible_rows uses).
-        qs = (ScholarshipApplication.objects
-              .filter(status__in=payments.PAYABLE_STATUSES)
-              .select_related('profile').order_by('id'))
-        if not every_org:
-            # org-fence: owning_organisation=org (the fence payments.eligible_rows uses).
-            qs = qs.filter(owning_organisation=org)
-        if programme is not None:
-            # ⚠ Narrows INSIDE the org filter above, the same rule `payments.eligible_rows`
-            # states: the organisation is the fence, the gift is a restriction within it.
-            qs = qs.filter(programme=programme)
-        rows = FundingSummaryRowSerializer(qs, many=True).data
-        totals = {
-            'students': len(rows),
-            'award_total': str(sum(_Decimal(r['award_amount']) for r in rows)),
-            'paid_total': str(sum(_Decimal(r['paid_to_date']) for r in rows)),
-            'remaining_total': str(sum(_Decimal(r['remaining']) for r in rows)),
-        }
-        return Response({'rows': rows, 'totals': totals})
 
 
 # ── Billing & usage v1 (Sprint 13a) — the super/org_admin usage screen ────────────
@@ -4269,8 +3678,6 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
 # The aggregate is deliberately super-global (no tenant scope for a super) — the metering
 # UsageEvent.objects query lives in usage.py, not in a raw views_admin query, so the
 # org-fence static guard has nothing to police here. Classified in test_org_fence.py.
-_MONTH_RE = re.compile(r'^\d{4}-\d{2}$')
-
 
 class AdminBillingUsageView(_AdminBase):
     """Super + org_admin usage readout. The flag darkens the ORG-FACING screen only.
@@ -4312,7 +3719,7 @@ class AdminBillingUsageView(_AdminBase):
             # default was. A test pins the two computations to the same clock.
             month = timezone.localtime().strftime('%Y-%m')
 
-        from . import usage
+        from .. import usage
         if is_super:
             # super: every organisation + the platform (NULL-org) reconciliation row.
             payload = usage.monthly_usage(month, include_platform=True)
@@ -4373,8 +3780,8 @@ class AdminPlatformCostsView(_AdminBase):
 
         from apps.courses.models import PartnerOrganisation
 
-        from . import platform_cost
-        from .models import PlatformCost
+        from .. import platform_cost
+        from ..models import PlatformCost
 
         costs = platform_cost.reconcile(month)
 
@@ -4473,7 +3880,7 @@ class AdminPlatformCostsView(_AdminBase):
 
         from decimal import Decimal, InvalidOperation
 
-        from .models import OrgBillingAdjustment
+        from ..models import OrgBillingAdjustment
 
         month = (request.data.get('period_month') or '').strip()
         if not _MONTH_RE.match(month):
@@ -4529,7 +3936,7 @@ class AdminBillingRatesView(_AdminBase):
         if not self.has_role(admin, 'super'):
             return self._deny_role()
 
-        from .models import BillingRate
+        from ..models import BillingRate
         rows = BillingRate.objects.all()   # org-fence: platform-level config, no tenant data
         return Response({'rates': [{
             'id': r.id,
@@ -4551,7 +3958,7 @@ class AdminBillingRatesView(_AdminBase):
         from datetime import date
         from decimal import Decimal, InvalidOperation
 
-        from .models import BillingRate
+        from ..models import BillingRate
 
         category = (request.data.get('category') or '').strip()
         kind = (request.data.get('kind') or '').strip()
@@ -4589,1723 +3996,6 @@ class AdminBillingRatesView(_AdminBase):
                          'value': str(row.value),
                          'effective_from': row.effective_from.isoformat()},
                         status=status.HTTP_201_CREATED)
-
-
-# ── Tenant invoices and receipts (2026-09-14) ─────────────────────────────────
-
-def _invoice_money(v):
-    # Money crosses as a STRING. A bare Decimal in a nested dict renders as a float (sponsor-card
-    # lesson), and a float in an invoice payload is how RM30.00 becomes RM30.0 on a bill.
-    # ⚠ Same rule, same parameters, as the platform-cost payload's own formatter further up this
-    # file — code health H7 found the two were byte-identical copies written four days apart and
-    # routed both through `money.format_money` rather than leaving a third to appear next.
-    return money.format_money(v, blank=None, blank_when=money.BLANK_NONE,
-                              quantize=False, coerce=False)
-
-
-def _invoice_payload(inv, *, for_super):
-    """ONE invoice as the API returns it. An allowlist, typed out by hand.
-
-    ⚠ The tenant shape carries no issuing email, no override reason and no recipient list: the
-    override reason quotes internal warnings ("Supabase has nothing recorded") that describe the
-    platform's own cost ledger, which is super-only everywhere else.
-    """
-    receipts = list(inv.receipts.all())
-    out = {
-        'id': inv.id,
-        'number': inv.number,
-        'organisation_id': inv.organisation_id,
-        'organisation': inv.organisation.name,
-        'period_month': inv.period_month,
-        'issued_on': inv.issued_on.isoformat(),
-        'due_on': inv.due_on.isoformat(),
-        'status': inv.status,
-        'currency': inv.currency,
-        'subtotal_myr': _invoice_money(inv.subtotal_myr),
-        'discount_pct': _invoice_money(inv.discount_pct),
-        'discount_myr': _invoice_money(inv.discount_myr),
-        'discount_reason': inv.discount_reason,
-        'total_myr': _invoice_money(inv.total_myr),
-        'amount_paid_myr': _invoice_money(inv.amount_paid()),
-        'balance_myr': _invoice_money(inv.balance()),
-        'sent_at': inv.sent_at.isoformat() if inv.sent_at else None,
-        'voided_at': inv.voided_at.isoformat() if inv.voided_at else None,
-        'void_reason': inv.void_reason,
-        'bill_to_name': (inv.bill_to_snapshot or {}).get('bill_to_name', ''),
-        'lines': [{
-            'position': ln.position,
-            'category': ln.category,
-            'description': ln.description,
-            'quantity': _invoice_money(ln.quantity),
-            'unit_amount_myr': _invoice_money(ln.unit_amount_myr),
-            'amount_myr': _invoice_money(ln.amount_myr),
-        } for ln in inv.lines.all()],
-        'receipts': [{
-            'id': r.id,
-            'number': r.number,
-            'received_on': r.received_on.isoformat(),
-            'amount_myr': _invoice_money(r.amount_myr),
-            'method': r.method,
-            'reference': r.reference,
-        } for r in receipts],
-    }
-    if for_super:
-        out.update({
-            'issued_by_email': inv.issued_by_email,
-            'override_reason': inv.override_reason,
-            'sent_by_email': inv.sent_by_email,
-            'sent_to': list(inv.sent_to or []),
-            # Where Send WILL deliver — the frozen bill-to inboxes — so the confirm step can name
-            # them before anything leaves the building.
-            'bill_to_emails': list((inv.bill_to_snapshot or {}).get('emails', [])),
-            'voided_by_email': inv.voided_by_email,
-            'replaces_number': inv.replaces.number if inv.replaces_id else '',
-        })
-    return out
-
-
-class _InvoiceBase(_AdminBase):
-    """Shared door for the invoice endpoints: who is asking, and which invoice they may see."""
-
-    def _caller(self, request):
-        """→ (admin, is_super, error_response). Super, or org_admin while billing is live."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, False, self._deny()
-        is_super = self.has_role(admin, 'super')
-        # Same 404-first gate as the usage screen: every non-super keeps getting the dark 404
-        # while `BILLING_USAGE_ENABLED` is off, so the invoices route adds no existence signal.
-        if not is_super and not getattr(settings, 'BILLING_USAGE_ENABLED', False):
-            return None, False, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        if not (is_super or admin.role == 'org_admin'):
-            return None, False, self._deny_role()
-        return admin, is_super, None
-
-    def _visible_invoices(self, admin, is_super):
-        """THE FENCE, in one place. A tenant sees its OWN invoices, and only those that were SENT.
-
-        ⚠ "Sent" is part of the fence, not a display filter. The owner's ruling is that nothing
-        leaves the building until a super presses Send; an issued invoice appearing on the
-        tenant's screen before then would be sending it by a second door.
-        """
-        from .models import Invoice
-        qs = Invoice.objects.select_related('organisation', 'replaces').prefetch_related(  # org-fence: narrowed below for every non-super
-            'lines', 'receipts')
-        if is_super:
-            return qs
-        if not admin.owning_organisation_id:
-            return qs.none()
-        return qs.filter(organisation_id=admin.owning_organisation_id, sent_at__isnull=False)
-
-    @staticmethod
-    def _error(exc):
-        from . import invoicing
-        if isinstance(exc, invoicing.InvoiceRefused):
-            return Response({'error': exc.code, 'code': exc.code, 'problems': exc.problems},
-                            status=status.HTTP_409_CONFLICT)
-        return Response({'error': exc.code, 'code': exc.code, 'message': exc.message},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-
-class AdminInvoicesView(_InvoiceBase):
-    """GET the invoices a caller may see; POST (super) issues one.
-
-    Super's GET also carries `readiness` — for each tenant, whether the chosen month (default: the
-    previous one) can be issued and every reason it cannot — so the screen can offer Issue, or
-    Issue anyway with a reason, without a second round trip.
-    """
-
-    def get(self, request):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        from . import invoicing
-
-        invoices = [_invoice_payload(i, for_super=is_super)
-                    for i in self._visible_invoices(admin, is_super)]
-        payload = {'invoices': invoices}
-        if is_super:
-            from apps.courses.models import PartnerOrganisation
-            month = (request.query_params.get('month') or '').strip() or invoicing.previous_month()
-            if not invoicing.MONTH_RE.match(month):
-                return Response({'error': 'bad_month', 'code': 'bad_month'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            payload['month'] = month
-            payload['issue_day'] = invoicing.ISSUE_DAY
-            payload['readiness'] = [{
-                'organisation_id': org.id,
-                'organisation': org.name,
-                'problems': invoicing.readiness(org, month),
-            } for org in PartnerOrganisation.objects.tenants().order_by('name')]
-        return Response(payload)
-
-    def post(self, request):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        if not is_super:
-            return self._deny_role()
-        from apps.courses.models import PartnerOrganisation
-
-        from . import invoicing
-
-        month = (request.data.get('period_month') or '').strip()
-        if not invoicing.MONTH_RE.match(month):
-            return Response({'error': 'bad_month', 'code': 'bad_month'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        org = PartnerOrganisation.objects.filter(pk=request.data.get('organisation_id')).first()
-        if org is None:
-            return Response({'error': 'not_found', 'code': 'not_found'},
-                            status=status.HTTP_404_NOT_FOUND)
-        try:
-            inv = invoicing.issue_invoice(
-                org, month, issued_by_email=admin.email or '',
-                override_reason=request.data.get('override_reason') or '')
-        except invoicing.InvoicingError as exc:
-            return self._error(exc)
-        inv = self._visible_invoices(admin, True).get(pk=inv.pk)
-        return Response(_invoice_payload(inv, for_super=True), status=status.HTTP_201_CREATED)
-
-
-class AdminInvoiceActionView(_InvoiceBase):
-    """SUPER-ONLY actions on one invoice: `send`, `void`, `receipt`."""
-
-    def post(self, request, pk, action):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        if not is_super:
-            return self._deny_role()
-        from . import invoicing
-
-        inv = self._visible_invoices(admin, True).filter(pk=pk).first()
-        if inv is None:
-            return Response({'error': 'not_found', 'code': 'not_found'},
-                            status=status.HTTP_404_NOT_FOUND)
-        by = admin.email or ''
-        try:
-            if action == 'send':
-                invoicing.send_invoice(inv, sent_by_email=by)
-            elif action == 'void':
-                invoicing.void_invoice(inv, reason=request.data.get('reason'), voided_by_email=by)
-            elif action == 'receipt':
-                invoicing.record_receipt(
-                    inv,
-                    received_on=(request.data.get('received_on') or '').strip(),
-                    amount_myr=request.data.get('amount_myr'),
-                    reference=request.data.get('reference'),
-                    method=(request.data.get('method') or 'bank_transfer').strip(),
-                    note=request.data.get('note') or '',
-                    recorded_by_email=by)
-            else:
-                return Response({'error': 'not_found', 'code': 'not_found'},
-                                status=status.HTTP_404_NOT_FOUND)
-        except invoicing.InvoicingError as exc:
-            return self._error(exc)
-        inv = self._visible_invoices(admin, True).get(pk=pk)
-        return Response(_invoice_payload(inv, for_super=True))
-
-
-class AdminInvoicePdfView(_InvoiceBase):
-    """GET an invoice PDF (`kind='invoice'`) or a receipt PDF (`kind='receipt'`).
-
-    Fenced through `_visible_invoices` for BOTH: a receipt is reachable only through an invoice the
-    caller may see, so a tenant naming another tenant's receipt id gets the same 404 as a missing one.
-    """
-
-    def get(self, request, pk, kind):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        from django.http import HttpResponse
-
-        from . import invoice_pdf, invoicing
-        from .models import InvoiceReceipt
-
-        visible = self._visible_invoices(admin, is_super)
-        not_found = Response({'error': 'not_found', 'code': 'not_found'},
-                             status=status.HTTP_404_NOT_FOUND)
-        try:
-            if kind == 'invoice':
-                inv = visible.filter(pk=pk).first()
-                if inv is None:
-                    return not_found
-                pdf, name = invoice_pdf.invoice_pdf(inv), inv.number
-            elif kind == 'receipt':
-                receipt = (InvoiceReceipt.objects.select_related('invoice')  # org-fence: through the fenced invoice set
-                           .filter(pk=pk, invoice__in=visible).first())
-                if receipt is None:
-                    return not_found
-                pdf, name = invoice_pdf.receipt_pdf(receipt), receipt.number
-            else:
-                return not_found
-        except invoicing.InvoicingError as exc:
-            return self._error(exc)
-        resp = HttpResponse(pdf, content_type='application/pdf')
-        resp['Content-Disposition'] = f'attachment; filename="{name}.pdf"'
-        return resp
-
-
-class AdminInvoiceSettingsView(_InvoiceBase):
-    """SUPER-ONLY: who bills (the issuer) and who is billed (each tenant's billing details).
-
-    GET returns both. POST saves ONE of them: `{"issuer": {...}}` or
-    `{"organisation_id": N, "bill_to_name": ..., "address": ..., "emails": [...]}`. Saving changes
-    the NEXT invoice only — every issued invoice holds its own snapshot.
-    """
-
-    ISSUER_FIELDS = ('legal_name', 'registration_no', 'address', 'email', 'phone', 'bank_name',
-                     'bank_account_name', 'bank_account_no')
-
-    def _payload(self):
-        from apps.courses.models import PartnerOrganisation
-
-        from . import invoicing
-        who = invoicing.issuer()
-        tenants = []
-        for org in PartnerOrganisation.objects.tenants().order_by('name'):
-            d = invoicing.billing_details(org)
-            tenants.append({'organisation_id': org.id, 'organisation': org.name,
-                            'bill_to_name': d.bill_to_name, 'address': d.address,
-                            'emails': d.clean_emails(), 'missing': d.missing()})
-        return {
-            'issuer': {**{f: getattr(who, f) for f in self.ISSUER_FIELDS},
-                       'payment_terms_days': who.payment_terms_days,
-                       'missing': who.missing()},
-            'tenants': tenants,
-        }
-
-    def get(self, request):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        if not is_super:
-            return self._deny_role()
-        return Response(self._payload())
-
-    def post(self, request):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        if not is_super:
-            return self._deny_role()
-        from django.core.exceptions import ValidationError
-        from django.core.validators import validate_email
-
-        from apps.courses.models import PartnerOrganisation
-
-        from . import invoicing
-        from .models import InvoiceIssuer, OrgBillingDetails
-
-        def bad(code):
-            return Response({'error': code, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
-
-        data = request.data or {}
-        if isinstance(data.get('issuer'), dict):
-            src = data['issuer']
-            who = invoicing.issuer()
-            if who.pk is None:
-                who = InvoiceIssuer()
-            for f in self.ISSUER_FIELDS:
-                if f in src:
-                    setattr(who, f, str(src.get(f) or '').strip())
-            if who.email:
-                try:
-                    validate_email(who.email)
-                except ValidationError:
-                    return bad('bad_email')
-            if 'payment_terms_days' in src:
-                try:
-                    days = int(src.get('payment_terms_days'))
-                except (TypeError, ValueError):
-                    return bad('bad_terms')
-                if not 0 <= days <= 365:
-                    return bad('bad_terms')
-                who.payment_terms_days = days
-            who.updated_by_email = admin.email or ''
-            who.save()
-            return Response(self._payload())
-
-        org = (PartnerOrganisation.objects.tenants()
-               .filter(pk=data.get('organisation_id')).first())
-        if org is None:
-            return Response({'error': 'not_found', 'code': 'not_found'},
-                            status=status.HTTP_404_NOT_FOUND)
-        emails = data.get('emails') or []
-        if isinstance(emails, str):
-            emails = [e for e in (x.strip() for x in emails.replace(';', ',').split(',')) if e]
-        if not isinstance(emails, list):
-            return bad('bad_email')
-        emails = [str(e).strip() for e in emails if str(e).strip()]
-        for e in emails:
-            try:
-                validate_email(e)
-            except ValidationError:
-                return bad('bad_email')
-        details, _ = OrgBillingDetails.objects.get_or_create(organisation=org)
-        details.bill_to_name = str(data.get('bill_to_name') or '').strip()
-        details.address = str(data.get('address') or '').strip()
-        details.emails = list(dict.fromkeys(emails))
-        details.updated_by_email = admin.email or ''
-        details.save()
-        return Response(self._payload())
-
-
-class AdminOrgBuildHoursView(_AdminBase):
-    """Build hours for ONE organisation's modules. Super writes; org_admin reads its own.
-
-    The org side of the owner's 2026-07-27 design. Fenced on `organisation_id` like every other
-    org-scoped surface: an org_admin sees only its own hours, and a cross-org id is a **404**,
-    never a 403 — consistent with the rest of the admin API, so the route leaks no existence.
-
-    Only a super may RECORD hours: it is a charge against a tenant, and a tenant recording what
-    it will be billed for is not a control anyone would accept.
-    """
-
-    def get(self, request, org_id):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        is_super = self.has_role(admin, 'super')
-        if not (is_super or admin.role == 'org_admin'):
-            return self._deny_role()
-        if not is_super and admin.owning_organisation_id != int(org_id):
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        month = (request.query_params.get('month') or '').strip()
-        if month and not _MONTH_RE.match(month):
-            return Response({'error': 'bad_month', 'code': 'bad_month'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        from .models import OrgBuildHours
-        qs = OrgBuildHours.objects.filter(organisation_id=org_id)  # org-fence: explicit filter
-        if month:
-            qs = qs.filter(period_month=month)
-        payload = {'organisation_id': int(org_id), 'lines': [{
-            'id': r.id, 'period_month': r.period_month, 'module': r.module,
-            'hours': str(r.hours), 'basis': r.basis,
-        } for r in qs]}
-
-        # The charge is only computed when a month is asked for AND its rates are set. A
-        # missing rate is reported as such, never silently rendered as RM0.00.
-        if month:
-            from . import platform_cost
-            try:
-                charge = platform_cost.development_charge(
-                    admin.owning_organisation if not is_super else _org_or_none(org_id), month)
-                payload['charge'] = {k: (str(v) if v is not None else None)
-                                     for k, v in charge.items() if k != 'lines'}
-            except platform_cost.RateMissing as exc:
-                payload['charge'] = None
-                payload['charge_blocked'] = str(exc)
-        return Response(payload)
-
-    def post(self, request, org_id):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'super'):
-            return self._deny_role()
-
-        from decimal import Decimal, InvalidOperation
-
-        from .models import OrgBuildHours
-
-        month = (request.data.get('period_month') or '').strip()
-        if not _MONTH_RE.match(month):
-            return Response({'error': 'bad_month', 'code': 'bad_month'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        module = (request.data.get('module') or '').strip()
-        basis = (request.data.get('basis') or '').strip()
-        if not module:
-            return Response({'error': 'module_required', 'code': 'module_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if not basis:
-            # The whole point of the model: an hours figure with no stated reconstruction is
-            # not auditable, and this is the only place that can insist on one.
-            return Response({'error': 'basis_required', 'code': 'basis_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        try:
-            hours = Decimal(str(request.data.get('hours')))
-        except (InvalidOperation, TypeError):
-            return Response({'error': 'bad_hours', 'code': 'bad_hours'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if hours <= 0:
-            return Response({'error': 'bad_hours', 'code': 'bad_hours'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        org = _org_or_none(org_id)
-        if org is None:
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        row = OrgBuildHours.objects.create(
-            organisation=org, period_month=month, module=module, hours=hours,
-            basis=basis, recorded_by_email=(admin.email or ''))
-        return Response({'id': row.id, 'period_month': row.period_month,
-                         'module': row.module, 'hours': str(row.hours)},
-                        status=status.HTTP_201_CREATED)
-
-
-def _org_or_none(org_id):
-    from apps.courses.models import PartnerOrganisation
-    # org-fence: super-only callers reach this; the org id is validated, not trusted.
-    return PartnerOrganisation.objects.filter(pk=org_id).first()
-
-
-# ── Contract module (org-owned versioned bursary templates) — S3 admin API ────────
-# Access: super or org_admin ONLY, org-fenced (a cross-org template is 404, never
-# 403). Deploy is SUPER-only (org_admin -> 403). The service (apps.scholarship.
-# contracts) owns the lifecycle + validation; these views are thin. generate-quiz
-# is draft-only and calls the mockable Gemini seam (never live in tests).
-
-_CONTRACT_RULE_LABELS = {
-    'T1': 'Version + counterparty complete',
-    'T2': 'Lawyer vetting recorded',
-    'C1': 'Clauses numbered 1..N (contiguous)',
-    'C2': 'English complete on every clause',
-    'Q1': 'At least one quiz question',
-    'Q2': 'Each quiz question is structurally valid',
-    'Q3': 'No quiz on a non-candidate clause',
-    'Q4': 'Quiz languages agree (same correct answer)',
-    'S1': 'A default schedule row exists',
-    'S2': 'Schedule row shapes are valid',
-    'S3': 'Each schedule total is an allowed amount',
-    'S4': 'Schedule totals match the award amounts',
-    'P1': 'Uses only v1-supported options',
-    'W1': 'Guarantor wording vs co-signer config',
-    'W2': 'Some translations are incomplete',
-    'W3': 'A clause body contains an RM figure',
-}
-
-
-def _contract_clause_dict(c):
-    return {
-        'order': c.order,
-        'level': c.level,
-        'heading_en': c.heading_en, 'heading_ms': c.heading_ms, 'heading_ta': c.heading_ta,
-        'body_en': c.body_en, 'body_ms': c.body_ms, 'body_ta': c.body_ta,
-        'is_quiz_candidate': c.is_quiz_candidate,
-        'quiz_en': c.quiz_en, 'quiz_ms': c.quiz_ms, 'quiz_ta': c.quiz_ta,
-        'quiz_generated_model': c.quiz_generated_model,
-    }
-
-
-def _contract_schedule_dict(r):
-    return {
-        'pathway': r.pathway, 'variant': r.variant,
-        'label_en': r.label_en, 'label_ms': r.label_ms, 'label_ta': r.label_ta,
-        'monthly_amount': str(r.monthly_amount), 'start_month': r.start_month,
-        'paid_offsets': list(r.paid_offsets or []), 'sort_order': r.sort_order,
-        'months': len(r.paid_offsets or []), 'total': str(r.total),
-    }
-
-
-def _contract_template_summary(t):
-    return {
-        'id': t.id, 'organisation': t.organisation.code, 'version': t.version,
-        'status': t.status, 'languages_available': t.languages_available,
-        'vetted_by_name': t.vetted_by_name, 'vetted_on': t.vetted_on,
-        'deployed_by_at': t.deployed_by_at, 'created_at': t.created_at,
-        'updated_at': t.updated_at,
-    }
-
-
-def _contract_template_detail(t):
-    d = _contract_template_summary(t)
-    d.update({
-        'title_en': t.title_en, 'title_ms': t.title_ms, 'title_ta': t.title_ta,
-        'preamble_en': t.preamble_en, 'preamble_ms': t.preamble_ms, 'preamble_ta': t.preamble_ta,
-        'progress_standard_en': t.progress_standard_en, 'progress_standard_ms': t.progress_standard_ms,
-        'progress_standard_ta': t.progress_standard_ta,
-        'counterparty_name': t.counterparty_name, 'counterparty_title': t.counterparty_title,
-        'counterparty_nric': t.counterparty_nric, 'counterparty_address': t.counterparty_address,
-        'counterparty_notify_emails': t.counterparty_notify_emails or [],
-        'parent_role': t.parent_role, 'parent_pin_required': t.parent_pin_required,
-        'witness_policy': t.witness_policy,
-        'vetting_attested_by_email': t.vetting_attested_by_email,
-        'vetting_attested_at': t.vetting_attested_at,
-        'created_by_email': t.created_by_email, 'submitted_by_email': t.submitted_by_email,
-        'submitted_by_at': t.submitted_by_at, 'deployed_by_email': t.deployed_by_email,
-        'archived_at': t.archived_at,
-        'clauses': [_contract_clause_dict(c) for c in t.clauses.all().order_by('order')],
-        'schedule': [_contract_schedule_dict(r) for r in t.schedule_rows.all()],
-    })
-    return d
-
-
-def _contract_validation_dict(result):
-    return {
-        'ok': result.ok,
-        'errors': [{'code': c, 'label': _CONTRACT_RULE_LABELS.get(c, c)} for c in result.errors],
-        'warnings': [{'code': c, 'label': _CONTRACT_RULE_LABELS.get(c, c)} for c in result.warnings],
-    }
-
-
-def _contracts_err(e):
-    body = {'error': e.code, 'code': e.code}
-    if getattr(e, 'errors', None):
-        body['errors'] = e.errors
-    http = status.HTTP_403_FORBIDDEN if e.code == 'deploy_forbidden' else status.HTTP_400_BAD_REQUEST
-    return Response(body, status=http)
-
-
-class _ContractsBase(_AdminBase):
-    """Gate + org-fenced template lookup for the Contract admin endpoints.
-    super or org_admin only; deploy is super-only; cross-org -> 404."""
-
-    def _not_found(self):
-        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    def _contract_admin(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
-            return None, self._deny_role()
-        return admin, None
-
-    def _template_for(self, request, pk):
-        """(template, admin, None) if the caller may access it; else (None, None, err).
-        Cross-org -> 404 (no existence leak). Super global; org_admin own-org only."""
-        admin, err = self._contract_admin(request)
-        if err:
-            return None, None, err
-        from .models import ContractTemplate
-        template = (ContractTemplate.objects.filter(pk=pk)
-                    .select_related('organisation')
-                    .prefetch_related('clauses', 'schedule_rows').first())
-        if template is None:
-            return None, None, self._not_found()
-        if not self.has_role(admin, 'super') and template.organisation_id != admin.owning_organisation_id:
-            return None, None, self._not_found()   # cross-org 404
-        return template, admin, None
-
-    def _target_org(self, request, admin):
-        """The org a new template belongs to: super -> the request 'organisation' code
-        (required); org_admin -> own owning org."""
-        from apps.courses.models import PartnerOrganisation
-        if self.has_role(admin, 'super'):
-            code = (request.data.get('organisation') or '').strip()
-            if not code:
-                return None, Response({'error': 'organisation_required', 'code': 'organisation_required'},
-                                      status=status.HTTP_400_BAD_REQUEST)
-            org = PartnerOrganisation.objects.filter(code=code).first()
-            if org is None:
-                return None, Response({'error': 'unknown_organisation', 'code': 'unknown_organisation'},
-                                      status=status.HTTP_400_BAD_REQUEST)
-            return org, None
-        org = admin.owning_organisation
-        if org is None:
-            return None, self._deny_role()
-        return org, None
-
-
-class AdminContractTemplateListView(_ContractsBase):
-    """GET list (org-fenced; super may ?organisation=<code>). POST create a DRAFT
-    ({version, organisation? (super), copy_from?})."""
-    def get(self, request):
-        admin, err = self._contract_admin(request)
-        if err:
-            return err
-        from .models import ContractTemplate
-        qs = (ContractTemplate.objects.select_related('organisation')
-              .prefetch_related('clauses', 'schedule_rows')
-              .order_by('organisation_id', '-created_at'))
-        if not self.has_role(admin, 'super'):
-            qs = qs.filter(organisation_id=admin.owning_organisation_id)
-        else:
-            org_f = (request.query_params.get('organisation') or '').strip()
-            if org_f:
-                qs = qs.filter(organisation__code=org_f)
-        return Response({'templates': [_contract_template_summary(t) for t in qs]})
-
-    def post(self, request):
-        admin, err = self._contract_admin(request)
-        if err:
-            return err
-        org, oerr = self._target_org(request, admin)
-        if oerr:
-            return oerr
-        from . import contracts
-        from .models import ContractTemplate
-        copy_from = None
-        cf = request.data.get('copy_from')
-        if cf:
-            copy_from = ContractTemplate.objects.filter(pk=cf, organisation=org).first()
-            if copy_from is None:
-                return Response({'error': 'copy_from_not_found', 'code': 'copy_from_not_found'},
-                                status=status.HTTP_400_BAD_REQUEST)
-        try:
-            template = contracts.create_template(
-                org, (request.data.get('version') or '').strip(),
-                created_by_email=getattr(admin, 'email', '') or '', copy_from=copy_from)
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        return Response(_contract_template_detail(template), status=status.HTTP_201_CREATED)
-
-
-class AdminContractTemplateDetailView(_ContractsBase):
-    """GET the full template. PATCH updates whitelisted config fields (draft only)."""
-    def get(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        return Response(_contract_template_detail(template))
-
-    def patch(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from . import contracts
-        fields = {k: v for k, v in request.data.items() if k in contracts._CONFIG_FIELDS}
-        try:
-            contracts.update_config(template, **fields)
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractClausesView(_ContractsBase):
-    """PUT the full ordered clause list (draft only)."""
-    def put(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        clauses = request.data.get('clauses')
-        if not isinstance(clauses, list):
-            return Response({'error': 'clauses must be a list', 'code': 'bad_body'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        from . import contracts
-        try:
-            contracts.replace_clauses(template, clauses)
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractScheduleView(_ContractsBase):
-    """PUT the full payment schedule (draft only)."""
-    def put(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        rows = request.data.get('rows')
-        if not isinstance(rows, list):
-            return Response({'error': 'rows must be a list', 'code': 'bad_body'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        from . import contracts
-        try:
-            contracts.replace_schedule(template, rows)
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractGenerateQuizView(_ContractsBase):
-    """POST — generate a clause's quiz via Gemini (draft only; billable, on-demand).
-    The Gemini call is the mockable seam contracts._gemini_generate (never live in tests)."""
-    def post(self, request, pk, order):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        clause = template.clauses.filter(order=order).first()
-        if clause is None:
-            return self._not_found()
-        from . import contracts
-        try:
-            contracts.generate_quiz(clause, model=request.data.get('model') or None)
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        return Response(_contract_clause_dict(clause))
-
-
-class AdminContractVettingView(_ContractsBase):
-    """POST — record the lawyer-vetting attestation ({vetted_by_name, vetted_on}).
-    The attesting admin's own email is stamped as the attester."""
-    def post(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from django.utils.dateparse import parse_date
-        from . import contracts
-        try:
-            contracts.record_vetting(
-                template,
-                vetted_by_name=(request.data.get('vetted_by_name') or '').strip(),
-                vetted_on=parse_date((request.data.get('vetted_on') or '').strip()),
-                attested_by_email=(getattr(admin, 'email', '') or '').strip())
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractValidateView(_ContractsBase):
-    """GET — the deploy-validation result (errors + warnings), mirroring the service."""
-    def get(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from . import contracts
-        return Response(_contract_validation_dict(contracts.validate_for_deployment(template)))
-
-
-class AdminContractSubmitView(_ContractsBase):
-    """POST — draft -> pending_deployment (refuses when validation fails)."""
-    def post(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from . import contracts
-        try:
-            contracts.submit_for_deployment(
-                template, submitted_by_email=getattr(admin, 'email', '') or '')
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractRevertView(_ContractsBase):
-    """POST — pending_deployment -> draft (to edit further)."""
-    def post(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from . import contracts
-        try:
-            contracts.revert_to_draft(template)
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractDeployView(_ContractsBase):
-    """POST — pending_deployment -> active (SUPER only; org_admin -> 403). Atomically
-    archives the org's previous active version."""
-    def post(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        if not self.has_role(admin, 'super'):
-            return self._deny_role()   # deploy is super-only
-        from . import contracts
-        try:
-            contracts.deploy(template, is_super=True,
-                             deployed_by_email=getattr(admin, 'email', '') or '')
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        template.refresh_from_db()
-        return Response(_contract_template_detail(template))
-
-
-class AdminContractPreviewView(_ContractsBase):
-    """GET — a rendered preview (HTML, or ?output=pdf). Sample particulars only.
-
-    NOTE: the PDF selector is ``?output=pdf``, NOT ``?format=pdf`` — ``format`` is DRF's
-    RESERVED content-negotiation query param, and ``?format=pdf`` makes DRF raise Http404
-    (no 'pdf' renderer) during content negotiation, BEFORE this view runs (TD-163)."""
-    def get(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from django.http import HttpResponse
-        from . import contracts
-        html = contracts.render_preview_html(template, request.query_params.get('locale', 'en'))
-        if request.query_params.get('output') == 'pdf':
-            from . import bursary
-            try:
-                pdf = bursary.generate_pdf(html)
-            except bursary.BursaryError as e:
-                return Response({'error': e.code, 'code': e.code},
-                                status=status.HTTP_400_BAD_REQUEST)
-            resp = HttpResponse(pdf, content_type='application/pdf')
-            resp['Content-Disposition'] = f'inline; filename="contract_{template.version}.pdf"'
-            return resp
-        return HttpResponse(html, content_type='text/html')
-
-
-class AdminContractQuizPreviewView(_ContractsBase):
-    """GET — the comprehension checkpoints served for a locale (author preview)."""
-    def get(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        from . import contracts
-        loc = contracts.resolve_locale(request.query_params.get('locale', 'en'), template)
-        return Response({'template_version': template.version, 'locale_used': loc,
-                         'checkpoints': contracts.quiz_checkpoints(template, loc)})
-
-
-class AdminContractImportDocxView(_ContractsBase):
-    """POST a .docx — parse it (deterministically from the doc's own heading/list
-    numbering; Gemini only as a fallback for unstyled docs) into a PROPOSED clause list
-    plus a detected title/preamble, for the author to review (draft-only). Nothing is
-    saved and the uploaded file is NOT retained — on confirm the FE PUTs the reviewed
-    clauses and fills a blank title/preamble. Failures return a code the FE degrades on."""
-    from rest_framework.parsers import MultiPartParser
-    parser_classes = [MultiPartParser]
-
-    def post(self, request, pk):
-        template, admin, err = self._template_for(request, pk)
-        if err:
-            return err
-        if template.status != 'draft':
-            return Response({'error': 'not_draft', 'code': 'not_draft'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        upload = request.FILES.get('file')
-        if upload is None:
-            return Response({'error': 'no_file', 'code': 'no_file'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        from . import contracts
-        try:
-            proposal = contracts.segment_docx(upload.read())   # bytes only; never stored
-        except contracts.ContractsError as e:
-            return _contracts_err(e)
-        # PROPOSED — the FE reviews, then PUTs clauses (+ fills blank title/preamble/party fields).
-        return Response({
-            'clauses': proposal['clauses'],
-            'title': proposal.get('title', ''),
-            'preamble': proposal.get('preamble', ''),
-            'counterparty': proposal.get('counterparty', {}),
-        })
-
-
-# ── Requests space (Sprint 15) ─────────────────────────────────────────────────────
-# The org-section "Requests" area: bug/feature forms → AI reviewer → owner-gated hours
-# quotes. Ships DARK behind REQUESTS_ENABLED — every route 404s while the flag is off
-# (the FE hub card is hidden by the same 404-probe, so there is no client flag). Service =
-# apps.scholarship.org_requests; org-fenced via _org_request_for (cross-org 404), role-gated
-# per the endpoint table (org-side vs super-only). All classes classified in
-# test_org_fence.py FENCED_OR_EXEMPT and the OrgRequest model is WATCHED (its raw admin
-# queries below all carry an # org-fence pragma).
-
-def _org_request_err(e):
-    """Map an OrgRequestError code to a 4xx. bad_transition/bug_is_free/... are 4xx; the two
-    AI-availability codes are 503 (the model is unconfigured/unavailable, not the caller's fault)."""
-    if e.code in ('triage_ai_unconfigured', 'triage_ai_unavailable'):
-        return Response({'error': e.code, 'code': e.code},
-                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class _OrgRequestsBase(_AdminBase):
-    """Shared flag/role/org gate for the Requests-space endpoints.
-
-    404-FIRST dark ship: with ``REQUESTS_ENABLED`` off, ``_flag`` short-circuits every handler to
-    404 BEFORE any auth/role work — the same shape as the sponsor-pool flag gate — so the feature
-    leaks no existence signal while dark. When the flag is on, role denials are REAL 403s and a
-    cross-org id is 404 (no existence leak)."""
-
-    def _flag(self):
-        """Returns an error Response (404) when the feature is dark, else None."""
-        if not getattr(settings, 'REQUESTS_ENABLED', False):
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        return None
-
-    def _not_found(self):
-        return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-    def _org_request_for(self, admin, pk):
-        # org-fence: fetch then re-gate to the caller's organisation (super global); a cross-org
-        # id returns None -> 404 (no existence leak). This is the ONLY OrgRequest.objects read.
-        req = (OrgRequest.objects
-               .select_related('organisation', 'submitted_by').filter(pk=pk).first())
-        if req is None:
-            return None
-        if self.has_role(admin, 'super'):
-            return req
-        if req.organisation_id != admin.owning_organisation_id:
-            return None
-        return req
-
-    # ── role prologues (flag already assumed checked by the caller) ──────────────
-    def _org_side(self, request):
-        """Caller must be an org_admin or super (the roles that OPEN the Requests area)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
-            return None, self._deny_role()
-        return admin, None
-
-    def _requestee(self, request, pk, *, allow_super=False):
-        """A requestee WRITE (answer/defer/modify → org_admin only; approve/decline → +super).
-        Returns (admin, req, None) or (None, None, err)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, None, self._deny()
-        if not ((admin.role == 'org_admin') or (allow_super and admin.is_super)):
-            return None, None, self._deny_role()
-        req = self._org_request_for(admin, pk)
-        if req is None:
-            return None, None, self._not_found()
-        return admin, req, None
-
-    def _super_side(self, request, pk):
-        """A super-only WRITE (triage/quote/requote/schedule/done/ai-rerun)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return None, None, self._deny()
-        if not admin.is_super:
-            return None, None, self._deny_role()
-        req = self._org_request_for(admin, pk)
-        if req is None:
-            return None, None, self._not_found()
-        return admin, req, None
-
-    def _serialize(self, admin, req):
-        """Super sees the OWNER payload (incl. the AI draft + triage); everyone else the
-        allowlist ORG payload (no ai_* / triage ever)."""
-        if self.has_role(admin, 'super'):
-            return OrgRequestOwnerSerializer(req).data
-        return OrgRequestOrgSerializer(req).data
-
-
-class AdminOrgRequestListView(_OrgRequestsBase):
-    """GET list (org-fenced) . POST create a request. org_admin + super."""
-
-    def get(self, request):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, err = self._org_side(request)
-        if err:
-            return err
-        # org-fence: list scoped to the caller's organisation (super global) via _org_scoped.
-        qs = self._org_scoped(
-            OrgRequest.objects.select_related('organisation', 'submitted_by'),
-            admin, field='organisation_id')
-        return Response({'requests': [self._serialize(admin, r) for r in qs]})
-
-    def post(self, request):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, err = self._org_side(request)
-        if err:
-            return err
-        from . import org_requests
-        # Whose org the request belongs to: the org_admin's own; a super must name organisation_id.
-        if admin.is_super:
-            org_id = request.data.get('organisation_id')
-            from apps.courses.models import PartnerOrganisation
-            org = PartnerOrganisation.objects.filter(pk=org_id).first() if org_id else None
-            if org is None:
-                return Response({'error': 'org_required', 'code': 'org_required'},
-                                status=status.HTTP_400_BAD_REQUEST)
-        else:
-            org = admin.owning_organisation
-            if org is None:
-                return Response({'error': 'no_org', 'code': 'no_org'},
-                                status=status.HTTP_400_BAD_REQUEST)
-        try:
-            req = org_requests.create_request(
-                org, admin, kind=(request.data.get('kind') or '').strip(),
-                title=request.data.get('title') or '',
-                description=request.data.get('description') or '',
-                component=request.data.get('component') or '',
-                urgency=request.data.get('urgency') or '',
-                steps_to_reproduce=request.data.get('steps_to_reproduce') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        # Best-effort post-commit: notify the owner + auto-run the AI reviewer (never fails create).
-        try:
-            from . import emails
-            emails.send_org_request_submitted_email(req)
-        except Exception:
-            logger.warning('Requests: submit-notify failed for OrgRequest %s', req.pk, exc_info=True)
-        org_requests.auto_run_ai_review(req)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req), status=status.HTTP_201_CREATED)
-
-
-class AdminOrgRequestCountView(_OrgRequestsBase):
-    """GET {count} for the nav badge. Super: requests waiting on US — SUBMITTED (awaiting triage)
-    OR a triaged FEATURE with no approved analysis (TD-205). org_admin: own org's requests that
-    need THEIR attention — quoted (awaiting accept) OR carrying an unanswered clarifying question.
-    org_admin + super."""
-
-    def get(self, request):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, err = self._org_side(request)
-        if err:
-            return err
-        from django.db.models import Count, Q
-        if self.has_role(admin, 'super'):
-            # TD-205: "waiting on us" is BOTH ends of the engineer's involvement. Untriaged is the
-            # obvious half. The other is a triaged FEATURE with no approved analysis — it cannot be
-            # quoted at all (`analysis_required` refuses), so it is stuck BY CONSTRUCTION and
-            # nothing else says so. A triaged BUG is deliberately NOT counted: a bug is free and
-            # schedulable straight from triage, so it waits on a decision, not on an analysis.
-            #
-            # A filtered Count, and one annotate only (two multi-valued annotates multiply each
-            # other — this project has been bitten by that).
-            #
-            # A single `.exclude(analyses__approved_at__isnull=False, analyses__superseded_at__
-            # isnull=True)` is EQUIVALENT here and was measured to be, not assumed: Django compiles
-            # one multi-condition exclude into a single NOT EXISTS with both conditions on the same
-            # joined row, which is exactly "has no approved, live analysis". The multi-valued
-            # negation trap is real but belongs to CHAINED `.exclude(a).exclude(b)`, which asks two
-            # independent questions of two different rows. Count is kept for being explicit about
-            # the zero and for not needing `.distinct()`, NOT because exclude is broken — an
-            # earlier version of this comment claimed it was, and a bite-check disproved it.
-            #
-            # An approved analysis always carries ≥1 cited file because `approve_analysis` refuses
-            # otherwise, so this agrees with `org_requests.approved_analysis` without re-testing it.
-            # org-fence: super is global by design for the triage badge.
-            waiting = OrgRequest.objects.annotate(
-                live_analyses=Count('analyses', filter=Q(analyses__approved_at__isnull=False,
-                                                         analyses__superseded_at__isnull=True)),
-            ).filter(
-                Q(status='submitted')
-                | Q(status='triaged', triaged_kind='feature', live_analyses=0)
-            )
-            return Response({'count': waiting.count()})
-        # TD-201: "needs you" is a quote awaiting a decision, or a question awaiting a reply —
-        # the latter is now a comment row, so it is one subquery instead of walking a JSON list
-        # per request.
-        # org-fence: own org only (org_admin). Kept ADJACENT to the query — the static guard reads
-        # a 200-char window, so an explanation wedged in between silently un-fences it.
-        qs = OrgRequest.objects.filter(
-            organisation_id=admin.owning_organisation_id,
-        ).exclude(status__in=('done', 'declined'))
-        return Response({'count': qs.filter(
-            Q(status='quoted') | Q(comments__awaiting_reply=True)
-        ).distinct().count()})
-
-
-class AdminOrgRequestDetailView(_OrgRequestsBase):
-    """GET one request (org_admin own else 404; super). org_admin + super."""
-
-    def get(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, err = self._org_side(request)
-        if err:
-            return err
-        req = self._org_request_for(admin, pk)
-        if req is None:
-            return self._not_found()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestAnswerView(_OrgRequestsBase):
-    """POST answer a clarifying question (org_admin own org). No status transition."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            # ⚠ `comment_id` AND `admin`, and both were missing. This call still passed `index=`
-            # — the parameter the service dropped on 2026-07-31 when clarifications became
-            # comments — so EVERY answer raised TypeError before the service was reached, and the
-            # `except OrgRequestError` below could not see it. Answering was 500-ing for every
-            # organisation on every request for eighteen days (BrightPath request #15).
-            req = org_requests.answer_clarification(
-                req, request.data.get('answer') or '',
-                comment_id=request.data.get('comment_id'),
-                admin=admin)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        # Best-effort: notify the owner + re-run the AI reviewer on the new answer.
-        try:
-            from . import emails
-            emails.send_org_request_answered_email(req)
-        except Exception:
-            logger.warning('Requests: answer-notify failed for OrgRequest %s', req.pk, exc_info=True)
-        org_requests.auto_run_ai_review(req)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestApproveView(_OrgRequestsBase):
-    """POST accept a quote (quoted/deferred → approved). org_admin own org, or super."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
-        if err:
-            return err
-        from . import org_requests
-        by_role = 'super' if admin.is_super else 'org_admin'
-        try:
-            req = org_requests.approve(req, admin, by_role=by_role)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        try:
-            from . import emails
-            emails.send_org_request_accepted_email(req)
-        except Exception:
-            logger.warning('Requests: accept-notify failed for OrgRequest %s', req.pk, exc_info=True)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestDeferView(_OrgRequestsBase):
-    """POST defer a quote (quoted → deferred). org_admin own org."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            req = org_requests.defer(req, admin)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestModifyView(_OrgRequestsBase):
-    """POST modify (amend the description; quoted/deferred → submitted). org_admin own org."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            req = org_requests.modify(req, admin, description=request.data.get('description') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        org_requests.auto_run_ai_review(req)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestDeclineView(_OrgRequestsBase):
-    """POST decline/withdraw (→ declined, terminal). org_admin own org (withdraw, reason
-    optional), or super (decline, reason required)."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
-        if err:
-            return err
-        from . import org_requests
-        by_role = 'super' if admin.is_super else 'org_admin'
-        try:
-            req = org_requests.decline(req, admin, by_role=by_role,
-                                       reason=request.data.get('reason') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestAskView(_OrgRequestsBase):
-    """POST <pk>/ask/ {question} — the OWNER asks the requester something. Super only.
-
-    Until now the clarification thread ran one way: the AI asked, the requester answered, and the
-    owner watched by email. So a judgement about the SHAPE of a request — "adding a sponsor
-    directly would bypass the terms and consent; would an invite do?" — had nowhere to go, because
-    `triage_note` is private to the owner and the org never sees it.
-
-    Same window as `/answer/` and the AI's own questions (submitted/triaged): a quoted request
-    must not grow new questions, because the quote was priced against what was known when it
-    was sent.
-
-    Emails the requester through the SAME helper the AI's questions use, so a question reads the
-    same to them however it was authored — only the on-screen attribution differs.
-    """
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            question = org_requests.ask_question(req, admin, request.data.get('question') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        try:
-            from . import emails
-            emails.send_org_request_questions_email(req, [question])
-        except Exception:
-            logger.warning('Requests: owner-question notify failed for OrgRequest %s',
-                           req.pk, exc_info=True)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestCommentView(_OrgRequestsBase):
-    """POST <pk>/comments/ {body, visibility?} — post to the DISCUSSION (TD-201).
-
-    The verb the module never had. Until now exactly ONE action reached the requester: `ask` a
-    question. So a conclusion — "here is what we would build, and why" — had to travel as a quote
-    note or not at all, and the owner's judgement about the shape of a request left the system.
-
-    ACTOR: super OR any org_admin of the owning organisation (owner ruling, 2026-07-31). They can
-    already READ the request — requests are org-fenced, and a cross-org pk is a 404 — so this adds
-    no visibility, it lets the people already in the room speak. `_requestee(allow_super=True)` is
-    exactly that rule; the org fence is the request lookup, not a check here.
-
-    ⚠ `visibility='internal'` is SUPER-ONLY and the service refuses it for an org author. Two
-    layers on purpose: a serializer allowlist cannot save you here, because the leak would be a
-    ROW the org may not read rather than a field — see `org_requests.comments_for`.
-
-    WINDOW: until the request is TERMINAL, wider than `OPEN_FOR_SHAPING`. Discussion continues
-    after assignment (the owner's Bugzilla framing); it is asking a NEW QUESTION that still stops
-    at the quote, because a question can re-price and a remark cannot.
-    """
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
-        if err:
-            return err
-        from . import org_requests
-        visibility = (request.data.get('visibility') or org_requests.VISIBILITY_SHARED).strip()
-        # An org_admin may not post an internal note. Refused HERE as well as in the service so
-        # the endpoint's contract is readable without following the call.
-        if visibility == org_requests.VISIBILITY_INTERNAL and not admin.is_super:
-            return Response({'error': 'forbidden', 'code': 'forbidden'},
-                            status=status.HTTP_403_FORBIDDEN)
-        author_kind = (org_requests.AUTHOR_OWNER if admin.is_super
-                       else org_requests.AUTHOR_ORG)
-
-        # ⚠ THE ENGINEER MAY SPEAK DIRECTLY, BUT ONLY WHERE THE ORGANISATION CANNOT HEAR IT
-        # (2026-08-01). Authorship is otherwise derived from the caller, which meant a note the
-        # ENGINEER wrote — a triage recommendation, say — arrived stamped as the OWNER, because it
-        # is the owner's token making the call. TD-204 already refused that trade for approved
-        # analyses ("attributing it to the approver is a lie about who wrote it"); the same
-        # objection applies to a note the owner did not write.
-        #
-        # ⚠ INTERNAL ONLY, and the pairing is the whole control. Engineer prose that REACHES the
-        # requester still has exactly one route — stage an analysis, the owner approves — so this
-        # cannot become a side door around that gate. An internal note is owner-visible by
-        # construction (`org_requests.comments_for` filters the ROW), so there is nothing for an
-        # approval step to protect.
-        #
-        # ⚠ THE RULE LIVES HERE, NOT IN `post_comment`, and that is deliberate rather than lazy:
-        # `approve_analysis` legitimately posts engineer + SHARED through the same service, so a
-        # service-level "engineer implies internal" would break the one path this exists to
-        # protect. What is enforced here is the HTTP contract — who may claim to be whom — while
-        # the domain rule (engineer + shared happens only on approval) stays in the service.
-        claimed = (request.data.get('author') or '').strip()
-        if claimed:
-            if not admin.is_super or claimed != org_requests.AUTHOR_ENGINEER:
-                return Response({'error': 'forbidden', 'code': 'forbidden'},
-                                status=status.HTTP_403_FORBIDDEN)
-            if visibility != org_requests.VISIBILITY_INTERNAL:
-                return Response({'error': 'engineer_must_be_internal',
-                                 'code': 'engineer_must_be_internal'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            author_kind = org_requests.AUTHOR_ENGINEER
-        try:
-            org_requests.post_comment(
-                # ⚠ `author_admin=None` for the engineer, exactly as `approve_analysis` does.
-                # `_comment_dicts` exposes `author_name`, so passing the calling admin would print
-                # the OWNER'S NAME beside an "Engineer" badge — the same lie in a second field,
-                # and the one a reader would actually see.
-                req, None if author_kind == org_requests.AUTHOR_ENGINEER else admin,
-                request.data.get('body') or '',
-                author_kind=author_kind, visibility=visibility)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestAnalysisView(_OrgRequestsBase):
-    """POST <pk>/analysis/ {body, estimated_hours?, cited_files[], authored_by?, repo_sha?} —
-    stage the ENGINEER'S ANALYSIS as a DRAFT (TD-204). Super only.
-
-    Posts NOTHING. The draft is invisible to the requesting organisation by construction — no
-    org-facing serializer names `org_request_analyses` — and reaches them only when the owner
-    approves it below. Owner ruling, 2026-07-31: *"you have to do the proper analysis and estimate
-    the workload, and I want you to post as well, with my approval."*
-
-    ⚠ `cited_files` is REQUIRED and non-empty. The estimate must cite its files; that is the only
-    thing separating the engineer's number from the model's, and an analysis citing nothing is
-    exactly what this record exists to prevent.
-    """
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            org_requests.record_analysis(
-                req, admin,
-                body=request.data.get('body') or '',
-                estimated_hours=request.data.get('estimated_hours'),
-                cited_files=request.data.get('cited_files') or [],
-                authored_by=request.data.get('authored_by') or '',
-                repo_sha=request.data.get('repo_sha') or '',
-                # A PROPOSED triage — prefills the owner's form and applies nothing. The request's
-                # own kind/lane still change only when the owner presses Run.
-                proposed_kind=request.data.get('proposed_kind') or '',
-                proposed_lane=request.data.get('proposed_lane') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestAnalysisApproveView(_OrgRequestsBase):
-    """POST <pk>/analysis/<aid>/approve/ — the owner approves; it enters the thread (TD-204).
-
-    This is the control the whole record hangs on: the engineer stages, the owner approves, and
-    only approval reaches the requester. Same split as `pool.publish_profile_to_pool` — preparing
-    is free, publishing is gated. Super only.
-
-    ⚠ The analysis is reached through `req.analyses`, never the model's top-level manager — the org
-    fence IS the request lookup, so a cross-org id must 404 rather than resolve. (Naming that
-    manager even in prose trips the static fence guard, which scans source text: see
-    test_org_fence.TestOrgFenceStaticGuard.)
-
-    Only the PROSE crosses to the requester. The cited files and the hours stay owner-side; see the
-    model docstring for why neither is secrecy.
-    """
-
-    def post(self, request, pk, aid):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        analysis = req.analyses.filter(pk=aid).first()   # org-fence: scoped to this request
-        if analysis is None:
-            return self._not_found()
-        from . import org_requests
-        try:
-            org_requests.approve_analysis(analysis, admin)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestWithdrawAnalysisView(_OrgRequestsBase):
-    """POST <pk>/analysis/<aid>/withdraw/ — retire a DRAFT the engineer got wrong. Super only.
-
-    Staging is POST-only and a draft could not be corrected or retracted, so fixing one meant
-    staging a second and leaving the first in the approve list. Two near-identical drafts render
-    with the same badge, the same hours and the same cited files, and `approve_analysis` does not
-    refuse a second approval — so the stale one could reach the requester as a duplicate comment.
-
-    ⚠ Same org fence as approve: reached through `req.analyses`, never the model's top-level
-    manager, so a cross-org id 404s rather than resolving.
-    """
-
-    def post(self, request, pk, aid):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        analysis = req.analyses.filter(pk=aid).first()   # org-fence: scoped to this request
-        if analysis is None:
-            return self._not_found()
-        from . import org_requests
-        try:
-            org_requests.withdraw_analysis(analysis, admin)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestTriageView(_OrgRequestsBase):
-    """POST triage (submitted → triaged). Super only."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            req = org_requests.triage(
-                req, admin, triaged_kind=(request.data.get('triaged_kind') or '').strip(),
-                lane=(request.data.get('lane') or '').strip(),
-                note=request.data.get('note') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestQuoteView(_OrgRequestsBase):
-    """POST send a quote (triaged → quoted; feature only). Super only. Emails the submitter."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            req = org_requests.quote(
-                req, admin, hours=request.data.get('hours'),
-                margin_pct=request.data.get('margin_pct'),
-                note=request.data.get('note') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        try:
-            from . import emails
-            emails.send_org_request_quote_email(req)
-        except Exception:
-            logger.warning('Requests: quote email failed for OrgRequest %s', req.pk, exc_info=True)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestRequoteView(_OrgRequestsBase):
-    """POST re-quote a deferred request (deferred → quoted). Super only. Emails the submitter."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            req = org_requests.requote(
-                req, admin, hours=request.data.get('hours'),
-                margin_pct=request.data.get('margin_pct'),
-                note=request.data.get('note') or '')
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        try:
-            from . import emails
-            emails.send_org_request_quote_email(req)
-        except Exception:
-            logger.warning('Requests: re-quote email failed for OrgRequest %s', req.pk, exc_info=True)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestScheduleView(_OrgRequestsBase):
-    """POST schedule (triaged-bug or approved → scheduled). Super only. Optional date."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from django.utils.dateparse import parse_date
-        from . import org_requests
-        raw = (request.data.get('scheduled_for') or '').strip()
-        sched = parse_date(raw) if raw else None
-        try:
-            req = org_requests.schedule(req, admin, scheduled_for=sched)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestDoneView(_OrgRequestsBase):
-    """POST mark done (scheduled → done, terminal). Super only."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            req = org_requests.done(req, admin)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        return Response(self._serialize(admin, req))
-
-
-class AdminOrgRequestAiRerunView(_OrgRequestsBase):
-    """POST re-run the AI reviewer manually (no transition; submitted/triaged). Super only.
-    Unlike the auto-run this surfaces the ContractsError as a 503 so the owner sees WHY."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._super_side(request, pk)
-        if err:
-            return err
-        from . import org_requests
-        try:
-            result = org_requests.run_ai_review(req)
-        except org_requests.OrgRequestError as e:
-            return _org_request_err(e)
-        if result['new_questions']:
-            try:
-                from . import emails
-                emails.send_org_request_questions_email(req, result['new_questions'])
-            except Exception:
-                logger.warning('Requests: questions email failed for OrgRequest %s', req.pk,
-                               exc_info=True)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
-
-
-# ── Screenshot attachments (Sprint 15.1, TD-172) ────────────────────────────────────
-# Images ONLY, ≤5 per request, org-fenced. Every read/write reaches an attachment ONLY through the
-# org-fenced request lookup (_requestee → _org_request_for → cross-org 404), and the storage key is
-# requests/<org_id>/<request_id>/<uuid> so the download-URL org assertion (serializers_admin +
-# storage.resolve_org_for_path) refuses a foreign blob. Attachments are queried via the request's
-# related manager (req.attachments) — never a raw OrgRequestAttachment.objects query — so the fence
-# rides on the already-fenced request (no separate pragma needed).
-
-
-class AdminOrgRequestAttachmentSignUploadView(_OrgRequestsBase):
-    """POST <pk>/attachments/sign-upload/ — a signed URL to PUT a screenshot. org_admin (own org) +
-    super. The request must be non-terminal, and the count cap is enforced BEFORE we mint a URL."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
-        if err:
-            return err
-        from . import org_requests
-        # Evidence closes when the quote is ACCEPTED, not merely at a terminal status — changing
-        # a screenshot under an accepted quote changes what was priced. See org_requests.can_attach.
-        if not org_requests.can_attach(req):
-            return Response({'error': 'request_closed', 'code': 'request_closed'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # Count cap BEFORE signing (≤5 recorded attachments).
-        if req.attachments.count() >= org_requests.MAX_ATTACHMENTS:
-            return Response({'error': 'attachment_limit', 'code': 'attachment_limit',
-                             'max': org_requests.MAX_ATTACHMENTS},
-                            status=status.HTTP_400_BAD_REQUEST)
-        import uuid
-        from .storage import create_signed_upload_url, build_request_attachment_key
-        path = build_request_attachment_key(req.organisation_id, req.id, uuid.uuid4().hex)
-        url = create_signed_upload_url(path)
-        if not url:
-            return Response({'error': 'storage_unavailable', 'code': 'storage_unavailable'},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response({'upload_url': url, 'storage_path': path})
-
-
-class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
-    """POST <pk>/attachments/ — record an attachment row after the PUT. org_admin (own org) + super.
-    Validates: non-terminal request, IMAGE allowlist (no pdf), size ≤ the organisation's
-    `max_doc_size_mb` (Org Config Sprint E — same cap its students answer to), count cap,
-    and the storage_path prefix must match THIS request (a foreign path is rejected)."""
-
-    def post(self, request, pk):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
-        if err:
-            return err
-        from . import org_requests
-        # Evidence closes when the quote is ACCEPTED, not merely at a terminal status — changing
-        # a screenshot under an accepted quote changes what was priced. See org_requests.can_attach.
-        if not org_requests.can_attach(req):
-            return Response({'error': 'request_closed', 'code': 'request_closed'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        storage_path = (request.data.get('storage_path') or '').strip()
-        content_type = (request.data.get('content_type') or '').strip()
-        original_filename = (request.data.get('original_filename') or '').strip()
-        try:
-            size = int(request.data.get('size') or 0)
-        except (TypeError, ValueError):
-            size = 0
-        # Path prefix must belong to THIS request (foreign-path rejection).
-        from .storage import build_request_attachment_key
-        expected_prefix = build_request_attachment_key(req.organisation_id, req.id, '')
-        if not storage_path.startswith(expected_prefix) or storage_path == expected_prefix:
-            return Response({'error': 'bad_path', 'code': 'bad_path'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # IMAGE allowlist only (no pdf).
-        if not org_requests.is_allowed_attachment(content_type, original_filename):
-            return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # The size cap is the ORGANISATION's here too (Org Config Sprint E) — this attachment
-        # belongs to that organisation's own support request, so it answers to the same number
-        # its students' uploads do.
-        from apps.courses import org_config
-        if size > org_config.max_doc_size_bytes(req.organisation):
-            return Response({'error': 'file_too_large', 'code': 'file_too_large',
-                             'max_mb': org_config.value(req.organisation, 'max_doc_size_mb')},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # Count cap at record too (another attachment may have landed since sign).
-        if req.attachments.count() >= org_requests.MAX_ATTACHMENTS:
-            return Response({'error': 'attachment_limit', 'code': 'attachment_limit',
-                             'max': org_requests.MAX_ATTACHMENTS},
-                            status=status.HTTP_400_BAD_REQUEST)
-        req.attachments.create(
-            storage_path=storage_path, original_filename=original_filename[:255],
-            content_type=content_type[:100], size=size, uploaded_by=admin)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req), status=status.HTTP_201_CREATED)
-
-
-class AdminOrgRequestAttachmentDeleteView(_OrgRequestsBase):
-    """DELETE <pk>/attachments/<att_id>/ — remove an attachment while the request is non-terminal.
-    org_admin (own org) + super; the attachment is reached through the org-fenced request, so
-    another org's attachment is 404. Deletes the row + best-effort blob sweep."""
-
-    def delete(self, request, pk, att_id):
-        gate = self._flag()
-        if gate:
-            return gate
-        admin, req, err = self._requestee(request, pk, allow_super=True)
-        if err:
-            return err
-        from . import org_requests
-        # Evidence closes when the quote is ACCEPTED, not merely at a terminal status — changing
-        # a screenshot under an accepted quote changes what was priced. See org_requests.can_attach.
-        if not org_requests.can_attach(req):
-            return Response({'error': 'request_closed', 'code': 'request_closed'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # Scoped to THIS (already org-fenced) request — a foreign attachment id is 404.
-        att = req.attachments.filter(pk=att_id).first()
-        if att is None:
-            return self._not_found()
-        path = att.storage_path
-        att.delete()
-        try:
-            from .storage import delete_objects
-            delete_objects([path])
-        except Exception:
-            logger.warning('Requests: attachment blob sweep failed for %s', path, exc_info=True)
-        req.refresh_from_db()
-        return Response(self._serialize(admin, req))
 
 
 # ── Wallet credits (P4b) ─────────────────────────────────────────────────────────
@@ -6396,8 +4086,8 @@ class AdminWalletCreditListCreateView(_CreditsBase):
         if err:
             return err
         from decimal import Decimal, InvalidOperation
-        from . import sponsorship as sponsorship_service
-        from .models import Programme
+        from .. import sponsorship as sponsorship_service
+        from ..models import Programme
         sponsor = Sponsor.objects.filter(pk=request.data.get('sponsor_id')).first()
         if sponsor is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -6438,7 +4128,7 @@ class AdminWalletCreditSignView(_CreditsBase):
         credit = self._credit_for(admin, pk)
         if credit is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import sponsorship as sponsorship_service
+        from .. import sponsorship as sponsorship_service
         try:
             sponsorship_service.sign_admin_credit(
                 credit, admin, request.data.get('typed_name') or '')
@@ -6461,7 +4151,7 @@ class AdminWalletCreditCancelView(_CreditsBase):
         credit = self._credit_for(admin, pk)
         if credit is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import sponsorship as sponsorship_service
+        from .. import sponsorship as sponsorship_service
         try:
             sponsorship_service.cancel_admin_credit(credit, admin)
         except sponsorship_service.CreditError as e:
@@ -6469,291 +4159,6 @@ class AdminWalletCreditCancelView(_CreditsBase):
                             status=status.HTTP_400_BAD_REQUEST)
         credit.refresh_from_db()
         return Response(_credit_dict(credit))
-
-# ── Sponsor terms (T2) ───────────────────────────────────────────────────────
-# The versioned document a sponsor reads and accepts. Authoring only — nothing here is
-# sponsor-facing; the wizard and the gate are T3.
-
-def _terms_section_dict(sec):
-    """Allowlist view of one section. Explicit fields — never model passthrough."""
-    return {
-        'order': sec.order,
-        'heading_en': sec.heading_en, 'heading_ms': sec.heading_ms, 'heading_ta': sec.heading_ta,
-        'body_en': sec.body_en, 'body_ms': sec.body_ms, 'body_ta': sec.body_ta,
-        'is_quiz_candidate': sec.is_quiz_candidate,
-        'quiz_en': sec.quiz_en, 'quiz_ms': sec.quiz_ms, 'quiz_ta': sec.quiz_ta,
-        'quiz_generated_model': sec.quiz_generated_model,
-    }
-
-
-def _terms_summary_dict(terms):
-    return {
-        'id': terms.id,
-        'version': terms.version,
-        'status': terms.status,
-        'title_en': terms.title_en,
-        # The list table shows these two, so they belong on the summary. `languages_available`
-        # walks the sections, which is why the list view prefetches them.
-        'languages_available': terms.languages_available,
-        'section_count': terms.sections.count(),
-        'created_by_email': terms.created_by_email,
-        'published_by_email': terms.published_by_email,
-        'published_at': terms.published_at,
-        'archived_at': terms.archived_at,
-        'created_at': terms.created_at,
-        'updated_at': terms.updated_at,
-    }
-
-
-def _terms_detail_dict(terms):
-    d = _terms_summary_dict(terms)
-    d.update({
-        'title_ms': terms.title_ms, 'title_ta': terms.title_ta,
-        'intro_en': terms.intro_en, 'intro_ms': terms.intro_ms, 'intro_ta': terms.intro_ta,
-        'languages_available': terms.languages_available,
-        'sections': [_terms_section_dict(x) for x in terms.sections.all()],
-        'acceptance_count': terms.acceptances.count(),
-    })
-    return d
-
-
-def _terms_validation_dict(result):
-    return {
-        'ok': result.ok,
-        'errors': [{'code': c, 'label': sponsor_terms_mod.RULE_LABELS.get(c, c)}
-                   for c in result.errors],
-        'warnings': [{'code': c, 'label': sponsor_terms_mod.RULE_LABELS.get(c, c)}
-                     for c in result.warnings],
-    }
-
-
-def _terms_err(exc):
-    """A publish refusal is a 403 (you are not allowed); everything else is a 400 (fix it)."""
-    payload = {'error': exc.code}
-    if getattr(exc, 'detail', ''):
-        payload['detail'] = exc.detail
-    if getattr(exc, 'errors', None):
-        payload['errors'] = [{'code': c, 'label': sponsor_terms_mod.RULE_LABELS.get(c, c)}
-                             for c in exc.errors]
-    status_code = 403 if exc.code == 'publish_forbidden' else 400
-    return Response(payload, status=status_code)
-
-
-class _SponsorTermsBase(_AdminBase):
-    """Gate for the sponsor-terms panel — identical to the sponsor-emails gate, and for the same
-    reason: authoring what every donor is bound by is an editorial power, not a reading one.
-    Finance reads the sponsor list because money is its business; it does not write the terms.
-    """
-    def _terms_admin(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not (self.has_role(admin, 'admin') or admin.role == 'org_admin'):
-            return None, self._deny_role()
-        return admin, None
-
-    def _version_or_404(self, pk):
-        from .models import SponsorTermsVersion
-        return (SponsorTermsVersion.objects
-                .prefetch_related('sections')
-                .filter(pk=pk)
-                .first())
-
-
-class AdminSponsorTermsListView(_SponsorTermsBase):
-    """GET  .../admin/scholarship/sponsor-terms/  — every version, newest first.
-    POST .../admin/scholarship/sponsor-terms/  {version, copy_from?} — a new draft.
-    """
-    def get(self, request):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        from .models import SponsorTermsVersion
-        rows = SponsorTermsVersion.objects.prefetch_related('sections').all()
-        active = sponsor_terms_mod.active_version()
-        return Response({
-            'versions': [_terms_summary_dict(t) for t in rows],
-            'active_version': active.version if active else '',
-            'sponsor_count': Sponsor.objects.count(),
-        })
-
-    def post(self, request):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        copy_from = None
-        if request.data.get('copy_from'):
-            copy_from = self._version_or_404(request.data.get('copy_from'))
-            if not copy_from:
-                return Response({'error': 'not_found'}, status=404)
-        try:
-            terms = sponsor_terms_mod.create_version(
-                version=request.data.get('version') or '',
-                copy_from=copy_from,
-                by_email=admin.email or '',
-            )
-        except sponsor_terms_mod.SponsorTermsError as exc:
-            return _terms_err(exc)
-        return Response(_terms_detail_dict(terms), status=201)
-
-
-class AdminSponsorTermsDetailView(_SponsorTermsBase):
-    """GET / PATCH one version. PATCH edits the title and intro only; sections have their own
-    endpoint because they are replaced wholesale rather than patched field by field."""
-    def get(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        return Response(_terms_detail_dict(terms))
-
-    def patch(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        fields = {k: v for k, v in request.data.items()
-                  if k in sponsor_terms_mod._CONFIG_FIELDS}
-        if not fields:
-            return Response({'error': 'nothing_to_update'}, status=400)
-        try:
-            sponsor_terms_mod.update_intro(terms, fields, by_email=admin.email or '')
-        except sponsor_terms_mod.SponsorTermsError as exc:
-            return _terms_err(exc)
-        return Response(_terms_detail_dict(terms))
-
-
-class AdminSponsorTermsSectionsView(_SponsorTermsBase):
-    """PUT .../sponsor-terms/<pk>/sections/ {sections: [...]} — replace them all.
-
-    Orders are assigned server-side by position, so a client cannot produce a gap or a duplicate.
-    """
-    def put(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        try:
-            sponsor_terms_mod.replace_sections(terms, request.data.get('sections'))
-        except sponsor_terms_mod.SponsorTermsError as exc:
-            return _terms_err(exc)
-        terms.refresh_from_db()
-        return Response(_terms_detail_dict(terms))
-
-
-class AdminSponsorTermsGenerateQuizView(_SponsorTermsBase):
-    """POST .../sponsor-terms/<pk>/sections/<order>/generate-quiz/ — a Gemini draft. Billable."""
-    def post(self, request, pk, order):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        section = terms.sections.filter(order=order).first()
-        if not section:
-            return Response({'error': 'not_found'}, status=404)
-        try:
-            sponsor_terms_mod.generate_quiz(section)
-        except sponsor_terms_mod.SponsorTermsError as exc:
-            return _terms_err(exc)
-        terms.refresh_from_db()
-        return Response(_terms_detail_dict(terms))
-
-
-class AdminSponsorTermsValidateView(_SponsorTermsBase):
-    """GET .../sponsor-terms/<pk>/validate/ — the publish checklist, labels included."""
-    def get(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        return Response(_terms_validation_dict(sponsor_terms_mod.validate_for_publish(terms)))
-
-
-class AdminSponsorTermsPublishView(_SponsorTermsBase):
-    """POST .../sponsor-terms/<pk>/publish/ — super or org_admin.
-
-    Opened from super-only on 2026-07-28 at the owner's direction, so the programme lead can
-    publish without going through the platform owner. A plain `admin` is still refused: authoring
-    is staff work, but making a document binding on a donor is not.
-    """
-    def post(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        try:
-            # super OR org_admin. A plain `admin` may AUTHOR but not make it binding: they are
-            # staff doing the work, not the people answerable for what a donor is bound by.
-            may_publish = bool(admin.is_super_admin) or admin.role == 'org_admin'
-            sponsor_terms_mod.publish(terms, by_email=admin.email or '', allowed=may_publish)
-        except sponsor_terms_mod.SponsorTermsError as exc:
-            return _terms_err(exc)
-        terms.refresh_from_db()
-        return Response(_terms_detail_dict(terms))
-
-
-class AdminSponsorTermsImportDocxView(_SponsorTermsBase):
-    """POST a .docx — parse it into a PROPOSED flat section list for the author to review.
-
-    Nothing is saved and the upload is NOT retained. On confirm the frontend PUTs the reviewed
-    sections, exactly as the contract importer works. Draft-only.
-    """
-    from rest_framework.parsers import MultiPartParser
-    parser_classes = [MultiPartParser]
-
-    def post(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        if terms.status != 'draft':
-            return Response({'error': 'not_draft'}, status=400)
-        upload = request.FILES.get('file')
-        if upload is None:
-            return Response({'error': 'no_file'}, status=400)
-        try:
-            proposal = sponsor_terms_mod.import_docx(upload.read())   # bytes only; never stored
-        except sponsor_terms_mod.SponsorTermsError as exc:
-            return _terms_err(exc)
-        except Exception:
-            # contracts.* raises ContractsError for an unreadable/empty document. Map anything
-            # that escapes to one code rather than leaking a stack trace into the panel.
-            return Response({'error': 'docx_unreadable'}, status=400)
-        return Response(proposal)
-
-
-class AdminSponsorTermsPreviewView(_SponsorTermsBase):
-    """GET .../sponsor-terms/<pk>/preview/?locale=en — exactly what a sponsor will read.
-
-    Serves `sponsor_terms.document()`, the SAME function the sponsor-facing page will call in T3,
-    so the preview cannot drift from the real thing.
-    """
-    def get(self, request, pk):
-        admin, err = self._terms_admin(request)
-        if err:
-            return err
-        terms = self._version_or_404(pk)
-        if not terms:
-            return Response({'error': 'not_found'}, status=404)
-        locale = request.query_params.get('locale') or 'en'
-        return Response({
-            'document': sponsor_terms_mod.document(terms, locale),
-            'checkpoints': sponsor_terms_mod.quiz_checkpoints(terms, locale),
-        })
 
 
 def _checks_both_modes(tokens):
@@ -7239,8 +4644,8 @@ class AdminProgrammeConfigurationView(_AdminBase):
         return programmes[0], None
 
     def _payload(self, programme):
-        from . import requirements
-        from .models import ApplicationItem
+        from .. import requirements
+        from ..models import ApplicationItem
         states = {
             'document': requirements.programme_states(programme, 'document'),
             'question': requirements.programme_states(programme, 'question'),
@@ -7284,7 +4689,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
         if err:
             return err
 
-        from .models import ITEM_STATE_CHOICES, ApplicationItem, ProgrammeApplicationItem
+        from ..models import ITEM_STATE_CHOICES, ApplicationItem, ProgrammeApplicationItem
         valid_states = {s for s, _ in ITEM_STATE_CHOICES}
         changes = request.data.get('items')
         if not isinstance(changes, list):
@@ -7310,7 +4715,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
                                  'item': f'{kind}:{code}'}, status=status.HTTP_400_BAD_REQUEST)
             resolved.append((item, state))
 
-        from . import requirements
+        from .. import requirements
         before = {
             'document': requirements.programme_states(programme, 'document'),
             'question': requirements.programme_states(programme, 'question'),
@@ -7325,874 +4730,6 @@ class AdminProgrammeConfigurationView(_AdminBase):
             logger.info('AUDIT programme_item_set programme=%s item=%s:%s was=%s now=%s by=%s',
                         programme.code, item.kind, item.code, was, state, admin.email or '')
         return Response(self._payload(programme))
-
-
-# ── Gift programmes and their intake years (Sabah S2b, 2026-09-02) ───────────────────────────────
-#
-# Until now neither a Programme nor a ScholarshipCohort could be created anywhere: no endpoint, no
-# screen, and `scholarship` registers no models in Django admin either. Standing up a second gift
-# meant an engineer writing SQL. That is the whole reason this exists — the owner's acceptance test
-# is "Suresh, as org admin, can do everything on his own without any work from me".
-#
-# ⚠ THE FENCE IS THE ORGANISATION, EXACTLY AS `AdminProgrammeConfigurationView` DOES IT:
-# `organisation_id` derived from the caller's own `owning_organisation`, and anything outside it is
-# **404, never 403** — a 403 would confirm the tenant exists. A super sees every tenant, because
-# they genuinely work across them.
-#
-# ⚠ THESE SCREENS ARE NOT A SECOND SECURITY BOUNDARY. A programme narrows INSIDE the org wall; it
-# never replaces it (`Programme` docstring). Nothing here authorises anything.
-
-def programme_student_queryset(p):
-    """Every student this gift has ever taken — the ONE answer to that question.
-
-    ⚠ IT REACHES THROUGH THE COHORT, NOT JUST THE COLUMN.
-    `ScholarshipApplication.programme` is copied from the cohort at first save and is **set-once**
-    (deliberately — a cohort moved between gifts must not re-home somebody's money). So a cohort
-    that has moved leaves its old applications pointing at the OLD gift, and `filter(programme=p)`
-    alone would call this gift empty while its own round still held people.
-
-    ⚠ TWO READERS, AND THEY MUST NOT DRIFT: `programme_delete_blocker` (may this gift be deleted?)
-    and `programme_lifecycle` (is a switched-off gift a DRAFT or an ARCHIVE?). Both are asking the
-    same question — "has anybody ever applied?" — and a disagreement would put a **Draft** badge on
-    a gift whose Delete button is greyed because students applied.
-    """
-    from .models import ScholarshipApplication
-    # org-fence: `p` reached every caller through `_programmes_for` / `_programme_or_404`, so it is
-    # already inside the caller's organisation and the join cannot widen past it.
-    return ScholarshipApplication.objects.filter(
-        Q(programme=p) | Q(cohort__programme=p)).distinct()
-
-
-def programme_lifecycle(p, has_students):
-    """Where a gift is in its life: `active` · `draft` · `archived`.
-
-    ⚠⚠ SERVED, NOT DERIVED IN THE BROWSER (owner ruling, 2026-09-07). The card carries an
-    `applications` count, so a client COULD work this out — and that is exactly the mistake
-    `delete_blocked_by` exists to avoid. It lives here so the rule has one home beside the other
-    gift rules, and so it can be tested in Python.
-
-    ⚠ THE THIRD STATE IS WORKED OUT, NOT STORED — the owner chose that (option A of two, 2026-09-07)
-    over a migration. The database knows only on/off; `is_active` false splits by whether anybody
-    ever applied. **The known edge:** a gift switched on, applied to by nobody, then switched off
-    reads DRAFT rather than ARCHIVED. Accepted, because the alternative is a stored column and a
-    production data step for a distinction nothing acts on yet.
-
-    ⚠ WHY THE SPLIT MATTERS AT ALL. "Inactive" was doing two jobs that look identical on screen and
-    are nothing alike: a gift still being SET UP (born switched off — every gift starts here) and a
-    gift that has FINISHED (retired, holding real students). The owner's report was that the control
-    read as a duplicate of the intake year's Open/Close; naming the three states is what separates
-    a lifecycle from an applications switch.
-    """
-    if p.is_active:
-        return 'active'
-    return 'archived' if has_students else 'draft'
-
-
-def programme_delete_blocker(p):
-    """What is holding this gift, as ``(code, count)`` — or ``(None, 0)`` if nothing is.
-
-    ⚠⚠ ONE FUNCTION, TWO READERS, AND THAT IS THE WHOLE POINT (owner, 2026-09-07). The list row
-    calls it so the Delete button can be DISABLED with the reason showing, and the delete handler
-    calls it to REFUSE. If these were two pieces of code they would drift, and the drift would show
-    up as the worst possible shape: a button that looks safe, a phrase typed out in full, and only
-    then a refusal.
-
-    ⚠ THE CLIENT CANNOT WORK THIS OUT FOR ITSELF, which is why it is served rather than derived.
-    The list payload carries `intake_years` and `applications`; it has never carried benefactors,
-    money or payment runs. A button disabled on what the client happens to know would go green for
-    a gift held by a donation and refuse after the typing — rarer, and more surprising.
-
-    ⚠⚠ AN INTAKE YEAR IS NOT A HOLDER, AND THAT IS THE OWNER'S RULING (2026-09-07): *"I don't
-    [want] the ability to delete a gift programme that has students, and not merely intake years."*
-    A year on its own holds nothing but the rules somebody typed a minute ago; **STUDENTS** are what
-    make a gift undeletable. It used to be checked FIRST, so a gift created by mistake and given one
-    stray year could never be removed, and neither could the year (TD-232). An empty year now goes
-    WITH the gift, in the delete handler, inside one transaction.
-
-    ⚠ SO THE APPLICATION QUERY MUST REACH THROUGH THE COHORT, not only the denormalised column.
-    `ScholarshipApplication.programme` is copied from the cohort at first save and is **set-once**,
-    so a cohort moved between gifts leaves its old applications pointing at the old gift. Filtering
-    on `programme=p` alone would then call this gift empty while its own year still held somebody
-    else's students — and the DB's `PROTECT` would refuse after the phrase had been typed in full.
-
-    ⚠ THE RULE IS THE MODEL'S, NOT THIS FUNCTION'S. Every relation below is `on_delete=PROTECT`:
-    the database refuses regardless. This only names WHICH, in the order a person is most likely to
-    be able to act on — students, before money they cannot undo.
-    """
-    from .models import Donation, PaymentRun, SponsorProgrammeMembership
-    holders = (
-        # org-fence: every query filters on `p`, which every caller reached through the fence
-        # (`_programmes_for` / `_programme_or_404`) — already inside the caller's organisation.
-        ('has_applications', programme_student_queryset(p)),
-        # org-fence: as above — narrowed by the already-fenced `p`.
-        ('has_benefactors', SponsorProgrammeMembership.objects.filter(programme=p)),
-        # org-fence: as above.
-        ('has_money', Donation.objects.filter(programme=p)),
-        # org-fence: as above.
-        ('has_payment_runs', PaymentRun.objects.filter(programme=p)),
-    )
-    for code, qs in holders:
-        count = qs.count()
-        if count:
-            return code, count
-    return None, 0
-
-
-def _apply_copy_terms(p):
-    """Race/ethnicity/religion words anywhere in this gift's stored apply copy. Advisory."""
-    from . import apply_copy as ac
-    parts = []
-    for block in (p.apply_copy or {}).values():
-        if isinstance(block, dict):
-            parts.append(block.get('title') or '')
-            parts.append(block.get('intro') or '')
-            parts.extend(b for b in (block.get('criteria') or []) if isinstance(b, str))
-    return ac.sensitive_terms(*parts)
-
-
-def _programme_row(p):
-    """One gift, with the counts its card shows. Deliberately not a serializer: the shape is three
-    joins wide and exists only here."""
-    from .models import ScholarshipCohort
-    cohorts = ScholarshipCohort.objects.filter(programme=p)
-    students = programme_student_queryset(p)
-    open_year = cohorts.filter(is_open=True, is_active=True).values_list('year', flat=True).first()
-    blocked_by, blocked_count = programme_delete_blocker(p)
-    return {
-        'id': p.id, 'code': p.code,
-        'name_en': p.name_en, 'name_ms': p.name_ms, 'name_ta': p.name_ta,
-        'is_active': p.is_active,
-        # ⚠ THE BADGE'S ANSWER, SERVED. `is_active` stays beside it because it is what the PATCH
-        # writes — the control still flips a boolean; `lifecycle` is only how it READS. Do not
-        # re-derive this from `applications` in the browser (the `delete_blocked_by` rule).
-        'lifecycle': programme_lifecycle(p, students.exists()),
-        # ⚠ SERVED, NOT GUESSED. The Delete control is disabled from THIS, and the delete endpoint
-        # refuses from the same function — so the button and the refusal cannot disagree. `null`
-        # means nothing is holding it and it may be deleted.
-        'delete_blocked_by': blocked_by,
-        'delete_blocked_count': blocked_count,
-        # ⚠ THE STORED MAP, VERBATIM — not `apply_copy.for_wire`, which folds ms/ta onto English
-        # for a READER. The tab is an EDITOR: it has to show a blank Malay box as blank, or the
-        # first save would silently promote the English text into a Malay field nobody typed.
-        'apply_copy': p.apply_copy or {},
-        # ⚠ ADVISORY, AND PERSISTENT RATHER THAN ONLY-ON-SAVE. `decisions.md` 2026-05-25 removed
-        # ethnicity from the public copy because MyNadi's s44(6) status requires the programme not
-        # to discriminate by race. The owner ruled 2026-09-09 that this WARNS and does not refuse
-        # (option A) — a tenant may lawfully run an ethnicity-scoped gift. Serving it on every read
-        # means the caution is on screen when somebody opens the tab, not only after they save.
-        'apply_copy_sensitive': list(_apply_copy_terms(p)),
-        'intake_years': cohorts.count(),
-        # ⚠ COUNTED THROUGH `programme_student_queryset`, NOT `filter(programme=p)` (2026-09-08).
-        # `ScholarshipApplication.programme` is denormalised and SET ONCE, so a cohort moved between
-        # gifts leaves its old applications on the OLD gift — the column alone would call a gift's
-        # own round empty. The Applications LIST already narrows through that same predicate, so a
-        # card counting the column would disagree with the list it links to. Identical today (no
-        # cohort has moved); the point is that it stays identical when one does.
-        # Counted on a programme ALREADY narrowed to the caller's own `owning_organisation`, so it
-        # cannot be handed another tenant's programme in the first place.
-        'applications': students.count(),
-        # ⚠ "HAS EVER BEEN AWARDED", NEVER `status='awarded'`. `awarded` is one stage in a chain
-        # (awarded → active → maintenance → closed), so counting the status alone would make the
-        # number FALL as students progress — twelve today, three next month, with nobody having
-        # lost anything. `awarded_at` is stamped set-if-null by `stamp_first` and never cleared, so
-        # it is the durable answer; the status arm catches any row awarded before that stamp
-        # existed (`vircle.py` notes such rows exist). `closed` is deliberately absent from the
-        # status arm — a closed case that was awarded carries the stamp, and one that was not is
-        # not an award.
-        'awarded': students.filter(
-            Q(awarded_at__isnull=False)
-            | Q(status__in=('awarded', 'active', 'maintenance'))).count(),
-        # The year currently taking applications, or None. Named `open_year` rather than `is_open`
-        # because a PROGRAMME is never open — one of its years is.
-        'open_year': open_year,
-        # ⚠ SERVED WHOLE, NEVER ASSEMBLED IN THE BROWSER. The console and the student site are the
-        # same origin today, so `window.location.origin + …` would be right — and would silently
-        # become wrong the day a tenant is served from its own domain, which is exactly what
-        # `branding.frontend_url` already answers per organisation. It is also the ONE string a
-        # person copies onto a poster; a half-built one is worse than none.
-        # PER GIFT, NOT PER YEAR (owner ruling): the code is the gift's permanent identifier, so a
-        # printed link survives every intake. `resolve_open_cohort` picks the year.
-        'apply_url': '%s/scholarship/apply?p=%s' % (
-            branding.for_organisation(p.organisation).frontend_url, p.code),
-    }
-
-
-# The requirement columns the screens tick and fill. NULL means "not applied" (S2a) — the value IS
-# the switch, so unticking is writing null and there is no companion boolean to disagree with it.
-REQUIREMENT_FIELDS = (
-    'min_spm_a_count', 'min_spm_bplus_count', 'min_stpm_pngk', 'min_merit_score',
-    'income_ceiling', 'per_capita_ceiling',
-)
-
-
-def _window_from(data, current=(None, None)):
-    """Read `opens_on` / `closes_on` off a payload.
-
-    Returns ``(fields, error)`` — ``fields`` is a dict of only the keys the caller actually sent,
-    so a PATCH that mentions neither changes neither.
-
-    ⚠ THREE STATES PER FIELD, AND THE MIDDLE ONE IS THE POINT: absent (leave alone), empty string
-    or null (CLEAR it), or a date (set it). Without an explicit clear there is no way to withdraw
-    a window once stated, and a date somebody can only ever change is a trap — the same reasoning
-    as the nullable requirement thresholds (Sabah S2a).
-
-    ⚠ THE ORDER CHECK READS THE RESULT, NOT THE PAYLOAD. `current` carries what the row holds now,
-    so PATCHing only `closes_on` is still validated against the stored `opens_on`. Checking the
-    payload alone would let two valid-looking edits arrive in sequence and leave the row backwards.
-
-    ⚠ IT REFUSES, IT DOES NOT SWAP. A silent swap turns a typo into a stated fact that nobody was
-    told about, on a date students are shown.
-    """
-    from datetime import date as _date
-    fields, opens, closes = {}, current[0], current[1]
-    for key in ('opens_on', 'closes_on'):
-        if key not in data:
-            continue
-        raw = data.get(key)
-        if raw in (None, ''):
-            fields[key] = None
-        else:
-            try:
-                parsed = _date.fromisoformat(str(raw).strip())
-            except (TypeError, ValueError):
-                return None, key
-            fields[key] = parsed
-        if key == 'opens_on':
-            opens = fields[key]
-        else:
-            closes = fields[key]
-    if opens and closes and closes < opens:
-        return None, 'window_backwards'
-    return fields, None
-
-
-def round_state(c):
-    """Where an intake round is in its life: `draft` · `open` · `closed` · `finished`.
-
-    ⚠ SERVED, NEVER DERIVED IN THE BROWSER — the same rule as the gift card's `lifecycle`. Two
-    copies of this would eventually disagree, and the shape of that disagreement is a badge saying
-    one thing beside a control doing another.
-
-    ⚠⚠ THE FOUR STATES ARE THREE BEHAVIOURS, AND THE MIDDLE ONE IS LOAD-BEARING:
-      · `open`     — anyone may start an application and submit it.
-      · `closed`   — no NEW applications; **anyone already started may still finish**. That is not
-                     an oversight, it is where the intake gate sits (`ApplicationCreateView`), and
-                     production relied on it: the 2026 round's switch went off on 1 July and THIRTY
-                     students who were already part-way through submitted between then and 7 July.
-      · `finished` — the grace period is over. A late submission is refused. **TERMINAL.**
-      · `draft`    — never opened and nobody has applied. A round on its first day.
-
-    `draft` vs `closed` is a display distinction only (both refuse new applications); it exists so a
-    round being set up does not read as one that has run and stopped, which is the same confusion
-    "inactive" caused on the gift card.
-    """
-    from .models import ScholarshipApplication
-    if c.finished_at:
-        return 'finished'
-    if c.is_open:
-        return 'open'
-    # org-fence: `c` was reached through `_programmes_for` / `_cohort_or_404`, so it is already
-    # inside the caller's organisation and this count cannot widen past it.
-    if ScholarshipApplication.objects.filter(cohort=c).exists():
-        return 'closed'
-    return 'draft'
-
-
-def _cohort_row(c):
-    from .models import ScholarshipApplication
-    return {
-        'id': c.id, 'code': c.code, 'name': c.name, 'year': c.year,
-        'is_open': c.is_open, 'is_active': c.is_active,
-        # ⚠ THE STATE IS SERVED. See `round_state` — do not re-derive it in the browser.
-        'state': round_state(c),
-        'finished_at': c.finished_at.isoformat() if c.finished_at else None,
-        'finished_by': c.finished_by,
-        # ⚠ THE STATED WINDOW, AND IT IS DESCRIPTIVE (owner, 2026-09-06). Serialised beside
-        # `is_open` and never instead of it: `is_open` is what decides whether a student may
-        # apply, these two say when the round is MEANT to run. ISO or None — a round with no
-        # stated window is normal, so the client renders a dash, not an error.
-        'opens_on': c.opens_on.isoformat() if c.opens_on else None,
-        'closes_on': c.closes_on.isoformat() if c.closes_on else None,
-        # org-fence: same reasoning — the cohort reached here was selected through
-        # `programme__in=self._programmes_for(admin)`, so it is already inside the caller's org.
-        'applications': ScholarshipApplication.objects.filter(cohort=c).count(),
-        # ⚠ THE PEOPLE FINISHING WOULD SHUT OUT. Served because the "close for good" dialog has to
-        # name it: a closed round still lets anyone already started submit, and finishing ends that.
-        #
-        # ⚠⚠ `shortlisted` IS THE NOT-YET-SUBMITTED STATUS. **DO NOT reach for `submitted_at` —
-        # it is `auto_now_add`, so it is stamped at CREATION and is never null.** The field that
-        # records a real submission is `profile_completed_at`, and the status that gates
-        # `services.confirm_profile` is `shortlisted`; that is precisely the population a finish
-        # would shut out, so it is the population to count.
-        # org-fence: as above.
-        'unsubmitted': ScholarshipApplication.objects.filter(
-            cohort=c, status='shortlisted').count(),
-        'requirements': {f: getattr(c, f) for f in REQUIREMENT_FIELDS},
-    }
-
-
-class _ProgrammeScopedBase(_AdminBase):
-    """Shared gate + org fence for the two screens. `org_admin` and `super` only — deciding what a
-    programme is and who it asks for is the organisation's own decision, held by its administrator
-    (the same rule and the same roles as the Layer 0 configuration screen)."""
-
-    ROLES = ('org_admin',)
-
-    def _gate(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return None, self._deny()
-        if not self.has_role(admin, *self.ROLES):
-            return None, self._deny_role()
-        return admin, None
-
-    def _programmes_for(self, admin):
-        """Every gift this caller may touch. ⚠ INCLUDES INACTIVE ONES, unlike the configuration
-        screen's `_programme_for` — you cannot switch a programme on if you cannot see it."""
-        from .models import Programme
-        qs = Programme.objects.select_related('organisation')
-        if not self.has_role(admin, 'super'):
-            org_id = admin.owning_organisation_id
-            qs = qs.filter(organisation_id=org_id) if org_id else qs.none()
-        return qs
-
-    def _programme_or_404(self, admin, pk):
-        p = self._programmes_for(admin).filter(pk=pk).first()
-        if p is None:
-            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        return p, None
-
-
-# A URL-safe slug, because this is what an apply link carries (`?p=<code>`), and lower-case only
-# so two codes cannot differ by case alone in a place people retype by hand.
-CODE_RE = re.compile(r'^[a-z0-9][a-z0-9-]{1,49}$')
-
-
-class AdminProgrammeListView(_ProgrammeScopedBase):
-    """GET the organisation's gift programmes · POST create one."""
-
-    def get(self, request):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        rows = [_programme_row(p) for p in self._programmes_for(admin).order_by('code')]
-        return Response({'programmes': rows})
-
-    def post(self, request):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        org = admin.owning_organisation
-        if org is None:
-            return Response({'error': 'no_org', 'code': 'no_org'}, status=status.HTTP_400_BAD_REQUEST)
-
-        from .models import Programme, code_is_free
-        code = (request.data.get('code') or '').strip().lower()
-        name_en = (request.data.get('name_en') or '').strip()
-        if not CODE_RE.match(code):
-            return Response({'error': 'bad_code', 'code': 'bad_code'}, status=status.HTTP_400_BAD_REQUEST)
-        if not name_en:
-            return Response({'error': 'name_required', 'code': 'name_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # `Programme.code` is unique PLATFORM-WIDE, not per organisation, because it is what an
-        # apply link carries (`/scholarship/apply?p=<code>`) — PF-1. So the clash a tenant hits may
-        # be with another tenant's code, and the message must not say whose.
-        # ⚠ `code_is_free` ALSO refuses a RETIRED code. A code some other gift used to answer to
-        # still routes students there through `resolve_open_cohort`; handing it to a new gift would
-        # send them to the wrong foundation with nothing raising an error.
-        if not code_is_free(code):
-            return Response({'error': 'code_taken', 'code': 'code_taken'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # ⚠ CREATED INACTIVE, ALWAYS, whatever the client sends. An active second programme changes
-        # live behaviour the moment it exists: the payment-run picker appears (Sabah S1) and the
-        # configuration screen starts asking which programme. Switching it on is a separate,
-        # deliberate press once its first intake year is set up.
-        p = Programme.objects.create(
-            organisation=org, code=code, name_en=name_en,
-            name_ms=(request.data.get('name_ms') or '').strip(),
-            name_ta=(request.data.get('name_ta') or '').strip(),
-            is_active=False,
-        )
-        logger.info('AUDIT programme_created code=%s org=%s by=%s', p.code, org.id, admin.email or '')
-        return Response(_programme_row(p), status=status.HTTP_201_CREATED)
-
-
-class AdminProgrammeDetailView(_ProgrammeScopedBase):
-    """PATCH one gift — its three names, its CODE, and whether it is active.
-
-    ⚠ THE CODE IS EDITABLE NOW, AND THE OLD ONE IS KEPT AS AN ALIAS. It is printed on posters and
-    typed into `/scholarship/apply?p=<code>`; an unknown code makes `resolve_open_cohort` answer
-    "no open round", so a rename with no alias would tell every student on a printed link that
-    applications are closed — silently, with nothing failing. This endpoint is the ONE writer of
-    `ProgrammeCodeAlias`.
-    """
-
-    def patch(self, request, pk):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        p, err = self._programme_or_404(admin, pk)
-        if err:
-            return err
-
-        changed = []
-
-        if 'code' in request.data:
-            from .models import ProgrammeCodeAlias, code_is_free
-            new_code = (request.data.get('code') or '').strip().lower()
-            if not CODE_RE.match(new_code):
-                return Response({'error': 'bad_code', 'code': 'bad_code'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            if new_code != p.code:
-                # ⚠ The clash may be with ANOTHER tenant's live code OR with any gift's retired
-                # one — both still route students — so the message must not say whose.
-                if not code_is_free(new_code, exclude_programme=p):
-                    return Response({'error': 'code_taken', 'code': 'code_taken'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                old_code = p.code
-                with transaction.atomic():
-                    # Renaming BACK to a code this gift used to answer to: that alias becomes the
-                    # live code, so the row must go or the gift would alias itself.
-                    ProgrammeCodeAlias.objects.filter(programme=p, code=new_code).delete()
-                    ProgrammeCodeAlias.objects.create(
-                        programme=p, code=old_code, created_by=admin.email or '')
-                    p.code = new_code
-                    p.save(update_fields=['code'])
-                logger.info('AUDIT programme_code_changed old=%s new=%s org=%s by=%s',
-                            old_code, new_code, p.organisation_id, admin.email or '')
-
-        for f in ('name_en', 'name_ms', 'name_ta'):
-            if f in request.data:
-                v = (request.data.get(f) or '').strip()
-                if f == 'name_en' and not v:
-                    return Response({'error': 'name_required', 'code': 'name_required'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                setattr(p, f, v); changed.append(f)
-
-        if 'apply_copy' in request.data:
-            # ⚠ VALIDATED SERVER-SIDE, NOT ONLY ON THE FORM. This is free text that renders on a
-            # PUBLIC page, and the `parents_occupation` overflow (2026-06-07) is the standing
-            # lesson: a form `maxLength` is a courtesy, the serializer is the guarantee.
-            from . import apply_copy as ac
-            try:
-                p.apply_copy = ac.normalise(request.data.get('apply_copy'))
-            except ac.ApplyCopyError as e:
-                return Response({'error': e.code, 'code': e.code, 'field': e.field},
-                                status=status.HTTP_400_BAD_REQUEST)
-            changed.append('apply_copy')
-
-        if 'is_active' in request.data:
-            want = bool(request.data.get('is_active'))
-            # ⚠ SWITCHING OFF A GIFT THAT IS TAKING APPLICATIONS WOULD STRAND THEM MID-FLIGHT: the
-            # apply link would stop resolving (`resolve_open_cohort` filters `programme__is_active`)
-            # while a half-finished application still points at it. Close the year first.
-            if not want:
-                from .models import ScholarshipCohort
-                if ScholarshipCohort.objects.filter(programme=p, is_open=True, is_active=True).exists():
-                    return Response({'error': 'has_open_year', 'code': 'has_open_year'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-            p.is_active = want; changed.append('is_active')
-
-        if changed:
-            p.save(update_fields=changed)
-            logger.info('AUDIT programme_updated code=%s fields=%s by=%s',
-                        p.code, ','.join(changed), admin.email or '')
-        return Response(_programme_row(p))
-
-    def delete(self, request, pk):
-        """DELETE one gift — only ever a gift that never became anything.
-
-        ⚠⚠ THE RULE IS ALREADY WRITTEN IN THE MODEL, AND THIS ENDPOINT ONLY SURFACES IT. Every
-        relation that means a gift has BECOME something is `on_delete=PROTECT`: its applications,
-        the benefactors accepted into it, the money recorded against it, and the payment runs that
-        paid from it. The database would refuse regardless; what this adds is a refusal that SAYS
-        WHICH of those is holding it, at the moment somebody asks, instead of a 500 from a
-        constraint.
-
-        So the honest line is: **a gift that has ever taken a student or a ringgit cannot be
-        deleted.** What can be deleted is the one you created by mistake a minute ago.
-
-        ⚠⚠ AND ITS EMPTY INTAKE YEARS GO WITH IT — the owner's ruling, 2026-09-07: *"I don't [want]
-        the ability to delete a gift programme that has students, and not merely intake years."* A
-        year on its own is the rules somebody typed a minute ago; students are what make a gift
-        undeletable. A year is `PROTECT` from the gift, so this handler clears the years EXPLICITLY,
-        in the same transaction, rather than the MODEL being relaxed to `CASCADE`. Both halves of
-        that matter: `PROTECT` stays the backstop for every other path that might ever delete a
-        programme, and a year that is NOT empty is still refused — `programme_delete_blocker` has
-        already established that no application exists under this gift, by cohort as well as by
-        column, so the years removed here can only be rules nobody has used.
-
-        This is what closes TD-232: a gift created by mistake and given one stray year used to be
-        stuck for ever, and so was the year (there is still no way to delete a year on its own).
-
-        ⚠ WHAT ELSE GOES WITH IT, deliberately: `ProgrammeApplicationItem` is CASCADE — those rows
-        are the gift's own configuration, meaningless without it. And `Invitation`,
-        `PartnerOrganisation.programme` and `PartnerAdmin.programme` are SET_NULL, which is exactly
-        right: those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift"
-        (the S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer.
-
-        ⚠ THE TYPED CONFIRMATION IS SERVER-SIDE, not a client courtesy. `confirm` must equal the
-        gift's own code. A destructive verb that any client can fire with an empty body is one
-        mis-wired button away from deleting somebody's gift, and the browser dialog is not the
-        guard — it is the explanation of the guard.
-        """
-        admin, err = self._gate(request)
-        if err:
-            return err
-        p, err = self._programme_or_404(admin, pk)
-        if err:
-            return err
-
-        # ⚠ THE PHRASE CARRIES THE VERB — `delete <code>`, not the bare code (owner, 2026-09-07).
-        # The code is printed on the card AND in the dialog's own label, so typing it alone is
-        # closer to copying what is already on screen than to stating an intention. "delete test2"
-        # cannot be produced by reflex, and it says what it does.
-        want = f'delete {p.code}'.lower()
-        if ' '.join((request.data.get('confirm') or '').split()).lower() != want:
-            return Response({'error': 'confirm_mismatch', 'code': 'confirm_mismatch'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # ⚠ THE SAME FUNCTION THE LIST ROW READS, so the disabled button and this refusal can never
-        # disagree. Two copies of "what holds a gift" would drift, and the drift shows up as a
-        # button that looked safe and a refusal after the phrase was typed out in full.
-        blocked_by, count = programme_delete_blocker(p)
-        if blocked_by:
-            return Response({'error': blocked_by, 'code': blocked_by, 'count': count},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        from .models import ScholarshipCohort
-        code, name = p.code, p.name_en
-        try:
-            # ⚠ ONE TRANSACTION, YEARS FIRST. If the gift's delete were to fail after the years had
-            # gone, an untouched gift would be left with its rules missing — which is worse than
-            # either outcome on its own. `atomic` is what makes "the years go with it" true rather
-            # than "the years go, and then we try".
-            with transaction.atomic():
-                # org-fence: `p` was reached through `_programme_or_404`, so these are this
-                # organisation's own years; the blocker above proved none of them holds a student.
-                years = ScholarshipCohort.objects.filter(programme=p)
-                year_count = years.count()
-                years.delete()
-                p.delete()
-        except ProtectedError:
-            # The backstop, and it should be unreachable: a relation added later without a check
-            # above lands here rather than as a 500. Deliberately generic — this arm knows only
-            # that something protects it, which is exactly why the named checks exist.
-            return Response({'error': 'in_use', 'code': 'in_use'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # The year count is ON the audit line because it is the part a person cannot see afterwards:
-        # the gift's own row is gone either way, but "and it took three years with it" is the fact
-        # somebody reading this log later would otherwise have to guess at.
-        logger.info('AUDIT programme_deleted code=%s name=%s years=%s by=%s',
-                    code, name, year_count, admin.email or '')
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class AdminApplyCopyDraftView(_ProgrammeScopedBase):
-    """POST a target locale -> a DRAFTED Malay/Tamil block, from this gift's own English.
-
-    ⚠⚠ IT RETURNS THE DRAFT AND SAVES NOTHING. The browser fills the boxes with it; the person
-    reads it and presses Save, which is the existing PATCH and the existing validation. Making
-    this write would put a machine's wording on a public page with no human between — the rule
-    `decisions.md` settled for the document engines (*the model extracts, a person decides*), and
-    the reason `apply_copy` exists at all is that an organisation owns what its gift advertises.
-
-    ⚠ IT IS BILLABLE. One Gemini call per press, metered through `usage_context` like every other
-    seam, so a tenant's drafting shows up on their own usage row rather than the platform's.
-    """
-
-    def post(self, request, pk):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        p, err = self._programme_or_404(admin, pk)
-        if err:
-            return err
-
-        from . import apply_copy_draft as acd, usage
-        locale = (request.data.get('locale') or '').strip().lower()
-        try:
-            with usage.usage_context(source='apply_copy_draft',
-                                     organisation_id=p.organisation_id):
-                block = acd.draft(p, locale)
-        except acd.DraftError as e:
-            return Response({'error': e.code, 'code': e.code},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        logger.info('AUDIT apply_copy_drafted code=%s locale=%s by=%s',
-                    p.code, locale, admin.email or '')
-        return Response({'locale': locale, 'block': block})
-
-
-def _requirements_from(data):
-    """Read the tick boxes. A key that is ABSENT is left alone; a key that is present and null
-    UNTICKS that requirement. Both matter: a PATCH sends only what changed, and clearing a value is
-    how a test is switched off (S2a — the value IS the switch)."""
-    out, bad = {}, None
-    for f in REQUIREMENT_FIELDS:
-        if f not in data:
-            continue
-        v = data.get(f)
-        if v in (None, ''):
-            out[f] = None
-            continue
-        try:
-            out[f] = float(v) if f in ('min_stpm_pngk', 'min_merit_score') else int(v)
-        except (TypeError, ValueError):
-            bad = f
-            break
-        if out[f] < 0:
-            bad = f
-            break
-    return out, bad
-
-
-class AdminIntakeYearListView(_ProgrammeScopedBase):
-    """GET one gift's intake years · POST open a new one."""
-
-    def get(self, request, pk):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        p, err = self._programme_or_404(admin, pk)
-        if err:
-            return err
-        from .models import ScholarshipCohort
-        years = ScholarshipCohort.objects.filter(programme=p).order_by('-year', 'code')
-        return Response({
-            'programme': {'id': p.id, 'code': p.code, 'name_en': p.name_en,
-                          'is_active': p.is_active},
-            'years': [_cohort_row(c) for c in years],
-        })
-
-    def post(self, request, pk):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        p, err = self._programme_or_404(admin, pk)
-        if err:
-            return err
-
-        from .models import ScholarshipCohort
-        code = (request.data.get('code') or '').strip().lower()
-        name = (request.data.get('name') or '').strip()
-        year = request.data.get('year')
-        if not CODE_RE.match(code):
-            return Response({'error': 'bad_code', 'code': 'bad_code'}, status=status.HTTP_400_BAD_REQUEST)
-        if not name:
-            return Response({'error': 'name_required', 'code': 'name_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        try:
-            year = int(year)
-        except (TypeError, ValueError):
-            return Response({'error': 'bad_year', 'code': 'bad_year'}, status=status.HTTP_400_BAD_REQUEST)
-        if ScholarshipCohort.objects.filter(code=code).exists():
-            return Response({'error': 'code_taken', 'code': 'code_taken'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        reqs, bad = _requirements_from(request.data)
-        if bad:
-            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        window, bad_window = _window_from(request.data)
-        if bad_window:
-            return Response({'error': bad_window, 'code': bad_window},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # ⚠ BOTH THE PROGRAMME AND THE ORGANISATION ARE SET, and they must agree. The application
-        # denormalises `owning_organisation` from its cohort, so a cohort carrying one and not the
-        # other files students under the wrong fence (TD-177 is exactly this, in a test fixture).
-        # It is DERIVED, never asked for.
-        #
-        # ⚠ CREATED CLOSED, ALWAYS. `is_open` defaults to True on the model, which would mean
-        # creating a year opens applications in the same press. Opening is what lets real students
-        # in; it gets its own deliberate action below.
-        c = ScholarshipCohort.objects.create(
-            programme=p, owning_organisation=p.organisation,
-            code=code, name=name, year=year, is_active=True, is_open=False, **reqs, **window,
-        )
-        logger.info('AUDIT intake_year_created cohort=%s programme=%s by=%s',
-                    c.code, p.code, admin.email or '')
-        return Response(_cohort_row(c), status=status.HTTP_201_CREATED)
-
-
-class AdminIntakeYearDetailView(_ProgrammeScopedBase):
-    """PATCH one intake year — its name, its requirements, and whether it is taking applications."""
-
-    def _cohort_or_404(self, admin, pk):
-        from .models import ScholarshipCohort
-        c = (ScholarshipCohort.objects
-             .select_related('programme', 'programme__organisation')
-             .filter(pk=pk, programme__in=self._programmes_for(admin)).first())
-        if c is None:
-            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        return c, None
-
-    def patch(self, request, pk):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        c, err = self._cohort_or_404(admin, pk)
-        if err:
-            return err
-
-        changed = []
-        if 'name' in request.data:
-            name = (request.data.get('name') or '').strip()
-            if not name:
-                return Response({'error': 'name_required', 'code': 'name_required'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            c.name = name; changed.append('name')
-
-        window, bad_window = _window_from(request.data, (c.opens_on, c.closes_on))
-        if bad_window:
-            return Response({'error': bad_window, 'code': bad_window},
-                            status=status.HTTP_400_BAD_REQUEST)
-        for f, v in window.items():
-            setattr(c, f, v); changed.append(f)
-
-        reqs, bad = _requirements_from(request.data)
-        if bad:
-            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # ⚠ CAPTURE THE OLD VALUE BEFORE WRITING. A threshold decides who is shortlisted, and
-        # `shortlisting.evaluate()` reads these columns LIVE — unlike the documents and questions,
-        # which are frozen per application at submit (`requirements_snapshot`). So a change here
-        # moves the bar for everybody still to be judged, and "which fields changed" does not
-        # answer the only question anybody will ask afterwards: FROM WHAT, TO WHAT.
-        #
-        # This is TD-203's lesson applied before it bites twice: `award_amount` had no audit line
-        # either, and when three production rows had to be corrected on 2026-07-30 there was no
-        # system record of who set them or to what — it came down to the owner's memory.
-        moved = {f: (getattr(c, f), v) for f, v in reqs.items() if getattr(c, f) != v}
-        for f, v in reqs.items():
-            setattr(c, f, v); changed.append(f)
-
-        if 'is_open' in request.data:
-            want = bool(request.data.get('is_open'))
-            # ⚠⚠ FINISHED IS TERMINAL (owner, 2026-09-08: *"when an application is finished, can it
-            # be opened again? I don't think it should be"*). The refusal lives HERE, on the
-            # endpoint, not only in the browser — a screen that merely hides the control is a
-            # suggestion, and this one has to be a rule. Nothing in the product clears
-            # `finished_at`; reversing it is a deliberate database correction.
-            if want and c.finished_at:
-                return Response({'error': 'round_finished', 'code': 'round_finished'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            if want:
-                # ⚠⚠ ONE OPEN ROUND PER **GIFT PROGRAMME** — NOT PER ORGANISATION (owner,
-                # 2026-09-06: *"Only one round is open for a gift programme. But if the org has two
-                # programmes, there could be two open applications."*).
-                #
-                # This filter said `owning_organisation=` until 2026-09-06, which refused to open
-                # Sabah's round while the flagship's was open — an organisation running two gifts
-                # could only ever take applications for one of them. Do not put it back.
-                #
-                # ⚠ WHAT THE NARROWER RULE COSTS, so nobody re-widens it to "fix" the symptom:
-                # `services.resolve_open_cohort` counts ambiguity across ALL open rounds
-                # platform-wide, deliberately — *"which round?"* is equally unanswerable between
-                # two intakes of the same organisation. So with two rounds open, a student who
-                # arrives on a bare `/scholarship/apply` (no `?p=<code>`) gets refused. That
-                # refusal is CORRECT and must stay: guessing once filed a student under the wrong
-                # foundation, funded from the wrong money, with no error anywhere.
-                #
-                # What was wrong was WHEN it arrived — after the student had filled in the whole
-                # form. The apply page now ASKS which gift before the form (PF-1's own rule, moved
-                # earlier), and the 409 stays as an unreachable backstop.
-                #
-                # The refusal below still arrives at the moment the admin creates the ambiguity,
-                # which is where it can still be undone.
-                from .models import ScholarshipCohort
-                clash = (ScholarshipCohort.objects
-                         .filter(programme=c.programme, is_open=True, is_active=True)
-                         .exclude(pk=c.pk).values_list('code', flat=True).first())
-                if clash:
-                    return Response({'error': 'another_year_open', 'code': 'another_year_open',
-                                     'open_code': clash}, status=status.HTTP_400_BAD_REQUEST)
-                if not c.programme.is_active:
-                    return Response({'error': 'programme_not_active', 'code': 'programme_not_active'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-            c.is_open = want; changed.append('is_open')
-
-        if changed:
-            c.save(update_fields=changed)
-            logger.info('AUDIT intake_year_updated cohort=%s fields=%s by=%s',
-                        c.code, ','.join(changed), admin.email or '')
-            # A SECOND line, only when a threshold actually moved, carrying old -> new. Kept
-            # separate from the line above rather than widening it: that one records that an
-            # intake year was edited, this one records that the bar changed, and the two are read
-            # by different people asking different questions.
-            if moved:
-                logger.info(
-                    'AUDIT intake_year_requirements_set cohort=%s changes=%s by=%s',
-                    c.code,
-                    ';'.join('%s:%s->%s' % (f, old, new) for f, (old, new) in sorted(moved.items())),
-                    admin.email or '')
-        return Response(_cohort_row(c))
-
-
-class AdminIntakeYearFinishView(_ProgrammeScopedBase):
-    """POST — close an intake round FOR GOOD. Terminal.
-
-    ⚠ ITS OWN ENDPOINT, NOT A FIELD ON THE PATCH, and the reason is the typed confirmation. This is
-    the one action on this screen with no way back, so it takes the same shape as deleting a gift:
-    the round's own code has to be typed. Folding it into the PATCH would make an irreversible act
-    reachable by the same request that renames a round.
-
-    ⚠ THE ROUND MUST BE CLOSED FIRST. Two deliberate steps, the same reasoning as "creating never
-    opens": stopping new applicants and ending the grace period are different decisions, taken at
-    different times, and collapsing them would have shut out the thirty students who submitted
-    between 1 and 7 July 2026.
-
-    ⚠ THE DIALOG NAMES THE UNSUBMITTED COUNT, and this endpoint is why it can: finishing REFUSES a
-    late submission, so anybody still part-way through is shut out. That number is the one thing the
-    reader cannot see from the dialog, so it is served on the row.
-    """
-
-    def post(self, request, pk):
-        admin, err = self._gate(request)
-        if err:
-            return err
-        from .models import ScholarshipApplication, ScholarshipCohort
-        c = (ScholarshipCohort.objects
-             .select_related('programme', 'programme__organisation')
-             .filter(pk=pk, programme__in=self._programmes_for(admin)).first())
-        if c is None:
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if c.finished_at:
-            return Response({'error': 'already_finished', 'code': 'already_finished'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if c.is_open:
-            return Response({'error': 'still_open', 'code': 'still_open'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # The typed phrase is the round's own code — printed on the row and in the dialog's label,
-        # so typing it is closer to copying than to deciding. Same shape as `delete <code>`.
-        typed = (request.data.get('confirm') or '').strip().lower()
-        if typed != c.code.lower():
-            return Response({'error': 'confirm_mismatch', 'code': 'confirm_mismatch'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        c.finished_at = timezone.now()
-        c.finished_by = admin.email or ''
-        c.save(update_fields=['finished_at', 'finished_by'])
-
-        # ⚠ `shortlisted`, NOT `submitted_at__isnull` — that column is `auto_now_add` and is never
-        # null. See the same note on `_cohort_row`.
-        #
-        # ⚠ THE PRAGMA SITS DIRECTLY ABOVE THE QUERY, and it has to: the static guard looks within
-        # 200 characters, so an explanation wedged between the two makes it fail — correctly.
-        # org-fence: `c` came through `_programmes_for(admin)`, so this is already the caller's org.
-        stranded = ScholarshipApplication.objects.filter(cohort=c, status='shortlisted').count()
-        # ⚠ THE COUNT IS ON THE AUDIT LINE because it is the part nobody can reconstruct later: the
-        # round's own row says it is finished either way, but "and it shut out two half-finished
-        # applications" is the fact a reader would otherwise have to guess at. TD-203's lesson.
-        logger.info('AUDIT intake_year_finished cohort=%s unsubmitted=%s by=%s',
-                    c.code, stranded, admin.email or '')
-        return Response(_cohort_row(c))
 
 
 # ── the officer's spending screen (sponsor spending S4) ──────────────────────
@@ -8235,7 +4772,7 @@ class _SpendingBase(_AdminBase):
         read the scope from here and the gift from somewhere else would have two answers to
         'what am I looking at', and only one of them fenced.
         """
-        from . import spend_report
+        from .. import spend_report
 
         admin = self.get_admin(request)
         if not admin:
@@ -8298,8 +4835,8 @@ class AdminSpendingView(_SpendingBase):
         admin, org, programme, err = self._spending_admin(request)
         if err:
             return err
-        from . import spend_report
-        from .models import SPEND_CATEGORY_CHOICES
+        from .. import spend_report
+        from ..models import SPEND_CATEGORY_CHOICES
 
         totals = spend_report.totals(org, programme)
         return Response({
@@ -8369,7 +4906,7 @@ class AdminSpendingCategoryView(_SpendingBase):
         admin, org, programme, err = self._spending_admin(request)
         if err:
             return err
-        from . import spend_report
+        from .. import spend_report
 
         merchant = request.data.get('merchant') or ''
         category = request.data.get('category') or ''
@@ -8426,7 +4963,7 @@ class AdminProgrammeOverviewView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        from . import programme_overview, spend_report
+        from .. import programme_overview, spend_report
         if not programme_overview.sections_for(admin):
             return self._deny_role()
         programme, gift_err = self._gift_narrowing(request, admin)
@@ -8501,8 +5038,8 @@ class AdminOverviewLayoutView(_AdminBase):
         return orgs[0], None
 
     def _payload(self, org):
-        from . import overview_layout
-        from .models import OrganisationOverviewLayout
+        from .. import overview_layout
+        from ..models import OrganisationOverviewLayout
         # org-fence: `org` is the derived organisation above.
         row = OrganisationOverviewLayout.objects.filter(organisation=org).first()
         return {
@@ -8526,8 +5063,8 @@ class AdminOverviewLayoutView(_AdminBase):
         return ','.join(f"{s['key']}{'+' if s['on'] else '-'}" for s in sections)
 
     def put(self, request):
-        from . import overview_layout
-        from .models import OrganisationOverviewLayout
+        from .. import overview_layout
+        from ..models import OrganisationOverviewLayout
 
         admin, err = self._gate(request)
         if err:

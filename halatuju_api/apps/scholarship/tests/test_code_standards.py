@@ -141,7 +141,15 @@ COUNT_SLACK = {
 #: The SHA-256 of the canonical JSON of the `baseline` block (sorted keys, no whitespace, UTF-8).
 #: ⚠ If you are here because this failed: the baseline is the frozen record of what H4 found. It
 #: is not a number to keep current. Lower a limit in `budget`, never in `baseline`.
-BASELINE_SHA256 = 'b0ecf04fff3c524a35fd562f8ffcf1d46f3eec9112e2142c0f6cb9e78ef60e42'
+#: ⚠ RE-PINNED 2026-09-20 (code health H11), the second deliberate re-pin after H5's. Nothing was
+#: raised and no ledger gained a member: `apps/scholarship/views_admin.py` became the package
+#: `apps/scholarship/views_admin/`, so its `oversize_files` KEY was renamed to
+#: `apps/scholarship/views_admin/__init__.py` in both blocks — same file, new path, baseline number
+#: untouched at 8547. A path rename is the one case where the frozen record must follow: a key
+#: naming a file that no longer exists describes nothing, and the two tests above would then
+#: demand the line be removed AND refuse the package root with no line left to lower. See the
+#: `_history` note in the JSON and `docs/retrospective-2026-09-20-code-health-h11.md`.
+BASELINE_SHA256 = '20c521daa4565d11842f95fdac43f2874f00ca67836c6c38150851ff2c3919f2'
 
 LEDGERS = ('oversize_files', 'long_functions', 'duplicated_names', 'runtime_skips',
            'hand_built_application_fixtures')

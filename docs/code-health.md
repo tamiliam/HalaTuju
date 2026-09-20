@@ -7,11 +7,12 @@ that got WORSE than the last run by more than a tolerance — the only thing tha
 
 Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` at sprint close).
 
-**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases, run back to back under a development freeze; awaiting the owner's word to start H1).
+**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases). H1-H11 are shipped. The development freeze was lifted at the H10 checkpoint on 2026-09-19; on 2026-09-20 the owner asked for H11-H19 to run back to back again, stopping only for a decision that is the owner's.
 
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 2b6274e | 90 | 42 | admin-api.ts 107.1 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-19 | 3eadcd9 | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
 | 2026-09-19 | 9c5024a | 90 | 42 | views_admin.py 273.8 | 25 | 15 | 4 | 133 | 139 | 0 | 41 | 15 | 86 | 0 | - | - | ok |
 | 2026-09-19 | b7a1350 | 90 | 41 | views_admin.py 273.8 | 25 | 16 | 4 | 133 | 139 | 0 | - | 11 | 84 | 0 | - | - | ok |
@@ -29,14 +30,13 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 3eadcd9, window 2026-06-21 onward)
+## Latest run (2026-09-20, 2b6274e, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/views_admin.py` | 32 | 8556 | 273.8 |
 | `halatuju-web/src/lib/admin-api.ts` | 26 | 4118 | 107.1 |
-| `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3201 | 96 |
+| `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3188 | 95.6 |
 | `halatuju_api/apps/scholarship/services.py` | 31 | 2946 | 91.3 |
 | `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1632 | 49 |
@@ -44,23 +44,24 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 3599 | 32.4 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
+| `halatuju-web/src/components/ScholarshipDocuments.tsx` | 11 | 1914 | 21.1 |
 
 ### Fix ratio
-- 303 fix / 423 feat commits since 2026-06-21
+- 304 fix / 418 feat commits since 2026-06-22
 
 ### Files over 1000 lines
-- `8556  halatuju_api/apps/scholarship/views_admin.py`
+- `5093  halatuju_api/apps/scholarship/views_admin/__init__.py`
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
 - `4118  halatuju-web/src/lib/admin-api.ts`
 - `3599  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `3201  halatuju_api/apps/scholarship/income_engine.py`
+- `3188  halatuju_api/apps/scholarship/income_engine.py`
 - `2946  halatuju_api/apps/scholarship/services.py`
 - `2488  halatuju-web/src/lib/api.ts`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
-- `1957  halatuju-web/src/components/ScholarshipDocuments.tsx`
+- `1914  halatuju-web/src/components/ScholarshipDocuments.tsx`
 - `1632  halatuju-web/src/lib/officerCockpit.ts`
 - `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
@@ -68,7 +69,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `1342  halatuju-web/src/lib/scholarship.ts`
 - `1246  halatuju_api/apps/courses/views_admin.py`
 - `1229  halatuju_api/apps/scholarship/serializers_admin.py`
-- `1195  halatuju_api/apps/scholarship/serializers.py`
+- `1212  halatuju_api/apps/scholarship/serializers.py`
 - `1151  halatuju_api/apps/scholarship/verdict_engine.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
@@ -123,21 +124,79 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 31 of 159 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 158 entries have a defining line; 88 carry no resolution marker on it
+- 159 entries have a defining line; 88 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 409: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5067: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 415: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5275: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 9c5024a
+- renamed in halatuju_api/code-standards.json — budget.oversize_files.apps/scholarship/views_admin/__init__.py: renamed from one of apps/scholarship/views_admin.py (8547 -> 5093); the list did not grow
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-20 (eleventh reading) — H11: `views_admin.py` is a package; `std` FAILs on a rename
+
+Read-only (`--write` was excluded by the brief). **One FAIL: `std`, and it is the tool reading a
+ledger-key RENAME as a new exemption.** Every other reading is unchanged or better. No behaviour
+changed: the ten moved bodies are byte-identical to the lines they came from, proved mechanically.
+
+- **`hot#1` 273.8 → 107.1 (−61%).** `views_admin.py` (8,556 lines × 32 fix commits) left the table
+  and `admin-api.ts` is now the worst file. *Decision: ACCEPT the reading, but do NOT read it as a
+  61% reduction in risk.* `m_hotspots` counts fix commits by PATH, from `ctx.commits()`, with no
+  rename following. `views_admin/__init__.py` is 5,093 lines of the same code and scores **zero**
+  because no commit has ever touched that path. The honest figure is the one the roadmap asked for
+  — the file that carried the risk is 40% smaller, and 3,532 of its lines now sit in ten modules
+  averaging 370 — and the tool will re-learn the truth over the next 90 days as fixes land on the
+  new paths. **H12's acceptance ("`hot#1` under 100") is therefore already nearly met by the rename
+  alone and should not be treated as evidence of anything.**
+  - *Proposed (not made — this sprint's brief excluded `Settings/_tools`):* `m_hotspots` should walk
+    `git log --follow`, or at minimum attribute a deleted path's fixes to the file that replaced it.
+    Until then, **every Phase-4 sprint will show a hotspot vanishing rather than shrinking**, which
+    is the most flattering possible error and the one worth naming out loud.
+- **⚠ `std` ok → FAIL, and it is the tool, not the change.** `loosened()` compares the `budget`
+  block key by key: a key that disappears is a tightening and is silent, a key that appears is
+  reported as "a NEW entry". A file split necessarily does both at once —
+  `apps/scholarship/views_admin.py` became `apps/scholarship/views_admin/__init__.py` — so the one
+  operation the in-repo standard's own failure message PRESCRIBES ("SPLIT IT into modules") is the
+  operation the sprint-close tool refuses.
+  - **✅ FIXED THE SAME DAY, in the tool, before this row was recorded.** The lead took the
+    proposal below and built it: `loosened()` now treats an added key as a RENAME, and passes it
+    in silence but not unrecorded, only when a key left the same list in the same step, the new
+    number is no bigger than the biggest that left, and neither the list's total nor its length
+    rose. Debt cannot grow through a rename, so the guard keeps its teeth. Six cases in
+    `Settings/_tools/tests/test_code_health.py` pin it — one rename that must pass and four
+    disguises that must still fail — and the rule was bite-checked (broken → red, restored
+    byte-identical). **`std` reads ok, and H12, H13, H15 and H16 will not need this paragraph.**
+  - *Decision as first recorded (now superseded): ACCEPTED, with the reason recorded in three
+    places* — the `_history` note in
+    `halatuju_api/code-standards.json`, the re-pin comment above `BASELINE_SHA256`, and the H11
+    retrospective. Nothing was raised: the baseline keeps 8547 (the same file, at a new path), the
+    budget falls 8547 → 5093, and **no ledger gained a member** — all ten new submodules are under
+    the 600-line standard on purpose, which is why `requests` is two modules and the gift domain is
+    three rather than one each.
+  - *The proposal that was built:* `loosened()` should pair a removed key with an added one whose
+    VALUE is lower and report a rename rather than an addition. Left standing here because the
+    reasoning is the lesson: four acceptances in a row for a guard that is right about nothing in
+    any of them is how a guard stops being read, and that is why it was fixed instead.
+- **`xapp` held at 133 — and this took a deliberate decision.** The first cut repeated
+  `from apps.courses.models import PartnerOrganisation` in three new modules and moved
+  `PartnerAdminMixin` into `base.py` while leaving it in the root, reading **137**. The three
+  repeats were redundant (each of those bodies already imports it inside the function that uses it,
+  exactly as before the move) and the root's `PartnerAdminMixin` line was dead the moment
+  `_AdminBase` left. *Decision: a split may not widen the app boundary. `base.py` is the only new
+  module that imports from `apps.courses`, and it does so with the line the root gave up.*
+- **`big` held at 25** — one oversize file swapped for another, as expected in wave 1. The package
+  root leaves the list at H12.
+- **`td_open` −1**, and **TD-267 raised** (three module-level imports in the old file that nothing
+  has used for some time — found by the move, not caused by it, and deliberately not fixed).
+- All other readings delta 0: `fix%` 42, `long` 15, `dup` 4, `supp` 139, `skip` 0, `mirror` 3,
+  `guard%` 19, `unused` 0.
 
 ### 2026-09-19 (tenth reading) — H10: the mirror ledger is down to a documented exception
 

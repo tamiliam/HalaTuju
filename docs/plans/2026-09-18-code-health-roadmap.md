@@ -492,7 +492,7 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 
 | File | Lines | Split sprint |
 |---|---|---|
-| `halatuju_api/apps/scholarship/views_admin.py` | 8,556 | **H11** (six domains) then **H12** (the rest) |
+| `halatuju_api/apps/scholarship/views_admin/__init__.py` | ~~8,556~~ **5,093** | ~~H11~~ ✅ done 2026-09-20 → **H12** (the rest). ⚠ The ten submodules are each under 600 and are NOT on the list |
 | `halatuju_api/apps/scholarship/models.py` | 4,756 | **H15** |
 | `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
 | `halatuju-web/src/lib/admin-api.ts` | 4,118 | **H13** |
@@ -510,31 +510,70 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 The standing rule does not apply to them; **the ratchet in `code-standards.json` still does**, so a
 sprint that would push one past its budget splits it in its own commit first.
 
-### H11 — `views_admin.py` becomes a package, wave 1
-- **Scope:** `views_admin/__init__.py` re-exports all 142 names, so `urls.py` is **byte-identical**.
-  Move the six domains with their own service module and no shared helper (~3,200 lines):
-  requests (831), gift programmes + intake years (866), invoices (455), contracts (421),
-  payments (365), sponsor terms (297). `_AdminBase` stays in `views_admin/base.py` — tenancy
-  rule 3: org scoping lives in the base gates, and every moved view still inherits it.
-- **The four known trip-wires, all found in the survey:**
-  1. `logger = logging.getLogger(__name__)` — twelve `assertLogs('apps.scholarship.views_admin')`
-     sites break on a new logger name. Every submodule uses the explicit old name.
-  2. `test_org_fence.py` opens `views_admin.py` by filename (made package-aware in H3).
-  3. Eight private helpers are imported by tests from the package root — re-export them.
-  4. 19 `patch('apps.scholarship.views_admin.build_verdict' / '.refine_sponsor_profile')` strings
-     point at re-exported imports; they follow the code in wave 2, not here.
-- **Acceptance:** `urls.py` unchanged; pytest identical count, green; org fence green **and**
-  bite-checked in a moved file; reading: `hot#1` falls by about a third.
-- **Complexity:** medium. **~6h.** api deploy.
+### H11 — `views_admin.py` becomes a package, wave 1 ✅ SHIPPED 2026-09-20
+
+**What moved.** `views_admin.py` (8,556) is the package `views_admin/` (root 5,093 + ten modules,
+3,532 lines, average 370, none over 500). `urls.py` byte-identical; all 142 names re-exported.
+
+| module | lines | what |
+|---|---|---|
+| `base.py` | 332 | `_AdminBase`, `_MONTH_RE`, `_org_or_none` |
+| `payments.py` | 377 | payment runs |
+| `invoices.py` | 466 | tenant invoices, receipts, build hours |
+| `contracts.py` | 436 | contract templates |
+| `requests.py` | 480 | a request and its conversation |
+| `requests_delivery.py` | 391 | analysis, quote, schedule, attachments |
+| `sponsor_terms.py` | 300 | sponsor terms authoring |
+| `gifts.py` | 315 | gift + intake-year readers and row builders |
+| `gift_programmes.py` | 315 | the Programme endpoints |
+| `intake_years.py` | 287 | the ScholarshipCohort endpoints |
+
+**Three things the plan got wrong, and they are the reason H12's estimate moves:**
+
+1. **The 600-line standard decides how many modules there are, not the domain.** H4's ledger is
+   frozen and may not gain a member, so any new file over 600 lines is simply refused by the gate
+   with nowhere to record it. `requests` (833) and the gift domain (868) therefore had to land as
+   two and three modules. ⚠ **H12's old acceptance line — "no file in the package over ~900
+   lines" — was never reachable. It is 600, and it always was.**
+2. **A ledger-key RENAME is the one case where the frozen baseline has to follow.** A key naming
+   a file that no longer exists describes nothing: `test_a_listed_file_that_shrank…` demands the
+   line be removed and `test_no_unlisted_source_file…` then refuses the package root with no line
+   left to lower. The key was renamed in BOTH blocks and `BASELINE_SHA256` re-pinned, with the
+   reason in the JSON's `_history`. **`Settings/_tools/code_health.py` reads that as a new
+   exemption and FAILs `std`. It will do so on H12, H13, H15 and H16 too** — see the fix proposed
+   under `## Reviews` in `docs/code-health.md`. Four acceptances in a row for a guard that is
+   wrong every time is how a guard stops being read.
+3. **Trip-wire 1 did not exist.** Switching a submodule to `logging.getLogger(__name__)` turned
+   NONE of the twelve `assertLogs` sites red — `assertLogs` on a parent records what propagates up
+   from its children, and every one of those tests then matches on the message. The explicit logger
+   name is still right (the Cloud Logging scrape metric counts by logger name), but nothing was
+   enforcing it. H11 added the guard that does.
+
+**Held:** pytest 7,019 → **7,021** (the +2 is the new logger guard and its floor; every
+pre-existing test is unchanged and green) · `manage.py check` 0 · `makemigrations --check` clean ·
+`xapp` 133 → 133 · `big` 25 → 25 · every other reading delta 0.
+**`hot#1` 273.8 → 107.1**, but read `docs/code-health.md` before quoting it: the tool counts fixes
+by path and does not follow a rename, so the split reads as a hotspot vanishing rather than
+shrinking. **Retro:** `docs/retrospective-2026-09-20-code-health-h11.md`.
 
 ### H12 — `views_admin` wave 2
 - **Scope:** the remaining nineteen domains (applications/verdict/QC, interviews, sponsors,
   sources, reviewers, billing, org configuration, spending, overview…). The 19 patch strings move
   with `build_verdict` and `refine_sponsor_profile`. `interview_agenda_full` has zero callers
-  outside one test — confirm dead, delete (the only deletion in the phase).
-- **Acceptance:** `__init__.py` holds re-exports only; no file in the package over ~900 lines;
-  reading: `hot#1` under 100.
-- **Complexity:** medium. **~7h.** api deploy.
+  outside one test — confirm dead, delete (the only deletion in the phase). Also delete the twelve
+  now-dead names in the root's import block: the nine H11 kept on purpose (still addressed by
+  `patch(...)` strings and lazy importers until their code moves) and TD-267's three.
+- **Acceptance:** `__init__.py` holds re-exports only; **no file in the package over 600 lines**
+  (corrected — see H11 note 1); pytest count identical bar any guard the bite-checks prove missing;
+  `urls.py` still byte-identical. ⚠ **Do not use `hot#1` as evidence** (H11 note 3 in
+  `docs/code-health.md`); `big` falling by one — the package root leaving the list — is the honest
+  reading for this sprint.
+- **Complexity:** medium. **~7h → ~9h.** The re-estimate is H11's measured cost, not a guess:
+  the slicing and the suite were about four hours; the other two went on the ledger conflict, the
+  `xapp` regression a naive split caused (three repeated `apps.courses` imports and one left
+  behind — **budget an hour for the app-boundary count on every split from here**), and the
+  silent bite. H12 has 5,093 lines to place against H11's 3,532, nineteen domains against six,
+  and the 19 patch strings to move for real. api deploy.
 
 ### H13 — `admin-api.ts` and `api.ts` become barrels
 - **Scope:** `src/lib/http.ts` takes the four private fetch helpers (they are *not* shared today:
