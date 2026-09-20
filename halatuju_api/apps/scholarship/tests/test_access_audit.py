@@ -105,11 +105,20 @@ class AuditLoggerNameTest(SimpleTestCase):
     #: turned nothing red, including the one `assertLogs('apps.scholarship.services')` site,
     #: because `assertLogs` on a parent records whatever propagates up from its children. The
     #: guard was package-specific; the hazard never was.
-    PACKAGES = ('apps.scholarship.views_admin', 'apps.scholarship.services')
+    #: ⚠ H16 (2026-09-20) added `apps.scholarship.emails`, whose logger is the noisiest in the
+    #: app — fourteen of its twenty-one modules hold one, every `Failed to send ... email`
+    #: warning among them. `emails/shared.py` writes the package name out in full for exactly
+    #: this reason and every other module imports that one logger from it.
+    #: `apps.scholarship.income_engine` is deliberately NOT here: it is a pure rule engine and
+    #: logs nothing, so listing it would be a floor of zero, which is the thing this guard
+    #: exists to refuse.
+    PACKAGES = ('apps.scholarship.views_admin', 'apps.scholarship.services',
+                'apps.scholarship.emails')
 
     #: The fewest submodules of each that carry a logger today. THE FLOOR: a scan that finds
     #: nothing passes for ever while watching nothing.
-    FLOORS = {'apps.scholarship.views_admin': 3, 'apps.scholarship.services': 4}
+    FLOORS = {'apps.scholarship.views_admin': 3, 'apps.scholarship.services': 4,
+              'apps.scholarship.emails': 10}
 
     def _submodule_loggers(self, package):
         pkg = importlib.import_module(package)

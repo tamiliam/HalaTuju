@@ -2,7 +2,91 @@
 
 All notable changes to this project will be documented in this file.
 
-## Code health H16 - every guard that reads the tree has a floor - 2026-09-20
+## Code health H16 - `emails.py` and `income_engine.py` become packages, and PHASE 4 IS COMPLETE - 2026-09-20
+
+**Moves only. No production behaviour changed, no migration, no suppression, no skip, and the
+email golden master is BYTE-UNCHANGED.** The last two files on the Phase-4 split table are gone.
+
+`emails.py` (4,242 lines) is now 21 modules and a 134-line re-export shell. `income_engine.py`
+(3,188) - the repository's worst hotspot - is 19 modules and a 132-line shell. Every moved line is
+byte-identical to the line it came from, asserted by the cut itself rather than claimed afterwards,
+and **no importing file was changed.**
+
+### Changed
+
+- **`apps/scholarship/emails.py` -> `apps/scholarship/emails/`** - 21 modules, largest
+  `interview_mail.py` at 464 lines, none over 600. The shell re-exports all 195 names the old
+  module defined, so `from apps.scholarship import emails` and `emails.send_*` are untouched
+  everywhere.
+- **`apps/scholarship/income_engine.py` -> `apps/scholarship/income_engine/`** - 19 modules,
+  largest `identity_checks.py` at 377, none over 600. **⛔ THIS IS ELIGIBILITY AND NOTHING MOVED:**
+  no verdict changed, `VERDICT_ENGINE_VERSION` was not bumped, and `income_shown`,
+  `declared_income_gaps`, `salary_income_satisfied` and `str_not_breached` are the same functions
+  at a new path. `halatuju-web/src/lib/incomeWizard.ts`, the deliberate mirror, was NOT touched -
+  its three `unguarded_mirrors` entries stay parked pending the owner's TD-262 rulings.
+- **`apps/scholarship/constants.py` (new) - the back-edge's one door.** The six plain numbers
+  `apps/courses/org_config.py` reads from `apps.scholarship` moved here verbatim, and their old
+  homes re-export them, so `check2_queries.MAX_CLARIFY` and `scheduling.SLOT_STEP_MIN` answer
+  exactly as before. The module imports nothing and never will - which is the point: every one of
+  those reads carried a comment saying the import had to be lazy because it would be circular, and
+  a leaf cannot be.
+- **`apps/courses/views_admin.py` - the LAST import-time cross-app import is gone.**
+  `from apps.scholarship.emails import send_partner_welcome_email` at module level is now a lazy
+  import inside a same-named seam, so the three call sites and the patch target are byte-identical.
+  `courses_to_scholarship_module_level_imports` ratchets **1 -> 0**.
+
+### Fixed
+
+- **Two guards that read these files by path, followed in the same change.**
+  `test_branding_guard.py` read `emails.__file__` - which for a package is a re-export shell with
+  no copy in it at all, so it would have scanned ~0 string constants and, without its floor, gone
+  on passing while 4,200 lines of email copy left its sight. It now walks the package.
+  `test_superseded_documents.py::TestStaticReadGuard` opened `income_engine.py` by name; it now
+  walks the package with a floor. **`strCoachDrift.test.ts` in the WEB tree** read
+  `income_engine.py` too - and the api-side `test_web_guards_read_live_paths.py` (built the day
+  before) caught it, from the api gate, with no jest involved. That is TD-269's repair doing
+  exactly the job it was written for.
+- **`AuditLoggerNameTest` gains `apps.scholarship.emails`** with a floor of 10. Fourteen of the
+  package's modules carry a logger; `emails/shared.py` writes `apps.scholarship.emails` out in
+  full rather than taking `__name__`, because the Cloud Logging scrape metric counts by logger
+  name. A bite-check confirmed the guard now goes RED here - the same bite was SILENT at H15.
+
+### Added
+
+- **`apps/scholarship/tests/package_patch.py`** - `patch_engine(package, name)`. A name in a
+  package is looked up three ways (through the package, from a sibling's import header, in its own
+  home), and `mock.patch('apps.scholarship.income_engine.<name>')` now covers only the first. The
+  helper patches one shared mock into every scope that holds the name, restoring exactly what the
+  old one-module patch meant, **and asserts it patched at least one** - a name nobody holds any
+  more is a move nobody followed, and an unpatched eligibility rule means the real rule ran and the
+  test asserted nothing.
+
+### Notes
+
+- **The `_moved` mechanism was NOT used, and that is the result, not an omission.** Both
+  `oversize_files` entries LEFT the budget outright: neither file had an indivisible lump (the
+  largest thing in either is a 128-line function), so both fell under 600 everywhere. H15 needed
+  `_moved` because `ScholarshipApplication` is one 847-line class no move can divide. The frozen
+  `baseline` is untouched and `BASELINE_SHA256` was not re-pinned.
+- **The roadmap's `xapp` back-edge target was not reached, and it was not reachable by a move.**
+  `courses -> scholarship` goes 31 -> 30 edges (41 -> 41 statements), not "under 20". Six
+  constants are six distinct names, so they are six edges whichever module holds them;
+  consolidating three source modules into one leaf changes which module is named, not how many
+  names cross. Raised as **TD-278** with the arithmetic rather than engineered away.
+- ⚠ **The previous entry in this file was mislabelled `Code health H16`.** It was the guard-floor
+  sprint that closed TD-276/275/269 - real work, but not a roadmap sprint, and the roadmap's H16
+  was already allocated to this one. Its heading has been corrected below; nothing else in it was
+  touched.
+
+**Held:** pytest **7,043 passed / 3 skipped** (identical; subtests 811 -> 813, the two new
+`emails` package checks) · jest **2,934 / 160 suites** (identical) · `manage.py check` 0 ·
+`makemigrations --check --dry-run` **`No changes detected`** · tsc 0 · lint 0 · i18n ok
+(5,389 keys x 3) · `next build` exit 0 · code_health **0 FAIL, 6 WARN**, `std` **ok**,
+**`big` 19 -> 17**, **`hot#1` `income_engine.py` 95.6 -> `officerCockpit.ts` 49**,
+**`xapp` 46 -> 45**, `supp` 139, `skip` 0, `dup` 4, `mirror` 3, `guard%` 20 - nothing worse.
+**Retro:** `docs/retrospective-2026-09-20-code-health-h16.md`.
+
+## Guard floors - every guard that reads the tree has a floor - TD-276, TD-275, TD-269 - 2026-09-20
 
 **Tests and docs only. No production code changed, no migration, no suppression, no skip.**
 TD-276 and TD-275 closed.

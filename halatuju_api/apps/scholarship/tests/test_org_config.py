@@ -950,7 +950,10 @@ class TestPerOrgInterviewRules(TestCase):
         self.assertFalse(scheduling._cutoff_ok(start, timezone.now(), self.org))
         self.assertTrue(scheduling._cutoff_ok(start, timezone.now(), None))   # platform 12h
         sent = {}
-        with mock.patch.object(emails, '_send_html',
+        # ⚠ `emails` is a PACKAGE (code health H16): `_send_html` is an attribute of the module
+        # that READS it, so patching the re-export shell would rebind a name nothing calls and a
+        # real email would go out with this test asserting nothing.
+        with mock.patch.object(emails.interview_mail, '_send_html',
                                side_effect=lambda *a, **k: sent.update(html=a[2]) or True):
             emails.send_interview_booked_email(
                 'stu@x.com', student_name='Kavi', reviewer_name='Bala', start=start,

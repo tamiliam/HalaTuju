@@ -403,7 +403,11 @@ class TestInvitingASponsor(TestCase):
 
     def test_a_bounce_is_recorded_rather_than_swallowed(self):
         from unittest.mock import patch
-        with patch('apps.scholarship.emails.EmailMessage.send', side_effect=RuntimeError('boom')):
+        # ⚠ `emails` is a PACKAGE (code health H16), and the shell re-exports what the old module
+        # DEFINED, not what it imported — so `EmailMessage` is reached through the module that
+        # actually sends this letter.
+        with patch('apps.scholarship.emails.invitation_mail.EmailMessage.send',
+                   side_effect=RuntimeError('boom')):
             r = self._invite()
         self.assertEqual(r.status_code, 502)
         inv = Invitation.objects.get(audience='sponsor')

@@ -181,7 +181,10 @@ _CLARIFY_ORDER = [
 # most material (design §4). PLATFORM default — an organisation can tune its own cap via
 # org_config `max_clarify_open` (Org Config Sprint B), whose registry default reads THIS
 # constant; read the live cap through `max_clarify(application)`, never this name directly.
-MAX_CLARIFY = 3
+# ⚠ It MOVED to `apps/scholarship/constants.py` at code health H16 and is RE-EXPORTED here, so
+# `check2_queries.MAX_CLARIFY` still answers exactly as it did. `apps.courses` reads it from
+# `constants`, which imports nothing — so the back-edge no longer pulls this module in.
+from .constants import MAX_CLARIFY
 
 
 def max_clarify(application):

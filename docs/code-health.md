@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 586bcb0 | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 986702a | 90 | 42 | income_engine.py 95.6 | 19 | 15 | 4 | 46 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 591b6a9 | 90 | 42 | income_engine.py 95.6 | 19 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-20 | 676cc96 | 90 | 42 | income_engine.py 95.6 | 21 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
@@ -36,13 +37,11 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 986702a, window 2026-06-22 onward)
+## Latest run (2026-09-20, 586bcb0, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/income_engine.py` | 30 | 3188 | 95.6 |
-| `halatuju_api/apps/scholarship/emails.py` | 14 | 4242 | 59.4 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 30 | 1632 | 49 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
@@ -50,14 +49,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1229 | 11.1 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 9 | 1151 | 10.4 |
 | `halatuju_api/apps/scholarship/academic_engine.py` | 9 | 887 | 8 |
-| `halatuju_api/apps/courses/views_admin.py` | 6 | 1246 | 7.5 |
+| `halatuju_api/apps/courses/views_admin.py` | 6 | 1262 | 7.6 |
+| `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
+| `halatuju-web/src/lib/admin-api.ts` | 26 | 241 | 6.3 |
 
 ### Fix ratio
 - 305 fix / 418 feat commits since 2026-06-22
 
 ### Files over 1000 lines
-- `4242  halatuju_api/apps/scholarship/emails.py`
-- `3188  halatuju_api/apps/scholarship/income_engine.py`
 - `2421  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
@@ -67,7 +66,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1342  halatuju-web/src/lib/scholarship.ts`
 - `1338  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1246  halatuju_api/apps/courses/views_admin.py`
+- `1262  halatuju_api/apps/courses/views_admin.py`
 - `1229  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1212  halatuju_api/apps/scholarship/serializers.py`
 - `1151  halatuju_api/apps/scholarship/verdict_engine.py`
@@ -86,7 +85,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `210  halatuju_api/apps/scholarship/verdict_engine.py:467 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:167 autofill_pathway_from_offer`
-- `183  halatuju_api/apps/courses/views_admin.py:643 post`
+- `183  halatuju_api/apps/courses/views_admin.py:659 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `155  halatuju_api/apps/courses/views.py:1000 get`
@@ -100,7 +99,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - unknown_placeholders x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 
 ### Cross-app imports
-- courses -> scholarship: 21 edges (29 import statements)
+- courses -> scholarship: 20 edges (29 import statements)
 - reports -> courses: 2 edges (2 import statements)
 - reports -> scholarship: 1 edges (2 import statements)
 - scholarship -> courses: 22 edges (119 import statements)
@@ -127,15 +126,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 165 entries have a defining line; 91 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 487: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5381: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 522: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5416: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- renamed in halatuju_api/code-standards.json — budget.long_functions.apps/scholarship/services/offer_sync.py::autofill_pathway_from_offer: renamed from one of apps/scholarship/services.py::autofill_pathway_from_offer (192 -> 192); the list did not grow
-- renamed in halatuju_api/code-standards.json — budget.oversize_files.apps/scholarship/models/applications.py: renamed from one of apps/scholarship/models.py, apps/scholarship/services.py (4756 -> 899); the list did not grow
+- budgets no looser than at 986702a
 
 ## Reviews
 

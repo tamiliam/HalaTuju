@@ -49,9 +49,10 @@ def _default_sponsor_email_max_cards():
 
 
 def _default_query_email_delay_hours():
-    # The platform value is a module constant, not a Django setting — imported lazily because
-    # `services` lives in apps.scholarship and importing it at module load would be circular.
-    from apps.scholarship.services import QUERY_EMAIL_DELAY_HOURS
+    # The platform value is a module constant, not a Django setting. It lives in
+    # `apps.scholarship.constants`, a LEAF module that imports nothing (code health H16), so
+    # reading it no longer drags the eighteen-module `services` package across the app border.
+    from apps.scholarship.constants import QUERY_EMAIL_DELAY_HOURS
     return QUERY_EMAIL_DELAY_HOURS
 
 
@@ -64,8 +65,8 @@ def _default_nudge_cooldown_hours():
 
 
 def _default_max_clarify_open():
-    # Module constant (design §4: a long list suppresses student responses) — lazy import, as above.
-    from apps.scholarship.check2_queries import MAX_CLARIFY
+    # Module constant (design §4: a long list suppresses student responses) — from the leaf, as above.
+    from apps.scholarship.constants import MAX_CLARIFY
     return MAX_CLARIFY
 
 
@@ -105,24 +106,24 @@ def _default_interview_duration_min():
 
 
 def _default_interview_window_start_min():
-    # The platform home is a module constant, not a Django setting — lazy import, because
-    # `scheduling` lives in apps.scholarship and importing it at module load would be circular.
-    from apps.scholarship.scheduling import SLOT_WINDOW_START_MIN
+    # The platform home is a module constant, not a Django setting — read from the leaf
+    # `apps.scholarship.constants`, as above, rather than from the scheduling engine.
+    from apps.scholarship.constants import SLOT_WINDOW_START_MIN
     return SLOT_WINDOW_START_MIN
 
 
 def _default_interview_window_end_min():
-    from apps.scholarship.scheduling import SLOT_WINDOW_END_MIN
+    from apps.scholarship.constants import SLOT_WINDOW_END_MIN
     return SLOT_WINDOW_END_MIN
 
 
 def _default_interview_slot_step_min():
-    from apps.scholarship.scheduling import SLOT_STEP_MIN
+    from apps.scholarship.constants import SLOT_STEP_MIN
     return SLOT_STEP_MIN
 
 
 def _default_interview_min_lead_hours():
-    from apps.scholarship.scheduling import SLOT_MIN_LEAD_HOURS
+    from apps.scholarship.constants import SLOT_MIN_LEAD_HOURS
     return SLOT_MIN_LEAD_HOURS
 
 

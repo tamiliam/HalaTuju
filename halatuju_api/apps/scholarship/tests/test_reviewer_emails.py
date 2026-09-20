@@ -14,6 +14,7 @@ The three states are the spine of the file:
 and one property that has nothing to do with switches: whatever a QC typed reaches the reviewer
 verbatim, because `qc_comments` is a structural block and not a scalar.
 """
+import contextlib
 from unittest import mock
 
 from django.core.management import call_command
@@ -23,6 +24,34 @@ from apps.scholarship import emails
 from apps.scholarship.models import PartnerEmailTemplate
 
 REVIEWER = 'anand@rv.test'
+
+#: The reviewer mail's two homes since `emails` became a package (code health H16, 2026-09-20).
+#: `send_reviewer_assigned_email` and the QC notices are in `reviewer_mail`;
+#: `send_reviewer_verdict_due_email` is in `reviewer_interviews`.
+_HOMES = (emails.reviewer_mail, emails.reviewer_interviews)
+
+
+@contextlib.contextmanager
+def _patch_send(name, **kw):
+    """Patch ONE send primitive in every reviewer-mail module that reads it, as one mock.
+
+    ⚠ Patching the name on the `emails` package itself used to be enough and is now WRONG. A send
+    primitive lives in `emails.sending` and each mail module imports it into its own namespace,
+    so patching the package's re-export shell rebinds a name nothing calls — the real mail would
+    still go out and `assert_called_once()` would fail with a puzzle rather than a reason. The
+    ONE shared mock keeps `assert_called_once` meaning what it did before: called once in total,
+    whichever module did the calling.
+    """
+    shared = mock.MagicMock(**kw)
+    homes = [m for m in _HOMES if hasattr(m, name)]
+    assert homes, (
+        f'no reviewer-mail module imports {name!r} any more. The primitive MOVED — follow it and '
+        're-point `_HOMES`; never drop the patch, because an unpatched send primitive means this '
+        'suite posts real mail and asserts nothing.')
+    with contextlib.ExitStack() as stack:
+        for module in homes:
+            stack.enter_context(mock.patch.object(module, name, shared))
+        yield shared
 
 
 class _Base(TestCase):
@@ -39,16 +68,16 @@ class TestTheThreeStates(_Base):
     def test_with_NO_ROW_the_built_in_body_still_sends(self):
         # The dangerous direction. A missed seed must degrade to the old behaviour, never to none.
         self.assertFalse(PartnerEmailTemplate.objects.filter(kind='reviewer_assigned').exists())
-        with mock.patch.object(emails, '_send_plain', return_value=True) as legacy, \
-                mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_plain', return_value=True) as legacy, \
+                _patch_send('_send_html') as templated:
             self.assertTrue(self.send_assigned())
         legacy.assert_called_once()
         templated.assert_not_called()
 
     def test_with_the_row_ON_the_row_governs(self):
         self.seed()
-        with mock.patch.object(emails, '_send_plain') as legacy, \
-                mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_plain') as legacy, \
+                _patch_send('_send_html') as templated:
             self.assertTrue(self.send_assigned())
         templated.assert_called_once()
         legacy.assert_not_called()
@@ -59,8 +88,8 @@ class TestTheThreeStates(_Base):
         # say off while the system said on.
         self.seed()
         PartnerEmailTemplate.objects.filter(kind='reviewer_assigned').update(enabled=False)
-        with mock.patch.object(emails, '_send_plain') as legacy, \
-                mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_plain') as legacy, \
+                _patch_send('_send_html') as templated:
             self.assertFalse(self.send_assigned())
         legacy.assert_not_called()
         templated.assert_not_called()
@@ -77,7 +106,7 @@ class TestTheThreeStates(_Base):
         # That flag answers "what do ORGANISATIONS receive?". Taking partner comms dark for an
         # unrelated reason must not stop telling a volunteer they have been given a case.
         self.seed()
-        with mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_html') as templated:
             self.assertTrue(self.send_assigned())
         templated.assert_called_once()
 
@@ -87,14 +116,14 @@ class TestTheThreeStates(_Base):
         self.seed()
         with mock.patch('apps.scholarship.partner_comms.render',
                         side_effect=ValueError('boom')), \
-                mock.patch.object(emails, '_send_plain', return_value=True) as legacy:
+                _patch_send('_send_plain', return_value=True) as legacy:
             self.assertTrue(self.send_assigned())
         legacy.assert_called_once()
 
     def test_no_recipient_sends_nothing_by_either_route(self):
         self.seed()
-        with mock.patch.object(emails, '_send_plain') as legacy, \
-                mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_plain') as legacy, \
+                _patch_send('_send_html') as templated:
             self.assertFalse(emails.send_reviewer_assigned_email('', 'Anand'))
         legacy.assert_not_called()
         templated.assert_not_called()
@@ -102,7 +131,7 @@ class TestTheThreeStates(_Base):
 
 class TestWhatActuallyRenders(_Base):
     def _rendered(self, fn):
-        with mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_html') as templated:
             fn()
         self.assertTrue(templated.called, 'the template path did not run')
         _to, subject, html, text = templated.call_args[0][:4]
@@ -143,7 +172,7 @@ class TestWhatActuallyRenders(_Base):
 
 class TestTheQcsOwnWords(_Base):
     def _qc_text(self, comments):
-        with mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_html') as templated:
             emails.send_qc_returned_email(
                 REVIEWER, 'Anand', ref='SC-7', applicant_name='Siti', qc_comments=comments)
         return templated.call_args[0][3]
@@ -182,6 +211,6 @@ class TestTheQcsOwnWords(_Base):
 
     def test_an_empty_reason_does_not_crash_the_email(self):
         self.seed()
-        with mock.patch.object(emails, '_send_html') as templated:
+        with _patch_send('_send_html') as templated:
             emails.send_qc_returned_email(REVIEWER, 'Anand', ref='SC-7', qc_comments='')
         self.assertTrue(templated.called)

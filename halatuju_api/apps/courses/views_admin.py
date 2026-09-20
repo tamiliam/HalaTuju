@@ -30,12 +30,28 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from apps.scholarship.emails import send_partner_welcome_email
 from .search import apply_people_search
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
 logger = logging.getLogger(__name__)
+
+
+def send_partner_welcome_email(*args, **kwargs):
+    """The ONE module-level `courses → scholarship` import, made lazy (code health H16).
+
+    It was `from apps.scholarship.emails import send_partner_welcome_email` at the top of this
+    file — the single import in the whole back-edge that ran at import time, which is the half of
+    a cross-app edge that can take the service down at start-up rather than merely tangle it. The
+    other two dozen were already lazy, each inside the function that needs it.
+
+    This is a seam, not an indirection: the name, the three call sites below and the patch target
+    `apps.courses.views_admin.send_partner_welcome_email` are all exactly what they were. Doing it
+    as three lazy imports instead would have been three import statements where there was one, and
+    the app-boundary standard counts statements.
+    """
+    from apps.scholarship import emails
+    return emails.send_partner_welcome_email(*args, **kwargs)
 
 # Unambiguous alphabet — no O/0, I/l/1 — because this password gets read off a phone screen and
 # typed by hand, and a partner who mistypes it has no other way in.

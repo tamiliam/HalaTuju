@@ -159,6 +159,41 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   gap is named and NOT closed: **a guard file that still exists and still runs but has been
   hollowed out is invisible to all of this** — that is what each guard's own floor is for, and
   there is no mechanism that checks a floor is still meaningful.
+- **TD-278 (raised 2026-09-20 by code health H16) — low, but it retires a target the roadmap still
+  carries.** H16's acceptance said the `courses → scholarship` back-edge would finish **"under
+  20"**. It finished at **30 edges (41 import statements)**, down from 31/41, and no move could
+  have done better. The arithmetic: `xapp` counts distinct `(app → app, imported name)` edges
+  since TD-268, and the six things `apps/courses/org_config.py` reaches across the border for are
+  six distinct NAMES — `QUERY_EMAIL_DELAY_HOURS`, `MAX_CLARIFY` and the four `SLOT_*` numbers.
+  Moving all six into `apps/scholarship/constants.py` changes which module is named; it cannot
+  change how many names cross. The remaining 30 break down as: 6 constants, 11 in tests (factories,
+  `TEST_JWT_SECRET`, three models), 5 `family` names, 3 whole modules pulled in lazily
+  (`whatsapp`, `invitations`, `staff_footprint`), 3 models, `identity`, `reviewer_onboarding` and
+  `emails`. **What H16 did land is real:** the LAST import-time cross-app import is gone
+  (`courses_to_scholarship_module_level_imports` ratcheted **1 → 0**), and `courses` no longer
+  drags the eighteen-module `services` package, `check2_queries` and `scheduling` across the border
+  to read six integers — it reads a leaf that imports nothing, so the "it would be circular"
+  comment beside each of those reads is now false by construction.
+  **Getting under 20 needs a behaviour change, and somebody has to choose which:** (a) `courses`
+  owns its own platform defaults and `scholarship` reads THEM, inverting the edge; (b) the six are
+  served through an endpoint or a settings module rather than imported; (c) `org_config`'s registry
+  moves into `scholarship`, which is where every one of its scholarship-shaped defaults lives
+  anyway. (c) is the one that would collapse the most edges at once and it is the largest change.
+  **None of the three is a move, so none belongs in Phase 4.** Until one is chosen, the roadmap's
+  "under 20" should not be carried into Phase 5 as though it were still pending work.
+  **Trigger:** whoever scopes a Phase 4b, or the next sprint that touches `org_config`.
+- **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
+  H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
+  for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a
+  bare file name exempts or selects *any* file of that name anywhere in the app (TD-277). This was
+  done knowingly: the roadmap named the file explicitly, `constants` is the conventional name for
+  what it holds, and the one basename-keyed guard left in the tree
+  (`test_verdict_item_i18n.py`, `path.name == 'verdict_engine.py'`) is an INCLUSION test on a
+  different, still-unique name rather than an exemption allowlist — so the collision is inert
+  today. It is recorded because it will not announce itself if that stops being true. The fix, if
+  ever wanted, is to rename the package-private `services/constants.py` (nothing outside
+  `services/` imports it) rather than the new public leaf. ~15 min.
+  **Trigger:** the next guard that keys on a bare file name, or a Phase 4b sweep.
 - **TD-277 (raised 2026-09-20 by code health H15) — low.** A source guard whose allowlist is keyed
   on a BARE FILE NAME silently widens as the tree grows. `test_wallet_credit.py` exempted
   `models.py` and `sponsorship.py` from the "only `record_admin_credit` may mint an admin-recorded

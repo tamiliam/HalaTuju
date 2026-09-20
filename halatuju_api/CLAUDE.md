@@ -1006,7 +1006,64 @@ Read it at sprint start, before planning.
 
 - **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 SHIPPED 2026-09-19: money parsing/formatting has ONE home, `apps/scholarship/money.py` (`parse_money` / `format_money`; each caller keeps its own exception and blank answer through a named two-line wrapper); `text.py` (`id_list`, `digits_only`); `gemini.py` (the single-model metered core — the three `_gemini_generate` seams stay BY NAME). Any change to these helpers must answer to `tests/test_helper_characterisation.py` (417 assertions).** **TD-261 FIXED 2026-09-19 on the owner's order: a bill credit is written `RM-40.00` (chosen from its readers — see decisions.md); one-decimal figures keep their decimal; `money.parse_money` refuses `Infinity`/`NaN`; `sponsor_comms.render` defaults declared tokens; a payment-run line with a third decimal is REFUSED, not rounded.** **H8 (2026-09-19): PHASE A DELIVERED, PHASE B STOPPED AT ITS GATE — no production code changed. The income rule has ELEVEN homes and they disagree in sixteen places today: TD-262 (HIGH), awaiting the owner's rulings.** ⚠ **DO NOT "tidy" `application_completeness`: its legacy doc-type arm is more permissive ON PURPOSE (it may only ever widen); replacing it un-submits students and nulls their `requirements_snapshot`.** Any change to an income home answers to `tests/test_income_evidence_homes.py` and `src/lib/__tests__/incomeEvidenceHomes.test.ts`. **H9 SHIPPED 2026-09-19 — no production code changed: the six decision gates that said they MIRRORED a backend rule now have a test that reads the backend's own source in both directions (`applicationStatusDrift` · `requestStatusDrift` · `officerGateDrift` · `strCoachDrift` · `adminRoleDrift` · `payoutAccountDrift`, shared reader `halatuju-web/src/test/apiSource.ts`). `unguarded_mirrors` 58 → 41; a new `mirror` reading in `code_health.py` agrees with it exactly.** ⚠ **A CONSTANT IS GUARDED, NOT SERVED** (decisions.md 2026-09-19): serve a rule that can differ between two callers; for a module-level constant a drift test fails in the deploy gate where a served value could only fail at runtime. **Raised TD-264 (money path: the api counts payout-account digits with Unicode-aware `isdigit()`, the web with ASCII `\d`, so a direct POST of five superscripts is stored as a payout target — owner's call which side moves) and TD-263 (low: `requote` offered on a bug, unreachable today by one road only).** **H10 SHIPPED 2026-09-19 — PHASE 3 COMPLETE: the mirror ledger is 41 → 3 (nine more drift tests; 16 comments that were not rule claims reworded honestly). ⛔ The three survivors are `incomeWizard.ts` and stay by decision until TD-262 is settled. Raised TD-266 (`AdminResolutionItem` is a stale copy of the student-facing `ResolutionItem` and ONE serializer feeds both) and TD-265 (the finance summary computes a `programme` column nothing renders).** ⚠ **A test that reads another file's TEXT must normalise line endings** — the api sources are CRLF here and LF in the build container; `apiSource.readApi` does it once, at the seam. **H11 SHIPPED 2026-09-20 — PHASE 4 BEGUN: `views_admin.py` (8,556) is the package `apps/scholarship/views_admin/` (root 5,093 + ten modules, all under 500). Moves only, ten bodies byte-identical, `urls.py` untouched, 142 names re-exported. Raised TD-267 and two tool shortcomings (`std` cannot tell a ledger-key RENAME from a new exemption; `hot#1` does not follow a rename) — both written up under `## Reviews` in `docs/code-health.md`. A trip-wire the brief named did NOT exist: `assertLogs` on a parent logger records its children, so twelve tests would have sat green while every audit line moved off the scrape metric — H11 added the guard that catches it.** **H12 SHIPPED 2026-09-20: the package root is 154 lines of re-export and no code; thirty modules, none over 600; `urls.py` byte-identical; pytest unchanged at 7,021; `big` 25 → 24.** ⚠ **A `patch('apps.scholarship.views_admin.<dependency>')` string no longer resolves** — 23 were moved to the module that reads the dependency, and a stale one raises `AttributeError`. ⛔ **`interview_agenda_full` was NOT dead and was NOT deleted** — it serves the cockpit's `interview_agenda` field through a LAZY import, which is why a symbol search called it unused. Raised **TD-268** (`xapp` counts import statements, so a split can only inflate it: 133 → 135 with the coupling unchanged — accepted with the arithmetic); **TD-267 resolved.**
 
-## Next Sprint — ▶ H16 (`emails.py`, `income_engine.py`, and the back-edge — api). H15 shipped 2026-09-20; TD-262's income work is closed except option 4 and W1.
+## Next Sprint — ▶ H17 (one locale per visitor — web; PHASE 5 BEGINS). H16 shipped 2026-09-20 and **PHASE 4 IS COMPLETE**; TD-262's income work is closed except option 4 and W1.
+
+**H16 SHIPPED 2026-09-20 — `emails.py` (4,242) and `income_engine.py` (3,188) are PACKAGES, and
+Phase 4 is done.** The roots are 134 and 132 lines of re-export and no code; the bodies are 40
+modules (21 + 19), every line byte-identical to the line it came from. **The email golden master
+is BYTE-UNCHANGED** — the acceptance this sprint turned on — and `makemigrations --check
+--dry-run` reports `No changes detected`. Not yet deployed. Retro:
+`docs/retrospective-2026-09-20-code-health-h16.md`; the **PHASE 4 CLOSING SUMMARY** (what the six
+sprints delivered, what is still over 1,000 lines and why, what Phase 5 should expect) is in
+`docs/plans/2026-09-18-code-health-roadmap.md`. Gates at close: **7,043 pytest / 3 skipped**
+(identical) · **2,934 jest / 160 suites** (identical) · `manage.py check` 0 · `next build` 0 ·
+code_health **0 FAIL**, `std` ok, **`big` 19 → 17**, **`hot#1` `income_engine.py` 95.6 →
+`officerCockpit.ts` 49**, **`xapp` 46 → 45 (it FELL)**.
+
+**Seven things to know before touching `emails` or `income_engine` again:**
+- ⛔ **NEVER SET `UPDATE_EMAIL_GOLDEN`.** `tests/test_email_branding.py` pins the rendered bytes —
+  subject, text body, HTML alternative, from/reply-to and attachment FILENAMES — of every `send_*`
+  across three languages. It is the whole safety net for `emails/`. If it fails you have changed
+  what a student receives, and that needs the owner, not an environment variable. A bite-check
+  proved it still bites the moved code: one character in `emails/student_decisions.py` turns it
+  red and names the spec.
+- ⛔ **`income_engine/` IS ELIGIBILITY.** H16 moved it and changed nothing: no verdict moved and
+  `VERDICT_ENGINE_VERSION` was not bumped. The owner rulings behind it are TD-262 chunks 1–3,
+  rule-4 items 1 and 1b, F8, and the 2026-09-20 ruling that the cash door stays off the STR route;
+  `income_engine/evidence.py` names them at the top of the file. **`halatuju-web/src/lib/
+  incomeWizard.ts` is its deliberate mirror and still carries the three remaining
+  `unguarded_mirrors` entries, parked** — it was NOT touched and must not be "tidied" until TD-262
+  is settled.
+- ⚠ **A `mock.patch('apps.scholarship.emails.<name>')` or `patch.object(emails, …)` may now be a
+  SILENT no-op.** This is the hazard H12 and H15 described, one step worse: the shell re-exports
+  what the old module DEFINED, so the attribute still EXISTS — the patch succeeds, rebinds
+  something nothing calls, and the real function runs. Use
+  **`apps/scholarship/tests/package_patch.py`'s `patch_engine(package, name)`**, which patches
+  every scope holding the name with one shared mock and asserts it patched at least one.
+- ⚠ **Grep a module for `__file__` as well as `__name__` before splitting it.** Both are things a
+  module knows about ITSELF, and a move one level deeper changes both. `emails.py` built the
+  Vircle guide's asset path from `dirname(__file__)`; in the package that pointed at
+  `apps/scholarship/emails/`, the best-effort helper logged a warning and returned `None`, and the
+  email would have gone out without its PDF. Every suite was green. **Only the golden master saw
+  it.** `emails/vircle_install.py` carries the fix and the reason.
+- ⚠ **`AuditLoggerNameTest` now covers three packages** (`views_admin`, `services`, `emails`).
+  `emails/shared.py` writes `logging.getLogger('apps.scholarship.emails')` out in full and every
+  other module imports THAT logger — never `__name__`, which would drop fourteen modules' warnings
+  off the Cloud Logging scrape metric. `income_engine` is deliberately absent: it logs nothing, and
+  a floor of zero is what the guard exists to refuse. **Add your package when you split a file that
+  logs.**
+- ⚠ **Two guards read these files by path and were followed in the same change.**
+  `test_branding_guard.py` now WALKS `emails/` (a package's `__file__` is its shell, which holds
+  no copy at all); `test_superseded_documents.py::TestStaticReadGuard` now walks `income_engine/`.
+  Both carry floors. In the WEB tree, `strCoachDrift.test.ts` names
+  `income_engine/str_route.py` — it names the module rather than walking because `pySeq` takes the
+  first match, and an answer that depends on file sort order is not a guard.
+- ⚠ **`apps/scholarship/constants.py` is a LEAF and must stay one.** It holds the six platform
+  numbers `apps/courses/org_config.py` reads across the app border; its value is entirely in what
+  it does NOT import. Adding one import to it undoes the sprint. The old homes
+  (`check2_queries`, `scheduling`, `services/query_emails`) re-export their constant, so every
+  existing reader is unchanged. See **TD-278** before quoting the roadmap's "back-edge under 20":
+  that target is not reachable by a move and the arithmetic is written out there.
 
 **H15 SHIPPED 2026-09-20 — `models.py` (4,756) and `services.py` (2,946) are PACKAGES.** The roots
 are 81 and 109 lines of re-export and no code; the bodies are 33 modules (15 + 18), every line

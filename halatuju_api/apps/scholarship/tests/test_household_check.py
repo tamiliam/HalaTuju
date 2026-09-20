@@ -7,6 +7,7 @@ from unittest import mock
 from django.test import SimpleTestCase
 
 from apps.scholarship import income_engine as ie
+from apps.scholarship.tests.package_patch import patch_engine
 
 
 def _app(income=None, size=None):
@@ -18,9 +19,9 @@ class TestHouseholdIncomeReconciliation(SimpleTestCase):
     def _recon(app, members, incomes, *, genuine=True):
         """Run the reconciliation with the earner set + per-member incomes mocked; genuineness
         defaults to genuine (fail-open)."""
-        return mock.patch.object(ie, '_income_earning_members', return_value=members), \
-            mock.patch.object(ie, 'earner_monthly_income', side_effect=[(a, 's') for a in incomes]), \
-            mock.patch.object(ie, '_member_income_genuine', return_value=genuine)
+        return patch_engine(ie, '_income_earning_members', return_value=members), \
+            patch_engine(ie, 'earner_monthly_income', side_effect=[(a, 's') for a in incomes]), \
+            patch_engine(ie, '_member_income_genuine', return_value=genuine)
 
     def test_matches_within_tolerance(self):
         app = _app(income=7000, size=5)
@@ -91,16 +92,16 @@ class TestHouseholdIncomeReconciliation(SimpleTestCase):
 class TestHouseholdSizeAccounted(SimpleTestCase):
     def test_accounted_when_exact_and_no_gaps(self):
         app = _app(income=7000, size=5)
-        with mock.patch.object(ie, '_described_household_count', return_value=5), \
-             mock.patch.object(ie, 'household_status_gaps', return_value=[]):
+        with patch_engine(ie, '_described_household_count', return_value=5), \
+             patch_engine(ie, 'household_status_gaps', return_value=[]):
             r = ie.household_size_accounted(app)
         self.assertTrue(r['accounted'])
         self.assertFalse(r['overcount'])
 
     def test_not_accounted_when_status_gap(self):
         app = _app(income=7000, size=5)
-        with mock.patch.object(ie, '_described_household_count', return_value=5), \
-             mock.patch.object(ie, 'household_status_gaps', return_value=[{'member': 'father', 'need': 'status'}]):
+        with patch_engine(ie, '_described_household_count', return_value=5), \
+             patch_engine(ie, 'household_status_gaps', return_value=[{'member': 'father', 'need': 'status'}]):
             r = ie.household_size_accounted(app)
         self.assertFalse(r['accounted'])
 
@@ -108,16 +109,16 @@ class TestHouseholdSizeAccounted(SimpleTestCase):
         # Household larger than the itemised roster (grandparents, unlisted relatives) → no tick,
         # but NOT an over-count flag either.
         app = _app(income=7000, size=6)
-        with mock.patch.object(ie, '_described_household_count', return_value=4), \
-             mock.patch.object(ie, 'household_status_gaps', return_value=[]):
+        with patch_engine(ie, '_described_household_count', return_value=4), \
+             patch_engine(ie, 'household_status_gaps', return_value=[]):
             r = ie.household_size_accounted(app)
         self.assertFalse(r['accounted'])
         self.assertFalse(r['overcount'])
 
     def test_overcount_flagged(self):
         app = _app(income=7000, size=3)
-        with mock.patch.object(ie, '_described_household_count', return_value=5), \
-             mock.patch.object(ie, 'household_status_gaps', return_value=[]):
+        with patch_engine(ie, '_described_household_count', return_value=5), \
+             patch_engine(ie, 'household_status_gaps', return_value=[]):
             r = ie.household_size_accounted(app)
         self.assertFalse(r['accounted'])
         self.assertTrue(r['overcount'])

@@ -52,12 +52,13 @@ def _bills_to_application(fn):
 # lock-step copy: `interview_schedule_payload` SERVES the resolved four to the picker, so
 # there is nothing left to keep in step.
 _MYT = ZoneInfo('Asia/Kuala_Lumpur')
-SLOT_WINDOW_START_MIN = 8 * 60        # 08:00
-SLOT_WINDOW_END_MIN = 21 * 60 + 30    # 21:30 (latest start)
-SLOT_STEP_MIN = 30
-# Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
-# has time to see + pick + prepare.
-SLOT_MIN_LEAD_HOURS = 24
+# ⚠ The four MOVED to `apps/scholarship/constants.py` at code health H16 and are RE-EXPORTED
+# here, so `scheduling.SLOT_STEP_MIN` and friends still answer exactly as they did.
+# `apps.courses` reads them from `constants`, which imports nothing — so the back-edge no longer
+# pulls this module, and its scheduling machinery, in to read four integers.
+from .constants import (
+    SLOT_MIN_LEAD_HOURS, SLOT_STEP_MIN, SLOT_WINDOW_END_MIN, SLOT_WINDOW_START_MIN,
+)
 
 
 def slot_rules(organisation=None):

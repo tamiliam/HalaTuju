@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.courses.models import StudentProfile
 from apps.scholarship import income_engine, services
+from apps.scholarship.tests.package_patch import patch_engine
 from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
@@ -44,9 +45,9 @@ class TestMemberClusterComplete(_Base):
         app = self._app('a')
         self._doc(app, 'parent_ic', 'father', vision_name='RAJ KUMAR')
         self._doc(app, 'salary_slip', 'father', vision_name='RAJ KUMAR')
-        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        with patch_engine(income_engine, 'student_income_ic_check',
                         return_value={'readable': True, 'name_status': 'match'}), \
-             mock.patch('apps.scholarship.income_engine.student_income_proof_check',
+             patch_engine(income_engine, 'student_income_proof_check',
                         return_value={'name_status': 'match', 'nric_status': 'match'}):
             self.assertTrue(income_engine.member_cluster_complete(app, 'father'))
             self.assertTrue(income_engine.salary_income_satisfied(app))
@@ -54,7 +55,7 @@ class TestMemberClusterComplete(_Base):
     def test_missing_salary_slip_does_not_qualify(self):
         app = self._app('b')
         self._doc(app, 'parent_ic', 'father', vision_name='RAJ KUMAR')  # IC only, no slip, no STR
-        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        with patch_engine(income_engine, 'student_income_ic_check',
                         return_value={'readable': True, 'name_status': 'match'}):
             self.assertFalse(income_engine.member_cluster_complete(app, 'father'))
 
@@ -62,7 +63,7 @@ class TestMemberClusterComplete(_Base):
         app = self._app('c')
         self._doc(app, 'parent_ic', 'father', vision_name='WRONG')
         self._doc(app, 'salary_slip', 'father')
-        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        with patch_engine(income_engine, 'student_income_ic_check',
                         return_value={'readable': True, 'name_status': 'mismatch'}):
             self.assertFalse(income_engine.member_cluster_complete(app, 'father'))
 
@@ -93,9 +94,9 @@ class TestEitherRouteSatisfies(_Base):
         return app
 
     def _clean_checks(self):
-        return (mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        return (patch_engine(income_engine, 'student_income_ic_check',
                            return_value={'readable': True, 'name_status': 'match'}),
-                mock.patch('apps.scholarship.income_engine.student_income_proof_check',
+                patch_engine(income_engine, 'student_income_proof_check',
                            return_value={'name_status': 'match', 'nric_status': 'match'}))
 
     def _failed_str(self, app):
@@ -144,7 +145,7 @@ class TestGateSuppression(_Base):
 
     def test_income_doc_blockers_clear_when_one_cluster_complete(self):
         app = self._app('e')  # mother + father selected; only mother will "qualify"
-        with mock.patch('apps.scholarship.income_engine.member_cluster_complete',
+        with patch_engine(income_engine, 'member_cluster_complete',
                         side_effect=lambda a, m: m == 'mother'):
             self.assertEqual(services.income_doc_blockers(app), [])
 
@@ -154,14 +155,14 @@ class TestGateSuppression(_Base):
         self._doc(app, 'parent_ic', 'father', vision_name='RAJAANMALAYS')
         mismatch = {'name_status': 'mismatch', 'proof_name_status': 'no_ref',
                     'proof_nric_status': 'no_ref'}
-        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        with patch_engine(income_engine, 'student_income_ic_check',
                         return_value=mismatch):
             # No clean cluster → the mismatch BLOCKS.
-            with mock.patch('apps.scholarship.income_engine.member_cluster_complete',
+            with patch_engine(income_engine, 'member_cluster_complete',
                             return_value=False):
                 self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
             # One clean cluster → the same mismatch is a soft Check-2 item, NOT a blocker.
-            with mock.patch('apps.scholarship.income_engine.member_cluster_complete',
+            with patch_engine(income_engine, 'member_cluster_complete',
                             side_effect=lambda a, m: m == 'mother'):
                 self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
 
@@ -172,14 +173,14 @@ class TestGateSuppression(_Base):
         self._doc(app, 'parent_ic', 'mother', vision_name='JEYASUTHA A/P JAGANATHAN')
         proof_mismatch = {'name_status': 'match', 'proof_name_status': 'mismatch',
                           'proof_nric_status': 'mismatch'}
-        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        with patch_engine(income_engine, 'student_income_ic_check',
                         return_value=proof_mismatch):
             # No dispositive STR → the extraneous IC mismatch BLOCKS.
-            with mock.patch('apps.scholarship.income_engine.household_str_status',
+            with patch_engine(income_engine, 'household_str_status',
                             return_value=(None, None)):
                 self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
             # Dispositive STR (matched to the father) → the mismatch is soft, NOT a blocker.
-            with mock.patch('apps.scholarship.income_engine.household_str_status',
+            with patch_engine(income_engine, 'household_str_status',
                             return_value=('current', 'father')):
                 self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
 
@@ -200,14 +201,14 @@ class TestProvingIncomeDoesNotSettleParentage(_Base):
 
     def _established(self):
         """Income established the STR way — the shape application 16 is actually in."""
-        return mock.patch('apps.scholarship.income_engine.household_str_status',
+        return patch_engine(income_engine, 'household_str_status',
                           return_value=('current', 'mother'))
 
     def test_a_red_birth_certificate_blocks_even_when_income_is_proved(self):
         app = self._app('rel-a', income_route='str', income_earner='mother')
         self._doc(app, 'birth_certificate')
         with self._established(), \
-             mock.patch('apps.scholarship.income_engine.student_bc_check',
+             patch_engine(income_engine, 'student_bc_check',
                         return_value={'child_status': 'mismatch', 'mother_status': 'match',
                                       'father_status': 'match'}):
             self.assertTrue(income_engine.income_established(app))
@@ -217,7 +218,7 @@ class TestProvingIncomeDoesNotSettleParentage(_Base):
         app = self._app('rel-b', income_route='str', income_earner='guardian')
         self._doc(app, 'guardianship_letter')
         with self._established(), \
-             mock.patch('apps.scholarship.income_engine.student_guardianship_check',
+             patch_engine(income_engine, 'student_guardianship_check',
                         return_value={'guardian_status': 'match', 'ward_status': 'mismatch'}):
             self.assertIn('guardianship_person_mismatch', services.document_red_blockers(app))
 
@@ -225,7 +226,7 @@ class TestProvingIncomeDoesNotSettleParentage(_Base):
         app = self._app('rel-c', income_route='str', income_earner='mother')
         self._doc(app, 'birth_certificate')
         with self._established(), \
-             mock.patch('apps.scholarship.income_engine.student_bc_check',
+             patch_engine(income_engine, 'student_bc_check',
                         return_value={'child_status': 'match', 'mother_status': 'check_one',
                                       'father_status': 'mismatch'}):
             # Amber never blocks, and the FATHER row never blocks — even when it is red.
@@ -239,12 +240,12 @@ class TestProvingIncomeDoesNotSettleParentage(_Base):
         self._doc(app, 'parent_ic', 'father', vision_name='RAJAANMALAYS')
         mismatch = {'name_status': 'mismatch', 'proof_name_status': 'no_ref',
                     'proof_nric_status': 'no_ref'}
-        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+        with patch_engine(income_engine, 'student_income_ic_check',
                         return_value=mismatch):
             with self._established():
                 self.assertNotIn('parent_ic_person_mismatch',
                                  services.document_red_blockers(app))
-            with mock.patch('apps.scholarship.income_engine.household_str_status',
+            with patch_engine(income_engine, 'household_str_status',
                             return_value=(None, None)):
                 self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
 
@@ -304,7 +305,7 @@ class TestPatronymicFromIc(_Base):
         # confirmed (was: 'recommend' + income_unverified_needs_interview).
         from apps.scholarship.verdict_engine import build_verdict
         app = self._app88('e')
-        with mock.patch('apps.scholarship.income_engine.household_str_status',
+        with patch_engine(income_engine, 'household_str_status',
                         return_value=('current', 'father')):
             income = next(f for f in build_verdict(app) if f['fact'] == 'income')
         self.assertEqual(income['status'], 'verified')

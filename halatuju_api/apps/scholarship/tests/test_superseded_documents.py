@@ -12,12 +12,14 @@ would then silently count. These tests pin:
   5. a STATIC guard so a future read in the pure engine modules can't skip the active filter.
 """
 import os
+import pathlib
 import re
 
 from django.test import TestCase
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
+from apps.scholarship.tests.source_walk import read_source, walk_sources
 from apps.scholarship import verdict_engine, income_engine, services
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 
@@ -158,10 +160,16 @@ class TestStaticReadGuard(TestCase):
     forgets `superseded_at` fails HERE, loudly, instead of silently counting a replaced doc."""
 
     # Pure read-only engines — no upload/sweep/ops document mutations live in these.
+    # ⚠ An entry may name a FILE or a PACKAGE. `income_engine` became a package at code health
+    # H16 (2026-09-20) and the guard followed it in the same change: it now walks every module
+    # inside, with a floor, because a scan that reads one re-export shell finds no document read
+    # at all and would pass for ever (TD-276).
     READ_MODULES = [
-        'verdict_engine.py', 'income_engine.py', 'anomaly_engine.py', 'pathway_engine.py',
+        'verdict_engine.py', 'income_engine', 'anomaly_engine.py', 'pathway_engine.py',
         'profile_engine.py', 'submission_review.py', 'check2_queries.py',
     ]
+    #: `income_engine/` is 20 files at H16 (19 modules + the shell). A minimum, not an equality.
+    MIN_PACKAGE_MODULES = 16
     # Tokens that open a documents READ — both the direct `.documents.` form and the aliased
     # `docs.` form (`docs = getattr(application, 'documents', None)`), which the first audit's
     # grep missed (has_valid_str et al. read a superseded STR without the filter).
@@ -170,13 +178,26 @@ class TestStaticReadGuard(TestCase):
                    'docs.filter(', 'docs.all(', 'docs.values_list(',
                    'docs.exists(', 'docs.count(')
 
-    def test_engine_reads_filter_superseded(self):
-        base = os.path.join(os.path.dirname(os.path.dirname(__file__)))
-        offenders = []
+    def _sources(self):
+        """(label, source text) for every file under guard — a module, or a whole package."""
+        base = pathlib.Path(os.path.dirname(os.path.dirname(__file__)))
+        out = []
         for name in self.READ_MODULES:
-            path = os.path.join(base, name)
-            with open(path, encoding='utf-8') as fh:
-                src = fh.read()
+            if name.endswith('.py'):
+                out.append((name, read_source(
+                    base / name,
+                    'every documents read in this engine must exclude superseded rows')))
+                continue
+            for path in walk_sources(
+                    base / name, '*.py', self.MIN_PACKAGE_MODULES,
+                    f'every documents read in the `{name}` package must exclude superseded rows, '
+                    'and the reads live in the modules, never in the re-export shell'):
+                out.append((f'{name}/{path.name}', path.read_text(encoding='utf-8')))
+        return out
+
+    def test_engine_reads_filter_superseded(self):
+        offenders = []
+        for name, src in self._sources():
             for tok in self.READ_TOKENS:
                 for m in re.finditer(re.escape(tok), src):
                     # a BACK+forward window spans a leading `# all-versions-read:` pragma and the

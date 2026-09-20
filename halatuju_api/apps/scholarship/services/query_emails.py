@@ -14,8 +14,12 @@ from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_sla
 # a human review rather than an instant bot reply (the owner's call). PLATFORM default —
 # an organisation can tune its own delay via org_config `query_email_delay_hours`
 # (Organisation → Settings → Configuration; Org Config Sprint B), whose registry default
-# reads THIS constant, so this stays the one home for the platform number.
-QUERY_EMAIL_DELAY_HOURS = 2
+# reads THIS constant.
+# ⚠ It MOVED to `apps/scholarship/constants.py` at code health H16 and is RE-EXPORTED here, so
+# `services.QUERY_EMAIL_DELAY_HOURS` still answers exactly as it did. `apps.courses` reads it
+# from `constants`, which imports nothing — so the back-edge no longer pulls the whole
+# eighteen-module `services` package in to read one integer.
+from ..constants import QUERY_EMAIL_DELAY_HOURS
 
 
 def _query_email_due_window(now):

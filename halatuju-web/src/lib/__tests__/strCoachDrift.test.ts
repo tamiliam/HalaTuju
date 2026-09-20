@@ -18,7 +18,12 @@ import { shouldShowCoach } from '@/lib/documentHelp'
 import type { ApplicantDocument, StrCheck } from '@/lib/api'
 import { pySeq, readApi } from '@/test/apiSource'
 
-const ENGINE = 'apps/scholarship/income_engine.py'
+// ⚠ `income_engine.py` became the package `income_engine/` at code health H16 (2026-09-20) and
+// this path followed it in the same change. It names the MODULE rather than walking the package
+// because `pySeq` takes the FIRST match of a name, and an answer that depends on the order files
+// happen to sort in is not a guard (H15 design decision 3). `readApi` throws if the module moves
+// again, so the next move is loud here rather than silent.
+const ENGINE = 'apps/scholarship/income_engine/str_route.py'
 const engineSrc = readApi(ENGINE)
 
 const coachStates = pySeq(engineSrc, 'STR_COACH_STATES')

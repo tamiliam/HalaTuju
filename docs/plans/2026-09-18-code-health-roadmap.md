@@ -494,10 +494,10 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 |---|---|---|
 | ~~`halatuju_api/apps/scholarship/views_admin/__init__.py`~~ | ~~8,556~~ ~~5,093~~ **154** | ~~H11~~ ~~H12~~ ✅ **DONE 2026-09-20.** The package is thirty modules, none over 600, and the root left the `big` list. Nothing here is waiting on a split any more |
 | ~~`halatuju_api/apps/scholarship/models.py`~~ | ~~4,756~~ **81** | ~~H15~~ ✅ **DONE 2026-09-20.** A re-export shell; 15 modules in `models/`, the largest `applications.py` at 899 (one class of 847 lines — see the retro). `makemigrations --check` clean. The file has LEFT `big` |
-| `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
+| ~~`halatuju_api/apps/scholarship/emails.py`~~ | ~~4,242~~ **134** | ~~H16~~ ✅ **DONE 2026-09-20.** A re-export shell; 21 modules in `emails/`, largest `interview_mail.py` at 464, none over 600. The email golden master is BYTE-UNCHANGED. The file has LEFT `big` |
 | ~~`halatuju-web/src/lib/admin-api.ts`~~ | ~~4,118~~ **241** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 28 modules in `src/lib/admin-api/`, none over 450. Nothing here is waiting on a split any more |
 | ~~`halatuju-web/src/app/admin/scholarship/[id]/view.tsx`~~ | ~~3,599~~ **1,338** | ~~H14~~ ✅ **DONE 2026-09-20.** Thirteen panels + the shared furniture are 14 modules in `[id]/view/`, none over 350. ⚠ It is STILL over 1,000 and always will be until the Decision panel is untangled — that is design work, not a move |
-| `halatuju_api/apps/scholarship/income_engine.py` | 3,201 | **H16** — ⚠ also TD-262; settle the eligibility rulings before moving it |
+| ~~`halatuju_api/apps/scholarship/income_engine.py`~~ | ~~3,201~~ **132** | ~~H16~~ ✅ **DONE 2026-09-20.** A re-export shell; 19 modules in `income_engine/`, largest `identity_checks.py` at 377. ⛔ ELIGIBILITY: no verdict moved, no `VERDICT_ENGINE_VERSION` bump. `incomeWizard.ts`, its deliberate mirror, was NOT touched. The file has LEFT `big` |
 | ~~`halatuju_api/apps/scholarship/services.py`~~ | ~~2,946~~ **109** | ~~H15~~ ✅ **DONE 2026-09-20.** A re-export shell; 18 modules in `services/`, none over 430. ⛔ `application_completeness` is in `completeness.py`, moved byte-identically and NOT touched. The file has LEFT `big` |
 | ~~`halatuju-web/src/lib/api.ts`~~ | ~~2,488~~ **132** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 14 modules in `src/lib/api/`, none over 420. ⚠ Its size ceiling was the stated reason `income_shown` is declared locally — TD-271 |
 | ~~`halatuju-web/src/components/ScholarshipDocuments.tsx`~~ | ~~1,957~~ **286** | ~~H14~~ ✅ **DONE 2026-09-20.** The checklists + card furniture are 3 modules in `ScholarshipDocuments/`; **`IncomeWizard` followed them on 2026-09-20 once TD-272 was fixed** (565 lines, its two disable entries relabelled by a declared move). The file has LEFT `oversize_files` |
@@ -855,7 +855,91 @@ estimate.
 
 </details>
 
-### H16 — `emails.py`, `income_engine.py`, and the back-edge
+### H16 — `emails.py`, `income_engine.py`, and the back-edge ✅ SHIPPED 2026-09-20
+
+**What moved.** `emails.py` (4,242) is **134 lines of re-export and no code**; `income_engine.py`
+(3,188) is **132**. The bodies are 40 modules — 21 in `emails/` (4,228 moved lines, largest 464)
+and 19 in `income_engine/` (3,155 moved lines, largest 377). Every moved line is byte-identical to
+the line it came from, asserted by the cut itself, and the 47 lines that did NOT move (14 + 33
+header lines) were declared in advance and proved to be header or blank. **No importing file
+changed.**
+
+| emails | lines | | lines | income_engine | lines | | lines |
+|---|---|---|---|---|---|---|---|
+| `interview_mail` | 464 | `payment_mail` | 162 | `identity_checks` | 377 | `gaps` | 139 |
+| `student_decisions` | 403 | `student_queries` | 143 | `utilities` | 338 | `epf_evidence` | 130 |
+| `reviewer_mail` | 366 | `invitation_mail` | 118 | `evidence` | 310 | `doc_checks` | 125 |
+| `award_offer` | 334 | `spend_alerts` | 113 | `relationships` | 258 | `pension` | 95 |
+| `student_notices` | 326 | `invoice_mail` | 85 | `amounts` | 205 | `bill_followups` | 88 |
+| `sponsor_cards` | 313 | `ops_alerts` | 65 | `str_route` | 196 | `buckets` | 69 |
+| `signing` | 286 | `shared` | 61 | `freshness` | 188 | `followups` | 63 |
+| `vircle_install` | 269 | `referral_mail` | 60 | `advice` | 169 | | |
+| `reviewer_interviews` | 228 | `decline_mail` | 48 | `household` | 163 | | |
+| `sending` | 217 | | | `occupation` | 148 | | |
+| `student_reminders` | 187 | | | `informal` | 146 | | |
+| `org_request_mail` | 177 | | | `salary_figures` | 139 | | |
+
+**Six things this sprint corrects or adds for whoever reads it next:**
+
+1. ⛔ **A `__file__`-RELATIVE PATH IS THE SAME HAZARD AS A `__name__` LOGGER, AND ONLY THE GOLDEN
+   SAW IT.** `emails.py` built the Vircle installation-guide path from
+   `os.path.dirname(os.path.abspath(__file__))`. One level deeper, that answers
+   `apps/scholarship/emails/` and the attachment silently vanishes — no exception, no log line, a
+   `return None` and an email that goes out without its PDF. Every suite was green; the **email
+   golden master** failed, because it pins attachment filenames. This arc had a written rule for
+   `__name__`; it did not have one for `__file__`, and the two are the same rule.
+   **⚠ Before the next package split, grep the file for `__file__` as well as `__name__`.**
+2. **`_moved` WAS NOT NEEDED, AND NOT USING IT IS THE RESULT.** Both `oversize_files` entries left
+   the budget outright. H15 needed a relabel because `ScholarshipApplication` is one 847-line
+   class no move can divide; neither of these files had an indivisible lump, so both fell under
+   600 everywhere. **A sprint that declares a move it did not need has quietly kept an exemption
+   alive.** ⚠ The roadmap also said `income_engine.py` "carries `long_functions` entries as well
+   as its size entry" — **it did not.** Grep the ledger; do not trust a sprint brief about it.
+3. ⚠ **PATCHING A NAME ON A PACKAGE SHELL IS A NO-OP FOR THE CODE INSIDE IT, AND SOMETIMES A SILENT
+   ONE.** H12 and H15 both said this about dotted strings; H16 met it at scale — 36 of the 36
+   failures after the cut were patch targets, guards, or the ledger, and nothing else. A name in a
+   package is looked up three ways (through the package, from a sibling's import header, in its own
+   home) and the old single target covered only the first. `tests/package_patch.py` now patches one
+   shared mock into all three **and asserts it patched something**, which is the half that stops a
+   future move turning a test into a no-op.
+4. ⚠ **A CYCLE IS NOT A FAILURE OF THE DOMAIN SPLIT; IT NAMES THE ONE FUNCTION IN THE WRONG PLACE.**
+   Two appeared. `_send_plain` sat with the reviewer mail it serves but reads
+   `_interview_unsub_headers`, so it went to `sending`. `_name_bucket` / `_nric_bucket` /
+   `_combine_relationship` sat with the document checks that use them, but `relationships`,
+   `identity_checks` and `str_route` read them too — they became `buckets.py`, which its docstring
+   says. Both were found by the generator before a single file was written, not by the suite.
+5. **THE FREE-NAME ANALYSIS THAT BIT H15 WAS FIXED AT SOURCE.** H15's one bug was a scope-blind
+   pass: a lazy `from django.utils import timezone` inside one function made the name look
+   satisfied for another. H16 used `symtable`, which is scope-aware — a lazy import binds LOCALLY
+   there, so a sibling's use still reads as a free global. **Zero missing imports; the suite found
+   none.** ⚠ The module symbol table ALONE is not enough (a global used only inside a function is
+   not `is_referenced()` at module scope); every nested scope has to be walked. The first draft did
+   not, and reported three dependencies where there are seventeen.
+6. **THE BACK-EDGE TARGET WAS NOT REACHED AND WAS NOT REACHABLE BY A MOVE — see TD-278.** The
+   acceptance said "`xapp` back-edge under 20"; it went **31 → 30 edges** (41 → 41 statements).
+   Six constants are six distinct names, so they are six edges whichever module holds them, and
+   consolidating three source modules into one leaf changes which module is named rather than how
+   many names cross. What DID land is real and bankable: the last import-time cross-app import is
+   gone (`courses_to_scholarship_module_level_imports` **1 → 0**, ratcheted), and `courses` no
+   longer pulls the eighteen-module `services` package, `check2_queries` and `scheduling` across
+   the border to read six integers — it reads `apps/scholarship/constants.py`, a leaf that imports
+   nothing, so the "it would be circular" comment beside each of those imports is now false by
+   construction.
+
+**Held:** pytest **7,043 passed / 3 skipped** (identical; subtests 811 → 813) · jest **2,934 /
+160 suites** (identical) · `manage.py check` 0 · `makemigrations --check --dry-run`
+**`No changes detected`** · **the email golden master BYTE-UNCHANGED** · tsc 0 · lint 0 · i18n ok
+· `next build` exit 0 · code_health **0 FAIL, 6 WARN**, `std` **ok**, **`big` 19 → 17**,
+**`hot#1` `income_engine.py` 95.6 → `officerCockpit.ts` 49** (income_engine left the table),
+**`xapp` 46 → 45 — it FELL**, `supp` 139, `skip` 0, `dup` 4, `mirror` 3, `guard%` 20.
+**Seven bite-checks, all seven behaved** — including the logger bite that was SILENT at H15.
+**Findings raised: TD-278, TD-279.**
+**Retro:** `docs/retrospective-2026-09-20-code-health-h16.md`. **Cost: ~7h** against the ~7h
+estimate.
+
+<details>
+<summary>The original H16 plan, as written</summary>
+
 - **Scope:** `emails.py`: copy constants (1,005 lines of EN/BM/TA) out to `email_copy/`; senders
   by domain. The safety net is `test_email_branding.py` — a byte-identity golden over every
   `send_*`. ⚠ **Never set `UPDATE_EMAIL_GOLDEN` during this sprint**; it would bless the
@@ -888,6 +972,93 @@ estimate.
   - **Expect `xapp` NOT to rise** — TD-268 landed and H15 confirmed it: 46 → 46 across a 33-module
     split. If it does rise, say what the rise is made of rather than engineering it away.
 - **api deploy.**
+
+</details>
+
+---
+
+## PHASE 4 CLOSING SUMMARY — 2026-09-20
+
+**Phase 4 is complete.** Six sprints, all on one day, all moves only.
+
+### What the six sprints delivered
+
+| sprint | what it split | before | after |
+|---|---|---|---|
+| H11 | `views_admin.py` → package, wave 1 | 8,556 | root 5,093 + 10 modules |
+| H12 | `views_admin` wave 2 | 5,093 | root **154** + 30 modules total |
+| H13 | `admin-api.ts`, `api.ts` → barrels | 4,118 / 2,488 | **241** + 28, **132** + 14 |
+| H14 | the cockpit `view.tsx`, `ScholarshipDocuments.tsx` | 3,599 / 1,957 | **1,338** + 13, **286** + 3 |
+| H15 | `models.py`, `services.py` → packages | 4,756 / 2,946 | **81** + 15, **109** + 18 |
+| H16 | `emails.py`, `income_engine.py` → packages; the back-edge | 4,242 / 3,188 | **134** + 21, **132** + 19 |
+
+**Nine files totalling 35,850 lines became 138 modules and eight shells.** Not one of those lines
+was reworded. No migration was created, both golden masters are byte-unchanged, and **no importing
+file was changed in any of the six sprints.**
+
+### The readings, before H11 and now
+
+| reading | before H11 | now | note |
+|---|---|---|---|
+| `big` — files over 1,000 lines | **25** | **17** | the target was 12 or fewer — see below |
+| `hot#1` — the worst file's bug score | **273.8** (`views_admin.py`) | **49** (`officerCockpit.ts`) | ⚠ the tool counts fixes by PATH and does not follow a rename, so a split reads as a hotspot vanishing rather than shrinking. The honest claim is that the four worst files by fix-density are no longer single files |
+| `xapp` — cross-app edges | **133** statements | **45** edges | ⚠ THE DEFINITION CHANGED at TD-268 (2026-09-20): edges, not statements. Not comparable across that date. H12 → H16 on the new definition: 46 → 45 |
+| `courses → scholarship` module-level imports | **1** | **0** | the import-time half of the back-edge is gone |
+| `supp` · `skip` · `dup` · `mirror` | 139 · 0 · 4 · 3 | 139 · 0 · 4 · 3 | **unchanged, deliberately** — a moves-only phase must not move these |
+| pytest · jest | 7,019 · 2,881 | **7,043** · **2,934** | every pre-existing test unchanged and green; the additions are guards, never a rewrite |
+
+### What is still over 1,000 lines, and why each one is
+
+Seventeen files. **None of them is waiting on a Phase-4 sprint** — the split table is empty.
+
+| file | lines | why it is still big |
+|---|---|---|
+| `apps/scholarship/views.py` | 2,421 | never had a Phase-4 sprint. A real candidate for a future one; `DocumentListCreateView.post` alone is 312 lines |
+| `apps/scholarship/vision.py` | 2,321 | **deliberately out of scope** — 140 patch sites address it by dotted string. Splitting it is a test-suite rewrite, not a move |
+| `apps/courses/views.py` | 2,309 | never had a sprint; the courses app was out of Phase 4's scope |
+| `src/lib/officerCockpit.ts` | 1,632 | never had a sprint. It is now `hot#1` and is the obvious first file of any Phase 4b |
+| `apps/courses/models.py` | 1,375 | a wide table, like `models/applications.py`. A move cannot divide a class |
+| `apps/courses/stpm_quiz_data.py` | 1,371 | **data, not code** — a question bank. Splitting it buys nothing |
+| `src/app/profile/page.tsx` | 1,371 | a page component; the H14 panel treatment would work, and was not scoped |
+| `src/lib/scholarship.ts` | 1,342 | never had a sprint |
+| `src/app/admin/scholarship/[id]/view.tsx` | 1,338 | ⚠ H14 took it from 3,599 and **stopped here on purpose**. The rest is the Decision panel, and untangling it is design work, not a move |
+| `apps/courses/views_admin.py` | 1,262 | never had a sprint |
+| `serializers_admin.py` · `serializers.py` | 1,229 · 1,212 | never had a sprint; both are flat lists of serializer classes, so a split is cheap when someone wants it |
+| `verdict_engine.py` | 1,151 | ⛔ **eligibility.** TD-262 is not fully settled; splitting it before the rulings land repeats the mistake H16's brief was written to avoid |
+| `contracts.py` | 1,145 | money and consent. Same argument as `verdict_engine.py`, one notch lower |
+| `src/app/scholarship/apply/page.tsx` | 1,142 | a page component, as above |
+| `org_requests.py` · `profile_engine.py` | 1,061 · 1,023 | just over the line; neither was scoped |
+
+**So `big` finished at 17 against a target of 12 or fewer, and that is an honest miss.** The eight
+that left were the eight the phase named. The nine that remain divide into three groups: four
+nobody scoped (`views.py` ×2, `officerCockpit.ts`, `scholarship.ts` and the two serializer files),
+three that a move cannot help (`vision.py`'s patch sites, `stpm_quiz_data.py`'s data,
+`courses/models.py`'s wide table), and two that are **eligibility and money and should not be
+touched until their owner rulings land**. Closing the gap is a Phase 4b, and it is a smaller and
+more obvious piece of work than Phase 4 was, because the method is now written down and proven six
+times.
+
+### What Phase 5 (H17, H18) should expect
+
+- **The method transfers whole and it is cheap now.** H16's generator computes free names with
+  `symtable`, asserts byte-identity per line before a file is allowed to exist, proves every
+  unmoved line is blank or header, and detects cycles before anything is written. H15 and H16 each
+  cost ~7h for two files of 7,000+ lines, and most of that was NOT the cut.
+- **⚠ THE COST IS THE GUARDS, NOT THE MOVE.** Every one of the six sprints found at least one
+  guard reading a moved file by path, and the arc has met a SILENT one four times. Before cutting
+  anything: grep both trees for the path, grep for `glob(`/`rglob(`/directory walks, grep for
+  `patch('...')` **and** `patch.object(...)`, and grep the file itself for `__name__` **and**
+  `__file__`. That list is the whole of H11–H16's hard-won knowledge and it is ten minutes.
+- **Phase 5 is not a moves phase, so the ratchet works differently.** H17 (one locale per visitor)
+  and H18 (first-load-JS and query budgets) both CHANGE what runs. Phase 4's proof — green suites
+  on identical counts — does not apply; H17 needs a measured before-and-after of the bundle, and
+  H18 needs its budgets set from a real reading, not from a hope.
+- **Two new budgets will want the `_moved` treatment eventually.** A first-load-JS budget keyed on
+  a route path has exactly the problem TD-272 solved for file paths: a renamed route orphans its
+  entry. Design it with a declared-move escape from the start rather than after the first rename.
+- **⚠ `hot#1` still does not follow a rename (the tool, not the repo).** After six splits the
+  hotspot table is much less informative than it looks. Fix it, or stop quoting it, before Phase 5
+  sets budgets that lean on it.
 
 ---
 
@@ -962,7 +1133,7 @@ lift it — it is to write the standing rule and the standards into the workflow
 Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
 Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
-Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- H11-H15 shipped 2026-09-20; ALTERNATING with product work
+Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- COMPLETE, all six shipped 2026-09-20
 Phase 5   H17 -> H18
 Phase 6   H19                          <-- "completed"
 ```
