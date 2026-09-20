@@ -17,11 +17,15 @@ import {
   REQUEST_COMPONENT_TREE, REQUEST_COMPONENT_PARENTS, REQUEST_COMPONENT_VALUES,
   requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
-import { readApi } from '@/test/apiSource'
+import { readApi, readApiTree } from '@/test/apiSource'
 
-const MODELS = 'apps/scholarship/models.py'
+// ⚠ `models.py` became the PACKAGE `models/` at code health H15 (2026-09-20). Walked rather than
+// pointed at `models/org_requests.py`, because the error message below promises the tree is where
+// `REQUEST_COMPONENT_TREE` must be a module-level dict — and a second copy appearing in another
+// module is exactly the drift this file exists to catch.
+const MODELS = 'apps/scholarship/models'
 const SERVICE = 'apps/scholarship/org_requests.py'
-const modelsSrc = readApi(MODELS)
+const modelsSrc = readApiTree(MODELS, 15)
 const serviceSrc = readApi(SERVICE)
 
 /** `REQUEST_COMPONENT_TREE = {'parent': ('sub', …), 'other': (), …}` — parents in order. */

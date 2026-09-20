@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H15 - `models.py` and `services.py` become packages - 2026-09-20
+
+**Moves only. No behaviour changed, no migration was created, and no importing file changed.**
+`apps/scholarship/models.py` (4,756 lines) and `apps/scholarship/services.py` (2,946) were the
+second and fourth largest files in the repository. They are now packages of 15 and 18 modules,
+every body lifted byte-for-byte from the lines it came from.
+
+### Changed
+
+- **`models.py` -> `models/`**: a package root of 81 lines of re-export and no code, plus 15
+  modules holding 4,715 moved lines - `applications` 899, `billing` 547, `comms_templates` 413,
+  `funding` 388, `tenant_requests` 382, `programmes` 363, `agreements` 329, `review` 294,
+  `items` 257, `documents` 248, `interviews` 205, `invoices` 153, `spending` 152, `sponsors` 133,
+  `content` 118. **All 63 models keep their `app_label` and their table**, and
+  `makemigrations --check --dry-run` reports **`No changes detected`** - the acceptance this
+  sprint turned on. Every one of the 63 already declared `db_table` explicitly, so not one table
+  name was implicit and none could drift with the module name even in principle.
+- **`services.py` -> `services/`**: a root of 109 lines of re-export and no code, plus 18 modules
+  holding 2,890 moved lines - `blockers` 430, `offer_sync` 386, `assignment` 332, `decline` 301,
+  `intake` 266, `confirmation` 240, `completeness` 185, `query_emails` 147, `profile_sync` 139,
+  `consent` 134, `querying` 124, `queries_sla` 88, `details` 78, `reminders` 73,
+  `consent_blockers` 71, `errors` 61, `ready_profiles` 60, `constants` 18.
+- **`application_completeness` WAS MOVED BYTE-IDENTICALLY AND NOT TOUCHED**, in any direction. It
+  lives in `services/completeness.py` and its module docstring says why: the legacy document-type
+  arm is deliberately more permissive, and replacing it un-submits students and nulls
+  `requirements_snapshot` (the H8 ruling).
+- **The six web drift tests that read these two files BY PATH followed the code.** Three now walk
+  the whole `models/` package through a new `readApiTree()` helper with a floor on module count,
+  because they select a block by CONTENT and assert exactly one match - reading only the module
+  that holds it today would have kept them green while dropping the half of the rule that says no
+  second one exists. The other three name the module their rule landed in.
+- **Nine `mock.patch` strings and two `mock.patch.object` targets were re-pointed** to the module
+  that READS the dependency, the H12 rule. Two that resolve through the package at call time
+  (`serializers_admin` re-imports inside the method; the cron dispatcher does `getattr`) still
+  work and were left alone.
+- **The first two `_moved` records this repository has carried** (TD-272's mechanism, used in
+  anger for the first time): `models.py`'s size entry relabelled onto `models/applications.py`
+  and ratcheted 4756 -> 899, and `services.py::autofill_pathway_from_offer` relabelled onto
+  `services/offer_sync.py`. `services.py` left `oversize_files` outright. **The frozen `baseline`
+  was not edited and `BASELINE_SHA256` was not re-pinned** - which is the whole point of TD-272.
+
+### Fixed
+
+- **A source guard that had silently stopped looking.** `test_verdict_item_i18n.py` walked
+  `apps/scholarship/` with `glob('*.py')`, not `rglob`, so the day either file became a package it
+  would have gone on passing while scanning neither. Now recursive, with a floor.
+- **A source guard whose allowlist was keyed on bare file names.** `test_wallet_credit.py`
+  exempted `models.py` and `sponsorship.py` by basename; a basename allowlist silently widens as
+  the tree grows. Now keyed on the path relative to the app, with a floor on modules scanned.
+- **`AuditLoggerNameTest` now covers every package in the app, not just `views_admin`.** A
+  bite-check proved it did not follow: switching `services/assignment.py` to
+  `logging.getLogger(__name__)` turned nothing red, the one `assertLogs('apps.scholarship.services')`
+  site included, because `assertLogs` on a parent records whatever propagates up from its
+  children. H11 found this hazard and wrote a guard for one package; the hazard was never
+  package-specific.
+
+### Held
+
+pytest **7,037 passed / 3 skipped** (identical - no test added or removed; the two new package
+checks are subtests, 807 -> 811) · jest **2,929 / 159 suites** (identical) · `manage.py check` 0 ·
+`makemigrations --check` **No changes detected** · tsc 0 · lint 0 · i18n ok · `next build` exit 0 ·
+code_health **0 FAIL**, `std` **ok**, **`big` 21 -> 19**, `hot#1` holds at `income_engine.py` 95.6,
+**`xapp` 46 -> 46** (a pure split no longer inflates it - TD-268's edge counting landed first),
+`supp`/`skip`/`dup`/`mirror`/`guard%` unchanged. Six bite-checks; five behaved first time and the
+sixth came back SILENT, which is why the logger guard above exists.
+
 ## TD-272 - a ledger key may follow its code - 2026-09-20
 
 **A change to the STANDARDS themselves, not a Phase-4 move sprint.** Every ledger in

@@ -110,7 +110,7 @@ class TestConfirm(PhaseCBase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'shortlisted')
 
-    @patch('apps.scholarship.services.send_profile_complete_admin_email')
+    @patch('apps.scholarship.services.confirmation.send_profile_complete_admin_email')
     def test_confirm_complete_flips_status_and_emails(self, mock_email):
         app = self._complete(self._make_app())
         self._auth(STUDENT)
@@ -123,8 +123,8 @@ class TestConfirm(PhaseCBase):
 
     @override_settings(PROFILE_COMPLETE_EMAIL_ENABLED=True)
     @patch('apps.scholarship.emails.send_profile_complete_student_email')
-    @patch('apps.scholarship.services.send_submission_received_email')
-    @patch('apps.scholarship.services.send_profile_complete_admin_email')
+    @patch('apps.scholarship.services.confirmation.send_submission_received_email')
+    @patch('apps.scholarship.services.confirmation.send_profile_complete_admin_email')
     def test_confirm_sends_profile_complete_email_when_flag_on(self, _admin, mock_ack, mock_new):
         app = self._complete(self._make_app())
         self._auth(STUDENT)
@@ -134,8 +134,8 @@ class TestConfirm(PhaseCBase):
         mock_ack.assert_not_called()             # basic ack superseded (no double-email)
 
     @patch('apps.scholarship.emails.send_profile_complete_student_email')
-    @patch('apps.scholarship.services.send_submission_received_email')
-    @patch('apps.scholarship.services.send_profile_complete_admin_email')
+    @patch('apps.scholarship.services.confirmation.send_submission_received_email')
+    @patch('apps.scholarship.services.confirmation.send_profile_complete_admin_email')
     def test_confirm_sends_basic_ack_when_flag_off(self, _admin, mock_ack, mock_new):
         app = self._complete(self._make_app())
         self._auth(STUDENT)
@@ -144,7 +144,7 @@ class TestConfirm(PhaseCBase):
         mock_ack.assert_called_once()            # default: basic ack
         mock_new.assert_not_called()
 
-    @patch('apps.scholarship.services.send_profile_complete_admin_email')
+    @patch('apps.scholarship.services.confirmation.send_profile_complete_admin_email')
     def test_confirm_is_idempotent(self, _mock):
         app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(STUDENT)

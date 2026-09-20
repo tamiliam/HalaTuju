@@ -351,16 +351,29 @@ class TestOnlyTheServiceMintsAdminCredits(TestCase):
     row. Anything else could mint an unconfirmed credit by a side door, or a confirmed one
     without a bank reference. Same mechanical class as the org-fence completeness map.
     """
+    #: The only two places `SOURCE_ADMIN` may appear: the model that DEFINES the constant, and the
+    #: service that mints the row. ⚠ Held as paths RELATIVE TO THE APP, not bare file names (code
+    #: health H15, 2026-09-20): `models.py` became the package `models/`, and `Donation` moved to
+    #: `models/funding.py`. Allowlisting the bare name `funding.py` would have exempted any future
+    #: `funding.py` anywhere in the app — a basename allowlist silently widens as the tree grows,
+    #: which is how a source guard stops being a guard.
+    CREDIT_SOURCES = {('models', 'funding.py'), ('sponsorship.py',)}
+
     def test_no_other_production_path_creates_an_admin_recorded_donation(self):
         import pathlib
         app_dir = pathlib.Path(svc.__file__).parent
-        offenders = []
+        offenders, scanned = [], 0
         for path in app_dir.rglob('*.py'):
-            if 'tests' in path.parts or 'migrations' in path.parts:
+            if 'tests' in path.parts or 'migrations' in path.parts or '__pycache__' in path.parts:
                 continue
+            scanned += 1
             text = path.read_text(encoding='utf-8')
-            if 'SOURCE_ADMIN' in text and path.name not in ('models.py', 'sponsorship.py'):
-                offenders.append(path.name)
+            if 'SOURCE_ADMIN' in text and path.relative_to(app_dir).parts not in self.CREDIT_SOURCES:
+                offenders.append(str(path.relative_to(app_dir)))
+        self.assertGreater(
+            scanned, 50,
+            f'THE FLOOR: only {scanned} production modules were scanned. This guard is a WALK, and '
+            f'a walk that stops walking passes for ever while watching nothing.')
         self.assertEqual(offenders, [], f'Only sponsorship.record_admin_credit may mint an '
                                         f'admin-recorded credit; also found in: {offenders}')
 

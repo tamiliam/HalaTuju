@@ -15,10 +15,15 @@
  */
 import { PARTNER_EMAIL_KINDS, REVIEWER_EMAIL_KINDS } from '@/lib/partnerComms'
 import { SPONSOR_EMAIL_KINDS } from '@/lib/sponsorComms'
-import { pyChoiceValues, pySeq, readApi } from '@/test/apiSource'
+import { pyChoiceValues, pySeq, readApi, readApiTree } from '@/test/apiSource'
 
-const MODELS = 'apps/scholarship/models.py'
-const modelsSrc = readApi(MODELS)
+// ⚠ `models.py` became the PACKAGE `models/` at code health H15 (2026-09-20). This guard picks
+// its two `KIND_CHOICES` blocks BY CONTENT and insists on exactly one match each, so it reads the
+// WHOLE package, not the one module the blocks live in today — the "and there is no second one"
+// half of the rule is only true if everything is still being looked at. The floor stops the walk
+// silently reading nothing.
+const MODELS = 'apps/scholarship/models'
+const modelsSrc = readApiTree(MODELS, 15)
 const partnerSrc = readApi('apps/scholarship/partner_comms.py')
 const sponsorSrc = readApi('apps/scholarship/sponsor_comms.py')
 

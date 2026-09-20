@@ -20,7 +20,15 @@ import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 import { ROLE_NAMES } from '@/lib/navigation'
 import { pySeq, readApi } from '@/test/apiSource'
 
-const SERVICES = 'apps/scholarship/services.py'
+/**
+ * ⚠ `services.py` became the PACKAGE `services/` at code health H15 (2026-09-20), and the two
+ * constants this file reads landed in two different modules — the same shape as `VIEWS` below,
+ * and the same rule: the path follows the code, the assertion is never deleted.
+ */
+const SERVICES = [
+  'apps/scholarship/services/decline.py',      // ORG_REJECT_FROM
+  'apps/scholarship/services/assignment.py',   // REVIEW_ROLES
+]
 /**
  * ⚠ `views_admin.py` became the PACKAGE `views_admin/` at code health H11/H12, and the two gates
  * this file reads landed in two different modules. The path followed the code (H13) — the rule is
@@ -31,7 +39,7 @@ const VIEWS = [
   'apps/scholarship/views_admin/applications.py',   // AdminOrgRejectView
   'apps/scholarship/views_admin/verdict.py',        // AdminAssignReviewerView
 ]
-const servicesSrc = readApi(SERVICES)
+const servicesSrc = SERVICES.map(readApi).join('\n')
 const viewsSrc = VIEWS.map(readApi).join('\n')
 
 const backendRejectFrom = pySeq(servicesSrc, 'ORG_REJECT_FROM')

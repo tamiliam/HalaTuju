@@ -264,7 +264,7 @@ class TestAdminScholarship(TestCase):
 
     # ── Check-2/Check-3 redesign S3: auto-draft the profile at the reviewer handoff ──
     @override_settings(CHECK2_AUTO_GENERATE=True)
-    @patch('apps.scholarship.services.is_ready_for_assignment', return_value=True)
+    @patch('apps.scholarship.services.assignment.is_ready_for_assignment', return_value=True)
     @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
            return_value={'markdown': 'Draft profile.', 'model_used': 'test'})
     def test_handoff_autodrafts_profile_when_flag_on(self, _gen, _ready):
@@ -277,7 +277,7 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(sp.draft_markdown, 'Draft profile.')
 
     @override_settings(CHECK2_AUTO_GENERATE=False)
-    @patch('apps.scholarship.services.is_ready_for_assignment', return_value=True)
+    @patch('apps.scholarship.services.assignment.is_ready_for_assignment', return_value=True)
     @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
            return_value={'markdown': 'Draft profile.', 'model_used': 'test'})
     def test_handoff_no_autodraft_when_flag_off(self, _gen, _ready):
@@ -288,7 +288,7 @@ class TestAdminScholarship(TestCase):
         self.assertFalse(SponsorProfile.objects.filter(application=self.app).exists())
 
     @override_settings(CHECK2_AUTO_GENERATE=True)
-    @patch('apps.scholarship.services.is_ready_for_assignment', return_value=True)
+    @patch('apps.scholarship.services.assignment.is_ready_for_assignment', return_value=True)
     @patch('apps.scholarship.profile_engine.generate_sponsor_profile')
     def test_handoff_never_redrafts_existing_profile(self, gen, _ready):
         from apps.scholarship.services import assign_reviewer

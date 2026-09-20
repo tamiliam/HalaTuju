@@ -60,7 +60,11 @@ class TestReconcileLogic(_Base):
             p.start()
         self.addCleanup(lambda: [p.stop() for p in patches])
         app = self._app(route=route)
-        with mock.patch.object(services, 'switch_income_route') as sw:
+        # ⚠ `services.assignment`, not `services` (code health H15, 2026-09-20). `services.py` is
+        # the package `services/` now; `reconcile_income_route` and `switch_income_route` both
+        # live in `services/assignment.py`, and the caller resolves the name in ITS OWN module
+        # globals. Patching the package's re-export would patch a name nothing calls.
+        with mock.patch.object(services.assignment, 'switch_income_route') as sw:
             result = services.reconcile_income_route(app, by='test')
         return result, sw
 
@@ -124,7 +128,7 @@ class TestConsentReconcilesRoute(_Base):
         # Bypass the (separately-tested) consent gate + minor path; capture the switch.
         with mock.patch('apps.scholarship.views.consent_blockers', return_value=[]), \
              mock.patch('apps.scholarship.views.is_minor', return_value=False), \
-             mock.patch.object(services, 'switch_income_route') as sw:
+             mock.patch.object(services.assignment, 'switch_income_route') as sw:
             r = client.post('/api/v1/scholarship/consent/', {'granted_by': 'self'}, format='json')
         self.assertEqual(r.status_code, 201)
         sw.assert_called_once()

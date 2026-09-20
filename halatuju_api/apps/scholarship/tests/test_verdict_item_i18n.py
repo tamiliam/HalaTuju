@@ -37,14 +37,29 @@ _KNOWN_DYNAMIC = 2
 
 def _emitting_sources():
     """Modules that can construct a verdict Item — verdict_engine plus anything importing its
-    private `_item` helper."""
+    private `_item` helper.
+
+    ⚠ `rglob`, NOT `glob` (code health H15, 2026-09-20). This walked only the top level of
+    `apps/scholarship/`, so the day `models.py` and `services.py` became PACKAGES it would have
+    stopped looking inside either one and gone on passing — a source guard that quietly scans less
+    is the failure this arc keeps meeting (H11's silent logger bite, H13's dead web suite). The
+    floor below is the other half: a walk that finds nothing must go red, not green.
+    """
     out = []
-    for path in sorted(_SCHOLARSHIP.glob('*.py')):
+    for path in sorted(_SCHOLARSHIP.rglob('*.py')):
+        if '__pycache__' in path.parts or 'migrations' in path.parts:
+            continue
         src = path.read_text(encoding='utf-8')
         if '_item(' not in src:
             continue
         if path.name == 'verdict_engine.py' or 'verdict_engine import' in src:
             out.append((path, src))
+    if len(out) < 2:
+        raise AssertionError(
+            f'THE FLOOR: only {len(out)} verdict-emitting module(s) were found under '
+            f'{_SCHOLARSHIP}. `verdict_engine.py` and at least one importer of its `_item` helper '
+            f'are expected. Either the scan broke or the code moved — check before lowering this, '
+            f'because a scan that finds nothing asserts nothing and passes for ever.')
     return out
 
 

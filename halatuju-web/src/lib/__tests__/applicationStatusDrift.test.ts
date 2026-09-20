@@ -16,7 +16,12 @@ import {
 } from '@/lib/applicationStatus'
 import { pyChoiceValues, readApi } from '@/test/apiSource'
 
-const MODELS = 'apps/scholarship/models.py'
+// ⚠ `models.py` became the PACKAGE `models/` at code health H15 (2026-09-20); the path follows
+// the code, and the assertion is never deleted. `STATUS_CHOICES` is a class attribute on nine
+// models, and `pyChoiceValues` takes the FIRST — so this names the one module that holds
+// `ScholarshipApplication` rather than walking the package, which would make the answer depend on
+// the order the files happen to sort in. `readApi` throws if that module ever moves again.
+const MODELS = 'apps/scholarship/models/applications.py'
 const backend = pyChoiceValues(readApi(MODELS), 'STATUS_CHOICES')
 const web = [...APPLICATION_STATUSES] as string[]
 

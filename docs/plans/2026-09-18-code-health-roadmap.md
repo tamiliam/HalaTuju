@@ -493,12 +493,12 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 | File | Lines | Split sprint |
 |---|---|---|
 | ~~`halatuju_api/apps/scholarship/views_admin/__init__.py`~~ | ~~8,556~~ ~~5,093~~ **154** | ~~H11~~ ~~H12~~ ✅ **DONE 2026-09-20.** The package is thirty modules, none over 600, and the root left the `big` list. Nothing here is waiting on a split any more |
-| `halatuju_api/apps/scholarship/models.py` | 4,756 | **H15** |
+| ~~`halatuju_api/apps/scholarship/models.py`~~ | ~~4,756~~ **81** | ~~H15~~ ✅ **DONE 2026-09-20.** A re-export shell; 15 modules in `models/`, the largest `applications.py` at 899 (one class of 847 lines — see the retro). `makemigrations --check` clean. The file has LEFT `big` |
 | `halatuju_api/apps/scholarship/emails.py` | 4,242 | **H16** |
 | ~~`halatuju-web/src/lib/admin-api.ts`~~ | ~~4,118~~ **241** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 28 modules in `src/lib/admin-api/`, none over 450. Nothing here is waiting on a split any more |
 | ~~`halatuju-web/src/app/admin/scholarship/[id]/view.tsx`~~ | ~~3,599~~ **1,338** | ~~H14~~ ✅ **DONE 2026-09-20.** Thirteen panels + the shared furniture are 14 modules in `[id]/view/`, none over 350. ⚠ It is STILL over 1,000 and always will be until the Decision panel is untangled — that is design work, not a move |
 | `halatuju_api/apps/scholarship/income_engine.py` | 3,201 | **H16** — ⚠ also TD-262; settle the eligibility rulings before moving it |
-| `halatuju_api/apps/scholarship/services.py` | 2,946 | **H15** |
+| ~~`halatuju_api/apps/scholarship/services.py`~~ | ~~2,946~~ **109** | ~~H15~~ ✅ **DONE 2026-09-20.** A re-export shell; 18 modules in `services/`, none over 430. ⛔ `application_completeness` is in `completeness.py`, moved byte-identically and NOT touched. The file has LEFT `big` |
 | ~~`halatuju-web/src/lib/api.ts`~~ | ~~2,488~~ **132** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 14 modules in `src/lib/api/`, none over 420. ⚠ Its size ceiling was the stated reason `income_shown` is declared locally — TD-271 |
 | ~~`halatuju-web/src/components/ScholarshipDocuments.tsx`~~ | ~~1,957~~ **286** | ~~H14~~ ✅ **DONE 2026-09-20.** The checklists + card furniture are 3 modules in `ScholarshipDocuments/`; **`IncomeWizard` followed them on 2026-09-20 once TD-272 was fixed** (565 lines, its two disable entries relabelled by a declared move). The file has LEFT `oversize_files` |
 | `halatuju_api/apps/scholarship/vision.py` | 2,321 | **none — deliberately out of scope** (140 patch sites). Growing it is allowed; it is not waiting on a split |
@@ -750,7 +750,74 @@ unblocks anything: TD-272's fix (2026-09-20) let `IncomeWizard` move with its tw
 **Retro:** `docs/retrospective-2026-09-20-code-health-h14.md`. **Cost: ~7h** against the ~8h
 estimate.
 
-### H15 — `models.py` and `services.py`
+### H15 — `models.py` and `services.py` ✅ SHIPPED 2026-09-20
+
+**What moved.** `models.py` (4,756) is **81 lines of re-export and no code**; `services.py` (2,946)
+is **109**. The bodies are 33 modules — 15 in `models/` (4,715 moved lines, largest 899) and 18 in
+`services/` (2,890 moved lines, largest 430). Every moved line is byte-identical to the line it came
+from, asserted by the cut itself; the 97 lines that did NOT move (two headers, five deliberate
+re-export lines, 56 blank separators) were declared in advance, and a second assertion proved every
+declared line was blank or header, so no section banner could be lost in a gap.
+
+| models | lines | | lines | services | lines | | lines |
+|---|---|---|---|---|---|---|---|
+| `applications` | 899 | `documents` | 248 | `blockers` | 430 | `querying` | 124 |
+| `billing` | 547 | `interviews` | 205 | `offer_sync` | 386 | `queries_sla` | 88 |
+| `comms_templates` | 413 | `invoices` | 153 | `assignment` | 332 | `details` | 78 |
+| `funding` | 388 | `spending` | 152 | `decline` | 301 | `reminders` | 73 |
+| `tenant_requests` | 382 | `sponsors` | 133 | `intake` | 266 | `consent_blockers` | 71 |
+| `programmes` | 363 | `content` | 118 | `confirmation` | 240 | `errors` | 61 |
+| `agreements` | 329 | | | `completeness` | 185 | `ready_profiles` | 60 |
+| `review` | 294 | | | `query_emails` | 147 | `constants` | 18 |
+| `items` | 257 | | | `profile_sync` | 139 | | |
+| | | | | `consent` | 134 | | |
+
+**Five things this sprint corrects or adds for whoever reads it next:**
+
+1. ⛔ **PYTHON CANNOT USE H13's KEEP-THE-PATH TRICK, so both ledger keys HAD to move.** `foo.ts`
+   beside `foo/` resolves to the file in webpack and jest, which is how H13 dodged the ledger-key
+   problem entirely. In Python a package **shadows** a module of the same name in the same
+   directory, so `models.py` cannot sit beside `models/`. H16 gets no choice either. This is what
+   `_moved` is for, and **its first real use went exactly as TD-272 designed**: two records, the
+   frozen `baseline` untouched, `BASELINE_SHA256` NOT re-pinned, `std` **ok**. `services.py` left
+   `oversize_files` outright; `models.py`'s entry relabelled onto `models/applications.py` and
+   ratcheted 4756 → 899.
+2. ⛔ **THREE KINDS OF GUARD READ THESE FILES BY PATH, AND TWO WOULD HAVE FAILED SILENTLY.** The six
+   WEB drift tests failed loudly (`readApi` throws — TD-269's repair holding). But
+   `test_verdict_item_i18n.py` walked `apps/scholarship/` with **`glob`, not `rglob`**, so it simply
+   stopped looking inside both new packages **and went on passing**; and `test_wallet_credit.py`
+   allowlisted by **bare file name**, where the obvious fix would have been a real weakening. ⚠
+   **H16 must grep for BOTH shapes before cutting**: a path string, and a directory walk that will
+   quietly cover less. Raised **TD-276** and **TD-277**.
+3. **A patch-target search must cover `patch.object`, not just the dotted string.** Grepping
+   `apps.scholarship.services.<name>` found the nine strings that had to follow a dependency into a
+   submodule. It did not find `mock.patch.object(services, 'switch_income_route')` — the same H12
+   trap in a different shape, caught only by the suite.
+4. **Four new module names collided with existing top-level modules** (`money`, `contracts`,
+   `org_requests`, `email_templates` all already existed in `apps/scholarship/`). Python does not
+   care; the basename-keyed guard in note 2 does, and so would any future one. Renamed to
+   `funding`, `agreements`, `tenant_requests`, `comms_templates`. ⚠ **H16 should check `emails.py`
+   and `income_engine.py` module names against the app's existing files at cut time** — it is free
+   then and expensive later.
+5. **The logger bite came back SILENT, in a second package, for H11's exact reason.**
+   `AuditLoggerNameTest` was hard-coded to `views_admin`; switching `services/assignment.py` to
+   `getLogger(__name__)` turned nothing red, the one `assertLogs('apps.scholarship.services')` site
+   included. The guard now takes a LIST of packages with a floor each. ⚠ **H16 adds
+   `apps.scholarship.income_engine` to that list if it gives the package a logger.**
+
+**Held:** pytest **7,037 / 3 skipped** (identical; the two generalised logger checks are subtests,
+807 → 811) · jest **2,929 / 159 suites** (identical) · `manage.py check` 0 ·
+`makemigrations --check --dry-run` **`No changes detected`** · tsc 0 · lint 0 · i18n ok ·
+`next build` exit 0 · code_health **0 FAIL**, `std` ok, **`big` 21 → 19**, `hot#1` holds at
+`income_engine.py` 95.6, **`xapp` 46 → 46 — it did NOT rise**, because TD-268's edge counting
+landed first. Six bite-checks; five behaved, the sixth was silent and its guard was written.
+**Findings raised: TD-275, TD-276, TD-277. TD-269 discharged for these two files.**
+**Retro:** `docs/retrospective-2026-09-20-code-health-h15.md`. **Cost: ~7h** against the ~8h
+estimate.
+
+<details>
+<summary>The original H15 plan, as written</summary>
+
 - **Scope:** `models/` package with full re-export — `ScholarshipApplication` is a wide table
   (159 fields, 3 methods), not a fat class, so this is a file move. 310 importers, 3 patch sites,
   and migrations address models by label, not by file. `services.py` splits on its existing
@@ -786,6 +853,8 @@ estimate.
     tests; H14's was right. The ten minutes is the point either way.
 - **api deploy.**
 
+</details>
+
 ### H16 — `emails.py`, `income_engine.py`, and the back-edge
 - **Scope:** `emails.py`: copy constants (1,005 lines of EN/BM/TA) out to `email_copy/`; senders
   by domain. The safety net is `test_email_branding.py` — a byte-identity golden over every
@@ -796,7 +865,29 @@ estimate.
   (`courses/views_admin.py:33`) goes lazy.
 - **Acceptance:** email golden byte-identical; both golden masters unchanged; `xapp` back-edge
   under 20.
-- **Complexity:** medium. **~7h.** api deploy.
+- **Complexity:** medium. **~7h → ~7h, re-estimated on H15's measured cost (~7h for TWO files of
+  7,702 lines).** The cut itself is cheaper than it looks — H15's generator and its checks transfer
+  whole — so the estimate holds rather than falls, because the time goes somewhere else. Read H15's
+  five notes above first; these are the four things that actually cost it time, and H16 meets all
+  of them:
+  - ⚠ **Both files become PACKAGES and both ledger keys MUST move.** `foo.py` cannot sit beside
+    `foo/` in Python (H15 note 1), so H13's keep-the-path trick is unavailable. Declare each in
+    `_moved`; the mechanism is proven now and the frozen baseline is not touched.
+    `income_engine.py` carries `long_functions` entries as well as its size entry — **grep both
+    `code-standards.json` files for every path before planning the cut**, as H15 did.
+  - ⚠ **Grep for TWO guard shapes, not one.** A path string in a test (loud, easy) AND a directory
+    walk that will quietly cover less (silent — H15 note 2, TD-276). `grep -rn "glob(" apps/` and
+    check every walk that touches `apps/scholarship`. Grep the WEB tree too: **`income_engine.py`
+    is read by `incomeEvidenceHomes.test.ts` and the `incomeWizard` mirror claims point at it.**
+  - ⚠ **Check new module basenames against `ls apps/scholarship/*.py` at cut time** (H15 note 4).
+    `email_copy/` is safe; a `models`-style domain split of `income_engine` could easily collide.
+  - ⚠ **Search patch targets in both shapes** — `patch('...emails.<name>')` and
+    `patch.object(emails, '<name>')` (H15 note 3).
+  - ⛔ **Never set `UPDATE_EMAIL_GOLDEN`.** `test_email_branding.py` is a byte-identity golden over
+    every `send_*` and it is the whole safety net for the `emails.py` half.
+  - **Expect `xapp` NOT to rise** — TD-268 landed and H15 confirmed it: 46 → 46 across a 33-module
+    split. If it does rise, say what the rise is made of rather than engineering it away.
+- **api deploy.**
 
 ---
 
@@ -871,7 +962,7 @@ lift it — it is to write the standing rule and the standards into the workflow
 Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
 Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
-Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- H11-H14 shipped 2026-09-20; ALTERNATING with product work
+Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- H11-H15 shipped 2026-09-20; ALTERNATING with product work
 Phase 5   H17 -> H18
 Phase 6   H19                          <-- "completed"
 ```
@@ -880,8 +971,13 @@ Phase 6   H19                          <-- "completed"
 - **H6 blocks H14.** H3 blocks H11. H5 should precede H7/H8 (their tests use the factory).
   H6 paid for itself here: its 59 rendered tests passed unedited through a 2,359-line lift, which
   is the only reason H14 could claim the moved code is the code that runs.
-- ⚠ **TD-269 should block H15.** H15 moves `services.py`, which a WEB drift test reads by
-  path; H11 broke exactly that way and nobody saw it for two sprints (see H13, note 1).
+- ~~⚠ **TD-269 should block H15.**~~ ✅ **DISCHARGED for these two files, 2026-09-20.** H15 grepped
+  the web tree before planning the cut and found SIX drift tests reading `models.py` /
+  `services.py` by path; all six followed the code, three of them onto a package WALK with a floor
+  because they assert "exactly one match" and would otherwise have narrowed silently. `readApi`
+  throwing on a missing path is what made this loud rather than invisible. ⚠ **The systemic half
+  stays open, and H15 widened it: a path string is the EASY shape. The dangerous one is a
+  directory walk that quietly covers less — see TD-276, and H15's note 2.**
 - ~~⚠ **TD-272 constrains H15 and H16.**~~ ✅ **FIXED 2026-09-20 — it no longer blocks either.** A
   ledger key may now FOLLOW its code, through a declared move in the `_moved` array of
   `code-standards.json`, and a move may only relabel: it buys no extra room, no extra member and

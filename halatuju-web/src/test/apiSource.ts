@@ -40,6 +40,41 @@ export function readApi(relpath: string): string {
   return fs.readFileSync(full, 'utf8').replace(/\r\n/g, '\n')
 }
 
+/**
+ * Read a whole api PACKAGE as one string — every `.py` in the folder, joined.
+ *
+ * ⚠ WHY A WALK AND NOT A LIST OF FILES (code health H15, 2026-09-20). `models.py` (4,756 lines)
+ * and `services.py` (2,946) became packages, and several guards here scan the WHOLE of one of
+ * them to assert that exactly ONE block matches a shape — "exactly one `KIND_CHOICES` containing
+ * `weekly_summary`", say. Re-pointing such a guard at the single module that holds the block it
+ * wants would still pass, while quietly giving up the half of the rule that says no SECOND one
+ * exists anywhere else. A walk keeps reading the same surface the one file used to be.
+ *
+ * `minFiles` is the floor, and it is the whole reason this is safe: if the package is ever
+ * flattened, renamed, or the glob stops matching, the guard goes RED instead of scanning nothing
+ * and passing for ever. (H6/H11's lesson, and `test_the_scan_actually_found_some`'s.)
+ *
+ * Files are joined in ASCII order of their names, which is deterministic but is NOT the order the
+ * original file declared things in — so a caller that wants a specific block must select it BY
+ * CONTENT, never by taking the first match.
+ */
+export function readApiTree(relDir: string, minFiles: number): string {
+  const full = path.join(API_ROOT, ...relDir.split('/'))
+  if (!fs.existsSync(full) || !fs.statSync(full).isDirectory()) {
+    throw new Error(
+      `drift test: ${relDir} is not a package in halatuju_api. The rules it guards have MOVED — `
+      + 'find their new home and update the path here, never delete the assertion.')
+  }
+  const files = fs.readdirSync(full).filter((f) => f.endsWith('.py')).sort()
+  if (files.length < minFiles) {
+    throw new Error(
+      `drift test: ${relDir} has ${files.length} modules, fewer than the ${minFiles} this guard `
+      + 'expects. Either the package was split differently or the walk stopped working — check '
+      + 'before lowering this floor, because a guard that reads nothing passes for ever.')
+  }
+  return files.map((f) => readApi(`${relDir}/${f}`)).join('\n')
+}
+
 /** Strip a trailing `# comment` that is outside quotes, so a `#` inside a string survives. */
 function stripComment(line: string): string {
   let quote: string | null = null

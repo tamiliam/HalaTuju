@@ -123,6 +123,32 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   left. Without it every H15/H16 move that touches a string ledger buys a false `std: FAIL`, which
   is the fifth acceptance in a row for a guard that is wrong every time. ~1h in `Settings/_tools`,
   with `test_a_split_renames_a_budget_entry_and_is_not_loosening` as the model.
+- **TD-275 (raised 2026-09-20 by code health H15) — low, NOT caused by H15.** Both suites carry one
+  pre-existing failure that only appears under full parallelism, and both pass in isolation:
+  `test_sponsor_detail.py::TestMoneyIsOrgFenced::test_the_other_tenants_money_never_appears` under
+  `pytest -n auto` (5/5 alone), and `src/app/admin/spending/page.test.tsx` under an unbounded `jest`
+  (53/53 alone; green under `npm run gates`, which pins `--maxWorkers=2`). Measured on a clean
+  `591b6a9b` checkout BEFORE anything was touched, which is the only reason they could be told
+  apart from the sprint's own work. **A flake that fires on some runs is a baseline nobody can
+  read**, and the next sprint that measures its own baseline will burn the same ten minutes
+  deciding whether it broke something. Find the shared state (likely an ordering or a cached
+  module-level read) and pin it. ~2h.
+- **TD-276 (raised 2026-09-20 by code health H15) — medium.** A source guard that scans a DIRECTORY
+  must be recursive and must have a floor, and two were neither. `test_verdict_item_i18n.py` walked
+  `apps/scholarship/` with `glob('*.py')` rather than `rglob`, so the day `models.py` and
+  `services.py` became packages it silently stopped looking inside either one **and went on
+  passing** — it never appeared in a failure list, because a scan that finds less asserts less.
+  Both were fixed in H15 (recursive + floor), but the class is not closed: this is the same shape
+  as H11's silent logger bite and H13's dead web suite, and `test_org_fence`, `test_endpoint_exercise`
+  and `test_ai_registry` are all walks whose floors should be audited the same way. **Every walk in
+  the suite needs a floor that fails when the walk finds nothing.** ~2h to audit the rest.
+- **TD-277 (raised 2026-09-20 by code health H15) — low.** A source guard whose allowlist is keyed
+  on a BARE FILE NAME silently widens as the tree grows. `test_wallet_credit.py` exempted
+  `models.py` and `sponsorship.py` from the "only `record_admin_credit` may mint an admin-recorded
+  credit" scan by `path.name`; re-pointing it at `funding.py` would have exempted any future
+  `funding.py` anywhere in the app. Fixed here by keying on the path relative to the app. Worth a
+  sweep for other basename-keyed allowlists, and worth a note in `CLAUDE.md`'s source-guard
+  guidance: **allowlist a path, never a name.** ~1h.
 - **TD-273 (raised 2026-09-20 by code health H14) — low.** The cockpit's thirteen panels now take
   ~180 hand-written props. `tsc` proves every prop a panel USES is declared; nothing proves a
   declared prop is still read, so a stale one would sit there reading as a dependency that is not

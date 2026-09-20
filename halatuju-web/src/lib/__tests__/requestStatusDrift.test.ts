@@ -20,11 +20,15 @@ import {
   requestActionsFor, canComment, canAttach,
   type RequestAction, type RequestRole,
 } from '@/lib/requestStatus'
-import { pyChoiceValues, pySeq, pyTransitionTable, readApi } from '@/test/apiSource'
+import { pyChoiceValues, pySeq, pyTransitionTable, readApi, readApiTree } from '@/test/apiSource'
 
 const SERVICE = 'apps/scholarship/org_requests.py'
 const serviceSrc = readApi(SERVICE)
-const modelsSrc = readApi('apps/scholarship/models.py')
+// ⚠ `models.py` became the PACKAGE `models/` at code health H15 (2026-09-20). The scan below
+// picks the OrgRequest-shaped `STATUS_CHOICES` by CONTENT and throws unless exactly one matches,
+// so it must keep seeing every model — reading only the module OrgRequest lives in would keep the
+// test green while dropping the half of it that says no second table has that shape.
+const modelsSrc = readApiTree('apps/scholarship/models', 15)
 
 const TRANSITIONS = pyTransitionTable(serviceSrc, 'TRANSITIONS')
 const TERMINAL = pySeq(serviceSrc, 'TERMINAL_STATUSES')

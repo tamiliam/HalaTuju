@@ -98,33 +98,49 @@ class AuditLoggerNameTest(SimpleTestCase):
     alert never sees. One name, one stream, one metric.
     """
 
-    PACKAGE = 'apps.scholarship.views_admin'
+    #: EVERY package this app has split a big module into. ⚠ ADD TO THIS LIST WHENEVER ANOTHER
+    #: FILE BECOMES A PACKAGE (code health H15, 2026-09-20). H11 wrote this guard for
+    #: `views_admin` alone; H15 split `services.py` the same way and a bite-check proved the
+    #: guard did NOT follow — switching `services/assignment.py` to `logging.getLogger(__name__)`
+    #: turned nothing red, including the one `assertLogs('apps.scholarship.services')` site,
+    #: because `assertLogs` on a parent records whatever propagates up from its children. The
+    #: guard was package-specific; the hazard never was.
+    PACKAGES = ('apps.scholarship.views_admin', 'apps.scholarship.services')
 
-    def _submodule_loggers(self):
-        views_admin = importlib.import_module(self.PACKAGE)
-        for info in pkgutil.iter_modules(views_admin.__path__):
-            module = importlib.import_module(f'{self.PACKAGE}.{info.name}')
+    #: The fewest submodules of each that carry a logger today. THE FLOOR: a scan that finds
+    #: nothing passes for ever while watching nothing.
+    FLOORS = {'apps.scholarship.views_admin': 3, 'apps.scholarship.services': 4}
+
+    def _submodule_loggers(self, package):
+        pkg = importlib.import_module(package)
+        for info in pkgutil.iter_modules(pkg.__path__):
+            module = importlib.import_module(f'{package}.{info.name}')
             found = getattr(module, 'logger', None)
             if isinstance(found, logging.Logger):
                 yield info.name, found
 
     def test_every_submodule_logs_under_the_package_name(self):
-        wrong = [f'{name}: logs as "{lg.name}"'
-                 for name, lg in self._submodule_loggers() if lg.name != AUDIT_LOGGER]
-        self.assertEqual(
-            wrong, [],
-            f'A module in {self.PACKAGE} binds a logger of its own name. Write the package name '
-            f'out in full — `logging.getLogger("{AUDIT_LOGGER}")` — never `__name__`, which in a '
-            f'submodule reads `{AUDIT_LOGGER}.<module>` and drops every line it carries out of '
-            f'the audit metric.\n' + '\n'.join(wrong))
+        for package in self.PACKAGES:
+            with self.subTest(package=package):
+                wrong = [f'{name}: logs as "{lg.name}"'
+                         for name, lg in self._submodule_loggers(package) if lg.name != package]
+                self.assertEqual(
+                    wrong, [],
+                    f'A module in {package} binds a logger of its own name. Write the package '
+                    f'name out in full — `logging.getLogger("{package}")` — never `__name__`, '
+                    f'which in a submodule reads `{package}.<module>` and drops every line it '
+                    f'carries out of the scrape metric that counts by logger name.\n'
+                    + '\n'.join(wrong))
 
     def test_the_scan_actually_found_some(self):
-        """THE FLOOR. If the package is ever renamed or flattened, the loop above would find
+        """THE FLOOR. If a package is ever renamed or flattened, the loop above would find
         nothing and pass for ever while watching nothing — the same failure this arc keeps
-        meeting. Three is well under the number that carry a logger today."""
-        found = list(self._submodule_loggers())
-        self.assertGreaterEqual(
-            len(found), 3,
-            f'Fewer than three {self.PACKAGE} submodules were found to carry a logger '
-            f'({[n for n, _ in found]}). Either the package moved or this guard stopped '
-            f'seeing it, and it is now vacuous.')
+        meeting. Each floor is well under the number that carry a logger today."""
+        for package in self.PACKAGES:
+            with self.subTest(package=package):
+                found = list(self._submodule_loggers(package))
+                self.assertGreaterEqual(
+                    len(found), self.FLOORS[package],
+                    f'Fewer than {self.FLOORS[package]} {package} submodules were found to carry '
+                    f'a logger ({[n for n, _ in found]}). Either the package moved or this guard '
+                    f'stopped seeing it, and it is now vacuous.')

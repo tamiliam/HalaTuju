@@ -1,7 +1,22 @@
 {
   "_how_this_works": "The code standards this service is held to, as numbers. `baseline` is FROZEN: it records every limit and every ledger exactly as code health H4 found them on 2026-09-19, and it is never maintained. `budget` is the live limit; it starts identical to `baseline` and may only ever get TIGHTER. `apps/scholarship/tests/test_code_standards.py` asserts all of it on every run, and since H2 that suite runs inside the Cloud Build deploy gate, so a change that breaks a standard cannot ship. If a test here told you to lower a number or remove a line, edit `budget` and only `budget` — never raise a limit, and never add a name to a ledger. THE ONE EXCEPTION IS A MOVE: see `_moved`.",
   "_moved_how_this_works": "Every ledger here is keyed on a FILE PATH, so a file that MOVES orphans its entry — the same debt at the new path is unlisted (which fails) and cannot be added (a ledger may only shrink). `_moved` is how a key follows its code: each record names ONE key the frozen `baseline` already holds (`from`) and ONE key it does not (`to`), and the tests read the baseline THROUGH it. A relabel is all it can do — the ledger's length and total are the same numbers either side, and `budget <= baseline` then holds the new key to exactly the room the old one had. So a move buys NOTHING: not a bigger number, not an extra member, not a merge onto a key that already exists, and not a path that is not a real file. ⚠ `_moved` is a SIBLING of `baseline`, never a part of it, so declaring an honest move does NOT move `BASELINE_SHA256` — H11's hand re-pin was the loophole, not the fix. Prune a record once the budget line it follows is gone. TD-272.",
-  "_moved": [],
+  "_moved": [
+    {
+      "on": "2026-09-20",
+      "why": "Code health H15: models.py became the package apps/scholarship/models/. The debt this line records is ScholarshipApplication, a single class of 847 lines and 159 fields that no move can divide, so it landed whole in models/applications.py and its entry follows it there. The budget falls 4756 to 899 in the same edit; the other 62 models went to fourteen modules all under 600 and none of them needed a line.",
+      "ledger": "oversize_files",
+      "from": "apps/scholarship/models.py",
+      "to": "apps/scholarship/models/applications.py"
+    },
+    {
+      "on": "2026-09-20",
+      "why": "Code health H15: services.py became the package apps/scholarship/services/. This function was moved byte-identically into services/offer_sync.py with the rest of the offer-reading code, so the recorded 192 lines are the same 192 lines at a new path. Its number does not change because the function did not; only the file it lives in did.",
+      "ledger": "long_functions",
+      "from": "apps/scholarship/services.py::autofill_pathway_from_offer",
+      "to": "apps/scholarship/services/offer_sync.py::autofill_pathway_from_offer"
+    }
+  ],
   "_history": [
     "2026-09-19 H4: created. Every limit and ledger frozen as H4 found them; BASELINE_SHA256 pinned in test_code_standards.py.",
     "2026-09-19 H5: added the hand_built_application_fixtures standard; baseline re-pinned. The new ledger records the 154 test files that hand-built a ScholarshipApplication before the factory existed (306 calls), which is the honest frozen record of what H5 found. `budget` then falls as files convert. No other baseline number was touched.",
@@ -9,6 +24,7 @@
     "2026-09-19 TD-262 item 1: `verdict_engine.py::_verdict_income_salary` LEFT `budget.long_functions` — its 198-line straight run is now four named steps in the new `apps/scholarship/verdict_income_salary.py` (a new module because `verdict_engine.py` is on the oversize ledger, the same reason `income_shown.py` is one), each well under 150 lines. `verdict_engine.py` fell 1284 → 1146 with it and its entry was lowered to match. Nothing was raised and nothing was added.",
     "2026-09-19 TD-262 item 1b: the §6 failed-STR headroom block MOVED out of `_verdict_income` into `verdict_income_salary.py` as `_failed_str_headroom_fact`, verbatim. Item 1b adds one branch to `_verdict_income`, which sat one line over its allowance — and the standard's own instruction for that is to extract into the smaller module, never to raise the number. `_verdict_income` ends at 210 and its entry was lowered 214 → 210 to match. `verdict_engine.py` ends at 1151 — larger than before, not smaller — so its 1146 entry STAYS: a file that grew is never the occasion to touch its number, and 1151 sits inside the +20 allowance. Nothing was raised and nothing was added.",
     "2026-09-20 code health H11: `apps/scholarship/views_admin.py` became the package `apps/scholarship/views_admin/`, so its ledger KEY was renamed to `apps/scholarship/views_admin/__init__.py` in BOTH blocks and BASELINE_SHA256 was re-pinned in the same commit. It is the same file at a new path — the baseline keeps 8547, the frozen record of what H4 measured; the budget falls 8547 → 5093, the package root's real size after six domains moved out. NO LEDGER GAINED A MEMBER: all TEN new submodules are under the 600-line standard, deliberately, which is why `requests` and the gift domain are two and three modules rather than one each. ⚠ A path rename is the ONE case where the frozen baseline has to follow, because a ledger key that names a file which no longer exists stops describing anything — `test_a_listed_file_that_shrank_has_its_entry_lowered` would demand the line be removed and `test_no_unlisted_source_file_passes_the_line_limit` would then refuse the package root with no line to lower. Renaming the key is the only move that keeps the ratchet pointing at the same code. H12 empties the root; the entry falls again with it.",
+    "2026-09-20 code health H15: `apps/scholarship/models.py` (4,756) and `apps/scholarship/services.py` (2,946) became the packages `models/` (15 modules) and `services/` (18 modules). `services.py` LEFT `budget.oversize_files` outright — every one of its modules is under 600 and the package root is 109 lines of re-export, so `test_a_listed_file_that_shrank_has_its_entry_lowered` asked for the line to be REMOVED. `models.py` could not leave: `ScholarshipApplication` is ONE class of 847 lines (159 fields), which no move can divide, so its entry was RELABELLED onto `models/applications.py` through the first `_moved` record this file has carried, and the budget ratcheted 4756 -> 899. `services.py::autofill_pathway_from_offer` was relabelled the same way onto `services/offer_sync.py`. ⚠ THIS IS THE FIRST USE OF `_moved` AND IT IS THE POINT OF TD-272: the frozen `baseline` was NOT edited and `BASELINE_SHA256` was NOT re-pinned, which is what H11 had to do by hand for the same kind of move. NO LEDGER GAINED A MEMBER: both relabels pop one key and insert one, so every ledger's length and total are unchanged.",
     "2026-09-20 code health H12: `apps/scholarship/views_admin/__init__.py` LEFT `budget.oversize_files` altogether. The remaining nineteen domains moved out as twenty modules, every body byte-identical to the lines it came from, and the package root is now 154 lines of re-export — well under the 600-line standard, so `test_a_listed_file_that_shrank_has_its_entry_lowered` asks for the line to be REMOVED rather than lowered, and that is what happened. The frozen `baseline` still records 8547 and is untouched, so BASELINE_SHA256 did NOT move this time — H11's rename was the exception, not a habit. NO LEDGER GAINED A MEMBER: the largest of the twenty new modules is `reviewers.py` at 475 lines. The 8,556-line file H4 measured is now thirty modules, none over 600, and the entry that described it has nothing left to describe."
   ],
   "baseline": {
@@ -277,7 +293,7 @@
       "apps/scholarship/emails.py": 4242,
       "apps/scholarship/help_engine.py": 618,
       "apps/scholarship/income_engine.py": 3187,
-      "apps/scholarship/models.py": 4756,
+      "apps/scholarship/models/applications.py": 899,
       "apps/scholarship/offer_pathway.py": 611,
       "apps/scholarship/org_requests.py": 1061,
       "apps/scholarship/partner_comms.py": 627,
@@ -289,7 +305,6 @@
       "apps/scholarship/scheduling.py": 711,
       "apps/scholarship/serializers.py": 1195,
       "apps/scholarship/serializers_admin.py": 1214,
-      "apps/scholarship/services.py": 2931,
       "apps/scholarship/spending_import.py": 749,
       "apps/scholarship/sponsorship.py": 999,
       "apps/scholarship/verdict_engine.py": 1146,
@@ -310,7 +325,7 @@
       "apps/scholarship/bursary.py::render_agreement_html": 151,
       "apps/scholarship/help_engine.py::verdict_for_document": 152,
       "apps/scholarship/resolution.py::doc_match_verdict": 177,
-      "apps/scholarship/services.py::autofill_pathway_from_offer": 192,
+      "apps/scholarship/services/offer_sync.py::autofill_pathway_from_offer": 192,
       "apps/scholarship/verdict_engine.py::_verdict_income": 210,
       "apps/scholarship/views.py::DocumentListCreateView.post": 312,
       "apps/scholarship/vision.py::_run_field_extraction_impl": 306
