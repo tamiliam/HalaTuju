@@ -11,11 +11,9 @@
  * money path. The owner ruled on 2026-09-19: narrow the api to ASCII 0-9, the form's reading.
  * Both sides now count the same characters, and the block below pins the agreement.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import { countDigits } from '@/lib/actionCentre'
 import { readApi } from '@/test/apiSource'
+import { readWeb } from '@/test/sourceGuard'
 
 const SERIALIZERS = 'apps/scholarship/serializers.py'
 const src = readApi(SERIALIZERS)
@@ -40,8 +38,11 @@ const apiFloor = (() => {
 
 /** The form's floor, from `ActionCentre.tsx`'s one comparison, so the two are read the same way. */
 const webFloor = (() => {
-  const form = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'components', 'ActionCentre.tsx'), 'utf8')
+  // ⚠ `readWeb`, not a bare `readFileSync` (TD-276). This runs at module scope, so a moved
+  // component used to kill the file at import with an `ENOENT` rather than say what had moved.
+  const form = readWeb('src/components/ActionCentre.tsx',
+    'the form must refuse a payout account at EXACTLY the api\'s digit floor, and both floors are '
+    + 'read out of their own comparison rather than restated here')
   const m = form.match(/countDigits\(accountNumber\)\s*<\s*(\d+)/)
   if (!m) throw new Error('drift test: the form no longer compares countDigits against a floor')
   return Number(m[1])

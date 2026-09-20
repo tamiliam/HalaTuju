@@ -15,19 +15,19 @@
  * Convention: tag any soft evidence line in `_utility_context` / `_verdict_*` with a
  * trailing `# SOFT` comment. Jest runs in node (no jsdom); fs/path reads are fine.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import { SOFT_EVIDENCE } from '@/lib/officerCockpit'
+import { readApi } from '@/test/apiSource'
 
-const ENGINE = path.join(
-  __dirname, '..', '..', '..', '..',
-  'halatuju_api', 'apps', 'scholarship', 'verdict_engine.py',
-)
+// ⚠ `readApi` with a repo-relative literal, not a hand-rolled `path.join` (TD-276, code health
+// H16). Two reasons. It throws a NAMED failure when the engine moves, instead of an `ENOENT`
+// that reads as a broken test; and the api's own `test_web_guards_read_live_paths.py` extracts
+// exactly this literal, so a backend sprint that moves `verdict_engine.py` goes red in its OWN
+// gate rather than killing this file silently two sprints later (that is H13).
+const ENGINE = 'apps/scholarship/verdict_engine.py'
 
 // A soft evidence line: `_item('code', …)` on a line whose trailing comment is `# SOFT`.
 function softCodesFromEngine(): string[] {
-  const src = fs.readFileSync(ENGINE, 'utf8')
+  const src = readApi(ENGINE)
   const codes: string[] = []
   src.split(/\r?\n/).forEach((line) => {
     if (!/#\s*SOFT\b/.test(line)) return

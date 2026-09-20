@@ -61,10 +61,20 @@ class TestCatalogueIntegrity(TestCase):
         does, so existence in en plus that parity check covers all three without a second reader.
         """
         import json
-        from pathlib import Path
-        messages = Path(__file__).resolve().parents[4] / 'halatuju-web' / 'src' / 'messages' / 'en.json'
-        self.assertTrue(messages.exists(), f'cannot find the message catalogue at {messages}')
-        catalogue = json.loads(messages.read_text(encoding='utf-8'))
+        from apps.scholarship.tests.source_walk import REPO_ROOT, read_source
+        # ⚠ `read_source` (TD-276, code health H16): a moved catalogue names itself and says what
+        # to do, rather than dying in a bare FileNotFoundError.
+        messages = REPO_ROOT / 'halatuju-web' / 'src' / 'messages' / 'en.json'
+        catalogue = json.loads(read_source(
+            messages,
+            'every ApplicationItem.label_key must have a string behind it; without the catalogue '
+            'a missing label renders as a raw key path on the applicant\'s screen'))
+        # THE FLOOR. An empty or truncated catalogue would resolve every key to None and turn
+        # `missing` into the whole list — loud — but a catalogue that parsed to `{}` with no items
+        # in the DB would pass on nothing. ~3,700 leaves on 2026-09-20; a minimum.
+        self.assertGreater(len(json.dumps(catalogue)), 100_000,
+                           f'{messages} parsed to {len(catalogue)} top-level key(s) — the '
+                           f'catalogue is truncated or is not the one this guard means')
 
         def resolve(dotted):
             node = catalogue

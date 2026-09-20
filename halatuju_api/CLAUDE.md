@@ -466,6 +466,56 @@ raise a number, because there is no case in which that is the right answer.
 budgets arrive with H18. Style and formatting are deliberately out of scope for ever — a formatter
 pass rewrites every file and proves nothing about bugs.
 
+### A TREE-WALKING GUARD NEEDS A FLOOR (TD-276, 2026-09-20)
+
+**If a test walks the tree, it must assert that the walk found something — and how much.** This is
+not a style note. This arc met the same failure four times and every time it was SILENT: a guard
+walks the tree, finds N things, asserts something about each, and then the code moves and the walk
+finds ZERO. Every assertion is now vacuous and the guard goes on passing. It never appears in a
+failure list, because **a scan that finds less asserts less**. `officerGateDrift.test.ts` read
+`views_admin.py` by path and died at import for two sprints (13 tests); `test_verdict_item_i18n.py`
+used `glob` where a package needed `rglob`; `AuditLoggerNameTest` was pinned to one package and its
+bite came back GREEN; `test_wallet_credit.py` allowlisted by bare filename.
+
+**A guard that can pass while seeing nothing is not a guard.**
+
+Use the shared helper. `halatuju_api/apps/scholarship/tests/source_walk.py` (api) and
+`halatuju-web/src/test/sourceGuard.ts` (web); `src/test/apiSource.ts` is the same idea pointed at
+the backend's tree and already carries `readApiTree(dir, minFiles)`.
+
+| You are about to… | Use | It fails with |
+|---|---|---|
+| read one file by path | `read_source(path, why)` · `readWeb` / `readRepo(rel, why)` | the path, and `why` this guard reads it |
+| read an api file from a web test | `readApi('apps/…')` — the repo-relative LITERAL | the path; and the api gate sees it (below) |
+| walk a directory | `walk_sources(root, '*.py', floor, why)` · `walkFloor(dir, floor, why, {exts})` | the shortfall, the tree, and `why` |
+| count what a scan found | `floor_count(found, floor, what, why)` · `floorCount` | the shortfall and `why` |
+
+Four rules for the number itself:
+
+1. **A floor is a MINIMUM, not an equality.** It is the count the walk found the day it was
+   written, rounded down for churn. Adding a legitimate file must leave the guard GREEN — a floor
+   that cries wolf teaches the next engineer to edit the number without reading it, and a floor
+   nobody believes is worse than none. A guard that genuinely needs a CLOSED set asserts that
+   equality itself, beside the reason it is closed.
+2. **It names its number AND its reason.** "expected 12, got 0" tells a future engineer nothing.
+   `why` is a sentence saying what rule this holds and where to look for the code that moved.
+3. **Floor the FILES and the THINGS.** A walk can read every file and still find none of what it
+   came for, because the marker it greps was renamed. `test_ai_registry.py` floors both, and they
+   fail differently on purpose.
+4. **Never lower a floor to make red go away, and never convert one to a skip.** A skipped drift
+   test is how the 64-subject drift shipped.
+
+⚠ **Watch for a corpus fed to `parametrize` or `.each`.** An empty list there generates ZERO tests:
+the file collects clean, reports nothing, and is green for ever. `test_slip_fixtures.py` was
+exactly this.
+
+⚠ **The two trees watch each other.** `test_web_guards_read_live_paths.py` (api side) extracts
+every api path the web tree names and fails if one is gone — so a backend refactor goes red in its
+OWN gate instead of killing a web suite that nobody will run for two sprints.
+`crossTreePaths.test.ts` does the reverse. Both also carry a MANIFEST of the guard files on the
+other side, which is the only thing in either tree that notices a whole test FILE leaving the run.
+**When you add a guard that reads across the trees, add it to that manifest the same day.**
+
 ### Income evidence — one per-earner answer
 
 **`apps/scholarship/income_shown.py` → `income_shown(application, member)`** answers *has this

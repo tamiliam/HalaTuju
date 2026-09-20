@@ -110,6 +110,24 @@ const bodyRows = () => screen.getAllByRole('row').slice(1)
 const shopOrder = () => bodyRows().map((r) =>
   (within(r).getAllByRole('cell')[0].textContent || '').split('admin.spending')[0].trim())
 
+/** What the four figures show before the overview arrives (`page.tsx` draws this, not a blank). */
+const PLACEHOLDER = '—'
+
+/**
+ * The totals panel, once it holds FIGURES rather than placeholders (TD-275).
+ *
+ * ⚠ THE PANEL EXISTS FROM THE FIRST PAINT. `findByTestId('spending-totals')` therefore resolves
+ * immediately, whether or not the data has landed — so anything that reads its text must wait for
+ * the CONTENT, not for the element. That distinction is the whole of TD-275: on a loaded machine
+ * the element was found in the placeholder state and the figures arrived a tick later.
+ */
+const settledTotals = async (): Promise<HTMLElement> => {
+  await waitFor(() => {
+    expect(screen.getByTestId('spending-totals').textContent).not.toContain(PLACEHOLDER)
+  })
+  return screen.getByTestId('spending-totals')
+}
+
 beforeEach(() => {
   jest.clearAllMocks()
   mockApi.getSpendingOverview.mockResolvedValue(OVERVIEW)
@@ -147,8 +165,20 @@ describe('the three tabs', () => {
     // They describe the whole page. A headline that changed under the tabs would be a headline
     // nobody could quote — and the "Not yet sorted" figure is exactly what the Unsorted tab is
     // there to explain, so it has to still be on screen when you get there.
+    //
+    // ⚠ WAIT FOR THE FIGURES, NOT FOR THE ELEMENT (TD-275, code health H16). This read the
+    // `textContent` straight off `findByTestId('spending-totals')`, and that panel renders on the
+    // FIRST paint with four em-dash placeholders, before the overview has arrived. Whether the
+    // fetch had already flushed into state by the time the element was found depended on how busy
+    // the machine was: idle, the numbers were there and the test passed; loaded — which is what
+    // an unbounded `jest` produces and `--maxWorkers=2` does not — it captured "—— — —" as
+    // `before`, the numbers arrived during the first `openTab`, and the comparison failed with
+    // nothing wrong. It was filed as a parallelism flake; the cause is the placeholder, and it is
+    // fixed by reading `before` only once the page has settled. No skip, no retry, no serial pin.
     render(<SpendingPage />)
-    const before = (await screen.findByTestId('spending-totals')).textContent
+    const totals = await settledTotals()
+    const before = totals.textContent
+    expect(before).not.toContain(PLACEHOLDER)     // the wait actually waited
     for (const tab of ['students', 'unsorted', 'shops'] as const) {
       await openTab(tab)
       expect(screen.getByTestId('spending-totals').textContent).toEqual(before)

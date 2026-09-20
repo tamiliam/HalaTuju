@@ -214,12 +214,14 @@ describe('the before-paint boot script', () => {
     // that a test happens to sit beside.
     const SELF = 'src/lib/__tests__/theme.test.ts'
     const offenders: string[] = []
+    let scanned = 0
     const walk = (dir: string) => {
       for (const e of fs.readdirSync(path.join(process.cwd(), dir))) {
         const rel = `${dir}/${e}`
         if (rel === SELF) continue
         if (fs.statSync(path.join(process.cwd(), rel)).isDirectory()) walk(rel)
         else if (/\.(ts|tsx|js)$/.test(e)) {
+          scanned += 1
           const src = read(rel).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\/\/.*/g, ' ')
           if (src.includes('NEXT_PUBLIC_THEME_SWITCH') || src.includes('themeSwitchEnabled')) {
             offenders.push(rel)
@@ -228,8 +230,11 @@ describe('the before-paint boot script', () => {
       }
     }
     walk('src')
-    // Self-check: a broken walk must not pass on nothing.
-    expect(fs.readdirSync(path.join(process.cwd(), 'src')).length).toBeGreaterThan(0)
+    // ⚠ THE FLOOR, AND IT COUNTS WHAT THE WALK READ (TD-276, code health H16). The old
+    // self-check counted the TOP-LEVEL entries of `src/` — a number that stays healthy even if
+    // the recursion stops on the first directory, which is precisely the silent narrowing this
+    // arc keeps meeting. 545 files on 2026-09-20; a minimum, so a new module stays green.
+    expect(scanned).toBeGreaterThanOrEqual(500)
     expect(offenders).toEqual([])
   })
 

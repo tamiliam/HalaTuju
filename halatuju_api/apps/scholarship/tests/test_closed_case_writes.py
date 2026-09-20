@@ -31,6 +31,7 @@ from django.utils import timezone
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import InterviewSession, ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import CASE_CLOSED_STATES, review_writes_closed
+from apps.scholarship.tests.source_walk import read_source
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 SUPER = 'cc-su'
@@ -232,11 +233,13 @@ class TestTheCockpitMirrorsThisSet(SimpleTestCase):
     """
 
     def test_the_two_closed_sets_are_identical(self):
-        if not _COCKPIT_TS.exists():
-            raise AssertionError(
-                f'officerCockpit.ts not found at {_COCKPIT_TS} — this guard needs the monorepo '
-                f'layout. Do NOT convert it to a skip.')
-        text = _COCKPIT_TS.read_text(encoding='utf-8')
+        # ⚠ `read_source` (TD-276, code health H16) — the same loud failure this test already
+        # wrote by hand, now written once where every guard can reach it. Do NOT convert to a skip.
+        text = read_source(
+            _COCKPIT_TS,
+            "the cockpit's CASE_CLOSED_STATES and this endpoint's accept-set are one unit of "
+            'change; drift means the screen offers a control the endpoint refuses, or hides one '
+            'it would have accepted, and both are silent')
         match = re.search(r'CASE_CLOSED_STATES\s*=\s*new Set<string>\(\[([^\]]*)\]\)', text)
         self.assertIsNotNone(
             match, 'could not find CASE_CLOSED_STATES in officerCockpit.ts — if it was renamed, '

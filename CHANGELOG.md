@@ -2,6 +2,88 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H16 - every guard that reads the tree has a floor - 2026-09-20
+
+**Tests and docs only. No production code changed, no migration, no suppression, no skip.**
+TD-276 and TD-275 closed.
+
+This arc met the same failure four times and every time it was SILENT: a guard walks the tree,
+finds N things, asserts something about each, and then the code moves and the walk finds ZERO.
+Every assertion is vacuous and the guard goes on passing. **A guard that can pass while seeing
+nothing is not a guard.**
+
+### Added
+
+- **`halatuju_api/apps/scholarship/tests/source_walk.py`** and
+  **`halatuju-web/src/test/sourceGuard.ts`** - one shared helper per language, beside the test
+  helpers already there (`contract_helpers.py`, `factories.py`; `apiSource.ts`). `read_source` /
+  `readWeb` / `readRepo` read a path and throw a message NAMING the path and why the guard reads
+  it, instead of an `ENOENT` into a stdlib frame. `walk_sources` / `walkFloor` walk a tree
+  recursively and throw if they find fewer files than the floor, naming the shortfall, the tree
+  and the reason. `floor_count` / `floorCount` do the same for the THINGS a scan found, which is
+  the other half of the shape: a walk can read every file and still find none of what it came for
+  because the marker it greps was renamed. **A floor is a MINIMUM, not an equality** - a floor
+  that cries wolf teaches the next engineer to edit the number without reading it.
+- **`test_web_guards_read_live_paths.py` - TD-269 closed, and this is the answer to "can a whole
+  test FILE be noticed leaving the run".** Twenty-four api paths are named by web tests, and no
+  api gate walked one of them: H11 and H12 moved `views_admin.py` with `pytest`,
+  `manage.py check` and `makemigrations --check` all green, and `officerGateDrift.test.ts` was
+  dead at IMPORT for two sprints. This is a directory listing against a list of strings, on the
+  api side, inside the api's own gate - no jest, no node, no web install. It also carries a
+  MANIFEST of the twenty web guard files, so one deleted or renamed fails here, plus a floor on
+  the web suite's file count for a guard nobody thought to name.
+- **`crossTreePaths.test.ts` - the same alarm pointed the other way.** Six api tests read
+  `halatuju-web/**` by path, and a web-only sprint runs `npm run gates` and `next build`, never
+  `pytest`. Same manifest, same floors, same cost: nothing.
+
+### Fixed
+
+- **Fifty guards surveyed** - 18 in the api tree, 32 in the web (exactly what `code_health`'s
+  `guard%` counts) - and **twenty-one floors placed**, 13 through the new helpers and 8 written
+  out where the guard counts something of its own. Each names its number and its reason. The
+  sharpest was `test_slip_fixtures.py`, whose `glob` fed `parametrize` directly: an empty list
+  there generates ZERO tests, so the file would have collected clean, reported nothing and stayed
+  green for ever. Also: `test_org_fence`'s SCANNED resolved to 39 files and its only floor was
+  "at least one per entry", so `views_admin/` could have shrunk from 31 modules to 1 with every
+  assertion still passing; `theme.test.ts`'s self-check counted the TOP-LEVEL entries of `src/`, a
+  number that stays healthy even if the recursion stops on the first directory (now 545 files
+  actually read); `no-icu-messageformat` had no floor at all, and an empty catalogue has no ICU
+  in it.
+- **Seventeen bare `readFileSync`/`read_text` calls now fail by name**, eight of them at module
+  or describe scope. Each was the H13
+  shape in waiting: a moved path killed the whole file at import with an `ENOENT` that reads as a
+  broken test rather than as the drift it is. Four of them additionally moved onto `readApi` with
+  a repo-relative literal, which is what the new api-side guard extracts - so the sprint that
+  moves the file goes red in its OWN gate.
+- **TD-275, the pytest half - and it was never a parallelism flake.**
+  `test_sponsor_detail.py::TestMoneyIsOrgFenced::test_the_other_tenants_money_never_appears`
+  asserted `assertNotIn('5000', str(res.data))`, and that payload carries FIVE timestamps, each
+  ending in a random six-digit microsecond field. Roughly one run in seven hundred produced a
+  microsecond containing `5000` (`.450007`, `.150002`, ...) and the test went red with nothing
+  wrong: a haystack of random digits, a four-digit needle. It was filed under `-n auto` because
+  that is the run people watch. The needle is now the form the payload actually renders money in
+  (`'5000.00'`, which no microsecond can contain), BACKED by a structural check that no row in
+  Alpha's payload belongs to Beta - strictly stronger, and deterministic.
+- **TD-275, the jest half - and it was load, not parallelism.**
+  `admin/spending/page.test.tsx` read `textContent` straight off
+  `findByTestId('spending-totals')`, and that panel renders on the FIRST paint with four em-dash
+  placeholders, before the overview arrives. Whether the fetch had flushed into state by the time
+  the element was found depended on how busy the machine was: idle it passed, loaded - which is
+  what an unbounded `jest` produces and `--maxWorkers=2` does not - it captured the placeholders,
+  the figures arrived during the first tab change, and the comparison failed. It now waits for the
+  CONTENT rather than the element. No skip, no `xfail`, no retry, no serial pin.
+
+### Held
+
+pytest **7,043 passed / 3 skipped** (7,037 + 6 new guard tests) · jest **2,934 / 160 suites**
+(2,929 + 5) · `manage.py check` 0 · `makemigrations --check` **No changes detected** · tsc 0 ·
+lint 0 · i18n ok · `next build` exit 0 · code_health unchanged, `std` **ok**. Four bite-checks,
+all four behaved: a floored guard pointed at a missing path went RED naming the path; a narrowed
+walk went RED naming the shortfall (0 of 5); a legitimately added file left the walk GREEN (6 of
+a floor of 5); and re-introducing TD-275's jest cause reproduced the exact failure text seen in
+the wild. The jest flake was also caught unmodified in one of eleven full unbounded runs before
+the fix, and in none of eight after.
+
 ## Code health H15 - `models.py` and `services.py` become packages - 2026-09-20
 
 **Moves only. No behaviour changed, no migration was created, and no importing file changed.**

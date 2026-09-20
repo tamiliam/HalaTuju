@@ -9,8 +9,7 @@
  * 4. requestActionsFor mirrors org_requests.TRANSITIONS (the buttons a page shows must match the
  *    server's from-status rules — a spot-check across the flow).
  */
-import * as fs from 'fs'
-import * as path from 'path'
+import { readWeb } from '@/test/sourceGuard'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
@@ -57,12 +56,16 @@ describe('requestStatus vocabulary', () => {
   })
 
   test('neither requests page regrows a local status map', () => {
-    const screens = [
-      path.join(__dirname, '..', '..', 'app', 'admin', 'requests', 'page.tsx'),
-      path.join(__dirname, '..', '..', 'app', 'admin', 'requests', '[id]', 'page.tsx'),
+    // ⚠ `readWeb`, not a bare `readFileSync` (TD-276, code health H16): a moved screen used to
+    // end this in an ENOENT, which reads as a broken test rather than as the drift it is.
+    const WHY = 'a requests screen that regrows its own status map drifts from the one '
+      + 'vocabulary the api serves, silently'
+    const screens: Array<[string, string]> = [
+      ['admin/requests/page.tsx', readWeb('src/app/admin/requests/page.tsx', WHY)],
+      ['admin/requests/[id]/page.tsx', readWeb('src/app/admin/requests/[id]/page.tsx', WHY)],
     ]
     const BANNED = /STATUS_LABELS|STATUS_TONE|statusBadge/
-    expect(screens.filter((f) => BANNED.test(fs.readFileSync(f, 'utf8')))).toEqual([])
+    expect(screens.filter(([, src]) => BANNED.test(src)).map(([n]) => n)).toEqual([])
   })
 })
 

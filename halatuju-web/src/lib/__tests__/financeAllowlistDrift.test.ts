@@ -13,10 +13,8 @@
  * Characterised first (the H8 rule): the api's declared fields listed against the interface's
  * declared keys. They DISAGREE by one — `programme` — pinned below as **TD-265**, not fixed.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import { readApi } from '@/test/apiSource'
+import { readWeb } from '@/test/sourceGuard'
 
 const SERIALIZERS = 'apps/scholarship/serializers_admin.py'
 const src = readApi(SERIALIZERS)
@@ -41,8 +39,11 @@ const apiFields = (() => {
  * never delete the assertion.
  */
 const webKeys = (() => {
-  const text = fs.readFileSync(
-    path.join(__dirname, '..', 'admin-api', 'payments.ts'), 'utf8')
+  // ⚠ `readWeb`, not a bare `readFileSync` (TD-276) — this runs at module scope, so a second
+  // move of this barrel used to kill the whole file at import with an ENOENT.
+  const text = readWeb('src/lib/admin-api/payments.ts',
+    'an interface has no runtime, so `FundingSummaryRow` is read as source text; its keys must '
+    + 'be exactly the fields the api allowlists onto the funding summary')
   const block = text.match(/export interface FundingSummaryRow \{([\s\S]*?)\n\}/)
   if (!block) throw new Error('drift test: `export interface FundingSummaryRow { … }` not found')
   return [...block[1].matchAll(/^\s{2}([a-z_]+)\??:/gm)].map((m) => m[1])

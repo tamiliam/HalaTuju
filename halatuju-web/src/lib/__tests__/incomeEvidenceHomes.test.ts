@@ -31,9 +31,6 @@
  * The api answers quoted below are not guesses: each is the value asserted by the named test in
  * `test_income_evidence_homes.py`, which runs against the real engine.
  */
-import { readFileSync } from 'fs'
-import { join } from 'path'
-
 import { blockerLabelKey, stepOf } from '@/lib/blockers'
 import {
   docTypeToFact, docTypeToRequestFact, docTypeToStudentGroup, STUDENT_DOC_GROUP_ORDER,
@@ -45,8 +42,8 @@ import { groupDocumentsByFact, incomeSubSections } from '@/lib/officerCockpit'
 import { incomeRequirements, salaryMemberBlocks, workingMembers } from '@/lib/incomeWizard'
 import type { AdminApplicantDocument } from '@/lib/admin-api'
 import type { IncomeShownAnswer, IncomeShownMap } from '@/lib/incomeShown'
-
-const WEB_ROOT = join(__dirname, '..', '..', '..')
+import { readApi } from '@/test/apiSource'
+import { readWeb } from '@/test/sourceGuard'
 
 function doc(over: Partial<AdminApplicantDocument> = {}): AdminApplicantDocument {
   return {
@@ -411,8 +408,11 @@ describe('W-D memberIncomeShown — the student side', () => {
     // ⚠ THE PATH FOLLOWED THE CODE (TD-272): the wizard left `ScholarshipDocuments.tsx` for its
     // own module. `toContain` on the declaration is the floor — this guard fails loudly if the
     // closure ever moves again, rather than passing green over a file that no longer holds it.
-    const src = readFileSync(
-      join(WEB_ROOT, 'src/components/ScholarshipDocuments/IncomeWizard.tsx'), 'utf8')
+    // ⚠ `readWeb`, not a bare `readFileSync` (TD-276, code health H16): a third move of the
+    // wizard names the path and says what to do, rather than throwing an ENOENT mid-assertion.
+    const src = readWeb('src/components/ScholarshipDocuments/IncomeWizard.tsx',
+      '`memberIncomeShown` is a closure with no export, so the three arms of the income-shown '
+      + 'rule — and the absence of a fourth, STR arm — can only be read as source text')
     expect(src).toContain('const memberIncomeShown = (m: WorkingMember): boolean =>')
     const start = src.indexOf('const memberIncomeShown')
     const body = src.slice(start, src.indexOf('const salaryComplete', start))
@@ -437,13 +437,15 @@ describe('W-D memberIncomeShown — the student side', () => {
  * (`services.income_doc_blockers` → `consent_blockers` on the payload); the web only maps codes to
  * copy. The ownership test itself stays in the api, next to the matching rule it reads.
  */
-const API_F8 = join(
-  WEB_ROOT, '..', 'halatuju_api', 'apps', 'scholarship', 'income_str_ownership.py',
-)
+// ⚠ `readApi` with a repo-relative literal, not a hand-rolled `join` (TD-276, code health H16):
+// it throws a NAMED failure when the module moves, and the api's own
+// `test_web_guards_read_live_paths.py` extracts this literal, so a backend sprint that moves
+// `income_str_ownership.py` goes red in its OWN gate instead of killing this file silently (H13).
+const API_F8 = 'apps/scholarship/income_str_ownership.py'
 
 /** The api's own constant, so a rename there cannot leave the student looking at a raw key. */
 function apiBlockerCode(): string {
-  const m = readFileSync(API_F8, 'utf8').match(/^STR_NOT_HOUSEHOLD = '([a-z_]+)'$/m)
+  const m = readApi(API_F8).match(/^STR_NOT_HOUSEHOLD = '([a-z_]+)'$/m)
   return m ? m[1] : ''
 }
 

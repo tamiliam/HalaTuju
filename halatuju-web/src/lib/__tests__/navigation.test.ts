@@ -22,6 +22,7 @@ import {
   chordTarget, CHORD_PREFIX,
   type AdminRoleName, type NavContext, type ProbeState, type LabelledNavItem,
 } from '@/lib/navigation'
+import { walkFloor } from '@/test/sourceGuard'
 
 const ctx = (role: AdminRoleName, probes: Partial<Record<'requests' | 'billing', ProbeState>> = {}): NavContext =>
   ({ role, probes: { ...NO_PROBES, ...probes } })
@@ -169,10 +170,17 @@ describe('visibleNav per role', () => {
     expect(staleMessages).toEqual([])
 
     // The manual describes this row in prose, which no message walk can see.
+    // ⚠ FLOORED (TD-276, code health H16): a moved or renamed manual folder used to end this in
+    // a bare ENOENT, and a folder that had merely stopped matching `.tsx` would have reported
+    // "nothing stale" for ever. 11 pages on 2026-09-20; a minimum, so a new page stays green.
     const manual = path.join(process.cwd(), 'src', 'content', 'manual')
-    const stale = fs.readdirSync(manual)
-      .filter((f) => f.endsWith('.tsx'))
-      .filter((f) => fs.readFileSync(path.join(manual, f), 'utf8').includes('B40 Applications'))
+    const pages = walkFloor(manual, 8,
+      'the manual names the navigation rows in prose, which no message walk can see, so a row '
+      + 'renamed in the catalogue can still be stale here',
+      { exts: ['.tsx'] })
+    const stale = pages
+      .filter((f) => fs.readFileSync(f, 'utf8').includes('B40 Applications'))
+      .map((f) => path.basename(f))
     expect(stale).toEqual([])
   })
 

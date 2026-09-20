@@ -12,11 +12,17 @@
  * What it does NOT prove: that the field looks right, or that the flag panel reads well. Those
  * are for a human — the copy deliberately declines to say which side is wrong.
  */
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { readWeb } from '@/test/sourceGuard'
 
-const PAGE = join(process.cwd(), 'src', 'app', 'profile', 'page.tsx')
-const src = readFileSync(PAGE, 'utf8')
+// ⚠ `readWeb`, not a bare `readFileSync` (TD-276, code health H16). This read happens at MODULE
+// scope, so a moved page used to kill the whole file at import with an `ENOENT` — the H13 shape,
+// where thirteen tests left the run and the message that would have explained it was a stdlib
+// traceback. `readWeb` names the path and says what to do with it.
+const PAGE = 'src/app/profile/page.tsx'
+const src = readWeb(PAGE,
+  'the IC padlock must be driven by the stored LOCK, never a bare `disabled` attribute; the defect '
+  + 'this replaces told 85 of 143 production applicants their IC was locked when nothing had '
+  + 'locked it')
 
 /** The IC input, from its `type="text"` through to the closing brace of its className. */
 function icInputBlock(): string {

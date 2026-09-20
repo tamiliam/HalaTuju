@@ -123,25 +123,42 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   left. Without it every H15/H16 move that touches a string ledger buys a false `std: FAIL`, which
   is the fifth acceptance in a row for a guard that is wrong every time. ~1h in `Settings/_tools`,
   with `test_a_split_renames_a_budget_entry_and_is_not_loosening` as the model.
-- **TD-275 (raised 2026-09-20 by code health H15) — low, NOT caused by H15.** Both suites carry one
-  pre-existing failure that only appears under full parallelism, and both pass in isolation:
-  `test_sponsor_detail.py::TestMoneyIsOrgFenced::test_the_other_tenants_money_never_appears` under
-  `pytest -n auto` (5/5 alone), and `src/app/admin/spending/page.test.tsx` under an unbounded `jest`
-  (53/53 alone; green under `npm run gates`, which pins `--maxWorkers=2`). Measured on a clean
-  `591b6a9b` checkout BEFORE anything was touched, which is the only reason they could be told
-  apart from the sprint's own work. **A flake that fires on some runs is a baseline nobody can
-  read**, and the next sprint that measures its own baseline will burn the same ten minutes
-  deciding whether it broke something. Find the shared state (likely an ordering or a cached
-  module-level read) and pin it. ~2h.
-- **TD-276 (raised 2026-09-20 by code health H15) — medium.** A source guard that scans a DIRECTORY
-  must be recursive and must have a floor, and two were neither. `test_verdict_item_i18n.py` walked
-  `apps/scholarship/` with `glob('*.py')` rather than `rglob`, so the day `models.py` and
-  `services.py` became packages it silently stopped looking inside either one **and went on
-  passing** — it never appeared in a failure list, because a scan that finds less asserts less.
-  Both were fixed in H15 (recursive + floor), but the class is not closed: this is the same shape
-  as H11's silent logger bite and H13's dead web suite, and `test_org_fence`, `test_endpoint_exercise`
-  and `test_ai_registry` are all walks whose floors should be audited the same way. **Every walk in
-  the suite needs a floor that fails when the walk finds nothing.** ~2h to audit the rest.
+- ~~**TD-275 (raised 2026-09-20 by code health H15) — low, NOT caused by H15.**~~ **RESOLVED at
+  code health H16 (2026-09-20) — and NEITHER failure was about parallelism.** Both causes were
+  found and fixed; neither test was skipped, xfailed, pinned to a worker or retried.
+  **pytest:** `test_the_other_tenants_money_never_appears` asserted `assertNotIn('5000',
+  str(res.data))`, and that payload carries FIVE timestamps whose microsecond field is a random
+  six digits. About one run in seven hundred produced a microsecond containing `5000` and the
+  test went red with nothing wrong — a four-digit needle in a haystack of random digits. It was
+  filed under `-n auto` because that is the run people watch; serial runs the same lottery. The
+  needle is now `'5000.00'`, the form the payload actually renders money in, which no microsecond
+  can contain, backed by a structural check that no row in Alpha's payload belongs to Beta.
+  **jest:** `admin/spending/page.test.tsx` read `textContent` off `findByTestId('spending-totals')`
+  — a panel that renders on the FIRST paint with four em-dash placeholders, before the overview
+  arrives. Whether the fetch had flushed by then depended on machine LOAD, which is what an
+  unbounded `jest` produces and `--maxWorkers=2` does not. It now waits for the CONTENT.
+  ⚠ **The lesson generalises: `findBy*` waits for an ELEMENT. If the element renders before its
+  data, a test that reads its text is racing, and the race is invisible on an idle box.**
+  ⚠ **What it was NOT**, each ruled out before the real cause was found: shared mutable fixtures
+  (`OVERVIEW` is spread, never mutated), an in-place sort (`sortRows` copies), a debounce or timer
+  (there is none on that page), a clock or locale (`formatDate` formats by hand for exactly that
+  reason), and a jest test timeout (`jest.setup.ts` already sets 30 s above the 10 s async limit).
+  The flake was caught unmodified in **one of eleven** full unbounded runs before the fix and in
+  **none of eight** after; re-introducing the cause — an overview that resolves on a macrotask —
+  reproduces the original failure text exactly, every time.
+- ~~**TD-276 (raised 2026-09-20 by code health H15) — medium.**~~ **RESOLVED at code health H16
+  (2026-09-20).** Both trees were surveyed exhaustively (50 guards that glob, `readdir`, walk,
+  grep source text or read any repo path), **21 floors were placed**, and the class now has a
+  shared helper per language so the next guard gets a floor for free:
+  `apps/scholarship/tests/source_walk.py` and `halatuju-web/src/test/sourceGuard.ts`. A floor
+  names its NUMBER and its REASON, and it is a MINIMUM — a floor that cries wolf teaches the next
+  engineer to edit the number without reading it. The worst finding was not on the original list:
+  `test_slip_fixtures.py` fed a bare `glob` straight to `parametrize`, where an empty list
+  generates **zero tests**, so the file would have collected clean and reported nothing for ever.
+  Seventeen reads that used to die on a bare `ENOENT` now name the path, eight of them at module or describe scope where the failure took the whole FILE out of the run. The remaining
+  gap is named and NOT closed: **a guard file that still exists and still runs but has been
+  hollowed out is invisible to all of this** — that is what each guard's own floor is for, and
+  there is no mechanism that checks a floor is still meaningful.
 - **TD-277 (raised 2026-09-20 by code health H15) — low.** A source guard whose allowlist is keyed
   on a BARE FILE NAME silently widens as the tree grows. `test_wallet_credit.py` exempted
   `models.py` and `sponsorship.py` from the "only `record_admin_credit` may mint an admin-recorded
@@ -5450,7 +5467,20 @@ ruled on 2026-09-11 that a row reading Done IS the activation.
 **Trigger:** the next student Vircle activates, or the first payment run where a "Not yet
 activated" flag has to be explained away.
 
-### [TD-269] An api refactor can kill a web drift test, and every api gate stays green - medium
+### [TD-269] An api refactor can kill a web drift test, and every api gate stays green - medium - **RESOLVED 2026-09-20**
+
+**RESOLVED at code health H16 (2026-09-20)**, by the cheap api-side check this entry proposed.
+`halatuju_api/apps/scholarship/tests/test_web_guards_read_live_paths.py` extracts every api path
+the web tree names — the `readApi('apps/…')` literal form and the
+`join(…, 'halatuju_api', 'apps', …)` form — and fails if one is not there, naming the web file
+that will die at import. It is a directory listing against a list of strings: no jest, no node,
+no web install. It also carries a MANIFEST of the twenty web guard files, so one deleted or
+renamed fails too, and a floor on the web suite's file count for a guard nobody thought to name.
+`halatuju-web/src/lib/__tests__/crossTreePaths.test.ts` is its mirror, because a web-only sprint
+runs no api gate and six api tests read `halatuju-web/**` by path. Four web guards were moved onto
+the `readApi` literal form in the same pass, so the extractor can see them. ⚠ **What neither side
+catches: a guard file that still exists and still runs but has been hollowed out.** That is what
+each guard's own floor is for (TD-276).
 
 **Found:** code health H13 (2026-09-20), on the baseline run taken before touching anything. The
 broken test was REPAIRED in H13; this entry is the systemic half, which was not.

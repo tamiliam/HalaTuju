@@ -183,11 +183,37 @@ class TestMoneyIsOrgFenced(SponsorDetailBase):
 
     def test_the_other_tenants_money_never_appears(self):
         """Stated as a leak test, not a count: the failure that matters is Beta's figures
-        showing up in Alpha's screen at all."""
-        body = str(self._get(self.approver_a).data)
+        showing up in Alpha's screen at all.
+
+        ⚠ THE MONEY NEEDLE IS THE RENDERED FORM, NOT A BARE NUMBER (TD-275, code health H16).
+        This asserted `assertNotIn('5000', body)`, and `body` is `str(res.data)` — which carries
+        FIVE timestamps, each ending in a random six-digit microsecond field. Roughly one run in
+        seven hundred produced a microsecond containing `5000` (`.450007`, `.150002`, …) and the
+        test went red with nothing wrong: a haystack of random digits, a four-digit needle. It was
+        recorded as a parallelism flake because `pytest -n auto` is the run people watch, but the
+        lottery is the same in either mode and parallelism has nothing to do with it.
+
+        The needle is now the form the payload actually renders money in (`'5000.00'`, as
+        `'20000.00'` beside it shows), which no microsecond can contain, and the substring scan is
+        BACKED by a structural check so a change of rendering cannot quietly make the scan
+        toothless. Strictly stronger than what it replaces, and deterministic.
+        """
+        data = self._get(self.approver_a).data
+        body = str(data)
         self.assertNotIn('TRF-B-1', body)
         self.assertNotIn('Beta Bursary', body)
-        self.assertNotIn('5000', body)
+        self.assertNotIn('5000.00', body)
+
+        # The same claim, read off the structure rather than the text — this is what holds if the
+        # payload ever renders an amount as a number instead of a string.
+        beta_programme_ids = set(
+            Programme.objects.filter(organisation=self.org_b).values_list('id', flat=True))
+        self.assertTrue(beta_programme_ids, 'fixture broken: Beta owns no programme')
+        for row in list(data['programmes']) + list(data['credits']) + list(data['memberships']):
+            self.assertNotIn(row.get('programme_id'), beta_programme_ids, row)
+        self.assertEqual(
+            [Decimal(c['amount']) for c in data['credits']], [Decimal('20000')],
+            "Alpha's screen shows Alpha's credit and nothing else")
 
     def test_memberships_carry_the_programme_id_the_credit_form_posts(self):
         """S2: the creditable set is "gifts they were ACCEPTED into", which is the memberships

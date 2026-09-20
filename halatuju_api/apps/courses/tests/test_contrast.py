@@ -18,6 +18,7 @@ from django.test import SimpleTestCase, TestCase
 
 from apps.courses import contrast as cx
 from apps.courses import theme_tokens as tt
+from apps.scholarship.tests.source_walk import read_source
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -238,7 +239,13 @@ class TestTheBrandRolesAgreeWithTheBrowser(SimpleTestCase):
         return m.group(1) if m else None
 
     def test_the_css_resolves_the_same_stops_this_module_measures(self):
-        css = self.CSS.read_text(encoding='utf-8')
+        # ⚠ `read_source`, not `Path.read_text` (TD-276, code health H16). A moved stylesheet used
+        # to end this test in a bare FileNotFoundError, which reads as a broken test rather than
+        # as the drift it is. The helper names the path and says what to do.
+        css = read_source(
+            self.CSS,
+            'the CSS resolves --brand-fill/-hover/-ink/-shape, and contrast.py measures what those '
+            'stops resolve TO; a disagreement silently approves a colour nobody will see')
         dark_at = css.index("[data-theme='dark']")
         light, dark = css[:dark_at], css[dark_at:]
 

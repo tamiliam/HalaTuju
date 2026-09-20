@@ -698,6 +698,28 @@ class TestOrgFenceStaticGuard(TestCase):
                 f'{entry} carries no watched query - it is either the wrong file or the '
                 f'queries moved, and either way this guard is now watching nothing.')
 
+    #: The number of `*.py` the SCANNED tuple resolved to on 2026-09-20 (31 in the `views_admin/`
+    #: package plus the eight single modules), rounded down for churn. See the test below.
+    SCANNED_FILE_FLOOR = 30
+
+    def test_the_scan_reads_the_whole_package_not_one_surviving_module(self):
+        """THE OTHER FLOOR (TD-276, code health H16). The per-entry floor above is satisfied by
+        ONE file: `views_admin/` could shrink from thirty-one modules to one and, so long as that
+        one still held a watched query, every assertion here would go on passing over 3% of the
+        surface it was written to watch. That is the shape this arc keeps meeting — a walk that
+        silently narrows asserts less and never says so.
+
+        A MINIMUM, not an equality: a new `views_admin/` submodule is exactly what this guard
+        wants to start reading, so it must stay green when one arrives.
+        """
+        total = sum(len(scan_targets(_APP_DIR, entry)) for entry in self.SCANNED)
+        self.assertGreaterEqual(total, self.SCANNED_FILE_FLOOR, (
+            f'THE FLOOR: SCANNED resolved to only {total} source file(s); this guard expects at '
+            f'least {self.SCANNED_FILE_FLOOR}. Either the `views_admin/` package was flattened, '
+            f'split differently or MOVED, or an entry stopped naming anything. Follow the code '
+            f'and re-point SCANNED — do not lower this number to make the red go away, because '
+            f'a fence scan that reads fewer files finds fewer offences and passes for ever.'))
+
     def test_the_modules_that_query_watched_models_are_all_scanned(self):
         """The other half: a NEW admin-facing module that queries a watched model must join
         SCANNED. Without this, S4's own mistake repeats - move the query one file sideways and

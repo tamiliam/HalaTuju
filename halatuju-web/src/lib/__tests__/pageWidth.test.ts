@@ -1,11 +1,31 @@
 import fs from 'fs'
 import path from 'path'
 import { pageWidthFor, WIDE_ROUTES, WIDTH_CLASS } from '../pageWidth'
+import { readWeb, walkFloor } from '@/test/sourceGuard'
 
 const ADMIN = path.join(process.cwd(), 'src', 'app', 'admin')
 const COMPONENTS = path.join(process.cwd(), 'src', 'components', 'admin')
 /** These render WITHOUT the shell, so they keep their own width. */
 const CHROMELESS = ['login', 'set-password', 'callback']
+
+/**
+ * ⚠ THE FLOOR (TD-276, code health H16). Everything below scans `sources(ADMIN)` and
+ * `sources(COMPONENTS)` and asserts that the offenders are none. A walk that found nothing would
+ * report no offenders and pass for ever — and every walk in this file starts with a bare
+ * `readdirSync`, which on a moved folder throws an ENOENT that reads as a broken test rather than
+ * as the drift it is. `walkFloor` fails first, naming the folder. 54 admin pages and 30 admin
+ * components on 2026-09-20; MINIMUMS, so a new page or panel leaves this green.
+ */
+const WHY_WALK = 'every admin page must take its width from `pageWidthFor`, and a list surface '
+  + 'must draw cards under `md`; both are checked by scanning every file under these two folders'
+
+describe('the walks this file depends on found something', () => {
+  test('the admin tree and the admin components are both really there', () => {
+    expect(walkFloor(ADMIN, 45, WHY_WALK, { exts: ['.tsx'] }).length).toBeGreaterThanOrEqual(45)
+    expect(walkFloor(COMPONENTS, 25, WHY_WALK, { exts: ['.tsx'] }).length)
+      .toBeGreaterThanOrEqual(25)
+  })
+})
 
 /** Every `page.tsx` under /admin, as its route. */
 function adminRoutes(dir = ADMIN, prefix = '/admin'): string[] {
@@ -138,8 +158,10 @@ describe('every table sits in the shared frame', () => {
   // reader reads aloud. i18n parity cannot catch it either — the key would be absent from all
   // three locales identically. Five of my own labels were invented before this test existed.
   test('every TableFrame label names a real string', () => {
-    const en = JSON.parse(fs.readFileSync(
-      path.join(process.cwd(), 'src', 'messages', 'en.json'), 'utf8'))
+    // ⚠ `readWeb`, not a bare `readFileSync` (TD-276): a moved catalogue names itself.
+    const en = JSON.parse(readWeb('src/messages/en.json',
+      'every `TableFrame` label is a message key, and a key with no string behind it renders as '
+      + 'the raw key path on an officer screen'))
     const resolve = (key: string) =>
       key.split('.').reduce<unknown>(
         (o, part) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[part] : undefined),

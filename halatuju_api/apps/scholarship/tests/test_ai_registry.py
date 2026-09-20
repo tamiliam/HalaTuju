@@ -89,6 +89,19 @@ class TestTheRegistryCannotGoStale(TestCase):
         self.assertIn('apps/scholarship/profile_engine.py', calling)
         self.assertGreaterEqual(len(calling), 10)
 
+    def test_the_walk_itself_still_reads_the_whole_app_tree(self):
+        """THE OTHER FLOOR (TD-276, code health H16). The test above floors the files that MATCH;
+        this floors the files the walk even looked at. They fail differently: if `apps/` moved,
+        the matches go to zero and that test says "vision.py is missing", which reads as a deleted
+        module rather than as a walk that stopped walking. ~280 source files on 2026-09-20; a
+        minimum, so every new module in the app tree leaves this green."""
+        walked = list(_source_files())
+        self.assertGreaterEqual(len(walked), 250, (
+            f'THE FLOOR: the AI-registry walk read only {len(walked)} source file(s) under '
+            f'{API_ROOT}. The app tree MOVED, or the rglob stopped matching. Follow the code and '
+            f're-point API_ROOT — a walk that reads nothing finds no unregistered AI job and '
+            f'passes for ever.'))
+
     def test_no_registered_job_points_at_a_file_that_is_gone(self):
         """The other direction: a job whose module was deleted or renamed would leave the screen
         naming something that no longer exists."""

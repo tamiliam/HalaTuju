@@ -15,8 +15,7 @@
  * 3. No regrowth — neither admin screen carries a local status→label or status→colour map, in the
  *    same spirit as no-icu-messageformat.test.ts's source scan.
  */
-import * as fs from 'fs'
-import * as path from 'path'
+import { readWeb } from '@/test/sourceGuard'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
@@ -73,12 +72,16 @@ describe('applicationStatus vocabulary', () => {
   })
 
   test('neither admin screen regrows a local status map', () => {
-    const screens = [
-      path.join(__dirname, '..', '..', 'app', 'admin', 'scholarship', 'page.tsx'),
-      path.join(__dirname, '..', '..', 'app', 'admin', 'scholarship', '[id]', 'page.tsx'),
+    // ⚠ `readWeb`, not a bare `readFileSync` (TD-276, code health H16): a moved screen used to
+    // end this in an ENOENT, which reads as a broken test rather than as the drift it is.
+    const WHY = 'a screen that regrows its own status map is how the label drift shipped; the '
+      + 'vocabulary has one home and these two screens must read it'
+    const screens: Array<[string, string]> = [
+      ['admin/scholarship/page.tsx', readWeb('src/app/admin/scholarship/page.tsx', WHY)],
+      ['admin/scholarship/[id]/page.tsx', readWeb('src/app/admin/scholarship/[id]/page.tsx', WHY)],
     ]
     const BANNED = /STATUS_LABELS|STATUS_TONE|statusBadge/
-    const offenders = screens.filter((f) => BANNED.test(fs.readFileSync(f, 'utf8')))
+    const offenders = screens.filter(([, src]) => BANNED.test(src)).map(([name]) => name)
     expect(offenders).toEqual([])
   })
 })

@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 986702a | 90 | 42 | income_engine.py 95.6 | 19 | 15 | 4 | 46 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 591b6a9 | 90 | 42 | income_engine.py 95.6 | 19 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-20 | 676cc96 | 90 | 42 | income_engine.py 95.6 | 21 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-20 | 1a23b52 | 90 | 42 | income_engine.py 95.6 | 21 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
@@ -35,7 +36,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 591b6a9, window 2026-06-22 onward)
+## Latest run (2026-09-20, 986702a, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -120,14 +121,14 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - halatuju-web/src/lib/incomeWizard.ts:111  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 31 of 159 web test files read source text (signals: readFileSync, apiSource)
+- 32 of 160 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 165 entries have a defining line; 92 carry no resolution marker on it
+- 165 entries have a defining line; 91 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 470: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5364: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 487: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5381: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
@@ -135,8 +136,6 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ### Standards budgets vs the last recorded run
 - renamed in halatuju_api/code-standards.json — budget.long_functions.apps/scholarship/services/offer_sync.py::autofill_pathway_from_offer: renamed from one of apps/scholarship/services.py::autofill_pathway_from_offer (192 -> 192); the list did not grow
 - renamed in halatuju_api/code-standards.json — budget.oversize_files.apps/scholarship/models/applications.py: renamed from one of apps/scholarship/models.py, apps/scholarship/services.py (4756 -> 899); the list did not grow
-- renamed in halatuju-web/code-standards.json — budget.eslint_disable_without_reason: "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-de replaced a member that left; the list did not grow (37 -> 37)
-- renamed in halatuju-web/code-standards.json — budget.eslint_disable_without_reason: "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-de replaced a member that left; the list did not grow (37 -> 37)
 
 ## Reviews
 

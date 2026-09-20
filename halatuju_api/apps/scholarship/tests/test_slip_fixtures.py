@@ -18,9 +18,18 @@ from pathlib import Path
 import pytest
 
 from apps.scholarship.academic_engine import parse_spm_slip, _norm_lower_alnum
+from apps.scholarship.tests.source_walk import walk_sources
 
 FIXDIR = Path(__file__).parent / 'fixtures' / 'slips'
-FIXTURES = sorted(FIXDIR.glob('*.json'))
+
+#: ⚠ THE FLOOR (TD-276). This corpus is fed straight to `parametrize`, and an empty list there
+#: generates ZERO tests — the file would collect clean, report nothing and stay green for ever,
+#: which is the exact shape TD-276 was raised to end. `walk_sources` raises instead, naming the
+#: directory. Five fixtures on 2026-09-20; a minimum, so adding a sixth slip stays green.
+FIXTURES = walk_sources(
+    FIXDIR, '*.json', 5,
+    'each fixture is the full Vision word geometry of one real results slip, and they are the '
+    'only end-to-end proof that the positional parser reads upright AND rotated slips')
 
 
 def _load(p):

@@ -19,7 +19,6 @@ rather than merely fail:
 """
 import re
 from decimal import Decimal
-from pathlib import Path
 from unittest import mock
 
 import jwt
@@ -36,6 +35,7 @@ from apps.scholarship.models import (
     Donation, Programme, Sponsor, SponsorEmailLog, SponsorEmailTemplate,
     SponsorProgrammeMembership, SponsorReferral,
 )
+from apps.scholarship.tests.source_walk import REPO_ROOT, floor_count, read_source
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 EMAILS = '/api/v1/admin/scholarship/sponsor-emails/'
@@ -48,11 +48,25 @@ def _frontend_already_live():
     decides which rows to label as sending anyway — and a copy of the list in this file would
     drift silently, which is the failure mode a keep-in-sync pair exists to prevent.
     """
-    src = (Path(__file__).resolve().parents[3].parent
-           / 'halatuju-web' / 'src' / 'lib' / 'sponsorComms.ts')
-    body = re.search(r'ALREADY_LIVE:\s*readonly string\[\]\s*=\s*\[(.*?)\]',
-                     src.read_text(encoding='utf-8'), re.S).group(1)
-    return {m.group(1) for m in re.finditer(r"'([a-z_]+)'", body)}
+    text = read_source(
+        REPO_ROOT / 'halatuju-web' / 'src' / 'lib' / 'sponsorComms.ts',
+        'the panel declares ALREADY_LIVE, and a copy of that list in this file would drift '
+        'silently — which is the whole failure a keep-in-sync pair exists to prevent')
+    match = re.search(r'ALREADY_LIVE:\s*readonly string\[\]\s*=\s*\[(.*?)\]', text, re.S)
+    if match is None:
+        raise AssertionError(
+            'SOURCE GUARD: no `ALREADY_LIVE: readonly string[] = [ … ]` in sponsorComms.ts. The '
+            'front end has RENAMED or restructured the list — follow it and re-point this parse, '
+            'never delete the assertion. (Before TD-276 this raised AttributeError on None, '
+            'which reads as a broken test rather than as drift.)')
+    kinds = {m.group(1) for m in re.finditer(r"'([a-z_]+)'", match.group(1))}
+    #: THE FLOOR (TD-276). A parse that matches an EMPTY list returns an empty set, and every
+    #: comparison below it then compares nothing to nothing and passes. Four on 2026-09-20; a
+    #: minimum, so switching a fourth template live stays green.
+    return set(floor_count(sorted(kinds), 3, 'ALREADY_LIVE kinds',
+                           'the backend decides which sponsor templates ship switched on and the '
+                           'panel decides which rows to label as sending anyway; the two lists '
+                           'must agree'))
 
 
 ALREADY_SENDING = _frontend_already_live()

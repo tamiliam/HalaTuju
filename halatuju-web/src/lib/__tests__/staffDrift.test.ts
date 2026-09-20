@@ -16,12 +16,10 @@
  * Characterised first (the H8 rule): the status words listed on both sides, and the reviewer gate
  * run field-by-field against the api's own compulsory set. They AGREE.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import { REQUIRED_REVIEWER_FIELDS, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
 import type { ReviewerProfile } from '@/lib/admin-api'
 import { pySeq, readApi } from '@/test/apiSource'
+import { readWeb } from '@/test/sourceGuard'
 
 const INVITATIONS = 'apps/scholarship/invitations.py'
 const ONBOARDING = 'apps/scholarship/reviewer_onboarding.py'
@@ -47,7 +45,11 @@ const backendStatuses = (() => {
 
 /** The union in `invitations.ts` — a TS type has no runtime, so it is read as source text. */
 const webStatuses = (() => {
-  const text = fs.readFileSync(path.join(__dirname, '..', 'invitations.ts'), 'utf8')
+  // ⚠ `readWeb`, not a bare `readFileSync` (TD-276) — module scope, so an ENOENT here used to
+  // take the whole file out of the run instead of naming what moved.
+  const text = readWeb('src/lib/invitations.ts',
+    'the `InvitationStatus` union has no runtime, so it is read as source text; it must hold '
+    + 'exactly the five words the api\'s `status_of` can return')
   const m = text.match(/export type InvitationStatus\s*=\s*([^\n]+)/)
   if (!m) throw new Error('drift test: `export type InvitationStatus = …` not found')
   return [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1])

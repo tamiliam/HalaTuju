@@ -9,21 +9,22 @@
  * ⚠ It also asserts it actually found the Python list, so a moved file or a renamed constant
  * fails loudly instead of quietly watching nothing.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import { CLAIM_REFUSAL_COPY, claimRefusalKey, claimHelpKey, claimChannelKey, claimCodeHelpKey }
   from '@/lib/profileClaim'
+import { readApi } from '@/test/apiSource'
 
-const PY = path.resolve(
-  __dirname, '..', '..', '..', '..', 'halatuju_api', 'apps', 'courses', 'profile_claim.py')
+// ⚠ `readApi` with a repo-relative literal, not a hand-rolled `path.resolve` (TD-276, code health
+// H16): it throws a NAMED failure when the module moves instead of an `ENOENT`, and the api's own
+// `test_web_guards_read_live_paths.py` extracts this literal, so a backend sprint that moves
+// `profile_claim.py` goes red in its own gate rather than killing this file silently (H13).
+const PY = 'apps/courses/profile_claim.py'
 
 /** The strings inside the `REFUSAL_CODES = ( … )` tuple. */
 function serverRefusalCodes(): string[] {
-  const src = fs.readFileSync(PY, 'utf8').replace(/\r\n?/g, '\n')
+  const src = readApi(PY)
   const block = src.match(/REFUSAL_CODES = \(([\s\S]*?)\n\)/)
   if (!block) throw new Error(`REFUSAL_CODES not found in ${PY}`)
   return (block[1].match(/'([a-z_]+)'/g) || []).map((q) => q.slice(1, -1))

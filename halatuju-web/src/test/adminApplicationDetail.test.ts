@@ -17,16 +17,17 @@
  * render. If the file cannot be found the test FAILS rather than skipping — a drift guard that
  * quietly passes when it cannot see its subject is worse than no guard.
  */
-import * as fs from 'fs'
-import * as path from 'path'
-
 import { BRANCHES, OUTCOME_STAGES, STAGES } from '@/test/adminApplicationDetail'
+import { readApi } from '@/test/apiSource'
 
-const FACTORY = path.resolve(
-  __dirname, '..', '..', '..', 'halatuju_api', 'apps', 'scholarship', 'tests', 'factories.py')
+// ⚠ `readApi` with a repo-relative literal, not a hand-rolled `path.resolve` (TD-276, code health
+// H16). It throws a NAMED failure when the factory moves, and the api's own
+// `test_web_guards_read_live_paths.py` extracts this literal — so a backend sprint that moves
+// `factories.py` goes red in its OWN gate rather than killing this file silently (H13).
+const FACTORY = 'apps/scholarship/tests/factories.py'
 
-/** CRLF collapsed on read: the authoring machine is Windows and the gate is Linux. */
-const source = (): string => fs.readFileSync(FACTORY, 'utf8').replace(/\r\n?/g, '\n')
+/** CRLF collapsed on read by `readApi`: the authoring machine is Windows and the gate is Linux. */
+const source = (): string => readApi(FACTORY)
 
 /** The quoted names inside the first `NAME = (...)` tuple, comments stripped. */
 function pythonTuple(src: string, name: string): string[] {
@@ -50,8 +51,8 @@ function pythonSet(src: string, name: string): string[] {
 
 describe('the fixture mirrors the backend factory', () => {
   it('can see the factory at all (the floor)', () => {
-    // A path that resolved to nothing would make every assertion below vacuous.
-    expect(fs.existsSync(FACTORY)).toBe(true)
+    // A path that resolved to nothing would make every assertion below vacuous. `readApi` throws
+    // when the file is gone; this is the other half — a file that is there but hollow.
     expect(source().length).toBeGreaterThan(5_000)
   })
 

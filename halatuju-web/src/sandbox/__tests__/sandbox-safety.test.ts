@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 
+import { readWeb, walkFloor } from '@/test/sourceGuard'
+
 /**
  * The sandbox is handed to people outside the organisation, so the things that make it safe have
  * to be mechanical rather than remembered.
@@ -32,13 +34,23 @@ function walk(dir: string): string[] {
   return out
 }
 
-const sandboxFiles = [...walk(SANDBOX_DIR), ...walk(APP_SANDBOX_DIR)]
-const fixtureFiles = walk(join(SANDBOX_DIR, 'fixtures'))
+// ⚠ FLOORED, NOT MERELY NON-EMPTY (TD-276, code health H16). `walkFloor` throws — naming the
+// folder and the shortfall — if either tree moves or shrinks below the count it held when this
+// was written: 6 sandbox files, 3 app-sandbox routes, 3 fixtures on 2026-09-20. `> 0` was the old
+// self-check, and `> 0` is satisfied by one surviving file out of nine, which is how a scan
+// quietly stops covering the surface it was written for.
+const WHY_SANDBOX = 'the sandbox is handed to people outside the organisation, so "no fixture '
+  + 'resembles a real person" and "it never copies a component" must be mechanical, not remembered'
+const sandboxFiles = [
+  ...walkFloor(SANDBOX_DIR, 6, WHY_SANDBOX, { exts: ['.ts', '.tsx'], skip: ['__tests__'] }),
+  ...walkFloor(APP_SANDBOX_DIR, 3, WHY_SANDBOX, { exts: ['.ts', '.tsx'], skip: ['__tests__'] }),
+]
+const fixtureFiles = walkFloor(join(SANDBOX_DIR, 'fixtures'), 3, WHY_SANDBOX,
+  { exts: ['.ts', '.tsx'], skip: ['__tests__'] })
 
 describe('sandbox fixtures contain no real person', () => {
   it('scans a non-trivial amount of fixture text', () => {
-    // Self-check: if the fixtures move, the scans below must not silently pass on nothing.
-    expect(fixtureFiles.length).toBeGreaterThan(0)
+    // The other half of the floor: the files exist AND carry the text the scans below read.
     const chars = fixtureFiles.reduce((n, f) => n + readFileSync(f, 'utf-8').length, 0)
     expect(chars).toBeGreaterThan(2000)
   })
@@ -118,7 +130,11 @@ describe('the sandbox mounts real components and never copies one', () => {
 })
 
 describe('the sandbox is compiled out of a normal build', () => {
-  const config = readFileSync(join(__dirname, '..', '..', '..', 'next.config.js'), 'utf-8')
+  // ⚠ `readWeb`, not a bare `readFileSync` (TD-276): this runs at describe scope, so a moved
+  // config used to take the whole file out of the run with an ENOENT.
+  const config = readWeb('next.config.js',
+    'the sandbox page extension is gated on NEXT_PUBLIC_SANDBOX here; without that gate a '
+    + 'sandbox route ships to production')
 
   it('gates the sandbox page extension on NEXT_PUBLIC_SANDBOX', () => {
     expect(config).toMatch(/pageExtensions/)
@@ -149,8 +165,10 @@ describe('the sandbox provider stack has not drifted from the app', () => {
     // anonymous Supabase user on mount — real auth rows for a design review), and AuthGateModal
     // would open over the screens the designer came to see.
     const EXCLUDED = ['AuthProvider', 'AuthGateModal']
-    const appStack = readFileSync(join(__dirname, '..', '..', 'app', 'providers.tsx'), 'utf-8')
-    const sandboxStack = readFileSync(join(__dirname, '..', 'providers.tsx'), 'utf-8')
+    const WHY_STACK = 'adding a provider to the app leaves the sandbox compiling happily and '
+      + 'rendering a subtly different tree, which `tsc` cannot catch'
+    const appStack = readWeb('src/app/providers.tsx', WHY_STACK)
+    const sandboxStack = readWeb('src/sandbox/providers.tsx', WHY_STACK)
 
     const providersIn = (src: string) =>
       Array.from(src.matchAll(/<(\w+Provider|AuthGateModal)[\s/>]/g)).map((m) => m[1])
