@@ -26,7 +26,6 @@ import { useT } from '@/lib/i18n'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
-import { platformApplyCard } from '@/lib/applyCopy'
 import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import {
   draftApplyCopy, updateAdminProgramme,
@@ -115,8 +114,21 @@ function StandardWording({ locale, t }: {
   locale: Loc
   t: (k: string, p?: Record<string, string>) => string
 }) {
-  const card = platformApplyCard(locale)
-  if (!card.title) return null
+  // ⚠ `@/lib/applyCopyPlatform` IS LOADED ON DEMAND, AND THAT IS NOT A STYLE CHOICE (code health
+  // H17). It reads all THREE message catalogues at once — which is right, because this is the one
+  // screen whose job is to show an administrator what an applicant reading Malay or Tamil would
+  // get. Imported statically it put 1.53 MB of raw JSON into the first load of
+  // `/admin/programme`, a page most of whose visitors never open this tab. The words are
+  // identical either way; they simply arrive with the panel instead of with the page.
+  const [card, setCard] = useState<{ title: string; intro: string; criteria: string[] } | null>(null)
+  useEffect(() => {
+    let alive = true
+    import('@/lib/applyCopyPlatform')
+      .then((m) => { if (alive) setCard(m.platformApplyCard(locale)) })
+      .catch(() => { if (alive) setCard(null) })
+    return () => { alive = false }
+  }, [locale])
+  if (!card || !card.title) return null
   return (
     <details className="mb-5 rounded-lg border border-ground-200 bg-ground-50 px-4 py-3"
       data-testid="standard-wording">

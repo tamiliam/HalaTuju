@@ -2,6 +2,77 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H17 - one locale per visitor (PHASE 5 OPENS) - 2026-09-20
+
+**A visitor now downloads ONE language instead of three.** Every word on every screen is
+unchanged, in every language, with the same fallbacks - this sprint changed DELIVERY, not content.
+All three catalogues keep all 5,389 keys and the i18n parity guards passed unedited.
+
+**Measured, from two real `next build` runs:** the median route fell from **478.5 kB to 255.5 kB**
+of first-load JS. 74 of 88 routes shrank, 11 grew by 0.1-1.0 kB (the loader module itself on
+otherwise-empty stub routes), 3 were unchanged. The shared chunk is **87.1 kB -> 87.2 kB**, which
+is the point: the catalogues were never in the shared chunk, they were in the root LAYOUT chunk
+that every page carries.
+
+| Route | before | after |
+|---|---|---|
+| `/` (the landing page) | 483 kB | **259 kB** |
+| `/scholarship/apply` | 538 kB | **314 kB** |
+| `/profile` (the worst route before) | 562 kB | **339 kB** |
+| `/admin/scholarship/[id]` (the worst route after) | 515 kB | **389 kB** - see TD-280 |
+
+### Changed
+
+- **`src/lib/messages.ts` (new) - the catalogue loader, and the ONE place `@/messages/*.json` is
+  named.** English stays a static import: it is what the server renders (`localStorage` is not
+  readable there, so SSR has always been English), what the first client paint shows, and what
+  `t()` answers with while another chunk is in the air. Malay and Tamil are reached through
+  `import()` with LITERAL specifiers - a computed one makes webpack emit a context module holding
+  every JSON in the folder, which is the same bug spelled differently. Loaded catalogues are
+  cached for the life of the tab, so switching back costs no fetch.
+- **`src/lib/i18n.tsx` - the provider carries ONE catalogue, and the fetch starts before React
+  runs.** Locale and catalogue are a single piece of state, so no render can exist in which
+  `locale` says Tamil and the words are still English. The stored locale's chunk is requested as
+  the module is evaluated, in parallel with hydration, rather than from an effect afterwards -
+  which is the difference between the flash a returning Tamil reader has always had and a longer
+  one this sprint could have introduced. A failed fetch still moves the reader's choice and falls
+  back to English rather than leaving the switcher stuck.
+- **`src/lib/preUPlan.ts` (new) - `preUTrackMalay` and its `ms.json` import leave
+  `lib/scholarship.ts`.** Sixteen Malay pre-U track labels for the officer cockpit were putting
+  393 kB of Malay into the first load of the **fifteen route pages** that import that module. Now
+  one admin route pays for them. Still read from `ms.json`, not copied out of it.
+- **`src/lib/applyCopyPlatform.ts` (new) - `platformApplyCard` leaves `lib/applyCopy.ts`.** Found
+  by MEASUREMENT, not by reading: with the rest of the sprint in place `/scholarship/apply` was
+  still 539 kB while every other route had fallen to ~260 kB, because `applyCard` (pure, used by
+  that student page) and `platformApplyCard` (reads all three catalogues, used only by the admin
+  Apply-copy tab) shared a file. `ApplyCopyTab` reaches the new module through an `import()`, so
+  the three catalogues are a chunk of that PANEL rather than of `/admin/programme`.
+
+### Added
+
+- **`src/lib/__tests__/localeDelivery.test.tsx`** - the switcher, the fallback and the first
+  paint, rendered. Every expectation is read OUT of `en/ms/ta.json`, never hardcoded, so nobody
+  who legitimately changes a word has to edit this file.
+- **`src/lib/__tests__/oneLocalePerVisitor.test.ts`** - the budget, written where it can bite:
+  no production module outside a declared three-line exemption list may statically import a
+  catalogue, the provider may import none at all, and `lib/applyCopy` must stay catalogue-free
+  because a student page imports it. With a FLOOR on the files scanned (TD-276).
+
+### Not done, and why
+
+- **No kilobyte budget in `code-standards.json`.** That number exists only in the route table
+  `next build` prints, and jest runs with no build output to read; a budget nothing measures reads
+  as enforced and is not. H18 owns it, and needs a reader first - TD-281.
+- **`/admin/scholarship/[id]` still carries `ms.json`** - 130 kB for sixteen words, confined from
+  fifteen routes to one. The ways out all trade a single source of truth for bytes, which is the
+  owner's call and not an engineer's. TD-280.
+
+**Gates:** pytest **7,043 / 3 skipped (IDENTICAL to H16)** · jest **2,954 / 162 suites** (2,934 /
+160 before; +20 new tests, no existing expectation edited) · `tsc` 0 · `next lint` 0 errors ·
+i18n 5,389 keys per locale · `next build` exit 0 · `manage.py check` 0 · `makemigrations --check`
+clean · `code_health` 0 FAIL, `std` ok, `big` 17, `xapp` 45, `hot#1` unchanged. Six bite-checks,
+all six behaved.
+
 ## Code health H16 - `emails.py` and `income_engine.py` become packages, and PHASE 4 IS COMPLETE - 2026-09-20
 
 **Moves only. No production behaviour changed, no migration, no suppression, no skip, and the

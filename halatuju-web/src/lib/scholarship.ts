@@ -5,9 +5,6 @@
  */
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
-// The Malay pre-U track/stream labels live once, in the i18n messages (used by the apply form);
-// preUTrackMalay() reads them from here so the cockpit reuses that single source, not a copy.
-import msMessages from '@/messages/ms.json'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -156,22 +153,9 @@ export function expandMatricInstitution(name: string | null | undefined): string
   return s
 }
 
-/** Malay-only label for a pre-U track/stream code (STPM stream OR Matriculation track). The apply
- * form shows these bilingually ("Social Science (Sains Sosial)") for the student; the officer
- * cockpit shows the Malay term only (owner 2026-07-18). Sourced from the SAME i18n messages the
- * apply form uses — the Malay (`ms`) values under `scholarship.apply.plan.stream` / `.track` — so
- * there is one FE home for these labels, not a second hardcoded copy. `stream` (STPM) is checked
- * before `track` (matric); they share `sains` with the same value. Null for an unknown code. */
-const _msPreUPlan = (msMessages as {
-  scholarship?: { apply?: { plan?: {
-    stream?: Record<string, string>
-    track?: Record<string, string>
-  } } }
-}).scholarship?.apply?.plan
-export function preUTrackMalay(code: string | null | undefined): string | null {
-  if (!code) return null
-  return _msPreUPlan?.stream?.[code] ?? _msPreUPlan?.track?.[code] ?? null
-}
+// `preUTrackMalay` lives in `lib/preUPlan.ts` (code health H17). It was the one thing in this
+// file that imported a message catalogue, and a static `ms.json` here put 393 kB of Malay into
+// the first load of the fifteen route pages that import this module. Its new home explains why.
 
 /** Format a raw amount (digit string or number) as money with thousands separators
  * and exactly two decimals, e.g. "3000" → "3,000.00". Empty/non-numeric → "". Used

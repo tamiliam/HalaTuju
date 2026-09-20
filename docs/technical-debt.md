@@ -182,6 +182,42 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   **None of the three is a move, so none belongs in Phase 4.** Until one is chosen, the roadmap's
   "under 20" should not be carried into Phase 5 as though it were still pending work.
   **Trigger:** whoever scopes a Phase 4b, or the next sprint that touches `org_config`.
+- **TD-280 (raised 2026-09-20 by code health H17) — low, and it needs an OWNER's word, not an
+  engineer's.** After H17 exactly one screen still downloads a whole message catalogue it is not
+  reading: the officer cockpit, `/admin/scholarship/[id]`, which is **389 kB of first-load JS
+  against ~256 kB for every other route**. The whole difference is `ms.json`, and the whole reason
+  is `preUTrackMalay` — **sixteen Malay pre-U track labels**, rendered in a card for an officer
+  who is usually reading English. It is synchronous by necessity: there is no `ms` catalogue in
+  memory to answer from and no loading state to hang a label off, so a lazy version would blank a
+  word the officer is reading. H17 confined the import from `lib/scholarship.ts` (fifteen route
+  pages) to `lib/preUPlan.ts` (this one route) and stopped there, deliberately. **130 kB for
+  sixteen words is the honest number and it deserves a decision, not a quiet fix.** Three ways out,
+  in ascending order of what they ask of somebody else:
+  (1) **A guarded copy in the web tree.** Sixteen labels in a small module, plus a drift test
+  against `src/messages/ms.json`. The objection is that it is a second home for a string — but the
+  owner **already ruled for exactly this** on 2026-07-18 ("option B, owner-approved") when the
+  backend kept `card_display._TRACK_LABEL` beside the same block, guarded by
+  `test_card_display.TestTrackLabelParity`. A bundle boundary is the same kind of boundary as a
+  process boundary. ~1h, and it is the cheapest.
+  (2) **Serve the label.** The api already holds the map; putting the resolved Malay label on the
+  cockpit payload removes the FE copy and the FE import together. An api change, so not H17's to
+  make.
+  (3) **Leave it.** A handful of staff, a chunk that caches after the first load, and the students
+  on phones are already paid for. This is a defensible answer and it is today's answer.
+  ⚠ Whatever is chosen, do NOT relax `oneLocalePerVisitor.test.ts`'s exemption list to make it go
+  away — that list is the guard, and adding a line to it is the regression.
+  **Trigger:** H18 (it is the worst route in the bundle budget H18 sets), or the owner's word.
+- **TD-281 (raised 2026-09-20 by code health H17) — low, lead's tool.** The first-load-JS budget
+  H18 is to record has **no reader that runs in a test**. The number exists only in the route table
+  `next build` prints; jest runs with no build output, and `code_health.py` does not build either.
+  H17 therefore did NOT put a kilobyte figure in `code-standards.json`: a budget nothing measures
+  reads as enforced and is not, which is worse than no budget. What H18 needs first is a step that
+  parses `.next/`'s route table (or the build log) into the ledger, and a decision about where that
+  step runs — the Cloud Build deploy gate is the only place that already builds. Until then the
+  enforceable half is the SOURCE rule, which is what `oneLocalePerVisitor.test.ts` asserts: no
+  production module outside a declared list may statically import a catalogue. ⚠ Design the byte
+  budget with the `_moved` escape from day one — it is keyed on a ROUTE PATH, which has exactly
+  TD-272's problem the first time a route is renamed. ~2h, inside H18.
 - **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
   H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
   for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a

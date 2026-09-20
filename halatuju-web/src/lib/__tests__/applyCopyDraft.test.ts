@@ -13,7 +13,9 @@
  */
 import { toDraft, toPayload, writtenLocales, englishUnsaved } from '@/components/admin/ApplyCopyTab'
 import { draftApplyCopy } from '../admin-api'
-import { platformApplyCard } from '../applyCopy'
+// `platformApplyCard` moved to its own module in code health H17 so that the three message
+// catalogues stop riding into `/scholarship/apply`. The expectations below are unchanged.
+import { platformApplyCard } from '../applyCopyPlatform'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'

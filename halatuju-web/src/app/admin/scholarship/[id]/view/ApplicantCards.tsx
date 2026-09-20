@@ -13,8 +13,8 @@ import {
   formatPhone,
   formatAddress,
   expandMatricInstitution,
-  preUTrackMalay,
 } from '@/lib/scholarship'
+import { preUTrackMalay } from '@/lib/preUPlan'
 import { spmExamYear } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'

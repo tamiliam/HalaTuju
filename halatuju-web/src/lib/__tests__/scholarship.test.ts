@@ -9,7 +9,6 @@ import {
   formatPhone,
   formatMoney2dp,
   expandMatricInstitution,
-  preUTrackMalay,
   formatAddress,
   isValidPhone,
   eligiblePathways,
@@ -62,6 +61,9 @@ import {
   liveApplications,
   LIVE_APPLICATION_STATES,
 } from '@/lib/scholarship'
+// `preUTrackMalay` moved to its own module in code health H17 so that `ms.json` stops riding into
+// every bundle that imports `lib/scholarship`. The expectations below are unchanged.
+import { preUTrackMalay } from '@/lib/preUPlan'
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'

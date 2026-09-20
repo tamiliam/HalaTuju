@@ -123,6 +123,7 @@ makes a reading worse than its own start has not finished.
 | Standards enforced by a test in the deploy gate | 0 | **all of H4's list** | H4, H19 |
 | Database queries to open one applicant (officer view) | unmeasured | **measured, budgeted, cannot grow** | H18 |
 | First-load JS per route | unbudgeted | **budgeted, cannot grow** | H17, H18 |
+| ↳ *reading at H17* | median **478.5 kB**, worst 562 kB | median **255.5 kB**, worst 389 kB | ✅ H17; the ledger entry is H18's (TD-281) |
 
 `long` (16 long functions) and `xapp` get no target: they fall as a side-effect or not at all, and
 chasing them is how a health arc turns into a rewrite.
@@ -1064,7 +1065,7 @@ times.
 
 ## Phase 5 — Efficiency: what the visitor downloads, and what each page costs
 
-### H17 — One locale per visitor
+### H17 — One locale per visitor ✅ SHIPPED 2026-09-20
 - **Goal:** an English reader stops downloading ~1.2 MB of Malay and Tamil.
 - **Scope:** `src/lib/i18n.tsx` statically imports all three locale files (1.53 MB) into every
   client bundle. English stays static as the fallback; `ms` and `ta` load on demand. Watch for a
@@ -1073,6 +1074,29 @@ times.
 - **Acceptance:** first-load JS for `/` down by roughly three-quarters on the default locale; no
   flash in a recorded Playwright run for each locale.
 - **Complexity:** medium. **~5h.** web deploy.
+- **Delivered (~5h, from two real `next build` runs):** median route **478.5 kB → 255.5 kB**;
+  `/` **483 → 259 kB**; `/profile`, the worst route before, **562 → 339 kB**. 74 of 88 routes
+  shrank, 11 grew by 0.1–1.0 kB, 3 unchanged. The shared chunk is 87.1 → 87.2 kB and always was
+  going to be: the catalogues were in the root LAYOUT chunk, not the shared one.
+  `lib/messages.ts` is the loader and the one place `@/messages/*.json` is named; `preUTrackMalay`
+  and `platformApplyCard` moved to modules of their own so their catalogue imports stop riding
+  into fifteen route pages and into `/scholarship/apply` respectively.
+- **⚠ THE ACCEPTANCE'S OWN NUMBER WAS NEARLY RIGHT AND ITS LOCATION WAS WRONG.** "`/` down by
+  roughly three-quarters" reads as a claim about the SHARED chunk; `/` fell by 46%, and no route
+  could ever have fallen by three-quarters, because 87 kB of React and runtime is the floor.
+  ⚠ **AND THE SCOPE NAMED ONE FILE WHERE THERE WERE THREE.** `i18n.tsx` was the big one, but
+  `lib/scholarship.ts` (fifteen routes) and `lib/applyCopy.ts` (a student page) each held a static
+  catalogue import too, and the second was found only because the first `next build` AFTER the
+  change showed `/scholarship/apply` sitting at 539 kB while everything else had halved.
+  **Grep for the import, do not trust the scope's file list.**
+- **Not done, deliberately:** no kilobyte budget in `code-standards.json` (TD-281 — there is no
+  reader that runs in a test); `/admin/scholarship/[id]` still carries `ms.json`, 130 kB for
+  sixteen Malay labels, confined from fifteen routes to one (TD-280 — the ways out trade a single
+  source of truth for bytes, which is an owner's call).
+- **No Playwright run.** The brief's acceptance asked for one per locale; the flash is asserted
+  instead by a rendered jest test that pins what the first paint holds for a reader stored as
+  Tamil (words, never a raw key) and that the locale and its words change in the same commit.
+  A recorded run would be a better instrument and is worth H18's first hour.
 
 ### H18 — Efficiency gets budgets too
 - **Goal:** the owner's word was *"bugs **or inefficiencies**"*. Slowness creeps in the same way
@@ -1089,6 +1113,29 @@ times.
   - One reading added to `code_health.py`: `queries` for the applicant detail.
 - **Acceptance:** each budget bite-checked (add a query in a loop → red; add a heavy import → red).
 - **Complexity:** medium–high. **~9h.** api deploy if the N+1 is real.
+- **⚠ RE-ESTIMATED AFTER H17 — still ~9h, but the SPLIT of it has moved, and the bundle half is
+  no longer the cheap half.** What H17 learnt about where the weight actually is:
+  1. **The bundle budget needs a READER before it needs a number, and that is the whole job**
+     (TD-281, ~2h). `next build`'s route table is the only place the figure exists, and neither
+     jest nor `code_health.py` builds. Decide where the step runs — the Cloud Build deploy gate is
+     the only place that already builds — before writing a single kilobyte into a ledger. A budget
+     nothing measures reads as enforced and is not. **Design it with the `_moved` escape from day
+     one**: it is keyed on a ROUTE PATH and has exactly TD-272's problem the first time a route is
+     renamed.
+  2. **The new low is 255.5 kB median / 389 kB worst, and the worst route is a decision, not a
+     number.** Pinning 389 kB for `/admin/scholarship/[id]` blesses TD-280; pinning 256 kB refuses
+     it. Ask the owner before the ledger is written, not after.
+  3. **87 kB is the floor and belongs in the ledger's header**, or the first person to read it
+     will set a target no route can reach (H14's and H16's lesson, twice: a target inherited
+     without its own arithmetic).
+  4. **THE QUERY HALF IS NOW THE LARGER HALF — budget ~6h of the 9 for it.** H17 touched no api
+     code and learnt nothing that makes the N+1 cheaper; meanwhile the bundle half turned out to
+     be one afternoon of measurement plus a source guard, most of it spent finding the two
+     catalogue imports the roadmap's scope did not name. The applicant-detail endpoint is
+     unmeasured since June and is the sprint's real risk.
+  5. **The source-level half is already done and should not be rebuilt.**
+     `oneLocalePerVisitor.test.ts` is the enforceable part of the bundle budget today; H18 adds
+     the byte reading beside it rather than in place of it.
 
 ---
 
@@ -1134,7 +1181,7 @@ Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
 Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
 Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- COMPLETE, all six shipped 2026-09-20
-Phase 5   H17 -> H18
+Phase 5   H17 -> H18                   <-- H17 SHIPPED 2026-09-20; H18 next
 Phase 6   H19                          <-- "completed"
 ```
 
