@@ -36,6 +36,30 @@
  *                                   code improves this FAILS until the budget is lowered.
  *   4. the `baseline` block is PINNED by a SHA-256 held in this file, so rewriting history needs
  *      a second, deliberate edit in a second file that a reviewer cannot miss.
+ *   5. a DECLARED MOVE may RELABEL a frozen entry onto the path the code went to, and nothing else.
+ *
+ * **RULE 5 — A LEDGER KEY FOLLOWS ITS CODE (TD-272, 2026-09-20).** Every ledger here is keyed on a
+ * FILE PATH — `oversize_files` on the path alone, the two lists on the path plus what sits at it.
+ * When a file MOVES, which is what this roadmap's whole Phase 4 asks for, its key stops naming a
+ * real file: the entry is orphaned, the same debt at the new path is UNLISTED (which fails), and it
+ * cannot be added because a ledger may only shrink. `IncomeWizard` could not leave
+ * `ScholarshipDocuments.tsx` for exactly this reason — its two reasonless `exhaustive-deps`
+ * disables are recorded under the parent's path — and H14 abandoned the move rather than break the
+ * standard. A ratchet that refuses the improvement it exists to encourage gets switched off.
+ *
+ * So a move is now DECLARED, in a `_moved` array in `code-standards.json`, and the tests read the
+ * `baseline` THROUGH it: `effectiveBaseline()` returns the frozen record with each declared move's
+ * key relabelled, and every rule above then runs against that, unchanged. What makes this safe is
+ * that a relabel is the ONLY thing it can do — a move names one key that IS in the frozen ledger
+ * and one that is NOT, so the ledger's length is arithmetically identical either side (and its
+ * total too, where it holds numbers), and `budget <= baseline` then holds the new key to exactly
+ * the room the old one had. A move that would buy anything — a bigger number, an extra member, a
+ * key the ledger already has, a file that is not in the tree — is refused and named.
+ *
+ * ⚠ `_moved` sits OUTSIDE the `baseline` block, so **BASELINE_SHA256 does NOT move for an honest
+ * move.** That is the point: H11's hand re-pin was the loophole, not the fix. The frozen record
+ * stays byte-for-byte what H4 measured; `_moved` is the auditable lens through which it is read.
+ * Rewriting `baseline` itself still fails rule 4, exactly as before.
  *
  * **⚠ THE LOOPHOLE THAT REMAINS, STATED.** Without git this file cannot see the PREVIOUS commit,
  * only the frozen baseline. A number ratcheted down to 20 can be raised back to 30 in the same
@@ -513,10 +537,134 @@ export interface StandardsBlock {
   eslint_disable_without_reason: string[]
   unguarded_mirrors: string[]
 }
+/** One declared move: ONE frozen ledger key that followed its code to a new path. RULE 5. */
+export interface MoveRecord {
+  on: string
+  why: string
+  ledger: string
+  from: string
+  to: string
+}
 export interface StandardsFile {
   _how_this_works: string
+  _moved?: MoveRecord[]
   baseline: StandardsBlock
   budget: StandardsBlock
+}
+
+/** The three ledgers a move may relabel a key in. All three are keyed on a repo path (the two
+ *  lists carry `path::…` after it), so all three have their `to` checked against the tree. */
+const LEDGERS = ['oversize_files', 'eslint_disable_without_reason', 'unguarded_mirrors'] as const
+type LedgerName = (typeof LEDGERS)[number]
+
+/** Every field a move record must carry, all non-empty strings. `why` is not decoration: a
+ *  relabel of the frozen record is the one edit that survives a reviewer's glance, so it has to
+ *  say what moved and what for — at least as many words as the reason rule asks of a disable. */
+const MOVE_FIELDS = ['on', 'why', 'ledger', 'from', 'to'] as const
+const MIN_MOVE_WORDS = 5
+
+/** The frozen ledgers, as the declared moves leave them. */
+export interface EffectiveBaseline {
+  oversize_files: Record<string, number>
+  eslint_disable_without_reason: string[]
+  unguarded_mirrors: string[]
+}
+
+/** Is this a real file under the web root? Injected as `exists` so the move tests below can prove
+ *  the rule on throwaway data without needing files on disk. */
+function inWebTree(relpath: string): boolean {
+  return fs.existsSync(path.join(WEB_ROOT, relpath))
+}
+
+/**
+ * The frozen `baseline` ledgers, with every DECLARED move RELABELLED onto its new key. RULE 5.
+ *
+ * Returns `{ effective, problems }`. `problems` holds one sentence per move that is NOT an honest
+ * relabel, written at the engineer who has to fix it. A refused move relabels nothing, so the
+ * ordinary "unlisted" / "gained a member" failures fire as well; this list is what says WHY.
+ *
+ * A move is honest when the record is complete and its `why` is a sentence, `from` IS in that
+ * ledger (there is a real recorded debt to relabel), `to` is NOT (a move is a relabel, never a
+ * merge — two entries on one key would give the survivor the room of both), and `to` names a file
+ * that is in the tree. Because a relabel replaces one key with one key, the ledger's LENGTH is
+ * unchanged, and so is its total where it holds numbers — asserted below rather than argued, so a
+ * future edit here cannot quietly make a move generous.
+ */
+export function effectiveBaseline(
+  baseline: StandardsBlock,
+  moves: unknown[],
+  exists: (p: string) => boolean = inWebTree,
+): { effective: EffectiveBaseline; problems: string[] } {
+  const effective: EffectiveBaseline = {
+    oversize_files: { ...baseline.oversize_files },
+    eslint_disable_without_reason: [...baseline.eslint_disable_without_reason],
+    unguarded_mirrors: [...baseline.unguarded_mirrors],
+  }
+  const problems: string[] = []
+  const holds = (ledger: LedgerName, key: string): boolean => (
+    ledger === 'oversize_files'
+      ? Object.prototype.hasOwnProperty.call(effective.oversize_files, key)
+      : (effective[ledger] as string[]).includes(key)
+  )
+
+  moves.forEach((raw, i) => {
+    const at = `_moved[${i}]`
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      problems.push(`${at}: every entry in "_moved" must be an object carrying `
+        + `${MOVE_FIELDS.join(', ')}.`)
+      return
+    }
+    const move = raw as Record<string, unknown>
+    const blank = MOVE_FIELDS.filter(
+      (f) => typeof move[f] !== 'string' || !(move[f] as string).trim())
+    if (blank.length) {
+      problems.push(`${at}: missing or empty ${blank.join(', ')}. A move record carries `
+        + `${MOVE_FIELDS.join(', ')}, all non-empty strings.`)
+      return
+    }
+    const ledger = move.ledger as string
+    const from = move.from as string
+    const to = move.to as string
+    if (!(LEDGERS as readonly string[]).includes(ledger)) {
+      problems.push(`${at}: "ledger" is "${ledger}", which is not one of ${LEDGERS.join(', ')}.`)
+      return
+    }
+    if (((move.why as string).match(/[A-Za-z]{2,}/g) || []).length < MIN_MOVE_WORDS) {
+      problems.push(`${at}: "why" needs at least ${MIN_MOVE_WORDS} words saying what moved and `
+        + 'what for. Relabelling the frozen record is the one edit a reviewer will not question '
+        + 'on sight, so it has to explain itself.')
+      return
+    }
+    const name = ledger as LedgerName
+    if (!holds(name, from)) {
+      problems.push(`${at}: "from" names "${from}", which the frozen ${ledger} ledger does not `
+        + 'hold. A move may only RELABEL a debt that is already recorded — if it is not recorded, '
+        + 'moving the code does not make room for it. Fix the code instead, or correct "from" to '
+        + 'the key the baseline actually has.')
+      return
+    }
+    if (holds(name, to)) {
+      problems.push(`${at}: "to" names "${to}", which the ${ledger} ledger ALREADY holds. A move `
+        + 'is a relabel, never a merge: two entries landing on one key would give the survivor '
+        + 'the room of both. Land the moved code on a path of its own.')
+      return
+    }
+    const target = to.split('::')[0]
+    if (!exists(target)) {
+      problems.push(`${at}: "to" names the file "${target}", which is not in the tree. A move `
+        + 'must land on a file that EXISTS, or the ledger goes back to describing nothing — '
+        + 'which is the whole defect this mechanism ends (TD-272).')
+      return
+    }
+    if (name === 'oversize_files') {
+      effective.oversize_files[to] = effective.oversize_files[from]
+      delete effective.oversize_files[from]
+    } else {
+      const list = effective[name] as string[]
+      list[list.indexOf(from)] = to
+    }
+  })
+  return { effective, problems }
 }
 
 /**
@@ -540,6 +688,10 @@ export function sha256(text: string): string {
 const FILE = JSON.parse(read(BUDGET_PATH)) as StandardsFile
 const BUDGET = FILE.budget
 const BASELINE = FILE.baseline
+/** RULE 5. `BASELINE` stays the untouched, pinned block; `EFFECTIVE` is it read through `_moved`,
+ *  and is what every ledger rule below is measured against. */
+const MOVES: unknown[] = Array.isArray(FILE._moved) ? FILE._moved : []
+const { effective: EFFECTIVE, problems: MOVE_PROBLEMS } = effectiveBaseline(BASELINE, MOVES)
 const SCAN = scanWeb()
 const EDIT = 'Edit "budget" in halatuju-web/code-standards.json exactly as each line says.'
 
@@ -571,6 +723,9 @@ describe('the scan actually found the code (the floor)', () => {
 
   test('the budget file is the shape this file expects', () => {
     expect(typeof FILE._how_this_works).toBe('string')
+    // "_moved" may be absent or empty, but when it is there it is an ARRAY of move records —
+    // the declared list of ledger keys that followed their code to a new path (RULE 5).
+    expect(FILE._moved === undefined || Array.isArray(FILE._moved)).toBe(true)
     for (const block of [BASELINE, BUDGET]) {
       expect(typeof block.counts).toBe('object')
       expect(typeof block.oversize_files).toBe('object')
@@ -783,25 +938,30 @@ describe('the ratchet itself', () => {
       .filter((k) => BUDGET.counts[k] > (BASELINE.counts[k] ?? BUDGET.counts[k]))
       .map((k) => `counts.${k}: budget ${BUDGET.counts[k]}, baseline ${BASELINE.counts[k]}`)
       .concat(Object.keys(BUDGET.oversize_files)
-        .filter((k) => k in BASELINE.oversize_files
-          && BUDGET.oversize_files[k] > BASELINE.oversize_files[k])
+        .filter((k) => k in EFFECTIVE.oversize_files
+          && BUDGET.oversize_files[k] > EFFECTIVE.oversize_files[k])
         .map((k) => `oversize_files["${k}"]: budget ${BUDGET.oversize_files[k]}, `
-          + `baseline ${BASELINE.oversize_files[k]}`))
+          + `baseline ${EFFECTIVE.oversize_files[k]}`))
     expect(say(raised.length > 0, [
       'A limit in "budget" has been raised above the frozen "baseline". A budget may only go DOWN.',
       'If the code genuinely needs more room it needs a smaller change instead — split the file,',
-      `give the rule one home, write the reason.\n${raised.join('\n')}`,
+      'give the rule one home, write the reason. ⚠ A key that arrived through a declared move',
+      'inherits the room of the entry it replaced and not a line more — a move buys nothing.',
+      `\n${raised.join('\n')}`,
     ])).toBe('')
   })
 
   test('no ledger has gained a member', () => {
+    // ⚠ Measured against the EFFECTIVE baseline — the frozen record read through `_moved`
+    // (RULE 5). A key a declared move relabelled is not a gain; a key no move accounts for is,
+    // and still fails here.
     const added: string[] = Object.keys(BUDGET.oversize_files)
-      .filter((k) => !(k in BASELINE.oversize_files))
+      .filter((k) => !(k in EFFECTIVE.oversize_files))
       .map((k) => `oversize_files: "${k}"`)
     const pairs: Array<[string, string[], string[]]> = [
       ['eslint_disable_without_reason',
-        BUDGET.eslint_disable_without_reason, BASELINE.eslint_disable_without_reason],
-      ['unguarded_mirrors', BUDGET.unguarded_mirrors, BASELINE.unguarded_mirrors],
+        BUDGET.eslint_disable_without_reason, EFFECTIVE.eslint_disable_without_reason],
+      ['unguarded_mirrors', BUDGET.unguarded_mirrors, EFFECTIVE.unguarded_mirrors],
     ]
     for (const [name, budgetList, baselineList] of pairs) {
       const base = new Set(baselineList)
@@ -811,7 +971,10 @@ describe('the ratchet itself', () => {
       'An exemption list has gained a member. A ledger records what H4 found on 2026-09-19 and can',
       'only ever shrink — adding to it is how a list of known debts turns into a list of',
       'permissions. Fix the code instead: split the file, write the reason, guard the mirror.',
-      `\n${added.join('\n')}`,
+      '⚠ If the code MOVED and this is the same debt at a new path, do NOT add the key: DECLARE',
+      'THE MOVE in the "_moved" array of halatuju-web/code-standards.json ({on, why, ledger, from,',
+      'to}), which relabels the frozen entry and grants exactly the room it already had. See',
+      `RULE 5 at the top of this file.\n${added.join('\n')}`,
     ])).toBe('')
   })
 
@@ -827,6 +990,9 @@ describe('the ratchet itself', () => {
   })
 
   test('the baseline block has not been rewritten', () => {
+    // ⚠ RULE 5 DOES NOT TOUCH THIS. `_moved` is a sibling of `baseline`, not a part of it, so an
+    // honest move leaves this hash exactly where it is. If this is failing, someone edited the
+    // frozen record itself — which is still the thing rule 4 refuses.
     const now = sha256(canonical(BASELINE))
     expect(say(now !== BASELINE_SHA256, [
       'The frozen "baseline" block in halatuju-web/code-standards.json has changed. The baseline is',
@@ -834,6 +1000,85 @@ describe('the ratchet itself', () => {
       '"budget". If this change really is intended (a whole file was deleted, say), say so in the',
       `sprint retro and set BASELINE_SHA256 in this test file to ${now} in the SAME commit, so a`,
       'reviewer sees both halves.',
+    ])).toBe('')
+  })
+})
+
+// ── STANDARD: a declared move buys nothing ───────────────────────────────────────────────────
+//
+// RULE 5, asserted against the real file. TD-272. A ledger key may follow its code to a new path,
+// and that is ALL it may do. These three are what make the relabel safe enough to allow at all.
+describe('a declared move relabels the frozen record and buys nothing', () => {
+  test('every declared move is an honest relabel', () => {
+    expect(say(MOVE_PROBLEMS.length > 0, [
+      'A record in the "_moved" array of halatuju-web/code-standards.json is not an honest',
+      'relabel. A move declares that ONE key already in the frozen ledger is now spelt as ONE key',
+      'the ledger does not have — nothing else. It may not raise a number, add a member, merge two',
+      'entries, or name a file that is not in the tree. Each line says which record and what to do.',
+      `\n${MOVE_PROBLEMS.join('\n')}`,
+    ])).toBe('')
+  })
+
+  test('a move changes no ledger\'s length or total', () => {
+    // THE INVARIANT THE WHOLE MECHANISM RESTS ON, asserted rather than argued. A relabel replaces
+    // one key with one key, so both numbers must be identical either side. If a future edit to
+    // `effectiveBaseline` ever made a move generous, this catches it — long before anyone notices
+    // the budget quietly had more room than the frozen record gave it.
+    const total = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0)
+    const grew: string[] = []
+    if (Object.keys(EFFECTIVE.oversize_files).length
+        !== Object.keys(BASELINE.oversize_files).length) {
+      grew.push(`oversize_files: ${Object.keys(BASELINE.oversize_files).length} entries frozen, `
+        + `${Object.keys(EFFECTIVE.oversize_files).length} after the declared moves`)
+    }
+    if (total(EFFECTIVE.oversize_files) !== total(BASELINE.oversize_files)) {
+      grew.push(`oversize_files: total ${total(BASELINE.oversize_files)} frozen, `
+        + `${total(EFFECTIVE.oversize_files)} after the declared moves`)
+    }
+    for (const name of ['eslint_disable_without_reason', 'unguarded_mirrors'] as const) {
+      if (EFFECTIVE[name].length !== BASELINE[name].length) {
+        grew.push(`${name}: ${BASELINE[name].length} entries frozen, `
+          + `${EFFECTIVE[name].length} after the declared moves`)
+      }
+      if (new Set(EFFECTIVE[name]).size !== EFFECTIVE[name].length) {
+        grew.push(`${name}: a declared move produced a DUPLICATE member`)
+      }
+    }
+    expect(say(grew.length > 0, [
+      'Applying the declared moves changed the SIZE of a frozen ledger. It must not: a move',
+      'relabels one entry onto one new key, so the count and the total are the same numbers either',
+      `side. Something in \`effectiveBaseline\` is doing more than relabelling.\n${grew.join('\n')}`,
+    ])).toBe('')
+  })
+
+  test('every declared move is still doing a job', () => {
+    // A move record exists to let a key sit in `budget`. When that key leaves `budget` — the debt
+    // was fixed, or the file fell under the limit and the tightness test removed the line — the
+    // record describes nothing, and a list of records describing nothing is the rot this whole
+    // file exists against. Prune it; the story of the move lives in the CHANGELOG.
+    const inBudget = (ledger: LedgerName, key: string): boolean => (
+      ledger === 'oversize_files'
+        ? key in BUDGET.oversize_files
+        : (BUDGET[ledger] as string[]).includes(key)
+    )
+    const stale = (MOVES as MoveRecord[]).flatMap((move, i) => {
+      if (typeof move !== 'object' || move === null) return []
+      if (!(LEDGERS as readonly string[]).includes(move.ledger)) return []
+      if (typeof move.to !== 'string') return []
+      const name = move.ledger as LedgerName
+      const relabelled = name === 'oversize_files'
+        ? move.to in EFFECTIVE.oversize_files
+        : (EFFECTIVE[name] as string[]).includes(move.to)
+      if (!relabelled) return []       // the move was refused; the test above names it
+      if (inBudget(name, move.to)) return []
+      return [`_moved[${i}]: "${move.to}" is no longer in budget.${move.ledger} — `
+        + 'REMOVE this move record']
+    })
+    expect(say(stale.length > 0, [
+      'A record in "_moved" points at a budget line that is gone. The debt it followed has been',
+      'paid, so the relabel has nothing left to do. Delete the record from',
+      'halatuju-web/code-standards.json; the story of the move belongs in the CHANGELOG, not in a',
+      `live lens over the frozen record.\n${stale.join('\n')}`,
     ])).toBe('')
   })
 })
@@ -966,6 +1211,119 @@ describe('the mirror rule, proven both ways', () => {
     const b = at('const filler = 1\nconst more = 2\n'
       + '/** Mirrors `STATUS_CHOICES` in models.py. */\nconst a = 1\n')
     expect(a[0].key).toBe(b[0].key)
+  })
+})
+
+describe('the move rule, proven both ways', () => {
+  // RULE 5's own rules on a throwaway ledger. The standard above can only exercise the real file,
+  // where every move happens to be honest; these feed `effectiveBaseline` the dishonest shapes and
+  // prove each is refused, without anyone having to break the repo. The tree check is injected, so
+  // nothing here touches the disk.
+  const REAL = new Set(['a.tsx', 'a/index.tsx', 'b.tsx', 'c.tsx'])
+  const base = (): StandardsBlock => ({
+    counts: {},
+    oversize_files: { 'a.tsx': 900, 'b.tsx': 700 },
+    eslint_disable_without_reason: ['a.tsx::react-hooks/exhaustive-deps::1', 'b.tsx::no-console::1'],
+    unguarded_mirrors: ['a.tsx::mirrors-the-backend-income-engine'],
+  })
+  const move = (over: Partial<MoveRecord> = {}): MoveRecord => ({
+    on: '2026-09-20',
+    why: 'the body moved to its own module beside it',
+    ledger: 'oversize_files',
+    from: 'a.tsx',
+    to: 'a/index.tsx',
+    ...over,
+  })
+  const apply = (...moves: unknown[]) => effectiveBaseline(base(), moves, (p) => REAL.has(p))
+
+  test('a move relabels the entry and nothing else', () => {
+    const { effective, problems } = apply(move())
+    expect(problems).toEqual([])
+    expect(effective.oversize_files).toEqual({ 'a/index.tsx': 900, 'b.tsx': 700 })
+    expect(effective.eslint_disable_without_reason).toEqual(base().eslint_disable_without_reason)
+  })
+
+  test('a list entry is relabelled in place, so the ledger keeps its length', () => {
+    const { effective, problems } = apply(move({
+      ledger: 'eslint_disable_without_reason',
+      from: 'a.tsx::react-hooks/exhaustive-deps::1',
+      to: 'a/index.tsx::react-hooks/exhaustive-deps::1',
+    }))
+    expect(problems).toEqual([])
+    expect(effective.eslint_disable_without_reason).toEqual([
+      'a/index.tsx::react-hooks/exhaustive-deps::1', 'b.tsx::no-console::1',
+    ])
+  })
+
+  test('a relabel holds the length and the total', () => {
+    const { effective } = apply(move())
+    const total = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0)
+    expect(Object.keys(effective.oversize_files).length)
+      .toBe(Object.keys(base().oversize_files).length)
+    expect(total(effective.oversize_files)).toBe(total(base().oversize_files))
+  })
+
+  test('two moves may chain through the same key', () => {
+    // A file moved twice (H11's package, then H12's emptying) is two records, not a rewrite.
+    const { effective, problems } = apply(move(), move({ from: 'a/index.tsx', to: 'c.tsx' }))
+    expect(problems).toEqual([])
+    expect(effective.oversize_files).toEqual({ 'c.tsx': 900, 'b.tsx': 700 })
+  })
+
+  test('a move onto a key the ledger already holds is refused — a merge is not a rename', () => {
+    // Two entries on one key would give the survivor the room of both.
+    const { effective, problems } = apply(move({ to: 'b.tsx' }))
+    expect(problems[0]).toContain('ALREADY holds')
+    expect(effective.oversize_files).toEqual(base().oversize_files)
+  })
+
+  test('a move from a key the ledger does not hold is refused', () => {
+    // The invention: nothing left, so nothing was renamed — debt cannot arrive this way.
+    const { effective, problems } = apply(move({ from: 'c.tsx' }))
+    expect(problems[0]).toContain('does not hold')
+    expect(effective.oversize_files).toEqual(base().oversize_files)
+  })
+
+  test('a move onto a file that is not in the tree is refused', () => {
+    const { effective, problems } = apply(move({ to: 'nowhere/at/all.tsx' }))
+    expect(problems[0]).toContain('not in the tree')
+    expect(effective.oversize_files).toEqual(base().oversize_files)
+  })
+
+  test('a list move onto a file that is not in the tree is refused too', () => {
+    const { effective, problems } = apply(move({
+      ledger: 'unguarded_mirrors',
+      from: 'a.tsx::mirrors-the-backend-income-engine',
+      to: 'gone.tsx::mirrors-the-backend-income-engine',
+    }))
+    expect(problems[0]).toContain('not in the tree')
+    expect(effective.unguarded_mirrors).toEqual(base().unguarded_mirrors)
+  })
+
+  test('a move with a shrug for a reason is refused', () => {
+    expect(apply(move({ why: 'moved' })).problems[0]).toContain('at least')
+  })
+
+  test('a move naming a ledger that does not exist is refused', () => {
+    expect(apply(move({ ledger: 'oversize_filez' })).problems[0]).toContain('not one of')
+  })
+
+  test('a move missing a field is refused', () => {
+    const row = move() as unknown as Record<string, unknown>
+    delete row.on
+    expect(apply(row).problems[0]).toContain('missing or empty')
+  })
+
+  test('a move that is not an object is refused', () => {
+    expect(apply('a.tsx -> a/index.tsx').problems[0]).toContain('must be an object')
+  })
+
+  test('no declared moves leaves the frozen record exactly as it is', () => {
+    const { effective, problems } = apply()
+    expect(problems).toEqual([])
+    expect(effective.oversize_files).toEqual(base().oversize_files)
+    expect(effective.eslint_disable_without_reason).toEqual(base().eslint_disable_without_reason)
+    expect(effective.unguarded_mirrors).toEqual(base().unguarded_mirrors)
   })
 })
 

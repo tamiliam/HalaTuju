@@ -102,13 +102,27 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
   it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
   pinned row in `test_helper_characterisation.py` first and watching it go red.
-- **TD-272 (raised 2026-09-20 by code health H14) — medium.** The reasonless-eslint-disable ledger
-  in `code-standards.json` is keyed on a FILE PATH and frozen, so a disable INSIDE a moved body
-  has nowhere to go: `IncomeWizard` could not leave `ScholarshipDocuments.tsx` because two of its
-  disables are recorded under that file's name. H11's ledger-key lesson, in a second ledger, and
-  the one H13's keep-the-path trick cannot dodge. **H15 and H16 should grep the ledger for the
-  file they are about to split, before planning the cut.** Fix is H19's: key on the rule plus the
-  line, or teach the ratchet a `moved_to`.
+- ~~**TD-272 (raised 2026-09-20 by code health H14) — medium.**~~ **RESOLVED 2026-09-20** — the
+  ratchet was taught a `_moved`, the second of the two fixes this entry proposed. Both
+  `code-standards.json` files now carry a `_moved` array, and both standards tests read the frozen
+  `baseline` THROUGH it, so a ledger key follows its code to a new path. A move may only RELABEL:
+  one key that is in the frozen ledger becomes one key that is not, which leaves the ledger's
+  length and total unchanged and holds the new key to exactly the room the old one had.
+  `BASELINE_SHA256` does not move for an honest move, in either service, because `_moved` is a
+  sibling of `baseline` rather than a part of it. **`IncomeWizard` then made the move H14 could
+  not**, its two reasonless disables travelling with the body they sit in. ⚠ **H15 and H16 still
+  grep the ledgers before planning a cut** — the question is unchanged ("does anything INSIDE this
+  file have a key of its own?"); what changed is that the answer is no longer a refusal. ⚠ One
+  matching change is still owed in `Settings/_tools/code_health.py` — see TD-274.
+- **TD-274 (raised 2026-09-20 by TD-272) — low, lead's tool.** `code_health.loosened` grew a
+  rename exception for a DICT budget entry on 2026-09-20 (H11's file split), but its LIST branch
+  has none: `eslint_disable_without_reason` and `unguarded_mirrors` are JSON arrays, so relabelling
+  a member reads as `gained "<new key>"` and `std` FAILs on exactly the honest move the in-repo
+  standard now allows. The same three guards apply — a member left the same list in the same step,
+  the list did not grow, and (there being no number in a string ledger) one arrived for each that
+  left. Without it every H15/H16 move that touches a string ledger buys a false `std: FAIL`, which
+  is the fifth acceptance in a row for a guard that is wrong every time. ~1h in `Settings/_tools`,
+  with `test_a_split_renames_a_budget_entry_and_is_not_loosening` as the model.
 - **TD-273 (raised 2026-09-20 by code health H14) — low.** The cockpit's thirteen panels now take
   ~180 hand-written props. `tsc` proves every prop a panel USES is declared; nothing proves a
   declared prop is still read, so a stale one would sit there reading as a dependency that is not

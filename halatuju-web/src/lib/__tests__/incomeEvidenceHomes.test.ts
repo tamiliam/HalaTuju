@@ -20,10 +20,13 @@
  *   W-C  `docCategory.docTypeToFact` (via `groupDocumentsByFact`) — which fact section a document
  *        is filed under. TWO further copies of this map existed until TD-262 chunk 1; all three
  *        readers now share one home and this file pins the whole table plus both folds.
- *   W-D  `ScholarshipDocuments.memberIncomeShown` — the STUDENT's green cue. Not exported (it is a
+ *   W-D  `IncomeWizard.memberIncomeShown` — the STUDENT's green cue. Not exported (it is a
  *        closure inside the component), so its SHAPE is characterised here by a source-read pin;
  *        what a student actually sees is asserted by rendering the tab in
- *        `src/components/ScholarshipDocuments.test.tsx`.
+ *        `src/components/ScholarshipDocuments.test.tsx`. ⚠ THE PIN FOLLOWED THE CODE: the wizard
+ *        moved to `src/components/ScholarshipDocuments/IncomeWizard.tsx` at TD-272, and a
+ *        source-read guard left on the old path would have gone GREEN while watching a file the
+ *        rule had left (H11's lesson). The `toContain` below is the floor that stops that.
  *
  * The api answers quoted below are not guesses: each is the value asserted by the named test in
  * `test_income_evidence_homes.py`, which runs against the real engine.
@@ -401,12 +404,15 @@ describe('W-D memberIncomeShown — the student side', () => {
     // fourth arm is a gate shortcut wearing a per-member name, and its docstring now says so.
     // DO NOT "fix" this by adding an STR arm. The disagreement is deliberate and this pins it.
     //
-    // ⚠ SOURCE READ, and the reason is unchanged: `memberIncomeShown` is a closure inside a
-    // ~1,960-line component with no export. It asserts the three arms are these three and that no
+    // ⚠ SOURCE READ, and the reason is unchanged: `memberIncomeShown` is a closure inside the
+    // wizard component with no export. It asserts the three arms are these three and that no
     // fourth appears. The rendered half — a household STR and nothing else leaves the earner
     // un-ticked — is in `ScholarshipDocuments.test.tsx`.
+    // ⚠ THE PATH FOLLOWED THE CODE (TD-272): the wizard left `ScholarshipDocuments.tsx` for its
+    // own module. `toContain` on the declaration is the floor — this guard fails loudly if the
+    // closure ever moves again, rather than passing green over a file that no longer holds it.
     const src = readFileSync(
-      join(WEB_ROOT, 'src/components/ScholarshipDocuments.tsx'), 'utf8')
+      join(WEB_ROOT, 'src/components/ScholarshipDocuments/IncomeWizard.tsx'), 'utf8')
     expect(src).toContain('const memberIncomeShown = (m: WorkingMember): boolean =>')
     const start = src.indexOf('const memberIncomeShown')
     const body = src.slice(start, src.indexOf('const salaryComplete', start))

@@ -32,6 +32,30 @@ Four rules hold it shut, and all four are asserted below:
                                      manners are `NOT_YET_SCANNED`'s: "lower me", "remove me".
   4. the `baseline` block is PINNED by a SHA-256 held in this file, so rewriting history needs a
      second, deliberate edit in a second file that a reviewer cannot miss.
+  5. a DECLARED MOVE may RELABEL a frozen entry onto the path the code went to, and may do
+     nothing else. See below.
+
+**RULE 5 — A LEDGER KEY FOLLOWS ITS CODE (TD-272, 2026-09-20).** Every ledger here is keyed on a
+FILE PATH. When a file MOVES — which is what this roadmap's whole Phase 4 asks for — its key stops
+naming a real file: the entry is orphaned, the same debt at the new path is UNLISTED (which fails),
+and it cannot be added because a ledger may only shrink. H11 hit it on `views_admin.py` and paid
+for it by editing the frozen baseline and re-pinning `BASELINE_SHA256` by hand; H14 hit it again
+on `IncomeWizard` and simply did not do the move. A ratchet that refuses the improvement it exists
+to encourage gets switched off.
+
+So a move is now DECLARED, in a `_moved` array in `code-standards.json`, and the tests read the
+`baseline` THROUGH it: `effective_baseline()` returns the frozen record with each declared move's
+key relabelled, and every rule above then runs against that, unchanged. What makes this safe is
+that a relabel is the ONLY thing it can do — a move names one key that is in the frozen ledger and
+one that is not, so the ledger's length and its total are arithmetically identical either side, and
+`budget <= baseline` then holds the new key to exactly the room the old one had. A move that would
+buy anything — a bigger number, an extra member, a key the ledger already has, a file that is not
+in the tree — is refused and named.
+
+⚠ `_moved` sits OUTSIDE the `baseline` block, so **`BASELINE_SHA256` does NOT move for an honest
+move.** That is the point: H11's hand re-pin was the loophole, not the fix. The frozen record stays
+byte-for-byte what H4 measured; `_moved` is the (auditable, reviewable) lens through which it is
+read. Rewriting `baseline` itself still fails rule 4, exactly as before.
 
 **⚠ THE LOOPHOLE THAT REMAINS, STATED, because a guard whose limits are unwritten gets trusted
 for things it never claimed.** Without git this file cannot see the PREVIOUS commit, only the
@@ -153,6 +177,20 @@ BASELINE_SHA256 = '20c521daa4565d11842f95fdac43f2874f00ca67836c6c38150851ff2c391
 
 LEDGERS = ('oversize_files', 'long_functions', 'duplicated_names', 'runtime_skips',
            'hand_built_application_fixtures')
+
+#: Which of those are keyed on a REPO PATH — the whole key for three of them, the part before the
+#: `::` for `long_functions`. `duplicated_names` is keyed `app::name` and names no file at all, so
+#: it is the one ledger whose move cannot be checked against the tree; everything else about a move
+#: is checked for it like any other.
+PATH_KEYED_LEDGERS = frozenset({'oversize_files', 'long_functions', 'runtime_skips',
+                                'hand_built_application_fixtures'})
+
+#: Every field a `_moved` record must carry, all non-empty strings. `why` is not decoration: a
+#: relabel of the frozen record is the one edit that survives a reviewer's glance, so it has to say
+#: what moved and what for. `MIN_MOVE_WORDS` is the same "three words of prose is not a sentence"
+#: reasoning the web half applies to an eslint-disable reason, one notch stricter.
+MOVE_FIELDS = ('on', 'why', 'ledger', 'from', 'to')
+MIN_MOVE_WORDS = 5
 
 #: H5. The model whose hand-built fixtures are ledgered, and the call that builds one. Counted
 #: from the AST — never from a string match — because a guard that fires on the words in a
@@ -402,6 +440,90 @@ def canonical(block):
                       ensure_ascii=False).encode('utf-8')
 
 
+# ── Rule 5: a declared move, and every way it can fail to be one ────────────────────────────
+def _in_api_tree(relpath):
+    """Is this a real file under the api root? Injected as `exists` so the arithmetic tests below
+    can prove the rule without needing files on disk."""
+    return os.path.isfile(os.path.join(API_ROOT, relpath))
+
+
+def effective_baseline(baseline, moves, exists=_in_api_tree):
+    """The frozen `baseline` ledgers, with every DECLARED move RELABELLED onto its new key.
+
+    See RULE 5 at the top of this file. Returns `(effective, problems)`:
+
+      * `effective` — `{ledger name: {key: number}}`, the frozen ledgers with the relabels applied.
+        The `baseline` block itself is never touched, so `BASELINE_SHA256` never moves.
+      * `problems`  — one sentence per move that is NOT an honest relabel, written at the engineer
+        who has to fix it. A refused move relabels nothing, so the old key stays and the ordinary
+        "unlisted" / "gained a member" failures fire too; this list is what says WHY.
+
+    A move is honest when all of these hold, and together they make it impossible for debt to grow
+    through one:
+
+      * the record is complete — `on`, `why`, `ledger`, `from`, `to`, and a `why` that is a
+        sentence rather than a shrug;
+      * `from` IS in that ledger (there is a real recorded debt to relabel), and
+      * `to` is NOT (a move is a relabel, never a merge — two entries landing on one key would
+        give the survivor the room of both), and
+      * `to` names a file that is actually in the tree.
+
+    Because a relabel pops one key and inserts one key, the ledger's LENGTH and its TOTAL are
+    arithmetically unchanged — `test_a_move_changes_no_ledger_s_length_or_total` asserts exactly
+    that, so a future edit here cannot quietly make a move generous. And since the new key inherits
+    the old key's frozen number, `test_no_budget_number_is_above_the_baseline` then holds the moved
+    entry to precisely the room the entry it replaced had, and no more.
+    """
+    effective = {ledger: dict(baseline.get(ledger, {})) for ledger in LEDGERS}
+    problems = []
+    for i, move in enumerate(moves):
+        at = f'_moved[{i}]'
+        if not isinstance(move, dict):
+            problems.append(f'{at}: every entry in "_moved" must be an object carrying '
+                            f'{", ".join(MOVE_FIELDS)}.')
+            continue
+        blank = [f for f in MOVE_FIELDS
+                 if not isinstance(move.get(f), str) or not move[f].strip()]
+        if blank:
+            problems.append(
+                f'{at}: missing or empty {", ".join(blank)}. A move record carries '
+                f'{", ".join(MOVE_FIELDS)}, all non-empty strings.')
+            continue
+        ledger, old, new = move['ledger'], move['from'], move['to']
+        if ledger not in LEDGERS:
+            problems.append(f'{at}: "ledger" is "{ledger}", which is not one of '
+                            f'{", ".join(LEDGERS)}.')
+            continue
+        if len(re.findall(r'[A-Za-z]{2,}', move['why'])) < MIN_MOVE_WORDS:
+            problems.append(
+                f'{at}: "why" needs at least {MIN_MOVE_WORDS} words saying what moved and what '
+                f'for. Relabelling the frozen record is the one edit a reviewer will not question '
+                f'on sight, so it has to explain itself.')
+            continue
+        entries = effective[ledger]
+        if old not in entries:
+            problems.append(
+                f'{at}: "from" names "{old}", which the frozen {ledger} ledger does not hold. A '
+                f'move may only RELABEL a debt that is already recorded — if it is not recorded, '
+                f'moving the code does not make room for it. Fix the code instead, or correct the '
+                f'"from" key to the one the baseline actually has.')
+            continue
+        if new in entries:
+            problems.append(
+                f'{at}: "to" names "{new}", which the {ledger} ledger ALREADY holds. A move is a '
+                f'relabel, never a merge: two entries landing on one key would give the survivor '
+                f'the room of both. Land the moved code on a path of its own.')
+            continue
+        if ledger in PATH_KEYED_LEDGERS and not exists(new.split('::')[0]):
+            problems.append(
+                f'{at}: "to" names the file "{new.split("::")[0]}", which is not in the tree. A '
+                f'move must land on a file that EXISTS, or the ledger goes back to describing '
+                f'nothing — which is the whole defect this mechanism ends (TD-272).')
+            continue
+        entries[new] = entries.pop(old)
+    return effective, problems
+
+
 class _Standard(SimpleTestCase):
     """Shared plumbing. Nothing asserts here; the standards are the subclasses."""
     maxDiff = None
@@ -413,6 +535,11 @@ class _Standard(SimpleTestCase):
         cls.file = _budget_file()
         cls.budget = cls.file['budget']
         cls.baseline = cls.file['baseline']
+        #: RULE 5. The frozen ledgers as the DECLARED moves leave them — what every ledger rule
+        #: below is measured against. `cls.baseline` stays the untouched, pinned block.
+        cls.moves = cls.file.get('_moved', [])
+        cls.effective, cls.move_problems = effective_baseline(
+            cls.baseline, cls.moves if isinstance(cls.moves, list) else [])
 
 
 class TestTheScanActuallyFoundTheCode(_Standard):
@@ -459,6 +586,11 @@ class TestTheScanActuallyFoundTheCode(_Standard):
         self.assertIn('_how_this_works', self.file,
                       f'{BUDGET_PATH} has lost its "_how_this_works" note — it is what lets '
                       f'someone opening the file cold understand what they may change.')
+        self.assertIsInstance(
+            self.file.get('_moved', []), list,
+            f'{BUDGET_PATH}: "_moved" must be an ARRAY of move records (it may be empty). It is '
+            f'the declared list of ledger keys that followed their code to a new path — RULE 5 at '
+            f'the top of this file.')
 
 
 class TestNoNewGiantFile(_Standard):
@@ -788,7 +920,7 @@ class TestTheRatchetItself(_Standard):
                   for k, v in sorted(self.budget['counts'].items())
                   if v > self.baseline['counts'].get(k, v)]
         for ledger in LEDGERS:
-            base = self.baseline[ledger]
+            base = self.effective[ledger]
             raised += [f'{ledger}["{k}"]: budget {v}, baseline {base[k]}'
                        for k, v in sorted(self.budget[ledger].items())
                        if k in base and v > base[k]]
@@ -796,12 +928,17 @@ class TestTheRatchetItself(_Standard):
             raised, [],
             'A limit in "budget" has been raised above the frozen "baseline". A budget may only '
             'go DOWN. If the code genuinely needs more room, it needs a smaller change instead — '
-            'split the file, extract the function, give the rule one home.\n' + '\n'.join(raised))
+            'split the file, extract the function, give the rule one home. ⚠ A key that arrived '
+            'through a declared move inherits the room of the entry it replaced and not a line '
+            'more — a move may not buy anything.\n' + '\n'.join(raised))
 
     def test_no_ledger_has_gained_a_member(self):
+        """⚠ Measured against the EFFECTIVE baseline — the frozen record read through `_moved`
+        (RULE 5). A key that a declared move relabelled is not a gain; a key that no move accounts
+        for still is, and still fails here."""
         added = []
         for ledger in LEDGERS:
-            base = self.baseline[ledger]
+            base = self.effective[ledger]
             added += [f'{ledger}: "{k}" is in budget but not in baseline'
                       for k in sorted(self.budget[ledger]) if k not in base]
         self.assertEqual(
@@ -809,7 +946,11 @@ class TestTheRatchetItself(_Standard):
             'An exemption list has gained a member. A ledger records what H4 found on 2026-09-19 '
             'and can only ever shrink — adding to it is how a list of known debts turns into a '
             'list of permissions. Fix the code instead: split the file, extract the function, '
-            'give the rule one home, delete the skip.\n' + '\n'.join(added))
+            'give the rule one home, delete the skip. ⚠ If the code MOVED and this is the same '
+            'debt at a new path, do not add the key: DECLARE THE MOVE in the "_moved" array of '
+            'code-standards.json ({"on", "why", "ledger", "from", "to"}), which relabels the '
+            'frozen entry and grants exactly the room it already had. See RULE 5 at the top of '
+            'this file.\n' + '\n'.join(added))
 
     def test_no_budget_counter_sits_loose_above_the_code(self):
         """Tightness for the plain numbers. When a count improves, its budget must follow, or the
@@ -826,6 +967,9 @@ class TestTheRatchetItself(_Standard):
             f'catching up with your improvement.\n' + '\n'.join(loose))
 
     def test_the_baseline_block_has_not_been_rewritten(self):
+        """⚠ RULE 5 DOES NOT TOUCH THIS. `_moved` is a sibling of `baseline`, not a part of it, so
+        an honest move leaves this hash exactly where it is. If this is failing, someone edited
+        the frozen record itself — which is still the thing rule 4 refuses."""
         now = hashlib.sha256(canonical(self.baseline)).hexdigest()
         self.assertEqual(
             now, BASELINE_SHA256,
@@ -834,6 +978,68 @@ class TestTheRatchetItself(_Standard):
             f'thing you lower is "budget". If this change really is intended (a whole file was '
             f'deleted, say), say so in the sprint retro and set BASELINE_SHA256 in this test file '
             f'to {now} in the SAME commit, so a reviewer sees both halves.')
+
+
+class TestADeclaredMoveBuysNothing(_Standard):
+    """RULE 5, asserted against the real file. TD-272.
+
+    A ledger key may follow its code to a new path, and that is ALL it may do. These three tests
+    are what make the relabel safe enough to allow at all: the first refuses a move that is not an
+    honest relabel, the second proves the relabelling itself cannot enlarge a ledger however the
+    code above is later edited, and the third stops `_moved` turning into a junk drawer of records
+    that describe nothing."""
+
+    def test_every_declared_move_is_an_honest_relabel(self):
+        self.assertEqual(
+            self.move_problems, [],
+            f'A record in the "_moved" array of {os.path.basename(BUDGET_PATH)} is not an honest '
+            f'relabel. A move declares that ONE key already in the frozen ledger is now spelt as '
+            f'ONE key the ledger does not have — nothing else. It may not raise a number, add a '
+            f'member, merge two entries, or name a file that is not in the tree. Each line below '
+            f'says which record and what to do.\n' + '\n'.join(self.move_problems))
+
+    def test_a_move_changes_no_ledger_s_length_or_total(self):
+        """THE INVARIANT THE WHOLE MECHANISM RESTS ON, asserted rather than argued. A relabel pops
+        one key and inserts one, so both numbers must be identical either side. If a future edit
+        to `effective_baseline` ever made a move generous, this is what catches it — long before
+        anyone notices the budget quietly had more room than the frozen record gave it."""
+        grew = []
+        for ledger in LEDGERS:
+            frozen, now = self.baseline[ledger], self.effective[ledger]
+            if len(now) != len(frozen):
+                grew.append(f'{ledger}: {len(frozen)} entries frozen, {len(now)} after the '
+                            f'declared moves — a move may only RELABEL')
+            if sum(now.values()) != sum(frozen.values()):
+                grew.append(f'{ledger}: total {sum(frozen.values())} frozen, '
+                            f'{sum(now.values())} after the declared moves')
+        self.assertEqual(
+            grew, [],
+            'Applying the declared moves changed the SIZE of a frozen ledger. It must not: a move '
+            'relabels one entry onto one new key, so the count and the total are the same numbers '
+            'either side. Something in `effective_baseline` is doing more than relabelling.\n'
+            + '\n'.join(grew))
+
+    def test_every_declared_move_is_still_doing_a_job(self):
+        """A move record exists to let a key sit in `budget`. When that key leaves `budget` — the
+        debt was fixed, or the file fell under the limit and the tightness test removed the line —
+        the record describes nothing, and a list of records describing nothing is the rot this
+        whole file exists against. Prune it; the history lives in `_history` and the CHANGELOG."""
+        stale = []
+        for i, move in enumerate(self.moves):
+            if not (isinstance(move, dict) and move.get('ledger') in LEDGERS
+                    and isinstance(move.get('to'), str)):
+                continue                       # already named by the honest-relabel test above
+            if move['to'] not in self.effective[move['ledger']]:
+                continue                       # the move was refused, so it relabelled nothing
+            if move['to'] not in self.budget[move['ledger']]:
+                stale.append(f'_moved[{i}]: "{move["to"]}" is no longer in '
+                             f'budget.{move["ledger"]} — REMOVE this move record')
+        self.assertEqual(
+            stale, [],
+            f'A record in "_moved" points at a budget line that is gone. The debt it followed has '
+            f'been paid, so the relabel has nothing left to do. Delete the record from '
+            f'{os.path.basename(BUDGET_PATH)}; the story of the move belongs in "_history" and '
+            f'the CHANGELOG, not in a live lens over the frozen record.\n' + '\n'.join(stale))
 
 
 # ── The ratchet's own arithmetic, proven on a throwaway budget ──────────────────────────────
@@ -868,3 +1074,109 @@ class TestTheRatchetArithmetic(SimpleTestCase):
         self.assertEqual(hashlib.sha256(a).hexdigest(), hashlib.sha256(b).hexdigest())
         self.assertNotEqual(hashlib.sha256(a).hexdigest(),
                             hashlib.sha256(canonical({'b': 2, 'a': {'d': 2, 'c': 3}})).hexdigest())
+
+
+class TestTheMoveArithmetic(SimpleTestCase):
+    """RULE 5's own rules, proven on a throwaway ledger — both directions, each named.
+
+    `TestADeclaredMoveBuysNothing` can only exercise the real file, where every move happens to be
+    honest. These feed `effective_baseline` the dishonest shapes and prove each one is refused,
+    without anyone having to break the repo. The tree check is injected, so nothing here touches
+    the disk."""
+    maxDiff = None
+
+    #: Two files and one long function. `exists` below says yes to exactly these three names.
+    REAL = {'a.py', 'a/__init__.py', 'b.py', 'c.py'}
+
+    def base(self):
+        return {'oversize_files': {'a.py': 900, 'b.py': 700},
+                'long_functions': {'a.py::big': 200},
+                'duplicated_names': {'scholarship::_money': 7},
+                'runtime_skips': {}, 'hand_built_application_fixtures': {}}
+
+    def move(self, **kw):
+        row = {'on': '2026-09-20', 'ledger': 'oversize_files',
+               'why': 'the body moved to its own module beside it',
+               'from': 'a.py', 'to': 'a/__init__.py'}
+        row.update(kw)
+        return row
+
+    def apply(self, *moves):
+        return effective_baseline(self.base(), list(moves), exists=lambda p: p in self.REAL)
+
+    # ── the one shape that passes ────────────────────────────────────────────────────────────
+    def test_a_move_relabels_the_entry_and_nothing_else(self):
+        effective, problems = self.apply(self.move())
+        self.assertEqual(problems, [])
+        self.assertEqual(effective['oversize_files'], {'a/__init__.py': 900, 'b.py': 700},
+                         'the moved entry keeps its frozen number at the new key')
+        self.assertEqual(effective['long_functions'], {'a.py::big': 200},
+                         'a move in one ledger leaves every other ledger alone')
+
+    def test_a_relabel_holds_the_length_and_the_total(self):
+        effective, _ = self.apply(self.move())
+        before, after = self.base()['oversize_files'], effective['oversize_files']
+        self.assertEqual(len(after), len(before))
+        self.assertEqual(sum(after.values()), sum(before.values()))
+
+    def test_two_moves_may_chain_through_the_same_key(self):
+        """A file moved twice (H11's package, then H12's emptying) is two records, not a rewrite."""
+        effective, problems = self.apply(
+            self.move(), self.move(**{'from': 'a/__init__.py', 'to': 'c.py'}))
+        self.assertEqual(problems, [])
+        self.assertEqual(effective['oversize_files'], {'c.py': 900, 'b.py': 700})
+
+    def test_a_long_function_key_is_moved_on_its_path_half(self):
+        effective, problems = self.apply(
+            self.move(ledger='long_functions', **{'from': 'a.py::big', 'to': 'c.py::big'}))
+        self.assertEqual(problems, [])
+        self.assertEqual(effective['long_functions'], {'c.py::big': 200})
+
+    def test_a_name_ledger_needs_no_file_because_its_key_is_not_a_path(self):
+        effective, problems = self.apply(self.move(
+            ledger='duplicated_names',
+            **{'from': 'scholarship::_money', 'to': 'scholarship::format_ringgit'}))
+        self.assertEqual(problems, [])
+        self.assertEqual(effective['duplicated_names'], {'scholarship::format_ringgit': 7})
+
+    # ── and the shapes that must not ─────────────────────────────────────────────────────────
+    def test_a_move_onto_a_key_the_ledger_already_holds_is_refused(self):
+        """The merge. Two entries on one key would give the survivor the room of both."""
+        effective, problems = self.apply(self.move(**{'to': 'b.py'}))
+        self.assertTrue(problems and 'ALREADY holds' in problems[0], problems)
+        self.assertEqual(effective['oversize_files'], self.base()['oversize_files'],
+                         'a refused move must relabel nothing at all')
+
+    def test_a_move_from_a_key_the_ledger_does_not_hold_is_refused(self):
+        """The invention. Nothing left, so nothing was renamed — debt cannot arrive this way."""
+        effective, problems = self.apply(self.move(**{'from': 'c.py'}))
+        self.assertTrue(problems and 'does not hold' in problems[0], problems)
+        self.assertEqual(effective['oversize_files'], self.base()['oversize_files'])
+
+    def test_a_move_onto_a_file_that_is_not_in_the_tree_is_refused(self):
+        effective, problems = self.apply(self.move(**{'to': 'nowhere/at/all.py'}))
+        self.assertTrue(problems and 'not in the tree' in problems[0], problems)
+        self.assertEqual(effective['oversize_files'], self.base()['oversize_files'])
+
+    def test_a_move_with_a_shrug_for_a_reason_is_refused(self):
+        _, problems = self.apply(self.move(why='moved'))
+        self.assertTrue(problems and 'at least' in problems[0], problems)
+
+    def test_a_move_naming_a_ledger_that_does_not_exist_is_refused(self):
+        _, problems = self.apply(self.move(ledger='oversize_filez'))
+        self.assertTrue(problems and 'not one of' in problems[0], problems)
+
+    def test_a_move_missing_a_field_is_refused(self):
+        row = self.move()
+        del row['on']
+        _, problems = self.apply(row)
+        self.assertTrue(problems and 'missing or empty' in problems[0], problems)
+
+    def test_a_move_that_is_not_an_object_is_refused(self):
+        _, problems = self.apply('a.py -> a/__init__.py')
+        self.assertTrue(problems and 'must be an object' in problems[0], problems)
+
+    def test_no_declared_moves_leaves_the_frozen_record_exactly_as_it_is(self):
+        effective, problems = self.apply()
+        self.assertEqual(problems, [])
+        self.assertEqual(effective, self.base())

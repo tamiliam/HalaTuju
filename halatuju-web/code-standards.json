@@ -1,5 +1,22 @@
 {
-  "_how_this_works": "The code standards this service is held to, as numbers. `baseline` is FROZEN: it records every limit and every ledger exactly as code health H4 found them on 2026-09-19, and it is never maintained. `budget` is the live limit; it starts identical to `baseline` and may only ever get TIGHTER. `src/lib/__tests__/codeStandards.test.ts` asserts all of it on every run, and since H2 that suite runs inside the Cloud Build deploy gate, so a change that breaks a standard cannot ship. If a test here told you to lower a number or remove a line, edit `budget` and only `budget` — never raise a limit, and never add a name to a ledger.",
+  "_how_this_works": "The code standards this service is held to, as numbers. `baseline` is FROZEN: it records every limit and every ledger exactly as code health H4 found them on 2026-09-19, and it is never maintained. `budget` is the live limit; it starts identical to `baseline` and may only ever get TIGHTER. `src/lib/__tests__/codeStandards.test.ts` asserts all of it on every run, and since H2 that suite runs inside the Cloud Build deploy gate, so a change that breaks a standard cannot ship. If a test here told you to lower a number or remove a line, edit `budget` and only `budget` — never raise a limit, and never add a name to a ledger. THE ONE EXCEPTION IS A MOVE: see `_moved`.",
+  "_moved_how_this_works": "Every ledger here is keyed on a FILE PATH, so a file that MOVES orphans its entry — the same debt at the new path is unlisted (which fails) and cannot be added (a ledger may only shrink). `_moved` is how a key follows its code: each record names ONE key the frozen `baseline` already holds (`from`) and ONE key it does not (`to`), and the tests read the baseline THROUGH it. A relabel is all it can do — the ledger's length is the same number either side, and `budget <= baseline` then holds the new key to exactly the room the old one had. So a move buys NOTHING: not a bigger number, not an extra member, not a merge onto a key that already exists, and not a path that is not a real file. ⚠ `_moved` is a SIBLING of `baseline`, never a part of it, so declaring an honest move does NOT move `BASELINE_SHA256` — H11's hand re-pin was the loophole, not the fix. Prune a record once the budget line it follows is gone. TD-272.",
+  "_moved": [
+    {
+      "on": "2026-09-20",
+      "why": "TD-272 — IncomeWizard left ScholarshipDocuments.tsx for its own module beside it (code health H14 had to abandon that move because this ledger refused it). The two reasonless react-hooks/exhaustive-deps disables are inside the moved body, so they travelled with the code they suppress. Neither was reworded and neither gained a reason: the same debt, at the path that now holds it.",
+      "ledger": "eslint_disable_without_reason",
+      "from": "src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::1",
+      "to": "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-deps::1"
+    },
+    {
+      "on": "2026-09-20",
+      "why": "TD-272 — the second of IncomeWizard's two exhaustive-deps disables, moved with the same body for the same reason. The ordinal is unchanged because the wizard carries both and carries them in the same order.",
+      "ledger": "eslint_disable_without_reason",
+      "from": "src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::2",
+      "to": "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-deps::2"
+    }
+  ],
   "baseline": {
     "recorded_on": "2026-09-19",
     "recorded_at": "code health H4",
@@ -134,7 +151,7 @@
     ]
   },
   "budget": {
-    "last_tightened_on": "2026-09-20 (code health H14)",
+    "last_tightened_on": "2026-09-20 (TD-272 — IncomeWizard moved out of ScholarshipDocuments.tsx; that file left oversize_files at 286 lines and its two disable entries were RELABELLED onto the wizard's path by the two declared moves above. Nothing was raised, no ledger gained a member, and BASELINE_SHA256 did not move.)",
     "counts": {
       "ts_ignore": 0,
       "ts_expect_error": 0,
@@ -153,7 +170,6 @@
       "src/app/scholarship/apply/page.tsx": 1142,
       "src/app/scholarship/award/page.tsx": 697,
       "src/components/ActionCentre.tsx": 990,
-      "src/components/ScholarshipDocuments.tsx": 825,
       "src/components/ScholarshipNextSteps.tsx": 828,
       "src/components/admin/GiftProgrammes.tsx": 602,
       "src/components/admin/IntakeYearTab.tsx": 718,
@@ -191,8 +207,8 @@
       "src/components/IncomeClusterCoach.tsx::react-hooks/exhaustive-deps::1",
       "src/components/OrgRequestAttachments.tsx::@next/next/no-img-element::1",
       "src/components/PathwayPicker.tsx::react-hooks/exhaustive-deps::1",
-      "src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::1",
-      "src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::2",
+      "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-deps::1",
+      "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-deps::2",
       "src/components/admin/GiftProgrammes.tsx::react-hooks/exhaustive-deps::1",
       "src/components/admin/IntakeYearTab.tsx::react-hooks/exhaustive-deps::1",
       "src/components/admin/InvitationEmailsCard.tsx::react-hooks/exhaustive-deps::1",

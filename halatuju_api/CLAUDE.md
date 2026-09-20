@@ -379,7 +379,7 @@ message itself tells you what to do; this table is the why.
 
 | Standard | Enforced by | Why it exists |
 |---|---|---|
-| **No new giant file** — a source file may not pass 600 lines; the 36 api / 20 web files already over are listed with their size and may not grow more than 20 lines | `test_code_standards.py` · `codeStandards.test.ts` | `views_admin.py` was 8,547 lines and had been fixed 34 times in 90 days. Nobody holds a file that size in one head, and nobody reviews it properly. (H11 split it: the entry is now `views_admin/__init__.py` at 5,093, and **a split RENAMES a ledger key** — see the `_history` note in `code-standards.json` before splitting anything else on this list) |
+| **No new giant file** — a source file may not pass 600 lines; the 36 api / 20 web files already over are listed with their size and may not grow more than 20 lines | `test_code_standards.py` · `codeStandards.test.ts` | `views_admin.py` was 8,547 lines and had been fixed 34 times in 90 days. Nobody holds a file that size in one head, and nobody reviews it properly. (H11 split it: the entry is now `views_admin/__init__.py` at 5,093, and **a split RENAMES a ledger key** — since TD-272 that is a DECLARED move, not a hand edit of the frozen baseline: see **Moving a file that is in a ledger** below before splitting anything else on this list) |
 | **No new giant function** — no Python function of 150+ lines outside the ledger of 16; a listed one may not grow more than 10 lines | `test_code_standards.py` | A 300-line function has no seams, so a branch in the middle of it can only be reached by running the whole thing |
 | **One rule, one home** — no module-level function name defined in 3+ files of one app, beyond the ten listed | `test_code_standards.py` | `_money` is seven functions with one name. A money-format fix made in one copy is not made in the other six |
 | **Tests can fail** — zero `skip` / `skipif` / `xfail` / `unittest.skip`; zero `.skip` / `.todo` / `xit` / `xdescribe`; the four files using a runtime `self.skipTest` are ledgered and may only shrink | both | Both golden masters used to skip themselves on the run straight after a regenerate: the least supervised moment in the process passed green |
@@ -403,6 +403,58 @@ be raised back to where H4 found it and an exemption list can only shrink. And i
 budget to match — that is the ratchet catching up with you, not a complaint. (The `baseline` block
 is pinned by a SHA-256 held in the test file, so rewriting history takes a second deliberate edit
 that a reviewer sees.)
+
+### Moving a file that is in a ledger — HOW TO DECLARE A MOVE (TD-272, 2026-09-20)
+
+Every ledger is keyed on a FILE PATH. **So before you plan a cut, grep both `code-standards.json`
+files for the file you are about to split** — the question is not "may this file's key move?" but
+"does anything INSIDE this file have a key of its own?" A file's size entry, a long function, a
+runtime skip, a hand-built fixture, an `eslint-disable` and a mirror claim are all keyed on the
+path, and the last two live *inside* the body you are about to lift.
+
+When the answer is yes, **you do not add the new key and you do not touch the frozen `baseline`.**
+You declare the move. Add a record to the `_moved` array at the top of that service's
+`code-standards.json`:
+
+```json
+{
+  "on": "2026-09-20",
+  "why": "IncomeWizard left ScholarshipDocuments.tsx for its own module; the two reasonless
+          exhaustive-deps disables are inside the moved body, so they travelled with it.",
+  "ledger": "eslint_disable_without_reason",
+  "from": "src/components/ScholarshipDocuments.tsx::react-hooks/exhaustive-deps::1",
+  "to":   "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-deps::1"
+}
+```
+
+…then edit `budget` to spell the entry at its new key, exactly as you would have edited it anyway.
+One record per key: a body carrying two disables is two records. The tests read the frozen
+`baseline` THROUGH `_moved`, so every rule above then applies to the relabelled record, unchanged.
+
+**A move may not buy anything, and the test will say so if you try.** It is refused when the `to`
+key is one the ledger already holds (a merge would give the survivor the room of both), when the
+`from` key is not in the frozen ledger (there is no recorded debt to relabel — fix the code
+instead), when `to` names a file that is not in the tree, when the record is incomplete, or when
+`why` is a shrug rather than a sentence. And because a relabel swaps one key for one key, **a
+ledger's length and total are the same either side** and the moved entry inherits exactly the room
+the old one had — not a line more.
+
+**You do NOT re-pin `BASELINE_SHA256` for a move.** `_moved` is a sibling of `baseline`, never a
+part of it, so the frozen record stays byte-for-byte what H4 measured. H11 re-pinned by hand and
+said in its own retro that a fifth acceptance of a wrong guard is how a guard stops being read;
+this is what replaced that. Rewriting the `baseline` block itself is still refused, exactly as
+before.
+
+**Prune the record when the debt is paid.** Once the budget line it follows is gone — the file fell
+under 600, the disable gained a reason — the record describes nothing and the test asks you to
+delete it. The story of the move lives in the CHANGELOG and in `_history`, not in a live lens over
+the frozen record.
+
+⚠ **A guard that READS a moved file by path must follow it in the same change.** `theme.test.ts`
+walks a directory and so needs nothing; `incomeEvidenceHomes.test.ts` names a file and had to be
+re-pointed when `IncomeWizard` moved. A source-read guard left on the old path goes GREEN while
+watching a file the rule has left, which is the most dangerous way for a test to pass. **Run BOTH
+suites whatever you touched** — a web guard reads api source and vice versa.
 
 **Never raise a budget.** If you must grow a file that is already on the list, **split it first, in
 its own commit, with no behaviour change** — then add your work to the smaller module. If you must
@@ -979,15 +1031,20 @@ holds at 95.6. Six bite-checks, all six behaved. **Bundle: 86 of 87 routes uncha
 route 32.8 → 34.8 kB.** **TD-271 closed**; **TD-272 and TD-273 raised.**
 
 **Three things to know before the next Phase-4 cut:**
-- ⛔ **A FROZEN EXEMPTION LEDGER KEYED ON A FILE PATH CAN REFUSE YOUR SPLIT — TD-272.**
-  `IncomeWizard` was in H14's scope and DID NOT MOVE: its two reasonless `exhaustive-deps`
-  disables are recorded in `halatuju-web/code-standards.json` under
-  `src/components/ScholarshipDocuments.tsx`, and at a new path they are unlisted (FAIL), cannot
-  be added (a ledger may not gain a member), and rewriting the frozen baseline makes
-  `code_health.py` report `std: FAIL`. This is H11's ledger-key trap in a SECOND ledger, and
-  H13's keep-the-path trick does not help, because the exemption is INSIDE the moved body.
-  ⚠ **H15 and H16: grep every ledger for the file you are about to split, BEFORE planning the
-  cut.** The reason is also written at the top of `ScholarshipDocuments.tsx`.
+- ✅ **TD-272 FIXED 2026-09-20 — A LEDGER KEY MAY NOW FOLLOW ITS CODE.** `IncomeWizard` was in
+  H14's scope and did not move, because its two reasonless `exhaustive-deps` disables were
+  recorded in `halatuju-web/code-standards.json` under `src/components/ScholarshipDocuments.tsx`:
+  at a new path they were unlisted (FAIL), could not be added (a ledger may not gain a member),
+  and rewriting the frozen baseline made `code_health.py` report `std: FAIL`. Both standards tests
+  now take a **DECLARED move** — a `_moved` array, read as a lens over the frozen `baseline` — so
+  the wizard moved and the two entries went with it. **`BASELINE_SHA256` is NOT re-pinned for an
+  honest move**, and a move may only relabel: no bigger number, no extra member, no merge.
+  ⚠ **H15 and H16: still grep every ledger for the file you are about to split, BEFORE planning
+  the cut** — the question is unchanged, only the answer is. **How to declare one:
+  `## Code standards → Moving a file that is in a ledger`, above.** ⚠ One loose end, **TD-274**:
+  `Settings/_tools/code_health.py` still reads a relabelled STRING-ledger member as a new
+  exemption, so a move touching `eslint_disable_without_reason` / `unguarded_mirrors` buys a
+  false `std: FAIL` until that lands.
 - **`view.tsx` is still 1,338 lines and that is the floor for a moves-only sprint.** 784 lines of
   state and handlers, 137 of derived readings and the **263-line Decision / Recommendation
   panel** must stay — the roadmap rules untangling that panel DESIGN work, not a move — and a new
@@ -996,8 +1053,9 @@ route 32.8 → 34.8 kB.** **TD-271 closed**; **TD-272 and TD-273 raised.**
   is designed, not before.
 - **`supp` is unchanged at 139, correctly.** The `useApiLoad(token, fn)` hook the roadmap
   predicted would retire ~26 `exhaustive-deps` disables was cut from H14's brief: a new shared
-  hook is a design change, not a move. It is now worth MORE than it was, because one hook would
-  retire those disables and unblock `IncomeWizard` (TD-272) in the same stroke.
+  hook is a design change, not a move. It is still worth doing — though it no longer UNBLOCKS
+  anything: TD-272's fix let `IncomeWizard` move with its two disables intact, so retiring them
+  is now a plain improvement rather than the price of a split.
 
 **H15's scope** (roadmap `docs/plans/2026-09-18-code-health-roadmap.md`): **api, not web.**
 `models.py` (4,756) becomes a `models/` package with full re-export — `ScholarshipApplication` is

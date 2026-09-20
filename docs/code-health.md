@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 676cc96 | 90 | 42 | income_engine.py 95.6 | 21 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-20 | 1a23b52 | 90 | 42 | income_engine.py 95.6 | 21 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-20 | d8e9571 | 90 | 42 | income_engine.py 95.6 | 22 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 0694ae2 | 90 | 42 | admin-api.ts 107.1 | 24 | 15 | 4 | 46 | 139 | 0 | 3 | 19 | 88 | 0 | - | - | ok |
@@ -33,7 +34,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 1a23b52, window 2026-06-22 onward)
+## Latest run (2026-09-20, 676cc96, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -126,18 +127,40 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 165 entries have a defining line; 92 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 430: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5324: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 444: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5338: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at d8e9571
+- renamed in halatuju-web/code-standards.json — budget.eslint_disable_without_reason: "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-de replaced a member that left; the list did not grow (37 -> 37)
+- renamed in halatuju-web/code-standards.json — budget.eslint_disable_without_reason: "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-de replaced a member that left; the list did not grow (37 -> 37)
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-20 (TD-272) — `std: FAIL` is the TOOL, and here is the exact line to change
+
+A read-only run after TD-272 shipped: **every other reading delta 0** (`fix%` 42, `big` 21, `long`
+15, `dup` 4, `xapp` 46, `supp` 139, `skip` 0, `mirror` 3, `guard%` 19, `td_open` 92, `unused` 0),
+and **`std` FAIL**, twice, both lines reading
+`budget.eslint_disable_without_reason: gained "src/components/ScholarshipDocuments/IncomeWizard.tsx::react-hooks/exhaustive-deps::N"`.
+
+**That is a false FAIL and it is the fifth in a row of the same kind.** `loosened` grew a rename
+exception on 2026-09-20 for a DICT budget entry (H11's file split), but the LIST branch has none —
+it still reports every new member of a JSON array as `gained`. The two ledgers that are arrays,
+`eslint_disable_without_reason` and `unguarded_mirrors`, are exactly the ones whose keys sit INSIDE
+a moved body, so they are the ones a Phase-4 move relabels. **Raised as TD-274**, with the fix
+stated: give the list branch the same three guards the dict branch has — a member left the same
+list in the same step, the list did not grow, and (there being no number in a string ledger) one
+arrived for each that left — and record it through `notes` exactly as the dict branch does.
+
+Accepted for this change **only because the in-repo standard is the stricter of the two and it is
+green**: `_moved` refuses a relabel that merges, invents, over-budgets or names a file that is not
+in the tree, and nine bite-checks prove each refusal. The external tool is agreeing with an older
+rule than the repo now has.
 
 ### 2026-09-20 (twelfth reading) — H12: `views_admin` wave 2; `big` falls, and `xapp` changes meaning
 

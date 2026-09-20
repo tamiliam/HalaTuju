@@ -500,7 +500,7 @@ split file.** Do not add lines to the big file and leave the split for later. Si
 | `halatuju_api/apps/scholarship/income_engine.py` | 3,201 | **H16** — ⚠ also TD-262; settle the eligibility rulings before moving it |
 | `halatuju_api/apps/scholarship/services.py` | 2,946 | **H15** |
 | ~~`halatuju-web/src/lib/api.ts`~~ | ~~2,488~~ **132** | ~~H13~~ ✅ **DONE 2026-09-20.** A barrel; 14 modules in `src/lib/api/`, none over 420. ⚠ Its size ceiling was the stated reason `income_shown` is declared locally — TD-271 |
-| ~~`halatuju-web/src/components/ScholarshipDocuments.tsx`~~ | ~~1,957~~ **825** | ~~H14~~ ✅ **DONE 2026-09-20.** The checklists + card furniture are 3 modules in `ScholarshipDocuments/`. ⚠ `IncomeWizard` did NOT move — the frozen disable ledger refuses it (TD-272) |
+| ~~`halatuju-web/src/components/ScholarshipDocuments.tsx`~~ | ~~1,957~~ **286** | ~~H14~~ ✅ **DONE 2026-09-20.** The checklists + card furniture are 3 modules in `ScholarshipDocuments/`; **`IncomeWizard` followed them on 2026-09-20 once TD-272 was fixed** (565 lines, its two disable entries relabelled by a declared move). The file has LEFT `oversize_files` |
 | `halatuju_api/apps/scholarship/vision.py` | 2,321 | **none — deliberately out of scope** (140 patch sites). Growing it is allowed; it is not waiting on a split |
 
 **Everything else over 1,000 lines has no Phase-4 sprint** — `views.py` (2,421), `courses/views.py`
@@ -745,8 +745,8 @@ behaved. **TD-271 CLOSED** (the sprint's one declared exception). **Findings rai
 TD-273.**
 ⚠ **`supp` did NOT fall by ~25.** The `useApiLoad` hook that would have retired ~26
 `exhaustive-deps` disables was cut from this sprint's brief: a new shared hook is a design
-change, not a move, and Phase 4 is moves only. It is still worth doing and is now the obvious
-companion to TD-272 — one hook would retire the disables AND unblock `IncomeWizard`'s move.
+change, not a move, and Phase 4 is moves only. It is still worth doing, though it no longer
+unblocks anything: TD-272's fix (2026-09-20) let `IncomeWizard` move with its two disables intact.
 **Retro:** `docs/retrospective-2026-09-20-code-health-h14.md`. **Cost: ~7h** against the ~8h
 estimate.
 
@@ -767,7 +767,19 @@ estimate.
   - ⚠ **Grep `code-standards.json` and the api's own exemption ledgers for both files before
     planning the cut — TD-272.** H14 was refused a scoped move because a suppression inside the
     moved body was recorded under the parent file's path. `models.py` and `services.py` are
-    prime candidates for the same trap.
+    prime candidates for the same trap. ✅ **TD-272 IS FIXED (2026-09-20): the grep still has to
+    happen, but the answer is no longer a refusal.** Declare the move in the `_moved` array of
+    that service's `code-standards.json` — one record per key, `{on, why, ledger, from, to}` —
+    and spell the budget entry at its new key. The frozen `baseline` is NOT edited and
+    `BASELINE_SHA256` is NOT re-pinned. `models.py` carries `long_functions` and
+    `hand_built_application_fixtures` keys as well as its size entry; every one of them relabels
+    the same way. See `## Code standards → Moving a file that is in a ledger` in
+    `halatuju_api/CLAUDE.md`.
+  - ⚠ **`std` will still FAIL on a move that touches a STRING ledger until TD-274 lands.**
+    `code_health.loosened` learnt the rename exception for dict entries on 2026-09-20 but not for
+    JSON arrays, so relabelling an `eslint_disable_without_reason` or `unguarded_mirrors` member
+    reads as `gained "<new key>"`. That is the tool, not the repo — but say so in the sprint
+    report rather than accepting a bare FAIL, and prefer landing TD-274 first (~1h).
   - **Expect `xapp` to rise and say what the rise is made of** — H12's lesson, unchanged, and
     TD-268 is still open.
   - **Take BOTH baselines yourself before touching anything.** H13's brief was wrong by 13
@@ -870,9 +882,14 @@ Phase 6   H19                          <-- "completed"
   is the only reason H14 could claim the moved code is the code that runs.
 - ⚠ **TD-269 should block H15.** H15 moves `services.py`, which a WEB drift test reads by
   path; H11 broke exactly that way and nobody saw it for two sprints (see H13, note 1).
-- ⚠ **TD-272 constrains H15 and H16.** A frozen exemption ledger keyed on a file path refuses to
-  let a listed suppression move; H14 was refused a scoped move by it and did not split that file.
-  Grep the ledgers for the file BEFORE planning the cut, not after the gate says no.
+- ~~⚠ **TD-272 constrains H15 and H16.**~~ ✅ **FIXED 2026-09-20 — it no longer blocks either.** A
+  ledger key may now FOLLOW its code, through a declared move in the `_moved` array of
+  `code-standards.json`, and a move may only relabel: it buys no extra room, no extra member and
+  no re-pin of the frozen baseline. `IncomeWizard` made the move H14 could not, as the acceptance
+  test for the change. **Still grep the ledgers for the file BEFORE planning the cut** — the
+  question ("does anything INSIDE this file have a key of its own?") is unchanged; only the answer
+  is. ⚠ **Its one loose end is TD-274**, in `Settings/_tools`: `std` still reads a relabelled
+  STRING-ledger member as a new exemption.
 - Phases 3 and 4 do not block each other; Phase 3 goes first because it is the half that prevents bugs.
 - **Back to back through H10, by the owner's 2026-09-18 ruling.** With the product frozen there was
   one agent in the checkout, which removed Phase 4's biggest risk (a file changing under a move).

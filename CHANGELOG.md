@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-272 - a ledger key may follow its code - 2026-09-20
+
+**A change to the STANDARDS themselves, not a Phase-4 move sprint.** Every ledger in
+`code-standards.json` is keyed on a FILE PATH, so a file that MOVES orphans its entry: the same
+debt at the new path is unlisted (which fails), and it cannot be added because a ledger may only
+shrink. H11 paid for that by editing the frozen baseline and re-pinning `BASELINE_SHA256` by hand;
+H14 simply abandoned the move it had been asked to make. A ratchet that refuses the improvement it
+exists to encourage gets switched off, so it now has a fifth rule.
+
+### Added
+
+- **RULE 5 - a DECLARED move, in a new `_moved` array in both `code-standards.json` files.** Each
+  record names ONE key the frozen `baseline` already holds (`from`) and ONE it does not (`to`),
+  plus `ledger`, `on` and a `why` that has to be a sentence. Both standards tests now read the
+  baseline THROUGH it: `effective_baseline()` / `effectiveBaseline()` returns the frozen record
+  with each declared move relabelled, and **every rule already there then runs against that,
+  unchanged.**
+- **A move buys NOTHING, and that is arithmetic rather than a promise.** A relabel replaces one key
+  with one key, so a ledger's length - and its total, where it holds numbers - is identical either
+  side; `budget <= baseline` then holds the new key to exactly the room the old one had. A move is
+  refused and named when it would raise a number, add a member, merge onto a key the ledger already
+  holds, name a file that is not in the tree, come without a full record, or arrive with a shrug
+  for a reason. Sixteen new tests prove each refusal on throwaway data, in both languages.
+- **`_moved` is a SIBLING of `baseline`, never a part of it, so `BASELINE_SHA256` does NOT move for
+  an honest move** - in either service. H11's hand re-pin was the loophole, not the fix. Rewriting
+  the frozen block itself still fails rule 4 exactly as before, and a bite-check proves it.
+- **A stale move record is refused too**: once the budget line it follows is gone, the record
+  describes nothing, and the test says to delete it.
+
+### Changed
+
+- **`IncomeWizard` MOVED, which is the acceptance test for the whole change.** It left
+  `src/components/ScholarshipDocuments.tsx` for `src/components/ScholarshipDocuments/IncomeWizard.tsx`
+  - 524 lines, byte for byte, only the declaration gaining `export default` and the imports
+  re-pointed one directory down. Its **two `react-hooks/exhaustive-deps` disables travelled with
+  the code and are still reasonless on purpose**: writing a justification for a deliberately
+  incomplete dependency array is analysis, not a move, and a wrong one in the code is worse than
+  the recorded debt. Two declared moves relabelled their ledger entries onto the new path.
+- **`ScholarshipDocuments.tsx` fell from 825 lines to 286 and LEFT `oversize_files` altogether**;
+  the new module is 565, under the 600-line standard, so it needed no ledger line of its own.
+- **`incomeEvidenceHomes.test.ts`'s W6 pin followed the code.** It reads `memberIncomeShown` as
+  source, and a source-read guard left on the old path would have gone green while watching a file
+  the rule had left - H11's lesson, and the reason both suites are run whatever is touched.
+
+### Fixed
+
+- **TD-272 CLOSED.** H15 and H16 no longer have to plan a cut around a frozen ledger key.
+
 ## Code health H14 - the cockpit and the documents component, panel by panel - 2026-09-20
 
 **Moves only, with ONE declared exception (TD-271). No behaviour changed, no migration, no api
