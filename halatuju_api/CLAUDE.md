@@ -573,6 +573,128 @@ OWN gate instead of killing a web suite that nobody will run for two sprints.
 other side, which is the only thing in either tree that notices a whole test FILE leaving the run.
 **When you add a guard that reads across the trees, add it to that manifest the same day.**
 
+### THE RULES THE ARC HARVESTED (code health H19, 2026-09-20)
+
+Nineteen sprints put about 150 entries into `docs/lessons.md`. Most are about one incident. These
+nine groups are the shapes that came back three, four and five times, reduced to the rule and its
+reason. **`lessons.md` keeps the evidence; this keeps the instruction** — read this, and read the
+story only when you want to know why. The two classes that earned a section of their own are above:
+**moving a file that is in a ledger**, and **a tree-walking guard needs a floor**.
+
+**1. A guard is only as strong as its cheapest passing state.**
+- Before writing a source-level guard, ask what the laziest passing state looks like. If the answer
+  is *"the right word appears somewhere in the file"*, the guard is decorative — count occurrences,
+  or assert the property. `/TableFrame/.test(src)` was satisfied by an import line.
+- **A negative assertion goes GREEN when its subject leaves the file it reads.** `not.toMatch` and
+  `assertNotIn` reward the code leaving; a positive assertion at least fails loudly. Pair every
+  negative with a positive, or point the guard at a walk with a floor.
+- A negative assertion over a whole payload needs a sentinel no timestamp, id or amount can
+  contain, and a positive line proving the sentinel is in the data at all.
+- Match the instrument to the claim. A source-shape test is right for a STRUCTURAL claim (no bare
+  `disabled`, no raw hex, no surface forgotten) and is **not evidence** for anything depending on
+  focus, event propagation, keyboard, drag, mount/unmount or async — that class needs a mount. A
+  rendered test is in turn only evidence of what jsdom actually implements; where it does not,
+  assert the structural pair that decides the real behaviour and say in the test why.
+
+**2. Bite it, or you do not know.**
+- A guard, a golden master, a drift test and a budget are all hypotheses until an injected fault
+  turns them red. **"It still passes after the move" is not a measurement; "it still fails when it
+  should" is.**
+- **A silent bite is the finding, not a curiosity to note.** Write the test that should have
+  spoken, or delete the line that can never matter — in this sprint.
+- A silent bite may mean the FIXTURE is too kind rather than the guard unnecessary. Read the
+  function from the top and name the branch your fixture returns on; the missing row is the one
+  that reaches your code.
+- **Verify the injection LANDED.** A zero-match needle is unproven, not passing, and reads exactly
+  like "the code has moved". Prove the needle is unique, and derive the newline from the file's own
+  bytes — line endings are per FILE here.
+- The fault must leave the file parseable. If every test goes red you broke the module, not the
+  behaviour; the signal is *the right tests went red and no others*.
+- **Restore by writing the original BYTES back in a `finally`, and verify the restore against the
+  ORIGINAL digest** — not against "no exception was raised". A harness that edits one file twice
+  backs up the intermediate state. **Never `git checkout --`**: it restores to the last commit, not
+  to the state you were in. This arc lost real work to it twice.
+
+**3. A number you did not measure is a number you do not have.**
+- **Measure every baseline yourself before touching anything, even when the brief states it.**
+  H13's brief said 2,913 jest and the tree stood at 2,900 with a whole suite dead at import for two
+  sprints. An inherited number is the one most likely to predate the thing that broke it.
+- **Do the arithmetic on any target you are asked to accept, on day one.** H14, H16 and H17 each
+  inherited an acceptance from a differently-shaped predecessor, and each found on the last day
+  that it had never been reachable. Find the FLOOR first — 87.2 kB sits under every route.
+- Say what you ran. "3,584 passed" measured in one directory, quoted as a project total, is a trap
+  for whoever reads it next.
+- **When a reading's DEFINITION changes, say so at the row and do not compare across it** (`xapp`
+  steps 133 → 46 on 2026-09-20 because the definition changed, not the code).
+
+**4. When a reading punishes the right behaviour, fix the reading — never the number.**
+- `xapp` counted import STATEMENTS, so a faithful split could only inflate it. `guard%` counts
+  source-reading tests, which are the cure for unguarded mirrors and not the disease. `hot#1` does
+  not follow a rename, so a split reads as a hotspot vanishing rather than shrinking.
+- **A number held by hiding the thing it measures is worse than a number that went up honestly.**
+  Write the arithmetic out, raise the tool shortcoming as a TD entry, accept the rise in the review.
+- A metric's match list is reviewed whenever a sprint invents a new idiom for the thing it counts,
+  and a widened definition is dated in the source, so the step reads as the definition catching up.
+
+**5. A standard is the thing that RUNS.**
+- A budget needs a READER before it needs a number, and the reader needs a home that already runs.
+  **A ledger full of figures nothing reads is worse than an empty column: it reads as enforced.**
+- **When a standard is enforced somewhere other than the test suite, a test in the suite asserts
+  the wiring.** `codeStandards.test.ts` asserts `cloudbuild.yaml` still runs `npm run
+  bundle-budget`; without it, one tidy-up of the gate turns every kilobyte in the ledger into a
+  comment, silently.
+- Name where it runs and what it cannot see, in the file itself.
+- If the number cannot be measured yet, ship the SOURCE rule that causes it and make the measured
+  half a named finding with its reader as the first task. H17 refused a number it could not measure
+  and that refusal was worth more than the number.
+
+**6. "Nothing uses this" is a claim about your SEARCH.**
+- A symbol search answers *who imports this*. Lazy imports are deliberate here, so that is not *who
+  calls this*. **Grep for what the thing PRODUCES** — the served field name, the status value, the
+  error code — not only for its own name. `interview_agenda_full` was written into a roadmap, a
+  brief and this file as dead, and serves every cockpit load.
+- Two greps for a patch target, always: `patch('pkg.name')` **and** `patch.object(pkg, 'name')`. On
+  a re-export shell the first SUCCEEDS, rebinds something nothing calls, and the real function runs
+  — use `tests/package_patch.py`'s `patch_engine`.
+- Never conclude an absence from a truncated search (`| head`), from one field of a model, or from
+  the repository at all: authored content — clauses, templates, copy — lives in the database.
+
+**7. Measure before you reach for the obvious fix.**
+- **A performance fix is not done until the MEASUREMENT moved.** Take the reading, apply the fix,
+  take it again; if the two are equal you have not fixed it, whatever the mechanism suggests. A
+  `.filter(...)` on a related manager ignores a prefetch cache, so the reflex fix for the cockpit's
+  315 queries is a no-op that passes every test (TD-282).
+- Budgeting a bad number is a legitimate outcome: it stops the number growing while the real fix is
+  scoped, and it makes the fix visible when it lands, because the tightness rule then fails with
+  *"LOWER it to N"*.
+
+**8. Characterise before you change, and never edit an expectation.**
+- A de-duplication or unification sprint starts with a characterisation table over ALL the copies
+  against ONE input list, written against the unchanged tree. Surprises are pinned and reported,
+  never folded into the move. H7 found five defects that way; H8 found eleven homes where the
+  register said four.
+- **A test that starts failing when you convert a fixture is a FINDING, not a fixture to bend
+  back.** A test that breaks is a claim about which behaviour was intended: read its purpose before
+  touching its assertion, and when you must amend one, write into the test what superseded it.
+- **Any sprint on eligibility, money, consent or identity states its STOP condition in the brief
+  and names the smaller deliverable that ships if it stops.** H8 stopped, shipped a verified map
+  and no production code, and that was the right outcome — the literal goal would have un-submitted
+  real students with a green suite.
+
+**9. Prose rots; write it so it cannot.**
+- **A docstring describing THE CURRENT SPRINT has a shelf life.** Write status as a dated sequence
+  — *"Sprint 2 landed this inert; 3a moved the gates onto it"* — which can never be falsified,
+  instead of a present tense that the next sprint silently makes false.
+- **Advocacy text expires the day the gap closes**, and the sprint that closes it owns rewriting
+  the case that was made for it.
+- **A comment asking two files to stay in step is a defect report, not a safeguard.** Extract it,
+  serve it, or write the drift test.
+- An exemption carries its reason at the SITE somebody would open to remove it, and names the
+  condition that releases it. Left silent, a decision is indistinguishable from an oversight and
+  the next sweep "finishes the job".
+- A promise to a named future sprint belongs in that sprint's ROADMAP section. A code comment is a
+  note to whoever next opens that file, which is a different person (TD-271).
+
 ### Income evidence — one per-earner answer
 
 **`apps/scholarship/income_shown.py` → `income_shown(application, member)`** answers *has this
@@ -1063,7 +1185,91 @@ Read it at sprint start, before planning.
 
 - **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 SHIPPED 2026-09-19: money parsing/formatting has ONE home, `apps/scholarship/money.py` (`parse_money` / `format_money`; each caller keeps its own exception and blank answer through a named two-line wrapper); `text.py` (`id_list`, `digits_only`); `gemini.py` (the single-model metered core — the three `_gemini_generate` seams stay BY NAME). Any change to these helpers must answer to `tests/test_helper_characterisation.py` (417 assertions).** **TD-261 FIXED 2026-09-19 on the owner's order: a bill credit is written `RM-40.00` (chosen from its readers — see decisions.md); one-decimal figures keep their decimal; `money.parse_money` refuses `Infinity`/`NaN`; `sponsor_comms.render` defaults declared tokens; a payment-run line with a third decimal is REFUSED, not rounded.** **H8 (2026-09-19): PHASE A DELIVERED, PHASE B STOPPED AT ITS GATE — no production code changed. The income rule has ELEVEN homes and they disagree in sixteen places today: TD-262 (HIGH), awaiting the owner's rulings.** ⚠ **DO NOT "tidy" `application_completeness`: its legacy doc-type arm is more permissive ON PURPOSE (it may only ever widen); replacing it un-submits students and nulls their `requirements_snapshot`.** Any change to an income home answers to `tests/test_income_evidence_homes.py` and `src/lib/__tests__/incomeEvidenceHomes.test.ts`. **H9 SHIPPED 2026-09-19 — no production code changed: the six decision gates that said they MIRRORED a backend rule now have a test that reads the backend's own source in both directions (`applicationStatusDrift` · `requestStatusDrift` · `officerGateDrift` · `strCoachDrift` · `adminRoleDrift` · `payoutAccountDrift`, shared reader `halatuju-web/src/test/apiSource.ts`). `unguarded_mirrors` 58 → 41; a new `mirror` reading in `code_health.py` agrees with it exactly.** ⚠ **A CONSTANT IS GUARDED, NOT SERVED** (decisions.md 2026-09-19): serve a rule that can differ between two callers; for a module-level constant a drift test fails in the deploy gate where a served value could only fail at runtime. **Raised TD-264 (money path: the api counts payout-account digits with Unicode-aware `isdigit()`, the web with ASCII `\d`, so a direct POST of five superscripts is stored as a payout target — owner's call which side moves) and TD-263 (low: `requote` offered on a bug, unreachable today by one road only).** **H10 SHIPPED 2026-09-19 — PHASE 3 COMPLETE: the mirror ledger is 41 → 3 (nine more drift tests; 16 comments that were not rule claims reworded honestly). ⛔ The three survivors are `incomeWizard.ts` and stay by decision until TD-262 is settled. Raised TD-266 (`AdminResolutionItem` is a stale copy of the student-facing `ResolutionItem` and ONE serializer feeds both) and TD-265 (the finance summary computes a `programme` column nothing renders).** ⚠ **A test that reads another file's TEXT must normalise line endings** — the api sources are CRLF here and LF in the build container; `apiSource.readApi` does it once, at the seam. **H11 SHIPPED 2026-09-20 — PHASE 4 BEGUN: `views_admin.py` (8,556) is the package `apps/scholarship/views_admin/` (root 5,093 + ten modules, all under 500). Moves only, ten bodies byte-identical, `urls.py` untouched, 142 names re-exported. Raised TD-267 and two tool shortcomings (`std` cannot tell a ledger-key RENAME from a new exemption; `hot#1` does not follow a rename) — both written up under `## Reviews` in `docs/code-health.md`. A trip-wire the brief named did NOT exist: `assertLogs` on a parent logger records its children, so twelve tests would have sat green while every audit line moved off the scrape metric — H11 added the guard that catches it.** **H12 SHIPPED 2026-09-20: the package root is 154 lines of re-export and no code; thirty modules, none over 600; `urls.py` byte-identical; pytest unchanged at 7,021; `big` 25 → 24.** ⚠ **A `patch('apps.scholarship.views_admin.<dependency>')` string no longer resolves** — 23 were moved to the module that reads the dependency, and a stale one raises `AttributeError`. ⛔ **`interview_agenda_full` was NOT dead and was NOT deleted** — it serves the cockpit's `interview_agenda` field through a LAZY import, which is why a symbol search called it unused. Raised **TD-268** (`xapp` counts import statements, so a split can only inflate it: 133 → 135 with the coupling unchanged — accepted with the arithmetic); **TD-267 resolved.**
 
-## Next Sprint — ▶ H19 (the standards move into how every future sprint is run). PHASE 5 IS COMPLETE — H17 and H18 both shipped 2026-09-20. H19 is the LAST sprint of the code-health arc.
+## Next Sprint — ▶ NOTHING IS SCHEDULED. The code-health arc is CLOSED (H1–H19, all nineteen shipped 2026-09-20). The strongest candidate is **TD-282** and it needs the owner's word first.
+
+**H19 SHIPPED 2026-09-20 — PHASE 6 COMPLETE, AND THE ARC IS DONE.** Documentation only: no
+production code, no test file, no test expectation, no migration, neither `code-standards.json`
+touched. Retro: `docs/retrospective-2026-09-20-code-health-h19.md`. **The arc's own closing
+retrospective — the readings on 2026-09-18 against today, everything promised and not delivered,
+what is enforced and by what, what is open and whose it is — is the last section of
+`docs/plans/2026-09-18-code-health-roadmap.md`. Read that before deciding what comes next.**
+
+**What H19 leaves you.** `## Code standards` above gained **`### THE RULES THE ARC HARVESTED`** —
+about 150 entries of `docs/lessons.md` reduced to nine groups of short imperative rules with their
+reasons. **That section is the sprint-start reading now**; `lessons.md` is untouched and keeps the
+evidence. The workflow half went to the lead as exact text for `Settings/_workflows/sprint-start.md`
+(a code-health pre-flight) and `sprint-close.md` (run every suite whatever you touched; `/code-review`
+on the diff; a reading that moved because the sprint did the right thing is a finding about the tool).
+
+### ⚠ FOUR THINGS TO CHECK BEFORE YOU START ANYTHING
+
+1. **Read the split table first.** The standing rule of 2026-09-19 is still live: **a sprint that
+   must touch a file on the hotspot or oversize list runs that file's split FIRST, moves only, in
+   its own commit, and builds on the smaller module.** The table is *"Which Phase-4 sprint owns
+   which file"* in the roadmap — **every row of it is now DONE**, so nothing is waiting on a split
+   and the rule currently binds nothing. It starts binding again the moment somebody schedules a
+   Phase 4b, and the ratchet in `code-standards.json` binds regardless.
+2. **Two api files cannot take another line (TD-283).** `serializers_admin.py` is **1,233 against
+   1,234** and `models/applications.py` **919 against 919** — the recorded size plus the 20-line
+   hotfix allowance, fully spent. The next change to either **splits it first**. H18's first
+   attempt at TD-280 was refused by the standard and had to move; that is the standard working.
+3. **Deploy state is a live fact — read it, do not inherit it.** Everything through H19 is on
+   `origin/main` (0 commits ahead at the time of writing). Several blocks below still say *"Not yet
+   deployed"*, and those sentences were true when written. **A push is a REQUEST to deploy:** match
+   your SHA in `gcloud builds list`, read the status, and check `status.latestReadyRevisionName`
+   (never `status.traffic[0]` — this service carries a tagged revision at index zero).
+4. **Measure the baselines yourself.** At `be270fdc`: **7,053 pytest / 3 skipped · 2,958 jest / 163
+   suites**. Those are H19's own measurements, not inherited ones — and the reason the rule exists
+   is that H13 was briefed at 2,913 jest against a tree standing at 2,900 with a whole suite dead at
+   import for two sprints.
+
+### The candidates, in the order they deserve attention
+
+**1. TD-282 — the officer cockpit is an N+1, and it is the owner's decision.** Opening **one**
+applicant costs **315 database queries** with no documents, **385** with three and **437** with
+more; **265 of the 315 are the same statement** (`SELECT … FROM applicant_documents WHERE
+application_id = …`), issued by `_latest_doc`-shaped helpers inside `verdict_engine`,
+`income_engine` and `anomaly_engine`. **`prefetch_related` does not fix it** — a `.filter(...)` on
+a related manager ignores a prefetch cache — so the fix is a per-request document cache threaded
+through three engines, with characterisation tests, and **that is a sprint, not a small change.**
+It is budgeted (`test_query_budgets.py`, zero slack, in the deploy gate) so the number cannot grow
+unnoticed; a budget is a record of a debt, not an approval. **The owner's word is needed on whether
+it gets a sprint before product work resumes.** ⚠ Nothing in this repository measures TIME — 315
+queries on one SQLite connection is not 315 round trips to Cloud SQL, so if the officers say the
+screen is slow, that is new information and not a duplicate of this entry.
+
+**2. The four endpoints Phase 5 never measured** — the applications list, the student application,
+the sponsor pool and Programme Overview. The pattern is cheap now: one fixture, one ledger key, ten
+lines each. **Expect findings** — the one endpoint that was measured turned out to be a 315-query
+N+1 nobody had counted since June.
+
+**3. TD-284 — three of the arc's own targets are enforced by nothing**, and all three are the ones
+that slipped: `fix%` (target under 30, reads 42), `big` (target 12, reads 17) and `guard%` (target
+12, reads 20). `guard%` needs the real work: it counts drift tests, which are the prescribed CURE
+for unguarded mirrors, as the habit they cure. The fix is in `Settings/_tools/code_health.py` and
+is the lead's, not a project sprint's.
+
+**4. A Phase 4b, if anybody wants it.** Seventeen files are still over 1,000 lines and **none is
+waiting on a Phase-4 sprint**. `officerCockpit.ts` (1,632) is now `hot#1` and is the obvious first
+file; `views.py` (2,421), `courses/views.py` (2,309), `scholarship.ts` and the two serializer files
+were never scoped. ⛔ `verdict_engine.py` and `contracts.py` are **eligibility and money** and must
+wait for their owner rulings; `vision.py` is deliberately out of scope (140 patch sites);
+`stpm_quiz_data.py` is data. The method is written down and proven six times — the roadmap's
+**"What Phase 5 should expect"** is the checklist, and the cost is the GUARDS, not the move.
+
+**5. On the owner's desk, unblocked:** TD-262 (F2 + W1 — the income rule's fourth way has no upload
+slot; needs a Stitch prototype), TD-259 **with** TD-254 (eight i18n keys in no locale, four of them
+on the IC-claim screen — fixed together or not at all), TD-257 (22 wired endpoints no test drives),
+TD-255 (production still builds on Node 18, past end of life), TD-260, TD-253, TD-265.
+
+### If you are starting a product sprint instead
+
+Nothing above blocks it. Read `### THE RULES THE ARC HARVESTED` and the split table, measure your
+own baselines, grep **both** `code-standards.json` files for every path you intend to change and
+**the other tree** for any path you move — then build. The twelve standards in the gate will tell
+you if you get it wrong, and none of their failure messages will ever ask you to raise a number.
+
+## Superseded — previous Next Sprint (as of 2026-09-20, before H19 closed the code-health arc)
 
 **H18 SHIPPED 2026-09-20 — PHASE 5 COMPLETE. Two budgets that nobody was keeping now exist, both
 ratchet DOWN only, and a regression in either turns a gate red.** Not yet deployed. Retro:

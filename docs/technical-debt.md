@@ -308,6 +308,36 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   159 fields that no move can divide — its ledger entry already followed it there at H15) plus
   `FundingNeed`, which can leave. **Trigger:** whoever next needs to add a field to the cockpit
   payload or a column to the application.
+- **TD-284 (raised 2026-09-20 by code health H19, the arc's last sprint) — low, and it is the
+  arc's own lesson pointed back at itself.** **Three of the roadmap's targets are enforced by
+  nothing, and all three are the ones that were missed.** `fix%` (target under 30, reads **42**),
+  `big` (target 12, reads **17**) and `guard%` (target 12, reads **20**, having started at 17) are
+  readings of `Settings/_tools/code_health.py`. They WARN, a WARN is a triage item, and no test
+  anywhere turns red when one of them moves the wrong way — while the twelve standards that ARE
+  tests in the deploy gate all held for three days without anybody remembering them. H17 wrote the
+  rule this entry exists to record: *a standard is the thing that RUNS, not the thing that is
+  written down*, and *a ledger full of figures nothing reads is worse than an empty column,
+  because it reads as enforced.* A target in a roadmap's acceptance table is exactly that kind of
+  figure.
+  **Two of the three cannot simply be ratcheted, and saying why is the point.** `fix%` is a ratio
+  over a 90-day commit window, so it is a reading about a quarter and not about a commit; a gate on
+  it would fire on the calendar. `big` COULD be ratcheted — the `oversize_files` ledger already
+  holds every file over 600 lines and only shrinks — but a second ledger at the 1,000-line
+  threshold would duplicate it, and the honest fix is to keep chasing the 600-line ledger and drop
+  the 1,000-line figure as a separate promise. `guard%` is the one that needs real work: it counts
+  a web test that reads source TEXT, and fifteen of the number are the drift tests H9 and H10 wrote
+  as the prescribed CURE for unguarded mirrors. **The reading no longer measures what it was built
+  to measure.** The fix is already written up under `## Reviews` in `docs/code-health.md`:
+  `m_guard_share` excludes `*Drift.test.ts` and reports them as a separate `drift` count, so the
+  two habits — a test asserting a shape where a behaviour was available, and a test that is the
+  only instrument for a cross-language constant — are counted apart. Until that lands, **`guard%`
+  WARN on HalaTuju is expected and explained**, and a FAIL (a jump of more than 5 in one sprint) is
+  still a real signal.
+  **Why it was not done in H19:** `Settings/_tools` is outside a project sprint's write scope, and
+  this is the fourth tool change the arc has proposed from inside the repository (after `std`'s
+  blindness to a rename, `xapp`'s statement count and `hot#1` not following a rename, of which the
+  lead built two the same day). ~2h in the tool plus a Trend-row note. **Trigger:** the next
+  `system-audit.md` pass, or the first sprint that reads `guard%` and cannot tell what it means.
 - **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
   H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
   for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a

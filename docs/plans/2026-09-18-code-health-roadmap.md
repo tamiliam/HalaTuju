@@ -1246,7 +1246,60 @@ should be asked the same question: *where does this run, and what turns red?*
 *(The freeze was lifted early, at the checkpoint on 2026-09-19, so H19's last act is no longer to
 lift it — it is to write the standing rule and the standards into the workflows for good.)*
 
-### H19 — The standards move into how every future sprint is run
+### H19 — The standards move into how every future sprint is run ✅ SHIPPED 2026-09-20 — **PHASE 6 COMPLETE; THE ARC IS CLOSED**
+
+*Retro: `docs/retrospective-2026-09-20-code-health-h19.md`. Documentation only — no production
+code, no test expectation edited, no migration. Gates: pytest 7,053 / 3 skipped and jest 2,958 /
+163 suites, both IDENTICAL to the sprint's own measured baseline; `code_health` 0 FAIL, 6 WARN.*
+
+**Delivered.**
+- **`halatuju_api/CLAUDE.md` gained `### THE RULES THE ARC HARVESTED`** — ~150 entries of
+  `docs/lessons.md` reduced to **nine groups** of short imperative rules, each with its reason:
+  a guard's cheapest passing state · bite it or you do not know · a number you did not measure ·
+  a reading that punishes the right behaviour · a standard is the thing that RUNS · "nothing uses
+  this" is a claim about your search · measure before the obvious fix · characterise before you
+  change · prose rots. `lessons.md` is untouched and keeps the evidence.
+- **The workflow changes were WRITTEN OUT, not made** — `Settings/` was outside this sprint's
+  write scope, so the exact text for `sprint-start.md` (a code-health pre-flight: measure your own
+  baselines, read the hotspot list, grep both budget files and the other tree for every path you
+  will touch, re-derive the plan's numbers and its premise) and for `sprint-close.md` (run every
+  suite whatever you touched and quote what you ran; `/code-review` on the diff and a bite-check on
+  anything that is supposed to fail; a reading that moved because the sprint did the right thing is
+  a finding about the TOOL) went to the lead to apply, with the two smaller additions to
+  `small-change-lane.md` and `system-audit.md`.
+- **`docs/code-health.md`'s header now describes the instrument, not the project** — the arc is
+  closed, twelve standards run in the gate, and the three arc targets no ledger enforces are named
+  there with their real readings.
+- **The arc's closing retrospective** is the last section of this file.
+
+**Not delivered, and why.**
+- **"Tighten `code-standards.json` to the arc's targets — the last turn of the ratchet" was
+  already turned, continuously, and H19 changed neither file.** The ratchet's third rule
+  (`budget <= actual + slack`) turns the gate red the moment a budget sits loose above reality, so
+  the tightening happens in the sprint that earns it, not in a ceremony at the end. Measured on the
+  day: **zero of 32 api and zero of 17 web oversize entries sit more than ten lines above the real
+  file.** TD-283's two files are at their exact allowance already.
+- **The three arc targets that are NOT in any ledger cannot be ratcheted at all** — `fix%`, `big`
+  and `guard%` are readings of `code_health.py`, and nothing turns red when one of them moves the
+  wrong way. That is the H17 lesson arriving at the end of the arc: **a standard is the thing that
+  runs.** Raised as **TD-284** rather than pretended away.
+- **The acceptance's dry run was not performed as a branch.** It asks for a throwaway branch that
+  adds a 700-line file, a mirrored rule, a hand-built fixture and a query in a loop, refused four
+  times by four different tests. Each of those four refusals is already pinned by its own
+  bite-checked test inside `test_code_standards.py` / `codeStandards.test.ts` — the dry run would
+  re-prove what those tests prove on every run, and this sprint's brief forbids new machinery and
+  new test files. Named here so the gap is a decision, not an omission. **The four refusals, by
+  name:** a 700-line file →
+  `test_code_standards.test_no_unlisted_source_file_passes_the_line_limit` (and the web twin *"no
+  unlisted source file passes 600 lines"*); a mirrored rule →
+  `codeStandards.test.ts` *"a comment claiming a mirrored rule names the drift test that guards
+  it"*, itself bitten by *"a plain mirror claim is caught"*; a hand-built fixture →
+  `test_no_unlisted_test_file_hand_builds_an_application`; a query in a loop →
+  `test_query_budgets.py`, which has **zero slack**, so one extra statement is one failure. Each
+  names in its failure message what to do.
+
+*The original scope, as written on 2026-09-18, is kept below.*
+
 - **Goal:** six months from now, an agent that has never seen this document still keeps to it.
 - **Scope — each line is a change to a workflow or a project file, not advice:**
   - **`halatuju_api/CLAUDE.md` — a "Code standards" section**, short: the standards, each with the
@@ -1360,3 +1413,192 @@ Phase 6   H19                          <-- "completed"
 **Still on the owner's desk (none of them blocked by anything):** TD-262 (F2 + W1, the income
 rule's fourth way has no upload slot — needs a Stitch prototype), TD-260, TD-255, TD-257, TD-253,
 TD-265. TD-264 was ruled on 2026-09-19 and is resolved.
+
+---
+
+# THE ARC'S CLOSING RETROSPECTIVE — 2026-09-20
+
+*Written at the close of H19, the nineteenth and last sprint. It covers three days: 2026-09-18 to
+2026-09-20. Everything below is checkable against the repository — the readings are rows of
+`docs/code-health.md`'s Trend table, the counts are the gate lines in each sprint's retrospective,
+and where a claim is an estimate it says so.*
+
+## What the owner asked for
+
+> *"Occasionally I find bugs being introduced during our coding, as the code base becomes more and
+> more complicated. I'd like to audit the health of the codebase as we progress further."*
+> … *"Once this is built, future builds would ensure the standards are maintained to prevent bugs
+> or inefficiencies creeping in."*
+
+Two things: find out where the bugs come from, and make the answer hold without anybody having to
+remember it. Nineteen sprints in six phases, run 2026-09-18 to 2026-09-20.
+
+## The readings, 2026-09-18 against today
+
+| Reading | 2026-09-18 (`b0c2687`) | 2026-09-20 (`469133f`) | |
+|---|---|---|---|
+| Tests run before a deploy | **no** | **yes, both services** | the biggest single change in the arc |
+| `tsc` errors | 24 | **0** | done; any error is now a regression |
+| `unused` npm packages | 4 | **0** | done |
+| `skip` — tests that skip themselves | 2 | **0** | done |
+| `dup` — one function name, 3+ homes in an app | 10 | **4** | done; the four are declared exceptions |
+| Front-end rules mirrored with no drift guard | **58** | **3** | done bar the income rule, parked by decision |
+| `big` — files over 1,000 lines | 25 | **17** | **target was 12. Missed.** |
+| `long` — Python functions of 150+ lines | 16 | **15** | never had a target; it was never chased |
+| `hot#1` — the worst file's fix-density score | **285.4** (`views_admin.py`) | **49** (`officerCockpit.ts`) | **overstated — see below** |
+| `guard%` — web tests that read source text | 17 | **20** | **target was 12. It went UP.** |
+| `supp` — suppressions | 139 | **139** | unchanged, and every Phase-4 sprint says so deliberately |
+| `fix%` — fixes ÷ all commits, 90 days | 41 | **42** | **target was under 30. It has not moved.** |
+| `xapp` — cross-app imports | 132 statements | **45 edges** | ⚠ **the definition changed on 2026-09-20; not comparable across that date** |
+| `td_open` — open debt entries | 84 | **91** | it rose, and that is what an audit does |
+| `std` — the budgets versus the last run | *did not exist* | **ok** | the ratchet, added at H4 |
+| Rendered tests that mount the officer cockpit | 0 | **59** | done |
+| Standards enforced by a test in the deploy gate | 0 | **12** | done |
+| pytest | 6,714 / 3 skipped | **7,053 / 3 skipped** | +339 |
+| jest | 2,354 / 140 suites | **2,958 / 163 suites** | +604 tests, +23 suites |
+| Median first-load JS, 87 routes | 478.5 kB | **256 kB** | 54% of what it was |
+| Worst route | `/profile`, 562 kB | `/profile`, **339 kB** | |
+| The officer cockpit's route | 515 kB | **292 kB** | |
+| Queries to open one applicant | **never counted** | **315 / 385, budgeted** | ⚠ measured, **not fixed** |
+| Backend suite | 174.6 s | **122.9 s** | |
+| Web suite | 42 s | **21 s** | |
+
+**Nine files totalling 35,850 lines became 138 modules and eight re-export shells**, across six
+sprints of moves only. Not one of those lines was reworded. No migration was created, both golden
+masters are byte-unchanged, and **no importing file was changed in any of the six sprints.**
+
+## What was promised and not delivered
+
+**Four targets from the arc's own table were missed, and one reading moved the wrong way.**
+
+1. **`big` finished at 17 against a target of 12 or fewer.** The eight files that left were the
+   eight the phase named; the seventeen that remain divide into four nobody scoped
+   (`views.py` ×2, `officerCockpit.ts`, `scholarship.ts`, the two serializer files), three a move
+   cannot help (`vision.py`'s 140 patch sites, `stpm_quiz_data.py`'s question bank,
+   `courses/models.py`'s wide table), two that are eligibility and money and must wait for their
+   owner rulings (`verdict_engine.py`, `contracts.py`), and the officer cockpit's `view.tsx` at
+   1,338 — which H14 took from 3,599 and stopped at on purpose, because the rest is the Decision
+   panel and untangling it is design work. **The gap is a Phase 4b and the method is written down
+   and proven six times.**
+2. **`guard%` was to fall to 12 and rose to 20.** H6 did what the target asked — 25 source-reading
+   web tests became 14 of 137 — and then H9 and H10 wrote fifteen drift tests, which is the
+   prescribed cure for the mirror problem and which `m_guard_share` counts as the disease. **The
+   reading no longer measures what it was built to measure**, the proposed fix is recorded under
+   `## Reviews` in `docs/code-health.md` (count `*Drift.test.ts` separately), and it was never
+   built because `Settings/_tools` was outside every sprint's write scope. The number is honest;
+   the interpretation is the thing that changed.
+3. **`fix%` was to fall under 30 and reads 42.** It was never going to move inside the arc: it is a
+   ratio over a 90-day commit window, and the arc is three days long. It can only be read again in
+   December, and it is the one reading that answers the owner's original question directly.
+4. **The `courses → scholarship` back-edge was to go under 20 and finished at 30.** The arithmetic
+   is in TD-278: the metric counts distinct `(app → app, name)` edges, so moving six constants into
+   one leaf module changes WHICH module is named, not HOW MANY names cross. Getting under 20 needs
+   `courses` to own its own defaults, or the numbers to be served rather than imported — **a
+   behaviour change, and Phase 4 was moves only.** The target was accepted without doing the sum.
+5. **`hot#1` 285 → 49 overstates what happened, and the arc says so at every row it appears on.**
+   `m_hotspots` counts fix commits by PATH and does not follow a rename, so a split reads as a
+   hotspot *vanishing* rather than shrinking. The honest claim is the one worth keeping: **the four
+   files with the worst fix-density are no longer single files**, and the tool will re-learn the
+   truth over the next 90 days as fixes land on the new paths.
+
+**Things named in a sprint's own scope and not built:**
+
+- **H8's Phase B — the income rule reading one answer — was stopped at its gate, and that was
+  right.** The literal goal would have un-submitted real students and wiped the snapshot they were
+  judged against, with a green suite. What shipped instead was a verified map: the rule has
+  **eleven** homes, not the four the register claimed, and they disagree in **sixteen** places.
+  That is the largest finding the arc produced and no reading could have found it.
+- **H12's one permitted deletion was not made.** `interview_agenda_full` was written into the
+  roadmap, the brief and `CLAUDE.md` as dead; it is served on every admin application detail load
+  through a lazy import. Nothing was deleted in the whole of Phase 4.
+- **H14's `useApiLoad` hook** — which would have retired ~26 of the 33 `exhaustive-deps` disables
+  and was predicted to take `supp` down ~25 — **was cut from the brief.** `supp` is 139 either
+  side of the arc, and that is why.
+- **H13 refused the roadmap's shared `src/lib/http.ts` and its `admin-api/index.ts` layout**, and
+  named the type-only import cycles (TD-270) rather than engineering them away.
+- **H17's acceptance asked for a recorded Playwright run per locale and settled for a rendered jest
+  test.** Still worth about an hour.
+- **H17 refused to write a first-load-JS budget it could not measure**, which cost a sprint of
+  delay and bought a budget that is real (TD-281, built in H18). It is the best decision in Phase 5
+  and the one H19's harvest is built around.
+- **H18 measured the officer cockpit's N+1 and did not fix it.** 315 queries with no documents,
+  385 with three, 437 with more; 265 of the 315 are the same statement. `prefetch_related` is a
+  no-op against it. **TD-282, and it is the single largest measured inefficiency in the product.**
+- **H19 did not perform its acceptance's dry-run branch**, and did not tighten either
+  `code-standards.json`, because the ratchet had already turned every budget to within ten lines of
+  the real file. Both are argued in H19's section above.
+
+**One promise nobody made and should have:** the arc never measured TIME. Both of Phase 5's budgets
+count things — kilobytes and statements — and 315 queries on one SQLite connection is not 315 round
+trips to Cloud SQL. **No budget in this repository can tell you the cockpit is slow for an officer
+in Ipoh.**
+
+## What is now enforced, and by what
+
+| What | Enforced by | Where it runs | What turns red |
+|---|---|---|---|
+| The suite itself | `cloudbuild.yaml`, both services | **the Cloud Build deploy gate** | a red suite stops the deploy — this did not exist on 2026-09-18 |
+| No new giant file · no new giant function · one rule one home · no skipped test · no new blind spot · every `eslint-disable` has a reason · no unguarded mirror · no dead dependency · the app boundary · new tests use the factory | `test_code_standards.py` (30 tests) · `codeStandards.test.ts` (40) | every test run **and** the gate | a limit raised, a ledger gaining a member, a frozen baseline rewritten |
+| A route may not get heavier (300 kB ceiling · per-route ledger · 256 kB median) | `scripts/bundle-budget.js` | **the gate only** — jest cannot build | any of the three; **and `codeStandards.test.ts` asserts the gate still calls it** |
+| Opening one applicant may not cost more queries | `test_query_budgets.py`, zero slack | every pytest run **and** the gate | one extra statement |
+| A ledger key following its code | the `_moved` array + nine refusal tests | every run | a move that merges, invents, over-budgets or names a file not in the tree |
+| A tree-walking guard seeing nothing | `source_walk.py` · `sourceGuard.ts` floors | every run | a walk that found fewer files, or fewer of the things it came for |
+| An api refactor killing a web guard | `test_web_guards_read_live_paths.py` ↔ `crossTreePaths.test.ts` | both gates | a path one tree names and the other has moved |
+| The budgets against history | `std`, in `Settings/_tools/code_health.py` | sprint close | a budget looser than at the last recorded run |
+
+**Twelve standards, two budgets, one cross-tree pair, and a ratchet over all of them.** The thing
+that makes this different from a document is that every row above has a failure message that says
+what to do, and none of them will ever tell you to raise a number.
+
+## What is still open, and whose it is
+
+**The owner's, and none of it is blocked by anything:**
+- **TD-282** — the applicant view's N+1. Needs its own sprint and the owner's word on whether it
+  gets one.
+- **TD-262 (F2 + W1)** — the income rule's fourth way has no upload slot; needs a Stitch prototype.
+- **TD-259 with TD-254** — eight i18n keys that exist in no locale, four of them on the IC-claim
+  screen. They are fixed together or not at all.
+- **TD-257** (22 wired endpoints no test drives), **TD-260**, **TD-253**, **TD-265**, **TD-255**
+  (production still builds on Node 18, past end of life).
+
+**Engineering's, unscheduled:**
+- **Phase 4b** — the five files over 1,000 lines that nobody scoped, starting with
+  `officerCockpit.ts`, which is now `hot#1`.
+- **TD-284** — `fix%`, `big` and `guard%` have targets and no enforcement; `guard%`'s definition
+  needs the drift-test split.
+- **TD-283** — `serializers_admin.py` and `models/applications.py` are at their exact allowance;
+  the next change to either splits it first.
+- **TD-278** (the back-edge needs a behaviour change), **TD-270**, **TD-273**, **TD-275**,
+  **TD-279**, **TD-266**, **TD-263**, **TD-256**.
+- **The four endpoints Phase 5 did not measure** — the applications list, the student application,
+  the sponsor pool, Programme Overview. One fixture, one ledger key, ten lines each, and whoever
+  does it should expect findings.
+- **The 134 test files that still hand-build an application.** The gate refuses a new one; the old
+  ones convert as they are next touched.
+
+## What the arc cost, honestly
+
+The plan said **about 125 hours across nineteen sprints**. Only four retrospectives state a figure:
+H15 ~7h against ~8h, H16 ~7h against ~7h, H17 ~5h against ~5h, H18 ~7h against a re-estimated ~9h.
+**Fifteen of the nineteen record no hours at all**, so the total is not known and this document is
+not going to invent one. What the four that did record show is that the estimates were close once
+the method existed, and that H18's split was backwards in both directions at once — priced at ~6h
+of query work and ~3h of bundle work, delivered at roughly 2h and 4h. **An estimate that prices a
+sprint by how alarming its subject sounds will be wrong twice.**
+
+## The three things a reader who was not here should take away
+
+1. **The single change that mattered is that a red suite can no longer ship.** Everything else in
+   the arc is downstream of H2. Before it, both triggers deployed whatever was pushed and no test
+   ran between a commit and production.
+2. **A standard is the thing that RUNS.** Twelve of them are tests in the gate and hold without
+   anybody remembering. The three arc targets that are only readings — `fix%`, `big`, `guard%` —
+   are precisely the three that were missed or went the wrong way, and that is not a coincidence.
+   It is the argument for the whole arc, restated by the exceptions.
+3. **Most of what the arc found, it found by reading and running, not by measuring.** The numbers
+   pointed at the files; they did not find the sponsor fund view outside the org fence, the mock
+   donation endpoint live in production, the five money defects, the eleven homes of the income
+   rule disagreeing sixteen ways, the email that would have shipped without its attachment, or the
+   315 queries. Those came from characterising before changing, from bite-checks, and from one
+   guard being pointed at a file it had excused for two months. **Keep the readings; do not mistake
+   them for the audit.**

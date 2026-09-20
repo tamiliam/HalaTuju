@@ -7,11 +7,26 @@ that got WORSE than the last run by more than a tolerance — the only thing tha
 
 Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` at sprint close).
 
-**The plan that acts on these readings:** `docs/plans/2026-09-18-code-health-roadmap.md` (nineteen sprints, six phases). H1-H12 are shipped. The development freeze was lifted at the H10 checkpoint on 2026-09-19; on 2026-09-20 the owner asked for H11-H19 to run back to back again, stopping only for a decision that is the owner's.
+**The arc that produced these readings is CLOSED.** `docs/plans/2026-09-18-code-health-roadmap.md`
+— nineteen sprints in six phases, **all shipped, H1 to H19**, 2026-09-18 to 2026-09-20. Its closing
+retrospective (what moved, what was promised and missed, what is enforced and by what, what is
+still open and whose it is) is the last section of that file. The development freeze was lifted at
+the H10 checkpoint on 2026-09-19.
+
+**What that means for a reading you are about to take.** Twelve standards are now tests inside the
+Cloud Build deploy gate, ratcheting one way only — the two `code-standards.json` files hold the
+numbers, and `halatuju_api/CLAUDE.md` `## Code standards` says what each one is for and how to move
+a ledger key when a file moves. **This document is no longer a project being worked on; it is the
+instrument the project is read with.** A WARN here is a triage item, not a task — six of them are
+standing and decided, and the decision is in the newest `## Reviews` entry that names them. Three
+of the arc's targets are NOT enforced by any ledger and can only be watched here: `fix%` (target
+under 30, reads 42), `big` (target 12, reads 17) and `guard%` (target 12, reads 20 and rose because
+drift tests are counted as the habit they cure). See TD-284.
 
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | be270fd | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 469133f | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 719f0c8 | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 586bcb0 | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
@@ -39,7 +54,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 469133f, window 2026-06-22 onward)
+## Latest run (2026-09-20, be270fd, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -128,18 +143,63 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 165 entries have a defining line; 91 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 648: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5542: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 678: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5572: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 719f0c8
+- budgets no looser than at 469133f
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-20 (thirteenth reading) — H19 closes the arc: every reading delta 0, and the six standing WARNs are now decided in one place
+
+Read-only (`--write` was excluded by the brief), taken on a tree where **no production code, no
+test file and neither `code-standards.json` was changed.** **0 FAIL, 6 WARN**, every reading delta
+0 against `469133f`: `fix%` 42, `big` 17, `long` 15, `dup` 4, `xapp` 45, `supp` 139, `skip` 0,
+`mirror` 3, `guard%` 20, `unused` 0, `std` **ok**.
+
+**The six WARNs are standing, and this is the entry to read before deciding one of them again.**
+Each has been decided at least once above; H19's contribution is to say which are DONE and which
+are unfinished, so a future close does not re-litigate all six every time.
+
+| WARN | Reads | Status |
+|---|---|---|
+| `dup` 4 | `_gemini_generate` ×3 and the `render`/`banned_phrases`/`unknown_placeholders` trio | **DECIDED, PERMANENT** (fifth reading, H7). The metering seams tenancy rule 6 names, and one engine with two thin per-audience adapters. **Do not chase it to zero by renaming adapters.** |
+| `mirror` 3 | `incomeWizard.ts` ×3 | **DECIDED, PARKED** (tenth reading, H10). A guard written today either fails on a disagreement nobody has ruled on or blesses one. Leaves the ledger when **TD-262** is settled, and whoever settles it writes the guard. |
+| `long` 15 | 15 Python functions of 150+ lines | **ACCEPTED as baseline** (2026-09-18). Never had a target; ratcheted, not chased. |
+| `big` 17 | files over 1,000 lines | **MISSED — the target was 12.** Eight left, nine remain; four nobody scoped, three a move cannot help, two are eligibility and money. The split table is empty, so **nothing is waiting**: this is a Phase 4b when somebody wants one. See the arc's closing retrospective. |
+| `guard%` 20 | 33 of 163 web test files read source text | **THE READING NO LONGER MEASURES WHAT IT WAS BUILT TO MEASURE**, and the target (12) was missed in the wrong direction. Fifteen of the number are the drift tests H9/H10 wrote as the prescribed CURE for unguarded mirrors. The fix (exclude `*Drift.test.ts`, report `drift` separately) is in the tenth reading above and is now **TD-284**. Until it lands, a WARN here is expected and explained; a FAIL (a jump over 5 in one sprint) is still a real signal. |
+| `fix%` 42 | 305 fix / 418 feat, 90 days | **CANNOT HAVE MOVED.** It is a ratio over a 90-day commit window and the arc is three days long. **It is the reading that answers the owner's original question, and it can only be read again in December.** Part of TD-284. |
+
+**One decision, and it is about this document rather than about the code.** `big`, `guard%` and
+`fix%` are the three arc targets **no test anywhere enforces** — they WARN, and a WARN is a triage
+item. All three are the ones that were missed or moved the wrong way, while the twelve standards
+that ARE tests in the deploy gate held for three days without anybody remembering them. *Decision:
+**raise TD-284**, not accept* — per `code-health-audit.md`, a third consecutive accept of the same
+WARN is a TD entry, and `guard%` has now been accepted at the ninth, tenth and (implicitly) every
+reading since. The entry says which of the three can be ratcheted, which cannot, and why.
+
+**⚠ One thing this run showed by accident, and it is worth knowing before anybody quotes
+`td_open`.** H19 added TD-284 to the register and `td_open` **did not move** — it reads 91 before
+and after. The tool counts entries by a DEFINING LINE shaped `### [TD-NNN] …`, and every entry
+raised since TD-274 has been written as a BULLET in the curated list near the top of
+`docs/technical-debt.md`, which is the house pattern the arc itself followed. So **eleven current
+entries (TD-274 to TD-284) are invisible to this reading**, and `td_open` 84 → 91 across an arc
+that raised about two dozen is an undercount, not a measure of restraint. *Decision: recorded here
+rather than raised, because it is a property of the register's format and not of the code* — the
+Consolidation Review's Open Items Index is where the register is counted **by reading**, and
+`code-health-audit.md` already says `td_open` is not a score. Fix it in the register (give each
+bullet a heading) or in the tool, whichever the next `system-audit.md` pass prefers.
+
+**Not a reading, and the reason this entry exists:** the arc that produced every row above is
+closed. Its retrospective is the last section of
+`docs/plans/2026-09-18-code-health-roadmap.md`, and the header of this file now describes what is
+enforced and where.
 
 ### 2026-09-20 (TD-272) — `std: FAIL` is the TOOL, and here is the exact line to change
 

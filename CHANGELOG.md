@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H19 - the standards move into how every sprint is run (THE ARC CLOSES) - 2026-09-20
+
+**Nineteen sprints in three days, and this is the last one.** Documentation only: no production
+code, no test file, no test expectation, no migration, and neither `code-standards.json` touched.
+pytest **7,053 / 3 skipped** and jest **2,958 / 163 suites** are identical to the baselines this
+sprint measured for itself before writing a word.
+
+**Why the sprint existed.** Ten standards in the deploy gate, two efficiency budgets, a `_moved`
+mechanism, guard floors, drift tests, a test factory and a rendered-cockpit harness were all kept
+alive by nineteen sprints having happened. H19's job was to make them survive ordinary work by
+ordinary means, so that a sprint six months from now cannot quietly undo them.
+
+### Added
+
+- **`### THE RULES THE ARC HARVESTED` in `halatuju_api/CLAUDE.md`.** About 150 entries of
+  `docs/lessons.md` grouped into **nine** classes of short imperative rules, each with its reason:
+  a guard is only as strong as its cheapest passing state; bite it or you do not know; a number you
+  did not measure is a number you do not have; when a reading punishes the right behaviour, fix the
+  reading and not the number; a standard is the thing that RUNS; "nothing uses this" is a claim
+  about your search; measure before you reach for the obvious fix; characterise before you change
+  and never edit an expectation; prose rots, so write it so it cannot. Each group is a shape this
+  project met three, four or five times. **`docs/lessons.md` is untouched and keeps the evidence -
+  `CLAUDE.md` gets the rule, not the story.**
+- **The arc's closing retrospective**, the last section of
+  `docs/plans/2026-09-18-code-health-roadmap.md`: the readings on 2026-09-18 against today,
+  everything promised and not delivered named plainly, what is enforced and by what, and what is
+  still open and whose it is. Every number in it is a Trend row, a gate line in a named
+  retrospective, or a count taken on the day.
+- **TD-284** - `fix%`, `big` and `guard%` have targets in the roadmap and enforcement nowhere, and
+  all three are the readings that were missed or moved the wrong way.
+- `docs/retrospective-2026-09-20-code-health-h19.md`.
+
+### Changed
+
+- **`docs/code-health.md`'s header now describes the instrument, not a project in flight.** The arc
+  is closed; twelve standards run in the Cloud Build deploy gate; the six standing WARNs are triage
+  and are decided in the newest `## Reviews` entry; the three arc targets no ledger enforces are
+  named with their real readings.
+- **`halatuju_api/CLAUDE.md` `## Next Sprint` is rewritten for a project with no sprint scheduled.**
+  It names the four things to check before starting anything (the split table, TD-283's two files
+  at their exact allowance, deploy state as a live fact to be read rather than inherited, and
+  measuring your own baselines) and ranks the candidates: TD-282 first, then the four endpoints
+  Phase 5 never measured, then TD-284, then a Phase 4b.
+
+### Not done, and why
+
+- **The workflow edits were WRITTEN OUT, not made.** `Settings/` is outside a project sprint's
+  write scope, so the exact text for `sprint-start.md` (a code-health pre-flight) and
+  `sprint-close.md` (run every suite whatever you touched and quote what you ran; `/code-review` on
+  the diff; a reading that moved because the sprint did the right thing is a finding about the
+  tool) went to the lead to apply, with two smaller additions for `small-change-lane.md` and
+  `system-audit.md`.
+- **"Tighten `code-standards.json` to the arc's targets" was already done, continuously, and H19
+  changed neither file.** The ratchet's third rule (`budget <= actual + slack`) turns the gate red
+  the moment a budget sits loose above reality, so the tightening happens in the sprint that earns
+  it. Measured rather than assumed: **zero of 32 api and zero of 17 web `oversize_files` entries
+  sit more than ten lines above the real file.**
+- **The acceptance's dry-run branch was not made.** Each of its four refusals is already pinned by
+  a named, bite-checked test, so the branch would re-prove on one branch what those tests prove on
+  every run - but nobody has watched all four fire against one branch in one run, and that is a
+  weaker claim. Recorded as a *not delivered* line rather than left out.
+- **No bite-checks.** The sprint added no guard, no test and no machinery, so there was nothing
+  whose failure could be injected. Said out loud, because "none were needed" and "they were
+  skipped" read identically in a report.
+
 ## Code health H18 - efficiency gets budgets too (PHASE 5 CLOSES) - 2026-09-20
 
 **Two things nobody was counting are now counted, and a regression in either turns a gate red.**
