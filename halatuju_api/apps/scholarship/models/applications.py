@@ -860,6 +860,26 @@ class ScholarshipApplication(models.Model):
             return field
         return None
 
+    @property
+    def pre_u_track_label(self):
+        """The Malay pre-U track/stream label for ``pre_u_track`` — "Sains Sosial", "Perakaunan",
+        "Belum pasti" — or ``None``. Derived, never stored: NO MIGRATION, no column.
+
+        ⚠ **WHY A DERIVED ATTRIBUTE AND NOT A SCREEN'S BUSINESS.** Until code health H18 the
+        officer cockpit worked this label out in the BROWSER, from a static
+        ``import ms from '@/messages/ms.json'`` — the whole Malay catalogue, **130 kB of
+        first-load JS on `/admin/scholarship/[id]`**, for **sixteen words** read by an officer
+        usually reading English (TD-280). The map was already on this side, so the copy in the
+        bundle bought nothing but bytes. Served, not mirrored.
+
+        The lookup, the reason ``not_sure`` is labelled here and not on a sponsor card, and the
+        reason there is deliberately no case-folding, all live in ``card_display.preu_track_malay``
+        — imported inside the property because that is a read-side display module and this is a
+        model.
+        """
+        from apps.scholarship import card_display
+        return card_display.preu_track_malay(self.pre_u_track)
+
     def __str__(self):
         who = self.profile_id or 'unlinked'
         return f'Application #{self.pk} ({who} -> {self.cohort.code})'

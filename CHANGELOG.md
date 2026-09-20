@@ -2,6 +2,81 @@
 
 All notable changes to this project will be documented in this file.
 
+## Code health H18 - efficiency gets budgets too (PHASE 5 CLOSES) - 2026-09-20
+
+**Two things nobody was counting are now counted, and a regression in either turns a gate red.**
+Plus TD-280 closed: the officer cockpit stopped downloading a Malay dictionary to read sixteen
+words, and `/admin/scholarship/[id]` fell from **389 kB to 292 kB** of first-load JS.
+
+**The finding of the sprint, and it is not a happy one.** Opening ONE applicant on the officer
+cockpit costs **315 database queries** before that applicant has uploaded a single document, and
+**385** with three - roughly **twenty more queries per document**, so a real case with a dozen is
+past six hundred. 265 of the 315 are the same statement (`SELECT ... FROM applicant_documents
+WHERE application_id = ...`), issued over and over by `_latest_doc` helpers inside the verdict,
+income and anomaly engines, each of which builds a fresh queryset every time it is asked a
+question. **H18 measured it and budgeted it; it did not fix it** - the fix is a per-request
+document cache threaded through three engines, which is a behaviour-shaped change with its own
+risk and its own sprint. See **TD-282**.
+
+### Added
+
+- **A first-load-JS budget that ratchets** (`halatuju-web/scripts/bundle-budget.js`, closing
+  TD-281). H17 cut the median route from 478.5 kB to 255.5 kB and then honestly refused to write a
+  kilobyte figure into `code-standards.json`, because **that number exists in exactly one place -
+  the route table `next build` prints - and nothing that runs in a test builds.** This sprint
+  wrote the reader. It parses the real route table and refuses a regression three ways: a route
+  at or above a **300 kB ceiling** that is not in the ledger; a ledgered route grown past its own
+  number; and the **median across all 87 routes** rising above 256 kB. It ratchets DOWN only - an
+  improvement fails the build with *"LOWER it to N"* until the ledger is re-recorded.
+  - **Where it runs:** the Cloud Build deploy gate (`halatuju-web/cloudbuild.yaml`, the `test`
+    step, straight after `npm run gates`), because that is the only place that already builds.
+    Locally it is **`npm run bundle-budget`**, one command.
+  - **What it cannot see, stated:** it does not run in jest, so `npm test` alone never reports it;
+    it reads what Next PRINTS (gzipped first-paint JS - no CSS, no fonts, no lazily-imported
+    chunks); and it is blind between the 87.2 kB floor and the 300 kB ceiling, which is what the
+    median budget covers. **87.2 kB is the floor under every route** and is written into the
+    ledger's own note, so nobody sets a target no route can reach.
+  - The jest half (`codeStandards.test.ts`) owns the LEDGER - the ratchet arithmetic, and a test
+    asserting **the deploy gate still runs the reader.** A budget nobody runs reads as enforced
+    and is not, which is the whole of TD-281.
+- **A database-query budget for the officer's applicant view**
+  (`halatuju_api/apps/scholarship/tests/test_query_budgets.py`). Two readings through the REAL
+  endpoint, built with the H5 factory: **315** queries with no documents, **385** with three. The
+  pair separates a fixed cost from a per-document one. Recorded in
+  `halatuju_api/code-standards.json` as the new `query_budgets` ledger, keyed on the Django route
+  pattern; the ratchet arithmetic lives in `test_code_standards.py` and the reading lives beside
+  the database it needs.
+
+### Changed
+
+- **TD-280 closed - the Malay pre-U track label is SERVED, not computed in the browser.** The
+  cockpit used to work the label out itself, from a static `import ms from '@/messages/ms.json'`
+  in `lib/preUPlan.ts`: the whole 393 kB Malay catalogue, **130 kB of first-load JS on one route,
+  for sixteen words**, read by an officer who is usually reading English. The api already held the
+  same map. It now resolves the label and serves it on the cockpit payload as
+  `pre_u_track_label` (additive; no existing field changed shape or meaning, and there is **no
+  migration** - it is a derived model property, not a column).
+  - `/admin/scholarship/[id]`: **389 kB -> 292 kB** of first-load JS (its own page chunk fell
+    132 kB -> 34.8 kB). It is no longer the worst route and no longer needs a ledger entry at all.
+  - `src/lib/preUPlan.ts` was **deleted**, and the `oneLocalePerVisitor` exemption list shrank
+    from three modules to two - the only direction that list may move.
+  - **Not one word changed in any language.** The officer reads exactly what they read before,
+    proved by a rendered cockpit test (`view.preUTrack.test.tsx`) and by a new cross-runtime
+    parity guard against `messages/ms.json` that the browser version never had.
+
+### Fixed
+
+- Nothing. No behaviour changed anywhere except the additive payload field.
+
+### Notes for whoever is next
+
+- **`serializers_admin.py` and `models/applications.py` are now at their exact line allowances**
+  (1,233 / 1,234 and 919 / 919). The standard refused this sprint's first two attempts and that is
+  it working: the next change to either file must split it first. TD-283.
+- The deploy gate gains one `next build` (~1 min) inside the `test` step, which runs **in
+  parallel** with the image build (6.9 min average). A green run should cost **no extra wall
+  time**.
+
 ## Code health H17 - one locale per visitor (PHASE 5 OPENS) - 2026-09-20
 
 **A visitor now downloads ONE language instead of three.** Every word on every screen is

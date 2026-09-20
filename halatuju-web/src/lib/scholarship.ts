@@ -153,9 +153,12 @@ export function expandMatricInstitution(name: string | null | undefined): string
   return s
 }
 
-// `preUTrackMalay` lives in `lib/preUPlan.ts` (code health H17). It was the one thing in this
-// file that imported a message catalogue, and a static `ms.json` here put 393 kB of Malay into
-// the first load of the fifteen route pages that import this module. Its new home explains why.
+// `preUTrackMalay` IS GONE, and nothing in this file may replace it. It was the one thing here
+// that imported a message catalogue, and a static `ms.json` put 393 kB of Malay into the first
+// load of the fifteen route pages that import this module. Code health H17 confined it to
+// `lib/preUPlan.ts` (one route); code health H18 deleted that module too, because the api now
+// SERVES the resolved label on the cockpit payload as `pre_u_track_label` (TD-280). The browser
+// no longer downloads a Malay catalogue to look up sixteen words. Render what the server sends.
 
 /** Format a raw amount (digit string or number) as money with thousands separators
  * and exactly two decimals, e.g. "3000" → "3,000.00". Empty/non-numeric → "". Used

@@ -122,8 +122,10 @@ makes a reading worse than its own start has not finished.
 | Rendered tests that mount the cockpit | 0 | **1 harness, 6+ tests** | H6 |
 | Standards enforced by a test in the deploy gate | 0 | **all of H4's list** | H4, H19 |
 | Database queries to open one applicant (officer view) | unmeasured | **measured, budgeted, cannot grow** | H18 |
+| ↳ *reading at H18* | unmeasured since June | **315** (no documents) / **385** (three) — budgeted, zero slack, in the deploy gate | ✅ H18. ⚠ It is an N+1 and it was NOT fixed: TD-282 |
 | First-load JS per route | unbudgeted | **budgeted, cannot grow** | H17, H18 |
 | ↳ *reading at H17* | median **478.5 kB**, worst 562 kB | median **255.5 kB**, worst 389 kB | ✅ H17; the ledger entry is H18's (TD-281) |
+| ↳ *reading at H18* | — | median **256 kB**, worst **339 kB**, cockpit **292 kB** | ✅ H18 — ledger + 300 kB ceiling + median, read by `scripts/bundle-budget.js` in the deploy gate |
 
 `long` (16 long functions) and `xapp` get no target: they fall as a side-effect or not at all, and
 chasing them is how a health arc turns into a rewrite.
@@ -1098,7 +1100,40 @@ times.
   Tamil (words, never a raw key) and that the locale and its words change in the same commit.
   A recorded run would be a better instrument and is worth H18's first hour.
 
-### H18 — Efficiency gets budgets too
+### H18 — Efficiency gets budgets too ✅ SHIPPED 2026-09-20
+- **Delivered (~7h against the re-estimated ~9h).** Both budgets exist, both ratchet DOWN only,
+  and a regression in either turns a gate red — proved by eight bite-checks, not by reasoning.
+  TD-280 and TD-281 are both closed.
+  - **The bundle budget** (`halatuju-web/scripts/bundle-budget.js`, closing TD-281) parses the
+    real `next build` route table against `budget.first_load_js` (a ledger of the routes at or
+    above a **300 kB ceiling**) and `budget.first_load_js_median_kb` (**256 kB** across 87
+    routes). It runs in the **Cloud Build deploy gate**, in the existing `test` step after
+    `npm run gates` — the only place that already builds — and locally as `npm run bundle-budget`.
+    The jest half owns the ledger's ratchet arithmetic **and asserts the gate still runs the
+    reader**, which is the half TD-281 was really about.
+  - **The query budget** (`halatuju_api/apps/scholarship/tests/test_query_budgets.py`) reads the
+    real endpoint through the H5 factory: **315 queries with no documents, 385 with three**,
+    recorded in the new `query_budgets` ledger, zero slack.
+  - **TD-280 closed by SERVING the label** (the owner's ruling). `/admin/scholarship/[id]`:
+    **389 kB → 292 kB** of first-load JS, its own page chunk 132 kB → 34.8 kB. `lib/preUPlan.ts`
+    deleted; the `oneLocalePerVisitor` exemption list shrank from three modules to two. No
+    migration (a derived model property), and not one word changed in any language.
+- **⚠ THE FINDING: the applicant view is a real N+1, twenty queries deep PER DOCUMENT, and it was
+  NOT fixed.** 265 of the 315 bare-case queries are one `applicant_documents` SELECT issued over
+  and over by `_latest_doc` helpers in three engines. It is not a `select_related` fix — a
+  filtered related-manager call ignores a prefetch cache — so the honest fix is a per-request
+  document cache threaded through `verdict_engine`, `income_engine` and `anomaly_engine`, with
+  characterisation tests. **TD-282**, and it needs an owner's word on whether it gets a sprint.
+- **⚠ The acceptance's "the bundle half is the cheap half" was right, and its ~6h for the query
+  half was wrong in an interesting way.** The query half cost about two hours, because MEASURING
+  an N+1 is cheap and FIXING one is not, and the brief only allowed the measurement. The bundle
+  half cost more than H17 predicted — not the parsing, but deciding *where the reader runs* and
+  then proving the gate still invokes it.
+- **⚠ Two api files are now at their exact line allowances** (`serializers_admin.py` 1,233/1,234,
+  `models/applications.py` 919/919) — the standard refused this sprint's first two attempts and
+  the work moved. TD-283. The next change to either must split it first.
+
+- *(the brief as written, for the record)*
 - **Goal:** the owner's word was *"bugs **or inefficiencies**"*. Slowness creeps in the same way
   bugs do — one reasonable change at a time, with nothing counting.
 - **Scope:**
@@ -1136,6 +1171,73 @@ times.
   5. **The source-level half is already done and should not be rebuilt.**
      `oneLocalePerVisitor.test.ts` is the enforceable part of the bundle budget today; H18 adds
      the byte reading beside it rather than in place of it.
+
+---
+
+## PHASE 5 CLOSING SUMMARY — what two sprints bought, and what is still unbudgeted
+
+**Phase 5 asked one question: what does the product COST?** Not whether it is correct — Phases 1–4
+had that — but what a visitor downloads and what a screen asks the database. Nobody had ever
+counted either, which is the only reason both numbers were as bad as they were.
+
+### The numbers, before and after
+
+| | before Phase 5 | after Phase 5 |
+|---|---|---|
+| Locale catalogues in every client bundle | **en + ms + ta**, 1.53 MB raw | **en only** |
+| Median first-load JS, 87 routes | **478.5 kB** | **256 kB** |
+| Worst route | `/profile`, 562 kB | `/profile`, **339 kB** |
+| `/admin/scholarship/[id]` (the officer cockpit) | 515 kB | **292 kB** |
+| `/` (the landing page) | 483 kB | **259 kB** |
+| Routes at or above 300 kB | most of them | **3**, each ledgered with its own number |
+| First-load JS budget | **none** | ledger + ceiling + median, **in the deploy gate** |
+| Queries to open one applicant | **unmeasured since June** | **315 / 385**, budgeted, cannot grow |
+| Modules statically importing a catalogue | 3 (one of them in the root layout) | **2**, both confined to one panel each |
+
+**The median route is now 54% of what it was, and the officer cockpit 57%.** Not one word on one
+screen changed in any of the three languages across either sprint; both were about DELIVERY.
+
+### What is now budgeted, and where each budget actually bites
+
+| Budget | Lives in | Read by | Runs in |
+|---|---|---|---|
+| Static catalogue imports (the SOURCE rule) | `oneLocalePerVisitor.test.ts` | jest | every test run + the deploy gate |
+| First-load JS per route + the median | `halatuju-web/code-standards.json` | `scripts/bundle-budget.js` | **the Cloud Build deploy gate**, and `npm run bundle-budget` locally |
+| The bundle budget's own wiring | `codeStandards.test.ts` | jest | every test run + the deploy gate |
+| Queries to open one applicant (×2 fixtures) | `halatuju_api/code-standards.json` | `test_query_budgets.py` | every pytest run + the deploy gate |
+| The query ledger's ratchet arithmetic | same file | `test_code_standards.py` | every pytest run + the deploy gate |
+
+### ⚠ What is still NOT budgeted — say it plainly
+
+1. **The other four busy endpoints.** H18's brief scoped the query budget to the officer's
+   applicant view alone. The applications list, the student application, the sponsor pool and
+   Programme Overview are all **unmeasured**. The pattern is now cheap to copy — one fixture, one
+   ledger key, ten lines — and whoever does it should expect findings.
+2. **TIME, anywhere.** Both budgets count things (kilobytes, statements), not milliseconds. 315
+   queries on one SQLite connection is not 315 round trips to Cloud SQL, and the production cost
+   is dominated by latency nothing here measures. **No budget in this repository can tell you the
+   cockpit is slow for an officer in Ipoh.**
+3. **What the browser actually downloads.** Next's figure is gzipped first-paint JS: no CSS, no
+   fonts, no images, and no chunk fetched later by an `import()`. Moving weight behind a dynamic
+   import lowers the number without making the application smaller. Usually the right trade; still
+   a trade.
+4. **Anything between the floor and the ceiling.** A route may drift 250 → 299 kB unremarked. The
+   median catches broad creep; it will not catch one route getting steadily fatter.
+5. **Build minutes and api image size.** H18's brief dropped the "build budget" line from the
+   original scope. The deploy gate now runs one extra `next build` (~1 min) **in parallel with**
+   the 6.9-minute image build, so a green run should cost no extra wall time — but nothing
+   measures that claim, and nobody is watching the trend.
+6. **The N+1 itself.** It is budgeted, which is not the same as fixed. TD-282.
+
+### The one lesson Phase 5 would give Phase 6
+
+**H17 refused to write a number it could not measure, and that refusal was worth more than the
+number would have been.** It cost one sprint of delay and bought a budget that is real. The
+failure it avoided — a ledger full of figures nothing reads, cited afterwards as coverage — is
+the same failure `test_admin_detail_payload.py` describes for key-set snapshots, and the same one
+`test_endpoint_exercise.py` guards with a floor. **A standard is the thing that RUNS, not the
+thing that is written down.** H19 is about moving standards into workflows; every one it moves
+should be asked the same question: *where does this run, and what turns red?*
 
 ---
 
@@ -1181,7 +1283,7 @@ Phase 1   H1 -> H2 -> H3 -> H4
 Phase 2   H5 -> H6
 Phase 3   H7 -> H8 -> H9 -> H10        <-- CHECKPOINT reached 2026-09-19: the owner LIFTED the freeze
 Phase 4   H11 -> H12 -> H13 -> H14 -> H15 -> H16   <-- COMPLETE, all six shipped 2026-09-20
-Phase 5   H17 -> H18                   <-- H17 SHIPPED 2026-09-20; H18 next
+Phase 5   H17 -> H18                   <-- COMPLETE, both shipped 2026-09-20
 Phase 6   H19                          <-- "completed"
 ```
 

@@ -267,6 +267,9 @@ function base(): AdminScholarshipDetail {
                         institution: 'Test University' },
     chosen_programme_display: { title: 'Test Engineering Degree', stream: '' },
     pre_u_track: '',
+    // Served by the api (TD-280), never computed here. Null is what the server sends for a blank
+    // or unlabelled code, which is what this university-pathway applicant has.
+    pre_u_track_label: null,
     pre_u_institution: '',
     uncertainty_reasons: [],
     uncertainty_note: '',

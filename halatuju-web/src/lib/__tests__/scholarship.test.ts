@@ -61,9 +61,14 @@ import {
   liveApplications,
   LIVE_APPLICATION_STATES,
 } from '@/lib/scholarship'
-// `preUTrackMalay` moved to its own module in code health H17 so that `ms.json` stops riding into
-// every bundle that imports `lib/scholarship`. The expectations below are unchanged.
-import { preUTrackMalay } from '@/lib/preUPlan'
+// ⚠ `preUTrackMalay` IS GONE — there is no FE lookup left to import. Code health H17 moved it
+// out of this module (so `ms.json` stopped riding into fifteen route bundles); code health H18
+// deleted it, because the api now SERVES the resolved label on the cockpit payload (TD-280).
+// The expectations that were here followed the code to the runtime that owns it, unchanged:
+// `halatuju_api/apps/scholarship/tests/test_card_display.TestCockpitTrackLabelParity`
+// — the same six labels, the same nulls, plus a parity guard against `messages/ms.json` that the
+// FE version never had. The words the officer reads are pinned by
+// `src/app/admin/scholarship/[id]/view.preUTrack.test.tsx`.
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'
@@ -129,25 +134,6 @@ describe('expandMatricInstitution', () => {
     expect(expandMatricInstitution('')).toBe('')
     expect(expandMatricInstitution(null)).toBe('')
     expect(expandMatricInstitution(undefined)).toBe('')
-  })
-})
-
-describe('preUTrackMalay', () => {
-  it('gives the Malay-only label for STPM streams', () => {
-    expect(preUTrackMalay('sains')).toBe('Sains')
-    expect(preUTrackMalay('sains_sosial')).toBe('Sains Sosial')
-    expect(preUTrackMalay('not_sure')).toBe('Belum pasti')
-  })
-  it('gives the Malay-only label for matric tracks', () => {
-    expect(preUTrackMalay('kejuruteraan')).toBe('Kejuruteraan')
-    expect(preUTrackMalay('sains_komputer')).toBe('Sains Komputer')
-    expect(preUTrackMalay('perakaunan')).toBe('Perakaunan')
-  })
-  it('returns null for an unknown/blank code', () => {
-    expect(preUTrackMalay('')).toBeNull()
-    expect(preUTrackMalay(null)).toBeNull()
-    expect(preUTrackMalay(undefined)).toBeNull()
-    expect(preUTrackMalay('mystery')).toBeNull()
   })
 })
 

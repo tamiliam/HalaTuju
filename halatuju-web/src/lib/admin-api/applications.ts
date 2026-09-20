@@ -188,6 +188,18 @@ export interface AdminScholarshipDetail {
   // the bidang as `stream`; STPM/Matric carry the track in `stream`; else `stream` is ''.
   chosen_programme_display?: { title: string; stream: string }
   pre_u_track: string
+  /**
+   * The Malay pre-U track/stream label for `pre_u_track` — "Sains Sosial", "Perakaunan",
+   * "Belum pasti" — or null when the stored code has no label.
+   *
+   * ⚠ **SERVED, NOT MIRRORED (TD-280, code health H18).** Until H18 the cockpit computed this in
+   * the browser, from a static `import ms from '@/messages/ms.json'` in `lib/preUPlan.ts`: the
+   * whole 393 kB Malay catalogue, **130 kB of first-load JS on this one route**, for sixteen
+   * words shown to an officer who is usually reading English. The api already held the same map
+   * (`card_display._COCKPIT_TRACK_LABEL`), so the browser copy bought nothing but bytes. Render
+   * what the server sends; never look the code up here again.
+   */
+  pre_u_track_label: string | null
   pre_u_institution: string
   uncertainty_reasons: string[]
   uncertainty_note: string

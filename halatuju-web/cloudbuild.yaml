@@ -80,6 +80,23 @@ steps:
         echo "--- npm run gates ---"
         npm run gates
 
+        # THE FIRST-LOAD-JS BUDGET (code health H18, closing TD-281). This is the ONLY place the
+        # number can be read: it exists in the route table `next build` prints, and NOTHING that
+        # runs in a test builds — jest has no build output and `code_health.py` does not build
+        # either. So a kilobyte figure in code-standards.json is enforced HERE or nowhere, and
+        # `codeStandards.test.ts` asserts that this line is still in this file.
+        #
+        # ⚠ IT COSTS WALL TIME ONLY IF IT OVERTAKES THE IMAGE. This step runs in PARALLEL with
+        # `Build`, which alone averages 6.9 minutes; `npm ci` + gates + this build come to roughly
+        # four. `Push` waits for both, so a green run should cost NO extra wall time — and if the
+        # gates ever do overtake the image build, the extra is the length of one `next build`
+        # (~1 min), paid only on builds that were going to deploy anyway.
+        #
+        # ⚠ It is NOT the same build as the image's: this one runs here with the repo's .env
+        # defaults, the image's runs inside the Dockerfile. It is read for BYTES, never shipped.
+        echo "--- npm run bundle-budget ---"
+        npm run bundle-budget
+
   # ---------------------------------------------------------------- image (parallel with tests)
   - args:
       - build

@@ -389,6 +389,8 @@ message itself tells you what to do; this table is the why.
 | **No dead weight** — every package in `dependencies` is imported somewhere | `codeStandards.test.ts` | Downloaded on every build, audited on every scan, and read by the next person as something this app uses |
 | **The app boundary** — `courses → scholarship` imports may not rise above 25, and the module-level ones may not rise above 1 | `test_code_standards.py` | Two apps that import each other are one app with a line drawn through it, and the import-time half is what takes the service down at start-up |
 | **New tests use the factory** — a test file not already in the ledger of 134 may not call `ScholarshipApplication.objects.create(`; a listed file's count may only fall | `test_code_standards.py` | A hand-built fixture can describe a state the product cannot reach, and then the test passes for ever while testing nothing (BrightPath #24). See **Test fixtures** below |
+| **A route may not get heavier** — no route's first-load JS may reach **300 kB** unless it is in the `first_load_js` ledger with its own number, no ledgered route may pass that number, and the **median across all routes** may not rise above **256 kB** | `scripts/bundle-budget.js` **in the deploy gate** (+ `codeStandards.test.ts` for the ledger and the wiring) | A visitor downloaded 1.53 MB of message catalogues to read one language, and nothing counted it for a year. See **The two budgets H18 added** below — this one is NOT measured by jest and that matters |
+| **Opening one applicant may not cost more queries** — the officer's applicant-detail GET is pinned at **315** (no documents) and **385** (three), with ZERO slack | `test_query_budgets.py` (the reading) + `test_code_standards.py` (the ratchet) | It is an N+1 that nobody had counted since June — 265 of those 315 are the same statement. **The budget is a record of a debt, not an approval: TD-282.** See below |
 
 **The two budget files.** `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`.
 Each sits inside its own service folder, so it is inside the path filter of the Cloud Build trigger
@@ -403,6 +405,61 @@ be raised back to where H4 found it and an exemption list can only shrink. And i
 budget to match — that is the ratchet catching up with you, not a complaint. (The `baseline` block
 is pinned by a SHA-256 held in the test file, so rewriting history takes a second deliberate edit
 that a reviewer sees.)
+
+### The two budgets H18 added (2026-09-20) — and HOW TO RUN EACH LOCALLY
+
+Both are ordinary ratchets: a frozen `baseline`, a live `budget` that only tightens, and a failure
+message that tells you which number to lower. What is different is **where each one is measured**,
+and that is the part to read before trusting either.
+
+**1. First-load JS per route — `halatuju-web/`, and jest does NOT measure it.**
+
+```
+cd halatuju-web && npm run bundle-budget        # builds, then checks. One command.
+```
+
+The number exists in exactly one place: the route table `next build` prints. jest has no build
+output; `code_health.py` does not build either. So the reader is `halatuju-web/scripts/bundle-budget.js`
+and it runs **inside the Cloud Build deploy gate** (`halatuju-web/cloudbuild.yaml`, the `test` step,
+after `npm run gates`), which is the only place a build already happens. A regression therefore
+turns the gate red before the image is pushed.
+
+- It refuses three things: a route at or above the **300 kB ceiling** that is not in the ledger; a
+  ledgered route past its own number; the **median** above 256 kB.
+- ⚠ **87.2 kB is the FLOOR** under every route (React + the Next runtime + the shared chunk). No
+  target below that is reachable by any change — subtract it before setting one.
+- ⚠ **What it cannot see:** it does not run in `npm test`; it reads what Next PRINTS (gzipped
+  first-paint JS — no CSS, no fonts, no lazily-imported chunks, so moving weight behind an
+  `import()` lowers the number without shrinking the app); and it is blind between the floor and
+  the ceiling, which is what the median covers. The full list is at the top of the script.
+- `codeStandards.test.ts` owns the ledger's arithmetic **and asserts `cloudbuild.yaml` still runs
+  the reader.** Do not remove that line from the gate; the numbers become decoration the moment
+  you do, silently.
+
+**2. Database queries to open one applicant — `halatuju_api/`.**
+
+```
+cd halatuju_api && python -m pytest apps/scholarship/tests/test_query_budgets.py -q
+```
+
+Two readings through the REAL endpoint, built with the H5 factory: **315** queries with no
+documents, **385** with three named documents. The pair separates a fixed cost from a per-document
+one — if the three-document budget fails while the bare one holds, the new work is inside the N+1
+and every real applicant pays for it several times over. Zero slack, because the reading is
+deterministic.
+
+⚠ **THE NUMBER IS A DEBT, NOT A TARGET MET.** 265 of the 315 are the same
+`SELECT … FROM applicant_documents WHERE application_id = …`, issued by `_latest_doc`-shaped
+helpers inside `verdict_engine`, `income_engine` and `anomaly_engine`. **`prefetch_related` does
+not fix it** — a `.filter(...)` on a related manager ignores a prefetch cache — so the real fix is
+a per-request document cache threaded through those engines. That is **TD-282** and it needs its
+own sprint. Until then the budget stops the number growing, and when the fix lands these tests go
+red with *"LOWER it to N"*, which is the ratchet catching up with an improvement.
+
+⚠ Its keys are **route patterns**, not file paths (`api/v1/…/<int:pk>/::GET::<fixture>`), so
+`query_budgets` is a full member of `_moved` but not of `PATH_KEYED_LEDGERS` — see the next
+section, and the reading test asks the equivalent question ("does this pattern still resolve?")
+where Django's resolver exists.
 
 ### Moving a file that is in a ledger — HOW TO DECLARE A MOVE (TD-272, 2026-09-20)
 
@@ -1006,7 +1063,59 @@ Read it at sprint start, before planning.
 
 - **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** **TD-254 + TD-259 FIXED 2026-09-19 on the owner's order: the IC claim is a LINK row (`ProfileLoginAlias`) resolved in the auth middleware, behind a code to a VERIFIED contact, fully audited, and the endpoint never names the holder — see `### Profile claim`. `request.auth_sub` = who holds the token (staff, sponsor, audit); `request.user_id` = whose student data. Migration `courses/0075` applied migrate-first.** **H7 SHIPPED 2026-09-19: money parsing/formatting has ONE home, `apps/scholarship/money.py` (`parse_money` / `format_money`; each caller keeps its own exception and blank answer through a named two-line wrapper); `text.py` (`id_list`, `digits_only`); `gemini.py` (the single-model metered core — the three `_gemini_generate` seams stay BY NAME). Any change to these helpers must answer to `tests/test_helper_characterisation.py` (417 assertions).** **TD-261 FIXED 2026-09-19 on the owner's order: a bill credit is written `RM-40.00` (chosen from its readers — see decisions.md); one-decimal figures keep their decimal; `money.parse_money` refuses `Infinity`/`NaN`; `sponsor_comms.render` defaults declared tokens; a payment-run line with a third decimal is REFUSED, not rounded.** **H8 (2026-09-19): PHASE A DELIVERED, PHASE B STOPPED AT ITS GATE — no production code changed. The income rule has ELEVEN homes and they disagree in sixteen places today: TD-262 (HIGH), awaiting the owner's rulings.** ⚠ **DO NOT "tidy" `application_completeness`: its legacy doc-type arm is more permissive ON PURPOSE (it may only ever widen); replacing it un-submits students and nulls their `requirements_snapshot`.** Any change to an income home answers to `tests/test_income_evidence_homes.py` and `src/lib/__tests__/incomeEvidenceHomes.test.ts`. **H9 SHIPPED 2026-09-19 — no production code changed: the six decision gates that said they MIRRORED a backend rule now have a test that reads the backend's own source in both directions (`applicationStatusDrift` · `requestStatusDrift` · `officerGateDrift` · `strCoachDrift` · `adminRoleDrift` · `payoutAccountDrift`, shared reader `halatuju-web/src/test/apiSource.ts`). `unguarded_mirrors` 58 → 41; a new `mirror` reading in `code_health.py` agrees with it exactly.** ⚠ **A CONSTANT IS GUARDED, NOT SERVED** (decisions.md 2026-09-19): serve a rule that can differ between two callers; for a module-level constant a drift test fails in the deploy gate where a served value could only fail at runtime. **Raised TD-264 (money path: the api counts payout-account digits with Unicode-aware `isdigit()`, the web with ASCII `\d`, so a direct POST of five superscripts is stored as a payout target — owner's call which side moves) and TD-263 (low: `requote` offered on a bug, unreachable today by one road only).** **H10 SHIPPED 2026-09-19 — PHASE 3 COMPLETE: the mirror ledger is 41 → 3 (nine more drift tests; 16 comments that were not rule claims reworded honestly). ⛔ The three survivors are `incomeWizard.ts` and stay by decision until TD-262 is settled. Raised TD-266 (`AdminResolutionItem` is a stale copy of the student-facing `ResolutionItem` and ONE serializer feeds both) and TD-265 (the finance summary computes a `programme` column nothing renders).** ⚠ **A test that reads another file's TEXT must normalise line endings** — the api sources are CRLF here and LF in the build container; `apiSource.readApi` does it once, at the seam. **H11 SHIPPED 2026-09-20 — PHASE 4 BEGUN: `views_admin.py` (8,556) is the package `apps/scholarship/views_admin/` (root 5,093 + ten modules, all under 500). Moves only, ten bodies byte-identical, `urls.py` untouched, 142 names re-exported. Raised TD-267 and two tool shortcomings (`std` cannot tell a ledger-key RENAME from a new exemption; `hot#1` does not follow a rename) — both written up under `## Reviews` in `docs/code-health.md`. A trip-wire the brief named did NOT exist: `assertLogs` on a parent logger records its children, so twelve tests would have sat green while every audit line moved off the scrape metric — H11 added the guard that catches it.** **H12 SHIPPED 2026-09-20: the package root is 154 lines of re-export and no code; thirty modules, none over 600; `urls.py` byte-identical; pytest unchanged at 7,021; `big` 25 → 24.** ⚠ **A `patch('apps.scholarship.views_admin.<dependency>')` string no longer resolves** — 23 were moved to the module that reads the dependency, and a stale one raises `AttributeError`. ⛔ **`interview_agenda_full` was NOT dead and was NOT deleted** — it serves the cockpit's `interview_agenda` field through a LAZY import, which is why a symbol search called it unused. Raised **TD-268** (`xapp` counts import statements, so a split can only inflate it: 133 → 135 with the coupling unchanged — accepted with the arithmetic); **TD-267 resolved.**
 
-## Next Sprint — ▶ H18 (efficiency gets budgets too — bundle + QUERIES). H17 shipped 2026-09-20 and Phase 5 is half done; TD-262's income work is closed except option 4 and W1.
+## Next Sprint — ▶ H19 (the standards move into how every future sprint is run). PHASE 5 IS COMPLETE — H17 and H18 both shipped 2026-09-20. H19 is the LAST sprint of the code-health arc.
+
+**H18 SHIPPED 2026-09-20 — PHASE 5 COMPLETE. Two budgets that nobody was keeping now exist, both
+ratchet DOWN only, and a regression in either turns a gate red.** Not yet deployed. Retro:
+`docs/retrospective-2026-09-20-code-health-h18.md`; the **PHASE 5 CLOSING SUMMARY** (the numbers
+before and after, what is budgeted and what is still not) is in
+`docs/plans/2026-09-18-code-health-roadmap.md`.
+
+⚠ **THE FINDING OF THE SPRINT — READ THIS BEFORE ANYTHING ELSE. Opening ONE applicant on the
+officer cockpit costs 315 database queries**, before that applicant has uploaded a single
+document, and **385 with three** — roughly twenty more per document, so a real case with a dozen
+is past six hundred. **265 of the 315 are the same statement** (`SELECT … FROM applicant_documents
+WHERE application_id = …`), issued by `_latest_doc`-shaped helpers inside `verdict_engine`,
+`income_engine` and `anomaly_engine`. **It was measured and budgeted, NOT fixed** — the brief
+allowed only a one-line fix and this is not one: `prefetch_related` is ignored by a `.filter(...)`
+on a related manager, so the real fix is a per-request document cache threaded through three
+engines, with characterisation tests. **TD-282, and it needs the owner's word on whether it gets a
+sprint of its own.**
+
+**What else landed:**
+- **The first-load-JS budget, with a reader that actually runs (TD-281 closed).**
+  `halatuju-web/scripts/bundle-budget.js` parses the real `next build` route table; it runs **in
+  the Cloud Build deploy gate** (the existing `test` step, after `npm run gates`) and locally as
+  **`npm run bundle-budget`**. Ledger + 300 kB ceiling + a 256 kB median, in
+  `halatuju-web/code-standards.json`. ⛔ **`codeStandards.test.ts` asserts `cloudbuild.yaml` still
+  runs it** — remove that line from the gate and every kilobyte in the ledger becomes a comment.
+- **TD-280 closed by SERVING the label** (the owner chose option 2, not the cheap copy). The
+  Malay pre-U track label is resolved by `card_display.preu_track_malay`, reached through a
+  derived `ScholarshipApplication.pre_u_track_label` property — **no migration, no column** — and
+  served on the cockpit payload. `src/lib/preUPlan.ts` is **deleted**; the `oneLocalePerVisitor`
+  exemption list shrank from three modules to two. **`/admin/scholarship/[id]`: 389 → 292 kB**
+  (page chunk 132 → 34.8 kB). Not one word changed in any language.
+- **Two api files are now AT their line allowance** — `serializers_admin.py` 1,233/1,234 and
+  `models/applications.py` 919/919. The standard refused this sprint's first two attempts and the
+  work moved. **The next change to either must split it first: TD-283.**
+- ⚠ **`BASELINE_SHA256` was re-pinned in BOTH services**, deliberately, in the same commit: a NEW
+  standard must enter the frozen record or `budget <= baseline` is vacuous for it (H5's case, not
+  H11's). Nothing was raised; no existing ledger gained a member.
+
+**Gates at close:** **7,053 pytest / 3 skipped** (7,043 before; +10 new) · **2,958 jest / 163
+suites** (2,954 / 162 before; +7 new, −3 deleted with their module) · `tsc` 0 · lint 0 errors ·
+i18n 5,389/locale · `next build` 0, 88 routes · `npm run bundle-budget` **ok** (median 256 kB,
+worst 339 kB, shared 87.2 kB) · `manage.py check` 0 · `makemigrations --check` clean ·
+code_health **0 FAIL**, `std` ok, `big` 17, `xapp` 45, `hot#1` unchanged. **Eight bite-checks, all
+eight behaved.**
+
+**H19 starts here (~6h, low–medium):** the standards move into the workflows — a health pre-flight
+in `sprint-start.md`, `/code-review` on the diff in `sprint-close.md`, the third-accept-becomes-a-TD
+rule in `small-change-lane.md`, a hotspot read-through in `system-audit.md`, and the last turn of
+the ratchet in both `code-standards.json` files. **Ask every standard the question Phase 5 was
+built on: where does this RUN, and what turns red?** Acceptance is a dry run — a throwaway branch
+that adds a 700-line file, a mirrored rule, a hand-built fixture and a query in a loop is refused
+four times by four different tests, with nobody remembering anything.
 
 **H17 SHIPPED 2026-09-20 — a visitor downloads ONE language instead of three, and the median route
 fell from 478.5 kB of first-load JS to 255.5 kB.** WEB ONLY: no api file, no migration. Not yet
@@ -1031,8 +1140,9 @@ chunk, not the shared one**, and 87 kB is the FLOOR under every route.
   specifier makes webpack emit a context module holding every JSON in the folder, which is the
   same bug spelled differently. `src/lib/__tests__/oneLocalePerVisitor.test.ts` enforces all of it.
 - ⛔ **ADDING A LINE TO THAT TEST'S EXEMPTION LIST IS THE REGRESSION**, not a fix for it. The list
-  has three entries and each says what route pays for it. If a guard is in your way, the answer is
-  a lazy `import()` or a file split — never a new exemption.
+  has **two** entries since H18 closed TD-280 (it had three), and each says what route pays for
+  it. If a guard is in your way, the answer is a lazy `import()`, a file split, or **serving the
+  value from the api** — never a new exemption.
 - ⚠ **A module is not a unit of consumption.** `lib/applyCopy.ts` held one pure function used by a
   student page and one catalogue-reading function used by an admin tab; sharing a file meant
   `/scholarship/apply` carried 1.53 MB of JSON. Every gate was green and only the route table saw
@@ -1041,17 +1151,10 @@ chunk, not the shared one**, and 87 kB is the FLOOR under every route.
   give you a render where `locale` says Tamil and the words are English — the flash. The stored
   locale's chunk is also requested at MODULE EVALUATION, not from an effect, so the fetch runs in
   parallel with hydration.
-- ⚠ **`/admin/scholarship/[id]` still carries `ms.json`** — 130 kB for the sixteen Malay pre-U
-  labels `lib/preUPlan.ts` resolves, confined by H17 from fifteen route pages to this one. It
-  cannot be lazy (it renders for an officer reading English). **TD-280 prices the three ways out
-  and needs the owner's word**; note the 2026-07-18 precedent, where the owner approved a guarded
-  copy of these very labels on the Python side.
-
-**H18 starts here (re-estimated by H17, still ~9h, but the split moved):** build the bundle
-budget's READER before writing any number (**TD-281** — `next build`'s route table is the only
-place it exists and nothing that runs in a test builds), key it on a route path with `_moved` from
-day one, put the 87 kB floor in the ledger's header, and **budget ~6h of the 9 for the QUERY half**
-— the applicant-detail N+1 is unmeasured since June and is the sprint's real risk.
+- ~~⚠ **`/admin/scholarship/[id]` still carries `ms.json`**~~ **CLOSED at H18 (TD-280): the label
+  is SERVED now.** `lib/preUPlan.ts` and its `ms.json` import are gone, the route fell 389 → 292 kB,
+  and the exemption list above has **two** entries, not three. ⛔ Do not re-create a browser-side
+  track-label map: the api serves `pre_u_track_label` on the cockpit payload.
 
 **H16 SHIPPED 2026-09-20 — `emails.py` (4,242) and `income_engine.py` (3,188) are PACKAGES, and
 Phase 4 is done.** The roots are 134 and 132 lines of re-export and no code; the bodies are 40

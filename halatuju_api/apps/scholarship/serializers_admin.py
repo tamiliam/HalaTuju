@@ -458,6 +458,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # degree as the programme + the bidang on its own Stream/Bidang row; STPM/Matric carry the track;
     # else stream is ''. One backend home (card_display.programme_split) so the cockpit just renders.
     chosen_programme_display = serializers.SerializerMethodField()
+    # TD-280: the Malay pre-U track label the cockpit renders, SERVED rather than computed in the
+    # browser out of a whole Malay catalogue. The model property holds the reasoning.
+    pre_u_track_label = serializers.ReadOnlyField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -528,7 +531,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'other_scholarships', 'other_scholarships_text', 'help_university',
             'help_scholarship', 'anything_else',
             # Plans redesign — surface the structured pathway plan for admin/coordinator
-            'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
+            'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_track_label',
+            'pre_u_institution',
             'chosen_programme', 'chosen_programme_display', 'uncertainty_reasons', 'uncertainty_note',
             # NB chosen_programme is a SerializerMethodField (get_chosen_programme) — fills a
             # blank POLY-diploma institution live from the offer (see the method).

@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 469133f | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 719f0c8 | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 586bcb0 | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | 986702a | 90 | 42 | income_engine.py 95.6 | 19 | 15 | 4 | 46 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
@@ -38,7 +39,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-20, 719f0c8, window 2026-06-22 onward)
+## Latest run (2026-09-20, 469133f, window 2026-06-22 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -47,7 +48,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 1338 | 12 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1229 | 11.1 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1233 | 11.1 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 9 | 1151 | 10.4 |
 | `halatuju_api/apps/scholarship/academic_engine.py` | 9 | 887 | 8 |
 | `halatuju_api/apps/courses/views_admin.py` | 6 | 1262 | 7.6 |
@@ -66,9 +67,9 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1338  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1326  halatuju-web/src/lib/scholarship.ts`
+- `1329  halatuju-web/src/lib/scholarship.ts`
 - `1262  halatuju_api/apps/courses/views_admin.py`
-- `1229  halatuju_api/apps/scholarship/serializers_admin.py`
+- `1233  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1212  halatuju_api/apps/scholarship/serializers.py`
 - `1151  halatuju_api/apps/scholarship/verdict_engine.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
@@ -121,20 +122,20 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - halatuju-web/src/lib/incomeWizard.ts:111  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 33 of 162 web test files read source text (signals: readFileSync, apiSource)
+- 33 of 163 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
 - 165 entries have a defining line; 91 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 558: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5452: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 648: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5542: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 586bcb0
+- budgets no looser than at 719f0c8
 
 ## Reviews
 

@@ -14,7 +14,6 @@ import {
   formatAddress,
   expandMatricInstitution,
 } from '@/lib/scholarship'
-import { preUTrackMalay } from '@/lib/preUPlan'
 import { spmExamYear } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
@@ -52,7 +51,10 @@ export function ApplicantCards({
         // pre_u_track holds a matric TRACK (sains/kejuruteraan…) or an STPM STREAM
         // (sains/sains_sosial/not_sure). The cockpit shows the Malay term ONLY (owner 2026-07-18) —
         // "Sains Sosial", not the apply form's bilingual "Social Science (Sains Sosial)".
-        const preUTrackLabel = preUTrackMalay(app.pre_u_track)
+        // ⚠ SERVED, NOT MIRRORED (TD-280, code health H18). This used to be `preUTrackMalay(...)`
+        // from `lib/preUPlan`, which statically imported the whole Malay catalogue — 130 kB of
+        // first-load JS on this route for sixteen words. The api resolves it now; we render it.
+        const preUTrackLabel = app.pre_u_track_label
         // Help answers: render the apply-form's own words (Yes / No / Not sure) rather
         // than the raw 'yes'/'no'/'unsure' codes.
         const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)

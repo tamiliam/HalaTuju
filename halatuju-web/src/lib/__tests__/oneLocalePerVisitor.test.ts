@@ -49,10 +49,11 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
   'src/lib/messages.ts':
     'THE LOADER. English only, and static on purpose: it is what the server renders, what the '
     + 'first client paint shows, and what `t()` answers with while another chunk is in the air.',
-  'src/lib/preUPlan.ts':
-    'The officer cockpit\'s Malay pre-U track label, read from `ms.json` rather than copied out '
-    + 'of it. Synchronous by necessity (it renders for an officer reading English, so there is no '
-    + 'catalogue in memory to answer from) and confined to `/admin/scholarship/[id]`. TD-280.',
+  // ⚠ `src/lib/preUPlan.ts` WAS HERE, and it is gone — TD-280, closed by code health H18. The
+  // officer cockpit's Malay pre-U track label is now RESOLVED BY THE API and served on the
+  // payload (`pre_u_track_label`), so the browser downloads no Malay catalogue for it and there
+  // is no module to exempt. `/admin/scholarship/[id]` fell from 389 kB of first-load JS to the
+  // level of every other route. THIS LIST GOT SHORTER, which is the only direction it may move.
   'src/lib/applyCopyPlatform.ts':
     'The platform default wording in all three languages at once — the one screen whose job is to '
     + 'show an administrator what a Malay or Tamil applicant would read. `ApplyCopyTab` reaches '

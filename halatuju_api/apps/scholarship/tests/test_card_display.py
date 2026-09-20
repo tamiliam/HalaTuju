@@ -240,6 +240,83 @@ class TestTrackLabelParity(SimpleTestCase):
             'card and the officer cockpit render the same words.')
 
 
+class TestCockpitTrackLabelParity(SimpleTestCase):
+    """TD-280 / code health H18 — the OFFICER COCKPIT's Malay track label, now served.
+
+    Until H18 the browser computed this label itself, from a static import of the whole Malay
+    catalogue: **130 kB of first-load JS on `/admin/scholarship/[id]` for sixteen words**, read by
+    an officer who is usually reading English. The map was already here, so the FE copy bought
+    nothing but bytes. The label is now resolved by `card_display.preu_track_malay` and served on
+    the cockpit payload as `pre_u_track_label`.
+
+    ``TestTrackLabelParity`` above guards ``_TRACK_LABEL`` — the SPONSOR CARD's map — against the
+    FE JSON with ``not_sure`` excluded. This guards the COCKPIT's map against ALL of it, because
+    the cockpit has always shown "Belum pasti" and must go on showing it. Same file, same read,
+    one code more.
+
+    ⚠ **IT DOES NOT SKIP WHEN THE WEB FOLDER IS ABSENT, and that is deliberate.** Its sibling
+    does, and a skip in an api-only checkout is a guard that quietly stops guarding (TD-276, four
+    times in this arc). When the JSON is there the assertion is full equality with it. When it is
+    not, the assertion FALLS BACK to the structural chain — the cockpit map is `_TRACK_LABEL` plus
+    exactly the codes the sibling guard declares FE-only — which still fails if somebody adds a
+    code to one map and not the other. Something is always asserted.
+    """
+    @staticmethod
+    def _whole_fe_plan():
+        """Every Malay stream/track label the apply form shows, FE-only codes included, or None
+        when the web folder is not checked out."""
+        import json
+        import os
+        here = os.path.dirname(os.path.abspath(__file__))
+        ms_path = os.path.normpath(os.path.join(
+            here, '..', '..', '..', '..', 'halatuju-web', 'src', 'messages', 'ms.json'))
+        if not os.path.exists(ms_path):
+            return None
+        with open(ms_path, encoding='utf-8') as fh:
+            plan = (((json.load(fh).get('scholarship') or {}).get('apply') or {}).get('plan') or {})
+        return {**(plan.get('stream') or {}), **(plan.get('track') or {})}
+
+    def test_the_cockpit_map_is_the_whole_fe_stream_and_track_set(self):
+        whole = self._whole_fe_plan()
+        if whole is not None:
+            self.assertEqual(
+                cd._COCKPIT_TRACK_LABEL, whole,
+                'The officer cockpit\'s pre-U track labels have DRIFTED from the FE '
+                '(messages/ms.json scholarship.apply.plan.stream/.track). The cockpit no longer '
+                'reads that JSON in the browser — the api serves the resolved label (TD-280) — so '
+                'this test is the only thing keeping the served words identical to the ones the '
+                'apply form shows the student. Update card_display._COCKPIT_ONLY_TRACK_LABEL / '
+                '_TRACK_LABEL, or the JSON, so the two agree.')
+        self.assertEqual(
+            set(cd._COCKPIT_TRACK_LABEL), set(cd._TRACK_LABEL) | TestTrackLabelParity._FE_ONLY,
+            'The cockpit map is the sponsor-card map plus exactly the codes the parity guard '
+            'above declares FE-only. A code in one and not the other means one of the two '
+            'surfaces has quietly stopped labelling a stream the student can pick.')
+
+    def test_it_resolves_exactly_what_the_browser_used_to_resolve(self):
+        """The six assertions `scholarship.test.ts` made about `preUTrackMalay`, in the runtime
+        that now owns the lookup. STPM streams, matric tracks, and null for anything else."""
+        for code, label in (('sains', 'Sains'), ('sains_sosial', 'Sains Sosial'),
+                            ('not_sure', 'Belum pasti'), ('kejuruteraan', 'Kejuruteraan'),
+                            ('sains_komputer', 'Sains Komputer'), ('perakaunan', 'Perakaunan')):
+            with self.subTest(code=code):
+                self.assertEqual(cd.preu_track_malay(code), label)
+        for empty in ('', None, 'mystery', 'Sains'):
+            with self.subTest(code=empty):
+                self.assertIsNone(
+                    cd.preu_track_malay(empty),
+                    'The browser did a plain dictionary lookup on the stored code and rendered '
+                    'nothing when it missed. Serving the label must not start rendering a word '
+                    'where the officer has always seen a blank.')
+
+    def test_the_sponsor_card_still_ignores_not_sure(self):
+        """The reason `not_sure` is a SEPARATE map and not a sixth entry in `_TRACK_LABEL`. On a
+        sponsor card or in an email, "STPM · Belum pasti" would read as a specialisation."""
+        self.assertNotIn('not_sure', cd._TRACK_LABEL)
+        self.assertEqual(cd.preu_label('stpm', 'not_sure'), 'STPM')
+        self.assertEqual(cd.preu_label('stpm', 'sains_sosial'), 'STPM · Sains Sosial')
+
+
 class TestStpmCatalogueAndCourseHref(TestCase):
     """The post-STPM catalogue is a SEPARATE table, and the resolvers only knew the SPM one
     (#132 UUM law / #136 UPSI education, owner 2026-07-26) — so an STPM-degree student read as a

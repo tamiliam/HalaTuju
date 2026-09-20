@@ -125,6 +125,46 @@ _TRACK_LABEL = {
     'sains_komputer': 'Sains Komputer', 'perakaunan': 'Perakaunan',
 }
 
+#: The one code the OFFICER COCKPIT labels and the sponsor card deliberately does not.
+#: ⚠ `not_sure` is a student saying "I have not picked a stream yet". On a sponsor card or in an
+#: email that would read as a specialisation ("STPM · Belum pasti"), so `preu_label` and
+#: `programme_split` must go on ignoring it — which is why this is a SEPARATE map and NOT a sixth
+#: entry in `_TRACK_LABEL`. The cockpit has always shown it, because the FE read the label
+#: straight out of `messages/ms.json`, where `scholarship.apply.plan.stream.not_sure` is
+#: "Belum pasti". Code health H18 moved that read to the server (TD-280) and the word came with
+#: it, unchanged. `TestTrackLabelParity` guards `_TRACK_LABEL` against the same JSON;
+#: `TestCockpitTrackLabelParity` guards this map against ALL of it, `not_sure` included.
+_COCKPIT_ONLY_TRACK_LABEL = {'not_sure': 'Belum pasti'}
+#: What the officer cockpit renders for a pre-U track/stream code. Malay only, by the owner's
+#: ruling of 2026-07-18 ("Sains Sosial", not the apply form's bilingual "Social Science (Sains
+#: Sosial)"). SERVED, NOT MIRRORED — see `preu_track_malay`.
+_COCKPIT_TRACK_LABEL = {**_TRACK_LABEL, **_COCKPIT_ONLY_TRACK_LABEL}
+
+
+def preu_track_malay(pre_u_track):
+    """The Malay pre-U track/stream label the officer cockpit shows, or ``None``.
+
+    ⚠ **THIS IS WHY `/admin/scholarship/[id]` NO LONGER SHIPS 393 kB OF MALAY.** Until code
+    health H18 the browser computed this label itself, from a static
+    ``import ms from '@/messages/ms.json'`` in ``lib/preUPlan.ts`` — 130 kB of first-load JS for
+    **sixteen words**, on the one screen whose reader is usually reading English (TD-280). The map
+    was always here as well, so the FE copy bought nothing but bytes. The api now serves the
+    resolved label on the cockpit payload (`pre_u_track_label`) and the browser renders what it is
+    given: served, not mirrored — the project's standing rule.
+
+    ⚠ **THE WORDS MUST NOT CHANGE.** The officer reads exactly what the FE used to compute:
+    stream first, then track, then nothing — which is what the old
+    ``_msPreUPlan?.stream?.[code] ?? _msPreUPlan?.track?.[code] ?? null`` did, and the two sets
+    share ``sains`` with the same value, so the merge order cannot matter.
+
+    ⚠ **AND NEITHER MUST THE LOOKUP.** Deliberately NO ``.strip().lower()``, unlike `preu_label`
+    two functions down. The FE did a plain dictionary lookup on the stored code, so a stored
+    ``'Sains'`` rendered NOTHING on the cockpit; normalising here would start rendering a word
+    where the officer has always seen a blank, which is a behaviour change dressed as a tidy-up.
+    This function's whole promise is that the screen is unchanged.
+    """
+    return _COCKPIT_TRACK_LABEL.get(pre_u_track) or None
+
 # Pathways whose catalogue course name is a SPECIALISATION under a CONSTANT degree title — the
 # "degree + specialisation" shape. PISMP is the first: every course is one Ijazah Sarjana Muda
 # Perguruan, differing only by bidang ("Bahasa Tamil Pendidikan Rendah (SJKT)"). We show the degree

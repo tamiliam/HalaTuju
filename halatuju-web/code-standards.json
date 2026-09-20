@@ -148,10 +148,16 @@
       "src/lib/sponsorDetail.ts::sponsor-detail-the-pure-decisions-behind-admin-sponsors",
       "src/lib/sponsorTerms.ts::a-checkpoint-is-complete-when-it-would-survive",
       "src/lib/sponsorTerms.ts::clearing-the-quiz-flag-wipes-the-payloads-mirroring"
-    ]
+    ],
+    "first_load_js": {
+      "/profile": 339,
+      "/scholarship/apply": 314,
+      "/scholarship/application": 305
+    },
+    "first_load_js_median_kb": 256
   },
   "budget": {
-    "last_tightened_on": "2026-09-20 (TD-272 — IncomeWizard moved out of ScholarshipDocuments.tsx; that file left oversize_files at 286 lines and its two disable entries were RELABELLED onto the wizard's path by the two declared moves above. Nothing was raised, no ledger gained a member, and BASELINE_SHA256 did not move.)",
+    "last_tightened_on": "2026-09-20 (code health H18 — the first_load_js ledger and first_load_js_median_kb were ADDED, frozen at a real `next build` taken that day: median 256 kB across 87 routes, and the three routes at or above the 300 kB ceiling. Its reader is scripts/bundle-budget.js, run by the deploy gate — see _first_load_js_note. Nothing else was touched and nothing was raised. In the same sprint TD-280 closed: /admin/scholarship/[id] fell 389 kB -> 292 kB when the Malay pre-U track label became a SERVED payload field, so it needs no ledger entry at all — src/lib/preUPlan.ts was deleted and the oneLocalePerVisitor exemption list shrank from three modules to two.) Previously: 2026-09-20 (TD-272 — IncomeWizard moved out of ScholarshipDocuments.tsx; that file left oversize_files at 286 lines and its two disable entries were RELABELLED onto the wizard's path by the two declared moves above. Nothing was raised, no ledger gained a member, and BASELINE_SHA256 did not move.)",
     "counts": {
       "ts_ignore": 0,
       "ts_expect_error": 0,
@@ -223,6 +229,13 @@
       "src/lib/incomeWizard.ts::compulsory-mirrors-income_engine-salary_member_blocks-ic-relationship-doc-income",
       "src/lib/incomeWizard.ts::malaysian-patronymic-connectors-a-l-a-p-s",
       "src/lib/incomeWizard.ts::pure-mirror-of-the-backend-income-requirement-engine"
-    ]
+    ],
+    "_first_load_js_note": "KILOBYTES OF JAVASCRIPT A VISITOR DOWNLOADS BEFORE A ROUTE CAN DO ANYTHING (code health H18, closing TD-281). Recorded from a real `next build` on 2026-09-20, after H17 cut the median route from 478.5 kB to 255.5 kB and after H18 closed TD-280. ⚠ 87.2 kB IS THE FLOOR under every route — React, the Next runtime and the shared chunk — so no target below that is reachable by any change. The ledger lists only the routes AT OR ABOVE the 300 kB ceiling in `scripts/bundle-budget.js`; everything else is held by `first_load_js_median_kb`, which is what broad creep moves. ⚠ NOTHING IN JEST MEASURES THESE. The reader is `scripts/bundle-budget.js` and it runs in the Cloud Build deploy gate (`cloudbuild.yaml`, the `test` step) and locally as `npm run bundle-budget`; `codeStandards.test.ts` asserts the wiring, because a budget nobody runs reads as enforced and is not.",
+    "first_load_js": {
+      "/profile": 339,
+      "/scholarship/apply": 314,
+      "/scholarship/application": 305
+    },
+    "first_load_js_median_kb": 256
   }
 }

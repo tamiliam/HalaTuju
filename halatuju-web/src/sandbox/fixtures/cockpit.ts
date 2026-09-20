@@ -94,6 +94,9 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
   chosen_programme: { id: 'matric-sains', name: 'Matrikulasi Sains' },
   chosen_programme_display: { title: 'Matrikulasi', stream: 'Sains' },
   pre_u_track: 'matric',
+  // Served by the api (TD-280). 'matric' is a PATHWAY code, not a track code, so the server
+  // resolves no label for it — exactly as the browser's own lookup used to resolve none.
+  pre_u_track_label: null,
   pre_u_institution: 'Kolej Matrikulasi Selangor',
   uncertainty_reasons: [],
   uncertainty_note: '',

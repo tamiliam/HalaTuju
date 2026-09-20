@@ -22,6 +22,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+from apps.scholarship.tests.factories import authed_client, make_admin, make_application
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -109,3 +110,50 @@ class TestEveryRoleSeesTheSamePayload(TestCase):
         keys = self._keys('p-oa')
         for f in ('qc_override_by', 'qc_override_by_name', 'qc_override_at', 'qc_override_reason'):
             self.assertIn(f, keys)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheServedPreUTrackLabel(TestCase):
+    """TD-280 / code health H18 — ONE named key, and the file's own rule about snapshots holds.
+
+    The docstring above refuses a 154-key snapshot, and this is not one: it names a SINGLE field,
+    because that field is now LOAD-BEARING in a way none of the other 153 are. The cockpit used to
+    compute this label itself, out of a static import of the whole Malay message catalogue — 130 kB
+    of first-load JS on `/admin/scholarship/[id]` for sixteen words. That module has been DELETED.
+    There is no browser fallback: if this field stops being served, the officer's screen silently
+    loses the track ("Tingkatan Enam" where it used to read "Tingkatan Enam · Sains Sosial") and
+    nothing else in either tree would notice.
+
+    So: the field is served, and it carries the Malay word.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        # ⚠ THE FACTORY, not `objects.create` — code health H5. The class above predates it and is
+        # on the `hand_built_application_fixtures` ledger with exactly one call; that ledger only
+        # ever shrinks, so a second hand-built fixture in this file would fail the standards test.
+        cls.app = make_application(
+            'interviewing', chosen_pathway='stpm', pre_u_track='sains_sosial')
+        cls.admin = make_admin(
+            'org_admin', owning_org=cls.app.owning_organisation)
+
+    def _payload(self):
+        r = authed_client(self.admin).get(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/')
+        self.assertEqual(r.status_code, 200, r.content[:200])
+        return r.json()
+
+    def test_the_cockpit_payload_carries_the_resolved_malay_label(self):
+        payload = self._payload()
+        self.assertIn(
+            'pre_u_track_label', payload,
+            'The officer cockpit has no track-label map of its own any more (TD-280) — this field '
+            'IS the label. Removing it blanks the stream on every STPM/Matric applicant screen.')
+        self.assertEqual(payload['pre_u_track_label'], 'Sains Sosial')
+        # The raw code is still served beside it: the screen links a pre-U pick back to its
+        # /pathway page using the CODE, so serving the label did not replace anything.
+        self.assertEqual(payload['pre_u_track'], 'sains_sosial')
+
+    def test_an_unlabelled_code_is_served_as_null_rather_than_a_blank_word(self):
+        self.app.pre_u_track = ''
+        self.app.save(update_fields=['pre_u_track'])
+        self.assertIsNone(self._payload()['pre_u_track_label'])

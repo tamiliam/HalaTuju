@@ -182,9 +182,29 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   **None of the three is a move, so none belongs in Phase 4.** Until one is chosen, the roadmap's
   "under 20" should not be carried into Phase 5 as though it were still pending work.
   **Trigger:** whoever scopes a Phase 4b, or the next sprint that touches `org_config`.
-- **TD-280 (raised 2026-09-20 by code health H17) — low, and it needs an OWNER's word, not an
-  engineer's.** After H17 exactly one screen still downloads a whole message catalogue it is not
-  reading: the officer cockpit, `/admin/scholarship/[id]`, which is **389 kB of first-load JS
+- ~~**TD-280 (raised 2026-09-20 by code health H17) — low, and it needs an OWNER's word.**~~
+  **RESOLVED at code health H18 (2026-09-20) — the owner chose option (2), SERVE THE LABEL.** Not
+  the cheapest of the three ways out, and the right one: the project's standing rule is *serve a
+  rule that varies, guard a rule that is a constant*, and a third home for a string would have
+  been a mirror to maintain for ever. The api resolves the label
+  (`card_display.preu_track_malay`, reached through a derived `ScholarshipApplication`
+  property — **no migration, no column**) and serves it on the cockpit payload as
+  `pre_u_track_label`, additively. `src/lib/preUPlan.ts` is **deleted**, its static `ms.json`
+  import with it, and the `oneLocalePerVisitor` exemption list shrank from three modules to two.
+  **`/admin/scholarship/[id]`: 389 kB → 292 kB of first-load JS** (its own page chunk 132 kB →
+  34.8 kB), measured from two real builds; it is no longer the worst route and needs no entry in
+  H18's new `first_load_js` ledger. Not one word changed in any language, proved by a rendered
+  cockpit test and by `test_card_display.TestCockpitTrackLabelParity` — a cross-runtime guard
+  against `messages/ms.json` covering ALL of `plan.stream`/`plan.track`, `not_sure` included,
+  which the browser version never had. ⚠ **Two things worth carrying forward.** (1) `not_sure` is
+  deliberately a SEPARATE map (`_COCKPIT_ONLY_TRACK_LABEL`), not a sixth entry in `_TRACK_LABEL`:
+  on a sponsor card "STPM · Belum pasti" would read as a specialisation, and the cockpit has
+  always shown it. (2) The resolver deliberately does NOT case-fold, unlike `preu_label` beside
+  it — the browser did a plain dictionary lookup, so folding would start rendering a word where
+  the officer has always seen a blank. That is a behaviour change dressed as a tidy-up.
+- *(historical, for the record — the entry as H17 wrote it)* After H17 exactly one screen still
+  downloaded a whole message catalogue it was not reading: the officer cockpit,
+  `/admin/scholarship/[id]`, which was **389 kB of first-load JS
   against ~256 kB for every other route**. The whole difference is `ms.json`, and the whole reason
   is `preUTrackMalay` — **sixteen Malay pre-U track labels**, rendered in a card for an officer
   who is usually reading English. It is synchronous by necessity: there is no `ms` catalogue in
@@ -207,8 +227,29 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   ⚠ Whatever is chosen, do NOT relax `oneLocalePerVisitor.test.ts`'s exemption list to make it go
   away — that list is the guard, and adding a line to it is the regression.
   **Trigger:** H18 (it is the worst route in the bundle budget H18 sets), or the owner's word.
-- **TD-281 (raised 2026-09-20 by code health H17) — low, lead's tool.** The first-load-JS budget
-  H18 is to record has **no reader that runs in a test**. The number exists only in the route table
+- ~~**TD-281 (raised 2026-09-20 by code health H17) — low, lead's tool.**~~ **RESOLVED at code
+  health H18 (2026-09-20). The reader was written first, exactly as this entry asked.**
+  `halatuju-web/scripts/bundle-budget.js` parses the real `next build` route table and compares it
+  with `budget.first_load_js` + `budget.first_load_js_median_kb` in
+  `halatuju-web/code-standards.json`. **WHERE IT RUNS is the answer to the question this entry
+  actually posed:** the Cloud Build deploy gate (`halatuju-web/cloudbuild.yaml`, the `test` step,
+  after `npm run gates`), because that is the only place that already builds — and `npm run
+  bundle-budget` locally, one command. The ledger was designed with the `_moved` escape from day
+  one: `first_load_js` is a full member of `_moved` (a renamed route DECLARES the move) but
+  deliberately **not** of `PATH_KEYED_LEDGERS`, because "is `to` a real file?" is the wrong
+  question for a route; the equivalent — "is it still in the build's route table?" — is asked by
+  the reader, which has one. **87.2 kB is the floor** and it is written into the ledger's own
+  `_first_load_js_note`, so the next person does not set a target no route can reach.
+  ⚠ **THE HALF THAT MAKES IT REAL IS A TEST, NOT THE SCRIPT.** `codeStandards.test.ts` asserts
+  that the script exists, that `package.json` exposes it, and **that `cloudbuild.yaml` still runs
+  it**. Without that last assertion the numbers become decoration the first time somebody tidies
+  the gate — which is this entry's own warning, one indirection along. ⚠ **What it still cannot
+  see** is written at the top of the script: it does not run in jest; it reads what Next PRINTS
+  (gzipped first-paint JS — no CSS, no fonts, no lazily-imported chunks, so moving weight behind
+  an `import()` lowers the number without shrinking the application); and it is blind between the
+  floor and the 300 kB ceiling, which is what the median budget covers.
+- *(historical, for the record — the entry as H17 wrote it)* The first-load-JS budget
+  H18 was to record had **no reader that runs in a test**. The number exists only in the route table
   `next build` prints; jest runs with no build output, and `code_health.py` does not build either.
   H17 therefore did NOT put a kilobyte figure in `code-standards.json`: a budget nothing measures
   reads as enforced and is not, which is worse than no budget. What H18 needs first is a step that
@@ -218,6 +259,55 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   production module outside a declared list may statically import a catalogue. ⚠ Design the byte
   budget with the `_moved` escape from day one — it is keyed on a ROUTE PATH, which has exactly
   TD-272's problem the first time a route is renamed. ~2h, inside H18.
+- **TD-282 (raised 2026-09-20 by code health H18) — ⚠ MEDIUM-HIGH, and it is the largest single
+  finding of the code-health arc. THE OFFICER'S APPLICANT VIEW IS AN N+1 AND NOBODY HAD COUNTED
+  IT.** The June audit said the applicant-detail GET made "20–30 duplicate queries"; H18 measured
+  it through the real endpoint with the H5 factory and the number is far worse.
+
+  | fixture | queries to open ONE applicant |
+  |---|---|
+  | no documents at all | **315** |
+  | three documents (`ic`, `results_slip`, `str`) | **385** |
+  | six documents | **437** |
+
+  **Roughly twenty more queries per document**, so a real case with a dozen is past six hundred —
+  for one officer opening one screen. **265 of the 315 are the SAME statement**: `SELECT … FROM
+  applicant_documents WHERE application_id = …`, on an application that has no documents. The
+  callers are `_latest_doc`-shaped helpers deep inside `verdict_engine` (`_suspect_genuineness`,
+  `_utility_context`), `income_engine` (`utilities`, `gaps`, `identity_checks`, `income_shown`)
+  and `anomaly_engine` — each of which builds a FRESH queryset every time it is asked a question.
+  The verdict engine itself runs more than once per request: `get_anomalies`,
+  `get_interview_agenda` and `submission_review` each reach it. **No writes were observed** at the
+  `interviewing` stage, so that half of the June note did not reproduce.
+
+  ⚠ **IT IS NOT A `select_related` / `prefetch_related` FIX AND H18 CHECKED BEFORE SAYING SO.**
+  `prefetch_related('documents')` on the view's queryset is ignored by every one of those calls,
+  because a `.filter(...)` on a related manager does not use a prefetched cache. The honest fix is
+  a **per-request document cache** threaded through the three engines — read the application's
+  documents once, pass the list down, and make the helpers filter in Python. That changes the
+  shape of a dozen pure functions, needs its own characterisation tests (the engines' answers must
+  be byte-identical before and after), and is a sprint, not a line. H18's brief allowed only a
+  one-line fix, so H18 **measured, budgeted and stopped**, which is the right answer to a finding
+  this size.
+  **What the budget buys meanwhile:** the number cannot grow unnoticed (`test_query_budgets.py`,
+  zero slack, in the deploy gate), and when the fix lands it FAILS the tightness test with
+  *"LOWER it to N"* rather than passing unremarked. **Trigger:** the next sprint that may touch
+  the cockpit's read path, or an officer complaining the screen is slow. Owner decision: whether
+  this is worth a sprint of its own before the product work resumes.
+- **TD-283 (raised 2026-09-20 by code health H18) — low, but it will bite the very next sprint
+  that touches either file.** `halatuju_api/apps/scholarship/serializers_admin.py` is at **1,233
+  lines against an allowance of 1,234**, and `apps/scholarship/models/applications.py` at **919
+  against 919**. Both are the recorded size plus the 20-line hotfix allowance, fully spent. H18
+  met this head-on: its first attempt at TD-280 put a `SerializerMethodField` and its method in
+  the serializer, the standard refused it, and the work moved to a derived model property — which
+  then needed its docstring trimmed twice to fit. **That is the standard working exactly as
+  written** ("that allowance exists for a hotfix, not for new work — SPLIT THE FILE FIRST"), and
+  it is worth recording that it has now started to bind. Neither file can absorb another feature.
+  The splits are ordinary: `serializers_admin.py` divides along the same domain lines H11/H12 used
+  for `views_admin/`, and `applications.py` holds `ScholarshipApplication` (an 847-line class of
+  159 fields that no move can divide — its ledger entry already followed it there at H15) plus
+  `FundingNeed`, which can leave. **Trigger:** whoever next needs to add a field to the cockpit
+  payload or a column to the application.
 - **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
   H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
   for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a

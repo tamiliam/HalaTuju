@@ -74,9 +74,21 @@ produce, so a test could never reach the branch it named. Adding it put a new ke
 `baseline` block, so `BASELINE_SHA256` below was deliberately re-pinned in the same commit — see
 the `_history` note in the JSON.
 
+**ADDED IN H18** (2026-09-20): `query_budgets` — how many database queries it costs to open one
+applicant on the officer cockpit. It is the first standard here that counts something about a
+REQUEST rather than about the source, so it is split across two files: the RATCHET ARITHMETIC is
+here (budget ≤ baseline, no gained member, a declared move buys nothing) and the READING is in
+`apps/scholarship/tests/test_query_budgets.py`, which needs a database and so cannot live in a
+`SimpleTestCase`. Adding it put a new key in the frozen `baseline`, so `BASELINE_SHA256` below was
+deliberately re-pinned in the same commit — the second such re-pin, after H5's. ⚠ The reading it
+froze is 315 queries for one applicant (385 with three documents), which is an N+1, NOT an
+approval: see TD-282 and the `_history` note in the JSON.
+
 **NOT IN H4/H5, on purpose** (later sprints add them, each with its own test here or in the web
 half):
-  * database-query and first-load-JS budgets — H18.
+  * the first-load-JS budget — H18, and it lives in the WEB half (`halatuju-web/`), because the
+    number exists only in the route table `next build` prints. `halatuju-web/scripts/bundle-budget.js`
+    is its reader and the Cloud Build deploy gate is where it runs (TD-281).
 Style and formatting are deliberately out of scope for ever: a formatter pass rewrites every file
 and proves nothing about bugs.
 """
@@ -173,15 +185,28 @@ COUNT_SLACK = {
 #: naming a file that no longer exists describes nothing, and the two tests above would then
 #: demand the line be removed AND refuse the package root with no line left to lower. See the
 #: `_history` note in the JSON and `docs/retrospective-2026-09-20-code-health-h11.md`.
-BASELINE_SHA256 = '20c521daa4565d11842f95fdac43f2874f00ca67836c6c38150851ff2c3919f2'
+#: ⚠ RE-PINNED AGAIN 2026-09-20 (code health H18), the third deliberate re-pin. A NEW STANDARD was
+#: added — the `query_budgets` ledger — which is H5's case, not H11's: nothing was raised, no
+#: existing ledger gained a member, and no existing number moved. A new standard has to enter the
+#: frozen record or it has no baseline to be measured against, and `budget <= baseline` would be
+#: vacuous for it. The frozen numbers are the honest reading of 2026-09-20 (315 queries to open
+#: one applicant, 385 with three documents) — a debt recorded, not a target met. See the
+#: `_history` note in the JSON, TD-282, and `docs/retrospective-2026-09-20-code-health-h18.md`.
+BASELINE_SHA256 = 'c6228b6ae96574c037dc105ea3d6564a49481ff25b2d91952262a52a2396ab6f'
 
 LEDGERS = ('oversize_files', 'long_functions', 'duplicated_names', 'runtime_skips',
-           'hand_built_application_fixtures')
+           'hand_built_application_fixtures', 'query_budgets')
 
 #: Which of those are keyed on a REPO PATH — the whole key for three of them, the part before the
 #: `::` for `long_functions`. `duplicated_names` is keyed `app::name` and names no file at all, so
 #: it is the one ledger whose move cannot be checked against the tree; everything else about a move
 #: is checked for it like any other.
+#: ⚠ `query_budgets` (H18) is the second such ledger and for a different reason: its key is a
+#: DJANGO ROUTE PATTERN (`api/v1/…/<int:pk>/::GET::<fixture>`). "Is `to` a real file?" is the
+#: wrong question for a URL; the right one — "does this pattern still RESOLVE?" — needs Django's
+#: resolver and is asked in `test_query_budgets.py`, which is a `TestCase` and can ask it. Every
+#: other rule about a move (complete record, real `from`, free `to`, length and total unchanged)
+#: applies to it here exactly as to the rest.
 PATH_KEYED_LEDGERS = frozenset({'oversize_files', 'long_functions', 'runtime_skips',
                                 'hand_built_application_fixtures'})
 
@@ -1089,10 +1114,15 @@ class TestTheMoveArithmetic(SimpleTestCase):
     REAL = {'a.py', 'a/__init__.py', 'b.py', 'c.py'}
 
     def base(self):
+        # ⚠ ONE KEY PER LEDGER, EMPTY OR NOT — `effective_baseline` returns every name in
+        # `LEDGERS`, so a ledger missing here would make the "nothing changed" test below compare
+        # two different shapes. `query_budgets` (H18) was added for exactly that reason; no
+        # assertion in this class changed with it.
         return {'oversize_files': {'a.py': 900, 'b.py': 700},
                 'long_functions': {'a.py::big': 200},
                 'duplicated_names': {'scholarship::_money': 7},
-                'runtime_skips': {}, 'hand_built_application_fixtures': {}}
+                'runtime_skips': {}, 'hand_built_application_fixtures': {},
+                'query_budgets': {}}
 
     def move(self, **kw):
         row = {'on': '2026-09-20', 'ledger': 'oversize_files',

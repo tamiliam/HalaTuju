@@ -67,8 +67,22 @@
  * What it CANNOT do is exceed the baseline, add a ledger member, or leave a budget loose. The
  * remaining window is caught by the lead's sprint-close tool, which does have git.
  *
- * **NOT IN H4, on purpose** (later sprints add them): first-load-JS and database-query budgets
- * are H18; "a new test file may not hand-build a ScholarshipApplication" is H5. Style and
+ * **ADDED IN H18** (2026-09-20): `first_load_js` — the kilobytes of JavaScript a visitor
+ * downloads before a route can do anything, plus `first_load_js_median_kb` across all of them.
+ * ⚠ **IT IS THE FIRST STANDARD HERE THAT THIS FILE CANNOT MEASURE.** The number exists only in
+ * the route table `next build` prints, and jest has no build output (TD-281). So the standard is
+ * split: `scripts/bundle-budget.js` takes the READING, in the Cloud Build deploy gate where a
+ * build already happens; this file owns the LEDGER — the ratchet arithmetic, and the proof that
+ * the reader is wired in. Neither half is worth anything alone, which is why the second half
+ * exists: a budget nobody runs is the same failure as a budget nobody wrote.
+ * ⚠ Its keys are ROUTE PATHS, not file paths, so `first_load_js` is a full member of `_moved`
+ * (a renamed route DECLARES the move) but NOT of `PATH_KEYED_LEDGERS` — "is `to` a real file?"
+ * is the wrong question for a route, and "is it still in the build's route table?" is asked by
+ * the reader, which has one.
+ *
+ * **NOT IN H4, on purpose** (later sprints add them): the database-query budget is H18 and lives
+ * in the API half (`halatuju_api/apps/scholarship/tests/test_query_budgets.py`, keyed on a Django
+ * route pattern); "a new test file may not hand-build a ScholarshipApplication" is H5. Style and
  * formatting are out of scope for ever — a formatter pass rewrites every file and proves nothing
  * about bugs.
  */
@@ -135,8 +149,15 @@ const COUNT_SLACK: Record<string, number> = {
  * The SHA-256 of the canonical JSON of the `baseline` block (sorted keys, no whitespace, UTF-8).
  * ⚠ If you are here because this failed: the baseline is the frozen record of what H4 found. It
  * is not a number to keep current. Lower a limit in `budget`, never in `baseline`.
+ * ⚠ RE-PINNED 2026-09-20 (code health H18), the FIRST re-pin on the web side. A NEW STANDARD was
+ * added — `first_load_js` and `first_load_js_median_kb` — and a new standard has to enter the
+ * frozen record or it has no baseline to be measured against and `budget <= baseline` is vacuous
+ * for it. Nothing was raised, no existing number moved, and no existing ledger gained a member.
+ * The frozen figures are a real `next build` of 2026-09-20: median 256 kB across 87 routes, and
+ * the three routes at or above the 300 kB ceiling. ⚠ A DECLARED MOVE still does NOT move this
+ * hash — `_moved` is a sibling of `baseline`, and that is unchanged.
  */
-const BASELINE_SHA256 = '788bd164999fd2428101b4457b215d27a8ce16cd6a9bde2b1361a888eb400f5e'
+const BASELINE_SHA256 = '66d0ce0b50802d676f35003413d7182de4682af5a1d280895361805052550f16'
 
 /**
  * ⚠ THIS FILE EXCLUDES ITSELF FROM THE TEST-FILE SKIP SCAN, and only from that scan. It has to:
@@ -536,6 +557,12 @@ export interface StandardsBlock {
   oversize_files: Record<string, number>
   eslint_disable_without_reason: string[]
   unguarded_mirrors: string[]
+  /** H18: kilobytes of first-load JS, keyed on the ROUTE. Optional on the type so the throwaway
+   *  blocks the move tests build stay valid — the real file carries it in both blocks, and
+   *  "the budget file is the shape this file expects" asserts that. */
+  first_load_js?: Record<string, number>
+  /** H18: the median across every route with a non-zero first load. One number, one direction. */
+  first_load_js_median_kb?: number
 }
 /** One declared move: ONE frozen ledger key that followed its code to a new path. RULE 5. */
 export interface MoveRecord {
@@ -552,10 +579,19 @@ export interface StandardsFile {
   budget: StandardsBlock
 }
 
-/** The three ledgers a move may relabel a key in. All three are keyed on a repo path (the two
- *  lists carry `path::…` after it), so all three have their `to` checked against the tree. */
-const LEDGERS = ['oversize_files', 'eslint_disable_without_reason', 'unguarded_mirrors'] as const
+/** The ledgers a move may relabel a key in. */
+const LEDGERS = ['oversize_files', 'eslint_disable_without_reason', 'unguarded_mirrors',
+  'first_load_js'] as const
 type LedgerName = (typeof LEDGERS)[number]
+
+/** Which of those are keyed on a REPO PATH (the two lists carry `path::…` after it), so a move's
+ *  `to` is checked against the tree. `first_load_js` (H18) is keyed on a ROUTE — `/profile`,
+ *  `/admin/scholarship/[id]` — which is not a file and has no single file behind it. The
+ *  equivalent question, "is the route still in the build's route table?", is asked by
+ *  `scripts/bundle-budget.js`, which has a build to ask it of. Every OTHER rule about a move
+ *  applies to it here exactly as to the rest. */
+const PATH_KEYED_LEDGERS = new Set<string>([
+  'oversize_files', 'eslint_disable_without_reason', 'unguarded_mirrors'])
 
 /** Every field a move record must carry, all non-empty strings. `why` is not decoration: a
  *  relabel of the frozen record is the one edit that survives a reviewer's glance, so it has to
@@ -568,6 +604,7 @@ export interface EffectiveBaseline {
   oversize_files: Record<string, number>
   eslint_disable_without_reason: string[]
   unguarded_mirrors: string[]
+  first_load_js: Record<string, number>
 }
 
 /** Is this a real file under the web root? Injected as `exists` so the move tests below can prove
@@ -599,11 +636,15 @@ export function effectiveBaseline(
     oversize_files: { ...baseline.oversize_files },
     eslint_disable_without_reason: [...baseline.eslint_disable_without_reason],
     unguarded_mirrors: [...baseline.unguarded_mirrors],
+    first_load_js: { ...(baseline.first_load_js ?? {}) },
   }
   const problems: string[] = []
+  /** The two number-keyed ledgers are objects; the other two are lists of `path::…` strings. */
+  const numeric = (ledger: LedgerName): boolean => (
+    ledger === 'oversize_files' || ledger === 'first_load_js')
   const holds = (ledger: LedgerName, key: string): boolean => (
-    ledger === 'oversize_files'
-      ? Object.prototype.hasOwnProperty.call(effective.oversize_files, key)
+    numeric(ledger)
+      ? Object.prototype.hasOwnProperty.call(effective[ledger] as Record<string, number>, key)
       : (effective[ledger] as string[]).includes(key)
   )
 
@@ -650,15 +691,17 @@ export function effectiveBaseline(
       return
     }
     const target = to.split('::')[0]
-    if (!exists(target)) {
+    // ⚠ Skipped for `first_load_js`, whose keys are ROUTES. See PATH_KEYED_LEDGERS.
+    if (PATH_KEYED_LEDGERS.has(name) && !exists(target)) {
       problems.push(`${at}: "to" names the file "${target}", which is not in the tree. A move `
         + 'must land on a file that EXISTS, or the ledger goes back to describing nothing — '
         + 'which is the whole defect this mechanism ends (TD-272).')
       return
     }
-    if (name === 'oversize_files') {
-      effective.oversize_files[to] = effective.oversize_files[from]
-      delete effective.oversize_files[from]
+    if (numeric(name)) {
+      const table = effective[name] as Record<string, number>
+      table[to] = table[from]
+      delete table[from]
     } else {
       const list = effective[name] as string[]
       list[list.indexOf(from)] = to
@@ -731,7 +774,70 @@ describe('the scan actually found the code (the floor)', () => {
       expect(typeof block.oversize_files).toBe('object')
       expect(Array.isArray(block.eslint_disable_without_reason)).toBe(true)
       expect(Array.isArray(block.unguarded_mirrors)).toBe(true)
+      // H18. Optional on the TYPE (so the move tests may build throwaway blocks) and required
+      // HERE, in the real file, in both blocks — otherwise `budget <= baseline` is vacuous for it.
+      expect(typeof block.first_load_js).toBe('object')
+      expect(typeof block.first_load_js_median_kb).toBe('number')
     }
+  })
+})
+
+// ── STANDARD: the first-load-JS budget (H18, TD-281) ─────────────────────────────────────────
+/**
+ * ⚠ **THIS BLOCK DOES NOT MEASURE KILOBYTES AND CANNOT.** jest runs with no build output; the
+ * figures exist only in the route table `next build` prints. `scripts/bundle-budget.js` reads
+ * that table and refuses a regression, and the Cloud Build deploy gate is where it runs.
+ *
+ * What is asserted here is everything that does NOT need a build, and the most important of it is
+ * the last test: **that the reader is actually wired into the gate.** H17 declined to write a
+ * kilobyte figure into this file precisely because a budget nothing measures READS AS ENFORCED and
+ * is not. A reader that exists but is never invoked is the same lie one indirection along, so the
+ * wiring is asserted rather than trusted.
+ */
+describe('the first-load-JS budget', () => {
+  const READER = 'scripts/bundle-budget.js'
+  const ledger = (): Record<string, number> => (BUDGET.first_load_js ?? {})
+
+  test('every budgeted route is a route, and its number is a plausible kilobyte figure', () => {
+    // 87.2 kB is the FLOOR under every route (React + the Next runtime + the shared chunk), so a
+    // budget below it is one no route could ever meet — H17's acceptance made exactly that
+    // mistake with a target of "three-quarters off 483 kB", which is 121 kB.
+    const wrong = Object.entries(ledger())
+      .filter(([route, kb]) => !route.startsWith('/') || !(kb > 87) || !(kb < 5000))
+      .map(([route, kb]) => `first_load_js["${route}"]: ${kb}`)
+    expect(say(wrong.length > 0, [
+      'A "first_load_js" entry is not a route path with a sane kilobyte number. The key is the',
+      'route exactly as `next build` prints it ("/admin/scholarship/[id]"), and the value is its',
+      'first-load JS in kB — which can never be below ~87, the shared floor under every route.',
+      `\n${wrong.join('\n')}`,
+    ])).toBe('')
+  })
+
+  test('the median budget is not below the floor either', () => {
+    expect(BUDGET.first_load_js_median_kb).toBeGreaterThan(87)
+  })
+
+  test('the reader exists and package.json exposes it as ONE command', () => {
+    // "A developer must be able to run it locally with one command" — and the command has to
+    // BUILD, because there is nowhere else the number comes from.
+    expect(fs.existsSync(path.join(WEB_ROOT, READER))).toBe(true)
+    const pkg = JSON.parse(read(path.join(WEB_ROOT, 'package.json'))) as {
+      scripts: Record<string, string>
+    }
+    expect(pkg.scripts['bundle-budget']).toContain('next build')
+    expect(pkg.scripts['bundle-budget']).toContain(READER)
+  })
+
+  test('⚠ the DEPLOY GATE runs it — the half that makes the number mean anything', () => {
+    // TD-281 in one assertion. If this fails, the kilobyte figures in code-standards.json have
+    // quietly become decoration: recorded, readable, and enforced by nothing.
+    const gate = read(path.join(WEB_ROOT, 'cloudbuild.yaml'))
+    expect(say(!gate.includes('npm run bundle-budget'), [
+      'halatuju-web/cloudbuild.yaml no longer runs `npm run bundle-budget`. That step is the ONLY',
+      'place the first-load-JS budget is measured: jest has no build output and `code_health.py`',
+      'does not build either (TD-281). Without it every kilobyte number in code-standards.json is',
+      'a comment. Put it back in the `test` step, after `npm run gates`.',
+    ])).toBe('')
   })
 })
 
@@ -942,6 +1048,18 @@ describe('the ratchet itself', () => {
           && BUDGET.oversize_files[k] > EFFECTIVE.oversize_files[k])
         .map((k) => `oversize_files["${k}"]: budget ${BUDGET.oversize_files[k]}, `
           + `baseline ${EFFECTIVE.oversize_files[k]}`))
+      // H18: the same rule for the first-load-JS ledger and for the median beside it. A kilobyte
+      // budget is a limit like any other and may only go down.
+      .concat(Object.keys(BUDGET.first_load_js ?? {})
+        .filter((k) => k in EFFECTIVE.first_load_js
+          && (BUDGET.first_load_js as Record<string, number>)[k] > EFFECTIVE.first_load_js[k])
+        .map((k) => `first_load_js["${k}"]: budget `
+          + `${(BUDGET.first_load_js as Record<string, number>)[k]} kB, `
+          + `baseline ${EFFECTIVE.first_load_js[k]} kB`))
+      .concat((BUDGET.first_load_js_median_kb ?? 0) > (BASELINE.first_load_js_median_kb ?? 0)
+        ? [`first_load_js_median_kb: budget ${BUDGET.first_load_js_median_kb}, `
+          + `baseline ${BASELINE.first_load_js_median_kb}`]
+        : [])
     expect(say(raised.length > 0, [
       'A limit in "budget" has been raised above the frozen "baseline". A budget may only go DOWN.',
       'If the code genuinely needs more room it needs a smaller change instead — split the file,',
@@ -958,6 +1076,9 @@ describe('the ratchet itself', () => {
     const added: string[] = Object.keys(BUDGET.oversize_files)
       .filter((k) => !(k in EFFECTIVE.oversize_files))
       .map((k) => `oversize_files: "${k}"`)
+      .concat(Object.keys(BUDGET.first_load_js ?? {})
+        .filter((k) => !(k in EFFECTIVE.first_load_js))
+        .map((k) => `first_load_js: "${k}"`))
     const pairs: Array<[string, string[], string[]]> = [
       ['eslint_disable_without_reason',
         BUDGET.eslint_disable_without_reason, EFFECTIVE.eslint_disable_without_reason],
