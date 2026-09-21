@@ -2,6 +2,105 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-282 — opening one applicant costs 38 queries, not 315 - 2026-09-21
+
+Baselines measured first: **pytest 7,086 / 3 skipped** and **jest 2,982 / 166 suites**, both
+agreeing with the brief. After: **pytest 7,104 / 3 skipped** (+18, all new) and **jest 2,982 /
+166** unchanged.
+
+### Changed
+
+- **The officer's applicant-detail `GET` now reads `applicant_documents` once.** It cost **315**
+  database queries with no documents on file, **385** with three; it now costs **38** either way.
+  A six-document fixture goes **425 → 39**. The per-document slope — roughly twenty queries for
+  every document a family uploads — is gone, which is why the first two figures are now equal. A
+  real case with a dozen documents was past six hundred.
+- **A new module, `apps/scholarship/document_snapshot.py`.** It reads one application's documents
+  once and holds them, for the length of ONE read-only computation, in a `contextvars` variable
+  keyed on the application's id. Five readers (`latest_doc`, `live_docs`, `has_live_doc`,
+  `present_doc_types`, `tagged_members`) answer from that list when a snapshot is open
+  and run exactly the query they replaced when one is not. About thirty helpers in seventeen
+  modules — `verdict_engine`, `anomaly_engine`, `income_shown`, `submission_review`,
+  `pathway_engine`, `income_str_ownership`, `services/blockers` and ten `income_engine` modules
+  — now call a reader instead of building their own queryset.
+- **Exactly one place opens a snapshot**: `AdminApplicationDetailView.get`, around the serializer
+  build. Every other caller — the submission gate, Check 2, the management commands, the
+  student's payload, every test — is on the same code path it was on yesterday.
+- **Both query budgets fall**: `315 → 38` and `385 → 38` in `halatuju_api/code-standards.json`.
+  Only `budget` moved; `baseline` is untouched, no ledger gained or lost a member, no key was
+  renamed, so no `_moved` record and no `BASELINE_SHA256` re-pin.
+- `income_engine.occupation._has_read_doc` takes the application rather than the related manager,
+  so it can read the snapshot. Both callers already held one.
+
+### Added
+
+- **`apps/scholarship/tests/test_document_snapshot.py` — the proof, and it is permanent.** The
+  officer payload's **bytes** with the snapshot ON are asserted identical to the bytes with it
+  OFF, across **238 fixtures**: every one of the factory's 15 stages (17 cases, counting both
+  roads at `verdict_recorded` and `awaiting_qc`) × both income routes × seven document sets — no
+  documents, one of each type, several of the same type, a superseded row beside its replacement,
+  tagged beside untagged, **two documents with the identical `uploaded_at`**, and garbage
+  `vision_fields`. Each case also asserts the snapshot actually saved queries, so the matrix
+  cannot pass vacuously the day the view stops opening one. Plus the staleness tests: a write is
+  visible to a read outside the block, a second application is never served the first's documents,
+  a nested snapshot restores the outer one, an exception still closes the scope, and the officer
+  detail GET writes no document.
+
+### Unchanged, deliberately
+
+- **No verdict, band, gate, blocker or chase moved.** `VERDICT_ENGINE_VERSION` is NOT bumped, and
+  that is the claim the 238-case byte-identity matrix exists to support.
+- `services.application_completeness` and `consent_blockers` were not touched (3 queries), and
+  `check2_queries` was left on its own query because it sits inside a write (1 more). Those four,
+  the snapshot's own load and the payload's `documents` list are the six reads of
+  `applicant_documents` that remain.
+- **TD-287 was not folded in.** See its register entry: inside the snapshot the doubled
+  `_utility_context` now costs nothing at all, so what it buys on the officer's screen is zero.
+
+### Found while doing it (reported, not fixed)
+
+- **TD-292** — `ORDER BY uploaded_at DESC` carries no tie-breaker anywhere, so "the latest
+  document" is undefined when two share a timestamp. Pre-existing; the snapshot makes the
+  helpers agree with each other. (The builder's "strictly less arbitrary" was an overclaim —
+  see the review section below.)
+- **TD-293** — two stored `vision_fields` shapes 500 the officer's detail GET. Pre-existing and
+  proven so: the same exception is raised with the snapshot switched off.
+- **TD-291** — the admin Requests list and the student's own read were profiled with the same
+  harness and the numbers are in that entry. Neither was changed.
+
+### After the adversarial review (same day, before anything shipped)
+
+A second agent that did not build this was briefed to find what was WRONG with it. Verdict:
+**ship after three fixes** — no wrong answer, no stale read, no shared-instance mutation (a probe
+spied every `__setattr__` on every snapshot row across a full GET: zero writes), the payload fully
+evaluated inside the `with`, and every one of the ~30 fallback queries eye-diffed against the old
+one and found kwarg- and order-identical. What it did find, all fixed here:
+
+- **The snapshot was keyed on `pk` alone.** Proved with a probe: any object whose pk equalled the
+  applicant's — another model, or a stand-in with no documents — was served that applicant's
+  documents. Latent (no reader is called with such an object today), and exactly the trap the
+  "widening it safely" steps invite. The key is now `(concrete model, pk)`, with a test that
+  reverting it turns red.
+- **"This handler is READ-ONLY" was wrong**, in the module, the view and CLAUDE.md. The detail GET
+  runs `sync_resolution_items`, which creates and resolves ResolutionItem rows off verdict facts
+  and can email the student — so a wrong row under the snapshot would be PERSISTED AND SENT, not
+  just drawn. The rule is "never writes `applicant_documents`", and it now says so.
+- **The first, cold open was never compared.** The matrix warms each application up first (it must
+  — the first GET syncs Check-2 items), but the warm-up ran with the snapshot ON in both arms, so
+  the one read that WRITES was never compared ON against OFF. Added: twin applications, one
+  opened cold each way, comparing the resolution items and the mail each read left behind —
+  102 cases over three document sets (nothing on file, one of everything, the member-tag filter), one of which also proves the comparison is not vacuous. Bitten both
+  ways, and the result is written into the test: it goes red when a fault changes what the
+  verdict reads as the LATEST document, and stays green when a fault only adds rows to a LIST
+  read (superseded-as-live), which is the byte matrix's half to catch, and it does.
+- **"Strictly less arbitrary, never more" was an overclaim** (TD-292). The snapshot's order comes
+  from a different, unfiltered query than each helper's own, so on PostgreSQL a tie can resolve
+  differently than it did before; SQLite cannot show it. What makes it safe is a count, not the
+  argument: **0 tied pairs in 1,356 production documents.** TD-293 re-rated LOW on the same
+  count: **0 malformed `authenticity` shapes**, and no current writer can produce one.
+- TD-294 (a CSV-export `auth.users` traceback logged on every detail read) and TD-295
+  (`_latest_offer`'s manager swap) raised.
+
 ## Audit of 2026-09-21 — web fixes - 2026-09-21
 
 Eight findings from the same audit, in the web tree, plus the kilobyte they cost and how it was

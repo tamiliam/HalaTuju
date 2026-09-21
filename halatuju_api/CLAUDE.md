@@ -390,7 +390,7 @@ message itself tells you what to do; this table is the why.
 | **The app boundary** — `courses → scholarship` imports may not rise above 25, and the module-level ones may not rise above 1 | `test_code_standards.py` | Two apps that import each other are one app with a line drawn through it, and the import-time half is what takes the service down at start-up |
 | **New tests use the factory** — a test file not already in the ledger of 134 may not call `ScholarshipApplication.objects.create(`; a listed file's count may only fall | `test_code_standards.py` | A hand-built fixture can describe a state the product cannot reach, and then the test passes for ever while testing nothing (BrightPath #24). See **Test fixtures** below |
 | **A route may not get heavier** — no route's first-load JS may reach **300 kB** unless it is in the `first_load_js` ledger with its own number, no ledgered route may pass that number, and the **median across all routes** may not rise above **256 kB** | `scripts/bundle-budget.js` **in the deploy gate** (+ `codeStandards.test.ts` for the ledger and the wiring) | A visitor downloaded 1.53 MB of message catalogues to read one language, and nothing counted it for a year. See **The two budgets H18 added** below — this one is NOT measured by jest and that matters |
-| **Opening one applicant may not cost more queries** — the officer's applicant-detail GET is pinned at **315** (no documents) and **385** (three), with ZERO slack | `test_query_budgets.py` (the reading) + `test_code_standards.py` (the ratchet) | It is an N+1 that nobody had counted since June — 265 of those 315 are the same statement. **The budget is a record of a debt, not an approval: TD-282.** See below |
+| **Opening one applicant may not cost more queries** — the officer's applicant-detail GET is pinned at **38**, with or without documents, with ZERO slack | `test_query_budgets.py` (the reading) + `test_code_standards.py` (the ratchet) | It was **315** and **385** — an N+1 nobody had counted since June. TD-282 fixed it with the document snapshot (below); the two numbers are now EQUAL because a document costs nothing extra to open. The budget's job now is to notice if that comes undone |
 
 **The two budget files.** `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`.
 Each sits inside its own service folder, so it is inside the path filter of the Cloud Build trigger
@@ -442,24 +442,85 @@ turns the gate red before the image is pushed.
 cd halatuju_api && python -m pytest apps/scholarship/tests/test_query_budgets.py -q
 ```
 
-Two readings through the REAL endpoint, built with the H5 factory: **315** queries with no
-documents, **385** with three named documents. The pair separates a fixed cost from a per-document
-one — if the three-document budget fails while the bare one holds, the new work is inside the N+1
-and every real applicant pays for it several times over. Zero slack, because the reading is
-deterministic.
+Two readings through the REAL endpoint, built with the H5 factory: **38** queries with no
+documents and **38** with three named documents. The pair separates a fixed cost from a
+per-document one — if the three-document budget fails while the bare one holds, the new work is
+inside a per-document N+1 and every real applicant pays for it several times over. Zero slack,
+because the reading is deterministic.
 
-⚠ **THE NUMBER IS A DEBT, NOT A TARGET MET.** 265 of the 315 are the same
-`SELECT … FROM applicant_documents WHERE application_id = …`, issued by `_latest_doc`-shaped
-helpers inside `verdict_engine`, `income_engine` and `anomaly_engine`. **`prefetch_related` does
-not fix it** — a `.filter(...)` on a related manager ignores a prefetch cache — so the real fix is
-a per-request document cache threaded through those engines. That is **TD-282** and it needs its
-own sprint. Until then the budget stops the number growing, and when the fix lands these tests go
-red with *"LOWER it to N"*, which is the ratchet catching up with an improvement.
+⚠ **THE TWO NUMBERS BEING EQUAL IS THE POINT.** They were **315** and **385** when H18 recorded
+them on 2026-09-20 — roughly twenty queries for every document a family uploaded, so a case with a
+dozen was past six hundred. TD-282 (2026-09-21) removed the slope entirely with the **document
+snapshot** described in the next section. If these two ever diverge again, the per-document N+1 is
+back.
 
 ⚠ Its keys are **route patterns**, not file paths (`api/v1/…/<int:pk>/::GET::<fixture>`), so
 `query_budgets` is a full member of `_moved` but not of `PATH_KEYED_LEDGERS` — see the next
 section, and the reading test asks the equivalent question ("does this pattern still resolve?")
 where Django's resolver exists.
+
+### THE DOCUMENT SNAPSHOT (TD-282, 2026-09-21) — what it is and how to widen it
+
+**What it is.** `apps/scholarship/document_snapshot.py`. It reads ONE application's documents
+once and holds that list for the length of ONE read-only computation. About thirty helpers across
+seventeen modules — `verdict_engine._latest_doc`, `income_engine`'s `_cluster_docs` and
+`_latest_doc`, `anomaly_engine`, `income_shown`, `submission_review`, `services/blockers` and the
+rest — now call one of its five readers (`latest_doc`, `live_docs`, `has_live_doc`,
+`present_doc_types`, `tagged_members`) instead of each building its own queryset.
+
+**How a reader decides.** If a snapshot is open **for that very application — same MODEL and
+same pk** (the first version keyed on pk alone, and the adversarial review proved any object
+sharing the number was served the applicant's documents) — it filters the loaded list in Python. If not, it runs exactly the query the helper ran before — same single
+`.filter(**kwargs)`, same `ORDER BY`, same laziness. So nothing outside a snapshot changed.
+
+**Ordering.** Every document read in this codebase is `ORDER BY uploaded_at DESC` — some helpers
+say `.order_by('-uploaded_at')`, the rest inherit the identical clause from
+`ApplicantDocument.Meta.ordering`. The snapshot loads with that same clause once and the readers
+filter **without re-sorting**, so a subset keeps the order the database gave and an in-memory
+answer matches the query's by construction **when timestamps are distinct**. ⚠ **Not one of those
+reads has a tie-breaker**, so "the latest" is undefined when two documents share a timestamp.
+That is pre-existing — but it is NOT "made no worse", and the first draft of this note said so:
+the snapshot's order comes from a different, unfiltered query than each helper's own, and on
+PostgreSQL the two can emit tied rows differently, so on a tie the snapshot can pick a different
+document than the old code did. SQLite cannot show it. What makes it safe is a measurement:
+**0 tied pairs in 1,356 production documents on 2026-09-21** (`uploaded_at` is `auto_now_add`,
+nothing bulk-creates). TD-292 holds the `, '-id'` fix and why it needs a version bump.
+
+**THE ONE PLACE IT IS OPENED.** `views_admin/applications.py`,
+`AdminApplicationDetailView.get`, around the serializer build. That is the whole scope today.
+
+⚠ **NO WRITE PATH MAY OPEN OR READ ONE.** The rows are a photograph taken when the block opened.
+A function that writes a document and reads one back must see its own write, and inside a
+snapshot it would not. This is why the scope is an explicit `with` around one handler and NOT a
+request-wide middleware, and why `check2_queries` (which sits inside a write) was deliberately
+left on its own query. ⚠ **"Read-only" here means ONLY "never writes `applicant_documents`".**
+The detail GET is not read-only in the ordinary sense: building the payload runs
+`sync_resolution_items`, which creates and resolves ResolutionItem rows off verdict facts and can
+email the student. So a wrong row under the snapshot would be persisted and sent, not merely
+drawn — which is why the matrix also compares what the FIRST, cold open leaves behind (items and
+mail) on twin applications, not only the bytes of a warmed one. `test_document_snapshot.py` holds the test that a write is
+visible to a read taken OUTSIDE the block — and the test that the detail GET writes no document
+at all, which is the precondition for opening one there.
+
+**It lives in a `contextvars.ContextVar`**, not a module global and not an attribute on the model
+instance. A global would be shared between two officers opening two applicants at the same
+instant; an attribute on the instance would survive into a later write in the same request. The
+variable is reset from its token in a `finally`, so nesting and exceptions are both safe.
+
+**To widen it — the four steps, in this order:**
+1. Satisfy yourself the computation is **read-only with respect to `applicant_documents`**.
+2. Wrap at the **outermost** point of that computation, so everything underneath shares one
+   snapshot instead of opening several.
+3. **Add the surface to the ON==OFF matrix in `test_document_snapshot.py` BEFORE you ship it.**
+   That test asserts the response BYTES are identical with the snapshot on and off across 238
+   fixtures (every stage × both income routes × seven document sets). A widening that is not in
+   the matrix is not proven, and the matrix is the only reason anyone can change this module
+   safely.
+4. Lower the affected query budget afterwards. The budget is what notices if the saving is undone.
+
+⚠ **The student's own read is a LIST** (`many=True`), so a snapshot there has to be opened per
+application inside the loop, not once around it. See TD-291 for what it would save (20 → ~7 for a
+two-earner family; break-even for an STR family).
 
 ### Moving a file that is in a ledger — HOW TO DECLARE A MOVE (TD-272, 2026-09-20)
 

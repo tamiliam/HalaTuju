@@ -259,9 +259,44 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   production module outside a declared list may statically import a catalogue. ⚠ Design the byte
   budget with the `_moved` escape from day one — it is keyed on a ROUTE PATH, which has exactly
   TD-272's problem the first time a route is renamed. ~2h, inside H18.
-- **TD-282 (raised 2026-09-20 by code health H18) — ⚠ MEDIUM-HIGH, and it is the largest single
-  finding of the code-health arc. THE OFFICER'S APPLICANT VIEW IS AN N+1 AND NOBODY HAD COUNTED
-  IT.** The June audit said the applicant-detail GET made "20–30 duplicate queries"; H18 measured
+- ~~**TD-282 (raised 2026-09-20 by code health H18) — ⚠ MEDIUM-HIGH.**~~ **RESOLVED 2026-09-21 —
+  315 → 38, and 385 → 38.** The officer's applicant-detail GET now opens a **document snapshot**
+  (`apps/scholarship/document_snapshot.py`) around the serializer build: the application's
+  documents are read ONCE into a `contextvars`-scoped list, and about thirty helpers across
+  seventeen modules filter that list in Python instead of each building a fresh queryset. The two
+  budgets are now EQUAL, which is the finding worth keeping: **the per-document slope is zero**,
+  so a family with a dozen documents costs an officer the same 38 queries as a family with none.
+  Both `query_budgets` entries were lowered in `code-standards.json` (budget only — the frozen
+  `baseline` is untouched, no ledger changed size, no key was renamed, so no `_moved` and no
+  `BASELINE_SHA256` re-pin). A six-document fixture, measured but not budgeted, reads **425 → 39**
+  — the one extra query is an `applicant_documents` read from one of the three sites deliberately
+  left on its own query, and it fires once however many documents follow it.
+
+  **Why it is safe, and where that is written down.** `VERDICT_ENGINE_VERSION` is NOT bumped: no
+  fact's status, band or red-chip count moves. The evidence is
+  `apps/scholarship/tests/test_document_snapshot.py`, a **permanent 238-case matrix** asserting
+  the endpoint's response BYTES are identical with the snapshot on and with it switched off —
+  every factory stage × both income routes × seven document sets (none · one of each type ·
+  several of the same type · a superseded row beside its replacement · tagged beside untagged ·
+  two documents with the IDENTICAL `uploaded_at` · garbage `vision_fields`). Each case also
+  asserts the snapshot saved queries, so the matrix cannot go on passing the day the view stops
+  opening one. Five more tests hold the staleness rule: a write is visible to a read outside the
+  block, a second application is never served the first's rows, a nested snapshot restores the
+  outer one, an exception still closes the scope, and the detail GET writes no document at all
+  (the precondition for opening one there).
+
+  **What was measured on the way, and what was left alone.** The real document-query count was
+  **283 of 315**, not the 265 this entry first recorded (the original figure grouped three
+  distinct SQL shapes as one). `services.application_completeness` and `consent_blockers` were
+  deliberately not touched, and `check2_queries` was left on its own query because it sits inside
+  a write — between them 4 of the remaining 38. See
+  `docs/retrospective-2026-09-21-td282-applicant-view.md`, TD-292 (ordering ties) and TD-293
+  (two garbage shapes that 500 the endpoint, both pre-existing and proven so).
+
+  ---
+  *The original entry, for the record:*
+
+  The June audit said the applicant-detail GET made "20–30 duplicate queries"; H18 measured
   it through the real endpoint with the H5 factory and the number is far worse.
 
   | fixture | queries to open ONE applicant |
@@ -398,6 +433,21 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   context through `verdict_income_salary`'s four functions is TD-282's shape of change (a
   per-request read passed down), and doing it for one caller in isolation buys four queries against
   the 315 that entry records. **Trigger:** TD-282's sprint — fold it in there.
+  **⚠ RE-PRICED 2026-09-21, AND THE TRIGGER ABOVE IS NOW SPENT. TD-282's sprint looked at it and
+  deliberately did NOT fold it in, which is a decision worth reading before anyone picks it up.**
+  Two things changed. First, what it buys **on the officer's screen is now zero**: both
+  computations of `_utility_context` read through the document snapshot, so the second one issues
+  no query at all — the four reads it used to cost were four `applicant_documents` SELECTs and
+  those are exactly what the snapshot removed. Second, what it COSTS did not change: threading
+  the context through `verdict_income_salary`'s four functions still means editing
+  `_verdict_income`, which is in the `long_functions` ledger at 210 lines with a 10-line
+  allowance, on the eligibility path, for a saving that no longer shows on the surface the
+  entry was written about. It remains a real 4 queries for every caller OUTSIDE a snapshot — the
+  submission gate, Check 2, the management commands — and `FALL_THROUGH_BUDGETS` in
+  `test_query_budgets.py` still reads 27 / 39, unmoved by TD-282, which is the number that will
+  fall when someone does it. **New trigger:** the sprint that wraps the submission gate or Check
+  2 in a snapshot (where it would again buy nothing), or any sprint already editing
+  `verdict_income_salary` for another reason — do it as a passenger, never as the errand.
 - **TD-288 (raised 2026-09-21 by the web audit) — low, pre-existing.**
   `src/components/ScholarshipDocuments/IncomeWizard.tsx` declares `Pills` and `Question` INSIDE the
   component body, so every answer gives React two new component types, remounts both, and drops
@@ -431,6 +481,114 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   this week's work. The student client also polls `/scholarship/bursary-agreement/`, which is
   switched off and answers 404 — 24 times since 2026-09-19. **Trigger:** TD-282's sprint is the
   natural place to measure the Requests list with the same query-budget harness.
+  **✅ MEASURED 2026-09-21 in TD-282's sprint, with that harness. NOT FIXED — the brief scoped
+  that sprint to the detail endpoint, and this is the follow-up.** Both readings are through the
+  real endpoint with the H5 factory, on SQLite.
+
+  | surface | fixture | queries | the shape |
+  |---|---|---|---|
+  | `GET /admin/scholarship/requests/` as **org_admin** | 12 requests | **27** | 3 fixed + **2 per request** |
+  | the same list as **super** (owner serializer) | 12 requests | **51** | 3 fixed + **4 per request** |
+  | `GET /scholarship/applications/` (the student's own) | STR route, no working members | **7** | 5 non-document + 2 document |
+  | the same | salary route, two members | **20** | 5 non-document + **15 document** |
+
+  **The Requests list is a plain N+1 and it is NOT the same defect as TD-282.** Nothing here
+  touches `applicant_documents`, so the document snapshot cannot help it. Each row costs
+  `org_requests.comments_for` (a filtered `org_request_comments` read) and
+  `_serialize_org_request_attachments`; a super additionally pays `approved_analysis` and
+  `get_analyses`, both on `org_request_analyses`. The fix is a `Prefetch` with the same filtered
+  querysets on the list view's queryset — four reads for the whole page instead of four per row
+  — which would take a 100-request page from ~203 (org) / ~403 (super) to about 7. That is
+  entirely consistent with the 3–7 s this entry recorded from production, because every one of
+  those is a Cloud SQL round trip.
+
+  **The student's own read is TD-282's defect and WOULD be fixed by widening the snapshot, but
+  only for a working household.** 15 of the salary-route family's 20 queries are document reads
+  (`income_shown`'s cluster reads at three per member, `income_support_docs`, `str_not_breached`),
+  so a snapshot would take **20 → about 7**. The STR-route family is **break-even at 7**: only
+  two of its reads are documents, and one of those is inside
+  `services.application_completeness`, which TD-282's brief put out of bounds. ⚠ And that
+  endpoint serves a **list**, so a snapshot there must be opened per application inside the
+  loop, not once around it — a detail the detail-endpoint scope never had to face.
+  **New trigger:** an officer complaining the Requests space is slow (do the `Prefetch`), or the
+  next sprint on the student's Documents tab (widen the snapshot, and add that surface to the
+  ON==OFF matrix first — `document_snapshot`'s own docstring says how).
+- **TD-292 (raised 2026-09-21 by TD-282's sprint) — low, and it is PRE-EXISTING, not new.**
+  **"The latest document" is undefined when two documents share an `uploaded_at`.** Every
+  document read in the codebase orders by `uploaded_at` descending with **no tie-breaker** —
+  some helpers say `.order_by('-uploaded_at')`, the rest inherit the identical clause from
+  `ApplicantDocument.Meta.ordering`. With equal timestamps neither SQLite nor PostgreSQL promises
+  which row comes first, and PostgreSQL in particular may answer differently after an unrelated
+  `UPDATE` (`superseded_at`, a `vision_fields` re-extraction) rewrites a heap row. So an STR
+  verdict on a household that uploaded twice in the same second could in principle read one
+  document today and the other tomorrow, with nothing changed.
+
+  **TD-282 did not cause this — but "made it smaller" was an overclaim, corrected by the
+  adversarial review the same day.** Before, each of thirty helpers issued its OWN query, so two
+  could disagree about a tie inside one request; now they all filter one ordered read, so they
+  agree with each other. BUT that one read is a different, unfiltered query, and on PostgreSQL it
+  may emit tied rows in a different order than a helper's own filtered query did — so on a tie
+  the snapshot can choose a DIFFERENT document than the pre-TD-282 code. The
+  `identical-timestamps` fixture passes, on SQLite, and proves agreement with SQLite only.
+  **✅ THE PRODUCTION COUNT WAS RUN BY THE LEAD ON 2026-09-21: 1,356 documents, ZERO pairs sharing
+  an `uploaded_at` within an application and document type (with or without `household_member`),
+  and zero NULL `uploaded_at`.** So nothing is exposed today and the `, '-id'` change below is
+  free to make — it still wants its own small change with the version bump, not a rider.
+
+  **The fix is one word and it is NOT free.** Adding `, '-id'` (or `'-pk'`) as a secondary key
+  everywhere would make the choice deterministic — newest row wins, which is what every one of
+  these helpers means by "latest". But it would also change which document is chosen TODAY for
+  any household holding a tie, and therefore possibly a band, so it is a `VERDICT_ENGINE_VERSION`
+  change with a production count behind it, not a tidy-up. **What must happen first:** a
+  read-only production count of applications holding two live documents of the same
+  `(doc_type, household_member)` with equal `uploaded_at` — if it is zero, the change is free and
+  should just be made. ⚠ Note that a single re-upload flow writes both rows within milliseconds,
+  and `uploaded_at` is a full timestamp, so the true count is probably very small.
+  **Trigger:** the count, or the next sprint that touches `ApplicantDocument.Meta.ordering`.
+- **TD-293 (raised 2026-09-21 by TD-282's sprint) — MEDIUM, PRE-EXISTING, and an officer sees a
+  500.** **Two stored `vision_fields` shapes make the officer's applicant-detail GET raise.**
+  Found by the garbage-input row of TD-282's ON==OFF matrix, and proven pre-existing in the same
+  breath: the identical exception is raised with the document snapshot switched off
+  (`TheGarbageThatCrashesTheEndpointCrashedItBefore` asserts both directions, so nobody has to
+  take that on trust).
+
+  | stored value | where it lands | exception |
+  |---|---|---|
+  | `{"authenticity": "some string"}` | the `(vf.get('authenticity') or {}).get('status', '')` idiom — an IC reaches `verdict_engine._doc_wrong_type`, a salary slip `income_engine/evidence._salary_slip_not_wrongtype` | `AttributeError: 'str' object has no attribute 'get'` |
+  | `{"authenticity": {"status": 12345}}` | `genuineness/bands.py` `canonical_status` — `(raw or '').strip()` | `AttributeError: 'int' object has no attribute 'strip'` |
+
+  The first idiom is the telling one: it carefully guards `vision_fields` against not being a
+  dict (`isinstance(...)`) and then assumes `authenticity` IS one. `grep "get('authenticity') or
+  {}"` finds **nine production sites** doing it, so the fix is one shared reader — something like
+  `genuineness.bands.stored_status(doc)` returning a string, always — rather than nine
+  `isinstance` calls that the tenth site will forget. `canonical_status` should coerce with
+  `str(raw)` or refuse a non-string explicitly.
+
+  **How likely is it in production? ✅ MEASURED 2026-09-21 — NOT AT ALL, TODAY.** The lead ran
+  the count: of 1,356 documents, **zero** have a non-object `vision_fields`, zero a non-object
+  `authenticity`, zero a non-string `authenticity.status`. The adversarial reviewer also read
+  every writer (`genuineness/supporting_doc.py`, `vision.py`): each assigns `authenticity` as a
+  dict literal with `status` from a string map defaulting to `''`, so current code cannot produce
+  either crashing shape. **Severity is therefore LOW, not medium** — a hardening, worth doing
+  with the shared reader below the next time those nine sites are touched, not a live risk. ⚠ **Not fixed here on
+  purpose:** turning a 500 into a 200 means deciding what the officer should SEE for a document
+  whose stored extraction is malformed, which is a product answer and not a performance
+  refactor's to give. ~1h plus that decision.
+  **Trigger:** a production count of malformed `vision_fields`, or the first officer 500.
+- **TD-294 (raised 2026-09-21 by the adversarial review of TD-282) — low, pre-existing.** Every
+  officer detail GET logs a full `OperationalError` traceback, *"Failed to fetch auth.users data
+  for CSV export"*, straight after its `AUDIT applicant_detail_read` line. Seen on SQLite in the
+  reviewer's probe (the statement is Postgres-only, so on SQLite it always raises); whether it
+  also fires in PRODUCTION is unknown, and TD-290 (application warnings may not reach Cloud
+  Logging at their real severity) is exactly why nobody would have seen it. It also means a
+  detail READ is doing CSV-export work. **Trigger:** TD-290's investigation — look for this line
+  first; it is a free test of whether warnings arrive.
+- **TD-295 (raised 2026-09-21 by the adversarial review of TD-282) — low.**
+  `pathway_engine._latest_offer` moved from `ApplicantDocument.objects.filter(application=…)` to
+  `application.documents` so it could use the snapshot reader. Same rows for a saved application;
+  but a bare id or a stand-in that the old form answered (or raised on) now quietly gets `None`.
+  All four callers pass real applications, so nothing moves today. Recorded so the next caller
+  knows. **Trigger:** any new caller of `_latest_offer`.
 - **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
   H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
   for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a

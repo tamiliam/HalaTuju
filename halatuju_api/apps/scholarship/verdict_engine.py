@@ -41,6 +41,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
+from .document_snapshot import latest_doc, present_doc_types
 from .services import ic_identity_blockers
 from .vision import name_match
 from .genuineness.bands import canonical_status
@@ -132,23 +133,22 @@ def _income_open_item(application):
 
 # Phase 2 (version history): these three are the MAIN verdict read funnel — every one
 # filters `superseded_at__isnull=True` so a replaced document can never count in a verdict.
+# Since TD-282 all three delegate to `document_snapshot`, which answers from one shared read
+# when the officer's detail GET has a snapshot open and runs this same query otherwise. They
+# stay as named functions because a dozen call sites and several tests import them.
 def _latest_doc(application, doc_type):
-    return (application.documents.filter(doc_type=doc_type, superseded_at__isnull=True)
-            .order_by('-uploaded_at').first())
+    return latest_doc(application, doc_type)
 
 
 def _latest_doc_for_member(application, doc_type, member):
     """The latest LIVE income document of *doc_type* tagged to a specific household
     *member* (salary route). The (doc_type, household_member) pair is the
     single-instance key, so this returns that member's current IC / payslip / EPF."""
-    return (application.documents.filter(
-                doc_type=doc_type, household_member=member, superseded_at__isnull=True)
-            .order_by('-uploaded_at').first())
+    return latest_doc(application, doc_type, member=member)
 
 
 def _present_doc_types(application):
-    return set(application.documents.filter(superseded_at__isnull=True)
-               .values_list('doc_type', flat=True))
+    return present_doc_types(application)
 
 
 def _doc_assist_verdict(doc):

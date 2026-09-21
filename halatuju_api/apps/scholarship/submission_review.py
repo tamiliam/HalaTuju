@@ -32,6 +32,7 @@ Verification taxonomy for a ledger row:
 from __future__ import annotations
 
 from .anomaly_engine import sibling_tertiary_count, detect_anomalies
+from .document_snapshot import latest_doc
 from .verdict_engine import build_verdict
 
 # A verification-verdict status → the ledger verification it implies.
@@ -66,8 +67,7 @@ def _row(claim, value, source, verification):
 
 def _letter_of_intent_text(application) -> str:
     """The OCR'd plain text of the letter of intent (P1), or '' if not uploaded/read."""
-    doc = (application.documents.filter(doc_type='statement_of_intent', superseded_at__isnull=True)
-           .order_by('-uploaded_at').first())
+    doc = latest_doc(application, 'statement_of_intent')
     if doc is None or not isinstance(getattr(doc, 'vision_fields', None), dict):
         return ''
     return (doc.vision_fields.get('text') or '').strip()

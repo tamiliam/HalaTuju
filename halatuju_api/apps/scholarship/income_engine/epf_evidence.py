@@ -28,7 +28,7 @@ def semester_result_gap(application):
         by definition; the programme currently processes post-SPM applicants, so this rarely fires).
     Clears when a ``semester_result`` field-extracts."""
     docs = _docs_or_none(application)
-    if docs is None or _has_read_doc(docs, 'semester_result'):
+    if docs is None or _has_read_doc(application, 'semester_result'):
         return False
     prof = getattr(application, 'profile', None)
     if (getattr(prof, 'exam_type', '') or '') == 'stpm':

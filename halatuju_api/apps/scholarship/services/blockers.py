@@ -7,6 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 from django.utils import timezone
 
 from .. import requirements
+from ..document_snapshot import latest_doc, live_docs, present_doc_types
 from ..models import ApplicantDocument
 
 
@@ -39,8 +40,7 @@ def ic_identity_blockers(application):
     are skipped (can't compare). Caller guarantees an 'ic' document exists.
     """
     from ..vision import nric_match, name_match
-    ic = (application.documents.filter(doc_type='ic', superseded_at__isnull=True)
-          .order_by('-uploaded_at').first())
+    ic = latest_doc(application, 'ic')
     if ic is None or not ic.vision_run_at:
         return ['ic_service_down']  # never processed — treat as a system issue
     if ic.vision_error:
@@ -169,8 +169,7 @@ def income_doc_blockers(application):
     # `income_str_ownership`, which also documents why an UNREAD STR is not a stranger's one.
     from ..income_str_ownership import STR_NOT_HOUSEHOLD, stranger_str_blocks_submission
     strangers_str = stranger_str_blocks_submission(application)
-    present = set(application.documents.filter(superseded_at__isnull=True)
-                  .values_list('doc_type', flat=True))
+    present = present_doc_types(application)
     out = []
     if route == 'str':
         # EITHER route satisfies (owner 2026-07-22): a fully documented earner settles income on
@@ -267,8 +266,7 @@ def _offer_blocks(application):
     if (getattr(application, 'chosen_pathway', '') or '').strip().lower() == 'stpm':
         return False
     from ..pathway_engine import offer_official_status
-    offer = (application.documents.filter(doc_type='offer_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+    offer = latest_doc(application, 'offer_letter')
     if offer is None or offer_official_status(offer) != 'not_genuine':
         return False                       # missing / official / unknown → not a block
     # A not-official offer blocks UNLESS the pathway verdict the officer sees is Probable+.
@@ -331,7 +329,7 @@ def document_red_blockers(application):
     def has(d, *keys):
         return any(d.get(k) == 'mismatch' for k in keys)
 
-    for doc in application.documents.filter(superseded_at__isnull=True):
+    for doc in live_docs(application):
         dt = doc.doc_type
         if income_ok and dt in _INCOME_CLUSTER_DOC_TYPES:
             continue
@@ -394,12 +392,10 @@ def document_unreadable_blockers(application):
     from ..income_engine import (income_cluster_advice, effective_working_members,
                                 _member_ic_doc, student_income_ic_check)
     codes = set()
-    slip = (application.documents.filter(doc_type='results_slip', superseded_at__isnull=True)
-            .order_by('-uploaded_at').first())
+    slip = latest_doc(application, 'results_slip')
     if slip and student_slip_check(slip).get('name') == 'unreadable':
         codes.add('results_slip_unreadable')
-    offer = (application.documents.filter(doc_type='offer_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+    offer = latest_doc(application, 'offer_letter')
     if offer and student_offer_check(offer).get('name') == 'unreadable':
         codes.add('offer_letter_unreadable')
     # Income cluster — per earner.

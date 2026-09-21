@@ -7,6 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from ..document_snapshot import latest_doc, live_docs
 from ..vision import nric_close, relationship_name_match as name_match
 from .buckets import _name_bucket, _nric_bucket
 from .relationships import _relationship_inputs, member_relationship_status, student_name_for_link
@@ -20,8 +21,7 @@ def _cluster_proof_identity(application, member):
     income proof is present yet to compare against."""
     route = (getattr(application, 'income_route', '') or '').strip()
     if route == 'str':
-        p = (application.documents.filter(doc_type='str', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+        p = latest_doc(application, 'str')
         if p:
             f = _doc_fields(p)
             return 'str', (f.get('recipient_name', '') or '').strip(), (f.get('recipient_nric', '') or '').strip()
@@ -44,8 +44,7 @@ def _cluster_proof_identity(application, member):
 # red into a verified green; it never asserts a mismatch.
 
 def _bc_doc(application):
-    return (application.documents.filter(doc_type='birth_certificate', superseded_at__isnull=True)
-            .order_by('-uploaded_at').first())
+    return latest_doc(application, 'birth_certificate')
 
 
 def _bc_anchorable(bc) -> bool:
@@ -175,8 +174,7 @@ def _cluster_docs(application, member, doc_type):
     # replaced income doc can never re-enter the cluster verdict.
     route = (getattr(application, 'income_route', '') or '').strip()
     if route == 'salary':
-        qs = application.documents.filter(
-            doc_type=doc_type, household_member=member, superseded_at__isnull=True)
+        return live_docs(application, doc_type, member=member)
     else:
         # STR route (single earner) or blank wizard: the earner's docs — tagged OR legacy-blank.
         # Code-health S4 #15: when the wizard HAS named the earner, the legacy-blank fallback
@@ -189,9 +187,7 @@ def _cluster_docs(application, member, doc_type):
             allowed = [member]
         else:
             allowed = [member, '']
-        qs = application.documents.filter(
-            doc_type=doc_type, household_member__in=allowed, superseded_at__isnull=True)
-    return qs.order_by('-uploaded_at')
+        return live_docs(application, doc_type, members=allowed)
 
 
 def _member_ic_doc(application, member):

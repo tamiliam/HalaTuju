@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime
 import re
 
+from ..document_snapshot import live_docs
 from .salary_figures import _doc_fields, _parse_rm
 from .utilities import _parse_billing_month, _reconciled_holder_name, _utility_name_unrelated
 
@@ -48,7 +49,7 @@ def stale_income_proof(application, today=None):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    slips = list(docs.filter(doc_type='salary_slip', superseded_at__isnull=True))
+    slips = list(live_docs(application, 'salary_slip'))
     if not slips:
         return False
     ages = []

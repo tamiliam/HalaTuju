@@ -275,7 +275,7 @@
     }
   },
   "budget": {
-    "last_tightened_on": "2026-09-20 (code health H18 — the query_budgets ledger was ADDED, frozen at the reading taken on 2026-09-20: 315 database queries to open one applicant with no documents, 385 with three. Nothing else was touched and nothing was raised. See the _history note and TD-282.)",
+    "last_tightened_on": "2026-09-21 (TD-282 — the officer's applicant-detail GET now opens a shared document snapshot, so both query_budgets entries FALL: 315 -> 38 with no documents and 385 -> 38 with three. The two numbers are now EQUAL, which is the finding: the per-document N+1 is gone, so a document no longer costs anything to open. This is the ratchet catching up with an improvement — the tightness test named both numbers and this is the edit it asked for. Only `budget` moved; `baseline` is untouched, no ledger gained or lost a member, no key was renamed, so no `_moved` record and no BASELINE_SHA256 re-pin. Previously: 2026-09-20 (code health H18 — the query_budgets ledger was ADDED, frozen at the reading taken that day). See TD-282 and docs/retrospective-2026-09-21-td282-applicant-view.md.)",
     "counts": {
       "noqa": 80,
       "type_ignore": 15,
@@ -483,8 +483,8 @@
       "apps/scholarship/tests/test_whatsapp.py": 1
     },
     "query_budgets": {
-      "api/v1/admin/scholarship/applications/<int:pk>/::GET::no-documents": 315,
-      "api/v1/admin/scholarship/applications/<int:pk>/::GET::three-documents": 385
+      "api/v1/admin/scholarship/applications/<int:pk>/::GET::no-documents": 38,
+      "api/v1/admin/scholarship/applications/<int:pk>/::GET::three-documents": 38
     }
   }
 }

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 
+from ..document_snapshot import latest_doc, tagged_members
 from ..vision import relationship_name_match as name_match
 
 
@@ -50,8 +51,7 @@ def student_name_for_link(application) -> str:
     docs = getattr(application, 'documents', None)
     if docs is None:
         return profile_name
-    ic = (docs.filter(doc_type='ic', superseded_at__isnull=True)
-          .order_by('-uploaded_at').first())
+    ic = latest_doc(application, 'ic')
     ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
     if (ic_name and father_name_from_ic(ic_name)
             and profile_name and name_match(ic_name, profile_name) != 'mismatch'):
@@ -204,10 +204,7 @@ def effective_working_members(application, any_route: bool = False) -> list:
     docs = getattr(application, 'documents', None)
     if docs is not None:
         try:
-            tagged = (docs.filter(doc_type__in=('parent_ic', 'salary_slip', 'epf'),
-                                  superseded_at__isnull=True)
-                      .exclude(household_member='')
-                      .values_list('household_member', flat=True))
+            tagged = tagged_members(application, ('parent_ic', 'salary_slip', 'epf'))
             found.update(m for m in tagged if m in _MEMBER_ORDER)
         except (AttributeError, TypeError):
             pass
@@ -245,8 +242,7 @@ def _relationship_inputs(application, member, member_ic_name):
     guardianship letter for a guardian)."""
     bc_child = bc_mother = bc_father = letter_name = ''
     if member in ('mother', 'father', 'brother', 'sister'):
-        bc = (application.documents.filter(doc_type='birth_certificate', superseded_at__isnull=True)
-              .order_by('-uploaded_at').first())
+        bc = latest_doc(application, 'birth_certificate')
         vf = (getattr(bc, 'vision_fields', None) if bc else None) or {}
         f = vf.get('fields', {}) if isinstance(vf, dict) else {}
         if isinstance(f, dict):
@@ -254,7 +250,6 @@ def _relationship_inputs(application, member, member_ic_name):
             bc_mother = f.get('bc_mother_name', '')
             bc_father = f.get('bc_father_name', '')
     elif member == 'guardian':
-        g = (application.documents.filter(doc_type='guardianship_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+        g = latest_doc(application, 'guardianship_letter')
         letter_name = (getattr(g, 'vision_name', '') or '') if g else ''
     return bc_child, bc_mother, bc_father, letter_name

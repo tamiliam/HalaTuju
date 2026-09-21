@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime
 
+from ..document_snapshot import has_live_doc, live_docs
 from .freshness import _INCOME_DOC_CURRENT_MONTHS
 from .identity_checks import _cluster_docs
 from .relationships import _MEMBER_ORDER
@@ -126,11 +127,15 @@ def _docs_or_none(application):
     return getattr(application, 'documents', None)
 
 
-def _has_read_doc(docs, doc_type):
+def _has_read_doc(application, doc_type):
     """A doc of this type that field-extracted OK (``student_verdict='ok'``) is on file — so a
     blank/wrong upload doesn't clear a V4 academic request (consistency with V1's read-requirement:
-    a doc must READ to count, not merely be present)."""
-    for d in docs.filter(doc_type=doc_type, superseded_at__isnull=True):
+    a doc must READ to count, not merely be present).
+
+    ⚠ TD-282 changed the first argument from the related MANAGER to the APPLICATION, so the read
+    can come from the shared snapshot. Both callers already hold the application, and both still
+    ask ``_docs_or_none`` first for the test-double case."""
+    for d in live_docs(application, doc_type):
         if (getattr(d, 'vision_fields', None) or {}).get('student_verdict', '') == 'ok':
             return True
     return False
@@ -145,6 +150,6 @@ def school_leaving_cert_gap(application):
     if (getattr(prof, 'exam_type', 'spm') or 'spm') != 'spm':
         return False
     docs = _docs_or_none(application)
-    if docs is None or _has_read_doc(docs, 'school_leaving_cert'):
+    if docs is None or _has_read_doc(application, 'school_leaving_cert'):
         return False
-    return not docs.filter(doc_type='results_slip', superseded_at__isnull=True).exists()
+    return not has_live_doc(application, 'results_slip')

@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime
 import re
 
+from ..document_snapshot import latest_doc, live_docs
 from ..vision import canonical_name_tokens, relationship_name_match as name_match
 from .identity_checks import _roster_candidates
 from .salary_figures import _arrears_amount, _doc_fields, _parse_rm
@@ -171,7 +172,7 @@ def _utility_name_unrelated(application, bill_name):
     for _member, nm in _roster_candidates(application):   # declared father/mother/guardian/siblings
         if nm.strip():
             candidates.append(nm)
-    for ic in application.documents.filter(doc_type='parent_ic', superseded_at__isnull=True):
+    for ic in live_docs(application, 'parent_ic'):
         nm = (getattr(ic, 'vision_name', '') or '').strip()
         if nm:
             candidates.append(nm)
@@ -185,8 +186,7 @@ def _utility_holder_names(application):
     bills (latest first)."""
     names = []
     for dt in ('water_bill', 'electricity_bill'):
-        for doc in application.documents.filter(
-                doc_type=dt, superseded_at__isnull=True).order_by('-uploaded_at'):
+        for doc in live_docs(application, dt):
             nm = (_doc_fields(doc).get('name', '') or '').strip()
             if nm:
                 names.append(nm)
@@ -271,8 +271,7 @@ def utility_holder_unknown(application):
     the first such bill, or None. Bills routinely sit in a parent's name (fine — that
     matches the IC); this fires only when the holder is a stranger to the documents."""
     for dt in ('water_bill', 'electricity_bill'):
-        for doc in application.documents.filter(
-                doc_type=dt, superseded_at__isnull=True).order_by('-uploaded_at'):
+        for doc in live_docs(application, dt):
             facts = utility_check(doc)
             if facts and facts.get('name_note') == 'unrelated' and facts.get('name'):
                 return facts['name']
@@ -285,15 +284,16 @@ def utility_address_mismatch(application):
     a 'partial' (a missing postcode or a shortened/abbreviated street) deliberately stays
     silent, so only a genuinely different address raises the query. Soft, never a gate."""
     for dt in ('water_bill', 'electricity_bill'):
-        for doc in application.documents.filter(doc_type=dt, superseded_at__isnull=True):
+        for doc in live_docs(application, dt):
             if (getattr(doc, 'vision_address_match', '') or '') == 'mismatch':
                 return True
     return False
 
 
 def _latest_doc(application, doc_type):
-    return (application.documents.filter(doc_type=doc_type, superseded_at__isnull=True)
-            .order_by('-uploaded_at').first())
+    # TD-282: one shared read when the officer's detail GET has a snapshot open; otherwise
+    # exactly the query this used to build for itself.
+    return latest_doc(application, doc_type)
 
 
 def utility_per_capita(application):

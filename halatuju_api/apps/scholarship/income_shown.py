@@ -36,6 +36,8 @@ It lives in its own module because ``income_engine.py`` sits on the oversize led
 """
 from dataclasses import dataclass
 
+from .document_snapshot import live_docs
+
 # ── The three per-earner ways (the value of ``IncomeShown.way``) ─────────────────────────────
 WAY_SALARY_SLIP = 'salary_slip'
 WAY_EPF = 'epf'
@@ -90,8 +92,7 @@ def income_support_docs(application, member):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return []
-    return list(docs.filter(doc_type='income_support_doc', household_member__in=[member, ''],
-                            superseded_at__isnull=True))
+    return list(live_docs(application, 'income_support_doc', members=[member, '']))
 
 
 def income_support_doc_read(doc) -> bool:

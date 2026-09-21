@@ -6,6 +6,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from ..document_snapshot import latest_doc
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
 from .relationships import _MEMBER_ORDER, effective_working_members, relationship_doc_for
 from .str_route import STR_COACH_STATES, student_str_check
@@ -30,9 +31,7 @@ def income_cluster_advice(application, member):
     if not member:
         return ''
     route = (getattr(application, 'income_route', '') or '').strip()
-    str_doc = (application.documents.filter(doc_type='str', superseded_at__isnull=True)
-               .order_by('-uploaded_at').first()
-               if route == 'str' else None)
+    str_doc = latest_doc(application, 'str') if route == 'str' else None
     proofs = [p for dt in ('salary_slip', 'epf') for p in _cluster_docs(application, member, dt)]
     has_proof = bool(proofs) or str_doc is not None
 
@@ -78,8 +77,7 @@ def income_cluster_advice(application, member):
     # the shared patronymic on the IC proves it).
     rel_doc = relationship_doc_for(member)
     if rel_doc:
-        rel_obj = (application.documents.filter(doc_type=rel_doc, superseded_at__isnull=True)
-                   .order_by('-uploaded_at').first())
+        rel_obj = latest_doc(application, rel_doc)
         if rel_obj is None:
             return 'income_rel_doc_needed'             # not uploaded yet → nudge for it
         # Uploaded, but we still can't confirm the link. A name CLASH already returned

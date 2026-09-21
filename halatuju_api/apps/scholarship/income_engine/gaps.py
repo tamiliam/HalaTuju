@@ -5,6 +5,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from ..document_snapshot import has_live_doc
 from .identity_checks import chain_verified_earner
 from .occupation import _member_occupation
 
@@ -58,7 +59,7 @@ def _parent_has_income_evidence(application, member):
     route = (getattr(application, 'income_route', '') or '').strip()
     if (route == 'str'
             and (getattr(application, 'income_earner', '') or '').strip() == member
-            and application.documents.filter(doc_type='str', superseded_at__isnull=True).exists()):
+            and has_live_doc(application, 'str')):
         return True
     return False
 

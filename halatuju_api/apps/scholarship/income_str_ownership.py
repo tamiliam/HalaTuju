@@ -51,11 +51,11 @@ def str_recipient_is_stranger(application) -> bool:
     is a stranger's; ``'no_ref'`` (nothing read, or nothing to compare against) is neither, and
     returns False."""
     from . import income_engine as ie
+    from .document_snapshot import latest_doc
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    str_doc = (docs.filter(doc_type='str', superseded_at__isnull=True)
-               .order_by('-uploaded_at').first())
+    str_doc = latest_doc(application, 'str')
     if str_doc is None:
         return False
     sc = ie.student_str_check(str_doc)

@@ -539,10 +539,11 @@ def parse_reporting_date(raw):
 
 
 def _latest_offer(application):
-    from .models import ApplicantDocument
-    return (ApplicantDocument.objects.filter(
-                application=application, doc_type='offer_letter', superseded_at__isnull=True)
-            .order_by('-uploaded_at').first())
+    # TD-282: the shared snapshot when the officer's detail GET has one open, else the same
+    # single-row read this always did. (It used to go through `ApplicantDocument.objects`
+    # rather than the related manager; identical rows, one fewer way of spelling it.)
+    from .document_snapshot import latest_doc
+    return latest_doc(application, 'offer_letter')
 
 
 def offer_reporting_date(application):

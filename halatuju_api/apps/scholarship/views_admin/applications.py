@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from halatuju.pagination import FlexiblePageNumberPagination
 from apps.courses.search import apply_people_search
 from .. import reopen as reopen_service
+from ..document_snapshot import document_snapshot
 from ..models import Referee, ScholarshipApplication
 from ..serializers import RefereeSerializer
 from ..serializers_admin import AdminApplicationDetailSerializer, AdminApplicationListSerializer
@@ -160,7 +161,21 @@ class AdminApplicationDetailView(_AdminBase):
             'AUDIT applicant_detail_read admin_id=%s app_id=%s',
             getattr(admin, 'id', '?'), pk,
         )
-        return Response(AdminApplicationDetailSerializer(app).data)
+        # TD-282 — THE ONE PLACE A DOCUMENT SNAPSHOT IS OPENED. Building this payload used to
+        # cost 315 database queries with no documents on file and 385 with three, because the
+        # verdict, income, anomaly and blocker engines underneath each re-queried
+        # `applicant_documents` every time they were asked a question. The snapshot reads them
+        # once and every one of those helpers filters that list in Python instead; outside this
+        # block they all behave exactly as before. It is safe here because this handler never
+        # WRITES `applicant_documents`, so the list cannot go stale while it is open.
+        # ⚠ THIS GET IS NOT READ-ONLY, and the first draft of this comment said it was. Building
+        # the payload runs `sync_resolution_items`, which creates and resolves ResolutionItem rows
+        # and can notify the student by email — driven by verdict facts that now read through
+        # the snapshot. So a wrong row here would be PERSISTED AND EMAILED, not just drawn. The
+        # rule is "no write to applicant_documents", and the stakes are why the ON==OFF matrix
+        # in `test_document_snapshot.py` compares the FIRST open as well as the warmed one.
+        with document_snapshot(app):
+            return Response(AdminApplicationDetailSerializer(app).data)
 
     def patch(self, request, pk):
         """Admin-editable per-application flags: mentoring-candidate. Writes are

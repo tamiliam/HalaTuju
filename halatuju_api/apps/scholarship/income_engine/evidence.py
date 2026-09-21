@@ -12,6 +12,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from ..document_snapshot import has_live_doc, latest_doc
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
 from .relationships import effective_working_members, relationship_doc_for
 from .salary_figures import _doc_fields, _epf_monthly_salary
@@ -27,7 +28,7 @@ def has_valid_str(application):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    str_doc = latest_doc(application, 'str')
     if str_doc is None:
         return False
     sc = student_str_check(str_doc)
@@ -51,7 +52,7 @@ def household_str_status(application):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return None, None
-    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    str_doc = latest_doc(application, 'str')
     if str_doc is None:
         return None, None
     # Genuineness guard: a positively non-genuine STR is breached (mirrors str_not_breached).
@@ -78,7 +79,7 @@ def str_not_breached(application):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    str_doc = latest_doc(application, 'str')
     if str_doc is None:
         return False
     sc = student_str_check(str_doc)
@@ -99,7 +100,7 @@ def str_confirmed_current(application):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    str_doc = latest_doc(application, 'str')
     if str_doc is None:
         return False
     sc = student_str_check(str_doc)
@@ -225,8 +226,7 @@ def member_cluster_complete(application, member):
         if pc and 'mismatch' in (pc.get('name_status'), pc.get('nric_status')):
             return False
     rel = relationship_doc_for(member)
-    if rel and not application.documents.filter(
-            doc_type=rel, superseded_at__isnull=True).exists():
+    if rel and not has_live_doc(application, rel):
         return False
     return True
 

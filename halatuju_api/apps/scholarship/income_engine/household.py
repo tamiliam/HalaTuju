@@ -6,6 +6,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from ..document_snapshot import tagged_members
 from .amounts import earner_monthly_income
 from .gaps import household_status_gaps
 from .identity_checks import _cluster_docs
@@ -80,10 +81,7 @@ def _income_earning_members(application):
     payslip on file quantifies that member's pay regardless of route."""
     members = list(effective_working_members(application))
     try:
-        doc_members = (application.documents
-                       .filter(doc_type__in=('salary_slip', 'epf'), superseded_at__isnull=True)
-                       .exclude(household_member='')
-                       .values_list('household_member', flat=True))
+        doc_members = tagged_members(application, ('salary_slip', 'epf'))
     except (AttributeError, TypeError):
         doc_members = []
     for m in sorted(set(doc_members)):

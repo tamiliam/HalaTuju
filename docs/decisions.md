@@ -12006,3 +12006,15 @@ does not cover it and the owner must rule again.
 **Rationale:** a page whose heading names a round must not carry one figure that ignores it — the exemption would be the confusing case, not the filter. The footer equality is a statement about the same scope; with a round chosen there is no footer on that scope to equal. A round's code, name, year and state is a date, not a person or a sum, so every role may read the picker's options.
 
 **Revisit if:** the Applications list gains the same filter (it should — `_intake_narrowing` is on `_AdminBase` for that reason), at which point the two pages must resolve `?intake=` identically.
+
+## An applicant's documents are read once into a SCOPED SNAPSHOT, not a cache — TD-282, 2026-09-21
+
+**Decision:** `apps/scholarship/document_snapshot.py` reads one application's documents once and holds them in a `contextvars.ContextVar`, keyed on the application id, for the length of ONE read-only computation opened with a `with` block. Five readers answer from that list when a snapshot is open for that application and run exactly the query they replaced when one is not. Exactly one place opens a snapshot today: `AdminApplicationDetailView.get`.
+
+**Alternatives considered:** `prefetch_related('documents')` on the view's queryset (does nothing — a `.filter(...)` on a related manager ignores a prefetch cache, which H18 proved before this sprint began); a cache hung on the model instance, which is what a prefetch cache is (the instance outlives the read, so a later write in the same request would answer from a photograph); a module-level dict (shared between two officers opening two applicants on two threads at the same instant); request-wide middleware (would cover every write path in the request, which is precisely the thing that must not happen).
+
+**Rationale:** the cost was 315 queries with no documents and 385 with three, 283 of them the same table, and the honest fix is one read shared by the thirty helpers that ask about it. A `ContextVar` reset from its token in a `finally` cannot outlive its block, cannot leak between threads or tasks, and cannot answer for a different applicant — three failure modes a cache has and this does not. The rule that pays for all of it: **no write path may open or read a snapshot**, which is why the scope is an explicit `with` around one read-only handler rather than anything automatic.
+
+**Trade-offs:** thirty call sites now go through a shared module instead of spelling their own queryset, so a reader's bug is thirty bugs. That is bought back with a permanent 238-case test asserting the endpoint's response BYTES are identical with the snapshot on and off (every factory stage x both income routes x seven document sets), which is what lets the next engineer change the module at all. Widening it is deliberately manual: a new surface must be added to that matrix first.
+
+**Revisit if:** a second surface wants one and the per-surface `with` starts being forgotten — then the answer is still not middleware, it is a decorator on the read-only handlers that names itself, plus the matrix entry.
