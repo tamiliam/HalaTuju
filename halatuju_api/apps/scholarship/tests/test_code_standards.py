@@ -1210,3 +1210,89 @@ class TestTheMoveArithmetic(SimpleTestCase):
         effective, problems = self.apply()
         self.assertEqual(problems, [])
         self.assertEqual(effective, self.base())
+
+
+# ── A moves-only split may not quietly drop a module-wide directive (audit 2026-09-21) ───────
+
+class TestAModuleHeaderSurvivedTheSplit(SimpleTestCase):
+    """`from __future__ import annotations` is a per-MODULE directive, and a split makes modules.
+
+    ⚠ FOUND BY THE AUDIT OF 2026-09-21, AND IT IS A REGRESSION OF INTENT, NOT OF BEHAVIOUR.
+    `income_engine.py` carried the directive at line 23. Code health H16 turned that file into a
+    package and declared itself **moves-only** — *"not a line of this body was reworded"*, which
+    every submodule's own docstring still says. But the directive is a property of the FILE, not
+    of any body inside it, so it stayed behind with the file that was deleted: none of the
+    nineteen submodules nor the shell received it. Nothing broke, because these modules evaluate
+    their annotations lazily enough not to notice — which is precisely why nobody noticed either.
+
+    The other four splits (`views_admin`, `services`, `models`, `emails`) were checked the same
+    way, against `git show <split>^:<path>`: none of those pre-split files carried the directive,
+    so there was nothing to restore and nothing is claimed here about them.
+
+    ⚠ THE GUARD IS PER-PACKAGE AND EACH ENTRY CARRIES ITS REASON, because "every package must
+    have it" would be a rule nobody agreed to — the four above do not, legitimately. A package
+    joins this registry when its pre-split file had the directive, or when someone decides it
+    should; either way the sentence beside it says which.
+    """
+
+    #: `package directory -> why every module in it must carry the directive`.
+    REQUIRED = {
+        'income_engine': (
+            'the pre-split `income_engine.py` carried it at line 23 and code health H16 declared '
+            'itself moves-only, so losing it was a change H16 did not intend to make'),
+    }
+
+    DIRECTIVE = 'from __future__ import annotations'
+
+    #: The fewest `.py` files the walk must find across the registry. THE FLOOR: a negative-shaped
+    #: guard over a walk goes green the instant the walk narrows.
+    FILE_FLOOR = 18
+
+    def _modules(self):
+        import os
+        from apps.scholarship.tests.source_walk import API_ROOT, walk_sources
+        found = []
+        for package, why in self.REQUIRED.items():
+            found += walk_sources(
+                os.path.join(API_ROOT, 'apps', 'scholarship', package), '*.py', 1, why)
+        return found
+
+    def test_every_module_of_a_registered_package_carries_the_directive(self):
+        import ast
+        from apps.scholarship.tests.source_walk import _relative
+        missing = []
+        for path in self._modules():
+            tree = ast.parse(path.read_text(encoding='utf-8'))
+            has = any(isinstance(n, ast.ImportFrom) and n.module == '__future__'
+                      and any(a.name == 'annotations' for a in n.names)
+                      for n in tree.body)
+            if not has:
+                missing.append(_relative(path))
+        self.assertEqual(
+            missing, [],
+            f'Module(s) of a package registered in REQUIRED are missing '
+            f'`{self.DIRECTIVE}`. It is a per-FILE directive, so a new module in one of these '
+            f'packages does not inherit it and a split does not carry it — add the line, or '
+            f'remove the package from REQUIRED and say in the same change why the whole package '
+            f'no longer needs it.\n' + '\n'.join(missing))
+
+    def test_the_walk_actually_found_the_modules(self):
+        """THE FLOOR (TD-276). The assertion above is a negative over a walk: rename the package
+        and it finds nothing, asserts nothing, and passes for ever."""
+        from apps.scholarship.tests.source_walk import floor_count
+        floor_count(self._modules(), self.FILE_FLOOR, 'modules in the registered packages',
+                    'a directive guard that reads no modules holds no directive')
+
+    def test_the_registry_names_packages_that_exist(self):
+        """A registry keyed on a directory name describes nothing the day the directory moves —
+        the same failure `_moved`'s `to`-must-be-a-real-file rule exists to refuse."""
+        import os
+        from apps.scholarship.tests.source_walk import API_ROOT
+        for package, why in self.REQUIRED.items():
+            with self.subTest(package=package):
+                self.assertTrue(
+                    os.path.isdir(os.path.join(API_ROOT, 'apps', 'scholarship', package)),
+                    f'REQUIRED names "{package}", which is not a package in apps/scholarship. '
+                    f'It was registered because: {why}')
+                self.assertGreater(len(why.split()), 8,
+                                   f'REQUIRED["{package}"] must say WHY in a sentence.')

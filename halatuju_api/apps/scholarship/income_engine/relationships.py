@@ -5,6 +5,8 @@ verdict for one member. Nothing here reads a document.
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 import re
 
 from ..vision import relationship_name_match as name_match

@@ -153,3 +153,89 @@ class AuditLoggerNameTest(SimpleTestCase):
                     f'Fewer than {self.FLOORS[package]} {package} submodules were found to carry '
                     f'a logger ({[n for n, _ in found]}). Either the package moved or this guard '
                     f'stopped seeing it, and it is now vacuous.')
+
+    # ── the half the runtime scan above cannot reach (audit 2026-09-21) ────────────────────
+    #: Every package this app has split a big module into, by DIRECTORY. Wider than `PACKAGES`
+    #: above on purpose: that scan reads a module attribute called `logger` and so can only see
+    #: packages that bind one, which is why `income_engine` and `models` are excused there (a
+    #: floor of zero is the thing these guards exist to refuse). This scan reads SOURCE, so it
+    #: costs nothing to watch a package that logs nothing today and everything the day one of its
+    #: modules starts to.
+    PACKAGE_DIRS = ('views_admin', 'services', 'emails', 'models', 'income_engine')
+
+    #: The fewest `.py` files the walk must find across all five, and the fewest `getLogger`
+    #: CALLS the parse must find in them. Two floors, failing differently on purpose (TD-276
+    #: rule 3): a walk can read every file and still find none of what it came for.
+    SOURCE_FILE_FLOOR = 80
+    GETLOGGER_CALL_FLOOR = 15
+
+    def _getlogger_calls(self):
+        """Every `getLogger(...)` call in those five packages, as `(path, lineno, argument)`.
+
+        ⚠ AN AST WALK, NOT A GREP, AND THAT IS THE POINT. `emails/shared.py` carries the string
+        `logging.getLogger(__name__)` inside a COMMENT explaining why it does not do that; a
+        regex reads it as the defect it describes. A parse sees a comment for what it is.
+        """
+        import ast
+        from apps.scholarship.tests.source_walk import API_ROOT, walk_sources
+        import os
+        found = []
+        root = os.path.join(API_ROOT, 'apps', 'scholarship')
+        files = []
+        for pkg in self.PACKAGE_DIRS:
+            files += walk_sources(
+                os.path.join(root, pkg), '*.py', 1,
+                f'the audit stream must carry ONE logger name per package, and {pkg} is one of '
+                f'the packages a big module was split into')
+        for path in files:
+            tree = ast.parse(path.read_text(encoding='utf-8'))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                name = func.attr if isinstance(func, ast.Attribute) else getattr(func, 'id', '')
+                if name != 'getLogger':
+                    continue
+                arg = node.args[0] if node.args else None
+                found.append((path, node.lineno, arg))
+        return files, found
+
+    def test_no_module_anywhere_in_a_package_asks_for_getLogger_dunder_name(self):
+        """⚠ WRITTEN BECAUSE THE GUARD ABOVE MISSED A REAL REGRESSION (audit 2026-09-21).
+
+        `services/confirmation.py` binds the package logger at module scope — and then, INSIDE
+        `confirm_profile`, re-imported `logging` and called `logging.getLogger(__name__)` for the
+        one warning that says a student's Check-2 queries failed to raise at submission. So that
+        line — the only alert anybody gets for a silently half-finished submission — left as
+        `apps.scholarship.services.confirmation` and dropped out of the scrape metric that counts
+        by logger name. H15 moved the body verbatim and inherited it; the runtime scan above reads
+        a module ATTRIBUTE called `logger` and can see nothing that happens inside a function.
+
+        A source walk can. Module-level and inline are the same defect and this catches both, so
+        the two halves of the rule cannot drift apart."""
+        _files, calls = self._getlogger_calls()
+        import ast
+        from apps.scholarship.tests.source_walk import _relative
+        wrong = [f'{_relative(path)}:{lineno}'
+                 for path, lineno, arg in calls
+                 if isinstance(arg, ast.Name) and arg.id == '__name__']
+        self.assertEqual(
+            wrong, [],
+            'A module inside one of the split packages calls getLogger(__name__). In a submodule '
+            'that reads `apps.scholarship.<package>.<module>`, which is NOT the name the Cloud '
+            'Logging metric counts — so every line that logger carries leaves the audit stream '
+            'silently. Write the package name out in full. This catches an INLINE call inside a '
+            'function body as well as a module-level binding; they are the same defect.\n'
+            + '\n'.join(wrong))
+
+    def test_the_source_scan_actually_read_something(self):
+        """THE TWO FLOORS (TD-276 rule 3). The files, and the things. A negative assertion over a
+        walk goes GREEN the moment the walk narrows, and this scan's subject — a call that must
+        NOT appear — is exactly that shape, so it needs both."""
+        from apps.scholarship.tests.source_walk import floor_count
+        files, calls = self._getlogger_calls()
+        floor_count(files, self.SOURCE_FILE_FLOOR, 'source files in the split packages',
+                    'the getLogger(__name__) scan must actually read the packages it names')
+        floor_count(calls, self.GETLOGGER_CALL_FLOOR, 'getLogger() calls',
+                    'a scan that parses every file and finds no getLogger call at all has '
+                    'stopped recognising the call it came for, and asserts nothing')

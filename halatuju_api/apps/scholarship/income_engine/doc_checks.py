@@ -3,6 +3,8 @@
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 from ..vision import nric_close
 from .buckets import _combine_relationship, _name_bucket, _nric_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner

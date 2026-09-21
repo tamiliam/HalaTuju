@@ -3,6 +3,8 @@
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 from .gaps import _member_income_documented
 from .informal import _NEGATIONS, _member_occupation_label
 

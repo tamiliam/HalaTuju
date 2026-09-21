@@ -74,7 +74,12 @@ from .genuineness.bands import canonical_status
 #   2026-09-19.2 — TD-262 item 1b (rule 4, same day): the same preference now reaches an
 #   INCOMPLETE STR cluster (a missing earner IC or birth certificate), which returned RED ahead of
 #   both fall-throughs. Raise-only again, and again it moves a band, so it bumps.
-VERDICT_ENGINE_VERSION = '2026-09-19.2'
+#   2026-09-21.1 — audit of 2026-09-21: both fall-throughs would RAISE on a salary reading resting
+#   on nothing but a DECLARED amount accepted off the household's STR, and `has_valid_str` never
+#   asks whose STR that is. The gate now also requires the reading to stand WITHOUT the STR, which
+#   LOWERS those households to the band they held before 2026-09-19.1/.2 — a band moves, so it
+#   bumps. (The evidence carry in the same change moves no band and would not have bumped it.)
+VERDICT_ENGINE_VERSION = '2026-09-21.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -452,16 +457,23 @@ def _stronger_income_fact(current, application, student_name, present):
     this function exists to look past, and it would open the door for a household with no
     payslip at all. One derivation, but it answers a different question.
 
+    ⚠ AND THAT MARKER IS NOT ENOUGH ON ITS OWN (audit 2026-09-21): it counts a DECLARED amount
+    accepted off a stranger's STR. `salary_evidence_stands_without_the_str` is the second half of
+    the gate and carries the whole reasoning; it runs FIRST because it is much the cheaper.
+
     R1/R2 are untouched: a CURRENT genuine STR is settled by STR PRECEDENCE long before this
     runs, so payslips can still never lower it."""
-    from .verdict_income_salary import verdict_income_salary
+    from .verdict_income_salary import (raised_income_fact,
+                                        salary_evidence_stands_without_the_str,
+                                        verdict_income_salary)
+    if not salary_evidence_stands_without_the_str(application):
+        return current
     salary = verdict_income_salary(application, student_name, present, any_route=True)
     if not any(i['code'] == 'income_proof_present' for i in salary['evidence']):
         return current
     if _INCOME_BAND_ORDER.index(salary['status']) <= _INCOME_BAND_ORDER.index(current['status']):
         return current
-    return _fact('income', salary['status'], salary['evidence'],
-                 salary['unresolved'] + current['unresolved'])
+    return raised_income_fact(salary, current)
 
 
 def _verdict_income(application):

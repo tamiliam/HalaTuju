@@ -5,6 +5,8 @@ income-proof check.
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 from ..vision import nric_close, relationship_name_match as name_match
 from .buckets import _name_bucket, _nric_bucket
 from .relationships import _relationship_inputs, member_relationship_status, student_name_for_link

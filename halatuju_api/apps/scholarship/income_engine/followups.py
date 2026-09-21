@@ -3,6 +3,8 @@
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 from .evidence import has_valid_str
 from .household import _described_household_count
 from .utilities import utility_monthly_total, utility_reasonable

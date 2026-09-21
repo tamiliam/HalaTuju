@@ -54,7 +54,12 @@ export function ApplicantCards({
         // ⚠ SERVED, NOT MIRRORED (TD-280, code health H18). This used to be `preUTrackMalay(...)`
         // from `lib/preUPlan`, which statically imported the whole Malay catalogue — 130 kB of
         // first-load JS on this route for sixteen words. The api resolves it now; we render it.
-        const preUTrackLabel = app.pre_u_track_label
+        // ⚠ `?? null` collapses the two absences ON PURPOSE (audit 2026-09-21, finding G).
+        // `null` = the api has no label for this code; `undefined` = an api revision (or a
+        // cached payload) from before TD-280 that never sent the field. Both must render the
+        // same nothing: a raw `sains_sosial`, or the word `undefined`, would be worse than a
+        // missing suffix, and re-deriving the Malay word here is TD-280 all over again.
+        const preUTrackLabel = app.pre_u_track_label ?? null
         // Help answers: render the apply-form's own words (Yes / No / Not sure) rather
         // than the raw 'yes'/'no'/'unsure' codes.
         const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)

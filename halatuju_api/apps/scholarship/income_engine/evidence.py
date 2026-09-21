@@ -10,6 +10,8 @@ stays off the STR route.
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
 from .relationships import effective_working_members, relationship_doc_for
 from .salary_figures import _doc_fields, _epf_monthly_salary

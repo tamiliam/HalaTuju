@@ -392,6 +392,145 @@ class TestParseVircleImport(_Table):
                                  f'Unrecognised Monthly amount: {value!r}')
 
 
+# ── The four tables above go through ONE function. This is that function, asked directly. ────
+
+class TestParseMoneyAtTheEdges(SimpleTestCase):
+    """`money.parse_money` itself, at the figures a `Decimal` accepts and arithmetic cannot —
+    on EVERY combination of the two rounding parameters. Added by the audit of 2026-09-21.
+
+    **⚠ THE ESCAPE THIS PINS SHUT, AND IT IS THE SAME CLASS TD-261 CLOSED.** `parse_money` says,
+    in its own docstring, that it "raises `MoneyError` and nothing else". On
+    `parse_money('1E+100', places_exact=True)` it did not: the `amount.quantize(CENTS)` inside
+    the `places_exact` comparison sat OUTSIDE every guard, so a figure too large for the decimal
+    context to express at two places raised a raw `decimal.InvalidOperation`. `invoicing`,
+    `payments`, `invoice_parsers` and the Vircle import each catch `MoneyError` and nothing else,
+    so it reached the admin receipt endpoint as a **500** where every other bad figure is a 400.
+    TD-261 closed exactly this shape one line below, at `quantize`, and left the twin open.
+
+    **⚠ WHY A TABLE OVER PARAMETER COMBINATIONS AND NOT FOUR MORE CALLER ROWS.** The escape is
+    reachable only when `places_exact` is on, and only one live caller sets it without `quantize`.
+    A caller-shaped test would therefore have pinned the defect in one place and left the
+    function free to keep it everywhere else — and the next caller to ask for `places_exact` would
+    have inherited it silently. The parameters are the axis the behaviour actually varies along,
+    so they are the axis the table runs along.
+
+    **⚠ 10²⁶ IS THE FIRST FIGURE THAT ESCAPES, and the number is not arbitrary.** The decimal
+    context holds 28 significant digits, so `Decimal('1E+25').quantize(Decimal('0.01'))` needs 27
+    and succeeds while `1E+26` needs 28 + 2 and cannot. The pair either side of that line is
+    pinned below, because a table of huge numbers that are ALL refused would pass just as well
+    against a function that refuses every exponent.
+    """
+
+    #: `(value, quantize, places_exact) -> the exact answer`. A `str` here is a `MoneyError`
+    #: reason; anything else is the `Decimal` that must come back.
+    TABLE = (
+        # ── the escape: too big for the context to express at two places ────────────────────
+        ('1E+26', False, True, 'syntax'),      # ⚠ RAISED `InvalidOperation` RAW before the fix
+        ('1E+26', True, True, 'syntax'),       # ⚠ RAISED `InvalidOperation` RAW before the fix
+        ('1E+100', False, True, 'syntax'),     # ⚠ RAISED `InvalidOperation` RAW before the fix
+        ('1E+100', True, True, 'syntax'),      # ⚠ RAISED `InvalidOperation` RAW before the fix
+        # …and the two combinations that were already safe, unchanged by the fix. `quantize`
+        # alone has refused this as 'syntax' since TD-261; asking for neither never rounds
+        # anything, so nothing can raise and the figure comes back as read.
+        ('1E+26', True, False, 'syntax'),
+        ('1E+100', True, False, 'syntax'),
+        ('1E+26', False, False, Decimal('1E+26')),
+        ('1E+100', False, False, Decimal('1E+100')),
+
+        # ── one step below the line: the context CAN express it, so nothing refuses ─────────
+        ('1E+25', False, False, Decimal('1E+25')),
+        ('1E+25', True, False, Decimal('10000000000000000000000000.00')),
+        ('1E+25', False, True, Decimal('1E+25')),
+        ('1E+25', True, True, Decimal('10000000000000000000000000.00')),
+        ('99999999999999999999999999.99', True, True,
+         Decimal('99999999999999999999999999.99')),
+
+        # ── the other end: a figure too SMALL to be two places. No escape here, and that is
+        #    worth pinning rather than assuming — `quantize` rounds it to zero quite happily,
+        #    while `places_exact` correctly calls it out of RANGE (it is not a 2dp figure), and
+        #    a 'range' refusal is a different sentence to the person than a 'syntax' one.
+        ('1E-100', False, False, Decimal('1E-100')),
+        ('1E-100', True, False, Decimal('0.00')),
+        ('1E-100', False, True, 'range'),
+        ('1E-100', True, True, 'range'),
+    )
+
+    #: The non-finite four, on all four combinations. Pinned apart from the table because
+    #: `Decimal('NaN')` is not equal to itself, so an equality-shaped row could never hold one.
+    NON_FINITE = ('Infinity', '-Infinity', 'NaN', 'sNaN')
+
+    def test_the_table(self):
+        from apps.scholarship import money
+        for value, quantize, places_exact, expected in self.TABLE:
+            with self.subTest(value=value, quantize=quantize, places_exact=places_exact):
+                if isinstance(expected, str):
+                    with self.assertRaises(money.MoneyError) as caught:
+                        money.parse_money(value, quantize=quantize, places_exact=places_exact)
+                    self.assertEqual(caught.exception.reason, expected)
+                    self.assertEqual(caught.exception.value, value)
+                else:
+                    self.assertEqual(
+                        money.parse_money(value, quantize=quantize, places_exact=places_exact),
+                        expected)
+
+    def test_every_non_finite_figure_refuses_as_syntax_on_every_combination(self):
+        from apps.scholarship import money
+        for value in self.NON_FINITE:
+            for quantize in (False, True):
+                for places_exact in (False, True):
+                    with self.subTest(value=value, quantize=quantize,
+                                      places_exact=places_exact):
+                        with self.assertRaises(money.MoneyError) as caught:
+                            money.parse_money(value, quantize=quantize,
+                                              places_exact=places_exact)
+                        self.assertEqual(caught.exception.reason, 'syntax')
+
+    def test_the_promise_in_the_docstring_holds_for_every_combination(self):
+        """THE PROPERTY, not a list of values — *"raises `MoneyError` and nothing else"*.
+
+        The table above is a list of figures somebody thought of; this asserts the rule they are
+        examples of, so a figure nobody thought of cannot escape the same way. A raw
+        `InvalidOperation` reaching a caller is a 500, and no input to a money parser should be
+        able to produce one."""
+        from apps.scholarship import money
+        escaped = []
+        values = [v for v, *_ in self.TABLE] + list(self.NON_FINITE) + [
+            '1E+27', '1E+999999', '-1E+100', '1E-999999', '-1E-100', '9' * 40,
+            '9' * 40 + '.99', '1e26', '1E+26.5', 'Inf', '-inf', 'nan',
+        ]
+        for value in values:
+            for quantize in (False, True):
+                for places_exact in (False, True):
+                    for allow_zero in (False, True):
+                        for allow_negative in (False, True):
+                            try:
+                                money.parse_money(
+                                    value, quantize=quantize, places_exact=places_exact,
+                                    allow_zero=allow_zero, allow_negative=allow_negative)
+                            except money.MoneyError:
+                                pass
+                            except Exception as exc:        # noqa: BLE001 — that IS the finding
+                                escaped.append(
+                                    f'{value!r} (quantize={quantize}, '
+                                    f'places_exact={places_exact}, allow_zero={allow_zero}, '
+                                    f'allow_negative={allow_negative}) raised '
+                                    f'{type(exc).__name__}: {exc}')
+        self.assertEqual(
+            escaped, [],
+            'money.parse_money let an exception that is NOT a MoneyError reach its caller. '
+            'Every caller catches MoneyError and nothing else, so each of these is a 500 on a '
+            'money surface. Put the arithmetic that raised it inside the guard and refuse the '
+            "figure with the reason that fits — never widen a caller's except clause.\n"
+            + '\n'.join(escaped))
+
+    def test_the_sweep_actually_covered_something(self):
+        """THE FLOOR (TD-276). The property test above passes trivially if its value list is ever
+        emptied or its loops narrowed, and it would go on passing for ever while asserting
+        nothing at all."""
+        self.assertGreaterEqual(len(self.TABLE), 16)
+        self.assertGreaterEqual(len(self.NON_FINITE), 4)
+
+
 # ── Money, job 3 of 3: FORMAT for display ────────────────────────────────────────────────────
 # Three callers, three answers for an absent figure: '0.00', '' and None. That disagreement is
 # the whole reason the name had to stop being shared.

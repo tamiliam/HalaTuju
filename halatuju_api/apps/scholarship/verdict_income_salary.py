@@ -259,6 +259,74 @@ def verdict_income_salary(application, student_name, present, any_route=False):
     return _salary_place_verdict(application, members, evidence, found, gap, review)
 
 
+def salary_evidence_stands_without_the_str(application) -> bool:
+    """Does ANY working member's income stand on its own — WITHOUT leaning on a household STR?
+
+    The gate `verdict_engine._stronger_income_fact` asks before it lets a salary reading RAISE a
+    verdict the STR has just failed to settle (audit 2026-09-21). It is `income_shown`'s three
+    per-earner ways, over the same earners the salary reading reconstructs, and it is deliberately
+    NOT a second derivation: the per-earner answer has no STR arm, by the owner's ruling of
+    2026-09-19, and that absence is the whole reason it is the right question here.
+
+    ⚠ WHY `income_proof_present` ALONE WAS NOT ENOUGH, AND THE MISTAKE IS WORTH KEEPING IN VIEW.
+    That marker follows `found['any_financial']`, one of whose arms is `earner_monthly_income`
+    answering `declared_str` — a figure the family TYPED, accepted because `has_valid_str` says an
+    approved, in-cycle STR is on file. `has_valid_str` reads CURRENCY and never asks whose STR it
+    is. So an STR-route household with a stranger's current STR, one parent IC and a typed figure
+    produced a salary reading resting ENTIRELY on the STR the fall-through exists to look past,
+    and that reading then raised the very verdict the STR had failed. **A gate that asks "is there
+    salary evidence?" must ask what that evidence itself rests on.**
+
+    ⚠ THIS DOES NOT REPAIR `has_valid_str`, AND THAT IS A DECISION, NOT AN OVERSIGHT. Making a
+    stranger's STR stop vouching for a declared amount EVERYWHERE also moves the Check-2
+    declared-wage ask (`income_declared_gaps`'s STR short-circuit — a 2026-09-20 RULING with its
+    own pinned rows), the officer follow-up context's `on_str`, the rendered
+    `income_declared_accepted_str` evidence code, and per-capita arithmetic on BOTH routes. That
+    is the owner's call, raised as **TD-285**; this is the ruling applied where the ruling bites.
+
+    ⚠ AND IT IS NOT `salary_income_satisfied` EITHER, for the reason at `_stronger_income_fact`:
+    that predicate's fourth way is a non-breached household STR, so it is satisfied by the very
+    document in question.
+    """
+    from .income_engine import effective_working_members
+    from .income_shown import income_shown
+    return any(income_shown(application, m).shown
+               for m in effective_working_members(application, any_route=True))
+
+
+def raised_income_fact(salary, current):
+    """The income fact `_stronger_income_fact` answers with when the SALARY reading wins.
+
+    It is the salary reading's band and asks, plus **everything the STR route had already
+    established** — its unresolved items (item 1's rule, unchanged) and, since the audit of
+    2026-09-21, its EVIDENCE.
+
+    ⚠ THE GREENS USED TO LEAVE WITH THE BAND. The raised fact took `salary['evidence']` wholesale,
+    so `str_verified` — the line saying the government's own means-test was confirmed for this
+    family — and the STR earner's own `earner_ic_present` vanished from the officer's card at the
+    moment the household was upgraded. The IC line matters most in the ordinary shape of this
+    case: the STR names the MOTHER while the FATHER's payslip carries the raise, so the two lines
+    are about two different people and the salary reading can only ever have named one of them.
+
+    ⚠ EXACT ITEMS, NEVER CODES, AND THE REDUNDANCY IS THE PRICE. De-duplicating by code would
+    read better on a household whose two routes name the same earner — and would have dropped the
+    mother's IC line because the card already carried the father's. Deciding that two items with
+    one code are "the same claim" is a new matching rule, and this module does not invent one. So
+    only a VERBATIM repeat is dropped, and a single-earner household carries one untagged line
+    twice. Pinned, with the reasoning, in
+    `test_income_evidence_homes.TestTheRaisedFactKeepsTheStrEvidence`.
+
+    ⚠ IT MOVES NO BAND. Status, band and unresolved list are exactly what they were; this adds
+    lines to a card. That is why the evidence carry alone would not bump `VERDICT_ENGINE_VERSION`.
+
+    ORDER: the winning reading first, then the STR route's lines in their own order — the same
+    convention as the unresolved carry beside it, so the two halves cannot drift apart.
+    """
+    carried = [i for i in current['evidence'] if i not in salary['evidence']]
+    return _fact('income', salary['status'], salary['evidence'] + carried,
+                 salary['unresolved'] + current['unresolved'])
+
+
 def _failed_str_headroom_fact(application, earner, evidence, review):
     """The §6 evidence-driven fall-through for a FAILED STR (rejected / wrong-type): the STR is
     not a current STR, but salary/benefit documents on file may still show B40 — assess them and

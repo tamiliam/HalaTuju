@@ -11,7 +11,7 @@ import ActionCentre from '@/components/ActionCentre'
 import {
   showsActionCentre, isFundedStatus, soleLiveApplication, liveApplications,
 } from '@/lib/scholarship'
-import InterviewBookingPanel from '@/components/scholarship/InterviewBookingPanel'
+import InterviewBookingPanel from '@/components/scholarship/LazyInterviewBookingPanel'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 

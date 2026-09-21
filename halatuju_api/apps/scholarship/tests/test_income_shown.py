@@ -266,9 +266,41 @@ class TestTheStudentPayloadServesIt(IncomeShownBase):
         from apps.scholarship.serializers import ApplicationReadSerializer
         return ApplicationReadSerializer(app).data
 
-    def test_her_payload_carries_one_entry_per_roster_member_code(self):
+    def test_her_payload_is_keyed_by_roster_member_code_for_the_members_she_can_ask_about(self):
+        """⚠ AMENDED BY THE AUDIT OF 2026-09-21, AND THE CLAIM IT WAS MAKING SURVIVES INTACT.
+
+        This row read `sorted(served) == sorted(_MEMBER_ORDER)` — all five. What it was really
+        asserting is that the payload is keyed by the roster's member CODE (`'father'`, not a
+        display name), which is what `incomeShown.answerFor(served, member)` looks up.
+
+        What superseded the equality: `income_shown` costs three queries per member and this
+        serializer also runs `many=True` on the LIST that feeds her Documents tab, so it now
+        serves `student_income_members` — the members her screen can actually ask about. An
+        absent key is safe by design (`answerFor` returns null and every caller falls back to the
+        old presence reading, because the two services deploy together but not atomically).
+        The keys are still roster codes and that is what is asserted here. The COST is pinned in
+        `test_query_budgets.TestTheStudentApplicationReadQueryBudget`."""
         served = self._payload(self._app())['income_shown']
-        self.assertEqual(sorted(served), sorted(income_engine._MEMBER_ORDER))
+        self.assertEqual(sorted(served), ['father'])          # the one working member declared
+        self.assertTrue(set(served) <= set(income_engine._MEMBER_ORDER),
+                        f'{sorted(served)} is not keyed by roster member codes')
+
+    def test_a_member_her_screen_never_asks_about_is_not_served(self):
+        """The other half of the amendment above, stated positively. Four of the five used to be
+        computed on every read of every application in the list — three queries each — for
+        households nobody had declared. `MemberIncomeGroup` is rendered once per block of
+        `salaryMemberBlocks(income_working_members)`, so those four were never looked up."""
+        served = self._payload(self._app(members=('father',)))['income_shown']
+        for absent in ('mother', 'guardian', 'brother', 'sister'):
+            self.assertNotIn(absent, served)
+
+    def test_a_declared_earner_is_served_even_without_a_working_member_tick(self):
+        """⚠ THE BELT AND BRACES, AND IT IS DELIBERATE. A member can carry a declared amount
+        while the working-members list is mid-edit. One extra key costs three queries only when
+        such a member exists; a key the screen wanted and did not get degrades that earner
+        silently to the presence reading this whole module replaced."""
+        served = self._payload(self._app(members=(), declared={'mother': 900}))['income_shown']
+        self.assertIn('mother', served)
 
     def test_an_unusable_payslip_reads_as_not_shown_and_names_its_reason(self):
         # ⚠ THE LOCKOUT ROW. Before F2 her screen saw a file and closed the cash door; the
@@ -281,11 +313,24 @@ class TestTheStudentPayloadServesIt(IncomeShownBase):
         })
 
     def test_both_payloads_answer_identically(self):
-        # One rule, one home: the officer's and the student's screens can never be told
-        # different things about the same earner.
+        """One rule, one home: the officer's and the student's screens can never be told
+        different things about the same earner.
+
+        ⚠ AMENDED BY THE AUDIT OF 2026-09-21 — AND THE RULE IT GUARDS IS NOW ASSERTED MORE
+        STRICTLY, NOT LESS. It compared her whole payload against
+        `income_shown_map(app, _MEMBER_ORDER)`, which conflated two claims: *the two screens
+        agree* and *she is served all five members*. The second is what the audit changed (three
+        queries per member, on a serializer the LIST runs); the first is the one that matters and
+        it is now asserted PER MEMBER against the officer's own payload, which still carries all
+        five. So a divergence in the ANSWER fails here exactly as before, and a change to WHICH
+        members she is served fails in the row above, where it can be read."""
         from apps.scholarship.serializers import ApplicationReadSerializer
         app = self._app(declared={'father': 1200})
         self._doc(app, 'epf', fields=_EPF_BLANK)
         self._doc(app, 'income_support_doc', fields={'employer': 'X'}, student_verdict='ok')
-        self.assertEqual(ApplicationReadSerializer(app).data['income_shown'],
-                         isx.income_shown_map(app, income_engine._MEMBER_ORDER))
+        hers = ApplicationReadSerializer(app).data['income_shown']
+        officers = isx.income_shown_map(app, income_engine._MEMBER_ORDER)
+        self.assertTrue(hers, 'her payload served nothing, so this asserts nothing')
+        for member, answer in hers.items():
+            with self.subTest(member=member):
+                self.assertEqual(answer, officers[member])

@@ -2,6 +2,207 @@
 
 All notable changes to this project will be documented in this file.
 
+## Audit of 2026-09-21 — web fixes - 2026-09-21
+
+Eight findings from the same audit, in the web tree, plus the kilobyte they cost and how it was
+paid for. Baseline measured first: **jest 2,958 / 163 suites**. After: **2,982 / 166**, tsc 0, lint
+0 errors, i18n parity ok, `next build` 0, `npm run bundle-budget` **ok** with no budget raised.
+Findings A, B, D and E were reproduced and then verified in a real browser with the catalogue
+chunk delayed and blocked.
+
+**Language switching on a real network (findings A–E).** H17 made Malay and Tamil arrive as their
+own chunks, and every test it wrote lets the chunk land before it looks. Everything here lives in
+the window while it is still in the air. Two quick choices raced: whichever answered last won, so a
+reader who picked Tamil and then Malay could end with `localStorage` saying Malay, the switcher
+saying Tamil, `html lang="ta"` and a Tamil heading — one reader, four surfaces, three answers. A
+monotonic request token now lets only the latest choice commit. The switcher shows the pending
+choice at once with `aria-busy` and the house spinner, instead of snapping back to English for the
+length of the download — which is what invited the second click that caused the race. A chunk that
+fails (a tab held open across a deploy) cost two silent fetches and committed a half-move; it now
+costs one, reverts the control, persists nothing and tells the reader in the language on screen
+(`common.languageLoadFailed`, the one new string, en/ms/ta). `html lang` follows the committed
+catalogue, so a screen reader is no longer told Tamil while reading English. And `localStorage` is
+guarded on every read and write, as `theme.ts` has been since F1: with site data blocked the i18n
+module threw as it was *evaluated*, before React existed, and the reader got a blank document.
+
+**The cash door may no longer close on a full room (finding F).** `MemberIncomeGroup` is the only
+place a student sees their `income_support_doc`. A family who typed an amount, uploaded their
+letter and then managed a readable payslip had the whole panel unmount: the letter stayed on their
+application and became unreachable. Clearing the amount hid it one level down. The door and the
+letter card now stay while a declared amount or a letter exists; what counts as income shown is
+still the served answer, read and never re-derived. The amount box also reads back the figure that
+was SAVED — `-500` cleared the entry while the box went on showing `-500` — through a shared
+`clampDeclared`.
+
+**Two guards that were quietly narrower than they read (findings G, H).** `pre_u_track_label` was
+typed required, so an api one revision behind sent `undefined` and `tsc` could not see it; it is
+optional now, and still renders nothing rather than re-deriving the label (that is TD-280 again).
+And the web move invariant named three ledgers by hand, so H18's `first_load_js` was never covered
+— it loops over `LEDGERS` with a floor, and a phantom entry that the old test passed over goes red.
+
+**What the fixes cost, and how it was paid.** About half a kilobyte of required code in the layout
+graph tipped `/scholarship/application` from 305 to **306 kB**, one over its ledger. No budget was
+raised. The first attempt — loading the sign-in gate on first open — was built, tested, verified in
+a browser and then **reverted, because it measured a saving of zero**: the gate's heavy
+dependencies (Supabase, `@/lib/api`, storage, session policy) belong to `auth-context`, which is
+mounted globally and stays, while five routes rounded up a kilobyte and the auth path gained a
+failure mode. The second attempt was measured before it was kept: `InterviewBookingPanel` renders
+nothing for most students, is imported by this one page, and now arrives through
+`LazyInterviewBookingPanel`, which owns its `import()` because `next/dynamic` re-throws a failed
+load into the page's error boundary. **306 → 304 kB; median 256, worst 339, shared 87.2, all
+unchanged; ledger ratcheted 305 → 304.** A failed chunk says so in place with an existing string.
+Four bites: a static import again, a swallowed failure and a panel that never mounts each went
+red; a comment-only edit stayed green.
+
+**Also from the audit, in the workspace tool:** `code_health.loosened` guessed that a gained ledger
+entry was a rename whenever something else left and the totals held. That was name-blind — two
+debts genuinely fixed could pay for two unrelated new ones. A rename now passes only when the
+project's own `_moved` list declares it.
+
+**Known, not fixed:** `IncomeWizard.tsx` declares `Pills` and `Question` inside the component
+body, so every answer remounts them and drops keyboard focus (pre-existing; TD-288).
+`LanguageSelector` → `Toast` duplicates the Toast module into `/`'s page chunk, +0.64 kB (TD-289);
+the honest fix splits `Toast.tsx` in two and should be measured on its own.
+
+## Audit of 2026-09-21 — api fixes - 2026-09-21
+
+Seven findings from a code audit of the api tree. One is an **eligibility defect** and the rest are
+correctness, cost and audit-trail repairs. Every fix has a test that was seen RED against the
+unfixed tree first, and every new test was bite-checked in both directions.
+
+Baseline measured before a line was written: **pytest 7,053 passed / 3 skipped** (825 subtests).
+After: **7,086 passed / 3 skipped** (876 subtests) — +33 tests, 0 failures. `manage.py check` and
+`makemigrations --check --dry-run` clean before and after; `code_health.py` **0 fail, 6 warn**, the
+six standing WARNs at their documented readings (`fix%` 42, `big` 17, `long` 15, `dup` 4,
+`mirror` 3, `guard%` 20) — none moved. No migration; nothing under `halatuju-web/` touched.
+
+### Fixed
+
+- **⛔ ELIGIBILITY — a declared income amount could raise a verdict on the strength of a STRANGER'S
+  STR (HIGH).** `verdict_engine._stronger_income_fact` — the TD-262 rule-4 fall-through that lets a
+  salary reading out-argue a failed STR — gated on the salary reading's `income_proof_present`
+  marker, exactly as the owner's ruling of 2026-09-19 specified. But that marker follows
+  `found['any_financial']`, one of whose arms is `earner_monthly_income` answering `declared_str`:
+  a figure the family TYPED, accepted because `income_engine.has_valid_str` sees an approved,
+  in-cycle STR on file. **`has_valid_str` tests the STR's CURRENCY and never asks whose STR it
+  is.** So an STR-route household with a current Lulus STR in a stranger's name, one parent IC,
+  `income_declared={'father': 1500}` and no payslip, no EPF and no letter produced a salary reading
+  resting ENTIRELY on the document the fall-through exists to look past — and that reading then
+  raised the very verdict the STR had just failed to settle. Reachable on **both** new arms: the
+  `str_mismatch` arm (item 1) and the incomplete-cluster `gap` arm (item 1b). It broke two owner
+  rulings at once: R5 *"only the family's own STR count"* (2026-09-19) and the 2026-09-20 ruling
+  that the cash/declared door is not for the STR route.
+  **The fix, and where it is applied.** The fall-through's gate now also requires the salary
+  reading to stand WITHOUT the STR — `income_shown`'s three per-earner ways (a usable payslip, a
+  readable EPF, or a declared amount backed by a supporting letter that READ), which have no STR
+  arm by that same ruling. `verdict_income_salary.salary_evidence_stands_without_the_str`.
+  **Exactly two answers move**, both back to what they read before commit 2c6dbe68:
+  `str_mismatch` + declared-only → `recommend` (was `verified`), and the incomplete-cluster `gap` +
+  declared-only → `gap` (was `verified`). A declared amount backed by a letter still raises, a
+  payslip still raises, a current genuine own STR is still settled upstream by STR PRECEDENCE, and
+  `services.application_completeness` was not touched.
+  **`VERDICT_ENGINE_VERSION` → `2026-09-21.1`** (a fact's status changes).
+- **`money.parse_money` let a raw `decimal.InvalidOperation` escape, as a 500 (MEDIUM).** TD-261
+  guarded the `quantize` call and the non-finite values and left their twin open: the quantise
+  inside the `places_exact` comparison sat OUTSIDE every guard. `parse_money('1E+100',
+  places_exact=True)` therefore raised `InvalidOperation`, not `MoneyError` — and
+  `invoicing._receipt_amount` catches `MoneyError` and nothing else, so the admin receipt endpoint
+  answered **500** where every other bad figure answers 400. **10²⁶ is the first figure that
+  escapes** (the decimal context holds 28 digits), and `1e3` is already an accepted receipt amount,
+  so exponent notation is something that box takes. Both quantise sites are now guarded and both
+  refuse as `'syntax'`, so the sentence a person reads does not depend on which flag their caller
+  set.
+- **The one alert for a half-finished submission had left the audit stream (MEDIUM).**
+  `services/confirmation.py`'s `confirm_profile` used an INLINE `logging.getLogger(__name__)` for
+  the warning that a student's Check-2 queries failed to raise at submission. H15 moved that body
+  verbatim out of `services.py`, where `__name__` WAS the package name; in a submodule it reads
+  `apps.scholarship.services.confirmation`, which the Cloud Logging metric that counts by logger
+  name never sees. Restored to the package logger already bound at the top of the file. Grepped:
+  it was the only inline case in all five split packages.
+- **`from __future__ import annotations` was dropped from the income engine at H16 (MEDIUM).** The
+  pre-split `income_engine.py` carried it at line 23; H16 declared itself moves-only, and the
+  directive is a property of the FILE, so it stayed behind with the file that was deleted. Restored
+  in all **20** modules of `income_engine/`. The other four splits (`views_admin`, `services`,
+  `models`, `emails`) were checked against `git show <split>^:<path>` — none of those pre-split
+  files carried it, so nothing was owed and nothing is claimed about them.
+- **A raised income fact dropped the STR route's own evidence lines (LOW).** TD-262 item 1 was
+  careful that the STR cluster's UNRESOLVED items survive a raise; its EVIDENCE was taken wholesale
+  from the salary reading. So `str_verified` — the line saying the government's own means-test was
+  confirmed for this family — and the STR earner's `earner_ic_present` left the officer's card at
+  the moment the household was upgraded. The IC line matters most in the ordinary shape of the
+  case: the STR names the MOTHER while the FATHER's payslip carries the raise, so the two lines are
+  about **two different people**. Now carried, winning reading first, minus anything already stated
+  VERBATIM (`verdict_income_salary.raised_income_fact`). No band, no status and no unresolved item
+  moves; no golden and no web drift table is affected, and `str_verified` already had en/ms/ta copy.
+
+### Changed — cost
+
+- **The student reading her own application costs 22 → 7 queries** (STR route), **25 → 13** (salary,
+  one earner) and **29 → 20** (salary, two earners). `ApplicationReadSerializer.get_income_shown`
+  served all five of `_MEMBER_ORDER` on every read AND on the LIST — which is the call that
+  actually feeds her Documents tab — at three queries per member. It now serves the members her
+  screen can ask about (the working members, plus any earner carrying a declared amount), read off
+  the row with no query of its own. **The payload shape for a member that IS served is
+  byte-identical**; an absent key lands on the fallback `incomeShown.answerFor` already implements
+  by design, because the two services deploy together but not atomically.
+- **The STR fall-through costs 42 → 27 queries when its reading cannot be used**, and **39 → 39**
+  when it can. `_stronger_income_fact` built the entire salary reading and then usually threw it
+  away; its gate is a conjunction of two pure predicates, so the cheap one is now asked first. A
+  reorder, not a shortcut — the second number is the proof.
+
+### Added — tests and guards
+
+- `test_income_evidence_homes.py` §11 (the fall-through's gate must stand without the STR — nine
+  rows, including the blast-radius pin that the submission gate does not move) and §12 (a raised
+  fact keeps the STR route's evidence).
+- `test_helper_characterisation.TestParseMoneyAtTheEdges` — `parse_money` over **every**
+  combination of `quantize` / `places_exact`, at huge exponents, `1E-100` and the non-finite four,
+  plus a PROPERTY test that nothing but `MoneyError` may ever reach a caller.
+  `test_invoicing.TestReceiptEndpointRefusals` gains the endpoint proof (400, `bad_amount`).
+- `AuditLoggerNameTest` now AST-walks all five split packages for `getLogger(__name__)` **inside
+  function bodies** as well as at module scope, with a floor on the files and on the calls. The
+  existing runtime scan reads a module attribute and is structurally blind to both.
+- `TestAModuleHeaderSurvivedTheSplit` — a floored, per-package registry so a future split cannot
+  silently drop a module-wide directive again.
+- `test_query_budgets.py` gains the student-read budget (three household shapes) and the
+  fall-through budget (the discarded reading and the taken one). ⚠ Both live as **constants in
+  the test file, not in `code-standards.json`** — that ledger refuses a gained member, and adding
+  a key means re-pinning the frozen baseline by hand. Named as the smaller instrument; TD-286.
+
+### Amended — two existing expectations, in the open
+
+Narrowing the student's `income_shown` map turned two rows of `test_income_shown.py` red. Neither
+was bent back; each was read for what it was claiming and re-stated:
+
+- `test_her_payload_carries_one_entry_per_roster_member_code` asserted `sorted(served) ==
+  _MEMBER_ORDER`, conflating *"the payload is keyed by roster member CODE"* (which is what
+  `incomeShown.answerFor` looks up, and is unchanged) with *"she is served all five"* (which is
+  what the audit changed). Renamed and split: the keys are still roster codes, and two new rows
+  assert positively which members are and are not served.
+- `test_both_payloads_answer_identically` compared her whole payload against
+  `income_shown_map(app, _MEMBER_ORDER)`. The rule it guards — **one rule, one home; the two
+  screens can never be told different things about one earner** — is now asserted PER MEMBER
+  against the officer's payload, which still carries all five. That is stricter, not weaker: a
+  divergence in the ANSWER fails here as before, and a change to WHICH members she is served now
+  fails where it can be read. Bite-checked: a payload that drops `unusable` turns it red.
+
+### Known, not fixed
+
+- **TD-285** — `has_valid_str` still lets a stranger's STR vouch for a declared amount everywhere
+  except the gate the audit closed. Four live callers, three of them surfaces the owner has
+  already ruled on. Needs a production count and the owner's word; the read-only screen went to
+  the lead with this audit.
+- **TD-286** — how a NEW query budget enters a frozen ledger. **TD-287** — `_utility_context` is
+  computed twice per fall-through (4 wasted queries); fold into TD-282.
+- **The top-band skip suggested for the fall-through was NOT added.** `_stronger_income_fact` is
+  only ever called with `gap` or `recommend`, so a `status == 'verified'` early return is
+  unreachable today and would be dead code with a measured saving of zero. The reorder above is
+  the part that pays.
+- **A per-member document memo inside `_salary_member_scan` was NOT added.** Behaviour-identity
+  cannot be proved from the existing characterisation suites alone, and the same `_cluster_docs`
+  helper is hit from a dozen other places in the same request — a memo for one loop buys little
+  against the 315 TD-282 records. That is TD-282's sprint.
+
 ## Code health H19 - the standards move into how every sprint is run (THE ARC CLOSES) - 2026-09-20
 
 **Nineteen sprints in three days, and this is the last one.** Documentation only: no production

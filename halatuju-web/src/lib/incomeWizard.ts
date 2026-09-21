@@ -36,6 +36,20 @@ export interface IncomeAnswers {
   income_declared?: Partial<Record<WorkingMember, number>> | null
 }
 
+/**
+ * What a typed figure BECOMES once declared: floored at zero, rounded to the ringgit, and 0 for
+ * anything that is not a number. 0 means "no declaration" — the entry is cleared, not stored.
+ *
+ * ⚠ **ONE HOME, BECAUSE THE BOX AND THE PAYLOAD MUST AGREE.** The wizard clamped on its way to
+ * the server while the input kept showing what the family typed, so `-500` read back as `-500`
+ * with nothing saved and `1500.6` read back as `1500.6` with `1501` stored (audit 2026-09-21).
+ * `MemberIncomeGroup` normalises the field through this same function, so there is no second
+ * copy of the rule to drift.
+ */
+export function clampDeclared(raw: string | number): number {
+  return Math.max(0, Math.round(Number(raw) || 0))
+}
+
 /** A member's declared average monthly income (RM), or 0 when none/invalid. */
 export function declaredAmount(
   declared: IncomeAnswers['income_declared'], member: WorkingMember,

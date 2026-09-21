@@ -756,10 +756,13 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
 
     def get_income_shown(self, obj):
         """TD-262 F2 — the per-earner answer (``income_shown.py``), served to the student's own
-        screen in exactly the shape the officer's payload serves. The reason is at that module."""
-        from .income_engine import _MEMBER_ORDER
-        from .income_shown import income_shown_map
-        return income_shown_map(obj, _MEMBER_ORDER)
+        screen in exactly the shape the officer's payload serves. The reason is at that module.
+
+        ⚠ THE MEMBERS HER SCREEN CAN ASK ABOUT, not all five (audit 2026-09-21) — three queries
+        each, on a serializer the LIST also runs. `student_income_members` carries the reasoning
+        and the proof that an absent key is safe."""
+        from .income_shown import income_shown_map, student_income_members
+        return income_shown_map(obj, student_income_members(obj))
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades

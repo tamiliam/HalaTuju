@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * One ticked earner's INCOME box on the student's Documents tab — TD-262 F2.
  *
@@ -17,6 +19,13 @@
  * (`apps/scholarship/income_shown.py`, read through `@/lib/incomeShown`) — the same answer the
  * submission gate, the officer's chase list and the AI verdict read. Presence is not evidence.
  *
+ * ⚠ AND THE DOOR MAY ONLY CLOSE ON AN EMPTY ROOM (audit 2026-09-21). This panel is the ONLY
+ * place a student is ever shown their `income_support_doc`, so hiding it hides a document that
+ * is still on their application: a family who typed a figure, uploaded their letter and then got
+ * a readable payslip could no longer see, replace or delete either. `hasContents` is what the
+ * door now asks about before it closes — the served income answer decides whether the door is
+ * NEEDED, never whether the family may reach what is already behind it.
+ *
  * ⚠ THE GREEN TICK IS NOT THIS RULE AND MUST NOT BE FOLDED INTO IT. `shown` comes in as a prop
  * from `ScholarshipDocuments.memberIncomeShown`, the student-side cue the owner ruled on in
  * chunk 1 (no STR arm; an untagged letter counts). The door and the tick answer different
@@ -24,7 +33,7 @@
  * deliberately left alone by F2.
  */
 import { useState, type ReactNode } from 'react'
-import type { MemberBlock, WorkingMember } from '@/lib/incomeWizard'
+import { clampDeclared, type MemberBlock, type WorkingMember } from '@/lib/incomeWizard'
 import { answerFor, type IncomeShownMap } from '@/lib/incomeShown'
 
 /** ⚠ `ServesIncomeShown` USED TO BE DECLARED HERE AND IS GONE (TD-271, code health H14). The
@@ -61,6 +70,7 @@ export default function MemberIncomeGroup({
   served,
   presenceFallback,
   declared,
+  hasSupportLetter,
   onDeclare,
   renderCard,
   memberHelp,
@@ -82,6 +92,9 @@ export default function MemberIncomeGroup({
   presenceFallback: boolean
   /** This earner's declared monthly amount (RM), 0 when none. */
   declared: number
+  /** Is a supporting letter ON FILE for this earner? Presence, not the served verdict — an
+   *  unreadable letter is the one a family most needs to be able to replace. */
+  hasSupportLetter: boolean
   onDeclare: (member: WorkingMember, raw: string) => void
   renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; suppressCoach?: boolean }) => ReactNode
   memberHelp: (docType: string, member: string) => string | undefined
@@ -95,7 +108,15 @@ export default function MemberIncomeGroup({
   // Seeded open for a returning family who already typed a figure, so their own answer is never
   // hidden behind a tap they have to remember making.
   const [open, setOpen] = useState(declared > 0)
-  const doorClosed = cashDoorClosed(served, block.member, presenceFallback)
+  // The box shows what was SAVED, not what was typed: `onDeclare` floors at zero and rounds to
+  // the ringgit, and an uncontrolled field went on displaying `-500` for an entry it had just
+  // cleared. Seeded from the prop and re-normalised on the way out, through the wizard's own
+  // `clampDeclared`, so there is one rule and not two.
+  const [amount, setAmount] = useState(declared > 0 ? String(declared) : '')
+  // ⚠ CONTENTS, not evidence. Anything the family has already put here keeps the way back in,
+  // whatever the served answer says about how their income is shown.
+  const hasContents = declared > 0 || hasSupportLetter
+  const doorClosed = cashDoorClosed(served, block.member, presenceFallback) && !hasContents
 
   return (
     <div className={`rounded-lg border p-2.5 space-y-2 ${
@@ -156,16 +177,22 @@ export default function MemberIncomeGroup({
                   <span className="text-xs text-ground-500">RM</span>
                   <input
                     type="number" inputMode="numeric" min={0} step={50}
-                    defaultValue={declared || ''}
+                    value={amount}
                     placeholder={iq('declared.placeholder')}
-                    onBlur={(e) => onDeclare(block.member, e.target.value)}
+                    onChange={(e) => setAmount(e.target.value)}
+                    onBlur={(e) => {
+                      const saved = clampDeclared(e.target.value)
+                      setAmount(saved > 0 ? String(saved) : '')
+                      onDeclare(block.member, e.target.value)
+                    }}
                     className="w-28 text-sm rounded border border-ground-300 px-2 py-1 focus:border-primary-400 focus:outline-none"
                   />
                   <span className="text-xs text-ground-400">{iq('declared.perMonth')}</span>
                 </div>
-                {/* The letter card appears only once there is an amount for it to support —
-                    an upload slot with nothing to back reads as one more thing to find. */}
-                {declared > 0 && renderCard('income_support_doc', { required: false, member: block.member,
+                {/* The letter card appears once there is an amount for it to support — an upload
+                    slot with nothing to back reads as one more thing to find — OR once a letter
+                    is already on file, because this is the only place the family can reach it. */}
+                {hasContents && renderCard('income_support_doc', { required: false, member: block.member,
                   titleOverride: iq('supportLetterTitle'), helpOverride: iq('declared.needsDoc') })}
               </div>
             )}

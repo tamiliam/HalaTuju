@@ -32,6 +32,17 @@ raised `InvalidOperation` from OUTSIDE the guard — reaching the caller raw, as
 400. That was H7-FINDING 3/4. A non-finite figure is now refused as a `'syntax'` `MoneyError`
 before anything else looks at it, so all four callers answer with their own refusal and their own
 code. It is the honest reason as well as the safe one: `Infinity` is not an amount of money.
+
+⚠ **AND SO IS THE THIRD (audit 2026-09-21).** TD-261 fixed the non-finite VALUES and the
+`quantize` call, and left the `places_exact` comparison — which quantises too — outside the
+guard. `parse_money('1E+100', places_exact=True)` therefore still raised a raw
+`InvalidOperation`: a figure a `Decimal` holds perfectly well but the 28-digit context cannot
+express at two places. Every caller catches `MoneyError` and nothing else, so the admin receipt
+endpoint answered a 500. Both quantise sites are now guarded and both refuse as `'syntax'`. The
+rule, in one line: **any arithmetic on the parsed figure belongs inside a guard, because the only
+promise this module makes to four callers is that it raises `MoneyError` and nothing else** —
+asserted as a property, over every parameter combination, in
+`tests/test_helper_characterisation.TestParseMoneyAtTheEdges`.
 """
 from decimal import Decimal, InvalidOperation
 
@@ -104,8 +115,20 @@ def parse_money(value, *, strip_chars='', strip_whitespace=True, blank_as=None,
         raise MoneyError('syntax', value)
 
     # Answered against the figure as READ, before `quantize` rounds anything — see the docstring.
-    if places_exact and amount != amount.quantize(CENTS):
-        raise MoneyError('range', value)
+    if places_exact:
+        try:
+            rounded = amount.quantize(CENTS)
+        except InvalidOperation as exc:
+            # ⚠ THE TWIN OF THE `quantize` GUARD BELOW, AND IT WAS LEFT OPEN (audit 2026-09-21).
+            # This quantise sat OUTSIDE every guard, so `parse_money('1E+100', places_exact=True)`
+            # raised a raw `InvalidOperation` — through `_receipt_amount`, which catches
+            # `MoneyError` and nothing else, and out of the admin receipt endpoint as a 500. Same
+            # class as TD-261, one line up. The refusal matches the `quantize` guard's: a figure
+            # the context cannot express at two places is refused as `'syntax'` in both places,
+            # so the sentence a person reads does not depend on which flag their caller set.
+            raise MoneyError('syntax', value) from exc
+        if amount != rounded:
+            raise MoneyError('range', value)
     if quantize:
         try:
             amount = amount.quantize(CENTS)

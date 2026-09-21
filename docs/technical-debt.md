@@ -338,6 +338,99 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   blindness to a rename, `xapp`'s statement count and `hot#1` not following a rename, of which the
   lead built two the same day). ~2h in the tool plus a Trend-row note. **Trigger:** the next
   `system-audit.md` pass, or the first sprint that reads `guard%` and cannot tell what it means.
+- **TD-285 (raised 2026-09-21 by the api audit) — ⚠ MEDIUM, AND IT IS AN OWNER'S CALL, NOT AN
+  ENGINEERING ONE. `income_engine.has_valid_str` STILL LETS A STRANGER'S STR VOUCH FOR A DECLARED
+  INCOME — EVERYWHERE EXCEPT THE ONE GATE THE AUDIT CLOSED.** `has_valid_str` reads the latest STR
+  and asks one question of it: is its currency `current` or `unconfirmed`? It never asks **whose**
+  STR it is. `earner_monthly_income` then accepts a family's self-declared monthly figure as a real
+  number on the strength of it (`declared_str`), which the owner's R5 of 2026-09-19 — *"only the
+  family's own STR count"* — says it may not.
+
+  The audit fixed the **verdict fall-through**, where the consequence was an eligibility band: a
+  household with a stranger's current STR and a typed figure was lifted to Certain on a document
+  belonging to somebody else. That fix is applied at the gate, in
+  `verdict_income_salary.salary_evidence_stands_without_the_str`, and moves exactly two answers.
+  **The predicate itself was left alone deliberately**, because tightening it reaches four live
+  callers and three of them are surfaces the owner has already ruled on:
+
+  | caller | what changes if `has_valid_str` learns to ask whose STR it is |
+  |---|---|
+  | `income_declared_gaps.py:62` | the Check-2 declared-wage ask's STR short-circuit. A **salary-route** household holding a stranger's STR would start being chased for a supporting letter. That early return is a **RULING of 2026-09-20** with its own pinned rows (*"If STR has been fulfilled, there is no need for the student to complete the cash door"*) |
+  | `income_engine/amounts.py:85` | `earner_monthly_income` → `income_per_capita` → `income_headroom`. Per-capita arithmetic on **both routes**, plus `profile_engine` and the household reconciliation ticks. A figure that counted becomes `declared_unproven` (None), so `all_known` goes False and bands fall to `unsure` |
+  | `income_engine/followups.py:62` | `on_str` in the officer's follow-up context — officer-facing copy |
+  | `verdict_income_salary.py:169` | which evidence CODE is rendered: `income_declared_accepted_str` vs `income_declared_accepted_evidenced` |
+
+  ⚠ **AND THE TIGHTENING ITSELF NEEDS THE OWNER'S WORD ON ITS SHAPE**, because the obvious version
+  is wrong. Narrowing to "the recipient positively MATCHES a household member" would also strip the
+  declared amount from every household whose STR simply did not READ a recipient — and *absence is
+  not a mismatch* is owner rule 1 of F8 (`income_str_ownership.py`), written precisely so a family
+  is never refused for a gap in OUR reading. The correct predicate is therefore
+  `not str_recipient_is_stranger(application)`, which blocks only a positive mismatch. F8 already
+  holds that rule for the submission gate; this would extend it to the AMOUNT.
+
+  **What must happen before it is built:** a production count of STR-route AND salary-route
+  applications with a declared amount and an STR whose recipient matches no household IC, by
+  status — the read-only screen is written and was handed to the lead with this audit. The owner
+  then chooses, exactly as he did for F8: tighten, grandfather the already-decided, or leave it.
+  ~3h once the count is in, plus a `VERDICT_ENGINE_VERSION` bump if any band moves.
+  **Trigger:** the owner reading the count.
+- **TD-286 (raised 2026-09-21 by the api audit) — low.** Two query budgets added by the audit —
+  the student's own application read and the STR fall-through — live as **constants in
+  `test_query_budgets.py`**, not in `code-standards.json`'s `query_budgets` ledger. That is not
+  laziness: `test_code_standards.py` refuses a ledger that GAINS a member, so a new key means
+  editing the frozen `baseline` and re-pinning `BASELINE_SHA256` by hand — which H11 did once and
+  its own retrospective called the way a guard stops being read. The constants carry the same two
+  assertions (a ceiling that may not be exceeded, a tightness check that fails when the code
+  improves) and are named as the smaller instrument in the file. **The real fix is a decision about
+  how a NEW standard enters a frozen record** — H18 faced the identical question when it added
+  `query_budgets` itself and took the documented exception. Until somebody rules on that,
+  every budget added after H4 will keep landing in a test file. ~1h plus the ruling.
+  **Trigger:** the third post-H4 budget, or TD-282 landing (which makes all four move at once).
+- **TD-287 (raised 2026-09-21 by the api audit) — low, and it is a free 4 queries.**
+  `verdict_engine._utility_context` is computed **twice** on every STR fall-through: once by
+  `_verdict_income` for the STR route's own evidence, and again inside `verdict_income_salary` for
+  the salary reading's. The two results are byte-identical — the audit's evidence-carry
+  de-duplication relies on exactly that — so one of them is pure waste, and it is four database
+  reads (`utility_per_capita`, `utility_hardship`, `unemployment_corroborated_members`,
+  `household_size_shortfall`) per fall-through. It was found by a **silent bite**: a de-duplication
+  test written against a household with no utility signal had nothing to de-duplicate, and making
+  the fixture honest is what showed the double computation. Not fixed here because threading the
+  context through `verdict_income_salary`'s four functions is TD-282's shape of change (a
+  per-request read passed down), and doing it for one caller in isolation buys four queries against
+  the 315 that entry records. **Trigger:** TD-282's sprint — fold it in there.
+- **TD-288 (raised 2026-09-21 by the web audit) — low, pre-existing.**
+  `src/components/ScholarshipDocuments/IncomeWizard.tsx` declares `Pills` and `Question` INSIDE the
+  component body, so every answer gives React two new component types, remounts both, and drops
+  keyboard focus to `<body>`. It predates the audit (`977375cb`) and rode into the file that
+  TD-272's move created; `ApplyCopyTab.tsx` documents the identical trap at its own head. Lint
+  cannot see it. The fix is to lift both to module scope and pass what they close over as props —
+  small, but it is the income wizard, so it wants a rendered focus test written first.
+  **Trigger:** the next change to that file.
+- **TD-289 (raised 2026-09-21 by the web audit) — low.** `LanguageSelector` now imports `useToast`
+  (to say when a language chunk cannot be fetched), and webpack duplicates the Toast module into
+  `/`'s page chunk: +0.64 kB. The honest fix splits `Toast.tsx` into a context module and a
+  provider module. Deliberately NOT done with the audit fixes: that sprint moved shared chunks
+  twice and watched adjacent routes shift ±1 kB unpredictably each time, and a lazy sign-in gate
+  built on an ARGUMENT about where the weight was measured a saving of zero and was reverted.
+  **Trigger:** any sprint that touches `Toast.tsx`; measure with `npm run bundle-budget` before and
+  after, and keep it only if a number moves.
+- **TD-290 (raised 2026-09-21 by the audit of the safety net) — MEDIUM, and unproven.** Every
+  `severity>=WARNING` entry in Cloud Logging since 2026-09-19, on both services, is a payload-less
+  REQUEST log; not one line from Django's own `logger.warning` / `logger.exception` appears at
+  WARNING or above. Either nothing warned in three days, or application warnings do not reach Cloud
+  Logging at their real severity (stdout lines without structured severity land as DEFAULT). It
+  matters because three raw-SQL sites swallow their exceptions into exactly those loggers
+  (`usage.py`, `courses/views_admin.py`, `notify_contact_submissions.py`), the deploy gate runs on
+  SQLite and cannot see a Postgres-only failure, and H11–H16 went to real trouble to keep audit
+  logger NAMES stable for a scrape metric that may be matching on text alone. **Not investigated
+  further — it needs a deliberate test log line in production, which is the owner's call.**
+  **Trigger:** before anyone relies on a log-based alert.
+- **TD-291 (raised 2026-09-21 by the audit of production) — low.** `GET
+  /admin/scholarship/requests/` routinely takes 3–7 s, with 16–20 s outliers; `payment-runs/{id}`
+  about 3 s; `programmes/{id}/apply-copy/draft/` 8–25 s (that one calls Gemini). None began with
+  this week's work. The student client also polls `/scholarship/bursary-agreement/`, which is
+  switched off and answers 404 — 24 times since 2026-09-19. **Trigger:** TD-282's sprint is the
+  natural place to measure the Requests list with the same query-budget harness.
 - **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
   H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
   for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a

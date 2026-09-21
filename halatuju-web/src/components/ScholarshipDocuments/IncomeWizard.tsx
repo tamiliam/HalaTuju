@@ -28,6 +28,7 @@ import {
   incomeRequirements,
   wizardComplete,
   hasPatronymic,
+  clampDeclared,
   declaredAmount,
   type IncomeRoute,
   type IncomeEarner,
@@ -202,12 +203,19 @@ export default function IncomeWizard({
 
   // Phase 2A: persist a member's declared average monthly income (0/blank → clear the entry).
   const saveDeclared = (m: WorkingMember, raw: string) => {
-    const n = Math.max(0, Math.round(Number(raw) || 0))
+    const n = clampDeclared(raw)
     const next = { ...(ans.income_declared || {}) } as Partial<Record<WorkingMember, number>>
     if (n > 0) next[m] = n
     else delete next[m]
     save({ income_declared: next })
   }
+  // Is there a supporting letter ON FILE for this earner — the document the cash door uploads?
+  // PRESENCE, deliberately: `supportLetterCounts` below asks whether the server would COUNT it,
+  // and a letter that did not read is exactly the one a family most needs to reach and replace.
+  // Matched the way the card itself matches (`household_member === member`, no `legacyBlank`), so
+  // the door is only held open for a letter this earner's card can actually draw.
+  const hasSupportLetter = (m: WorkingMember) =>
+    docs.some((d) => d.doc_type === 'income_support_doc' && (d.household_member || '') === m)
   // ⚠ THE OLD, WRONG GATE ON THE CASH DOOR — kept ONLY as the fallback for a payload that
   // predates the served answer. It asks whether a salary/EPF FILE exists, not whether it shows
   // anything, so on its own it shut the cash door on a family whose payslip was a photo of the
@@ -499,6 +507,7 @@ export default function IncomeWizard({
                 served={app.income_shown}
                 presenceFallback={memberHasProof(block.member)}
                 declared={declaredAmount(ans.income_declared, block.member)}
+                hasSupportLetter={hasSupportLetter(block.member)}
                 onDeclare={saveDeclared}
                 renderCard={renderCard}
                 memberHelp={memberHelp}

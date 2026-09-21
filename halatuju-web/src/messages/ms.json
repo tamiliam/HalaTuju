@@ -33,7 +33,8 @@
     "remove": "Buang",
     "dismiss": "Tutup",
     "menu": "Menu",
-    "unsavedChanges": "Perubahan belum disimpan"
+    "unsavedChanges": "Perubahan belum disimpan",
+    "languageLoadFailed": "Kami tidak dapat memuatkan bahasa itu. Sila muat semula halaman dan cuba lagi."
   },
   "header": {
     "myProfile": "Profil Saya",

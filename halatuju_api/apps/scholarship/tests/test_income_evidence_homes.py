@@ -1058,3 +1058,316 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         self._ic(app)
         _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
         self.assertEqual(self.verdict(app), ('recommend', ['str_recipient_mismatch']))
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 11. THE FALL-THROUGH'S GATE MAY NOT LEAN ON THE STR IT IS LOOKING PAST  (audit 2026-09-21)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
+    """Two owner rules meet in one line of `verdict_engine._stronger_income_fact`, and until the
+    audit of 2026-09-21 that line honoured neither.
+
+    - **R5, 2026-09-19:** *"only the family's own STR count."*
+    - **2026-09-20:** the cash/declared door *"is there primarily for those without STR or salary
+      slip"* — it is NOT the STR route's way in.
+
+    **What the code did.** The gate was `income_proof_present`, which
+    `verdict_income_salary` appends off `found['any_financial']`. One of that flag's arms is
+    `earner_monthly_income(...) == 'declared_str'` — a self-declared figure ACCEPTED because
+    `has_valid_str` says an approved, in-cycle STR is on file. And `has_valid_str` tests
+    CURRENCY only. It never asks WHOSE STR it is.
+
+    So an STR-route household with a stranger's current Lulus STR, one parent IC, a typed figure
+    and no payslip, no EPF and no letter produced a salary reading that rested **entirely on the
+    STR the fall-through exists to look past** — and that reading then RAISED the very verdict
+    that STR had just failed to settle. Both new arms were reachable: the `str_mismatch` arm
+    (item 1) and the incomplete-cluster `gap` arm (item 1b).
+
+    **The rule now.** The salary reading may raise a failed-STR verdict only when it rests on
+    evidence that stands WITHOUT that STR — `income_shown`'s three per-earner ways, which have
+    no STR arm by the same ruling. A declared amount backed by a READ supporting letter still
+    raises, because that letter is evidence of its own; a declared amount backed by nothing but
+    the failed STR raises nothing.
+
+    ⚠ EVERY ROW IS AN ELIGIBILITY ANSWER. The two rows that MOVED were written FIRST and seen RED
+    against the unfixed tree; each says at its assertion what it read before."""
+
+    STRANGER_NAME = 'Someone Else Bin Nobody'
+    STRANGER_NRIC = '999999-14-9999'
+    MOTHER_NAME = 'Kamala A/P Suppiah'
+    MOTHER_NRIC = '750808-14-5002'
+
+    #: The figure the family types into the cash door. Comfortably B40 for five people, so the
+    #: salary reading bands 'verified' the moment the figure is ACCEPTED — which is exactly what
+    #: makes an un-gated acceptance visible as a whole verdict, not a shade.
+    DECLARED = 1500
+
+    def _household(self, app):
+        """Five at home — without a size `income_headroom` cannot compute and every salary
+        reading bands 'unknown', which would make this section a table of coincidences."""
+        app.profile.household_size = 5
+        app.profile.save(update_fields=['household_size'])
+        return app
+
+    def _strangers_str(self, app, **str_kw):
+        str_kw.setdefault('status', 'Lulus')
+        str_kw.setdefault('year', '2026')
+        return _str_doc(app, recipient_name=self.STRANGER_NAME,
+                        recipient_nric=self.STRANGER_NRIC, **str_kw)
+
+    def _mismatch_arm(self, declared=True):
+        """ITEM 1's arm. The STR is approved and in cycle, and provably somebody else's, so
+        `_verdict_income` bands 'recommend' and offers the salary reading."""
+        app = self._household(self._app(
+            route='str', members=(), earner='father',
+            declared={'father': self.DECLARED} if declared else None))
+        self._ic(app)                       # the father's IC, patronymic-linked to the student
+        self._strangers_str(app)
+        return app
+
+    def _gap_arm(self, declared=True):
+        """ITEM 1b's arm. The MOTHER is the declared STR recipient with neither her IC nor a
+        birth certificate on file (→ `earner_ic_missing` + `birth_cert_missing`, a `gap`), while
+        the father's IC is. Her name matches no IC the household has uploaded, so the recipient
+        reads `mismatch` — a current STR that is nobody's, as far as this application can tell."""
+        app = self._household(self._app(
+            route='str', members=(), earner='mother',
+            declared={'father': self.DECLARED} if declared else None))
+        self._ic(app)
+        _str_doc(app, status='Lulus', year='2026',
+                 recipient_name=self.MOTHER_NAME, recipient_nric=self.MOTHER_NRIC)
+        return app
+
+    def _letter(self, app, member='father'):
+        """A supporting income letter that READ — the third per-earner way, and the one piece of
+        evidence in this section that owes the STR nothing. ⚠ `student_verdict` sits at the TOP
+        of `vision_fields`, not under `fields`; `income_support_doc_read` reads it there."""
+        d = _doc(app, 'income_support_doc', member)
+        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+        d.save(update_fields=['vision_fields'])
+        return d
+
+    # ── what the defect actually was, pinned at the two predicates ───────────────────────────
+    def test_a_strangers_current_str_still_accepts_the_declared_amount(self):
+        """⚠ THE DEFECT, NAMED WHERE IT LIVES, AND IT IS **NOT** FIXED BY THIS CHANGE.
+        `has_valid_str` reads the STR's CURRENCY and nothing else, so `earner_monthly_income`
+        hands back `declared_str` — a figure accepted on a document belonging to someone else —
+        and every caller of that source still sees it (`income_per_capita`, the officer's
+        `income_declared_accepted_str` evidence line, `profile_engine`).
+
+        This row is the STATE OF THE TREE, pinned deliberately: the audit fix is applied at the
+        fall-through's gate only, and the wider repair is TD-285 for the owner. If this row ever
+        goes red, the wider fix has landed and this section's reasoning must be re-read."""
+        app = self._mismatch_arm()
+        self.assertIs(income_engine.has_valid_str(app), True)
+        self.assertEqual(income_engine.earner_monthly_income(app, 'father'),
+                         (float(self.DECLARED), 'declared_str'))
+        # …and nothing the household owns shows the father's income on its own.
+        from apps.scholarship.income_shown import income_shown
+        self.assertIs(income_shown(app, 'father').shown, False)
+
+    def test_the_salary_reading_still_carries_income_proof_present(self):
+        """The gate's OLD test, pinned as still true. The fix is not "stop appending the marker"
+        — that marker is the salary route's own answer and F10 keeps it one-way (see
+        `_salary_place_verdict`'s note on the `over` RED). The fix is that the fall-through asks
+        a second question the marker cannot answer: does this rest on the STR?"""
+        app = self._mismatch_arm()
+        present = set(app.documents.filter(superseded_at__isnull=True)
+                      .values_list('doc_type', flat=True))
+        salary = verdict_income_salary(
+            app, income_engine.student_name_for_link(app), present, any_route=True)
+        self.assertEqual(salary['status'], 'verified')
+        self.assertIn('income_proof_present', [i['code'] for i in salary['evidence']])
+
+    # ── the two rows that MOVE ───────────────────────────────────────────────────────────────
+    def test_a_declared_amount_on_a_strangers_str_does_not_raise_the_mismatch_arm(self):
+        """⚠ WRITTEN FIRST AND SEEN RED. Against the unfixed tree this read
+        ('verified', ['str_recipient_mismatch']) — a household whose ONLY statement about money
+        was a figure it typed itself, lifted to Certain by a stranger's STR after that same STR
+        had been refused on the line above. It now reads what it read before 2c6dbe68 (TD-262
+        item 1), which is §8's amber and a human."""
+        self.assertEqual(self.verdict(self._mismatch_arm()),
+                         ('recommend', ['str_recipient_mismatch']))
+
+    def test_a_declared_amount_on_a_strangers_str_does_not_raise_the_gap_arm(self):
+        """⚠ WRITTEN FIRST AND SEEN RED. Against the unfixed tree this read
+        ('verified', ['birth_cert_missing', 'earner_ic_missing', 'str_recipient_mismatch']) —
+        the incomplete-cluster RED turned Certain by the same non-evidence. It now reads what it
+        read before item 1b: the cluster's own `gap`."""
+        self.assertEqual(self.verdict(self._gap_arm()),
+                         ('gap', ['birth_cert_missing', 'earner_ic_missing',
+                                  'str_recipient_mismatch']))
+
+    # ── and the rows that must NOT move, or the fix has taken the third way with it ──────────
+    def test_a_declared_amount_backed_by_a_letter_still_raises_the_mismatch_arm(self):
+        """THE CONTROL, and the reason the gate is `income_shown` rather than "no declared
+        amounts". The third per-earner way — a typed figure plus a letter that READ — owes the
+        STR nothing, so it is exactly the "stronger proof" rule 4 asks to be preferred. If this
+        row ever fails, the fix has closed the cash door instead of the STR loophole."""
+        app = self._mismatch_arm()
+        self._letter(app)
+        from apps.scholarship.income_shown import income_shown
+        self.assertEqual(income_shown(app, 'father').way, 'declared_letter')
+        self.assertEqual(self.verdict(app), ('verified', ['str_recipient_mismatch']))
+
+    def test_a_declared_amount_backed_by_a_letter_still_raises_the_gap_arm(self):
+        app = self._gap_arm()
+        self._letter(app)
+        self.assertEqual(self.verdict(app),
+                         ('verified', ['birth_cert_missing', 'earner_ic_missing',
+                                       'str_recipient_mismatch']))
+
+    def test_a_payslip_still_raises_both_arms_with_a_declared_amount_beside_it(self):
+        """A real payslip is untouched by any of this — the gate's first way. Pinned WITH the
+        declared amount present, because the two live in the same household and a gate that
+        looked at the declaration first would answer differently."""
+        for arm in (self._mismatch_arm, self._gap_arm):
+            with self.subTest(arm=arm.__name__):
+                app = arm()
+                _doc(app, 'salary_slip', 'father',
+                     fields={'gross_income': 'RM 1,800.00', 'net_income': 'RM 1,800.00',
+                             'period': '08/2026'})
+                self.assertEqual(verdict_engine._verdict_income(app)['status'], 'verified')
+
+    def test_the_familys_own_current_str_is_still_settled_upstream(self):
+        """R1/R2 untouched: a current genuine STR whose recipient IS the household's own is
+        settled by STR PRECEDENCE before the route split, declared amount or not. The fix must
+        be invisible here — it never runs."""
+        app = self._household(self._app(route='str', members=(), earner='father',
+                                        declared={'father': self.DECLARED}))
+        self._ic(app)
+        _str_doc(app, status='Lulus', year='2026',
+                 recipient_name=FATHER_NAME, recipient_nric=FATHER_NRIC)
+        self.assertEqual(self.verdict(app), ('verified', []))
+
+    def test_the_submission_gate_is_untouched_by_the_verdict_fix(self):
+        """⚠ THE BLAST-RADIUS PIN. The audit fix is applied in ONE function of the verdict. The
+        submission gate answers this household on F8's own ownership test
+        (`stranger_str_blocks_submission`), and that answer — whatever it is — may not move
+        because a verdict band did. Pinned on both arms."""
+        for arm in (self._mismatch_arm, self._gap_arm):
+            with self.subTest(arm=arm.__name__):
+                app = arm()
+                self.assertIn('str_not_household', services.income_doc_blockers(app))
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 12. A RAISED FACT KEEPS THE STR ROUTE'S OWN EVIDENCE LINES  (audit 2026-09-21)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+class TestTheRaisedFactKeepsTheStrEvidence(IncomeHomesBase):
+    """TD-262 item 1 was careful that the STR cluster's UNRESOLVED items survive a raise — the
+    officer note and the student's re-upload ask must not disappear when the band moves. Its
+    EVIDENCE was not: `_stronger_income_fact` took `salary['evidence']` wholesale, so every green
+    line the STR route had earned vanished from the card the moment a salary reading won.
+
+    **The household that shows it, and it is an ordinary one.** The MOTHER is the STR recipient
+    and her IC arrived UNTAGGED — which the STR route reads as the single earner's (`_cluster_docs`
+    blank fallback) and the salary route deliberately does not attribute to anybody. So the STR
+    route confirms her IC and confirms her STR, and then fails on a missing birth certificate;
+    the FATHER, tagged and payslipped, carries the salary reading to Certain. The raise is right.
+    Losing `str_verified` and the mother's IC line on the way is not: the officer is left reading
+    a card that never mentions that this family's own STR was confirmed.
+
+    **The rule.** The salary reading's evidence comes first — it is the reading that won — then
+    the STR route's own lines in their original order, minus any item the salary reading already
+    states EXACTLY. Same shape and same order convention as the unresolved carry beside it.
+
+    ⚠ EXACT ITEMS, NOT CODES, AND THE REDUNDANCY IT LEAVES IS DELIBERATE. De-duplicating by CODE
+    would be tidier on a household where the STR earner and the salary earner are the same person
+    — and would have dropped `earner_ic_present` for KAMALA here, because the card already
+    carried one for DEVARAJ. They are two people. A rule that decides two lines are "the same
+    claim" is a new matching rule, and this module is not where one gets invented; so the only
+    thing dropped is what is already there verbatim, and a household whose two routes name the
+    same earner carries one untagged line twice. That is the price, it is paid on the officer's
+    card and not in any answer, and it is not to be "tidied" without reading this paragraph.
+
+    ⚠ NOTHING ELSE MOVES. Same status, same band, same unresolved list."""
+
+    MOTHER_NAME = 'Kamala A/P Suppiah'
+    MOTHER_NRIC = '750808-14-5002'
+
+    def _raised_by_the_other_parent(self, *, size=5, other_family_members=()):
+        app = self._app(route='str', members=(), earner='mother',
+                        mother_occupation='homemaker', father_occupation='private',
+                        other_family_members=list(other_family_members))
+        app.profile.household_size = size
+        app.profile.save(update_fields=['household_size'])
+        # ⚠ UNTAGGED, and that is the whole fixture: the STR route reads a blank-member IC as the
+        # declared earner's, the salary route attributes it to nobody. So the mother is confirmed
+        # on one route and invisible on the other.
+        _doc(app, 'parent_ic', '', name=self.MOTHER_NAME, nric=self.MOTHER_NRIC)
+        self._ic(app)                                       # the father's, tagged
+        _doc(app, 'salary_slip', 'father',
+             fields={'gross_income': 'RM 1,800.00', 'net_income': 'RM 1,800.00',
+                     'period': '08/2026'})
+        _str_doc(app, status='Lulus', year='2026',
+                 recipient_name=self.MOTHER_NAME, recipient_nric=self.MOTHER_NRIC)
+        return app
+
+    def _fact(self, app):
+        return verdict_engine._verdict_income(app)
+
+    def test_the_fixture_really_is_a_raise(self):
+        """A control first. If this household ever stops being raised, every assertion below is
+        about something else and would go on passing while proving nothing."""
+        app = self._raised_by_the_other_parent()
+        self.assertEqual(self.verdict(app), ('verified', ['birth_cert_missing']))
+
+    def test_the_str_verification_survives_the_raise(self):
+        """⚠ WRITTEN FIRST AND SEEN RED. `str_verified` was dropped: the card said Certain and
+        never said the family's own STR had been confirmed."""
+        codes = [i['code'] for i in self._fact(self._raised_by_the_other_parent())['evidence']]
+        self.assertIn('str_verified', codes)
+
+    def test_the_str_earners_own_ic_line_survives_the_raise(self):
+        """⚠ WRITTEN FIRST AND SEEN RED. Two people, two lines. The salary reading names the
+        FATHER's IC; the mother's — the one the STR is addressed to — was thrown away with it."""
+        evidence = self._fact(self._raised_by_the_other_parent())['evidence']
+        names = [i['params'].get('name') for i in evidence if i['code'] == 'earner_ic_present']
+        self.assertIn(self.MOTHER_NAME, names)
+        self.assertIn(FATHER_NAME, names)
+
+    def test_the_salary_readings_own_evidence_comes_first_and_intact(self):
+        """The order is STABLE and the winning reading leads it. A carry that re-ordered the
+        card would be a change to what the officer reads, which this is not."""
+        app = self._raised_by_the_other_parent()
+        present = set(app.documents.filter(superseded_at__isnull=True)
+                      .values_list('doc_type', flat=True))
+        salary = verdict_income_salary(
+            app, income_engine.student_name_for_link(app), present, any_route=True)
+        evidence = self._fact(app)['evidence']
+        self.assertEqual(evidence[:len(salary['evidence'])], salary['evidence'])
+
+    def test_the_carry_adds_nothing_the_salary_reading_already_says(self):
+        """No item appears twice VERBATIM. (Two lines with one code and different params are two
+        claims about two people — see the class docstring.)
+
+        ⚠ THE FIXTURE CARRIES A SOFT HOUSEHOLD LINE, AND IT HAD TO BE PUT THERE. Written against
+        the household above, this assertion was VACUOUS and the bite came back SILENT: carrying
+        `current['evidence']` wholesale broke nothing, because on that family the two readings
+        happen to share no item verbatim. The lines they really do share are
+        `_utility_context`'s — BOTH `_verdict_income` and `verdict_income_salary` call it, so
+        every soft household signal is computed twice and is identical both times. So the
+        household here describes five people while stating a size of two, which raises
+        `household_size_confirm(described=5, size=2)` on both sides and gives the de-duplication
+        something to do."""
+        app = self._raised_by_the_other_parent(
+            size=2, other_family_members=[{'relationship': 'grandmother'},
+                                          {'relationship': 'uncle'},
+                                          {'relationship': 'cousin'}])
+        evidence = self._fact(app)['evidence']
+        # The needle is really in the data: without this the loop below asserts nothing.
+        self.assertIn('household_size_confirm', [i['code'] for i in evidence],
+                      'the fixture stopped producing a line both readings emit, so the '
+                      'de-duplication under test has nothing to de-duplicate')
+        seen = []
+        for item in evidence:
+            self.assertNotIn(item, seen, f'{item} is on the card twice, verbatim')
+            seen.append(item)
+
+    def test_the_band_and_the_asks_are_untouched_by_the_carry(self):
+        """The whole of Fix 7's contract in one row: evidence is the only thing that changed."""
+        app = self._raised_by_the_other_parent()
+        fact = self._fact(app)
+        self.assertEqual(fact['status'], 'verified')
+        self.assertEqual([i['code'] for i in fact['unresolved']], ['birth_cert_missing'])

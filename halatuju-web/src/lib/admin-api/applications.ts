@@ -198,8 +198,19 @@ export interface AdminScholarshipDetail {
    * words shown to an officer who is usually reading English. The api already held the same map
    * (`card_display._COCKPIT_TRACK_LABEL`), so the browser copy bought nothing but bytes. Render
    * what the server sends; never look the code up here again.
+   *
+   * ⚠ **OPTIONAL, AND THE `?` IS LOAD-BEARING (audit 2026-09-21).** `null` is the api SAYING
+   * there is no label for this code. `undefined` is a different fact: the field was not sent at
+   * all — an api revision that predates TD-280, or a payload cached in the browser from before
+   * it. The two services deploy together but not atomically, so that window is real, and a
+   * required field made `undefined` invisible to `tsc` — which is a deploy gate here.
+   *
+   * Both answers render the SAME thing: no suffix. There is deliberately no fallback, because
+   * the only one available would be to look the code up in the browser again, and that is TD-280
+   * (130 kB of Malay catalogue on this one route) arriving a second time. Better one deploy's
+   * worth of missing suffix than a permanent megabyte. `view.preUTrack.test.tsx` holds both.
    */
-  pre_u_track_label: string | null
+  pre_u_track_label?: string | null
   pre_u_institution: string
   uncertainty_reasons: string[]
   uncertainty_note: string

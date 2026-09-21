@@ -84,8 +84,15 @@ def confirm_profile(application):
         # delayed query email can count them — the "review assistant" asks for them too.
         sync_resolution_items(application)
     except Exception:  # noqa: BLE001 — query raising must never fail a submission
-        import logging
-        logging.getLogger(__name__).warning(
+        # ⚠ THE PACKAGE LOGGER BOUND AT THE TOP OF THIS FILE, never an inline
+        # `getLogger(__name__)`. This is the ONLY alert that a student's Check-2 queries failed
+        # to raise at submission, and in a submodule `__name__` reads
+        # `apps.scholarship.services.confirmation` — a name the Cloud Logging metric that counts
+        # by logger never sees. H15 moved this body verbatim out of `services.py`, where
+        # `__name__` WAS the package name, so the line changed stream without anything changing
+        # in it. Found by the audit of 2026-09-21; guarded by
+        # `test_access_audit.AuditLoggerNameTest`, which now reads function bodies too.
+        logger.warning(
             'Check-2 query raise failed for app %s', application.id, exc_info=True)
     return True
 

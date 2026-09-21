@@ -33,7 +33,8 @@
     "remove": "Remove",
     "dismiss": "Dismiss",
     "menu": "Menu",
-    "unsavedChanges": "Unsaved changes"
+    "unsavedChanges": "Unsaved changes",
+    "languageLoadFailed": "We could not load that language. Please reload the page and try again."
   },
   "header": {
     "myProfile": "My Profile",

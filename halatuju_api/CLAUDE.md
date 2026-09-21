@@ -714,11 +714,24 @@ str_not_breached(app)`, which is where the household arm lives and the ONLY plac
 `income_engine._member_income_documented` (the officer's chase list, and through it the pension /
 informal / formal-slip asks and the household-size tick) ·
 `verdict_income_salary._salary_member_scan` (`any_financial`, the verdict's financial-evidence
-line) · **`income_declared_gaps` (the Check-2 declared-wage ask — TD-262 F2)** · and **BOTH
-screens**, which read it **SERVED** — the officer on the applicant-detail payload, the student on
-her own `ApplicationReadSerializer` payload — through `halatuju-web/src/lib/incomeShown.ts`.
-Served, never mirrored, with an absent field falling back to each screen's old presence reading so
-a half-deployed pair cannot paint a screen of red.
+line) · **`verdict_income_salary.salary_evidence_stands_without_the_str`** (the second half of the
+rule-4 fall-through's gate — audit 2026-09-21; it is the right question there precisely BECAUSE
+this module has no STR arm) · **`income_declared_gaps` (the Check-2 declared-wage ask — TD-262
+F2)** · and **BOTH screens**, which read it **SERVED** — the officer on the applicant-detail
+payload, the student on her own `ApplicationReadSerializer` payload — through
+`halatuju-web/src/lib/incomeShown.ts`. Served, never mirrored, with an absent field falling back to
+each screen's old presence reading so a half-deployed pair cannot paint a screen of red.
+
+**⚠ IT COSTS THREE QUERIES PER MEMBER, SO THE MEMBER LIST IS A CONTRACT *AND* A BILL (audit
+2026-09-21).** The student's `ApplicationReadSerializer` served all five of `_MEMBER_ORDER` on
+every read AND on the LIST — which is the call that actually feeds her Documents tab
+(`getMyScholarshipApplications` → `ScholarshipNextSteps` → `ScholarshipDocuments`). It now serves
+`income_shown.student_income_members`: her working members plus any earner carrying a declared
+amount, read off the row at no query cost. 22 → 7 queries on the STR route, 25 → 13 with one
+earner. **The answer for a member that IS served is byte-identical**; an absent key lands on the
+fallback `incomeShown.answerFor` already implements by design. The OFFICER payload
+(`serializers_admin.py`) still serves all five, deliberately — the cockpit reads members the
+student's own screen never asks about. Pinned in `tests/test_query_budgets.py`.
 
 ### The declared-wage ask (TD-262 F2) — `apps/scholarship/income_declared_gaps.py`
 
@@ -791,6 +804,42 @@ owner's four ways — the fourth being a non-breached household STR. A stale / u
 recipient-mismatched STR is **not breached**, so that predicate is satisfied by the very STR a
 fall-through exists to look past. The honest test is the salary reading's own
 `income_proof_present` marker. Pinned by name in `tests/test_income_evidence_homes.py` §8.
+
+**⚠ AND `income_proof_present` IS NOT THE WHOLE GATE EITHER — THE FALL-THROUGH NEEDS *TWO*
+CONDITIONS (audit 2026-09-21).** That marker follows `found['any_financial']`, one arm of which is
+`earner_monthly_income` answering **`declared_str`**: a figure the family TYPED, accepted because
+`income_engine.has_valid_str` sees an approved, in-cycle STR. **`has_valid_str` tests the STR's
+CURRENCY and never asks whose STR it is.** So the salary reading offered to out-argue a failed STR
+could rest ENTIRELY on that STR — a stranger's current Lulus letter plus a declared amount, with no
+payslip, no EPF and no supporting letter — and raise the verdict the STR had just failed to settle.
+Both new arms were reachable. It broke R5 (*"only the family's own STR count"*) and the 2026-09-20
+ruling that the cash/declared door is not for the STR route.
+
+`_stronger_income_fact` therefore now asks **`verdict_income_salary.salary_evidence_stands_without_the_str`
+FIRST** — `income_shown`'s three per-earner ways, which have no STR arm by that same ruling — and
+`income_proof_present` second. Two questions, not one: *does any earner's income stand on its own?*
+and *does the salary route's own reading say so?* A declared amount backed by a READ letter still
+raises; one leaning on the failed STR raises nothing. Order matters for cost only (42 → 27 queries
+on the discarded case, 39 → 39 on the taken one), never for the answer. §11 of
+`tests/test_income_evidence_homes.py` pins the rows, including the two that moved back to their
+pre-2c6dbe68 bands.
+
+**⚠ THE UNDERLYING PREDICATE IS UNCHANGED, ON PURPOSE — `has_valid_str` STILL VOUCHES FOR A
+DECLARED AMOUNT EVERYWHERE ELSE.** Fixing it reaches the Check-2 declared-wage short-circuit (a
+2026-09-20 RULING with pinned rows), per-capita arithmetic on both routes, the officer follow-up
+context and a rendered evidence code — and the correct narrowing is `not str_recipient_is_stranger`
+(a POSITIVE mismatch only), because *absence is not a mismatch* is F8's rule 1. That is **TD-285**,
+an owner decision waiting on a production count. Do not "finish the job" here without it.
+
+**⚠ A RAISED FACT CARRIES THE STR ROUTE'S EVIDENCE AS WELL AS ITS ASKS**
+(`verdict_income_salary.raised_income_fact`). Item 1 was explicit that the cluster's unresolved
+items survive; its greens were taken wholesale from the salary reading, so `str_verified` and the
+STR earner's own `earner_ic_present` left the officer's card with the band. In the ordinary shape
+of this case those are about a DIFFERENT PERSON from the one the salary reading named — the STR is
+the mother's, the payslip the father's. Winning reading first, then the STR route's lines in order,
+minus anything already stated **VERBATIM**; exact items, never codes, because deciding two items
+are "the same claim" is a new matching rule. Band, status and unresolved list are untouched, which
+is why this half alone does not bump `VERDICT_ENGINE_VERSION`. Pinned in §12.
 
 **⚠ A CURRENT GENUINE STR IS SETTLED UPSTREAM AND PAYSLIPS NEVER TOUCH IT** (rules 1 and 2):
 `_str_precedence_verdict` returns before the route split is reached. Removing it reddens five

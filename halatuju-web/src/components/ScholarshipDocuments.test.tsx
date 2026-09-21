@@ -17,7 +17,7 @@
  * The second block arrived in code health H6, replacing the source-scanning half of
  * `lib/__tests__/docFileLayout.test.ts`. Its reason is written at the block.
  */
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import ScholarshipDocuments from './ScholarshipDocuments'
 import type { ApplicationRequirements, ScholarshipApplication } from '@/lib/api'
 import { sandboxApplication } from '@/sandbox/fixtures/scholarship'
@@ -473,5 +473,115 @@ describe('the third doorway: paid in cash, and the lockout that hid it', () => {
   it('...and with nothing on file that fallback still offers the door', async () => {
     await student({ documents: [] })
     expect(screen.getByText(CASH_DOOR)).toBeTruthy()
+  })
+
+  /**
+   * ⚠ **THE DOOR MAY CLOSE ON AN EMPTY ROOM, NEVER ON A FULL ONE** (audit 2026-09-21, finding F).
+   *
+   * The cash door is the ONLY place an `income_support_doc` is ever drawn for a student, and the
+   * letter card inside it waited on `declared > 0`. So a family who typed an amount, uploaded
+   * their letter, and then managed to get a readable payslip had the whole panel unmount beneath
+   * them: the letter was still on file, still attached to their application, still read by the
+   * officer — and they could no longer see it, replace it or delete it. Setting the amount back
+   * to 0 did the same thing one level down, hiding the letter while leaving it uploaded.
+   *
+   * The rule is now about CONTENTS, not about how income happens to be shown: if a declared
+   * amount or a letter exists for this earner, the way back in stays. It may still hide when
+   * there is genuinely nothing behind it.
+   */
+  describe('the door cannot close on something the family has already put behind it', () => {
+    /** A supporting letter tagged to this earner — what the cash door uploads. */
+    const supportLetter = (id: number, member = 'father') => ({
+      id, doc_type: 'income_support_doc', household_member: member,
+      original_filename: `letter-${id}.pdf`, content_type: 'application/pdf', size: 2048,
+      verification_status: 'pending', download_url: 'https://example.test/d',
+      uploaded_at: '2026-06-01', vision_fields: { student_verdict: 'ok' },
+    }) as unknown as api.ApplicantDocument
+
+    it('⚠ a letter on file survives a payslip that reads — the family can still reach it', async () => {
+      // Before the fix this panel unmounted entirely and the letter became unreachable: no card,
+      // no delete, no replace, and the typed amount still sitting on the application.
+      await student({
+        declared: { father: 900 },
+        documents: [slip(41), supportLetter(42)],
+        income_shown: served({ shown: true, way: 'salary_slip', documents: [41] }),
+      })
+      expect(screen.getByText(CASH_DOOR)).toBeTruthy()
+      // Their own typed figure still seeds the panel open, so it is not even behind a tap.
+      expect(cashDoorToggle().getAttribute('aria-expanded')).toBe('true')
+      expect(screen.getByText(LETTER_CARD)).toBeTruthy()
+      expect(screen.getByPlaceholderText('scholarship.docs.income.wizard.declared.placeholder'))
+        .toBeTruthy()
+    })
+
+    it('⚠ a letter stays reachable after the amount is cleared back to 0', async () => {
+      // The second dead end, one level in: the door opened, but the letter card itself waited on
+      // an amount, so clearing the figure hid a document that was still uploaded.
+      await student({
+        declared: {},
+        documents: [supportLetter(43)],
+        income_shown: served({}),
+      })
+      act(() => { cashDoorToggle().click() })
+      expect(screen.getByText(LETTER_CARD)).toBeTruthy()
+    })
+
+    it('the door may still hide when there is nothing behind it and income is shown', async () => {
+      // The control, and the half of the rule that keeps the screen calm. Without it this block
+      // also passes on a panel that simply never closes again, which is the wall F2 removed.
+      await student({
+        declared: {},
+        documents: [slip(44)],
+        income_shown: served({ shown: true, way: 'salary_slip', documents: [44] }),
+      })
+      expect(screen.queryByText(CASH_DOOR)).toBeNull()
+    })
+
+    it('an empty letter slot still waits for an amount — an upload with nothing behind it', async () => {
+      // Unchanged by the fix, and stated so the rule above cannot be read as "always draw it".
+      await student({ declared: {}, documents: [], income_shown: served({}) })
+      act(() => { cashDoorToggle().click() })
+      expect(screen.queryByText(LETTER_CARD)).toBeNull()
+    })
+  })
+
+  /**
+   * ⚠ **THE BOX MUST SHOW WHAT WAS SAVED** (audit 2026-09-21, finding F, second half).
+   *
+   * `saveDeclared` clamps: it floors at zero and rounds to the ringgit, so `-500` clears the
+   * entry and `1500.6` is stored as `1501`. The field was uncontrolled (`defaultValue`), so the
+   * DOM went on showing what was typed. A family read `1500.6` and believed that was their
+   * declaration; a family read `-500` and had no idea their figure had been cleared.
+   */
+  describe('the declared amount reads back as the figure that was SAVED', () => {
+    const amountBox = () => screen.getByPlaceholderText(
+      'scholarship.docs.income.wizard.declared.placeholder') as HTMLInputElement
+
+    const typeAndLeave = async (value: string) => {
+      const box = amountBox()
+      await act(async () => {
+        fireEvent.change(box, { target: { value } })
+        fireEvent.blur(box)
+      })
+    }
+
+    it('rounds to the ringgit on screen, not only in the payload', async () => {
+      await student({ declared: { father: 900 }, income_shown: served({}) })
+      await typeAndLeave('1500.6')
+      expect(amountBox().value).toBe('1501')
+    })
+
+    it('a negative figure clears the box, because it cleared the entry', async () => {
+      await student({ declared: { father: 900 }, income_shown: served({}) })
+      await typeAndLeave('-500')
+      expect(amountBox().value).toBe('')
+    })
+
+    it('a plain whole number is left exactly as typed', async () => {
+      // The control: normalising must not rewrite an answer that was already right.
+      await student({ declared: { father: 900 }, income_shown: served({}) })
+      await typeAndLeave('1200')
+      expect(amountBox().value).toBe('1200')
+    })
   })
 })

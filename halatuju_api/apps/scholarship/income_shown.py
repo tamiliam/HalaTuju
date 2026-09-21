@@ -150,5 +150,40 @@ def income_shown(application, member) -> IncomeShown:
 
 def income_shown_map(application, members):
     """``{member: answer.as_dict()}`` for the officer payload — the cockpit reads this instead of
-    re-deriving evidence from document PRESENCE (TD-262 W2/W3/W4)."""
+    re-deriving evidence from document PRESENCE (TD-262 W2/W3/W4).
+
+    ⚠ IT COSTS THREE DATABASE QUERIES PER MEMBER (the slips, the EPFs, the letters), so the
+    member list is a COST as well as a contract — see ``student_income_members``."""
     return {m: income_shown(application, m).as_dict() for m in members}
+
+
+def student_income_members(application):
+    """The members the STUDENT's own screen can ask about — and therefore the only ones her
+    payload has any reason to carry (audit 2026-09-21).
+
+    **What it was.** ``ApplicationReadSerializer`` served all five of ``_MEMBER_ORDER`` on every
+    student read AND on the list, which is the call that actually feeds her Documents tab. Four
+    of the five were almost always households nobody had declared, at three queries each.
+
+    **What the screen asks.** ``IncomeWizard`` renders one ``MemberIncomeGroup`` per block of
+    ``incomeWizard.salaryMemberBlocks(a.income_working_members)``, and salary route only. So the
+    served keys the web can ever look up are that list — nothing else reads this field.
+
+    **Why an ABSENT member is safe, and this is the load-bearing half.** ``incomeShown.answerFor``
+    returns ``null`` for a key that is not there, and every caller treats ``null`` as *"no served
+    answer — fall back to the old presence reading"*, never as *"nothing is shown"*. That
+    fallback exists because the two services deploy together but not atomically. Narrowing the
+    map therefore lands on a path the front end already handles by design. The answers that ARE
+    served are byte-identical: this changes which keys the dict has, never what one says.
+
+    ⚠ THE DECLARED EARNERS ARE INCLUDED even though today's screen reads blocks only. A member
+    can carry a declared amount while the working-members list is being edited, and one extra key
+    costs three queries only when such a member exists — whereas a key the screen wanted and did
+    not get degrades an earner silently to the presence reading this whole module replaced.
+    """
+    from .income_engine import _MEMBER_ORDER
+    declared = getattr(application, 'income_declared', None)
+    chosen = set(getattr(application, 'income_working_members', None) or ())
+    if isinstance(declared, dict):
+        chosen |= {m for m, amount in declared.items() if amount}
+    return [m for m in _MEMBER_ORDER if m in chosen]

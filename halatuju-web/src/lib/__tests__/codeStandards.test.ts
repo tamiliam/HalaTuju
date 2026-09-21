@@ -593,6 +593,12 @@ type LedgerName = (typeof LEDGERS)[number]
 const PATH_KEYED_LEDGERS = new Set<string>([
   'oversize_files', 'eslint_disable_without_reason', 'unguarded_mirrors'])
 
+/** Which ledgers are `{key: number}` objects rather than lists of `path::…` strings. ONE home,
+ *  read by `effectiveBaseline` and by the move invariant — the invariant is meant to hold for
+ *  every ledger `LEDGERS` names, and a second copy of this split is how it stopped holding for
+ *  `first_load_js` (audit 2026-09-21, finding H). */
+const NUMERIC_LEDGERS = new Set<string>(['oversize_files', 'first_load_js'])
+
 /** Every field a move record must carry, all non-empty strings. `why` is not decoration: a
  *  relabel of the frozen record is the one edit that survives a reviewer's glance, so it has to
  *  say what moved and what for — at least as many words as the reason rule asks of a disable. */
@@ -640,8 +646,7 @@ export function effectiveBaseline(
   }
   const problems: string[] = []
   /** The two number-keyed ledgers are objects; the other two are lists of `path::…` strings. */
-  const numeric = (ledger: LedgerName): boolean => (
-    ledger === 'oversize_files' || ledger === 'first_load_js')
+  const numeric = (ledger: LedgerName): boolean => NUMERIC_LEDGERS.has(ledger)
   const holds = (ledger: LedgerName, key: string): boolean => (
     numeric(ledger)
       ? Object.prototype.hasOwnProperty.call(effective[ledger] as Record<string, number>, key)
@@ -1145,26 +1150,49 @@ describe('a declared move relabels the frozen record and buys nothing', () => {
     // one key with one key, so both numbers must be identical either side. If a future edit to
     // `effectiveBaseline` ever made a move generous, this catches it — long before anyone notices
     // the budget quietly had more room than the frozen record gave it.
+    //
+    // ⚠ **IT LOOPS OVER `LEDGERS`, AND THAT IS THE POINT (audit 2026-09-21, finding H).** It used
+    // to name three ledgers by hand, so when H18 added `first_load_js` — the newest ledger, the
+    // one in kilobytes, the one a move is most tempting on — the invariant simply did not cover
+    // it and nothing said so. A guard written as a list of names goes quietly out of date every
+    // time the thing it guards grows; the Python twin has always looped over all of `LEDGERS`,
+    // and this now does too, so the NEXT ledger is covered by construction rather than by
+    // somebody remembering. The floor below is what proves the loop actually ran over all of them.
     const total = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0)
+    /** The frozen ledger, before any move is applied. Both numeric ones may be absent on the
+     *  throwaway blocks the move tests build, so an empty ledger is a legitimate reading. */
+    const frozen = (name: LedgerName): Record<string, number> | string[] => (
+      name === 'first_load_js' ? (BASELINE.first_load_js ?? {}) : BASELINE[name])
     const grew: string[] = []
-    if (Object.keys(EFFECTIVE.oversize_files).length
-        !== Object.keys(BASELINE.oversize_files).length) {
-      grew.push(`oversize_files: ${Object.keys(BASELINE.oversize_files).length} entries frozen, `
-        + `${Object.keys(EFFECTIVE.oversize_files).length} after the declared moves`)
-    }
-    if (total(EFFECTIVE.oversize_files) !== total(BASELINE.oversize_files)) {
-      grew.push(`oversize_files: total ${total(BASELINE.oversize_files)} frozen, `
-        + `${total(EFFECTIVE.oversize_files)} after the declared moves`)
-    }
-    for (const name of ['eslint_disable_without_reason', 'unguarded_mirrors'] as const) {
-      if (EFFECTIVE[name].length !== BASELINE[name].length) {
-        grew.push(`${name}: ${BASELINE[name].length} entries frozen, `
-          + `${EFFECTIVE[name].length} after the declared moves`)
+    const inspected: string[] = []
+    for (const name of LEDGERS) {
+      inspected.push(name)
+      if (NUMERIC_LEDGERS.has(name)) {
+        const was = frozen(name) as Record<string, number>
+        const now = EFFECTIVE[name] as Record<string, number>
+        if (Object.keys(now).length !== Object.keys(was).length) {
+          grew.push(`${name}: ${Object.keys(was).length} entries frozen, `
+            + `${Object.keys(now).length} after the declared moves`)
+        }
+        if (total(now) !== total(was)) {
+          grew.push(`${name}: total ${total(was)} frozen, ${total(now)} after the declared moves`)
+        }
+      } else {
+        const was = frozen(name) as string[]
+        const now = EFFECTIVE[name] as string[]
+        if (now.length !== was.length) {
+          grew.push(`${name}: ${was.length} entries frozen, `
+            + `${now.length} after the declared moves`)
+        }
+        if (new Set(now).size !== now.length) {
+          grew.push(`${name}: a declared move produced a DUPLICATE member`)
+        }
       }
-      if (new Set(EFFECTIVE[name]).size !== EFFECTIVE[name].length) {
-        grew.push(`${name}: a declared move produced a DUPLICATE member`)
-      }
     }
+    // ⚠ THE FLOOR (TD-276). A loop that inspects nothing asserts nothing and passes for ever.
+    // This one is an EQUALITY rather than a minimum, because the set it walks is closed by
+    // definition: every ledger a move may name is a ledger this invariant must hold for.
+    expect(inspected).toEqual([...LEDGERS])
     expect(say(grew.length > 0, [
       'Applying the declared moves changed the SIZE of a frozen ledger. It must not: a move',
       'relabels one entry onto one new key, so the count and the total are the same numbers either',

@@ -4,6 +4,8 @@ blocks, and `income_requirements` — the list the wizard mirrors.
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+from __future__ import annotations
+
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
 from .relationships import _MEMBER_ORDER, effective_working_members, relationship_doc_for
 from .str_route import STR_COACH_STATES, student_str_check

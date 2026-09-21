@@ -22,6 +22,7 @@
  */
 import { screen } from '@testing-library/react'
 
+import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 
 installCockpitConsoleGuard()
@@ -68,5 +69,47 @@ describe('the officer reads the SERVED Malay pre-U track label', () => {
     await loaded()
     expect(screen.queryByText(/· Sains Sosial/)).toBeNull()
     expect(screen.queryByText(/Sains Sosial/)).toBeNull()
+  })
+})
+
+/**
+ * THE STAGED-DEPLOY WINDOW — the api one revision behind (audit 2026-09-21, finding G).
+ *
+ * `pre_u_track_label` was typed `string | null`, REQUIRED. The two services deploy together but
+ * not atomically, and the browser also holds cached payloads: an api revision that predates
+ * TD-280 does not send the field at all, so the value is `undefined` and the type is a lie the
+ * compiler cannot see. Everything downstream — a `.trim()`, a `.length`, a `??` that never fires
+ * — is then written against a guarantee that does not hold, and `tsc` is a deploy gate here.
+ *
+ * ⚠ **THE MISSING FIELD SHOWS NOTHING, ON PURPOSE, AND THAT IS NOT LAZINESS.** The obvious
+ * "fallback" would be to look the code up in the browser — which is precisely TD-280, the 130 kB
+ * of Malay catalogue H18 removed from this route, and re-adding it is refused by
+ * `oneLocalePerVisitor.test.ts` and by the bundle budget. The payload carries no English track
+ * label to fall back on either. So the parenthesis is omitted: the officer reads the programme
+ * name without a suffix for the length of one deploy, rather than a raw `sains_sosial` or the
+ * word `undefined`.
+ */
+describe('an api one revision behind, which does not send the label at all', () => {
+  it('⚠ the TYPE admits a payload without the field — the whole of the finding', () => {
+    // RED before the fix, in `npm run typecheck` — the FIRST gate `npm run gates` runs — with
+    // "Property 'pre_u_track_label' is missing in type Omit<…> but required in type
+    // AdminScholarshipDetail". No runtime assertion can catch a type lie: a field the api simply
+    // does not send arrives as `undefined` whatever the declaration claims, and the only
+    // instrument that sees the difference is the compiler.
+    const fromAnOlderApi = (
+      payload: Omit<AdminScholarshipDetail, 'pre_u_track_label'>,
+    ): AdminScholarshipDetail => payload
+    expect(typeof fromAnOlderApi).toBe('function')
+  })
+
+  it('renders the programme with no suffix — never a raw code, never the word "undefined"', async () => {
+    const build = { ...stpm(null).build } as Record<string, unknown>
+    delete build.pre_u_track_label
+    renderCockpit({ ...stpm(null), build })
+    await loaded()
+    expect(screen.getByText('Tingkatan Enam')).toBeTruthy()
+    expect(screen.queryByText(/undefined/)).toBeNull()
+    expect(screen.queryByText(/sains_sosial/)).toBeNull()
+    expect(screen.queryByText(/·\s*$/)).toBeNull()
   })
 })

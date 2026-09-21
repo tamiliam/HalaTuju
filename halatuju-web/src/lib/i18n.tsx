@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
   type ReactNode,
@@ -28,8 +29,26 @@ export const LOCALE_LABELS: Record<Locale, string> = {
 }
 
 interface I18nContextValue {
+  /** The language the reader has CHOSEN, and the one the switcher has committed to. */
   locale: Locale
-  setLocale: (locale: Locale) => void
+  /**
+   * The language of the WORDS on screen right now — `en` while `locale`'s catalogue is still in
+   * the air, or after its chunk failed to arrive.
+   *
+   * ⚠ **`html lang` FOLLOWS THIS ONE, NEVER `locale`.** They differ for exactly as long as a
+   * download takes, and in that window `lang="ta"` over English text tells a screen reader to
+   * pronounce English in a Tamil voice. A returning Tamil reader met it on every single visit,
+   * because the server cannot read `localStorage` and so the first paint is always English.
+   */
+  contentLocale: Locale
+  /**
+   * Ask for a language. Resolves once the words are on screen; REJECTS when the catalogue could
+   * not be fetched, so the caller can put its control back and say so.
+   *
+   * ⚠ It rejects rather than committing a half-move. Until the 2026-09-21 audit a failed load
+   * moved `locale` anyway and showed English words under a Tamil switcher, with nothing said.
+   */
+  setLocale: (locale: Locale) => Promise<void>
   t: (key: string, params?: Record<string, string>) => string
 }
 
@@ -48,11 +67,42 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string {
   return typeof current === 'string' ? current : path
 }
 
+/**
+ * ⚠ **EVERY TOUCH OF `localStorage` IN THIS FILE GOES THROUGH THESE TWO FUNCTIONS, AND THAT IS
+ * NOT TIDINESS.** Where a browser has site data blocked — Safari private mode, "block all
+ * cookies", a locked-down school device — `localStorage` still EXISTS and throws `SecurityError`
+ * the instant it is touched. The read happens as this module is EVALUATED (see the warm start
+ * below), which is *before React exists*: an unguarded throw escapes the module body, the bundle
+ * never finishes evaluating, and the reader is handed a BLANK DOCUMENT. Not an error screen, not
+ * a broken switcher — nothing at all, on every page of the product.
+ *
+ * `theme.ts` has wrapped the identical call in try/catch since F1, with a comment saying exactly
+ * this. i18n did not, and an audit found it on 2026-09-21. A blocked store must cost the MEMORY
+ * of the choice and nothing else: such a reader gets English, and a switcher that works for the
+ * life of the tab. `localeSwitch.test.tsx` blocks both calls and proves both halves.
+ */
+function readStoredLocale(): Locale | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = window.localStorage.getItem(KEY_LOCALE)
+    if (stored === 'en' || stored === 'ms' || stored === 'ta') return stored
+  } catch {
+    /* site data blocked — see above. English, and no memory of the choice. */
+  }
+  return null
+}
+
+function writeStoredLocale(locale: Locale): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(KEY_LOCALE, locale)
+  } catch {
+    /* see readStoredLocale — the choice still applies to this tab, it is just not remembered. */
+  }
+}
+
 function getInitialLocale(): Locale {
-  if (typeof window === 'undefined') return 'en'
-  const stored = localStorage.getItem(KEY_LOCALE)
-  if (stored === 'en' || stored === 'ms' || stored === 'ta') return stored
-  return 'en'
+  return readStoredLocale() ?? 'en'
 }
 
 /**
@@ -90,6 +140,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return { locale, catalogue: catalogueIfLoaded(locale) ?? FALLBACK_CATALOGUE }
   })
   const { locale, catalogue } = active
+  // DERIVED, never stored: the only catalogue that is not its own locale's is the English
+  // fallback, and it is a singleton, so identity answers the question exactly. Storing it would
+  // be a fourth place for the same fact to be set — and three of them already have to agree.
+  const contentLocale: Locale = catalogue === FALLBACK_CATALOGUE ? 'en' : locale
+  /**
+   * ⚠ **THE MONOTONIC REQUEST TOKEN — WHY A SWITCH NEEDS ONE AT ALL.** Two quick choices are two
+   * fetches, and a network is free to answer them in either order. With no token, the slower
+   * answer simply overwrote the faster one whenever the reader's FIRST choice happened to arrive
+   * second: `localStorage` said Malay, the switcher said Tamil, `html lang` said Tamil and the
+   * heading was Tamil — one reader, four surfaces, three answers. Reproduced in a browser on
+   * 2026-09-21. Only the latest request may commit; every older one returns having done nothing.
+   */
+  const request = useRef(0)
   // Branding lives in the OUTER BrandingProvider (see providers.tsx). Its five AUTO_TOKENS are
   // auto-injected into every render, BENEATH the explicit call-site params (which always win).
   const branding = useBranding()
@@ -110,25 +173,52 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
     let alive = true
     loadCatalogue(locale).then(
-      (loaded) => { if (alive) setActive((cur) => (cur.locale === locale ? { locale, catalogue: loaded } : cur)) },
+      (loaded) => { if (alive) setActive((cur) => (cur.locale === locale
+        ? { locale, catalogue: loaded } : cur)) },
       () => { /* keep showing English; the words are right in a language, just not this one */ },
     )
     return () => { alive = false }
   }, [locale])
 
-  const setLocale = useCallback((newLocale: Locale) => {
+  // ⚠ THIS EFFECT NO LONGER RUNS AFTER A SWITCH, AND THAT IS THE SECOND HALF OF THE ONE-FETCH
+  // RULE. `setLocale` commits `locale` only once the catalogue is in memory, so by the time
+  // `[locale]` changes `catalogueIfLoaded` answers immediately and nothing is fetched. It used to
+  // commit the failure too, which re-ran this effect against a chunk that had just 404'd — two
+  // requests per switch for a tab held open across a deploy, both of them silent.
+
+  /**
+   * ⚠ **NOTHING IS COMMITTED AND NOTHING IS STORED UNTIL THE WORDS ARE IN HAND.** The locale, the
+   * catalogue, `localStorage` and `html lang` therefore cannot disagree, which is the whole of the
+   * 2026-09-21 audit's findings A, D and E in one sentence.
+   *
+   * Before: `localStorage` was written the moment the reader picked, and a failed chunk committed
+   * `{ newLocale, English }` anyway — so a tab held open across a deploy showed a Tamil switcher
+   * over English words, said nothing, remembered the choice, and asked for the dead chunk twice.
+   * A stored choice that cannot be honoured is worse than none: it repeats on every reload.
+   */
+  const setLocale = useCallback((newLocale: Locale): Promise<void> => {
+    const token = ++request.current
     const ready = catalogueIfLoaded(newLocale)
     if (ready) {
+      // Already in memory (always so for English, and for any language visited this tab) — one
+      // synchronous commit, no fetch, nothing for the control to wait on.
       setActive({ locale: newLocale, catalogue: ready })
-    } else {
-      loadCatalogue(newLocale).then(
-        (loaded) => setActive({ locale: newLocale, catalogue: loaded }),
-        // The chunk did not arrive. Move anyway: the reader's choice is stored, `html lang` and
-        // the switcher follow, and `t` answers in English until a reload retries the fetch.
-        () => setActive({ locale: newLocale, catalogue: FALLBACK_CATALOGUE }),
-      )
+      writeStoredLocale(newLocale)
+      return Promise.resolve()
     }
-    localStorage.setItem(KEY_LOCALE, newLocale)
+    return loadCatalogue(newLocale).then(
+      (loaded) => {
+        if (token !== request.current) return   // a newer choice owns the screen; stand down
+        setActive({ locale: newLocale, catalogue: loaded })
+        writeStoredLocale(newLocale)
+      },
+      (err: unknown) => {
+        // A SUPERSEDED failure is silent on purpose: the reader has already moved on, and a
+        // message about a language they left would be noise they cannot act on.
+        if (token !== request.current) return
+        throw err
+      },
+    )
   }, [])
 
   const t = useCallback(
@@ -142,7 +232,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   )
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nContext.Provider value={{ locale, contentLocale, setLocale, t }}>
       {children}
     </I18nContext.Provider>
   )

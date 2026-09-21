@@ -607,6 +607,30 @@ class TestReceiptEndpointRefusals(InvoiceWorld):
                 self.assertEqual(response.json()['code'], 'bad_amount')
         self.assertEqual(inv.receipts.count(), 0)
 
+    def test_a_figure_too_big_to_express_at_two_places_is_a_400_not_a_500(self):
+        """⚠ THE AUDIT OF 2026-09-21, AND IT IS TD-261's DEFECT WEARING A DIFFERENT HAT.
+
+        TD-261 guarded the `quantize` call and the non-finite values. It did not guard the
+        quantise inside `money.parse_money`'s `places_exact` comparison — and `_receipt_amount`
+        asks for `places_exact` — so `1E+100` in the receipt box raised a raw
+        `decimal.InvalidOperation` straight past the `except money.MoneyError` and out of this
+        endpoint as a **500**. The figure is not exotic: `1e3` is already an accepted amount here
+        (pinned in the characterisation table), so exponent notation is something this box takes.
+
+        `1E+26` is in the list deliberately — it is the FIRST figure that escapes, and a test
+        that only ever tried absurd ones would pass against a parser that refused every
+        exponent."""
+        inv = self.issue()
+        for amount in ('1E+26', '1E+100', '1e30', '-1E+100', '9' * 40):
+            with self.subTest(amount=amount):
+                response = self.post(inv, amount)
+                self.assertEqual(response.status_code, 400,
+                                 f'{amount!r} answered {response.status_code}, not 400 — a money '
+                                 f'figure escaped money.parse_money as something other than a '
+                                 f'MoneyError. See the note at the top of money.py.')
+                self.assertEqual(response.json()['code'], 'bad_amount')
+        self.assertEqual(inv.receipts.count(), 0)
+
     def test_an_ordinary_bad_amount_still_answers_the_same_way(self):
         """The control: the new refusal must be indistinguishable from the old ones, or the
         screen would have to learn a second shape."""
