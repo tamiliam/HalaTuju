@@ -121,6 +121,31 @@ function median(numbers) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
 }
 
+/**
+ * THE TIGHTNESS NOTE — TD-300, 2026-09-28. Informational: it never fails the gate.
+ *
+ * TD-300 was a median budget with NO room under it: exactly 44 of 87 routes sat at or under
+ * 256 kB, so the median WAS the 44th route and the next byte on any route at 256 would have turned
+ * the deploy gate red for a reason unrelated to the change that added it. Nothing printed that
+ * until someone tripped it. This line prints it on every run, so the trap is seen coming:
+ *   - how far the median sits under its budget, in kB;
+ *   - how many routes sit within 1 kB of the median (the crowd a small shared change moves);
+ *   - how many routes may each cross the budget before the MEDIAN does. The median is under the
+ *     budget exactly while at least half the routes are, so that count is the real headroom:
+ *     at 0, the next route to cross takes the median with it.
+ */
+function tightness(kbs, now, medianKb) {
+  const need = Math.ceil(kbs.length / 2)
+  const underBudget = kbs.filter((kb) => kb <= medianKb).length
+  const nearMedian = kbs.filter((kb) => Math.abs(kb - now) <= 1).length
+  const spare = underBudget - need
+  const gap = medianKb - now
+  return `median headroom: ${Math.abs(gap).toFixed(1)} kB ${gap >= 0 ? 'under' : 'OVER'} the `
+    + `${medianKb} kB budget; `
+    + `${nearMedian} route(s) within 1 kB of the median; ${Math.max(spare, 0)} route(s) may cross `
+    + `the budget before the median does${spare <= 0 ? ' — ⚠ NONE: the next one takes the median with it' : ''}\n`
+}
+
 /** Read `budget.first_load_js` + `budget.first_load_js_median_kb`, with a readable failure. */
 function readBudget() {
   let file
@@ -206,6 +231,7 @@ function check(output) {
   process.stdout.write(
     `\nfirst-load JS: ${routes.length} routes, median ${now} kB, worst `
     + `${Math.max(...routes.map((r) => r.kb))} kB, shared ${shared === null ? '?' : shared} kB\n`)
+  process.stdout.write(tightness(routes.map((r) => r.kb), now, medianKb))
 
   if (notes.length) {
     failures.push(

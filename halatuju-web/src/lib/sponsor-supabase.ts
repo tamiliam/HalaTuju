@@ -1,7 +1,7 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
 import { getTurnstileToken } from '@/lib/turnstile'
 
-let _sponsorSupabase: SupabaseClient | null = null
+let _sponsorSupabase: AuthOnlyClient | null = null
 
 /** The sponsor scope's storage key — exported for the same reason as the admin one
  *  (see ADMIN_STORAGE_KEY and lib/oauthOrigin.ts). */
@@ -11,22 +11,21 @@ export const SPONSOR_STORAGE_KEY = 'halatuju_sponsor_session'
  * Separate Supabase client for sponsor auth, built the same way as the admin client.
  * Its own storage key keeps the sponsor session isolated from the student and
  * admin sessions — a sponsor signs in with email/password or Google and never
- * touches the student anonymous-session / NRIC machinery.
+ * touches the student anonymous-session / NRIC machinery. Auth-only (TD-300): see
+ * lib/supabaseAuthClient.ts.
  */
-export function getSponsorSupabase(): SupabaseClient {
+export function getSponsorSupabase(): AuthOnlyClient {
   if (!_sponsorSupabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (!url || !key) {
       throw new Error('Supabase credentials not configured')
     }
-    _sponsorSupabase = createClient(url, key, {
-      auth: {
-        storageKey: SPONSOR_STORAGE_KEY,
-        // PKCE so this OAuth session can't be read off the URL hash by the
-        // globally-mounted student client (which would leak sponsor → student).
-        flowType: 'pkce',
-      },
+    _sponsorSupabase = createAuthOnlyClient(url, key, {
+      storageKey: SPONSOR_STORAGE_KEY,
+      // PKCE so this OAuth session can't be read off the URL hash by the
+      // globally-mounted student client (which would leak sponsor → student).
+      flowType: 'pkce',
     })
   }
   return _sponsorSupabase

@@ -1,5 +1,26 @@
 # Architectural Decisions — HalaTuju
 
+## The first-load median budget sits at the real median plus the ratchet's own slack — TD-300, 2026-09-28
+
+**Decision.** When the median falls, `first_load_js_median_kb` is lowered to the new real median
+**plus `MEDIAN_SLACK_KB` (2 kB)** — the most `bundle-budget.js` tolerates before it demands a lower
+number — and never raised. Set 2026-09-28 at **229** over a real median of 227.
+
+**Why not the real median exactly.** A budget equal to the median is TD-300 itself: with 44 of 87
+routes at or under it, the next byte on any median route turns the deploy gate red for a reason
+unrelated to that change. At 229, 50 routes sit at or under it, so six may each cross before the
+median does. That is headroom the script already concedes, not new slack.
+
+**The headroom that matters is a COUNT of routes, not kilobytes**, and `bundle-budget.js` prints it
+on every run ("N route(s) may cross the budget before the median does"). At 0 it says so.
+
+**Also decided:** the three Supabase browser clients are AUTH-ONLY (`src/lib/supabaseAuthClient.ts`).
+A value import from `@supabase/supabase-js` anywhere in `src/` is refused by a test; `import type`
+is allowed. `@supabase/auth-js` is a declared dependency pinned to the version supabase-js pins.
+
+**Revisit if:** the app starts to need Realtime, Storage or PostgREST from the browser — then import
+that client on the page that needs it, not through the global auth clients.
+
 ## The cash door is NOT added to the STR route — owner ruling, 2026-09-20
 
 **The owner, verbatim:** *"If STR has been fulfilled, there is no need for the student to complete

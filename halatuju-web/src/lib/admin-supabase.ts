@@ -1,7 +1,7 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
 import { getTurnstileToken } from '@/lib/turnstile'
 
-let _adminSupabase: SupabaseClient | null = null
+let _adminSupabase: AuthOnlyClient | null = null
 
 /** The admin scope's storage key. Exported because the callback needs it to look for the PKCE
  *  verifier this origin should be holding (see lib/oauthOrigin.ts) — one spelling, not two. */
@@ -10,21 +10,20 @@ export const ADMIN_STORAGE_KEY = 'halatuju_admin_session'
 /**
  * Separate Supabase client for admin auth.
  * Uses a different storage key so admin and student sessions don't conflict.
+ * Auth-only (TD-300): see lib/supabaseAuthClient.ts.
  */
-export function getAdminSupabase(): SupabaseClient {
+export function getAdminSupabase(): AuthOnlyClient {
   if (!_adminSupabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (!url || !key) {
       throw new Error('Supabase credentials not configured')
     }
-    _adminSupabase = createClient(url, key, {
-      auth: {
-        storageKey: ADMIN_STORAGE_KEY,
-        // PKCE so this OAuth session can't be read off the URL hash by the
-        // globally-mounted student client (which would leak admin → student).
-        flowType: 'pkce',
-      },
+    _adminSupabase = createAuthOnlyClient(url, key, {
+      storageKey: ADMIN_STORAGE_KEY,
+      // PKCE so this OAuth session can't be read off the URL hash by the
+      // globally-mounted student client (which would leak admin → student).
+      flowType: 'pkce',
     })
   }
   return _adminSupabase

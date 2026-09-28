@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## The bundle gets its headroom back — the Supabase clients are auth-only (TD-300) - 2026-09-28
+
+Baselines measured first: **jest 3,076 / 174 suites**, bundle median **256 kB** / worst **339 kB** /
+shared **87.2 kB**, 44 of 87 routes at or under 256 (zero headroom). After: bundle median
+**227 kB** / worst **310 kB** / shared **87.2 kB** — 73 routes lighter, 14 unchanged, **none
+heavier**; six routes may now cross the median budget before the median does. Gates after:
+**jest 3,092 / 175 suites** (+16 tests, +1 suite), **pytest 7,117 / 3 skipped** (unchanged),
+`npm run bundle-budget` **ok**. Web only; no api change. Not committed, pushed or deployed.
+
+### Changed
+
+- **The three Supabase browser clients build ONLY the auth client** (`src/lib/supabaseAuthClient.ts`,
+  used by `supabase.ts`, `admin-supabase.ts`, `sponsor-supabase.ts`). `createClient` constructed
+  Realtime, PostgREST, Storage and Functions too, so none could tree-shake; the app only ever calls
+  `.auth`. Same URL, headers, default student storage key and options, proved against the real
+  `createClient` by `supabaseAuthClient.test.ts`. Nobody is signed out; no behaviour changes.
+- **`@supabase/auth-js` 2.95.3 is a declared dependency** (the version supabase-js already pins).
+- **Ledger ratcheted down** (`code-standards.json` budget): median 256 → 229 (real 227 + the
+  ratchet's own 2 kB slack — decisions.md 2026-09-28), `/profile` 339 → 310,
+  `/scholarship/apply` 314 → 285, `/scholarship/application` 304 → 275.
+
+### Added
+
+- **`npm run bundle-budget` prints a tightness note** on every run: the median's distance from its
+  budget, the routes within 1 kB of it, and how many routes may cross before the median does.
+- **A guard against the weight coming back:** any value import from `@supabase/supabase-js` in
+  `src/` fails jest (`import type` stays allowed).
+
+### Measured and not kept
+
+- **TD-289 (split `Toast.tsx`)**: 0.40 kB on `/`, under the 0.5 kB bar. Reverted; TD-289 stays open.
+
+### Raised
+
+- **TD-304** — Next's printed first-load counts the page entry only, not layout-only chunks
+  (`/login` prints 87.6 kB, fetches ~231), so the budget can be passed by moving weight into a layout.
+
 ## The URL carries the gift — a list link can be shared, and a reload never forgets (TD-296, TD-298) - 2026-09-28
 
 Baselines measured first, agreeing with the brief: **pytest 7,117 / 3 skipped**, **jest 3,021 /

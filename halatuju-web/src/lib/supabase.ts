@@ -1,10 +1,12 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
 import { getTurnstileToken } from '@/lib/turnstile'
 
-let _supabase: SupabaseClient | null = null
+let _supabase: AuthOnlyClient | null = null
 
-// Lazy-initialised browser client (avoids build-time env var errors)
-export function getSupabase(): SupabaseClient {
+// Lazy-initialised browser client (avoids build-time env var errors). Auth-only: see
+// lib/supabaseAuthClient.ts (TD-300) — it keeps the default storage key every student is signed
+// in under.
+export function getSupabase(): AuthOnlyClient {
   if (!_supabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -17,7 +19,7 @@ export function getSupabase(): SupabaseClient {
     // (this student client is mounted globally, incl. on /admin/* + /sponsor/*
     // callbacks) would happily read — leaking the admin/sponsor Google session into
     // the student session. PKCE closes that bleed.
-    _supabase = createClient(url, key, { auth: { flowType: 'pkce' } })
+    _supabase = createAuthOnlyClient(url, key, { flowType: 'pkce' })
   }
   return _supabase
 }

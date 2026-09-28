@@ -14,6 +14,7 @@
     "gates": "npm run typecheck && npm run lint && npm run i18n && npm run test"
   },
   "dependencies": {
+    "@supabase/auth-js": "2.95.3",
     "@supabase/supabase-js": "^2.39.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.17.0",

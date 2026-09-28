@@ -464,6 +464,20 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   built on an ARGUMENT about where the weight was measured a saving of zero and was reverted.
   **Trigger:** any sprint that touches `Toast.tsx`; measure with `npm run bundle-budget` before and
   after, and keep it only if a number moves.
+  **Measured 2026-09-28 (TD-300's sprint) and NOT kept:** the split (a `ToastContext.ts` with the
+  context and `useToast`, five callers repointed) took `/` from 231.112 to 230.716 kB — **0.40 kB**,
+  under the 0.5 kB bar the brief set — and moved eight other routes by under a kilobyte each (none
+  heavier). Reverted. Worth doing only alongside other work in `Toast.tsx`.
+- **TD-304 (raised 2026-09-28 by TD-300's sprint) — low, and it is a blind spot in a guard.** Next
+  14's printed "First Load JS" for an app route is the PAGE entry's chunks only; chunks that only a
+  LAYOUT loads are fetched on first paint and are not in it. Measured from `app-build-manifest.json`:
+  `/login` prints 87.6 kB and the browser fetches ~231; `/admin/faq` prints 173 and fetches ~275;
+  the median route prints 227 and fetches ~257. So the budget can be "passed" by moving weight from
+  a page into a layout, which makes nothing lighter — the same trap as a lazy import, one level up.
+  The root layout carries React Query (8.8 kB gz: `providers.tsx`) for three pages that use it.
+  **Fix:** have `bundle-budget.js` (or a companion) read `.next/app-build-manifest.json` and budget
+  page + layout chunks, or at least print them. **Trigger:** the next sprint that touches a layout
+  or the budget script.
 - **TD-290 (raised 2026-09-21 by the audit of the safety net) — MEDIUM, and unproven.** Every
   `severity>=WARNING` entry in Cloud Logging since 2026-09-19, on both services, is a payload-less
   REQUEST log; not one line from Django's own `logger.warning` / `logger.exception` appears at
@@ -609,8 +623,19 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   instruction). Still display state: the server already re-fences `?programme=` on every endpoint,
   so no fence moves. **Cost:** about a day, most of it tests across five list pages. **Trigger:**
   somebody asks to share or bookmark a gift's Payments or Applications list.
-- **TD-300 (raised 2026-09-28 by TD-296's sprint) — low, but it will block a deploy. The
-  first-load median has NO headroom.** `npm run bundle-budget` reads median **256 kB** with exactly
+- ~~**TD-300 (raised 2026-09-28 by TD-296's sprint) — low, but it will block a deploy. The
+  first-load median has NO headroom.**~~ **RESOLVED 2026-09-28 — weight taken off, no number
+  raised.** Measured first (webpack stats + the built chunks): the median route's first load was
+  react-dom 53.6 · **`en.json` 97.1** · **supabase-js 44.8 + the `buffer` polyfill 6.0** · the Next
+  runtime 31.5 · link/router 6.8 · the page. The app only ever calls `.auth`, but `createClient`
+  constructs Realtime, PostgREST, Storage and Functions in its constructor, so none of it could
+  tree-shake. The three clients are now AUTH-ONLY (`halatuju-web/src/lib/supabaseAuthClient.ts`,
+  compared field for field with the real `createClient` by `supabaseAuthClient.test.ts`, which
+  also refuses any value import of supabase-js in `src/`). **Median 256 → 227 kB, worst 339 → 310,
+  73 routes lighter, none heavier, shared 87.2 unchanged**; counting the layout chunks too, all 87
+  routes fell (~29 kB each). Ledger: median 229 (six routes may cross it before the median does),
+  `/profile` 310, `/scholarship/apply` 285, `/scholarship/application` 275. `bundle-budget.js` now
+  prints that headroom on every run. The original entry: `npm run bundle-budget` reads median **256 kB** with exactly
   44 of 87 routes at or under 256 — the median IS the 44th. TD-296 added ~0.5 kB to six list
   routes; the run page (`/admin/payments/[id]`, 256) tipped to 257 when it imported `withGift`, and
   its way back is now spelled out inline for that reason alone. The next byte on any route at 256
