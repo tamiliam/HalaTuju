@@ -34,7 +34,7 @@
 // set up the failure `StaffAdmin` already had — a rule fixed in one of two renderings of the same
 // row, with nothing failing at the time.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import PanelTabs, { type PanelTab } from '@/components/admin/PanelTabs'
@@ -96,13 +96,28 @@ export default function SpendingPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState('')
 
+  // Which gift the overview ON SCREEN belongs to. Between a switch and its reply the table still
+  // shows the gift you left; a correction made on it must name THAT gift or none (review F1).
+  const [dataGift, setDataGift] = useState<string | undefined>(undefined)
+
+  // ⚠ ONLY THE NEWEST LIST READ MAY LAND (TD-298). Switching gift starts a new read without
+  // cancelling the old one, and a slow reply for the gift you LEFT could arrive last and overwrite
+  // the new gift's spending under a crumb naming the new one. Every LIST read takes a ticket; a
+  // reply whose ticket is no longer the latest is dropped.
+  // ⚠ A SAVE NEVER TAKES THIS TICKET (review F1). It once did, so a save made mid-switch marked
+  // the NEW gift's read stale and — when the save then failed — nothing re-read at all: the old
+  // gift's figures sat under the new gift's crumb, loading for ever. A save re-reads through
+  // `load` (below), and the list's own ticket decides what lands.
+  const latest = useRef(0)
   const load = useCallback(() => {
+    const ticket = ++latest.current
     if (!token || !allowed || gate !== 'open') { setLoading(false); return }
     setLoading(true)
+    const forGift = programme
     getSpendingOverview(programme, { token })
-      .then(setData)
-      .catch(() => setError(t('admin.spending.loadFailed')))
-      .finally(() => setLoading(false))
+      .then((d) => { if (ticket === latest.current) { setData(d); setDataGift(forGift) } })
+      .catch(() => { if (ticket === latest.current) setError(t('admin.spending.loadFailed')) })
+      .finally(() => { if (ticket === latest.current) setLoading(false) })
     // ⚠ `programme` IS A DEPENDENCY. Switching gift in the breadcrumb must re-read; without
     // it the crumb would say one gift while the table showed another — the exact failure the
     // 2026-09-03 defect produced, arriving from the other direction.
@@ -110,6 +125,10 @@ export default function SpendingPage() {
   }, [token, allowed, programme, gate])
 
   useEffect(() => { load() }, [load])
+  // The LATEST `load` — a save that finishes after a gift switch must re-read the gift the crumb
+  // names NOW, not the one its own render closed over.
+  const loadNow = useRef(load)
+  loadNow.current = load
 
   // ⚠ Re-read the whole overview after a correction rather than patching the row in place. One
   // change moves the shop's category, every payment at it, all four figures at the top, and
@@ -117,12 +136,13 @@ export default function SpendingPage() {
   // headline percentage disagreeing with the table under it.
   async function correct(merchant: string, category: string) {
     if (!token) return
+    // ⚠ THE ROW'S OWN GIFT, NEVER THE CRUMB'S (review F1). While a switch is loading, the table on
+    // screen is still the gift you left; a save from it carrying the new gift's code would file
+    // one gift's shop under another. `dataGift` is set in the same update as the table it names.
     setSaving(merchant)
     setError('')
     try {
-      await setSpendingCategory(merchant, category, programme, { token })
-      const fresh = await getSpendingOverview(programme, { token })
-      setData(fresh)
+      await setSpendingCategory(merchant, category, dataGift, { token })
     } catch (e) {
       const code = e instanceof Error ? e.message : ''
       const known = ['unknown_merchant', 'unknown_category', 'merchant_required']
@@ -131,6 +151,9 @@ export default function SpendingPage() {
         : t('admin.spending.saveFailed'))
     } finally {
       setSaving('')
+      // Success OR failure: re-read the CURRENT gift through the list's own ticket, so the page
+      // always ends showing the gift the crumb names, and never left loading.
+      loadNow.current()
     }
   }
 

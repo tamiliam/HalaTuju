@@ -50,6 +50,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { useProgrammeScope } from '@/lib/programmeScope'
+import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import ProgrammeRulesTab from '@/components/admin/ProgrammeRulesTab'
 import ProgrammeConfigTab from '@/components/admin/ProgrammeConfigTab'
 import IntakeYearTab from '@/components/admin/IntakeYearTab'
@@ -68,6 +69,9 @@ export default function AdminProgrammePage() {
   const mayView = canAccess('/admin/programme', effectiveRole(role))
   const [tab, setTab] = useState<Tab>('year')
   const { programme } = useProgrammeScope()
+  // `?programme=` opens Configuration in that gift, e.g. from a gift card (TD-296). The tabs keep
+  // their own inline question for a code the list does not know — by decision, never a redirect.
+  useGiftInUrl()
 
   // ⚠ `?tab=` IS READ FROM `window.location`, NOT `useSearchParams`, AND THAT IS DELIBERATE.
   // This is a PAGE file, and Next's own typing plus static generation is a contract the other

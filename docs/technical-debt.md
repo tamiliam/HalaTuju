@@ -589,8 +589,15 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   but a bare id or a stand-in that the old form answered (or raised on) now quietly gets `None`.
   All four callers pass real applications, so nothing moves today. Recorded so the next caller
   knows. **Trigger:** any new caller of `_latest_offer`.
-- **TD-296 (raised 2026-09-28 by the gift-context sprint) — low. The URL does not carry the
-  gift, so a LIST link cannot be shared into a gift.** Detail pages are safe without it — a run and
+- ~~**TD-296 (raised 2026-09-28 by the gift-context sprint) — low. The URL does not carry the
+  gift, so a LIST link cannot be shared into a gift.**~~ **RESOLVED 2026-09-28 (owner's pick) —
+  `?programme=<code>` on the five list pages, read once on mount (`src/lib/useGiftInUrl.ts`),
+  kept in step with `router.replace`; the money gate waits for it; the rail, the gift cards and the
+  run page's way back carry it. Retro: `docs/retrospective-2026-09-28-gift-in-the-url.md`; rules in
+  `decisions.md` 2026-09-28. Not taken: the applicant page's way back and a pinned record's rail
+  links stay bare (they would narrow the all-gifts list). Follow-ups TD-300–TD-303. Review
+  F1 (a failed save stranding Spending) and F2 (a mistyped link poisoning the session) fixed the
+  same day.** Detail pages are safe without it — a run and
   an application name their own gift from the server payload (`usePinProgramme`), which is why a
   bookmark, a refresh and a new tab all work. A list page is not: `/admin/payments` pasted into a
   colleague's chat opens with no gift, and (by the 2026-09-28 ruling) either redirects them to the
@@ -602,8 +609,43 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   instruction). Still display state: the server already re-fences `?programme=` on every endpoint,
   so no fence moves. **Cost:** about a day, most of it tests across five list pages. **Trigger:**
   somebody asks to share or bookmark a gift's Payments or Applications list.
-- **TD-298 (raised 2026-09-28 by the adversarial review of the gift-context sprint, F6) — low,
-  pre-existing.** Switching gift on a Programme-scope list page fires a new fetch without
+- **TD-300 (raised 2026-09-28 by TD-296's sprint) — low, but it will block a deploy. The
+  first-load median has NO headroom.** `npm run bundle-budget` reads median **256 kB** with exactly
+  44 of 87 routes at or under 256 — the median IS the 44th. TD-296 added ~0.5 kB to six list
+  routes; the run page (`/admin/payments/[id]`, 256) tipped to 257 when it imported `withGift`, and
+  its way back is now spelled out inline for that reason alone. The next byte on any route at 256
+  turns the deploy gate red for a reason unrelated to that change. **Fix:** find weight to take off
+  the shared admin chunk, or have the owner re-set the median budget with the arithmetic in front
+  of them. **Trigger:** the next web sprint, before it starts.
+- **TD-301 (raised 2026-09-28 by TD-296's sprint) — low, pre-existing.** The Programme Overview
+  has TD-298's shape: `load` sets `data` from whichever reply lands last, so a slow reply for the
+  gift you left can overwrite the new gift's figures (and its 404 branch can clear the round of the
+  wrong gift). TD-298's brief named three pages and this one was left to keep the sprint to its
+  brief. **Fix:** the same ticket Spending now uses, plus an out-of-order test. ~30 min.
+  **Trigger:** the next sprint on the Overview.
+- **TD-302 (raised 2026-09-28 by TD-296's sprint) — low, an OWNER DECISION. There is no way back
+  to "all gifts" on Applications once a gift is chosen.** The crumb's switcher lists gifts and has
+  no "all gifts" entry. Before TD-296 a reload was the (accidental) escape; now the address bar
+  carries the gift, so a reload keeps it, and the rail's Applications link carries it too. The only
+  way back is loading the bare `/admin/scholarship` fresh. Nothing was invented here (brief item
+  9). **Options:** an "All gifts" item in the crumb on Applications and the Overview only (the two
+  pages that read across gifts), which would `select('')` and drop the query. **Trigger:** a
+  reviewer or officer asking how to see every gift again.
+- **TD-303 (raised 2026-09-28 by the adversarial review of TD-296, F3) — low, the pre-existing
+  F5 fallback reached by a new road.** When the shell's scopes fetch FAILS and the address bar
+  names a gift, the list is empty, so nothing can confirm the link's gift: the money page opens
+  with no gift (as it did before TD-296 on a failed fetch — review F5 of the gift-context sprint,
+  accepted), and a New-run press sends no `programme`, so the server picks the org's only LIVE gift
+  — while the address bar names another. No money goes to the wrong fund on a single-gift org (the
+  only live gift IS the fund), but the screen and the URL disagree about which gift is open.
+  **Proposed:** when the address names a gift the list cannot confirm (empty or failed list), the
+  page does not draw the New-run button — a line saying the gift list could not be loaded instead.
+  **Trigger:** the next Payments sprint, or a report of a failed scopes fetch.
+- ~~**TD-298 (raised 2026-09-28 by the adversarial review of the gift-context sprint, F6) — low,
+  pre-existing.**~~ **RESOLVED 2026-09-28 with TD-296 — Payments and Applications drop a stale
+  effect's replies (`current` flag in the cleanup); Spending tickets every read, the correction's
+  re-read included. One out-of-order test per page, each red with its guard removed. The Overview
+  has the same shape and was not in the brief: TD-301.** Switching gift on a Programme-scope list page fires a new fetch without
   cancelling the old one; a slow reply for the PREVIOUS gift can land after the new one's and
   overwrite it, so the list briefly — or until the next action — describes the gift you left
   while the crumb names the new one. Payments, Spending and Applications all have the shape

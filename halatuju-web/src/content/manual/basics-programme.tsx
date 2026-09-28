@@ -51,7 +51,9 @@ export const basicsProgramme: ManualChapter = {
         <strong> Applications</strong>. If your organisation runs more than one gift, the trail across the
         top says which one you are in, and you can switch there. A single payment run or application
         belongs to one gift, so on those pages the trail simply names it; and <strong>Payments</strong> and
-        <strong> Spending</strong> open once you are inside a gift. You only ever see the groups your role
+        <strong> Spending</strong> open once you are inside a gift. Inside a gift, the page&rsquo;s address
+        names it too, so you can <strong>copy the link and send it</strong> to a colleague — it opens in the
+        same gift for them. You only ever see the groups your role
         reaches, so a short menu is not a fault. An entry marked <em>soon</em> is a page still being built; you
         may well see none at all.
         <br /><br />

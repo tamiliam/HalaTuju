@@ -35,6 +35,13 @@ export interface ProgrammeScope {
   ambiguous: boolean
   /** The live gifts only — what a money page may offer (a draft cannot be paid from). */
   live: readonly ProgrammeChoice[]
+  /**
+   * A gift was ASKED FOR — picked, pinned or named in the URL (TD-296) — and the list we hold does
+   * not know it. `chosen` is then `''`, never the only gift; this lets a money page treat it as
+   * "no gift" even on a single-gift tenant, where `ambiguous` is false. Only when the list is
+   * non-empty: an empty list is a failed fetch, and that degrades as it always has (review F5).
+   */
+  unrecognised: boolean
   select: (code: string) => void
   /**
    * Re-fetch the list of gifts this caller may open.
@@ -71,7 +78,8 @@ export interface ProgrammeScope {
 }
 
 const EMPTY: ProgrammeScope = {
-  choices: [], chosen: '', programme: null, ambiguous: false, live: [], select: () => {},
+  choices: [], chosen: '', programme: null, ambiguous: false, live: [], unrecognised: false,
+  select: () => {},
   reload: async () => {}, pinned: false, pinnedName: '', setPin: () => {},
   // Outside the shell there is no list to wait for, so a harness mount behaves as it always has.
   settled: true,

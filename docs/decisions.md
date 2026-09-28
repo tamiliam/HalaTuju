@@ -12047,3 +12047,26 @@ does not cover it and the owner must rule again.
 **Trade-offs:** a single-gift tenant now shows the loading line for the length of the first scopes fetch on a cold load of Payments or Spending (after that the list is in memory). A super whose scopes list is every programme on the platform will almost always be redirected when arriving by URL — correct, since they genuinely have to say which.
 
 **Revisit if:** the Programmes page opens its gift cards to admin or finance (then the door follows automatically, and the inline question should go); or the URL starts carrying the gift (TD-296), which would make the redirect unnecessary for a shared link.
+
+## The URL carries the gift: read once on mount, the query wins, and after that it follows the crumb with `replace` — TD-296, 2026-09-28
+
+**Decision.** The five Programme-scope LIST pages (Overview, Applications, Configuration, Payments, Spending) take `?programme=<code>` (`src/lib/useGiftInUrl.ts`):
+- **Read ONCE, on mount, into the scope's `select`.** The address bar is not read again while the page stays mounted. A recognised code becomes `chosen`; an unrecognised one (a typo, another organisation's, a gift created this session before the list reloaded) resolves to NOTHING through the scope's existing guard, and the page asks or redirects exactly as the ruling above says. Never "the only one" — on the money pages that now holds on a single-gift tenant too (`unrecognised`).
+- **Precedence: the query wins over the in-memory pick on mount** — it is the more specific instruction. After mount the crumb is the control and the query follows it.
+- **After mount the query is rewritten with `router.replace` (`scroll: false`), never `push`.** Back must not become a gift-switcher, and switching adds no history entry. It writes only on a CHANGE after mount, so a page that arrived without a query and whose gift was already known is left as it arrived.
+- **The money gate reads the address bar first.** `useGiftGate` does not decide until the query has been applied and — when it named a gift — the scopes list has settled, so a shared `/admin/payments?programme=<code>` opens straight into that gift for an org_admin: no bounce, no box.
+- **The rail's Programme rows and the gift cards' doors carry the code**; the run page's way back carries the RUN's gift.
+
+**Two places deliberately do NOT carry it.** (1) The rail while a detail page has pinned its record's gift, and (2) the applicant page's "back to Applications". Applications is the all-gifts list — a reviewer's only door — and either link would select the record's gift one click later: review F2 (the pin narrowing that list with no way back) by another road. A bare link returns the person's own previous choice. The brief asked for (2) to carry the gift; this is the builder's reading, flagged for the lead. Payments' way back does carry it, because Payments has no all-gifts mode.
+
+**A DRAFT in the link (or the crumb) is not payable.** With a live gift to offer, Payments and Spending ASK every role (live gifts only) rather than opening a draft whose run the server would 404 — the F1 rule. They ask rather than redirect: the Programmes page lists the draft's own card, so a door role sent there could bounce straight back.
+
+**Still display state.** No cookie, no header, nothing stored. The code reaches an endpoint only as the explicit `?programme=` every endpoint already re-fences on the caller's own organisation; a client ignoring the query reaches what it reached before. The detail pages are unchanged and take no query (the record names its gift).
+
+**Alternatives considered:** (a) read the query on every change — refused: the address bar would overrule the crumb it is meant to follow, and Back would switch gifts; (b) `push` on a switch — refused for the same reason; (c) `useSearchParams` — refused: in a page file it needs a Suspense boundary or `next build` refuses (F7c), and reading once needs only `window.location`, as `?tab=` already does; (d) let the pin's gift ride on every link — refused, F2.
+
+**Amended the same day by the adversarial review.** (F2) An unrecognised code is "no gift" only while its page is open; when the page goes, a pick the list still does not recognise is cleared, so a mistyped link cannot poison later visits. (F1) On Spending a save never shares the list's staleness token, carries the gift of the table it came from, and re-reads the current gift on success and failure.
+
+**Trade-off, for the owner (TD-302):** there is no "All gifts" in the crumb, and a reload no longer resets Applications to all gifts, because the address bar now remembers.
+
+**Revisit if:** the crumb gains an "All gifts" entry (then it should drop the query), or a second page family wants the gift in its URL (the hook is per page, by design).

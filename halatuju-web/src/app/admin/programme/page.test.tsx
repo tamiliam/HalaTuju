@@ -26,6 +26,9 @@ jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
 jest.mock('@/lib/admin-api')
+// The page reads `?programme=` on mount and keeps it in step with `router.replace` (TD-296); the
+// URL tests live in `page.url.test.tsx`. Here the router only has to exist.
+jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
 
 const mockApi = api as jest.Mocked<typeof api>
 

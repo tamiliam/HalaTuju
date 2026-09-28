@@ -50,6 +50,7 @@ import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { has } from '@/lib/programmeOverview'
 import { useProgrammeParam } from '@/lib/programmeScope'
+import { useGiftInUrl } from '@/lib/useGiftInUrl'
 
 const K = 'admin.programmeOverview'
 
@@ -61,6 +62,8 @@ export default function ProgrammeOverviewPage() {
   // caller's own organisation (TD-241). `undefined` when several gifts exist and none is chosen;
   // the scope refuses to guess and the server then answers with everything the fence allows.
   const programme = useProgrammeParam()
+  // `?programme=` opens this page in that gift (TD-296); nothing is read until it has applied.
+  const urlRead = useGiftInUrl()
 
   const [data, setData] = useState<ProgrammeOverview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -78,6 +81,7 @@ export default function ProgrammeOverviewPage() {
   const intake = chosenIntake.gift === programme ? chosenIntake.id : undefined
 
   const load = useCallback(() => {
+    if (!urlRead) return
     if (!token || !allowed) { setLoading(false); return }
     setLoading(true)
     setError('')
@@ -98,7 +102,7 @@ export default function ProgrammeOverviewPage() {
     // ⚠ `programme` AND `intake` ARE DEPENDENCIES. Switching gift in the breadcrumb, or picking a
     // round, must re-read — or the crumb would name one gift while the figures described another.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed, programme, intake])
+  }, [token, allowed, programme, intake, urlRead])
 
   useEffect(() => { load() }, [load])
 

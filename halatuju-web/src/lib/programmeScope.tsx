@@ -116,6 +116,7 @@ export function ProgrammeScopeProvider(
       programme: choices.find((c) => c.code === chosen) ?? null,
       ambiguous: live.length > 1,
       live,
+      unrecognised: want !== '' && !known && choices.length > 0,
       select: setPicked,
       reload,
       pinned: pin !== '',

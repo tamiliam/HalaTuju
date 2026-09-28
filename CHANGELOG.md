@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## The URL carries the gift — a list link can be shared, and a reload never forgets (TD-296, TD-298) - 2026-09-28
+
+Baselines measured first, agreeing with the brief: **pytest 7,117 / 3 skipped**, **jest 3,021 /
+168 suites**, bundle median **256 kB** / worst **339 kB**. After: **pytest 7,117 / 3 skipped**
+(web sprint; no api change), **jest 3,076 / 174 suites** (+55 tests, +6 suites), bundle median
+**256 kB** / worst **339 kB** — with no headroom (see TD-300). Not committed, pushed or deployed.
+
+### Added
+
+- **`?programme=<code>` on the five Programme-scope list pages** (Overview, Applications,
+  Configuration, Payments, Spending) — `src/lib/useGiftInUrl.ts`. Read ONCE on mount into the
+  scope's `select`, so it outranks an earlier pick and meets the same guard: a code the list does
+  not know selects nothing. After mount the address bar follows the crumb with `router.replace`
+  (`scroll: false`) — never `push`, so Back is not a gift-switcher.
+- **A shared money link opens into its gift.** `useGiftGate` now waits for the address bar to be
+  read (and, when it named a gift, for the scopes list to settle) before it redirects or asks.
+- **The rail's Programme rows, the gift cards' doors and the run page's way back carry the gift**
+  (`src/lib/giftHref.ts`: `withGift`, `withGiftHrefs`). The rail does NOT carry a pinned record's
+  gift, and the applicant page's way back does NOT name the applicant's gift — both would narrow
+  the all-gifts Applications list (review F2 by another road).
+- **The manual says so in one sentence** (`basics-programme.tsx`, *Finding your way around*): inside
+  a gift the address names it, so a copied link opens in the same gift. No existing sentence changed.
+
+### Changed
+
+- **A gift asked for and not recognised is "no gift" on the money pages even on a single-gift
+  tenant** (`unrecognised` on the scope) — redirect or ask, never the only gift.
+- **A chosen DRAFT is not payable:** with a live gift to offer, Payments and Spending ask every
+  role (live gifts only) instead of opening a draft whose runs the server would 404.
+
+### Fixed
+
+- **TD-298 — a slow reply for the gift you left no longer overwrites the new one.** Payments and
+  Applications drop a stale effect's replies; Spending gives every read a ticket and only the
+  newest lands — the correction takes its ticket BEFORE the save, so a gift switch during the save
+  skips its re-read (found by the sprint's own `/code-review`).
+
+### After the adversarial review (verdict: ship after fixes)
+
+- **F1 (high) — Spending no longer strands the new gift after a failed save.** A save made
+  mid-switch took the LIST's staleness ticket, dropping the new gift's read; a failed save then
+  re-read nothing — the old gift's figures under the new crumb, loading for ever, and the save sent
+  the new gift's code for the old gift's row. Now a save takes no list ticket, carries the gift of
+  the table it came from (`dataGift`), and re-reads the CURRENT gift on success AND failure.
+- **F2 (medium) — a mistyped link no longer poisons the session.** An unrecognised code is still
+  "no gift" while its page is open, but is cleared when the page goes (only if the list still does
+  not know it), so a later plain visit behaves as before: a single gift resolves itself, and the
+  rail's money rows come back.
+- **F4/F5** — the hook's docstring now says a real fresh load of a single-gift tenant writes the
+  gift into the address bar once; the "cold load" tests now start from an EMPTY list, as a browser
+  does. **F3** recorded as TD-303. jest **3,076 / 174**.
+
 ## The console never forgets which gift you are in - 2026-09-28
 
 Baselines measured first: **pytest 7,108 / 3 skipped** and **jest 2,982 / 166 suites**, both

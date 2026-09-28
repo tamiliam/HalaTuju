@@ -13,6 +13,8 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 
 import { AppShell } from './AppShell'
 import type { AdminRoleName } from '@/lib/navigation'
+import { usePinProgramme } from '@/lib/programmeScopeCore'
+import { useGiftInUrl } from '@/lib/useGiftInUrl'
 
 let mockRole: Record<string, unknown> = {}
 // Default null: with no token the shell runs no probes, so the dark-shipped features stay dark.
@@ -328,6 +330,62 @@ describe('the rail waits for a gift before offering Configuration', () => {
     expect(await screen.findByText('admin.programme.config.nav')).toBeTruthy()
     // ...and the rail names the gift it settled on, instead of the bare scope word.
     expect(within(sidebar()).getByText('BrightPath Bursary')).toBeTruthy()
+  })
+
+  /*
+   * ── (f) The rail's Programme rows carry the gift (TD-296, 2026-09-28) ── so Overview →
+   * Applications → Payments keeps it in the address bar. But NOT while a detail page has pinned
+   * its record's gift: the pin never selects (review F2), and a rail link naming it would select it
+   * one click later — narrowing a reviewer's all-gifts Applications list to the applicant they had
+   * just opened.
+   */
+  const railHref = (labelKey: string) =>
+    within(sidebar()).getByText(labelKey).closest('a')?.getAttribute('href')
+
+  it('(f) carries the chosen gift on every Programme row, and on no other', async () => {
+    withGifts([G('bp-flagship', 'BrightPath Bursary')])
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    await waitFor(() => expect(railHref('admin.payments.title')).toBe('/admin/payments?programme=bp-flagship'))
+    expect(railHref('admin.scholarship.nav')).toBe('/admin/scholarship?programme=bp-flagship')
+    expect(railHref('admin.nav.programmeOverview'))
+      .toBe('/admin/programme/overview?programme=bp-flagship')
+    expect(railHref('admin.orgPage.nav')).toBe('/admin/organisation')
+  })
+
+  it('(f) with several gifts and none chosen, the rows carry nothing', async () => {
+    withGifts([G('bp-flagship', 'BrightPath Bursary'), G('bp-sabah', 'Test Programme')])
+    asRole('admin')
+    render(<AppShell>content</AppShell>)
+    await waitFor(() => expect(railHref('admin.scholarship.nav')).toBe('/admin/scholarship'))
+  })
+
+  it('(f) ⚠ a PINNED record does not put its gift on the rail — the pin never selects', async () => {
+    withGifts([G('bp-flagship', 'BrightPath Bursary'), G('bp-sabah', 'Test Programme')])
+    asRole('admin')
+    function OnARecord() { usePinProgramme({ code: 'bp-sabah', name: 'Test Programme' }); return null }
+    render(<AppShell><OnARecord /></AppShell>)
+    await waitFor(() => expect(within(sidebar()).getByText('Test Programme')).toBeTruthy())
+    expect(railHref('admin.scholarship.nav')).toBe('/admin/scholarship')
+    expect(railHref('admin.payments.title')).toBe('/admin/payments')
+  })
+
+  it('⚠ REVIEW F2: a mistyped link hides the money rows only while its page is open', async () => {
+    // Single gift, org_admin: an unknown `?programme=` is no gift for that page — and once the page
+    // goes, it must be forgotten, or the rail hides Payments for the rest of the session.
+    withGifts([G('bp-flagship', 'BrightPath Bursary')])
+    asRole('org_admin')
+    window.history.replaceState({}, '', '/admin/payments?programme=not-a-gift')
+    function ListPage() { useGiftInUrl(); return null }
+    try {
+      const view = render(<AppShell><ListPage /></AppShell>)
+      await waitFor(() => expect(within(sidebar()).queryByText('admin.payments.title')).toBeNull())
+      view.rerender(<AppShell>{null}</AppShell>)
+      await waitFor(() => expect(railHref('admin.payments.title'))
+        .toBe('/admin/payments?programme=bp-flagship'))
+    } finally {
+      window.history.replaceState({}, '', '/')
+    }
   })
 
   it('shows Configuration while the list is still on its way — a row must not pop in', () => {

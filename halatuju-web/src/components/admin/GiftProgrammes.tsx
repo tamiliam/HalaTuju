@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
+import { withGift } from '@/lib/giftHref'
 import InfoBox from '@/components/InfoBox'
 import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
 import {
@@ -196,7 +197,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
       // render — which is the same dead screen for as long as the fetch takes.
       await reload()
       select(wanted)
-      router.push('/admin/programme?tab=year')
+      router.push(withGift('/admin/programme?tab=year', wanted))
     }
   }
 
@@ -231,7 +232,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
     where: '/admin/scholarship' | '/admin/programme' | '/admin/programme/overview',
   ) => {
     select(p.code)
-    router.push(where)
+    router.push(withGift(where, p.code))   // the gift rides in the URL too (TD-296)
   }
 
   /**

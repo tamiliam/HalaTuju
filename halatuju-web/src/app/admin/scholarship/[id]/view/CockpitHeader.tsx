@@ -35,6 +35,9 @@ export function CockpitHeader({
       {/* Header — applicant identity, status, and key facts at a glance */}
       <header className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
         <div className="flex items-center justify-between">
+          {/* ⚠ NO `?programme=` HERE, on purpose (TD-296). Applications is the all-gifts list — a
+              reviewer's only door — and naming this applicant's gift would narrow it on the way
+              back: the F2 defect by another road. A bare link returns the person's OWN choice. */}
           <Link href="/admin/scholarship" className="text-xs text-ground-400 hover:text-ground-600">‹ {t('admin.scholarship.back')}</Link>
           {(prevId != null || nextId != null) && (
             <div className="flex items-center gap-1 text-xs">

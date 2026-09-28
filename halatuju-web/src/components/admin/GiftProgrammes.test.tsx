@@ -155,7 +155,20 @@ describe('the card is the door', () => {
     await show(programme())
     fireEvent.click(screen.getByTestId('open-test3'))
     expect(mockSelect).toHaveBeenCalledWith('test3')
-    expect(mockPush).toHaveBeenCalledWith('/admin/programme/overview')
+    // TD-296: the gift rides in the URL as well as in the scope, so the page it lands on can be
+    // shared or reloaded without losing it.
+    expect(mockPush).toHaveBeenCalledWith('/admin/programme/overview?programme=test3')
+  })
+
+  it('creating a gift lands on its Intake year WITH the gift in the URL (TD-296)', async () => {
+    mockApi.createAdminProgramme.mockResolvedValue(programme({ code: 'new-gift' }))
+    await show(programme())
+    fireEvent.click(screen.getByText(/admin.programmes.new/))
+    fireEvent.change(document.getElementById('p-name')!, { target: { value: 'New Gift' } })
+    fireEvent.change(document.getElementById('p-code')!, { target: { value: 'New-Gift' } })
+    fireEvent.click(screen.getByText('admin.programmes.create'))
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/admin/programme?tab=year&programme=new-gift'))
+    expect(mockSelect).toHaveBeenCalledWith('new-gift')
   })
 
   it('KEEPS Settings in the menu, and that is the route to Configuration', async () => {
@@ -165,7 +178,7 @@ describe('the card is the door', () => {
     openMore()
     fireEvent.click(screen.getByText('admin.programmes.openSettings'))
     expect(mockSelect).toHaveBeenCalledWith('test3')
-    expect(mockPush).toHaveBeenCalledWith('/admin/programme')
+    expect(mockPush).toHaveBeenCalledWith('/admin/programme?programme=test3')
   })
 
   it('SELECTS the gift whichever door is used — that is what reveals the Programme menu', async () => {

@@ -173,13 +173,24 @@ describe('the way back to the list', () => {
     render(<GiftScope><PaymentRunPage /></GiftScope>)
     await loaded()
     const back = screen.getByRole('link', { name: 'admin.payments.title' })
-    expect(back.getAttribute('href')).toBe('/admin/payments')
+    // TD-296: the way back names THIS RUN's gift, so the list opens in it — from a bookmark or a
+    // new tab too, where no earlier choice exists. (Was the bare path before the URL carried it.)
+    expect(back.getAttribute('href')).toBe('/admin/payments?programme=bpb-sabah-2026')
     // `next/link` renders an <a> too; what distinguishes it is that it is not a bare anchor in
     // the SOURCE — asserted structurally below, because jsdom does not navigate either way.
     const src = readWeb('src/app/admin/payments/[id]/page.tsx',
       'the run page\'s way back to the list must be next/link: a bare <a> reloads the app and '
       + 'throws away the gift the person was in (2026-09-28)')
     expect(src).not.toMatch(/<a href="\/admin\/payments"/)
-    expect(src).toMatch(/<Link href="\/admin\/payments"/)
+    expect(src).not.toMatch(/<a href=\{run\.programme/)
+    expect(src).toMatch(/<Link href=\{run\.programme \? `\/admin\/payments\?programme=/)
+  })
+
+  it('a run with no gift goes back to the bare list — a link never claims a gift', async () => {
+    mockApi.getPaymentRun.mockResolvedValue({ ...RUN, programme: null })
+    render(<GiftScope><PaymentRunPage /></GiftScope>)
+    await loaded()
+    expect(screen.getByRole('link', { name: 'admin.payments.title' }).getAttribute('href'))
+      .toBe('/admin/payments')
   })
 })

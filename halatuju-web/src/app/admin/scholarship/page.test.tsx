@@ -29,6 +29,9 @@ jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: authRole }),
 }))
 jest.mock('@/lib/admin-api')
+// The page reads `?programme=` on mount and keeps it in step with `router.replace` (TD-296); the
+// URL tests live in `page.url.test.tsx`. Here the router only has to exist.
+jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
 
 // The breadcrumb's chosen gift. Re-pointed per test — the page reads the same context the crumb
 // does, which is the whole reason the two can never disagree about which gift is open.

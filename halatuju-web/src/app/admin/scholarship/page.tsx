@@ -6,6 +6,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
+import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
@@ -84,6 +85,8 @@ export default function AdminScholarshipList() {
    * so the heading drops to a neutral one rather than asserting a gift.
    */
   const { chosen, programme } = useProgrammeScope()
+  // `?programme=` narrows this list to that gift (TD-296); with none it stays the all-gifts list.
+  const urlRead = useGiftInUrl()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Inline reviewer assignment (the "Assigned" column dropdown) — super or org_admin.
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
@@ -133,7 +136,10 @@ export default function AdminScholarshipList() {
   }, [search])
 
   useEffect(() => {
-    if (!token || !mayView) return
+    if (!token || !mayView || !urlRead) return
+    // Only this effect's newest read may land (TD-298): a slow reply for the gift — or filter — you
+    // left must not overwrite the list you are now looking at.
+    let current = true
     setLoading(true)
     getScholarshipApplications(
       {
@@ -153,11 +159,12 @@ export default function AdminScholarshipList() {
       },
       { token },
     )
-      .then(setData)
-      .catch(() => setError(t('admin.scholarship.loadFailed')))
-      .finally(() => setLoading(false))
+      .then((d) => { if (current) setData(d) })
+      .catch(() => { if (current) setError(t('admin.scholarship.loadFailed')) })
+      .finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, chosen, bucket, statusF, source, assignedF, q, page, pageSize, sort, sortDir])
+  }, [token, urlRead, chosen, bucket, statusF, source, assignedF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 

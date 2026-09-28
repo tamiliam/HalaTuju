@@ -277,7 +277,8 @@ describe('several gifts and none chosen', () => {
       ] } as unknown as Awaited<ReturnType<typeof api.getAdminProgrammes>>)
       const { rerender } = render(<GiftScope><GiftProgrammes token="tok" /></GiftScope>)
       fireEvent.click(await screen.findByTestId('open-bpb-sabah-2026'))
-      expect(mockPush).toHaveBeenCalledWith('/admin/programme/overview')
+      // TD-296: the card's push carries the gift in the URL too; the loop assertion is unchanged.
+      expect(mockPush).toHaveBeenCalledWith('/admin/programme/overview?programme=bpb-sabah-2026')
       rerender(<GiftScope><PaymentsLandingPage /></GiftScope>)
       await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalledWith(
         'bpb-sabah-2026', { token: 'tok' }))

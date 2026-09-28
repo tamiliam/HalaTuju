@@ -9,6 +9,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useNavProbes } from '@/lib/useNavProbes'
 import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
+import { withGiftHrefs } from '@/lib/giftHref'
 import { pageWidthFor, WIDTH_CLASS } from '@/lib/pageWidth'
 import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
 import { ProgrammeScopeProvider, useProgrammeScope } from '@/lib/programmeScope'
@@ -156,18 +157,22 @@ function Chrome(
    * a list of every gift is a true answer and it is a reviewer's only door. See `NavItem.needsProgramme` for why that removes the need for any
    * role exemption.
    */
-  const { chosen, programme } = useProgrammeScope()
+  const { chosen, programme, pinned: onRecord } = useProgrammeScope()
   const groups = useMemo(
     // ⚠ `undefined` UNTIL THE LIST HAS ARRIVED — see `scopesLoaded` on AppShell. Hiding a row on
     // the strength of a list we have not fetched would make it pop in on every page load.
     // `pathname` is what folds the Programme group away outside a gift (owner, 2026-09-14) —
     // see `programmeGroupFolded`. It is the path and not `chosen`, because `chosen` fills itself
     // in on a single-gift tenant and would never let the group fold at all.
-    () => visibleNav({
+    // ⚠ THE PROGRAMME ROWS CARRY THE GIFT (TD-296), so Overview → Applications → Payments keeps it
+    // in the address bar — but NOT while a detail page has pinned its record's gift: the pin never
+    // selects (review F2), and a rail link naming it would select it one click later, narrowing a
+    // reviewer's all-gifts Applications list to the applicant they just opened.
+    () => withGiftHrefs(visibleNav({
       role: r, probes, pathname,
       programmeChosen: scopesLoaded ? chosen !== '' : undefined,
-    }),
-    [r, probes, chosen, scopesLoaded, pathname],
+    }), onRecord ? '' : chosen),
+    [r, probes, chosen, scopesLoaded, pathname, onRecord],
   )
   const active = activeItem(pathname)
   const activeId = active?.id

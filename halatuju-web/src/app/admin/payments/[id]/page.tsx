@@ -161,8 +161,11 @@ export default function PaymentRunDetailPage() {
   return (
     <div>
       <nav className="text-xs text-ground-400">
-        {/* `Link`, not `<a>` (2026-09-28): a full reload threw away the gift you were in. */}
-        <Link href="/admin/payments" className="hover:underline">{t('admin.payments.title')}</Link>
+        {/* `Link`, not `<a>` (2026-09-28): a full reload threw away the gift you were in. And it
+            names THIS RUN's gift (TD-296), so the list opens in it — the pin never selects (F2).
+            Spelled out rather than `withGift`: this route IS the median of the first-load budget,
+            and importing the helper tipped it from 256 to 257 kB (measured). */}
+        <Link href={run.programme ? `/admin/payments?programme=${encodeURIComponent(run.programme.code)}` : '/admin/payments'} className="hover:underline">{t('admin.payments.title')}</Link>
         <span className="mx-1">/</span><span className="text-ground-600">{run.reference}</span>
       </nav>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">

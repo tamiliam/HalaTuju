@@ -77,4 +77,13 @@ describe('a fresh mount of the application page, with no prior choice', () => {
     expect(scopeChosen()).toBe('(none)')
     expect(crumbSwitch()).not.toBeNull()
   })
+
+  it('⚠ the way back to Applications does NOT name the case’s gift (TD-296, by decision)', async () => {
+    // Unlike a payment run's way back (Payments has no all-gifts mode), this list IS the all-gifts
+    // list. Naming the applicant's gift here would narrow it on the way back — F2 by another road.
+    renderCockpit({ role: 'org_admin', app: app(), wrapper: GiftScope })
+    await mounted()
+    const back = screen.getByRole('link', { name: /admin.scholarship.back/ })
+    expect(back.getAttribute('href')).toBe('/admin/scholarship')
+  })
 })

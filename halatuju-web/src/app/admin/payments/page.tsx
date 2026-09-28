@@ -89,14 +89,21 @@ export default function PaymentsLandingPage() {
 
   useEffect(() => {
     if (!token || !allowed || gate !== 'open') { setLoading(false); return }
+    // ⚠ A REPLY FOR THE GIFT YOU LEFT IS DROPPED (TD-298). Switching gift starts new reads without
+    // cancelling the old; a slow answer for the PREVIOUS gift could land last and overwrite the
+    // new gift's runs under a crumb naming the new one. The cleanup marks this effect's replies stale.
+    let current = true
     setLoading(true)
     getPaymentRuns(programme, { token })
-      .then((d) => setRuns(d.runs))
-      .catch(() => setError(t('admin.payments.loadFailed')))
-      .finally(() => setLoading(false))
+      .then((d) => { if (current) setRuns(d.runs) })
+      .catch(() => { if (current) setError(t('admin.payments.loadFailed')) })
+      .finally(() => { if (current) setLoading(false) })
     // Best-effort: the funding summary is a supplementary section, so a failure here hides it
     // rather than breaking the runs list this page exists for.
-    getFundingSummary(programme, { token }).then(setFunding).catch(() => setFunding(null))
+    getFundingSummary(programme, { token })
+      .then((f) => { if (current) setFunding(f) })
+      .catch(() => { if (current) setFunding(null) })
+    return () => { current = false }
     // ⚠ `programme` IS A DEPENDENCY — switching gift in the breadcrumb must re-read both
     // lists, or the crumb names one gift while the runs below belong to another.
     // eslint-disable-next-line react-hooks/exhaustive-deps
