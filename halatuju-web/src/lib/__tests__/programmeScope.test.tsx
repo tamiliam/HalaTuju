@@ -15,7 +15,7 @@
  * So these tests pin both halves at once — the refusal stays, and the list can be refreshed.
  */
 import { act, render, screen } from '@testing-library/react'
-import { ProgrammeScopeProvider, useProgrammeScope } from '@/lib/programmeScope'
+import { ProgrammeScopeProvider, usePinProgramme, useProgrammeScope } from '@/lib/programmeScope'
 
 const TWO = [{ code: 'bp', name: 'BrightPath' }, { code: 'test', name: 'Test' }]
 
@@ -90,5 +90,78 @@ describe('the list can be refreshed, which is the actual fix', () => {
     render(<ProgrammeScopeProvider choices={TWO}><Probe /></ProgrammeScopeProvider>)
     act(() => { screen.getByTestId('reload').click() })
     expect(chosen()).toBe('(none)')
+  })
+})
+
+/**
+ * A DETAIL page pins the gift it shows (2026-09-28). The rendered proofs — a fresh tab, the crumb
+ * with no switch, the new-tab student — are beside the pages (`payments/[id]/page.gift.test.tsx`,
+ * `scholarship/[id]/view.gift.test.tsx`); these are the two rules only the provider can show.
+ */
+describe('the pin', () => {
+  function Pinner({ code }: { code: string }) {
+    usePinProgramme({ code, name: `Name of ${code}` })
+    return null
+  }
+  function PinProbe() {
+    const { chosen: c, pinned, settled } = useProgrammeScope()
+    return <span data-testid="pin">{`${c || '(none)'}|${pinned}|${settled}`}</span>
+  }
+  const pin = () => screen.getByTestId('pin').textContent
+
+  it('⚠ a page unmounting releases ONLY its own pin, never the next page’s', () => {
+    // If the new page has pinned before the old one's cleanup runs (a transition can hold the old
+    // tree), the old cleanup must not wipe the new pin — or the crumb would fall back to asking.
+    const tree = (...codes: string[]) => (
+      <ProgrammeScopeProvider choices={TWO}>
+        {codes.map((c) => <Pinner key={c} code={c} />)}<PinProbe />
+      </ProgrammeScopeProvider>)
+    const { rerender } = render(tree('bp'))
+    expect(pin()).toBe('bp|true|true')
+    rerender(tree('bp', 'test'))          // the new page pins while the old is still mounted
+    expect(pin()).toBe('test|true|true')
+    rerender(tree('test'))                // …then the old one goes
+    expect(pin()).toBe('test|true|true')
+  })
+
+  it('reports whether the shell’s list has settled, and a harness mount is settled', () => {
+    const { rerender } = render(
+      <ProgrammeScopeProvider choices={[]} settled={false}><PinProbe /></ProgrammeScopeProvider>)
+    expect(pin()).toBe('(none)|false|false')
+    rerender(<ProgrammeScopeProvider choices={TWO}><PinProbe /></ProgrammeScopeProvider>)
+    expect(pin()).toBe('(none)|false|true')
+  })
+})
+
+/**
+ * ── ONLY LIVE GIFTS MAKE A QUESTION (adversarial review F1, 2026-09-28) ──
+ *
+ * The reviewer's exact case: one live gift and one DRAFT. The server auto-picks the one live gift
+ * (`is_active=True`) and Sabah S2 says a draft must change nothing — so the client must agree:
+ * not ambiguous, resolved to the live one. Two LIVE gifts still ask.
+ */
+describe('a draft is not a second gift', () => {
+  function LiveProbe() {
+    const { chosen: c, ambiguous, live } = useProgrammeScope()
+    return <span data-testid="live">{`${c || '(none)'}|${ambiguous}|${live.map((g) => g.code).join(',')}`}</span>
+  }
+  const live = () => screen.getByTestId('live').textContent
+  const LIVE = { code: 'bp', name: 'BrightPath', isActive: true }
+  const DRAFT = { code: 'sabah', name: 'Sabah', isActive: false }
+
+  it('one live + one draft resolves to the live gift and is not ambiguous', () => {
+    render(<ProgrammeScopeProvider choices={[LIVE, DRAFT]}><LiveProbe /></ProgrammeScopeProvider>)
+    expect(live()).toBe('bp|false|bp')
+  })
+
+  it('two LIVE gifts are still a question', () => {
+    render(<ProgrammeScopeProvider choices={[LIVE, { ...DRAFT, isActive: true }]}>
+      <LiveProbe /></ProgrammeScopeProvider>)
+    expect(live()).toBe('(none)|true|bp,sabah')
+  })
+
+  it('a tenant whose ONLY gift is a draft still resolves to it, as before', () => {
+    render(<ProgrammeScopeProvider choices={[DRAFT]}><LiveProbe /></ProgrammeScopeProvider>)
+    expect(live()).toBe('sabah|false|')
   })
 })

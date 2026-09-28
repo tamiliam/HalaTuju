@@ -29,14 +29,23 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import SpendingPage from './page'
 import * as api from '@/lib/admin-api'
 import { canAccess } from '@/lib/navigation'
+import { GiftScope, TWO_GIFTS } from '@/test/giftScope'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+// A mutable cell so the gift-gate tests can sign in as each role; every older test keeps `admin`.
+let mockRole: Record<string, unknown> = { role: 'admin', owning_org_id: 11 }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'admin', owning_org_id: 11 } }),
+  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
+}))
+// The page redirects through the router since 2026-09-28 (`useGiftGate`).
+const mockReplace = jest.fn()
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
 }))
 jest.mock('@/lib/admin-api')
 
 const mockApi = api as jest.Mocked<typeof api>
+afterEach(() => { mockRole = { role: 'admin', owning_org_id: 11 } })
 
 const OVERVIEW: api.SpendingOverview = {
   totals: {
@@ -139,7 +148,12 @@ beforeEach(() => {
 describe('the three tabs', () => {
   it('opens on Shops, and offers exactly three', async () => {
     render(<SpendingPage />)
-    const tabs = await screen.findAllByRole('tab')
+    // ⚠ WAIT FOR THE COUNTS, NOT FOR THE TABS (2026-09-28) — TD-275's shape again. The tabs are
+    // drawn on the FIRST paint with no counts, so `findAllByRole('tab')` resolved before the data
+    // on a loaded machine and read "shops" for "shops4". It failed once in a full `npm run gates`
+    // run beside the api suite and passed three times alone; the cause is the first paint.
+    await waitFor(() => expect(screen.getAllByRole('tab')[0].textContent).toBe(`${KEY}shops4`))
+    const tabs = screen.getAllByRole('tab')
     // ⚠ ASSERTED AS LABEL + COUNT SEPARATELY, NOT AS ONE GLUED STRING.
     // Gluing the label and the count into one quoted string was the first attempt, and it
     // broke the i18n scanner: that guard greps the whole of `src/` for quoted keys under this
@@ -725,6 +739,62 @@ describe('who may open it', () => {
   it('refuses a reviewer and a partner', () => {
     expect(canAccess('/admin/spending', 'reviewer')).toBe(false)
     expect(canAccess('/admin/spending', 'partner')).toBe(false)
+  })
+})
+
+/**
+ * ── You enter a gift first (owner, 2026-09-28) ── Payments and Spending move together (TD-241),
+ * so this page is gated exactly as Payments is: several gifts and none chosen never draws every
+ * gift's spending. A role with a door to the gifts is sent to the Programmes page; `admin` (the
+ * only other role here — finance may not open Spending at all) has no gift cards there, so is
+ * asked on the page.
+ */
+describe('several gifts and none chosen', () => {
+  const inScope = (choices = TWO_GIFTS, settled = true) => render(
+    <GiftScope choices={choices} settled={settled}><SpendingPage /></GiftScope>)
+
+  it('an org_admin is REDIRECTED to the Programmes page, and no figure is drawn', async () => {
+    mockRole = { role: 'org_admin', owning_org_id: 11 }
+    inScope()
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+    expect(mockReplace).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('spending-totals')).toBeNull()
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
+    expect(mockApi.getSpendingOverview).not.toHaveBeenCalled()
+  })
+
+  it('an admin is ASKED here — no redirect, no tabs, no figures', async () => {
+    inScope()
+    expect(await screen.findByTestId('choose-programme')).toBeTruthy()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('spending-totals')).toBeNull()
+    expect(screen.queryAllByRole('tab')).toHaveLength(0)
+    expect(mockApi.getSpendingOverview).not.toHaveBeenCalled()
+  })
+
+  it('answering loads THAT gift’s spending', async () => {
+    inScope()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sabah Bursary 2026' }))
+    await waitFor(() => expect(mockApi.getSpendingOverview).toHaveBeenCalledWith(
+      'bpb-sabah-2026', { token: 'tok' }))
+    expect(await screen.findByTestId('spending-totals')).toBeTruthy()
+  })
+
+  it('the list not yet loaded: no redirect, nothing drawn', async () => {
+    mockRole = { role: 'org_admin', owning_org_id: 11 }
+    inScope(TWO_GIFTS, false)
+    expect(screen.getByTestId('gift-wait')).toBeTruthy()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockApi.getSpendingOverview).not.toHaveBeenCalled()
+  })
+
+  it('with ONE gift: no box, no redirect, the page exactly as before', async () => {
+    mockRole = { role: 'org_admin', owning_org_id: 11 }
+    inScope([TWO_GIFTS[0]])
+    await screen.findAllByText('99 SPEEDMART')
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockApi.getSpendingOverview).toHaveBeenCalledWith('brightpath-flagship', { token: 'tok' })
   })
 })
 

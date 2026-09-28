@@ -21,6 +21,7 @@ import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import { formatNric } from '@/lib/scholarship'
 import { isValidPhone } from '@/lib/scholarship'
@@ -144,6 +145,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // a verdict they themselves recorded (two-person control).
   const canQc = isSuper || role?.role === 'qc' || role?.role === 'org_admin'
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
+  // ⚠ The crumb names THIS case's gift, from the payload — `app.programme` (the gift), never
+  // `chosen_programme` (the course). A fresh tab opened from a run pins it too (2026-09-28).
+  usePinProgramme(app?.programme)
   // Execute (verify/verdict/interview/etc.): super acts on any application; org_admin + qc (the
   // org-wide roles) act on any OWN-ORG application (the detail GET already 404s cross-org);
   // admin/reviewer act ONLY on applications assigned to them (mirrors backend _can_review_app).

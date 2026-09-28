@@ -8,7 +8,11 @@
 // activation rule lives once, in payments.finance_check_required on the server.
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
+// From the CORE module, not `programmeScope`: this page needs the pin, not the provider, and the
+// provider cost the route its first-load budget (see `programmeScopeCore`).
+import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
@@ -84,6 +88,11 @@ export default function PaymentRunDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
   useEffect(() => { if (allowed) load() }, [allowed, load])
+  // ⚠ A RUN BELONGS TO ONE GIFT, AND THE CRUMB NOW SAYS WHICH (2026-09-28). Before this, the crumb
+  // on a run page could be switched to another gift and the page ignored it — the crumb lied.
+  // The code is the SERVER's (`run.programme`), so a bookmark, a refresh and a fresh tab all pin
+  // the same gift with nothing stored; see `usePinProgramme`.
+  usePinProgramme(run?.programme)
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!run) return <p className="text-ground-400">{t('common.loading')}</p>
@@ -152,7 +161,8 @@ export default function PaymentRunDetailPage() {
   return (
     <div>
       <nav className="text-xs text-ground-400">
-        <a href="/admin/payments" className="hover:underline">{t('admin.payments.title')}</a>
+        {/* `Link`, not `<a>` (2026-09-28): a full reload threw away the gift you were in. */}
+        <Link href="/admin/payments" className="hover:underline">{t('admin.payments.title')}</Link>
         <span className="mx-1">/</span><span className="text-ground-600">{run.reference}</span>
       </nav>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">

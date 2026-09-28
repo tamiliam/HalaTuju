@@ -58,6 +58,9 @@ export interface PaymentRunDetail {
   /** The month this run pays for (1st of month, ISO); dedup key — a student is paid once per month. */
   period_month: string | null
   status: 'draft' | 'admin_signed' | 'finance_checked' | 'completed' | 'cancelled'
+  /** The ONE gift this run pays from (P2b); `null` for a run made before gifts were recorded.
+   *  `code` since 2026-09-28: the run page pins the breadcrumb to it (`usePinProgramme`). */
+  programme?: { id: number; code: string; name: string } | null
   note: string
   drive_file_url: string
   created_by: string

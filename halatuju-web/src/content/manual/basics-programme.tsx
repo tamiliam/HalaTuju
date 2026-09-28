@@ -49,7 +49,9 @@ export const basicsProgramme: ManualChapter = {
         <strong> your organisation</strong> — the people, the money and the paperwork — and
         <strong> your programme</strong>, which is one gift: its <strong>Configuration</strong> and its
         <strong> Applications</strong>. If your organisation runs more than one gift, the trail across the
-        top says which one you are in, and you can switch there. You only ever see the groups your role
+        top says which one you are in, and you can switch there. A single payment run or application
+        belongs to one gift, so on those pages the trail simply names it; and <strong>Payments</strong> and
+        <strong> Spending</strong> open once you are inside a gift. You only ever see the groups your role
         reaches, so a short menu is not a fault. An entry marked <em>soon</em> is a page still being built; you
         may well see none at all.
         <br /><br />

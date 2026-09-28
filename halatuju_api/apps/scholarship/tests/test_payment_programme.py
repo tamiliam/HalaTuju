@@ -155,8 +155,9 @@ class TestSkippedListNarrowsToo(_Base):
     def test_the_detail_payload_names_the_gift(self):
         from apps.scholarship.views_admin import _payment_run_detail
         run = self._create(self.sabah)
+        # `code` added 2026-09-28 (the run page pins the breadcrumb to it); id and name as before.
         self.assertEqual(_payment_run_detail(run)['programme'],
-                         {'id': self.sabah.id, 'name': 'Sabah Bursary'})
+                         {'id': self.sabah.id, 'code': 'p2b-sabah', 'name': 'Sabah Bursary'})
 
 
 class TestBackfillLeavesRunsAlone(_Base):
@@ -319,7 +320,8 @@ class TestCreateEndpointChoosesTheGift(_Base):
     def test_the_named_gift_is_used(self):
         r = self._post({'payment_date': '2026-08-01', 'programme': self.sabah.code})
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.json()['programme'], {'id': self.sabah.id, 'name': 'Sabah Bursary'})
+        self.assertEqual(r.json()['programme'], {'id': self.sabah.id, 'code': 'p2b-sabah',
+                                                 'name': 'Sabah Bursary'})
         self.assertEqual([i['application_id'] for i in r.json()['items']], [self.app_sabah.id])
 
     def test_the_code_may_ride_as_a_QUERY_parameter_too(self):
@@ -349,5 +351,5 @@ class TestCreateEndpointChoosesTheGift(_Base):
         self.sabah.save(update_fields=['is_active'])
         r = self._post({'payment_date': '2026-08-01'})
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.json()['programme'], {'id': self.flagship.id,
+        self.assertEqual(r.json()['programme'], {'id': self.flagship.id, 'code': 'p2b-flag',
                                                  'name': 'Flagship Bursary'})

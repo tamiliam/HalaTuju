@@ -74,6 +74,10 @@ export function AppShell({ children }: { children: ReactNode }) {
    * `NavContext` says an omitted value means show.
    */
   const [scopesLoaded, setScopesLoaded] = useState(false)
+  // ⚠ NOT `scopesLoaded`. That stays false on a FAILED fetch, on purpose, so the rail never hides a
+  // row on a list it could not get. `settled` is true either way: the money pages wait for it
+  // before redirecting (2026-09-28), and a page waiting on furniture must never wait for ever.
+  const [scopesSettled, setScopesSettled] = useState(false)
   // ⚠ EXTRACTED SO IT CAN BE RE-RUN. It used to be an inline effect on [token, locale],
   // i.e. fetched ONCE per console session — so a gift created during that session was
   // missing from this list, `programmeScope` refused to resolve the unknown code (correctly),
@@ -87,6 +91,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     } catch {
       /* furniture — never block the shell. ⚠ `scopesLoaded` stays false on a failure, so a menu
          row is never hidden on the strength of a list we could not fetch. */
+    } finally {
+      setScopesSettled(true)
     }
   }, [token, locale])
 
@@ -98,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 
   return (
-    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes}>
+    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes} settled={scopesSettled}>
       <Chrome scopes={scopes} scopesLoaded={scopesLoaded}>{children}</Chrome>
     </ProgrammeScopeProvider>
   )
@@ -145,9 +151,9 @@ function Chrome(
    * gifts and none picked — with one gift it fills itself in, so on a single-gift tenant nothing
    * here changes at all.
    *
-   * ⚠ IT HIDES THE ROW THAT WOULD GO WRONG, NOT THE GROUP. Only `programmeConfig` carries
-   * `needsProgramme`; Applications stays, because a list of every gift is a true answer and it is
-   * a reviewer's only door. See `NavItem.needsProgramme` for why that removes the need for any
+   * ⚠ IT HIDES THE ROWS THAT WOULD GO WRONG, NOT THE GROUP. `programmeConfig`, `payments` and
+   * `spending` carry `needsProgramme` (the last two since 2026-09-28); Applications stays, because
+   * a list of every gift is a true answer and it is a reviewer's only door. See `NavItem.needsProgramme` for why that removes the need for any
    * role exemption.
    */
   const { chosen, programme } = useProgrammeScope()

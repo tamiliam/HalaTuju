@@ -27,48 +27,38 @@
  * to reach for it by default — and a stored gift code would outlive the tab, the tenant and the
  * person's memory of setting it, so a reload would silently reopen someone else's gift. A hard
  * reload resets to the same honest place a first visit does: the only gift, or a question.
+ *
+ * ⚠ A DETAIL PAGE PINS THE GIFT IT IS SHOWING (2026-09-28). A payment run belongs to exactly one
+ * gift, and so does an application; before this, switching the crumb on a run page changed the
+ * crumb and not the page — the crumb lied. `usePinProgramme(code)` is how such a page tells the
+ * scope which gift it shows. The code comes from the SERVER payload (the run's or the
+ * application's `programme.code` — the GIFT, never `chosen_programme`, which is the student's
+ * course), so it survives a bookmark, a refresh and a new tab with nothing stored anywhere.
+ * While pinned: the pinned code outranks the person's pick and the crumb names it WITH NO SWITCH.
+ * A code not in `choices` resolves `chosen` to nothing — never to a wrong gift — and the crumb
+ * shows the RECORD's own name from the payload (a server fact, not a guess).
+ * ⚠ THE PIN NEVER SELECTS (adversarial review, 2026-09-28). The first cut did, and it narrowed the
+ * all-gifts Applications list — a reviewer's only door — to one gift with no way back but a
+ * reload. On unmount the person's previous choice returns exactly as it was, "none" included.
+ *
+ * ⚠ ONLY LIVE GIFTS MAKE A QUESTION. A draft cannot be paid from and the server auto-picks the one
+ * LIVE gift, so `ambiguous` and the single-gift auto-resolve count active gifts (Sabah S2: a draft
+ * changes nothing). The crumb's switcher still lists drafts, labelled, for Configuration.
  */
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 
-export interface ProgrammeChoice {
-  code: string
-  name: string
-  /** False for a gift that is not switched on yet — a normal, and common, state. */
-  isActive?: boolean
-}
+import {
+  ProgrammeScopeCtx, useProgrammeScope, type PinnedGift, type ProgrammeChoice,
+  type ProgrammeScope,
+} from './programmeScopeCore'
 
-export interface ProgrammeScope {
-  /** Every gift this caller may look at, from the scopes endpoint. Server-ordered. */
-  choices: readonly ProgrammeChoice[]
-  /** The selected gift's code, or `''` when it is not yet known. NEVER guessed. */
-  chosen: string
-  /** The selected gift, or null. */
-  programme: ProgrammeChoice | null
-  /** True when there is more than one to choose between — the page should say so. */
-  ambiguous: boolean
-  select: (code: string) => void
-  /**
-   * Re-fetch the list of gifts this caller may open.
-   *
-   * ⚠ WHY THIS HAD TO EXIST (owner, live use, 2026-09-07). The shell fetches the scopes ONCE per
-   * console session, so a gift CREATED during that session was unknown to this list — and the
-   * guard below then did exactly its job: refused to resolve a code it did not recognise. The
-   * result was a screen that asked which gift, forever, with every click a no-op.
-   *
-   * ⚠ THE FIX IS TO REFRESH THE LIST, NEVER TO LOOSEN THE GUARD. Accepting an unknown code is the
-   * 2026-09-03 defect (it showed the owner a different programme's settings); falling back to the
-   * only gift is the same defect wearing a hat. Stale data is the bug — the refusal is correct.
-   */
-  reload: () => Promise<void>
-}
-
-const EMPTY: ProgrammeScope = {
-  choices: [], chosen: '', programme: null, ambiguous: false, select: () => {},
-  reload: async () => {},
-}
-
-const Ctx = createContext<ProgrammeScope>(EMPTY)
+// The context half lives in `programmeScopeCore` (so a detail page can pin without loading this
+// provider — a first-load-JS measurement, see that file); re-exported so importers are unchanged.
+export {
+  ProgrammeScopeCtx, useProgrammeScope, usePinProgramme,
+  type PinnedGift, type ProgrammeChoice, type ProgrammeScope,
+} from './programmeScopeCore'
 
 /**
  * Provided by the shell, so the choice survives moving between Configuration and Applications.
@@ -76,15 +66,24 @@ const Ctx = createContext<ProgrammeScope>(EMPTY)
  * did before this existed.
  */
 export function ProgrammeScopeProvider(
-  { choices, children, onReload }: {
+  { choices, children, onReload, settled = true }: {
     choices: readonly ProgrammeChoice[]
     children: ReactNode
     /** Ask the shell to re-fetch the scopes. Optional so a harness can mount without one. */
     onReload?: () => Promise<void>
+    /** The shell's fetch has answered or failed. Defaults to true for a harness with a list. */
+    settled?: boolean
   },
 ) {
   const [picked, setPicked] = useState('')
+  const [pinGift, setPinState] = useState<PinnedGift | null>(null)
+  const pin = pinGift?.code ?? ''
   const reload = useCallback(async () => { await onReload?.() }, [onReload])
+  // Release only the code we were asked to release, so a page mounting as another unmounts can
+  // never have its fresh pin wiped by the old page's cleanup. `picked` is never touched.
+  const setPin = useCallback((gift: PinnedGift, on: boolean) => {
+    setPinState((was) => (on ? gift : (was?.code === gift.code ? null : was)))
+  }, [])
 
   const value = useMemo<ProgrammeScope>(() => {
     /*
@@ -102,25 +101,31 @@ export function ProgrammeScopeProvider(
      * "here is a different gift", and that substitution must be impossible however the list is
      * populated. Not recognised now means ASK — the same refusal `resolve_open_cohort` makes.
      */
-    const known = choices.some((c) => c.code === picked)
-    const chosen = picked
-      ? (known ? picked : '')
-      : (choices.length === 1 ? choices[0].code : '')
+    // A pin outranks the pick, and goes through the SAME guard: a pinned code we do not
+    // recognise resolves to nothing — the question — and never to the pick or the only gift.
+    const want = pin || picked
+    const known = choices.some((c) => c.code === want)
+    // The single-gift resolve counts LIVE gifts (a draft beside one live gift changes nothing);
+    // a tenant whose only gift is a draft still resolves to it, as it always has.
+    const live = choices.filter((c) => c.isActive !== false)
+    const only = live.length === 1 ? live[0] : (choices.length === 1 ? choices[0] : null)
+    const chosen = want ? (known ? want : '') : (only?.code ?? '')
     return {
       choices,
       chosen,
       programme: choices.find((c) => c.code === chosen) ?? null,
-      ambiguous: choices.length > 1,
+      ambiguous: live.length > 1,
+      live,
       select: setPicked,
       reload,
+      pinned: pin !== '',
+      pinnedName: pinGift?.name ?? '',
+      setPin,
+      settled,
     }
-  }, [choices, picked, reload])
+  }, [choices, picked, pin, pinGift, reload, setPin, settled])
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
-}
-
-export function useProgrammeScope(): ProgrammeScope {
-  return useContext(Ctx)
+  return <ProgrammeScopeCtx.Provider value={value}>{children}</ProgrammeScopeCtx.Provider>
 }
 
 /**

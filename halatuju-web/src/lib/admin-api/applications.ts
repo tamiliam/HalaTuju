@@ -354,6 +354,10 @@ export interface AdminScholarshipDetail {
    *  different gift. ⚠ Not a fence — the org fence is server-side; a blank on either side
    *  greys nobody (see `officerCockpit.assignOptions`). */
   programme_id?: number | null
+  /** The GIFT itself (2026-09-28) — the same row as `programme_id`, with the code the breadcrumb
+   *  speaks. ⚠ NOT `chosen_programme`, which is the student's COURSE. The cockpit pins the crumb
+   *  to this (`usePinProgramme`); `null` when the application has no gift. */
+  programme?: { id: number; code: string; name: string } | null
   /** Whether the dark-by-default Conditional Bursary Agreement feature is live; the cockpit
    *  only renders the agreement panel when true. */
   bursary_agreement_enabled?: boolean

@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from ..models import ScholarshipApplication
+from ..serializers_admin_gift import gift_ref
 from .base import _AdminBase
 
 
@@ -42,13 +43,15 @@ def _sig(name, email, at):
 
 
 def _run_programme(run):
-    """The gift a run pays from — ``{id, name}`` or None for a pre-P2b run. Shown beside the
+    """The gift a run pays from — ``{id, code, name}`` or None for a pre-P2b run. Shown beside the
     reference so an operator can tell two same-dated runs apart (references disambiguate with a
-    `-02` suffix, which says there are two but not which is which)."""
-    p = getattr(run, 'programme', None)
-    if p is None:
-        return None
-    return {'id': p.id, 'name': (p.name_en or '').strip()}
+    `-02` suffix, which says there are two but not which is which).
+
+    ⚠ `code` ADDED 2026-09-28 so the run page can tell the breadcrumb WHICH gift it is showing —
+    a run belongs to exactly one gift, and a crumb that could be switched on a run page named a
+    gift the page was not showing. `id` and `name` are unchanged; the shape is `gift_ref`'s, the
+    one place the console is told a record's gift."""
+    return gift_ref(getattr(run, 'programme', None))
 
 
 def _payment_run_summary(run):

@@ -12,19 +12,34 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import PaymentsLandingPage from './page'
 import * as api from '@/lib/admin-api'
+import GiftProgrammes from '@/components/admin/GiftProgrammes'
+import { GiftScope, TWO_GIFTS, crumbText } from '@/test/giftScope'
+import { hasGiftDoor } from '@/lib/navigation'
 
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+// `t` echoes its key — except "Pays from", whose NAME is the point of asserting it.
+jest.mock('@/lib/i18n', () => ({ useT: () => ({
+  t: (k: string, p?: Record<string, string>) => (k === 'admin.payments.paysFrom' ? `${k}:${p?.name}` : k),
+  locale: 'en',
+}) }))
 // ⚠ `owning_org_id` matters — the picker filters the scope list on it, because the server reads
 // `org = admin.owning_organisation` even for a super.
+// The role is a mutable cell so the gift-gate tests can sign in as each role in turn; every older
+// test in this file keeps the role it always had.
+const DEFAULT_ROLE = { role: 'admin', is_super_admin: true, owning_org_id: 11 }
+let mockRole: Record<string, unknown> = DEFAULT_ROLE
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({
-    token: 'tok', role: { role: 'admin', is_super_admin: true, owning_org_id: 11 },
-  }),
+  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
 }))
-jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn() }) }))
+const mockPush = jest.fn()
+const mockReplace = jest.fn()
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
+}))
 jest.mock('@/lib/admin-api')
 
 const mockApi = api as jest.Mocked<typeof api>
+const asRole = (role: string) => { mockRole = { role, is_super_admin: role === 'super', owning_org_id: 11 } }
+afterEach(() => { mockRole = DEFAULT_ROLE })
 
 const FUNDING = {
   rows: [
@@ -154,6 +169,189 @@ describe('which gift the run pays from', () => {
     expect(screen.queryByLabelText('admin.payments.programme')).toBeNull()
     fireEvent.change(screen.getByLabelText('admin.payments.paymentDate'), { target: { value: '2999-01-05' } })
     expect((screen.getByText('admin.payments.createDraft') as HTMLButtonElement).disabled).toBe(false)
+  })
+})
+
+/**
+ * ── You enter a gift first; inside it the question never arises (owner, 2026-09-28) ──
+ *
+ * ⚠ THE DEFECT, AS IT HAPPENED: an `admin` at BrightPath (two live gifts) opened Payments, pressed
+ * New payment run, and got "Your organisation runs more than one gift, so please say which this
+ * run pays from" — with nowhere in the dialog to say it. The page drew every gift's runs and a
+ * button the server could only refuse.
+ *
+ * Now: reached with no gift known, a role that HAS a door to the gifts (super, org_admin) is SENT
+ * to the Programmes page — *"the user should be redirected to the Programmes page, which lists the
+ * gifts"* — and a role that has none there (admin, finance: the gift cards are not theirs) is asked
+ * with the house `ChooseProgramme` box. Either way no list and no New-run button, ever.
+ */
+describe('several gifts and none chosen', () => {
+  const inScope = (choices = TWO_GIFTS, settled = true) => render(
+    <GiftScope choices={choices} settled={settled}><PaymentsLandingPage /></GiftScope>)
+
+  const noMoneyOnScreen = () => {
+    expect(screen.queryByText(/admin.payments.newRun/)).toBeNull()
+    expect(screen.queryByTestId('run-cards')).toBeNull()
+    expect(screen.queryByText('admin.payments.funding.title')).toBeNull()
+    // …and the server is not even ASKED for every gift's runs behind the screen.
+    expect(mockApi.getPaymentRuns).not.toHaveBeenCalled()
+    expect(mockApi.getFundingSummary).not.toHaveBeenCalled()
+  }
+
+  it('⚠ an org_admin is REDIRECTED to the Programmes page — once, with replace', async () => {
+    asRole('org_admin')
+    inScope()
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+    expect(mockReplace).toHaveBeenCalledTimes(1)
+    expect(mockPush).not.toHaveBeenCalled()
+    // The instant before it lands: the loading line and nothing else — no box either.
+    expect(screen.getByTestId('gift-wait')).toBeTruthy()
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
+    noMoneyOnScreen()
+  })
+
+  it('a super is redirected the same way', async () => {
+    asRole('super')
+    inScope()
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+    noMoneyOnScreen()
+  })
+
+  it('⚠ an ADMIN (no gift cards on the Programmes page) is ASKED here, never sent there', async () => {
+    // The defect's own role. `maySeeGifts` on the Programmes page is super + org_admin, so a
+    // redirect would land Kulaly on a page with no gift to click.
+    asRole('admin')
+    inScope()
+    expect(await screen.findByTestId('choose-programme')).toBeTruthy()
+    expect(mockReplace).not.toHaveBeenCalled()
+    noMoneyOnScreen()
+  })
+
+  it('finance is asked here too, for the same reason', async () => {
+    asRole('finance')
+    inScope()
+    expect(await screen.findByTestId('choose-programme')).toBeTruthy()
+    expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('answering the box loads THAT gift’s runs, and the crumb says so', async () => {
+    asRole('admin')
+    inScope()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sabah Bursary 2026' }))
+    await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalledWith(
+      'bpb-sabah-2026', { token: 'tok' }))
+    expect(mockApi.getFundingSummary).toHaveBeenCalledWith('bpb-sabah-2026', { token: 'tok' })
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
+    expect(await screen.findByText(/admin.payments.newRun/)).toBeTruthy()
+    expect(crumbText()).toContain('Sabah Bursary 2026')
+  })
+
+  it('⚠ the list NOT YET LOADED is not "no gift": no redirect, and nothing drawn', async () => {
+    // An empty list reads as "one gift" before it arrives. Acting on it would bounce every page
+    // load — or flash every gift's money for the length of the fetch.
+    asRole('org_admin')
+    inScope(TWO_GIFTS, false)
+    expect(screen.getByTestId('gift-wait')).toBeTruthy()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(mockReplace).not.toHaveBeenCalled()
+    noMoneyOnScreen()
+  })
+
+  it('with ONE gift there is nothing to ask — no redirect, the page exactly as before', async () => {
+    asRole('org_admin')
+    inScope([TWO_GIFTS[0]])
+    await screen.findByText('26/07/2026')
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
+    expect(mockApi.getPaymentRuns).toHaveBeenCalledWith('brightpath-flagship', { token: 'tok' })
+  })
+
+  it('⚠ CANNOT LOOP: opening a gift from the Programmes page and landing here does NOT redirect',
+    async () => {
+      // The real door: `GiftProgrammes`' card calls `select(code)` and navigates. Then the person
+      // clicks Payments in the rail. If that bounced back, the console would loop.
+      asRole('org_admin')
+      mockApi.getAdminProgrammes.mockResolvedValue({ programmes: [
+        { id: 1, code: 'brightpath-flagship', name_en: 'BrightPath Bursary', is_active: true },
+        { id: 2, code: 'bpb-sabah-2026', name_en: 'Sabah Bursary 2026', is_active: true },
+      ] } as unknown as Awaited<ReturnType<typeof api.getAdminProgrammes>>)
+      const { rerender } = render(<GiftScope><GiftProgrammes token="tok" /></GiftScope>)
+      fireEvent.click(await screen.findByTestId('open-bpb-sabah-2026'))
+      expect(mockPush).toHaveBeenCalledWith('/admin/programme/overview')
+      rerender(<GiftScope><PaymentsLandingPage /></GiftScope>)
+      await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalledWith(
+        'bpb-sabah-2026', { token: 'tok' }))
+      expect(mockReplace).not.toHaveBeenCalled()
+    })
+})
+
+/**
+ * ── F1 (adversarial review, 2026-09-28): a DRAFT is not a second gift ── The reviewer's exact
+ * case: one live gift and one draft. The server auto-picks the one live gift; the first cut
+ * counted the draft, hid Payments and bounced org_admins to the Programmes page.
+ */
+describe('one live gift and one draft', () => {
+  const LIVE_AND_DRAFT = [TWO_GIFTS[0], { ...TWO_GIFTS[1], isActive: false }]
+
+  it('is ONE gift: no redirect, no box, the live gift’s runs, and the dialog names it', async () => {
+    asRole('org_admin')
+    render(<GiftScope choices={LIVE_AND_DRAFT}><PaymentsLandingPage /></GiftScope>)
+    await screen.findByText('26/07/2026')
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
+    expect(mockApi.getPaymentRuns).toHaveBeenCalledWith('brightpath-flagship', { token: 'tok' })
+    fireEvent.click(screen.getByText(/admin.payments.newRun/))
+    expect(screen.getByTestId('pays-from').textContent)
+      .toBe('admin.payments.paysFrom:Flagship Bursary')
+  })
+
+  it('two LIVE gifts and a draft: the question offers only the LIVE two', async () => {
+    asRole('admin')
+    render(<GiftScope choices={[...TWO_GIFTS, { code: 'draft-gift', name: 'Draft Gift', isActive: false }]}>
+      <PaymentsLandingPage /></GiftScope>)
+    const box = await screen.findByTestId('choose-programme')
+    expect(Array.from(box.querySelectorAll('button')).map((b) => b.textContent))
+      .toEqual(['Flagship Bursary', 'Sabah Bursary 2026'])
+  })
+})
+
+/** THE PAIR, the page's half: redirected IFF `hasGiftDoor` — the predicate the rail hides on. */
+describe('who is redirected and who is asked', () => {
+  it('each role allowed here is redirected exactly when it has a door to the gifts', async () => {
+    for (const role of ['super', 'org_admin', 'admin', 'finance'] as const) {
+      mockReplace.mockClear()
+      asRole(role)
+      const view = render(<GiftScope><PaymentsLandingPage /></GiftScope>)
+      if (hasGiftDoor(role)) {
+        await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+      } else {
+        expect(await screen.findByTestId('choose-programme')).toBeTruthy()
+        expect(mockReplace).not.toHaveBeenCalled()
+      }
+      view.unmount()
+    }
+  })
+
+  it('finance can USE the box: choosing a gift loads its runs', async () => {
+    asRole('finance')
+    render(<GiftScope><PaymentsLandingPage /></GiftScope>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Flagship Bursary' }))
+    await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalledWith(
+      'brightpath-flagship', { token: 'tok' }))
+    expect(screen.queryByTestId('choose-programme')).toBeNull()
+  })
+})
+
+describe('the New-run dialog names the fund', () => {
+  it('says which gift the run pays from — read-only, one line', async () => {
+    render(<GiftScope choices={[TWO_GIFTS[1]]}><PaymentsLandingPage /></GiftScope>)
+    await screen.findByText('26/07/2026')
+    fireEvent.click(screen.getByText(/admin.payments.newRun/))
+    const line = screen.getByTestId('pays-from')
+    expect(line.textContent).toBe('admin.payments.paysFrom:Sabah Bursary 2026')
+    // It is a sentence, not a control: nothing in the dialog lets you pick a gift.
+    expect(line.tagName).toBe('P')
+    expect(screen.queryByRole('combobox')).toBeNull()
   })
 })
 

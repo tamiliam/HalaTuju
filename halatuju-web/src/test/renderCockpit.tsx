@@ -25,6 +25,7 @@
  * `installCockpitConsoleGuard()` — fails the test that produced one.
  */
 import { render, type RenderResult } from '@testing-library/react'
+import type { JSXElementConstructor, ReactNode } from 'react'
 
 import { AdminScholarshipDetailView } from '@/app/admin/scholarship/[id]/view'
 import type { AdminRoleName } from '@/lib/navigation'
@@ -119,6 +120,9 @@ export interface CockpitOptions extends CockpitAuth {
   build?: BuildOptions
   /** A payload built by hand, instead of `stage` + `build`. */
   app?: AdminScholarshipDetail
+  /** Mount inside this — e.g. a `ProgrammeScopeProvider`, to see what the page tells the
+   *  breadcrumb (2026-09-28). Absent, the page mounts bare, exactly as before. */
+  wrapper?: JSXElementConstructor<{ children: ReactNode }>
 }
 
 export interface MountedCockpit extends RenderResult {
@@ -144,7 +148,8 @@ export function renderCockpit(options: CockpitOptions): MountedCockpit {
     ?? buildApplicationDetail(options.stage ?? 'interviewing', options.build ?? {})
   authModule.__cockpitAuth = authFor(options)
   primeCockpitApi(app)
-  const result = render(<AdminScholarshipDetailView />)
+  const result = render(<AdminScholarshipDetailView />,
+                        options.wrapper ? { wrapper: options.wrapper } : undefined)
   return Object.assign(result, { app, api })
 }
 

@@ -51,9 +51,13 @@ class _AdminBase(PartnerAdminMixin, APIView):
         return admin, None
 
     def _get_application(self, pk):
+        # `programme` (the GIFT) is joined here, not fetched later: every detail payload now names
+        # it (`serializers_admin_gift`, 2026-09-28), and a join costs no query where a lazy FK
+        # read cost one — `test_query_budgets.py` measured 38 -> 39 without it.
         # org-fence: the shared lookup; every caller re-gates via _org_allows /
         # _scoped_application / _require_app_write / _require_qc before use.
-        return ScholarshipApplication.objects.select_related('profile', 'cohort').filter(pk=pk).first()
+        return ScholarshipApplication.objects.select_related(
+            'profile', 'cohort', 'programme').filter(pk=pk).first()
 
     def _b40_scope(self, admin):
         """B40 Applications access by role:

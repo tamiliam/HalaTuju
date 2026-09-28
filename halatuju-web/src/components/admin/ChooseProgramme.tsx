@@ -12,11 +12,13 @@
 // page updates with it. One selection, two places showing it, no second source of truth.
 
 import { useT } from '@/lib/i18n'
+import { useProgrammeScope } from '@/lib/programmeScope'
 import type { AdminProgramme } from '@/lib/admin-api'
 
-export default function ChooseProgramme(
-  { programmes, onSelect }: { programmes: AdminProgramme[]; onSelect: (code: string) => void },
-) {
+function Box({ options, onSelect }: {
+  options: ReadonlyArray<{ code: string; label: string }>
+  onSelect: (code: string) => void
+}) {
   const { t } = useT()
 
   return (
@@ -24,13 +26,34 @@ export default function ChooseProgramme(
       <p className="text-sm font-medium text-ground-800">{t('admin.programmeScope.choose')}</p>
       <p className="mt-0.5 text-xs text-ground-500">{t('admin.programmeScope.chooseHint')}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {programmes.map((p) => (
-          <button key={p.id} type="button" onClick={() => onSelect(p.code)}
+        {options.map((p) => (
+          <button key={p.code} type="button" onClick={() => onSelect(p.code)}
             className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50">
-            {p.name_en}
+            {p.label}
           </button>
         ))}
       </div>
     </div>
   )
+}
+
+export default function ChooseProgramme(
+  { programmes, onSelect }: { programmes: AdminProgramme[]; onSelect: (code: string) => void },
+) {
+  return <Box options={programmes.map((p) => ({ code: p.code, label: p.name_en }))} onSelect={onSelect} />
+}
+
+/**
+ * The same box, fed from the breadcrumb's OWN list and answered through its own `select`.
+ *
+ * ⚠ FOR THE MONEY PAGES (Payments, Spending — 2026-09-28), and it cannot use the full records the
+ * Configuration tabs use: `getAdminProgrammes` is org_admin-only, and a plain `admin` or `finance`
+ * opens these pages too. The scopes list is what the crumb offers everybody, so the question and
+ * the crumb can never offer different gifts.
+ */
+export function ChooseFromScope() {
+  // LIVE gifts only: a draft cannot be paid from (the server 404s it), so offering one here would
+  // be offering an answer that fails.
+  const { live, select } = useProgrammeScope()
+  return <Box options={live.map((c) => ({ code: c.code, label: c.name }))} onSelect={select} />
 }

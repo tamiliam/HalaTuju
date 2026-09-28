@@ -44,6 +44,8 @@ import TableFrame from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { useProgrammeParam } from '@/lib/programmeScope'
+import { useGiftGate } from '@/lib/useGiftGate'
+import { ChooseFromScope } from '@/components/admin/ChooseProgramme'
 import { formatDate } from '@/lib/formatDate'
 import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
@@ -83,6 +85,10 @@ export default function SpendingPage() {
   // client that sent nothing would reach exactly the rows the organisation fence allows.
   // `undefined` when several gifts exist and none is chosen — the scope refuses to guess.
   const programme = useProgrammeParam()
+  // ⚠ SEVERAL GIFTS AND NONE CHOSEN NEVER DRAWS EVERY GIFT'S SPENDING (2026-09-28). Payments and
+  // Spending move together (TD-241), so this page is gated exactly as Payments is — see
+  // `useGiftGate`. One gift, or one chosen: exactly as before.
+  const gate = useGiftGate(role)
 
   const [tab, setTab] = useState<Tab>('shops')
   const [data, setData] = useState<SpendingOverview | null>(null)
@@ -91,7 +97,7 @@ export default function SpendingPage() {
   const [saving, setSaving] = useState('')
 
   const load = useCallback(() => {
-    if (!token || !allowed) { setLoading(false); return }
+    if (!token || !allowed || gate !== 'open') { setLoading(false); return }
     setLoading(true)
     getSpendingOverview(programme, { token })
       .then(setData)
@@ -101,7 +107,7 @@ export default function SpendingPage() {
     // it the crumb would say one gift while the table showed another — the exact failure the
     // 2026-09-03 defect produced, arriving from the other direction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed, programme])
+  }, [token, allowed, programme, gate])
 
   useEffect(() => { load() }, [load])
 
@@ -145,6 +151,17 @@ export default function SpendingPage() {
 
   if (role && !allowed) {
     return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
+  }
+
+  // Not known yet, or on the way to the Programmes page: the loading line and nothing to press.
+  if (gate === 'wait') return <p className="text-ground-400" data-testid="gift-wait">{t('common.loading')}</p>
+  if (gate === 'ask') {
+    return (
+      <div data-testid="spending-choose">
+        <h1 className="text-2xl font-semibold text-ground-900">{t('admin.spending.title')}</h1>
+        <ChooseFromScope />
+      </div>
+    )
   }
 
   const totals = data?.totals

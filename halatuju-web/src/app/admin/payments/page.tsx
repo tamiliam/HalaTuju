@@ -1,7 +1,7 @@
 'use client'
 // Payments landing (P2) — the run list, a "New payment run" date dialog, and the funding
-// summary. Entered from the Administration panel's Payments card (no top-level nav entry); the
-// layout keeps "Administration" active here.
+// summary. A Programme-scope row since TD-241, offered by the rail only INSIDE a gift since
+// 2026-09-28; reached by URL with several gifts and none chosen, it sends you to the gifts.
 // Access: admin / org_admin / finance / super. Finance may READ everything here but creates
 // nothing — the "New payment run" control is hidden for it (the backend 403s it anyway).
 
@@ -12,7 +12,9 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
-import { useProgrammeParam } from '@/lib/programmeScope'
+import { useProgrammeParam, useProgrammeScope } from '@/lib/programmeScope'
+import { useGiftGate } from '@/lib/useGiftGate'
+import { ChooseFromScope } from '@/components/admin/ChooseProgramme'
 import { formatDate } from '@/lib/formatDate'
 import {
   getPaymentRuns, createPaymentRun, getFundingSummary,
@@ -76,9 +78,18 @@ export default function PaymentsLandingPage() {
   // nothing reaches exactly what the organisation fence already allowed, and the server still
   // refuses `programme_required` rather than picking between two.
   const programme = useProgrammeParam()
+  // ⚠ SEVERAL GIFTS AND NONE CHOSEN NEVER DRAWS A LIST HERE (2026-09-28). It used to draw every
+  // gift's runs and a New-run button the server could only refuse (`programme_required`) — with
+  // nowhere on screen to answer. The owner: *"since we access the payment run by first selecting
+  // the gift programme, that question shouldn't even arise."* The rail no longer offers this row
+  // outside a gift; reached by URL, `useGiftGate` sends the person to the Programmes page (or,
+  // for a role with no gift cards there, asks here). One gift, or one chosen: exactly as before.
+  const gate = useGiftGate(role)
+  const { programme: gift } = useProgrammeScope()
 
   useEffect(() => {
-    if (!token || !allowed) { setLoading(false); return }
+    if (!token || !allowed || gate !== 'open') { setLoading(false); return }
+    setLoading(true)
     getPaymentRuns(programme, { token })
       .then((d) => setRuns(d.runs))
       .catch(() => setError(t('admin.payments.loadFailed')))
@@ -89,9 +100,20 @@ export default function PaymentsLandingPage() {
     // ⚠ `programme` IS A DEPENDENCY — switching gift in the breadcrumb must re-read both
     // lists, or the crumb names one gift while the runs below belong to another.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed, programme])
+  }, [token, allowed, programme, gate])
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
+
+  // Not known yet, or on the way to the Programmes page: the loading line and nothing to press.
+  if (gate === 'wait') return <p className="text-ground-400" data-testid="gift-wait">{t('common.loading')}</p>
+  if (gate === 'ask') {
+    return (
+      <div className="font-plex" data-testid="payments-choose">
+        <h1 className="text-2xl font-bold text-ground-900">{t('admin.payments.title')}</h1>
+        <ChooseFromScope />
+      </div>
+    )
+  }
 
   const cancelledCount = runs.filter((r) => r.status === 'cancelled').length
   const visibleRuns = showCancelled ? runs : runs.filter((r) => r.status !== 'cancelled')
@@ -293,6 +315,15 @@ export default function PaymentsLandingPage() {
           onClick={() => !busy && setDialogOpen(false)}>
           <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-ground-900">{t('admin.payments.newRun')}</h2>
+            {/* ⚠ THE FUND IS NAMED, NEVER CHOSEN, HERE (2026-09-28). One read-only line: the gift
+                the crumb resolved. It is not a second picker — TD-241 deleted that for good
+                reason — it is the answer the person is about to spend, said once more on the one
+                screen where the answer moves money. No line when there is nothing resolved. */}
+            {gift && (
+              <p className="mt-1 text-sm text-ground-600" data-testid="pays-from">
+                {t('admin.payments.paysFrom', { name: gift.name })}
+              </p>
+            )}
             {/* ⚠ THE GIFT PICKER WAS HERE AND IS DELETED (TD-241). The breadcrumb names the
                 gift now, so this dialog asks only WHEN the money leaves. The safety did not
                 move: the server still refuses `programme_required` rather than picking

@@ -589,6 +589,39 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   but a bare id or a stand-in that the old form answered (or raised on) now quietly gets `None`.
   All four callers pass real applications, so nothing moves today. Recorded so the next caller
   knows. **Trigger:** any new caller of `_latest_offer`.
+- **TD-296 (raised 2026-09-28 by the gift-context sprint) — low. The URL does not carry the
+  gift, so a LIST link cannot be shared into a gift.** Detail pages are safe without it — a run and
+  an application name their own gift from the server payload (`usePinProgramme`), which is why a
+  bookmark, a refresh and a new tab all work. A list page is not: `/admin/payments` pasted into a
+  colleague's chat opens with no gift, and (by the 2026-09-28 ruling) either redirects them to the
+  Programmes page or asks. **What it would take:** `?programme=<code>` on the Programme-scope list
+  routes, read ONCE on mount into `select` (never written back on every switch, or Back becomes a
+  gift-switcher); the rail and the crumb's switch updating the query with `router.replace`; the
+  money pages' gate treating a recognised query code as chosen; and a decision on precedence when
+  the query and the in-memory pick disagree (the query should win — it is the more specific
+  instruction). Still display state: the server already re-fences `?programme=` on every endpoint,
+  so no fence moves. **Cost:** about a day, most of it tests across five list pages. **Trigger:**
+  somebody asks to share or bookmark a gift's Payments or Applications list.
+- **TD-298 (raised 2026-09-28 by the adversarial review of the gift-context sprint, F6) — low,
+  pre-existing.** Switching gift on a Programme-scope list page fires a new fetch without
+  cancelling the old one; a slow reply for the PREVIOUS gift can land after the new one's and
+  overwrite it, so the list briefly — or until the next action — describes the gift you left
+  while the crumb names the new one. Payments, Spending and Applications all have the shape
+  (`.then(setX)` with no staleness check). Fix: a `live` flag or request token per effect, as
+  `useSelectedProgramme` already does. **Trigger:** the next sprint on any of those pages.
+- **TD-299 (raised 2026-09-28 by the same review, F7) — low, pre-existing shape.** A super who
+  chooses ANOTHER organisation's gift in the crumb sees "Pays from: <that gift>" in the New-run
+  dialog, and Create then 404s: `create_run` uses `admin.owning_organisation`, so a super can only
+  ever create a run for their own organisation's gifts. Suggested fix: the dialog (or the New-run
+  button) is offered only when the resolved gift belongs to the caller's own organisation
+  (`scopes.programmes[].organisation_id` against `role.owning_org_id`), with a sentence saying
+  why otherwise. No money moves today — the server refuses. **Trigger:** a super running a
+  payment for another tenant, or the next Payments sprint.
+- **TD-297 (raised 2026-09-28 by the gift-context sprint) — low, pre-existing wording.** The
+  manual's *Finding your way around* (`src/content/manual/basics-programme.tsx`) still lists "the
+  money" under **your organisation**; Payments and Spending moved to the programme group with
+  TD-241 on 2026-09-11. This sprint added a sentence to that paragraph and did not reword the
+  existing one (no existing copy is changed without the owner). **Trigger:** the next manual pass.
 - **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
   H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
   for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a
@@ -4257,6 +4290,13 @@ INSIDE the organisation fence and never instead of it (an unknown or cross-tenan
 The Payments page's own gift picker was deleted — the breadcrumb is the only control that names a
 gift. Nobody gained or lost reach. Five bite-checks; the silent one found that nothing tested the
 run LIST's narrowing. See `docs/decisions.md` and the CHANGELOG entry of the same date.
+
+**Follow-up, 2026-09-28 — the gap this closure left.** The picker went, but the page still drew
+every gift's runs and a New-run button when no gift was chosen, and the server's
+`programme_required` then had nowhere on screen to be answered (an admin at BrightPath hit it).
+Fixed by the gift-context sprint: both rows now wait for a gift (`needsProgramme`), the pages
+redirect or ask rather than draw, the dialog names the fund, and the run and applicant pages pin
+the crumb to their own gift. See `docs/decisions.md`, 2026-09-28.
 
 **Raised by the owner, 2026-09-10**, while reviewing where the new Spending page sits:
 *"I am thinking if both payment and spending should be parked under gift programme, instead of

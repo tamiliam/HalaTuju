@@ -48,7 +48,7 @@ export interface ScopeOption {
   isActive?: boolean
 }
 
-function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLabel }: {
+function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLabel, locked }: {
   label: string
   options: ScopeOption[]
   selectedCode: string
@@ -56,9 +56,12 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLab
   ariaLabel: string
   /** Shown beside a gift that is not switched on yet. Absent for organisations. */
   notActiveLabel?: string
+  /** The page is ABOUT one gift (a run, an application) — name it, offer no other. */
+  locked?: boolean
 }) {
-  // Nothing to switch between: render the name, not a control that suggests otherwise.
-  if (options.length <= 1) {
+  // Nothing to switch between, or nothing the page would follow: render the name, not a control
+  // that suggests otherwise. A switch on a run page changed the crumb and not the run (2026-09-28).
+  if (options.length <= 1 || locked) {
     return <span className="truncate font-medium text-ground-800">{label}</span>
   }
 
@@ -93,7 +96,7 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLab
 
 export function ScopeSwitcher({
   organisations, programmes, selectedOrg, selectedProgramme, onSelectOrg, onSelectProgramme,
-  scope,
+  scope, programmeLocked, pinnedName,
 }: {
   organisations: ScopeOption[]
   programmes: ScopeOption[]
@@ -103,6 +106,10 @@ export function ScopeSwitcher({
   onSelectProgramme: (code: string) => void
   /** The scope of the page being viewed — from the route registry, never guessed. */
   scope?: NavScope
+  /** A detail page has pinned its own gift (`usePinProgramme`): no switch on the gift crumb. */
+  programmeLocked?: boolean
+  /** The pinned record's own gift name, from its payload — shown when the list lacks its code. */
+  pinnedName?: string
 }) {
   const { t } = useT()
   const sep = <span aria-hidden className="shrink-0 text-ground-300">/</span>
@@ -141,16 +148,20 @@ export function ScopeSwitcher({
           />
         </>
       )}
-      {showProgramme && programmes.length > 0 && (
+      {showProgramme && (programmes.length > 0 || (programmeLocked && pinnedName)) && (
         <>
           {sep}
           <Crumb
-            label={programme?.name ?? t('admin.shell.chooseProgramme')}
+            // A pinned record whose gift the list does not hold still names ITS OWN gift, from
+            // the server payload — never a question with no answer, never a guess (2026-09-28).
+            label={programme?.name
+              ?? (programmeLocked && pinnedName ? pinnedName : t('admin.shell.chooseProgramme'))}
             options={programmes}
             selectedCode={programme?.code ?? ''}
             onSelect={onSelectProgramme}
             ariaLabel={t('admin.shell.switchProgramme')}
             notActiveLabel={t('admin.programmes.notActive')}
+            locked={programmeLocked}
           />
         </>
       )}
@@ -175,7 +186,7 @@ export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scop
   onSelectOrg: (code: string) => void
   scope?: NavScope
 }) {
-  const { choices, chosen, select } = useProgrammeScope()
+  const { choices, chosen, select, pinned, pinnedName } = useProgrammeScope()
 
   return (
     <ScopeSwitcher
@@ -186,6 +197,8 @@ export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scop
       onSelectOrg={onSelectOrg}
       onSelectProgramme={select}
       scope={scope}
+      programmeLocked={pinned}
+      pinnedName={pinnedName}
     />
   )
 }

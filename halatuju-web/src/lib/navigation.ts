@@ -97,6 +97,8 @@ export interface NavItem {
    * `applications` is a READ: with nothing chosen it lists every gift under a neutral heading,
    * which is a true answer, just a less specific one. That is the same line the gift-switcher
    * sprint drew inside the pages (2026-09-08); this applies it to the menu.
+   * ⚠ `payments`/`spending` carry it since 2026-09-28 — but it hides a row only for a role with a
+   * door to the gifts (`hasGiftDoor`); for admin and finance the page's own question IS the door.
    *
    * ⚠ AND IT IS WHY NO ROLE NEEDS AN EXEMPTION. A reviewer's ONLY sidebar group is Programme
    * (`navigation.test.ts` pins it), so hiding the group outright would leave them with an empty
@@ -319,8 +321,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // enforces it, and `test_the_key_set_per_role_is_exact` is what pins it.
       //
       // ⚠ **NO `needsProgramme`.** This row READS: with no gift chosen it describes everything the
-      // organisation fence allows, under a neutral heading — the Applications/Payments rule, not
-      // Configuration's. See `NavItem.needsProgramme` for why the test is CONSEQUENCE, not scope.
+      // organisation fence allows, under a neutral heading — the Applications rule, not
+      // Configuration's (nor, since 2026-09-28, Payments'/Spending's). See `NavItem.needsProgramme` for why the test is CONSEQUENCE, not scope.
       //
       // ⚠ `programmeConfig` is `exact: true`, so `/admin/programme/overview` cannot be swallowed by
       // `/admin/programme`; longest match then makes this child the active row.
@@ -348,9 +350,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // a fence. Both endpoints re-resolve `?programme=<code>` inside the caller's own
       // organisation (`_AdminBase._gift_narrowing`), so a client ignoring it reaches the same
       // rows the organisation fence already allowed.
+      // ⚠ `needsProgramme` on BOTH (2026-09-28) — you enter a gift first. See that field's note.
       { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' } },
+        gate: { mode: 'always' }, needsProgramme: true },
       // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
       // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
       // the Payments allowlist, and this screen carries names beside purchases. This row and
@@ -359,7 +362,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // 'X' for expenses; 'S' is Students and 'P' is Sponsors.
       { id: 'spending', href: '/admin/spending', labelKey: 'admin.spending.nav', chord: 'X',
         scope: 'programme', roles: ['super', 'org_admin', 'admin'],
-        gate: { mode: 'always' } },
+        gate: { mode: 'always' }, needsProgramme: true },
     ],
   },
   {
@@ -453,7 +456,7 @@ export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide'
   if (!item.roles.includes(ctx.role)) return 'hide'
   // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
   // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
-  if (item.needsProgramme && ctx.programmeChosen === false) return 'hide'
+  if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.role)) return 'hide'
   if (item.gate.mode === 'probe') {
     return ctx.probes[item.gate.probe] === 'live' ? 'show' : item.gate.dark
   }
@@ -498,8 +501,14 @@ export function visibleNav(ctx: NavContext): VisibleNavGroup[] {
 export function programmeGroupFolded(ctx: NavContext): boolean {
   if (ctx.pathname === undefined) return false
   if (activeItem(ctx.pathname)?.scope === 'programme') return false
-  const door = NAV_ITEMS.find((i) => i.id === 'programmeConfig')
-  return door !== undefined && door.roles.includes(ctx.role)
+  return hasGiftDoor(ctx.role)
+}
+
+/** May this role step INTO a gift from the Programmes page? ONE answer for the fold above,
+ *  `needsProgramme` in `canSee` and `useGiftGate` (2026-09-28): with a door a money row waits for
+ *  a gift and its page redirects there; without one the row stays and the page asks. */
+export function hasGiftDoor(role: AdminRoleName): boolean {
+  return NAV_ITEMS.find((i) => i.id === 'programmeConfig')?.roles.includes(role) ?? false
 }
 
 /** True when `pathname` is `href` or sits underneath it. The boundary matters: without the

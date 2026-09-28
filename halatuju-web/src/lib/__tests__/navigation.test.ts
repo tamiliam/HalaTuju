@@ -19,10 +19,10 @@ import ta from '@/messages/ta.json'
 import {
   NAV_GROUPS, NAV_ITEMS, CHROMELESS, ROLE_NAMES, NO_PROBES, SIDEBAR_SCOPES,
   effectiveRole, canSee, visibleNav, activeItem, canAccess, searchNav, defaultRoute,
-  chordTarget, CHORD_PREFIX,
+  chordTarget, CHORD_PREFIX, hasGiftDoor,
   type AdminRoleName, type NavContext, type ProbeState, type LabelledNavItem,
 } from '@/lib/navigation'
-import { walkFloor } from '@/test/sourceGuard'
+import { floorCount, walkFloor } from '@/test/sourceGuard'
 
 const ctx = (role: AdminRoleName, probes: Partial<Record<'requests' | 'billing', ProbeState>> = {}): NavContext =>
   ({ role, probes: { ...NO_PROBES, ...probes } })
@@ -509,19 +509,61 @@ describe('visibleNav groups', () => {
     const gift = (role: AdminRoleName): NavContext =>
       ({ role, probes: NO_PROBES, programmeChosen: true })
 
-    it('hides Configuration, and only Configuration, while no gift is chosen', () => {
+    it('hides Configuration, Payments and Spending while no gift is chosen', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id))
-        .toEqual(['programmeOverview', 'applications', 'payments', 'spending'])
+        .toEqual(['programmeOverview', 'applications'])
     })
 
-    it('⚠ PAYMENTS AND SPENDING STAY VISIBLE WITH NO GIFT CHOSEN, like Applications', () => {
-      // They deliberately do NOT carry `needsProgramme` (TD-241). Configuration EDITS one
-      // gift, so offering it before you have named one is meaningless. Payments and Spending
-      // READ, and their pages ask which gift the way Applications does — a money row that
-      // vanished from the sidebar would read as a lost permission, not as a pending question.
-      const prog = visibleNav(noGift('finance')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'payments'])
+    /*
+     * ⚠⚠ THIS TEST WAS INVERTED ON 2026-09-28, IN THE OPEN — an owner ruling, not a drift.
+     *
+     * It used to read "PAYMENTS AND SPENDING STAY VISIBLE WITH NO GIFT CHOSEN", on the argument
+     * (TD-241) that they READ and their pages would ask. They did not ask: the Payments page drew
+     * the list and a New-run button, and the server then refused `programme_required` with
+     * nowhere on screen to answer it — an admin at BrightPath hit exactly that. The owner:
+     * *"since we access the payment run by first selecting the gift programme, that question
+     * shouldn't even arise."* So the two money rows wait for a gift, like Configuration, and the
+     * pages ask with `ChooseProgramme` if reached by URL. See docs/decisions.md, 2026-09-28.
+     */
+    it('⚠ PAYMENTS AND SPENDING WAIT FOR A GIFT — for a role with a door to the gifts', () => {
+      const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
+      expect(prog.items.map((i) => i.id)).not.toContain('payments')
+      // …and come back the moment one is chosen.
+      const chosen = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
+      expect(chosen.items.map((i) => i.id)).toEqual(expect.arrayContaining(['payments', 'spending']))
+    })
+
+    // ⚠ F3 (adversarial review, 2026-09-28): the first cut hid Payments from FINANCE too, and the
+    // Programmes page shows finance no gift cards — so its only way in was Overview → crumb. For a
+    // role with no door the row stays, and the page's own question IS the door.
+    it('⚠ finance and admin KEEP Payments with no gift chosen — the page asks them', () => {
+      const fin = visibleNav(noGift('finance')).find((g) => g.scope === 'programme')!
+      expect(fin.items.map((i) => i.id)).toEqual(['programmeOverview', 'payments'])
+      const adm = visibleNav(noGift('admin')).find((g) => g.scope === 'programme')!
+      expect(adm.items.map((i) => i.id)).toEqual(expect.arrayContaining(['payments', 'spending']))
+    })
+
+    // THE PAIR, PINNED: a money row is hidden outside a gift for exactly the roles `hasGiftDoor`
+    // names — the same predicate `useGiftGate` redirects on, so the rail and the page cannot drift.
+    it('hides a money row outside a gift IFF the role has a door (`hasGiftDoor`)', () => {
+      const seen = floorCount(ROLE_NAMES.flatMap((role) => (['payments', 'spending'] as const)
+        .map((id) => ({ role, item: NAV_ITEMS.find((i) => i.id === id)! }))
+        .filter(({ item }) => item.roles.includes(role))), 6, 'role x money-row pairs',
+      'every role that may open Payments or Spending must be checked against hasGiftDoor')
+      for (const { role, item } of seen) {
+        const hidden = canSee(item, noGift(role)) === 'hide'
+        expect([role, item.id, hidden]).toEqual([role, item.id, hasGiftDoor(role)])
+      }
+    })
+
+    // ⚠ THE TRAP: `undefined` is "the list has not arrived", not "no gift". Hiding the money rows
+    // on it would make them vanish on the first paint of every page load and pop back a moment
+    // later — and, on a tenant with ONE gift, blink for nothing.
+    it('⚠ an UNKNOWN answer (list not loaded) does NOT hide Payments or Spending', () => {
+      const prog = visibleNav({ role: 'org_admin', probes: NO_PROBES, programmeChosen: undefined })
+        .find((g) => g.scope === 'programme')!
+      expect(prog.items.map((i) => i.id)).toEqual(expect.arrayContaining(['payments', 'spending']))
     })
 
     it('shows every row once a gift is chosen', () => {
@@ -555,9 +597,10 @@ describe('visibleNav groups', () => {
       expect(omitted).toEqual(visibleNav(gift('org_admin')))
     })
 
-    it('marks exactly one row as needing a gift', () => {
+    // Was exactly one row (`programmeConfig`) until 2026-09-28; the money rows joined it.
+    it('marks exactly the three rows that act on one gift', () => {
       expect(NAV_ITEMS.filter((i) => i.needsProgramme).map((i) => i.id))
-        .toEqual(['programmeConfig'])
+        .toEqual(['programmeConfig', 'payments', 'spending'])
     })
   })
 

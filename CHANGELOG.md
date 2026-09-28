@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## The console never forgets which gift you are in - 2026-09-28
+
+Baselines measured first: **pytest 7,108 / 3 skipped** and **jest 2,982 / 166 suites**, both
+agreeing with the brief. After: **pytest 7,117 / 3 skipped** (+9, all new) and **jest 3,021 /
+168 suites** (+39). Bundle: median **256 kB**, worst **339 kB**, before and after.
+
+**Amended after the adversarial review (F1–F4), same day:** only LIVE gifts make the question (a
+draft beside one live gift is one gift, as on the server); the pin NEVER selects (the previous
+choice returns exactly on unmount); the rail hides money rows outside a gift only for roles with a
+door to the gifts — one predicate, `hasGiftDoor`, shared with the redirect — so finance and admin
+keep Payments and choose on the page; a pinned gift missing from the list shows the record's own
+name. The context and pin hook moved to `src/lib/programmeScopeCore.ts` (re-exported) so the run
+page stays inside the median budget. TD-298 and TD-299 raised from review findings F6/F7. Not committed,
+pushed or deployed. Owner: *"since we access the payment run by first selecting the gift
+programme, that question shouldn't even arise."*
+
+### Fixed
+
+- **Payments with two gifts and none chosen no longer offers a button the server can only
+  refuse.** An admin at BrightPath pressed New payment run and got "please say which this run pays
+  from" with nowhere to say it. The page no longer draws any list, figure or button without a gift.
+- **The breadcrumb no longer lies on a payment run or an application.** It used to offer a switch
+  the page ignored, and to ask "which gift?" in a fresh tab above a record that belongs to one.
+
+### Changed
+
+- **Payments and Spending wait for a gift in the rail** (`needsProgramme`), like Configuration.
+  An unknown answer (the list not yet loaded) still shows them. `navigation.test.ts`'s
+  "PAYMENTS AND SPENDING STAY VISIBLE" was **inverted in the open**, with the ruling written in.
+- **Reached by URL with several gifts and none chosen** (`src/lib/useGiftGate.ts`): super and
+  org_admin are **redirected** to the Programmes page (`router.replace`, once); admin and finance,
+  who have no gift cards there, are **asked on the page** with the house `ChooseProgramme` box.
+  Nothing is decided until the scopes list has settled (answered or failed).
+- **The shell tells the scope when its fetch has settled** (`settled`, distinct from
+  `scopesLoaded`, which still stays false on a failure).
+- **A detail page pins its own gift** (`usePinProgramme` in `lib/programmeScope.tsx`): from the
+  server payload, outranks the pick, no switch on the crumb, an unknown code shows the question,
+  selects the gift once recognised, released on unmount. Works on click, bookmark, refresh and a
+  new tab; nothing stored.
+- **The run page's way back to the list is `next/link`** (a bare `<a>` reloaded the app and lost
+  the gift). The new-tab student links stay.
+- **API, additive only.** A run's `programme` is `{id, code, name}` (was `{id, name}`); the admin
+  applicant payload gains `programme: {id, code, name}` — the GIFT, never `chosen_programme` — via
+  `apps/scholarship/serializers_admin_gift.py`, appended last by a base class so
+  `serializers_admin.py` did not grow a line. `_AdminBase._get_application` joins `programme`, so
+  the applicant GET stays at **38** queries (it read 39 without the join).
+- Manual *Finding your way around* gains one sentence; no existing wording changed.
+
+### Added
+
+- New string `admin.payments.paysFrom` — en *"Pays from: {name}"*, ms *"Dibayar daripada:
+  {name}"*, ta *"செலுத்தும் நன்கொடை: {name}"* — one read-only line in the New-run dialog.
+- Tests: `test_gift_context.py` (9), `payments/[id]/page.gift.test.tsx`,
+  `scholarship/[id]/view.gift.test.tsx`, gift-gate blocks in the Payments and Spending page tests,
+  two provider tests; helper `src/test/giftScope.tsx`; `renderCockpit` takes a `wrapper`.
+- TD-296 (the URL does not carry the gift — deferred, costed), TD-297 (manual still says money is
+  under the organisation).
+
 ## TD-282 — opening one applicant costs 38 queries, not 315 - 2026-09-21
 
 Baselines measured first: **pytest 7,086 / 3 skipped** and **jest 2,982 / 166 suites**, both

@@ -7,7 +7,7 @@ from .models import (
     FundingNeed, GraduationMessage, InterviewSession, InterviewSlot, ReviewerProfile,
     ScholarshipApplication, SponsorProfile,
 )
-from . import pool
+from . import pool, serializers_admin_gift as _gift
 from .serializers import (
     ApplicantDocumentSerializer,
     ConsentSerializer,
@@ -335,7 +335,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
 
 
-class AdminApplicationDetailSerializer(serializers.ModelSerializer):
+class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.
