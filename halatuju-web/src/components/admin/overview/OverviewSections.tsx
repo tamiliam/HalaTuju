@@ -136,15 +136,19 @@ export function MoneySection({ data, t }: SectionProps) {
   )
 }
 
-// (The Intake card that sat beside Attention until 2026-09-18 is gone — owner: "doesn't add much
-//  value". A round's state lives on Configuration; a round is now a FILTER, not a card.)
+// ── What needs attention: one card, the full width of the page. ──
+//    (It used to share a two-column row with an Intake card. That card went on 2026-09-18 — owner:
+//    "doesn't add much value"; a round's state lives on Configuration and a round is now a FILTER —
+//    and the half-width row it left behind went on 2026-09-29, because a lone card in the left
+//    half read as a hole on the right.)
 export function AttentionSection({ data, t }: SectionProps) {
   const attention = data.attention
   if (!attention) return null
   return (
     // ⚠ `due_soon` and `overdue` are SUBSETS of "with a reviewer", not a partition of it — a case
     //    does not stop being with its reviewer the moment it gets late.
-    <div className="mt-6 grid gap-3 lg:grid-cols-2">
+    //    The wrapper is spacing only — no grid, so the card takes the whole row.
+    <div className="mt-6">
       <Card title={t(`${K}.attention.title`)} testId="overview-attention">
         <dl className="text-sm">
           {([

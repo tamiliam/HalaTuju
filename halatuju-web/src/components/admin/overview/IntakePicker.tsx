@@ -11,8 +11,13 @@
  * says "no narrowing was asked for" rather than "narrow to nothing" — the same distinction the
  * gift query draws (`admin-api.giftQuery`).
  *
- * ⚠ NOTHING IS DRAWN WHEN THERE ARE NO ROUNDS. A gift with no intakes, or no gift chosen at all,
- * gets an empty list from the server; a picker with one option that changes nothing is furniture.
+ * ⚠ NOTHING IS DRAWN UNLESS THERE ARE AT LEAST TWO ROUNDS. A gift with no intakes, or no gift
+ * chosen at all, gets an empty list from the server; a picker with one option that changes nothing
+ * is furniture. A gift with exactly ONE round is the same furniture: "All intakes" and that round
+ * describe the same cases, so the choice changes nothing (owner, 2026-09-29).
+ * The server still sends that one round, and must: a round chosen by URL is named under the
+ * heading from the payload's own `intake` ("Showing the … intake only"), not from this list, and
+ * choosing nothing sends no parameter at all — so hiding the picker leaves both exactly as they were.
  */
 import { useT } from '@/lib/i18n'
 import type { OverviewIntake } from '@/lib/admin-api'
@@ -27,7 +32,7 @@ export default function IntakePicker({ intakes, value, onChange }: {
   onChange: (intake: number | undefined) => void
 }) {
   const { t } = useT()
-  if (intakes.length === 0) return null
+  if (intakes.length < 2) return null
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">

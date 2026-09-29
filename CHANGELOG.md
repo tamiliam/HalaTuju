@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Overview: the attention card is full width, and a one-round gift has no picker - 2026-09-29
+
+- **The "Needs attention" card now spans the page.** It sat in the left half of a two-column row built for the Intake card beside it; that card went on 2026-09-18 and the row stayed, leaving a hole on the right. The row is gone; the card, its test id and its comments are unchanged (`OverviewSections.tsx`). A test asserts the card's parent is not a two-column grid.
+- **The intake picker is only drawn when a gift has two or more rounds.** With one round, "All intakes" and that round describe the same cases, so the choice changed nothing. The server still sends the one round and a round chosen by URL is still named under the heading from the payload's own `intake`; choosing nothing still sends no parameter (`IntakePicker.tsx`). Tests cover one round (no picker) and two (picker); both bite-checked.
+
 ## The bundle gets its headroom back — the Supabase clients are auth-only (TD-300) - 2026-09-28
 
 Baselines measured first: **jest 3,076 / 174 suites**, bundle median **256 kB** / worst **339 kB** /

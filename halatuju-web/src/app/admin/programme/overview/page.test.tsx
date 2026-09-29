@@ -212,6 +212,16 @@ describe('an org admin sees the whole gift', () => {
     expect(screen.queryByTestId('overview-intake')).toBeNull()
   })
 
+  /* ⚠ THE ATTENTION CARD IS FULL WIDTH (owner, 2026-09-29). It shared a two-column row with the
+   * Intake card; when that card went, the row stayed and left a hole on the right. */
+  it('draws the attention card full width, not in half of a two-column row', async () => {
+    render(<ProgrammeOverviewPage />)
+    const card = await screen.findByTestId('overview-attention')
+    const wrapper = card.parentElement
+    expect(wrapper).not.toBeNull()
+    expect((wrapper?.className ?? '').includes('lg:grid-cols-2')).toEqual(false)
+  })
+
   /* ⚠ A STAGE AT ZERO IS NOT DRAWN (owner, 2026-09-18) — the total always is. The server still
    * sends all thirteen; the page shows the three with a case in them plus the total. */
   it('shows the total and only the stages that have a case in them', async () => {
@@ -643,6 +653,20 @@ describe('the intake picker', () => {
     render(<ProgrammeOverviewPage />)
     await screen.findByTestId('overview-funnel')
     expect(screen.queryByTestId('intake-picker')).toBeNull()
+  })
+
+  /* ⚠ ONE ROUND IS FURNITURE TOO: "All intakes" and the only round describe the same cases, so a
+   * picker offering the two changes nothing (owner, 2026-09-29). Two rounds are a real choice. */
+  it('is not drawn for a gift with one round, and is drawn for a gift with two', async () => {
+    mockApi.getProgrammeOverview.mockResolvedValue({ ...ADMIN_PAYLOAD, intakes: [INTAKES[0]] })
+    const { unmount } = render(<ProgrammeOverviewPage />)
+    await screen.findByTestId('overview-funnel')
+    expect(screen.queryByTestId('intake-picker')).toBeNull()
+    unmount()
+
+    mockApi.getProgrammeOverview.mockResolvedValue({ ...ADMIN_PAYLOAD, intakes: INTAKES })
+    render(<ProgrammeOverviewPage />)
+    expect(await screen.findByTestId('intake-picker')).not.toBeNull()
   })
 
   it('lists every round, newest first, beside an "all intakes" option', async () => {
