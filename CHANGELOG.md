@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## The post-award cards load on demand — TD-306's route back under its budget - 2026-09-30
+
+**The deploy gate refused `4583a83d` on `/scholarship/application` at 276 kB** against its
+275 kB budget. The same tree measured 275,447 gz bytes locally and printed 275; the build
+machine's gzip rounded it over (TD-300's rounding trap, on a per-route line). The budget is never
+raised, so weight came off: the Action Centre's two post-award cards, `BankDetailsTask` and
+`VircleTask`, which only an AWARDED student ever sees, moved verbatim to
+`components/scholarship/PostAwardTasks.tsx` and are fetched through `LazyPostAwardTask.tsx` (the
+`LazyInterviewBookingPanel` pattern: it owns a literal `import()`, draws nothing mid-flight, and
+on a failed chunk says the existing `verifyEmail.networkError` in place). They took the phone
+helpers, the country list and the Vircle account rule with them. **275,447 → 272,750 bytes
+(prints 273 kB)**; median 228 and worst 310 unchanged. Every route pays **20 bytes** in the webpack
+runtime for the new chunk's entry, which tips four prints up by one (`/admin/scholarship/[id]`
+263→264, `/admin/students/[id]` 229→230, `/quiz` 226→227, `/stpm/[id]` 248→249); the median
+headroom count falls from six routes to five. `ActionCentre.tsx` 990 → 696 lines (ledger lowered).
+Two guards followed the moved code: `payoutAccountDrift.test.ts` reads the digit floor from the
+new file, and the theme guard's F2a list names both new files. New: `LazyPostAwardTask.test.tsx`
+(both cards arrive with their props; the import lines are pinned) and `.failure.test.tsx`. Web
+only; api untouched. Not committed, pushed or deployed.
+
 ## No student reads "RM {income}" any more (TD-306) - 2026-09-29
 
 Small-change lane, owner's pick (*"then 306"*); the shape and the copy are the lead's. Baselines

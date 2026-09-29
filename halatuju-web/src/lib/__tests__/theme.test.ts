@@ -762,6 +762,12 @@ export const F2A_FILES = [
   'src/components/FieldLabel.tsx', 'src/components/VerifiedTick.tsx',
   'src/components/DocumentHelpCoach.tsx', 'src/components/SelectWithOther.tsx',
   'src/components/IncomeClusterCoach.tsx',
+  // ⚠ THE GUARD FOLLOWED THE CODE (TD-306 follow-up, 2026-09-30): ActionCentre's two post-award
+  // cards moved out verbatim behind a lazy boundary to pay for /scholarship/application's
+  // first-load budget. Dropping them from this list would have taken ~290 converted lines out of
+  // the only guard that covered them.
+  'src/components/scholarship/PostAwardTasks.tsx',
+  'src/components/scholarship/LazyPostAwardTask.tsx',
 ]
 
 assertConverted('the shared student-journey components (F2a)', F2A_FILES, 27)

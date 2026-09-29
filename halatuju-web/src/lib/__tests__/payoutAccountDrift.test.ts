@@ -36,11 +36,13 @@ const apiFloor = (() => {
   return Number(m[1])
 })()
 
-/** The form's floor, from `ActionCentre.tsx`'s one comparison, so the two are read the same way. */
+/** The form's floor, from the bank-details card's one comparison, so the two are read the same
+ *  way. The card moved verbatim out of `ActionCentre.tsx` into `scholarship/PostAwardTasks.tsx`
+ *  on 2026-09-30 (TD-306 follow-up: lazy-loaded to pay for the route's first-load budget). */
 const webFloor = (() => {
   // ⚠ `readWeb`, not a bare `readFileSync` (TD-276). This runs at module scope, so a moved
   // component used to kill the file at import with an `ENOENT` rather than say what had moved.
-  const form = readWeb('src/components/ActionCentre.tsx',
+  const form = readWeb('src/components/scholarship/PostAwardTasks.tsx',
     'the form must refuse a payout account at EXACTLY the api\'s digit floor, and both floors are '
     + 'read out of their own comparison rather than restated here')
   const m = form.match(/countDigits\(accountNumber\)\s*<\s*(\d+)/)

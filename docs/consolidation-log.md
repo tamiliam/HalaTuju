@@ -13,6 +13,7 @@ _(cleared at the 2026-09-18 review — counter reset; the 11 reviewed entries ar
 - 2026-09-29 fix(overview): attention card full width; picker hidden for a one-round gift (OverviewSections.tsx, IntakePicker.tsx, page.test.tsx)
 - 2026-09-29 fix(web): self-host the three fonts so a deploy needs nothing from Google, TD-305 (layout.tsx, src/fonts/ x3 woff2 + OFL + README, fontSources.test.ts; found TD-310)
 - 2026-09-29 fix(check2): TD-306 - no student reads "RM {income}"; a no-income wording for the high-utility ask, item copy never shows a raw placeholder (high_utility_variant.py new, check2_queries.py, actionCentre.ts, ActionCentre.tsx, OutstandingPanel.tsx, en/ms/ta.json incl. two dead officer strings deleted, test_income_whose_str_vouches.py, two new test files)
+- 2026-09-30 fix(web): TD-306's route back under budget - the deploy gate refused 4583a83d on /scholarship/application at 276 kB; the post-award cards load on demand, 275,447 -> 272,750 bytes, prints 273 (ActionCentre.tsx, scholarship/PostAwardTasks.tsx + LazyPostAwardTask.tsx new, code-standards.json ledger lowered, payoutAccountDrift + theme guards followed the move, two new test files)
 
 ## Reviews
 

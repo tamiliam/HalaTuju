@@ -680,6 +680,18 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   turns the deploy gate red for a reason unrelated to that change. **Fix:** find weight to take off
   the shared admin chunk, or have the owner re-set the median budget with the arithmetic in front
   of them. **Trigger:** the next web sprint, before it starts.
+  **Note 2026-09-30 — the PER-ROUTE line has the same rounding trap the median had.** The ledger
+  compares Next's PRINTED figure (three significant digits) with the budget, so a 275 kB budget
+  passes up to 275,499 gz bytes and fails at 275,500 — and the build machine (node:18-alpine, its
+  own gzip) does not compress to the same bytes as a local build. The deploy gate refused
+  `4583a83d` (TD-306) on `/scholarship/application` at **276 kB** while the same tree measured
+  **275,447 bytes** here and printed 275: 53 bytes of local headroom were not headroom. Paid by
+  taking weight off, never by raising the line: the Action Centre's two post-award cards
+  (`BankDetailsTask`, `VircleTask`) moved verbatim to `components/scholarship/PostAwardTasks.tsx`
+  behind `LazyPostAwardTask.tsx` — **275,447 → 272,750 bytes, prints 273 kB**, so the route now
+  has **~2.7 kB** of local room under the 275,500 line. Target a route at least a kilobyte under
+  its printed budget locally, and read the exact bytes (the sum of the gzipped page chunks in
+  `.next/app-build-manifest.json`), not the print.
 - **TD-301 (raised 2026-09-28 by TD-296's sprint) — low, pre-existing.** The Programme Overview
   has TD-298's shape: `load` sets `data` from whichever reply lands last, so a slow reply for the
   gift you left can overwrite the new gift's figures (and its 404 branch can clear the round of the
