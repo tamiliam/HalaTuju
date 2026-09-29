@@ -1309,10 +1309,11 @@ Read it at sprint start, before planning.
 ## Next Sprint — ▶ NOTHING IS SCHEDULED (as of 2026-09-28, after TD-300 "the bundle got its headroom back")
 
 **Built 2026-09-28, NOT committed, pushed or deployed — the lead and an adversarial reviewer own
-that.** Retro: NOT WRITTEN — the security-guidance hook blocked the file because its text names
-the hook's own trigger word, and the builder did not reword it to get past (that is the rule);
-the audit trail is the CHANGELOG entry, `docs/decisions.md` 2026-09-28 and TD-300/TD-304, which
-the adversarial reviewer judged sufficient. Rule: `docs/decisions.md`
+that.** Retro: `docs/retrospective-2026-09-29-bundle-headroom.md` — written by the LEAD on
+2026-09-29 with the owner's consent, after the security-guidance hook refused the builder's own
+(its text named the hook's trigger word; the builder did not reword to get past, which is the
+rule). It also records the deploy that failed once on a Google Fonts download (TD-305) and the
+two review hardenings. Rule: `docs/decisions.md`
 2026-09-28 (TD-300). In one breath: the three Supabase clients are AUTH-ONLY
 (`halatuju-web/src/lib/supabaseAuthClient.ts` builds the `AuthClient` field for field as
 `createClient` does — same default student storage key, same headers — and a jsdom test compares
