@@ -38,11 +38,11 @@ export default function GetStartedPage() {
             {t('getStarted.sponsor')}
           </Link>
 
-          <div className="border-t mt-6 pt-4 flex items-center justify-between">
-            <span className="text-sm text-ground-600">{t('getStarted.haveAccount')}</span>
+          <div className="border-t mt-6 pt-4 flex items-center justify-between gap-3">
+            <span className="min-w-0 text-sm text-ground-600">{t('getStarted.haveAccount')}</span>
             <button
               onClick={() => showAuthGate('profile')}
-              className="text-sm font-semibold text-primary-600 border border-ground-200 rounded-lg px-4 py-1.5 hover:bg-ground-50"
+              className="shrink-0 whitespace-nowrap text-sm font-semibold text-primary-600 border border-ground-200 rounded-lg px-4 py-1.5 hover:bg-ground-50"
             >
               {t('header.login.label')}
             </button>

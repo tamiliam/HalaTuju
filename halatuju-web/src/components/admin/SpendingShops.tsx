@@ -152,7 +152,7 @@ export default function SpendingShops({
       {/* ⚠ The count of what is SHOWING, beside the controls that changed it — deliberately not
           on the tab, where the number must keep meaning "how many are there in total". */}
       {filtered && (
-        <span className="text-xs tabular-nums text-ground-500" data-testid={`${testId}-showing`}>
+        <span className="text-xs text-ground-500" data-testid={`${testId}-showing`}>
           {t('admin.spending.filter.showing', {
             shown: String(shown.length), total: String(rows.length),
           })}
@@ -182,7 +182,7 @@ export default function SpendingShops({
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
               <span className="tabular-nums">RM{rm(m.total)}</span>
               <span>{t('admin.spending.col.visits')}{' '}
-                <span className="tabular-nums">{m.visits}</span></span>
+                <span>{m.visits}</span></span>
               {m.last_seen && <span>{formatDate(m.last_seen)}</span>}
             </div>
             {heldBack(m, 'mt-1 text-[11px] text-ground-500')}

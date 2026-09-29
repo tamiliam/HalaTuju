@@ -193,31 +193,33 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
             <th className="px-2 py-1.5 text-right font-medium">{t('admin.billing.invoice.col.amount')}</th>
           </tr>
         </thead>
-        <tbody className="tabular-nums">
+        {/* `tabular-nums` on the figure cells only, not the body: it switches face to Plex
+            (Lexend has no even digits), and the descriptions must stay in Lexend (TD-310). */}
+        <tbody>
           {inv.lines.map((ln) => (
             <tr key={ln.position} className="border-b">
               <td className="px-2 py-1.5 text-ground-900">{ln.description}</td>
-              <td className="px-2 py-1.5 text-right text-ground-700">{ln.quantity ?? ''}</td>
-              <td className="px-2 py-1.5 text-right text-ground-700">{ln.unit_amount_myr ? formatMyr(ln.unit_amount_myr) : ''}</td>
-              <td className="px-2 py-1.5 text-right text-ground-900">{formatMyr(ln.amount_myr)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.quantity ?? ''}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.unit_amount_myr ? formatMyr(ln.unit_amount_myr) : ''}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums text-ground-900">{formatMyr(ln.amount_myr)}</td>
             </tr>
           ))}
           <tr><td colSpan={3} className="px-2 pt-2 text-right text-ground-500">{t('admin.billing.charge.subtotal')}</td>
-            <td className="px-2 pt-2 text-right">{formatMyr(inv.subtotal_myr)}</td></tr>
+            <td className="px-2 pt-2 text-right tabular-nums">{formatMyr(inv.subtotal_myr)}</td></tr>
           {Number(inv.discount_myr) > 0 && (
             <tr><td colSpan={3} className="px-2 text-right text-ground-500">
               {t('admin.billing.invoice.discountLine', { pct: String(Number(inv.discount_pct)) })}
               {inv.discount_reason && <span className="block text-[11px] text-ground-400">{inv.discount_reason}</span>}
-            </td><td className="px-2 text-right">−{formatMyr(inv.discount_myr)}</td></tr>
+            </td><td className="px-2 text-right tabular-nums">−{formatMyr(inv.discount_myr)}</td></tr>
           )}
           <tr className="font-semibold"><td colSpan={3} className="border-t border-ground-900 px-2 pt-1.5 text-right">{t('admin.billing.invoice.totalDue')}</td>
-            <td className="border-t border-ground-900 px-2 pt-1.5 text-right">{formatMyr(inv.total_myr)}</td></tr>
+            <td className="border-t border-ground-900 px-2 pt-1.5 text-right tabular-nums">{formatMyr(inv.total_myr)}</td></tr>
           {Number(inv.amount_paid_myr) > 0 && (
             <>
               <tr><td colSpan={3} className="px-2 text-right text-ground-500">{t('admin.billing.invoice.paid')}</td>
-                <td className="px-2 text-right">−{formatMyr(inv.amount_paid_myr)}</td></tr>
+                <td className="px-2 text-right tabular-nums">−{formatMyr(inv.amount_paid_myr)}</td></tr>
               <tr className="font-semibold"><td colSpan={3} className="px-2 text-right">{t('admin.billing.invoice.balance')}</td>
-                <td className="px-2 text-right">{formatMyr(inv.balance_myr)}</td></tr>
+                <td className="px-2 text-right tabular-nums">{formatMyr(inv.balance_myr)}</td></tr>
             </>
           )}
         </tbody>

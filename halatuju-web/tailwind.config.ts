@@ -122,8 +122,11 @@ const config: Config = {
         error: '#ef4444',
       },
       fontFamily: {
-        // Lexend from Stitch design
-        sans: ['Lexend', 'system-ui', 'sans-serif'],
+        // Lexend from the Stitch design. ⚠ THE VARIABLE MUST COME FIRST (TD-310): until 2026-09-29
+        // this list began with the plain name 'Lexend', which nothing on the page provides (the
+        // self-hosted face is registered as `__Lexend_<hash>` behind `--font-lexend`), so every
+        // visitor saw system-ui for months while the code said Lexend. `fontSources.test.ts` pins it.
+        sans: ['var(--font-lexend)', 'Lexend', 'system-ui', 'sans-serif'],
         // IBM Plex Sans — applied to the four ORGANISATION admin modules only
         // (invite / payments / contracts / sources) via `font-plex`.
         plex: ['var(--font-ibm-plex-sans)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],

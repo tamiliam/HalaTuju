@@ -197,7 +197,7 @@ export default function PaymentsLandingPage() {
               <span>{formatDate(r.payment_date)}</span>
               <span>{monthLabel(r.period_month)}</span>
               <span>{t('admin.payments.col.students')}{' '}
-                <span className="tabular-nums">{r.students}</span></span>
+                <span>{r.students}</span></span>
             </div>
           </Link>
         ))}

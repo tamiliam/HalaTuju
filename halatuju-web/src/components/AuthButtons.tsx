@@ -32,7 +32,7 @@ export default function AuthButtons() {
       <div className="relative" ref={ref}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1 text-sm font-medium text-ground-700 px-3 py-1.5 rounded-lg hover:bg-ground-50"
+          className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-ground-700 px-3 py-1.5 rounded-lg hover:bg-ground-50"
         >
           {t('header.login.label')}
           <svg className={`w-4 h-4 text-ground-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">

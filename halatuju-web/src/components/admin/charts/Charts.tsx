@@ -51,11 +51,11 @@ export interface BarSeries {
 function Figures({ testId, figures }: { testId: string; figures: readonly ChartFigure[] }) {
   if (figures.length === 0) return null
   return (
-    <ol className="mt-2.5 flex flex-wrap gap-x-3.5 gap-y-1 text-[11px] tabular-nums text-ground-500"
+    <ol className="mt-2.5 flex flex-wrap gap-x-3.5 gap-y-1 text-[11px] text-ground-500"
       data-testid={`${testId}-figures`}>
       {figures.map((f) => (
         <li key={f.label}>
-          {f.label} <span className="font-semibold text-ground-700">{f.value}</span>
+          {f.label} <span className="font-semibold tabular-nums text-ground-700">{f.value}</span>
         </li>
       ))}
     </ol>

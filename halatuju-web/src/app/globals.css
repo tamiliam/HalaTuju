@@ -2,8 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Lexend font from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+/* ⚠ NO FONT IS IMPORTED HERE, and none may be (TD-310): a Google `@import` sat here for months,
+   ignored by every browser. Fonts are self-hosted in layout.tsx; Lexend is `--font-lexend`.
+   ⚠ MONEY PAINTS IN A FACE WITH TABULAR FIGURES. Lexend has no `tnum` and its digits differ in
+   width (500–620 units), so `tabular-nums` alone would jitter; Plex's digits are all 600. A
+   surface on a face that has `tnum` keeps it via `--figures-face` (the sponsor portal: Inter). */
+:root { --figures-face: var(--font-ibm-plex-sans), 'IBM Plex Sans', system-ui, sans-serif; }
+.tabular-nums:not(.font-mono) { font-family: var(--figures-face); }
 
 /* Brand colour channels (platform Sprint 6, decision D3). Space-separated RGB triplets converted
    from today's EXACT platform hexes — static CSS so first paint is correct + SSR-safe. A tenant
@@ -472,7 +477,8 @@
 /* Base styles */
 @layer base {
   html {
-    font-family: 'Lexend', system-ui, sans-serif;
+    /* The same stack as Tailwind's `font-sans`, read from the config so the two cannot drift. */
+    font-family: theme('fontFamily.sans');
   }
 
   /* ⚠ THE PAGE ITSELF. This was `bg-white text-gray-900` — RAW, so in dark mode the whole

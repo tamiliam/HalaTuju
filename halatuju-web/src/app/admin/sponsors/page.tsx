@@ -201,7 +201,7 @@ export default function AdminSponsorsList() {
 
               <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
                 <span>{t('admin.sponsors.colStudents')}{' '}
-                  <span className="tabular-nums">{s.students > 0 ? s.students : '—'}</span></span>
+                  <span>{s.students > 0 ? s.students : '—'}</span></span>
                 <span className={seenTone[seenBand(s.last_seen_at)]}>
                   {s.last_seen_at
                     ? t(`admin.sponsors.seen.${seenBand(s.last_seen_at)}`, { date: formatDate(s.last_seen_at) })

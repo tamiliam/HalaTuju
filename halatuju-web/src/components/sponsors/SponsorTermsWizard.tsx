@@ -165,7 +165,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
             )}
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-ground-100 bg-ground-50 px-5 py-3">
-            <span className="text-xs text-ground-500 tabular-nums">
+            <span className="text-xs text-ground-500">
               {t('sponsorPortal.terms.progress', {
                 n: String(i + 1), total: String(checkpoints.length),
               })}

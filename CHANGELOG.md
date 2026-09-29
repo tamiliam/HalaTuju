@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## The product is in Lexend at last; the Home top bar fits a phone (TD-310) - 2026-09-29
+
+Small sprint, owner's ruling *"on 310, go"* (option 2, after seeing the look). Web only.
+Baselines measured first: **jest 3,135 / 179 suites**, bundle median **228 kB**, worst **310**,
+budget 229. After the review fixes: **jest 3,150 / 181** (+15). Not committed, pushed or deployed.
+
+- **Fixed first: the Home top bar on phones** (`src/app/page.tsx`, `AuthButtons.tsx`). The bar
+  (logo, Auto, English, Log in, Sign Up) was one row that could not wrap: at 390 px it measured
+  **414 / 432 / 588 px** in English / Malay / Tamil, so the page scrolled sideways and "Log in"
+  broke onto two lines. The nav and its control cluster now `flex-wrap` (controls drop under the
+  logo and wrap among themselves), the logo is `shrink-0`, and the "Log in ▾" toggle is
+  `whitespace-nowrap` like "Sign Up" beside it. Measured with Lexend on: the bar is **390 at 390
+  and 360 at 360** in all three languages, "Log in" one line (32 px tall). No new component and no
+  wording change. Pinned by `src/lib/__tests__/navLayout.test.ts` (4).
+- **Lexend switched on.** `tailwind.config.ts` `fontFamily.sans` now leads with
+  `var(--font-lexend)`; the base `html` rule in `globals.css` reads the same stack with
+  `theme('fontFamily.sans')` (it had its own plain `'Lexend'` copy); the dead Google `@import` is
+  deleted. Measured in Chromium (CDP platform fonts) at 1280×900, 390×844 and 360×800 on `/` (en,
+  ms, ta), `/about`, `/about` in Tamil, `/scholarship/apply` and `/admin/login`: headings,
+  paragraphs and buttons paint in **Lexend**; Tamil paints in **Nirmala UI** glyph by glyph; no
+  request to Google; Supabase blocked throughout.
+- **Money columns keep tabular figures.** Lexend has no `tnum` feature (its GSUB carries
+  ccmp/dnom/frac/liga/locl/numr) and its digits are 500–620 units wide, so `tabular-nums` on
+  Lexend does nothing: `RM 1111.11` measured 81.08 px against 91.36 px for `RM 0000.00`. One rule
+  in `globals.css` paints every `tabular-nums` (104 uses) in IBM Plex Sans (digits all 600 units;
+  both rows 88.16 px), through `--figures-face`. The sponsor portal sets `--figures-face` to Inter,
+  which has `tnum`, so its money stays in Inter. `font-mono` is left alone.
+- **Inter is kept** — the sponsor portal paints in it (`sponsor/(portal)/layout.tsx`).
+- **Guards** in `fontSources.test.ts` (+4): `font-sans[0]` is `var(--font-lexend)` (read from the
+  real config); the `html` rule reads `theme('fontFamily.sans')`; no Google Fonts `@import`/link
+  anywhere under `src/` (floored walk); the tabular rule, `--figures-face` and the sponsor portal's
+  Inter override. Bites: see the retrospective.
+- **Bundle:** first-load JS unchanged (median 228, worst 310, shared 87.2; only `/`'s page chunk
+  3.3 → 3.33 kB, first-load 231 either way). Main CSS 105,786 → 105,938 B raw, 16,603 → 16,582 B
+  gzipped.
+- **Found, not changed: TD-311** — the Home page in Tamil is still 458 px wide on a phone: the
+  hero heading's Tamil word does not fit at `text-5xl`. Older than this change; the owner's call.
+- **Adversarial review (SHIP AFTER FIXES), all four fixed:**
+  - **F1** TVET requirement rows (`RequirementsCard.tsx`, general and special) now wrap and both
+    halves are `min-w-0 break-words`; three TVET course pages had reached 380–387 px at 360.
+  - **F2** `/get-started`'s "Log in" is `shrink-0 whitespace-nowrap` (it broke onto two lines at
+    360; now 34 px tall, one line, in en/ms/ta).
+  - **F3** `tabular-nums` added to the figure cells that lacked it: billing usage (events, input
+    and output tokens, storage, the paused `0`), course-data coverage (6 cells), invoice lines and
+    totals (8 cells). No other right-aligned figure cell was bare (the two others are a link and a
+    button).
+  - **F4** `tabular-nums` moved off containers and sentences so only figures change face: invoice
+    `<tbody>` → its figure cells; chart legend `<ol>` → the value span; removed from the two
+    "Showing X of Y" sentences, the intake-year date range, and inline figures in running text
+    (Merit, Visits, Transactions/Unsorted/Balance, Applications, sponsor Students, reviewer
+    outcome legend, payment-run Students, the sponsor terms "N of M").
+  - Guards: `figuresFace.test.ts` (new, 5, floored walk) and `navLayout.test.ts` +2.
+  - Measured at 360 px in en/ms/ta on 15 course pages (the reviewer's three drawn with every
+    requirement key, ten random TVET, two poly) + `/get-started`: max `scrollWidth` **360**.
+  - Raised TD-312 (`/search` Tamil 375 px) and TD-313 (raw requirement names on TVET pages).
+
 ## A deploy no longer needs Google Fonts — the three fonts are self-hosted (TD-305) - 2026-09-29
 
 Small-change lane, owner's pick. Web only. Baselines measured first: **jest 3,123 / 178 suites**,

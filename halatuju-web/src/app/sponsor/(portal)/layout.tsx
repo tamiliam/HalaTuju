@@ -156,9 +156,13 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
   return (
     // Sponsor portal typeface (owner 2026-07-18): Inter — crisp at small sizes, trustworthy
     // for the money/facts. Scoped here; the rest of HalaTuju stays on Lexend. (--font-inter
-    // is registered in the root layout.)
+    // is registered in the root layout.) Inter HAS tabular figures, so money here keeps Inter:
+    // `--figures-face` is what `.tabular-nums` paints in (globals.css, TD-310).
     <div className="min-h-screen flex flex-col bg-ground-50"
-      style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
+      style={{
+        fontFamily: 'var(--font-inter), system-ui, sans-serif',
+        '--figures-face': 'var(--font-inter), system-ui, sans-serif',
+      } as React.CSSProperties}>
       <header className="bg-ground-0 border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/sponsor" className="flex items-center gap-2 shrink-0">

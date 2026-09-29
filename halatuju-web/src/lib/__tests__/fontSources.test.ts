@@ -22,6 +22,7 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as path from 'path'
 import { WEB_ROOT, floorCount, readWeb, walkFloor } from '@/test/sourceGuard'
+import tailwindConfig from '../../../tailwind.config'
 
 const LAYOUT = 'src/app/layout.tsx'
 const layout = readWeb(LAYOUT,
@@ -102,6 +103,50 @@ describe('every font file the layout names is present and audited', () => {
     // Without `weight: '100 900'` the @font-face says 400 only and the browser FAKES every bold
     // on the sponsor portal instead of using the font's own weights.
     expect((layout.match(/weight: '100 900'/g) || []).length).toBe(2)
+  })
+})
+
+/**
+ * TD-310 (2026-09-29): the product said Lexend for months and painted system-ui. Tailwind's
+ * `font-sans` began with the plain name 'Lexend', which nothing on the page provides (next/font
+ * registers the face as `__Lexend_<hash>` behind `--font-lexend`), and the Google `@import` meant
+ * to supply the plain name sat after other rules, where every browser ignores it. Both halves
+ * read as correct in review. These tests pin the working shape.
+ */
+describe('Lexend actually paints (TD-310)', () => {
+  const GLOBALS = 'src/app/globals.css'
+  const globals = readWeb(GLOBALS, 'the stylesheet that once imported Lexend from Google, dead')
+
+  it('font-sans leads with the self-hosted variable, not a family name nothing provides', () => {
+    const families = tailwindConfig.theme?.extend?.fontFamily as Record<string, string[]>
+    expect(families.sans[0]).toBe('var(--font-lexend)')
+  })
+
+  it('the base html rule reads the same stack from the config', () => {
+    expect(globals).toMatch(/html\s*\{[^}]*font-family:\s*theme\('fontFamily\.sans'\)/)
+  })
+
+  it('no stylesheet or source file imports a font from Google at run time', () => {
+    const files = walkFloor(path.join(WEB_ROOT, 'src'), 500,
+      'every source file is scanned for a Google Fonts @import or <link> (TD-310)',
+      { exts: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.css'] })
+    // Assembled, not written whole, so this file does not match its own scan.
+    const host = ['fonts', 'googleapis', 'com'].join('\\.')
+    const re = new RegExp(`@import\\s+url\\(\\s*['"]?https?://${host}|href=['"{]\\s*['"\`]?https?://${host}`)
+    const offenders = files
+      .filter((f) => re.test(fs.readFileSync(f, 'utf8')))
+      .map((f) => path.relative(WEB_ROOT, f).split(path.sep).join('/'))
+    expect(offenders).toEqual([])
+  })
+
+  it('money columns paint in a face with tabular figures, because Lexend has none', () => {
+    // Lexend's GSUB has no `tnum` and its digits are 500–620 units wide; Plex's are all 600.
+    expect(globals).toMatch(/--figures-face:\s*var\(--font-ibm-plex-sans\)/)
+    expect(globals).toMatch(/\.tabular-nums:not\(\.font-mono\)\s*\{\s*font-family:\s*var\(--figures-face\);\s*\}/)
+    // The sponsor portal is on Inter, which HAS tabular figures — it keeps its own face.
+    const sponsor = readWeb('src/app/sponsor/(portal)/layout.tsx',
+      'the sponsor portal sets its figures face to Inter')
+    expect(sponsor).toMatch(/'--figures-face': 'var\(--font-inter\)/)
   })
 })
 

@@ -188,27 +188,27 @@ export default function CourseDataDashboard() {
             <tbody className="divide-y">
               <tr>
                 <td className="py-2">{t('admin.courseData.src.epanduan_stpm')}</td>
-                <td className="py-2 text-right">{coverage.stpm_active} / {coverage.stpm_total}</td>
+                <td className="py-2 text-right tabular-nums">{coverage.stpm_active} / {coverage.stpm_total}</td>
                 <td className="py-2 text-right text-ground-400">{dash}</td>
                 <td className="py-2 text-right text-ground-400">{dash}</td>
               </tr>
               <tr>
                 <td className="py-2">{t('admin.courseData.src.epanduan_spm')}</td>
-                <td className="py-2 text-right">{coverage.spm_total}</td>
+                <td className="py-2 text-right tabular-nums">{coverage.spm_total}</td>
                 <td className="py-2 text-right text-ground-400">{dash}</td>
                 <td className="py-2 text-right text-ground-400">{dash}</td>
               </tr>
               <tr>
                 <td className="py-2">{t('admin.courseData.src.uptvet')}</td>
-                <td className="py-2 text-right">{coverage.tvet_have}</td>
-                <td className="py-2 text-right">{coverage.uptvet_available ?? dash}</td>
-                <td className={`py-2 text-right ${coverage.uptvet_gap ? 'text-caution-700 font-medium' : 'text-ground-400'}`}>
+                <td className="py-2 text-right tabular-nums">{coverage.tvet_have}</td>
+                <td className="py-2 text-right tabular-nums">{coverage.uptvet_available ?? dash}</td>
+                <td className={`py-2 text-right tabular-nums ${coverage.uptvet_gap ? 'text-caution-700 font-medium' : 'text-ground-400'}`}>
                   {coverage.uptvet_gap ?? dash}
                 </td>
               </tr>
               <tr>
                 <td className="py-2">{t('admin.courseData.src.emasco')}</td>
-                <td className="py-2 text-right">{coverage.emasco_total}</td>
+                <td className="py-2 text-right tabular-nums">{coverage.emasco_total}</td>
                 <td className="py-2 text-right text-ground-400">{dash}</td>
                 <td className="py-2 text-right text-ground-400">{dash}</td>
               </tr>

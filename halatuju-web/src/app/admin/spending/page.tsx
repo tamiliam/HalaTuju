@@ -278,7 +278,7 @@ export default function SpendingPage() {
               {t('admin.spending.filter.onlyUnplaced')}
             </label>
             {studentsFiltered && (
-              <span className="text-xs tabular-nums text-ground-500"
+              <span className="text-xs text-ground-500"
                 data-testid="student-showing">
                 {t('admin.spending.filter.showing', {
                   shown: String(shownStudents.length), total: String(allStudents.length),
@@ -301,11 +301,11 @@ export default function SpendingPage() {
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
                   <span>{t('admin.spending.students.transactions')}{' '}
-                    <span className="tabular-nums">{s.transactions}</span></span>
+                    <span>{s.transactions}</span></span>
                   <span>{t('admin.spending.students.unsorted')}{' '}
-                    <span className="tabular-nums">RM{rm(s.unplaced)}</span></span>
+                    <span>RM{rm(s.unplaced)}</span></span>
                   <span>{t('admin.spending.students.balance')}{' '}
-                    <span className={`tabular-nums ${balanceTone(s.balance)}`}>
+                    <span className={balanceTone(s.balance)}>
                       {money(s.balance)}</span></span>
                 </div>
               </div>

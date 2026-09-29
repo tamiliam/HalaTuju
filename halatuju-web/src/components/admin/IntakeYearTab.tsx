@@ -107,7 +107,7 @@ function WindowCell({ year, today, t }: {
   if (state.kind === 'none') return <span className="tabular-nums">—</span>
   return (
     <span className="block" data-testid={`window-${year.code}`}>
-      <span className="block tabular-nums">
+      <span className="block">
         {`${formatDate(year.opens_on) || '—'} – ${formatDate(year.closes_on) || '—'}`}
       </span>
       <span className="mt-0.5 block text-xs text-ground-500" data-window-state={state.kind}>
@@ -385,7 +385,7 @@ export default function IntakeYearTab() {
                 <div className="mt-2 flex items-center justify-between gap-3 border-t border-ground-100 pt-2">
                   <span className="text-[11px] text-ground-600">
                     {t('admin.years.col.applications')}{' '}
-                    <span className="tabular-nums">{y.applications}</span>
+                    <span>{y.applications}</span>
                   </span>
                   <button type="button" disabled={busy}
                     data-testid={`edit-card-${y.code}`} onClick={() => startEdit(y)}

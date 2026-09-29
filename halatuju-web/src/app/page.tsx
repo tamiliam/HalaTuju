@@ -14,11 +14,15 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
       {/* Navigation */}
-      <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
+      {/* ⚠ BOTH ROWS WRAP ON PURPOSE (TD-310). On a 390 px phone this bar was 414 px wide in
+          English, 432 in Malay and 588 in Tamil — the page scrolled sideways and "Log in" broke
+          onto two lines. Now the controls drop under the logo, and wrap among themselves, instead
+          of pushing the page wider. `navLayout.test.ts` pins these classes. */}
+      <nav className="container mx-auto px-6 py-4 flex flex-wrap justify-between items-center gap-y-3">
+        <div className="flex items-center gap-2 shrink-0">
           <BrandLogo width={120} height={40} />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 sm:gap-x-4">
           <ThemeSelector />
           <LanguageSelector />
           <Link href="/about" className="hidden sm:inline text-ground-600 hover:text-ground-900">

@@ -129,9 +129,9 @@ function OrgCard({ block, t, showHeading = true }: {
                     </span>
                   ))}
                 </td>
-                <td className="px-4 py-2 text-right text-ground-700">{formatCount(r.events)}</td>
-                <td className="px-4 py-2 text-right text-ground-500">{r.input_tokens ? formatCount(r.input_tokens) : '—'}</td>
-                <td className="px-4 py-2 text-right text-ground-500">{r.output_tokens ? formatCount(r.output_tokens) : '—'}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-ground-700">{formatCount(r.events)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-ground-500">{r.input_tokens ? formatCount(r.input_tokens) : '—'}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-ground-500">{r.output_tokens ? formatCount(r.output_tokens) : '—'}</td>
               </tr>
             ))}
             {/* Document storage — a live snapshot, not a metered call. */}
@@ -141,7 +141,7 @@ function OrgCard({ block, t, showHeading = true }: {
                 <span className="text-ground-500"> — {t(block.is_platform
                   ? 'admin.billing.storageAllNote' : 'admin.billing.storageOrgNote')}</span>
               </td>
-              <td className="px-4 py-2 text-right text-ground-700" colSpan={3}>{formatBytes(block.storage_bytes)}</td>
+              <td className="px-4 py-2 text-right tabular-nums text-ground-700" colSpan={3}>{formatBytes(block.storage_bytes)}</td>
             </tr>
             {/* Paused services — shown greyed so the reader knows they exist and cost nothing now. */}
             {PAUSED_SERVICES.map((s) => (
@@ -150,7 +150,7 @@ function OrgCard({ block, t, showHeading = true }: {
                   {t(`admin.billing.service.${s}`)}{' '}
                   <span className="text-[10px] uppercase">{t('admin.billing.paused')}</span>
                 </td>
-                <td className="px-4 py-2 text-right">0</td>
+                <td className="px-4 py-2 text-right tabular-nums">0</td>
                 <td className="px-4 py-2 text-right">—</td>
                 <td className="px-4 py-2 text-right">—</td>
               </tr>

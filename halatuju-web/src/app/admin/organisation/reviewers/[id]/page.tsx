@@ -289,7 +289,7 @@ export default function AdminReviewerDetailPage() {
                     <span className={`inline-block w-2.5 h-2.5 rounded-sm mr-1.5 ${OUTCOME_BG[s.key]}`} />
                     {t(`admin.reviewers.detail.${s.key}`)}
                     {' '}
-                    <span className="tabular-nums font-semibold text-ground-900">{s.count}</span>
+                    <span className="font-semibold text-ground-900">{s.count}</span>
                   </span>
                 ))}
               </div>

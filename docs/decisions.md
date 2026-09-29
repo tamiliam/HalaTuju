@@ -12254,3 +12254,44 @@ does not cover it and the owner must rule again.
 **Trade-off, for the owner (TD-302):** there is no "All gifts" in the crumb, and a reload no longer resets Applications to all gifts, because the address bar now remembers.
 
 **Revisit if:** the crumb gains an "All gifts" entry (then it should drop the query), or a second page family wants the gift in its URL (the hook is per page, by design).
+
+## The product paints in Lexend, and money paints in a face with tabular figures — TD-310, owner ruling, 2026-09-29
+
+**Decision.** Option 2 of TD-310: the self-hosted Lexend becomes the body face of the whole
+product. The owner saw a before/after of every public page at desktop and phone width, including
+the Home top bar's overflow, and ruled: *"on 310, go."* `fontFamily.sans` leads with
+`var(--font-lexend)`; the base `html` rule reads it from the config; the dead Google `@import` is
+gone. Tamil keeps falling through per glyph to the system Tamil face (Nirmala UI on Windows) —
+Lexend has no Tamil and none is added.
+
+**Tabular numbers.** Lexend has no `tnum` feature and proportional digits (500–620 units), so
+`tabular-nums` on Lexend does nothing and a money column's figures would not line up. Rather than
+touch 104 call sites, ONE rule in `globals.css` makes `.tabular-nums` (except `font-mono`) paint in
+`var(--figures-face)`, which defaults to **IBM Plex Sans** (every digit 600 units; already
+self-hosted and preloaded; already the organisation admin's face). A surface whose own face HAS
+`tnum` overrides the variable: the sponsor portal sets it to **Inter**. Measured: `RM 1111.11` and
+`RM 0000.00` are both 88.16 px under the rule, 81.08 vs 91.36 px in Lexend without it.
+
+**Alternatives considered:** (a) keep the system font the screen had shown for months and delete
+Lexend (option 1) — the owner chose the design's face; (b) `system-ui` for figures — tabular on
+Windows, macOS and Android today, but a different face per device and not ours to pin; (c) a new
+utility class added beside each `tabular-nums` — 104 edits across 26 files, and the next
+`tabular-nums` written without it would jitter silently; (d) keep Lexend in the money columns and
+accept the jitter — refused, the payments and billing tables are read column-wise.
+
+**Trade-offs:** a figure written with `tabular-nums` is in Plex even when the text around it is
+Lexend — the digits look slightly different from a number in running text. Coupling a font to
+`tabular-nums` is a house rule, not Tailwind's meaning; it is written at the rule and pinned by
+`fontSources.test.ts`.
+
+**Revisit if:** Lexend ships a version with `tnum` (then delete the rule), or a surface adopts a
+third face (it sets `--figures-face` the way the sponsor portal does).
+
+**Amended the same day by the adversarial review: the Plex rule targets FIGURES, not containers.**
+Because `tabular-nums` now changes the face, where it sits decides which words change face. So:
+(1) it goes on the cell or span that holds the figure — never on a `table`/`tbody`/`tr`/list, which
+would put the words inside in Plex too (the invoice body and a chart legend did); (2) a figure in
+running text ("Merit 87", "Visits 12", "Showing 3 of 12") carries NOTHING — a lone inline number
+does not need even digits, and the sentence stays in one face; (3) every right-aligned figure cell
+in a table DOES carry it, or its column jitters in Lexend ("1,111,111" 56.5 px vs "8,000,000"
+66.6 px). `src/lib/__tests__/figuresFace.test.ts` enforces all three over every `.tsx`.

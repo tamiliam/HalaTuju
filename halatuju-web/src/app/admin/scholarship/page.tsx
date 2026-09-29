@@ -337,7 +337,7 @@ export default function AdminScholarshipList() {
                   <span className="text-[11px] text-ground-600">{a.qualification?.toUpperCase()}</span>
                   <span className="text-[11px] text-ground-500">·</span>
                   <span className="text-[11px] text-ground-700">
-                    {t('admin.scholarship.merit')} <span className="tabular-nums font-medium">{a.merit_score ?? '—'}</span>
+                    {t('admin.scholarship.merit')} <span className="font-medium">{a.merit_score ?? '—'}</span>
                   </span>
                 </div>
 

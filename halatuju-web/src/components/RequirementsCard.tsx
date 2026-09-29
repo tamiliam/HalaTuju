@@ -182,9 +182,11 @@ export default function RequirementsCard({
               // TVET: clean key-value table layout (matches Stitch design)
               <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
                 {requirements.general.map((item) => (
-                  <div key={item.key} className="flex justify-between items-center px-3 py-2">
-                    <span className="text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
-                    <span className="text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
+                  // Wraps, and both halves may shrink: in Lexend a long label + value pair was
+                  // wider than a 360 px phone (TD-310 review). navLayout.test.ts pins it.
+                  <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 px-3 py-2">
+                    <span className="min-w-0 break-words text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
+                    <span className="min-w-0 break-words text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
                   </div>
                 ))}
               </div>
@@ -211,9 +213,9 @@ export default function RequirementsCard({
             {isTvet ? (
               <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
                 {requirements.special.map((item) => (
-                  <div key={item.key} className="flex justify-between items-center px-3 py-2">
-                    <span className="text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
-                    <span className="text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
+                  <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 px-3 py-2">
+                    <span className="min-w-0 break-words text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
+                    <span className="min-w-0 break-words text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
                   </div>
                 ))}
               </div>
