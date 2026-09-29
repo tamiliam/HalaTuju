@@ -2279,6 +2279,46 @@
           "title": "Muat naik penyata KWSP kakak anda (pilihan)",
           "desc": "Jika kakak anda mempunyai penyata EPF (KWSP), muat naik bersama slip gajinya. Ia akan membantu mengesahkan pendapatannya."
         },
+        "father_ic_for_str_missing": {
+          "title": "Muat naik kad pengenalan bapa anda",
+          "desc": "Nama pada dokumen STR anda belum sepadan dengan mana-mana ahli keluarga anda. Sila muat naik kad pengenalan (MyKad) bapa anda supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "mother_ic_for_str_missing": {
+          "title": "Muat naik kad pengenalan ibu anda",
+          "desc": "Nama pada dokumen STR anda belum sepadan dengan mana-mana ahli keluarga anda. Sila muat naik kad pengenalan (MyKad) ibu anda supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "guardian_ic_for_str_missing": {
+          "title": "Muat naik kad pengenalan penjaga anda",
+          "desc": "Nama pada dokumen STR anda belum sepadan dengan mana-mana ahli keluarga anda. Sila muat naik kad pengenalan (MyKad) penjaga anda supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "brother_ic_for_str_missing": {
+          "title": "Muat naik kad pengenalan abang anda",
+          "desc": "Nama pada dokumen STR anda belum sepadan dengan mana-mana ahli keluarga anda. Sila muat naik kad pengenalan (MyKad) abang anda supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "sister_ic_for_str_missing": {
+          "title": "Muat naik kad pengenalan kakak anda",
+          "desc": "Nama pada dokumen STR anda belum sepadan dengan mana-mana ahli keluarga anda. Sila muat naik kad pengenalan (MyKad) kakak anda supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "father_ic_for_str_unreadable": {
+          "title": "Muat naik semula kad pengenalan bapa anda",
+          "desc": "Kami tidak dapat membaca kad pengenalan bapa anda dengan cukup jelas untuk menyemaknya dengan dokumen STR anda. Sila muat naik gambar kad pengenalan (MyKad) beliau yang jelas dan lengkap supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "mother_ic_for_str_unreadable": {
+          "title": "Muat naik semula kad pengenalan ibu anda",
+          "desc": "Kami tidak dapat membaca kad pengenalan ibu anda dengan cukup jelas untuk menyemaknya dengan dokumen STR anda. Sila muat naik gambar kad pengenalan (MyKad) beliau yang jelas dan lengkap supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "guardian_ic_for_str_unreadable": {
+          "title": "Muat naik semula kad pengenalan penjaga anda",
+          "desc": "Kami tidak dapat membaca kad pengenalan penjaga anda dengan cukup jelas untuk menyemaknya dengan dokumen STR anda. Sila muat naik gambar kad pengenalan (MyKad) beliau yang jelas dan lengkap supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "brother_ic_for_str_unreadable": {
+          "title": "Muat naik semula kad pengenalan abang anda",
+          "desc": "Kami tidak dapat membaca kad pengenalan abang anda dengan cukup jelas untuk menyemaknya dengan dokumen STR anda. Sila muat naik gambar kad pengenalan (MyKad) beliau yang jelas dan lengkap supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
+        "sister_ic_for_str_unreadable": {
+          "title": "Muat naik semula kad pengenalan kakak anda",
+          "desc": "Kami tidak dapat membaca kad pengenalan kakak anda dengan cukup jelas untuk menyemaknya dengan dokumen STR anda. Sila muat naik gambar kad pengenalan (MyKad) beliau yang jelas dan lengkap supaya kami dapat mengesahkan STR itu milik isi rumah anda."
+        },
         "utility_bill_missing": {
           "title": "Muat naik bil utiliti",
           "desc": "Sila muat naik bil air atau elektrik terkini untuk rumah anda. Ia mengesahkan alamat anda dan membantu kami memahami isi rumah anda. Mana-mana bil boleh."

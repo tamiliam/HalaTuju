@@ -373,9 +373,44 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   blindness to a rename, `xapp`'s statement count and `hot#1` not following a rename, of which the
   lead built two the same day). ~2h in the tool plus a Trend-row note. **Trigger:** the next
   `system-audit.md` pass, or the first sprint that reads `guard%` and cannot tell what it means.
-- **TD-285 (raised 2026-09-21 by the api audit) — ⚠ MEDIUM, AND IT IS AN OWNER'S CALL, NOT AN
+- ~~**TD-285 (raised 2026-09-21 by the api audit) — ⚠ MEDIUM, AND IT IS AN OWNER'S CALL, NOT AN
   ENGINEERING ONE. `income_engine.has_valid_str` STILL LETS A STRANGER'S STR VOUCH FOR A DECLARED
-  INCOME — EVERYWHERE EXCEPT THE ONE GATE THE AUDIT CLOSED.** `has_valid_str` reads the latest STR
+  INCOME — EVERYWHERE EXCEPT THE ONE GATE THE AUDIT CLOSED.**~~ **RESOLVED 2026-09-29 (owner's
+  ruling: option 1, *"close it now, the F8 way"*; the lead's production count the same day: 60
+  applications hold an STR, 3 carry a typed amount, 0 have a Lulus STR whose recipient NRIC
+  matches no household IC, 0 typed amounts rest on one — no live answer moves).** `has_valid_str`
+  is now `currency in (current, unconfirmed) AND NOT str_check_names_a_stranger(sc)`, the F8 rule
+  split out of `str_recipient_is_stranger` and applied to the reading the predicate already took —
+  **no extra query** (a new `TestHasValidStrQueryBudget` pins 8/6/6/1; the obvious implementation
+  doubled it and nothing else would have noticed). A POSITIVE mismatch refuses; `no_ref` — a
+  recipient that did not read, or no household IC to compare — still vouches. All four callers
+  moved together; `tests/test_income_whose_str_vouches.py` characterises them over 288 households.
+  **Owner's F1 sub-ruling (same day): "we cannot judge" is NOT "stranger".** The refusal needs a
+  COMPLETE comparison set — every roster member (recorded father/mother not deceased or out of
+  contact, a guardian, the declared earner, every working member) with an IC on file; otherwise
+  the STR counts and the missing IC is ASKED — at the gate as the existing
+  After re-review: "read" is per FIELD (a member is compared on name only if their IC's name read,
+  on NRIC only if its NRIC read; a mismatch refuses only if complete on a field the STR offers); a
+  cannot-judge STR does NOT block submission (the lead's reading, decisions.md — the gate blocks a
+  true stranger only, freeing the rest; nobody newly blocked); the ask is raised after submission
+  as the Check-2 doc request `<member>_ic_for_str_missing`, or `_unreadable` when the IC is on file
+  but the field did not read. 336 households: 80 rows move fully (true strangers), 48 freed at the
+  gate. **Owner-visible edges, no change (F-E):** an STR in the name of a mother recorded "not in
+  contact", or of a sibling who is not a working member, is refused with no ask — off the roster,
+  so the comparison can be complete without them; excluding a member only makes refusal more
+  likely. Follow-ups: TD-308 (the Check-2 path re-reads the STR), TD-309 (the Documents page cannot
+  take a non-working member's IC).
+  **`on_str` is student-facing** (adversarial review F2): it picks the student's Check-2
+  high-utility clarify, so a submitted household on a stranger's STR has an open
+  `high_utility_expense_str` closed by the system, `high_utility_expense` (capped) and, on the
+  salary route, `declared_income_evidence_missing` raised, and the existing query-raised email
+  sent — pinned end to end in the same file. **Known edge, no fix (review F5, LOW):** an adult
+  STUDENT's own STR reads as a stranger's, because `_MEMBER_ORDER` holds no student — F8's
+  existing rule now carried into the amount. Live count: to be run by the lead.
+  One band moves (salary route, typed amount alone: Certain → Unsure), so
+  `VERDICT_ENGINE_VERSION` → `2026-09-29.1`. The submission gate, the frozen gate and every
+  blocker are unchanged. Retro: `docs/retrospective-2026-09-29-td285-whose-str.md`. The original
+  entry follows for the record. `has_valid_str` reads the latest STR
   and asks one question of it: is its currency `current` or `unconfirmed`? It never asks **whose**
   STR it is. `earner_monthly_income` then accepts a family's self-declared monthly figure as a real
   number on the strength of it (`declared_str`), which the owner's R5 of 2026-09-19 — *"only the
@@ -421,6 +456,9 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   `query_budgets` itself and took the documented exception. Until somebody rules on that,
   every budget added after H4 will keep landing in a test file. ~1h plus the ruling.
   **Trigger:** the third post-H4 budget, or TD-282 landing (which makes all four move at once).
+  **⚠ TRIGGER REACHED 2026-09-29 (TD-285):** `HAS_VALID_STR_BUDGETS` is the third post-H4 budget
+  and it too landed as constants in `test_query_budgets.py`, for the same reason. Still open — the
+  ruling on how a new standard enters the frozen record is what is owed.
 - **TD-287 (raised 2026-09-21 by the api audit) — low, and it is a free 4 queries.**
   `verdict_engine._utility_context` is computed **twice** on every STR fall-through: once by
   `_verdict_income` for the STR route's own evidence, and again inside `verdict_income_salary` for
@@ -6231,3 +6269,7 @@ depends on, not a defect.
 
 **Trigger:** H19, or the next sprint that changes a cockpit panel's props.
 - **TD-305 (raised 2026-09-29 by the TD-300 deploy) — MEDIUM: the web DEPLOY depends on fonts.googleapis.com being up at build time.** `src/app/layout.tsx` loads Lexend, Inter and IBM Plex Sans through `next/font/google`, which DOWNLOADS the font CSS and files inside `next build`. On 2026-09-29 the download came back malformed and the Docker `Build` step died with `TypeError: Cannot read properties of null (reading '1')` in `@next/font/dist/google/loader.js:112` — the loader's regex found no match in what Google returned. Every gate had passed; the change (`fdcd5e06`, TD-300) touched neither the layout nor the fonts; a re-run of the same commit was the fix. So a deploy can fail, and cost ~12 build minutes, for a reason that lives in a third party's uptime, and the failure reads like a code error. **Fix:** self-host the three families with `next/font/local` (download the woff2 once, commit them under `public/fonts/` or `src/fonts/`, same `display`/`subsets`/CSS variables), so a build needs nothing from Google; `next/font` still subsets and preloads them. Also honest: the first-load figures may move by the font CSS a few hundred bytes — measure with `npm run bundle-budget` before and after, as always. **Trigger:** the next web sprint, or the second time this failure appears in the build history — whichever is first.
+- **TD-306 (raised 2026-09-29 by TD-285's adversarial review) — low, student-visible copy. The high-utility clarify can print the literal `RM {income}`.** The student copy `scholarship.actionCentre.item.high_utility_expense` (desc: *"…That looks high next to the household income of RM {income} a month you reported…"*) is filled from the item's `params`, and `check2_queries._clarify_params` sets `income` only when `profile.household_income` is set. With none reported the clarify is still raised, and the web's `interpolateMessage` (`src/lib/branding.ts`) leaves an unknown placeholder untouched — so the student reads "RM {income}". Pre-existing for any household with no reported income; **TD-285 can now route a household into it**: a true stranger's STR turns the `_str` variant (which quotes no income) into this one. **Fix:** either raise the STR-free variant only when an income is on file (else a third copy without the figure), or have the copy drop the clause when `income` is absent — a copy decision in three languages, so the owner's. **Trigger:** the first student-copy sprint on Check 2, or a report of the literal placeholder.
+- **TD-308 (raised 2026-09-29 by TD-285's re-review, F-G) — low, an unbudgeted read.** `check2_queries._gap_sets` → `income_str_ownership.str_owner_ic_asks` → `_latest_str_check` reads the latest STR and runs `student_str_check` (one IC lookup per household member) on EVERY Check-2 sync, although the same request has usually read that STR already (the verdict, the income engine). On the officer's applicant view the document snapshot makes it free (38/38 unchanged); on every other `sync_check2_queries` path — the student's Action Centre read, `confirm_profile`, the hourly `send_due_query_emails` sweep — **no query budget covers it**. Passing the reading in would widen `_gap_sets`' signature inside `check2_queries.py`, which is on the oversize ledger, so it was not done in TD-285. **Fix:** thread one STR reading through `_gap_sets` (or read it through `document_snapshot` on those paths), and add a budget on `sync_check2_queries`. **Trigger:** the next sprint that splits `check2_queries.py`, or a slow Action Centre.
+- **TD-309 (raised 2026-09-29 by TD-285's re-review, F-B/F-D) — medium, a web gap behind an owner ruling.** The Documents page offers a household member's IC slot only when that member is a ticked working member (salary route) or the declared earner (STR route). So when an STR is in the name of a NON-working parent — the owner's own example, the mother's STR with only the father's IC — the student cannot upload her IC before submission, even though her IC is exactly what settles whose STR it is. TD-285 therefore raises that ask only AFTER submission (Check 2, where the Action Centre takes a member-tagged upload) and does not block (decisions.md 2026-09-29, the lead's reading). **Fix (web + a served rule):** show an IC slot for every `str_roster` member whose IC would settle the STR (`str_owner_ic_asks`), tagged to them; only then could the ask move to the gate if the owner wants it there. **Trigger:** the owner overruling the lead's reading, or the next Documents-page sprint.
+- **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requests_endpoints.py::TestOrgPayloadAllowlist::test_the_ai_split_is_exact`; the file passed alone (33/33) and the whole suite passed on the immediate re-run. Nothing in TD-285 touches org requests. Seen once, under xdist, on this machine — unexplained. **Next step:** if it recurs, capture the assertion text and whether it fails alone with `-p randomly`/a fixed worker; a shared-state leak between workers (cache, a module-level default) is the usual cause. **Trigger:** a second sighting.

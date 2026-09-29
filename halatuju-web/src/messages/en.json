@@ -2279,6 +2279,46 @@
           "title": "Upload your elder sister's EPF statement (optional)",
           "desc": "If your elder sister has an EPF (KWSP) statement, upload it alongside her payslip. It would help confirm her income."
         },
+        "father_ic_for_str_missing": {
+          "title": "Upload your father's IC",
+          "desc": "Your STR doesn't match anyone in your family yet. Upload your father's IC (MyKad) so we can confirm it is your household's."
+        },
+        "mother_ic_for_str_missing": {
+          "title": "Upload your mother's IC",
+          "desc": "Your STR doesn't match anyone in your family yet. Upload your mother's IC (MyKad) so we can confirm it is your household's."
+        },
+        "guardian_ic_for_str_missing": {
+          "title": "Upload your guardian's IC",
+          "desc": "Your STR doesn't match anyone in your family yet. Upload your guardian's IC (MyKad) so we can confirm it is your household's."
+        },
+        "brother_ic_for_str_missing": {
+          "title": "Upload your elder brother's IC",
+          "desc": "Your STR doesn't match anyone in your family yet. Upload your elder brother's IC (MyKad) so we can confirm it is your household's."
+        },
+        "sister_ic_for_str_missing": {
+          "title": "Upload your elder sister's IC",
+          "desc": "Your STR doesn't match anyone in your family yet. Upload your elder sister's IC (MyKad) so we can confirm it is your household's."
+        },
+        "father_ic_for_str_unreadable": {
+          "title": "Re-upload your father's IC",
+          "desc": "The IC on file for him could not be read well enough to check your STR. Please upload a clear photo (MyKad)."
+        },
+        "mother_ic_for_str_unreadable": {
+          "title": "Re-upload your mother's IC",
+          "desc": "The IC on file for her could not be read well enough to check your STR. Please upload a clear photo (MyKad)."
+        },
+        "guardian_ic_for_str_unreadable": {
+          "title": "Re-upload your guardian's IC",
+          "desc": "The IC on file for them could not be read well enough to check your STR. Please upload a clear photo (MyKad)."
+        },
+        "brother_ic_for_str_unreadable": {
+          "title": "Re-upload your elder brother's IC",
+          "desc": "The IC on file for him could not be read well enough to check your STR. Please upload a clear photo (MyKad)."
+        },
+        "sister_ic_for_str_unreadable": {
+          "title": "Re-upload your elder sister's IC",
+          "desc": "The IC on file for her could not be read well enough to check your STR. Please upload a clear photo (MyKad)."
+        },
         "utility_bill_missing": {
           "title": "Upload a utility bill",
           "desc": "Please upload a recent water or electricity bill for your home. It confirms your address and helps us understand your household. Either bill is fine."

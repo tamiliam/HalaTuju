@@ -96,7 +96,7 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
     return 'current'
 
 
-def _str_recipient_household_match(application, name, nric, tagged_member=''):
+def _str_recipient_household_match(application, name, nric, tagged_member='', read_into=None):
     """Exhaustively match an STR recipient's NAME and NRIC — INDEPENDENTLY — against every
     parent/guardian (and any other roster member) whose IC is on file. Returns
     ``(name_status, nric_status, member)``.
@@ -108,7 +108,12 @@ def _str_recipient_household_match(application, name, nric, tagged_member=''):
     household match on BOTH (e.g. #45). 'match' iff the field hits any member's IC; 'mismatch' iff
     at least one IC was compared and none hit; 'no_ref' when there was nothing to compare against.
     ``member`` resolves to the name-matched member (preferred), else the nric-matched member, else
-    the tagged/earner fallback."""
+    the tagged/earner fallback.
+
+    ``read_into`` (TD-285, owner's F1 ruling 2026-09-29), when given, is a dict that collects the
+    comparison set PER FIELD (review F-A): ``name`` — the members whose IC's NAME read; ``nric`` —
+    whose IC's NRIC read; ``on_file`` — whose IC is on file at all. So ``income_str_ownership``
+    can tell "a stranger" from "we cannot judge" without a second read of the same ICs."""
     members = list(dict.fromkeys([m for m in ([tagged_member] + list(_MEMBER_ORDER)) if m]))
     name_hit = nric_hit = None
     name_seen = nric_seen = False
@@ -118,6 +123,10 @@ def _str_recipient_household_match(application, name, nric, tagged_member=''):
             continue
         ic_name = (getattr(ic, 'vision_name', '') or '').strip()
         ic_nric = (getattr(ic, 'vision_nric', '') or '').strip()
+        if read_into is not None:
+            for field, value in (('on_file', True), ('name', ic_name), ('nric', ic_nric)):
+                if value and m not in read_into[field]:
+                    read_into[field].append(m)
         if ic_name:
             name_seen = True
             if name_hit is None and _name_bucket(name, ic_name) == 'match':
@@ -181,7 +190,9 @@ def student_str_check(doc):
     status = (f.get('status', '') or '').strip()
     year = (f.get('year', '') or '').strip()
 
-    name_status, nric_status, member = _str_recipient_household_match(app, name, nric, tagged)
+    ic_read_members = {'on_file': [], 'name': [], 'nric': []}
+    name_status, nric_status, member = _str_recipient_household_match(
+        app, name, nric, tagged, read_into=ic_read_members)
     # IC-NUMBER chain (#9): a BC↔STR IC-number match confirms the recipient is the verified earner,
     # regardless of a wrong/absent card in the slot. (Currency below is a separate test — a
     # confirmed recipient can still hold a stale/rejected STR.)
@@ -195,4 +206,8 @@ def student_str_check(doc):
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
         'current_status': _str_currency(status, year, cohort_year, f.get('source_type', '')),
         'ic_present': ic is not None,
+        # TD-285 (F1, F-A): whose ICs, on which FIELD, the recipient was compared against, and
+        # whose IC is on file at all. Server-side only — the
+        # student serializer strips it, so the documents payload is byte-identical.
+        'ic_read_members': ic_read_members,
     }

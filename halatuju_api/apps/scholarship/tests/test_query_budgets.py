@@ -63,6 +63,7 @@ from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
     make_org, make_programme, make_shortlistable_student,
 )
+from apps.scholarship.tests.test_income_whose_str_vouches import WhoseStrBase
 
 #: `…/halatuju_api`. Four levels up from `apps/scholarship/tests/this_file.py`. Derived, never
 #: hard-coded — `test_code_standards.py` does the same, for the same reason: a file that changes
@@ -387,3 +388,45 @@ class TestTheStrFallThroughDoesNotPayForAReadingItDiscards(TestCase):
             loose, [],
             'A fall-through budget sits above what the engine now costs — the ratchet catching '
             'up with an improvement. If TD-282 has landed, expect both.\n' + '\n'.join(loose))
+
+
+#: `income_engine.has_valid_str` on one household, by the STR it holds. Measured 2026-09-29 (TD-285)
+#: on the fixture of `test_income_whose_str_vouches.py` — IDENTICAL before and after the ownership
+#: test was added, because that test reads the `student_str_check` the predicate already took.
+#:
+#: ⚠ WHY THIS EXISTS: TD-285's bite (d) put one extra query inside `has_valid_str` and EVERY budget
+#: above stayed green — none of their fixtures reaches the predicate with an approved STR on file
+#: (the officer and student fixtures hold no STR that reads; both fall-through fixtures answer
+#: before the declared arm). A predicate read on the officer view, the student read and the
+#: verdict, measured by nothing, is where the next per-request read would have hidden.
+HAS_VALID_STR_BUDGETS = {'own_both': 8, 'stranger': 6, 'own_unread': 6, 'none': 1}
+
+
+class TestHasValidStrQueryBudget(WhoseStrBase):
+    """The predicate's own cost, per STR shape — a ceiling and a tightness check, as above."""
+
+    def _cost(self, state):
+        from apps.scholarship import income_engine
+        app = self.build('salary', state, True, 'none')
+        income_engine.has_valid_str(app)             # warm the lazy imports
+        with CaptureQueriesContext(connection) as captured:
+            income_engine.has_valid_str(app)
+        return len(captured.captured_queries)
+
+    def test_each_shape_stays_inside_its_budget(self):
+        for state, limit in HAS_VALID_STR_BUDGETS.items():
+            with self.subTest(state=state):
+                now = self._cost(state)
+                self.assertLessEqual(
+                    now, limit,
+                    f'`has_valid_str` ({state}) now costs {now} queries; the budget is {limit}. '
+                    f'⚠ DO NOT RAISE IT. It is read on the officer view, the student read and the '
+                    f'verdict; the ownership test (TD-285) must reuse the `student_str_check` '
+                    f'reading already taken, never read the household ICs a second time.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'HAS_VALID_STR_BUDGETS["{s}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for s, limit in HAS_VALID_STR_BUDGETS.items()
+                 for m in (self._cost(s),) if limit > m]
+        self.assertEqual(loose, [], 'A has_valid_str budget sits above what it now costs.\n'
+                         + '\n'.join(loose))

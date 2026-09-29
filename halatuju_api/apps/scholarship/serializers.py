@@ -1027,7 +1027,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         if obj.doc_type != 'str':
             return None
         from .income_engine import student_str_check
-        return student_str_check(obj)
+        return {k: v for k, v in student_str_check(obj).items() if k != 'ic_read_members'}
 
     def get_utility_check(self, obj):
         """{name, address, monthly_bill, unpaid_balance, address_status, current_status, bill_month,

@@ -1,5 +1,146 @@
 # Architectural Decisions — HalaTuju
 
+## A stranger's STR vouches for nothing — `has_valid_str` asks whose it is (TD-285) — owner ruling, 2026-09-29
+
+**The owner chose option 1 of TD-285: *"close it now, the F8 way."*** R5 of 2026-09-19 — *"only the
+family's own STR count"* — now holds for the TYPED AMOUNT as well as for the submission gate (F8)
+and the verdict fall-through (audit 2026-09-21).
+
+**The count the ruling was made on** (the lead, against production, 2026-09-29): **60**
+applications hold an STR; **3** of them carry a typed monthly amount; **0** have a Lulus STR whose
+recipient NRIC matches no household IC; **0** typed amounts rest on such an STR. No live answer
+moves. A read-only screen that re-runs it on name as well as NRIC, by route and status, was handed
+to the lead with the build.
+
+**Decision.** `income_engine.has_valid_str` = currency `current`/`unconfirmed` **AND NOT**
+`income_str_ownership.str_check_names_a_stranger(sc)`. The ownership rule is F8's, split out of
+`str_recipient_is_stranger` so there is ONE copy, and applied to the `student_str_check` reading the
+predicate has already taken — so it costs no extra query.
+- **A POSITIVE mismatch refuses:** a recipient that matches no household member by name OR NRIC
+  while a household IC is on file to compare against.
+- **Absence is not a mismatch (F8 rule 1):** a recipient nothing was read off, or an STR with no
+  household IC on file (`no_ref`), still vouches exactly as before.
+- **All four callers move together**, because they all read the one predicate: the Check-2
+  declared-wage ask, per-capita income on both routes (with `profile_engine` and the household
+  reconciliation tick), `on_str`, and the `income_declared_accepted_str` / `_evidenced` evidence
+  code. After the F1 sub-ruling below, 80 of 336 characterised households move fully — every one a
+  TRUE stranger's STR (a complete comparison on a field the STR offers, and no match) — and 48 more
+  move only at the gate, which frees them (`tests/test_income_whose_str_vouches.py`).
+- **`on_str` IS STUDENT-FACING, not officer-only** (adversarial review F2). In
+  `check2_queries._gap_sets` it picks which high-utility clarify the STUDENT is asked:
+  `high_utility_expense_str` (asked against the family's STR) or `high_utility_expense` (asked
+  against the household income the student reported — it quotes that figure). So for a SUBMITTED
+  household on a stranger's STR with high bills, the next Check-2 sync **closes an open
+  `high_utility_expense_str` clarify itself** (resolved by `system`), raises
+  `high_utility_expense` in its place when a clarify slot is free (it is the lowest-priority
+  clarify and is capped), and on the salary route also raises the uncapped
+  `declared_income_evidence_missing` letter request. A new item re-arms the one-time notice, and
+  the hourly `send_due_query_emails` sends the EXISTING `send_query_raised_email`
+  ("A few things we need for your {programme} application" — a count of open items and a link;
+  the golden is unchanged, no new words). From `interviewing` onward the machine may not ask, so
+  the `_str` clarify is still closed and **nothing replaces it and no email goes out**. Pinned in
+  sections 5 and 6 of the test file. Production count 0, so no live student receives any of this.
+- **`VERDICT_ENGINE_VERSION` → `2026-09-29.1`**, because a fact's status can move: a salary-route
+  household whose only statement about money is a typed figure on a stranger's STR falls from
+  Certain to Unsure (`income_declared_needs_evidence`). `results_doc.MODEL_VERSION` is untouched.
+
+**⚠ THIS IS CONSISTENT WITH THE 2026-09-20 CASH-DOOR RULING, NOT A REVERSAL OF IT.** That ruling
+reads *"If STR has been fulfilled, there is no need for the student to complete the cash door."* A
+stranger's STR fulfils nothing — R5 says so — so a salary-route household holding one is exactly a
+household with *"neither a current STR nor a payslip"*, the household the fourth way was built for,
+and Check 2 now asks it for the one supporting letter. Every row that ruling pinned stands: the
+family's own STR, however it matched, and an STR whose recipient did not read, are never chased;
+the cash door is still never on the STR route (that route guard is untouched, and no STR-route
+household gains a chase).
+
+**Not in scope, and unchanged by proof:** the submission gate (`income_doc_blockers`,
+`str_not_household` — F8's), `services.application_completeness`, every blocker code. No student
+who can submit today is stopped, and no submitted student is un-submitted (the frozen gate is
+pinned across all twelve STR states).
+
+**The audit's fall-through gate stays.** `verdict_income_salary.salary_evidence_stands_without_the_str`
+now duplicates the predicate for a stranger's STR, but NOT for an STR whose recipient did not read,
+which still vouches: on the incomplete-cluster arm that STR can still carry the salary reading's
+`income_proof_present`, and the gate is what stops it raising a red. Pinned.
+
+**Alternatives the owner had:** (2) grandfather the already-decided and tighten for new
+applications only; (3) leave it. With a count of zero, (1) moves nobody live and removes the one
+place R5 was not yet true.
+
+**Revisit if:** a legitimate STR recipient turns out to be somebody the family roster cannot hold
+(F8's own revisit line — a grandparent who is not the guardian).
+
+### "We cannot judge" is NOT "stranger" — owner ruling on review finding F1, 2026-09-29
+
+**The owner, via the lead, verbatim:** *option 1 — "we cannot judge" is NOT "stranger." A household
+member with no IC on file means the STR cannot be judged, so the STR COUNTS (absence is not a
+mismatch), and the system ASKS for that member's IC. The STR is refused only when every household
+member's IC is on file and none matches — a true stranger. This applies to the ONE shared rule, so
+the F8 gate softens the same way, and the owner has accepted that.*
+
+**The roster** (`income_str_ownership.str_roster`, read off the application's own fields — no
+query): the **father** and the **mother** whenever the application records one (a name or an
+occupation) not recorded as `deceased` or `no_contact`; a **guardian** in the family roster on the
+same terms; the STR route's **declared earner**; and every **ticked working member**. Why these:
+an STR is a household benefit paid to either spouse (owner 2026-07-07), so both parents are
+candidates whether or not they work; F8's own ruling names "a parent or guardian"; and the earner and
+working members are the people the student has told us carry the income, siblings included. A
+sibling who is neither is NOT on the roster — requiring every sibling's IC before an STR could ever
+be called somebody else's would switch the rule off for most families.
+
+**Decision.** `str_check_names_a_stranger(sc, application)` = F8's field rule (a match on name OR
+NRIC is the family's own; otherwise a positive mismatch) **AND** that mismatch is **complete on at
+least one field the STR offers**. "Read" is per FIELD (re-review F-A): a member counts as compared
+on NAME only if their IC's name read, on NRIC only if their IC's NRIC read, and a field is complete
+only when every roster member was compared on it. An IC that read only the mother's NRIC is no
+comparison at all against an STR that shows only her name. The comparison set travels on the
+`student_str_check` reading itself (`ic_read_members` = `{on_file, name, nric}`, collected inside
+the one matching loop and stripped from the student payload), so neither `has_valid_str` nor the
+gate reads an IC twice — every query budget is unchanged.
+- **Ask for the IC, AFTER submission (Check 2).** A NEW uncapped, member-tagged doc request:
+  `<member>_ic_for_str_missing` when that member's IC is not on file, or
+  `<member>_ic_for_str_unreadable` when it IS on file but the field needed did not read (re-review
+  F-C — the student is never told an IC she uploaded is "not on file"; the copy reads "the IC on
+  file for her could not be read"). Student copy in en/ms/ta; the OFFICER reads the same ask in
+  Outstanding, which renders the student's own wording for every Check-2 item — the
+  `admin.scholarship.verdict.item.<code>` keys are never rendered for Check-2 codes, and ten of them
+  would have cost 1.0 kB on two budgeted routes, so none was added; auto-resolves when the IC lands; rides the existing `send_query_raised_email` — no new
+  email words. The existing unreadable-IC ask (`earner_ic_unreadable`) was not reusable: it is a
+  verdict-derived system ticket for the declared earner only, carries no member tag, and the
+  verdict may not grow.
+- **A true stranger** (a complete comparison on an offered field, no match) is refused exactly as
+  TD-285 first shipped it, and still blocked at the gate by `str_not_household`.
+- The matrix: 336 households; 128 rows move — 80 fully (five true-stranger states) and 48 only at
+  the gate, where `str_not_household` simply leaves (below). Every other reading of a cannot-judge
+  row equals the untouched tree.
+
+**⚠ THE GATE — THE LEAD'S READING OF THE RULING, 2026-09-29, RECORDED SO THE OWNER CAN OVERRULE
+IT.** *"The STR counts, and the system asks"* is read as: **a cannot-judge STR does NOT block
+submission.** It counts; the ask is raised after submission through Check 2, where the Action
+Centre can take the upload; the officer sees it in Outstanding. The first build asked at the gate
+(`parent_ic_missing:mother` in place of `str_not_household`), and the re-review found that a dead
+end: before submission the Documents page offers a mother's IC slot only when she is a working
+member or the declared earner, so the owner's own example was told to do something the page could
+not do (TD-309 — the real gap). So the gate blocks only a TRUE stranger; the cannot-judge
+households it used to block are FREED. Nobody is newly blocked: every blocker on a matrix row now
+was on it before (`test_the_gate_never_blocks_a_row_it_did_not_block`). **If the owner wants a
+cannot-judge STR to hold submission after all, the ask belongs at the gate only once TD-309 lets
+the page take the upload.**
+
+**Consequence worth knowing.** The audit's fall-through gate
+(`salary_evidence_stands_without_the_str`) is load-bearing again for every cannot-judge STR: the
+STR vouches, so the salary reading can rest on it, and the gate is what stops that reading raising
+the verdict.
+
+**Owner-visible edges, NO change (re-review F-E).** An STR in the name of a mother the student
+recorded as "not in contact", or of a sibling who is neither the earner nor a working member, is
+refused with no ask: they are off the roster, so the comparison can be complete without them.
+Excluding a member cannot dodge the check — it only makes refusal MORE likely.
+
+**Revisit if:** households routinely record a parent who genuinely cannot produce an IC (abroad,
+estranged but recorded), so the ask can never be answered — then the roster needs a "no IC
+possible" answer the student can give; or the F-E edges turn up in practice.
+
 ## "All gifts" exists only where a page reads across gifts — TD-302, 2026-09-29
 
 **Decision.** The breadcrumb's gift menu offers **All gifts** on exactly two pages —

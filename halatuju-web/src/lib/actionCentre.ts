@@ -204,6 +204,19 @@ export const KNOWN_CODES = [
   'guardian_epf_missing',
   'brother_epf_missing',
   'sister_epf_missing',
+  // TD-285, owner's F1 ruling (2026-09-29): the STR names nobody whose IC is on file and this
+  // member has none — "we cannot judge" is not "stranger", so ask for THEIR IC (tagged doc request).
+  'father_ic_for_str_missing',
+  'mother_ic_for_str_missing',
+  'guardian_ic_for_str_missing',
+  'brother_ic_for_str_missing',
+  'sister_ic_for_str_missing',
+  // …and when that member's IC IS on file but the field needed did not read (review F-C).
+  'father_ic_for_str_unreadable',
+  'mother_ic_for_str_unreadable',
+  'guardian_ic_for_str_unreadable',
+  'brother_ic_for_str_unreadable',
+  'sister_ic_for_str_unreadable',
   'utility_bill_missing',
   // Owner 2026-07-08 — per-bill utility re-upload (missing / stale / unreadable), replacing the
   // either-or utility_bill_missing.

@@ -80,7 +80,9 @@ from .genuineness.bands import canonical_status
 #   asks whose STR that is. The gate now also requires the reading to stand WITHOUT the STR, which
 #   LOWERS those households to the band they held before 2026-09-19.1/.2 — a band moves, so it
 #   bumps. (The evidence carry in the same change moves no band and would not have bumped it.)
-VERDICT_ENGINE_VERSION = '2026-09-21.1'
+#   2026-09-29.1 — TD-285: `has_valid_str` asks WHOSE STR it is, so a typed amount on a stranger's
+#   STR is unproven — a salary-route band can fall Certain -> Unsure. A band moves, so it bumps.
+VERDICT_ENGINE_VERSION = '2026-09-29.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

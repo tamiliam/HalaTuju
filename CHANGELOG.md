@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## A stranger's STR no longer vouches for a typed income (TD-285) - 2026-09-29
+
+Owner's ruling: option 1, *"close it now, the F8 way."* Production count (the lead, same day): 60
+applications hold an STR, 3 carry a typed amount, **0** typed amounts rest on an STR whose recipient
+matches no household IC — no live answer moves. Baselines measured first: **pytest 7,117 / 3
+skipped**, **jest 3,118 / 176 suites**. After: **pytest 7,185 / 3 skipped** (+68), **jest 3,118 /
+176** (unchanged; the new codes' copy is covered by the existing parity loop). API only. Not committed, pushed or deployed.
+
+### Changed
+
+- **`income_engine.has_valid_str` asks WHOSE STR it is.** It was currency-only (`current` /
+  `unconfirmed`); it now also refuses an STR whose recipient POSITIVELY matches no household member
+  by name OR NRIC. An STR whose recipient did not read, or one with no household IC on file to
+  compare against, still counts (F8 rule 1: absence is not a mismatch). One predicate, so all four
+  callers move together: a salary-route family whose only income statement is a typed figure on a
+  stranger's STR is now asked by Check 2 for the one supporting letter and reads Unsure instead of
+  Certain; the typed figure is no longer counted in per-capita income on either route (nor in the
+  sponsor/reviewer profile line or the reconciliation tick); the STUDENT's Check-2 high-utility
+  clarify is asked against the reported household income (`high_utility_expense`) instead of the
+  STR (`high_utility_expense_str` — an open one is closed by the system), and the new ask sends the
+  existing "a few things we need" query email; and a typed figure backed by a letter is labelled
+  `income_declared_accepted_evidenced` rather than `_str`.
+- **`income_str_ownership.str_check_names_a_stranger`** — F8's ownership rule split out so the
+  submission gate and `has_valid_str` share one copy.
+- **Owner's F1 ruling (review finding): "we cannot judge" is NOT "stranger".** An STR is refused
+  only when its mismatch is COMPLETE on a field it offers — every roster member (`str_roster`: a
+  recorded father/mother not deceased or out of contact, a guardian, the declared earner, every
+  working member) compared on that field, "read" counted PER FIELD. Otherwise the STR still counts
+  and the IC that would settle it is ASKED, after submission.
+- **The F8 gate softens the same way (the lead's reading, decisions.md):** a cannot-judge STR no
+  longer blocks submission — those households are FREED; nobody is newly blocked. A true stranger
+  is still blocked by `str_not_household` exactly as before.
+- `student_str_check` carries `ic_read_members` (`{on_file, name, nric}` — whose ICs, on which
+  field, the recipient was compared against), collected in the one matching loop; the student
+  documents serializer strips it, so the payload is unchanged.
+- **`VERDICT_ENGINE_VERSION` → `2026-09-29.1`** (a fact's status can move).
+
+### Added
+
+- **`tests/test_income_whose_str_vouches.py`** — the four callers plus the live and frozen
+  submission gates over 336 households (2 routes × 21 STR states — true strangers and
+  cannot-judge strangers each by name, NRIC, both and dashboard; the mother's STR with only the
+  father's IC; her IC on file but read on the wrong field, both ways; a true stranger complete on
+  one field only — × typed amount or not × nothing / payslip / EPF / letter), pinned on the
+  untouched tree; 80 rows move fully (true strangers) and 48 are freed at the gate, and the test
+  asserts both sets. Plus the student's Check-2 codes per state, before and after, and the swaps
+  end to end through `send_due_query_emails` (adversarial reviews F1–F3, F-A–F-D).
+- **Check-2 doc requests `<member>_ic_for_str_missing` and `<member>_ic_for_str_unreadable`** for
+  father / mother / guardian / brother / sister — "upload (or re-upload) your mother's IC so we can
+  confirm the STR is your household's"; uncapped, member-tagged, en/ms/ta student copy (the
+  officer reads the same ask in Outstanding); auto-resolve when the IC lands. First-load median
+  227 → 228 kB (budget 229); no route over its budget. Rendered in a web test with the real en and ta catalogues
+  (`ActionCentre.strIc.test.tsx`) and in the officer's Outstanding list (`view.strIc.test.tsx`).
+- **TD-306** (the literal `RM {income}` in `high_utility_expense`), **TD-307** (a possible xdist
+  flake), **TD-308** (the Check-2 path re-reads the STR, unbudgeted) and **TD-309** (the Documents
+  page cannot take a non-working member's IC) raised.
+- **`test_query_budgets.TestHasValidStrQueryBudget`** — the predicate's own cost (8 / 6 / 6 / 1
+  queries), unchanged by the ownership test. No budget watched it before: an added query inside
+  the predicate left every existing budget green.
+
+### Unchanged, by proof
+
+- The submission gate and every blocker code; `application_completeness`; the cash door's route
+  guard; `results_doc.MODEL_VERSION`; every recorded query budget (38 / 38, 7 / 13 / 20, 27 / 39).
+
 ## A way back to "All gifts" on the two pages that read across gifts (TD-302) - 2026-09-29
 
 Baselines measured first: **jest 3,095 / 175 suites**, bundle median **227 kB** / worst **310 kB**

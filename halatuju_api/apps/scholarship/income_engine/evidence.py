@@ -9,10 +9,14 @@ stays off the STR route.
 
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
+
+Changed since the move, deliberately and once: `has_valid_str` now also asks WHOSE STR it is
+(TD-285, owner ruling 2026-09-29). Nothing else in this module was touched.
 """
 from __future__ import annotations
 
 from ..document_snapshot import has_live_doc, latest_doc
+from ..income_str_ownership import str_check_names_a_stranger
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
 from .relationships import effective_working_members, relationship_doc_for
 from .salary_figures import _doc_fields, _epf_monthly_salary
@@ -21,10 +25,25 @@ from .str_route import student_str_check
 
 def has_valid_str(application):
     """True when the household has a VALID STR DOCUMENT on file — approved and at least
-    'unconfirmed' currency (a genuine, un-rejected STR), on either income route. A valid STR
-    is the household's own means-test, so it lets a working member's DECLARED informal income
-    be ACCEPTED without a payslip (the STR already establishes B40 need — P5b). Reads the STR
-    *document* via ``student_str_check``, never the ``receives_str`` self-tick."""
+    'unconfirmed' currency (a genuine, un-rejected STR), on either income route, AND NOT
+    PROVABLY SOMEBODY ELSE'S. A valid STR is the household's own means-test, so it lets a
+    working member's DECLARED informal income be ACCEPTED without a payslip (the STR already
+    establishes B40 need — P5b). Reads the STR *document* via ``student_str_check``, never the
+    ``receives_str`` self-tick.
+
+    ⚠ TD-285 (owner, 2026-09-29: *"close it now, the F8 way"*). Until then this asked only the
+    STR's CURRENCY, never WHOSE it was, so a stranger's current STR accepted a family's typed
+    figure as a real number — against R5, *"only the family's own STR count"*. It now also asks
+    F8's ownership rule (``income_str_ownership.str_check_names_a_stranger``) of the SAME reading:
+    a POSITIVE mismatch refuses ONLY when every roster member's IC is on file (owner's F1 ruling,
+    2026-09-29: *"we cannot judge" is NOT "stranger"*); a recipient that did not READ, an STR with
+    no household IC to compare against (``no_ref``), or one that a missing roster IC might still
+    match, still vouches — and the missing IC is asked for. Every caller moves
+    together: the Check-2 declared-wage ask, per-capita income on both routes, ``on_str`` (which
+    picks the STUDENT's high-utility clarify — ``check2_queries._gap_sets``) and the
+    ``income_declared_accepted_str`` evidence code
+    (``test_income_whose_str_vouches.py``). No extra read: the ownership rule is applied to the
+    ``student_str_check`` already taken here."""
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
@@ -32,7 +51,9 @@ def has_valid_str(application):
     if str_doc is None:
         return False
     sc = student_str_check(str_doc)
-    return bool(sc and sc['current_status'] in ('current', 'unconfirmed'))
+    if not sc or sc['current_status'] not in ('current', 'unconfirmed'):
+        return False
+    return not str_check_names_a_stranger(sc, application)
 
 
 def household_str_status(application):
@@ -73,8 +94,9 @@ def str_not_breached(application):
     wrong_type / rejected / unread) and not judged non-genuine. Mirrors the officer cockpit's
     ``strNotBreached`` (officerCockpit.ts): a non-breached STR makes the salary-route documents
     SUPPORTIVE, not compulsory, on EITHER route (owner 2026-07-05: "STR not breached → no full salary
-    docs needed"). BROADER than ``has_valid_str`` (currency-only current/unconfirmed): a stale-but-
-    genuine STR is also 'not breached'. Keeps the consent gate + the student's wizard checklist in step
+    docs needed"). BROADER than ``has_valid_str`` (current/unconfirmed AND not provably a
+    stranger's, TD-285): a stale-but-genuine STR is also 'not breached', and this predicate stays
+    recipient-agnostic on purpose (F8 — see ``income_str_ownership``). Keeps the consent gate + the student's wizard checklist in step
     with what the student is SHOWN — otherwise the docs box says "not required" while the gate blocks."""
     docs = getattr(application, 'documents', None)
     if docs is None:

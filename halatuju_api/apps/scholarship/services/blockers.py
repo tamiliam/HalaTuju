@@ -167,6 +167,8 @@ def income_doc_blockers(application):
     # and never WHOSE it is, so a stranger's letter used to clear this gate. The ownership test is
     # applied here rather than inside that predicate because it also feeds the verdict — see
     # `income_str_ownership`, which also documents why an UNREAD STR is not a stranger's one.
+    # TD-285 F1 (2026-09-29): only a TRUE stranger blocks; an STR we cannot judge counts here and
+    # its missing IC is asked after submission (see `stranger_str_blocks_submission`).
     from ..income_str_ownership import STR_NOT_HOUSEHOLD, stranger_str_blocks_submission
     strangers_str = stranger_str_blocks_submission(application)
     present = present_doc_types(application)

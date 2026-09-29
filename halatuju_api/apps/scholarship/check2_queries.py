@@ -149,6 +149,10 @@ _MEMBER_PROOF_CODE = {
 _MEMBER_PENSION_CODE = {
     'father': 'father_pension_proof_missing', 'mother': 'mother_pension_proof_missing',
 }
+# TD-285, owner's F1 ruling (2026-09-29): the STR cannot be judged without this roster member's IC
+# → ask for it: `_missing` (not on file) or `_unreadable` (on file, needed field unread — F-C).
+_STR_IC_CODE = {(m, k): f'{m}_ic_for_str_{k}' for m in _MEMBER_PROOF_CODE for k in ('missing', 'unreadable')}
+DOC_SPECS.update({c: {'member': m, 'doc_type': 'parent_ic'} for (m, _k), c in _STR_IC_CODE.items()})
 # Only a PARENT slot can be blank (→ a status clarify); other-members always carry an occupation.
 _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
 
@@ -261,6 +265,7 @@ GOVERNED_BY = {
     'water_bill_recheck': (('document', 'water_bill'),),
     'electricity_bill_recheck': (('document', 'electricity_bill'),),
     'utility_bill_missing': _BILLS,              # deprecated code, still auto-resolves
+    **{c: _INCOME for c in _STR_IC_CODE.values()},   # TD-285 F1 — whose STR? ask the IC
 }
 
 
@@ -365,6 +370,9 @@ def _gap_sets(application):
         proof_wanted.add('income_doc_stale')
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
         proof_wanted.add('declared_income_evidence_missing')
+    from . import income_str_ownership as own            # TD-285 F1: whose STR? ask their IC
+    proof_wanted.update(_STR_IC_CODE[(m, kind)] for kind, members
+                        in own.str_owner_ic_asks(application).items() for m in members)
     # Per-member EPF requests (employed-with-payslip OR unemployed) — union, one per member, TAGGED.
     for m in set(employed_epf_members(application)) | set(unemployment_epf_members(application)):
         code = _MEMBER_EPF_CODE.get(m)

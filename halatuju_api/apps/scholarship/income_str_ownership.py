@@ -41,24 +41,48 @@ STR arm), so the tightening can never newly block a family that documented an ea
 STR_NOT_HOUSEHOLD = 'str_not_household'
 
 
-def str_recipient_is_stranger(application) -> bool:
-    """True when the household's live STR is PROVABLY in someone else's name.
+#: A parent the application records in one of these states is not in the household an STR could
+#: be paid to, so no IC is expected of them (the roster's own vocabulary, ``family.PROFESSION``).
+_NOT_IN_HOUSEHOLD = frozenset({'deceased', 'no_contact'})
 
-    Reads the same document ``str_not_breached`` and ``household_str_status`` read — the latest
-    non-superseded ``str`` — and the same recipient verdict (``student_str_check``, which has
-    already matched name and NRIC independently against every parent/guardian). ``'match'`` on
-    either field is the family's own STR. Only a positive ``'mismatch'`` with no match anywhere
-    is a stranger's; ``'no_ref'`` (nothing read, or nothing to compare against) is neither, and
-    returns False."""
-    from . import income_engine as ie
-    from .document_snapshot import latest_doc
-    docs = getattr(application, 'documents', None)
-    if docs is None:
-        return False
-    str_doc = latest_doc(application, 'str')
-    if str_doc is None:
-        return False
-    sc = ie.student_str_check(str_doc)
+
+def str_roster(application) -> list:
+    """THE ROSTER — the household members an STR recipient must be judged against before it may be
+    called somebody else's (owner's F1 ruling, 2026-09-29: *"we cannot judge" is NOT "stranger"*).
+
+    Exactly these, in ``_MEMBER_ORDER``, all read off fields the application already holds (no
+    query):
+      * **the father and the mother**, whenever the application records one (a name or an
+        occupation) who is not recorded as ``deceased`` or ``no_contact`` — an STR is a household
+        benefit that can be paid to either spouse (owner 2026-07-07), so both are candidates
+        whether or not they work;
+      * **a guardian**, when the roster lists one on the same terms — the third person the F8
+        rule itself names ("a parent or guardian of the applicant");
+      * **the STR route's declared earner** and **every ticked working member** — the people the
+        student has TOLD us carry the household's income, siblings included.
+    A sibling who is neither the earner nor a working member is NOT on the roster: the STR model is
+    a head-of-household benefit, and demanding every sibling's IC before we could ever call an STR
+    somebody else's would switch the ownership rule off for most families."""
+    from .income_engine.relationships import _MEMBER_ORDER, working_members
+    roster = set(working_members(application))
+    earner = (getattr(application, 'income_earner', '') or '').strip()
+    if earner in _MEMBER_ORDER:
+        roster.add(earner)
+    for parent in ('father', 'mother'):
+        occ = (getattr(application, f'{parent}_occupation', '') or '').strip()
+        named = (getattr(application, f'{parent}_name', '') or '').strip()
+        if (occ or named) and occ not in _NOT_IN_HOUSEHOLD:
+            roster.add(parent)
+    for person in (getattr(application, 'other_family_members', None) or []):
+        if (isinstance(person, dict) and person.get('role') == 'guardian'
+                and (person.get('occupation') or '') not in _NOT_IN_HOUSEHOLD):
+            roster.add('guardian')
+    return [m for m in _MEMBER_ORDER if m in roster]
+
+
+def _positive_mismatch(sc) -> bool:
+    """F8's field rule, unchanged: a match on name OR NRIC is the family's own; otherwise a
+    positive ``'mismatch'`` on either field. ``'no_ref'`` on both is neither (rule 1)."""
     if not sc:
         return False
     if sc['name_status'] == 'match' or sc['nric_status'] == 'match':
@@ -66,9 +90,88 @@ def str_recipient_is_stranger(application) -> bool:
     return 'mismatch' in (sc['name_status'], sc['nric_status'])
 
 
+def str_unjudged_members(application, sc) -> list:
+    """The roster members the recipient could NOT be compared against — ``[]`` when judgement is
+    possible. Read off the ``student_str_check`` reading in hand (its per-field
+    ``ic_read_members``), so it costs no query.
+
+    ⚠ "READ" IS PER FIELD (review F-A). A member counts as compared on NAME only if their IC's name
+    read, and on NRIC only if their IC's NRIC read. Judgement is possible when, on at least one
+    field the STR actually OFFERS, the recipient mismatched and EVERY roster member was compared
+    on that field. Otherwise the answer is every roster member missing from an offered field — an
+    IC that read only her NRIC is no comparison at all against an STR that shows only her name."""
+    if not sc:
+        return []
+    read = sc.get('ic_read_members') or {}
+    roster = str_roster(application)
+    gaps = set()
+    for field in ('name', 'nric'):
+        if not (sc.get(field) or '').strip():
+            continue                                  # the STR does not offer this field
+        missing = {m for m in roster if m not in (read.get(field) or ())}
+        if not missing and sc.get(f'{field}_status') == 'mismatch':
+            return []                                 # a complete comparison, and no match
+        gaps |= missing
+    return [m for m in roster if m in gaps]
+
+
+def str_check_names_a_stranger(sc, application) -> bool:
+    """The ownership rule itself, applied to a ``student_str_check`` reading already in hand.
+
+    A stranger's STR is a POSITIVE mismatch (F8's field rule, ``_positive_mismatch``) that is
+    COMPLETE on at least one field the STR offers: every member of ``str_roster`` was compared on
+    that field (``str_unjudged_members``, per FIELD — review F-A). Otherwise **we cannot judge** —
+    the answer is not "stranger", the STR counts, and the IC that would settle it is asked for
+    (``str_owner_ic_asks``). Owner's F1 ruling, 2026-09-29.
+
+    ⚠ ONE RULE, TWO READERS, AND IT IS SPLIT OUT SO IT STAYS ONE (TD-285). ``str_recipient_is_
+    stranger`` asks it of the live STR for the submission gate, and ``income_engine.has_valid_str``
+    asks it of the reading it has ALREADY taken. Neither may re-read the household ICs: the
+    comparison set travels on the reading, and the roster is read off the application's own
+    fields — the query budgets say so."""
+    return _positive_mismatch(sc) and not str_unjudged_members(application, sc)
+
+
+def _latest_str_check(application):
+    from . import income_engine as ie
+    from .document_snapshot import latest_doc
+    if getattr(application, 'documents', None) is None:
+        return None
+    str_doc = latest_doc(application, 'str')
+    return ie.student_str_check(str_doc) if str_doc is not None else None
+
+
+def str_recipient_is_stranger(application) -> bool:
+    """True when the household's live STR is PROVABLY in someone else's name — a positive mismatch
+    against every roster member's IC (``str_check_names_a_stranger``)."""
+    return str_check_names_a_stranger(_latest_str_check(application), application)
+
+
+def str_owner_ic_asks(application) -> dict:
+    """The ICs to ASK for, AFTER submission (Check 2), because the STR cannot be judged without
+    them: ``{'missing': [...], 'unreadable': [...]}``. A member whose IC is not on file is
+    ``missing``; one whose IC IS on file but did not read the field needed is ``unreadable``
+    (review F-C — never tell a student an IC they uploaded is "not on file"). Both empty for the
+    family's own STR, an unread STR, no STR, and a true stranger's.
+
+    ⚠ IT RE-READS THE STR on every call (TD-308): `check2_queries._gap_sets` has no STR reading in
+    hand, and threading one through the oversize-ledgered `check2_queries.py` is its own change."""
+    sc = _latest_str_check(application)
+    members = str_unjudged_members(application, sc) if _positive_mismatch(sc) else []
+    on_file = set(((sc or {}).get('ic_read_members') or {}).get('on_file') or ())
+    return {'missing': [m for m in members if m not in on_file],
+            'unreadable': [m for m in members if m in on_file]}
+
+
 def stranger_str_blocks_submission(application) -> bool:
-    """True when a stranger's STR is the ONLY thing standing in for this household's income —
-    the exact case F8 must stop at the submission gate.
+    """True when a TRUE stranger's STR is the ONLY thing standing in for this household's income —
+    the exact case F8 stops at the submission gate.
+
+    ⚠ A STR WE CANNOT JUDGE DOES NOT BLOCK (the lead's reading of the owner's F1 ruling, review
+    F-B/F-D, 2026-09-29). It counts; its missing IC is asked after submission, through Check 2,
+    because before submission the Documents page offers a mother's IC slot only when she is a
+    working member or the earner — asking there would be a dead end (TD-309). So this fires on
+    a SUBSET of the households the pre-ruling gate blocked: nobody is newly blocked.
 
     False the moment any working member's income is SHOWN on its own (a usable payslip, a
     readable EPF, or a declared amount backed by a letter that read): the household has answered

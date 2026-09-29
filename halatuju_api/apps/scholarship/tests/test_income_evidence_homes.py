@@ -978,12 +978,14 @@ class TestWhoseStrIsIt(IncomeHomesBase):
 
     # ── a stranger's STR ────────────────────────────────────────────────────────────────────
     def test_a_strangers_str_no_longer_clears_the_gate(self):
-        # F8 FIXED (owner 2026-09-19). Nobody in this household is on this letter. It used to
-        # read `[]` — the gate let her submit on it while the verdict refused it, so the officer
-        # opened an income fact with no STR behind it. Real student: anyone who uploads a
-        # relative's or a neighbour's screenshot. She is now told so, before she submits.
+        # F8 FIXED (owner 2026-09-19). Nobody in this household is on this letter — and, since the
+        # owner's F1 ruling of 2026-09-29, we KNOW that: the father's AND the mother's ICs are on
+        # file and neither matches. It used to read `[]` — the gate let her submit on it while the
+        # verdict refused it. Real student: anyone who uploads a relative's or a neighbour's
+        # screenshot. She is told so, before she submits.
         app = self._app()
         self._ic(app)
+        self._mother_ic(app)
         _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
         self.assertEqual(income_engine.household_str_status(app), (None, None))
         self.assertEqual(self.blockers(app), ['str_not_household'])
@@ -993,8 +995,52 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         # PRESENT, so a stranger's letter satisfied "the primary income proof".
         app = self._app(route='str', members=(), earner='father')
         self._ic(app)
+        self._mother_ic(app)
         _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
         self.assertEqual(self.blockers(app), ['str_not_household'])
+
+    def test_an_str_we_cannot_judge_no_longer_blocks(self):
+        """⚠ OWNER'S F1 RULING, 2026-09-29: *"we cannot judge" is NOT "stranger"* — the STR COUNTS.
+        The same STR, but the MOTHER — on the roster — has no IC on file, so we cannot say it is
+        not hers. It used to read `['str_not_household']` (F8, and TD-285 as first built). As the
+        lead reads the ruling (review F-B/F-D) it does not block: the ask for her IC is raised
+        after submission, where the Action Centre can take the upload. On both routes."""
+        for route, kw in (('salary', {}), ('str', {'members': (), 'earner': 'father'})):
+            with self.subTest(route=route):
+                app = self._app(route=route, **kw)
+                self._ic(app)
+                _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
+                self.assertEqual(self.blockers(app), [])
+
+    def test_the_mothers_str_with_only_the_fathers_ic_counts(self):
+        """The owner's own example. Her STR, his IC: it mismatches the only IC we can compare, and
+        only her IC could settle it — so it is not called somebody else's, and it does not block.
+        (Before the ruling: `['str_not_household']`.) Once her IC lands it simply matches."""
+        from apps.scholarship.income_str_ownership import str_owner_ic_asks
+        for route, kw in (('salary', {}), ('str', {'members': (), 'earner': 'father'})):
+            with self.subTest(route=route):
+                app = self._app(route=route, **kw)
+                self._ic(app)
+                _str_doc(app, recipient_name=self.MOTHER_NAME, recipient_nric=self.MOTHER_NRIC)
+                self.assertEqual(self.blockers(app), [])
+                self.assertEqual(str_owner_ic_asks(app), {'missing': ['mother'], 'unreadable': []})
+                self._mother_ic(app)
+                self.assertEqual(self.blockers(app), [])
+                self.assertEqual(str_owner_ic_asks(app), {'missing': [], 'unreadable': []})
+
+    def test_an_nric_only_strangers_str_does_not_clear_the_gate(self):
+        """TD-285 adversarial review F3: the NAME did not read, the NRIC read and is somebody
+        else's. Each field settles on its own, so one positive mismatch with no match anywhere is
+        a stranger's STR — on both routes. A rule reading the name alone would call it `no_ref`."""
+        for route, kw in (('salary', {}), ('str', {'members': (), 'earner': 'father'})):
+            with self.subTest(route=route):
+                app = self._app(route=route, **kw)
+                self._ic(app)
+                self._mother_ic(app)
+                _str_doc(app, recipient_name='', recipient_nric=self.STRANGER_NRIC)
+                sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
+                self.assertEqual((sc['name_status'], sc['nric_status']), ('no_ref', 'mismatch'))
+                self.assertEqual(self.blockers(app), ['str_not_household'])
 
     # ── the two things that must NEVER be read as a stranger's STR ──────────────────────────
     def test_an_unreadable_str_is_not_a_strangers_str(self):
@@ -1074,8 +1120,8 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
     **What the code did.** The gate was `income_proof_present`, which
     `verdict_income_salary` appends off `found['any_financial']`. One of that flag's arms is
     `earner_monthly_income(...) == 'declared_str'` — a self-declared figure ACCEPTED because
-    `has_valid_str` says an approved, in-cycle STR is on file. And `has_valid_str` tests
-    CURRENCY only. It never asks WHOSE STR it is.
+    `has_valid_str` says an approved, in-cycle STR is on file. And `has_valid_str` then tested
+    CURRENCY only; it never asked WHOSE STR it was (it does since TD-285, 2026-09-29).
 
     So an STR-route household with a stranger's current Lulus STR, one parent IC, a typed figure
     and no payslip, no EPF and no letter produced a salary reading that rested **entirely on the
@@ -1148,36 +1194,62 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         return d
 
     # ── what the defect actually was, pinned at the two predicates ───────────────────────────
-    def test_a_strangers_current_str_still_accepts_the_declared_amount(self):
-        """⚠ THE DEFECT, NAMED WHERE IT LIVES, AND IT IS **NOT** FIXED BY THIS CHANGE.
-        `has_valid_str` reads the STR's CURRENCY and nothing else, so `earner_monthly_income`
-        hands back `declared_str` — a figure accepted on a document belonging to someone else —
-        and every caller of that source still sees it (`income_per_capita`, the officer's
-        `income_declared_accepted_str` evidence line, `profile_engine`).
-
-        This row is the STATE OF THE TREE, pinned deliberately: the audit fix is applied at the
-        fall-through's gate only, and the wider repair is TD-285 for the owner. If this row ever
-        goes red, the wider fix has landed and this section's reasoning must be re-read."""
+    def test_a_true_strangers_current_str_no_longer_accepts_the_declared_amount(self):
+        """⚠ THE DEFECT, NAMED WHERE IT LIVES — FIXED BY TD-285 (owner, 2026-09-29) FOR A TRUE
+        STRANGER. With every roster IC on file (father AND mother) and neither matching, the STR
+        is somebody else's and vouches for nothing: this read `True` and
+        `(1500.0, 'declared_str')` until TD-285. The full matrix is
+        `test_income_whose_str_vouches.py`."""
         app = self._mismatch_arm()
-        self.assertIs(income_engine.has_valid_str(app), True)
+        _doc(app, 'parent_ic', 'mother', name=self.MOTHER_NAME, nric=self.MOTHER_NRIC)
+        self.assertIs(income_engine.has_valid_str(app), False)
         self.assertEqual(income_engine.earner_monthly_income(app, 'father'),
-                         (float(self.DECLARED), 'declared_str'))
+                         (None, 'declared_unproven'))
         # …and nothing the household owns shows the father's income on its own.
         from apps.scholarship.income_shown import income_shown
         self.assertIs(income_shown(app, 'father').shown, False)
 
-    def test_the_salary_reading_still_carries_income_proof_present(self):
-        """The gate's OLD test, pinned as still true. The fix is not "stop appending the marker"
-        — that marker is the salary route's own answer and F10 keeps it one-way (see
-        `_salary_place_verdict`'s note on the `over` RED). The fix is that the fall-through asks
-        a second question the marker cannot answer: does this rest on the STR?"""
+    def test_an_str_we_cannot_judge_still_accepts_the_declared_amount(self):
+        """⚠ OWNER'S F1 RULING, 2026-09-29: *"we cannot judge" is NOT "stranger".* This arm has
+        only the father's IC; the mother is on the roster with none, so the STR counts and the
+        typed figure with it — exactly as before TD-285. That is why the audit's gate below is
+        still load-bearing: it is what stops this reading raising the verdict."""
         app = self._mismatch_arm()
+        self.assertIs(income_engine.has_valid_str(app), True)
+        self.assertEqual(income_engine.earner_monthly_income(app, 'father'),
+                         (float(self.DECLARED), 'declared_str'))
+
+    def _salary_reading_of(self, app):
         present = set(app.documents.filter(superseded_at__isnull=True)
                       .values_list('doc_type', flat=True))
-        salary = verdict_income_salary(
+        return verdict_income_salary(
             app, income_engine.student_name_for_link(app), present, any_route=True)
+
+    def test_the_salary_reading_still_carries_income_proof_present(self):
+        """The gate's OLD test, pinned as still true on this arm (an STR we cannot judge, so the
+        typed figure is accepted). The fix is not "stop appending the marker" — F10 keeps it
+        one-way. The fall-through asks a second question the marker cannot answer: does this
+        rest on the STR? (For a TRUE stranger the predicate refuses the figure first; see
+        `test_income_whose_str_vouches.py`.)"""
+        salary = self._salary_reading_of(self._mismatch_arm())
         self.assertEqual(salary['status'], 'verified')
         self.assertIn('income_proof_present', [i['code'] for i in salary['evidence']])
+
+    def test_the_gate_still_bites_where_absence_keeps_the_str_vouching(self):
+        """⚠ WHY THE AUDIT'S GATE STAYS AFTER TD-285, IN ONE ROW. An STR whose recipient did NOT
+        READ still vouches for a typed figure (F8 rule 1: absence is not a mismatch), so on the
+        incomplete-cluster arm the salary reading still carries `income_proof_present` off the
+        STR alone. `salary_evidence_stands_without_the_str` is what keeps that reading from
+        raising the cluster's red. Remove the gate and this row goes red."""
+        app = self._household(self._app(
+            route='str', members=(), earner='mother', declared={'father': self.DECLARED}))
+        self._ic(app)
+        _str_doc(app, status='Lulus', year='2026', recipient_name='', recipient_nric='')
+        self.assertIs(income_engine.has_valid_str(app), True)
+        salary = self._salary_reading_of(app)
+        self.assertEqual(salary['status'], 'verified')
+        self.assertIn('income_proof_present', [i['code'] for i in salary['evidence']])
+        self.assertEqual(self.verdict(app)[0], 'gap')
 
     # ── the two rows that MOVE ───────────────────────────────────────────────────────────────
     def test_a_declared_amount_on_a_strangers_str_does_not_raise_the_mismatch_arm(self):
@@ -1243,12 +1315,16 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
     def test_the_submission_gate_is_untouched_by_the_verdict_fix(self):
         """⚠ THE BLAST-RADIUS PIN. The audit fix is applied in ONE function of the verdict. The
         submission gate answers this household on F8's own ownership test
-        (`stranger_str_blocks_submission`), and that answer — whatever it is — may not move
-        because a verdict band did. Pinned on both arms."""
+        (`str_gate_reading`), and that answer may not move because a verdict band did. Pinned on
+        both arms. ⚠ OWNER'S F1 RULING, 2026-09-29: both arms hold no MOTHER's IC, so the STR
+        cannot be judged and does not block (the lead's reading, review F-B). Both arms are
+        therefore clear — the gap arm too: with the F8 guard lifted, the father's complete cluster
+        (his IC links him, and the STR the gate no longer calls a stranger's is his income's
+        fourth way) satisfies the gate's "one complete cluster" early return, exactly as it does
+        for any household whose STR counts. Before the ruling both read `str_not_household`."""
         for arm in (self._mismatch_arm, self._gap_arm):
             with self.subTest(arm=arm.__name__):
-                app = arm()
-                self.assertIn('str_not_household', services.income_doc_blockers(app))
+                self.assertEqual(services.income_doc_blockers(arm()), [])
 
 
 # ════════════════════════════════════════════════════════════════════════════════════════════

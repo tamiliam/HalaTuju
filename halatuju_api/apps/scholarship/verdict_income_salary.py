@@ -271,18 +271,19 @@ def salary_evidence_stands_without_the_str(application) -> bool:
     ⚠ WHY `income_proof_present` ALONE WAS NOT ENOUGH, AND THE MISTAKE IS WORTH KEEPING IN VIEW.
     That marker follows `found['any_financial']`, one of whose arms is `earner_monthly_income`
     answering `declared_str` — a figure the family TYPED, accepted because `has_valid_str` says an
-    approved, in-cycle STR is on file. `has_valid_str` reads CURRENCY and never asks whose STR it
-    is. So an STR-route household with a stranger's current STR, one parent IC and a typed figure
-    produced a salary reading resting ENTIRELY on the STR the fall-through exists to look past,
-    and that reading then raised the very verdict the STR had failed. **A gate that asks "is there
-    salary evidence?" must ask what that evidence itself rests on.**
+    approved, in-cycle STR is on file. Until TD-285 (2026-09-29) `has_valid_str` read CURRENCY
+    only and never asked whose STR it was, so an STR-route household with a stranger's current
+    STR, one parent IC and a typed figure produced a salary reading resting ENTIRELY on the STR
+    the fall-through exists to look past, and that reading then raised the very verdict the STR
+    had failed. **A gate that asks "is there salary evidence?" must ask what that evidence itself
+    rests on.**
 
-    ⚠ THIS DOES NOT REPAIR `has_valid_str`, AND THAT IS A DECISION, NOT AN OVERSIGHT. Making a
-    stranger's STR stop vouching for a declared amount EVERYWHERE also moves the Check-2
-    declared-wage ask (`income_declared_gaps`'s STR short-circuit — a 2026-09-20 RULING with its
-    own pinned rows), the officer follow-up context's `on_str`, the rendered
-    `income_declared_accepted_str` evidence code, and per-capita arithmetic on BOTH routes. That
-    is the owner's call, raised as **TD-285**; this is the ruling applied where the ruling bites.
+    ⚠ TD-285 NOW REFUSES A STRANGER'S STR IN `has_valid_str` ITSELF — AND THIS GATE STAYS. The
+    predicate refuses only a POSITIVE mismatch; an STR whose recipient did not READ still vouches
+    (absence is not a mismatch), so on the incomplete-cluster arm the salary reading can still
+    carry `income_proof_present` off the STR alone. This gate is what keeps that reading from
+    raising the cluster's red (`test_income_evidence_homes`
+    `test_the_gate_still_bites_where_absence_keeps_the_str_vouching`).
 
     ⚠ AND IT IS NOT `salary_income_satisfied` EITHER, for the reason at `_stronger_income_fact`:
     that predicate's fourth way is a non-breached household STR, so it is satisfied by the very
