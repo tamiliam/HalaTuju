@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-29 | 244869c | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 19 | 96 | 0 | - | - | ok |
 | 2026-09-29 | a543580 | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
 | 2026-09-28 | ca706fd | 90 | 43 | officerCockpit.ts 45.7 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
 | 2026-09-20 | be270fd | 90 | 42 | officerCockpit.ts 49 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 91 | 0 | - | - | ok |
@@ -56,7 +57,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-29, a543580, window 2026-07-01 onward)
+## Latest run (2026-09-29, 244869c, window 2026-07-01 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -64,16 +65,16 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju-web/src/lib/officerCockpit.ts` | 27 | 1632 | 44.1 |
 | `halatuju_api/apps/scholarship/vision.py` | 16 | 2321 | 37.1 |
 | `halatuju_api/apps/scholarship/views.py` | 15 | 2421 | 36.3 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 11 | 1165 | 12.8 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 1342 | 12.1 |
-| `halatuju_api/apps/scholarship/verdict_engine.py` | 10 | 1163 | 11.6 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 8 | 1233 | 9.9 |
 | `halatuju_api/apps/courses/views_admin.py` | 6 | 1262 | 7.6 |
 | `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
 | `halatuju_api/apps/scholarship/academic_engine.py` | 7 | 887 | 6.2 |
-| `halatuju_api/apps/scholarship/sponsorship.py` | 6 | 999 | 6 |
+| `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 274 fix / 357 feat commits since 2026-07-01
+- 274 fix / 356 feat commits since 2026-07-01
 
 ### Files over 1000 lines
 - `2421  halatuju_api/apps/scholarship/views.py`
@@ -88,7 +89,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1262  halatuju_api/apps/courses/views_admin.py`
 - `1233  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
-- `1163  halatuju_api/apps/scholarship/verdict_engine.py`
+- `1165  halatuju_api/apps/scholarship/verdict_engine.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
@@ -102,7 +103,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `290  halatuju_api/apps/courses/engine.py:569 check_eligibility`
 - `245  halatuju_api/apps/courses/views.py:118 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
-- `210  halatuju_api/apps/scholarship/verdict_engine.py:479 _verdict_income`
+- `210  halatuju_api/apps/scholarship/verdict_engine.py:481 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:167 autofill_pathway_from_offer`
 - `183  halatuju_api/apps/courses/views_admin.py:659 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
@@ -139,20 +140,21 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 34 of 176 web test files read source text (signals: readFileSync, apiSource)
+- 34 of 178 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 166 entries have a defining line; 92 carry no resolution marker on it
+- 170 entries have a defining line; 96 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 1035: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 5936: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 1073: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 5974: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6275: - **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requ
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at ca706fd
+- budgets no looser than at a543580
 
 ## Reviews
 
