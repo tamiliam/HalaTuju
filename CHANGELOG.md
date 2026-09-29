@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## No student reads "RM {income}" any more (TD-306) - 2026-09-29
+
+Small-change lane, owner's pick (*"then 306"*); the shape and the copy are the lead's. Baselines
+measured first: **pytest 7,194 / 3 skipped**, **jest 3,150 / 181**. After the review fixes:
+**pytest 7,215 / 3 skipped** (+21), **jest 3,161 / 182** (+11). Not committed, pushed or deployed.
+
+- **The defect.** `high_utility_expense` quotes "the household income of RM {income} a month you
+  reported", but it was raised for households with no income on file; the item then carried no
+  `income` and the student read the literal placeholder. TD-285 had opened a new road into it.
+- **A third wording, chosen on the server.** `high_utility_expense_noincome` asks the same
+  question without the income clause, and is raised INSTEAD of the plain one when no income is on
+  file (none or 0). The choice lives in the new `apps/scholarship/high_utility_variant.py`
+  (`pick` / `params`); `check2_queries.py` calls it and stays at 669 lines. Same fact, same place
+  in the priority walk, the same single slot under the cap; the `_str` wording is untouched.
+- **Existing rows are repaired, not duplicated.** The plain and no-income wordings are one
+  question: a row of either (open, answered or waived) stands for the other, so nobody is asked
+  twice; an OPEN row that no longer fits the household — raised before this change with no
+  income, or an income reported or withdrawn since — is re-coded and re-filled in place on its
+  next sync (same row, no "new query" email). An answered row keeps the code it was answered
+  under. A read-only screen counts the affected rows for the lead.
+- **Belt and braces on the web.** The Action Centre and the officer's Outstanding panel now paint
+  item copy through `actionCentre.itemCopy`, which drops an unfilled `{placeholder}` and warns
+  outside production. `interpolateMessage` is unchanged on purpose — a dozen pages call
+  `t(key).replace('{n}', …)` after it — and one of them is pinned.
+- **Copy, en / ms / ta** — the existing wording minus the income clause, no new words.
+  "Your water and electricity bills come to about RM {amount} a month, which looks high. Please
+  tell us why the bills are this high — for example medical equipment, a home business, or
+  several people living together." No officer string added: the officer's panel shows the
+  student's wording, and the verdict view renders no per-code string for Check-2 clarifies — so
+  the two officer strings `admin.scholarship.verdict.item.high_utility_expense` / `_str`, which
+  nothing rendered, are deleted in all three languages (as TD-285 did for its codes).
+- **Bundle.** `/scholarship/application` sat 59 bytes under the rounding line of its 275 kB
+  ceiling; the first cut crossed it (276 kB). With the two dead strings gone and `itemCopy` kept
+  small: **275,441 → 275,447 bytes** (+6) on that route after the review fixes; median 228, worst
+  310, unchanged.
+- **Adversarial review, fixed the same day.** (F1) The in-place re-code could hit the UNIQUE
+  constraint when two syncs had raced and both wordings were on file, and the error escaped the
+  sync (Action Centre, officer page, hourly email sweep). Now: if the live wording already has a
+  row, the open stale row is a duplicate and is closed as `system` (never re-coded); the re-code
+  itself runs in a savepoint and an `IntegrityError` leaves the row exactly as it was. (F2) The
+  re-code runs only while the machine may ask (not from `interviewing` on) — and there the open
+  row is left as asked, not auto-closed; each re-code or duplicate close logs one line on
+  `apps.scholarship.check2_queries` (application, row, old code, new code). (F3) `itemCopy` now
+  drops a DESCRIPTION with an unfilled placeholder whole (the card shows its title alone) and
+  strips it from a title; the sweep asserts a description is fully filled or absent — 12
+  descriptions and 6 titles per language need params. **The historical answered plain rows with no
+  income will show title-only on the officer's Outstanding panel.** (F4)
+  `placeholder-parity.test.ts` now also requires each ms/ta value's non-AUTO placeholders to EQUAL
+  en's (313 keys; dropping `{amount}` from ms goes red). Tests: +5 api, +2 jest.
+- **`test_income_whose_str_vouches.py`** — TD-285's frozen matrix households report no income, so
+  their plain high-utility ask is now the no-income wording; applied as one named layer
+  (`_since_td306`) on top of the unedited tables.
+- **Guards.** `tests/test_high_utility_variants.py` (16: the choice, zero income, the `_str`
+  road, the registry and the cap, the in-place swap both ways, no re-ask of an answered row, the
+  email takes a count and no item text). `ActionCentre.noPlaceholder.test.tsx` (9: the new card
+  rendered in English and Tamil, and a sweep of every known code × three languages × EMPTY params
+  refusing a brace). Bites: raising the plain code without income, dropping the web fallback,
+  dropping the Tamil key and disabling the swap each go red; a comment-only change stays green.
+
 ## The product is in Lexend at last; the Home top bar fits a phone (TD-310) - 2026-09-29
 
 Small sprint, owner's ruling *"on 310, go"* (option 2, after seeing the look). Web only.

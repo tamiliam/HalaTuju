@@ -12295,3 +12295,67 @@ running text ("Merit 87", "Visits 12", "Showing 3 of 12") carries NOTHING — a 
 does not need even digits, and the sentence stays in one face; (3) every right-aligned figure cell
 in a table DOES carry it, or its column jitters in Lexend ("1,111,111" 56.5 px vs "8,000,000"
 66.6 px). `src/lib/__tests__/figuresFace.test.ts` enforces all three over every `.tsx`.
+
+## The high-utility clarify has a third wording, and item copy never shows a raw placeholder — TD-306, 2026-09-29
+
+**Context.** `high_utility_expense` asks "why are your bills this high?" and quotes "the household
+income of RM {income} a month you reported". It was raised whether or not an income was on file;
+with none, the item carried no `income` and the student read the literal "RM {income}". TD-285 made
+it reachable from a new road (a true stranger's STR moves a household off the `_str` wording).
+Owner: *"then 306"*; the shape and the copy are the lead's.
+
+**Decision 1 — a third variant, chosen on the server.** `high_utility_expense_noincome` asks the
+same question with no income clause, and is raised INSTEAD of the plain one when no income is on
+file (none, or 0). One home for the choice: `apps/scholarship/high_utility_variant.py` (`pick`,
+`params`); the plain copy is raised only when the figure it quotes exists. Same fact, same place in
+the priority walk, same single slot under the cap — the two never coexist. The `_str` wording is
+unchanged. The plain and no-income wordings are ONE question to the student: an existing row of
+either (open, answered or waived) stands for the other, so a student is never asked twice; an OPEN
+row that no longer fits the household (raised before TD-306 with no income, or an income reported
+or withdrawn since) is re-coded and re-filled IN PLACE on the next `sync_check2_queries` — same
+row, same slot, no new-item email. An answered row keeps the code it was answered under.
+
+**Decision 2 — item copy never paints a raw `{placeholder}`.** `interpolateMessage` is NOT changed:
+it leaves an unknown placeholder untouched on purpose, and a dozen pages call
+`t(key).replace('{n}', …)` afterwards (the sponsor portal, billing, the interview card, the coach).
+Instead the Action Centre and the officer's Outstanding panel paint item copy through
+`actionCentre.itemCopy`. Amended by the adversarial review (F3, the lead's rule): a DESCRIPTION
+with an unfilled placeholder is dropped whole — the card shows its title alone, never a sentence
+with a hole in it; a TITLE loses just the placeholder (rare: member-tagged titles always carry
+their member). It warns outside production. A sweep over every known code, in all three
+languages, with EMPTY params, refuses a brace and any description that is not fully filled or
+absent. And `placeholder-parity.test.ts` now requires each ms/ta value's non-AUTO placeholders to
+EQUAL en's, so a translation cannot silently drop a figure (F4).
+
+**The re-code is safe and gated (review F1, F2).** If the live wording already has a row, an open
+stale row is a duplicate and is closed as `system` rather than re-coded (a re-code would hit the
+one-row-per-code constraint); the re-code runs in a savepoint and an `IntegrityError` leaves the
+row untouched, so no error escapes `sync_check2_queries`. The re-code runs only while the machine
+may ask (`auto_queries_allowed`); from `interviewing` on an open row stays exactly as asked (the
+web shows its title alone if its description cannot be filled). Every re-code or duplicate close
+logs one line on `apps.scholarship.check2_queries`.
+
+**The owner reads the Tamil before the push (F6).** The three strings are the lead's draft; the
+Tamil (`scholarship.actionCentre.item.high_utility_expense_noincome`) is shown to the owner and
+the push waits for the owner's word on it.
+No officer string for the new code: the verdict view renders `admin.scholarship.verdict.item.*`
+only for codes the verdict engine emits, and it emits no Check-2 clarify — so the two existing
+`high_utility_expense` / `_str` officer strings were dead and are deleted (they also paid for the
+new copy on `/scholarship/application`, which sits on its budget).
+
+**Alternatives considered:** (a) drop the clause in the copy when `income` is absent (a conditional
+inside one string) — the catalogues have no conditional syntax, and it would hide the choice in the
+web; (b) do not raise the ask at all without an income — hides a real question (the bills still
+read high); (c) make `interpolateMessage` blank every unknown placeholder — breaks every
+`.replace('{n}')` caller; (d) let the old open rows auto-resolve and raise the new code — closes an
+unanswered question as "resolved by system" and sends the student a new-query email for the same
+question; (e) on the web, blank just the placeholder in a description — leaves debris ("you were
+taking , … for ( at )"), refused by the lead.
+
+**Trade-offs:** re-coding an open row rewrites its frozen `params` (the bill total is re-read at
+that moment); acceptable because the row was unpaintable. A description with a missing param is
+not shown at all — the title stands alone — which loses the detail but never shows a broken
+sentence; the historical answered plain rows with no income read title-only on the officer panel.
+
+**Revisit if:** another clarify's copy quotes a param that is not always set (give it the same
+shape: a variant, or a param that is always filled), or the catalogues gain conditional syntax.

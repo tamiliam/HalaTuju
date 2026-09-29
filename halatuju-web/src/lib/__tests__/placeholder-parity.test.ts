@@ -49,6 +49,29 @@ describe('placeholder parity', () => {
     },
   )
 
+  // TD-306 review F4. The subset rule above lets a translation DROP a placeholder — ms losing
+  // `{amount}` stayed green, and the student would read a sentence with the figure missing. So,
+  // per key, the non-AUTO placeholders of ms and ta must EQUAL en's. AUTO_TOKENS are left out on
+  // purpose: `t()` fills them on every render, and a translator may name the organisation where en
+  // names the programme (four keys do today).
+  it.each([['ms', ms], ['ta', ta]] as const)(
+    "%s: every value's non-AUTO placeholders = en's (none dropped, none added)",
+    (loc, msgs) => {
+      const flat = flatten(msgs)
+      const own = (s: string) => [...placeholders(s)].filter((p) => !AUTO.has(p)).sort().join(',')
+      const viol: string[] = []
+      let compared = 0
+      for (const [k, v] of Object.entries(enFlat)) {
+        const want = own(v)
+        if (want) compared++
+        const got = k in flat ? own(flat[k]) : want   // a missing key is the i18n gate's to report
+        if (got !== want) viol.push(`${loc}:${k}: en {${want}} vs {${got}}`)
+      }
+      expect(viol).toEqual([])
+      expect(compared).toBeGreaterThanOrEqual(300)   // floor: 313 en keys carry one on 2026-09-29
+    },
+  )
+
   it('AUTO_TOKENS holds the five injected branding params', () => {
     expect([...AUTO].sort()).toEqual([
       'displayDomain', 'orgShortName', 'personaName', 'programmeName', 'supportEmail',

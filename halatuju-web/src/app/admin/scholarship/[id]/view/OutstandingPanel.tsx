@@ -8,7 +8,7 @@
  */
 import type { Dispatch, SetStateAction } from 'react'
 import { showsCheck2Box } from '@/lib/officerCockpit'
-import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
+import { itemCopy, localiseParams, titleSourceFor } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminResolutionItem } from '@/lib/admin-api'
 
 import { REQUEST_CATEGORIES, REQ_CAT, type T } from './shared'
@@ -91,17 +91,16 @@ export function OutstandingPanel({
                       // Show the ACTUAL question the student was asked (same source as their
                       // Action Centre), not the internal caveat description.
                       const src = titleSourceFor(item)
-                      const question = src.kind === 'raw'
-                        ? (src.text || item.code)
-                        : t(src.titleKey, localiseParams(item.params, t))
+                      const copy = src.kind === 'raw' ? null : itemCopy(t, src, localiseParams(item.params, t))
+                      const question = copy ? copy.title : (src.kind === 'raw' && src.text) || item.code
                       // The FULL instruction the STUDENT actually saw (auto items carry a detailed
                       // description; a manual request's raw `text` above already IS the full ask). Show
                       // it so the reviewer sees EXACTLY what was asked, next to the student's answer.
                       // Strip markdown emphasis (*…*) for a clean plain-text read; hide when there's no
                       // desc key (t() echoes the key path) or it just repeats the title.
                       let detail = ''
-                      if (src.kind === 'i18n') {
-                        const d = t(src.descKey, localiseParams(item.params, t))
+                      if (copy && src.kind === 'i18n') {
+                        const d = copy.desc
                         if (d && d !== src.descKey && d !== question) {
                           detail = d.replace(/\*([^*]+)\*/g, '$1')
                         }

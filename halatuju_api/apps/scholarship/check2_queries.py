@@ -23,6 +23,7 @@ gaps become student clarify queries. Subjective / sensitive / motivational gaps
 from django.db import IntegrityError
 from django.utils import timezone
 
+from . import high_utility_variant as hu
 from .models import ResolutionItem
 from .submission_review import completeness_gaps
 
@@ -77,9 +78,10 @@ CLARIFY_SPECS = {
     'informal_work_detail':       {'fact': 'income'},   # a declared informal wage — own-account/employer + avg
     'household_roster_undercount':{'fact': 'income'},   # stated size > described (who else is at home?)
     'other_scholarships_followup':{'fact': 'income'},   # other scholarships listed — status/amount
-    # High utility spend — POINT-BLANK, states the amount (owner 2026-07-08). Two variants: against
-    # the declared income (default) OR against STR status (an STR household). Both carry params.
+    # High utility spend — POINT-BLANK, states the amount (owner 2026-07-08). Three variants, picked
+    # in `high_utility_variant` (TD-306): vs the reported income / no figure on file / STR status.
     'high_utility_expense':       {'fact': 'income'},   # vs declared/slip income
+    'high_utility_expense_noincome': {'fact': 'income'},   # TD-306 — no income to quote
     'high_utility_expense_str':   {'fact': 'income'},   # vs STR status
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
@@ -178,7 +180,8 @@ _CLARIFY_ORDER = [
     'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
-    'high_utility_expense', 'high_utility_expense_str',   # consumption signal, lowest priority
+    'high_utility_expense', 'high_utility_expense_noincome',   # consumption signal, lowest
+    'high_utility_expense_str',                                  # priority (TD-306: one slot)
 ]
 
 # The student is not the reviewer: a long list suppresses responses. Cap to the few
@@ -242,6 +245,7 @@ GOVERNED_BY = {
     'household_roster_undercount': _FAMILY,
     'other_scholarships_followup': None,         # apply-form question, not catalogued
     'high_utility_expense': _BILLS,
+    'high_utility_expense_noincome': _BILLS,
     'high_utility_expense_str': _BILLS,
     # doc requests
     'father_income_proof_missing': _INCOME,
@@ -335,11 +339,11 @@ def _gap_sets(application):
         gaps.add('household_roster_undercount')
     if other_scholarships_followup_gap(application):
         gaps.add('other_scholarships_followup')
-    # High utility spend → a POINT-BLANK student query stating the amount (owner 2026-07-08). Two
-    # variants: an STR household is asked against its STR status, else against the declared income.
+    # High utility spend → a POINT-BLANK student query stating the amount (owner 2026-07-08). Which
+    # of the three wordings (STR status / the reported income / no figure) is `hu.pick`'s (TD-306).
     high_ctx = high_utility_expense_context(application)
     if high_ctx is not None:
-        gaps.add('high_utility_expense_str' if high_ctx.get('on_str') else 'high_utility_expense')
+        gaps.add(hu.pick(high_ctx))
     # Full-household-income completeness: a blank-slot PARENT → a status CLARIFY; any earning roster
     # member with no income doc → a PROOF doc request (uncapped).
     proof_wanted = set()
@@ -409,15 +413,9 @@ def _clarify_params(application, code):
     high-utility queries carry any (owner 2026-07-08 — state the amount + the income/STR basis);
     every other clarify is static, so this returns {}. Computed once (a clarify is once-ever), so
     the figures reflect the bills on file when the query was raised."""
-    if code in ('high_utility_expense', 'high_utility_expense_str'):
+    if code in hu.CODES:        # only the plain variant quotes the income (TD-306)
         from .income_engine import high_utility_expense_context
-        ctx = high_utility_expense_context(application) or {}
-        params = {}
-        if ctx.get('amount') is not None:
-            params['amount'] = ctx['amount']
-        if code == 'high_utility_expense' and ctx.get('income') is not None:
-            params['income'] = ctx['income']         # the STR variant references status, not a figure
-        return params
+        return hu.params(high_utility_expense_context(application) or {}, code)
     if code == 'informal_income_detail':
         # Name the member(s) + declared occupation the student already gave in 'My Family', so the
         # ask reflects what we know rather than a generic prompt (owner 2026-07-08).
@@ -439,9 +437,9 @@ def clarify_overflow_count(application):
     if application.profile_completed_at is None or querying_locked(application):
         return 0
     gaps, _ = _gap_sets(application)
-    existing = {r.code: r for r in
-                application.resolution_items.filter(source='check2', kind='clarify')}
-    open_now = sum(1 for r in existing.values() if r.status == 'open')
+    existing = hu.stand_ins({r.code: r for r in   # TD-306: one row answers for the pair
+                application.resolution_items.filter(source='check2', kind='clarify')})
+    open_now = sum(1 for r in set(existing.values()) if r.status == 'open')
     slots = max(max_clarify(application) - open_now, 0)
     # "Waiting" = a clarify-able gap that could STILL be asked but is crowded out by the cap. A
     # clarify is once-ever: once an item exists (open OR already answered / waived) it is NEVER
@@ -538,9 +536,11 @@ def sync_check2_queries(application):
     # crowded-out higher-priority gap is surfaced to the officer via clarify_overflow_count().
     raised = sum(1 for r in existing.values() if r.kind == 'clarify' and r.status == 'open')
     cap = max_clarify(application)
+    hu.reconcile_open(application, existing, gaps, may_ask)   # TD-306: a stale open row re-coded
     if may_ask:
+        asked = hu.stand_ins(existing)
         for code in _CLARIFY_ORDER:
-            if code not in gaps or code in existing:
+            if code not in gaps or code in asked:
                 continue
             uncapped = (code == 'reporting_date_unknown')
             if not uncapped and raised >= cap:
@@ -559,7 +559,7 @@ def sync_check2_queries(application):
                 pass  # created concurrently — fine
 
     for code, item in existing.items():
-        if item.status == 'open' and item.kind == 'clarify' and code not in gaps:
+        if item.status == 'open' and item.kind == 'clarify' and not hu.alive(code, gaps):
             item.status = 'resolved'
             item.resolved_by = 'system'
             item.resolved_at = now

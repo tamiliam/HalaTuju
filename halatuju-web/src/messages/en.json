@@ -2355,6 +2355,10 @@
           "title": "Why are your utility bills this high?",
           "desc": "Your water and electricity bills come to about RM {amount} a month. That looks high next to the household income of RM {income} a month you reported. Please tell us why the bills are this high — for example medical equipment, a home business, or several people living together."
         },
+        "high_utility_expense_noincome": {
+          "title": "Why are your utility bills this high?",
+          "desc": "Your water and electricity bills come to about RM {amount} a month, which looks high. Please tell us why the bills are this high — for example medical equipment, a home business, or several people living together."
+        },
         "high_utility_expense_str": {
           "title": "Why are your utility bills this high?",
           "desc": "Your water and electricity bills come to about RM {amount} a month, which looks high. As your family receives STR (cash aid for lower-income households), please help us understand why the bills are this high — for example medical equipment, a home business, or several people living together."
@@ -4518,8 +4522,6 @@
           "informal_work_detail": "A declared informal wage — the student has been asked own-account vs employer and the average monthly earnings.",
           "household_roster_undercount": "Stated household size exceeds the members described — the student has been asked who else is in the household.",
           "other_scholarships_followup": "Other scholarships were listed at apply — the student has been asked which, the amount, and whether received/offered (avoid double-funding).",
-          "high_utility_expense": "Utility spend reads high vs the declared household income — the student has been asked point-blank why, with the amount stated.",
-          "high_utility_expense_str": "Utility spend reads high for an STR (cash-aid) household — the student has been asked point-blank why, with the amount stated.",
           "pension_amount_unknown": "A retired / unable-to-work parent may draw a pension or benefit that isn't yet counted — the student has been asked whether they receive one and, if so, roughly how much (no document demanded until they confirm).",
           "father_pension_proof_missing": "Father is retired/unable and the student confirmed he draws a pension — asked to upload the statement (counts as household income).",
           "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income)."

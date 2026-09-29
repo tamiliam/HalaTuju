@@ -148,6 +148,7 @@ _INCOME_CODES = frozenset({'income_declared_accepted_str', 'income_declared_acce
 #: The student-facing Check-2 codes TD-285 can move (adversarial review F2): `on_str` picks
 #: between the two high-utility clarifies, and the declared-wage ask is the letter request.
 CHECK2_CODES = frozenset({'high_utility_expense', 'high_utility_expense_str',
+                          'high_utility_expense_noincome',       # TD-306
                           'declared_income_evidence_missing'}
                          | {f'{m}_ic_for_str_{k}'
                             for m in ('father', 'mother', 'guardian', 'brother', 'sister')
@@ -1012,6 +1013,18 @@ class TestTheRulingInWords(WhoseStrBase):
 # ════════════════════════════════════════════════════════════════════════════════════════════
 # 5. WHAT THE STUDENT IS ASKED — and emailed (adversarial review F2)
 # ════════════════════════════════════════════════════════════════════════════════════════════
+_HU_NOINCOME = 'high_utility_expense_noincome'
+
+
+def _since_td306(codes):
+    """TD-306 (2026-09-29), applied on top of the two tables above, which stay as TD-285 froze them:
+    these households report NO household income, so where they used to be asked the plain
+    `high_utility_expense` ("…the household income of RM {income} a month you reported") — which
+    printed the literal placeholder — they are now asked `high_utility_expense_noincome`. Nothing
+    else moves; the `_str` wording and the letter request are untouched."""
+    return tuple(sorted(_HU_NOINCOME if c == _HU else c for c in codes))
+
+
 class TestTheStudentsCheck2Asks(WhoseStrBase):
     """`on_str` reaches the STUDENT: it picks `high_utility_expense_str` (asked against the STR)
     or `high_utility_expense` (asked against the household income the student reported), and the
@@ -1023,7 +1036,8 @@ class TestTheStudentsCheck2Asks(WhoseStrBase):
             for state in STATES:
                 with self.subTest(route=route, state=state):
                     want = CHECK2_MOVED.get((route, state), CHECK2_BEFORE[(route, state)])
-                    self.assertEqual(self.check2_codes(self.build_high_bills(route, state)), want)
+                    self.assertEqual(self.check2_codes(self.build_high_bills(route, state)),
+                                     _since_td306(want))
 
     def test_only_a_true_stranger_or_an_unjudged_str_moves_a_code(self):
         self.assertEqual(sorted({s for _r, s in CHECK2_MOVED}), sorted(TRUE_STRANGER | UNJUDGED))
@@ -1055,8 +1069,8 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
         from apps.scholarship.check2_queries import sync_check2_queries
         app = self.build_high_bills(route, state)
         # The household income the student REPORTED at apply — what the income variant quotes.
-        # (With none on file the clarify is raised without `income` and the student's copy would
-        # show the literal "RM {income}" — a pre-existing edge, reported, not built on here.)
+        # (With none on file it would be `high_utility_expense_noincome` since TD-306 — the same
+        # ask without a figure; before TD-306 the student's copy showed the literal "RM {income}".)
         app.profile.household_income = 1500
         app.profile.save(update_fields=['household_income'])
         app.profile_completed_at = timezone.now() - timedelta(days=3)

@@ -35,6 +35,7 @@ import {
   attributionFor,
   confirmTargetFor,
   localiseParams,
+  itemCopy,
   sortByWeight,
   clusterMemberOf,
   latestDocFor,
@@ -112,8 +113,7 @@ function ActionCard({
   const { t, locale } = useT()
   const src = titleSourceFor(item)
   const tParams = localiseParams(item.params, t)
-  const title = src.kind === 'raw' ? src.text : t(src.titleKey, tParams)
-  const desc = src.kind === 'i18n' ? t(src.descKey, tParams) : ''
+  const { title, desc } = src.kind === 'raw' ? { title: src.text, desc: '' } : itemCopy(t, src, tParams)
   // Human-aware re-ask (#83, owner 2026-07-08): the backend stamps `attempts` on a doc-task when
   // an upload arrived but did NOT clear it (the student re-sent the same file, or a different-but-
   // still-wrong one). Acknowledge what happened before repeating the ask, like a human would.

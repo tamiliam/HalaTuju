@@ -2355,6 +2355,10 @@
           "title": "Mengapa bil utiliti anda setinggi ini?",
           "desc": "Bil air dan elektrik anda berjumlah kira-kira RM {amount} sebulan. Itu kelihatan tinggi berbanding pendapatan isi rumah RM {income} sebulan yang anda laporkan. Sila beritahu kami mengapa bil setinggi ini — contohnya peralatan perubatan, perniagaan rumah, atau ramai orang tinggal bersama."
         },
+        "high_utility_expense_noincome": {
+          "title": "Mengapa bil utiliti anda setinggi ini?",
+          "desc": "Bil air dan elektrik anda berjumlah kira-kira RM {amount} sebulan, yang kelihatan tinggi. Sila beritahu kami mengapa bil setinggi ini — contohnya peralatan perubatan, perniagaan rumah, atau ramai orang tinggal bersama."
+        },
         "high_utility_expense_str": {
           "title": "Mengapa bil utiliti anda setinggi ini?",
           "desc": "Bil air dan elektrik anda berjumlah kira-kira RM {amount} sebulan, yang kelihatan tinggi. Memandangkan keluarga anda menerima STR (bantuan tunai untuk isi rumah berpendapatan rendah), sila bantu kami memahami mengapa bil setinggi ini — contohnya peralatan perubatan, perniagaan rumah, atau ramai orang tinggal bersama."
@@ -4518,8 +4522,6 @@
           "informal_work_detail": "Upah tidak formal yang diisytiharkan — pelajar diminta akaun sendiri lawan majikan dan purata pendapatan bulanan.",
           "household_roster_undercount": "Saiz isi rumah yang dinyatakan melebihi ahli yang dihuraikan — pelajar diminta siapa lagi dalam isi rumah.",
           "other_scholarships_followup": "Biasiswa lain disenaraikan semasa memohon — pelajar diminta yang mana, jumlah, dan sama ada diterima/ditawarkan (elak pembiayaan berganda).",
-          "high_utility_expense": "Perbelanjaan utiliti kelihatan tinggi berbanding pendapatan isi rumah yang diisytihar — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan.",
-          "high_utility_expense_str": "Perbelanjaan utiliti kelihatan tinggi bagi isi rumah STR (bantuan tunai) — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan.",
           "pension_amount_unknown": "Ibu/bapa yang bersara atau tidak berupaya bekerja mungkin menerima pencen atau bantuan yang belum dikira — pelajar telah ditanya sama ada mereka menerimanya dan, jika ya, lebih kurang berapa (tiada dokumen diminta sehingga disahkan).",
           "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah)."

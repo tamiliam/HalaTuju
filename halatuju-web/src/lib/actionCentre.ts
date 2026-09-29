@@ -229,6 +229,8 @@ export const KNOWN_CODES = [
   'household_size_confirm',
   'other_scholarships_followup',
   'high_utility_expense',
+  // TD-306 — the same ask when no household income is on file (no "RM {income}" to quote).
+  'high_utility_expense_noincome',
   // Owner 2026-07-08 — the STR variant of the point-blank high-usage query.
   'high_utility_expense_str',
   // Post-award payout — the bank-details task. The OPEN state renders via the dedicated
@@ -339,6 +341,33 @@ export function profilePickerHref(item: Pick<ResolutionItem, 'params'>): string 
  *  `views._flag_needs_officer_eye`. */
 export function needsOfficerEye(item: Pick<ResolutionItem, 'params'>): boolean {
   return item.params?.needs_officer_eye === true
+}
+
+/**
+ * TD-306 — a ticket's title/description, never with a raw `{placeholder}` in it.
+ *
+ * `interpolateMessage` (under `t()`) leaves a placeholder it has no value for UNTOUCHED, on purpose:
+ * a dozen pages call `t(key).replace('{n}', …)` afterwards and rely on it. A ticket's copy has no
+ * second pass, so an unfilled placeholder here would reach the student literally ("RM {income}").
+ * So (review F3): a DESCRIPTION with an unfilled placeholder is dropped whole — the card shows its
+ * title alone, never a sentence with a hole in it ("you were taking , … for ( at )"). A TITLE
+ * with one loses just the placeholder (rare: the member-tagged titles always carry their member).
+ * Either warns outside production so the missing param is seen. Filled copy comes back exactly as
+ * `t()` gave it. Kept small on purpose: it is on `/scholarship/application`'s first load, which
+ * sits on its budget.
+ */
+export function itemCopy(
+  t: (key: string, params?: Record<string, string>) => string,
+  src: { titleKey: string; descKey: string },
+  params?: Record<string, string>,
+): { title: string; desc: string } {
+  const title = t(src.titleKey, params)
+  const desc = t(src.descKey, params)
+  const gap = /\{\w+\}/
+  if (gap.test(title + desc) && process.env.NODE_ENV !== 'production') {
+    console.warn(`[actionCentre] unfilled placeholder in ${src.titleKey}: ${title} / ${desc}`)
+  }
+  return { title: title.replace(/\{\w+\}/g, ''), desc: gap.test(desc) ? '' : desc }
 }
 
 /** Convert ticket params (string|number values) to the string map `t()` wants. */
