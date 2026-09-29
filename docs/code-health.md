@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-30 | 4583a83 | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 98 | 0 | - | - | ok |
 | 2026-09-29 | 7435fa9 | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 96 | 0 | - | - | ok |
 | 2026-09-29 | 244869c | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 19 | 96 | 0 | - | - | ok |
 | 2026-09-29 | a543580 | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 19 | 92 | 0 | - | - | ok |
@@ -58,7 +59,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-29, 7435fa9, window 2026-07-01 onward)
+## Latest run (2026-09-30, 4583a83, window 2026-07-02 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -75,7 +76,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 274 fix / 356 feat commits since 2026-07-01
+- 275 fix / 357 feat commits since 2026-07-02
 
 ### Files over 1000 lines
 - `2421  halatuju_api/apps/scholarship/views.py`
@@ -141,21 +142,22 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 35 of 179 web test files read source text (signals: readFileSync, apiSource)
+- 36 of 182 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 171 entries have a defining line; 96 carry no resolution marker on it
+- 175 entries have a defining line; 98 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 1073: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
 - line 5974: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6275: - **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requ
+- line 6273: - **TD-314 (raised 2026-09-29 by TD-306's adversarial review, F5) — low, pre-existing shape, student-visible.** When a valid STR arrives on a househol
+- line 6276: - **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requ
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 244869c
+- budgets no looser than at 7435fa9
 
 ## Reviews
 
