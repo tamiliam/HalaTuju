@@ -71,11 +71,13 @@ export function useGiftInUrl(): boolean {
   }, [])
 
   // What `chosen` was when the page first knew its answer; a later difference is a switch.
+  // ⚠ A SWITCH TO NO GIFT FOLLOWS TOO (TD-302): "All gifts" on Applications and the Overview
+  // selects '' and the address must stop naming the gift, or a reload would narrow it again.
   const was = useRef<string | null>(null)
   useEffect(() => {
     if (asked === null) return
     if (was.current === null) { was.current = chosen; return }
-    if (!chosen || chosen === was.current) return
+    if (chosen === was.current) return
     was.current = chosen
     const { pathname, search } = window.location
     if (giftIn(search) === chosen) return

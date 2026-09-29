@@ -14,7 +14,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import SpendingPage from './page'
 import * as api from '@/lib/admin-api'
 import { GiftScope, TWO_GIFTS, crumbText, scopeChosen } from '@/test/giftScope'
-import { address, deferred, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
+import { address, crumbOffersAll, deferred, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 let mockRole: Record<string, unknown> = { role: 'org_admin', owning_org_id: 11 }
@@ -88,6 +88,13 @@ describe('(c) a draft in the link is not a gift to spend from', () => {
       .toEqual(['Flagship Bursary'])
     expect(mockApi.getSpendingOverview).not.toHaveBeenCalled()
   })
+})
+
+it('TD-302: the crumb offers no "All gifts" — this page needs a gift', async () => {
+  openAt(`/admin/spending?programme=${SABAH}`)
+  render(page())
+  await waitFor(() => expect(mockApi.getSpendingOverview).toHaveBeenCalledWith(SABAH, { token: 'tok' }))
+  expect(crumbOffersAll()).toBe(false)
 })
 
 describe('(e)(g) the query follows the crumb with replace', () => {

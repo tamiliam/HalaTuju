@@ -304,6 +304,7 @@ function Chrome(
               selectedOrg={selectedOrg}
               onSelectOrg={setSelectedOrg}
               scope={active?.scope}
+              pathname={pathname}
             />
           ) : undefined
         }

@@ -648,8 +648,14 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   wrong gift). TD-298's brief named three pages and this one was left to keep the sprint to its
   brief. **Fix:** the same ticket Spending now uses, plus an out-of-order test. ~30 min.
   **Trigger:** the next sprint on the Overview.
-- **TD-302 (raised 2026-09-28 by TD-296's sprint) — low, an OWNER DECISION. There is no way back
-  to "all gifts" on Applications once a gift is chosen.** The crumb's switcher lists gifts and has
+- ~~**TD-302 (raised 2026-09-28 by TD-296's sprint) — low, an OWNER DECISION. There is no way back
+  to "all gifts" on Applications once a gift is chosen.**~~ **RESOLVED 2026-09-29 (owner's pick,
+  the option below) — the crumb's gift menu offers "All gifts" on Applications and the Overview
+  ONLY, and only while a gift is chosen and two or more LIVE gifts exist (with one, `select('')`
+  resolves straight back to it, so the entry would be a no-op). It selects `''`; `useGiftInUrl` now
+  follows the crumb to "no gift" too and drops `?programme=` with `router.replace`. Never on
+  Configuration/Payments/Spending, never on a pinned detail page. Rule: decisions.md 2026-09-29.
+  Retro: `docs/retrospective-2026-09-29-all-gifts.md`.** The crumb's switcher lists gifts and has
   no "all gifts" entry. Before TD-296 a reload was the (accidental) escape; now the address bar
   carries the gift, so a reload keeps it, and the rail's Applications link carries it too. The only
   way back is loading the bare `/admin/scholarship` fresh. Nothing was invented here (brief item

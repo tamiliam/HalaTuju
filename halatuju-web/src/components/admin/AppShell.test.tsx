@@ -15,6 +15,7 @@ import { AppShell } from './AppShell'
 import type { AdminRoleName } from '@/lib/navigation'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
+import { switchCrumbTo, switchCrumbToAll } from '@/test/giftUrl'
 
 let mockRole: Record<string, unknown> = {}
 // Default null: with no token the shell runs no probes, so the dark-shipped features stay dark.
@@ -368,6 +369,21 @@ describe('the rail waits for a gift before offering Configuration', () => {
     await waitFor(() => expect(within(sidebar()).getByText('Test Programme')).toBeTruthy())
     expect(railHref('admin.scholarship.nav')).toBe('/admin/scholarship')
     expect(railHref('admin.payments.title')).toBe('/admin/payments')
+  })
+
+  it('TD-302: "All gifts" on Applications takes the gift off the rail too', async () => {
+    // Through the REAL shell, so the path it hands the crumb is the one that decides the offer.
+    withGifts([G('bp-flagship', 'BrightPath Bursary'), G('bp-sabah', 'Test Programme')])
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'admin.shell.switchProgramme' }))
+      .toBeTruthy())
+    switchCrumbTo('Test Programme')
+    await waitFor(() => expect(railHref('admin.scholarship.nav'))
+      .toBe('/admin/scholarship?programme=bp-sabah'))
+    switchCrumbToAll()
+    await waitFor(() => expect(railHref('admin.scholarship.nav')).toBe('/admin/scholarship'))
+    expect(railHref('admin.nav.programmeOverview')).toBe('/admin/programme/overview')
   })
 
   it('⚠ REVIEW F2: a mistyped link hides the money rows only while its page is open', async () => {

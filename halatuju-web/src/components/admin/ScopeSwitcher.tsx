@@ -48,7 +48,16 @@ export interface ScopeOption {
   isActive?: boolean
 }
 
-function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLabel, locked }: {
+/**
+ * ⚠ "ALL GIFTS" EXISTS ONLY WHERE A PAGE READS ACROSS GIFTS (TD-302, 2026-09-29). Applications and
+ * the Overview describe every gift the fence allows when none is chosen — a true answer, and for a
+ * reviewer the only door — so once a gift was picked there had to be a way back that was not a
+ * fresh load of the bare address. Configuration, Payments and Spending need a gift (2026-09-28),
+ * and an "all" there could only trip their gate. EXACT paths: a detail page below is pinned anyway.
+ */
+const READS_ACROSS_GIFTS = ['/admin/scholarship', '/admin/programme/overview']
+
+function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLabel, locked, allLabel }: {
   label: string
   options: ScopeOption[]
   selectedCode: string
@@ -58,6 +67,8 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLab
   notActiveLabel?: string
   /** The page is ABOUT one gift (a run, an application) — name it, offer no other. */
   locked?: boolean
+  /** Offer a first entry that selects NO gift (`''`), under this name. See `READS_ACROSS_GIFTS`. */
+  allLabel?: string
 }) {
   // Nothing to switch between, or nothing the page would follow: render the name, not a control
   // that suggests otherwise. A switch on a run page changed the crumb and not the run (2026-09-28).
@@ -75,6 +86,9 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLab
         </>
       }
     >
+      {allLabel && (
+        <MenuItem onClick={() => onSelect('')} icon={<span className="w-[13px]" />}>{allLabel}</MenuItem>
+      )}
       {options.map((o) => (
         <MenuItem
           key={o.code}
@@ -96,7 +110,7 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLab
 
 export function ScopeSwitcher({
   organisations, programmes, selectedOrg, selectedProgramme, onSelectOrg, onSelectProgramme,
-  scope, programmeLocked, pinnedName,
+  scope, programmeLocked, pinnedName, offerAllGifts,
 }: {
   organisations: ScopeOption[]
   programmes: ScopeOption[]
@@ -110,6 +124,8 @@ export function ScopeSwitcher({
   programmeLocked?: boolean
   /** The pinned record's own gift name, from its payload — shown when the list lacks its code. */
   pinnedName?: string
+  /** Offer "All gifts" in the gift menu — `BreadcrumbScopes` decides when (TD-302). */
+  offerAllGifts?: boolean
 }) {
   const { t } = useT()
   const sep = <span aria-hidden className="shrink-0 text-ground-300">/</span>
@@ -162,6 +178,7 @@ export function ScopeSwitcher({
             ariaLabel={t('admin.shell.switchProgramme')}
             notActiveLabel={t('admin.programmes.notActive')}
             locked={programmeLocked}
+            allLabel={offerAllGifts ? t('admin.shell.allGifts') : undefined}
           />
         </>
       )}
@@ -180,13 +197,21 @@ export function ScopeSwitcher({
  * when there is exactly one gift, and stays empty when there are several and none chosen) is the
  * same value the tabs act on.
  */
-export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scope }: {
+export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scope, pathname }: {
   organisations: ScopeOption[]
   selectedOrg: string
   onSelectOrg: (code: string) => void
   scope?: NavScope
+  /** The page's path — decides whether "All gifts" is offered (`READS_ACROSS_GIFTS`). */
+  pathname?: string
 }) {
-  const { choices, chosen, select, pinned, pinnedName } = useProgrammeScope()
+  const { choices, chosen, select, pinned, pinnedName, ambiguous } = useProgrammeScope()
+  // Only when it would CHANGE something: a gift is chosen, and "none" would stay none. With one
+  // live gift `select('')` resolves straight back to it, so there the entry would be a no-op (and
+  // beside a draft, a switch to the live gift wearing the wrong name). With nothing chosen the page
+  // already reads across gifts. The URL follows in `useGiftInUrl`, with `replace`. (A pinned
+  // detail page needs no clause here: its crumb is `locked`, plain text, before any menu exists.)
+  const offerAllGifts = ambiguous && chosen !== '' && READS_ACROSS_GIFTS.includes(pathname ?? '')
 
   return (
     <ScopeSwitcher
@@ -199,6 +224,7 @@ export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scop
       scope={scope}
       programmeLocked={pinned}
       pinnedName={pinnedName}
+      offerAllGifts={offerAllGifts}
     />
   )
 }

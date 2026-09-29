@@ -43,7 +43,9 @@ export function GiftScope({ choices = TWO_GIFTS, settled = true, children }: {
   return (
     <ProgrammeScopeProvider choices={choices} settled={settled}>
       <nav data-testid="crumb">
-        <BreadcrumbScopes organisations={[]} selectedOrg="" onSelectOrg={() => {}} scope="programme" />
+        {/* The page's path from jsdom's address bar, as the shell passes `usePathname()`. */}
+        <BreadcrumbScopes organisations={[]} selectedOrg="" onSelectOrg={() => {}} scope="programme"
+          pathname={window.location.pathname} />
       </nav>
       <Probe />
       {children}

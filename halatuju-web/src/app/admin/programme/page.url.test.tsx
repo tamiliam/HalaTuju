@@ -12,7 +12,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 
 import AdminProgrammeConfigPage from './page'
 import { GiftScope, TWO_GIFTS, scopeChosen } from '@/test/giftScope'
-import { address, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
+import { address, crumbOffersAll, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
@@ -43,6 +43,13 @@ it('a switch in the crumb rewrites the gift and keeps the tab — in place', asy
   switchCrumbTo('Flagship Bursary')
   await waitFor(() => expect(address()).toBe('/admin/programme?tab=rules&programme=brightpath-flagship'))
   expect(urlRouter.push).not.toHaveBeenCalled()
+})
+
+it('TD-302: the crumb offers no "All gifts" — Configuration needs a gift', async () => {
+  openAt(`/admin/programme?tab=rules&programme=${SABAH}`)
+  render(<GiftScope><AdminProgrammeConfigPage /></GiftScope>)
+  await waitFor(() => expect(scopeChosen()).toBe(SABAH))
+  expect(crumbOffersAll()).toBe(false)
 })
 
 it('an unknown gift selects nothing — the tabs ask, as they always have', async () => {

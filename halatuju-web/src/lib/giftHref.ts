@@ -17,14 +17,17 @@ import type { VisibleNavGroup } from '@/lib/navigation'
 /** The query key. The same name every endpoint already takes, so the two read the same. */
 export const GIFT_PARAM = 'programme'
 
-/** `href` carrying `code` as its gift (any other query kept, e.g. `?tab=year`); unchanged when
- *  there is no code — a link never claims a gift nobody chose. */
+/** `href` carrying `code` as its gift (any other query kept, e.g. `?tab=year`). With no code the
+ *  gift is TAKEN OUT — a link never claims a gift nobody chose, and "All gifts" (TD-302) must
+ *  leave an address that names none. */
 export function withGift(href: string, code: string | null | undefined): string {
-  if (!code) return href
   const at = href.indexOf('?')
+  if (!code && at < 0) return href
   const params = new URLSearchParams(at < 0 ? '' : href.slice(at + 1))
-  params.set(GIFT_PARAM, code)
-  return `${at < 0 ? href : href.slice(0, at)}?${params.toString()}`
+  if (code) params.set(GIFT_PARAM, code)
+  else params.delete(GIFT_PARAM)
+  const query = params.toString()
+  return `${at < 0 ? href : href.slice(0, at)}${query ? `?${query}` : ''}`
 }
 
 /** The gift a URL's query names, or `''`. */

@@ -53,7 +53,10 @@ export const basicsProgramme: ManualChapter = {
         belongs to one gift, so on those pages the trail simply names it; and <strong>Payments</strong> and
         <strong> Spending</strong> open once you are inside a gift. Inside a gift, the page&rsquo;s address
         names it too, so you can <strong>copy the link and send it</strong> to a colleague — it opens in the
-        same gift for them. You only ever see the groups your role
+        same gift for them. On <strong>Applications</strong> and the programme&rsquo;s <strong>Overview</strong>,
+        which can show every gift at once, the trail also offers <strong>All gifts</strong> to go back to
+        that wider view &mdash; once you are inside a gift, and only when your organisation runs more
+        than one live gift; with a single gift there is nothing wider to go back to. You only ever see the groups your role
         reaches, so a short menu is not a fault. An entry marked <em>soon</em> is a page still being built; you
         may well see none at all.
         <br /><br />

@@ -13,7 +13,9 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import AdminScholarshipList from './page'
 import * as api from '@/lib/admin-api'
 import { GiftScope, TWO_GIFTS, scopeChosen } from '@/test/giftScope'
-import { address, deferred, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
+import {
+  address, crumbOffersAll, deferred, openAt, switchCrumbTo, switchCrumbToAll, urlRouter,
+} from '@/test/giftUrl'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
@@ -113,6 +115,47 @@ describe('(e)(g) switching gift keeps the address bar in step, in place', () => 
     await waitFor(() => expect(mockApi.getScholarshipApplications).toHaveBeenCalled())
     switchCrumbTo('Sabah Bursary 2026')
     await waitFor(() => expect(address()).toBe(`/admin/scholarship?programme=${SABAH}`))
+  })
+})
+
+describe('TD-302 — "All gifts" is the way back to the all-gifts list', () => {
+  it('with a gift chosen: no gift, the bare address in place, and every gift re-read', async () => {
+    openAt(`/admin/scholarship?programme=${SABAH}`)
+    render(page())
+    await waitFor(() => expect(heading()).toBe('admin.scholarship.title|Sabah Bursary 2026'))
+    const before = window.history.length
+    switchCrumbToAll()
+    await waitFor(() => expect(address()).toBe('/admin/scholarship'))
+    expect(scopeChosen()).toBe('(none)')
+    expect(urlRouter.replace).toHaveBeenCalledWith('/admin/scholarship', { scroll: false })
+    expect(urlRouter.push).not.toHaveBeenCalled()
+    expect(window.history.length).toBe(before)
+    await waitFor(() => expect(heading()).toBe('admin.scholarship.titleAll'))
+    expect(giftsAskedFor()).toEqual([SABAH, undefined])
+  })
+
+  it('with nothing chosen it is ABSENT — the page already reads across gifts', async () => {
+    render(page())
+    await waitFor(() => expect(mockApi.getScholarshipApplications).toHaveBeenCalled())
+    expect(crumbOffersAll()).toBe(false)
+  })
+
+  it('a gift picked again after "All gifts" is written back into the address', async () => {
+    openAt(`/admin/scholarship?programme=${SABAH}`)
+    render(page())
+    await waitFor(() => expect(giftsAskedFor()).toEqual([SABAH]))
+    switchCrumbToAll()
+    await waitFor(() => expect(address()).toBe('/admin/scholarship'))
+    switchCrumbTo('Sabah Bursary 2026')
+    await waitFor(() => expect(address()).toBe(`/admin/scholarship?programme=${SABAH}`))
+  })
+
+  it('⚠ one live gift (and a draft): never offered — "none" resolves straight back to the live one', async () => {
+    const draft = { code: 'draft-gift', name: 'Draft Gift', isActive: false }
+    openAt('/admin/scholarship?programme=draft-gift')
+    render(page([TWO_GIFTS[0], draft]))
+    await waitFor(() => expect(scopeChosen()).toBe('draft-gift'))
+    expect(crumbOffersAll()).toBe(false)
   })
 })
 

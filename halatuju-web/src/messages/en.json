@@ -3221,7 +3221,8 @@
       "unpinNav": "Let the menu collapse",
       "switchOrg": "Switch organisation",
       "switchProgramme": "Switch programme",
-      "chooseProgramme": "Choose a gift"
+      "chooseProgramme": "Choose a gift",
+      "allGifts": "All gifts"
     },
     "nav": {
       "organisations": "Organisations",

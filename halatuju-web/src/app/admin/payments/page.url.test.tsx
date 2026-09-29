@@ -18,7 +18,7 @@ import PaymentsLandingPage from './page'
 import * as api from '@/lib/admin-api'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { GiftScope, TWO_GIFTS, crumbText, scopeChosen } from '@/test/giftScope'
-import { address, deferred, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
+import { address, crumbOffersAll, deferred, openAt, switchCrumbTo, urlRouter } from '@/test/giftUrl'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 let mockRole: Record<string, unknown> = { role: 'org_admin', owning_org_id: 11 }
@@ -53,6 +53,13 @@ beforeEach(() => {
 const page = (choices = TWO_GIFTS, settled = true) =>
   <GiftScope choices={choices} settled={settled}><PaymentsLandingPage /></GiftScope>
 const runsAskedFor = () => mockApi.getPaymentRuns.mock.calls.map((c) => c[0])
+
+it('TD-302: the crumb offers no "All gifts" — this page needs a gift', async () => {
+  openAt(`/admin/payments?programme=${SABAH}`)
+  render(page())
+  await waitFor(() => expect(mockApi.getPaymentRuns).toHaveBeenCalledWith(SABAH, { token: 'tok' }))
+  expect(crumbOffersAll()).toBe(false)
+})
 
 describe('(a) a shared link opens INTO its gift', () => {
   it('an org_admin lands on that gift’s runs: no redirect, no box', async () => {

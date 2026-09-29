@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## A way back to "All gifts" on the two pages that read across gifts (TD-302) - 2026-09-29
+
+Baselines measured first: **jest 3,095 / 175 suites**, bundle median **227 kB** / worst **310 kB**
+(2.0 kB headroom, six routes may cross before the median does). After: **jest 3,116 / 176 suites**
+(+21 tests, +1 suite), **pytest 7,117 / 3 skipped** (web sprint; no api change), bundle median
+**227 kB** / worst **310 kB** — every route's first-load figure unchanged. Web only. Not committed,
+pushed or deployed.
+
+### Added
+
+- **"All gifts" in the breadcrumb's gift menu** on Applications and the Programme Overview only,
+  while a gift is chosen and two or more live gifts exist. It clears the gift, drops
+  `?programme=` from the address in place (no history entry), and the page re-reads for every gift;
+  the Overview's round goes with the gift. New key `admin.shell.allGifts` — "All gifts" /
+  "Semua pemberian" / "எல்லாக் கொடைகள்" (the codebase's existing words for "every gift").
+- **The admin manual** (`basics-programme`) says where "All gifts" is offered.
+
+### Changed
+
+- **`useGiftInUrl` follows the crumb to "no gift"** as well as to a gift (`router.replace`).
+- **`withGift(href, '')` takes the gift out** of a link that carries one, keeping any other query.
+
 ## Overview: the attention card is full width, and a one-round gift has no picker - 2026-09-29
 
 - **The "Needs attention" card now spans the page.** It sat in the left half of a two-column row built for the Intake card beside it; that card went on 2026-09-18 and the row stayed, leaving a hole on the right. The row is gone; the card, its test id and its comments are unchanged (`OverviewSections.tsx`). A test asserts the card's parent is not a two-column grid.

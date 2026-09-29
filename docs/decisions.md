@@ -1,5 +1,27 @@
 # Architectural Decisions — HalaTuju
 
+## "All gifts" exists only where a page reads across gifts — TD-302, 2026-09-29
+
+**Decision.** The breadcrumb's gift menu offers **All gifts** on exactly two pages —
+Applications (`/admin/scholarship`) and the Programme Overview (`/admin/programme/overview`) —
+because with no gift chosen each of them describes every gift the organisation fence allows,
+which is a true answer (and for a reviewer, Applications is the only door). The list is
+`READS_ACROSS_GIFTS` in `ScopeSwitcher.tsx`, matched on the **exact** path.
+
+**Not offered:** on Configuration, Payments and Spending (they need a gift — the 2026-09-28
+ruling — so "all" could only trip their gate); on a pinned detail page (its crumb is plain text);
+with nothing chosen (the page already reads across gifts); and unless **two or more LIVE gifts**
+exist — with one, `select('')` resolves straight back to it, so the entry would change nothing
+(and beside a draft it would be a switch to the live gift wearing the wrong name).
+
+**How it works.** It calls `select('')`, the scope's honest "no gift". The address follows in
+`useGiftInUrl`, which now follows the crumb to "no gift" as well as to a gift, and drops
+`?programme=` with `router.replace` — never `push` (the TD-296 rule). `withGift(href, '')` now
+takes a gift out rather than leaving the href untouched.
+
+**Revisit if:** a third page comes to read across gifts — add it to `READS_ACROSS_GIFTS` and give
+it the same rendered test the two have.
+
 ## The first-load median budget sits at the real median plus the ratchet's own slack — TD-300, 2026-09-28
 
 **Decision.** When the median falls, `first_load_js_median_kb` is lowered to the new real median

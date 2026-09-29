@@ -33,6 +33,18 @@ export function switchCrumbTo(giftName: string): void {
   fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(giftName) }))
 }
 
+/** Open the crumb's menu and say whether it offers "All gifts" (TD-302). Leaves the menu open. */
+export function crumbOffersAll(): boolean {
+  fireEvent.click(screen.getByRole('button', { name: 'admin.shell.switchProgramme' }))
+  return screen.queryByRole('menuitem', { name: 'admin.shell.allGifts' }) !== null
+}
+
+/** Choose "All gifts" from the crumb's menu, the way a person does. */
+export function switchCrumbToAll(): void {
+  fireEvent.click(screen.getByRole('button', { name: 'admin.shell.switchProgramme' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'admin.shell.allGifts' }))
+}
+
 /** A promise the test resolves by hand, for replies that must arrive in a chosen order. */
 export function deferred<T>(): { promise: Promise<T>; resolve: (v: T) => void } {
   let resolve!: (v: T) => void

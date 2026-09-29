@@ -21,6 +21,11 @@ describe('withGift', () => {
     expect(withGift('/admin/payments', null)).toBe('/admin/payments')
   })
 
+  it('TD-302: with no code an earlier gift is TAKEN OUT, and any other query kept', () => {
+    expect(withGift('/admin/scholarship?programme=bp', '')).toBe('/admin/scholarship')
+    expect(withGift('/admin/programme?tab=year&programme=bp', '')).toBe('/admin/programme?tab=year')
+  })
+
   it('encodes, and giftIn reads it back', () => {
     const href = withGift('/admin/payments', 'a b&c')
     expect(giftIn(href.slice(href.indexOf('?')))).toBe('a b&c')
