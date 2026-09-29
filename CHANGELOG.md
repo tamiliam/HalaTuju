@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## A deploy no longer needs Google Fonts — the three fonts are self-hosted (TD-305) - 2026-09-29
+
+Small-change lane, owner's pick. Web only. Baselines measured first: **jest 3,123 / 178 suites**,
+bundle median **228 kB**, worst **310**, budget 229. After: **jest 3,135 / 179** (+12, the new
+guard). Not committed, pushed or deployed.
+
+- **`layout.tsx` loads Lexend, Inter and IBM Plex Sans with `next/font/local`** instead of
+  `next/font/google`, which downloaded them inside every `next build` (on 2026-09-29 a malformed
+  answer from Google failed a deploy). Same CSS variables (`--font-lexend`, `--font-inter`,
+  `--font-ibm-plex-sans`), `display: swap`, weights (Lexend/Inter variable 100–900; Plex declared
+  400/500/600/700 on its one variable file, as Google did) and Arial-metric fallback. The consts are
+  named `Lexend`/`Inter`/`IBM_Plex_Sans` because next/font names the family after them, keeping
+  `__Lexend_<hash>` etc. No other file imported the Google loader.
+- **The files: `halatuju-web/src/fonts/`** — the latin woff2 of each family (128,364 bytes in
+  all), byte-identical (SHA-256) to what the last Google-loader build emitted, each with its SIL
+  OFL 1.1 and a README naming the source URL and version. Only the latin subset is carried, as the
+  layout asked; the latin-ext/vietnamese/cyrillic/greek faces Google also declared (fetched only if
+  a page used such a letter) now fall to the fallback.
+- **Proof.** A clean `next build` with Google Fonts unreachable (dead HTTPS proxy + DNS refusal in
+  every node process) passes; the same block fails the pre-change layout. Route table and shared
+  chunks byte-for-byte unchanged (median 228, worst 310, shared 87.2); the font CSS chunk fell
+  11.3 → 2.0 kB. 18 probes (3 variables × 6 weights) paint the same faces at identical widths;
+  settled screenshots of `/about` and `/admin/login` are pixel-identical. The generated fallback
+  metrics differ by under 1% (fontkit vs Google's precomputed table) — seen only in the swap
+  moment before the woff2 arrives.
+- **Guard: `src/lib/__tests__/fontSources.test.ts`** (floored) — no Google-loader import in `src/`;
+  every font file the layout names exists, is woff2 and matches its pinned SHA-256; each family
+  has its OFL; the three variables are declared and every `var(--font-…)` consumer resolves.
+  Bites: Google import back → red; a woff2 deleted → red in jest (seconds) and `next build` fails
+  (`Can't resolve`); a variable renamed → red (2 tests); comment-only → green.
+- **Found, not changed: TD-310** — body text has never been in Lexend: `font-sans` names plain
+  `Lexend`, whose only source is a `globals.css` `@import` browsers ignore (it is not first in the
+  file); the screen shows the system font. The owner's call.
+
 ## A stranger's STR no longer vouches for a typed income (TD-285) - 2026-09-29
 
 Owner's ruling: option 1, *"close it now, the F8 way."* Production count (the lead, same day): 60

@@ -1,21 +1,38 @@
 import type { Metadata } from 'next'
-import { Lexend, Inter, IBM_Plex_Sans } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
 import { HtmlLang } from '@/components/HtmlLang'
 import { THEME_BOOT_SRC } from '@/lib/theme'
 
-const lexend = Lexend({
-  subsets: ['latin'],
+// ⚠ THE FONTS ARE SELF-HOSTED (TD-305). They were `next/font/google`, which DOWNLOADS them inside
+// `next build` — so a deploy failed on 2026-09-29 because Google answered badly, not because of
+// any code. The files in src/fonts/ are the very bytes that build downloaded (the latin subset of
+// each family; SHA-256 in src/fonts/README.md), so what a visitor sees is unchanged. A build now
+// needs nothing from Google; `fontSources.test.ts` keeps it that way. One honest difference: Google
+// also declared latin-ext / vietnamese (and, for Inter and Plex, cyrillic / greek) faces, fetched
+// only if a page used such a character. Those are not carried; such a letter now falls to the
+// metric-matched fallback. Malay, English and the Tamil script (never in these fonts) are unaffected.
+//
+// The const NAMES are deliberate: next/font/local names the @font-face family after the variable
+// it is assigned to (`__Lexend_<hash>`), so these keep the exact family names Google gave them.
+// `weight` is a RANGE for the two variable fonts: without it the face declares weight 400 only
+// and the browser would fake bold instead of using the font's own weights.
+const Lexend = localFont({
+  src: '../fonts/lexend/lexend-latin-wght.woff2',
+  weight: '100 900',
+  style: 'normal',
   display: 'swap',
   variable: '--font-lexend',
 })
 
 // Inter — registered as a CSS variable here (root, server component, where next/font resolves
 // cleanly) and applied to the sponsor portal only. The rest of HalaTuju stays on Lexend.
-const inter = Inter({
-  subsets: ['latin'],
+const Inter = localFont({
+  src: '../fonts/inter/inter-latin-wght.woff2',
+  weight: '100 900',
+  style: 'normal',
   display: 'swap',
   variable: '--font-inter',
 })
@@ -23,9 +40,16 @@ const inter = Inter({
 // IBM Plex Sans — registered as a CSS variable here and applied (via the `font-plex` Tailwind
 // family) to the four ORGANISATION admin modules only: invite, payments, contracts, sources.
 // The rest of HalaTuju stays on Lexend; the sponsor portal stays on Inter.
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+// Google serves Plex as ONE variable file and declared it four times, at 400/500/600/700 — kept
+// exactly so, so a request for 300 or 800 still settles on 400 or 700 as it did before. (The path
+// is repeated rather than held in a const: next/font only accepts literal arguments.)
+const IBM_Plex_Sans = localFont({
+  src: [
+    { path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-wght.woff2', weight: '400', style: 'normal' },
+    { path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-wght.woff2', weight: '500', style: 'normal' },
+    { path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-wght.woff2', weight: '600', style: 'normal' },
+    { path: '../fonts/ibm-plex-sans/ibm-plex-sans-latin-wght.woff2', weight: '700', style: 'normal' },
+  ],
   display: 'swap',
   variable: '--font-ibm-plex-sans',
 })
@@ -67,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${lexend.variable} ${inter.variable} ${ibmPlexSans.variable}`}>
+    <html lang="en" className={`${Lexend.variable} ${Inter.variable} ${IBM_Plex_Sans.variable}`}>
       <head>
         {/*
           Paints the person's theme before the first pixel (Layer 1 F1). Render-blocking on
