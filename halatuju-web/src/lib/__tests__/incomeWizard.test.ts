@@ -6,7 +6,77 @@ import {
   salaryMemberBlocks,
   hasPatronymic,
   declaredAmount,
+  strIcSlotMembers,
+  strIcNamedMembers,
+  type StrSlotDoc,
 } from '@/lib/incomeWizard'
+import { readApi } from '@/test/apiSource'
+
+describe('strIcSlotMembers — TD-309, the IC that settles whose STR it is', () => {
+  const str = (missing: string[], unreadable: string[] = [], uploaded_at = '2026-09-01T00:00:00Z'): StrSlotDoc =>
+    ({ doc_type: 'str', household_member: 'father', uploaded_at, str_check: { ic_slots: { missing, unreadable } } })
+  const ic = (m: string): StrSlotDoc => ({ doc_type: 'parent_ic', household_member: m, uploaded_at: '2026-09-01T00:00:00Z' })
+  const STR_FATHER = { income_route: 'str' as const, income_earner: 'father' as const }
+  const SALARY_FATHER = { income_route: 'salary' as const, income_working_members: ['father' as const] }
+
+  it('offers the named members on both routes', () => {
+    expect(strIcSlotMembers([str(['mother'])], STR_FATHER)).toEqual(['mother'])
+    expect(strIcSlotMembers([str(['mother'])], SALARY_FATHER)).toEqual(['mother'])
+  })
+
+  it('never offers a second card to a member who already owns one (earner / ticked member)', () => {
+    expect(strIcSlotMembers([str(['father', 'mother']), ic('father')], STR_FATHER)).toEqual(['mother'])
+    expect(strIcSlotMembers([str(['father', 'mother']), ic('father')], SALARY_FATHER)).toEqual(['mother'])
+    expect(strIcSlotMembers([str(['mother'])],
+      { income_route: 'salary', income_working_members: ['father', 'mother'] })).toEqual([])
+    expect(strIcSlotMembers([str(['mother'])], { income_route: 'str', income_earner: 'mother' })).toEqual([])
+  })
+
+  it('is missing ∪ unreadable, in MEMBER_ORDER', () => {
+    expect(strIcSlotMembers([str(['sister', 'guardian'], ['mother'])], STR_FATHER))
+      .toEqual(['mother', 'guardian', 'sister'])
+  })
+
+  it('keeps a member whose tagged IC is on file once the STR is settled (never hides an upload)', () => {
+    expect(strIcSlotMembers([str([]), ic('father'), ic('mother')], STR_FATHER)).toEqual(['mother'])
+    // an untagged legacy IC is nobody's extra card
+    expect(strIcSlotMembers([str([]), ic('')], STR_FATHER)).toEqual([])
+  })
+
+  it('no STR, or a payload from before TD-309 without ic_slots → []', () => {
+    expect(strIcSlotMembers([ic('mother')], STR_FATHER)).toEqual([])
+    expect(strIcSlotMembers([{ doc_type: 'str', uploaded_at: '2026-09-01T00:00:00Z', str_check: {} }, ic('mother')],
+      STR_FATHER)).toEqual([])
+    expect(strIcSlotMembers([{ doc_type: 'str', str_check: null }], STR_FATHER)).toEqual([])
+    expect(strIcSlotMembers([], STR_FATHER)).toEqual([])
+  })
+
+  it('review F1: strIcNamedMembers is who the SERVER names — not who is kept for a doc on file', () => {
+    expect(strIcNamedMembers([str(['sister'], ['mother']), ic('guardian')])).toEqual(['mother', 'sister'])
+    // settled STR + her IC on file: she still has a card, but the server no longer names her
+    expect(strIcNamedMembers([str([]), ic('mother')])).toEqual([])
+    expect(strIcSlotMembers([str([]), ic('mother')], STR_FATHER)).toEqual(['mother'])
+    expect(strIcNamedMembers([ic('mother')])).toEqual([])
+    const older = str(['guardian'], [], '2026-08-01T00:00:00Z')
+    expect(strIcNamedMembers([str([], [], '2026-09-15T00:00:00Z'), older])).toEqual([])
+  })
+
+  it('DRIFT: "latest" is the api\'s — live rows, `uploaded_at` descending (document_snapshot)', () => {
+    // The ordering above is a copy of the server's, so it is read from the server's source: if
+    // `SNAPSHOT_ORDER` or `latest_doc` changes shape, this goes red and the copy must follow.
+    const src = readApi('apps/scholarship/document_snapshot.py')
+    expect(src).toMatch(/^SNAPSHOT_ORDER = '-uploaded_at'$/m)
+    expect(src).toMatch(/def latest_doc\([\s\S]*?return live_docs\(application, doc_type, member=member, members=members\)\.first\(\)/)
+    expect(src).toMatch(/def _live\(rows\):\s*\n\s*return \[d for d in rows if getattr\(d, 'superseded_at', None\) is None\]/)
+  })
+
+  it('the LATEST STR wins over an older one with different slots, whatever the list order', () => {
+    const older = str(['guardian'], [], '2026-08-01T00:00:00Z')
+    const newer = str(['mother'], [], '2026-09-15T00:00:00Z')
+    expect(strIcSlotMembers([older, newer], STR_FATHER)).toEqual(['mother'])
+    expect(strIcSlotMembers([newer, older], STR_FATHER)).toEqual(['mother'])
+  })
+})
 
 describe('declaredAmount — Phase 2A declared informal income', () => {
   it('reads a positive amount, else 0', () => {

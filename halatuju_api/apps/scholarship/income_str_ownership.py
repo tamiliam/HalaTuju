@@ -122,7 +122,8 @@ def str_check_names_a_stranger(sc, application) -> bool:
     COMPLETE on at least one field the STR offers: every member of ``str_roster`` was compared on
     that field (``str_unjudged_members``, per FIELD — review F-A). Otherwise **we cannot judge** —
     the answer is not "stranger", the STR counts, and the IC that would settle it is asked for
-    (``str_owner_ic_asks``). Owner's F1 ruling, 2026-09-29.
+    (``str_owner_ic_asks``) and offered on the Documents page (``str_ic_slots``, TD-309). Owner's
+    F1 ruling, 2026-09-29.
 
     ⚠ ONE RULE, TWO READERS, AND IT IS SPLIT OUT SO IT STAYS ONE (TD-285). ``str_recipient_is_
     stranger`` asks it of the live STR for the submission gate, and ``income_engine.has_valid_str``
@@ -147,20 +148,47 @@ def str_recipient_is_stranger(application) -> bool:
     return str_check_names_a_stranger(_latest_str_check(application), application)
 
 
-def str_owner_ic_asks(application) -> dict:
-    """The ICs to ASK for, AFTER submission (Check 2), because the STR cannot be judged without
-    them: ``{'missing': [...], 'unreadable': [...]}``. A member whose IC is not on file is
-    ``missing``; one whose IC IS on file but did not read the field needed is ``unreadable``
-    (review F-C — never tell a student an IC they uploaded is "not on file"). Both empty for the
-    family's own STR, an unread STR, no STR, and a true stranger's.
+def str_ic_slots(sc, application) -> dict:
+    """The ICs that would settle whose STR this is, read off a ``student_str_check`` reading
+    ALREADY IN HAND: ``{'missing': [...], 'unreadable': [...]}``. A member whose IC is not on file
+    is ``missing``; one whose IC IS on file but did not read the field needed is ``unreadable``
+    (review F-C — never tell a student an IC they uploaded is "not on file"). Both empty for no
+    reading, the family's own STR, an unread STR, and a true stranger's. PURE — no query.
 
-    ⚠ IT RE-READS THE STR on every call (TD-308): `check2_queries._gap_sets` has no STR reading in
-    hand, and threading one through the oversize-ledgered `check2_queries.py` is its own change."""
-    sc = _latest_str_check(application)
+    ⚠ ONE RULE, TWO READERS (TD-309). Check 2 ASKS for these ICs after submission
+    (``str_owner_ic_asks``); the Documents page OFFERS a card for each of them before it
+    (``student_str_payload`` → the served ``str_check.ic_slots``). A demand and an offer that read
+    the same fact must be one reading, or the student is chased for a document the page will not
+    take (docs/lessons.md, TD-262 F2) — so both call this, and neither holds a copy."""
     members = str_unjudged_members(application, sc) if _positive_mismatch(sc) else []
     on_file = set(((sc or {}).get('ic_read_members') or {}).get('on_file') or ())
     return {'missing': [m for m in members if m not in on_file],
             'unreadable': [m for m in members if m in on_file]}
+
+
+def str_owner_ic_asks(application) -> dict:
+    """The ICs to ASK for, AFTER submission (Check 2), because the STR cannot be judged without
+    them — ``str_ic_slots`` of the household's live STR, the same rule the Documents page offers
+    from (TD-309).
+
+    ⚠ IT RE-READS THE STR on every call (TD-308): `check2_queries._gap_sets` has no STR reading in
+    hand, and threading one through the oversize-ledgered `check2_queries.py` is its own change."""
+    return str_ic_slots(_latest_str_check(application), application)
+
+
+def student_str_payload(doc):
+    """The STR document's ``str_check`` as the STUDENT is served it: the ``student_str_check``
+    reading with the server-only ``ic_read_members`` stripped and ``ic_slots`` (``str_ic_slots``)
+    added — the members whose IC the income wizard offers a tagged card for (TD-309). None for a
+    non-STR doc. No query beyond the reading's own: ``str_ic_slots`` reads only the reading and the
+    application's fields, which the reading has already loaded."""
+    from . import income_engine as ie
+    sc = ie.student_str_check(doc)
+    if sc is None:
+        return None
+    out = {k: v for k, v in sc.items() if k != 'ic_read_members'}
+    out['ic_slots'] = str_ic_slots(sc, doc.application)
+    return out
 
 
 def stranger_str_blocks_submission(application) -> bool:

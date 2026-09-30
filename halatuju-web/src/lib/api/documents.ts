@@ -127,6 +127,13 @@ export interface StrCheck {
   // only this union lagged, which the type check found on 2026-09-18 (TD-221).
   current_status: 'current' | 'stale' | 'rejected' | 'unconfirmed' | 'unknown' | 'wrong_type' | 'unreadable'
   ic_present: boolean
+  // TD-309: the roster members whose IC would settle whose STR this is (`str_ic_slots` — the
+  // same rule Check 2 asks from). 'missing' = no IC on file; 'unreadable' = on file, unread.
+  // Optional: a payload from before TD-309 has none.
+  ic_slots?: {
+    missing: Exclude<ApplicantDocument['household_member'], ''>[]
+    unreadable: Exclude<ApplicantDocument['household_member'], ''>[]
+  }
 }
 
 export interface IncomeIcCheck {

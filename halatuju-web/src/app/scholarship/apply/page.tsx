@@ -68,7 +68,7 @@ import {
 } from '@/lib/scholarship'
 import { applyCard, type ServedCopy } from '@/lib/applyCopy'
 import { collegesForTrack } from '@/data/matric-colleges'
-import { stpmSchoolsForStream } from '@/data/stpm-schools'
+import LazyStpmSchoolPicker from '@/components/scholarship/LazyStpmSchoolPicker'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -917,9 +917,9 @@ export default function ScholarshipApplyPage() {
               {form.preUTrack && (
                 <div>
                   <FieldLabel required tip={t('scholarship.apply.plan.schoolTip')}>{t('scholarship.apply.plan.schoolLabel')}</FieldLabel>
-                  <InstitutionPicker
+                  <LazyStpmSchoolPicker
                     key={`s-${form.preUTrack}`}
-                    options={stpmSchoolsForStream(form.preUTrack).map((s) => ({ name: s.name, hint: s.state }))}
+                    stream={form.preUTrack}
                     value={form.preUInstitution}
                     onChange={setPreUInstitution}
                     placeholder={t('scholarship.apply.plan.schoolPlaceholder')}

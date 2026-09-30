@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Documents page offers the IC that settles whose STR it is (TD-309) - 2026-09-30
+
+Sprint, owner's pick: **option 1 — the slot is offered, the submission gate is unchanged.** When an
+STR is in a name we cannot match (the owner's example: the mother's STR, only the father's IC on
+file), the income wizard now offers a `parent_ic` card for each member whose IC would settle it —
+tagged to them, NOT required, help line `scholarship.docs.income.wizard.strIcHelp` (en/ms/ta).
+Before, that IC could only be uploaded after submission, when Check 2 asked for it.
+
+- **api:** the STR's served `str_check` gains `ic_slots: {missing, unreadable}` from the new pure
+  `income_str_ownership.str_ic_slots(sc, application)`; `str_owner_ic_asks` (Check 2's ask) is now a
+  one-line wrapper over it, and `student_str_payload(doc)` serves it — the offer and the ask are one
+  function. `ic_read_members` stays stripped. `serializers.py` 1215 → 1215 (a two-line swap).
+- **Found and fixed:** before consent the STR route force-tagged every income upload to the earner,
+  which would have filed the mother's IC as the father's and superseded his. An IC sent with an
+  explicit non-earner tag now keeps it (`DocumentListCreateView.post`, `views.py` 2421 → 2425).
+- **Adversarial review, fixed before the push:** F1 — the STR help line only on a card for a member
+  the server NAMES; a card kept for an IC on file reads `icHelp.<member>` (`strIcNamedMembers`).
+  F2 — the force-tag exemption is `parent_ic` only; a non-earner STR/slip/EPF is still re-tagged to
+  the earner. F3 — the extra card keeps its own per-file coach. F5 — the student GET is pinned
+  live-only. F4 → **TD-315** (a brother's IC re-tagged to a bare-named father), F6 → **TD-316** (an
+  `_unreadable` IC ask resolved before the needed field reads).
+- **web:** `StrCheck.ic_slots` typed; `incomeWizard.strIcSlotMembers` (latest STR by `uploaded_at`,
+  with a drift test on `document_snapshot`'s ordering; skips a member who already owns an IC card;
+  keeps a card for a member whose tagged IC is on file); the wizard draws the cards on both routes.
+  `strComplete`, `salaryComplete`, `wizardComplete` and the compulsory lists are untouched.
+- **Bundle:** per-member help lines pushed `/scholarship/apply` to 286 kB against its 285 line. Cut
+  to one member-neutral line, and three dead wizard keys deleted (`burdenHint`, `splitPrompt`,
+  `docsHeading`, all three languages): `/scholarship/apply` 285,405 gz bytes (prints 285),
+  `/scholarship/application` 272,943 (prints 273, line 275). Median 228, worst 310.
+- **Margin restored (follow-up, same day).** `/scholarship/apply` was still ABOVE its 285 line
+  numerically. The Form 6 centre list (`@/data/stpm-schools`, ~15 kB gz) now loads through
+  `components/scholarship/LazyStpmSchoolPicker.tsx` (the `LazyPostAwardTask` pattern — nothing drawn
+  mid-flight, a failed chunk says `verifyEmail.networkError` in place), because only a student who
+  picks an STPM stream needs it; `/profile`, `/course/[id]` and `/pathway/stpm` keep it static. 30
+  message keys no source can produce were deleted from all three catalogues (en −326 gz bytes).
+  **`/scholarship/apply` 285,405 → 270,721 gz bytes; `/scholarship/application` 272,655;
+  `/profile` 309,391; median 228 → 227.** The ratchet then required the two lines down: 285 → 272
+  and 275 → 274, each recorded 2 kB over the build (the ratchet's own slack), not at the printed
+  figure, which would have left both routes numerically above their lines.
+- Tests: pytest **7,227 / 3 skipped** (+12, `tests/test_str_ic_slots.py`); jest **3,190 / 187**
+  (+23: `incomeWizard.test.ts` +8, new `IncomeWizard.strIc.test.tsx` 10,
+  `LazyStpmSchoolPicker.test.tsx` 4, `.failure.test.tsx` 1). decisions.md 2026-09-30; TD-309
+  resolved. Not committed, pushed or deployed.
+
 ## The post-award cards load on demand — TD-306's route back under its budget - 2026-09-30
 
 **The deploy gate refused `4583a83d` on `/scholarship/application` at 276 kB** against its

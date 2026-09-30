@@ -1046,10 +1046,14 @@ class DocumentListCreateView(APIView):
         # mother (#80: exactly this happened — a force-tag mis-attributed the father's slip). So the
         # force-tag is GATED on pre-consent; post-consent a blank tag is left for the request member
         # or the name-on-doc guard below to resolve. (A request-keyed upload was never force-tagged.)
+        # TD-309: an IC the student EXPLICITLY tagged to someone else (the card the Documents page
+        # offers for the member who would settle whose STR it is) keeps that tag — an IC only
+        # (review F2): a non-earner STR / slip / EPF is still force-tagged to the earner.
         _INCOME_EARNER_DOCS = {'str', 'parent_ic', 'salary_slip', 'epf'}
-        str_income = (new_doc_type in _INCOME_EARNER_DOCS
+        str_income = (new_doc_type in _INCOME_EARNER_DOCS and not new_request_code
                       and (getattr(app, 'income_route', '') or '').strip() == 'str'
-                      and not new_request_code
+                      and (new_doc_type != 'parent_ic'
+                           or new_member in ('', (getattr(app, 'income_earner', '') or '').strip()))
                       and app.profile_completed_at is None)   # pre-consent only
         if str_income:
             new_member = (getattr(app, 'income_earner', '') or '').strip()

@@ -127,6 +127,30 @@ was on it before (`test_the_gate_never_blocks_a_row_it_did_not_block`). **If the
 cannot-judge STR to hold submission after all, the ask belongs at the gate only once TD-309 lets
 the page take the upload.**
 
+**2026-09-30 — TD-309: the Documents page now OFFERS the IC; the gate stays as the lead's reading
+(owner: option 1).** The STR document's served `str_check` carries `ic_slots`
+(`{missing, unreadable}`), and the income wizard draws one extra `parent_ic` card per named member,
+TAGGED to them and NOT required — on the STR route inside the STR group box, on the salary route as
+its own member block. Its help line is one member-neutral sentence (`strIcHelp`); the card title
+already names the member, and five per-member lines cost `/scholarship/apply` its budget line. The owner was offered two shapes — (1) show the slot only, the submission gate
+unchanged; (2) also hold submission until the IC lands — and chose **option 1**: a cannot-judge STR
+still counts and does not block, the student can now answer before submitting, and Check 2's
+`<member>_ic_for_str_missing|_unreadable` ask still exists for a student who skips the card.
+**The offer and the ask are ONE function**: `income_str_ownership.str_ic_slots(sc, application)` is
+pure and reads the `student_str_check` reading in hand; `str_owner_ic_asks` (Check 2) is a one-line
+wrapper over it and `student_str_payload` (the Documents page) calls it too — the TD-262 F2 lesson
+(a demand and an offer that read the same fact must be one reading). A card also stays for a member
+whose tagged IC is on file once the STR is settled, so an upload never disappears from the page.
+**Found on the way and fixed in the same change:** before consent the STR route force-tagged EVERY
+income upload to the declared earner (TD-115), which would have filed the mother's IC as the
+father's and superseded his; an IC (`parent_ic`, and only an IC — review F2) sent with an explicit
+tag for another member now keeps it (`DocumentListCreateView.post`). A non-earner STR, payslip or
+EPF is still force-tagged to the earner, so a second, mother-tagged STR cannot become THE STR. A
+card kept only because a member's IC is on file reads her ordinary IC help, not the STR line
+(review F1). **If the owner later
+wants a cannot-judge STR to hold submission, the page can now take the upload, so the ask may move
+to the gate** — that is option 2, not built.
+
 **Consequence worth knowing.** The audit's fall-through gate
 (`salary_evidence_stands_without_the_str`) is load-bearing again for every cannot-judge STR: the
 STR vouches, so the salary reading can rest on it, and the gate is what stops that reading raising

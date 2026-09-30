@@ -1021,13 +1021,13 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         return student_income_proof_check(obj)
 
     def get_str_check(self, obj):
-        """{name, nric, status, year, amount, member, name_status, nric_status,
-        current_status, ic_present} for an STR document — recipient vs the earner IC +
-        whether it's a CURRENT STR. Null for every other doc type."""
+        """{name, nric, status, year, member, name_status, nric_status, current_status,
+        ic_present, ic_slots} for an STR document — recipient vs the household ICs, currency, and
+        the ICs that would settle whose it is (TD-309). Null for every other doc type."""
         if obj.doc_type != 'str':
             return None
-        from .income_engine import student_str_check
-        return {k: v for k, v in student_str_check(obj).items() if k != 'ic_read_members'}
+        from .income_str_ownership import student_str_payload
+        return student_str_payload(obj)
 
     def get_utility_check(self, obj):
         """{name, address, monthly_bill, unpaid_balance, address_status, current_status, bill_month,

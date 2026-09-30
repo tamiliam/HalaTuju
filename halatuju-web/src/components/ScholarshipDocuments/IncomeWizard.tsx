@@ -30,6 +30,8 @@ import {
   hasPatronymic,
   clampDeclared,
   declaredAmount,
+  strIcSlotMembers,
+  strIcNamedMembers,
   type IncomeRoute,
   type IncomeEarner,
   type WorkingMember,
@@ -232,6 +234,16 @@ export default function IncomeWizard({
   const studentHasPatronymic = !icName || hasPatronymic(icName)
   const reqs = incomeRequirements(answers, { studentHasPatronymic })
   const ready = wizardComplete(answers)
+  // TD-309: an extra, TAGGED, NOT-required IC card for each member whose IC would settle whose STR
+  // this is (served `str_check.ic_slots` — the rule Check 2 asks from). Offered, never demanded:
+  // nothing below (`strComplete`, `salaryComplete`, the compulsory lists) reads it. The STR line
+  // only for a member the server NAMES; one kept for an IC on file reads the IC help (review F1).
+  // Its own per-file coach speaks — no cluster coach ever covers a non-earner (review F3).
+  const strIcNamed = strIcNamedMembers(docs)
+  const strIcCard = (m: WorkingMember) => renderCard('parent_ic', { required: false, member: m,
+    titleOverride: memberTitle('parent_ic', m),
+    helpOverride: strIcNamed.includes(m) ? iq('strIcHelp') : iq(`icHelp.${m}`) })
+  const strIcMembers = strIcSlotMembers(docs, answers)
   // Green-border / "Complete" cue: the STR cluster is genuinely VERIFIED, not merely uploaded. Presence is
   // MEMBER-AWARE (mirrors the card's own slot match: household_member === earner, or a legacy blank for
   // STR-earner docs — so an IC left tagged to another member never counts as this earner's IC). Then, per
@@ -442,6 +454,7 @@ export default function IncomeWizard({
                 )}
               </div>
             ))}
+            {strIcMembers.map((m) => <div key={docKey('parent_ic', m)}>{strIcCard(m)}</div>)}
           </div>
           {/* Supplementary income evidence (salary slip / EPF) — optional on the STR route (the STR
               already evidences income), so it folds into a quiet collapsible (default closed) like
@@ -520,6 +533,12 @@ export default function IncomeWizard({
               />
             </div>
           )})}
+          {strIcMembers.map((m) => (
+            <div key={m} className="rounded-lg border border-ground-100 bg-ground-50/60 p-2.5 space-y-2">
+              <p className="text-xs font-semibold text-ground-700">{iq(`member.${m}`)}</p>
+              {strIcCard(m)}
+            </div>
+          ))}
         </div>
       )}
 

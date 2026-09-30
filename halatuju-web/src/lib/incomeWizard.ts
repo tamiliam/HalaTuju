@@ -180,6 +180,64 @@ export function incomeRequirements(
   return { route, members: [], compulsory, optional }
 }
 
+/** The slice of a served document `strIcSlotMembers` reads (structural, so this file stays
+ *  framework-free; `ApplicantDocument` satisfies it). */
+export interface StrSlotDoc {
+  doc_type: string
+  household_member?: string | null
+  uploaded_at?: string
+  str_check?: { ic_slots?: { missing: string[]; unreadable: string[] } } | null
+}
+
+/**
+ * TD-309 — the household members the income wizard offers an EXTRA, tagged, NOT-required
+ * `parent_ic` card for, because their IC would settle whose STR this is.
+ *
+ * Read off the LATEST STR's served `str_check.ic_slots` (the api's `str_ic_slots` — the same rule
+ * Check 2 asks from, so the page offers exactly what the officer's queue would chase). "Latest"
+ * mirrors `document_snapshot.latest_doc`: live documents (the student list is live-only) ordered
+ * by `uploaded_at` descending — the first STR with the greatest `uploaded_at` wins, and, as on the
+ * server, an exact tie has no defined winner.
+ * drift-test: halatuju-web/src/lib/__tests__/incomeWizard.test.ts
+ *
+ * Members = `missing ∪ unreadable`, in `MEMBER_ORDER`, MINUS anyone who already owns a
+ * `parent_ic` card (STR route: the earner; salary route: every ticked member), PLUS anyone with a
+ * `parent_ic` tagged to them on file and no card of their own — so an IC the student uploaded here
+ * never vanishes the moment the STR is settled. No STR, or a payload without `ic_slots` → [].
+ */
+export function strIcSlotMembers(docs: StrSlotDoc[], a: IncomeAnswers): WorkingMember[] {
+  const slots = latestStrSlots(docs)
+  if (!slots) return []
+  const owners = new Set<string>(a.income_route === 'salary'
+    ? workingMembers(a.income_working_members)
+    : a.income_route === 'str' && a.income_earner ? [a.income_earner] : [])
+  const named = new Set<string>(strIcNamedMembers(docs))
+  const onFile = new Set(docs.filter((d) => d.doc_type === 'parent_ic')
+    .map((d) => d.household_member || ''))
+  return MEMBER_ORDER.filter((m) => !owners.has(m) && (named.has(m) || onFile.has(m)))
+}
+
+/**
+ * Review F1 — the members the SERVER names (`missing ∪ unreadable` of the latest STR), in
+ * `MEMBER_ORDER`. A card `strIcSlotMembers` keeps only because a tagged IC is on file is NOT
+ * named, and must not say "a name we could not match": that is no longer true once her IC has
+ * settled the STR. The wizard picks the help line off this list.
+ */
+export function strIcNamedMembers(docs: StrSlotDoc[]): WorkingMember[] {
+  const slots = latestStrSlots(docs)
+  const named = new Set<string>([...(slots?.missing || []), ...(slots?.unreadable || [])])
+  return MEMBER_ORDER.filter((m) => named.has(m))
+}
+
+function latestStrSlots(docs: StrSlotDoc[]) {
+  let latest: StrSlotDoc | null = null
+  for (const d of docs) {
+    if (d.doc_type !== 'str') continue
+    if (!latest || Date.parse(d.uploaded_at || '') > Date.parse(latest.uploaded_at || '')) latest = d
+  }
+  return latest?.str_check?.ic_slots
+}
+
 /** The wizard is "answered enough" to show a meaningful checklist once the route is
  *  chosen and — STR: an earner is picked; salary: at least one working member ticked. */
 export function wizardComplete(a: IncomeAnswers): boolean {
