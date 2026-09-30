@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-30 | 75e2889 | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 99 | 0 | - | - | ok |
 | 2026-09-30 | 34a5f4c | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 99 | 0 | 0 | ok | ok |
 | 2026-09-30 | 40887ef | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 98 | 0 | - | - | ok |
 | 2026-09-30 | 4583a83 | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 98 | 0 | - | - | ok |
@@ -61,7 +62,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-30, 34a5f4c, window 2026-07-02 onward)
+## Latest run (2026-09-30, 75e2889, window 2026-07-02 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -159,15 +160,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 40887ef
-
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5380
+- budgets no looser than at 34a5f4c
 
 ## Reviews
 
