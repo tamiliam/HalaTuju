@@ -107,6 +107,28 @@ gate is unchanged.** The owner reads the Tamil help line before the push.
 - Bites: each fix reverted → its test red (F1: 2 tests, F2: 3 subtests, F3: 1, F5: 1), restores
   SHA-256 exact.
 
+## The Deploy Gate Refused the First Push — a Racing Test (lead, after the push)
+
+- *Symptom:* `34a5f4c1` built the api (`halatuju-api-01078-lmg`) but the WEB build failed in the
+  `test` step: `IncomeWizard.strIc.test.tsx` › "offers a Mother's IC card…" could not find the
+  card. Green on this machine on every run, including the full `npm run gates` before the push.
+- *Root cause:* the harness awaited the identity section's TITLE, which is painted before
+  `listDocuments` resolves, and the first `getByText` then ran against a wizard that had no
+  documents yet. On Node 18 in the gate the fetch landed a few milliseconds later. This is the
+  H13 `AppShell` lesson (2026-09-20) a second time: *await the thing you assert, not a neighbour*.
+- *Proof:* a 120 ms delay on the `listDocuments` mock turned 7 of 10 tests red with the old wait
+  and 0 of 10 with the new one.
+- *Fix:* the harness now also waits for the father's IC FILENAME, which every fixture holds and
+  which only exists once the documents have arrived and been drawn. Test-only; the product is
+  unchanged. Pushed as the web-only retry.
+- *Cost:* about 12 build minutes, and the api ran ahead of the web for the retry's duration —
+  harmless here, because the old web ignores the new `ic_slots` field and never sends a
+  non-earner IC tag.
+- *Lesson to carry:* a copied harness carries its race. `ScholarshipDocuments.test.tsx`, the
+  source of this harness, awaits the same title; it has not failed in the gate yet, and its
+  assertions mostly read what is painted before the fetch — but any test added to it that reads a
+  DOCUMENT must wait for one.
+
 ## What Is Still Open
 
 - The 9 keys the scan kept only through its loosest rule (`dashboard.title`, `…subtitle`,

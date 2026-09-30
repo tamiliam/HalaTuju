@@ -90,7 +90,13 @@ const student = async (route: 'str' | 'salary', documents: api.ApplicantDocument
     ...sandboxApplication, requirements: FULL, income_route: route,
     income_earner: route === 'str' ? 'father' : '', income_working_members: ['father'],
   } as unknown as ScholarshipApplication} />)
+  // ⚠ Await the DATA, not the frame. The identity title is painted before `listDocuments`
+  // resolves, so waiting on it alone let the first `getByText` run against an empty wizard —
+  // green on this machine for every run, red once in the deploy gate on Node 18 (the H13
+  // AppShell lesson, second sighting, 2026-09-30). Every fixture holds the father's IC, so its
+  // filename is the one thing that proves the documents have arrived and been drawn.
   await waitFor(() => expect(screen.getByText('scholarship.docs.section.identity.title')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('parent_ic-father.pdf')).toBeTruthy())
 }
 
 /** The card a title sits in — the bordered box that also holds its file input. */

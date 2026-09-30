@@ -41,6 +41,11 @@ Before, that IC could only be uploaded after submission, when Check 2 asked for 
   `/profile` 309,391; median 228 → 227.** The ratchet then required the two lines down: 285 → 272
   and 275 → 274, each recorded 2 kB over the build (the ratchet's own slack), not at the printed
   figure, which would have left both routes numerically above their lines.
+- **Deploy-gate retry (test-only):** the first push built the api but the web `test` step failed
+  on `IncomeWizard.strIc.test.tsx` — its harness awaited a title painted BEFORE the documents
+  fetch, green here on every run and red once on Node 18 (the H13 `AppShell` race, second
+  sighting). The harness now waits for the father's IC filename; proved by a delayed mock (7 of 10
+  red before, 0 after). Retro has the detail.
 - Tests: pytest **7,227 / 3 skipped** (+12, `tests/test_str_ic_slots.py`); jest **3,190 / 187**
   (+23: `incomeWizard.test.ts` +8, new `IncomeWizard.strIc.test.tsx` 10,
   `LazyStpmSchoolPicker.test.tsx` 4, `.failure.test.tsx` 1). decisions.md 2026-09-30; TD-309

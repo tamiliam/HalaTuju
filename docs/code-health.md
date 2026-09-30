@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-30 | 34a5f4c | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 99 | 0 | 0 | ok | ok |
 | 2026-09-30 | 40887ef | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 98 | 0 | - | - | ok |
 | 2026-09-30 | 4583a83 | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 98 | 0 | - | - | ok |
 | 2026-09-29 | 7435fa9 | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 96 | 0 | - | - | ok |
@@ -60,14 +61,14 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-30, 40887ef, window 2026-07-02 onward)
+## Latest run (2026-09-30, 34a5f4c, window 2026-07-02 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju-web/src/lib/officerCockpit.ts` | 27 | 1632 | 44.1 |
 | `halatuju_api/apps/scholarship/vision.py` | 16 | 2321 | 37.1 |
-| `halatuju_api/apps/scholarship/views.py` | 15 | 2421 | 36.3 |
+| `halatuju_api/apps/scholarship/views.py` | 15 | 2425 | 36.4 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 11 | 1165 | 12.8 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 1342 | 12.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 8 | 1233 | 9.9 |
@@ -77,10 +78,10 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 275 fix / 357 feat commits since 2026-07-02
+- 274 fix / 356 feat commits since 2026-07-02
 
 ### Files over 1000 lines
-- `2421  halatuju_api/apps/scholarship/views.py`
+- `2425  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
 - `1632  halatuju-web/src/lib/officerCockpit.ts`
@@ -100,7 +101,7 @@ drift tests are counted as the habit they cure). See TD-284.
 
 ### Python functions of 150+ lines
 - `333  halatuju_api/apps/courses/ranking_engine.py:379 calculate_fit_score`
-- `312  halatuju_api/apps/scholarship/views.py:1008 post`
+- `316  halatuju_api/apps/scholarship/views.py:1008 post`
 - `306  halatuju_api/apps/scholarship/vision.py:2009 _run_field_extraction_impl`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
 - `290  halatuju_api/apps/courses/engine.py:569 check_eligibility`
@@ -137,28 +138,36 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Front-end rules mirrored from the backend with no drift test
-- 46 of 49 mirror claims in src/lib name a drift test
+- 47 of 50 mirror claims in src/lib name a drift test
 - halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
 - halatuju-web/src/lib/incomeWizard.ts:98  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 36 of 184 web test files read source text (signals: readFileSync, apiSource)
+- 37 of 187 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 175 entries have a defining line; 98 carry no resolution marker on it
+- 177 entries have a defining line; 99 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 1085: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
 - line 5986: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 - line 6285: - **TD-314 (raised 2026-09-29 by TD-306's adversarial review, F5) — low, pre-existing shape, student-visible.** When a valid STR arrives on a househol
-- line 6288: - **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requ
+- line 6290: - **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requ
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 4583a83
+- budgets no looser than at 40887ef
+
+### tsc
+- 0 errors in 0 files
+
+### i18n
+- ==================================================
+- ALL PASSED (0 warnings)
+- Total keys per locale: 5380
 
 ## Reviews
 
