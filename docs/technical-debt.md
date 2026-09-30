@@ -9,11 +9,9 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-09-08** it runs to **TD-235**, with **126 ids carrying a defining entry
-and 63 of those showing no resolution marker** — see the Open Items Index below, which carries the
-significant ones and the exact method behind those figures. ⚠ The older claim here (*"196 distinct
-through TD-220, of which 110 are open"*) could not be reproduced at the 2026-09-08 regeneration and
-has been replaced rather than carried forward.
+a running log; as of **2026-09-30** it runs to **TD-318**, with **315 ids carrying a defining entry
+and 159 of those open** — every one read and verified on that day. See the Open Items Index
+below, which lists all of them in working order and says how the figures were reached.
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
 > `**Status:**` line — those are authoritative (a single hand-maintained tally rots, as the old "49/52"
@@ -31,90 +29,252 @@ has been replaced rather than carried forward.
 
 ---
 
-## Open Items Index (curated, regenerated 2026-09-18)
+## Open Items Index (curated, regenerated 2026-09-30)
 
-**140 entries carry a defining line; 88 of those show no resolution MARKER on it.** Two of the 88
-(TD-010, TD-033) are in fact resolved — struck through with a bolded `**RESOLVED (…)**` that
-carries no dash — so **86** is the honest open-candidate count, and some of those still carry a
-resolution deeper in their body (the 2026-09-08 pass found 14 such). This list is the
-**significant** pending items, not all 86; the per-entry marker in the body remains authoritative.
+**315 entries carry a defining line; 159 of those are open.** Every one of them was READ on
+2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
+every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
-> **The method, so the next regeneration inherits it rather than re-deriving it.** Count the
-> DEFINING lines (`### [TD-NNN]` or `- **TD-NNN**`, first occurrence wins) and look for a
-> resolution MARKER on that line — a tick, or RESOLVED/CLOSED/FIXED/SHIPPED standing as a
-> status, usually dated. ⚠ **Not a word that merely appears in the sentence.** The first attempt
-> at this regeneration counted TD-252 as resolved because its title contains the words "cannot
-> be closed"; every line where such a word appears WITHOUT being a marker is now printed for a
-> human to read (there were five). The 2026-09-08 figures (126/63) used a looser rule and are
-> not comparable line-for-line; the growth since is 14 new entries (TD-236 → TD-252).
+> **What this pass found, so the next one does not find it again.** The tool read 99 open. The honest
+> figure was higher, because two groups were defined where the tool could not see them: **31 entries
+> (TD-274 to TD-304) written INSIDE this index block**, which the tool and the duplicate-id guard skip, and
+> **94 entries of the June bullet log** written as `- TD-NNN:` with the id not in bold. Both are fixed in
+> the register, not in the tool: the 31 moved, word for word, to their own `##` section below, and the
+> bullet log now carries `- **TD-NNN**`. The count went UP because the register can now see itself;
+> no debt was added. **NEVER write a new entry inside this index — it holds pointers only.**
+>
+> **Closed at this pass: 36**, each overtaken by later work and each with a commit, a
+> `file:line` or a superseding entry on its defining line (`RESOLVED 2026-09-30 (overtaken: …)`). The
+> owner's rule for this pass: **close only with evidence**. A further 38 were already resolved in
+> their own text and only lacked a marker the tool could read. Nothing was closed on judgement.
 
-> **From 2026-09-18 the count is taken by script, not by hand:** `Settings/_tools/code_health.py`
-> applies the rule above and prints every near-miss. Its first reading is **146 defined, 84 open**
-> (against the 140 / 86 above, taken by hand the same day). The difference is understood: six
-> definitions shaped `### ✅ [TD-197 — RESOLVED …]` that the hand rule did not see as headings, and
-> four undated `— RESOLVED` titles (TD-002, TD-015, TD-017, TD-213). Quote the tool's `td_open`
-> from `docs/code-health.md` at each regeneration; read the near-miss list by eye.
+> **The method, inherited.** Count the DEFINING lines (`### [TD-NNN]` or `- **TD-NNN`, first occurrence
+> wins, this index excluded) and look for a resolution MARKER on that line — a tick, or
+> RESOLVED/CLOSED/FIXED/SHIPPED standing as a status. Not a word that merely appears in the sentence.
+> `Settings/_tools/code_health.py` applies the rule and prints every near-miss; quote its `td_open` from
+> `docs/code-health.md` at each regeneration. A partly-done entry stays OPEN and carries a dated
+> `**Status:**` line; the body is history and is not rewritten.
 
-> ⚠ **The previous regeneration (2026-08-19) said "109 open of 195 distinct" and I could not
-> reproduce 195 by any parse.** 230 distinct ids are MENTIONED in the register; only **126** have a
-> defining entry (a `### [TD-NNN]` heading or a `- **TD-NNN**` bullet). The gap is ids that appear
-> only inside another entry's prose. Recording the discrepancy rather than restating the old figure:
-> the next regeneration should start from the method below, not from either number.
+> **The classes.** Importance: **A** money or identity · **B** eligibility or security · **C** a student or
+> an officer sees it · **D** tooling and hygiene. Effort: **S** half a day, one file · **M** one to three
+> days · **L** longer, or a migration or an outside party. Tiers follow from the two.
 
-### Go-live gates — legal, money, or an owner decision (not just code)
-- **TD-075** — real payment + disbursement rails (toyyibPay, tranches, lapse cron). The whole
-  sponsorship money flow is built **dark on mocked money** until these land. **TD-148** (officer
-  view of a student's bank details) folds into it.
-- **TD-140** — Conditional Bursary Agreement, two Phase-0 gates: a lawyer vets the EN/BM clause
-  template, and the Foundation entity is finalised. Everything else is built and dark.
-  **TD-141** (parent signs in-session only) and **TD-142** (the agreement names a payment schedule
-  it cannot yet honour) ride with it.
-- **TD-192** — **HIGH, and the one that matters.** Sponsor vetting is a *button, not a process*: no
-  NRIC, DOB or address is collected, so we do not know our customers. RM172,000 has been taken from
-  eight people vetted with nothing in front of the reviewer. **Unparks the day a stranger can
-  register** — expected at organisation registration, but if open sign-up comes first, then.
-- **TD-198** — no admin route out of `awarded` once the award email has gone. **47 students sit
-  there.** Moves money back to a sponsor and retracts a promise, so it is the owner's call.
+### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 23
+Each line is the question. Nothing here can be closed by engineering alone.
 
-### High — engineering, promoted and ready to schedule
-- *Closed 2026-09-18:* **TD-258** (security, money path) — the sponsor FUND view now resolves the
-  student through `pool.for_sponsor`, the MOCK donation endpoint is behind
-  `SPONSOR_MOCK_DONATIONS_ENABLED` (default OFF, **never set in production**), and a NULL-programme
-  application can no longer be funded. Nothing had been exploited.
-- *Closed 2026-09-19:* **TD-254** (security, auth + PII) — the IC claim no longer names the holder
-  and no longer transfers anything. `exists` answers with the challenge CHANNELS only; `confirm:
-  true` is removed and refused; a claim writes ONE `ProfileLoginAlias` row that the auth seam
-  resolves, so it is reversible by deleting that row; every branch that touches another person's
-  record writes a `ProfileClaimEvent`. **Conservative by policy:** only an ALREADY-VERIFIED contact
-  may be challenged, so ~90% of profiles get an honest refusal and a route to support. The owner's
-  two open rulings are one edit to `profile_claim.claim_channels()`. No evidence of past use — and
-  the new table is what makes that question answerable in future.
-- *Closed 2026-09-19 with TD-254:* **TD-259** — the missing-key ledger is **EMPTY**. The five
-  `authGate` keys were written for the new flow in EN/MS/TA (no holder name anywhere); the two admin
-  rows read `admin.familyIncome` / the new `admin.familySize`; the Story error names a question that
-  exists. The idiom behind all eight — `t(key) || 'fallback'`, which never fires because `t` echoes
-  the key — is now refused by a web code standard, with `tOr()` as the replacement.
-- *Closed 2026-09-19 on the owner's order:* **TD-261** — all five money/figure defects fixed, and
-  the three pinned surprises decided. A bill figure keeps its minus sign (`RM-40.00`) and its one
-  decimal place; a non-finite figure is refused once, in `money.parse_money`, so the receipt box
-  and the payment-run line answer 400 `bad_amount` instead of 500; `sponsor_comms.render` defaults
-  every declared structural token, as `partner_comms.render` always has. The surprises: an invoice
-  comma must now group thousands, a payment-run line REFUSES a third decimal instead of rounding
-  it, and a negative Monthly cell stops the Vircle import by row. Each fix was made by editing its
-  pinned row in `test_helper_characterisation.py` first and watching it go red.
-- ~~**TD-272 (raised 2026-09-20 by code health H14) — medium.**~~ **RESOLVED 2026-09-20** — the
-  ratchet was taught a `_moved`, the second of the two fixes this entry proposed. Both
-  `code-standards.json` files now carry a `_moved` array, and both standards tests read the frozen
-  `baseline` THROUGH it, so a ledger key follows its code to a new path. A move may only RELABEL:
-  one key that is in the frozen ledger becomes one key that is not, which leaves the ledger's
-  length and total unchanged and holds the new key to exactly the room the old one had.
-  `BASELINE_SHA256` does not move for an honest move, in either service, because `_moved` is a
-  sibling of `baseline` rather than a part of it. **`IncomeWizard` then made the move H14 could
-  not**, its two reasonless disables travelling with the body they sit in. ⚠ **H15 and H16 still
-  grep the ledgers before planning a cut** — the question is unchanged ("does anything INSIDE this
-  file have a key of its own?"); what changed is that the answer is no longer a refusal. ⚠ One
-  matching change is still owed in `Settings/_tools/code_health.py` — see TD-274.
-- **TD-274 (raised 2026-09-20 by TD-272) — low, lead's tool.** `code_health.loosened` grew a
+- **TD-260** — About 600 students could not reclaim a lost account. Widen self-service, build a support relink tool, or both? *(A · M)*
+- **TD-198** — No officer can withdraw an award once the email has gone. Who may, with what reason, and what is the student told? *(A · M)*
+- **TD-192** — Sponsor vetting is one button. What checks do we require, for whom, and do they block money? *(A · L · parked with the sponsor module)*
+- **TD-152** — The agreement's donor is a named person until the Foundation is registered. Confirm the hand-over plan. *(A · L)*
+- **TD-142** — Payments are real but not tied to the signed agreement. This waits on TD-140. *(A · L · partly done)*
+- **TD-140** — The bursary agreement cannot go live until a lawyer approves the wording and the signing entity is settled. *(A · L)*
+- **TD-075** — Sponsor money is still mock. When do the lawyer's review and the payment account arrive, and may several sponsors fund one student? *(A · L)*
+- **TD-210** — Should a confirmed offer update the student's own profile pathway, so an old one cannot overwrite it? *(B · S)*
+- **TD-179** — Two rules decide this partner's students. One rule everywhere, or two on purpose? *(B · S)*
+- **TD-143** — A birth certificate cropped above its header: treat as suspect, or as not a birth certificate? *(B · S)*
+- **TD-128** — Special-needs teaching courses match only a physical disability. Ask about other needs now? *(B · M)*
+- **TD-311** — The Tamil Home heading spills on phones. Shrink all three languages, or Tamil only? *(C · S)*
+- **TD-265** — Show the funding gift on each payment row, or once in the header, or not at all? *(C · S)*
+- **TD-227** — Should a rejection need a written reason, and show when the rejecter was not the assigned reviewer? *(C · S)*
+- **TD-211** — The Reporting Date tick is green on any date read. Keep it, show it differently, or cross-check it? *(C · S)*
+- **TD-066** — The testing-only help box is still live with a personal mobile number. Keep (which number) or remove? *(C · S)*
+- **TD-230** — Should the apply form's referring-organisation list come from the Sources screen? *(C · M)*
+- **TD-225** — The logo half-disappears in dark mode. Commission a dark version, and let each organisation upload one? *(C · M)*
+- **TD-096** — Sponsor emails go out in one language. Declare English-only, or build per-language wording? *(C · M)*
+- **TD-133** — The Trust hub shows placeholders and example figures until the organisation is formal. *(C · L)*
+- **TD-043** — Phone sign-in says coming soon. Pay for a code service, or hide the box? *(C · L)*
+- **TD-318** — WhatsApp STOP is built but does nothing until the inbound webhook is set in the Twilio console (an owner action). *(D · S · leftover of TD-135)*
+- **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
+
+### Now — money, identity, eligibility or security — 18
+Class A at any size, and class B that is small or medium. Schedule these first.
+
+- **TD-315** — A brother's IC can be re-filed as the father's when the father's name is a bare given name. *(A · S)*
+- **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S)*
+- **TD-248** — A billing rate saved before 08:00 on the 1st can land in the previous month and re-price it. *(A · S)*
+- **TD-203** — Changes to a student's award amount are not logged. Nobody can say who set it or what it was. *(A · S)*
+- **TD-257** — 22 admin endpoints have no test driving them, including the two that release bursary money. *(A · M)*
+- **TD-229** — A second gift would make its students sign the first gift's agreement. Signing is off today. *(A · L)*
+- **TD-292** — The latest document has no tie-breaker when two uploads share a timestamp. *(B · S)*
+- **TD-217** — A certificate scan with a clipped left edge silently loses the half-read guard. *(B · S)*
+- **TD-167** — Nothing stops a new field reaching sponsors without the consent wording being rechecked. *(B · S)*
+- **TD-153** — Three oversight lists can be read by any admin role. *(B · S · partly done)*
+- **TD-255** — Production builds on Node 18, which no longer gets security fixes. *(B · M)*
+- **TD-253** — An interview with nothing in it still wakes Approve and Decline. The owner's ruling is not built. *(B · M)*
+- **TD-218** — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading. *(B · M)*
+- **TD-207** — Password reset fails for every admin who has finished onboarding. *(B · M)*
+- **TD-151** — The hardening pass for misread documents was never done: no problem-document set, no sanity check on figures. *(B · M)*
+- **TD-125** — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet. *(B · M)*
+- **TD-114** — A fact can read Certain off a document that was never scored for genuineness. *(B · M · partly done)*
+- **TD-069** — STPM students get only two SPM elective slots, and the choice is kept only in the browser. *(B · M)*
+
+### Next — a student or an officer can see it, and it is small — 37
+Class C, half a day each. Good small-change-lane work; several go together.
+
+- **TD-317** — The in-house EPF parser gives a rougher salary estimate. *(C · S · leftover of TD-123)*
+- **TD-316** — The unreadable-IC request closes too early, then reopens with a new email. *(C · S)*
+- **TD-314** — The high-bills question can be closed unanswered and asked again in other words. *(C · S)*
+- **TD-313** — TVET course pages show raw requirement names. *(C · S)*
+- **TD-312** — The search page in Tamil is slightly too wide for a small phone. *(C · S)*
+- **TD-303** — New run is offered when the gift list failed to load. *(C · S)*
+- **TD-301** — A slow reply can overwrite the Programme Overview with the wrong gift's figures. *(C · S)*
+- **TD-299** — New run is offered on another organisation's gift and then fails. *(C · S)*
+- **TD-297** — The manual still says the money sits under the organisation. *(C · S)*
+- **TD-288** — Keyboard focus jumps in the income questions. *(C · S)*
+- **TD-251** — Vircle's activation message carries no status, so the wallet is never marked active. *(C · S)*
+- **TD-249** — A reviewer nudge shows its due date a day early before 08:00. *(C · S)*
+- **TD-244** — Nothing flags a student whose wallet was never switched on. *(C · S)*
+- **TD-242** — A brief Drive failure drops a whole spending file and the import still reports success. *(C · S)*
+- **TD-220** — A payslip's IC chip shows the same red for a mismatch and for could-not-read. *(C · S)*
+- **TD-208** — Sign-up, invite and reset emails land in Gmail's spam folder. *(C · S)*
+- **TD-183** — Sponsor-screen Malay and Tamil, about 200 strings, are machine drafts. *(C · S · parked with the sponsor module; same sitting)*
+- **TD-169** — The Vircle guide attachment is named after BrightPath for every organisation. *(C · S)*
+- **TD-164** — During the decline cool-off a student can be shown a stage they never reached. *(C · S)*
+- **TD-160** — A partner invite with an unreadable reply saves no login id, so Resend cannot help. *(C · S)*
+- **TD-158** — A suspect birth certificate still shows green ticks in the cockpit. *(C · S)*
+- **TD-157** — A Singapore-dollar payslip is converted, but the officer never sees the ringgit figure or the rate. *(C · S)*
+- **TD-156** — Interview video calls can wait for a host who is never there. *(C · S)*
+- **TD-145** — A wrong public university is not caught when the institution box is blank. *(C · S)*
+- **TD-130** — A mistaken Gmail Unsubscribe could silence decision and query emails. *(C · S · partly done)*
+- **TD-127** — Some newer PISMP courses show a copied generic description. *(C · S · needs a look at production data)*
+- **TD-112** — The income route switch was never click-tested in a browser. *(C · S)*
+- **TD-108** — Invite-a-friend Tamil, screen and email, is a first draft. *(C · S · same sitting)*
+- **TD-105** — In-programme and graduation-message Tamil is a first draft. *(C · S · same sitting)*
+- **TD-101** — The sponsor portal has no Donate-more and no Withdraw-offer button. *(C · S · partly done)*
+- **TD-094** — Award and onboarding Tamil is a first draft. *(C · S · same sitting)*
+- **TD-092** — The public sponsor landing page was never walked in three languages. *(C · S)*
+- **TD-091** — Sponsor landing Tamil is a first draft, and the page is public. *(C · S · one owner sitting with TD-094, 105, 108, 183)*
+- **TD-089** — A guardian earner's link to the student stays pending. *(C · S · partly done)*
+- **TD-070** — Sponsor sign-in, sign-up and the admin vetting buttons were never click-tested in a browser. *(C · S)*
+- **TD-057** — A stale return marker can send a student to the apply page after onboarding. *(C · S)*
+- **TD-047** — If the database is unreachable at start-up, the course checker stays empty until a restart. *(C · S)*
+
+### Later — visible but larger, or small hygiene — 63
+Class C at medium or large size, and class D that is small.
+
+- **TD-291** — The Requests list does extra database reads per row; the student app polls a switched-off page. *(C · M)*
+- **TD-247** — Supplier bills reach the cost ledger only when someone imports them by hand. *(C · M)*
+- **TD-246** — Payments and Spending cannot be narrowed to one organisation. *(C · M · same gap as TD-228)*
+- **TD-245** — We cannot tell spent-nothing from wallet-missing-in-the-export. *(C · M)*
+- **TD-228** — Picking an organisation in the crumb filters nothing. *(C · M)*
+- **TD-216** — A conclusion-only rewrite still takes the interview credit. *(C · M · partly done)*
+- **TD-215** — The donor-pitch email exists only in English. *(C · M)*
+- **TD-214** — An invitation sent by mistake cannot be cancelled. *(C · M)*
+- **TD-155** — Partners have no Scholarship view of the students they referred. *(C · M · a planned feature)*
+- **TD-150** — The course matcher can tie a student to the wrong public course. *(C · M)*
+- **TD-132** — Sponsor portal wording, English and Tamil, was never reviewed by the owner. *(C · M)*
+- **TD-119** — Eight genuine family documents are still wrongly flagged in the test set. *(C · M · partly done)*
+- **TD-111** — Some detected anomalies are never put to the student as questions. *(C · M · partly done)*
+- **TD-110** — Two copies of the document-is-wrong rule have drifted apart. *(C · M)*
+- **TD-079** — Viewing an application writes to its to-do list; a deleted document does not re-ask the student. *(C · M)*
+- **TD-077** — Course names show a bare # where an Interview label is meant. *(C · M)*
+- **TD-076** — The Settings page is thin and its version number is typed by hand. *(C · M · same as TD-041)*
+- **TD-068** — A contractual decline sends the generic email. *(C · M · partly done · same ruling as TD-227)*
+- **TD-141** — A parent surety can sign only on the student's device. *(C · L · rides with TD-140)*
+- **TD-103** — The student types their own CGPA; nothing reads it off the slip. *(C · L)*
+- **TD-308** — Check 2 re-reads the STR on every refresh with no budget watching it. *(D · S)*
+- **TD-307** — One test failed once under a parallel run; unexplained. *(D · S)*
+- **TD-304** — The page-weight guard reads rounded figures and ignores layout code. *(D · S · also fixes the 0.5 kB rounding trap)*
+- **TD-295** — One helper returns nothing on the wrong input; a note for developers. *(D · S)*
+- **TD-294** — A failed login-email lookup logs an error nobody sees. *(D · S)*
+- **TD-293** — Two malformed data shapes would crash the applicant page; none exist today. *(D · S)*
+- **TD-290** — Our own warnings reach Google's logs with no severity, so an alert would never fire. *(D · S)*
+- **TD-289** — The language picker pulls the toast code onto the home page (0.4 kB). *(D · S)*
+- **TD-287** — One bills calculation runs twice on the salary fall-through. *(D · S)*
+- **TD-286** — Newer query budgets live in a test file, outside the frozen record. *(D · S)*
+- **TD-284** — Three code-health targets only warn; one miscounts the drift tests. *(D · S)*
+- **TD-279** — Two files are both called constants.py. *(D · S · same hazard as TD-277)*
+- **TD-277** — Guards that exempt files by bare name could exempt a new file of the same name. *(D · S · partly done)*
+- **TD-273** — Nothing checks that each cockpit panel uses every input it is given. *(D · S)*
+- **TD-270** — Type-only import loops in the admin web code are not reported. *(D · S)*
+- **TD-266** — The admin screens' type for a resolution item is out of date. *(D · S)*
+- **TD-263** — Re-quote can be offered on a bug and the server refuses it; unreachable today. *(D · S)*
+- **TD-256** — An api test reads the debt register, but a docs edit does not run the api tests. *(D · S)*
+- **TD-239** — A better AI prompt re-checks nothing already categorised. *(D · S)*
+- **TD-238** — Nothing shows how many merchants the AI is asked about, or the cost. *(D · S)*
+- **TD-236** — The request-analysis tool cannot run from a worktree. *(D · S)*
+- **TD-231** — The gift list runs a delete check per gift. *(D · S)*
+- **TD-196** — No person has walked the sponsor-terms wizard. *(D · S · parked with the sponsor module)*
+- **TD-195** — Two Go-to hints can show at once. *(D · S)*
+- **TD-194** — The officer console cannot be reviewed on a developer's machine. *(D · S)*
+- **TD-187** — The admin menu cannot scroll; it is 19 rows today. *(D · S)*
+- **TD-185** — The credit chain reads timestamps, not the credit's status. *(D · S · parked with the sponsor module)*
+- **TD-184** — No person has walked a real sponsor credit through both signatures. *(D · S · parked with the sponsor module)*
+- **TD-180** — Partner-emails screen Malay and Tamil are a first draft. *(D · S · same sitting as the other copy items)*
+- **TD-174** — A new email type could still bill the platform instead of the organisation. *(D · S · partly done)*
+- **TD-173** — iPhone photos attached to a request are not converted. *(D · S)*
+- **TD-170** — Two Malay and Tamil lines use a different name token; the wording needs the owner's sign-off. *(D · S)*
+- **TD-168** — The manual test hand-lists the role chapters. *(D · S)*
+- **TD-165** — A few reject-card error cases are untested. *(D · S · partly done)*
+- **TD-162** — The applicant list runs one extra query per row. *(D · S)*
+- **TD-129** — Some Tamil-school PISMP courses list an extra language credit; no result changes. *(D · S · needs a look at production data)*
+- **TD-126** — The Guide's scheduling step lost its screenshots in the July rewrite. *(D · S)*
+- **TD-117** — Older EPF uploads never got the wrong-type check. *(D · S · partly done · one paid re-read, with TD-116)*
+- **TD-116** — Older EPF statements use a rougher estimate until re-read. *(D · S · partly done · one paid re-read, with TD-117)*
+- **TD-104** — The in-programme results form has no slip upload. *(D · S)*
+- **TD-097** — Reviewer-profile Tamil is a first draft. *(D · S · same sitting as the other copy items)*
+- **TD-055** — The apply form overwrites the whole saved guardians list. *(D · S)*
+- **TD-053** — The decision record for the IC gate is out of step with the code. *(D · S)*
+
+### Someday — hygiene that is medium or large — 17
+Do one only when a sprint is already in that file.
+
+- **TD-041** — The Settings page has no account options. *(D · S · partly done · same as TD-076)*
+- **TD-283** — Two central files are exactly at their size limit. *(D · M)*
+- **TD-243** — The AI reliability rate blends engine versions. *(D · M)*
+- **TD-234** — Thirteen repair commands have no approved route to live data. *(D · M)*
+- **TD-212** — The email-template table is still named partner. *(D · M)*
+- **TD-190** — Sponsor tables sort and page in the browser. *(D · M · parked with the sponsor module)*
+- **TD-124** — Contact-form messages reach staff by email only. *(D · M)*
+- **TD-121** — The document test scorecard ignores the genuineness check. *(D · M)*
+- **TD-074** — Two small sponsor-pool follow-ups remain. *(D · M · partly done)*
+- **TD-065** — Some sponsor screens have no component tests. *(D · M · partly done)*
+- **TD-064** — The old super-admin switch is kept beside the role field. *(D · M)*
+- **TD-278** — An unreachable import-count target is still on the roadmap. *(D · L)*
+- **TD-226** — Two intake-year settings are stored and read by nothing. *(D · L)*
+- **TD-115** — The document slot has no database-level guard. *(D · L · partly done)*
+- **TD-084** — Two orphaned income fields and their dead copy remain. *(D · L)*
+- **TD-058** — Production lacks Django's bookkeeping tables; managed by hand. *(D · L)*
+- **TD-024** — The course-name field is called course. *(D · L)*
+
+### Accepted by the owner — open on the record, no work planned — 1
+
+- **TD-166** — The What-you-agreed-to panel shows today's wording. Accepted knowingly by the owner on 2026-07-26. *(C · S)*
+
+### Clusters worth doing as one job
+- **One owner sitting on first-draft Malay and Tamil** — TD-091, TD-094, TD-097, TD-105, TD-108, TD-132,
+  TD-170, TD-180, TD-183, TD-215. Each is too small for a pass of its own; together they are one sitting.
+- **Never walked in a browser** — TD-070, TD-092, TD-112, TD-184, TD-196. TD-194 (no local console
+  review) is why the console ones stay unwalked.
+- **One paid re-read of older EPF statements** — TD-116 and TD-117 are the same job.
+- **The missing organisation scope** — TD-228 and TD-246 are one gap.
+- **The award that cannot be undone** — TD-198, the console half of TD-252, and TD-068/TD-227 (a typed
+  reason) wait on the same owner rulings.
+- **Parked as a set, the sponsor module (owner, 2026-07-28)** — TD-183, TD-184, TD-185, TD-190, TD-192,
+  TD-196. The trigger is the organisation's registration approaching, not a date; TD-192 leaves the set
+  early if open sign-up arrives first.
+
+### Numbers that are cited and have no entry
+- TD-154 — a skipped number; decisions.md cites it.
+- TD-200 — never entered; its subject was ruled under TD-202.
+- TD-204 — shipped 2026-07-31 (CHANGELOG) and never entered in the register.
+
+> ⚠ **TWO NUMBERS ARE CLAIMED BY TWO TICKETS EACH, both from 2026-07-03.** **TD-151** = *document-extraction
+> robustness* (open) **and** *booked interviews kept phantom holds* (resolved). **TD-152** = *the bursary
+> agreement is a named-personal-donor contract* (accepted interim) **and** *no student channel inside the
+> 12h cutoff* (resolved). Neither is renumbered. This index means the FIRST of each pair; when you cite
+> either number, say which.
+>
+> The index this one replaces (regenerated 2026-09-18) is in git at `0033a2a5`, with its closure notes.
+
+## Raised 2026-09-20 to 2026-09-28 — the code-health arc, the audits and the gift-context sprints (TD-274 to TD-304)
+
+> **Moved here, word for word, on 2026-09-30.** These thirty-one entries were WRITTEN INSIDE the
+> Open Items Index, which the counting tool and the duplicate-id guard both skip — so for ten days
+> they were defined nowhere the register could count. Nothing in them was reworded; only the
+> resolution markers on their first lines were added or left as found.
+
+- ~~**TD-274 (raised 2026-09-20 by TD-272) — low, lead's tool.**~~ **RESOLVED 2026-09-30 (overtaken: workspace 1bcf720; code_health.loosened accepts a declared relabel in list ledgers)** `code_health.loosened` grew a
   rename exception for a DICT budget entry on 2026-09-20 (H11's file split), but its LIST branch
   has none: `eslint_disable_without_reason` and `unguarded_mirrors` are JSON arrays, so relabelling
   a member reads as `gained "<new key>"` and `std` FAILs on exactly the honest move the in-repo
@@ -159,6 +319,14 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   gap is named and NOT closed: **a guard file that still exists and still runs but has been
   hollowed out is invisible to all of this** — that is what each guard's own floor is for, and
   there is no mechanism that checks a floor is still meaningful.
+- **TD-277 (raised 2026-09-20 by code health H15) — low.** A source guard whose allowlist is keyed
+  on a BARE FILE NAME silently widens as the tree grows. `test_wallet_credit.py` exempted
+  `models.py` and `sponsorship.py` from the "only `record_admin_credit` may mint an admin-recorded
+  credit" scan by `path.name`; re-pointing it at `funding.py` would have exempted any future
+  `funding.py` anywhere in the app. Fixed here by keying on the path relative to the app. Worth a
+  sweep for other basename-keyed allowlists, and worth a note in `CLAUDE.md`'s source-guard
+  guidance: **allowlist a path, never a name.** ~1h.
+  **Status 2026-09-30:** partly done — still to do: no recorded sweep for other bare-name allowlists; no line in CLAUDE.md.
 - **TD-278 (raised 2026-09-20 by code health H16) — low, but it retires a target the roadmap still
   carries.** H16's acceptance said the `courses → scholarship` back-edge would finish **"under
   20"**. It finished at **30 edges (41 import statements)**, down from 31/41, and no move could
@@ -182,8 +350,19 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   **None of the three is a move, so none belongs in Phase 4.** Until one is chosen, the roadmap's
   "under 20" should not be carried into Phase 5 as though it were still pending work.
   **Trigger:** whoever scopes a Phase 4b, or the next sprint that touches `org_config`.
-- ~~**TD-280 (raised 2026-09-20 by code health H17) — low, and it needs an OWNER's word.**~~
-  **RESOLVED at code health H18 (2026-09-20) — the owner chose option (2), SERVE THE LABEL.** Not
+- **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
+  H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
+  for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a
+  bare file name exempts or selects *any* file of that name anywhere in the app (TD-277). This was
+  done knowingly: the roadmap named the file explicitly, `constants` is the conventional name for
+  what it holds, and the one basename-keyed guard left in the tree
+  (`test_verdict_item_i18n.py`, `path.name == 'verdict_engine.py'`) is an INCLUSION test on a
+  different, still-unique name rather than an exemption allowlist — so the collision is inert
+  today. It is recorded because it will not announce itself if that stops being true. The fix, if
+  ever wanted, is to rename the package-private `services/constants.py` (nothing outside
+  `services/` imports it) rather than the new public leaf. ~15 min.
+  **Trigger:** the next guard that keys on a bare file name, or a Phase 4b sweep.
+- ~~**TD-280 (raised 2026-09-20 by code health H17) — low, and it needs an OWNER's word.**~~ **RESOLVED at code health H18 (2026-09-20) — the owner chose option (2), SERVE THE LABEL.** Not
   the cheapest of the three ways out, and the right one: the project's standing rule is *serve a
   rule that varies, guard a rule that is a constant*, and a third home for a string would have
   been a mirror to maintain for ever. The api resolves the label
@@ -202,31 +381,6 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   always shown it. (2) The resolver deliberately does NOT case-fold, unlike `preu_label` beside
   it — the browser did a plain dictionary lookup, so folding would start rendering a word where
   the officer has always seen a blank. That is a behaviour change dressed as a tidy-up.
-- *(historical, for the record — the entry as H17 wrote it)* After H17 exactly one screen still
-  downloaded a whole message catalogue it was not reading: the officer cockpit,
-  `/admin/scholarship/[id]`, which was **389 kB of first-load JS
-  against ~256 kB for every other route**. The whole difference is `ms.json`, and the whole reason
-  is `preUTrackMalay` — **sixteen Malay pre-U track labels**, rendered in a card for an officer
-  who is usually reading English. It is synchronous by necessity: there is no `ms` catalogue in
-  memory to answer from and no loading state to hang a label off, so a lazy version would blank a
-  word the officer is reading. H17 confined the import from `lib/scholarship.ts` (fifteen route
-  pages) to `lib/preUPlan.ts` (this one route) and stopped there, deliberately. **130 kB for
-  sixteen words is the honest number and it deserves a decision, not a quiet fix.** Three ways out,
-  in ascending order of what they ask of somebody else:
-  (1) **A guarded copy in the web tree.** Sixteen labels in a small module, plus a drift test
-  against `src/messages/ms.json`. The objection is that it is a second home for a string — but the
-  owner **already ruled for exactly this** on 2026-07-18 ("option B, owner-approved") when the
-  backend kept `card_display._TRACK_LABEL` beside the same block, guarded by
-  `test_card_display.TestTrackLabelParity`. A bundle boundary is the same kind of boundary as a
-  process boundary. ~1h, and it is the cheapest.
-  (2) **Serve the label.** The api already holds the map; putting the resolved Malay label on the
-  cockpit payload removes the FE copy and the FE import together. An api change, so not H17's to
-  make.
-  (3) **Leave it.** A handful of staff, a chunk that caches after the first load, and the students
-  on phones are already paid for. This is a defensible answer and it is today's answer.
-  ⚠ Whatever is chosen, do NOT relax `oneLocalePerVisitor.test.ts`'s exemption list to make it go
-  away — that list is the guard, and adding a line to it is the regression.
-  **Trigger:** H18 (it is the worst route in the bundle budget H18 sets), or the owner's word.
 - ~~**TD-281 (raised 2026-09-20 by code health H17) — low, lead's tool.**~~ **RESOLVED at code
   health H18 (2026-09-20). The reader was written first, exactly as this entry asked.**
   `halatuju-web/scripts/bundle-budget.js` parses the real `next build` route table and compares it
@@ -248,17 +402,6 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   (gzipped first-paint JS — no CSS, no fonts, no lazily-imported chunks, so moving weight behind
   an `import()` lowers the number without shrinking the application); and it is blind between the
   floor and the 300 kB ceiling, which is what the median budget covers.
-- *(historical, for the record — the entry as H17 wrote it)* The first-load-JS budget
-  H18 was to record had **no reader that runs in a test**. The number exists only in the route table
-  `next build` prints; jest runs with no build output, and `code_health.py` does not build either.
-  H17 therefore did NOT put a kilobyte figure in `code-standards.json`: a budget nothing measures
-  reads as enforced and is not, which is worse than no budget. What H18 needs first is a step that
-  parses `.next/`'s route table (or the build log) into the ledger, and a decision about where that
-  step runs — the Cloud Build deploy gate is the only place that already builds. Until then the
-  enforceable half is the SOURCE rule, which is what `oneLocalePerVisitor.test.ts` asserts: no
-  production module outside a declared list may statically import a catalogue. ⚠ Design the byte
-  budget with the `_moved` escape from day one — it is keyed on a ROUTE PATH, which has exactly
-  TD-272's problem the first time a route is renamed. ~2h, inside H18.
 - ~~**TD-282 (raised 2026-09-20 by code health H18) — ⚠ MEDIUM-HIGH.**~~ **RESOLVED 2026-09-21 —
   315 → 38, and 385 → 38.** The officer's applicant-detail GET now opens a **document snapshot**
   (`apps/scholarship/document_snapshot.py`) around the serializer build: the application's
@@ -373,9 +516,7 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   blindness to a rename, `xapp`'s statement count and `hot#1` not following a rename, of which the
   lead built two the same day). ~2h in the tool plus a Trend-row note. **Trigger:** the next
   `system-audit.md` pass, or the first sprint that reads `guard%` and cannot tell what it means.
-- ~~**TD-285 (raised 2026-09-21 by the api audit) — ⚠ MEDIUM, AND IT IS AN OWNER'S CALL, NOT AN
-  ENGINEERING ONE. `income_engine.has_valid_str` STILL LETS A STRANGER'S STR VOUCH FOR A DECLARED
-  INCOME — EVERYWHERE EXCEPT THE ONE GATE THE AUDIT CLOSED.**~~ **RESOLVED 2026-09-29 (owner's
+- ~~**TD-285 (raised 2026-09-21 by the api audit) — ⚠ MEDIUM, AND IT IS AN OWNER'S CALL, NOT AN ENGINEERING ONE. `income_engine.has_valid_str` STILL LETS A STRANGER'S STR VOUCH FOR A DECLARED INCOME — EVERYWHERE EXCEPT THE ONE GATE THE AUDIT CLOSED.**~~ **RESOLVED 2026-09-29 (owner's
   ruling: option 1, *"close it now, the F8 way"*; the lead's production count the same day: 60
   applications hold an STR, 3 carry a typed amount, 0 have a Lulus STR whose recipient NRIC
   matches no household IC, 0 typed amounts rest on one — no live answer moves).** `has_valid_str`
@@ -506,16 +647,6 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   context and `useToast`, five callers repointed) took `/` from 231.112 to 230.716 kB — **0.40 kB**,
   under the 0.5 kB bar the brief set — and moved eight other routes by under a kilobyte each (none
   heavier). Reverted. Worth doing only alongside other work in `Toast.tsx`.
-- **TD-304 (raised 2026-09-28 by TD-300's sprint) — low, and it is a blind spot in a guard.** Next
-  14's printed "First Load JS" for an app route is the PAGE entry's chunks only; chunks that only a
-  LAYOUT loads are fetched on first paint and are not in it. Measured from `app-build-manifest.json`:
-  `/login` prints 87.6 kB and the browser fetches ~231; `/admin/faq` prints 173 and fetches ~275;
-  the median route prints 227 and fetches ~257. So the budget can be "passed" by moving weight from
-  a page into a layout, which makes nothing lighter — the same trap as a lazy import, one level up.
-  The root layout carries React Query (8.8 kB gz: `providers.tsx`) for three pages that use it.
-  **Fix:** have `bundle-budget.js` (or a companion) read `.next/app-build-manifest.json` and budget
-  page + layout chunks, or at least print them. **Trigger:** the next sprint that touches a layout
-  or the budget script.
 - **TD-290 (raised 2026-09-21 by the audit of the safety net) — MEDIUM, and unproven.** Every
   `severity>=WARNING` entry in Cloud Logging since 2026-09-19, on both services, is a payload-less
   REQUEST log; not one line from Django's own `logger.warning` / `logger.exception` appears at
@@ -641,8 +772,7 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   but a bare id or a stand-in that the old form answered (or raised on) now quietly gets `None`.
   All four callers pass real applications, so nothing moves today. Recorded so the next caller
   knows. **Trigger:** any new caller of `_latest_offer`.
-- ~~**TD-296 (raised 2026-09-28 by the gift-context sprint) — low. The URL does not carry the
-  gift, so a LIST link cannot be shared into a gift.**~~ **RESOLVED 2026-09-28 (owner's pick) —
+- ~~**TD-296 (raised 2026-09-28 by the gift-context sprint) — low. The URL does not carry the gift, so a LIST link cannot be shared into a gift.**~~ **RESOLVED 2026-09-28 (owner's pick) —
   `?programme=<code>` on the five list pages, read once on mount (`src/lib/useGiftInUrl.ts`),
   kept in step with `router.replace`; the money gate waits for it; the rail, the gift cards and the
   run page's way back carry it. Retro: `docs/retrospective-2026-09-28-gift-in-the-url.md`; rules in
@@ -661,8 +791,29 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   instruction). Still display state: the server already re-fences `?programme=` on every endpoint,
   so no fence moves. **Cost:** about a day, most of it tests across five list pages. **Trigger:**
   somebody asks to share or bookmark a gift's Payments or Applications list.
-- ~~**TD-300 (raised 2026-09-28 by TD-296's sprint) — low, but it will block a deploy. The
-  first-load median has NO headroom.**~~ **RESOLVED 2026-09-28 — weight taken off, no number
+- **TD-297 (raised 2026-09-28 by the gift-context sprint) — low, pre-existing wording.** The
+  manual's *Finding your way around* (`src/content/manual/basics-programme.tsx`) still lists "the
+  money" under **your organisation**; Payments and Spending moved to the programme group with
+  TD-241 on 2026-09-11. This sprint added a sentence to that paragraph and did not reword the
+  existing one (no existing copy is changed without the owner). **Trigger:** the next manual pass.
+- ~~**TD-298 (raised 2026-09-28 by the adversarial review of the gift-context sprint, F6) — low, pre-existing.**~~ **RESOLVED 2026-09-28 with TD-296 — Payments and Applications drop a stale
+  effect's replies (`current` flag in the cleanup); Spending tickets every read, the correction's
+  re-read included. One out-of-order test per page, each red with its guard removed. The Overview
+  has the same shape and was not in the brief: TD-301.** Switching gift on a Programme-scope list page fires a new fetch without
+  cancelling the old one; a slow reply for the PREVIOUS gift can land after the new one's and
+  overwrite it, so the list briefly — or until the next action — describes the gift you left
+  while the crumb names the new one. Payments, Spending and Applications all have the shape
+  (`.then(setX)` with no staleness check). Fix: a `live` flag or request token per effect, as
+  `useSelectedProgramme` already does. **Trigger:** the next sprint on any of those pages.
+- **TD-299 (raised 2026-09-28 by the same review, F7) — low, pre-existing shape.** A super who
+  chooses ANOTHER organisation's gift in the crumb sees "Pays from: <that gift>" in the New-run
+  dialog, and Create then 404s: `create_run` uses `admin.owning_organisation`, so a super can only
+  ever create a run for their own organisation's gifts. Suggested fix: the dialog (or the New-run
+  button) is offered only when the resolved gift belongs to the caller's own organisation
+  (`scopes.programmes[].organisation_id` against `role.owning_org_id`), with a sentence saying
+  why otherwise. No money moves today — the server refuses. **Trigger:** a super running a
+  payment for another tenant, or the next Payments sprint.
+- ~~**TD-300 (raised 2026-09-28 by TD-296's sprint) — low, but it will block a deploy. The first-load median has NO headroom.**~~ **RESOLVED 2026-09-28 — weight taken off, no number
   raised.** Measured first (webpack stats + the built chunks): the median route's first load was
   react-dom 53.6 · **`en.json` 97.1** · **supabase-js 44.8 + the `buffer` polyfill 6.0** · the Next
   runtime 31.5 · link/router 6.8 · the page. The app only ever calls `.auth`, but `createClient`
@@ -698,8 +849,7 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   wrong gift). TD-298's brief named three pages and this one was left to keep the sprint to its
   brief. **Fix:** the same ticket Spending now uses, plus an out-of-order test. ~30 min.
   **Trigger:** the next sprint on the Overview.
-- ~~**TD-302 (raised 2026-09-28 by TD-296's sprint) — low, an OWNER DECISION. There is no way back
-  to "all gifts" on Applications once a gift is chosen.**~~ **RESOLVED 2026-09-29 (owner's pick,
+- ~~**TD-302 (raised 2026-09-28 by TD-296's sprint) — low, an OWNER DECISION. There is no way back to "all gifts" on Applications once a gift is chosen.**~~ **RESOLVED 2026-09-29 (owner's pick,
   the option below) — the crumb's gift menu offers "All gifts" on Applications and the Overview
   ONLY, and only while a gift is chosen and two or more LIVE gifts exist (with one, `select('')`
   resolves straight back to it, so the entry would be a no-op). It selects `''`; `useGiftInUrl` now
@@ -722,192 +872,16 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   **Proposed:** when the address names a gift the list cannot confirm (empty or failed list), the
   page does not draw the New-run button — a line saying the gift list could not be loaded instead.
   **Trigger:** the next Payments sprint, or a report of a failed scopes fetch.
-- ~~**TD-298 (raised 2026-09-28 by the adversarial review of the gift-context sprint, F6) — low,
-  pre-existing.**~~ **RESOLVED 2026-09-28 with TD-296 — Payments and Applications drop a stale
-  effect's replies (`current` flag in the cleanup); Spending tickets every read, the correction's
-  re-read included. One out-of-order test per page, each red with its guard removed. The Overview
-  has the same shape and was not in the brief: TD-301.** Switching gift on a Programme-scope list page fires a new fetch without
-  cancelling the old one; a slow reply for the PREVIOUS gift can land after the new one's and
-  overwrite it, so the list briefly — or until the next action — describes the gift you left
-  while the crumb names the new one. Payments, Spending and Applications all have the shape
-  (`.then(setX)` with no staleness check). Fix: a `live` flag or request token per effect, as
-  `useSelectedProgramme` already does. **Trigger:** the next sprint on any of those pages.
-- **TD-299 (raised 2026-09-28 by the same review, F7) — low, pre-existing shape.** A super who
-  chooses ANOTHER organisation's gift in the crumb sees "Pays from: <that gift>" in the New-run
-  dialog, and Create then 404s: `create_run` uses `admin.owning_organisation`, so a super can only
-  ever create a run for their own organisation's gifts. Suggested fix: the dialog (or the New-run
-  button) is offered only when the resolved gift belongs to the caller's own organisation
-  (`scopes.programmes[].organisation_id` against `role.owning_org_id`), with a sentence saying
-  why otherwise. No money moves today — the server refuses. **Trigger:** a super running a
-  payment for another tenant, or the next Payments sprint.
-- **TD-297 (raised 2026-09-28 by the gift-context sprint) — low, pre-existing wording.** The
-  manual's *Finding your way around* (`src/content/manual/basics-programme.tsx`) still lists "the
-  money" under **your organisation**; Payments and Spending moved to the programme group with
-  TD-241 on 2026-09-11. This sprint added a sentence to that paragraph and did not reword the
-  existing one (no existing copy is changed without the owner). **Trigger:** the next manual pass.
-- **TD-279 (raised 2026-09-20 by code health H16) — low.** `apps/scholarship/constants.py` (new,
-  H16) shares a basename with `apps/scholarship/services/constants.py` (H15). H15's note 4 asked
-  for every module basename under `apps/scholarship/**` to be unique, because a guard keyed on a
-  bare file name exempts or selects *any* file of that name anywhere in the app (TD-277). This was
-  done knowingly: the roadmap named the file explicitly, `constants` is the conventional name for
-  what it holds, and the one basename-keyed guard left in the tree
-  (`test_verdict_item_i18n.py`, `path.name == 'verdict_engine.py'`) is an INCLUSION test on a
-  different, still-unique name rather than an exemption allowlist — so the collision is inert
-  today. It is recorded because it will not announce itself if that stops being true. The fix, if
-  ever wanted, is to rename the package-private `services/constants.py` (nothing outside
-  `services/` imports it) rather than the new public leaf. ~15 min.
-  **Trigger:** the next guard that keys on a bare file name, or a Phase 4b sweep.
-- **TD-277 (raised 2026-09-20 by code health H15) — low.** A source guard whose allowlist is keyed
-  on a BARE FILE NAME silently widens as the tree grows. `test_wallet_credit.py` exempted
-  `models.py` and `sponsorship.py` from the "only `record_admin_credit` may mint an admin-recorded
-  credit" scan by `path.name`; re-pointing it at `funding.py` would have exempted any future
-  `funding.py` anywhere in the app. Fixed here by keying on the path relative to the app. Worth a
-  sweep for other basename-keyed allowlists, and worth a note in `CLAUDE.md`'s source-guard
-  guidance: **allowlist a path, never a name.** ~1h.
-- **TD-273 (raised 2026-09-20 by code health H14) — low.** The cockpit's thirteen panels now take
-  ~180 hand-written props. `tsc` proves every prop a panel USES is declared; nothing proves a
-  declared prop is still read, so a stale one would sit there reading as a dependency that is not
-  one. `noUnusedParameters` on destructured props, or a small per-panel check. ~1h.
-- **TD-268 (raised 2026-09-20 by code health H12) — low.** `xapp` counts cross-app import
-  STATEMENTS, so splitting one file into twenty turned two import lines feeding four call sites
-  into four import lines: 133 → 135 with the coupling unchanged. A metric that punishes
-  decomposition is the wrong incentive for Phase 4. Counting distinct `(app → app, name)` edges
-  reads 133 either side. ~1h in `Settings/_tools`.
-- ~~**TD-267 (raised 2026-09-20 by code health H11) — low.**~~ **RESOLVED at code health H12
-  (2026-09-20)** — `Exists`, `OuterRef` and `OrgRequestAttachment` went with the rest of the root's
-  import block when H12 emptied `views_admin/__init__.py`, in the sprint the entry named.
-- **TD-266 (raised 2026-09-19 by code health H10) — medium.** `AdminResolutionItem` is a stale copy
-  of the student-facing `ResolutionItem`, and ONE serializer feeds both: the admin payload returns
-  `check2` items, so two `kind` values, one `source` value and `vircle_expected` are undeclared.
-  The end state is to delete the admin copy (lesson 290). ~1h, with the cockpit's rendered tests
-  as the net.
-- **TD-265 (raised 2026-09-19 by code health H10) — low.** The finance funding summary computes a
-  `programme` column on every row that the interface never declared and no screen draws. Not a
-  leak; a design call (per-row column, or the page header, now that the breadcrumb scopes it).
-- **TD-264 (raised 2026-09-19 by code health H9) — medium, money path — ✅ RESOLVED 2026-09-19.**
-  The api counted payout-account digits with Unicode-aware `isdigit()`, the form with ASCII `\d`,
-  so a direct POST of `³³³³³` was accepted and stored as a payout target. **Owner ruled: narrow the
-  api** — `BankAccountConfirmSerializer.validate_account_number` now counts ASCII `0-9` only, a
-  digit-like character is not counted rather than separately refused (exactly what the form does),
-  the five-digit floor and `account_number_invalid` are unchanged. 9 stored accounts, 0 affected;
-  no migration.
-- **TD-263 (raised 2026-09-19 by code health H9) — low.** The Requests screen offers `requote` at
-  `deferred` for any kind; the service refuses a non-feature requote. Unreachable today by one road
-  only, and the drift test asserts that road, so it goes red the moment it stops being true.
-- **TD-262 (raised 2026-09-19 by code health H8) — HIGH, eligibility.** The income rule has ELEVEN
-  homes (TD-235 said four) and they disagree in sixteen places today: a student's own screen files her
-  income letter under "Other" and ignores her STR; the officer's panel shows income proved for a
-  household the gate is holding shut, and chases a payslip from one that proved income the fourth
-  way. Nothing was changed — every fix moves an eligibility answer and is the owner's ruling.
-  *Chunks 1, 2+3, R4 items 1 and 1b, and F8 (only the family's own STR opens the gate) are DONE,
-  2026-09-19. What stands is **F2 + W1**: the owner's fourth way has no upload slot anywhere.*
-- **TD-260 (raised 2026-09-19)** — 604 of 674 IC-holding students have no verified contact, so no
-  self-service way to reclaim an account, and support has no screen to do it for them. Two owner levers.
-- **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
-  backfill of the code-health roadmap, after the H5 factory.
-- *Closed 2026-09-18 by H3:* TD-219 (view/service seam), TD-240 (fence scan of `views_sponsor.py`),
-  TD-250 (nested route drift). *Raised by H2:* TD-255 (Node 18), TD-256.
-- **TD-218** — `exam_type` answers two questions and six surfaces read it. **Fifth instance**; the
-  standing rule is that a fifth is a rename, not a patch. ~4h. Touches ranking and eligibility.
-- **TD-219** — nothing tests the seam between a view and the service it calls. Two defects in one
-  day slipped through it, one of them 500-ing every answer for eighteen days. ~3h.
-- **TD-114** — a fact can read CERTAIN off documents whose genuineness was never checked.
-- **TD-220** — the document chip shows the same red for "does not match" and "could not be read",
-  so a reviewer cannot tell a misread from a failure. ~1h for the label split. **This is the next
-  instance of the "UI asserts what nothing checks" watch** — read the 2026-08-19 consolidation
-  review before generalising from it.
-
-### Raised since 2026-09-08 (spending, billing, and the Vircle relay — all open)
-- **TD-251 / TD-252 — the Vircle pair, and the class they share.** 251: their activation webhook
-  posts a SHORT payload with no `Status`, so an activation is stored as a wallet and the date is
-  dropped (#144, repaired by hand). 252: `lapse_expired_offers` is built and **wired to nothing**,
-  so an unanswered offer stays open for ever — 35 are past their deadline today — and no door in
-  the product closes a case that should not have been awarded (#16 took three hand-written rows).
-- **TD-245 / TD-247** (medium) — the spending export cannot tell "spent nothing" from "wallet not
-  in the file"; supplier bills reach the ledger only when a person imports them.
-- **TD-242** (half-mitigated), **TD-240**, **TD-243/244/246/248/249/250** — carried, all low or
-  medium, each with its own trigger written down.
-
-### Promoted by the 2026-09-08 consolidation review
-- **TD-234** — **thirteen `backfill_*` / `repair_*` commands have no route to production.** The
-  guard that stops a fourteenth is landed and bite-checked; this is the backlog it seeded. Each of
-  the thirteen needs one of three answers: spent · needs a door · local by nature. ⚠ Do not clear it
-  by exporting production credentials to a laptop — that practice is what TD-206 retired.
-- **TD-235** — **the income rule has four homes and three name documents by hand.** Three separate
-  copies of the pre-25-July rule were found in six weeks, each on a live student (the frozen gate,
-  the cockpit display, the de-dup sweep). No mechanical guard was invented, deliberately: the
-  instances no longer share a shape. **Trigger: a fourth instance, or the next change to what
-  counts as income evidence.**
-- **TD-221** — the 24 pre-existing `tsc` errors that make that gate a no-op. Filed low, but it is
-  the reason `next build` has had to catch what `tsc` should have, twice.
-
-### Live defects with a user on the other side
-- **TD-207** — **password reset is broken for every admin who has already onboarded**, reviewers and
-  org_admins included. Do not fix it by flipping the flag per person; that is the workaround already
-  used on the owner's own account.
-- **TD-208** — platform mail lands in Gmail's Spam. Brevo reports `delivered`, which is true and
-  useless. Invitations ride the same sender, so somebody who never checks Spam never onboards.
-- **TD-164** — an embargoed decline masks the student's status to a hardcoded `'interviewed'`
-  instead of their real prior status. Owner parked it; `DECLINE_COOLOFF_DAYS` is **7** in production.
-- **TD-149** — no student path to change a bank account once confirmed. **TD-145** — a wrong *public*
-  university offer goes uncaught when the declared institution is blank. **TD-150** — the course
-  matcher binds the wrong public `course_id` for poly-IT synthetic majors.
-- **TD-227** — a rejection can be recorded by someone who was never assigned, with no reason given.
-
-### Closed since the last regeneration (2026-08-19 → 2026-09-08)
-**TD-222** (contrast gate light-only) and **TD-224** (muted text fails AA product-wide) were closed
-by Layer 1 F7a and F7e and **the register was never told** — both marked at this review. **TD-223**
-(links `info` vs `brand`) closed as F7f; **TD-232** (an intake year cannot be deleted) closed the
-day it was raised, by an owner ruling that superseded the ticket's own premise. ⚠ Two of those four
-sat stale for days: **a sprint that closes a TD has to say so IN the register**, not only in its
-retro and the project file.
-
-### Two clusters worth seeing as clusters, not as fourteen items
-- **Never verified in a browser — 7 items** (TD-070, TD-092, TD-112, TD-184, TD-188, TD-194,
-  TD-196). Not laziness: **TD-194** is the cause — local console review is still impossible because
-  the CORS/API half of the admin-auth problem was never addressed. Fixing TD-194 is what makes the
-  other six cheap; leaving it means every future console sprint closes unverified, as three in a
-  row already have.
-- **ms/ta copy is a first draft — 8 items** (TD-091, TD-094, TD-097, TD-105, TD-108, TD-132,
-  TD-183, TD-215, plus the new SPM-year question). These accumulate because each sprint adds a few
-  leaves and none is worth a pass on its own. They are worth **one owner sitting**, not eight.
-
-### Parked as a set — the sponsor module (owner, 2026-07-28)
-TD-183, TD-184, TD-185, TD-190, TD-192, TD-196. *"Fold all of this as future work. We'll attend to
-them once the organisation registration comes close."* **The trigger is the registration
-approaching, not a date** — and TD-192 leaves the set early if open sign-up arrives first.
-
-### Long tail, honestly labelled
-The remaining ~70 are low-severity hygiene, deferred polish and first-draft copy, several dating to
-the 2026-03 audit (TD-018 duplicate import, TD-019 inline `json` import, TD-020 duplicate dict key).
-**Some are probably fixed and never marked.** They are not worth auditing one by one; they are worth
-deleting in a batch the next time somebody is in that file with a reason.
-
-> **⚠ HOW THIS NUMBER WAS REACHED, so the next regeneration does not have to re-derive it.** A naive
-> parse says 126 open, and that is wrong. The register uses two formats by era — `### [TD-NNN]`
-> headings for the 2026-03 audit and the TD-144+ series, a bullet log for TD-053–143 — and in the
-> bullet-log era the resolution marker often sits **inside the entry body**, not on its first line.
-> 41 entries look open on line one and mention RESOLVED further down; **18 of those are genuinely
-> closed and 23 are false positives**, where the marker belongs to the NEXT entry that ran together
-> with it. The curated index above also has to be excluded from the parse, or its pointer bullets
-> are counted a second time as definitions. Read, then count.
->
-> **THE METHOD, as run on 2026-09-08 — inherit this rather than re-deriving it.** Exclude the
-> curated index block (from its heading to the next `##`). A DEFINING line is `### …[TD-NNN…` or
-> `- **TD-NNN`; anything else is a mention. That gives **126 defined ids** (230 are mentioned) and
-> **63 with no resolution marker on a defining line**, of which **14** also say RESOLVED inside
-> their body and need a human read to settle. **I could not reproduce the 2026-08-19 figure of
-> "195 distinct"** by any parse — recorded rather than repeated, because a number nobody can
-> re-derive is worse than one nobody has. If a later regeneration reconciles it, say how.
->
-> ⚠ **TWO NUMBERS ARE CLAIMED BY TWO TICKETS EACH, both from 2026-07-03**, found when the
-> duplicate-id guard was written on 2026-09-08 and nobody had noticed in two months.
-> **TD-151** = *document-extraction robustness* (open, the cluster promoted on 2026-08-19) **and**
-> *booked interviews kept phantom holds* (resolved). **TD-152** = *the bursary agreement is a
-> named-personal-donor contract* (accepted interim) **and** *no student channel inside the 12h
-> cutoff* (resolved). **Neither is renumbered** — each has been cited for two months, and rewriting
-> history to satisfy a new test is how a citation quietly starts pointing at the wrong ticket. This
-> index means the FIRST of each pair. When you cite either number, say which.
+- **TD-304 (raised 2026-09-28 by TD-300's sprint) — low, and it is a blind spot in a guard.** Next
+  14's printed "First Load JS" for an app route is the PAGE entry's chunks only; chunks that only a
+  LAYOUT loads are fetched on first paint and are not in it. Measured from `app-build-manifest.json`:
+  `/login` prints 87.6 kB and the browser fetches ~231; `/admin/faq` prints 173 and fetches ~275;
+  the median route prints 227 and fetches ~257. So the budget can be "passed" by moving weight from
+  a page into a layout, which makes nothing lighter — the same trap as a lazy import, one level up.
+  The root layout carries React Query (8.8 kB gz: `providers.tsx`) for three pages that use it.
+  **Fix:** have `bundle-budget.js` (or a companion) read `.next/app-build-manifest.json` and budget
+  page + layout chunks, or at least print them. **Trigger:** the next sprint that touches a layout
+  or the budget script.
 
 ## API Response Format Consistency
 
@@ -989,28 +963,28 @@ deleting in a batch the next time somebody is in that file with a reason.
 
 ## Duplicated Logic
 
-### [TD-018] Duplicate import of Count, Subquery, OuterRef
+### [TD-018] Duplicate import of Count, Subquery, OuterRef — **RESOLVED 2026-09-30 (overtaken: ca54b0ef; apps/courses/views.py has one import)**
 **File(s):** `halatuju_api/apps/courses/views.py` (line 25 and line 354)
 **What it is:** `Count, Subquery, OuterRef` are imported at the top of the file (line 25) and then re-imported inside `EligibilityCheckView.post()` (line 354).
 **What consistent looks like:** Remove the inline import at line 354.
 **Risk if left:** Low — no functional impact.
 **Dependencies:** None.
 
-### [TD-019] Inline json import in views.py
+### [TD-019] Inline json import in views.py — **RESOLVED 2026-09-30 (overtaken: ca54b0ef; json imported at the top of apps/courses/views.py)**
 **File(s):** `halatuju_api/apps/courses/views.py` (lines 487, 827)
 **What it is:** `import json as _json` is done inline inside method bodies at lines 487 and 827, with an underscore prefix to avoid name collision. Also `defaultdict` is imported inline as `_dd` at line 488.
 **What consistent looks like:** Import at the top of the file.
 **Risk if left:** Low — just code smell.
 **Dependencies:** None.
 
-### [TD-020] Duplicate credit_stv key in serializer SPECIAL_FIELDS
+### [TD-020] Duplicate credit_stv key in serializer SPECIAL_FIELDS — **RESOLVED 2026-09-30 (overtaken: ca54b0ef; one credit_stv key in apps/courses/serializers.py)**
 **File(s):** `halatuju_api/apps/courses/serializers.py` (lines 75, 88)
 **What it is:** `'credit_stv': 'Kredit Sains/Teknikal/Vokasional'` appears twice in the `SPECIAL_FIELDS` dict. In Python, the second silently overwrites the first, so the duplicate is dead code.
 **What consistent looks like:** Remove the duplicate at line 88.
 **Risk if left:** Low — no functional impact, but misleading.
 **Dependencies:** None.
 
-### [TD-021] PISMP deduplication logic in views.py is complex and inline
+### [TD-021] PISMP deduplication logic in views.py is complex and inline — **RESOLVED 2026-09-30 (overtaken: 20a5d036; eligibility_service.deduplicate_pismp)**
 **File(s):** `halatuju_api/apps/courses/views.py` (lines 481-557)
 **What it is:** ~75 lines of PISMP zone-variant deduplication logic is embedded directly inside `EligibilityCheckView.post()`. This includes hash computation, zone detection, language merging — all with inline imports and local function definitions. The method is already ~300 lines long.
 **What consistent looks like:** Extract PISMP deduplication to a separate function in a utilities module.
@@ -1082,7 +1056,7 @@ deleting in a batch the next time somebody is in that file with a reason.
 
 ## Test Patterns and Coverage Gaps
 
-### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED — **RESOLVED 2026-09-30 (overtaken: 187 web test files and a jest deploy gate)**
 **File(s):** `halatuju-web/` (entire frontend)
 **What it is:** The Next.js frontend had zero test files. After IC Gate Sprint (2026-03-15), 17 frontend tests exist. Remaining client-side logic is UI rendering and API calls — no business logic after TD-002 Sprint deleted `pathways.ts`, `merit.ts`, and `stpm.ts`.
 **What consistent looks like:** Component tests for critical flows (onboarding, dashboard). Nice-to-have, not urgent.
@@ -1133,6 +1107,8 @@ deleting in a batch the next time somebody is in that file with a reason.
 ## Missing Features / Stubs
 
 ### [TD-041] settings/page.tsx is a stub
+**Status 2026-09-30:** partly done — still to do: no account, notification or data-export settings (a scope choice).
+
 **File(s):** `halatuju-web/src/app/settings/page.tsx`
 **What it is:** The settings page only has a "Reset All Data" button that clears localStorage. No account management, no notification preferences, no data export.
 **What consistent looks like:** Either flesh out with real settings or remove the nav link until ready.
@@ -1193,7 +1169,7 @@ deleting in a batch the next time somebody is in that file with a reason.
 **File(s):** `halatuju-web/src/app/profile/page.tsx`, `halatuju-web/src/lib/api.ts`
 **Resolution:** Extended `StudentProfile.colorblind`/`disability` to accept `'Ya' | 'Tidak'` union type (backend format). Typed gender/nationality state vars with literal types. Removed `as any`. **UPDATE (i18n & Bug Fixes Sprint, 2026-03-19):** Backend converted to BooleanField, frontend types updated to `boolean`. Union type removed — booleans flow end-to-end with zero conversion layers.
 
-### [TD-050] i18n locale key inconsistency
+### [TD-050] i18n locale key inconsistency — **RESOLVED 2026-09-30 (overtaken: quiz/page.tsx reads the locale from useT; halatuju_lang is gone)**
 **File(s):** `halatuju-web/src/lib/i18n.tsx`, `halatuju-web/src/app/quiz/page.tsx` (lines 40, 149)
 **What it is:** The i18n system uses `halatuju_locale` localStorage key, but the quiz page reads `halatuju_lang` (which doesn't exist — it will always get the default 'en'). These are different keys.
 **What consistent looks like:** Use one key consistently. The quiz should use the i18n context's locale, not a separate localStorage read.
@@ -1317,51 +1293,55 @@ deleting in a batch the next time somebody is in that file with a reason.
 - TD-039, TD-040: Update dependency pins
 
 **B40 Redesign (found Sprint 7, 2026-05-23)**
-- TD-053: Reconcile the NRIC-gate whitelist — `middleware/supabase_auth.py` `NRIC_GATE_EXACT` omits `/api/v1/profile/sync/`, but `docs/decisions.md` + `test_nric_gate` describe sync as whitelisted. Suite green (no breakage); align code/docs/tests.
-- ~~TD-054~~: **RESOLVED — S11a (2026-05-24).** NRIC uniqueness is now enforced at the admin verify-&-accept point (`AdminVerifyAcceptView` returns `409 nric_conflict` if another profile already has that NRIC verified), per the soft-NRIC "clash surfaces at verification" design. The old claim transfer-path collision is no longer the uniqueness mechanism.
+- **TD-053**: Reconcile the NRIC-gate whitelist — `middleware/supabase_auth.py` `NRIC_GATE_EXACT` omits `/api/v1/profile/sync/`, but `docs/decisions.md` + `test_nric_gate` describe sync as whitelisted. Suite green (no breakage); align code/docs/tests.
+- ~~**TD-054**~~: **RESOLVED — S11a (2026-05-24).** NRIC uniqueness is now enforced at the admin verify-&-accept point (`AdminVerifyAcceptView` returns `409 nric_conflict` if another profile already has that NRIC verified), per the soft-NRIC "clash surfaces at verification" design. The old claim transfer-path collision is no longer the uniqueness mechanism.
 
 **B40 Redesign (found Sprint 9, 2026-05-24)**
-- TD-055: Apply submit overwrites the whole `profile.guardians` list with the single `{name, phone}` entry from My Family. Fine today (guardians collected nowhere else), but if a future flow stores multiple/richer guardians, the apply form would clobber them. Merge-by-index or key on relationship when guardians become multi-entry.
-- ~~TD-056~~: **RESOLVED — 2026-05-28.** All real partner-org codes in the /apply dropdown now have backing `PartnerOrganisation` rows seeded on prod via Supabase MCP: `smc`, `cumig`, `ewrf`, `hyo`, `mhm`, `sathya_sai`, `tara`, `hss`, `pptm` (9 total — 6 added with the new-orgs-pass in 8d6a07b, then the remaining 3 in a cleanup pass the same day). The `referred_by_org` FK now links cleanly for any of those selections. The remaining dropdown codes (`pushparani`, `govind`, `halatuju`, `social`, `other`) are intentionally **NOT** in `partner_organisations` — they're individual coordinators, self-referral, or generic catch-alls, not organisations. For those, `referral_source` carries the raw code and `referred_by_org` stays null by design. Original finding ↓ — TD-056: Seed `PartnerOrganisation` rows for the named referring-orgs (smc, cumig, pushparani, sathya_sai, halatuju, tara, govind). Until seeded, a selection persists as `referral_source` (raw code) but does **not** link the `referred_by_org` FK. Add a seed/data-migration (or admin entries) before launch so partner attribution works.
-- TD-057: The apply→onboarding "return" marker (`halatuju_apply_return`, sessionStorage) can go stale if the student **abandons** the results-edit detour mid-flow and then starts a *normal* onboarding in the same tab — the final step would wrongly route to `/scholarship/apply` instead of `/dashboard`. Mitigated (orphan cleared on any normal apply-page visit; sessionStorage clears on tab close) but not eliminated for the abandon→dashboard→onboarding path. Clean fix: thread the return intent as a query param through the onboarding steps instead of a persistent flag, or clear the marker on a dashboard visit.
+- **TD-055**: Apply submit overwrites the whole `profile.guardians` list with the single `{name, phone}` entry from My Family. Fine today (guardians collected nowhere else), but if a future flow stores multiple/richer guardians, the apply form would clobber them. Merge-by-index or key on relationship when guardians become multi-entry.
+- ~~**TD-056**~~: **RESOLVED — 2026-05-28.** All real partner-org codes in the /apply dropdown now have backing `PartnerOrganisation` rows seeded on prod via Supabase MCP: `smc`, `cumig`, `ewrf`, `hyo`, `mhm`, `sathya_sai`, `tara`, `hss`, `pptm` (9 total — 6 added with the new-orgs-pass in 8d6a07b, then the remaining 3 in a cleanup pass the same day). The `referred_by_org` FK now links cleanly for any of those selections. The remaining dropdown codes (`pushparani`, `govind`, `halatuju`, `social`, `other`) are intentionally **NOT** in `partner_organisations` — they're individual coordinators, self-referral, or generic catch-alls, not organisations. For those, `referral_source` carries the raw code and `referred_by_org` stays null by design. Original finding ↓ — TD-056: Seed `PartnerOrganisation` rows for the named referring-orgs (smc, cumig, pushparani, sathya_sai, halatuju, tara, govind). Until seeded, a selection persists as `referral_source` (raw code) but does **not** link the `referred_by_org` FK. Add a seed/data-migration (or admin entries) before launch so partner attribution works.
+- **TD-057**: The apply→onboarding "return" marker (`halatuju_apply_return`, sessionStorage) can go stale if the student **abandons** the results-edit detour mid-flow and then starts a *normal* onboarding in the same tab — the final step would wrongly route to `/scholarship/apply` instead of `/dashboard`. Mitigated (orphan cleared on any normal apply-page visit; sessionStorage clears on tab close) but not eliminated for the abandon→dashboard→onboarding path. Clean fix: thread the return intent as a query param through the onboarding steps instead of a persistent flag, or clear the marker on a dashboard visit.
 
 **B40 Plans redesign (found P5 ship, 2026-05-27)**
-- TD-058: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase instance). Harmless today — the app doesn't use contenttypes/admin/permissions at runtime, and additive `ADD COLUMN` migrations succeed — but `manage.py migrate` **exits non-zero** (the `post_migrate` create_contenttypes/create_permissions signal errors), and **any future migration that creates a new model (or code relying on contenttypes/permissions) would fail in prod**. Fix before such a migration: run `migrate contenttypes` + `migrate auth` against prod (or `migrate --run-syncdb`) to create the missing tables, after confirming no clash. Until then, treat a non-zero migrate exit as "verify the schema directly," not "it failed". (See lessons.md + retrospective-b40-plans-redesign.md.) **Status: MANAGED, not fixed.** The MCP migrate-first workaround is the standing practice and has fully absorbed this — we apply the migration's DDL + INSERT the `django_migrations` row via Supabase MCP `execute_sql` in one transaction (replicating what Django's executor would do), which never invokes `post_migrate`, so there's no non-zero exit and no contenttypes dependency. **This now covers NEW-MODEL migrations too, not just additive `ADD COLUMN`:** a new model is applied as a raw `CREATE TABLE` (+ RLS deny-by-default + the `django_migrations` row) — proven repeatedly, incl. `scholarship 0011` (additive, v2.3.0) and the new-model migrations **`0031` (E1a Sponsor), `0033` (E2a anon-pool cols), `0034` (E3a Donation/Sponsorship)** this Phase-E cycle. So the earlier caveat that "a new-model migration still needs the contenttypes/auth tables created first" is **superseded** — raw `CREATE TABLE` doesn't touch contenttypes, so we never created those tables and don't need to. **The only thing that still bites:** someone runs `manage.py migrate` for a new model **without** the workaround (e.g. a CI/local migrate against prod) — the `post_migrate` `create_contenttypes`/`create_permissions` signal would error. Real fix (if ever wanted): `migrate contenttypes` + `migrate auth` (or `--run-syncdb`) against prod once, after confirming no clash — but as long as every schema change goes through MCP migrate-first, this never fires. Treat a non-zero `migrate` exit as "verify the schema directly," not "it failed".
-- ~~TD-060~~: **RESOLVED — S5c (v2.4.6, 2026-05-28).** `profile_engine._build_prompt` rebuilt to the current (profile-canonical) data model + "Your story" narrative + simplified funding (no dead `total`) + referees, and made language-aware (understands Malay/English/Tamil input; output in a target language, default applicant locale, admin EN/BM selector). New `test_profile_engine.py` includes the no-`AttributeError`-on-current-model regression. Original finding ↓ — TD-060: **The AI sponsor-profile generator (`apps/scholarship/profile_engine.py`) is stale and would error if invoked.** `_build_prompt` reads `application.qualification` / `spm_a_count` / `household_income` / `stpm_pngk` — all **removed** from the model by the profile-canonical refactor (now live on `StudentProfile`) — plus legacy/dead fields `intended_pathway` (→ `pathways_considered`/`chosen_programme`), `fears`, `justification`, and `fn.total` (TD-059). `_build_prompt` runs **before** the try/except in `generate_sponsor_profile`, so a real call (with `GEMINI_API_KEY` set) raises `AttributeError` → `AdminGenerateProfileView` 500s. **Masked today** because the programme is dormant and Phase-2 sponsor profiles aren't live (without a key it returns "not configured" before `_build_prompt`). Also English-only by design. **Fix = S5c:** rewrite `_build_prompt` to profile-canonical fields (`profile.exam_type`, `count_spm_a_grades`, `profile.stpm_cgpa`, `profile.household_income/size`, `receives_str/jkm`) + new story fields (`first_in_family`, `parents_occupation`, `family_context`, `daily_life`, `aspirations`, `plans`) + new funding (`categories`/`funding_note`/`programme_months`, not `total`) + referees; and make it **Tamil/BM-aware** (target-language param; handle Tamil/BM narrative input). Found during S5b scoping (2026-05-28).
-- ~~TD-059~~: **RESOLVED — v2.4.7, 2026-05-28.** Dropped on prod via Supabase MCP under the expand-contract pattern (new code deployed first so the live `FundingNeedSerializer` no longer exposed the columns, then `ALTER TABLE funding_needs DROP COLUMN ×9` + `django_migrations` row for `0015_drop_funding_amount_fields`). 0 rows pre-drop confirmed. `funding_needs` now has exactly 7 columns: `id`, `created_at`, `updated_at`, `application_id`, `categories`, `funding_note`, `programme_months`. `FundingNeedSerializer.fields` shrunk to the 3 kept; `total` property + frontend `DetailsFormState` amount fields + `fundingTotal` helper + admin `RM${funding_need.total}` display all gone. Original finding ↓ — TD-059: **`FundingNeed` legacy amount columns are dead after the S3 funding reframe (v2.4.2).** `tuition_gap`, `laptop`, `hostel`, `transport`, `books`, `other`, `monthly_allowance`, `allowance_months` (+ the `total` property) are no longer written or rendered — the funding tab now uses `categories`/`funding_note`/`programme_months` only. Kept in place (additive migration `0013`, 0 prod rows) to avoid a non-backward-compatible drop mid-redesign. Cleanup: once the redesign ships fully (post-S5), drop the dead columns in one migration + remove them from `FundingNeedSerializer`/`DetailsFormState`/`fundingTotal`. Low risk (no data, no readers).
+- **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase instance). Harmless today — the app doesn't use contenttypes/admin/permissions at runtime, and additive `ADD COLUMN` migrations succeed — but `manage.py migrate` **exits non-zero** (the `post_migrate` create_contenttypes/create_permissions signal errors), and **any future migration that creates a new model (or code relying on contenttypes/permissions) would fail in prod**. Fix before such a migration: run `migrate contenttypes` + `migrate auth` against prod (or `migrate --run-syncdb`) to create the missing tables, after confirming no clash. Until then, treat a non-zero migrate exit as "verify the schema directly," not "it failed". (See lessons.md + retrospective-b40-plans-redesign.md.) **Status: MANAGED, not fixed.** The MCP migrate-first workaround is the standing practice and has fully absorbed this — we apply the migration's DDL + INSERT the `django_migrations` row via Supabase MCP `execute_sql` in one transaction (replicating what Django's executor would do), which never invokes `post_migrate`, so there's no non-zero exit and no contenttypes dependency. **This now covers NEW-MODEL migrations too, not just additive `ADD COLUMN`:** a new model is applied as a raw `CREATE TABLE` (+ RLS deny-by-default + the `django_migrations` row) — proven repeatedly, incl. `scholarship 0011` (additive, v2.3.0) and the new-model migrations **`0031` (E1a Sponsor), `0033` (E2a anon-pool cols), `0034` (E3a Donation/Sponsorship)** this Phase-E cycle. So the earlier caveat that "a new-model migration still needs the contenttypes/auth tables created first" is **superseded** — raw `CREATE TABLE` doesn't touch contenttypes, so we never created those tables and don't need to. **The only thing that still bites:** someone runs `manage.py migrate` for a new model **without** the workaround (e.g. a CI/local migrate against prod) — the `post_migrate` `create_contenttypes`/`create_permissions` signal would error. Real fix (if ever wanted): `migrate contenttypes` + `migrate auth` (or `--run-syncdb`) against prod once, after confirming no clash — but as long as every schema change goes through MCP migrate-first, this never fires. Treat a non-zero `migrate` exit as "verify the schema directly," not "it failed".
+- ~~**TD-060**~~: **RESOLVED — S5c (v2.4.6, 2026-05-28).** `profile_engine._build_prompt` rebuilt to the current (profile-canonical) data model + "Your story" narrative + simplified funding (no dead `total`) + referees, and made language-aware (understands Malay/English/Tamil input; output in a target language, default applicant locale, admin EN/BM selector). New `test_profile_engine.py` includes the no-`AttributeError`-on-current-model regression. Original finding ↓ — TD-060: **The AI sponsor-profile generator (`apps/scholarship/profile_engine.py`) is stale and would error if invoked.** `_build_prompt` reads `application.qualification` / `spm_a_count` / `household_income` / `stpm_pngk` — all **removed** from the model by the profile-canonical refactor (now live on `StudentProfile`) — plus legacy/dead fields `intended_pathway` (→ `pathways_considered`/`chosen_programme`), `fears`, `justification`, and `fn.total` (TD-059). `_build_prompt` runs **before** the try/except in `generate_sponsor_profile`, so a real call (with `GEMINI_API_KEY` set) raises `AttributeError` → `AdminGenerateProfileView` 500s. **Masked today** because the programme is dormant and Phase-2 sponsor profiles aren't live (without a key it returns "not configured" before `_build_prompt`). Also English-only by design. **Fix = S5c:** rewrite `_build_prompt` to profile-canonical fields (`profile.exam_type`, `count_spm_a_grades`, `profile.stpm_cgpa`, `profile.household_income/size`, `receives_str/jkm`) + new story fields (`first_in_family`, `parents_occupation`, `family_context`, `daily_life`, `aspirations`, `plans`) + new funding (`categories`/`funding_note`/`programme_months`, not `total`) + referees; and make it **Tamil/BM-aware** (target-language param; handle Tamil/BM narrative input). Found during S5b scoping (2026-05-28).
+- ~~**TD-059**~~: **RESOLVED — v2.4.7, 2026-05-28.** Dropped on prod via Supabase MCP under the expand-contract pattern (new code deployed first so the live `FundingNeedSerializer` no longer exposed the columns, then `ALTER TABLE funding_needs DROP COLUMN ×9` + `django_migrations` row for `0015_drop_funding_amount_fields`). 0 rows pre-drop confirmed. `funding_needs` now has exactly 7 columns: `id`, `created_at`, `updated_at`, `application_id`, `categories`, `funding_note`, `programme_months`. `FundingNeedSerializer.fields` shrunk to the 3 kept; `total` property + frontend `DetailsFormState` amount fields + `fundingTotal` helper + admin `RM${funding_need.total}` display all gone. Original finding ↓ — TD-059: **`FundingNeed` legacy amount columns are dead after the S3 funding reframe (v2.4.2).** `tuition_gap`, `laptop`, `hostel`, `transport`, `books`, `other`, `monthly_allowance`, `allowance_months` (+ the `total` property) are no longer written or rendered — the funding tab now uses `categories`/`funding_note`/`programme_months` only. Kept in place (additive migration `0013`, 0 prod rows) to avoid a non-backward-compatible drop mid-redesign. Cleanup: once the redesign ships fully (post-S5), drop the dead columns in one migration + remove them from `FundingNeedSerializer`/`DetailsFormState`/`fundingTotal`. Low risk (no data, no readers).
 
-- TD-061: **/profile + /application schema consolidation — drop 4 dead columns** (`StudentProfile.family_income`, `StudentProfile.siblings`, `StudentProfile.phone`, **`ScholarshipApplication.siblings_studying`**). The first three were replaced 2026-05-29 (S14) by their canonical equivalents on the profile (`household_income`, `household_size`, `contact_phone`); the fourth was replaced 2026-05-29 (S15) by `ScholarshipApplication.siblings_studying_count` which captures the actual number rather than just a yes/no signal. Frontend stopped writing all four dead columns and the backfills have run: `household_income` populated from `family_income` range midpoints (41 rows), `household_size = siblings + 2` where missing (42 rows), `phone` promotion was a no-op (the 6 dead-phone rows all already have `contact_phone`); `siblings_studying_count` backfill was a no-op (0 applications had `siblings_studying = TRUE` at the time the new column landed). Old columns kept these sprints to keep the migrations backward-compatible during deploy. **Next session:** destructive migration + serializer cleanup, expand-contract pattern (deploy-first / DROP-after), zero data loss expected. Touches: `ProfileUpdateSerializer.Meta.fields` (3 cols), `ProfileView.get` response keys (3 cols), `ApplicationDetailsUpdateSerializer` (1 col), `_DEEPER_FIELDS` (1 col), `ApplicationReadSerializer` fields (1 col), `profile_engine._siblings_studying_display` (drop the boolean fallback), `api.ts` types (4 cols), the courses `StudentProfile` + scholarship `ScholarshipApplication` models, and two drop migrations (one per app).
+- ~~**TD-061**~~ **RESOLVED (v2.14.0, 2026-05-30)**: **/profile + /application schema consolidation — drop 4 dead columns** (`StudentProfile.family_income`, `StudentProfile.siblings`, `StudentProfile.phone`, **`ScholarshipApplication.siblings_studying`**). The first three were replaced 2026-05-29 (S14) by their canonical equivalents on the profile (`household_income`, `household_size`, `contact_phone`); the fourth was replaced 2026-05-29 (S15) by `ScholarshipApplication.siblings_studying_count` which captures the actual number rather than just a yes/no signal. Frontend stopped writing all four dead columns and the backfills have run: `household_income` populated from `family_income` range midpoints (41 rows), `household_size = siblings + 2` where missing (42 rows), `phone` promotion was a no-op (the 6 dead-phone rows all already have `contact_phone`); `siblings_studying_count` backfill was a no-op (0 applications had `siblings_studying = TRUE` at the time the new column landed). Old columns kept these sprints to keep the migrations backward-compatible during deploy. **Next session:** destructive migration + serializer cleanup, expand-contract pattern (deploy-first / DROP-after), zero data loss expected. Touches: `ProfileUpdateSerializer.Meta.fields` (3 cols), `ProfileView.get` response keys (3 cols), `ApplicationDetailsUpdateSerializer` (1 col), `_DEEPER_FIELDS` (1 col), `ApplicationReadSerializer` fields (1 col), `profile_engine._siblings_studying_display` (drop the boolean fallback), `api.ts` types (4 cols), the courses `StudentProfile` + scholarship `ScholarshipApplication` models, and two drop migrations (one per app).
   - ✅ **RESOLVED (v2.14.0, 2026-05-30).** Dropped all four columns under expand-contract (deploy-first / DROP-after; migrations `courses/0050` + `scholarship/0022` applied via Supabase MCP after the no-field revision went live). Repointed every reader/writer to the canonical fields (the "expand" step had never actually been finished — these columns were still wired into `/profile` GET + update serializer, both admin serializers, the CSV export, the AI prompt, and several FE consumers). **Fixed a latent bug found in the process:** `/profile` read/wrote `household_income`/`household_size` but the GET response + `ProfileUpdateSerializer` still listed the *legacy* `family_income`/`siblings`, so `/profile` edits to household income/size were silently dropped — only `/apply` could write them. Full backend 1249 pass; jest 155; build clean. See `docs/decisions.md`.
 
-- TD-062: **Orphaned Supabase Storage blobs from pre-fix doc deletions.** Before today's single-instance-doc fix, the `DELETE /api/v1/scholarship/documents/<id>/` endpoint dropped the DB row but did NOT sweep the corresponding object in the `b40-documents` private bucket. Elanjelian's test account left ~3-4 orphan IC blobs (storage_paths matching the deleted doc IDs 1, 3, 4); other applicants who clicked Remove similarly leaked. The going-forward path is now clean (both DELETE and the new single-instance replace path call `storage.delete_objects`), so this only covers historical leaks. Cheap: write a one-shot management command that lists every object in the bucket via the Supabase Storage REST API and deletes any whose path doesn't correspond to an existing `applicant_documents.storage_path` row. Storage is cheap so this is low priority — flagging so we don't forget when we look at storage costs.
+- ~~**TD-062**~~ **RESOLVED (purge run 2026-06-01)**: **Orphaned Supabase Storage blobs from pre-fix doc deletions.** Before today's single-instance-doc fix, the `DELETE /api/v1/scholarship/documents/<id>/` endpoint dropped the DB row but did NOT sweep the corresponding object in the `b40-documents` private bucket. Elanjelian's test account left ~3-4 orphan IC blobs (storage_paths matching the deleted doc IDs 1, 3, 4); other applicants who clicked Remove similarly leaked. The going-forward path is now clean (both DELETE and the new single-instance replace path call `storage.delete_objects`), so this only covers historical leaks. Cheap: write a one-shot management command that lists every object in the bucket via the Supabase Storage REST API and deletes any whose path doesn't correspond to an existing `applicant_documents.storage_path` row. Storage is cheap so this is low priority — flagging so we don't forget when we look at storage costs.
   - ✅ **RESOLVED (v2.14.0, 2026-05-30).** Built `manage.py cleanup_orphan_blobs` (+ `storage.list_objects` helper): walks the bucket, diffs leaf paths against `ApplicantDocument.storage_path`, dry-run by default / `--apply` to delete. 3 tests (mocked Storage). Running `--apply` against prod to actually purge the historical orphans is a separate manual step — the tool is in place.
   - ✅ **PURGE RUN — fully closed (2026-06-01).** Swept the historical orphans against prod. To dodge the wrong-DB footgun entirely, the diff used the known-paths set pulled from the **prod DB via Supabase MCP** (not a local DB connection) and listed the bucket via the Storage REST API (service-role key read from the live `halatuju-api` Cloud Run env, never written to disk). Dry-run cross-checked clean: **49 KNOWN** (= the prod `applicant_documents` count exactly) · 55 bucket objects · 49 matched · **6 orphans, all under `3/` (Elanjelian test account)** — 5×`ic` + 1×`parent_ic`, ~198 KB JPEGs, no DB row. Deleted all 6 after explicit user sign-off; re-verify showed **49 bucket objects / 0 orphans**. No backup taken — already-orphaned IC images from a test account, and copying PII to local disk would be worse than deleting. The going-forward delete path was already clean, so no recurrence is expected. _Original footgun for the record: orphans = `bucket objects − ApplicantDocument rows in the CONNECTED DB`, so `cleanup_orphan_blobs --apply` with the storage key set but the DB pointed anywhere other than prod would flag every real document as an orphan — always dry-run and eyeball before `--apply`._
 
-- TD-063: **SPM stream pools are duplicated across the FE/BE boundary** (`SPM_STREAM_POOLS` in `halatuju-web/src/lib/subjects.ts` and `SCIENCE_POOL`/`ARTS_POOL`/`TECHNICAL_POOL` in `halatuju_api/apps/courses/engine.py`). They must stay identical — a stream subject present in the dropdown but absent from the backend pool silently scores on the 10% elective weight (Sec3) instead of the 30% stream weight (Sec2). Mitigated S18 with a linking code comment on both definitions + paired count tests (jest `subjects.test.ts`: 38 arts/16 technical; pytest `test_merit_pools.py`: same). (Found S18, 2026-05-29)
+- ~~**TD-063**~~ **RESOLVED (v2.13.0, 2026-05-30)**: **SPM stream pools are duplicated across the FE/BE boundary** (`SPM_STREAM_POOLS` in `halatuju-web/src/lib/subjects.ts` and `SCIENCE_POOL`/`ARTS_POOL`/`TECHNICAL_POOL` in `halatuju_api/apps/courses/engine.py`). They must stay identical — a stream subject present in the dropdown but absent from the backend pool silently scores on the 10% elective weight (Sec3) instead of the 30% stream weight (Sec2). Mitigated S18 with a linking code comment on both definitions + paired count tests (jest `subjects.test.ts`: 38 arts/16 technical; pytest `test_merit_pools.py`: same). (Found S18, 2026-05-29)
   - ✅ **RESOLVED (v2.13.0, 2026-05-30).** The duplication existed only because the back-end re-derived the stream from a flat grades dict (no label), which forced it to keep its own copy of the pools to *guess* the stream by counting. Fixed by passing the student's explicit stream/aliran selection: `prepare_merit_inputs(grades, stream_subjects=None)` uses the designated subjects for Sec2 when present (pools NOT consulted → a missing-from-pool subject can no longer be mis-scored), and falls back to the count-heuristic only for old/unlabelled data. New `StudentProfile.stream_subjects` (migration `courses/0049`); FE sends `aliranSubjects` to every merit call + persists on sync. **The pools are now fallback-only**, so the drift risk no longer reaches a labelled student — the original S18 bug class is impossible for them. Linking comment + count tests kept for the fallback path. Verified: golden master unchanged (5319) + 6 differential unit tests in `test_merit_pools.py`. See `docs/decisions.md`.
 
-- TD-064: **`PartnerAdmin.is_super_admin` kept alongside the new `role` field (expand-contract).** Phase C (v2.15.0) added `role ∈ {super, reviewer, viewer}` and backfilled it from `is_super_admin`, but kept the legacy boolean because several call sites still read it (`get_partner_students`, `AdminRoleView`, dashboards). An `is_super` bridge property + `has_role()` helper paper over the duality. **To resolve:** migrate every `is_super_admin` reader to `role`/`is_super`, then drop the boolean (additive→destructive migration, expand-contract). Low priority; the bridge is safe. (Introduced Phase C, 2026-05-30)
-- TD-065: **Admin interview/Phase-C flow has no jest component tests.** The capture UI, accept-gate UI, assignment, and confirm button are covered only by `next build` type-checking + backend pytest — jest is render-only for these admin pages (longstanding repo gap, surfaced again by Phase C). The interactive behaviour (verdict binding, gate disabling, draft/submit) is unverified at the component level. **To resolve:** add component tests for the interview capture form + accept-gate. Low priority. (Surfaced Phase C, 2026-05-30) **Extended v2.17.0:** the new gap-spotter UI (suggest button → render → gap→findings capture merge) and the student doc-assist chip (`vision_fields.student_verdict`) are likewise jest-untested — only `next build` typing + backend pytest cover them. Same remediation. **Extended v2.18.0:** the Phase-D "Refine with interview findings (AI)" button + final-profile panel are also jest-untested (backend pytest + `next build` typing only). **Extended v2.19.0:** the reject-bucket UI (Decline-after-review / Decline-contractual buttons + confirm + rejection badge) is likewise jest-untested. **Extended v2.20.0:** the `DocumentHelpCoach` widget (loading shimmer / AI message / i18n fallback render + fetch effect) is jest-untested at the component level — though its *pure* decision logic (`lib/documentHelp.ts` `shouldShowCoach`/`fallbackKeyFor`) IS node-env unit-tested (8 tests), so only the render/effect wiring relies on `next build` typing. Same remediation. **Extended v2.22.0:** the sponsor portal (`/sponsor`, 6-state render off `getSponsorMe()` + the register form) and the admin vetting table (`/admin/sponsors` approve/reject/suspend) are jest-untested — `next build` typing + backend pytest only. (The `actionsFor(status)` helper in `/admin/sponsors` is pure and could be unit-tested if extracted.) Same remediation. **Extended v2.23.0:** the sponsor auth pages (`/sponsor/login`, `/sponsor/register`, the portal complete-details form) are component-untested — though the pure password-rule + source logic (`lib/sponsorAuth.ts` `checkPassword`/`SPONSOR_SOURCES`) IS node-env unit-tested (6 tests), so only the form render/effect + Supabase-auth wiring relies on `next build` typing. Same remediation. **Extended v2.25.0:** the pool frontend (`/sponsor` browse grid, `/sponsor/pool/[id]` detail, the admin "Anonymous profile" card) is render-only and jest-untested — `next build` typing + the backend `test_sponsor_pool.py` (incl. the allowlist leak tests = the load-bearing guarantee) cover it; the FE just renders the allowlist payload. Plus E2 (both tiers) is **not click-tested** — the grid only renders with the flag on + dummy data + sponsor/admin sessions (headless can't; do the local smoke before flipping the flag — TD-070). **UNBLOCKED 2026-07-10 (reviewer/sponsor bug batch):** the web app now HAS a component-test harness (jest-environment-jsdom + @testing-library/react; per-file `/** @jest-environment jsdom */` docblock so the global node env is untouched; `tsconfig.jest.json` sets `jsx: react-jsx`) — first use is `sponsor/(portal)/students/[id]/page.test.tsx` (fund→refresh regression). The "jest is render-only / no harness" blocker is gone; the specific admin/sponsor pages listed above are still to be covered (now possible, no longer infra-blocked). Same remediation, now unblocked.
+- **TD-064**: **`PartnerAdmin.is_super_admin` kept alongside the new `role` field (expand-contract).** Phase C (v2.15.0) added `role ∈ {super, reviewer, viewer}` and backfilled it from `is_super_admin`, but kept the legacy boolean because several call sites still read it (`get_partner_students`, `AdminRoleView`, dashboards). An `is_super` bridge property + `has_role()` helper paper over the duality. **To resolve:** migrate every `is_super_admin` reader to `role`/`is_super`, then drop the boolean (additive→destructive migration, expand-contract). Low priority; the bridge is safe. (Introduced Phase C, 2026-05-30)
+- **TD-065**: **Admin interview/Phase-C flow has no jest component tests.** The capture UI, accept-gate UI, assignment, and confirm button are covered only by `next build` type-checking + backend pytest — jest is render-only for these admin pages (longstanding repo gap, surfaced again by Phase C). The interactive behaviour (verdict binding, gate disabling, draft/submit) is unverified at the component level. **To resolve:** add component tests for the interview capture form + accept-gate. Low priority. (Surfaced Phase C, 2026-05-30) **Extended v2.17.0:** the new gap-spotter UI (suggest button → render → gap→findings capture merge) and the student doc-assist chip (`vision_fields.student_verdict`) are likewise jest-untested — only `next build` typing + backend pytest cover them. Same remediation. **Extended v2.18.0:** the Phase-D "Refine with interview findings (AI)" button + final-profile panel are also jest-untested (backend pytest + `next build` typing only). **Extended v2.19.0:** the reject-bucket UI (Decline-after-review / Decline-contractual buttons + confirm + rejection badge) is likewise jest-untested. **Extended v2.20.0:** the `DocumentHelpCoach` widget (loading shimmer / AI message / i18n fallback render + fetch effect) is jest-untested at the component level — though its *pure* decision logic (`lib/documentHelp.ts` `shouldShowCoach`/`fallbackKeyFor`) IS node-env unit-tested (8 tests), so only the render/effect wiring relies on `next build` typing. Same remediation. **Extended v2.22.0:** the sponsor portal (`/sponsor`, 6-state render off `getSponsorMe()` + the register form) and the admin vetting table (`/admin/sponsors` approve/reject/suspend) are jest-untested — `next build` typing + backend pytest only. (The `actionsFor(status)` helper in `/admin/sponsors` is pure and could be unit-tested if extracted.) Same remediation. **Extended v2.23.0:** the sponsor auth pages (`/sponsor/login`, `/sponsor/register`, the portal complete-details form) are component-untested — though the pure password-rule + source logic (`lib/sponsorAuth.ts` `checkPassword`/`SPONSOR_SOURCES`) IS node-env unit-tested (6 tests), so only the form render/effect + Supabase-auth wiring relies on `next build` typing. Same remediation. **Extended v2.25.0:** the pool frontend (`/sponsor` browse grid, `/sponsor/pool/[id]` detail, the admin "Anonymous profile" card) is render-only and jest-untested — `next build` typing + the backend `test_sponsor_pool.py` (incl. the allowlist leak tests = the load-bearing guarantee) cover it; the FE just renders the allowlist payload. Plus E2 (both tiers) is **not click-tested** — the grid only renders with the flag on + dummy data + sponsor/admin sessions (headless can't; do the local smoke before flipping the flag — TD-070). **UNBLOCKED 2026-07-10 (reviewer/sponsor bug batch):** the web app now HAS a component-test harness (jest-environment-jsdom + @testing-library/react; per-file `/** @jest-environment jsdom */` docblock so the global node env is untouched; `tsconfig.jest.json` sets `jsx: react-jsx`) — first use is `sponsor/(portal)/students/[id]/page.test.tsx` (fund→refresh regression). The "jest is render-only / no harness" blocker is gone; the specific admin/sponsor pages listed above are still to be covered (now possible, no longer infra-blocked). Same remediation, now unblocked.
+  **Status 2026-09-30:** partly done — still to do: no component tests for sponsor login, register, pool detail or the document-help coach.
 
-- TD-066: **Temporary tech-support box on /application is marked `TEMP` and must be removed.** A testing-only support box ("Email tamiliam@gmail.com or call 012-337 5709…") sits in the /application left step menu (mobile fallback below the content). It was added during the live-test phase so a stuck student has a human to reach; it is **not** intended for the promoted programme. Every instance is tagged `TEMP` in code for grep-and-remove. **To resolve:** delete all `TEMP`-marked tech-support box markup + its i18n keys once live testing concludes. Low effort, just don't forget. (Introduced v2.17.0, 2026-05-31)
+- **TD-066**: **Temporary tech-support box on /application is marked `TEMP` and must be removed.** A testing-only support box ("Email tamiliam@gmail.com or call 012-337 5709…") sits in the /application left step menu (mobile fallback below the content). It was added during the live-test phase so a stuck student has a human to reach; it is **not** intended for the promoted programme. Every instance is tagged `TEMP` in code for grep-and-remove. **To resolve:** delete all `TEMP`-marked tech-support box markup + its i18n keys once live testing concludes. Low effort, just don't forget. (Introduced v2.17.0, 2026-05-31)
 
-- TD-067: **The Phase-D final profile (`SponsorProfile.final_markdown`) has no edit/publish/reader path.** v2.18.0 added the refined "v2" profile, but: (a) it's display-only on the admin page — unlike the draft (editable textarea + Save + Publish), the final can only be regenerated, not hand-tweaked; (b) the existing `publish` endpoint publishes `current_markdown` (draft/edited), not `final_markdown`; (c) its intended reader — the sponsor — has no portal yet (Phase E). So today the final profile is an admin-visible artefact with no downstream consumer. **To resolve in Phase E:** decide whether the sponsor reads `final_markdown` directly or whether an admin reviews/edits/publishes it first (likely the latter — add a finalised-edit + publish-final path mirroring the draft's), then wire the sponsor view to the published final. Deliberately deferred — building the reader before Phase E would be a door into an empty room (see decisions.md, the sponsor-login decision). (Introduced v2.18.0, 2026-05-31) **Resolved-in-direction v2.24.0 (E2a):** the sponsor's reader is now a SEPARATE *generated anonymous* profile (`SponsorProfile.anon_markdown`, admin generate→publish), **not** `final_markdown` — so `final_markdown` stays purely admin-facing context, and the "who reads it" question is answered (nobody downstream; sponsors read the anon blurb). **Remaining nuance:** the anon profile is generated from the *application form data*, so it does NOT yet fold in the Phase-D *interview findings* that `final_markdown` captures. Future enhancement: generate the anon profile from the refined final (anonymised) so interview insight reaches sponsors. Low priority.
+- ~~**TD-067**~~ **RESOLVED 2026-09-30 (overtaken: ec10ee6e; the final profile IS the sponsor version (views_admin/verdict.py))**: **The Phase-D final profile (`SponsorProfile.final_markdown`) has no edit/publish/reader path.** v2.18.0 added the refined "v2" profile, but: (a) it's display-only on the admin page — unlike the draft (editable textarea + Save + Publish), the final can only be regenerated, not hand-tweaked; (b) the existing `publish` endpoint publishes `current_markdown` (draft/edited), not `final_markdown`; (c) its intended reader — the sponsor — has no portal yet (Phase E). So today the final profile is an admin-visible artefact with no downstream consumer. **To resolve in Phase E:** decide whether the sponsor reads `final_markdown` directly or whether an admin reviews/edits/publishes it first (likely the latter — add a finalised-edit + publish-final path mirroring the draft's), then wire the sponsor view to the published final. Deliberately deferred — building the reader before Phase E would be a door into an empty room (see decisions.md, the sponsor-login decision). (Introduced v2.18.0, 2026-05-31) **Resolved-in-direction v2.24.0 (E2a):** the sponsor's reader is now a SEPARATE *generated anonymous* profile (`SponsorProfile.anon_markdown`, admin generate→publish), **not** `final_markdown` — so `final_markdown` stays purely admin-facing context, and the "who reads it" question is answered (nobody downstream; sponsors read the anon blurb). **Remaining nuance:** the anon profile is generated from the *application form data*, so it does NOT yet fold in the Phase-D *interview findings* that `final_markdown` captures. Future enhancement: generate the anon profile from the refined final (anonymised) so interview insight reaches sponsors. Low priority.
 
-- TD-068: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + a "Decline (contractual)" button on accepted students, but: (a) it sends the **generic** decline email — the user's spec ("email will say the reason specified by admin") was explicitly deferred, so there is no reason text box and the student isn't told why; (b) there's no structured trigger for *when* a contractual rejection applies — no capture of the signed-document / bank-account state, no sign-by deadline or reminder, so an admin just decides manually. **To resolve:** add an admin reason field on `admin_reject`/`AdminRejectView` (reuse the `send_request_info_email(note=…)` pattern → a contractual email template that inserts the reason) and design the post-award contractual workflow (account-number capture, sign-by deadline, auto-reminders). Deferred per the user at build time. (Introduced v2.19.0, 2026-05-31)
+- **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + a "Decline (contractual)" button on accepted students, but: (a) it sends the **generic** decline email — the user's spec ("email will say the reason specified by admin") was explicitly deferred, so there is no reason text box and the student isn't told why; (b) there's no structured trigger for *when* a contractual rejection applies — no capture of the signed-document / bank-account state, no sign-by deadline or reminder, so an admin just decides manually. **To resolve:** add an admin reason field on `admin_reject`/`AdminRejectView` (reuse the `send_request_info_email(note=…)` pattern → a contractual email template that inserts the reason) and design the post-award contractual workflow (account-number capture, sign-by deadline, auto-reminders). Deferred per the user at build time. (Introduced v2.19.0, 2026-05-31)
+  **Status 2026-09-30:** partly done — still to do: a contractual decline still sends the generic email with no typed reason (same ruling as TD-227).
 
-- TD-069: **STPM flow's SPM-prerequisite electives aren't durably persisted and stay capped at 2.** v2.21.0 fixed the main SPM grades flow (new `elective_subjects` field + cap 7), but the STPM onboarding flow (`onboarding/stpm-grades`) uses a *separate* subsystem for the SPM prerequisites a STPM student enters: grades go to `spm_prereq_grades` (a distinct field) and the elective *selection* lives only in hardcoded localStorage (`halatuju_spm_elektif` / `halatuju_spm_aliran`) — never synced, never re-hydrated — so it has the same logout/login loss the main flow just fixed, and its elective slots are still capped at 2 (`spmElektifSlots.length < 2`). **To resolve:** mirror v2.21.0 for the STPM path — add a `spm_elective_subjects` field, sync + hydrate it, and raise the cap with `MAX_SPM_ELECTIVES`. Explicitly left out of v2.21.0 ("Don't touch STPM" — user). (Introduced v2.21.0, 2026-05-31)
+- **TD-069**: **STPM flow's SPM-prerequisite electives aren't durably persisted and stay capped at 2.** v2.21.0 fixed the main SPM grades flow (new `elective_subjects` field + cap 7), but the STPM onboarding flow (`onboarding/stpm-grades`) uses a *separate* subsystem for the SPM prerequisites a STPM student enters: grades go to `spm_prereq_grades` (a distinct field) and the elective *selection* lives only in hardcoded localStorage (`halatuju_spm_elektif` / `halatuju_spm_aliran`) — never synced, never re-hydrated — so it has the same logout/login loss the main flow just fixed, and its elective slots are still capped at 2 (`spmElektifSlots.length < 2`). **To resolve:** mirror v2.21.0 for the STPM path — add a `spm_elective_subjects` field, sync + hydrate it, and raise the cap with `MAX_SPM_ELECTIVES`. Explicitly left out of v2.21.0 ("Don't touch STPM" — user). (Introduced v2.21.0, 2026-05-31)
 
-- TD-070: **Phase E Sprint E1 (sponsor portal + admin vetting) is not click-tested interactively.** v2.22.0 is test-green (1408 pytest + 172 jest, `next build` clean) but the two genuinely stateful flows can't run headless: (a) the sponsor **Google-OAuth sign-in** on `/sponsor` (then the round-trip back via `KEY_SPONSOR_SIGNIN` → `/auth/callback` → `/sponsor`), and (b) the **admin approve/reject/suspend** on `/admin/sponsors` (needs a real admin session; the reviewer-vs-viewer 403 gate is backend-tested but the button wiring isn't). Per the logged lesson "test-green ≠ click-tested for a multi-screen stateful flow facing imminent users", this needs a live smoke **before E2 exposes anything to real sponsors**. **To resolve:** run the manual smoke in the "Next Sprint" step 0 (register → pending → approve → approved shell; confirm a viewer admin is blocked). No code; a verification gate. (Introduced v2.22.0, 2026-05-31) **Extended v2.23.0:** the surface grew — sponsor **email/password sign-up + sign-in** (`/sponsor/register` → `/sponsor/login`, incl. the email-confirmation gap → complete-details), the **Google → complete-details** path, **forgot-password**, and the landing-nav `Log in ▾ | Sign Up` cluster are all headless-untestable. The step-0 smoke now also covers these. Note: if the Supabase project has **email confirmation enabled**, a brand-new email/password sponsor won't get a session at sign-up (the "confirm your email" screen shows) and the row is created only after they confirm + complete details — verify the real project setting during the smoke.
+- **TD-070**: **Phase E Sprint E1 (sponsor portal + admin vetting) is not click-tested interactively.** v2.22.0 is test-green (1408 pytest + 172 jest, `next build` clean) but the two genuinely stateful flows can't run headless: (a) the sponsor **Google-OAuth sign-in** on `/sponsor` (then the round-trip back via `KEY_SPONSOR_SIGNIN` → `/auth/callback` → `/sponsor`), and (b) the **admin approve/reject/suspend** on `/admin/sponsors` (needs a real admin session; the reviewer-vs-viewer 403 gate is backend-tested but the button wiring isn't). Per the logged lesson "test-green ≠ click-tested for a multi-screen stateful flow facing imminent users", this needs a live smoke **before E2 exposes anything to real sponsors**. **To resolve:** run the manual smoke in the "Next Sprint" step 0 (register → pending → approve → approved shell; confirm a viewer admin is blocked). No code; a verification gate. (Introduced v2.22.0, 2026-05-31) **Extended v2.23.0:** the surface grew — sponsor **email/password sign-up + sign-in** (`/sponsor/register` → `/sponsor/login`, incl. the email-confirmation gap → complete-details), the **Google → complete-details** path, **forgot-password**, and the landing-nav `Log in ▾ | Sign Up` cluster are all headless-untestable. The step-0 smoke now also covers these. Note: if the Supabase project has **email confirmation enabled**, a brand-new email/password sponsor won't get a session at sign-up (the "confirm your email" screen shows) and the row is created only after they confirm + complete details — verify the real project setting during the smoke.
 
-- TD-071: **Cloudflare Turnstile (anti-bot) deferred on sponsor signup.** The user's mockup showed a Turnstile widget on the sponsor registration form; v2.23.0 ships without it (email confirmation + admin vetting gate fake sponsors for now). **To resolve when bot-signups become a concern:** create a Cloudflare Turnstile site (free) for halatuju.xyz, set the site key + secret, and enable Supabase Auth's built-in CAPTCHA (hCaptcha/Turnstile) — the form already has the consent/submit structure; the widget slots in above the submit button and the token is passed to `signUp({ options: { captchaToken } })`. (Deferred per user, v2.23.0, 2026-05-31)
+- ~~**TD-071**~~ **RESOLVED 2026-09-30 (overtaken: 2d809b2f; Turnstile on sponsor sign-up)**: **Cloudflare Turnstile (anti-bot) deferred on sponsor signup.** The user's mockup showed a Turnstile widget on the sponsor registration form; v2.23.0 ships without it (email confirmation + admin vetting gate fake sponsors for now). **To resolve when bot-signups become a concern:** create a Cloudflare Turnstile site (free) for halatuju.xyz, set the site key + secret, and enable Supabase Auth's built-in CAPTCHA (hCaptcha/Turnstile) — the form already has the consent/submit structure; the widget slots in above the submit button and the token is passed to `signUp({ options: { captchaToken } })`. (Deferred per user, v2.23.0, 2026-05-31)
 
-- TD-072: **Sponsor phone is Malaysian-only + the old `/sponsor/register-interest` page is now orphaned.** (a) The sponsor register/complete-details phone input is a fixed `🇲🇾 +60` prefix with `formatPhone`/`isValidPhone` (Malaysian formats) — no country picker, so an international sponsor can't enter a non-MY number. If/when overseas sponsors are onboarded, add a country selector (or a phone-input lib) and relax `isValidPhone`. (b) ✅ **RESOLVED (v2.26.1, 2026-06-01).** The orphaned `app/sponsor/register-interest/page.tsx` (v2.16 public lead form → `SponsorInterest` model + admin list) and its entire stack have been **deleted** (Option B — full removal): the page, `submitSponsorInterest` API helper, the `sponsorInterest.*` i18n block (en/ms/ta), `SponsorInterestView` + `AdminSponsorInterestView` + their two routes, `SponsorInterestSerializer`, the `SponsorInterest` model, and `test_sponsor_interest.py`. Table `sponsor_interests` (0 rows) dropped via migration `0035_remove_sponsor_interest` (applied deploy-first). `emails.send_sponsor_interest_admin_email` kept — now shared by the live `SponsorRegisterView`. (Resolved v2.26.1, 2026-06-01) — _(a) MY-only sponsor phone remains open below._ (Introduced v2.23.0, 2026-05-31)
+- **TD-072**: **Sponsor phone is Malaysian-only + the old `/sponsor/register-interest` page is now orphaned.** (a) The sponsor register/complete-details phone input is a fixed `🇲🇾 +60` prefix with `formatPhone`/`isValidPhone` (Malaysian formats) — no country picker, so an international sponsor can't enter a non-MY number. If/when overseas sponsors are onboarded, add a country selector (or a phone-input lib) and relax `isValidPhone`. (b) ✅ **RESOLVED (v2.26.1, 2026-06-01).** The orphaned `app/sponsor/register-interest/page.tsx` (v2.16 public lead form → `SponsorInterest` model + admin list) and its entire stack have been **deleted** (Option B — full removal): the page, `submitSponsorInterest` API helper, the `sponsorInterest.*` i18n block (en/ms/ta), `SponsorInterestView` + `AdminSponsorInterestView` + their two routes, `SponsorInterestSerializer`, the `SponsorInterest` model, and `test_sponsor_interest.py`. Table `sponsor_interests` (0 rows) dropped via migration `0035_remove_sponsor_interest` (applied deploy-first). `emails.send_sponsor_interest_admin_email` kept — now shared by the live `SponsorRegisterView`. (Resolved v2.26.1, 2026-06-01) — _(a) MY-only sponsor phone remains open below._ (Introduced v2.23.0, 2026-05-31)
 
-- TD-073: **The student `AuthProvider` (and its Supabase client) is mounted globally — incl. under `/admin/*` and `/sponsor/*`.** `app/providers.tsx` wraps the whole app, so the student client initialises on the admin/sponsor login + callback pages and **auto-anonymous-signs-in** there (a throwaway anon `auth.users` row, swept by the `purge-anon-users` cron) and, on `/admin/auth/callback` / `/sponsor/auth/callback`, **attempts** to read the `?code` it didn't initiate (a harmless local "code verifier not found" — no session claimed, no server call, thanks to PKCE). The **leak itself is fixed** (v2.23.1, PKCE) — this is only residual noise. **Partly addressed v2.23.2:** the most visible symptom (the student `AuthGateModal` "Create Your Free Student Account" overlaying `/admin` + `/sponsor`) is now closed — the modal route-guards via `usePathname` and renders nothing on those paths. **Still residual:** the student `AuthProvider` + client themselves still mount under `/admin` + `/sponsor` (anon-session creation + a harmless failed-exchange log). **Belt-and-suspenders if it ever matters:** scope the student `AuthProvider` so it doesn't mount under `/admin` + `/sponsor` (e.g. route-group layouts), and/or set `detectSessionInUrl: false` on the student client with an explicit `exchangeCodeForSession` on `/auth/callback`. Low priority — PKCE already closes the security hole and the modal overlay is fixed. (Introduced/observed v2.23.1; modal overlay fixed v2.23.2, 2026-05-31)
+- ~~**TD-073**~~ **RESOLVED 2026-09-30 (overtaken: 93da774b (TD-182); auth-context.tsx isAnonymousAuthSuppressed)**: **The student `AuthProvider` (and its Supabase client) is mounted globally — incl. under `/admin/*` and `/sponsor/*`.** `app/providers.tsx` wraps the whole app, so the student client initialises on the admin/sponsor login + callback pages and **auto-anonymous-signs-in** there (a throwaway anon `auth.users` row, swept by the `purge-anon-users` cron) and, on `/admin/auth/callback` / `/sponsor/auth/callback`, **attempts** to read the `?code` it didn't initiate (a harmless local "code verifier not found" — no session claimed, no server call, thanks to PKCE). The **leak itself is fixed** (v2.23.1, PKCE) — this is only residual noise. **Partly addressed v2.23.2:** the most visible symptom (the student `AuthGateModal` "Create Your Free Student Account" overlaying `/admin` + `/sponsor`) is now closed — the modal route-guards via `usePathname` and renders nothing on those paths. **Still residual:** the student `AuthProvider` + client themselves still mount under `/admin` + `/sponsor` (anon-session creation + a harmless failed-exchange log). **Belt-and-suspenders if it ever matters:** scope the student `AuthProvider` so it doesn't mount under `/admin` + `/sponsor` (e.g. route-group layouts), and/or set `detectSessionInUrl: false` on the student client with an explicit `exchangeCodeForSession` on `/auth/callback`. Low priority — PKCE already closes the security hole and the modal overlay is fixed. (Introduced/observed v2.23.1; modal overlay fixed v2.23.2, 2026-05-31)
 
-- TD-074: **Sponsor-pool follow-ups (E2a, low priority, all behind the OFF flag).** (a) **Detail keyed by raw application id** — `GET /api/v1/sponsor/pool/<id>/` uses the DB row id (the card exposes `id` for the fetch). It's non-identifying and the endpoint returns 404 unless the student is currently pool-eligible, but it leaks row count/order to a vetted sponsor. If that matters, switch the API key to the opaque `pool_ref` (needs a ref→id resolver). (b) ✅ **RESOLVED (v2.25.1, 2026-06-01).** The anon-profile generator is fed the student's free-text narrative, which *could* echo a name/school/place. Now there is a **structural** backstop on top of the prompt instruction + admin review + allowlist card: `pool.scan_anon_for_identifiers(text, profile)` scans the generated blurb for the student's own identifying tokens (name/school distinctive tokens, city, NRIC, phone, email), and `AdminPublishAnonProfileView` **refuses to publish** (`400 anon_identifier_leak` + the offending `fields`) when it finds any — the admin must regenerate first. Generic school-type words (SMK/Sekolah/Menengah/…) and name connectors (bin/binti/a-l/…) are stoplisted to avoid false positives; the scan errs toward blocking. (7 tests in `test_sponsor_pool.py`.) (c) **No filters yet** on the browse list (state/field) — fine for a small dummy pool; add when the pool grows. (Introduced v2.24.0, 2026-05-31)
+- **TD-074**: **Sponsor-pool follow-ups (E2a, low priority, all behind the OFF flag).**
+  (a) **Detail keyed by raw application id** — `GET /api/v1/sponsor/pool/<id>/` uses the DB row id (the card exposes `id` for the fetch). It's non-identifying and the endpoint returns 404 unless the student is currently pool-eligible, but it leaks row count/order to a vetted sponsor. If that matters, switch the API key to the opaque `pool_ref` (needs a ref→id resolver). (b) ✅ **RESOLVED (v2.25.1, 2026-06-01).** The anon-profile generator is fed the student's free-text narrative, which *could* echo a name/school/place. Now there is a **structural** backstop on top of the prompt instruction + admin review + allowlist card: `pool.scan_anon_for_identifiers(text, profile)` scans the generated blurb for the student's own identifying tokens (name/school distinctive tokens, city, NRIC, phone, email), and `AdminPublishAnonProfileView` **refuses to publish** (`400 anon_identifier_leak` + the offending `fields`) when it finds any — the admin must regenerate first. Generic school-type words (SMK/Sekolah/Menengah/…) and name connectors (bin/binti/a-l/…) are stoplisted to avoid false positives; the scan errs toward blocking. (7 tests in `test_sponsor_pool.py`.) (c) **No filters yet** on the browse list (state/field) — fine for a small dummy pool; add when the pool grows. (Introduced v2.24.0, 2026-05-31)
+  **Status 2026-09-30:** partly done — still to do: the pool detail is keyed by the raw id; the browse list has no filters.
 
-- TD-075: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/match/consent *state machine* on dummy data, but deliberately not the regulated/operational money parts:
+- **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/match/consent *state machine* on dummy data, but deliberately not the regulated/operational money parts:
   - **(a) Real toyyibPay donation-in.** `SponsorDonateView` is a **MOCK** (`POST /sponsor/wallet/donate/` just creates a `Donation` row, `reference='mock'`). Wire toyyibPay (FPX) properly: create-bill → redirect → callback verifies → `Donation` credited; the donation terms (**final, non-refundable to bank — sponsor can only redirect the balance within the platform**) must be in the donation flow + the lawyer's brief, and a one-receipt-at-donation-time (LHDN) approach if myNADI has the status.
   - **(b) Disbursement-out + tranches.** The award is currently funded as one block. Build the **tranche schedule** (e.g. RM1,000 ×3: one on acceptance, the rest progress-gated) with admin **release / withhold**; a withheld tranche **voids the contract** and **returns that amount to the sponsor's balance** (the `Sponsorship.amount` stops fully holding — model a per-tranche state). Real payout to the institution is the gated outbound step.
   - **(c) The lapse cron.** `sponsorship.lapse_expired_offers()` exists + is unit-tested but **isn't scheduled**. **REWORKED (go-live transition, Sprint T1, 2026-07-19):** the function no longer follows the dead offer+14d semantics. It now only lapses an offer whose `accept_deadline` was **ARMED** (set when the sign-invitation email was actually sent, `now + SIGN_ACCEPT_DEADLINE_DAYS`, cleared when the agreement binds) — a NULL deadline is never a candidate — and it **REFUSES to lapse any application with a released disbursement** (returns it in `flagged` for admin review instead of pulling money out from under the grandfather cohort). It now returns `{'lapsed': n, 'flagged': [ids]}`, not an int. **The cron may ONLY EVER be scheduled against THESE semantics, and only after the go-live cohort has signed** (owner decision, per `docs/plans/2026-07-19-contract-golive-transition-plan.md`). Wiring it unchanged/early would lapse live awards — do NOT wire a Cloud Scheduler job for it before that.
@@ -1369,13 +1349,13 @@ deleting in a batch the next time somebody is in that file with a reason.
   - **(e) Award / decline letters.** The "award letter" + "decline letter" are state transitions only right now — no emails yet. Add `send_award_email` / `send_award_lapsed_email` (reuse `emails.py`, best-effort) when the flow goes live.
   - **(f) Future:** the 2-year allocation window (then myNADI reallocates); and the E3 tables were created via raw MCP CREATE TABLE (migrate-first), so their FK **constraint names** differ from Django's — harmless, but a future migration that alters/drops one by Django's expected name would need the real name (same caveat as E1a/E2a). (Introduced v2.26.0, 2026-06-01; lawyer + gateway gate the real-money parts.)
 
-- TD-076: **The Settings page (`/settings`) is a minimal stub.** `halatuju-web/src/app/settings/page.tsx` (73 lines) does only three things: a language selector, a "clear local data" button (`clearAll()` localStorage wipe), and an About block. **No account settings** — no profile/contact edit, no password change, no notification preferences, no logout, no delete-account. For a logged-in student the page offers nothing tied to their account. Also the **version string is hardcoded** (`const VERSION` — manually bumped at release; set to `2.26.1` on 2026-06-01 after it had gone stale at `2.0.0`) with no central runtime version source. **To resolve (when account self-service matters):** decide the real scope (likely: edit contact details, change password via Supabase, notification opt-outs, logout) and prototype in Stitch first per the UI discipline; and either wire `VERSION` to a build-injected `NEXT_PUBLIC_APP_VERSION` or accept the manual bump as a release-checklist line. Low priority — nothing depends on it. (Logged 2026-06-01)
-- TD-077: **Course `#` interview marker renders as raw text, not a badge.** A trailing/embedded `#` in a course name means "this course typically has an interview", but it's shown verbatim (e.g. `Diploma in Nursing #`) wherever course names render — looks like a typo to users. **To resolve:** strip the `#` from the display string and render a small "Interview" badge/indicator next to courses that carry it (needs a shared helper so every render site — eligibility results, course pickers, saved courses, admin — is consistent; new i18n label; prototype the badge in Stitch first). Was roadmap "Known Issues #5" with no TD number; promoted here so it's tracked. Low priority, cosmetic. (Logged 2026-06-01)
-- TD-078: **Subject-name map duplicated across the FE/BE boundary (`subjects.ts` ↔ `academic_engine._SUBJECT_BM`).** The verification-verdict academic check (S2) compares the OCR'd results-slip subject names against the typed grades by *normalised Bahasa-Melayu name*, which needs a Python `key → BM name` map; it mirrors `halatuju-web/src/lib/subjects.ts` `SUBJECT_NAMES`. Two hand-maintained copies in different languages → drift risk (a new SPM subject added to `subjects.ts` won't be matched by the backend until `_SUBJECT_BM` is updated too). Mitigated by a code comment linking the two. **To resolve:** either (a) generate `_SUBJECT_BM` from `subjects.ts` at build time, (b) move the canonical subject table to a shared JSON both sides load, or (c) add a paired test asserting equal key membership (the cheapest guard — but the test would have to read the TS file). Low priority; the map is stable and additive. (Logged 2026-06-02, Verification-verdict S2)
-- TD-079: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (S3) persists/auto-resolves `ResolutionItem` rows, and it's called from the **read** paths — `AdminApplicationDetailSerializer.get_resolution_items` and the student `ResolutionItemListView.get`. So an admin/student *GET* mutates rows (idempotent + `IntegrityError`-guarded, but a REST-purity smell). Separately, the **no-re-nag** rule means once a system ticket is resolved it is never re-created, so if a student deletes a now-compulsory document the gap returns on the officer's verdict but the *student's* queue does not re-surface the ticket. **To resolve (if it matters):** move `sync` to explicit state-change points only (upload + delete signals + a dedicated POST refresh) and drop it from the serializers; and/or allow re-opening by keying dedup on open-status + adding a re-open path. Both are deliberate S3 simplifications, not bugs — the officer always sees the true gap via the verdict. Low priority. (Logged 2026-06-02, Verification-verdict S3)
-- TD-080: **⚠️ LIVE BUG — IC uploaded as PDF/video fails OCR and is mislabelled as a service outage, stranding real applicants at consent.** Google Vision `document_text_detection` with inline `content=` bytes (`vision.extract_mykad`) only decodes raster images (JPEG/PNG/GIF/BMP/WEBP/TIFF/…); a **PDF or video** returns `"Bad image data."`. Two compounding defects turn that into a dead end: **(1) No upload format restriction.** The FE file input (`halatuju-web/src/components/ScholarshipDocuments.tsx:81`) has no `accept` attribute, and the API (`DocumentListCreateView.post`, `halatuju_api/apps/scholarship/views.py:236`) validates **size + doc-count only**, never MIME/extension — so PDFs (CamScanner / "scan to PDF") and even phone videos are accepted and stored. **(2) Misclassification.** `_ic_identity_blockers` (`services.py:482-485`) buckets **any** `vision_error != 'empty image'` into `ic_service_down`, so `"Bad image data."` surfaces to the student as *"Our document-check service is temporarily unavailable. Please try again later."* (`en.json` `ic_service_down`). "Try again later" never clears it — the stored file is a PDF/video — so the student is permanently blocked at the final consent step and reasonably concludes the system is down. **Evidence (prod, 30 May–01 Jun):** of 17 `ic`/`parent_ic` uploads, **all 9 PDFs/MP4s → "Bad image data", all 8 JPG/PNG/JPEG → success**, interleaved in time (∴ NOT a Vision outage; `detect_vision_outage` correctly does not trip). **5 students blocked** because their *own* `ic` is a PDF/video: THEEPICAA (#4, PDF), JANANI (#5, PDF), Harish (#6, PDF), YESWINDRAN (#8, CamScanner PDF), Taanusiya (#10, **.mp4 video**). **Immediate ops remediation (no code):** message these 5 to re-upload their IC as a **clear JPG/PNG photo** (camera, not scan/video) — OCR re-runs on upload and unblocks them. **Scope note:** this is **IC-only.** Supporting docs (`results_slip`, `str`, `salary_slip`, `epf`, `offer_letter`, bills) get a *soft, non-blocking* name/address presence check (`views.py:271-273` "Soft, never blocks"); consent only checks their **presence**, so a **PDF supporting doc submits fine** and shows no error — those must keep accepting PDF. Only the student's own `ic` hard-gates on a successful OCR read. **To resolve (code, post-sprint, needs approval), in priority order:** (1) **Fix the message** (smallest, do first) — re-map decode-type Vision errors (`"Bad image data."`, `"could not fetch image"`, read-nothing) to `ic_unreadable` ("please re-upload a clearer photo of your IC"), reserving `ic_service_down` for genuine service failures (`detect_vision_outage` already distinguishes); this alone ends the false "system down" dead-end. (2) **Handle PDF for the IC rather than ban it** — scanning a MyKad to PDF (CamScanner) is normal (3 of the 5 stuck students did this); rasterise the PDF's first page to an image server-side before Vision (e.g. pdf2image/Pillow) **or** use Vision's async PDF OCR, so scanned-IC PDFs just work. (3) Reject only truly unreadable types (video, etc.) with a clear "a photo or scan of your IC" message, and add `accept="image/*,.pdf"` on the IC input as a hint. **NB: do NOT add a blanket image-only restriction — it would break the legitimate PDF supporting docs.** **Higher priority than typical debt — affecting live applicants now.** (Logged 2026-06-02; investigation only, no code changed)
+- **TD-076**: **The Settings page (`/settings`) is a minimal stub.** `halatuju-web/src/app/settings/page.tsx` (73 lines) does only three things: a language selector, a "clear local data" button (`clearAll()` localStorage wipe), and an About block. **No account settings** — no profile/contact edit, no password change, no notification preferences, no logout, no delete-account. For a logged-in student the page offers nothing tied to their account. Also the **version string is hardcoded** (`const VERSION` — manually bumped at release; set to `2.26.1` on 2026-06-01 after it had gone stale at `2.0.0`) with no central runtime version source. **To resolve (when account self-service matters):** decide the real scope (likely: edit contact details, change password via Supabase, notification opt-outs, logout) and prototype in Stitch first per the UI discipline; and either wire `VERSION` to a build-injected `NEXT_PUBLIC_APP_VERSION` or accept the manual bump as a release-checklist line. Low priority — nothing depends on it. (Logged 2026-06-01)
+- **TD-077**: **Course `#` interview marker renders as raw text, not a badge.** A trailing/embedded `#` in a course name means "this course typically has an interview", but it's shown verbatim (e.g. `Diploma in Nursing #`) wherever course names render — looks like a typo to users. **To resolve:** strip the `#` from the display string and render a small "Interview" badge/indicator next to courses that carry it (needs a shared helper so every render site — eligibility results, course pickers, saved courses, admin — is consistent; new i18n label; prototype the badge in Stitch first). Was roadmap "Known Issues #5" with no TD number; promoted here so it's tracked. Low priority, cosmetic. (Logged 2026-06-01)
+- ~~**TD-078**~~ **RESOLVED 2026-09-30 (overtaken: 11e055f3; tests/test_subject_drift.py pins both maps)**: **Subject-name map duplicated across the FE/BE boundary (`subjects.ts` ↔ `academic_engine._SUBJECT_BM`).** The verification-verdict academic check (S2) compares the OCR'd results-slip subject names against the typed grades by *normalised Bahasa-Melayu name*, which needs a Python `key → BM name` map; it mirrors `halatuju-web/src/lib/subjects.ts` `SUBJECT_NAMES`. Two hand-maintained copies in different languages → drift risk (a new SPM subject added to `subjects.ts` won't be matched by the backend until `_SUBJECT_BM` is updated too). Mitigated by a code comment linking the two. **To resolve:** either (a) generate `_SUBJECT_BM` from `subjects.ts` at build time, (b) move the canonical subject table to a shared JSON both sides load, or (c) add a paired test asserting equal key membership (the cheapest guard — but the test would have to read the TS file). Low priority; the map is stable and additive. (Logged 2026-06-02, Verification-verdict S2)
+- **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (S3) persists/auto-resolves `ResolutionItem` rows, and it's called from the **read** paths — `AdminApplicationDetailSerializer.get_resolution_items` and the student `ResolutionItemListView.get`. So an admin/student *GET* mutates rows (idempotent + `IntegrityError`-guarded, but a REST-purity smell). Separately, the **no-re-nag** rule means once a system ticket is resolved it is never re-created, so if a student deletes a now-compulsory document the gap returns on the officer's verdict but the *student's* queue does not re-surface the ticket. **To resolve (if it matters):** move `sync` to explicit state-change points only (upload + delete signals + a dedicated POST refresh) and drop it from the serializers; and/or allow re-opening by keying dedup on open-status + adding a re-open path. Both are deliberate S3 simplifications, not bugs — the officer always sees the true gap via the verdict. Low priority. (Logged 2026-06-02, Verification-verdict S3)
+- ~~**TD-080**~~ **RESOLVED (2026-06-02)**: **⚠️ LIVE BUG — IC uploaded as PDF/video fails OCR and is mislabelled as a service outage, stranding real applicants at consent.** Google Vision `document_text_detection` with inline `content=` bytes (`vision.extract_mykad`) only decodes raster images (JPEG/PNG/GIF/BMP/WEBP/TIFF/…); a **PDF or video** returns `"Bad image data."`. Two compounding defects turn that into a dead end: **(1) No upload format restriction.** The FE file input (`halatuju-web/src/components/ScholarshipDocuments.tsx:81`) has no `accept` attribute, and the API (`DocumentListCreateView.post`, `halatuju_api/apps/scholarship/views.py:236`) validates **size + doc-count only**, never MIME/extension — so PDFs (CamScanner / "scan to PDF") and even phone videos are accepted and stored. **(2) Misclassification.** `_ic_identity_blockers` (`services.py:482-485`) buckets **any** `vision_error != 'empty image'` into `ic_service_down`, so `"Bad image data."` surfaces to the student as *"Our document-check service is temporarily unavailable. Please try again later."* (`en.json` `ic_service_down`). "Try again later" never clears it — the stored file is a PDF/video — so the student is permanently blocked at the final consent step and reasonably concludes the system is down. **Evidence (prod, 30 May–01 Jun):** of 17 `ic`/`parent_ic` uploads, **all 9 PDFs/MP4s → "Bad image data", all 8 JPG/PNG/JPEG → success**, interleaved in time (∴ NOT a Vision outage; `detect_vision_outage` correctly does not trip). **5 students blocked** because their *own* `ic` is a PDF/video: THEEPICAA (#4, PDF), JANANI (#5, PDF), Harish (#6, PDF), YESWINDRAN (#8, CamScanner PDF), Taanusiya (#10, **.mp4 video**). **Immediate ops remediation (no code):** message these 5 to re-upload their IC as a **clear JPG/PNG photo** (camera, not scan/video) — OCR re-runs on upload and unblocks them. **Scope note:** this is **IC-only.** Supporting docs (`results_slip`, `str`, `salary_slip`, `epf`, `offer_letter`, bills) get a *soft, non-blocking* name/address presence check (`views.py:271-273` "Soft, never blocks"); consent only checks their **presence**, so a **PDF supporting doc submits fine** and shows no error — those must keep accepting PDF. Only the student's own `ic` hard-gates on a successful OCR read. **To resolve (code, post-sprint, needs approval), in priority order:** (1) **Fix the message** (smallest, do first) — re-map decode-type Vision errors (`"Bad image data."`, `"could not fetch image"`, read-nothing) to `ic_unreadable` ("please re-upload a clearer photo of your IC"), reserving `ic_service_down` for genuine service failures (`detect_vision_outage` already distinguishes); this alone ends the false "system down" dead-end. (2) **Handle PDF for the IC rather than ban it** — scanning a MyKad to PDF (CamScanner) is normal (3 of the 5 stuck students did this); rasterise the PDF's first page to an image server-side before Vision (e.g. pdf2image/Pillow) **or** use Vision's async PDF OCR, so scanned-IC PDFs just work. (3) Reject only truly unreadable types (video, etc.) with a clear "a photo or scan of your IC" message, and add `accept="image/*,.pdf"` on the IC input as a hint. **NB: do NOT add a blanket image-only restriction — it would break the legitimate PDF supporting docs.** **Higher priority than typical debt — affecting live applicants now.** (Logged 2026-06-02; investigation only, no code changed)
   - **✅ RESOLVED (deployed 2026-06-02, 2 deploys):** (1) PDF intake — content-type-aware OCR reads digital PDFs via the text layer and rasterises scanned PDFs (page 1) for Vision; (2) upload format allowlist (images + PDF; video/junk rejected) + FE `accept`; (3) decode-error re-map (`"Bad image data."` → `ic_unreadable`, not `ic_service_down`); plus follow-ups: parent-IC re-run enabled, MyKad name extraction anchored on the parentage marker, and a name mismatch no longer hard-blocks consent when the NRIC matches. See CHANGELOG [Unreleased]. Residual OCR-quality items tracked in TD-081.
-- TD-081: **OCR signal-capturing improvements.** The TD-080 fixes made documents *readable*; this tracks making the *reads* better.
+- ~~**TD-081**~~ **RESOLVED (2026-06)**: **OCR signal-capturing improvements.** The TD-080 fixes made documents *readable*; this tracks making the *reads* better.
   - **✅ RESOLVED for the Identity/IC document (Check-1 sprint, deployed 2026-06-02, `3d110a4`).** (a) marker-less names + (b) blurry-scan NRIC digit misreads are both covered by the **cost-gated Gemini IC second opinion** (`run_vision_for_document` → `_should_gemini_ic` → `_gemini_ic_second_opinion` reads the card **image** → `_merge_ic_reads`, behind `IC_GEMINI_FALLBACK_ENABLED`); the deterministic name-truncation + address card-label strip handle the cheap cases for free. (c) clearer NRIC/name-mismatch guidance is delivered by the S4 Action Centre **and** Cikgu Gopal's now-bidirectional name-mismatch coaching (offer re-upload OR fix the typed profile name, with a `/profile` link). Plan + retro: `docs/scholarship/check1-ic-hardening-plan.md`, `docs/retrospective-check1-identity.md`.
   - **✅ Live smoke PASSED (2026-06-02, user-run, prod):** two real low-confidence MyKads both cleared — **Theresa** (truncated `…A/P` surname, the name case) and **Yeswindran** (unclear/misread NRIC digit, the blurry-number case). The cost-gated Gemini IC second opinion recovered both. The Identity fact is fully validated end-to-end.
   - **✅ RESOLVED for the Academic/results-slip document (deployed 2026-06-02/03, `62339e9`+`177aed2`; + live-review fixes `4391f54`+`b370503`).** Fixed the "Entered 0 of 9" band-word bug (`academic_engine._split_band`), the clinical 3-check (`student_slip_check` → `ResultsSlipChecklist` Name/Subjects/Results + exam year), 3 specific Gopal verdicts; live-confirmed. **Live-review follow-up (2026-06-03):** image-based Gemini slip read fixes the A↔A+ row transposition; a letter↔band disagreement OR a ±-only (same base letter) difference degrades to `uncertain` ("Please check", amber) — never a confident wrong mismatch. **Academic OCR quirk fully closed** (OCR can't guarantee the '+'; the officer verifies by eye). Retros `docs/retrospective-check1-academic.md`, `docs/retrospective-check1-livefixes.md`.
@@ -1410,15 +1390,15 @@ deleting in a batch the next time somebody is in that file with a reason.
     a deferred 4th slice (hooks left). Policy resolved: keep hard-required where evidence exists, "provide if available"
     + interview judgement for informal earners. (Logged 2026-06-02; Identity+Academic+Pathway resolved 2026-06-03;
     slip-orientation 2026-06-04.)
-- TD-082: **Student Action Centre `confirm` tickets for academic route to the Documents tab, not a grades-edit surface.** `/application` has no dedicated grades/results tab (grades come from the profile/onboarding; the results slip is uploaded under Documents), so a `confirm` ticket with `fact==='academic'` (e.g. `academic_missing_subjects` — "add Moral + Tamil Literature") sends the student to **Documents** rather than to the place they actually add subjects (the onboarding grades flow). Acceptable for now — the ticket copy states what to do and the ticket auto-clears once the subjects are entered — but the "Review" button under-delivers for academic. **To resolve:** add an in-`/application` grades-edit affordance (or deep-link the onboarding grades step) and map academic `confirm` to it (`actionCentre.confirmTargetFor` + `ScholarshipNextSteps.handleConfirmNav`). Low priority. (Logged 2026-06-02, Verification-verdict S4)
+- ~~**TD-082**~~ **RESOLVED (2026-06-07)**: **Student Action Centre `confirm` tickets for academic route to the Documents tab, not a grades-edit surface.** `/application` has no dedicated grades/results tab (grades come from the profile/onboarding; the results slip is uploaded under Documents), so a `confirm` ticket with `fact==='academic'` (e.g. `academic_missing_subjects` — "add Moral + Tamil Literature") sends the student to **Documents** rather than to the place they actually add subjects (the onboarding grades flow). Acceptable for now — the ticket copy states what to do and the ticket auto-clears once the subjects are entered — but the "Review" button under-delivers for academic. **To resolve:** add an in-`/application` grades-edit affordance (or deep-link the onboarding grades step) and map academic `confirm` to it (`actionCentre.confirmTargetFor` + `ScholarshipNextSteps.handleConfirmNav`). Low priority. (Logged 2026-06-02, Verification-verdict S4)
   - **✅ RESOLVED 2026-06-07:** `confirmTargetFor` now routes academic facts to a new `'grades'` target (the results
     *slip* stays on Documents); `handleConfirmNav` deep-links `'grades'` to `/onboarding/grades` with a return marker
     (`setOnboardingReturn('/scholarship/application')` → `popOnboardingReturn` honoured by the onboarding final step).
     Grades rehydrate from the profile via auth-context, so the editor isn't blank for a returning student.
-- TD-083: **Verdict override-rate metric + `officer_verdict.overall` are built on the backend but not surfaced in the cockpit UI.** S5 ships `GET /api/v1/admin/scholarship/verdict-metrics/` (pure `audit.override_metrics` → `{applications, fact_decisions, overrides, override_rate, per_fact}`) and the `getVerdictMetrics()`/`VerdictMetrics` FE type, but the cockpit does **not** render the "how good is the AI" override rate anywhere — it's queryable, not visible. Separately, the officer records a per-fact pass/fail in the Record-verdict panel, but the `officer_verdict.overall` ('accept'|'decline'|'hold') field has **no explicit UI toggle** (it's sent as `''`; the backend accepts that and the overall stance can be inferred from the four facts). **To resolve (when a coordinator dashboard is wanted):** add a small "AI override rate" line/card to the admin console (cohort-filterable via `?cohort=`), and either add an explicit overall accept/decline control to the panel or wire it to the existing verify-&-accept / decline actions so `overall` is set deliberately. Low priority — the audit data is captured regardless; this is surfacing + an optional explicit control. (Logged 2026-06-02, Verification-verdict S5)
+- ~~**TD-083**~~ **RESOLVED 2026-09-30 (overtaken: 7d0fe1fe; AiReliabilityCard shows the override rate)**: **Verdict override-rate metric + `officer_verdict.overall` are built on the backend but not surfaced in the cockpit UI.** S5 ships `GET /api/v1/admin/scholarship/verdict-metrics/` (pure `audit.override_metrics` → `{applications, fact_decisions, overrides, override_rate, per_fact}`) and the `getVerdictMetrics()`/`VerdictMetrics` FE type, but the cockpit does **not** render the "how good is the AI" override rate anywhere — it's queryable, not visible. Separately, the officer records a per-fact pass/fail in the Record-verdict panel, but the `officer_verdict.overall` ('accept'|'decline'|'hold') field has **no explicit UI toggle** (it's sent as `''`; the backend accepts that and the overall stance can be inferred from the four facts). **To resolve (when a coordinator dashboard is wanted):** add a small "AI override rate" line/card to the admin console (cohort-filterable via `?cohort=`), and either add an explicit overall accept/decline control to the panel or wire it to the existing verify-&-accept / decline actions so `overall` is set deliberately. Low priority — the audit data is captured regardless; this is surfacing + an optional explicit control. (Logged 2026-06-02, Verification-verdict S5)
   **Resolved (surfacing) — verification-assurance Sprint 3, 2026-06-12.** The override rate is now visible: an **AI reliability card** at the top of the B40 applications list shows agreement (= 1 − override rate) per fact + overall, via the tested `verdictReliability()` helper over the existing `getVerdictMetrics()`. The `?cohort=` filter remains available on the endpoint but the card shows the all-cohort figure. The **second half — an explicit `officer_verdict.overall` accept/decline/hold UI toggle — was deliberately NOT built**: the card derives reliability from the four per-fact Pass/Fail decisions the reviewer already makes, so `overall` stays inferred (sent as `''`). If a future coordinator dashboard wants an explicit overall stance, re-open a thin follow-up for just that toggle.
-- TD-084: **Orphaned single-earner income fields after the salary route went multi-earner.** The salary income route now uses `ScholarshipApplication.income_working_members` (multi-select); `earner_work_status` (old Q3) and `household_other_earners` (old Q4) are no longer read on that route (the STR route never used them) — kept in place to avoid a destructive migration. Likewise the wizard i18n keys `scholarship.docs.income.wizard.{q2,q3,q4,work}` are now unreferenced (kept for parity across en/ms/ta). **To resolve:** drop the two columns under expand-contract (grep for readers first — already write-only) and delete the four i18n key groups in all three locales. Low priority, cosmetic. (Logged 2026-06-04, Income Check-1 multi-earner)
-- TD-085: **▶ RE-SCOPED 2026-06-05 to TWO sprints (consent gate v2 + officer Documents-panel redesign). The original
+- **TD-084**: **Orphaned single-earner income fields after the salary route went multi-earner.** The salary income route now uses `ScholarshipApplication.income_working_members` (multi-select); `earner_work_status` (old Q3) and `household_other_earners` (old Q4) are no longer read on that route (the STR route never used them) — kept in place to avoid a destructive migration. Likewise the wizard i18n keys `scholarship.docs.income.wizard.{q2,q3,q4,work}` are now unreferenced (kept for parity across en/ms/ta). **To resolve:** drop the two columns under expand-contract (grep for readers first — already write-only) and delete the four i18n key groups in all three locales. Low priority, cosmetic. (Logged 2026-06-04, Income Check-1 multi-earner)
+- ~~**TD-085**~~ **RESOLVED (2026-06-05)**: **▶ RE-SCOPED 2026-06-05 to TWO sprints (consent gate v2 + officer Documents-panel redesign). The original
   "document-first verdict" + "re-extraction backfill" framing below was DROPPED:** the route stays AUTHORITATIVE (the
   strict route-aware gate + the manual slotting of all 16 pipeline students prevent the route/doc mismatch document-first
   was meant to fix), and the user re-runs legacy docs by hand in the cockpit. Spec: `docs/scholarship/consent-gate-v2-plan.md`.
@@ -1439,12 +1419,12 @@ deleting in a batch the next time somebody is in that file with a reason.
     `6d40af2`; retro `retrospective-gopal-cockpit-polish.md`)**, and re-running legacy docs by hand (the user's manual
     cockpit "Re-run").
   - _Original (dropped) framing for the record:_ Income verdict is wizard-route-driven, not document-driven — it ignores income proof the route didn't expect, and pre-wizard submissions can't assemble. Two linked gaps surfaced live (app #21, KISHANTAN): (a) the **STR-route branch of `verdict_engine._verdict_income` only accepts an `str` document as income proof** — a student flagged `receives_str=true` (so the wizard defaulted `income_route='str'`) who uploads the father's salary slip instead of an STR screenshot gets a red *"no proof of income"* even though the payslip + father's IC are present and the earner relationship is confirmed. The salary slip sitting in the drawer is never considered. (b) **Pre-wizard submissions have no route/earner/tags** — a pipeline audit found **15 apps with `income_route=''`** (the wizard didn't exist when they submitted), of which **only 6 are actually submitted (`profile_complete`)** and **9 are merely `shortlisted`** (not yet submitted — they self-heal when they walk the wizard to complete). So the real legacy remediation is **~7 submitted apps** (the 6 blank-route + app #21), not 15. Their income docs are in the **correct doc_types** (slotting is fine) but `household_member=''` (untagged), so the new salary-route cluster keying can't group them. **To resolve:** (1) make the income verdict **document-first** — look at what income proof actually exists (STR / salary slip / EPF, tagged or not) and verify it against the available parent IC(s), using the wizard answers (route/earner/members) as *hints not hard gates*; an STR-route student with a salary slip should still get per-capita credit; (2) a one-time **backfill** of `income_route`/`income_earner` for the 6 blank-route submitted apps so their clusters assemble; (3) **reconfigure the income cockpit** so the tile reflects what is actually in the drawer (surface the salary slip + per-capita + cluster) and never claims *"no proof of income"* when a verified income doc is present. The 9 shortlisted apps need nothing. (Logged 2026-06-05, Income Check-1 multi-earner close — the user's explicit next sprint.)
-- TD-086: **Reminder support email is a personal Gmail (`tamiliam@gmail.com`).** The completion-reminder + closure emails
+- ~~**TD-086**~~ **RESOLVED 2026-09-30 (overtaken: a6bed1f5; branding.email_support is help@halatuju.xyz)**: **Reminder support email is a personal Gmail (`tamiliam@gmail.com`).** The completion-reminder + closure emails
   point students to `emails.SUPPORT_EMAIL = 'tamiliam@gmail.com'` as the human fallback — intentional "for now" (user's
   call) so the system could go live. **To resolve:** swap to a branded address (e.g. `help@halatuju.xyz`, or a Gmail
   alias/forward) — a one-line change to `SUPPORT_EMAIL` in `apps/scholarship/emails.py`. Low priority, cosmetic/privacy.
   (Logged 2026-06-06, application-reminders.)
-- TD-087: **Completion reminders land ~1 day after their nominal day-count.** The cadence uses
+- ~~**TD-087**~~ **RESOLVED (2026-06-07)**: **Completion reminders land ~1 day after their nominal day-count.** The cadence uses
   `floor((now - reminder_anchor_at).days)` against thresholds (2/9/23/53), but the daily scheduler ticks at a FIXED 09:00
   Asia/KL while `reminder_anchor_at` carries the clock-time it was set — when the tick falls a few minutes before the
   anchor's time-of-day, the day threshold is first met one tick later (e.g. a 4-Jun anchor's R2 fires 14 Jun, not 13).
@@ -1453,7 +1433,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   - **✅ RESOLVED 2026-06-07** (`services._elapsed_days_local`): the cadence now compares calendar dates in Asia/KL
     instead of flooring the timedelta, so each reminder fires on its nominal day regardless of the anchor's time-of-day.
     +2 regression tests in `test_reminders.py`. Auto-close gate left as-is (it compares two 09:00-job stamps → no slip).
-- TD-088: **Two local `formatNric` duplicates in the admin students pages.** `app/admin/students/page.tsx` and
+- ~~**TD-088**~~ **RESOLVED (2026-06)**: **Two local `formatNric` duplicates in the admin students pages.** `app/admin/students/page.tsx` and
   `app/admin/students/[id]/page.tsx` each define their own `formatNric(nric: string | null)` (null-safe, returns the raw
   string when not 12 digits) instead of importing the shared `lib/scholarship.ts` one. Left unconsolidated in the
   income-card sprint deliberately: the shared helper takes `string` (not `string | null`) and returns `''` (not `'—'`)
@@ -1462,7 +1442,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   Low priority. (Logged 2026-06-06.)
   - **✅ RESOLVED** (this [Unreleased] cycle; see CHANGELOG "Changed"): added a null‑safe `formatNricDisplay()` in
     `lib/scholarship.ts` (em‑dash for a missing IC); both admin pages and the new `ScholarshipReview` use it.
-- TD-089: **The guardianship-letter relationship path is unwired (guardian income route).** Unlike the birth
+- **TD-089**: **The guardianship-letter relationship path is unwired (guardian income route).** Unlike the birth
   certificate (fixed 2026-06-06), `guardianship_letter` is NOT in `views.SUPPORTING_NAME_CHECK_TYPES`, so an uploaded
   letter is never OCR'd or field-extracted. Worse, `income_engine._relationship_inputs` reads the letter's name from
   `doc.vision_name` — a field only the IC path (`run_vision_for_document`) sets; neither `run_vision_match_for_document`
@@ -1471,7 +1451,8 @@ deleting in a batch the next time somebody is in that file with a reason.
   `RELATIONSHIP_DOC_TYPES`, give it a name field in its extraction schema, and change `_relationship_inputs` to read the
   guardian's name from `vision_fields['fields']` (not `vision_name`). Deliberately NOT done in the BC fix to avoid making
   valid guardian letters show a false "unreadable". Guardian income route is rare; low priority. (Logged 2026-06-06.)
-- TD-090: **`handleConfirm` does a full `window.location.reload()` after submit** (`ScholarshipNextSteps.tsx`) to
+  **Status 2026-09-30:** partly done — still to do: relationships.py reads vision_name where the guardian's name is stored as guardian_name.
+- ~~**TD-090**~~ **RESOLVED (2026-06-07)**: **`handleConfirm` does a full `window.location.reload()` after submit** (`ScholarshipNextSteps.tsx`) to
   re-render the page as the post-submit "received" screen, instead of updating React state in place. Pragmatic and
   reliable (the received screen lives in the parent `application/page.tsx`, keyed off `app.status`, so a reload is the
   simplest way to flip to it), but it's a heavier transition than necessary and loses client state. **To resolve:** lift
@@ -1480,34 +1461,34 @@ deleting in a batch the next time somebody is in that file with a reason.
   - **✅ RESOLVED 2026-06-07** (same day): `ScholarshipNextSteps` gained an `onSubmitted` prop; `handleConfirm` hands the
     updated application to the parent (`onSubmitted={setApp}`), which re-renders into the post-submit "received" screen —
     no `window.location.reload()`.
-- TD-091: **Sponsor-landing Tamil copy is a best-effort first pass, not the owner's voice.** The `sponsorLanding.*`
+- **TD-091**: **Sponsor-landing Tamil copy is a best-effort first pass, not the owner's voice.** The `sponsorLanding.*`
   Tamil strings (en/ms/ta parity, 40 keys) were written to ship trilingual but need the owner's refinement per the
   Tamil style guide (joins the existing Tamil-refine queue). Low risk — the page is dark behind `SPONSOR_POOL_ENABLED`
   until go-live. **To resolve:** owner refine pass on `messages/ta.json` `sponsorLanding` before Sprint 12 go-live.
   (Logged 2026-06-08, B40 Phase E/F Sprint 1.)
-- TD-092: **Sponsor landing not yet click-through-verified in a live browser.** Sprint 1 verified F1 via `next build`
+- **TD-092**: **Sponsor landing not yet click-through-verified in a live browser.** Sprint 1 verified F1 via `next build`
   typecheck + jest + the approved Stitch design, but did not run a Playwright/dev-server click-through (the page is dark
   on prod, and a live smoke needs `SPONSOR_POOL_ENABLED=on` locally with both servers). **To resolve:** before the
   Sprint 12 go-live deploy, run the app locally with the flag on and click through `/sponsor` in all three locales +
   confirm the counter renders the real eligible count. (Logged 2026-06-08, B40 Phase E/F Sprint 1.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-093: **The new `onboarding_responses` table (migration `0049`) needs RLS enabled on Supabase at deploy.** New
+- ~~**TD-093**~~ ✅ RESOLVED (go-live 2026-06-09): **The new `onboarding_responses` table (migration `0049`) needs RLS enabled on Supabase at deploy.** New
   Django-created tables land without row-level security; per the existing new-model pattern (TD-058 era), enable RLS +
   the appropriate policy when applying `0049` migrate-first via the Supabase MCP, and re-run `get_advisors` to confirm
   no "RLS disabled" finding. Low risk while dark (the api connects with a privileged role), but must be closed before
   go-live. **To resolve:** at the Phase E/F batch deploy, after `0049`, enable RLS on `onboarding_responses`. (Logged
   2026-06-08, B40 Phase E/F Sprint 2.)
-- TD-094: **The F8b award/onboarding Tamil copy is a first-draft.** `scholarship.award.*` /
+- **TD-094**: **The F8b award/onboarding Tamil copy is a first-draft.** `scholarship.award.*` /
   `scholarship.onboarding.*` / `scholarship.application.awardPanel.*` Tamil strings were written to ship trilingual but
   need the owner's refinement (joins the Tamil-refine queue with TD-091). English + Malay are final. Low risk — the
   pages are dark until go-live. **To resolve:** owner Tamil refine before Sprint 12 go-live. (Logged 2026-06-09, B40
   Phase E/F Sprint 3.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-095: **Create the two F3 Cloud Scheduler jobs at deploy.** `send_sponsor_realtime` (HOURLY) and
+- ~~**TD-095**~~ ✅ RESOLVED (go-live 2026-06-09): **Create the two F3 Cloud Scheduler jobs at deploy.** `send_sponsor_realtime` (HOURLY) and
   `send_sponsor_digests` (WEEKLY) are registered in `CronRunView.JOBS` (`sponsor-realtime`, `sponsor-digests`) but have
   no scheduler entries yet. **To resolve:** at the Phase E/F batch deploy, create two Cloud Scheduler jobs hitting the
   cron endpoint with `X-Cron-Secret` (mirror `halatuju-application-reminders`): hourly for `sponsor-realtime`, weekly
   for `sponsor-digests` (Asia/KL). Harmless while dark — no sponsor is `realtime`/`weekly`-eligible until the pool flag
   is on and sponsors exist. (Logged 2026-06-09, B40 Phase E/F Sprint 4.)
-- TD-096: **Sponsor notification emails default to English.** `Sponsor` has no locale field, so F3 emails send in
+- **TD-096**: **Sponsor notification emails default to English.** `Sponsor` has no locale field, so F3 emails send in
   English (the `send_sponsor_*` templates are trilingual and ready). **To resolve:** add a `locale` to `Sponsor`
   (captured at registration) and pass it through `sponsor_notifications`. Low priority. (Logged 2026-06-09, B40 Phase
   E/F Sprint 4.)
@@ -1522,82 +1503,83 @@ deleting in a batch the next time somebody is in that file with a reason.
   otherwise. **(b) is the honest default today** — BrightPath's sponsors are English-reading and the alternative is
   three times the copy nobody has reviewed once. Do NOT add a `Sponsor.locale` field without settling this first: it
   would look like the fix and change nothing.
-- TD-097: **The F6 reviewer-credentials Tamil copy is a first-draft.** `admin.reviewer.*` Tamil strings were written
+- **TD-097**: **The F6 reviewer-credentials Tamil copy is a first-draft.** `admin.reviewer.*` Tamil strings were written
   to ship trilingual but need the owner's refinement (joins the Tamil-refine queue with TD-091/094). English + Malay
   are final. Low risk — the page is staff-only and held local until the batch deploy. **To resolve:** owner Tamil
   refine before Sprint 12 go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 5.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-098: **Migration `0051_reviewerprofile` (new model) needs the contenttypes workaround + RLS at deploy.** The
+- ~~**TD-098**~~ ✅ RESOLVED (go-live 2026-06-09): **Migration `0051_reviewerprofile` (new model) needs the contenttypes workaround + RLS at deploy.** The
   `reviewer_profiles` table is created by a new-model migration; per the TD-058 pattern, prod has no
   contenttypes/auth tables, so a plain `manage.py migrate` exits non-zero on the `post_migrate` signal even when the
   DDL commits. **To resolve:** at the Phase E/F batch deploy, apply `0051` via the Supabase MCP (CREATE TABLE +
   record the `django_migrations` row), then **enable RLS on `reviewer_profiles`** (deny-by-default, service-role-only
   — it holds sensitive staff PII: phone/address) and re-run `get_advisors`. Must be closed before go-live. (Logged
   2026-06-09, B40 Phase E/F Sprint 5.)
-- TD-101: **The F2 "My students" view is read-only — donate/withdraw not wired.** The account header shows the giving
+- **TD-101**: **The F2 "My students" view is read-only — donate/withdraw not wired.** The account header shows the giving
   balance but no functional "Donate more"; an offered (pending) card shows "Awaiting acceptance" but no "Withdraw
   offer" action, though `SponsorDonateView` (mock) and `SponsorCancelOfferView` both exist. These are E3 wallet actions
   (the real money is TD-075); F2 deliberately ships the *profile + list* read-surface only. **To resolve:** wire
   `donate`/`cancel` into the My-students view when the E3 wallet UI is built (or sooner if a dark click-through needs
   them). Low priority while dark. (Logged 2026-06-09, B40 Phase E/F Sprint 8.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-100: **Migration `0052` (new `AssignmentEvent` model) needs the contenttypes workaround + RLS at deploy.** Like
+  **Status 2026-09-30:** partly done — still to do: no Donate-more top-up and no Withdraw-offer button in the sponsor portal.
+- ~~**TD-100**~~ ✅ RESOLVED (go-live 2026-06-09): **Migration `0052` (new `AssignmentEvent` model) needs the contenttypes workaround + RLS at deploy.** Like
   `0051`, the new `assignment_events` table is a new-model migration; prod has no contenttypes/auth tables, so a plain
   `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F batch
   deploy, apply `0052` via the Supabase MCP (ADD COLUMN `assigned_at` + CREATE TABLE `assignment_events` + record the
   `django_migrations` row), then **enable RLS on `assignment_events`** (deny-by-default, service-role-only) and re-run
   `get_advisors`. Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 7.)
-- TD-099: **No first-sign-in nudge for a reviewer to complete their profile.** F5 (Sprint 6) lets a super admin invite
+- ~~**TD-099**~~ **RESOLVED 2026-09-30 (overtaken: 36912aac; admin/layout.tsx holds a new reviewer on the profile page)**: **No first-sign-in nudge for a reviewer to complete their profile.** F5 (Sprint 6) lets a super admin invite
   a reviewer with the right role, but the roadmap's secondary "prompt Reviewer profile (F6) completion on first
   sign-in" was deferred to keep the sprint small — a newly-invited reviewer can reach `/admin` with a blank
   `ReviewerProfile`. **To resolve:** on the admin dashboard (or `/admin/profile`), show a dismissable banner for a
   reviewer/super whose `ReviewerProfile` is still blank, linking to `/admin/profile`. Low priority, non-blocking.
   (Logged 2026-06-09, B40 Phase E/F Sprint 6.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-102: **Migration `0053` (new `SemesterResult` + `GraduationMessage` models) needs the contenttypes workaround +
+- ~~**TD-102**~~ ✅ RESOLVED (go-live 2026-06-09): **Migration `0053` (new `SemesterResult` + `GraduationMessage` models) needs the contenttypes workaround +
   RLS at deploy.** Like `0051`/`0052`, `0053` creates two new tables (`semester_results`, `graduation_messages`); prod
   has no contenttypes/auth tables, so a plain `manage.py migrate` exits non-zero on `post_migrate` even when the DDL
   commits. **To resolve:** at the Phase E/F batch deploy, apply `0053` via the Supabase MCP (CREATE both TABLEs + record
   the `django_migrations` row), then **enable RLS on both** (deny-by-default, service-role-only — `graduation_messages`
   holds free-text that, pre-approval, may contain identifiers in `raw_text`/`scan_result`) and re-run `get_advisors`.
   Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 9.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-106: **Migration `0054` (new `SponsorReferral` model) needs the contenttypes workaround + RLS at deploy.** Like
+- ~~**TD-106**~~ ✅ RESOLVED (go-live 2026-06-09): **Migration `0054` (new `SponsorReferral` model) needs the contenttypes workaround + RLS at deploy.** Like
   `0051`–`0053`, the new `sponsor_referrals` table is a new-model migration; prod has no contenttypes/auth tables, so a
   plain `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F
   batch deploy, apply `0054` via the Supabase MCP (CREATE TABLE + record the `django_migrations` row), then **enable RLS
   on `sponsor_referrals`** (deny-by-default, service-role-only — it holds prospective-sponsor emails, PII until purged)
   and re-run `get_advisors`. Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 11.)
-- ✅ RESOLVED (go-live 2026-06-09) — TD-107: **Create the F4 `purge-referrals` Cloud Scheduler job at deploy.** The 60-day PDPA purge
+- ~~**TD-107**~~ ✅ RESOLVED (go-live 2026-06-09): **Create the F4 `purge-referrals` Cloud Scheduler job at deploy.** The 60-day PDPA purge
   (`purge_sponsor_referrals`) is whitelisted in `CronRunView.JOBS` but needs a **daily** Cloud Scheduler HTTP job
   (mirroring the F3 `sponsor-realtime`/`sponsor-digests` jobs: region, `X-Cron-Secret` from `CRON_SECRET`,
   `Asia/Kuala_Lumpur`). Without it, unconverted invitee emails are never scrubbed. **To resolve:** at deploy,
   `gcloud scheduler jobs create http halatuju-purge-referrals … POST …/internal/cron/purge-referrals/`. (Logged
   2026-06-09, B40 Phase E/F Sprint 11.)
-- TD-108: **F4 Tamil copy is a first-draft.** The `sponsorPortal.referrals.*` UI strings (17 keys) + the
+- **TD-108**: **F4 Tamil copy is a first-draft.** The `sponsorPortal.referrals.*` UI strings (17 keys) + the
   `REFERRAL_INVITE_*` Tamil email templates were written to keep parity but need the owner's review per
   `tamil-style-guide.md` (the invite email is sent to a real prospective sponsor). Fold into the pre-go-live Tamil refine
   batch (TD-091/094/096/097/105). (Logged 2026-06-09, B40 Phase E/F Sprint 11.)
-- TD-104: **F9b's results form has no slip-upload control (CGPA-only).** The approved Stitch design showed an optional
+- **TD-104**: **F9b's results form has no slip-upload control (CGPA-only).** The approved Stitch design showed an optional
   "Upload results slip (staff-only)" row, but the document upload pipeline (sign-upload → PUT → create doc) is heavy and
   the CGPA/`graduated` values are what drive the sponsor-facing progress band; the `results_slip` FK on the backend is
   left unset from this surface. **To resolve (optional):** wire the existing document-upload flow into the Add-result
   form (or let the student attach via a future in-programme Documents tab) and pass `results_slip` to
   `addSemesterResult`. Low priority — the band works without it. (Logged 2026-06-09, B40 Phase E/F Sprint 10.)
-- TD-105: **F9b Tamil copy is a first-draft.** The `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*`
+- **TD-105**: **F9b Tamil copy is a first-draft.** The `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*`
   Tamil strings (48 keys) were written to keep en/ms/ta parity but need the owner's review per `tamil-style-guide.md` —
   especially the graduation-relay wording (it's shown to a real sponsor). Fold into the pre-go-live Tamil refine batch
   alongside TD-091/094/096/097. (Logged 2026-06-09, B40 Phase E/F Sprint 10.)
-- TD-103: **Semester-result CGPA is student-entered, not OCR-derived.** F9a's `record_semester_result` accepts an
+- **TD-103**: **Semester-result CGPA is student-entered, not OCR-derived.** F9a's `record_semester_result` accepts an
   optional `results_slip` (a myNADI-only `ApplicantDocument`) but does NOT auto-extract the CGPA from it — the student
   types the CGPA + semester. The roadmap envisaged "reuse the OCR path"; deferred because the in-programme university
   slip differs from the SPM `results_slip` the academic engine parses, and a manual CGPA is enough to drive the coarse
   progress band. **To resolve (optional):** when an in-programme slip OCR schema exists, pre-fill the CGPA from the slip
   and let the student confirm (don't auto-trust). Low priority; the band only needs a coarse value. (Logged 2026-06-09,
   B40 Phase E/F Sprint 9.)
-- TD-109: **`source='system'` resolution items are created but no longer shown to students.** The Action Centre now
+- ~~**TD-109**~~ **RESOLVED 2026-09-30 (overtaken: views.py: students see system document requests; the cockpit shows all)**: **`source='system'` resolution items are created but no longer shown to students.** The Action Centre now
   excludes `source='system'` from the student queue (`ResolutionItemListView`), and the officer cockpit reads the
   verdict directly (not `resolution_items`) — so `sync_resolution_items`' system rows are effectively dead (created +
   auto-resolved, read by nothing student-facing). Harmless but wasteful (a write on every GET — see TD-079). **To
   resolve (optional):** either stop generating `source='system'` items, or keep them only if a future feature reads
   them; revisit together with TD-079 (resolution sync writes on GET). Low priority. (Logged 2026-06-10, Action Centre.)
-- TD-110: **`resolution.doc_match_verdict` duplicates the per-doc red/unreadable logic in
+- **TD-110**: **`resolution.doc_match_verdict` duplicates the per-doc red/unreadable logic in
   `services.document_red_blockers` / `document_unreadable_blockers`.** Both classify each doc_type's `*_check` into
   mismatch/unreadable using the same status sets, so they must be kept in lockstep (the Action Centre and the consent
   gate must agree on a document). **To resolve:** extract one shared per-doc helper (e.g. `income_engine`/a new
@@ -1606,7 +1588,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   returns a `'pending'` (not-yet-scanned → hold the task) state that the consent-gate blockers don't have — by design
   (the pre-submit gate's wizard is still open), but a future shared helper must keep the `'pending'` branch on the
   Action-Centre side only.
-- TD-111: **Check-2 student-query coverage — the anomaly engine detects more than the clarify generator can ask, so
+- **TD-111**: **Check-2 student-query coverage — the anomaly engine detects more than the clarify generator can ask, so
   student-answerable issues are silently dropped.** Check-2's student clarify questions come from a FIXED 4-item list
   (`check2_queries.CLARIFY_SPECS`: course/sibling/device/transport) tied to STEP-1 completeness gaps; the
   `anomaly_engine` detects more (`funding_other_without_note`, `device_in_funding`, …) but those stay OFFICER-only
@@ -1620,13 +1602,14 @@ deleting in a batch the next time somebody is in that file with a reason.
   + prioritise (BC before funding note). Exclude the empty-`justification` field (owner: not a good question). FE/BE, no
   migration; student stream still flag-gated (CHECK2_STUDENT_QUERIES_ENABLED) so it surfaces to the officer until on.
   (Logged 2026-06-10, Action Centre follow-up.)
-- TD-112: **Income route-switch not yet click-tested in a browser.** The post-submit self-serve income route switch
+  **Status 2026-09-30:** partly done — still to do: anomaly flags are not routed to student questions; no coverage critic.
+- **TD-112**: **Income route-switch not yet click-tested in a browser.** The post-submit self-serve income route switch
   (endpoint `.../income-route/` + `IncomeRouteSwitch` mini-wizard) is integration-tested via Django's test client (11
   tests: both directions, recompute, no-re-block) and the FE type-checks, but the live in-browser flow on a real
   `profile_complete` student isn't click-tested. Verify on prod after deploy: open the Action Centre on an STR-route
   student with an income task → "Change how you prove your income" → switch to salary → confirm → the STR task clears,
   the earner-IC task appears, status stays `profile_complete`. (Logged 2026-06-12, income route switch. TD-070 pattern.)
-- TD-113: **Switching to the salary route does not ticket the salary slip (soft signal only).** The salary verdict
+- ~~**TD-113**~~ **RESOLVED 2026-09-30 (overtaken: b493cfa0; check2 asks each earner for income proof)**: **Switching to the salary route does not ticket the salary slip (soft signal only).** The salary verdict
   (`verdict_engine._verdict_income_salary`) raises ticketable gaps for the earner IC + relationship docs, but a missing
   salary slip keeps income at `recommend`/`income_unverified_needs_interview` (an officer/interview flag, never a student
   task) — by design (the salary route never hard-blocks post-submit). So a student who switches STR→salary is prompted
@@ -1634,7 +1617,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   documents to upload" + the income_requirements checklist set the expectation. **To resolve (if wanted):** add a
   `salary_slip_missing` ticketable verdict code on the salary route + entry in `CODE_TO_TICKET`. **Needs sign-off** — it
   reopens the "never hard-block post-submit income" decision (consent-gate-v2). (Logged 2026-06-12, income route switch.)
-- TD-114: **A fact can read CERTAIN off documents whose genuineness was never checked — a folder of typed sheets
+- **TD-114**: **A fact can read CERTAIN off documents whose genuineness was never checked — a folder of typed sheets
   passed as Pathway + Income CERTAIN (test #16).** CERTAIN is asserted on field-match alone (typed text matches the
   application); it does not require the *document* to be genuine. Two holes: (A) genuineness runs at upload only and
   is never backfilled, so pre-feature uploads sit unscored and the verdict treats unscored as fine; (B) structural —
@@ -1644,7 +1627,8 @@ deleting in a batch the next time somebody is in that file with a reason.
   verification-genuineness-gating-plan.md`** (gate CERTAIN on genuineness; confirmed fake → Unsure; cover the offer
   letter; backfill command). **DEFERRED — edge case for our population; lower priority than current fixes.** Owner
   go-ahead required before building. (Logged 2026-06-13, test #16 finding.)
-- TD-115: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+  **Status 2026-09-30:** partly done — still to do: an IC or results slip that was never scored still counts as genuine; old uploads are not re-scored.
+- **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
   route-dependent convention, causing the "one IC under all earners" + "duplicate Mother's IC" bugs.** Target: 27 fixed
   `(doc_type × person)` slots; every upload (wizard or Action Centre) tagged by person; re-upload overwrites the slot;
   route controls which slots are required vs optional (not storage). Blocker: `income_engine._cluster_docs` reads STR-route
@@ -1660,20 +1644,23 @@ deleting in a batch the next time somebody is in that file with a reason.
   3 review rounds; `f5243a7` → `762b358`; roadmap `docs/scholarship/check2-check3-roadmap.md`).
   **Still open (deferred):** (a) DB `UniqueConstraint(application,doc_type,household_member)` — the permanent guarantee; needs
   test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (Logged 2026-06-13; b+c closed 2026-06-14.)
-- TD-116: **EPF mining benefits NEW uploads only — existing EPF statements need a re-parse to populate the new fields.**
+  **Status 2026-09-30:** partly done — still to do: no database UniqueConstraint on the document slot.
+- **TD-116**: **EPF mining benefits NEW uploads only — existing EPF statements need a re-parse to populate the new fields.**
   The 2026-06-14 EPF work (`97a7793`) extracts `avg_monthly_contribution`/`months_counted`/`contribution_status`/
   `statement_date`/`address`, but these need the CARUMAN rows + statement body, which aren't in the already-stored
   extracted fields — only a re-OCR/Gemini re-run repopulates them (billable). Shipped with a graceful fallback (the
   income estimate uses the latest-month figure for old records, so no regression). **To resolve (when wanted):** a
   targeted per-doc "Re-run vision" on the EPFs that matter, or a small `--apply` command that re-extracts EPFs (billable
   — owner's call). Low priority; outcomes already correct via the fallback. (Logged 2026-06-14.)
-- TD-117: **#37-class mis-slot (an STR screenshot uploaded as EPF) isn't flagged on OLD docs because the wrong-type
+  **Status 2026-09-30:** partly done — still to do: EPFs uploaded before 2026-06-20 were never re-read (one paid re-read; same job as TD-117).
+- **TD-117**: **#37-class mis-slot (an STR screenshot uploaded as EPF) isn't flagged on OLD docs because the wrong-type
   genuineness check never ran on them.** #37's EPF doc (id 411) predates the genuineness + capture layers
   (`authenticity: null`, `capture: null`); Gemini pulled a name+NRIC but no EPF financials, and `vision.doc_genuineness`
   → `wrong_type` (the designed detector) never ran, so no officer flag. A per-doc Re-run flags it. **Optional backstop
   (offered, not built):** a deterministic "EPF extracted a name but NO balance/contribution/year/employer → doesn't look
   like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
   2026-06-14.)
+  **Status 2026-09-30:** partly done — still to do: EPFs uploaded before 2026-06-20 never got the wrong-type check (same re-read as TD-116).
 - **TD-118 (low) ✅ RESOLVED (small-change lane, 2026-06-16):** removed the six dead api-client functions
   (`generateSponsorProfile`, `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`,
   `generateAnonProfile`, `publishAnonProfile`) from `admin-api.ts` (the `AdminSponsorProfile` type is retained — still
@@ -1690,11 +1677,12 @@ deleting in a batch the next time somebody is in that file with a reason.
   some `finalProfile.*`). All harmless (build green, i18n parity intact), so deferred from the redesign sprint. Remove
   them in a future web-only change, grepping each key/fn for references first and keeping en/ms/ta parity. (Logged
   2026-06-15.)
-- TD-119: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
+- **TD-119**: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
   `birth_certificate`, 1 `epf`, 1 `str`, 1 `offer_letter` (mismatch), 1 `offer_letter` (unreadable) as genuine-docs-
   wrongly-flagged. The owner reviewed `ic`/`parent_ic` as all-genuine, so these are likely matcher false positives of
   the same class as the results-slip ones. **To resolve:** run the diagnose → fix → test loop per type (the
   results-slip pass closed 11 of the original 24). (Logged 2026-06-16, Genuineness signatures.)
+  **Status 2026-09-30:** partly done — still to do: 8 false-positive flags remain in the test set, explained but not fixed.
 - **TD-120 (low) ✅ RESOLVED (small-change lane, 2026-06-16):** removed **77** orphaned `admin.scholarship` i18n leaves
   across en/ms/ta (parity 2654→2577×3), pruned four now-empty objects (`extractFields`, `interview.rubric`,
   `recordVerdict.tools`, `upu`). Used a **dynamic-aware scan** (full-path literals + concatenation/template prefixes) so
@@ -1717,7 +1705,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   `docsDrawer.*` — so a naive bulk delete would break the UI), removes only the confirmed-dead, and keeps en/ms/ta parity.
   Worth pairing with a guardrail (an i18n orphan-key check) so the set stops regrowing. (Logged 2026-06-16. NB: the
   unmerged `feature/doc-eval-harness` branch reserves TD-119 for its own corpus-flag debt — hence this is TD-120.)
-- TD-121: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
+- **TD-121**: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
   `eval_doc_recognition --auto-ok` scores via `resolution.doc_match_verdict` (content match), which never reads
   `vision_fields['authenticity']` — that cap lives in `verdict_engine.build_verdict`. So the known typed fake (a16)
   shows as a content false-negative even though the new signature scorer + cap would flag it `suspect` in production.
@@ -1725,12 +1713,12 @@ deleting in a batch the next time somebody is in that file with a reason.
   band (or through `build_verdict`), so the two-directional scorecard reflects the genuineness layer. Verified inline
   during the sprint (a16 → suspect; 43 genuine → genuine; 4 cropped → review; zero misclassifications), just not wired
   into the command. (Logged 2026-06-16, Genuineness signatures.)
-- TD-122 **✅ RESOLVED (2026-06-20):** BC + EPF genuineness now come from the probabilistic SIGNATURE
+- **TD-122** **✅ RESOLVED (2026-06-20):** BC + EPF genuineness now come from the probabilistic SIGNATURE
   scorer in the live upload path (`vision.run_field_extraction_for_document` routes `birth_certificate`
   + `epf` through `signature_genuineness`; STR stays holistic). Text-dominant (visual markers are bonus,
   the text clears the band); the EPF scorer doubles as the wrong-type backstop (tax/withdrawal/STR →
   not_epf, TD-117). Flag-gated, no migration; +wiring tests. (Logged 2026-06-16; done 2026-06-20.)
-- TD-123 **✅ RESOLVED (2026-06-20):** Issue-2 extraction updated for BC + EPF. BC: dropped `bc_number`
+- **TD-123** **✅ RESOLVED (2026-06-20):** Issue-2 extraction updated for BC + EPF. BC: dropped `bc_number`
   (schema + Gemini hint; `bc_child_nric` already optional/barcode-bound). EPF: extract the **employer-
   and employee-share contribution TOTALS separately** + `months_counted` + `employer_number`; the income
   engine derives `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))` (`income_engine._epf_monthly_salary`;
@@ -1738,35 +1726,35 @@ deleting in a batch the next time somebody is in that file with a reason.
   so already-extracted prod EPFs don't regress. Retired `avg_monthly_contribution` from extraction. +tests.
   *(Minor follow-up: the deterministic `doc_parse` EPF parser doesn't yet emit the split totals → those
   records use the legacy-fallback estimate; image-Gemini EPFs use the precise max() formula.)* (Logged 2026-06-16; done 2026-06-20.)
-- TD-124: **Contact-form messages are email-only — no in-app inbox.** `/contact` → `contact_submissions`; the
+- **TD-124**: **Contact-form messages are email-only — no in-app inbox.** `/contact` → `contact_submissions`; the
   `notify-contact-submissions` cron (2026-06-18) emails each unread row to `contact@halatuju.xyz` and marks it read.
   There is no `/admin/messages` UI to browse/triage them. **To resolve:** a small admin inbox reading
   `contact_submissions` with the `read` toggle. Low priority (email covers the need at current volume). (Logged 2026-06-18.)
-- TD-125: **The Meet service-account JSON key lives in a Cloud Run env var (`GOOGLE_MEET_SA_JSON`), not Secret
+- **TD-125**: **The Meet service-account JSON key lives in a Cloud Run env var (`GOOGLE_MEET_SA_JSON`), not Secret
   Manager.** Matches the project's existing env-var secret pattern (CRON_SECRET, GEMINI_API_KEY) but a long-lived SA
   key is higher-value. **To resolve:** move to Secret Manager (mounted) or switch `meeting.py` to keyless DWD via the
   Cloud Run runtime SA (workload identity), removing the key entirely. (Logged 2026-06-18.)
-- TD-126: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
+- **TD-126**: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
   text-only (images were made optional). **To resolve:** once `INTERVIEW_SCHEDULING_ENABLED` is on, capture the
   cockpit "Propose interview times" card + student booking panel and add them like the other steps. (Logged 2026-06-18.)
-- TD-127: **New PISMP rows (Pendidikan Khas `…H`, Prasekolah `…H7P`, MBPK `50BK…`) carry cloned generic descriptions.**
+- **TD-127**: **New PISMP rows (Pendidikan Khas `…H`, Prasekolah `…H7P`, MBPK `50BK…`) carry cloned generic descriptions.**
   During the 2026-06-18 catalogue reconciliation, the B/D/L→H swap and the MBPK ingest created rows whose `description`
   was cloned from a Perdana sibling rather than written for the specific bidang. They're correct on code/name/
   requirements but the prose is generic. **To resolve:** write proper bidang-specific descriptions (the retired B/D/L
   rows' bespoke Braille/BIM/autism copy is in `Downloads/sk_sjkc_retire_backup_2026-06-18.json` and can seed them).
   Low priority — cosmetic, doesn't affect eligibility or selection. (Logged 2026-06-18.)
-- TD-128: **MBPK eligibility gate under-captures non-physical special-needs.** MBPK courses are gated on the existing
+- **TD-128**: **MBPK eligibility gate under-captures non-physical special-needs.** MBPK courses are gated on the existing
   onboarding "Physical disability" checkbox (`req_disability`), but MBPK also covers learning / hearing / visual needs
   (the old B/D/L categories) which that single signal doesn't capture — a deliberate partial proxy chosen for
   simplicity (see decisions.md). **To resolve, if matching proves too narrow:** broaden the Special-Needs onboarding
   field into typed categories and gate MBPK on the union. (Logged 2026-06-18.)
-- TD-129: **SJKT PISMP bidang carry an over-specified language requirement (BT in the C-group).** The official 2026 IPGM
+- **TD-129**: **SJKT PISMP bidang carry an over-specified language requirement (BT in the C-group).** The official 2026 IPGM
   Perdana syarat lists C in **3** subjects (Bahasa Melayu, Bahasa Inggeris, Sejarah), but several SJKT bidang
   requirements store a 4-subject C-group `[BM, BT, HISTORY, BI]` (Bahasa Tamil added). Harmless in practice — an SJKT
   applicant trivially has BT ≥ C — so it never changes an outcome, but it's a minor deviation from the PDF surfaced
   while investigating the picker. **To resolve:** drop BT from the C-group (or confirm it's intentional) at the next
   PISMP courses refresh, alongside TD-127. (Logged 2026-06-19.)
-- TD-130: **Unsubscribe risk on transactional emails (definitive fix is Brevo-side).** Brevo auto-injects a
+- **TD-130**: **Unsubscribe risk on transactional emails (definitive fix is Brevo-side).** Brevo auto-injects a
   `List-Unsubscribe` header on ALL mail it relays, including transactional — so Gmail shows an "Unsubscribe" button, and a
   mistaken click may add the contact to Brevo's suppression list and silently stop future service mail. We shipped a
   code-side shim on **interview** emails (our own harmless `mailto:help@` `List-Unsubscribe`, no one-click POST), but the
@@ -1774,7 +1762,8 @@ deleting in a batch the next time somebody is in that file with a reason.
   its own header alongside ours. **To resolve:** ask Brevo support to enable **List-Help instead of List-Unsubscribe on
   transactional** (account-wide, certain fix); then drop the mailto shim. Owner action (free-tier support latency unknown).
   Interim option: extend the same `mailto:` shim to the decision/reminder send paths. (Logged 2026-06-19.)
-- TD-131 **✅ RESOLVED (2026-06-19):** built the verdict-completion SLA enforcement — `send_review_nudges` cron
+  **Status 2026-09-30:** partly done — still to do: decision and query emails send without the unsubscribe shim; the Brevo setting is unchanged.
+- **TD-131** **✅ RESOLVED (2026-06-19):** built the verdict-completion SLA enforcement — `send_review_nudges` cron
   (dark behind `REVIEW_NUDGES_ENABLED`) nudges the assigned reviewer 2 days before + once overdue, escalates to all
   super-admins 4 days after the due date (`assigned_at + REVIEW_SLA_DAYS`), idempotent via stamps reset on
   (re)assignment, cancelled by a recorded `verdict_decided_at`; the verdict-due date is also surfaced in the reviewer
@@ -1787,7 +1776,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   change):** add a verdict-due field/SLA, a detection job (interviewed/assigned + no verdict past the SLA), and an
   overdue-verdict nudge email; only then surface the due date in the **interview reminder** too (the deferred external-review
   point — a date with teeth, not a soft target that can already be in the past by interview time). (Logged 2026-06-19.)
-- TD-132: **R1 sponsor-portal Tamil strings are first-drafts.** The new `sponsorPortal.nav` / `students` / `account`
+- **TD-132**: **R1 sponsor-portal Tamil strings are first-drafts.** The new `sponsorPortal.nav` / `students` / `account`
   keys (+ `myStudents.none`) were added EN/MS/TA in lockstep, but the Tamil is a first-draft for owner refinement per
   `tamil-style-guide.md`. **To resolve (owner):** refine the Tamil copy on the three new sponsor-portal blocks.
   (Logged 2026-06-19, Sponsor redesign R1.) Related: **TD-101** (the Students "Support" button is a stub — funding not
@@ -1799,7 +1788,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   guardrail now prevents missing keys recurring. **To resolve (owner):** a copy pass — **English AND Tamil** — over the
   full sponsor portal (My Giving / Students / Account / Trust / AutoSponsor) on the live site. (Mechanically the strings
   render correctly; this is a quality/voice pass.)
-- TD-133: **R5 Trust & Transparency hub ships with honest PLACEHOLDERS — real content is owner-gated.** The hub's
+- **TD-133**: **R5 Trust & Transparency hub ships with honest PLACEHOLDERS — real content is owner-gated.** The hub's
   *Who we are* (legal entity), *Governance* (trustee board), *Sources & uses* (annual figures) and *Independent
   assurance* (auditor + FY report) render "to be published" / illustrative placeholders because the organisation is not
   yet formalised. The My Giving assurance strip likewise shows illustrative figures ("112 verified · RM 284,000 · FY2025
@@ -1808,7 +1797,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   by editing the `trust_content` DB row — **no deploy** (language-neutral data in the DB, trilingual chrome in i18n). A
   per-student `enrolment_verified` flag (the "Enrolment independently verified" badge) likewise stays False until that
   institution-confirmation process exists. (Logged 2026-06-20, Sponsor redesign R5/R7.)
-- TD-134: **[RESOLVED 2026-06-21]** Gap in the TD-115 slot model — the slot key `(doc_type, household_member)` could not
+- ~~**TD-134**~~ **RESOLVED (2026-06-21)**: **[RESOLVED 2026-06-21]** Gap in the TD-115 slot model — the slot key `(doc_type, household_member)` could not
   represent multiple reviewer-requested docs of the same type, so each Action-Centre "Other" upload overwrote the previous
   one (live data loss — Theepicaa app 4: 5 requested, 1 stored) and a cross-person income request (father's IC on a
   mother-STR route) overwrote the route doc. **Resolved** by `feat/request-owned-doc-slots` (commit `d9278f3`, migration
@@ -1817,30 +1806,30 @@ deleting in a batch the next time somebody is in that file with a reason.
   `MAX_OTHER_DOCS=10` cap. +6 tests. See `docs/decisions.md` + `docs/retrospective-2026-06-21-request-owned-doc-slots.md`.
   ⚠️ Migration `0067` clashes with the unmerged `feat/whatsapp-comms` branch — renumber the later merge to `0068`.
   (Logged + resolved 2026-06-21.) **UPDATE:** whatsapp-comms shipped its model as `scholarship/0068`; clash resolved.
-- TD-135: **[RESOLVED 2026-06-21]** WhatsApp inbound STOP/opt-out → flag sync. **Resolved (roadmap S5):** Twilio inbound
+- ~~**TD-135**~~ **RESOLVED (2026-06-21; the Twilio console step is TD-318)**: **[RESOLVED 2026-06-21]** WhatsApp inbound STOP/opt-out → flag sync. **Resolved (roadmap S5):** Twilio inbound
   webhook `POST /api/v1/scholarship/whatsapp/inbound/` (`WhatsAppInboundView`) flips `whatsapp_opt_in` on STOP/START,
   Twilio-signature authed (`whatsapp.verify_twilio_signature`), number→profile via sent `to_number`. +5 tests. **Remaining
   to activate:** owner sets the inbound webhook URL in the Twilio console (code is signature-gated/inert until then).
   (Logged + resolved 2026-06-21.)
-- TD-136: **Phone verification is a field, not a feature.** `contact_phone_verified` exists (resets on phone change) and is
+- ~~**TD-136**~~ **RESOLVED 2026-09-30 (overtaken: 84338ae2; phone verification via Twilio Verify is live)**: **Phone verification is a field, not a feature.** `contact_phone_verified` exists (resets on phone change) and is
   displayed, but nothing ever sets it True — there is no OTP send/verify flow. **To resolve (if wanted):** a "verify my
   number" flow via the **Twilio Verify API** (WhatsApp or SMS channel) → mark verified. Now feasible (Twilio wired).
   (Logged 2026-06-21.)
-- TD-137: **[RESOLVED 2026-06-21]** The 24h slot min-lead was frontend-only and applied to reschedule too. **Resolved:**
+- ~~**TD-137**~~ **RESOLVED (2026-06-21)**: **[RESOLVED 2026-06-21]** The 24h slot min-lead was frontend-only and applied to reschedule too. **Resolved:**
   reschedule mode now uses `RESCHEDULE_MIN_LEAD_HOURS = 2h` (the picker offers nearer slots + jumps to the nearer earliest
   day); first-propose keeps 24h; backend already accepted any future slot. FE-only (`interviewSlots.ts` +
   `InterviewScheduleCard`), +2 jest. (Logged + resolved 2026-06-21; roadmap Sprint 1.)
-- TD-138: **[CODE BUILT, sandbox-ready, dark in prod — 2026-06-21]** No WhatsApp when interview slots are PROPOSED.
+- ~~**TD-138**~~ **RESOLVED 2026-09-30 (overtaken: ffbbf5b7; both proposed-slot content SIDs are set on the live api (read 2026-09-30))**: **[CODE BUILT, sandbox-ready, dark in prod — 2026-06-21]** No WhatsApp when interview slots are PROPOSED.
   **Built (roadmap S2):** `_send_wa_proposed` in `propose_slots` (opt-in gated, links to the application page), dual-path
   (free-text in sandbox / template in prod). **Remaining to go live:** owner sandbox-tests the wording, then submit the
   Meta template + set `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID` (dark on a real sender until then). (Logged + built 2026-06-21.)
-- TD-139 **✅ RESOLVED (2026-06-20):** dropped `results_slip` from `genuineness.supporting_doc._GENUINENESS_DOCS`
+- **TD-139** **✅ RESOLVED (2026-06-20):** dropped `results_slip` from `genuineness.supporting_doc._GENUINENESS_DOCS`
   (it was scored by the SIGNATURE scorer — its upload branch wins first — so the holistic membership was dead);
   the slip branch is independent and the holistic set is now just STR. Test updated. (Originally logged as TD-133 on
   `feature/doc-eval-harness`; **renumbered to TD-139 at the 2026-06-23 merge** because main's TD-133 = the R5 Trust hub.
   This entry's number had churned 120→124→127→130→132→133→139 across parallel main merges — the exact collision the
   doc-eval lessons flag; resolved outright so the number no longer matters for tracking.)
-- TD-140: **Bursary agreement go-live is blocked on two Phase-0 gates (DARK until both clear).** The Conditional Bursary
+- **TD-140**: **Bursary agreement go-live is blocked on two Phase-0 gates (DARK until both clear).** The Conditional Bursary
   Award Agreement shipped 2026-06-26 behind `BURSARY_AGREEMENT_ENABLED` (default OFF). It is a real legal instrument and
   must **not** be exposed to live students until: (1) **a lawyer vets the template wording** in
   `apps/scholarship/bursary.py` (it currently carries a "DRAFT — pending legal review" banner, EN+BM; Tamil not yet
@@ -1848,18 +1837,19 @@ deleting in a batch the next time somebody is in that file with a reason.
   excluded instrument, but confirm); and (2) **the Foundation entity + signatory are finalised** (interim
   `FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC` = "Suresh"; old agreements stand as signed when the entity changes). **To
   resolve:** owner/legal action (not code) → then set `BURSARY_AGREEMENT_ENABLED=1`. (Logged 2026-06-26.)
-- TD-141: **Bursary parent surety signs IN-SESSION only — no separate parent-phone signing link (Phase 2).** v1 has the
+- **TD-141**: **Bursary parent surety signs IN-SESSION only — no separate parent-phone signing link (Phase 2).** v1 has the
   student and parent/guarantor sign on the same device in one sitting (`guarantor_method='in_session'`); the model already
   carries `guarantor_method='link'` for the future path. **To resolve (Phase 2):** a tokenised public signing page
   (`secrets.token_urlsafe`, mirrors the referral-link pattern) sent to the parent's phone via WhatsApp/SMS, gated by a
   Twilio Verify OTP, with reminders + expiry — so a parent who isn't physically present can co-sign. (Logged 2026-06-26.)
-- TD-142: **Bursary agreement states a payment schedule it cannot yet honour — disbursement + suspension are still mocked
+- **TD-142**: **Bursary agreement states a payment schedule it cannot yet honour — disbursement + suspension are still mocked
   (Phase 3; folds into TD-075).** The signed agreement *names* the RM500 + 10×RM250 schedule and the Foundation's right to
   suspend/withhold, but no money moves and `agreement.status` gates nothing operationally (the `is_executed` /
   all-four-signed state is recorded but inert). **To resolve (Phase 3, with TD-075):** wire real disbursement +
   suspension/withholding to `agreement.status == executed` + academic-progress signals so the stated schedule becomes
   operative. Until then the contract is a binding *instrument* on a mocked-money flow. (Logged 2026-06-26.)
-- TD-143: **A birth certificate cropped ABOVE its header scores `not_birth_certificate`, not `suspect`.** The BC
+  **Status 2026-09-30:** partly done — still to do: payments are real but not tied to the signed agreement; that gate waits on TD-140.
+- **TD-143**: **A birth certificate cropped ABOVE its header scores `not_birth_certificate`, not `suspect`.** The BC
   signature anchors live in the header block (`Sijil Kelahiran` / `Pendaftaran Kelahiran dan Kematian` / `Kerajaan
   Malaysia`); a screenshot cropped to the lower half (particulars only, e.g. corpus a27) loses them and the text score
   falls below 0.35 → `not_birth_certificate` (a harder "wrong type" verdict than the soft `suspect` a genuine-but-cropped
@@ -1867,7 +1857,7 @@ deleting in a batch the next time somebody is in that file with a reason.
   as-is (acceptable — half a BC isn't clearly a BC), OR floor a header-cropped-but-BC-ish doc at `suspect` rather than
   `not_type`. (Logged 2026-06-27, Layer-1 doc-recognition go-live.)
 
-### [TD-144] Bursary-agreement panel: derive ticks from the real agreement when the feature goes live
+### [TD-144] Bursary-agreement panel: derive ticks from the real agreement when the feature goes live — **RESOLVED 2026-09-30 (overtaken: e2f1cf03; the panel reads the real agreement)**
 **Status:** RESOLVED in post-award signing S5 (2026-07-01, commit `5abae484`). `AdminApplicationDetailSerializer`
 now surfaces the real loaded agreement as `bursary_agreement` (signature timestamps + status + PDF; null when
 off / no agreement); the cockpit seeds `bursary` from the detail GET and bases all four ticks on it — the
@@ -1881,7 +1871,7 @@ witness buttons are disabled until an agreement exists. See `docs/retrospective-
 **Context:** `_declared_pathway` reads the declared institution from `chosen_programme['institution']` (often blank) / `pre_u_institution`. For a degree applicant who picked a course via the eligibility tree, only `course_id` is stored — never resolved to an institution. So a student who declares **UMK** but uploads a genuine **UM** offer shows no institution clash (`offer_pathway_match` compares against an empty declared institution → 'unknown', not 'clash'). #31 is caught only because its offer is *also* a non-genuine pemakluman; a genuine wrong-public-uni offer would slip through. This is a SOFT confirm, NOT a hard gate (UPU routinely places a student at a different public uni, and our course tree can be wrong).
 **Fix:** in `_declared_pathway`, when `chosen_programme['course_id']` is set, resolve `course_id → course_institutions → institutions.institution_name` and use it as the declared institution so `offer_pathway_match` can raise a real clash → `pathway_confirm`. Mind the KM/KMK/SMK/KTE convention — the place token already bridges abbreviation↔expansion, so canonicalise on the place name, not the prefix. (Logged 2026-06-27, offer-validity gate go-live.)
 
-### [TD-146] Retire the legacy `sponsored` status once the award-accept flow is rewired
+### [TD-146] Retire the legacy `sponsored` status once the award-accept flow is rewired — **RESOLVED 2026-09-30 (overtaken: 636799ce; the sponsored status is retired)**
 **Status:** RESOLVED in post-award lifecycle S3 (2026-06-28). `respond_to_award`/`fund_student` rewired
 (`fund_student → awarded`, acceptance → `active` via cool-off or Foundation counter-sign); `sponsored`
 removed from STATUS_CHOICES, all status sets, the onboarding/finalising gates, admin maps + i18n; 0 prod
@@ -1889,7 +1879,7 @@ rows to migrate. Migration `0075`. See `docs/retrospective-2026-06-28-post-award
 **Context:** The post-award lifecycle replaces `sponsored` (award accepted, in-programme) with `active` (executed) → `maintenance` (funded). S2 added the new statuses but **kept `sponsored` valid** because `sponsorship.respond_to_award` still flips the app to `sponsored` on award acceptance, and the in-programme/pool/progress gates still accept it (`pool.FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND` include it). Prod has 0 `sponsored` rows.
 **Fix (S3):** rewire `respond_to_award` to set `active` (then `maintenance` on first disbursement, S4); migrate any `sponsored` rows → `maintenance`; remove `sponsored` from STATUS_CHOICES + the `FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND`/DECIDED_STATUSES/QUERYING_LOCKED/_TERMINAL sets + the admin status maps + i18n. (Logged 2026-06-28, post-award S2.)
 
-### [TD-147] Retire the recurring `ScholarshipCohort.name` migration drift for good
+### [TD-147] Retire the recurring `ScholarshipCohort.name` migration drift for good — **RESOLVED 2026-09-30 (overtaken: af9868b0; migration 0079)**
 **Status:** RESOLVED 2026-06-28 (small-change lane, branch `chore/retire-cohort-name-drift`). Added the
 standalone state-only migration `0079_alter_scholarshipcohort_name` (a help_text-only `AlterField` —
 `sqlmigrate` confirms `-- (no-op)`, no DDL). `makemigrations scholarship --check` now reports "No
@@ -1906,7 +1896,7 @@ a standalone small-change / in the next consolidation review, NOT folded into a 
 it isolated so it's obviously a no-op DDL). Verify with `makemigrations scholarship --check` returning
 "No changes" afterwards.
 
-### [TD-148] Officer view of a student's bank details (the payout surface)
+### [TD-148] Officer view of a student's bank details (the payout surface) — **RESOLVED 2026-09-30 (overtaken: cc0e0ad1; bank-details capture is switched off, students are paid via Vircle)**
 **Status:** Open (logged 2026-06-29, post-award S7). **Context:** the bank-details capture (S7) stores the
 student's confirmed `BankAccount` (bank/account-no/holder) but surfaces it on **no admin/officer view** —
 the owner's explicit scope ("stored in the DB but not displayed anywhere"). To actually *pay* a student,
@@ -1916,7 +1906,7 @@ gated like the other reviewer surfaces. **Folds into real disbursement (TD-075)*
 payout rails, not before (there's nothing to do with the number until money can move). Anonymity note: this
 is a back-office surface only; the account never crosses to a sponsor view.
 
-### [TD-149] No path to change a bank account after it's confirmed
+### [TD-149] No path to change a bank account after it's confirmed — **RESOLVED 2026-09-30 (overtaken: cc0e0ad1; bank-details capture is switched off (returns only if the flag is re-enabled))**
 **Status:** Open (logged 2026-06-29, post-award S7). **Context:** once the student saves their `BankAccount`,
 the `bank_details_missing` task resolves and leaves the Action Centre, so there is **no student-facing path
 to correct/replace the account** (wrong account saved, account later closed). The backend confirm endpoint
@@ -2003,6 +1993,8 @@ signature blocks vs our digital SMS-PIN flow; CGPA 3.0 vs the engine's 2.0; unil
 referenced "Donor's Personal Data Notice" (must exist); mentor obligations made enforceable before mentoring is built.
 
 ### [TD-153] Partner-role least-privilege tidy-ups (UI delete-button mismatch + API-readable oversight lists)
+**Status 2026-09-30:** partly done — still to do: sponsorships, graduation-messages and verdict-metrics lists have no role check.
+
 **Status:** Open (logged 2026-07-02, from a partner-role permission audit). Two low-risk mismatches; neither is a live
 PII exposure beyond what the role already sees, but both should be tightened.
 - **(a) UI/permission mismatch — partner Delete-student button.** The student-detail page
@@ -2075,18 +2067,18 @@ org-wide default (the Calendar API's `conferenceData` can't set quick access). A
 signed into the **exact Gmail they were invited under** (a mismatched account forces a knock even with Quick
 Access edge cases).
 
-- TD-157 (low): **officer "converted from S$X @3.15" chip on a Singapore salary slip.** The B40 income now
+- **TD-157** (low): **officer "converted from S$X @3.15" chip on a Singapore salary slip.** The B40 income now
   converts SGD → MYR (income_engine), so a Singapore payslip reads OVER the line while the doc still shows
   the S$ figure — the officer relies on the existing "Singaporean payslip" warning to connect the two. A
   dedicated chip/note showing the converted ringgit figure + the rate would make the higher income
   self-explanatory. (Cockpit live-review, 2026-07-05.)
-- TD-158 (low): **birth-certificate genuineness chip cap.** The genuineness scorer already assesses BCs
+- **TD-158** (low): **birth-certificate genuineness chip cap.** The genuineness scorer already assesses BCs
   (results_doc signatures → suspect / not_birth_certificate) and the verdict caps on it, but the cockpit
   BC row (Child / Mother / Father) does NOT surface it — a suspect/wrong-type BC still shows green reads.
   The other genuineness-scored types (ic/parent_ic/offer/str/salary/epf/results) already cap; BC is the one
   remaining gap. Same 3-line documentFacts pattern; not re-banding (signal already exists). (Cockpit
   live-review, 2026-07-05.)
-- TD-159 (low): **surface `consent_blockers` in the cockpit "Cannot accept yet" panel.** The admin API now
+- ~~**TD-159**~~ **RESOLVED 2026-09-30 (overtaken: 4135979c; the Blockers card reads consent_blockers)** (low): **surface `consent_blockers` in the cockpit "Cannot accept yet" panel.** The admin API now
   returns `consent_blockers` (the exact submission gate) per application, but the cockpit's yellow
   "Cannot accept yet — the applicant still owes" panel is driven by `application_completeness` (the 7
   parts) and shows only e.g. "Consent" — not the *reason* consent is blocked (a doc mismatch,
@@ -2104,7 +2096,7 @@ creating the row (or store a "provisioned, uid-pending" flag and backfill on fir
 with the durable-invite flow (2026-07-12); surfaced in the ship-readiness review. Low: needs a Supabase
 200-without-a-body, which has not been observed.
 
-### [TD-161] `confirm_pathway` doesn't handle a pathway-TYPE change (STPM→PISMP) — #43 (low)
+### [TD-161] `confirm_pathway` doesn't handle a pathway-TYPE change (STPM→PISMP) — #43 (low) — **RESOLVED 2026-09-30 (overtaken: 917d43cc + ad2d33ac; services/confirmation.py follows the offer's pathway type)**
 When the student confirms an offer whose pathway TYPE differs from what they declared,
 `services.confirm_pathway` updates `chosen_programme` + (now) the pre-U fields, but does NOT change
 `chosen_pathway` itself. #43 declared **STPM** (`chosen_pathway='stpm'`) yet confirmed a **PISMP
@@ -2125,27 +2117,31 @@ cohort (~140 apps, paginated); annotate/prefetch (an EXISTS subquery on the list
 cohort or page size grows enough to notice. Introduced with the not-ready-first-assignment list
 gate (assignment-surfaces round, 2026-07-16).
 
-- TD-163: **Contract template Preview tab shows "Could not render the preview" + the "Open PDF" button misbehaves (draft `2026-v1`, brightpath).** Owner-observed 2026-07-19 on `/admin/contracts/<id>` Preview tab (EN). The inline preview iframe rendered the header/notice but surfaced a red "Could not render the preview." banner, and clicking **Open PDF** did not open cleanly. **PARKED as future work** at the owner's request. **Likely NOT the IBM Plex Serif change** — `render_agreement_html` + `generate_pdf` are covered by 72 passing contract tests, the `bursary_e2e` command generates a real PDF end-to-end, and the font change only altered the body `font-family` string (a CSS value can't break HTML/iframe rendering). More probable: the *draft* template is missing a piece the full render needs (e.g. no active/complete schedule row or a config field), so the preview/PDF render raises for this specific draft state, OR the FE preview fetch (`AdminContractPreviewView`) / the Open-PDF blob handler errors on a draft. **To investigate when picked up:** (a) reproduce by rendering the prod `brightpath/2026-v1` draft through `render_agreement_html` + `generate_pdf` with its actual data; (b) check `AdminContractPreviewView` + the FE `TemplatePreview` "Open PDF" handler for a draft-incomplete path; (c) make the preview degrade gracefully (render what exists, or show a clear "complete the schedule/config first" message) rather than a bare "Could not render". Low urgency — the contract module is behind the OFF flags; a real template is authored + vetted before go-live. (Logged 2026-07-19)
+- ~~**TD-163**~~ **RESOLVED (2026-07-21)**: **Contract template Preview tab shows "Could not render the preview" + the "Open PDF" button misbehaves (draft `2026-v1`, brightpath).** Owner-observed 2026-07-19 on `/admin/contracts/<id>` Preview tab (EN). The inline preview iframe rendered the header/notice but surfaced a red "Could not render the preview." banner, and clicking **Open PDF** did not open cleanly. **PARKED as future work** at the owner's request. **Likely NOT the IBM Plex Serif change** — `render_agreement_html` + `generate_pdf` are covered by 72 passing contract tests, the `bursary_e2e` command generates a real PDF end-to-end, and the font change only altered the body `font-family` string (a CSS value can't break HTML/iframe rendering). More probable: the *draft* template is missing a piece the full render needs (e.g. no active/complete schedule row or a config field), so the preview/PDF render raises for this specific draft state, OR the FE preview fetch (`AdminContractPreviewView`) / the Open-PDF blob handler errors on a draft. **To investigate when picked up:** (a) reproduce by rendering the prod `brightpath/2026-v1` draft through `render_agreement_html` + `generate_pdf` with its actual data; (b) check `AdminContractPreviewView` + the FE `TemplatePreview` "Open PDF" handler for a draft-incomplete path; (c) make the preview degrade gracefully (render what exists, or show a clear "complete the schedule/config first" message) rather than a bare "Could not render". Low urgency — the contract module is behind the OFF flags; a real template is authored + vetted before go-live. (Logged 2026-07-19)
   **RESOLVED 2026-07-21.** Root cause was NOT rendering (verified: the exact prod `2026-v1` content renders to a valid PDF) and NOT a draft-incomplete state. It was a **query-param collision**: the Open-PDF URL used `?format=pdf`, and `format` is DRF's reserved content-negotiation override — `?format=pdf` raises `Http404` (no `pdf` renderer) in `perform_content_negotiation()`, *before* auth and before the view runs, so the PDF branch was dead code. Confirmed live: `?format=pdf`→404, `?format=json`→401, `?locale=en`→401 unauth. Fix: selector is now `?output=pdf` (view + FE); `openPdf` opens the tab synchronously (was popup-blocked post-`await`); `render_preview_html` now escapes + renders hierarchical numbering + bold; distinct `pdfFailed` message; regression tests assert `?output=pdf` streams a PDF and `?format=pdf` 404s. See lessons.md ("`?format=<x>` is RESERVED by DRF").
 
-- TD-164: **The embargoed-decline status mask is hardcoded to `'interviewed'` — it should mask to `pre_decline_status`.** `ApplicationReadSerializer.get_status` hides an unrevealed rejection from the student by returning `'interviewed'` while `pending_rejection_category` is set. That was correct when the only embargoed decline came from a reviewed case, but `admin_reject('interview', …)` is permitted from `shortlisted` / `profile_complete` / `interviewing` too — so an embargoed decline of a **shortlisted** student would show them a stage they never reached, for the whole cool-off window, while every write path silently 403s them (uploads/edits gate on `POST_SHORTLIST_EDITABLE`, which a rejected app has left). The correct target already exists and is already populated: `pre_decline_status`, snapshotted by `_record_reject` precisely so `cancel_pending_decline` can restore it — the same fix the 2026-07-03 code-health round applied to the cancel path but not to the mask. **⚠️ CORRECTED 2026-07-22 — THIS IS LIVE, NOT INERT.** This entry originally said "currently inert in production (`DECLINE_COOLOFF_DAYS=0`)". **That was wrong.** `gcloud run services describe halatuju-api` shows **`DECLINE_COOLOFF_DAYS = 7`** — the 7-day embargo is ACTIVE and has been for some time. The original claim was read off the *code default* (`os.environ.get('DECLINE_COOLOFF_DAYS', '0')`) instead of the running service, the exact failure lessons.md already warns about twice. **Evidence at the time of correction:** two applications sat mid-embargo — **#137** (rejected 15/07 from `profile_complete`, email due 22/07) and **#13** (rejected 17/07 from `interviewing`, due 24/07); both were being shown `'interviewed'`.
+- **TD-164**: **The embargoed-decline status mask is hardcoded to `'interviewed'` — it should mask to `pre_decline_status`.** `ApplicationReadSerializer.get_status` hides an unrevealed rejection from the student by returning `'interviewed'` while `pending_rejection_category` is set. That was correct when the only embargoed decline came from a reviewed case, but `admin_reject('interview', …)` is permitted from `shortlisted` / `profile_complete` / `interviewing` too — so an embargoed decline of a **shortlisted** student would show them a stage they never reached, for the whole cool-off window, while every write path silently 403s them (uploads/edits gate on `POST_SHORTLIST_EDITABLE`, which a rejected app has left). The correct target already exists and is already populated: `pre_decline_status`, snapshotted by `_record_reject` precisely so `cancel_pending_decline` can restore it — the same fix the 2026-07-03 code-health round applied to the cancel path but not to the mask. **⚠️ CORRECTED 2026-07-22 — THIS IS LIVE, NOT INERT.** This entry originally said "currently inert in production (`DECLINE_COOLOFF_DAYS=0`)". **That was wrong.** `gcloud run services describe halatuju-api` shows **`DECLINE_COOLOFF_DAYS = 7`** — the 7-day embargo is ACTIVE and has been for some time. The original claim was read off the *code default* (`os.environ.get('DECLINE_COOLOFF_DAYS', '0')`) instead of the running service, the exact failure lessons.md already warns about twice. **Evidence at the time of correction:** two applications sat mid-embargo — **#137** (rejected 15/07 from `profile_complete`, email due 22/07) and **#13** (rejected 17/07 from `interviewing`, due 24/07); both were being shown `'interviewed'`.
 
 **Actual current impact — real but bounded.** The mask's job is to hide the rejection, and it does that. The misreport only *matters* when `pre_decline_status` is far from `'interviewed'`: a decline from **`shortlisted`** would show the student an unearned jump to "Interviewed" for the full 7 days while every write path 403s them. Neither live case is `shortlisted`, so nobody is currently seeing an implausible stage — but `INTERVIEW_REJECT_FROM` permits `shortlisted`, so one reviewer decline from that stage produces it. **The org-admin reject (`org_admin_reject`) is NOT affected** — it never sets the pending markers, verified live on app #86 (email sent 29 ms after the click, `decline_due_at` null).
 
 **To resolve:** return `obj.pre_decline_status or 'interviewed'` (keep the legacy fallback for rows predating the snapshot), and add a test that embargoes a decline from `shortlisted` and asserts the student still reads `shortlisted`. Two live rows carry a correct `pre_decline_status` already, so no backfill is needed. **Owner decision 2026-07-22: park as managed debt, do not hotfix.** (Found during the org-admin reject sprint 2026-07-21; the flag error found + corrected 2026-07-22 while answering an unrelated question about awards. See `docs/retrospective-2026-07-21-org-admin-reject.md`.)
 
-- TD-165: **The org-admin reject card is component-untested (its pure gate is not).** The three-step card (button → mandatory reason → "Are you sure?") on `/admin/scholarship/[id]` is covered by `next build` typing + the backend `test_org_reject.py`; the step machine, the disabled-until-non-blank Reject button, and the error path that must PRESERVE the typed reason on a failed submit are not rendered in jest. The load-bearing *decision* logic IS unit-tested (`officerCockpit.canOrgReject` — 4 tests pinning super/org_admin × `shortlisted`), which is why this is low priority rather than a gap in the gate itself. A jsdom harness exists (see TD-065), so this is not infra-blocked. **To resolve:** a jsdom test driving idle → form → confirm, asserting Reject stays disabled on whitespace and that a rejected POST keeps the textarea contents. Note this action is irreversible, so the confirm step is the only safety net — it is worth covering. (Introduced 2026-07-21; same family as TD-065.) **Extended 2026-07-23:** the **reporting-date box** (above Recommendation) is likewise component-untested — its stage gate IS unit-tested (`officerCockpit.showsReportingDateBox`, 5 cases), so what is uncovered is the render/submit wiring and the error path. Same remediation, same jsdom harness.
+- **TD-165**: **The org-admin reject card is component-untested (its pure gate is not).** The three-step card (button → mandatory reason → "Are you sure?") on `/admin/scholarship/[id]` is covered by `next build` typing + the backend `test_org_reject.py`; the step machine, the disabled-until-non-blank Reject button, and the error path that must PRESERVE the typed reason on a failed submit are not rendered in jest. The load-bearing *decision* logic IS unit-tested (`officerCockpit.canOrgReject` — 4 tests pinning super/org_admin × `shortlisted`), which is why this is low priority rather than a gap in the gate itself. A jsdom harness exists (see TD-065), so this is not infra-blocked. **To resolve:** a jsdom test driving idle → form → confirm, asserting Reject stays disabled on whitespace and that a rejected POST keeps the textarea contents. Note this action is irreversible, so the confirm step is the only safety net — it is worth covering. (Introduced 2026-07-21; same family as TD-065.) **Extended 2026-07-23:** the **reporting-date box** (above Recommendation) is likewise component-untested — its stage gate IS unit-tested (`officerCockpit.showsReportingDateBox`, 5 cases), so what is uncovered is the render/submit wiring and the error path. Same remediation, same jsdom harness.
+  **Status 2026-09-30:** partly done — still to do: untested: a spaces-only reason, a failed reject keeping the text, the reporting-date save error.
 
-- TD-166: **The "What you agreed to" panel renders the CURRENT consent wording, not the version the student actually agreed to (low).** `ScholarshipConsent.tsx` builds `consentBody` from `t('scholarship.consent.text' | '.textMinor')` and reuses it for the read-only post-consent panel, so a student who consented under `2026-draft-5` now sees the `draft-6` text. The record itself is correct — `Consent.version` stores the version agreed — only the DISPLAY is current-wording. Accepted deliberately at the 2026-07-23 close because draft-6 is strictly NARROWER (sponsors receive less than draft-5 promised), so past consenters see a promise more favourable to them than the one they gave, and nothing they permitted has been exceeded. **It becomes a real problem the first time a consent version WIDENS what we share** — then the panel would show people a broader promise than they made. **To resolve:** keep the per-version bodies (e.g. `scholarship.consent.archive.<version>.text`) and render by `active.version`, falling back to current when a version has no archived copy. (Logged 2026-07-23) **✅ ACCEPTED — NOT resolved (owner, 2026-07-26).** The widening arrived with `2026-draft-7` and the archived-bodies fix was built (18 strings across en/ms/ta, recovered from git history for draft-3/5/6) and then REMOVED at the owner's direction: one displayed version, no per-student behaviour, questions handled by hand. So from draft-7 the panel does show earlier consenters a broader promise than they gave, knowingly. The record is unaffected (`Consent.version` is accurate). `consentText.test.ts` guards the decision — it fails if an `archive` block reappears, so reintroducing per-version display needs an owner decision rather than a quiet edit. Revisit if a consent version ever widens in a way that materially affects a student.
-- TD-167: **Nothing ties the consent copy to the actual sponsor payload — they drifted silently for months (medium).** The consent form claimed sponsors receive the student's "profile and documents" / "supporting information". Neither was ever true: no document is exposed on the sponsor path, and `SponsorPoolCardSerializer` is an allowlist of derived non-identifying fields. The two only reconciled because the owner read the consent form (2026-07-22). The existing sponsor tests assert the NEGATIVE (no name/NRIC/address/phone/email leaks) but nothing asserts the POSITIVE — that the set of sponsor-visible fields has not grown beyond what the consent describes. So a future field added to the card serializer would widen what sponsors see with no signal that the consent text now understates it. **To resolve:** a test pinning the sponsor-visible field set (a literal expected list vs `SponsorPoolCardSerializer().fields.keys()`), failing on any addition, with a comment pointing at `scholarship.consent.text` so whoever adds a field is forced to re-check the wording. Cheap, and it converts a compliance question into a CI failure. (Logged 2026-07-23)
-- TD-168: **`manual.test.ts` hand-maintains `ROLE_CHAPTERS`, so its coverage freezes while the registry grows (low).** The manual suite asserts visibility rules against a test-local literal array of role-chapter slugs. Registering the finance chapter (Sprint 14) left all 22 tests green while covering the new chapter with nothing — the array looks like the registry but is a copy of it. Extended by hand this sprint, which fixes the instance and not the shape. **To resolve:** derive it, `const ROLE_CHAPTERS = CHAPTERS.filter(c => c.group === 'role').map(c => c.slug)`, and keep the per-role assertions explicit (they are the part that must stay hand-written, since `visibleChapters` is deliberately role-filtered). Then a new chapter is covered the moment it is registered. Cheap; deferred only because the general rule is now in `lessons.md` and this is the single known instance. (Logged 2026-07-23, Sprint 14.)
-- TD-169: **The Vircle guide attachment filename still derives from the platform brand seam, even on a tenant send (low).** Sprint 5 (per-org branding) routed every rendered brand LITERAL — programme name, sign-off, persona, sender, display domain — through `branding.py`, and the org-2 leak test proves none of subject/text/HTML/from/reply-to leak the platform brand on a tenant send. The Vircle onboarding email's PDF ATTACHMENT filename was deliberately left OUT of that scope: it is built from `_P.programme_name` (the platform constant) unconditionally, because the PDF itself is a BrightPath-specific asset — a tenant send today would still attach BrightPath's guide under a BrightPath-derived filename. Not a leak within the sprint's contract (the leak test doesn't cover attachment filenames), but real drift the moment a second tenant goes live with Vircle enabled. **To resolve:** author a tenant-aware guide asset (or a per-org filename at minimum) and thread `branding` into the attachment-naming call the same way the 5 core `.format` families were threaded this sprint. Not required while BrightPath is the only tenant. (Logged 2026-07-24, Sprint 5; carried from `docs/retrospective-2026-07-23-sprint5-branding-email.md`, "What to watch / carry".)
-- TD-170: **Two admin strings tokenise only the brand WORD because their surrounding copy had already drifted from the canonical wording (low).** Sprint 6 (per-org branding, frontend) needed to interpolate `{programmeName}` into every message that names BrightPath, gated on byte-identity — but `admin.payments.subtitle` (ms/ta) and `recordVerdict.reasonPlaceholder` (ta) read "Biasiswa BrightPath" / "BrightPath உதவித்தொகை", phrasing that does not match the canonical `{programmeName}` insertion point used everywhere else (which would read naturally as "Biasiswa {programmeName}" only if the surrounding word order were also canonical). To keep BrightPath's rendered output byte-identical (the sprint's hard gate, snapshot-proven), these two entries tokenise ONLY the brand word in place rather than being rephrased to the canonical pattern — correct for byte-identity, but it means the two strings still carry the pre-existing drift, now baked around a token instead of a literal. **To resolve:** as part of a future Tamil/Malay copy-tidy pass (not blocking), rephrase both to the canonical `{programmeName}`-insertion pattern used by the other 16 interpolated keys, verified against the owner's wording rulings, with a fresh byte-identity check (BrightPath's rendered string will change, so this needs an explicit copy-approval step, not a silent edit). Low priority — the current strings are technically correct now, just copy-inconsistent. (Logged 2026-07-24, Sprint 6.)
-- TD-171: **`scholarship.test.ts` fails locally under Node 26's experimental global `localStorage`, though it is green on CI (low, environment-only).** Sprint 6 added no code to this test; it began failing in the LOCAL dev sandbox once Node 26 shipped a native global `localStorage` shim that shadows the jsdom one the suite expects, producing a assertion mismatch that has nothing to do with application logic. Verified NOT a regression: the identical failure reproduces on an unmodified checkout of `origin/main` (pre-Sprint-6) run under the same local Node 26, and the suite passes clean on CI (pinned Node version, no such global). **To resolve:** pin the local dev Node version in `.nvmrc`/`engines` to match CI, or add an explicit jsdom `localStorage` override in the test's setup so it no longer depends on which global wins. Not urgent — CI is authoritative and green; this only bites a contributor running jest locally on a very new Node. (Logged 2026-07-24, Sprint 6.) **✅ RESOLVED (2026-07-25, commit `8c4ff74a`).** Took the second suggested route: the "no-ops safely when no storage is available" test now hides the global `sessionStorage` for its duration (`Object.defineProperty` + restore in `finally`), so it simulates a genuinely storage-less runtime regardless of which Node provides a built-in web-storage shim. Full suite green locally on Node 26.5 (739 jest) — the local/CI split is gone.
-- TD-172: **Requests can't carry screenshots or attachments — deferred pending org-fenced file storage design (low).** Platform Sprint 15's `OrgRequest` (bug/feature requests) has no attachment field or upload endpoint; a submitter describes an issue in text only, even when a screenshot would resolve ambiguity in one glance (especially for bug reports, where "steps to reproduce" is already optional free text). Deliberately scoped out of Sprint 15 — the existing document-upload machinery (`ApplicantDocument`, `storage.py`) is shaped for the scholarship applicant's own signed-URL vault and isn't yet a general org-fenced file-storage primitive; bolting requests onto it without that design step risks either leaking across orgs or duplicating the vault pattern ad hoc. **To resolve:** design a general org-fenced attachment store (or generalise `storage.py`'s signed-URL pattern) before adding an `attachments` relation to `OrgRequest` + an upload endpoint under the existing `_OrgRequestsBase` org-fence. Low priority — text-only requests are functional; this is a quality-of-life gap, not a blocker. (Logged 2026-07-24, Sprint 15.) **✅ RESOLVED (Sprint 15.1, 2026-07-24).** New `OrgRequestAttachment` model (migration `0114`, table `org_request_attachments`, RLS enabled) generalises the signed-URL vault under a NEW `requests/<org_id>/<request_id>/<uuid>` storage-key namespace (`storage.build_request_attachment_key`, `resolve_org_for_path` extended) rather than reusing the applicant-document vault directly — a deliberate namespace split, not a shared table (see `docs/decisions.md`). Images-only ×5 ×8MB, bytes never through Django (Rule 5), every cross-org/foreign-path/cap invariant test-proven. See `docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
-- TD-173: **Requests screenshot attachments accept HEIC/HEIF but never convert them to JPEG (low).** `org_requests.ALLOWED_IMAGE_EXTENSIONS` (Sprint 15.1) includes `.heic`/`.heif` — an iPhone screenshot or photo uploads fine — but the existing `imaging.convert_heic_to_jpeg` conversion path only runs inside `DocumentListCreateView` for `ApplicantDocument`, a Django-mediated upload. `OrgRequestAttachment` uploads go browser→Supabase directly via a signed URL (bytes never reach Django, by design — Rule 5), so there is no server-side hook to convert at upload time; a HEIC attachment is stored and served as-is, which some browsers/admin contexts won't render inline. **To resolve:** either (a) convert client-side before upload (FE, `heic2any` or similar, adds a JS dependency), or (b) add a best-effort async conversion step (e.g. a signed-URL-triggered Cloud Function or a periodic sweep) that fetches, converts, and replaces the stored object — more moving parts, matches the existing `convert_heic_documents` management-command pattern. Low priority — HEIC is a minority of screenshot uploads (most are PNG/JPEG from a browser DevTools capture) and the record still displays/downloads correctly as a file, just not always as an inline image preview. (Logged 2026-07-24, Sprint 15.1.)
+- **TD-166**: **The "What you agreed to" panel renders the CURRENT consent wording, not the version the student actually agreed to (low).**
+  `ScholarshipConsent.tsx` builds `consentBody` from `t('scholarship.consent.text' | '.textMinor')` and reuses it for the read-only post-consent panel, so a student who consented under `2026-draft-5` now sees the `draft-6` text. The record itself is correct — `Consent.version` stores the version agreed — only the DISPLAY is current-wording. Accepted deliberately at the 2026-07-23 close because draft-6 is strictly NARROWER (sponsors receive less than draft-5 promised), so past consenters see a promise more favourable to them than the one they gave, and nothing they permitted has been exceeded. **It becomes a real problem the first time a consent version WIDENS what we share** — then the panel would show people a broader promise than they made. **To resolve:** keep the per-version bodies (e.g. `scholarship.consent.archive.<version>.text`) and render by `active.version`, falling back to current when a version has no archived copy. (Logged 2026-07-23) **✅ ACCEPTED — NOT resolved (owner, 2026-07-26).** The widening arrived with `2026-draft-7` and the archived-bodies fix was built (18 strings across en/ms/ta, recovered from git history for draft-3/5/6) and then REMOVED at the owner's direction: one displayed version, no per-student behaviour, questions handled by hand. So from draft-7 the panel does show earlier consenters a broader promise than they gave, knowingly. The record is unaffected (`Consent.version` is accurate). `consentText.test.ts` guards the decision — it fails if an `archive` block reappears, so reintroducing per-version display needs an owner decision rather than a quiet edit. Revisit if a consent version ever widens in a way that materially affects a student.
+- **TD-167**: **Nothing ties the consent copy to the actual sponsor payload — they drifted silently for months (medium).** The consent form claimed sponsors receive the student's "profile and documents" / "supporting information". Neither was ever true: no document is exposed on the sponsor path, and `SponsorPoolCardSerializer` is an allowlist of derived non-identifying fields. The two only reconciled because the owner read the consent form (2026-07-22). The existing sponsor tests assert the NEGATIVE (no name/NRIC/address/phone/email leaks) but nothing asserts the POSITIVE — that the set of sponsor-visible fields has not grown beyond what the consent describes. So a future field added to the card serializer would widen what sponsors see with no signal that the consent text now understates it. **To resolve:** a test pinning the sponsor-visible field set (a literal expected list vs `SponsorPoolCardSerializer().fields.keys()`), failing on any addition, with a comment pointing at `scholarship.consent.text` so whoever adds a field is forced to re-check the wording. Cheap, and it converts a compliance question into a CI failure. (Logged 2026-07-23)
+- **TD-168**: **`manual.test.ts` hand-maintains `ROLE_CHAPTERS`, so its coverage freezes while the registry grows (low).** The manual suite asserts visibility rules against a test-local literal array of role-chapter slugs. Registering the finance chapter (Sprint 14) left all 22 tests green while covering the new chapter with nothing — the array looks like the registry but is a copy of it. Extended by hand this sprint, which fixes the instance and not the shape. **To resolve:** derive it, `const ROLE_CHAPTERS = CHAPTERS.filter(c => c.group === 'role').map(c => c.slug)`, and keep the per-role assertions explicit (they are the part that must stay hand-written, since `visibleChapters` is deliberately role-filtered). Then a new chapter is covered the moment it is registered. Cheap; deferred only because the general rule is now in `lessons.md` and this is the single known instance. (Logged 2026-07-23, Sprint 14.)
+- **TD-169**: **The Vircle guide attachment filename still derives from the platform brand seam, even on a tenant send (low).** Sprint 5 (per-org branding) routed every rendered brand LITERAL — programme name, sign-off, persona, sender, display domain — through `branding.py`, and the org-2 leak test proves none of subject/text/HTML/from/reply-to leak the platform brand on a tenant send. The Vircle onboarding email's PDF ATTACHMENT filename was deliberately left OUT of that scope: it is built from `_P.programme_name` (the platform constant) unconditionally, because the PDF itself is a BrightPath-specific asset — a tenant send today would still attach BrightPath's guide under a BrightPath-derived filename. Not a leak within the sprint's contract (the leak test doesn't cover attachment filenames), but real drift the moment a second tenant goes live with Vircle enabled. **To resolve:** author a tenant-aware guide asset (or a per-org filename at minimum) and thread `branding` into the attachment-naming call the same way the 5 core `.format` families were threaded this sprint. Not required while BrightPath is the only tenant. (Logged 2026-07-24, Sprint 5; carried from `docs/retrospective-2026-07-23-sprint5-branding-email.md`, "What to watch / carry".)
+- **TD-170**: **Two admin strings tokenise only the brand WORD because their surrounding copy had already drifted from the canonical wording (low).** Sprint 6 (per-org branding, frontend) needed to interpolate `{programmeName}` into every message that names BrightPath, gated on byte-identity — but `admin.payments.subtitle` (ms/ta) and `recordVerdict.reasonPlaceholder` (ta) read "Biasiswa BrightPath" / "BrightPath உதவித்தொகை", phrasing that does not match the canonical `{programmeName}` insertion point used everywhere else (which would read naturally as "Biasiswa {programmeName}" only if the surrounding word order were also canonical). To keep BrightPath's rendered output byte-identical (the sprint's hard gate, snapshot-proven), these two entries tokenise ONLY the brand word in place rather than being rephrased to the canonical pattern — correct for byte-identity, but it means the two strings still carry the pre-existing drift, now baked around a token instead of a literal. **To resolve:** as part of a future Tamil/Malay copy-tidy pass (not blocking), rephrase both to the canonical `{programmeName}`-insertion pattern used by the other 16 interpolated keys, verified against the owner's wording rulings, with a fresh byte-identity check (BrightPath's rendered string will change, so this needs an explicit copy-approval step, not a silent edit). Low priority — the current strings are technically correct now, just copy-inconsistent. (Logged 2026-07-24, Sprint 6.)
+- **TD-171**: **`scholarship.test.ts` fails locally under Node 26's experimental global `localStorage`, though it is green on CI (low, environment-only).** Sprint 6 added no code to this test; it began failing in the LOCAL dev sandbox once Node 26 shipped a native global `localStorage` shim that shadows the jsdom one the suite expects, producing a assertion mismatch that has nothing to do with application logic. Verified NOT a regression: the identical failure reproduces on an unmodified checkout of `origin/main` (pre-Sprint-6) run under the same local Node 26, and the suite passes clean on CI (pinned Node version, no such global). **To resolve:** pin the local dev Node version in `.nvmrc`/`engines` to match CI, or add an explicit jsdom `localStorage` override in the test's setup so it no longer depends on which global wins. Not urgent — CI is authoritative and green; this only bites a contributor running jest locally on a very new Node. (Logged 2026-07-24, Sprint 6.) **✅ RESOLVED (2026-07-25, commit `8c4ff74a`).** Took the second suggested route: the "no-ops safely when no storage is available" test now hides the global `sessionStorage` for its duration (`Object.defineProperty` + restore in `finally`), so it simulates a genuinely storage-less runtime regardless of which Node provides a built-in web-storage shim. Full suite green locally on Node 26.5 (739 jest) — the local/CI split is gone.
+- **TD-172**: **Requests can't carry screenshots or attachments — deferred pending org-fenced file storage design (low).** Platform Sprint 15's `OrgRequest` (bug/feature requests) has no attachment field or upload endpoint; a submitter describes an issue in text only, even when a screenshot would resolve ambiguity in one glance (especially for bug reports, where "steps to reproduce" is already optional free text). Deliberately scoped out of Sprint 15 — the existing document-upload machinery (`ApplicantDocument`, `storage.py`) is shaped for the scholarship applicant's own signed-URL vault and isn't yet a general org-fenced file-storage primitive; bolting requests onto it without that design step risks either leaking across orgs or duplicating the vault pattern ad hoc. **To resolve:** design a general org-fenced attachment store (or generalise `storage.py`'s signed-URL pattern) before adding an `attachments` relation to `OrgRequest` + an upload endpoint under the existing `_OrgRequestsBase` org-fence. Low priority — text-only requests are functional; this is a quality-of-life gap, not a blocker. (Logged 2026-07-24, Sprint 15.) **✅ RESOLVED (Sprint 15.1, 2026-07-24).** New `OrgRequestAttachment` model (migration `0114`, table `org_request_attachments`, RLS enabled) generalises the signed-URL vault under a NEW `requests/<org_id>/<request_id>/<uuid>` storage-key namespace (`storage.build_request_attachment_key`, `resolve_org_for_path` extended) rather than reusing the applicant-document vault directly — a deliberate namespace split, not a shared table (see `docs/decisions.md`). Images-only ×5 ×8MB, bytes never through Django (Rule 5), every cross-org/foreign-path/cap invariant test-proven. See `docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
+- **TD-173**: **Requests screenshot attachments accept HEIC/HEIF but never convert them to JPEG (low).** `org_requests.ALLOWED_IMAGE_EXTENSIONS` (Sprint 15.1) includes `.heic`/`.heif` — an iPhone screenshot or photo uploads fine — but the existing `imaging.convert_heic_to_jpeg` conversion path only runs inside `DocumentListCreateView` for `ApplicantDocument`, a Django-mediated upload. `OrgRequestAttachment` uploads go browser→Supabase directly via a signed URL (bytes never reach Django, by design — Rule 5), so there is no server-side hook to convert at upload time; a HEIC attachment is stored and served as-is, which some browsers/admin contexts won't render inline. **To resolve:** either (a) convert client-side before upload (FE, `heic2any` or similar, adds a JS dependency), or (b) add a best-effort async conversion step (e.g. a signed-URL-triggered Cloud Function or a periodic sweep) that fetches, converts, and replaces the stored object — more moving parts, matches the existing `convert_heic_documents` management-command pattern. Low priority — HEIC is a minority of screenshot uploads (most are PNG/JPEG from a browser DevTools capture) and the record still displays/downloads correctly as a file, just not always as an inline image preview. (Logged 2026-07-24, Sprint 15.1.)
 
 ### [TD-174] Billing usage: email `UsageEvent` rows are mostly org-NULL — senders aren't threaded to an org (low, v1-permitted)
+**Status 2026-09-30:** partly done — still to do: attribution is manual per sender; only scheduling is tested.
+
 Sprint 13a's meter tags every logged usage row with the calling organisation where the seam already
 carries one (Gemini/Vision/WhatsApp calls run inside an application context). Email is different:
 most of `emails.py`'s `_send*` primitives fire from contexts that were never built to know which
@@ -2163,7 +2159,7 @@ usually derivable from the application/cohort each email closes over) — a mech
 wide-surface-area change, best done as its own small sprint once real per-org invoicing is on the
 table. (Logged 2026-07-25, Sprint 13a — Billing & usage v1.)
 
-### [TD-175] Test-date-rot: 5 owner-case tests carried literal near-future dates that expired on the calendar (low, pattern note)
+### [TD-175] Test-date-rot: 5 owner-case tests carried literal near-future dates that expired on the calendar (low, pattern note) — **RESOLVED 2026-09-30 (overtaken: 27562de0; the clock is frozen in those tests; no second sighting)**
 Five payment-window tests (from the 2026-07-22 payment back/advance-pay sprint) pinned owner-verified
 cases to literal dates like `date(2026, 7, 26)` — correct and meaningful the day they were written,
 but silently became "today or the past" the moment the real calendar caught up (2026-07-25), turning
@@ -2179,7 +2175,7 @@ from a note to an actual guard (either a pytest fixture that fails loudly on an 
 within N days of "now" near known date-sensitive call sites, or a lint rule). (Logged 2026-07-25,
 Sprint 13a — Billing & usage v1.)
 
-### [TD-176] Wallet-credit signers are free strings — no identity or role check in the service (medium)
+### [TD-176] Wallet-credit signers are free strings — no identity or role check in the service (medium) — **RESOLVED 2026-09-30 (overtaken: 3e11699b; sponsorship.sign_admin_credit checks the admin's identity)**
 `sponsorship.sign_admin_credit` / `finance_check_admin_credit` / `confirm_admin_credit` take
 `signer` as a plain string. They enforce **pairwise distinctness** (`signer_not_distinct`) but not
 **who the signer is**. The payments chain additionally requires the signer to **type their own
@@ -2208,7 +2204,7 @@ Elanjelian", so a name key was wrong in both directions. Source guards pin that 
 calling the payments primitives and uses the same guard vocabulary. See
 `docs/retrospective-2026-07-26-platform-p4b-credit-endpoints.md`.
 
-### [TD-177] `bursary_e2e.py` sets a cohort's organisation but not its programme (low)
+### [TD-177] `bursary_e2e.py` sets a cohort's organisation but not its programme (low) — **RESOLVED 2026-09-30 (overtaken: 8636b1b6; bursary_e2e sets the programme)**
 `management/commands/bursary_e2e.py:142` sets `cohort.owning_organisation` and leaves
 `cohort.programme` NULL, so applications it creates land in the safe-NULL programme bucket.
 Harmless today — the column is nullable, the command is dev/e2e-only, and prod is fully backfilled
@@ -2332,7 +2328,7 @@ so a fee set today prices in ~RM20/month of avoidable retention. Fix BEFORE fixi
 `describe`'s 77,576 MB, a 1000× error that would have hidden this entirely.
 (Logged 2026-07-26, billing cost review; diagnosis corrected same day.)
 
-- TD-179 (medium): **two attribution signals for "this partner's students" disagree, and now BOTH have
+- **TD-179** (medium): **two attribution signals for "this partner's students" disagree, and now BOTH have
   a live consumer.** The Sources student count + the partner weekly digest attribute an application by
   the raw referral CHIP (`profile.referral_source == org.code`, via `partner_comms.partner_applications`
   / `chip_tally`) — deliberately, because the stored `referred_by_org` FK drifts (a self-referral chip
@@ -2350,7 +2346,7 @@ so a fee set today prices in ~RM20/month of avoidable retention. Fix BEFORE fixi
   isolation. (Logged 2026-07-26, partner comms S1; referenced by
   `docs/plans/2026-07-26-partner-comms-roadmap.md`.)
 
-- TD-180 (low): **partner-email screen copy is ms/ta first-draft.** `admin.sources.emails.*` (~45 leaves
+- **TD-180** (low): **partner-email screen copy is ms/ta first-draft.** `admin.sources.emails.*` (~45 leaves
   ×3) was written in one pass; the Malay and Tamil are unreviewed. The EMAILS themselves are English-only
   by design (as every staff/partner email is), so this is the admin screen only. Owner pass wanted.
   (Logged 2026-07-26, partner comms S1.)
@@ -2611,7 +2607,7 @@ rail may scroll freely.
 **Cheap tell during review:** a sprint that fills two or three reserved slots at once.
 **Size:** small (a portal + its test), once it is actually needed. (Logged 2026-07-28, nav/IA N4.)
 
-### [TD-188] The rail's own review is still owed a browser — low, but it is the third in a row
+### [TD-188] The rail's own review is still owed a browser — low, but it is the third in a row — **RESOLVED 2026-09-30 (overtaken: 3a6c4586; the owner reviewed the live console on 2026-07-28)**
 **Status:** Open — logged 2026-07-28.
 **What.** N4 closes on 968 jest, `check-i18n` and a clean build, plus an interactive mock-up the
 owner approved. What no test covers is whether the open/close *feels* right: hover latency, whether
@@ -2638,7 +2634,7 @@ DB via the session pooler (no production change), or `http://localhost:3000` add
 `CORS_ALLOWED_ORIGINS` (a production config change for a dev convenience — owner's call). Logged as
 part of TD-194.
 
-### [TD-189] A bare `/apply` has no programme picker — the fallback the owner asked for is not built
+### [TD-189] A bare `/apply` has no programme picker — the fallback the owner asked for is not built — **RESOLVED 2026-09-30 (overtaken: 5c2fa368; a bare /apply asks which round (views._open_round_choices))**
 **Status:** Open — logged 2026-07-28 at PF-1's own close, with the condition that ends it.
 **What.** PF-1 makes the platform refuse to guess: with two rounds open and no `?p=` code, the API
 returns `409 programme_required` and the apply page shows its generic error. The owner's answer
@@ -2901,7 +2897,7 @@ expected occasion for it.
 
 (Logged 2026-07-28 from the owner's instruction at sprint close. **Number allocated when TD-191 was
 the highest — re-verify uniqueness at the next close**, per the concurrent-agent lesson.)
-### [TD-193] The scope switcher changes the breadcrumb and nothing else — low, but it will read as broken
+### [TD-193] The scope switcher changes the breadcrumb and nothing else — low, but it will read as broken — **RESOLVED 2026-09-30 (overtaken: the gift crumb filters since 2026-09-03; the organisation half is TD-228)**
 **Status:** ✅ **RESOLVED for the PROGRAMME crumb, 2026-09-03** (console shape sprint). The
 ORGANISATION crumb is still display-only and stays that way — see the split below.
 **How it was resolved, and why it did not become the thing this entry forbids.** `lib/programmeScope`
@@ -3050,7 +3046,7 @@ question namespace (the exact shape of this bug) fails it.
 checking that the reference resolves, and the difference is invisible until something dereferences it.
 
 
-### [TD-199] The eWallet-ID band has ~55 students of headroom before Vircle's sequence rolls past it
+### [TD-199] The eWallet-ID band has ~55 students of headroom before Vircle's sequence rolls past it — **RESOLVED 2026-09-30 (overtaken: 71665063; the wallet-ID band is 7-9 (about 400 students of room))**
 **Status:** Open · logged 2026-07-30 (Vircle ID band sprint, commit `21d48037`)
 **File(s):** `halatuju/settings/base.py` (`VIRCLE_ID_BAND_MIN`/`_MAX`), `apps/scholarship/payments.py` (`vircle_id_band`, `valid_vircle_id`)
 **What it is:** `valid_vircle_id` now requires the first digit the student types to sit in the issued band (5–9). That band is what separates a real eWallet ID from a **truncated DuitNow Transfer number**, which shares the prefix and the length. It is bounded: production wallets span `…175129` → `…177350`, i.e. **~2,221 numbers consumed across 46 students (~48 per student we onboard)** because the sequence advances with **Vircle's entire customer base**, not just ours. With 2,649 left before `…179999`, roll-over into `800040018xxxx` is roughly **55 students away — plausibly within the next intake**, at which point position 10 becomes `0` and every new student is refused.
@@ -3453,6 +3449,8 @@ not prefer is the case where it matters most.
 invited who would rather read Malay or Tamil.
 
 ### [TD-216] The interviewer label is stamped by the first click, not by the person who interviewed — medium
+**Status 2026-09-30:** partly done — still to do: findings and conclusion share one box, so a conclusion-only rewrite still takes the credit.
+
 
 **Status:** ✅ RESOLVED 2026-08-13 (commit `01cb0c77`) · **IN-HOUSE, NOT BILLABLE** (owner,
 2026-08-13: *"This is not what the request is about. This is a separate item… Let's fix this
@@ -4206,7 +4204,7 @@ practice this ticket exists downstream of; the answer is a door, or a decision t
 
 ---
 
-### [TD-235] The income rule has four homes, and three of them name documents by hand — medium
+### [TD-235] The income rule has four homes, and three of them name documents by hand — medium — **RESOLVED 2026-09-30 (overtaken: superseded by TD-262, which extends it; c2d0324b serves income_shown)**
 
 **Found:** the 2026-09-08 consolidation review, reading the three BrightPath #21 fixes together.
 
@@ -4282,7 +4280,7 @@ loud rather than to write down.
 
 (Logged 2026-09-08, BrightPath #23 close; workaround added the same day.)
 
-### [TD-237] Applications shows in the rail before a gift is chosen — low
+### [TD-237] Applications shows in the rail before a gift is chosen — low — **RESOLVED 2026-09-30 (overtaken: f44d9d11; navigation.programmeGroupFolded)**
 
 **Found:** owner, live, 2026-09-09. *"When an admin signs in, the Application menu item shows. It
 shouldn't. The gate is through the programme 'button' in the Overview page."*
@@ -4690,7 +4688,7 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
-### [TD-268] The cross-app import metric counts statements, so a file split can only inflate it — low
+### [TD-268] The cross-app import metric counts statements, so a file split can only inflate it — low — **RESOLVED 2026-09-30 (overtaken: code_health.py counts import edges since H15)**
 
 **Found:** code health H12 (2026-09-20), reading `xapp` after `views_admin/__init__.py` was split
 into twenty modules. **Nothing was changed** — `Settings/_tools` was out of the sprint's scope.
@@ -4893,6 +4891,8 @@ change for whoever next opens that file.
 **Trigger:** the transition table gains a second road into `deferred`, or triage becomes re-runnable.
 
 ### [TD-262] The income rule has ELEVEN homes and they disagree in sixteen places today — HIGH (eligibility; every fix is the owner's ruling)
+**Status 2026-09-30:** partly done — still to do: W1 (the api has no twin for the web's mononym birth-certificate arm) and option 4 (the supporting letter in the paper slots, if still wanted).
+
 
 **Found:** code health H8 (2026-09-19), which was planned to unify TD-235's "four homes" and
 stopped at its own gate: no home could be unified without changing some household's answer.
@@ -6216,7 +6216,7 @@ a component that sprint never opens. This was found only because a now-stale sen
 
 ---
 
-### [TD-272] A frozen exemption ledger keyed on a PATH refuses the very split it exists to encourage - medium
+### [TD-272] A frozen exemption ledger keyed on a PATH refuses the very split it exists to encourage - medium — **RESOLVED 2026-09-30 (overtaken: 591b6a9b; a declared move keeps its ledger entry)**
 
 **Found:** code health H14 (2026-09-20). **Reported, not fixed** - fixing it is a change to the
 standard, which is H19's job, not a move sprint's.
@@ -6292,3 +6292,5 @@ depends on, not a defect.
 - **TD-311 (raised 2026-09-29 by TD-310's browser run) — MEDIUM, student-visible, an OWNER DECISION (the English hero changes too): the Home page scrolls sideways in Tamil on a phone.** The hero heading is `text-5xl` (48 px) on every width below `md`, and its longest Tamil word does not fit a phone's content box (the `<h1>`'s own `scrollWidth` is what sticks out), so `/` in Tamil measures **458 px wide at 390 and at 360** (Chromium, Nirmala UI; English and Malay fit). It is older than TD-310 — before it, the top bar pushed the same page to 588 px and hid this — and the Tamil font is untouched by Lexend. The same screenshots show the Tamil closing call-to-action's label overlapping its button edge. **Fix (small, but the owner's eye):** step the hero down on phones (`text-4xl sm:text-5xl md:text-6xl`), which also shrinks the English heading on phones; or size only the Tamil hero down. Measure `/` in all three languages at 360 and 390 afterwards (`document.documentElement.scrollWidth <= innerWidth`). Screenshots: `before-home-ta-phone360.png` / `after-home-ta-phone360.png` from TD-310's run. **Trigger:** the owner's pick, or the next Home page change.
 - **TD-312 (raised 2026-09-29 by TD-310's adversarial review) — low, student-visible: `/search` in Tamil is 375 px wide on a 360 px phone.** A toggle row on the search page does not fit in Tamil (the reviewer's `rv7/F4-search-ta-360-preexisting-375px.png`). Pre-existing — the Tamil labels paint in Nirmala UI, which Lexend does not touch. **Fix:** let that row wrap (or `min-w-0` on its halves), as TD-310 did for the Home bar and the TVET requirement rows; re-measure `/search` at 360 in all three languages. **Trigger:** the next `/search` change.
 - **TD-313 (raised 2026-09-29 by TD-310's adversarial review) — low, content, student-visible: TVET course pages print raw requirement-type names.** In the TVET "Academic requirements" list the left half is `tvetKeyLabel(item.key)`, which knows only the eight GENERAL keys; every SPECIAL key falls back to the raw field name (`credit_math_or_addmath`, `pass_science_tech`, …). The reviewer counted **9** distinct raw names across the 83 TVET pages swept; the serializer can send **40** special keys (39 in `SPECIAL_FIELDS` + `req_interview`), so any of them may appear. The BM label beside it is correct, so the row reads "credit_bmbi · Kredit BM atau BI". **Fix (content, en/ms/ta):** give the special keys human labels (or show only the served label for special rows, as the non-TVET list does). **Trigger:** the next course-page or requirements-copy change.
+- **TD-317 (raised 2026-09-30 by the register review; the leftover of TD-123) — low, reviewer-visible.** `doc_parse._parse_epf` (the in-house EPF parser) returns the average and monthly contribution only, not the employer-share and employee-share totals, so a statement it reads uses the legacy-fallback salary estimate where a Gemini-read one uses the exact `max()` formula (`income_engine/salary_figures.py`). TD-123 recorded this as a minor follow-up under a RESOLVED headline, where it could not be counted. **Fix:** emit the two split totals from `_parse_epf`. **Trigger:** the next EPF or salary-figure change.
+- **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is built (`views.WhatsAppInboundView`, commit `d4577e90`) and is inert until the inbound webhook URL is set in the Twilio console — TD-135 said so under a RESOLVED headline on 2026-06-21, and nothing since records that it was done. It cannot be verified from the repository. **Fix:** the owner sets the URL in Twilio (or confirms it is set), then one STOP from a test number proves the opt-out flag flips. **Trigger:** before the next WhatsApp template goes out to students.

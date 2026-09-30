@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## The debt register is read end to end: 36 closed with evidence, 159 open and in order - 2026-09-30
+
+Docs only - no code, no deploy. The owner asked for every open TD to be checked against today's
+code, the stale ones discarded, and the rest classified by importance and ease.
+
+- **Every entry was read by an agent that did not write it** (eleven readers, by theme), against an
+  evidence pack (git log since June, the CHANGELOG, decisions, retros), and the lead opened every
+  citation behind a closure. The owner's rule: **close only with evidence**.
+- **The count was hiding two groups.** `code_health.py` read 99 open. 31 entries (TD-274 to TD-304)
+  had been WRITTEN INSIDE the Open Items Index, which the tool and the duplicate-id guard skip; and
+  94 entries of the June bullet log were `- TD-NNN:` with the id not in bold, a shape the tool does
+  not read. The register was fixed, not the tool: the 31 moved, word for word, to their own `##`
+  section; the bullet log now carries `- **TD-NNN**`. Defined 177 -> **315**.
+- **36 closed at this pass**, each overtaken by later work, each with a commit, a `file:line` or a
+  superseding entry on its defining line (`RESOLVED 2026-09-30 (overtaken: ...)`). 38 more were
+  already resolved in their own text and only lacked a marker the tool could read.
+- **159 open**, all in the regenerated index in working order: Owner-decision 23, Now
+  18, Next 37, Later 63, Someday 17, Accepted 1. 20 partly-done entries carry
+  a dated `**Status:**` line. Two leftovers that sat under RESOLVED headlines got numbers of their
+  own: **TD-317** (the in-house EPF parser's rougher estimate) and **TD-318** (the Twilio inbound
+  webhook, an owner action).
+- Bodies were not reworded. A check of the old file against the new finds 133 changed lines outside
+  the index: 105 reshaped bullets, 23 marked headings, 5 summary lines.
+- `tests/test_technical_debt_register.py` 3 passed; `code_health.py` td_open 99 -> 159 (the register
+  can see itself; no debt was added). decisions.md 2026-09-30; consolidation-log 2026-09-30.
+
 ## The Documents page offers the IC that settles whose STR it is (TD-309) - 2026-09-30
 
 Sprint, owner's pick: **option 1 — the slot is offered, the submission gate is unchanged.** When an

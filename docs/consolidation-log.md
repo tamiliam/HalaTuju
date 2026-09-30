@@ -17,6 +17,73 @@ _(cleared at the 2026-09-18 review — counter reset; the 11 reviewed entries ar
 
 ## Reviews
 
+### 2026-09-30 — the register itself: every entry read, 36 closed on evidence, 159 open and ordered
+
+**Not a small-change review** (the Pending list above is untouched and its counter stands) — the
+owner asked for the whole debt register to be verified and prioritised. Recorded here because the
+consolidation workflow owns "regenerate the index by READING".
+
+**Reflect.** Eleven read-only readers, by theme, each entry checked against the code and an evidence
+pack; the lead opened every citation behind a closure. Two findings about the register, not the code:
+thirty-one entries had been written INSIDE the index (which the tool and the duplicate-id guard skip),
+and ninety-four June entries used a bullet shape the tool does not read. The tool said 99 open; the
+register held 315 defined and, after this pass, 159 open.
+
+**Cohere.** The clusters, each worth one job: first-draft Malay and Tamil copy (ten entries, one owner
+sitting); never walked in a browser (five, behind TD-194); the missing organisation scope (TD-228,
+TD-246); the award that cannot be undone (TD-198, TD-252, TD-068, TD-227 — one set of rulings); one
+paid re-read of older EPFs (TD-116, TD-117). Three registers-of-habit to stop: closing a TD in a retro
+and not in the register (38 entries were resolved in their own text with no marker); writing new
+entries into the index; and recording a leftover under a RESOLVED headline (TD-123, TD-135 — now
+TD-317, TD-318).
+
+**Anticipate.** The Now tier is eighteen entries and eight are half a day each (TD-203, TD-252, TD-248,
+TD-315, TD-292, TD-217, TD-167, TD-153): a two-day money-and-identity sweep would clear them. The
+Owner-decision tier is twenty-three questions and blocks more work than any other tier.
+
+**Closed at this pass (overtaken, evidence on each defining line):**
+  - TD-003 — 187 web test files and a jest deploy gate
+  - TD-018 — ca54b0ef; apps/courses/views.py has one import
+  - TD-019 — ca54b0ef; json imported at the top of apps/courses/views.py
+  - TD-020 — ca54b0ef; one credit_stv key in apps/courses/serializers.py
+  - TD-021 — 20a5d036; eligibility_service.deduplicate_pismp
+  - TD-050 — quiz/page.tsx reads the locale from useT; halatuju_lang is gone
+  - TD-067 — ec10ee6e; the final profile IS the sponsor version (views_admin/verdict.py)
+  - TD-071 — 2d809b2f; Turnstile on sponsor sign-up
+  - TD-073 — 93da774b (TD-182); auth-context.tsx isAnonymousAuthSuppressed
+  - TD-078 — 11e055f3; tests/test_subject_drift.py pins both maps
+  - TD-083 — 7d0fe1fe; AiReliabilityCard shows the override rate
+  - TD-086 — a6bed1f5; branding.email_support is help@halatuju.xyz
+  - TD-099 — 36912aac; admin/layout.tsx holds a new reviewer on the profile page
+  - TD-109 — views.py: students see system document requests; the cockpit shows all
+  - TD-113 — b493cfa0; check2 asks each earner for income proof
+  - TD-136 — 84338ae2; phone verification via Twilio Verify is live
+  - TD-138 — ffbbf5b7; both proposed-slot content SIDs are set on the live api (read 2026-09-30)
+  - TD-144 — e2f1cf03; the panel reads the real agreement
+  - TD-146 — 636799ce; the sponsored status is retired
+  - TD-147 — af9868b0; migration 0079
+  - TD-148 — cc0e0ad1; bank-details capture is switched off, students are paid via Vircle
+  - TD-149 — cc0e0ad1; bank-details capture is switched off (returns only if the flag is re-enabled)
+  - TD-159 — 4135979c; the Blockers card reads consent_blockers
+  - TD-161 — 917d43cc + ad2d33ac; services/confirmation.py follows the offer's pathway type
+  - TD-175 — 27562de0; the clock is frozen in those tests; no second sighting
+  - TD-176 — 3e11699b; sponsorship.sign_admin_credit checks the admin's identity
+  - TD-177 — 8636b1b6; bursary_e2e sets the programme
+  - TD-188 — 3a6c4586; the owner reviewed the live console on 2026-07-28
+  - TD-189 — 5c2fa368; a bare /apply asks which round (views._open_round_choices)
+  - TD-193 — the gift crumb filters since 2026-09-03; the organisation half is TD-228
+  - TD-199 — 71665063; the wallet-ID band is 7-9 (about 400 students of room)
+  - TD-235 — superseded by TD-262, which extends it; c2d0324b serves income_shown
+  - TD-237 — f44d9d11; navigation.programmeGroupFolded
+  - TD-268 — code_health.py counts import edges since H15
+  - TD-272 — 591b6a9b; a declared move keeps its ledger entry
+  - TD-274 — workspace 1bcf720; code_health.loosened accepts a declared relabel in list ledgers
+
+**For the owner (23 entries):** TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318.
+
+**Gates.** `test_technical_debt_register.py` 3 passed; `code_health.py` td_open 159 = the index;
+`wat_lint.py` 0 fails. Docs only, no deploy.
+
 ### 2026-09-18 — eleven changes: five the owner SAW, six nobody could see
 
 **Reflect.** Two clusters, a fortnight apart and completely different in kind.

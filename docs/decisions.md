@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## The debt register is worked from its index, closed only on evidence, and never written inside the index — owner ruling and method, 2026-09-30
+
+**Decided by:** the owner (*"go through each one and determine if they are all still relevant or
+overtaken … discard the stale … classify on importance and ease … prioritise"*; and, asked how hard
+entries may be closed: *"Only with evidence"*). The method is the lead's.
+
+**The closing rule.** An entry closes only when a third party can find the proof: a commit in this
+repository, a `file:line` at HEAD, or a later entry or dated ruling that supersedes it. "Probably
+fixed in the arc" is OPEN. A partly-done entry stays OPEN with a dated `**Status:**` line. An entry
+the owner knowingly accepted stays open on the record under *Accepted* (TD-166). Nothing is closed
+because it no longer seems worth doing — that is an owner ruling, asked entry by entry.
+
+**The classes and the tiers.** Importance: **A** money or identity · **B** eligibility or security ·
+**C** a student or an officer sees it · **D** tooling and hygiene. Effort: **S** half a day, one
+file · **M** one to three days · **L** longer, or a migration or an outside party. Tiers:
+**Owner-decision** (any entry that needs a ruling, an outside party or an owner action — listed
+first, as questions) · **Now** (A at any size; B at S or M) · **Next** (C at S) · **Later** (C at
+M or L; D at S) · **Someday** (D at M or L). The register's own HIGH/medium/low words are history;
+the index's class is the current reading (TD-262 is headed HIGH and is two small leftovers).
+
+**The register's shape, so the count stays true.** A defining line is `### [TD-NNN]` or
+`- **TD-NNN`, and the resolution marker sits ON it. The Open Items Index holds POINTERS ONLY: 31
+entries written inside it (TD-274 to TD-304) were invisible to the counting tool and to the
+duplicate-id guard for ten days, and 94 June entries written `- TD-NNN:` had never been counted at
+all. Both were fixed in the register rather than in the tool. **A new entry goes in the body; the
+index gets a pointer at the next regeneration.**
+
+**What the owner is asked.** The 23 Owner-decision entries (TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318).
+
+**Revisit if:** the Owner-decision tier grows past what one sitting can rule on (then it needs its
+own agenda, not a list); or a tier's rule keeps being overridden by hand (then the rubric is wrong).
+
 ## A stranger's STR vouches for nothing — `has_valid_str` asks whose it is (TD-285) — owner ruling, 2026-09-29
 
 **The owner chose option 1 of TD-285: *"close it now, the F8 way."*** R5 of 2026-09-19 — *"only the
