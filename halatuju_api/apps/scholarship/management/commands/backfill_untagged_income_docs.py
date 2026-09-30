@@ -35,6 +35,7 @@ from apps.scholarship.income_engine import (
     _DEDUP_DOC_TYPES, _HOUSEHOLD_WIDE_DEDUP, dedupe_income_proof, implied_single_member,
     income_dedup_rank, resolved_member_for,
 )
+from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.resolution import doc_match_verdict
 
@@ -116,7 +117,7 @@ class Command(BaseCommand):
                             .filter(application=app, doc_type=doc.doc_type, household_member=member,
                                     request_code=doc.request_code, superseded_at__isnull=True)
                             .exclude(id=doc.id)
-                            .order_by('-uploaded_at').first())
+                            .order_by(*SNAPSHOT_ORDER).first())
                 if existing is None:
                     verdict = 'takes the empty slot'
                 else:

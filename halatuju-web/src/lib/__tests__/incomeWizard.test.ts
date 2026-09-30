@@ -61,11 +61,11 @@ describe('strIcSlotMembers — TD-309, the IC that settles whose STR it is', () 
     expect(strIcNamedMembers([str([], [], '2026-09-15T00:00:00Z'), older])).toEqual([])
   })
 
-  it('DRIFT: "latest" is the api\'s — live rows, `uploaded_at` descending (document_snapshot)', () => {
+  it('DRIFT: "latest" is the api\'s — live rows, `uploaded_at` then `id` descending (document_snapshot)', () => {
     // The ordering above is a copy of the server's, so it is read from the server's source: if
     // `SNAPSHOT_ORDER` or `latest_doc` changes shape, this goes red and the copy must follow.
     const src = readApi('apps/scholarship/document_snapshot.py')
-    expect(src).toMatch(/^SNAPSHOT_ORDER = '-uploaded_at'$/m)
+    expect(src).toMatch(/^SNAPSHOT_ORDER = \('-uploaded_at', '-id'\)$/m)
     expect(src).toMatch(/def latest_doc\([\s\S]*?return live_docs\(application, doc_type, member=member, members=members\)\.first\(\)/)
     expect(src).toMatch(/def _live\(rows\):\s*\n\s*return \[d for d in rows if getattr\(d, 'superseded_at', None\) is None\]/)
   })
@@ -75,6 +75,13 @@ describe('strIcSlotMembers — TD-309, the IC that settles whose STR it is', () 
     const newer = str(['mother'], [], '2026-09-15T00:00:00Z')
     expect(strIcSlotMembers([older, newer], STR_FATHER)).toEqual(['mother'])
     expect(strIcSlotMembers([newer, older], STR_FATHER)).toEqual(['mother'])
+  })
+
+  it('TD-292: an exact `uploaded_at` tie goes to the greater id, whatever the list order', () => {
+    const lower = { ...str(['guardian'], [], '2026-09-15T00:00:00Z'), id: 7 }
+    const higher = { ...str(['mother'], [], '2026-09-15T00:00:00Z'), id: 8 }
+    expect(strIcSlotMembers([lower, higher], STR_FATHER)).toEqual(['mother'])
+    expect(strIcSlotMembers([higher, lower], STR_FATHER)).toEqual(['mother'])
   })
 })
 

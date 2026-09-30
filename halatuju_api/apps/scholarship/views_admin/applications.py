@@ -428,7 +428,7 @@ class AdminCancelDeclineView(_AdminBase):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        cancel_pending_decline(app)
+        cancel_pending_decline(app, by_email=getattr(admin, 'email', '') or '')
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

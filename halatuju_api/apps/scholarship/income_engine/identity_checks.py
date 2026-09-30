@@ -238,21 +238,29 @@ def _roster_candidates(application):
     return out
 
 
-def _name_matched_members(application, doc):
-    """The DISTINCT roster members whose name tolerant-matches the NAME read off this income doc,
-    in roster order. [] when the doc has no readable name / isn't a resolvable income doc / matches
-    nobody. Ignores the doc's own tag — this is purely 'who does the NAME on the paper point to'."""
+def _name_match_levels(application, doc):
+    """{member: 'match'|'partial'} for every DISTINCT roster member whose name tolerant-matches the
+    NAME read off this income doc, in roster order (a member matched twice keeps its best level).
+    {} when the doc has no readable name / isn't a resolvable income doc / matches nobody. Ignores
+    the doc's own tag — this is purely 'who does the NAME on the paper point to'."""
     if getattr(doc, 'doc_type', '') not in _RESOLVABLE_INCOME_DOCS:
-        return []
+        return {}
     name = _doc_person_name(doc)
     if not name:
-        return []
+        return {}
     from ..vision import relationship_name_match
-    out = []
+    out = {}
     for member, cand in _roster_candidates(application):
-        if relationship_name_match(name, cand) in ('match', 'partial') and member not in out:
-            out.append(member)
+        level = relationship_name_match(name, cand)
+        if level in ('match', 'partial') and out.get(member) != 'match':
+            out[member] = level
     return out
+
+
+def _name_matched_members(application, doc):
+    """The DISTINCT roster members the name on this doc points to, full OR partial, in roster
+    order — what may FILL a blank tag (see `_name_match_levels`)."""
+    return list(_name_match_levels(application, doc))
 
 
 def resolved_member_for(application, doc):
@@ -275,14 +283,70 @@ def name_contradicts_tag(application, doc):
     with NRICs instead of names) or two members never triggers a correction — the tag stands.
 
     This is the airtight backstop for the #80/#112 class: a father's payslip that a pre-consent
-    STR-route force-tag stamped onto the mother. The upload guard uses it to self-correct at source."""
+    STR-route force-tag stamped onto the mother. The upload guard uses it to self-correct at source.
+
+    ⚠ TD-315 (2026-09-30, tightened by its review 2026-10-01): OVERRIDING AN EXPLICIT TAG NEEDS
+    THE NUMBER, OR A NAME THAT CANNOT BE A RELATIVE'S. (a) A document with a readable NRIC is
+    re-filed only when that NRIC equals exactly ONE member's IC on file — the roster stores no
+    NRICs, so the members' numbers come from their `parent_ic` documents. (b) Only a document with
+    NO readable NRIC falls back to the name: a FULL match with exactly one member whose GIVEN name
+    (the first token, before A/L, A/P, BIN …) is that member's given name too. A 'partial' never
+    overrides: the patronymic of a child's name IS the father's given name
+    (`'ARUN A/L RAJU'` ~ bare `'Raju'`), and word sets ignore order, so a son named after his
+    grandfather (`'ARUN A/L RAJU'` vs `'Raju A/L Arun'`) is a full match with the wrong given
+    name. A 'partial' may still FILL A BLANK tag (`resolved_member_for`)."""
     tag = (getattr(doc, 'household_member', '') or '').strip()
     if not tag:
         return ''
-    matched = _name_matched_members(application, doc)
-    if len(matched) == 1 and matched[0] != tag:
-        return matched[0]
+    doc_nric = _doc_person_nric(doc)
+    if doc_nric:
+        owners = _members_holding_nric(application, doc, doc_nric)
+        return owners[0] if len(owners) == 1 and owners[0] != tag else ''
+    levels = _name_match_levels(application, doc)
+    if len(levels) == 1:
+        member, level = next(iter(levels.items()))
+        if (level == 'match' and member != tag
+                and _given_names_agree(_doc_person_name(doc), _roster_name(application, member))):
+            return member
     return ''
+
+
+def _doc_person_nric(doc):
+    """The NRIC printed on the document (IC → `vision_nric`; payslip/EPF → `nric`; STR →
+    `recipient_nric`), canonicalised to its 12 digits, or '' when none reads in full."""
+    from ..vision import _canonical_nric
+    dt = getattr(doc, 'doc_type', '')
+    if dt == 'parent_ic':
+        raw = getattr(doc, 'vision_nric', '') or ''
+    else:
+        raw = _doc_fields(doc).get('recipient_nric' if dt == 'str' else 'nric', '') or ''
+    digits = _canonical_nric(raw)
+    return digits if len(digits) == 12 else ''
+
+
+def _members_holding_nric(application, doc, nric):
+    """The DISTINCT members whose live `parent_ic` on file carries *nric* — never *doc* itself."""
+    from ..vision import _canonical_nric
+    out = []
+    for ic in live_docs(application, 'parent_ic'):
+        member = (ic.household_member or '').strip()
+        if (ic.pk != getattr(doc, 'pk', None) and member and member not in out
+                and _canonical_nric(ic.vision_nric or '') == nric):
+            out.append(member)
+    return out
+
+
+def _roster_name(application, member):
+    return next((n for m, n in _roster_candidates(application) if m == member), '')
+
+
+def _given_names_agree(a, b):
+    """The FIRST name token of each (parentage markers and honorifics stripped, text after an '@'
+    alias dropped) is the same name under romanisation folding."""
+    from ..vision import _canonical_name_seq, _tokens_close
+    sa = _canonical_name_seq((a or '').split('@')[0])
+    sb = _canonical_name_seq((b or '').split('@')[0])
+    return bool(sa) and bool(sb) and _tokens_close(sa[0], sb[0])
 
 
 def implied_single_member(application):

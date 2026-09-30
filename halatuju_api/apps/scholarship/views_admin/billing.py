@@ -328,9 +328,11 @@ class AdminBillingRatesView(_AdminBase):
                             status=status.HTTP_400_BAD_REQUEST)
 
         raw_from = (request.data.get('effective_from') or '').strip()
+        # TD-248: the LOCAL date (TD-209's shape). A UTC date before 08:00 MYT on the 1st is
+        # still last month, and a rate defaulted there would re-price a month already billed.
         try:
             effective_from = (date.fromisoformat(raw_from) if raw_from
-                              else timezone.now().date().replace(day=1))
+                              else timezone.localdate().replace(day=1))
         except ValueError:
             return Response({'error': 'bad_effective_from', 'code': 'bad_effective_from'},
                             status=status.HTTP_400_BAD_REQUEST)

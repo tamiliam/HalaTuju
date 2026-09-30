@@ -389,8 +389,12 @@ _MALAY_NUM = {'ENAM': 6, 'TUJUH': 7, 'LAPAN': 8, 'DELAPAN': 8, 'SEMBILAN': 9,
 
 def _declared_subject_count(full_upper: str):
     """The subject total the slip prints in 'JUMLAH MATA PELAJARAN <word>', or None.
-    SPM slips state it as a Malay cardinal (e.g. SEPULUH = 10)."""
-    m = re.search(r'JUMLAH MATA PELAJARAN\s*:?\s*(.{0,30})', full_upper)
+    SPM slips state it as a Malay cardinal (e.g. SEPULUH = 10).
+
+    Clip-tolerant, the `PERIKSAAN\\s+TAHUN` shape (TD-217): anchored on 'MLAH', not 'JUMLAH', so a
+    left-trimmed scan's 'JMLAH' / 'UMLAH' / 'MLAH MATA PELAJARAN' (#140) still yields the total and
+    the under-read guard in `parse_spm_slip` still runs. The full word matches at the same place."""
+    m = re.search(r'MLAH\s+MATA\s+PELAJARAN\s*:?\s*(.{0,30})', full_upper)
     if not m:
         return None
     tail = m.group(1)

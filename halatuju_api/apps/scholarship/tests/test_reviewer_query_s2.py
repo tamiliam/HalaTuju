@@ -18,6 +18,11 @@ from apps.scholarship.models import (
 )
 
 TODAY = datetime.date(2026, 6, 29)
+# ⚠ The integration tests below run `sync_check2_queries`, which reads the REAL clock
+# (`freshness.stale_income_proof(today=None)`), so a literal "current" month rots: 'June 2026'
+# turned stale on 2026-10-01 and two tests went red with nothing changed (TD-175's shape, second
+# sighting). A slip dated THIS month is current on any day the suite runs.
+CURRENT_PERIOD = datetime.date.today().strftime('%B %Y')
 
 
 class _Base(TestCase):
@@ -97,7 +102,7 @@ class TestCheck2Integration(_Base):
         self._slip(app, 'December 2025')
         sync_check2_queries(app)
         self.assertIn('income_doc_stale', self._codes(app))
-        self._slip(app, 'June 2026')                 # current slip uploaded
+        self._slip(app, CURRENT_PERIOD)              # current slip uploaded
         sync_check2_queries(app)
         self.assertNotIn('income_doc_stale', self._codes(app))
 
@@ -110,7 +115,7 @@ class TestCheck2Integration(_Base):
 
     def test_nothing_when_clean(self):
         app = self._app('k')                         # current household, no tertiary sibling
-        self._slip(app, 'June 2026')
+        self._slip(app, CURRENT_PERIOD)
         sync_check2_queries(app)
         codes = set(self._codes(app))
         self.assertNotIn('income_doc_stale', codes)

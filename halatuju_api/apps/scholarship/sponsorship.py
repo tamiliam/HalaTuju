@@ -960,7 +960,12 @@ def reinstate_lapsed_sponsorship(application, *, since):
     return sp
 
 
-def lapse_expired_offers():
+def _expired_offers(now):
+    return list(Sponsorship.objects.filter(status='offered', accept_deadline__isnull=False,
+                                           accept_deadline__lt=now).select_related('application'))
+
+
+def lapse_expired_offers(lapsed_ids=None):
     """Lapse every 'offered' award whose ARMED accept_deadline has passed (the amount returns to
     the sponsor's balance; the application reverts to the pool). Intended for a scheduled job.
 
@@ -973,13 +978,16 @@ def lapse_expired_offers():
         REFUSED — it is logged and returned in ``flagged`` for an admin to handle by hand, never
         silently lapsed out from under real money.
 
-    Returns ``{'lapsed': <count>, 'flagged': [<application_id>, ...]}``. (The cron that calls this
-    is still UNSCHEDULED — it may only ever be wired against THESE semantics; see
-    docs/technical-debt.md (c).)"""
+    Returns ``{'lapsed': <count>, 'flagged': [<application_id>, ...]}``. Wired to the DAILY
+    ``lapse-expired-offers`` cron job (command ``lapse_expired_offers``, TD-252, 2026-09-30) — and
+    only ever against THESE semantics. Each refusal logs at INFO; the run logs ONE summary WARNING
+    with the count, so a standing set of paid offers does not raise the same alarm line by line
+    every day. A list passed as ``lapsed_ids`` receives the lapsed sponsorship ids. Each lapse
+    re-reads its row UNDER A LOCK and proceeds only if still 'offered' with the same deadline, so
+    an acceptance landing mid-sweep wins (review F4; unreachable while AWARD_ACCEPTANCE_ENABLED is
+    unset, as today, since no student can accept)."""
     now = timezone.now()
-    expired = list(Sponsorship.objects
-                   .filter(status='offered', accept_deadline__isnull=False, accept_deadline__lt=now)
-                   .select_related('application'))
+    expired = _expired_offers(now)
     lapsed = 0
     flagged = []
     for sp in expired:
@@ -987,13 +995,24 @@ def lapse_expired_offers():
         if app.disbursements.filter(status='released').exists():
             # Released money against this application → never auto-lapse. Flag for admin review.
             flagged.append(app.id)
-            logger.warning(
+            logger.info(
                 'lapse_expired_offers: REFUSED to lapse app %s (sponsorship %s) — it has released '
                 'disbursements. Flagged for admin review.', app.id, sp.id)
             continue
-        sp.status = 'lapsed'
-        sp.decided_at = now
-        sp.save(update_fields=['status', 'decided_at', 'updated_at'])
-        _revert_to_pool(app)   # offer expired unaccepted → back in the pool
+        with transaction.atomic():
+            sp = (Sponsorship.objects.select_for_update().select_related('application')
+                  .filter(pk=sp.pk, status='offered', accept_deadline=sp.accept_deadline).first())
+            if sp is None:
+                continue   # accepted / cancelled / re-armed since the list was read — leave it
+            sp.status = 'lapsed'
+            sp.decided_at = now
+            sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+            _revert_to_pool(sp.application)   # offer expired unaccepted → back in the pool
+        logger.info('lapse_expired_offers: LAPSED sponsorship %s (app %s)', sp.id, app.id)
+        if lapsed_ids is not None:
+            lapsed_ids.append(sp.id)
         lapsed += 1
+    if flagged:
+        logger.warning('lapse_expired_offers: %s expired offer(s) REFUSED — released money; '
+                       'flagged for admin review: %s', len(flagged), flagged)
     return {'lapsed': lapsed, 'flagged': flagged}

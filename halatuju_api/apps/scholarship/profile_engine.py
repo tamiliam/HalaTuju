@@ -25,6 +25,7 @@ import time
 
 from django.conf import settings
 
+from .document_snapshot import SNAPSHOT_ORDER
 from .models import FundingNeed
 from .shortlisting import count_spm_a_grades
 
@@ -382,7 +383,7 @@ def _gated_str(application):
         return 'no'
     from .income_engine import student_str_check
     doc = (application.documents.filter(doc_type='str', superseded_at__isnull=True)
-           .order_by('-uploaded_at').first())
+           .order_by(*SNAPSHOT_ORDER).first())
     if not doc:
         return _DO_NOT_CLAIM
     chk = student_str_check(doc)
@@ -599,7 +600,7 @@ def _statement_of_intent(application):
     (read on upload into vision_fields['text']). Capped so it informs the draft without
     dominating the prompt; normal PII redaction still applies. 'not provided' when none."""
     doc = (application.documents.filter(doc_type='statement_of_intent', superseded_at__isnull=True)
-           .order_by('-uploaded_at').first())
+           .order_by(*SNAPSHOT_ORDER).first())
     text = ''
     if doc is not None and isinstance(getattr(doc, 'vision_fields', None), dict):
         text = (doc.vision_fields.get('text') or '').strip()

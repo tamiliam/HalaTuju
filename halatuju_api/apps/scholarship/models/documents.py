@@ -7,6 +7,7 @@ database is untouched too — `makemigrations --check` reports no changes. See `
 """
 from django.db import models
 
+from ..document_snapshot import SNAPSHOT_ORDER
 from .applications import ScholarshipApplication
 
 class ApplicantDocument(models.Model):
@@ -138,7 +139,7 @@ class ApplicantDocument(models.Model):
 
     class Meta:
         db_table = 'applicant_documents'
-        ordering = ['-uploaded_at']
+        ordering = list(SNAPSHOT_ORDER)   # newest uploaded_at, then highest id (TD-292)
 
     @staticmethod
     def live(qs):

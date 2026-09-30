@@ -14,6 +14,7 @@ from apps.courses.models import StudentProfile
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from halatuju.throttling import UploadRateThrottle
 
+from .document_snapshot import SNAPSHOT_ORDER
 from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication, ScholarshipCohort
 from .serializers import (
     ApplicantDocumentSerializer,
@@ -1121,7 +1122,7 @@ class DocumentListCreateView(APIView):
         # _doc / other — the reviewer eyeballs them) keep the replace-first path.
         staged = single and (new_doc_type not in _BYPASS_JUDGE_TYPES)
         existing_live = (ApplicantDocument.objects.filter(id__in=stale_ids)
-                         .order_by('-uploaded_at').first() if staged else None)
+                         .order_by(*SNAPSHOT_ORDER).first() if staged else None)
         with transaction.atomic():
             doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
             from django.utils import timezone as _tz
@@ -1234,7 +1235,7 @@ class DocumentListCreateView(APIView):
                     stale_ids = list(dict.fromkeys(list(stale_ids) + list(prior)))
                     existing_live = (ApplicantDocument.objects.filter(
                         id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
-                        .order_by('-uploaded_at').first())
+                        .order_by(*SNAPSHOT_ORDER).first())
                 elif prior:
                     from django.utils import timezone as _tz2
                     ApplicantDocument.objects.filter(id__in=prior).update(
@@ -1667,7 +1668,7 @@ class BankAccountView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
         source_doc = ApplicantDocument.objects.filter(
             application=app, doc_type='bank_statement',
-            superseded_at__isnull=True).order_by('-uploaded_at').first()
+            superseded_at__isnull=True).order_by(*SNAPSHOT_ORDER).first()
         from django.utils import timezone
         acct, _created = BankAccount.objects.update_or_create(
             application=app,
@@ -2073,6 +2074,7 @@ class CronRunView(APIView):
         'issue-monthly-invoices': 'issue_monthly_invoices',  # monthly, 15th 09:00 MYT: issue LAST month's tenant invoices (sends nothing; idempotent)
         'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
+        'lapse-expired-offers': 'lapse_expired_offers',  # TD-252: daily; armed unpaid offers past deadline lapse, paid ones are flagged, never lapsed
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change
         'backfill-verdict-engine-version': 'backfill_verdict_engine_version',  # one-off: label the 88 predictions banked before verdict_engine had a version (DRY RUN unless --apply)
         'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS

@@ -13,6 +13,7 @@ offers and never overwrites a precise existing pick. Dry-run by default.
 from django.core.management.base import BaseCommand
 from django.db import connection
 
+from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services import autofill_pathway_from_offer
@@ -44,7 +45,7 @@ class Command(BaseCommand):
                 # Dry-run: re-read what the auto-fill WOULD do without saving.
                 offer = (ApplicantDocument.objects
                          .filter(application=app, doc_type='offer_letter')
-                         .order_by('-uploaded_at').first())
+                         .order_by(*SNAPSHOT_ORDER).first())
                 chk = student_offer_check(offer) if offer else {}
                 cp = app.chosen_programme if isinstance(app.chosen_programme, dict) else {}
                 would = (offer is not None

@@ -1343,17 +1343,23 @@ Index. 36 were closed as overtaken, each with evidence on its defining line. Rul
 it (decisions.md 2026-09-30): **close a TD only with evidence; put the resolution marker ON the
 defining line in the same change that fixes it; never write a new entry inside the index.**
 
+- **The Now-tier sweep is BUILT, not committed or pushed (2026-09-30):** TD-203, TD-248, TD-315,
+  TD-292, TD-217, TD-167 and TD-153 closed; TD-252's cron half built (command
+  `lapse_expired_offers`, job `lapse-expired-offers`). ⚠ The Cloud Scheduler job for
+  `lapse-expired-offers` is NOT created — a production step the lead takes with the owner's yes.
+  Migration 0162 is state-only (no SQL; record the `django_migrations` row).
+  `VERDICT_ENGINE_VERSION` 2026-09-30.1. Rules: decisions.md 2026-09-30.
 - **The Now tier (money, identity, eligibility, security) — work these first:**
-  - **TD-315** (A·S) — A brother's IC can be re-filed as the father's when the father's name is a bare given name.
-  - **TD-252** (A·S) — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled.
-  - **TD-248** (A·S) — A billing rate saved before 08:00 on the 1st can land in the previous month and re-price it.
-  - **TD-203** (A·S) — Changes to a student's award amount are not logged. Nobody can say who set it or what it was.
+  - ~~**TD-315**~~ (A·S) — closed by the sweep.
+  - **TD-252** (A·S) — An award nobody answers holds the sponsor's money for ever. Cron half built by the sweep; the Scheduler job and the console withdrawal (waits on TD-198) remain.
+  - ~~**TD-248**~~ (A·S) — closed by the sweep.
+  - ~~**TD-203**~~ (A·S) — closed by the sweep.
   - **TD-257** (A·M) — 22 admin endpoints have no test driving them, including the two that release bursary money.
   - **TD-229** (A·L) — A second gift would make its students sign the first gift's agreement. Signing is off today.
-  - **TD-292** (B·S) — The latest document has no tie-breaker when two uploads share a timestamp.
-  - **TD-217** (B·S) — A certificate scan with a clipped left edge silently loses the half-read guard.
-  - **TD-167** (B·S) — Nothing stops a new field reaching sponsors without the consent wording being rechecked.
-  - **TD-153** (B·S) — Three oversight lists can be read by any admin role.
+  - ~~**TD-292**~~ (B·S) — closed by the sweep.
+  - ~~**TD-217**~~ (B·S) — closed by the sweep.
+  - ~~**TD-167**~~ (B·S) — closed by the sweep.
+  - ~~**TD-153**~~ (B·S) — closed by the sweep (all of part b now gated).
   - **TD-255** (B·M) — Production builds on Node 18, which no longer gets security fixes.
   - **TD-253** (B·M) — An interview with nothing in it still wakes Approve and Decline. The owner's ruling is not built.
   - **TD-218** (B·M) — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading.

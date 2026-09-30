@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Now-tier sweep: eight money, identity and eligibility fixes from the debt register - 2026-09-30
+
+Sprint, owner's "go" on exactly this scope. BUILT, not committed, pushed or deployed; an adversarial
+review reads the diff first. Seven entries close (TD-203, TD-248, TD-315, TD-292, TD-217, TD-167,
+TD-153) and TD-252 is half built: register open 159 -> **152**.
+
+- **TD-203 — the award amount is audited.** Every writer of `award_amount` logs
+  `AUDIT award_amount_set app_id= by= was= now= via=override|verdict|reject|cancel`, only when the
+  value changes, on its module's own audit logger. The verdict recorder's apply and clear share one
+  line, emitted after the save lands. `cancel_pending_decline` gains `by_email` so the cancel names
+  the admin.
+- **TD-252 (cron half) — the lapse sweep has a door.** New command `lapse_expired_offers`, registered
+  as `CronRunView.JOBS['lapse-expired-offers']` (daily). Semantics unchanged (armed offers only;
+  paid applications refused and flagged). Refusals now log at INFO with ONE summary WARNING per run.
+  The Cloud Scheduler job is NOT created, and the console withdrawal half waits on TD-198.
+- **TD-248 — a billing rate saved with no date starts on the Malaysian 1st** (`timezone.localdate()`).
+- **TD-315 — a brother's IC is no longer re-filed as the father's.** After the adversarial review
+  (2026-10-01) `name_contradicts_tag` overrides an explicit tag only when the document's readable
+  NRIC equals exactly one member's IC on file, or, with no readable NRIC, on a full-name match
+  whose given name also matches in order (a grandfather-named son is no longer re-filed). A
+  partial never overrides; a blank is filled as before.
+- **TD-292 — "the latest document" has a tie-breaker:** newest `uploaded_at`, then highest `id`.
+  `document_snapshot.SNAPSHOT_ORDER = ('-uploaded_at', '-id')` is the one home: `Meta.ordering` and
+  17 explicit sites read it (migration 0162, state-only). `VERDICT_ENGINE_VERSION` -> `2026-09-30.1`.
+  The web's latest-STR pick breaks a tie the same way. A source scan with a floor stops a new
+  untie-broken order.
+- **TD-217 — a clipped certificate keeps its under-read guard.** `_declared_subject_count` anchors on
+  `MLAH\s+MATA\s+PELAJARAN`, so `JMLAH`/`UMLAH`/`MLAH` still read the declared total.
+- **TD-167 — what sponsors see is pinned.** `test_sponsor_visible_fields.py` asserts the exact field
+  set of the four sponsor-path serializers and points at `scholarship.consent.text`.
+- **TD-153 (b) — the last three oversight lists gate on role.** Sponsorships: super/org_admin/admin/
+  finance. Graduation queue: super/reviewer/admin. Verdict metrics: super/org_admin/admin/qc/reviewer.
+  Role table in decisions.md 2026-09-30.
+- **The lead's production measurements (read-only, 2026-09-30):** 31 armed offers past their deadline,
+  all with released money (the sweep would lapse 0 and flag 31); 1,356 documents with zero
+  `uploaded_at` ties (no band moves); 89 positionally parsed slips, all read a total with the strict
+  anchor, none clipped (no live read changes).
+- **Review fixes (2026-10-01):** F3 the override logs after its save; F4 the lapse re-reads each
+  row under a lock (an acceptance mid-sweep wins) and logs/prints the lapsed ids; F5 the version
+  bump is pinned, the web's `latestDocFor`/`clusterAnchorKey` break ties on the id, and the
+  source scan also catches `.latest(`, `Max(`/`max(` and sort keys on `uploaded_at`.
+- **Date rot, second sighting (2026-10-01):** two `test_reviewer_query_s2.py` tests went red at the
+  month turn (a literal 'June 2026' slip crossed the staleness line); the lead fixed them with a
+  this-month `CURRENT_PERIOD` constant. TD-175 had been closed the day before as "no second sighting".
+- Tests: 8 new files, 52 tests at the build (+13 api, +2 web after the review); pytest 7,227 -> 7,292 passed / 3 skipped; jest 3,190 -> 3,193.
+  `AdminCancelDeclineView` left the endpoint-exercise ledger (the TD-203 test drives it). Every
+  guarding test was bitten (22 mutations, all red; 3 comment-only changes green).
+
 ## The debt register is read end to end: 36 closed with evidence, 159 open and in order - 2026-09-30
 
 Docs only - no code, no deploy. The owner asked for every open TD to be checked against today's

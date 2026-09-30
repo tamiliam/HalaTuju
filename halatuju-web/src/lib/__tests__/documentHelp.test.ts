@@ -76,6 +76,14 @@ describe('clusterAnchorKey (the coach rides under the latest-uploaded cluster do
     expect(clusterAnchorKey(docs, 'mother', 'str')).toBe(clusterDocKey('birth_certificate', ''))
   })
 
+  it('TD-292: an exact uploaded_at tie goes to the greater id, whatever the list order', () => {
+    const t = '2026-06-04T00:00:00Z'
+    const ic = doc({ id: 7, doc_type: 'parent_ic', household_member: 'father', uploaded_at: t })
+    const slip = doc({ id: 8, doc_type: 'salary_slip', household_member: 'father', uploaded_at: t })
+    expect(clusterAnchorKey([ic, slip], 'father', 'salary')).toBe(clusterDocKey('salary_slip', 'father'))
+    expect(clusterAnchorKey([slip, ic], 'father', 'salary')).toBe(clusterDocKey('salary_slip', 'father'))
+  })
+
   it('salary route: keys include the member tag', () => {
     const docs = [
       doc({ id: 1, doc_type: 'parent_ic', household_member: 'father', uploaded_at: '2026-06-02T00:00:00Z' }),

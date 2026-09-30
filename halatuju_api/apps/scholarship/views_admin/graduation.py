@@ -18,12 +18,18 @@ class AdminGraduationMessageListView(_AdminBase):
     """GET /api/v1/admin/graduation-messages/ — the moderation queue (F9a). Reviewer +
     super (viewer is read-only staff and may also read). ``?status=pending`` (default)
     filters; ``?status=all`` returns everything. Staff see the full text + scan
-    outcome — they are NOT the anonymity boundary."""
+    outcome — they are NOT the anonymity boundary.
+
+    Role gate (TD-153 b, 2026-09-30): exactly the roles this docstring always named — `reviewer`
+    (who moderates, via `AdminGraduationMessageReviewView`) and super — plus `admin`, which is
+    what 'viewer' became when it was retired on 2026-06-09. No page calls this queue."""
 
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        if not (admin.is_super or admin.role in ('reviewer', 'admin')):
+            return self._deny_role()
         # org-fence: _org_scoped on the application join, applied below.
         qs = GraduationMessage.objects.select_related('application').all()
         qs = self._org_scoped(qs, admin, field='application__owning_organisation_id')

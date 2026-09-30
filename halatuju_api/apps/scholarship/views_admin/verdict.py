@@ -98,6 +98,7 @@ class AdminRecordVerdictView(_AdminBase):
         # may set a value if the system has erred. On DECLINE, clear it. See
         # apps.scholarship.award; reuse the verdict just snapshotted, don't recompute.
         from .. import award as award_rule
+        award_was = app.award_amount   # TD-203: logged below, once the save has landed
         if overall == 'accept':
             if app.award_amount is None:
                 proposed = award_rule.proposed_award_amount(app, verdict=app.ai_verdict_snapshot)
@@ -171,6 +172,11 @@ class AdminRecordVerdictView(_AdminBase):
             # Publishing is NOT done here — it is bound to QC-Accept (the case re-enters
             # AWAITING QC after verify-accept, and QC re-publishes on clearance).
             reopen_service.close_reopen_with_change(app)
+        if 'award_amount' in verdict_fields:
+            logger.info('AUDIT award_amount_set app_id=%s by=%s was=%s now=%s via=verdict',
+                        app.id, (getattr(admin, 'email', '') or '?'),
+                        ('-' if award_was is None else award_was),
+                        ('-' if app.award_amount is None else app.award_amount))
 
         data = AdminApplicationDetailSerializer(app).data
         data['finalise_result'] = finalise_result
@@ -407,11 +413,18 @@ class AdminCancelReopenView(_AdminBase):
 class AdminVerdictMetricsView(_AdminBase):
     """GET .../verdict-metrics/?cohort=<id> — the override-rate roll-up ("how good is
     the AI"): across applications whose verdict the officer has recorded, how often did
-    the human disagree with the AI's assertion, per fact. Read-only aggregate; any admin."""
+    the human disagree with the AI's assertion, per fact. Read-only aggregate.
+
+    Role gate (TD-153 b, 2026-09-30): its one caller, `AiReliabilityCard`, belongs on the
+    Applications page (`/admin/scholarship`, hidden there since 2026-06-13), whose roles are
+    super / org_admin / admin / qc / reviewer — so reviewers and QC keep it; partner and finance
+    are refused. The card swallows an error silently, so a narrower gate would hide it unseen."""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'qc', 'reviewer')):
+            return self._deny_role()
         from ..audit import override_metrics
         # org-fence: _org_scoped applied below (fences the metrics roll-up).
         qs = (ScholarshipApplication.objects

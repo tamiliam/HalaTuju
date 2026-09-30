@@ -131,8 +131,16 @@ class AdminSetAwardAmountView(_AdminBase):
         # A set value must be one of the permitted slider stops (clearing is allowed).
         if amount is not None and not award_rule.is_allowed_amount(amount):
             return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
+        # TD-203: the field that sets HOW MUCH a student is promised — log who, from what, to
+        # what, once the save has landed (review F3), and only when it changed.
+        award_was = app.award_amount
         app.award_amount = amount
         app.save(update_fields=['award_amount'])
+        if amount != award_was:
+            logger.info('AUDIT award_amount_set app_id=%s by=%s was=%s now=%s via=override',
+                        app.id, (getattr(admin, 'email', '') or '?'),
+                        ('-' if award_was is None else award_was),
+                        ('-' if amount is None else amount))
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -153,11 +161,18 @@ def _sponsorship_dict(s):
 
 class AdminSponsorshipListView(_AdminBase):
     """Phase E3: GET .../admin/sponsorships/[?status] — oversight of all matches
-    (sponsor ↔ student + amount + status)."""
+    (sponsor ↔ student + amount + status).
+
+    Role gate (TD-153 b, 2026-09-30): the SPONSORS surface's four roles. No page calls this list;
+    the same sponsor ↔ student ↔ amount rows reach the console through the sponsor detail
+    (`AdminSponsorDetailView`), which is gated super / org_admin / admin / finance. qc, reviewer
+    and partner are refused, as on that page."""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+            return self._deny_role()
         # org-fence: _org_scoped on the application join, applied below.
         qs = (Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')
               .order_by('-id'))  # deterministic ordering (TD audit 2026-06-14)

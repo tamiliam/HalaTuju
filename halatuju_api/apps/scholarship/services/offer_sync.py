@@ -8,6 +8,7 @@ import logging
 
 from django.utils.dateparse import parse_date
 
+from ..document_snapshot import SNAPSHOT_ORDER
 from .completeness import application_completeness
 
 #: ⚠ THE PACKAGE NAME, WRITTEN OUT. Never `__name__`: in a submodule that reads
@@ -37,7 +38,7 @@ def sync_reporting_date_from_offer(application, offer=None):
     if offer is None:
         offer = (ApplicantDocument.objects.filter(
                     application=application, doc_type='offer_letter', superseded_at__isnull=True)
-                 .order_by('-uploaded_at').first())
+                 .order_by(*SNAPSHOT_ORDER).first())
     if offer is None:
         return False
     rd = parse_reporting_date(student_offer_check(offer).get('reporting_date'))
@@ -102,7 +103,7 @@ def sync_institution_from_catalogue(application, offer=None, offer_check=None):
             offer = (ApplicantDocument.objects.filter(
                         application=application, doc_type='offer_letter',
                         superseded_at__isnull=True)
-                     .order_by('-uploaded_at').first())
+                     .order_by(*SNAPSHOT_ORDER).first())
         offer_check = student_offer_check(offer) if offer is not None else {}
     wrong_person = (offer_check.get('name') == 'mismatch'
                     or offer_check.get('ic') == 'mismatch')
@@ -188,7 +189,7 @@ def autofill_pathway_from_offer(application):
 
     offer = (ApplicantDocument.objects.filter(
                 application=application, doc_type='offer_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+             .order_by(*SNAPSHOT_ORDER).first())
     if offer is None:
         return False
     # FIRST, unconditionally: the reporting date is an independent fact about WHEN the student

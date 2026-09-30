@@ -17,6 +17,7 @@ the production database is reachable from.
 """
 from django.core.management.base import BaseCommand
 
+from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import (
     _field_status, offer_pathway_match, student_offer_check)
@@ -48,7 +49,7 @@ class Command(BaseCommand):
         for app in qs:
             offer = (ApplicantDocument.objects
                      .filter(application=app, doc_type='offer_letter', superseded_at__isnull=True)
-                     .order_by('-uploaded_at').first())
+                     .order_by(*SNAPSHOT_ORDER).first())
             if offer is None:
                 no_offer += 1
                 continue

@@ -194,11 +194,9 @@ class TestEveryEndpointIsExercised(SimpleTestCase):
         'api/v1/admin/scholarship/applications/<int:pk>/disbursements/':
             'AdminDisbursementScheduleView — money out, the schedule',
         # POST. Holds a pending award before the good-news email reveals it. The cool-off
-        # pair below is the only brake between a mistaken decision and a told student.
+        # pair (this + cancel-decline, driven since TD-203 on 2026-09-30) is the only brake between a mistaken decision and a told student.
         'api/v1/admin/scholarship/applications/<int:pk>/hold-award/':
             'AdminHoldAwardView — stops an award inside the cool-off',
-        'api/v1/admin/scholarship/applications/<int:pk>/cancel-decline/':
-            'AdminCancelDeclineView — stops a decline inside the cool-off',
         # POST. The officer-entered reporting date SIZES the bursary, and QC refuses a case
         # without one. The engine that normalises it is tested; this endpoint is not.
         'api/v1/admin/scholarship/applications/<int:pk>/reporting-date/':

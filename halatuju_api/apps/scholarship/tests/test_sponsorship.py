@@ -456,7 +456,9 @@ class TestAdminSponsorship(TestCase):
         ScholarshipApplication.objects.filter(id=self.app.id).update(award_amount=Decimal('3000'))
         self.app.refresh_from_db()
         svc.fund_student(s, self.app)
-        self._auth('rev')
+        # TD-153 (b), 2026-09-30: the list is gated to the Sponsors roles, and a reviewer is
+        # not one of them — read it as the Admin-General ('vie', role 'admin').
+        self._auth('vie')
         r = self.client.get('/api/v1/admin/sponsorships/')
         self.assertEqual(r.status_code, 200)
         row = r.json()['sponsorships'][0]

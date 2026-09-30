@@ -8,6 +8,7 @@ autofill_pathway_from_offer keeps it aligned on every offer extraction.
 """
 from django.core.management.base import BaseCommand
 
+from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ScholarshipApplication, ApplicantDocument
 from apps.scholarship import offer_pathway as op
 
@@ -15,7 +16,7 @@ from apps.scholarship import offer_pathway as op
 def _offer_institution(app):
     o = (ApplicantDocument.objects.filter(
             application=app, doc_type='offer_letter', superseded_at__isnull=True)
-         .order_by('-uploaded_at').first())
+         .order_by(*SNAPSHOT_ORDER).first())
     if not o or not isinstance(o.vision_fields, dict):
         return ''
     f = o.vision_fields.get('fields', {})

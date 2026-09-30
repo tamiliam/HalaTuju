@@ -8,6 +8,7 @@ Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from .. import requirements
+from ..document_snapshot import SNAPSHOT_ORDER
 from ..models import FundingNeed
 from .blockers import income_doc_blockers
 
@@ -87,7 +88,7 @@ def application_completeness(application):
         # only a positive name MISMATCH blocks.
         from ..academic_engine import _slip_name_status
         slip = (application.documents.filter(doc_type='results_slip', superseded_at__isnull=True)
-                .order_by('-uploaded_at').first())
+                .order_by(*SNAPSHOT_ORDER).first())
         slip_name_ok = slip is None or _slip_name_status(slip) != 'mismatch'
         # Layer 0: WHICH documents this programme asks for now comes from the catalogue
         # (`requirements.py`), not from a literal here. For every programme today the answer is

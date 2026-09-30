@@ -9,6 +9,7 @@ import logging
 from django.utils import timezone
 
 from .. import requirements
+from ..document_snapshot import SNAPSHOT_ORDER
 from ..emails import (
     send_profile_complete_admin_email, send_submission_received_email,
 )
@@ -110,7 +111,7 @@ def confirm_pathway(application):
     from ..pathway_engine import student_offer_check
     offer = (ApplicantDocument.objects.filter(
                 application=application, doc_type='offer_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+             .order_by(*SNAPSHOT_ORDER).first())
     if offer is None:
         return False
     chk = student_offer_check(offer)

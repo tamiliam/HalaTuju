@@ -1,5 +1,46 @@
 # Architectural Decisions — HalaTuju
 
+## Three rules from the Now-tier sweep: explicit tags, "the latest document", and the oversight-list roles — 2026-09-30
+
+**Decided by:** the owner's "go" on the eight-item Now-tier sweep; the rules below are what the
+build made permanent. Each is written here because the next change in its area must obey it.
+
+**1. An explicit document tag is overridden by the NUMBER first, the name only without one
+(TD-315; the lead's rule after the review of 2026-10-01, recorded for the owner to overrule).**
+In one sentence: the upload guard `income_engine.name_contradicts_tag` re-files a tagged income
+document only when its readable NRIC equals exactly ONE member's IC on file (the roster stores no
+NRICs, so the numbers come from the members' `parent_ic` documents, never the document itself),
+or — only when the document has NO readable NRIC — when its name is a full match with exactly
+one member AND the given name (the first token before A/L, A/P, BIN …) matches that member's in
+order. A `'partial'` never overrides (the patronymic of a child's name is the father's given
+name) and a blank tag is filled as before. Word sets ignore order, which is why the given-name
+check exists: `ARUN A/L RAJU` and `Raju A/L Arun` (a son named after his grandfather) are the
+same two words. Known cost: a payslip with no NRIC and a bare roster name (`father_name='Raju'`,
+4 fathers and 2 mothers of 104 named on live applications, the lead's count 2026-10-01) keeps its
+tag and is left for the officer.
+
+**2. "The latest document" = newest `uploaded_at`, then highest `id` — and the clause has ONE
+home (TD-292).** `document_snapshot.SNAPSHOT_ORDER = ('-uploaded_at', '-id')`.
+`ApplicantDocument.Meta.ordering` is built from it and every explicit document read writes
+`.order_by(*SNAPSHOT_ORDER)` (17 sites). Never write `'-uploaded_at'` again:
+`test_document_order.py` scans the tree for a descending `uploaded_at` order without the
+tie-break (with a floor), and the web copy (`incomeWizard.latestStrSlots`) breaks a tie on the
+greater `id`, pinned by its drift test. Bumped `VERDICT_ENGINE_VERSION` to `2026-09-30.1`
+because an exact tie now names a row; the lead's production count found zero ties. Migration
+0162 is state-only (no SQL).
+
+**3. The three oversight lists gate on role (TD-153 b).** None has a page calling it today, so
+each set is anchored to the code that serves or feeds the same data (super always passes):
+
+| Endpoint | Web caller → page | Anchor | Allowed | Refused |
+|---|---|---|---|---|
+| `GET /admin/sponsorships/` | none | the same rows reach the console via the sponsor detail (`AdminSponsorDetailView`, Sponsors page) | super, org_admin, admin, finance | qc, reviewer, partner |
+| `GET /admin/graduation-messages/` | none | its docstring: reviewer (who moderates via `AdminGraduationMessageReviewView`) + super + "viewer", which became `admin` on 2026-06-09 | super, reviewer, admin | org_admin, qc, finance, partner |
+| `GET /admin/scholarship/verdict-metrics/` | `getVerdictMetrics` → `AiReliabilityCard` → Applications page `/admin/scholarship` (card hidden since 2026-06-13) | that page's `navigation.ts` roles | super, org_admin, admin, qc, reviewer | finance, partner |
+
+When a page starts calling one of these, its roles and the gate change together
+(`test_oversight_list_role_gates.py` loops every role in `PartnerAdmin.ROLE_CHOICES`).
+
 ## The debt register is worked from its index, closed only on evidence, and never written inside the index — owner ruling and method, 2026-09-30
 
 **Decided by:** the owner (*"go through each one and determine if they are all still relevant or

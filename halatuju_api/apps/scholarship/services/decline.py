@@ -81,6 +81,7 @@ def _record_reject(application, category, by_email, now=None, comments=''):
     application.pre_decline_status = application.status
     # Snapshot BEFORE clearing, and only when there is something to snapshot, so a second
     # _record_reject on an already-cleared record cannot overwrite a real snapshot with None.
+    award_was = application.award_amount   # TD-203: logged once the save has landed
     if application.award_amount is not None:
         application.pre_decline_award_amount = application.award_amount
         application.award_amount = None
@@ -92,6 +93,9 @@ def _record_reject(application, category, by_email, now=None, comments=''):
     application.save(update_fields=['pre_decline_status', 'pre_decline_award_amount',
                                     'award_amount', 'status', 'rejection_category',
                                     'rejected_at', 'rejected_by', 'rejection_comments'])
+    if award_was is not None:
+        logger.info('AUDIT award_amount_set app_id=%s by=%s was=%s now=%s via=reject',
+                    application.id, (by_email or '?'), award_was, '-')
 
 
 def _send_decline_for(application):
@@ -223,7 +227,7 @@ def org_admin_reject(application, admin, comments):
     return True
 
 
-def cancel_pending_decline(application):
+def cancel_pending_decline(application, by_email=''):
     """Undo a rejection whose student email is still EMBARGOED (the student was never told):
     clear the scheduled email AND reverse the rejection back to the status it was declined
     FROM (snapshotted in ``pre_decline_status``; legacy rows without one fall back to
@@ -238,6 +242,7 @@ def cancel_pending_decline(application):
     decline made pre-verdict would land in the QC queue with no recorded verdict."""
     if not (application.decline_due_at or application.pending_rejection_category):
         return False
+    award_was = application.award_amount   # TD-203; `by_email` is the acting admin, for the log
     application.pending_rejection_category = ''
     application.decline_due_at = None
     application.pending_decline_by = ''
@@ -273,6 +278,11 @@ def cancel_pending_decline(application):
         fields += ['status', 'pre_decline_status', 'award_amount', 'pre_decline_award_amount',
                    'rejection_category', 'rejected_at', 'rejected_by', 'rejection_comments']
     application.save(update_fields=fields)
+    if application.award_amount != award_was:
+        logger.info('AUDIT award_amount_set app_id=%s by=%s was=%s now=%s via=cancel',
+                    application.id, (by_email or '?'),
+                    ('-' if award_was is None else award_was),
+                    ('-' if application.award_amount is None else application.award_amount))
     return True
 
 

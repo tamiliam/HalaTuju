@@ -28,6 +28,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 
 from apps.courses.models import CourseInstitution
+from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services import sync_institution_from_catalogue
@@ -123,7 +124,7 @@ class Command(BaseCommand):
         """(institution, wrong_person) off the LIVE offer, reading stored fields only."""
         offer = (ApplicantDocument.objects
                  .filter(application=app, doc_type='offer_letter', superseded_at__isnull=True)
-                 .order_by('-uploaded_at').first())
+                 .order_by(*SNAPSHOT_ORDER).first())
         if offer is None:
             return '', False
         chk = student_offer_check(offer)

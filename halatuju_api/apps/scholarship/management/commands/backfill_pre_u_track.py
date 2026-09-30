@@ -6,6 +6,7 @@ only, never overwrites a deliberate pick. Going forward the track is kept curren
 """
 from django.core.management.base import BaseCommand
 
+from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ScholarshipApplication, ApplicantDocument
 from apps.scholarship import offer_pathway as op
 from apps.scholarship.pathway_engine import student_offer_check
@@ -14,7 +15,7 @@ from apps.scholarship.pathway_engine import student_offer_check
 def _offer_programme(app):
     offer = (ApplicantDocument.objects.filter(
                 application=app, doc_type='offer_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+             .order_by(*SNAPSHOT_ORDER).first())
     if offer is None:
         return ''
     try:

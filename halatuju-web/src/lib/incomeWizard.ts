@@ -183,6 +183,7 @@ export function incomeRequirements(
 /** The slice of a served document `strIcSlotMembers` reads (structural, so this file stays
  *  framework-free; `ApplicantDocument` satisfies it). */
 export interface StrSlotDoc {
+  id?: number
   doc_type: string
   household_member?: string | null
   uploaded_at?: string
@@ -196,8 +197,8 @@ export interface StrSlotDoc {
  * Read off the LATEST STR's served `str_check.ic_slots` (the api's `str_ic_slots` — the same rule
  * Check 2 asks from, so the page offers exactly what the officer's queue would chase). "Latest"
  * mirrors `document_snapshot.latest_doc`: live documents (the student list is live-only) ordered
- * by `uploaded_at` descending — the first STR with the greatest `uploaded_at` wins, and, as on the
- * server, an exact tie has no defined winner.
+ * by `SNAPSHOT_ORDER` = `uploaded_at` descending, then `id` descending (TD-292) — the STR with the
+ * greatest `uploaded_at` wins, and an exact tie goes to the greater `id`, as on the server.
  * drift-test: halatuju-web/src/lib/__tests__/incomeWizard.test.ts
  *
  * Members = `missing ∪ unreadable`, in `MEMBER_ORDER`, MINUS anyone who already owns a
@@ -233,7 +234,9 @@ function latestStrSlots(docs: StrSlotDoc[]) {
   let latest: StrSlotDoc | null = null
   for (const d of docs) {
     if (d.doc_type !== 'str') continue
-    if (!latest || Date.parse(d.uploaded_at || '') > Date.parse(latest.uploaded_at || '')) latest = d
+    if (!latest) { latest = d; continue }
+    const t = Date.parse(d.uploaded_at || ''), lt = Date.parse(latest.uploaded_at || '')
+    if (t > lt || (t === lt && (d.id ?? -1) > (latest.id ?? -1))) latest = d
   }
   return latest?.str_check?.ic_slots
 }

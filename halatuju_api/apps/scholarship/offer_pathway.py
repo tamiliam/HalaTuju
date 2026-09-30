@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import re
 
+from .document_snapshot import SNAPSHOT_ORDER
 from .pathway_engine import distinctive_tokens
 
 
@@ -413,7 +414,7 @@ def poly_institution_from_live_offer(application):
         return ''
     offer = (ApplicantDocument.objects.filter(
                 application=application, doc_type='offer_letter', superseded_at__isnull=True)
-             .order_by('-uploaded_at').first())
+             .order_by(*SNAPSHOT_ORDER).first())
     if offer is None:
         return ''
     chk = student_offer_check(offer)

@@ -357,4 +357,9 @@ describe('latestDocFor (V6 reload-persistent coach, audit #15a)', () => {
   it('returns null when nothing matches', () => {
     expect(latestDocFor([doc(1, 'ic', '2026-07-01T00:00:00Z')], 'offer_letter')).toBeNull()
   })
+  it('TD-292: an exact uploaded_at tie goes to the greater id, whatever the list order', () => {
+    const t = '2026-07-03T00:00:00Z'
+    expect(latestDocFor([doc(7, 'results_slip', t), doc(8, 'results_slip', t)], 'results_slip')?.id).toBe(8)
+    expect(latestDocFor([doc(8, 'results_slip', t), doc(7, 'results_slip', t)], 'results_slip')?.id).toBe(8)
+  })
 })

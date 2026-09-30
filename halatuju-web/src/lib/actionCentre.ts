@@ -32,13 +32,17 @@ export function clusterMemberOf(
   return CLUSTER_MEMBERS.has(m) ? m : ''
 }
 
-/** The most recently uploaded document of a given type (by uploaded_at), or null. Re-surfaces
- *  Gopal's advice on a held task after a page reload (audit #15a), from the fetched documents
- *  rather than in-session upload state. */
+/** The most recently uploaded document of a given type (by uploaded_at, then the greater id on
+ *  an exact tie — the api's `SNAPSHOT_ORDER`, TD-292), or null. Re-surfaces Gopal's advice on a
+ *  held task after a page reload (audit #15a), from the fetched documents rather than in-session
+ *  upload state. */
 export function latestDocFor(docs: ApplicantDocument[], docType: string): ApplicantDocument | null {
   const matches = docs.filter((d) => d.doc_type === docType)
   if (matches.length === 0) return null
-  return matches.reduce((a, b) => ((b.uploaded_at || '') > (a.uploaded_at || '') ? b : a))
+  return matches.reduce((a, b) => {
+    const ta = a.uploaded_at || '', tb = b.uploaded_at || ''
+    return tb > ta || (tb === ta && b.id > a.id) ? b : a
+  })
 }
 
 // The icon family a ticket renders, derived purely from its `kind`.

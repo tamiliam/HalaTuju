@@ -174,16 +174,19 @@ export function clusterDocKey(docType: string, member: string): string {
 }
 
 /** The cluster's coach is anchored under the MOST RECENTLY UPLOADED document in the cluster
- *  (by `uploaded_at`), so it sits right beneath whatever the student just added — and moves
- *  down to the next document when they upload another. Returns that doc's `clusterDocKey`, or
- *  '' when the cluster is empty (nothing to anchor to). */
+ *  (by `uploaded_at`, then the greater id on an exact tie — the api's `SNAPSHOT_ORDER`, TD-292),
+ *  so it sits right beneath whatever the student just added — and moves down to the next
+ *  document when they upload another. Returns that doc's `clusterDocKey`, or '' when the
+ *  cluster is empty (nothing to anchor to). */
 export function clusterAnchorKey(
   docs: ApplicantDocument[], member: string, route: string,
 ): string {
   const clusterDocs = clusterDocsFor(docs, member, route)
   if (!clusterDocs.length) return ''
-  const latest = clusterDocs.reduce((a, b) =>
-    (a.uploaded_at || '') >= (b.uploaded_at || '') ? a : b)
+  const latest = clusterDocs.reduce((a, b) => {
+    const ta = a.uploaded_at || '', tb = b.uploaded_at || ''
+    return ta > tb || (ta === tb && a.id >= b.id) ? a : b
+  })
   return clusterDocKey(latest.doc_type, latest.household_member || '')
 }
 

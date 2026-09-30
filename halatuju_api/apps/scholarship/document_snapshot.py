@@ -44,32 +44,22 @@ matters because several engines walk from a document back to ``doc.application``
 
 ── ORDERING, AND THE ONE THING TO KNOW ABOUT IT ────────────────────────────────────────────
 
-Every one of these reads is ``ORDER BY uploaded_at DESC`` — some helpers say
-``.order_by('-uploaded_at')`` and the rest inherit it from ``ApplicantDocument.Meta.ordering``,
-which is the same clause. The snapshot is therefore loaded with that same clause ONCE, and
-every reader below filters the loaded list **without re-sorting it**, so a subset keeps the
-order the database gave. With distinct timestamps that makes an in-memory answer identical to
-the query's, by construction.
+Every one of these reads is ``ORDER BY uploaded_at DESC, id DESC`` — ``SNAPSHOT_ORDER`` below,
+the ONE home of that clause: ``ApplicantDocument.Meta.ordering`` is built from it and every
+explicit document ``.order_by(...)`` in the codebase unpacks it (``test_document_order`` scans
+for a site that does not). The snapshot is loaded with that same clause ONCE, and every reader
+below filters the loaded list **without re-sorting it**, so a subset keeps the order the
+database gave — an in-memory answer is identical to the query's, by construction, ties included.
 
-⚠ **WITH EQUAL ``uploaded_at`` THE ROW THE DATABASE PICKS IS ARBITRARY — AND IT ALWAYS WAS.**
-``ORDER BY uploaded_at DESC`` with no tie-breaker does not name a row when two share a
-timestamp; SQLite and PostgreSQL are both free to return either, and PostgreSQL may change its
-mind after an unrelated ``UPDATE`` moves a row in the heap. So *"the latest STR"* is already
-undefined on a tie in production, before this module existed. What the snapshot changes is that
-all the helpers now agree with **one** reading of that order instead of each taking its own.
-
-⚠ **THAT IS NOT THE SAME AS "UNCHANGED", and the first draft of this note overclaimed** (the
-adversarial review of 2026-09-21 caught it). The snapshot's order comes from a DIFFERENT query —
-one unfiltered ``SELECT … ORDER BY uploaded_at DESC`` — than each helper's own filtered one, and
-on PostgreSQL the two may run different plans and emit tied rows in a different order. So on a
-tie the snapshot can choose a different document than the pre-TD-282 code did, and SQLite, where
-the suite runs, cannot show it. The ON==OFF matrix has a same-timestamp case and it passes, but
-on SQLite that proves agreement with SQLite, nothing more. What makes this safe to ship is a
-measurement, not the argument: on 2026-09-21 production held **1,356 documents and ZERO pairs
-sharing a timestamp** within an application and document type (``uploaded_at`` is
-``auto_now_add``, nothing bulk-creates documents, nothing sets the field). Adding ``, '-id'`` as
-a tie-breaker would make it deterministic everywhere, but it changes which row is chosen, which
-is a ``VERDICT_ENGINE_VERSION`` matter and out of scope here. See TD-292.
+⚠ **"LATEST" = NEWEST ``uploaded_at``, THEN HIGHEST ``id``** (TD-292, 2026-09-30; decisions.md).
+Until then the clause had no tie-breaker, so with two documents sharing an ``uploaded_at`` the
+row the database picked was arbitrary — PostgreSQL may even change its mind after an unrelated
+``UPDATE`` moves a row in the heap — and the snapshot's one unfiltered read could choose a
+different row than a helper's own filtered query (the adversarial review of 2026-09-21). ``id``
+is the auto-increment key, so the tie goes to the row written LAST, which is what every helper
+means by "latest". It changes which document is chosen only on an exact tie, so it bumped
+``VERDICT_ENGINE_VERSION``; production held 1,356 documents and ZERO such ties when it shipped
+(the lead's read-only count, 2026-09-21 and again 2026-09-30), so no band moved.
 
 ── WIDENING IT SAFELY ──────────────────────────────────────────────────────────────────────
 
@@ -92,9 +82,10 @@ import contextvars
 _ACTIVE: contextvars.ContextVar = contextvars.ContextVar(
     'applicant_document_snapshot', default=None)
 
-#: The clause every document read in this codebase uses, written once. Changing it here without
-#: changing it at the helpers would make an in-memory answer differ from a queried one.
-SNAPSHOT_ORDER = '-uploaded_at'
+#: The clause every document read in this codebase uses, written ONCE: newest ``uploaded_at``,
+#: then highest ``id`` (TD-292). Unpack it — ``.order_by(*SNAPSHOT_ORDER)``; ``Meta.ordering``
+#: and every explicit site read it from here, so an in-memory answer can never differ from a query.
+SNAPSHOT_ORDER = ('-uploaded_at', '-id')
 
 #: Sentinel for "this reader does not filter on ``household_member`` at all", distinct from the
 #: real tag value ``''`` (an untagged, household-level document), which IS a filter.
@@ -193,7 +184,7 @@ def document_snapshot(application):
     # `superseded_at IS NULL` itself. Filtering here instead would move that rule out of the
     # readers and into the load, so a future reader wanting version history would silently be
     # handed a list that cannot contain it. One query either way.
-    rows = list(manager.all().order_by(SNAPSHOT_ORDER))
+    rows = list(manager.all().order_by(*SNAPSHOT_ORDER))
     token = _ACTIVE.set((key, rows))
     try:
         yield
@@ -261,7 +252,7 @@ def live_docs(application, doc_type=None, *, doc_types=None, member=ANY_MEMBER, 
     if manager is None:
         return DocRows()
     return manager.filter(
-        **_filter_kwargs(doc_type, doc_types, member, members)).order_by(SNAPSHOT_ORDER)
+        **_filter_kwargs(doc_type, doc_types, member, members)).order_by(*SNAPSHOT_ORDER)
 
 
 def latest_doc(application, doc_type, *, member=ANY_MEMBER, members=None):
@@ -269,8 +260,8 @@ def latest_doc(application, doc_type, *, member=ANY_MEMBER, members=None):
 
     The single most-called read in the codebase: ``_latest_doc`` in ``verdict_engine`` and in
     ``income_engine.utilities`` both delegate here, as do a dozen one-off copies of the same
-    three lines. ⚠ "Latest" is ``uploaded_at`` descending with no tie-breaker — see the module
-    docstring on equal timestamps.
+    three lines. "Latest" is ``SNAPSHOT_ORDER``: newest ``uploaded_at``, and on an exact tie the
+    highest ``id`` (TD-292).
     """
     return live_docs(application, doc_type, member=member, members=members).first()
 
