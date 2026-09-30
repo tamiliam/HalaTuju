@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-30 | 810803a | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 159 | 0 | - | - | ok |
 | 2026-09-30 | 75e2889 | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 99 | 0 | - | - | ok |
 | 2026-09-30 | 34a5f4c | 90 | 43 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 99 | 0 | 0 | ok | ok |
 | 2026-09-30 | 40887ef | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 98 | 0 | - | - | ok |
@@ -62,7 +63,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-30, 75e2889, window 2026-07-02 onward)
+## Latest run (2026-09-30, 810803a, window 2026-07-02 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -79,7 +80,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 274 fix / 356 feat commits since 2026-07-02
+- 274 fix / 352 feat commits since 2026-07-02
 
 ### Files over 1000 lines
 - `2425  halatuju_api/apps/scholarship/views.py`
@@ -148,19 +149,26 @@ drift tests are counted as the habit they cure). See TD-284.
 - 37 of 187 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 177 entries have a defining line; 99 carry no resolution marker on it
+- 315 entries have a defining line; 159 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 1085: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 1305: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1327: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1330: - **TD-069**: **STPM flow's SPM-prerequisite electives aren't durably persisted and stay capped at 2.** v2.21.0 fixed the main SPM grades flow (new `e
+- line 1344: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1355: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
+- line 1631: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
 - line 5986: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 - line 6285: - **TD-314 (raised 2026-09-29 by TD-306's adversarial review, F5) — low, pre-existing shape, student-visible.** When a valid STR arrives on a househol
 - line 6290: - **TD-307 (raised 2026-09-29 by TD-285's build) — low, a possible flake.** One full `pytest -n auto` run failed `apps/scholarship/tests/test_org_requ
+- line 6295: - **TD-317 (raised 2026-09-30 by the register review; the leftover of TD-123) — low, reviewer-visible.** `doc_parse._parse_epf` (the in-house EPF pars
+- line 6296: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 34a5f4c
+- budgets no looser than at 75e2889
 
 ## Reviews
 
