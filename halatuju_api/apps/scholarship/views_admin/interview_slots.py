@@ -6,7 +6,6 @@ and every importer are unchanged.
 """
 from rest_framework import status
 from rest_framework.response import Response
-from ..models import InterviewSlot
 from .. import scheduling
 from ..serializers_admin import interview_schedule_payload
 
@@ -78,21 +77,6 @@ class AdminInterviewSlotsView(_AdminBase):
         return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
 
-class AdminInterviewSlotDetailView(_AdminBase):
-    """DELETE .../applications/<pk>/interview-slots/<slot_id>/ — withdraw a proposed
-    (unbooked) slot. Reviewer/super, assignment-scoped."""
-
-    def delete(self, request, pk, slot_id):
-        if not scheduling.scheduling_enabled():
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        app, admin, err = self._require_app_write(request, pk)
-        if err:
-            return err
-        slot = InterviewSlot.objects.filter(application=app, pk=slot_id).first()
-        if slot is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        try:
-            scheduling.withdraw_slot(slot)
-        except scheduling.SchedulingError as e:
-            return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
+# ⚠ There is no per-slot DELETE. `AdminInterviewSlotDetailView` (withdraw ONE proposed slot) was
+# deleted on 2026-10-01 on the owner's ruling (TD-257): no screen called it, and a reviewer replaces
+# the whole menu by POSTing the slots again above. Re-adding it means a caller AND an endpoint test.

@@ -109,7 +109,6 @@ from .views_admin import (
     AdminResolutionItemView,
     AdminAssignReviewerView,
     AdminInterviewSlotsView,
-    AdminInterviewSlotDetailView,
     AdminResolutionItemActionView,
     AdminRunVisionView,
     AdminVerdictMetricsView,
@@ -478,7 +477,6 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/assign/', AdminAssignReviewerView.as_view()),
     # Interview scheduling (reviewer proposes times; dark behind INTERVIEW_SCHEDULING_ENABLED)
     path('admin/scholarship/applications/<int:pk>/interview-slots/', AdminInterviewSlotsView.as_view()),
-    path('admin/scholarship/applications/<int:pk>/interview-slots/<int:slot_id>/', AdminInterviewSlotDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/', AdminApplicationRefereeView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/', AdminRefereeDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/', AdminRunVisionView.as_view()),

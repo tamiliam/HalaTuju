@@ -29,6 +29,14 @@ no product code in Part 2, no ledger raised, bundle unchanged.
   `release_tranche`, `hold_pending_award`, `requote`) went red and were restored by SHA. The TD-219
   ledger shrank 21 -> **1**: the interview-slot DELETE, which no screen calls
   (`withdrawInterviewSlot` is exported and unused) — wire it or unwire it, the owner's call.
+- **TD-257 closed — the dead route DELETED on the owner's ruling (follow-up, same day; BUILT, not
+  committed or pushed).** Removed together: `applications/<pk>/interview-slots/<slot_id>/` from
+  `urls.py`, the view `AdminInterviewSlotDetailView` and its re-export, `scheduling.withdraw_slot`
+  (its only caller), the `test_org_fence.py` classification, and the web client
+  `withdrawInterviewSlot` with its `lib/admin-api.ts` re-export. The TD-219 ledger is **EMPTY**;
+  new `test_the_ledger_stays_empty` keeps it so, and the scan floor now requires ≥ 190 wired
+  routes measured AND resolved as exercised (199 today), so an empty ledger cannot go vacuous.
+  Register open 133 -> **132**, defined 318.
 
 ## Next-tier batch 2: eleven web-console fixes and the TD-319 ruling - 2026-10-01
 

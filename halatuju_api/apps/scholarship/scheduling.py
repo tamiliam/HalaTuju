@@ -417,17 +417,6 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
     return created
 
 
-def withdraw_slot(slot, *, now=None):
-    """Withdraw a single proposed slot (cannot withdraw the booked one)."""
-    now = now or timezone.now()
-    app = slot.application
-    if app.interview_status == 'booked' and app.interview_slot_id == slot.id:
-        raise SchedulingError('booked_slot')
-    slot.is_active = False
-    slot.save(update_fields=['is_active', 'updated_at'])
-    return slot
-
-
 # ── Student side: book / reschedule / cancel ──────────────────────────────────
 
 @_bills_to_application

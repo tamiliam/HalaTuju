@@ -92,12 +92,6 @@ export async function getInterviewSlots(id: number, options?: ApiOptions) {
     `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, options)
 }
 
-/** Withdraw a single proposed (unbooked) slot. */
-export async function withdrawInterviewSlot(id: number, slotId: number, options?: ApiOptions) {
-  return adminMutate<InterviewSchedule>(
-    `/api/v1/admin/scholarship/applications/${id}/interview-slots/${slotId}/`, 'DELETE', null, options)
-}
-
 /** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail.
  *  ``append`` generates 3 MORE (without repeating) and appends; otherwise replaces. */
 export async function suggestInterviewGaps(

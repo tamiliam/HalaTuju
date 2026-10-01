@@ -1342,8 +1342,9 @@ Read it at sprint start, before planning.
 (849245c8: Node 24 is PROVEN - gate green, halatuju-web-00937-ctv serving, 0 errors; the image probe
 found TD-321, older than the move). The lapse-expired-offers scheduler job exists (daily 09:00 MYT).
 Register: 318 defined, 133 open. **The Opus weekly limit was hit at 2026-10-01 ~15:00 MYT (resets
-Sunday 2026-10-05 12:00 MYT)** - the owner-approved deletion of the dead interview-slot DELETE route
-(closes TD-257) and the next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
+Sunday 2026-10-05 12:00 MYT)** — later lifted the same day: the owner-approved deletion of the dead
+interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257; register open
+**132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
 
 
@@ -1364,7 +1365,7 @@ defining line in the same change that fixes it; never write a new entry inside t
   - **TD-252** (A·S) — An award nobody answers holds the sponsor's money for ever. Cron half built by the sweep; the Scheduler job and the console withdrawal (waits on TD-198) remain.
   - ~~**TD-248**~~ (A·S) — closed by the sweep.
   - ~~**TD-203**~~ (A·S) — closed by the sweep.
-  - **TD-257** (A·M) — 21 of 22 driven by Now sprint 1; the last (interview-slot DELETE) has no caller — owner: wire or unwire.
+  - ~~**TD-257**~~ (A·M) — closed by Now sprint 1: twenty routes tested, the dead interview-slot DELETE deleted on the owner's ruling.
   - **TD-229** (A·L) — A second gift would make its students sign the first gift's agreement. Signing is off today.
   - ~~**TD-292**~~ (B·S) — closed by the sweep.
   - ~~**TD-217**~~ (B·S) — closed by the sweep.
@@ -1437,9 +1438,14 @@ defining line in the same change that fixes it; never write a new entry inside t
     `nodeVersion.test.ts` has a floor of 22 and would refuse that build. Roll back by shifting Cloud
     Run traffic to the previous revision (no build), or by `git revert` of the sprint commit, which
     removes the guard with the change.
-  - TD-257: five `test_endpoints_*.py` files (73 tests). The TD-219 ledger holds ONE line — the
-    interview-slot DELETE, which no screen calls. Owner: wire it into the cockpit, or delete the
-    route (which empties the ledger and closes TD-257).
+  - TD-257: five `test_endpoints_*.py` files (73 tests). **Follow-up BUILT, not committed or
+    pushed (owner's ruling, 2026-10-01):** the dead interview-slot DELETE is gone — the route, its
+    view `AdminInterviewSlotDetailView`, `scheduling.withdraw_slot` (its only caller), the
+    org-fence classification, and the unused web client `withdrawInterviewSlot` + its
+    `lib/admin-api.ts` re-export. The TD-219 ledger is EMPTY and `test_the_ledger_stays_empty`
+    holds it; the scan floor is ≥ 190 wired routes measured and exercised (199 today). TD-257
+    closed; register open 133 -> **132**. Both trees change, so it needs an api AND a web deploy;
+    no migration, no data change (the per-slot withdraw never had a caller).
 
 ## Superseded — previous Next Sprint (as of 2026-09-30, after TD-309)
 

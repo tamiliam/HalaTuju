@@ -83,7 +83,7 @@ export type {
 // Interview scheduling from the OFFICER's side, and the Check-3 session.
 export {
   getInterview, saveInterview, submitInterview, reopenInterview, proposeInterviewSlots,
-  getInterviewSlots, withdrawInterviewSlot, suggestInterviewGaps,
+  getInterviewSlots, suggestInterviewGaps,
 } from './admin-api/interviews'
 export type { InterviewSlot, InterviewSchedule } from './admin-api/interviews'
 

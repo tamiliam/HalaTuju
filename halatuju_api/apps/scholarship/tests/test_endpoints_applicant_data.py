@@ -6,11 +6,10 @@ Three routes the TD-219 guard listed as never driven by any test:
   * `applications/<pk>/referees/<ref_id>/`       DELETE (AdminRefereeDetailView)
   * `scholarship/documents/<pk>/help/`           GET    (DocumentHelpView) — the student's own
 
-The fourth route of this family, `applications/<pk>/interview-slots/<slot_id>/` (DELETE), is NOT
-tested here, on purpose: no screen calls it. `withdrawInterviewSlot` in
-`halatuju-web/src/lib/admin-api/interviews.ts` is exported and re-exported and called by nothing,
-and no cron reaches the view. TD-257's brief was to report a dead route rather than test it for its
-own sake, so it stays in the TD-219 ledger with that reason, for the lead to decide.
+The fourth route of this family, `applications/<pk>/interview-slots/<slot_id>/` (DELETE), is not
+here because it no longer exists: no screen called it (its web client was exported and imported
+by nothing), so it was reported rather than tested, and DELETED on the owner's ruling the same day
+(2026-10-01) with its view and `scheduling.withdraw_slot`. That emptied the TD-219 ledger.
 
 Both Gemini calls are mocked at the shared prose seam each module names (`_call_gemini_text`);
 what is asserted is what the SERVICE put into the prompt and what it made of the reply.

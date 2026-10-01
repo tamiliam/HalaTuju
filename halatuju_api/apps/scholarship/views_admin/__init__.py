@@ -94,7 +94,7 @@ from .graduation import (
     AdminGraduationMessageListView, AdminGraduationMessageReviewView,
 )
 from .interview_slots import (
-    _parse_slot_starts, AdminInterviewSlotDetailView, AdminInterviewSlotsView,
+    _parse_slot_starts, AdminInterviewSlotsView,
 )
 from .interviews import (
     _NEEDS_INTERVIEW_AMBERS, _RATIONALE_MAX, _VALID_VERDICTS, _interview_agenda, _is_authoring,

@@ -54,6 +54,12 @@ Each edit was made from a byte backup, the digest printed before the edit and af
   watches the `test` step, the `Build` step and the new revision. The live trigger needs no edit (it
   reads `filename: halatuju-web/cloudbuild.yaml`; the rollback export names no Node image).
 
+**Follow-up, same day (owner's ruling): the dead route was DELETED** — route, view,
+`scheduling.withdraw_slot`, its org-fence classification and the unused web client — so TD-257
+closed with an EMPTY ledger, held by `test_the_ledger_stays_empty` and a ≥ 190-route floor (199
+today; the "≥ 200" in the brief would have failed on day one, since the deletion itself took the
+count from 200 to 199).
+
 ## What was learnt
 
 - **Five of the twenty "untested" routes had in fact been REQUESTED before, and that is the guard's

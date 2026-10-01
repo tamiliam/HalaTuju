@@ -188,19 +188,20 @@ class TestEveryEndpointIsExercised(SimpleTestCase):
     #: sponsor-terms editors, the graduation relay and the document help — each with the role,
     #: the flag and an assertion on what the service wrote (`test_endpoints_*.py`).
     #:
-    #: ⚠ THE ONE LINE LEFT IS A ROUTE NO SCREEN CALLS, not one nobody got round to. TD-257 was
-    #: told to report a dead route rather than test it for its own sake; the lead/owner decides
-    #: whether it is wired into the cockpit (then tested) or unwired (then removed from urls.py,
-    #: which also empties this ledger).
-    NOT_YET_EXERCISED = {
-        # DELETE. Withdraws one proposed, unbooked interview slot (`scheduling.withdraw_slot`),
-        # dark behind INTERVIEW_SCHEDULING_ENABLED. ⚠ DEAD as of 2026-10-01: the web client
-        # `withdrawInterviewSlot` (halatuju-web/src/lib/admin-api/interviews.ts) is exported and
-        # re-exported from lib/admin-api.ts and CALLED BY NOTHING, and no cron or command reaches
-        # the view. A reviewer replaces the whole menu by POSTing the slots again instead.
-        'api/v1/admin/scholarship/applications/<int:pk>/interview-slots/<int:slot_id>/':
-            'AdminInterviewSlotDetailView — DELETE a proposed slot; no caller (TD-257)',
-    }
+    #: The twenty-second, the per-slot interview DELETE, had no caller anywhere (an exported web
+    #: function nothing imported, no cron) and was DELETED on the owner's ruling the same day,
+    #: with its view and its service function — so the ledger is EMPTY and TD-257 is closed.
+    #:
+    #: ⚠ EMPTY IS THE STEADY STATE NOW, AND `test_the_ledger_stays_empty` HOLDS IT THERE. A new
+    #: route with no test fails `test_every_wired_endpoint_is_exercised_or_listed`; the answer is
+    #: a test, and adding a line here is a decision to ship untested that the reviewer must see —
+    #: which is why the empty-ledger test fails on it too and names this comment.
+    NOT_YET_EXERCISED = {}
+
+    #: The routes `apps/scholarship/urls.py` wired on 2026-10-01 after the dead DELETE left: 199.
+    #: A FLOOR with margin, never an equality (lessons.md, H16): adding routes must not turn it
+    #: red, and an empty ledger must never let the guard pass while the walk saw nothing.
+    MIN_WIRED_ROUTES = 190
 
     @classmethod
     def setUpClass(cls):
@@ -216,7 +217,23 @@ class TestEveryEndpointIsExercised(SimpleTestCase):
         margin for ordinary churn."""
         self.assertGreater(self.files_read, 200, 'the test tree moved or was not found')
         self.assertGreater(len(self.exercised), 150, 'no paths reconstructed — check the AST walk')
-        self.assertGreater(len(self.wired), 150, 'urls.py moved or was not found')
+        self.assertGreaterEqual(len(self.wired), self.MIN_WIRED_ROUTES,
+                                'urls.py moved or was not found')
+        # With the ledger EMPTY, "exercised or listed" is just "exercised" — so the rule below
+        # only means something if the exercised set actually COVERS the wired set it is held to.
+        self.assertGreaterEqual(len(set(self.wired) & self.exercised), self.MIN_WIRED_ROUTES,
+                                'fewer wired routes resolved as exercised than the floor')
+
+    def test_the_ledger_stays_empty(self):
+        """TD-257 closed the ledger on 2026-10-01 (twenty routes tested, the dead one deleted).
+        With nothing left in it, `test_the_list_only_shrinks` below can no longer fail, so THIS
+        is the test that keeps the ledger honest: a new line is a decision to ship a route
+        untested, and it must be argued in review, not slipped in."""
+        self.assertEqual(
+            self.NOT_YET_EXERCISED, {},
+            'NOT_YET_EXERCISED was emptied by TD-257 (2026-10-01). Write an endpoint test for the '
+            'route instead; if it genuinely cannot be tested yet, change THIS test in the same '
+            'diff and say why, so the reviewer sees the decision.')
 
     def test_every_wired_endpoint_is_exercised_or_listed(self):
         """The rule. A new endpoint with no test that drives it fails HERE, on the day it is
