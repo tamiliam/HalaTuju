@@ -34,9 +34,10 @@ import * as path from 'path'
 import { imagesFrom, namedForPaste } from '@/lib/screenshotInput'
 
 // ⚠ `File` IS A BROWSER GLOBAL, AND ONLY NODE 20+ HAS IT. The production image — and so the deploy
-// gate — runs Node 18, where a bare `new File(...)` is a ReferenceError. This suite passed on every
-// dev box (Node 24) and failed the first time it ran where the app is built (code health H2,
-// 2026-09-18). `node:buffer` has exported `File` since 18.13, so borrow it when the global is absent.
+// gate — ran Node 18 until TD-255 moved it to 24 (2026-10-01); on 18 a bare `new File(...)` is a
+// ReferenceError. This suite passed on every dev box (Node 24) and failed the first time it ran
+// where the app is built (code health H2, 2026-09-18). `node:buffer` has exported `File` since
+// 18.13, so borrow it when the global is absent (kept: harmless on 24, and the floor guard is 22).
 if (typeof (globalThis as { File?: unknown }).File === 'undefined') {
   (globalThis as { File?: unknown }).File = NodeFile
 }

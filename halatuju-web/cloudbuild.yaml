@@ -37,8 +37,9 @@
 #   shell ever sees the text. So `$_SKIP_TESTS` below is not a shell variable — by the time sh
 #   runs, the line already reads `if [ "1" = "1" ]` (or `if [ "" = "1" ]`). A shell variable of
 #   our own would have to be written `$$NAME`; this file deliberately uses none.
-#   The test image is node:18-alpine (the Dockerfile's own base), which ships BusyBox `sh`, not
-#   bash — the script below is plain POSIX sh.
+#   The test image is node:24-alpine (the Dockerfile's own base), which ships BusyBox `sh`, not
+#   bash — the script below is plain POSIX sh. ⚠ Keep its major EQUAL to the Dockerfile's, to
+#   `.nvmrc` and to `engines` in package.json; `nodeVersion.test.ts` fails if they drift (TD-255).
 
 substitutions:
   # Escape hatch. Empty = tests run (the normal path). "1" = tests are skipped, loudly.
@@ -47,7 +48,7 @@ substitutions:
 steps:
   # ---------------------------------------------------------------- tests (parallel with Build)
   - id: test
-    name: node:18-alpine
+    name: node:24-alpine
     dir: halatuju-web
     entrypoint: sh
     waitFor: ['-']

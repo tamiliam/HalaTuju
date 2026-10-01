@@ -1,4 +1,8 @@
-FROM node:18-alpine AS base
+# Node 24 (Active LTS). ⚠ THE SAME MAJOR MUST APPEAR IN FOUR PLACES: here, the `test` step of
+# cloudbuild.yaml (the deploy gate runs the suite on the runtime that builds the app — TD-255 and
+# the H2 `File` defect are what happens when they differ), `.nvmrc` and `engines` in package.json.
+# `src/lib/__tests__/nodeVersion.test.ts` fails if any of them drifts. Change all four together.
+FROM node:24-alpine AS base
 
 # Install dependencies
 FROM base AS deps

@@ -1354,13 +1354,13 @@ defining line in the same change that fixes it; never write a new entry inside t
   - **TD-252** (A·S) — An award nobody answers holds the sponsor's money for ever. Cron half built by the sweep; the Scheduler job and the console withdrawal (waits on TD-198) remain.
   - ~~**TD-248**~~ (A·S) — closed by the sweep.
   - ~~**TD-203**~~ (A·S) — closed by the sweep.
-  - **TD-257** (A·M) — 22 admin endpoints have no test driving them, including the two that release bursary money.
+  - **TD-257** (A·M) — 21 of 22 driven by Now sprint 1; the last (interview-slot DELETE) has no caller — owner: wire or unwire.
   - **TD-229** (A·L) — A second gift would make its students sign the first gift's agreement. Signing is off today.
   - ~~**TD-292**~~ (B·S) — closed by the sweep.
   - ~~**TD-217**~~ (B·S) — closed by the sweep.
   - ~~**TD-167**~~ (B·S) — closed by the sweep.
   - ~~**TD-153**~~ (B·S) — closed by the sweep (all of part b now gated).
-  - **TD-255** (B·M) — Production builds on Node 18, which no longer gets security fixes.
+  - ~~**TD-255**~~ (B·M) — closed by Now sprint 1 (Node 24), deploy pending.
   - **TD-253** (B·M) — An interview with nothing in it still wakes Approve and Decline. The owner's ruling is not built.
   - **TD-218** (B·M) — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading.
   - **TD-207** (B·M) — Password reset fails for every admin who has finished onboarding.
@@ -1411,6 +1411,25 @@ defining line in the same change that fixes it; never write a new entry inside t
     6 kB). `/profile` sits 0.92 kB under its 310 line — the tightest of the three.
 - Still standing from TD-309: `serializers.py` is AT its size ceiling (1215) and `check2_queries.py`
   has 6 lines left; the 0.5 kB per-route margin rule is folded into TD-304.
+- **Now sprint 1 is BUILT, not committed or pushed (2026-10-01):** ~~TD-255~~ closed pending its
+  deploy; TD-257 21 of 22 done (stays open on one owner decision). Register open 133 -> **132**.
+  No migration, no product code, bundle unchanged. Retro:
+  `docs/retrospective-2026-10-01-now-sprint-1.md`.
+  - ⚠ **PRODUCTION WEB NOW BUILDS ON NODE 24** (`node:24-alpine`, Active LTS) — the Dockerfile,
+    the `cloudbuild.yaml` test step, `halatuju-web/.nvmrc` and `engines` in `package.json` all
+    name 24, held together by `src/lib/__tests__/nodeVersion.test.ts`. Change all four together
+    or the guard goes red. **What the deploy must prove** (no docker on the dev box, so nothing
+    local did): the `test` step pulls `node:24-alpine`, `npm ci` + gates + `bundle-budget` go
+    green on it, the image `Build` step succeeds on the same base, and the revision serves (the
+    `runner` stage runs `node server.js` on 24), and one `/_next/image?url=…&w=640&q=75` request
+    on the new revision answers 200 with an image type (Next 14.2's built-in resizer has never run
+    on 24; there is no `sharp`). ⚠ ROLLBACK IS NOT "edit the four lines back to 18": the new
+    `nodeVersion.test.ts` has a floor of 22 and would refuse that build. Roll back by shifting Cloud
+    Run traffic to the previous revision (no build), or by `git revert` of the sprint commit, which
+    removes the guard with the change.
+  - TD-257: five `test_endpoints_*.py` files (73 tests). The TD-219 ledger holds ONE line — the
+    interview-slot DELETE, which no screen calls. Owner: wire it into the cockpit, or delete the
+    route (which empties the ledger and closes TD-257).
 
 ## Superseded — previous Next Sprint (as of 2026-09-30, after TD-309)
 

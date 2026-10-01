@@ -10,10 +10,10 @@
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
 a running log; as of **2026-10-01** it runs to **TD-320**, with **317 ids carrying a defining entry
-and 133 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
+and 132 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
-TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, and one,
-TD-320, raised by its review). See the Open Items Index
+TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
+TD-320, raised by its review, and one, TD-255, closed by Now sprint 1 pending its deploy). See the Open Items Index
 below, which lists all of them in working order and says how the figures were reached.
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
@@ -34,7 +34,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**317 entries carry a defining line; 133 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, and TD-320 raised by its review). Every one of them was READ on
+**317 entries carry a defining line; 132 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, and TD-255 closed by Now sprint 1, deploy pending). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -89,13 +89,12 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-318** — WhatsApp STOP is built but does nothing until the inbound webhook is set in the Twilio console (an owner action). *(D · S · leftover of TD-135)*
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 
-### Now — money, identity, eligibility or security — 11
+### Now — money, identity, eligibility or security — 10
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 - **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S · partly done)*
-- **TD-257** — 22 admin endpoints have no test driving them, including the two that release bursary money. *(A · M)*
+- **TD-257** — 21 of 22 untested admin endpoints now driven (money, cool-off, Requests, terms). The last, the interview-slot DELETE, has no caller: wire it or unwire it? *(A · M · partly done 2026-10-01)*
 - **TD-229** — A second gift would make its students sign the first gift's agreement. Signing is off today. *(A · L)*
-- **TD-255** — Production builds on Node 18, which no longer gets security fixes. *(B · M)*
 - **TD-253** — An interview with nothing in it still wakes Approve and Decline. The owner's ruling is not built. *(B · M)*
 - **TD-218** — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading. *(B · M)*
 - **TD-207** — Password reset fails for every admin who has finished onboarding. *(B · M)*
@@ -5763,6 +5762,23 @@ in `apps/scholarship/tests/test_td258_sponsor_money_fence.py`.
 
 ### [TD-257] Twenty-two wired endpoints are never driven by a test — high
 
+**Status (2026-10-01, Now sprint 1): 21 of 22 driven; ONE line left, and it is a decision, not a
+test.** TD-203 drove `cancel-decline` on 2026-09-30. Now sprint 1 drove the other twenty, one
+cluster per file — `test_endpoints_disbursements.py` (schedule, every tranche action, the on-hold
+brake, close), `test_endpoints_cooloff.py` (hold-award, reporting-date, sponsor membership),
+`test_endpoints_requests_verbs.py` (requote, modify, decline, ask, schedule, done),
+`test_endpoints_sponsor_terms.py` (sections PUT, generate-quiz, import-docx, the graduation relay)
+and `test_endpoints_applicant_data.py` (verdict-summary, the referee DELETE, document help). Each
+sends the role that may act, with the gating flag on, and asserts what the SERVICE wrote; funded
+cases are reached through `fund_student` → `respond_to_award`, never a hand-set status. Four were
+bitten by stubbing the service body (`schedule_tranche`, `release_tranche`, `hold_pending_award`,
+`requote`): each went red, each file was restored to its original SHA-256. **What remains:**
+`applications/<pk>/interview-slots/<slot_id>/` (DELETE). No screen calls it —
+`withdrawInterviewSlot` in `halatuju-web/src/lib/admin-api/interviews.ts` is exported and called by
+nothing — and no cron reaches it, so it was reported rather than tested. **Owner/lead: wire it into
+the cockpit (then test it), or unwire it (then delete the route, which empties the ledger and
+closes this entry).**
+
 **Found:** code health H3 (2026-09-18), raised by the TD-219 guard.
 
 `test_endpoint_exercise.py` measures 200 routes in `apps/scholarship/urls.py`; 178 are driven by at
@@ -5803,7 +5819,23 @@ removing `docs/**` from `ignoredFiles`: every changelog line would then cost an 
 
 **Trigger:** the first api build that goes red on this test.
 
-### [TD-255] Production builds on Node 18, which is past end of life; the dev box runs Node 24 — medium
+### [TD-255] Production builds on Node 18, which is past end of life; the dev box runs Node 24 — medium — **RESOLVED 2026-10-01 (deploy pending; the lead confirms)**
+
+**Resolved 2026-10-01 (Now sprint 1; deploy pending).** The four homes of the Node major now name
+**24** (Active LTS) together: `halatuju-web/Dockerfile` (`FROM node:24-alpine`; the `deps`,
+`builder` and `runner` stages all build `FROM base`, so one line moves all three), the
+`cloudbuild.yaml` `test` step (`name: node:24-alpine`, still BusyBox `sh`), a new
+`halatuju-web/.nvmrc` (`24`) and `"engines": {"node": ">=24"}` in `package.json`. 24 rather than
+22: Next 14.2.0 asks only `>=18.17.0`, none of the 785 installed packages has an `engines.node` that
+excludes 24, and the dev box has run jest and `next build` on 24.13 daily. The lockfile is
+unchanged (`npm ci --dry-run` passes the sync check). **Guard:**
+`src/lib/__tests__/nodeVersion.test.ts` fails if the four homes name different majors or drop below
+22 — the drift that is this entry's own story; it was bitten by putting the gate back on 18.
+**Not done locally, said plainly:** there is no `docker` on the dev box, so the image was not built
+and no Playwright smoke ran on it; the first proof on `node:24-alpine` is the deploy gate itself
+(the `test` step and the image build), which the lead watches. The live trigger needs no edit — it
+runs `filename: halatuju-web/cloudbuild.yaml`, and the rollback export in `docs/infra/` has no test
+step and names no Node image.
 
 **Found:** code health H2 (2026-09-18). `screenshotInput.test.ts` used the global `File`, which
 Node gained in version 20. It was green on every dev machine and red the first time it ran on the

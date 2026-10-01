@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Now sprint 1: production on Node 24 (TD-255) and twenty untested admin endpoints driven (TD-257) - 2026-10-01
+
+Owner: "let's do the 11 first"; the lead chose these two. BUILT, not committed, pushed or deployed;
+an adversarial review reads the diff first. TD-255 closes pending the deploy; TD-257 stays open
+with one line, a decision for the owner. Register open 133 -> **132**, defined 317. No migration,
+no product code in Part 2, no ledger raised, bundle unchanged.
+
+- **TD-255 — Node 24 in all four places at once.** `halatuju-web/Dockerfile` (`node:24-alpine`;
+  the three stages build `FROM base`), the `cloudbuild.yaml` test step (`node:24-alpine`, BusyBox
+  `sh` as before), a new `.nvmrc` (`24`) and `engines.node >=24` in `package.json`. Why 24, not 22:
+  Next 14.2.0 asks `>=18.17.0` and none of 785 installed packages excludes 24; the dev box runs
+  24.13. Lockfile unchanged. New guard `src/lib/__tests__/nodeVersion.test.ts` holds the four to one
+  major with a floor of 22 (bitten: the gate put back on 18 goes red). No docker on the dev box, so
+  the deploy gate is the first run on the new image; the live trigger needs no edit.
+- **TD-257 — twenty routes driven, each asserting what the service wrote.** Five new files, 73 tests:
+  `test_endpoints_disbursements.py` (schedule, release / withhold / return / mark_due with their
+  preconditions, the on-hold brake, close), `test_endpoints_cooloff.py` (hold-award returns the
+  money to the sponsor; reporting-date and its AUDIT line; sponsor membership then lets
+  `record_admin_credit` record a credit it refused before), `test_endpoints_requests_verbs.py`
+  (requote, modify — which supersedes the analysis — decline, ask, schedule, done),
+  `test_endpoints_sponsor_terms.py` (sections PUT, generate-quiz, a real `.docx` import, the
+  graduation relay) and `test_endpoints_applicant_data.py` (verdict-summary, the referee DELETE,
+  document help). Funded cases come from `fund_student` -> `respond_to_award`, never a hand-set
+  status; no `ScholarshipApplication` is hand-built. Four stub bites (`schedule_tranche`,
+  `release_tranche`, `hold_pending_award`, `requote`) went red and were restored by SHA. The TD-219
+  ledger shrank 21 -> **1**: the interview-slot DELETE, which no screen calls
+  (`withdrawInterviewSlot` is exported and unused) — wire it or unwire it, the owner's call.
+
 ## Next-tier batch 2: eleven web-console fixes and the TD-319 ruling - 2026-10-01
 
 Owner: "proceed with batch 2", and "allow" on TD-319. BUILT, not committed, pushed or deployed; an

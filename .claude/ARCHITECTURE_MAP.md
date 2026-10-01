@@ -812,7 +812,7 @@ Validated by `scripts/check-i18n.js` (ensures identical key structure across all
 
 ```
 halatuju-web/
-├── Dockerfile                     # Multi-stage Node 18 Alpine build (standalone output)
+├── Dockerfile                     # Multi-stage Node 24 Alpine build (standalone output)
 ├── next.config.js                 # React strict mode, standalone output, NEXT_PUBLIC_API_URL
 ├── tailwind.config.ts             # Brand colours (primary: #137fec), Lexend font, 8px radius
 ├── tsconfig.json                  # Strict mode, path alias @/* → ./src/*

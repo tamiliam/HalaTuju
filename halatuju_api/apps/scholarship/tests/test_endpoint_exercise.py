@@ -181,83 +181,25 @@ class TestEveryEndpointIsExercised(SimpleTestCase):
     #: and `test_the_list_only_shrinks` fails with "remove me" — which is the point: the list
     #: cannot be left behind by the work that empties it.
     #:
-    #: ⚠ The comments say why each one MATTERS, not why it is acceptable. Twenty of the
-    #: twenty-two are WRITES, and six of them are in the Requests module — the module both of
-    #: TD-219's original defects came from.
+    #: ⚠ The comments say why each one MATTERS, not why it is acceptable. Twenty-two lines were
+    #: recorded at H3; TD-203 (2026-09-30) drove `cancel-decline` and TD-257 (Now sprint 1,
+    #: 2026-10-01) drove twenty more — the money-out routes, the cool-off brake, the reporting
+    #: date, closure, the sponsor-membership gate, six Requests verbs, the verdict summary, the
+    #: sponsor-terms editors, the graduation relay and the document help — each with the role,
+    #: the flag and an assertion on what the service wrote (`test_endpoints_*.py`).
+    #:
+    #: ⚠ THE ONE LINE LEFT IS A ROUTE NO SCREEN CALLS, not one nobody got round to. TD-257 was
+    #: told to report a dead route rather than test it for its own sake; the lead/owner decides
+    #: whether it is wired into the cockpit (then tested) or unwired (then removed from urls.py,
+    #: which also empties this ledger).
     NOT_YET_EXERCISED = {
-        # ── Money ─────────────────────────────────────────────────────────────────────
-        # POST. Releases, withholds or returns ONE tranche of a student's bursary. The whole
-        # post-award ledger runs through here and nothing has ever driven the URL.
-        'api/v1/admin/scholarship/disbursements/<int:pk>/<str:action>/':
-            'AdminDisbursementActionView — money out, per tranche',
-        # POST. Builds the tranche schedule the above then pays against.
-        'api/v1/admin/scholarship/applications/<int:pk>/disbursements/':
-            'AdminDisbursementScheduleView — money out, the schedule',
-        # POST. Holds a pending award before the good-news email reveals it. The cool-off
-        # pair (this + cancel-decline, driven since TD-203 on 2026-09-30) is the only brake between a mistaken decision and a told student.
-        'api/v1/admin/scholarship/applications/<int:pk>/hold-award/':
-            'AdminHoldAwardView — stops an award inside the cool-off',
-        # POST. The officer-entered reporting date SIZES the bursary, and QC refuses a case
-        # without one. The engine that normalises it is tested; this endpoint is not.
-        'api/v1/admin/scholarship/applications/<int:pk>/reporting-date/':
-            'AdminReportingDateView — sets the date the award amount is computed from',
-        # POST. Terminal: status -> closed, with a reason. Nothing walks it back.
-        'api/v1/admin/scholarship/applications/<int:pk>/close/':
-            'AdminCloseApplicationView — terminal closure',
-        # POST. Accepts a benefactor INTO a gift. `record_admin_credit` refuses without an
-        # approved membership, so this route is the gate on a second gift's money.
-        'api/v1/admin/sponsors/<int:pk>/membership/':
-            'AdminSponsorMembershipView — the gate on which gift a sponsor may fund',
-        # POST. Moves a funded student between on_track / probation / on_hold.
-        'api/v1/admin/scholarship/applications/<int:pk>/maintenance/':
-            'AdminMaintenanceSubstateView — post-award lifecycle write',
-
-        # ── The Requests module — TD-219's own ground ─────────────────────────────────
-        # All POST, all super-only or org_admin, all calling `org_requests` services with
-        # hand-built keyword arguments. This is the family where the same class of defect
-        # has already shipped twice in one day; six of its verbs are undriven.
-        'api/v1/admin/scholarship/requests/<int:pk>/requote/':
-            'AdminOrgRequestRequoteView — revises the hours and the price',
-        'api/v1/admin/scholarship/requests/<int:pk>/modify/':
-            'AdminOrgRequestModifyView — the requestee asks for a changed quote',
-        'api/v1/admin/scholarship/requests/<int:pk>/decline/':
-            'AdminOrgRequestDeclineView — the requestee refuses a quote',
-        'api/v1/admin/scholarship/requests/<int:pk>/ask/':
-            'AdminOrgRequestAskView — the owner asks the requester a question',
-        'api/v1/admin/scholarship/requests/<int:pk>/schedule/':
-            'AdminOrgRequestScheduleView — books the approved work in',
-        'api/v1/admin/scholarship/requests/<int:pk>/done/':
-            'AdminOrgRequestDoneView — closes the request, which bills the hours',
-
-        # ── Applicant data ────────────────────────────────────────────────────────────
-        # GET. The whole verdict payload for one applicant — identity, academics, income.
-        'api/v1/admin/scholarship/applications/<int:pk>/verdict-summary/':
-            'AdminVerdictSummaryView — the verdict payload (PII), never driven',
-        # DELETE, both. Destructive, and the LIST sibling of each IS driven — so the gap is
-        # precisely the verb that removes something.
-        'api/v1/admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/':
-            'AdminRefereeDetailView — DELETE a referee',
+        # DELETE. Withdraws one proposed, unbooked interview slot (`scheduling.withdraw_slot`),
+        # dark behind INTERVIEW_SCHEDULING_ENABLED. ⚠ DEAD as of 2026-10-01: the web client
+        # `withdrawInterviewSlot` (halatuju-web/src/lib/admin-api/interviews.ts) is exported and
+        # re-exported from lib/admin-api.ts and CALLED BY NOTHING, and no cron or command reaches
+        # the view. A reviewer replaces the whole menu by POSTing the slots again instead.
         'api/v1/admin/scholarship/applications/<int:pk>/interview-slots/<int:slot_id>/':
-            'AdminInterviewSlotDetailView — DELETE a proposed slot',
-
-        # ── What a sponsor signs, and what a sponsor is shown ─────────────────────────
-        # The sponsor TERMS editing verbs. What a benefactor accepts is a consent document;
-        # its list/detail/validate/publish routes are driven, these three are not.
-        'api/v1/admin/scholarship/sponsor-terms/<int:pk>/sections/':
-            'AdminSponsorTermsSectionsView — PUT the clauses a sponsor accepts',
-        'api/v1/admin/scholarship/sponsor-terms/<int:pk>/sections/<int:order>/generate-quiz/':
-            'AdminSponsorTermsGenerateQuizView — AI call, billable, per clause',
-        'api/v1/admin/scholarship/sponsor-terms/<int:pk>/import-docx/':
-            'AdminSponsorTermsImportDocxView — replaces the document wholesale',
-        # GET. Relays approved graduation thank-yous to the funder. The anonymity allowlist
-        # behind it IS tested; the endpoint that serves it is not.
-        'api/v1/sponsor/graduation-messages/':
-            'SponsorGraduationMessagesView — student words relayed to a sponsor',
-
-        # ── Student-facing ────────────────────────────────────────────────────────────
-        # GET. The per-document help text a student reads while uploading.
-        'api/v1/scholarship/documents/<int:pk>/help/':
-            'DocumentHelpView — the help a student is shown on a document',
+            'AdminInterviewSlotDetailView — DELETE a proposed slot; no caller (TD-257)',
     }
 
     @classmethod
