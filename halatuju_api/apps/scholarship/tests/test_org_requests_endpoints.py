@@ -19,6 +19,19 @@ TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 BASE = '/api/v1/admin/scholarship/requests/'
 
 
+def _leaf_values(obj):
+    """Every scalar inside a JSON payload, at any depth — so a test can ask whether a VALUE was
+    served without matching a substring of some other value (TD-307)."""
+    if isinstance(obj, dict):
+        for v in obj.values():
+            yield from _leaf_values(v)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            yield from _leaf_values(v)
+    else:
+        yield obj
+
+
 def _token(uid):
     return jwt.encode({'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
                       TEST_JWT_SECRET, algorithm='HS256')
@@ -240,10 +253,14 @@ class TestOrgPayloadAllowlist(_Base):
             self.assertNotIn(banned, body, banned)
 
         # And not smuggled in as a VALUE either — the number and the private note are the two
-        # things whose absence actually matters.
-        blob = str(body)
-        for banned in ('owner-only note', '9.0'):
-            self.assertNotIn(banned, blob, banned)
+        # things whose absence actually matters. ⚠ TD-307 (2026-10-01): this used to search the
+        # whole payload TEXT for '9.0', and a timestamp such as '…T09:50:19.008447+08:00' contains
+        # it, so the test failed on a clock. Values are compared as values, not as a substring.
+        values = list(_leaf_values(body))
+        self.assertNotIn('owner-only note', values)
+        self.assertNotIn(9.0, [v for v in values if isinstance(v, (int, float)) and not isinstance(v, bool)])
+        self.assertNotIn('9.0', [v for v in values if isinstance(v, str)])
+        self.assertNotIn('9', [v for v in values if isinstance(v, str)])
 
     def test_super_sees_owner_payload(self):
         self._auth('sup')

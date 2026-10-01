@@ -1054,9 +1054,11 @@ class TestTheStudentsCheck2Asks(WhoseStrBase):
 class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
     """The end-to-end answer the owner asked for: a household SUBMITTED before the change, on a
     stranger's STR, with bills reading high, already asked the `_str` clarify and already emailed.
-    After the change the next Check-2 sync closes that clarify itself, raises the income variant
-    and (salary route) the letter request, and re-arms the one-time notice; the hourly sweep then
-    sends the EXISTING "query raised" email — the same template, no new words."""
+    After the change the next Check-2 sync RE-WORDS that clarify in place to the income variant
+    (TD-314, 2026-10-01: the three bills wordings are one question — same row, no new-item email;
+    before TD-314 it was closed as `system` and the income variant raised as a new row) and, on
+    the salary route, raises the letter request, which re-arms the one-time notice; the hourly
+    sweep then sends the EXISTING "query raised" email — the same template, no new words."""
 
     def _already_asked(self, route, state='true_stranger'):
         """The household as the OLD tree left it. Check-2 syncs run with `has_valid_str`
@@ -1104,13 +1106,15 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
                                                              QUERY_RAISED_SUBJECTS)
         from apps.scholarship.services import send_due_query_emails
         app = self._already_asked('salary')
+        asked = app.resolution_items.get(code=_HU_STR)
         sync_check2_queries(app)
         app.refresh_from_db()
-        self.assertEqual(self._check2(app, 'resolved'), [(_HU_STR, 'system')])
+        self.assertEqual(self._check2(app, 'resolved'), [])        # TD-314: nothing closed
         self.assertEqual(self._check2(app, 'open'), [(_LETTER, ''), (_HU, '')])
         hu = app.resolution_items.get(code=_HU)
+        self.assertEqual(hu.pk, asked.pk)                           # the SAME row, re-worded
         self.assertEqual(hu.params, {'amount': 400, 'income': 1500})
-        self.assertIsNone(app.query_raised_notified_at)          # the one-time notice re-armed
+        self.assertIsNone(app.query_raised_notified_at)          # re-armed — by the LETTER request
 
         mail.outbox.clear()
         self.assertEqual(send_due_query_emails()['sent'], 1)
@@ -1129,14 +1133,20 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
     def test_str_route_the_clarify_is_swapped_and_no_letter_is_asked(self):
         from apps.scholarship.check2_queries import sync_check2_queries
         app = self._already_asked('str')
+        asked = app.resolution_items.get(code=_HU_STR)
         sync_check2_queries(app)
-        self.assertEqual(self._check2(app, 'resolved'), [(_HU_STR, 'system')])
+        app.refresh_from_db()
+        self.assertEqual(self._check2(app, 'resolved'), [])        # TD-314: nothing closed
         self.assertEqual(self._check2(app, 'open'), [(_HU, '')])
+        self.assertEqual(app.resolution_items.get(code=_HU).pk, asked.pk)   # re-worded in place
+        self.assertIsNotNone(app.query_raised_notified_at)        # no new item, so no new email
 
-    def test_at_interview_the_clarify_is_closed_and_nothing_replaces_it(self):
-        """⚠ From `interviewing` the machine may not ASK (owner, 2026-07-13) but still tidies:
-        the open `_str` clarify is auto-resolved by the system, nothing is raised in its place,
-        and no email goes out. Pinned so the owner sees it, not endorsed by it."""
+    def test_at_interview_the_clarify_stays_as_asked_and_nothing_replaces_it(self):
+        """⚠ From `interviewing` the machine may not ASK (owner, 2026-07-13). Before TD-314 the
+        open `_str` clarify was auto-resolved by the system here; since TD-314 the three bills
+        wordings are one question and an open ask is not withdrawn where the machine may not
+        ask (TD-306's rule for the pair, now the set): the row stays exactly as asked, nothing is
+        raised and no email goes out. Pinned so the owner sees it, not endorsed by it."""
         from django.core import mail
         from apps.scholarship.check2_queries import sync_check2_queries
         from apps.scholarship.services import send_due_query_emails
@@ -1145,8 +1155,8 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
         app.save(update_fields=['status'])
         sync_check2_queries(app)
         app.refresh_from_db()
-        self.assertEqual(self._check2(app, 'resolved'), [(_HU_STR, 'system')])
-        self.assertEqual(self._check2(app, 'open'), [])
+        self.assertEqual(self._check2(app, 'resolved'), [])
+        self.assertEqual(self._check2(app, 'open'), [(_HU_STR, '')])   # as asked, not re-worded
         self.assertIsNotNone(app.query_raised_notified_at)
         mail.outbox.clear()
         self.assertEqual(send_due_query_emails()['sent'], 0)

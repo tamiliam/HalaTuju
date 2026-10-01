@@ -82,7 +82,8 @@ from .genuineness.bands import canonical_status
 #   bumps. (The evidence carry in the same change moves no band and would not have bumped it.)
 #   2026-09-29.1 — TD-285: `has_valid_str` asks WHOSE STR; a salary band can fall Certain->Unsure.
 #   2026-09-30.1 — TD-292: "latest" document = newest uploaded_at, then highest id (tie-break).
-VERDICT_ENGINE_VERSION = '2026-09-30.1'
+#   2026-10-01.1 — TD-089: a guardian is linked off the letter's guardian AND ward names.
+VERDICT_ENGINE_VERSION = '2026-10-01.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -380,7 +381,7 @@ def _str_precedence_verdict(application):
         through): an unproven relationship isn't an established parent/guardian yet, so the route
         logic asks for the missing tie (BC / patronymic) — the fraud guard the salary route already
         applied via ``confirmed_members``."""
-    from .income_engine import (household_str_status, _member_ic_doc,
+    from .income_engine import (household_str_status, _member_ic_doc, letter_names,
                                 member_relationship_status, chain_verified_earner,
                                 student_name_for_link)
     grade, member = household_str_status(application)
@@ -396,10 +397,10 @@ def _str_precedence_verdict(application):
     # A WRONG-TYPE relationship doc is unusable — its fields must not confirm anything (#27).
     _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
     g_doc, _, g_unusable = _usable_relationship_fields(application, 'guardianship_letter')
-    rel = member_relationship_status(member, student_name, ic_name,
-                                     bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
-                                     ('' if g_unusable else (getattr(g_doc, 'vision_name', '') or '')),
-                                     bcf.get('bc_father_name', ''))
+    g_name, g_ward = letter_names(None if g_unusable else g_doc)    # TD-089 + review F1
+    rel = member_relationship_status(member, student_name, ic_name, bcf.get('bc_child_name', ''),
+                                     bcf.get('bc_mother_name', ''), g_name,
+                                     bcf.get('bc_father_name', ''), g_ward)
     if rel != 'match' and member in ('mother', 'father') and chain_verified_earner(application, member):
         rel = 'match'
     if rel != 'match':
@@ -496,7 +497,7 @@ def _verdict_income(application):
 
     The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
     from .income_engine import (father_link, mother_relationship,
-                                guardian_relationship, chain_verified_earner,
+                                guardian_link, chain_verified_earner,
                                 student_name_for_link, salary_income_satisfied)
     # Lazy: `verdict_income_salary` imports this module's `_fact` / `_item` primitives, so the
     # edge has to be one-way at import time (the `income_engine` pattern above).
@@ -596,7 +597,7 @@ def _verdict_income(application):
             elif g_unusable:
                 gap.append(_item('guardianship_letter_not_genuine'))
             else:
-                rel = guardian_relationship(getattr(g, 'vision_name', '') or '', earner_ic_name)
+                rel = guardian_link(g, earner_ic_name, student_name)   # TD-089 + review F1
     # IC-number chain: the BC's parent number matching the income proof's number confirms a
     # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
     if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):

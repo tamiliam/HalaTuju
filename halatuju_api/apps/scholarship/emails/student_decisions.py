@@ -5,7 +5,8 @@ confirmed, and the fail / merit / need / interview copy the decline mail also re
 Moved here VERBATIM from `emails.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
+from .sending import _interview_unsub_headers
 from .shared import _DEFAULT_NAME, _P, _meter_email, logger
 
 
@@ -346,12 +347,16 @@ def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extr
     fmt = {'name': name, 'programme': programme_name, 'link': link, **(extra or {})}
     _meter_email()
     try:
-        send_mail(
+        # TD-130: `send_mail` cannot carry headers. The same plain message, plus the harmless
+        # mailto List-Unsubscribe the interview mail has (no one-click POST), to the SENDER's
+        # support address. Subject, body, From and To are exactly what `send_mail` sent.
+        EmailMessage(
             subject=subjects[lang].format(programme=programme_name),
-            message=bodies[lang].format(**fmt),
+            body=bodies[lang].format(**fmt),
             from_email=b.email_from,
-            recipient_list=[to_email],
-        )
+            to=[to_email],
+            headers=_interview_unsub_headers(b),
+        ).send()
         return True
     except Exception:
         logger.warning(

@@ -57,13 +57,21 @@ def _fmt_myt(dt):
     return f'{local:%a, %d %b %Y}, {hour12}:{local:%M} {ampm} (MYT)'
 
 
-def _interview_unsub_headers():
+def _interview_unsub_headers(branding=None):
     """A harmless List-Unsubscribe on interview/service emails: a mailto to support, so a
     mistaken 'unsubscribe' click just lands a note in the support inbox for a human — instead
     of triggering the ESP's auto-suppression that would silently stop us reaching the student
     about reminders or their decision. No one-click POST header, so nothing auto-fires. (The
-    definitive fix is a Brevo-side List-Help on transactional mail.)"""
-    return {'List-Unsubscribe': f'<mailto:{_P.email_support}?subject=Unsubscribe%20from%20B40%20emails>'}
+    definitive fix is a Brevo-side List-Help on transactional mail.)
+
+    TD-130: the decision and query mail carry it too. ``branding`` is the SENDER's seam, so a
+    tenant's decision mail points at the tenant's own support address AND names the tenant's own
+    programme in the mailto subject (review F6 — it said "B40" on every organisation's mail);
+    default = the platform."""
+    from urllib.parse import quote
+    b = branding or _P
+    subject = quote(f"Unsubscribe from {b.programme_name('en')} emails", safe='')
+    return {'List-Unsubscribe': f'<mailto:{b.email_support}?subject={subject}>'}
 
 
 def _send_bilingual(to_email, subject, en, bm):

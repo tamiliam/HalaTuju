@@ -438,6 +438,7 @@ def resolve_doc_items_for_upload(application, doc):
         qs = qs.filter(code=rc) if rc else qs.filter(doc_type=doc.doc_type)
         upload_member = (getattr(doc, 'household_member', '') or '').strip()
         str_still_insufficient = False
+        str_ic_named = None          # TD-316: read once, and only if an STR-IC ask is in `qs`
         for item in qs:
             # V2 (#4): MEMBER-AWARE. A member-tagged request (V1.3 now writes
             # params.household_member on the check2 per-member proof items) clears ONLY on an
@@ -451,6 +452,15 @@ def resolve_doc_items_for_upload(application, doc):
             # ask (the gap persists, so leave the task open).
             if item.code == 'income_doc_stale' and income_engine.stale_income_proof(application):
                 continue
+            # TD-316: ONE FACT DECIDES THE ASK, THE OFFER AND THE RESOLUTION. An IC whose NAME read
+            # is 'ok' here even when the field the STR needs did not; the ask clears only once
+            # `str_ic_slots` — the rule that raised it and offers the TD-309 card — drops the member.
+            if '_ic_for_str_' in item.code:
+                if str_ic_named is None:
+                    from .income_str_ownership import str_owner_ic_asks
+                    str_ic_named = {m for ms in str_owner_ic_asks(application).values() for m in ms}
+                if item.code.split('_ic_for_str_')[0] in str_ic_named:
+                    continue
             # CRITERION-AWARE for str_not_current: this Action-Centre ask is specifically "confirm the
             # STR is approved AND being paid (current cycle)". A re-uploaded but STILL not-current STR
             # (dateless 'unconfirmed', unreadable) scans 'ok' and is fine for SUBMISSION (the gate is

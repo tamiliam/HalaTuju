@@ -1368,11 +1368,28 @@ defining line in the same change that fixes it; never write a new entry inside t
   - **TD-125** (B·M) — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet.
   - **TD-114** (B·M) — A fact can read Certain off a document that was never scored for genuineness.
   - **TD-069** (B·M) — STPM students get only two SPM elective slots, and the choice is kept only in the browser.
-- **The owner is asked 23 questions** (the Owner-decision tier): TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318.
+- **The owner is asked 24 questions** (the Owner-decision tier): TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318, TD-319 (raised 2026-10-01).
 - ⚠ `td_open` jumped 99 → 159 on this date. Nothing was added: 31 entries had been written INSIDE
   the index and 94 June bullets had a shape the tool did not read. Do not read the jump as new debt.
-- The small-lane candidates are the **Next** tier (37 entries, half a day each, student- or
+- The small-lane candidates are the **Next** tier (29 entries now, half a day each, student- or
   officer-visible). Several go together; see "Clusters" in the index.
+- **Next-tier batch 1 is BUILT, not committed or pushed (2026-10-01):** ~~TD-242~~, ~~TD-249~~,
+  ~~TD-047~~, ~~TD-160~~, ~~TD-316~~, ~~TD-314~~, ~~TD-089~~, ~~TD-317~~ closed; TD-130's code half
+  built (stays open: the owner's Brevo List-Help setting). The adversarial review's six findings
+  are fixed and it raised **TD-319** (Owner-decision: an unreadable EPF table gets no Gemini
+  fallback). Register open 152 -> **145**, defined 316.
+  `VERDICT_ENGINE_VERSION` 2026-10-01.1 (TD-089: guardian AND ward, all four readers). No
+  migration. Rules: decisions.md 2026-10-01.
+  - ⚠ **NEW ROUTE `GET /api/v1/health/`** (`apps/courses/health.py`): unauthenticated, no query,
+    200 `{"status":"ok","course_data_loaded":true}` / 503 `degraded`. Nothing calls it — check
+    whether Cloud Run should probe it (a production step; no Cloud Run health path existed before).
+    Only the eligibility route retries a failed course-data load; ranking waits for one.
+  - Three verbatim moves: `apps/courses/supabase_admin.py` (from `views_admin.py`, 1262 -> 1205),
+    `apps/scholarship/doc_parse_epf.py` and the leaf `apps/scholarship/doc_parse_text.py` (both
+    from `doc_parse.py`, 688 -> 547, so its budget line LEFT the ledger). `doc_parse` registers the
+    EPF parser itself; either import order works.
+  - The interview mail's mailto `List-Unsubscribe` subject now names the programme ("BrightPath
+    Bursary", a tenant's own name) instead of "B40" — header only.
 - Still standing from TD-309: `serializers.py` is AT its size ceiling (1215) and `check2_queries.py`
   has 6 lines left; the 0.5 kB per-route margin rule is folded into TD-304.
 

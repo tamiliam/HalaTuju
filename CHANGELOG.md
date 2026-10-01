@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## Next-tier batch 1: nine small api fixes from the debt register - 2026-10-01
+
+Owner's "go" on the Next tier; the lead chose these nine. BUILT, not committed, pushed or deployed;
+an adversarial review reads the diff first. Eight entries close (TD-242, TD-249, TD-047, TD-160,
+TD-316, TD-314, TD-089, TD-317); TD-130's code half is built and the entry stays open for the
+owner's Brevo setting. The adversarial review's six findings are fixed (below) and it raised
+TD-319: register open 152 -> **145**, defined 316.
+
+- **Review fixes (2026-10-01).** F1/F4: the guardian link also requires the letter's WARD to be the
+  student, and all four readers (three of them in the verdict engine, which still read
+  `vision_name`) take the letter through one reading, `income_engine.letter_names`; the version
+  is pinned. F2: the in-house EPF parser reads the one-cell-per-line table real OCR prints, so all
+  5 real snapshots with a table now read their contributions and both split totals (they read
+  'unknown' before). F3: the shared text helpers moved verbatim to the leaf `doc_parse_text.py`;
+  `doc_parse` registers the EPF parser, so either import order works (`doc_parse.py` 547, off the
+  ledger). F5: the course-data load publishes every map first and `requirements_df` last, and the
+  retry clock is re-checked under the lock. F6: the mailto unsubscribe subject names the sender's
+  programme (interview mail included) instead of "B40". TD-307 has its second sighting.
+
+- **TD-242 — a Drive file whose READ fails is a named finding.** `sheets.read_spending_report`
+  returns None for a failed read and `[]` for an empty sheet (`read_sheet_values` keeps its `[]`
+  contract). `spending_import.drive_sources` returns `(sources, unreadable, failed_reads)`;
+  `IngestReport.failed_reads` makes `needs_attention` true and prints `FILES LISTED BUT NOT READ`, so
+  the alert email fires; the run prints `PARTLY APPLIED - SHORT: n listed file(s) could not be read`,
+  never a bare APPLIED, and a run whose only listed file failed is not a quiet day.
+- **TD-249 — the nudge email's due date is the Malaysian day** (`timezone.localtime(due).date()`).
+- **TD-047 — the course data retries, and there is a health route.** An eligibility check that
+  finds the frame empty retries the load once (at most once a minute per process, inline, no
+  thread) before answering 503. New `GET /api/v1/health/` (`apps/courses/health.py`): no auth, no
+  query, `{"status": "ok"|"degraded", "course_data_loaded": bool}`, 200/503; it does not itself
+  retry. Nothing calls it yet — wiring it to a Cloud Run probe is a production step.
+- **TD-160 — a partner invite reads the login id back.** `_service_headers` and
+  `_create_supabase_user` moved verbatim to `apps/courses/supabase_admin.py` (imported back into
+  `views_admin`). On a 2xx with no readable id the account is read back by email (GoTrue admin list,
+  exact single match only); if that fails the row is still stored and a WARNING names the address.
+- **TD-316 — the IC ask for the STR closes on the same fact that raised it**: only when
+  `str_ic_slots` no longer names the member, not on any 'ok' upload. No second email.
+- **TD-314 — the three bills wordings are one question.** `high_utility_expense_str` joins the
+  TD-306 set: an open clarify is re-worded in place when a valid STR arrives or stops vouching (same
+  row, no new email, only where the machine may ask; a raced duplicate is closed). An answered one
+  stands for all three.
+- **TD-089 — a guardian earner's relationship reads the letter's `guardian_name`** (`vision_name`
+  for old rows). `VERDICT_ENGINE_VERSION` -> `2026-10-01.1`.
+- **TD-317 — the in-house KWSP parser emits the two split totals.** The EPF parser moved verbatim
+  to `apps/scholarship/doc_parse_epf.py` (re-exported from `doc_parse`), then
+  `_caruman_split` sums Caruman Majikan / Caruman Ahli over the contributing rows — all or nothing,
+  each row's shares must add up to its total — so `salary_figures` uses the exact `max()` formula.
+- **TD-130 (code half) — the decision and query emails carry the mailto List-Unsubscribe shim**,
+  headers only: `student_decisions._send` (pass, acknowledgement, submission received, award
+  confirmed, reminders, sign invitation, agreement executed) and the three `student_queries` sends.
+  A tenant's mail points at the tenant's support address. The Brevo List-Help setting is the owner's.
+- **TD-307 closed (lead, after the review re-run).** The flake was never xdist: the test searched the
+  whole payload text for the string 9.0, and a timestamp such as 19.008447 contains it, so it failed on
+  a clock about one run in a hundred. The test now compares served VALUES (a small _leaf_values helper)
+  and the register entry carries the diagnosis.
+
 ## The Now-tier sweep: eight money, identity and eligibility fixes from the debt register - 2026-09-30
 
 Sprint, owner's "go" on exactly this scope. BUILT, not committed, pushed or deployed; an adversarial

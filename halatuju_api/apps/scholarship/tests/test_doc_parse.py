@@ -410,6 +410,124 @@ class TestEpfParser(SimpleTestCase):
     def test_non_kwsp_text_returns_none(self):
         self.assertIsNone(parse_by_labels('epf', 'just some random text with no kwsp markers'))
 
+    # ── TD-317: the employer-share and member-share TOTALS, as the Gemini read carries them ──
+    def test_rows_with_both_shares_emit_both_totals(self):
+        r = parse_by_labels('epf', _KWSP)
+        # Caruman Majikan 221 + 250, Caruman Ahli 187 + 210, summed by hand from the fixture.
+        self.assertEqual(r['employer_contribution_total'], 'RM471.00')
+        self.assertEqual(r['employee_contribution_total'], 'RM397.00')
+        self.assertEqual(r['months_counted'], '2')                 # the n they are divided by
+
+    def test_rows_with_only_a_total_keep_the_old_fields_only(self):
+        totals_only = _KWSP.replace('221.00 187.00 408.00', '408.00').replace(
+            '250.00 210.00 460.00', '460.00')
+        r = parse_by_labels('epf', totals_only)
+        self.assertNotIn('employer_contribution_total', r)
+        self.assertNotIn('employee_contribution_total', r)
+        self.assertEqual((r['avg_monthly_contribution'], r['monthly_contribution'],
+                          r['months_counted']), ('RM434.00', 'RM460.00', '2'))
+
+    def test_ONE_row_without_a_split_drops_both_totals(self):
+        """All or nothing: the totals are divided by `months_counted`, which counts every row."""
+        r = parse_by_labels('epf', _KWSP.replace('250.00 210.00 460.00', '460.00'))
+        self.assertNotIn('employer_contribution_total', r)
+
+    def test_shares_that_do_not_add_up_are_a_misread_not_a_total(self):
+        r = parse_by_labels('epf', _KWSP.replace('221.00 187.00 408.00', '221.00 178.00 408.00'))
+        self.assertNotIn('employer_contribution_total', r)
+        self.assertNotIn('employee_contribution_total', r)
+
+    def test_a_zero_statement_carries_no_totals(self):
+        zero = _KWSP.replace('Jan-26 Caruman - IWS 16/01/2026 221.00 187.00 408.00\n'
+                             'Feb-26 Caruman - IWS 20/02/2026 250.00 210.00 460.00\n',
+                             'Tiada Transaksi\n')
+        self.assertNotIn('employer_contribution_total', parse_by_labels('epf', zero))
+
+    # ── Review F2: the REAL statements. OCR prints the CARUMAN table one cell per line. ──
+    #: Measured 2026-10-01 over the 13 `eval/snapshots/epf__*.ocr.txt`. The other eight cannot
+    #: yield a split: four print "Tiada Transaksi" (a9, a18, a57, a61 — no contribution, read as
+    #: zero), a72 is a Penyata cut off above its table, and a11 (Borang EC), a37 (an STR status
+    #: page) and a53 (a KWSP withdrawal record) are not Penyata Ahli at all.
+    SNAPSHOT_SPLITS = {'a10': 5, 'a27': 5, 'a31': 12, 'a63': 5, 'a67': 6}
+
+    def _snapshots(self):
+        import glob
+        import os
+        snap = os.path.join(os.path.dirname(doc_parse.__file__), 'eval', 'snapshots')
+        out = {}
+        for p in sorted(glob.glob(os.path.join(snap, 'epf__*.ocr.txt'))):
+            with open(p, encoding='utf-8') as fh:
+                out[os.path.basename(p).split('__')[1]] = fh.read()
+        return out
+
+    def test_real_statements_one_cell_per_line_yield_both_totals(self):
+        snaps = self._snapshots()
+        self.assertGreaterEqual(len(snaps), 13, 'the snapshot corpus shrank')
+        read = {}
+        for key, text in snaps.items():
+            r = parse_by_labels('epf', text) or {}
+            if r.get('employer_contribution_total') and r.get('employee_contribution_total'):
+                read[key] = r
+        self.assertGreaterEqual(len(read), len(self.SNAPSHOT_SPLITS), sorted(read))
+        for key, months in self.SNAPSHOT_SPLITS.items():
+            with self.subTest(snapshot=key):
+                self.assertIn(key, read)
+                self.assertEqual(read[key]['months_counted'], str(months))
+                self.assertEqual(read[key]['contribution_status'], 'has')
+
+    def test_a_real_statement_reads_to_the_sen(self):
+        # a10: five rows of Majikan 221.00 + Ahli 187.00 = 408.00, summed by hand.
+        r = parse_by_labels('epf', self._snapshots()['a10'])
+        self.assertEqual((r['employer_contribution_total'], r['employee_contribution_total'],
+                          r['months_counted'], r['avg_monthly_contribution'],
+                          r['monthly_contribution']),
+                         ('RM1105.00', 'RM935.00', '5', 'RM408.00', 'RM408.00'))
+
+    def test_a_tiada_transaksi_statement_is_still_zero_with_no_totals(self):
+        r = parse_by_labels('epf', self._snapshots()['a18'])
+        self.assertEqual(r['contribution_status'], 'zero')
+        self.assertNotIn('employer_contribution_total', r)
+
+    def test_cell_layout_all_or_nothing(self):
+        text = self._snapshots()['a10']
+        with self.subTest('a row whose shares do not add up'):
+            r = parse_by_labels('epf', text.replace('221.00\n187.00\n408.00\n20/02',
+                                                    '221.00\n178.00\n408.00\n20/02'))
+            self.assertNotIn('employer_contribution_total', r)
+        with self.subTest('a row missing a cell'):
+            r = parse_by_labels('epf', text.replace('20/02/2026\n221.00\n', '20/02/2026\n'))
+            self.assertNotIn('employer_contribution_total', r)
+            self.assertEqual(r['contribution_status'], 'unknown')     # as before F2: unread
+        with self.subTest('more month labels than rows'):
+            r = parse_by_labels('epf', text.replace('Mei-26\nCaruman IWS\n',
+                                                    'Mei-26\nCaruman IWS\nJun-26\nCaruman IWS\n'))
+            self.assertNotIn('employer_contribution_total', r)
+        with self.subTest('a grand total that disagrees with the rows'):
+            r = parse_by_labels('epf', text.replace('2,040.00', '2,050.00'))
+            self.assertNotIn('employer_contribution_total', r)
+
+    def test_the_epf_module_imports_FIRST_in_a_fresh_interpreter(self):
+        """Review F3: either import order must work. A fresh interpreter, so nothing has loaded
+        `doc_parse` before it; and the parser must still be registered afterwards."""
+        import os
+        import subprocess
+        import sys
+        api = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))))
+        code = ('from apps.scholarship import doc_parse_epf; '
+                'from apps.scholarship import doc_parse; '
+                'assert doc_parse._PARSERS["epf"] is doc_parse_epf._parse_epf; print("ok")')
+        res = subprocess.run([sys.executable, '-c', code], cwd=api, capture_output=True,
+                             text=True, encoding='utf-8', errors='replace', timeout=120)
+        self.assertEqual((res.returncode, res.stdout.strip()), (0, 'ok'), res.stderr[-800:])
+
+    def test_the_moved_parser_is_the_registered_one_and_keeps_its_old_names(self):
+        from apps.scholarship import doc_parse_epf
+        self.assertIs(doc_parse._PARSERS['epf'], doc_parse_epf._parse_epf)
+        for name in ('_parse_epf', '_caruman_amounts', '_last_caruman', '_epf_address',
+                     '_CARUMAN_RE'):
+            self.assertIs(getattr(doc_parse, name), getattr(doc_parse_epf, name), name)
+
 
 # A JPN LM15 BC as Vision reads it — sections interleaved, English "Name" labels present,
 # the child's IC under "No. Daftar" (NOT captured as a parent), parents under "No. Kad

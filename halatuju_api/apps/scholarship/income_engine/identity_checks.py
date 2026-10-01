@@ -125,9 +125,11 @@ def student_income_ic_check(doc):
         # IC-aware (#88): a typed profile name without the A/P connector must not lose the
         # patronymic link when the student's own verified IC carries it.
         student_name = student_name_for_link(app)
-        bc_child, bc_mother, bc_father, letter_name = _relationship_inputs(app, member, name)
+        bc_child, bc_mother, bc_father, letter_name, letter_ward = _relationship_inputs(
+            app, member, name)
         name_status = member_relationship_status(member, student_name, name,
-                                                 bc_child, bc_mother, letter_name, bc_father)
+                                                 bc_child, bc_mother, letter_name, bc_father,
+                                                 letter_ward)
 
     # Cross-check against the cluster's income proof (STR / salary slip) — the reason the
     # earner IC is uploaded. Green when the IC's name + number match the proof's recipient.

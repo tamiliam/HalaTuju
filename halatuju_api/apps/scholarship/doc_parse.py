@@ -22,51 +22,8 @@ from __future__ import annotations
 import re
 from typing import Callable, Optional
 
-# ── text + label helpers ──────────────────────────────────────────────────────
-
-
-def _lines(text: str) -> list:
-    """OCR text → trimmed lines (newline-normalised)."""
-    norm = (text or '').replace('\r\n', '\n').replace('\r', '\n')
-    return [ln.strip() for ln in norm.split('\n')]
-
-
-def find_value(text: str, label: str) -> str:
-    """The value printed after ``label`` (a regex, case-insensitive). Tries the remainder
-    of the label's own line (after an optional ``: = -`` separator); if that's blank, the
-    next non-empty line. ``''`` when the label isn't present.
-
-    Label-anchored, not position-anchored, so it survives a label sitting on its own line
-    (mobile screenshots) or inline with its value (desktop/PDF)."""
-    pat = re.compile(label, re.IGNORECASE)
-    lines = _lines(text)
-    for i, ln in enumerate(lines):
-        m = pat.search(ln)
-        if not m:
-            continue
-        rest = ln[m.end():].lstrip(' \t:=-').strip()
-        if rest:
-            return rest
-        for nxt in lines[i + 1:]:
-            if nxt:
-                return nxt
-        return ''
-    return ''
-
-
-def has(text: str, *patterns: str) -> bool:
-    """True iff any regex pattern is present (case-insensitive). Used for surface markers."""
-    blob = text or ''
-    return any(re.search(p, blob, re.IGNORECASE) for p in patterns)
-
-
-_NRIC_RE = re.compile(r'\b(\d{6})[-\s]?(\d{2})[-\s]?(\d{4})\b')
-
-
-def first_nric(text: str) -> str:
-    """The first Malaysian NRIC in the text, normalised to ``######-##-####``. '' if none."""
-    m = _NRIC_RE.search(text or '')
-    return f'{m.group(1)}-{m.group(2)}-{m.group(3)}' if m else ''
+# ── text + label helpers — moved to the leaf `doc_parse_text` (review F3) ───────
+from .doc_parse_text import _NRIC_RE, _first_rm_figure, _lines, find_value, first_nric, has
 
 
 # Tolerate an intervening ``)``/space — Malaysian bills print the amount as a column under
@@ -235,31 +192,6 @@ def _parse_str(text: str) -> Optional[dict]:
 #   Baki Terdahulu — matches the convention the income_engine utility_check already reads.
 
 
-def _first_rm_figure(v: str) -> str:
-    """First currency figure in ``v`` → ``RM<n>`` (commas stripped). '' if none.
-
-    ⚠ Named for what it does since code health H7. It used to be called `_money`, which it shared
-    with seven other functions in this app that PARSED or FORMATTED money; this one does neither.
-    It reads OCR text and returns a display string, it refuses nothing, and it has no opinion
-    about zero, negatives or decimal places — see `money.py` for the functions that do.
-
-    ⚠ TWO THINGS IT USED TO GET WRONG, fixed on the owner's order 2026-09-19 (TD-261):
-
-    * **The minus sign was dropped**, so a CREDIT ('-40.00' — the household is ahead on the
-      account) was stored as a charge of RM40.00. The sign is kept now, and kept AFTER the ``RM``
-      (``RM-40.00``): that is the shape both readers of the stored string already handle —
-      ``income_engine._arrears_amount`` spots a credit by matching ``-\\s*\\d``, which
-      ``-RM40.00`` would NOT satisfy, and the cockpit's ``_arrearsAmount`` reads either. Only the
-      LEADING minus is a sign; no fixture or corpus here shows a Malaysian bill printing a credit
-      as ``40.00-``, ``40.00 CR`` or ``(40.00)``, and an unseen shape cannot be tested.
-    * **One decimal place was dropped** ('1234.5' → 'RM1234'): the pattern admitted two decimals
-      or none, and ``[\\d,]+`` then matched the integer part alone. One OR two now, reported as
-      the document prints it ('RM1234.5') rather than padded — this extracts, it does not format.
-    """
-    m = re.search(r'(-?[\d,]+(?:\.\d{1,2})?)', v or '')
-    return f'RM{m.group(1).replace(",", "")}' if m else ''
-
-
 @register('electricity_bill')
 def _parse_electricity(text: str) -> Optional[dict]:
     # Format A — the full TNB "Bil Elektrik Anda" bill (name + itemised charges).
@@ -299,84 +231,11 @@ def _parse_electricity(text: str) -> Optional[dict]:
     return None
 
 
-# ── P3: KWSP EPF statement ────────────────────────────────────────────────────
-# The KWSP "Penyata Ahli" — fixed labels: name after SULIT DAN PERSENDIRIAN, PENYATA AHLI
-# TAHUN <year>, No. Kad Pengenalan, No. Majikan, JUMLAH SIMPANAN: RM<x>, and the CARUMAN
-# SEMASA monthly rows (latest month's total = monthly_contribution). A mis-slotted Borang
-# EC / payslip carries NONE of these → None → Gemini (free mis-slot detection).
-
-_CARUMAN_RE = re.compile(
-    r'^(?:jan|feb|mac|apr|mei|jun|jul|ogos|ogo|sep|okt|nov|dis)-\d{2}\b.*?([\d,]+\.\d{2})\s*$',
-    re.IGNORECASE)
-
-
-def _caruman_amounts(text: str) -> list:
-    """Every monthly CONTRIBUTION amount (float) from the CARUMAN SEMASA rows, in order."""
-    out = []
-    for ln in _lines(text):
-        m = _CARUMAN_RE.match(ln)
-        if m:
-            try:
-                out.append(float(m.group(1).replace(',', '')))
-            except ValueError:
-                pass
-    return out
-
-
-def _last_caruman(text: str) -> str:
-    """The LAST (most recent) monthly contribution row → ``RM<n>``. '' if none parsed."""
-    amts = _caruman_amounts(text)
-    return f'RM{amts[-1]:.2f}' if amts else ''
-
-
-def _epf_address(text: str) -> str:
-    """Best-effort member address: the line carrying a 5-digit postcode + the line above it
-    (the Penyata Ahli prints the correspondence address as a short block). '' if none. Soft —
-    the address matcher + officer eyeball decide; never a gate."""
-    lines = [ln for ln in _lines(text) if ln]
-    for i, ln in enumerate(lines):
-        if re.search(r'\b\d{5}\b', ln):
-            prev = lines[i - 1] if i > 0 else ''
-            return ' '.join(p for p in (prev, ln) if p).strip()
-    return ''
-
-
-@register('epf')
-def _parse_epf(text: str) -> Optional[dict]:
-    if not has(text, r'penyata\s+ahli') or not has(text, r'ahli\s+kwsp', r'jumlah\s+simpanan', r'\bKWSP\b'):
-        return None                          # not a KWSP Penyata Ahli (e.g. a Borang EC) → Gemini
-    lines = _lines(text)
-    si = next((k for k, ln in enumerate(lines)
-               if re.search(r'sulit\s+dan\s+persendirian', ln, re.IGNORECASE)), -1)
-    name = next((ln for ln in lines[si + 1:] if ln), '') if si >= 0 else ''
-    nric = first_nric(find_value(text, r'no\.?\s*kad\s+pengenalan')) or first_nric(text)
-    # The KWSP employer number is a digit code — extract the digit-run so a label/value
-    # adjacency broken by image OCR yields '' rather than junk ("RINGKASAN", ":").
-    em = re.search(r'\d{6,}', find_value(text, r'no\.?\s*majikan'))
-    employer = em.group(0) if em else ''
-    balance = _first_rm_figure(find_value(text, r'jumlah\s+simpanan'))
-    ym = re.search(r'penyata\s+ahli\s+tahun\s+(20\d{2})', text, re.IGNORECASE)
-    year = ym.group(1) if ym else ''
-    statement_date = find_value(text, r'tarikh\s+penyata') or year
-    if not (name or nric or balance):
-        return None
-    # The CONTRIBUTION signal: average the months shown (steadier than one row), and
-    # distinguish a GENUINE zero ("Tiada Transaksi" / no current contributions — a real
-    # 'no formal salary' signal) from an UNREADABLE table (couldn't parse → 'unknown').
-    amts = _caruman_amounts(text)
-    positives = [a for a in amts if a > 0]
-    if positives:
-        contribution_status, avg = 'has', round(sum(positives) / len(positives), 2)
-        avg_contribution, months = f'RM{avg:.2f}', str(len(positives))
-    elif has(text, r'tiada\s+transaksi') or amts:    # rows present but all zero, or explicit none
-        contribution_status, avg_contribution, months = 'zero', 'RM0.00', str(len(amts))
-    else:
-        contribution_status, avg_contribution, months = 'unknown', '', ''
-    return {'name': name, 'nric': nric, 'employer': employer, 'latest_balance': balance,
-            'last_contribution': '', 'monthly_contribution': _last_caruman(text),
-            'avg_monthly_contribution': avg_contribution, 'months_counted': months,
-            'contribution_status': contribution_status, 'statement_date': statement_date,
-            'address': _epf_address(text), 'year': year}
+# ── P3: KWSP EPF statement — moved to `doc_parse_epf` (TD-317) ─────────────────
+# Imported here, where the section was: it registers the parser and keeps the old names.
+from .doc_parse_epf import (_CARUMAN_RE, _caruman_amounts, _epf_address, _last_caruman,
+                            _parse_epf)
+register('epf')(_parse_epf)   # registered HERE: doc_parse_epf is a leaf
 
 
 # ── P4: JPN birth certificate (Sijil Kelahiran) ───────────────────────────────

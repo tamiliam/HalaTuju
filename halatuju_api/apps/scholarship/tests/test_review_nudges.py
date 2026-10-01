@@ -1,5 +1,5 @@
 """Tests for the verdict-completion SLA nudges (TD-131) — send_review_nudges cron."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.core.management import call_command
 from django.core import mail
@@ -98,6 +98,23 @@ class ReviewNudgeTests(TestCase):
         self._app(assigned_days_ago=20, status='rejected')
         call_command('send_review_nudges')
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_due_date_in_the_email_is_the_malaysian_day_td249(self):
+        # A due INSTANT at 23:30 UTC is 07:30 the NEXT day in Kuala Lumpur (UTC+8, no DST).
+        # The expected string is built from the UTC calendar date plus one day — plain date
+        # arithmetic, deliberately NOT a timezone conversion like the code under test does.
+        now = timezone.now()
+        utc_day = (now - timedelta(days=2)).date()      # overdue, inside the 3-day grace
+        due = datetime(utc_day.year, utc_day.month, utc_day.day, 23, 30, tzinfo=dt_timezone.utc)
+        app = self._app(assigned_days_ago=0)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            assigned_at=due - timedelta(days=10))       # REVIEW_SLA_DAYS=10 → due == `due`
+        call_command('send_review_nudges')
+        bodies = [m.body for m in mail.outbox if 'Verdict overdue' in m.subject]
+        self.assertEqual(len(bodies), 1)
+        malaysian = (utc_day + timedelta(days=1)).strftime('%d %b %Y')
+        self.assertIn(malaysian, bodies[0])
+        self.assertNotIn(utc_day.strftime('%d %b %Y'), bodies[0])
 
     def test_reassignment_resets_nudge_stamps(self):
         from apps.scholarship.services import assign_reviewer

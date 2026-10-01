@@ -405,7 +405,7 @@ class EligibilityCheckView(APIView):
         )
 
         courses_config = apps.get_app_config('courses')
-        df = courses_config.requirements_df
+        df = courses_config.ensure_data()  # TD-047: an empty frame retries the load once first
 
         if df is None or df.empty:
             logger.error("No course requirements loaded")

@@ -290,6 +290,86 @@ class TestTheReCodeIsSafe(_Household):
             self.assertIn(part, line)
 
 
+class TestTheStrWordingIsTheSameQuestion(_Household):
+    """TD-314. A valid STR arriving on a household with an OPEN plain / no-income bills clarify and
+    a FULL cap used to close that clarify as `system` and raise the `_str` wording later, with a
+    fresh "new query" email — the same question twice, the first closed unanswered. The three
+    wordings are now one question: the open row is re-worded in place (TD-306's mechanism)."""
+
+    def _ask_then_notify(self):
+        self.add_high_bills()
+        c2q.sync_check2_queries(self.app)              # device + transport + the bills ask: full
+        self.assertEqual(self.app.resolution_items.filter(
+            source='check2', kind='clarify', status='open').count(), c2q.MAX_CLARIFY)
+        self.app.query_raised_notified_at = timezone.now()
+        self.app.save(update_fields=['query_raised_notified_at'])
+
+    def test_a_valid_str_arriving_re_words_the_open_ask_in_place(self):
+        self._ask_then_notify()
+        row = self.app.resolution_items.get(code=PLAIN)
+        self.add_valid_str()
+        c2q.sync_check2_queries(self.app)
+        row.refresh_from_db()
+        self.assertEqual((row.code, row.status, row.resolved_by, row.params),
+                         (STR, 'open', '', {'amount': 400}))
+        self.assertEqual([i.pk for i in self.high_items()], [row.pk])        # no second row
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.query_raised_notified_at)             # no new-item email
+
+    def test_and_back_when_the_str_stops_vouching(self):
+        self.add_high_bills()
+        self.add_valid_str()
+        c2q.sync_check2_queries(self.app)
+        row = self.app.resolution_items.get(code=STR)
+        self.app.documents.filter(doc_type='str').delete()
+        c2q.sync_check2_queries(self.app)
+        row.refresh_from_db()
+        self.assertEqual((row.code, row.status, row.params),
+                         (PLAIN, 'open', {'amount': 400, 'income': 1200}))
+        self.assert_no_unquotable_copy()
+
+    def test_an_ANSWERED_plain_ask_is_not_asked_again_in_str_words(self):
+        self.add_high_bills()
+        c2q.sync_check2_queries(self.app)
+        self.app.resolution_items.filter(code=PLAIN).update(
+            status='resolved', resolved_by='student', resolution_text='a big family')
+        self.add_valid_str()
+        c2q.sync_check2_queries(self.app)
+        self.assertEqual([(i.code, i.status) for i in self.high_items()], [(PLAIN, 'resolved')])
+        self.assertEqual(c2q.clarify_overflow_count(self.app), 0)
+
+    def test_a_raced_duplicate_is_closed_not_clashed(self):
+        self.add_high_bills()
+        self.add_valid_str()
+        plain = ResolutionItem.objects.create(application=self.app, source='check2', code=PLAIN,
+                                              fact='income', kind='clarify', params={'amount': 400})
+        live = ResolutionItem.objects.create(application=self.app, source='check2', code=STR,
+                                             fact='income', kind='clarify', params={'amount': 400})
+        c2q.sync_check2_queries(self.app)                                   # must not raise
+        plain.refresh_from_db()
+        live.refresh_from_db()
+        self.assertEqual((plain.code, plain.status, plain.resolved_by), (PLAIN, 'resolved', 'system'))
+        self.assertEqual((live.code, live.status), (STR, 'open'))
+
+    def test_no_re_word_when_the_machine_may_not_ask_and_no_close_either(self):
+        self.add_high_bills()
+        c2q.sync_check2_queries(self.app)
+        row = self.app.resolution_items.get(code=PLAIN)
+        self.app.status = 'interviewing'
+        self.app.save(update_fields=['status'])
+        self.add_valid_str()
+        c2q.sync_check2_queries(self.app)
+        row.refresh_from_db()
+        self.assertEqual((row.code, row.status), (PLAIN, 'open'))           # as asked
+        self.assertFalse(self.app.resolution_items.filter(code=STR).exists())
+
+    def test_stand_ins_maps_every_wording_to_the_one_row(self):
+        row = object()
+        for only in hu.CODES:
+            with self.subTest(only=only):
+                self.assertEqual(hu.stand_ins({only: row}), {c: row for c in hu.CODES})
+
+
 class TestTheEmailCarriesNoItemText(TestCase):
     def test_the_query_email_takes_a_count_not_items(self):
         import inspect

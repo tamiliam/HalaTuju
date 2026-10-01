@@ -587,6 +587,18 @@ class TestEpfMonthlySalary(SimpleTestCase):
     def test_none_when_nothing_usable(self):
         self.assertIsNone(_epf_monthly_salary({'employee_contribution_total': '', 'monthly_contribution': ''}))
 
+    def test_an_IN_HOUSE_parsed_statement_gets_the_exact_formula_td317(self):
+        # The in-house KWSP parser now emits the split totals too. The fixture's rows are
+        # Majikan 221 + 250 = 471 and Ahli 187 + 210 = 397 over 2 months, so the exact formula
+        # is max(471 / 0.26, 397 / 0.22) = max(1811.54, 1804.55) = 1811.54 — NOT the legacy
+        # combined (408 + 460) / 2 / 0.24 = 1808.33 the statement read before TD-317.
+        from apps.scholarship.doc_parse import parse_by_labels
+        from apps.scholarship.tests.test_doc_parse import _KWSP
+        self.assertEqual(_epf_monthly_salary(parse_by_labels('epf', _KWSP)), 1811.54)
+        totals_only = _KWSP.replace('221.00 187.00 408.00', '408.00').replace(
+            '250.00 210.00 460.00', '460.00')
+        self.assertEqual(_epf_monthly_salary(parse_by_labels('epf', totals_only)), 1808.33)
+
     def test_epf_estimate_uses_max_formula(self):
         app = _app([_bill('epf', {'employer_contribution_total': 'RM1105', 'months_counted': '5',
                                   'employee_contribution_total': 'RM935'})])

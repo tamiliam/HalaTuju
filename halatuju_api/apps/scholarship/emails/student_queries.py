@@ -3,9 +3,17 @@
 Moved here VERBATIM from `emails.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
+from .sending import _interview_unsub_headers
 from .shared import _DEFAULT_NAME, _P, logger
 from .student_decisions import normalise_lang
+
+
+def _send_with_unsub(*, subject, message, from_email, recipient_list):
+    """`send_mail`'s plain message, keyword for keyword, plus the harmless mailto
+    List-Unsubscribe the interview mail carries (TD-130) — `send_mail` cannot take headers."""
+    EmailMessage(subject=subject, body=message, from_email=from_email, to=recipient_list,
+                 headers=_interview_unsub_headers()).send()
 
 
 REQUEST_INFO_SUBJECTS = {
@@ -35,7 +43,7 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
     frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     try:
-        send_mail(
+        _send_with_unsub(
             subject=REQUEST_INFO_SUBJECTS[lang].format(programme=programme_name),
             message=REQUEST_INFO_BODIES[lang].format(
                 name=name, programme=programme_name, note=note, link=link),
@@ -83,7 +91,7 @@ def send_query_reminder_email(to_email, applicant_name, programme_name, n_querie
     frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     try:
-        send_mail(
+        _send_with_unsub(
             subject=QUERY_REMINDER_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_REMINDER_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, days=days_left, link=link),
@@ -130,7 +138,7 @@ def send_query_raised_email(to_email, applicant_name, programme_name, n_queries,
     frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     try:
-        send_mail(
+        _send_with_unsub(
             subject=QUERY_RAISED_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_RAISED_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, link=link),

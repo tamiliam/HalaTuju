@@ -1,5 +1,49 @@
 # Architectural Decisions — HalaTuju
 
+## One fact decides the ask, the offer and the resolution; the three bills wordings are one question — 2026-10-01
+
+**Decided by:** the owner's "go" on the Next tier (batch 1, TD-316 and TD-314); the rules are the
+entries' own fix ideas, made permanent here because the next Check-2 change must obey them.
+
+**1. A Check-2 ask closes on the SAME fact that raised it (TD-316).** TD-309 made the IC ask for
+the STR (`<member>_ic_for_str_missing|_unreadable`) and the Documents page's offer read one
+function, `income_str_ownership.str_ic_slots`. The resolution did not: `resolve_doc_items_for_upload`
+cleared the ask on any IC upload whose verdict was `'ok'` — which an IC earns when its NAME reads —
+even when the field the STR needs (the NRIC) still had not read; the next sync re-opened it and the
+student was emailed again. Now the ask resolves only when `str_owner_ic_asks` (= `str_ic_slots` of
+the live STR) no longer names the member. **Rule: when an ask is raised by a predicate, its
+resolution reads that predicate — never a proxy such as "the upload scanned clean".** The upload's
+returned verdict is unchanged ('ok'), so the student-facing response did not change; the ask simply
+stays on the Action Centre. The rule is read only when such an ask is among the open items.
+
+**2. `high_utility_expense`, `_noincome` and `_str` are one question (TD-314).** TD-306 made the
+plain and no-income wordings one question (re-worded in place, an existing row stands for the
+other); `_str` stayed outside. So a valid STR arriving on an open plain clarify with a full cap
+closed it as `system` and later raised the `_str` wording with a fresh email. `_str` is now in the
+same set (`high_utility_variant.PAIR = frozenset(CODES)`): an open row is re-worded in place when
+the household's wording changes, in either direction; an answered row of any wording stands for
+all three; the re-word is gated on the machine being allowed to ask; a raced duplicate is closed,
+not clashed.
+
+**This supersedes one sentence of the TD-285 entry below** ("the next Check-2 sync **closes an open
+`high_utility_expense_str` clarify itself** (resolved by `system`), raises `high_utility_expense` in
+its place"): the `_str` row is now RE-WORDED in place to `high_utility_expense` — same row, and the
+re-word itself sends no email (on the salary route the separate letter request still does). And at
+`interviewing`, where the machine may not ask, an open `_str` row is no longer closed by the system:
+it stays exactly as asked (TD-306's rule, owner 2026-07-13: an open ask is not withdrawn). Three
+tests in `test_income_whose_str_vouches.py` carry the new expectation and say so.
+
+**3. The guardian link reads the letter's guardian AND ward names (TD-089, review F1/F4).** One
+reading, `income_engine.letter_names`, serves all four readers (the cockpit's IC check and the
+verdict engine's STR precedence, STR route and salary route). The guardian is the letter's
+`guardian_name` (`vision_name` only for rows written before extraction); a WARD that was read and
+does not tolerant-match the student is a mismatch, exactly as a birth certificate's child must be
+the student. `VERDICT_ENGINE_VERSION` 2026-10-01.1; 0 guardian-route households today (the lead's
+count, 2026-10-01), so no live verdict moves.
+
+**Revisit if:** a fourth wording is added (it joins `CODES`, and therefore the set, by default), or
+the owner wants an open ask withdrawn at interview after all.
+
 ## Three rules from the Now-tier sweep: explicit tags, "the latest document", and the oversight-list roles — 2026-09-30
 
 **Decided by:** the owner's "go" on the eight-item Now-tier sweep; the rules below are what the

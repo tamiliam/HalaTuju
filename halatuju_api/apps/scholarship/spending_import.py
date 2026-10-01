@@ -413,6 +413,7 @@ class IngestReport:
     """
     files: list = field(default_factory=list)             # (name, parsed, new)
     unreadable_files: list = field(default_factory=list)  # (name, message)
+    failed_reads: list = field(default_factory=list)      # names Drive LISTED, read failed (TD-242)
     unknown_headers: set = field(default_factory=set)
 
     rows_seen: int = 0
@@ -442,7 +443,8 @@ class IngestReport:
         nothing; a weekly all-clear is a message nobody opens, and the week it matters it gets
         skimmed with the rest.
         """
-        return bool(self.unreadable_files or self.unknown_headers or self.repeats_conflicting
+        return bool(self.unreadable_files or self.failed_reads or self.unknown_headers
+                    or self.repeats_conflicting
                     or self.unparsed_amount or self.unparsed_date or self.unknown_wallets
                     or self.ambiguous_wallets or self.students_without_wallet)
 
@@ -463,6 +465,9 @@ class IngestReport:
         if self.unreadable_files:
             out.append('UNREADABLE FILES (refused whole):')
             out += [f'  {n}: {m}' for n, m in self.unreadable_files]
+        if self.failed_reads:
+            out.append(f'FILES LISTED BUT NOT READ (nothing stored from them - re-run): '
+                       f'{sorted(self.failed_reads)}')
         if self.unknown_headers:
             out.append(f'UNKNOWN COLUMNS (loaded anyway): {sorted(self.unknown_headers)}')
         if self.repeats_conflicting:
@@ -538,8 +543,9 @@ def files_needing_read(listing) -> list:
 def drive_sources(folder_path, *, reread=False):
     """Every spending report in `folder_path` that needs reading, parsed → `ingest` input.
 
-    Returns `(sources, unreadable)` in the command's own shape, so the Drive path and the local
-    `--file` path hand `ingest` exactly the same thing. **No parsing rule lives here** — this is an
+    Returns `(sources, unreadable, failed_reads)`: the first two in the command's own shape, so the
+    Drive path and the local `--file` path hand `ingest` exactly the same thing; the third names
+    every listed file whose READ failed (TD-242). **No parsing rule lives here** — this is an
     adapter, and `rows_from_values` remains the one parser.
 
     ⚠⚠ **`reread=True` IGNORES "new or changed" AND READS EVERY FILE.** It exists for one
@@ -555,14 +561,19 @@ def drive_sources(folder_path, *, reread=False):
     from . import sheets
 
     listing = sheets.spending_reports_in(folder_path)
-    sources, unreadable = [], []
+    sources, unreadable, failed_reads = [], [], []
     wanted = listing if reread else files_needing_read(listing)
     for file_id, name, _modified in wanted:
         values = sheets.read_spending_report(file_id)
+        if values is None:
+            # ⚠⚠ TD-242: a FAILED read of a file Drive just listed. On 2026-09-11 this was
+            # skipped like an empty sheet and the run said APPLIED, 63 payments short. It is a
+            # named finding now, so `needs_attention` is true and the alert email fires.
+            failed_reads.append(name)
+            continue
         if not values:
-            # ⚠ Empty is NOT the same as unreadable. `read_spending_report` is best-effort and
-            # logs its own failure; an export with only a header row is also legitimately empty.
-            # Either way there is nothing to parse and nothing to report as a fault.
+            # An EMPTY sheet (no cells at all): nothing to parse and nothing to report as a
+            # fault — the read worked and found nothing, which is not a file we lost.
             continue
         try:
             rows, unknown = rows_from_values(values[0], values[1:], name)
@@ -570,7 +581,7 @@ def drive_sources(folder_path, *, reread=False):
             unreadable.append((name, str(exc)))
             continue
         sources.append((name, rows, unknown))
-    return sources, unreadable
+    return sources, unreadable, failed_reads
 
 
 def days_since_last_report() -> int | None:

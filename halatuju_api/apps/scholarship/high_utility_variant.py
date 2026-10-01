@@ -12,17 +12,19 @@ the literal "RM {income}" to the student. The rule is now made here, once: the c
 figure is chosen only when the figure exists (``pick``), and ``params`` fills exactly what that
 copy quotes.
 
-``high_utility_expense`` and ``_noincome`` differ only in whether the income can be quoted, so they
-are ONE question to the student (``PAIR``):
+All three ask the same thing in different words, so they are ONE question to the student
+(``PAIR`` — the name is TD-306's, when it held two; TD-314 folded the STR wording in):
 
-  * an OPEN item of the pair that no longer matches the household (a row raised before TD-306 with
-    no income on it, or income reported / withdrawn since) is re-coded and re-filled IN PLACE by
-    ``reconcile_open`` — same row, same slot under the cap, no new-item email;
-  * an item of the pair that already EXISTS (open or answered) stands for the other, so the student
+  * an OPEN item of the set that no longer matches the household (a row raised before TD-306 with
+    no income on it, income reported / withdrawn since, or a valid STR arriving or ceasing to
+    vouch) is re-coded and re-filled IN PLACE by ``reconcile_open`` — same row, same slot under the
+    cap, no new-item email;
+  * an item of the set that already EXISTS (open or answered) stands for the others, so the student
     is never asked the same question twice (``stand_ins``).
 
-The STR variant is deliberately outside the pair: its switch to and from the plain one is older than
-TD-306 and unchanged by it.
+⚠ TD-314: the STR wording used to sit OUTSIDE the set. A valid STR arriving on a household with an
+open plain / no-income clarify and a full cap closed that clarify as `system` and raised the `_str`
+wording later with a fresh email — the same bills question twice, the first closed unanswered.
 """
 import logging
 
@@ -37,7 +39,7 @@ PLAIN = 'high_utility_expense'
 NOINCOME = 'high_utility_expense_noincome'
 STR = 'high_utility_expense_str'
 CODES = (PLAIN, NOINCOME, STR)
-PAIR = frozenset({PLAIN, NOINCOME})
+PAIR = frozenset(CODES)     # one bills question, three wordings (TD-306, TD-314)
 
 
 def pick(ctx):
@@ -122,7 +124,8 @@ def stand_ins(existing):
     under two codes and the alias (not in the gaps) closes a live question."""
     out = dict(existing)
     for code in PAIR:
-        sibling = next(iter(PAIR - {code}))
-        if code not in out and sibling in out:
-            out[code] = out[sibling]
+        # Any wording's row stands for the others; sorted, so the choice is the same every sync.
+        sibling = next((s for s in sorted(PAIR - {code}) if s in existing), None)
+        if code not in out and sibling is not None:
+            out[code] = existing[sibling]
     return out

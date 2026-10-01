@@ -544,16 +544,84 @@ class TestDriveMode(TestCase):
         listing = [('id1', '2026-08-30 Usage Report.xlsx', timezone.now())]
         broken = [[h for h in HEADER_C if h != 'wallet_id'], []]
         with self._drive(listing, broken):
-            report_sources, unreadable = si.drive_sources('any/folder')
+            report_sources, unreadable, failed_reads = si.drive_sources('any/folder')
         self.assertEqual(report_sources, [])
         self.assertEqual(len(unreadable), 1)
         self.assertIn('wallet_id', unreadable[0][1])
+        self.assertEqual(failed_reads, [])
 
     def test_a_drive_failure_returns_nothing_rather_than_raising(self):
         """⚠ Best-effort, the same contract as the guide fetch: a Drive hiccup breaks nothing."""
         with mock.patch('apps.scholarship.sheets.spending_reports_in', return_value=[]):
-            sources, unreadable = si.drive_sources('missing/folder')
-        self.assertEqual((sources, unreadable), ([], []))
+            sources, unreadable, failed_reads = si.drive_sources('missing/folder')
+        self.assertEqual((sources, unreadable, failed_reads), ([], [], []))
+
+
+class TestFailedReadIsAFinding(TestCase):
+    """TD-242. On 2026-09-11 a listed export's read failed, was skipped like an empty sheet, and
+    the run printed APPLIED 63 payments short. A failed read is a NAMED finding; empty is not."""
+
+    GOOD, LOST = '2026-08-30 Usage Report', '2026-09-06 Usage Report'
+
+    def setUp(self):
+        self.org = make_org()
+        self.cohort = make_cohort(self.org)
+        self.app = make_app(self.cohort, self.org, '8000400170001')
+        self.listing = [('id-good', self.GOOD, timezone.now()),
+                        ('id-lost', self.LOST, timezone.now())]
+
+    def test_the_sheets_seam_tells_a_failed_read_from_an_empty_sheet(self):
+        from apps.scholarship import sheets
+        # A credential that cannot even be parsed: the read RAISES inside the seam.
+        with self.settings(GOOGLE_MEET_SA_JSON='{not json'):
+            self.assertIsNone(sheets.read_spending_report('id-lost'))
+            self.assertEqual(sheets.read_sheet_values('id-lost', 'A1:B2'), [],
+                             'the general reader keeps its [] contract')
+        api = mock.Mock()
+        api.spreadsheets.return_value.values.return_value.get.return_value.execute.return_value = {}
+        with self.settings(GOOGLE_MEET_SA_JSON='{}'), \
+                mock.patch('google.oauth2.service_account.Credentials.from_service_account_info'), \
+                mock.patch('googleapiclient.discovery.build', return_value=api):
+            self.assertEqual(sheets.read_spending_report('id-empty'), [])
+
+    def _run(self, reads, **kw):
+        from io import StringIO
+        out = StringIO()
+        reader = mock.Mock(side_effect=lambda file_id: reads[file_id])
+        with mock.patch.multiple('apps.scholarship.sheets',
+                                 spending_reports_in=mock.Mock(return_value=self.listing),
+                                 read_spending_report=reader), \
+                mock.patch('apps.scholarship.emails.send_spending_alert_email') as send:
+            call_command('ingest_spending', drive=True, apply=True, stdout=out, **kw)
+        return out.getvalue(), send
+
+    def test_a_listed_file_whose_read_FAILED_is_named_and_needs_attention(self):
+        good = [HEADER_C, row_c('t1', '8000400170001')]
+        text, send = self._run({'id-good': good, 'id-lost': None})
+        self.assertEqual(BursarySpendTxn.objects.count(), 1, 'the readable file still loads')
+        self.assertIn('FILES LISTED BUT NOT READ', text)
+        self.assertIn(self.LOST, text)
+        self.assertIn('NEEDS ATTENTION', text)
+        self.assertNotIn('(APPLIED)', text, 'never a bare APPLIED while short')
+        self.assertIn('PARTLY APPLIED - SHORT: 1 listed file(s)', text)
+        self.assertEqual(send.call_count, 1)
+        self.assertTrue(any(self.LOST in line for line in send.call_args[0][0]))
+        report = si.IngestReport(failed_reads=[self.LOST])
+        self.assertTrue(report.needs_attention)
+
+    def test_the_ONLY_listed_file_failing_is_not_a_quiet_day(self):
+        self.listing = self.listing[1:]
+        text, send = self._run({'id-lost': None})
+        self.assertNotIn('nothing new to read', text)
+        self.assertIn(self.LOST, text)
+        self.assertEqual(send.call_count, 1)
+
+    def test_an_EMPTY_sheet_is_still_skipped_quietly(self):
+        self.listing = self.listing[1:]
+        text, send = self._run({'id-lost': []})
+        self.assertIn('nothing new to read', text)
+        self.assertNotIn('FILES LISTED BUT NOT READ', text)
+        send.assert_not_called()
 
 
 class TestCronRegistration(TestCase):

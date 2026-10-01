@@ -75,10 +75,10 @@ class Command(BaseCommand):
         if not paths and not use_drive:
             raise CommandError('nothing to read - pass --file, --dir or --drive')
 
-        sources, unreadable = [], []
+        sources, unreadable, failed_reads = [], [], []
         if use_drive:
             drive_folder = getattr(settings, 'VIRCLE_SPENDING_FOLDER', '')
-            sources, unreadable = spending_import.drive_sources(
+            sources, unreadable, failed_reads = spending_import.drive_sources(
                 drive_folder, reread=options['reread'])
         for path in paths:
             name = os.path.basename(path)
@@ -93,14 +93,20 @@ class Command(BaseCommand):
         # The officer uploads by hand and not on a fixed day (owner, 2026-09-10), so most days
         # there is genuinely nothing to do and the job must be silent about it. The ONLY thing
         # that speaks on a quiet day is the staleness nudge below.
-        quiet_run = use_drive and not sources and not unreadable
+        # ⚠ TD-242: a listed file whose READ failed is not a quiet day — it is a file we lost.
+        quiet_run = use_drive and not sources and not unreadable and not failed_reads
         if quiet_run:
             report = None
             self.stdout.write('--- ingest_spending (drive) --- nothing new to read.')
         else:
             report = spending_import.ingest(sources, apply=options['apply'])
             report.unreadable_files.extend(unreadable)
+            report.failed_reads.extend(failed_reads)
             mode = 'APPLIED' if options['apply'] else 'REPORT ONLY - nothing was written'
+            if failed_reads:
+                # ⚠ Never a bare APPLIED while short: say how many listed files are missing.
+                mode = ('PARTLY APPLIED' if options['apply'] else mode) + (
+                    f' - SHORT: {len(failed_reads)} listed file(s) could not be read')
             self.stdout.write(f'--- ingest_spending ({mode}) ---')
             for line in report.lines():
                 self.stdout.write(line)

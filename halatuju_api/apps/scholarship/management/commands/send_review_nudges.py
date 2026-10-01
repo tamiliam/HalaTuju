@@ -97,7 +97,9 @@ class Command(BaseCommand):
                 due = review_sla.review_due(app.assigned_at, clocks=org_clocks)
                 ref = pool_ref(app.id)
                 applicant_name = getattr(app.profile, 'name', '') if app.profile else ''
-                due_by = due.date().strftime('%d %b %Y')
+                # TD-249: `due` is an aware UTC instant — the reviewer reads a MALAYSIAN date,
+                # the same one the Programme Overview shows (`programme_overview._local_date`).
+                due_by = timezone.localtime(due).date().strftime('%d %b %Y')
                 reviewer = app.assigned_to
                 reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
                 reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''

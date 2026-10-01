@@ -2,7 +2,7 @@
 URL patterns for the courses app.
 """
 from django.urls import path
-from . import views
+from . import health, views
 from .views_admin import (
     AdminRoleView, AdminInviteView, AdminOrgsView, AdminSetPasswordView,
     AdminListView, AdminDeleteView, AdminRevokeView, AdminResendView, AdminProfileView,
@@ -12,6 +12,9 @@ from .views_admin import (
 )
 
 urlpatterns = [
+    # TD-047: unauthenticated, no data, no query — is the course data loaded?
+    path('health/', health.health, name='health'),
+
     # Partner admin
     path('admin/role/', AdminRoleView.as_view(), name='admin-role'),
     path('admin/dashboard/', PartnerDashboardView.as_view(), name='partner-dashboard'),

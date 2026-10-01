@@ -335,8 +335,14 @@ def read_sheet_values(spreadsheet_id, cell_range):
     """Best-effort READ of a Google Sheet's cell range → a list of rows (each a list of strings),
     or [] on disabled / error (logged, never raised). Uses the ``spreadsheets`` scope the SA
     already holds. Trailing empty cells are trimmed by the API, so callers must index defensively."""
+    values = _sheet_values_or_none(spreadsheet_id, cell_range)
+    return [] if values is None else values
+
+
+def _sheet_values_or_none(spreadsheet_id, cell_range):
+    """`read_sheet_values` without folding a FAILED read into `[]`: None = could not read."""
     if not (sheets_enabled() and spreadsheet_id):
-        return []
+        return None
     try:
         import json
 
@@ -351,7 +357,7 @@ def read_sheet_values(spreadsheet_id, cell_range):
             spreadsheetId=spreadsheet_id, range=cell_range).execute().get('values', [])
     except Exception:
         logger.warning('Sheet read failed for %r %r', spreadsheet_id, cell_range, exc_info=True)
-        return []
+        return None
 
 
 # ── Vircle spending reports (sponsor spending reporting, S2) ──────────────────
@@ -426,12 +432,12 @@ def spending_reports_in(folder_path):
 
 
 def read_spending_report(file_id):
-    """One export's cells → ``[[...], ...]``, or `[]` (logged) on any failure.
+    """One export's cells → ``[[...], ...]``; `[]` = the sheet is EMPTY; None = the read FAILED.
 
-    Thin on purpose: `read_sheet_values` already holds the credentials, the least-privilege
-    `spreadsheets` scope and the best-effort contract. This only pins the range.
+    ⚠ TD-242: the two are different findings — Drive LISTED this file, so a failed read is a file
+    we know exists and got nothing from (`drive_sources` reports it). Never raises.
     """
-    return read_sheet_values(file_id, _SPENDING_RANGE)
+    return _sheet_values_or_none(file_id, _SPENDING_RANGE)
 
 
 def _find_file_in_folder(drive, folder_id, name):

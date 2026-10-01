@@ -31,6 +31,7 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
 from .search import apply_people_search
+from .supabase_admin import _create_supabase_user, _service_headers
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
@@ -74,64 +75,6 @@ _GOOGLE_EMAIL_DOMAINS = {'gmail.com', 'googlemail.com'}
 
 def is_google_email(email):
     return (email or '').rsplit('@', 1)[-1].lower() in _GOOGLE_EMAIL_DOMAINS
-
-
-def _service_headers(service_role_key):
-    return {
-        'apikey': service_role_key,
-        'Authorization': f'Bearer {service_role_key}',
-        'Content-Type': 'application/json',
-    }
-
-
-def _create_supabase_user(supabase_url, service_role_key, email, name, temp_password):
-    """Create the partner's Supabase auth account directly, with a password we choose.
-
-    We deliberately do NOT use /auth/v1/invite: its email carries a magic link that expires in 24
-    hours (Supabase's maximum) and cannot be re-sent to an address that already has an auth user,
-    so a partner who missed the window was permanently stuck. Creating the account outright means
-    nothing expires, and we send our own email instead.
-
-    `email_confirm` is load-bearing: PartnerAdminMixin.get_admin only links a PartnerAdmin row by
-    email when the JWT's `email_verified` claim is true. Without it the partner would sign in
-    successfully and still have no role.
-
-    Returns (user_id, already_registered, error). `already_registered` means the address already
-    had a HalaTuju account (student or Google) — not a failure: they keep their existing login and
-    we just grant the role, matching them by verified email on next sign-in.
-    """
-    resp = http_requests.post(
-        f'{supabase_url}/auth/v1/admin/users',
-        json={
-            'email': email,
-            'password': temp_password,
-            'email_confirm': True,
-            # `temp_password_issued_at` starts the 7-day clock: the login gate refuses an unchanged
-            # temp password past the TTL, and the daily `expire_temp_passwords` job rotates it dead.
-            'user_metadata': {'name': name, 'must_change_password': True,
-                              'temp_password_issued_at': timezone.now().isoformat()},
-        },
-        headers=_service_headers(service_role_key),
-    )
-    if resp.status_code in (200, 201):
-        try:
-            return (resp.json() or {}).get('id'), False, None
-        except ValueError:
-            # Created, but we cannot read the UID — fall back to the email-match backfill.
-            return None, False, None
-
-    try:
-        body = resp.json() or {}
-    except ValueError:
-        body = {}
-    if resp.status_code in (400, 422) and (
-        body.get('error_code') == 'email_exists' or body.get('code') == 'email_exists'
-        or 'already been registered' in str(body.get('msg', ''))
-    ):
-        return None, True, None
-
-    logger.error('Supabase user creation failed: %s %s', resp.status_code, resp.text)
-    return None, False, 'create_failed'
 
 
 class PartnerAdminMixin:
