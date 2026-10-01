@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-01 | b582c93 | 90 | 44 | officerCockpit.ts 46.1 | 18 | 15 | 4 | 45 | 139 | 0 | 3 | 19 | 133 | 0 | - | - | ok |
 | 2026-10-01 | 1fc39af | 90 | 44 | officerCockpit.ts 44.1 | 18 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 144 | 0 | - | - | ok |
 | 2026-10-01 | 5af36e1 | 90 | 44 | officerCockpit.ts 44.1 | 18 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 152 | 0 | - | - | ok |
 | 2026-09-30 | 810803a | 90 | 44 | officerCockpit.ts 44.1 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 159 | 0 | - | - | ok |
@@ -65,35 +66,35 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-01, 1fc39af, window 2026-07-03 onward)
+## Latest run (2026-10-01, b582c93, window 2026-07-03 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju-web/src/lib/officerCockpit.ts` | 27 | 1632 | 44.1 |
-| `halatuju_api/apps/scholarship/views.py` | 16 | 2427 | 38.8 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1645 | 46.1 |
 | `halatuju_api/apps/scholarship/vision.py` | 16 | 2321 | 37.1 |
-| `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 1166 | 15.2 |
+| `halatuju_api/apps/scholarship/views.py` | 15 | 2427 | 36.4 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 12 | 1166 | 14 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 9 | 1342 | 12.1 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 8 | 1233 | 9.9 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1233 | 11.1 |
 | `halatuju_api/apps/courses/views_admin.py` | 7 | 1205 | 8.4 |
 | `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
 | `halatuju_api/apps/scholarship/academic_engine.py` | 7 | 891 | 6.2 |
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 274 fix / 351 feat commits since 2026-07-03
+- 271 fix / 351 feat commits since 2026-07-03
 
 ### Files over 1000 lines
 - `2427  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
 - `2309  halatuju_api/apps/courses/views.py`
-- `1632  halatuju-web/src/lib/officerCockpit.ts`
+- `1645  halatuju-web/src/lib/officerCockpit.ts`
 - `1375  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1342  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1329  halatuju-web/src/lib/scholarship.ts`
+- `1309  halatuju-web/src/lib/scholarship.ts`
 - `1233  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
 - `1205  halatuju_api/apps/courses/views_admin.py`
@@ -149,26 +150,26 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 37 of 187 web test files read source text (signals: readFileSync, apiSource)
+- 37 of 193 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 316 entries have a defining line; 144 carry no resolution marker on it
+- 317 entries have a defining line; 133 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 1292: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1314: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1317: - **TD-069**: **STPM flow's SPM-prerequisite electives aren't durably persisted and stay capped at 2.** v2.21.0 fixed the main SPM grades flow (new `e
-- line 1331: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1342: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
-- line 1618: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 5972: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6285: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 1283: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1305: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1308: - **TD-069**: **STPM flow's SPM-prerequisite electives aren't durably persisted and stay capped at 2.** v2.21.0 fixed the main SPM grades flow (new `e
+- line 1322: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1333: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
+- line 1609: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 5963: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6277: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 5af36e1
+- budgets no looser than at 1fc39af
 
 ## Reviews
 
