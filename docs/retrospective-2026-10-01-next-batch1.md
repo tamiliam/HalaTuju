@@ -80,6 +80,23 @@ at 3,193 / 187 suites. `manage.py check` clean; `makemigrations --check` no chan
 documents", in `doc_parse.py`'s own contract and lessons S15/L86): the build said so in "Not done,
 on purpose" below and shipped anyway on the synthetic fixture. A real corpus was in the repo.
 
+## The gate refused the push (commit 3a82e8e0, build 2650b9c7)
+
+The F2 tests read the real corpus, `eval/snapshots/epf__*.ocr.txt` — gitignored PII, so the build
+image had 0 snapshots and four tests failed there that had passed every local run. Production was
+unchanged (the api did not deploy). Fixed test-only:
+- The four tests run on **synthetic twins** (`tests/fixtures_epf.py`): the real one-cell-per-line
+  layout in both orders, the `Ogs-25` spelling, "Tiada Transaksi", thousand separators and a
+  statement cut off above its table, with invented people and amounts that add up to the sen.
+- The real measurement (5 of the 5 statements with a table) is **measured by hand on the gitignored
+  corpus** with `apps/scholarship/eval/epf_table_check.py` (exits non-zero below the floor of 5);
+  the committed tests use synthetic twins. Not a test, not a skip.
+- `test_no_gitignored_corpus.py` refuses any test that reads `eval/snapshots` or `eval/fixtures`
+  (an AST scan of code, not prose, with a file floor and its own positive/negative controls); it
+  goes red on the file 3a82e8e0 committed.
+- Proved with the corpus HIDDEN: the snapshots folder renamed away, `test_doc_parse.py` 59/59
+  green, renamed back, 1,056 files with an identical listing digest.
+
 ## Not done, on purpose
 
 - **Cloud Run wiring for `/api/v1/health/`.** Nothing calls it; a startup or liveness probe is a

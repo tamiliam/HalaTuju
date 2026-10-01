@@ -20,6 +20,10 @@ TD-319: register open 152 -> **145**, defined 316.
   ledger). F5: the course-data load publishes every map first and `requirements_df` last, and the
   retry clock is re-checked under the lock. F6: the mailto unsubscribe subject names the sender's
   programme (interview mail included) instead of "B40". TD-307 has its second sighting.
+- **Gate fix (2026-10-01, test-only).** The deploy gate refused 3a82e8e0: four EPF tests read the
+  gitignored corpus. They now run on synthetic twins (`tests/fixtures_epf.py`); the real-corpus
+  measurement is the hand-run `eval/epf_table_check.py`; `test_no_gitignored_corpus.py` refuses a
+  test that reads `eval/snapshots` or `eval/fixtures`.
 
 - **TD-242 — a Drive file whose READ fails is a named finding.** `sheets.read_spending_report`
   returns None for a failed read and `[]` for an empty sheet (`read_sheet_values` keeps its `[]`

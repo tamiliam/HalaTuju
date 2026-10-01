@@ -443,67 +443,66 @@ class TestEpfParser(SimpleTestCase):
                              'Tiada Transaksi\n')
         self.assertNotIn('employer_contribution_total', parse_by_labels('epf', zero))
 
-    # ── Review F2: the REAL statements. OCR prints the CARUMAN table one cell per line. ──
-    #: Measured 2026-10-01 over the 13 `eval/snapshots/epf__*.ocr.txt`. The other eight cannot
-    #: yield a split: four print "Tiada Transaksi" (a9, a18, a57, a61 — no contribution, read as
-    #: zero), a72 is a Penyata cut off above its table, and a11 (Borang EC), a37 (an STR status
-    #: page) and a53 (a KWSP withdrawal record) are not Penyata Ahli at all.
-    SNAPSHOT_SPLITS = {'a10': 5, 'a27': 5, 'a31': 12, 'a63': 5, 'a67': 6}
+    # ── Review F2: real OCR prints the CARUMAN table ONE CELL PER LINE. ──────────────────────
+    # ⚠ SYNTHETIC TWINS, NOT THE CORPUS. The real statements (`eval/snapshots`) are gitignored
+    # PII, absent from the deploy gate, so a test reading them is green here and red there
+    # (build 2650b9c7, 2026-10-01). `fixtures_epf` copies their LAYOUT with invented people and
+    # amounts; the real-corpus measurement is `eval/epf_table_check.py`, run by hand.
 
-    def _snapshots(self):
-        import glob
-        import os
-        snap = os.path.join(os.path.dirname(doc_parse.__file__), 'eval', 'snapshots')
-        out = {}
-        for p in sorted(glob.glob(os.path.join(snap, 'epf__*.ocr.txt'))):
-            with open(p, encoding='utf-8') as fh:
-                out[os.path.basename(p).split('__')[1]] = fh.read()
-        return out
+    @staticmethod
+    def _edit(text, old, new):
+        """One replacement that MUST land — a mutation that finds nothing would test nothing."""
+        assert text.count(old) == 1, (old, text.count(old))
+        return text.replace(old, new)
 
-    def test_real_statements_one_cell_per_line_yield_both_totals(self):
-        snaps = self._snapshots()
-        self.assertGreaterEqual(len(snaps), 13, 'the snapshot corpus shrank')
-        read = {}
-        for key, text in snaps.items():
-            r = parse_by_labels('epf', text) or {}
-            if r.get('employer_contribution_total') and r.get('employee_contribution_total'):
-                read[key] = r
-        self.assertGreaterEqual(len(read), len(self.SNAPSHOT_SPLITS), sorted(read))
-        for key, months in self.SNAPSHOT_SPLITS.items():
-            with self.subTest(snapshot=key):
-                self.assertIn(key, read)
-                self.assertEqual(read[key]['months_counted'], str(months))
-                self.assertEqual(read[key]['contribution_status'], 'has')
+    def test_one_cell_per_line_statements_yield_both_totals(self):
+        from apps.scholarship.tests.fixtures_epf import SYNTHETIC
+        tabled = {k: v for k, v in SYNTHETIC.items() if v[1]}
+        self.assertGreaterEqual(len(tabled), 3, 'the synthetic set lost a tabled statement')
+        for key, (text, months, er, ee) in tabled.items():
+            with self.subTest(statement=key):
+                r = parse_by_labels('epf', text)
+                self.assertEqual((r['employer_contribution_total'],
+                                  r['employee_contribution_total'], r['months_counted'],
+                                  r['contribution_status']), (er, ee, str(months), 'has'))
 
-    def test_a_real_statement_reads_to_the_sen(self):
-        # a10: five rows of Majikan 221.00 + Ahli 187.00 = 408.00, summed by hand.
-        r = parse_by_labels('epf', self._snapshots()['a10'])
+    def test_a_one_cell_per_line_statement_reads_to_the_sen(self):
+        # flat_five: five rows of Majikan 230.00 + Ahli 195.00 = 425.00, summed by hand.
+        from apps.scholarship.tests.fixtures_epf import FLAT_FIVE
+        r = parse_by_labels('epf', FLAT_FIVE)
         self.assertEqual((r['employer_contribution_total'], r['employee_contribution_total'],
                           r['months_counted'], r['avg_monthly_contribution'],
                           r['monthly_contribution']),
-                         ('RM1105.00', 'RM935.00', '5', 'RM408.00', 'RM408.00'))
+                         ('RM1150.00', 'RM975.00', '5', 'RM425.00', 'RM425.00'))
 
     def test_a_tiada_transaksi_statement_is_still_zero_with_no_totals(self):
-        r = parse_by_labels('epf', self._snapshots()['a18'])
+        from apps.scholarship.tests.fixtures_epf import TIADA
+        r = parse_by_labels('epf', TIADA)
         self.assertEqual(r['contribution_status'], 'zero')
         self.assertNotIn('employer_contribution_total', r)
 
+    def test_a_statement_cut_off_above_its_table_is_unknown_with_no_totals(self):
+        from apps.scholarship.tests.fixtures_epf import TRUNCATED
+        r = parse_by_labels('epf', TRUNCATED)
+        self.assertEqual((r['contribution_status'], r['months_counted']), ('unknown', ''))
+        self.assertNotIn('employer_contribution_total', r)
+
     def test_cell_layout_all_or_nothing(self):
-        text = self._snapshots()['a10']
+        from apps.scholarship.tests.fixtures_epf import FLAT_FIVE as text
         with self.subTest('a row whose shares do not add up'):
-            r = parse_by_labels('epf', text.replace('221.00\n187.00\n408.00\n20/02',
-                                                    '221.00\n178.00\n408.00\n20/02'))
+            r = parse_by_labels('epf', self._edit(text, '230.00\n195.00\n425.00\n15/02',
+                                                  '230.00\n159.00\n425.00\n15/02'))
             self.assertNotIn('employer_contribution_total', r)
         with self.subTest('a row missing a cell'):
-            r = parse_by_labels('epf', text.replace('20/02/2026\n221.00\n', '20/02/2026\n'))
+            r = parse_by_labels('epf', self._edit(text, '15/02/2026\n230.00\n', '15/02/2026\n'))
             self.assertNotIn('employer_contribution_total', r)
             self.assertEqual(r['contribution_status'], 'unknown')     # as before F2: unread
         with self.subTest('more month labels than rows'):
-            r = parse_by_labels('epf', text.replace('Mei-26\nCaruman IWS\n',
-                                                    'Mei-26\nCaruman IWS\nJun-26\nCaruman IWS\n'))
+            r = parse_by_labels('epf', self._edit(text, 'Mei-26\nCaruman IWS\n',
+                                                  'Mei-26\nCaruman IWS\nJun-26\nCaruman IWS\n'))
             self.assertNotIn('employer_contribution_total', r)
         with self.subTest('a grand total that disagrees with the rows'):
-            r = parse_by_labels('epf', text.replace('2,040.00', '2,050.00'))
+            r = parse_by_labels('epf', self._edit(text, '2,125.00', '2,135.00'))
             self.assertNotIn('employer_contribution_total', r)
 
     def test_the_epf_module_imports_FIRST_in_a_fresh_interpreter(self):
