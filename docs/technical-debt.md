@@ -5971,6 +5971,7 @@ of the change, not an afterthought.
 
 ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 **Status 2026-09-30:** the cron half is BUILT (Now-tier sweep, not yet deployed): command `lapse_expired_offers`, registered as `CronRunView.JOBS['lapse-expired-offers']` (daily), function semantics unchanged; refusals log at INFO with one summary WARNING per run (production today: 31 expired offers, all paid → lapses 0, flags 31). Still to do: create the Cloud Scheduler job (a production step, owner's yes), and the console WITHDRAWAL half, which waits on TD-198.
+**Status 2026-10-01:** the cron half is LIVE and SCHEDULED (owner: *"schedule it"*): Cloud Scheduler job halatuju-lapse-expired-offers, daily 09:00 MYT, same X-Cron-Secret as the other jobs; api revision halatuju-api-01080-948. First run 2026-10-01 05:27 UTC: 200, lapsed 0, refused and flagged 31 (all paid), as predicted. Still to do: the console WITHDRAWAL half, which waits on TD-198. (Noticed on the way: the summary line reached Cloud Logging with NO severity - TD-290, as described.)
 
 **Status:** Open (2026-09-18). Found while closing test record #16 at the owner's request.
 
