@@ -30,6 +30,7 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
+from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import _create_supabase_user, _service_headers
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
@@ -847,7 +848,7 @@ class AdminResendView(PartnerAdminMixin, APIView):
         })
 
 
-class AdminSetPasswordView(APIView):
+class AdminSetPasswordView(PartnerAdminMixin, APIView):
     """POST /api/v1/admin/set-password/ - a temp-password partner sets their OWN password.
 
     The client cannot use `supabase.auth.updateUser({ password })`: the project requires
@@ -858,15 +859,20 @@ class AdminSetPasswordView(APIView):
 
     Scoped tightly so this is NOT a general re-auth bypass: it only ever sets the CALLER'S OWN uid
     (from their JWT), and ONLY while that account still owes a password change
-    (`must_change_password`, read authoritatively from Supabase). Once a partner has set their own
-    password, the endpoint refuses — everyone else keeps the project's secure-change policy.
+    (`must_change_password`, read authoritatively from Supabase) OR the token proves a recovery
+    link for this account followed within the last 15 minutes (TD-207, `recovery_session`). An
+    ordinary signed-in session is refused — it keeps the project's secure-change policy. ADMINS
+    ONLY, on the real JWT subject (review F3): a student or sponsor with a reset link never
+    reaches the service-role write, and a TD-254 profile alias never redirects it.
     """
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
-        uid = getattr(request, 'user_id', None)
+        uid = auth_sub(request)
         if not uid:
             return Response({'error': 'not_authenticated'}, status=401)
+        if self.get_admin(request) is None:
+            return Response({'error': 'not_an_admin'}, status=403)
         password = request.data.get('password') or ''
         if len(password) < 8:
             return Response({'error': 'password_too_short'}, status=400)
@@ -885,9 +891,12 @@ class AdminSetPasswordView(APIView):
             return Response({'error': 'supabase_unreachable'}, status=502)
         if gr.status_code != 200:
             return Response({'error': 'user_lookup_failed'}, status=502)
-        meta = (gr.json() or {}).get('user_metadata') or {}
-        if not meta.get('must_change_password'):
-            # Not mid-onboarding — do not let this stand in for a normal (re-auth'd) password change.
+        account = gr.json() or {}
+        meta = account.get('user_metadata') or {}
+        # TD-207: a FRESH recovery session for THIS account is authority too ("Forgot password").
+        if not (meta.get('must_change_password')
+                or is_fresh_recovery_for(request, account.get('email'))):
+            # Neither onboarding nor a reset — do not stand in for a normal (re-auth'd) change.
             return Response({'error': 'not_pending_password_change'}, status=403)
 
         # Supabase admin updateUser MERGES user_metadata (omitting a key does NOT delete it), so we

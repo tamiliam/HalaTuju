@@ -13,7 +13,8 @@ from apps.scholarship.models import (
     ScholarshipApplication,
 )
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, auth_token as _token, make_application, make_cohort, make_student,
+    TEST_JWT_SECRET, answered_findings, auth_token as _token, make_application, make_cohort,
+    make_student,
 )
 
 SUPER = 'super-uid'
@@ -332,7 +333,8 @@ class TestInterview(PhaseCBase):
         # advance was removed — it mis-fired on agenda edits/deletes once V3 folded the agenda in).
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
-            {'findings': {'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}},
+            {'findings': {**answered_findings(app),   # TD-253: every agenda item answered
+                          'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}},
              'rubric': {'financial_need': 5}, 'overall_note': 'Solid.'}, format='json',
         )
         self.assertEqual(r.status_code, 200)
@@ -374,8 +376,11 @@ class TestInterview(PhaseCBase):
         self._auth(REVIEWER)
         self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
-            {'findings': {'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}}}, format='json')
-        self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/submit/')
+            {'findings': {**answered_findings(app),
+                          'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}}},
+            format='json')
+        self.assertEqual(self.client.post(
+            f'/api/v1/admin/scholarship/applications/{app.id}/interview/submit/').status_code, 200)
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/reopen/')
         self.assertEqual(r.status_code, 200)
         app.refresh_from_db()

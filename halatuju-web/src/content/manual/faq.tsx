@@ -159,7 +159,9 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>How do the suggested interview questions work?</>,
       a: <>In the <strong>Interview Stage</strong>, tap <strong>Suggest interview questions</strong> — the system
         proposes a few from this student&rsquo;s record; tap <strong>Generate more</strong> for others. A prompt,
-        not a script: ask your own too, and jot <strong>one line</strong> per point before you submit.</>,
+        not a script: ask your own too, and jot <strong>one line</strong> per point before you submit. Every
+        point needs an answer — <strong>Resolved</strong>, a short note (even &ldquo;See conclusion&rdquo;), or
+        <strong> Delete</strong> — or the submit is refused and Approve and Decline stay greyed out.</>,
     },
     {
       q: <>Why is there always a &ldquo;Motivation &amp; grit&rdquo; point on the agenda?</>,

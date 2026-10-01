@@ -1347,6 +1347,19 @@ interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257
 **132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
 
+**NOW SPRINT 2 (TD-253 + TD-207) IS BUILT, not committed, pushed or deployed (2026-10-01; review
+fixes F1/F3-F6 2026-10-02).** Register open **131** (TD-322 raised by the review: the invite flag
+is browser-writable - Now tier). An interview must answer (or delete) every agenda item before submit and before the
+reviewer's Approve/Decline (QC and recorded decisions untouched); `admin/set-password/` accepts a
+recovery session no older than 15 minutes for the same email. Rules: decisions.md 2026-10-01 "A
+complete interview…". **The owner reads two new Tamil strings** (`admin.scholarship.interview.unanswered`,
+`admin.scholarship.recordVerdict.findingsIncomplete`) before the push. **How the owner tests the
+reset live, after the deploy:** sign out of the admin console; on the admin login page press
+"Forgot password" for elanjelian@me.com; open the email within 15 minutes; set a new password on the
+page the link opens (it must say saved, not refuse); sign in with it. A link followed more than 15
+minutes before pressing Save is refused by design — request a new one, and open the email in the SAME browser that asked for it (PKCE). ⚠ `/profile` already prints
+at its first-load line (310/310 kB) on the tree BEFORE this sprint; the sprint adds ~0.1 kB.
+
 
 **The debt register was read end to end on 2026-09-30 (docs only, no deploy).** 315 entries are
 defined, **159 are open**, all listed in working order in `docs/technical-debt.md` → Open Items
@@ -1372,9 +1385,9 @@ defining line in the same change that fixes it; never write a new entry inside t
   - ~~**TD-167**~~ (B·S) — closed by the sweep.
   - ~~**TD-153**~~ (B·S) — closed by the sweep (all of part b now gated).
   - ~~**TD-255**~~ (B·M) — closed by Now sprint 1 (Node 24), deploy pending.
-  - **TD-253** (B·M) — An interview with nothing in it still wakes Approve and Decline. The owner's ruling is not built.
+  - ~~**TD-253**~~ (B·M) — closed by Now sprint 2 (built, not pushed).
   - **TD-218** (B·M) — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading.
-  - **TD-207** (B·M) — Password reset fails for every admin who has finished onboarding.
+  - ~~**TD-207**~~ (B·M) — closed by Now sprint 2 (built, not pushed).
   - **TD-151** (B·M) — The hardening pass for misread documents was never done: no problem-document set, no sanity check on figures.
   - **TD-125** (B·M) — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet.
   - **TD-114** (B·M) — A fact can read Certain off a document that was never scored for genuineness.

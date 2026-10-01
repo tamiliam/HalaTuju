@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship.tests.factories import (
-    make_application, make_cohort, make_student,
+    answered_findings, make_application, make_cohort, make_student,
 )
 from apps.scholarship.models import (
     ApplicantDocument, Referee, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
@@ -881,15 +881,16 @@ class TestTheInterviewIsCreditedThroughTheENDPOINT(TestCase):
                           'clearing an agenda question must not claim the interview')
 
         # 2. The assigned reviewer writes it up. The credit is theirs.
-        self._save('td216-rev',
-                   findings={'device_in_funding': {'verdict': 'deleted', 'rationale': ''}},
+        #    TD-253: she answers every agenda item, or the submit in step 4 is refused.
+        written = {**answered_findings(self.app),
+                   'device_in_funding': {'verdict': 'deleted', 'rationale': ''}}
+        self._save('td216-rev', findings=written,
                    rubric={}, overall_note='I met her and she explained the situation.')
         self.assertEqual(self._session().interviewer_id, self.reviewer.id)
 
         # 3. Somebody else opens it and saves without changing a word. It stays the reviewer's.
         #    ⚠ This is the case the owner asked for by name.
-        self._save('td216-super',
-                   findings={'device_in_funding': {'verdict': 'deleted', 'rationale': ''}},
+        self._save('td216-super', findings=written,
                    rubric={}, overall_note='I met her and she explained the situation.')
         self.assertEqual(self._session().interviewer_id, self.reviewer.id,
                          're-saving somebody else\'s interview must not take the credit')

@@ -83,6 +83,7 @@ import {
   showsWitnessCard,
 } from '@/lib/officerCockpit'
 import { docTypeToRequestFact } from '@/lib/docCategory'
+import { interviewGateApplies, interviewRefusalText, missingAgendaItems } from '@/lib/interviewCompleteness'
 import { formatDate } from '@/lib/formatDate'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { nextSequence } from '@/lib/disbursement'
@@ -496,7 +497,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       await saveInterview(id, { findings, rubric, overall_note: note }, { token })
       const d = await submitInterview(id, { token })
       setApp(d); loadInterviewState(d)   // freeze to the read-only view
-    } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
+    } catch (e) {   // TD-253: an unanswered agenda item is refused, in words
+      setError(interviewRefusalText(e, t) ?? t('admin.scholarship.interview.submitError'))
+    } finally { setBusy('') }
   }
 
   // Reviewer reopens a submitted interview (un-submits → both boxes editable again).
@@ -525,8 +528,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     } catch { setError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
   }
 
-  const doRecordVerdict = async (finalise: boolean, accept = false) => {
-    if (!token) return
+  /** True when the verdict was recorded — a refusal must stop the decline chain below (review F5). */
+  const doRecordVerdict = async (finalise: boolean, accept = false): Promise<boolean> => {
+    if (!token) return false
     setBusy('verdict'); setError(''); setVerdictMsg('')
     try {
       const result = await recordVerdict(id, {
@@ -584,8 +588,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
           setVerdictMsgTone('warn')
         }
       }
+      return true
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
+      setError(interviewRefusalText(e, t) ?? (e instanceof Error ? e.message : t('admin.scholarship.acceptError')))
+      return false
     } finally { setBusy('') }
   }
 
@@ -616,7 +622,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       // Record the decline verdict, then route to QC. A post-award (recommended) case still
       // declines via the contractual path (that decline is already post-QC); an in-review case
       // goes to AWAITING QC for a second pair of eyes before it becomes a rejection.
-      await doRecordVerdict(false, false)
+      if (!(await doRecordVerdict(false, false))) return   // refused: sending on would 400 over it
       if (app?.status === 'recommended') {
         await doReject('contractual')
       } else {
@@ -850,20 +856,6 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // A reopen re-opens it (the backend querying_locked mirrors this).
   const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status) && !decisionReopened
   const lockReason = queryingLockReason(app.status, app.interview_session?.status)
-  // #7: Approve/Decline activate only once the reviewer has (1) submitted interview
-  // findings, (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
-  // (Approve's actual accept is still backend-gated on a complete profile + identity.)
-  const decisionReady = isDecisionReady(app.interview_session?.status, officerVerdict, verdictReason)
-  // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
-  // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
-  // figure); it is effectively always true now.
-  const hasAssistance = app.award_amount != null || app.proposed_award_amount != null
-  const approveReady = isApproveReady(decisionReady, hasAssistance)
-  // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
-  // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
-  const canSave = (officerVerdict.overall === 'accept' && approveReady)
-    || (officerVerdict.overall === 'decline' && decisionReady)
-
   // Freeze model (the owner's): Save persists a draft and stays editable (re-saving
   // overwrites the same draft); Submit / recording the decision disables editing →
   // read-only. A reopen unlocks the interview again (for the assigned reviewer too).
@@ -915,6 +907,24 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
   ]
   const editableAgenda = agendaItems.filter((it) => findings[it.code]?.verdict !== 'deleted')
+
+  // #7: Approve/Decline activate only once the reviewer has (1) submitted interview findings that
+  // answer EVERY agenda item (TD-253 — read from the SAVED session, which is what the api checks),
+  // (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
+  // (Approve's actual accept is still backend-gated on a complete profile + identity.)
+  const interviewMissing = interviewGateApplies({ status: app.status, recordedOutcome, decisionReopened })
+    ? missingAgendaItems(agendaItems.map((it) => it.code), app.interview_session?.findings) : []
+  const decisionReady = isDecisionReady(
+    app.interview_session?.status, officerVerdict, verdictReason, interviewMissing.length === 0)
+  // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
+  // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
+  // figure); it is effectively always true now.
+  const hasAssistance = app.award_amount != null || app.proposed_award_amount != null
+  const approveReady = isApproveReady(decisionReady, hasAssistance)
+  // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
+  // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
+  const canSave = (officerVerdict.overall === 'accept' && approveReady)
+    || (officerVerdict.overall === 'decline' && decisionReady)
 
   return (
     <div className="space-y-4 pb-10">
@@ -1246,7 +1256,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               </div>
               {/* One contextual hint: what's still missing before Save. */}
               {!decisionReady ? (
-                <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+                <p className="text-[11px] text-caution-700">{interviewSubmitted && interviewMissing.length > 0
+                  ? t('admin.scholarship.recordVerdict.findingsIncomplete', { count: String(interviewMissing.length) })
+                  : t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
               ) : !officerVerdict.overall ? (
                 <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (

@@ -358,6 +358,17 @@ def authed_client(admin_or_uid, client=None):
     return client
 
 
+# ── The interview ───────────────────────────────────────────────────────────────────────────
+def answered_findings(application, verdict='resolved'):
+    """Findings answering EVERY item on ``application``'s interview agenda (TD-253).
+
+    A submitted interview with an unanswered item is refused at submit and at the reviewer's
+    decision, so a test that walks a case past the interview must answer what the cockpit would
+    have shown. Read the agenda AFTER the application's state is final — it depends on it."""
+    from apps.scholarship.interview_completeness import agenda_keys
+    return {key: {'verdict': verdict, 'rationale': ''} for key in agenda_keys(application)}
+
+
 # ── The application ─────────────────────────────────────────────────────────────────────────
 def make_application(stage='submitted', *, outcome=None, cohort=None, student=None,
                      reviewer=None, **overrides):

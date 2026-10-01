@@ -225,7 +225,8 @@ class TestTheFactoryMatchesTheProduct(TestCase):
         # date (QC refuses a case without one — it sizes the bursary).
         application.refresh_from_db()
         services.submit_interview(InterviewSession.objects.create(
-            application=application, interviewer=cls.reviewer, status='draft'))
+            application=application, interviewer=cls.reviewer, status='draft',
+            findings=factories.answered_findings(application)))   # TD-253: every item answered
         application.refresh_from_db()
         services.set_reporting_date_by_officer(
             application, cls.reviewer, factories.REPORTING_DATE)

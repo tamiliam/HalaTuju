@@ -4031,6 +4031,7 @@
         "submittedOn": "Dihantar pada",
         "interviewedBy": "Ditemu duga oleh",
         "reopenError": "Tidak dapat membuka semula temu duga.",
+        "unanswered": "Jawab setiap soalan sebelum menghantar ({count} lagi): tandakan Selesai, tulis nota ringkas seperti “Lihat kesimpulan”, atau padamkannya.",
         "verdict": {
           "resolved": "Selesai"
         },
@@ -4578,6 +4579,7 @@
         "savedNotSubmitted": "Keputusan anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Luluskan sekali lagi untuk menghantarnya.",
         "savedNotSubmittedDecline": "Penolakan anda telah disimpan pada {date}, tetapi kes ini belum dihantar ke QC. Tekan Tolak sekali lagi untuk menghantarnya.",
         "saveNeedsReady": "Hantar penemuan anda, nilai AI dan tambah kesimpulan anda.",
+        "findingsIncomplete": "Jawab setiap soalan temu duga sebelum membuat keputusan ({count} lagi).",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
         "save": "Simpan & jana profil akhir",
         "saveDecline": "Simpan & hantar penolakan ke QC",

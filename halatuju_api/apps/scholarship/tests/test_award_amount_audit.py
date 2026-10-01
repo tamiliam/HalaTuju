@@ -16,11 +16,12 @@ happen; both paths are tested below.
 from decimal import Decimal
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.scholarship import services
-from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship.models import InterviewSession, ScholarshipApplication
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
+    TEST_JWT_SECRET, answered_findings, authed_client, make_admin, make_application, make_cohort,
 )
 
 VIEWS_LOGGER = 'apps.scholarship.views_admin'
@@ -46,6 +47,10 @@ class AwardAmountAuditTest(TestCase):
         ScholarshipApplication.objects.filter(pk=app.pk).update(
             award_amount=Decimal(amount) if amount is not None else None)
         app.refresh_from_db()
+        # TD-253: the reviewer's decision needs a submitted interview with every item answered.
+        InterviewSession.objects.create(application=app, status='submitted',
+                                        submitted_at=timezone.now(),
+                                        findings=answered_findings(app))
         return app
 
     def _record(self, app, overall):

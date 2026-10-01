@@ -18,6 +18,7 @@ from apps.scholarship.models import (
     DecisionReopen, InterviewSession, ScholarshipApplication, ScholarshipCohort,
     SponsorProfile,
 )
+from apps.scholarship.tests.factories import answered_findings
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 SUPER, REVIEWER, STUDENT = 'reopen-super', 'reopen-reviewer', 'reopen-student'
@@ -177,7 +178,9 @@ class TestDecisionReopen(TestCase):
     @patch('apps.scholarship.views_admin.verdict.refine_sponsor_profile')
     def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine):
         mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-2.5-pro'}
-        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now())
+        # TD-253: a REOPENED decision is the reviewer's again, so its interview must be complete.
+        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
+                                        findings=answered_findings(self.app))
         self._auth(SUPER)
         self.client.post(self._reopen_url(), {'reason': 'wrong income verdict'}, format='json')
         self.app.refresh_from_db(); self.sp.refresh_from_db()

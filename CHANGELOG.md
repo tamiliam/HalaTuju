@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Now sprint 2: a complete interview before Approve/Decline (TD-253) and password reset for onboarded admins (TD-207) - 2026-10-01
+
+BUILT, not committed, pushed or deployed; an adversarial review reads the diff first, and the owner
+reads the new Tamil. Register open 132 -> **130** -> **131** (TD-322 raised by the review),
+defined 319. No migration, no data change, no ledger raised.
+
+- **TD-253 — silence is refused, at both ends (owner's ruling, 2026-09-18).** New
+  `apps/scholarship/interview_completeness.py`: the agenda is the list the cockpit draws (served
+  anomalies less the two identity dedupes and less any anomaly Check 2 is already asking, the
+  folded `kind:code` entries incl. the standing Motivation item, the stored AI gaps); an item is
+  answered by a verdict OR a non-blank one-line answer ("See conclusion" counts), and a deleted item
+  is not owed. `interview/submit/` refuses `findings_incomplete` with the `missing` keys;
+  `record-verdict/` refuses an accept/decline with `interview_incomplete` (or
+  `interview_not_submitted`) only where the reviewer decides — no decision yet at the reviewer's
+  stage, or a reopened decision. QC accept/reject, verify-accept, submit-decline, `hold` and a
+  re-record of a decision already made are untouched (#32 and #140 awaiting QC, the 33 decided).
+  Web: new `src/lib/interviewCompleteness.ts`; `isDecisionReady` takes `interviewComplete` and the
+  cockpit reads it from the SAVED session; a new hint names how many questions are left, and the
+  submit refusal is shown in words. Reviewer Guide + FAQ updated. Guards: the server's copy of
+  `ANOMALY_CHECK2_OWNER` and the web's answered-rule are each compared with the other side.
+- **TD-207 — "Forgot password" works past onboarding.** `admin/set-password/` also accepts a
+  verified token whose `amr` holds a `recovery` entry at most 15 minutes old for the same email as
+  the account (`apps/courses/recovery_session.py`); the middleware now keeps the verified claims on
+  `request.auth_claims`. The invite path is unchanged; a plain session is still refused.
+- Tests: api 7,447 -> **7,472** passed (3 skipped); jest 3,239 / 194 -> **3,256 / 195**. Nine
+  bite-checks (gate off, status-only web gate twice, recovery branch, window, email; two
+  comment-only stay green), every restore SHA-equal. Existing walks that submitted or decided on an
+  empty interview now answer the agenda (`factories.answered_findings`).
+- **Review fixes (2026-10-02).** F1: a hold or blank verdict stamps `verdict_decided_at` but is
+  no longer read as a recorded decision (hold-then-accept was a way round the gate), api and
+  cockpit. F3: `admin/set-password/` is admins-only and acts on the real JWT subject. F4: the
+  cockpit applies the rule only at the api's reviewer-stage statuses (drift-tested). F5: a
+  `record-verdict` refusal is shown in words, and a refused Decline is no longer sent on to QC.
+  F6: "blank" is one explicit character class (whitespace + U+200B/C/D + U+FEFF) on both sides,
+  its source drift-tested. Owner: Motivation stays deletable; no "still unclear" button.
+  **TD-322 raised** (the invite flag is browser-writable). TD-207 carries a Status line.
+
 ## Now sprint 1: production on Node 24 (TD-255) and twenty untested admin endpoints driven (TD-257) - 2026-10-01
 
 Owner: "let's do the 11 first"; the lead chose these two. BUILT, not committed, pushed or deployed;

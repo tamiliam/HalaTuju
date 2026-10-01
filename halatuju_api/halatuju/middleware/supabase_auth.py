@@ -110,6 +110,10 @@ class SupabaseAuthMiddleware:
         request.user_id = None
         request.auth_sub = None
         request.supabase_user = None
+        # The VERIFIED claims, whole — set only below, after the signature and audience checked
+        # out. A view that needs a claim this middleware does not copy (TD-207: `amr`) reads it
+        # here rather than decoding the token itself.
+        request.auth_claims = None
 
         # Extract token from Authorization header
         auth_header = request.headers.get('Authorization', '')
@@ -166,6 +170,7 @@ class SupabaseAuthMiddleware:
                         'role': payload.get('role'),
                         'is_anonymous': payload.get('is_anonymous', False),
                     }
+                    request.auth_claims = payload
                     logger.debug(f"Authenticated user: {request.user_id}")
 
             except jwt.ExpiredSignatureError:

@@ -111,8 +111,11 @@ export const roleReviewer: ManualChapter = {
         in one place: the pre-interview flags, any <strong>carried-over queries</strong> the student didn&rsquo;t
         answer, the points the verdict marks <strong>&ldquo;confirm at interview&rdquo;</strong>, and a standing
         <strong> Motivation &amp; grit</strong> section. Tap <strong>Suggest interview questions</strong> (or
-        <strong> Generate more</strong>) and ask your own. After each point, jot <strong>one line</strong> on what
-        you found, then <strong>Submit interview findings</strong>. If a point mentions income above the line,
+        <strong> Generate more</strong>) and ask your own. <strong>Every point needs an answer</strong> before you
+        can submit: tap <strong>Resolved</strong>, jot <strong>one line</strong> on what you found (a short note
+        such as &ldquo;See conclusion&rdquo; is fine), or <strong>Delete</strong> a point that does not apply —
+        then <strong>Submit interview findings</strong>. Approve and Decline stay greyed out until every point
+        is answered. If a point mentions income above the line,
         that&rsquo;s for your judgement — explore the family&rsquo;s real situation, don&rsquo;t quote a figure.</>
       ),
       img: '/reviewer-guide/step7-interview.png',

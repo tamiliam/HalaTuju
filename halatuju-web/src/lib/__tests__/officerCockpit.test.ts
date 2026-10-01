@@ -1435,17 +1435,21 @@ describe('isQueryingLocked', () => {
 
 describe('isDecisionReady', () => {
   const all = { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'pass' }
-  it('true when interview submitted, all four facts pass/fail, and a reason is written', () => {
-    expect(isDecisionReady('submitted', all, 'Solid case.')).toBe(true)
+  it('true when interview submitted AND complete, all four facts pass/fail, and a reason is written', () => {
+    expect(isDecisionReady('submitted', all, 'Solid case.', true)).toBe(true)
   })
   it('false until the interview is submitted', () => {
-    expect(isDecisionReady('draft', all, 'Solid case.')).toBe(false)
+    expect(isDecisionReady('draft', all, 'Solid case.', true)).toBe(false)
+  })
+  it('⚠ TD-253: false on a SUBMITTED interview that leaves an agenda item unanswered (app #32)', () => {
+    // The status word alone let an interview with findings = {} wake Approve and Decline.
+    expect(isDecisionReady('submitted', all, 'Solid case.', false)).toBe(false)
   })
   it('false when a fact has no pass/fail yet', () => {
-    expect(isDecisionReady('submitted', { ...all, pathway: '' }, 'reason')).toBe(false)
+    expect(isDecisionReady('submitted', { ...all, pathway: '' }, 'reason', true)).toBe(false)
   })
   it('false when the reason is blank/whitespace', () => {
-    expect(isDecisionReady('submitted', all, '   ')).toBe(false)
+    expect(isDecisionReady('submitted', all, '   ', true)).toBe(false)
   })
 })
 
@@ -1541,7 +1545,7 @@ describe('pre-submission stage gate (shortlisted card hiding)', () => {
     // Submitting Step 2 is what leaves 'shortlisted', so there is no submitted interview —
     // the Recommendation buttons could never enable, which is why the card is hidden.
     const allPass = { identity: 'pass', academic: 'pass', pathway: 'pass', need: 'pass' } as never
-    expect(isDecisionReady(undefined, allPass, 'a reason')).toBe(false)
+    expect(isDecisionReady(undefined, allPass, 'a reason', true)).toBe(false)
     expect(showsPostSubmissionCards('shortlisted')).toBe(false)
   })
 })

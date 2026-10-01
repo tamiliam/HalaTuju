@@ -25,6 +25,7 @@
 import { fireEvent, screen } from '@testing-library/react'
 
 import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
+import { buildInterviewSession } from '@/test/adminApplicationDetail'
 
 installCockpitConsoleGuard()
 
@@ -137,6 +138,122 @@ describe('a half-completed Approve leaves the reviewer a button she can press', 
     await loaded()
     expect(screen.getByText('admin.scholarship.recordVerdict.reopenedBanner')).toBeTruthy()
     expect(button('recordVerdict.approve').disabled).toBe(false)
+  })
+})
+
+// ── TD-253: an interview with nothing in it does not wake Approve and Decline ───────────────
+describe('every interview question needs an answer before the reviewer decides', () => {
+  /** A case where EVERYTHING else is ready — four facts pressed, a conclusion written, the
+   *  interview submitted — so the only thing that can hold the buttons is the agenda. */
+  const ready = (findings: Record<string, { verdict: string; rationale: string }>, extra = {}) => ({
+    officer_verdict: { identity: 'pass', academic: 'pass', income: 'pass', pathway: 'pass',
+                       overall: '' },
+    verdict_reason: 'The evidence supports it.',
+    interview_agenda: [{ code: 'motivation_grit', kind: 'motivation' as const,
+                         params: { seeded: false } }],
+    interview_session: buildInterviewSession({ findings }),
+    ...extra,
+  })
+  const ROLES = ['super', 'org_admin', 'qc', 'admin', 'reviewer'] as const
+
+  it('⚠ #32: a submitted interview with an unanswered item keeps both asleep, for every role',
+     async () => {
+    for (const role of ROLES) {
+      const { unmount } = renderCockpit({ role, stage: 'interviewing', build: ready({}) })
+      await loaded()
+      expect(button('recordVerdict.approve').disabled).toBe(true)
+      expect(button('recordVerdict.decline').disabled).toBe(true)
+      expect(screen.getByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeTruthy()
+      unmount()
+    }
+  })
+
+  it('"See conclusion" is an answer: the same case wakes, for every role', async () => {
+    for (const role of ROLES) {
+      const { unmount } = renderCockpit({ role, stage: 'interviewing', build: ready({
+        'motivation:motivation_grit': { verdict: '', rationale: 'See conclusion' } }) })
+      await loaded()
+      expect(button('recordVerdict.approve').disabled).toBe(false)
+      expect(button('recordVerdict.decline').disabled).toBe(false)
+      expect(screen.queryByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeNull()
+      unmount()
+    }
+  })
+
+  it('a DELETED item is not owed an answer', async () => {
+    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({
+      'motivation:motivation_grit': { verdict: 'deleted', rationale: '' } }) })
+    await loaded()
+    expect(button('recordVerdict.approve').disabled).toBe(false)
+  })
+
+  it('a decision recorded before the rule is not reached back over (the stuck Approve)',
+     async () => {
+    // A recorded APPROVE (overall 'accept') — `ready()` blanks the outcome, so it is put back.
+    const base = ready({})
+    renderCockpit({ role: 'reviewer', stage: 'verdict_recorded', build: {
+      outcome: 'recommend', ...base, officer_verdict: { ...base.officer_verdict, overall: 'accept' } } })
+    await loaded()
+    expect(button('recordVerdict.approve').disabled).toBe(false)
+  })
+
+  it('a REOPENED decision is the reviewer\'s again, so the rule binds', async () => {
+    renderCockpit({ role: 'reviewer', stage: 'verdict_recorded', build: {
+      outcome: 'recommend', ...ready({}), decision_reopened_at: '2026-06-03T09:00:00.000Z' } })
+    await loaded()
+    expect(button('recordVerdict.approve').disabled).toBe(true)
+  })
+
+  it('⚠ review F1: a HOLD on file is not a decision — the empty interview still holds the buttons',
+     async () => {
+    renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+      verdict_decided_at: '2026-06-01T09:00:00.000Z',
+      officer_verdict: { identity: 'pass', academic: 'pass', income: 'pass', pathway: 'pass',
+                         overall: 'hold' } }) })
+    await loaded()
+    expect(button('recordVerdict.approve').disabled).toBe(true)
+    expect(button('recordVerdict.decline').disabled).toBe(true)
+  })
+
+  it('review F4: at QC\'s stage with no decision recorded, the rule does not reach', async () => {
+    // Mirrors the api's `_REVIEWER_STAGE`: an `interviewed` case is QC's, not the reviewer's.
+    renderCockpit({ role: 'super', stage: 'interviewing', build: ready({}, { status: 'interviewed' }) })
+    await loaded()
+    expect(screen.queryByText('admin.scholarship.recordVerdict.findingsIncomplete')).toBeNull()
+  })
+
+  it('review F5: the decision door\'s refusal is shown in words, and a Decline stops there',
+     async () => {
+    for (const choice of ['recordVerdict.approve', 'recordVerdict.decline']) {
+      const { api, unmount } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({
+        'motivation:motivation_grit': { verdict: 'resolved', rationale: '' } }) })
+      await loaded()
+      api.recordVerdict.mockRejectedValue(Object.assign(new Error('Every interview question…'), {
+        code: 'interview_incomplete', body: { missing: ['a', 'b'] } }))
+      fireEvent.click(button(choice))
+      fireEvent.click(screen.getByRole('button', {
+        name: choice.endsWith('decline') ? 'admin.scholarship.recordVerdict.saveDecline'
+          : 'admin.scholarship.recordVerdict.save' }))
+      expect((await screen.findAllByText('admin.scholarship.recordVerdict.findingsIncomplete'))
+        .length).toBeGreaterThan(0)
+      expect(screen.queryByText('Every interview question…')).toBeNull()
+      expect(api.submitDeclineApplication).not.toHaveBeenCalled()
+      unmount()
+    }
+  })
+
+  it('the submit refusal names how many are left, in words', async () => {
+    const { api } = renderCockpit({ role: 'reviewer', stage: 'interviewing', build: ready({}, {
+      interview_session: buildInterviewSession({ status: 'draft', findings: {} }) }) })
+    await loaded()
+    api.saveInterview.mockResolvedValue({} as never)
+    api.submitInterview.mockRejectedValue(Object.assign(new Error('x'), {
+      code: 'findings_incomplete', body: { missing: ['motivation:motivation_grit'] } }))
+    fireEvent.click(button('interview.submit'))
+    // The cockpit prints its one `error` in two places (the profile card and the decision card).
+    expect((await screen.findAllByText('admin.scholarship.interview.unanswered')).length)
+      .toBeGreaterThan(0)
+    expect(screen.queryByText('admin.scholarship.interview.submitError')).toBeNull()
   })
 })
 

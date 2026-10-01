@@ -1131,9 +1131,11 @@ export function queryingLockReason(
   return interviewStatus === 'submitted' ? 'interview' : 'closed'
 }
 
-/** Approve/Decline activate only once the interview is submitted, all four facts are pass/fail, and a reason is written. */
-export function isDecisionReady(interviewStatus: string | undefined, officerVerdict: OfficerVerdict, reason: string): boolean {
-  return interviewStatus === 'submitted'
+/** Approve/Decline activate only once the interview is submitted AND every agenda item answered
+ *  (TD-253 — the word "submitted" alone let an empty interview through, app #32; see
+ *  `interviewCompleteness`), all four facts are pass/fail, and a reason is written. */
+export function isDecisionReady(interviewStatus: string | undefined, officerVerdict: OfficerVerdict, reason: string, interviewComplete: boolean): boolean {
+  return interviewStatus === 'submitted' && interviewComplete
     && DECISION_FACTS.every((f) => officerVerdict[f] === 'pass' || officerVerdict[f] === 'fail')
     && (reason || '').trim().length > 0
 }

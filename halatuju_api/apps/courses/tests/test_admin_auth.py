@@ -589,6 +589,9 @@ class AdminSetPasswordTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("partner-uid")}')
+        # Review F3: only an admin may use this endpoint, so the caller holds a PartnerAdmin row.
+        PartnerAdmin.objects.create(supabase_user_id='partner-uid', email=self._EMAIL,
+                                    name='Org Admin', role='org_admin', is_active=True)
 
     def _post(self, password, meta, get_status=200):
         with patch(f'{self._MOD}.get') as g, patch(f'{self._MOD}.put') as p:
@@ -624,3 +627,90 @@ class AdminSetPasswordTest(TestCase):
     def test_requires_authentication(self):
         r = APIClient().post('/api/v1/admin/set-password/', {'password': 'a-strong-password'}, format='json')
         self.assertIn(r.status_code, (401, 403))
+
+    # ── TD-207: "Forgot password" for an admin who finished onboarding ────────────────────────
+    _EMAIL = 'org.admin@example.test'
+
+    def _recover(self, minutes_ago, *, token_email=None, account_email=None, method='recovery',
+                 meta=None):
+        """POST with a token whose `amr` records ``method`` ``minutes_ago`` minutes ago, against an
+        account (the mocked admin-API read) that is past onboarding unless ``meta`` says so."""
+        stamp = int((timezone.now() - datetime.timedelta(minutes=minutes_ago)).timestamp())
+        token = jwt.encode(
+            {'sub': 'partner-uid', 'aud': 'authenticated', 'role': 'authenticated',
+             'email': token_email or self._EMAIL,
+             'amr': [{'method': method, 'timestamp': stamp}]},
+            TEST_JWT_SECRET, algorithm='HS256')
+        account = {'email': account_email or self._EMAIL,
+                   'user_metadata': meta if meta is not None else {'name': 'Org Admin',
+                                                                   'must_change_password': False}}
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        with patch(f'{self._MOD}.get') as g, patch(f'{self._MOD}.put') as p:
+            g.return_value = MagicMock(status_code=200, json=lambda: account)
+            p.return_value = MagicMock(status_code=200, text='ok')
+            r = client.post('/api/v1/admin/set-password/', {'password': 'a-new-password'},
+                            format='json')
+        return r, p
+
+    def test_a_fresh_recovery_session_sets_the_password(self):
+        r, p = self._recover(minutes_ago=2)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIn('/admin/users/partner-uid', p.call_args[0][0])   # the caller's OWN uid
+        self.assertEqual(p.call_args[1]['json']['password'], 'a-new-password')
+        self.assertEqual(p.call_args[1]['json']['user_metadata']['name'], 'Org Admin')
+
+    def test_a_recovery_older_than_the_window_is_refused(self):
+        r, p = self._recover(minutes_ago=16)
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.json()['error'], 'not_pending_password_change')
+        p.assert_not_called()
+
+    def test_a_plain_session_with_the_flag_clear_is_still_refused(self):
+        for method in ('password', 'oauth', 'otp', 'magiclink'):
+            with self.subTest(method=method):
+                r, p = self._recover(minutes_ago=1, method=method)
+                self.assertEqual(r.status_code, 403)
+                p.assert_not_called()
+
+    def test_a_recovery_token_for_another_address_is_refused(self):
+        r, p = self._recover(minutes_ago=1, token_email='someone.else@example.test')
+        self.assertEqual(r.status_code, 403)
+        p.assert_not_called()
+
+    def test_the_email_match_ignores_case_and_spaces(self):
+        r, _ = self._recover(minutes_ago=1, token_email=' Org.Admin@Example.TEST ')
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def test_a_plain_string_amr_cannot_prove_freshness(self):
+        token = jwt.encode(
+            {'sub': 'partner-uid', 'aud': 'authenticated', 'role': 'authenticated',
+             'email': self._EMAIL, 'amr': ['recovery']}, TEST_JWT_SECRET, algorithm='HS256')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        r, _, p = self._post('a-strong-password', {'must_change_password': False})
+        self.assertEqual(r.status_code, 403)
+        p.assert_not_called()
+
+    def test_a_non_admin_with_a_fresh_recovery_is_refused(self):
+        # Review F3: a student or sponsor following their own reset link must never reach the
+        # service-role password write. No PartnerAdmin row → 403, and Supabase is never touched.
+        PartnerAdmin.objects.filter(supabase_user_id='partner-uid').delete()
+        r, p = self._recover(minutes_ago=1)
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.json()['error'], 'not_an_admin')
+        p.assert_not_called()
+
+    def test_it_acts_on_the_real_subject_never_an_alias(self):
+        # TD-254: `request.user_id` may be redirected to another profile; staff identity is the
+        # JWT subject. With an alias pointing partner-uid elsewhere, the write still targets it.
+        with patch('halatuju.middleware.supabase_auth.resolve_login_alias',
+                   return_value='someone-elses-profile'):
+            r, p = self._recover(minutes_ago=1)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIn('/admin/users/partner-uid', p.call_args[0][0])
+
+    def test_the_invite_flow_is_unchanged_without_any_recovery(self):
+        # Flag set, an ordinary session (no amr at all): onboarding still works exactly as before.
+        r, _, p = self._post('a-strong-password', {'must_change_password': True})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(p.call_args[1]['json']['user_metadata']['must_change_password'])

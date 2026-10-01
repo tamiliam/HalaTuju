@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from .. import pool
 from .. import reopen as reopen_service
+from ..interview_completeness import decision_gate_applies, decision_refusal
 from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication, SponsorProfile
 from ..profile_engine import generate_anon_blurb, refine_sponsor_profile
@@ -74,6 +75,15 @@ class AdminRecordVerdictView(_AdminBase):
                 {'error': 'Assess all four checks (Pass/Fail) before recording the decision.',
                  'code': 'verdict_incomplete', 'facts': incomplete},
                 status=status.HTTP_400_BAD_REQUEST)
+
+        # TD-253: the reviewer's Approve/Decline needs a submitted interview with every agenda item
+        # answered. Binds only where the reviewer decides — never QC's stage, never a decision
+        # already recorded unless a super reopened it (see `interview_completeness`). A hold or
+        # blank verdict stamps `verdict_decided_at` but is NOT a recorded decision (review F1).
+        if overall in ('accept', 'decline') and decision_gate_applies(app):
+            refusal = decision_refusal(app)
+            if refusal:
+                return Response(refusal, status=status.HTTP_400_BAD_REQUEST)
 
         # ⚠ STAMP THE PREDICTOR WITH ITS SNAPSHOT, IN THE SAME BREATH. The two are one fact: what
         # the AI said, and which engine said it. Splitting them (stamping elsewhere, or later)

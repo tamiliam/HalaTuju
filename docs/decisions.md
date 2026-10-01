@@ -1,5 +1,59 @@
 # Architectural Decisions — HalaTuju
 
+## A complete interview, and a fresh recovery is authority to set a password — 2026-10-01
+
+**Decided by:** the owner's TD-253 ruling of 2026-09-18 (*"I want this to be a conscious decision on
+their part, and I want it to be complete"*) and TD-207's own fix shape; built in Now sprint 2. The
+choices below are the builder's where the ruling was silent, and are written here so a later change
+obeys them.
+
+**1. "Complete" (TD-253).** Every item on the interview agenda the cockpit DRAWS — the served
+anomalies less the two identity mismatches and less any anomaly Check 2 is already asking
+(`ANOMALY_CHECK2_OWNER`), the non-anomaly `interview_agenda_full` entries keyed `kind:code` (the
+standing Motivation & grit item is always one), and the stored AI gaps — must be **answered or
+deleted**. Answered = a verdict (`resolved` / `still_unclear` / `new_concern`) **or** a non-blank
+one-line answer. **A rationale is not required with a verdict, and a verdict is not required with a
+rationale**, because the screen offers one verdict button (Resolved) and an answer box: a reviewer
+whose answer is "not resolved" can only type it, and the read-only record has always shown a bare
+Resolved as "Resolved ✓". "See conclusion" is a legitimate answer. Delete is a choice, not silence.
+The server's copy of the Check-2 map is `CHECK2_OWNED_ANOMALIES`, compared with the cockpit's by
+`test_interview_completeness.py`; the web's answered-rule is compared with the api's by
+`interviewCompleteness.test.ts`.
+
+**2. Where it binds.** Submitting findings always (`findings_incomplete`, with the missing keys).
+Recording Approve/Decline only where the reviewer decides: no decision recorded and the case at
+shortlisted/profile_complete/interviewing, OR a decision a super has reopened (the reopen unlocks
+the interview, so it can be completed) — `interview_incomplete` / `interview_not_submitted`.
+**Deliberately not:** QC's accept/reject (the two live cases awaiting QC on 2026-09-18, #32 and
+#140, carry empty interviews), verify-accept and submit-decline (they act on a verdict already
+recorded), a re-record of a verdict already recorded and not reopened (the stuck-Approve shape),
+and `hold`. No migration and no data change: the 33 decided cases stay as they are.
+
+**3. A fresh recovery session may set an admin's password (TD-207).** `admin/set-password/` accepts
+the set when `must_change_password` is true (invite, unchanged) **or** the verified access token's
+`amr` claim holds a `recovery` entry stamped no more than **15 minutes** ago **and** the token's
+email equals the account's. Only `recovery` counts (GoTrue's `IsRecovery()` also counts OTP and
+magic link — a login, not a request to change the password); a plain-string `amr` entry has no
+timestamp and is refused. The claims come from `request.auth_claims`, set by the middleware only
+after verification; nothing decodes a token twice. Flipping `must_change_password` by hand is not a
+fix and must not be used again.
+
+**4. After the adversarial review (2026-10-02).** "A decision is recorded" means an **Approve or a
+Decline** on file — `record-verdict` stamps `verdict_decided_at` for `hold` and a blank too, and
+reading the stamp alone let hold-then-accept walk round the gate (F1); the cockpit reads the
+recorded outcome the same way, and applies the rule only at the api's reviewer-stage statuses (F4).
+"Blank" is one explicit character class on both sides — Unicode whitespace plus U+200B/C/D and
+U+FEFF — whose source text the web drift test compares (F6). The set-password endpoint is
+**admins only**, on the real JWT subject, never a TD-254 alias (F3); the email match in the
+recovery rule is load-bearing, not belt and braces.
+
+**Owner rulings, 2026-10-02 ("It is OK as it is"):** the standing Motivation & grit item **stays
+deletable** like every other agenda item, and the cockpit gets **no "still unclear" button** — a
+typed answer is how a reviewer says "not resolved".
+
+**Revisit if:** the owner changes either ruling above, or reviewers report the 15-minute window
+expiring before they finish the reset page. The browser-writable invite flag is TD-322.
+
 ## Two owner rulings on the Next-tier work — 2026-10-01
 
 **TD-314 — the bills question is one question, and it stays open at interview.** The owner, shown the

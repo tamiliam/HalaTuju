@@ -11,6 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from ..anomaly_engine import detect_anomalies
+from ..interview_completeness import missing_agenda_items
 from ..models import InterviewSession
 from ..serializers_admin import AdminApplicationDetailSerializer, InterviewSessionSerializer
 from ..services import submit_interview
@@ -211,6 +212,12 @@ class AdminInterviewSubmitView(_AdminBase):
         err = _validate_findings(session.findings or {})
         if err:
             return Response({'error': err, 'code': 'bad_findings'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # TD-253 (owner, 2026-09-18): every agenda item answered or deleted — silence is refused.
+        missing = missing_agenda_items(app, session.findings)
+        if missing:
+            return Response({'error': 'Every interview question needs an answer before you submit.',
+                             'code': 'findings_incomplete', 'missing': missing},
                             status=status.HTTP_400_BAD_REQUEST)
         if session.interviewer_id is None:
             session.interviewer = admin

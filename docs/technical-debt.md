@@ -9,12 +9,12 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-10-01** it runs to **TD-321**, with **318 ids carrying a defining entry
-and 132 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
+a running log; as of **2026-10-01** it runs to **TD-322**, with **319 ids carrying a defining entry
+and 131 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
-TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, and one, TD-321,
-raised by its deploy). See the Open Items Index
+TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, one, TD-321,
+raised by its deploy, two, TD-253 and TD-207, closed by Now sprint 2, and one, TD-322, raised by its review). See the Open Items Index
 below, which lists all of them in working order and says how the figures were reached.
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
@@ -35,7 +35,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**318 entries carry a defining line; 132 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted). Every one of them was READ on
+**319 entries carry a defining line; 131 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -90,14 +90,13 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-318** — WhatsApp STOP is built but does nothing until the inbound webhook is set in the Twilio console (an owner action). *(D · S · leftover of TD-135)*
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 
-### Now — money, identity, eligibility or security — 9
+### Now — money, identity, eligibility or security — 8
 Class A at any size, and class B that is small or medium. Schedule these first.
 
+- **TD-322** — An admin's "must change password" flag is browser-writable, so a stolen session can set a new password without the old one. *(B · S-M · raised 2026-10-02)*
 - **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S · partly done)*
 - **TD-229** — A second gift would make its students sign the first gift's agreement. Signing is off today. *(A · L)*
-- **TD-253** — An interview with nothing in it still wakes Approve and Decline. The owner's ruling is not built. *(B · M)*
 - **TD-218** — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading. *(B · M)*
-- **TD-207** — Password reset fails for every admin who has finished onboarding. *(B · M)*
 - **TD-151** — The hardening pass for misread documents was never done: no problem-document set, no sanity check on figures. *(B · M)*
 - **TD-125** — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet. *(B · M)*
 - **TD-114** — A fact can read Certain off a document that was never scored for genuineness. *(B · M · partly done)*
@@ -3182,7 +3181,9 @@ that is the moment the credential exposure repeats. ~2h.
 
 ---
 
-### [TD-207] Password reset is BROKEN for every admin who has already onboarded — medium
+### [TD-207] Password reset is BROKEN for every admin who has already onboarded — medium — **RESOLVED 2026-10-01 (Now sprint 2: set-password also accepts a FRESH recovery session — a recovery entry in the verified token amr claim, no older than 15 minutes, for the same email as the account; apps/courses/recovery_session.py; tests in test_admin_auth.AdminSetPasswordTest; live proof is the owner resetting elanjelian@me.com after the deploy)**
+
+**Status (2026-10-02, after review):** two limits the fix lives with. (1) The reset email must be opened in the SAME browser that asked for it: the admin client uses PKCE, and the code in the link can be exchanged only by the browser holding its verifier. (2) If the Supabase "Reset password" email template were ever changed to a magic-link or OTP type, the session would record `otp`/`magiclink`, not `recovery`, and the set would be refused BY DESIGN (`recovery_session` counts only `recovery`). The endpoint is now admins-only on the real JWT subject (review F3); the browser-writable invite flag is TD-322.
 **⚠ SEVERITY CORRECTED DOWN from high, 2026-08-01, after actually counting who is affected.** The
 mechanism below is accurate and unchanged: reset cannot work for anyone past onboarding. What was
 wrong was the reach I asserted from it. Only someone who signs in with a PASSWORD would ever click
@@ -5966,7 +5967,7 @@ The options as they were put:
 a name disclosure to anyone who types an IC), and **log the transfer** — old id, new id, IC, when.
 There is no log line today, so the question "has this ever happened?" has no answer.
 
-### [TD-253] An interview with NOTHING in it passes the gate that guards Approve and Decline — medium
+### [TD-253] An interview with NOTHING in it passes the gate that guards Approve and Decline — medium — **RESOLVED 2026-10-01 (Now sprint 2: every agenda item must be answered or deleted — submit refuses findings_incomplete, record-verdict refuses interview_incomplete where the reviewer decides, isDecisionReady keys on content; apps/scholarship/interview_completeness.py + src/lib/interviewCompleteness.ts; QC stage and recorded decisions untouched)**
 
 **Status:** Open — **OWNER RULING 2026-09-18, ready to build.** *"The reviewer could simply say: See conclusion. I want this to be a conscious decision on their part, and I want it to be complete."* So the answer to the question below is: the per-fact record IS wanted; an empty box is not a shortcut, and a short rationale ("See conclusion") is a legitimate answer — what is refused is SILENCE. Every agenda item must carry a verdict the reviewer actively chose, at both ends (submit refuses an incomplete set; the buttons stay asleep until it is complete).
 
@@ -6323,3 +6324,4 @@ depends on, not a defect.
 - **TD-320 (raised 2026-10-01 by Next-tier batch 2's adversarial review) — low, officer-visible.** When TD-319's fallback takes Gemini's contribution figures, the whole EPF document is labelled `capture='ai'` (the cockpit's "AI" provenance chip) although its name, NRIC, employer and balance were read deterministically; the label cannot say "identity exact, contribution AI". **Fix:** a per-field or split provenance (e.g. `capture='mixed'` with its own chip label), or leave it. **Trigger:** an officer asking which EPF fields the model supplied.
 
 - **TD-321 (raised 2026-10-01 by the TD-255 deploy probe) - low, pre-existing, student-visible as weight: production serves every next/image request UNOPTIMISED.** The web runs in standalone mode with no sharp package, so Next 14.2 logs "Error: sharp is required to be installed in standalone mode for the image optimization to function correctly" on every image request and serves the ORIGINAL file: /_next/image?url=/scholarship/hero.jpg&w=384 returns the full 157,789-byte JPEG. The same log line exists on the Node-18 revisions (halatuju-web-00933-8xd), so this is older than the Node move, which changed nothing here. Four files use next/image. **Fix:** add sharp (a native dependency; the Alpine image needs it to build, and the first-load budget is unaffected because it is server-side), or set images.unoptimized and serve sized assets by hand. **Trigger:** the next image added to a student page, or a phone-data complaint.
+- **TD-322 (raised 2026-10-02 by the Now sprint 2 adversarial review) - medium, security: `must_change_password` lives in `user_metadata`, which any signed-in user can rewrite from the browser.** `supabase.auth.updateUser({ data: { must_change_password: true } })` needs no current password, so whoever holds a stolen ORDINARY admin session can switch the flag on and then set a new password through `admin/set-password/` - taking the account over without ever knowing the old password. The TD-207 recovery rule adds nothing against this attacker: they use the invite branch, not the recovery one. **Fix:** move the flag to `app_metadata` (server-writable only) at invite and Resend time and read it from there, keeping a one-release fallback that still honours `user_metadata` for invites already pending (and expires with their 7-day temp-password TTL). **Class B security, effort S-M, tier Now.**
