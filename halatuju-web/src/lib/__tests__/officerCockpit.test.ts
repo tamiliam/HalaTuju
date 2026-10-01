@@ -28,6 +28,10 @@ import {
   type DecisionTrailInput,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument } from '@/lib/admin-api'
+import type { BcCheck, IncomeProofCheck } from '@/lib/api'
+import enMessages from '@/messages/en.json'
+import msMessages from '@/messages/ms.json'
+import taMessages from '@/messages/ta.json'
 
 // ── Factories ─────────────────────────────────────────────────────────────────
 
@@ -486,6 +490,42 @@ describe('documentFacts', () => {
     })).map((f) => f.key)).toEqual(['child', 'mother', 'father'])
   })
 
+  // TD-158: the BC was the one genuineness-scored type whose row ignored its score.
+  describe('TD-158 — the birth-certificate row carries its genuineness', () => {
+    const MATCHED: BcCheck = { child_name: '', child_status: 'match', mother_name: '', mother_nric: '',
+      mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' }
+    type Genuineness = NonNullable<AdminApplicantDocument['authenticity']>['status']
+    const bc = (status?: Genuineness) => documentFacts(doc({ doc_type: 'birth_certificate', bc_check: MATCHED,
+      ...(status ? { authenticity: { status, reason: 'x' } } : {}) }))
+    const rows = (f: ReturnType<typeof documentFacts>) => f.filter((x) => ['child', 'mother', 'father'].includes(x.key))
+
+    it('a WRONG-TYPE upload (not_birth_certificate) shows no green tick, and the Wrong type chip', () => {
+      const f = bc('not_birth_certificate')
+      expect(rows(f).every((x) => x.status === 'not')).toBe(true)
+      expect(f.some((x) => x.status === 'verified')).toBe(false)
+      expect(f).toContainEqual({ key: 'wrongType', status: 'not' })
+    })
+    it('a SUSPECT one is never an unqualified green: the amber Genuine chip sits beside the reads', () => {
+      // The house rule (owner 2026-07-07): suspect does NOT cap the reads — it adds the amber chip.
+      const f = bc('suspect')
+      expect(f).toContainEqual({ key: 'genuine', status: 'partial' })
+      expect(rows(f).map((x) => x.status)).toEqual(['verified', 'verified', 'verified'])
+    })
+    it('review F1: unreadable AND wrong-type (a selfie in the BC slot) shows the red Wrong type chip too', () => {
+      const f = documentFacts(doc({ doc_type: 'birth_certificate',
+        bc_check: { ...MATCHED, child_status: 'no_ref', mother_status: 'no_ref', father_status: 'no_ref', unreadable: true },
+        authenticity: { status: 'not_birth_certificate', reason: 'a selfie' } }))
+      expect(f).toEqual([{ key: 'unreadable', status: 'partial' }, { key: 'wrongType', status: 'not' }])
+    })
+    it('a genuine (or unscored) certificate is exactly as before', () => {
+      for (const status of [undefined, 'genuine', 'likely_genuine'] as const) {
+        expect(bc(status)).toEqual([
+          { key: 'child', status: 'verified' }, { key: 'mother', status: 'verified' },
+          { key: 'father', status: 'verified' }])
+      }
+    })
+  })
+
   it('an unreadable guardianship letter is ONE amber row too', () => {
     expect(documentFacts(doc({
       doc_type: 'guardianship_letter',
@@ -702,6 +742,53 @@ describe('documentFacts', () => {
     const noAmt = facts([{ key: 'period', value: 'Apr 2026' }])   // an EPF-in-the-slot has no amount
     expect(noAmt.map((f) => f.key)).toEqual(['name', 'amount', 'period'])  // amount not dropped
     expect(noAmt.find((f) => f.key === 'amount')!.status).toBe('unknown')  // …shown grey instead
+  })
+
+  // TD-220: the payslip IC chip SAYS which red it is — the reader disagreed, or read nothing.
+  describe('TD-220 — the payslip IC chip names its failure', () => {
+    const slip = (nric: string, nric_status: IncomeProofCheck['nric_status'],
+                  extra: Partial<AdminApplicantDocument> = {}) =>
+      documentFacts(doc({ doc_type: 'salary_slip', ...extra,
+        income_proof_check: { name: 'X', nric, name_status: 'match', nric_status,
+          member: 'father', ic_present: true, points: [] } }))
+    const ic = (facts: ReturnType<typeof documentFacts>) => facts.filter((f) => f.key.startsWith('ic_no'))
+
+    it('a number READ that differs from the IC on file → "does not match", red (#73\'s case)', () => {
+      expect(ic(slip('751206-06-5041', 'mismatch'))).toEqual([{ key: 'ic_no_mismatch', status: 'not' }])
+    })
+    it('the same on an EPF statement', () => {
+      expect(ic(documentFacts(doc({ doc_type: 'epf', income_proof_check: { name: 'X',
+        nric: '751206-06-5041', name_status: 'match', nric_status: 'mismatch', member: 'father',
+        ic_present: true, points: [] } })))).toEqual([{ key: 'ic_no_mismatch', status: 'not' }])
+    })
+    it('a slip the reader could not read at all → "could not be read", red', () => {
+      for (const sv of ['unreadable', 'wrong_doc']) {
+        expect(ic(slip('', 'no_ref', { vision_fields: { student_verdict: sv } } as Partial<AdminApplicantDocument>)))
+          .toEqual([{ key: 'ic_no_unreadable', status: 'not' }])
+      }
+    })
+    it('the neighbours are unchanged: a match is plain green, an absent number on a READ slip shows nothing', () => {
+      expect(ic(slip('751206-08-5941', 'match'))).toEqual([{ key: 'ic_no', status: 'verified' }])
+      expect(ic(slip('751206-08-5941', 'no_ref'))).toEqual([{ key: 'ic_no', status: 'unknown' }])
+      expect(ic(slip('', 'no_ref', { vision_fields: { student_verdict: 'ok' } } as Partial<AdminApplicantDocument>)))
+        .toEqual([])
+      // review F2: an `incomplete` slip with no number read shows no IC chip (as the comment says)
+      expect(ic(slip('', 'no_ref', { vision_fields: { student_verdict: 'incomplete' } } as Partial<AdminApplicantDocument>)))
+        .toEqual([])
+    })
+    it('both labels exist in all three languages (the drawer looks them up by key)', () => {
+      for (const messages of [enMessages, msMessages, taMessages]) {
+        const fact = messages.admin.scholarship.docsDrawer.fact as Record<string, string>
+        expect(String(fact.ic_no_mismatch || '').length).toBeGreaterThan(0)
+        expect(String(fact.ic_no_unreadable || '').length).toBeGreaterThan(0)
+      }
+    })
+    it('a WRONG-TYPE slip keeps the plain red IC chip — the Wrong type chip says why', () => {
+      const f = slip('751206-06-5041', 'mismatch', { authenticity: { status: 'not_salary_slip', reason: 'x' } })
+      expect(ic(f)).toEqual([{ key: 'ic_no', status: 'not' }])
+      expect(ic(slip('', 'no_ref', { authenticity: { status: 'not_salary_slip', reason: 'x' },
+        vision_fields: { student_verdict: 'wrong_doc' } } as Partial<AdminApplicantDocument>))).toEqual([])
+    })
   })
 
   it('genuineness gate: an IC flagged not_ic (WRONG TYPE) reads RED with a Wrong-type chip', () => {

@@ -484,7 +484,15 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // IC No: an EPF statement always carries the member's number; a salary slip only sometimes
     // (hide it there when absent). Same treatment the STR chip gives it — the number is the strong
     // earner key — and both read `nric` off the check object the server sent, not a rule of ours.
-    if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) })
+    // TD-220: red said "mismatch" and "not read" alike. Now: a number read and differing → the
+    // mismatch chip; a slip that read nothing (unreadable / wrong_doc) → the unreadable chip; an
+    // `incomplete` slip with no number → no IC chip (doc_match_verdict counts it unreadable; we don't).
+    if ((c.nric || '').trim()) {
+      const differs = !cap && c.nric_status === 'mismatch'
+      facts.push({ key: differs ? 'ic_no_mismatch' : 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) })
+    } else if (!cap && ['unreadable', 'wrong_doc'].includes(doc.vision_fields?.student_verdict || '')) {
+      facts.push({ key: 'ic_no_unreadable', status: 'not' })
+    }
     if (dt === 'salary_slip') {
       // CONSISTENT chip set for every salary slip: Amount + Period always present, grey ('unknown')
       // when not read — never omitted, so two payslips don't show different numbers of chips.
@@ -507,12 +515,17 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // ⚠ NOTHING READ IS NOT NOTHING WRONG (#23). Every row of an unreadable certificate buckets
     // to `no_ref`, and three GREY chips read like an absent optional document — the same as one
     // that checked out. One AMBER chip instead, so the officer sees a document to chase.
-    if (c.unreadable) return [{ key: 'unreadable', status: 'partial' }]
-    return [
-      { key: 'child', status: factStatus(c.child_status) },
-      { key: 'mother', status: factStatus(c.mother_status) },
-      { key: 'father', status: factStatus(c.father_status) },
+    // Review F1: a wrong-type upload that also read nothing (a selfie) still carries its red chip.
+    if (c.unreadable) return gf ? [{ key: 'unreadable', status: 'partial' }, gf] : [{ key: 'unreadable', status: 'partial' }]
+    // TD-158: the same cap and Genuine chip every other scored type carries. A `not_birth_certificate`
+    // (red) discredits the reads, so no green tick; a merely SUSPECT one keeps them beside an amber chip.
+    const facts: DocumentFactLabel[] = [
+      { key: 'child', status: cap ? 'not' : factStatus(c.child_status) },
+      { key: 'mother', status: cap ? 'not' : factStatus(c.mother_status) },
+      { key: 'father', status: cap ? 'not' : factStatus(c.father_status) },
     ]
+    if (gf) facts.push(gf)
+    return facts
   }
   if (dt === 'guardianship_letter') {
     const c = doc.guardianship_check

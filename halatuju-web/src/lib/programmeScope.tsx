@@ -66,13 +66,15 @@ export {
  * did before this existed.
  */
 export function ProgrammeScopeProvider(
-  { choices, children, onReload, settled = true }: {
+  { choices, children, onReload, settled = true, failed = false }: {
     choices: readonly ProgrammeChoice[]
     children: ReactNode
     /** Ask the shell to re-fetch the scopes. Optional so a harness can mount without one. */
     onReload?: () => Promise<void>
     /** The shell's fetch has answered or failed. Defaults to true for a harness with a list. */
     settled?: boolean
+    /** The shell's fetch rejected (review F4). Defaults to false for a harness with a list. */
+    failed?: boolean
   },
 ) {
   const [picked, setPicked] = useState('')
@@ -117,6 +119,8 @@ export function ProgrammeScopeProvider(
       ambiguous: live.length > 1,
       live,
       unrecognised: want !== '' && !known && choices.length > 0,
+      unconfirmed: want !== '' && !known && choices.length === 0,
+      failed,
       select: setPicked,
       reload,
       pinned: pin !== '',
@@ -124,7 +128,7 @@ export function ProgrammeScopeProvider(
       setPin,
       settled,
     }
-  }, [choices, picked, pin, pinGift, reload, setPin, settled])
+  }, [choices, picked, pin, pinGift, reload, setPin, settled, failed])
 
   return <ProgrammeScopeCtx.Provider value={value}>{children}</ProgrammeScopeCtx.Provider>
 }

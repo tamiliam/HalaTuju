@@ -4679,6 +4679,7 @@
         "rerun": "Jalankan semula",
         "examYear": "SPM {year}",
         "intakeYear": "Ambilan {year}",
+        "sgdConverted": "Ditukar daripada S${sgd} pada kadar {rate} = RM {myr}",
         "viewer": {
           "newTab": "Buka dalam tab baharu",
           "close": "Tutup",
@@ -4693,6 +4694,8 @@
         "fact": {
           "name": "Nama",
           "ic_no": "No. IC",
+          "ic_no_mismatch": "No. IC tidak sepadan dengan IC dalam rekod",
+          "ic_no_unreadable": "No. IC tidak dapat dibaca",
           "relationship": "Hubungan",
           "wrong_card": "Kad salah",
           "subjects": "Subjek",
@@ -5589,6 +5592,7 @@
       "showCancelled": "Tunjukkan {count} larian dibatalkan",
       "hideCancelled": "Sembunyikan larian dibatalkan",
       "noOrg": "Akaun anda tidak terikat dengan sesebuah organisasi, jadi ia tidak boleh mencipta larian pembayaran.",
+      "otherOrgGift": "Hadiah ini milik organisasi lain, jadi anda tidak boleh memulakan larian pembayaran untuknya di sini.",
       "studentsLabel": "pelajar",
       "totalLabel": "Jumlah",
       "studentsHeading": "Pelajar",

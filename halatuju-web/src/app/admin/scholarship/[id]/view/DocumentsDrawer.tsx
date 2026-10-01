@@ -202,6 +202,12 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                     </p>
                   )}
                   {factLine(d)}
+                  {/* TD-157: a Singapore payslip is counted in ringgit — say at what, and at which rate. */}
+                  {d.sgd_conversion && (
+                    <p className="mt-0.5 text-[11px] text-ground-600" data-testid="sgd-conversion">
+                      {t('admin.scholarship.docsDrawer.sgdConverted', d.sgd_conversion)}
+                    </p>
+                  )}
                   {unusable && (
                     <p className="text-[11px] font-medium text-critical-600 mt-0.5">
                       {t('admin.scholarship.docsDrawer.notUsable.label')}

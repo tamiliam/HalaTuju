@@ -6,7 +6,7 @@
  * ⚠ MOVED OUT OF `../ScholarshipDocuments.tsx` WHOLE (TD-272, 2026-09-20), AND NOTHING ELSE
  * HAPPENED TO IT. Every line below is the line it was; only the declaration gained
  * `export default`, and the imports were re-pointed at the same modules from one directory down.
- * The tab that draws it is still `../ScholarshipDocuments.tsx`.
+ * The tab that draws it is still `../ScholarshipDocuments.tsx`. (Since: TD-288 lifted `Pills`/`Question`.)
  *
  * ⚠ THE TWO `react-hooks/exhaustive-deps` DISABLES BELOW ARE DEBT THAT TRAVELLED WITH THE CODE,
  * and they are STILL reasonless on purpose. They are recorded in
@@ -57,6 +57,46 @@ const CLUSTER_COACH_DOCS = new Set([
 // their card is tagged with the earner (the backend tags uploads the same way). The
 // relationship docs (birth_certificate / guardianship_letter) stay member-less single slots.
 const STR_EARNER_DOCS = new Set(['str', 'parent_ic', 'salary_slip', 'epf'])
+
+// ⚠ MODULE SCOPE ON PURPOSE (TD-288): declared inside the wizard they were a new type each render,
+// so every answer remounted them and dropped keyboard focus to <body>. IncomeWizard.focus.test.tsx.
+function Pills({
+  options,
+  selected,
+  onPick,
+}: {
+  options: { value: string; label: string }[]
+  selected: string
+  onPick: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 mt-1.5">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onPick(o.value)}
+          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+            selected === o.value
+              ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
+              : 'text-ground-600 border-ground-300 hover:border-primary-400'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Question({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-ground-800">{label}</p>
+      {children}
+    </div>
+  )
+}
 
 export default function IncomeWizard({
   app,
@@ -160,41 +200,6 @@ export default function IncomeWizard({
       JSON.stringify(app.other_family_members), app.income_working_members, touchedMembers])
 
   const iq = (k: string) => t(`scholarship.docs.income.wizard.${k}`)
-
-  const Pills = ({
-    options,
-    selected,
-    onPick,
-  }: {
-    options: { value: string; label: string }[]
-    selected: string
-    onPick: (v: string) => void
-  }) => (
-    <div className="flex flex-wrap gap-2 mt-1.5">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onPick(o.value)}
-          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-            selected === o.value
-              ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
-              : 'text-ground-600 border-ground-300 hover:border-primary-400'
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-
-  const Question = ({ label, children }: { label: string; children: ReactNode }) => (
-    <div>
-      <p className="text-sm font-medium text-ground-800">{label}</p>
-      {children}
-    </div>
-  )
-
 
   const answers = {
     income_route: ans.income_route as IncomeRoute,

@@ -5,6 +5,7 @@
  */
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
+import { APPLY_RETURN_KEY, safeSession, type StorageLike } from './applyReturn'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -682,7 +683,8 @@ export function declarationNameMismatch(form: ApplyFormState): boolean {
 // onboarding step reads the marker to route back here (and we restore the stash).
 // sessionStorage keys are constants (not string literals) to avoid drift.
 export const APPLY_STASH_KEY = 'halatuju_apply_stash'
-export const APPLY_RETURN_KEY = 'halatuju_apply_return'
+// The return marker and the storage seam live in the leaf `./applyReturn` (TD-057).
+export { APPLY_RETURN_KEY, hasApplyReturn, clearApplyReturn } from './applyReturn'
 
 /**
  * The programme an organisation's own apply link names (PF-1 P2).
@@ -786,16 +788,6 @@ export function needsProgrammeChoice(
 }
 
 
-type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
-
-/** sessionStorage if available (browser), else null (SSR / node tests without injection). */
-function safeSession(): StorageLike | null {
-  try {
-    return typeof sessionStorage !== 'undefined' ? sessionStorage : null
-  } catch {
-    return null
-  }
-}
 
 /** Stash the in-progress form and mark that onboarding should return to the apply page. */
 export function stashApplyForm(form: ApplyFormState, storage?: StorageLike): void {
@@ -833,18 +825,6 @@ export function peekApplyStash(storage?: StorageLike): ApplyFormState | null {
   } catch {
     return null
   }
-}
-
-/** True when onboarding was entered from the apply form (should return to it). */
-export function hasApplyReturn(storage?: StorageLike): boolean {
-  const s = storage ?? safeSession()
-  return !!s && s.getItem(APPLY_RETURN_KEY) === '1'
-}
-
-/** Clear the return marker (after routing back to the apply page). */
-export function clearApplyReturn(storage?: StorageLike): void {
-  const s = storage ?? safeSession()
-  s?.removeItem(APPLY_RETURN_KEY)
 }
 
 // A general "after onboarding, return to this path" marker — used when a flow other

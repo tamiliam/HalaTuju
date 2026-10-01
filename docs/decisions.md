@@ -1,5 +1,20 @@
 # Architectural Decisions — HalaTuju
 
+## Two owner rulings on the Next-tier work — 2026-10-01
+
+**TD-314 — the bills question is one question, and it stays open at interview.** The owner, shown the
+problem (an open question closed quietly and re-asked in new words with a new email) and the one open
+choice (keep it open at interview, or close it as before): *"I agree it is a problem. Fix it."* The fix
+shipped in Next-tier batch 1 stands as built — re-worded in place, same row, no new email, kept open from
+interviewing on. The family still owes an answer about the bills whatever the STR turned out to be.
+
+**TD-319 — an EPF statement the in-house reader cannot read goes to Gemini.** The owner, told it is a paid
+call (a few sen per odd statement, only when the deterministic reader reports the contribution status
+`unknown`): *"allow."* Older statements are re-read only if the owner asks for that batch separately.
+
+**Decided by:** the owner, 2026-10-01, in plain words from the lead. **Revisit if:** the Gemini bill for
+EPF reads exceeds a few ringgit a month, or a family reports being asked the bills question twice.
+
 ## One fact decides the ask, the offer and the resolution; the three bills wordings are one question — 2026-10-01
 
 **Decided by:** the owner's "go" on the Next tier (batch 1, TD-316 and TD-314); the rules are the

@@ -181,7 +181,8 @@ export default function RequirementsCard({
             {isTvet ? (
               // TVET: clean key-value table layout (matches Stitch design)
               <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
-                {requirements.general.map((item) => (
+                {requirements.general.map((item) => !TVET_KEY_LABELS[item.key]
+                  ? <TvetLabelOnlyRow key={item.key} label={item.label} /> : (
                   // Wraps, and both halves may shrink: in Lexend a long label + value pair was
                   // wider than a 360 px phone (TD-310 review). navLayout.test.ts pins it.
                   <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 px-3 py-2">
@@ -212,7 +213,8 @@ export default function RequirementsCard({
             </h3>
             {isTvet ? (
               <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
-                {requirements.special.map((item) => (
+                {requirements.special.map((item) => !TVET_KEY_LABELS[item.key]
+                  ? <TvetLabelOnlyRow key={item.key} label={item.label} /> : (
                   <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 px-3 py-2">
                     <span className="min-w-0 break-words text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
                     <span className="min-w-0 break-words text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
@@ -284,19 +286,33 @@ function CheckIcon({ color }: { color: 'gray' | 'blue' | 'green' }) {
 
 // --- TVET key-value helpers ---
 
+/** The eight GENERAL keys a TVET row can name as "label · value". Every other key — the ~40
+ *  SPECIAL requirement types the serializer can send (`credit_math_or_addmath`, …) — has no
+ *  label here, so its row shows ONLY the served Malay label, as the non-TVET list does (TD-313:
+ *  the raw field name used to print as the label). Trilingual labels for them remain open. */
+const TVET_KEY_LABELS: Record<string, { bm: string; en: string }> = {
+  req_malaysian: { bm: 'Warganegara', en: 'Nationality' },
+  single: { bm: 'Status Perkahwinan', en: 'Marital Status' },
+  min_credits: { bm: 'Kredit Minimum', en: 'Minimum Credits' },
+  min_pass: { bm: 'Lulus Minimum', en: 'Minimum Passes' },
+  no_colorblind: { bm: 'Penglihatan Warna', en: 'Colour Vision' },
+  no_disability: { bm: 'Fizikal', en: 'Physical' },
+  req_male: { bm: 'Jantina', en: 'Gender' },
+  req_female: { bm: 'Jantina', en: 'Gender' },
+}
+
 function tvetKeyLabel(key: string, locale: string): string {
-  const labels: Record<string, { bm: string; en: string }> = {
-    req_malaysian: { bm: 'Warganegara', en: 'Nationality' },
-    single: { bm: 'Status Perkahwinan', en: 'Marital Status' },
-    min_credits: { bm: 'Kredit Minimum', en: 'Minimum Credits' },
-    min_pass: { bm: 'Lulus Minimum', en: 'Minimum Passes' },
-    no_colorblind: { bm: 'Penglihatan Warna', en: 'Colour Vision' },
-    no_disability: { bm: 'Fizikal', en: 'Physical' },
-    req_male: { bm: 'Jantina', en: 'Gender' },
-    req_female: { bm: 'Jantina', en: 'Gender' },
-  }
-  const entry = labels[key]
-  return entry ? (locale === 'en' ? entry.en : entry.bm) : key
+  const entry = TVET_KEY_LABELS[key]
+  return entry ? (locale === 'en' ? entry.en : entry.bm) : ''   // never the raw key (TD-313)
+}
+
+/** A TVET row whose key has no label of its own: the served label alone, never the raw key. */
+function TvetLabelOnlyRow({ label }: { label: string }) {
+  return (
+    <div className="px-3 py-2">
+      <span className="min-w-0 break-words text-xs font-medium text-ground-800">{label}</span>
+    </div>
+  )
 }
 
 function tvetValueLabel(item: ReqItem, locale: string): string {

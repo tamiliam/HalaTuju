@@ -79,6 +79,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   // row on a list it could not get. `settled` is true either way: the money pages wait for it
   // before redirecting (2026-09-28), and a page waiting on furniture must never wait for ever.
   const [scopesSettled, setScopesSettled] = useState(false)
+  // Review F4 (TD-303): the fetch REJECTED, as opposed to answering with an empty list.
+  const [scopesFailed, setScopesFailed] = useState(false)
   // ⚠ EXTRACTED SO IT CAN BE RE-RUN. It used to be an inline effect on [token, locale],
   // i.e. fetched ONCE per console session — so a gift created during that session was
   // missing from this list, `programmeScope` refused to resolve the unknown code (correctly),
@@ -89,7 +91,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     try {
       setScopes(await getAdminScopes(locale, { token }))
       setScopesLoaded(true)
+      setScopesFailed(false)
     } catch {
+      setScopesFailed(true)
       /* furniture — never block the shell. ⚠ `scopesLoaded` stays false on a failure, so a menu
          row is never hidden on the strength of a list we could not fetch. */
     } finally {
@@ -100,12 +104,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => { void loadScopes() }, [loadScopes])
 
   const programmeChoices = useMemo(
-    () => scopes.programmes.map((p) => ({ code: p.code, name: p.name, isActive: p.is_active })),
+    () => scopes.programmes.map((p) => ({
+      code: p.code, name: p.name, isActive: p.is_active, organisationId: p.organisation_id })),
     [scopes.programmes],
   )
 
   return (
-    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes} settled={scopesSettled}>
+    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes} settled={scopesSettled}
+      failed={scopesFailed}>
       <Chrome scopes={scopes} scopesLoaded={scopesLoaded}>{children}</Chrome>
     </ProgrammeScopeProvider>
   )

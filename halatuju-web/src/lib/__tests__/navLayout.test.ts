@@ -70,6 +70,23 @@ describe('other rows that must fit a 360 px phone (TD-310 review)', () => {
     }
   })
 
+  it('the /search eligibility toggle may shrink and wrap its text (TD-312)', () => {
+    // In Tamil its description made /search 375 px wide at 360: the button was flex-shrink-0.
+    const search = readWeb('src/app/search/page.tsx', 'the course search page owns its filter row')
+    const row = search.match(/\{\/\* Filter row \*\/\}\s*<div className="([^"]+)">/)
+    expect(row).not.toBeNull()
+    expect(classes(row![1])).toEqual(expect.arrayContaining(['flex', 'flex-wrap']))
+    const toggle = search.match(
+      /onClick=\{handleEligibleToggle\}[\s\S]*?className="([^"]+)"\s*>\s*<div className="([^"]+)">[\s\S]*?<div className="([^"]+)">\s*<span[^>]*>\{t\('search\.eligibleOnly'\)\}/)
+    expect(toggle).not.toBeNull()
+    const [, button, knob, text] = toggle!
+    expect(classes(button)).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full']))
+    expect(classes(button)).not.toContain('flex-shrink-0')
+    expect(classes(button)).not.toContain('shrink-0')
+    expect(classes(knob)).toContain('shrink-0')
+    expect(classes(text)).toContain('min-w-0')
+  })
+
   it('"Log in" on /get-started stays on one line', () => {
     const page = readWeb('src/app/get-started/page.tsx', 'the sign-up chooser has its own Log in button')
     const btn = page.match(/className="([^"]+)"\s*>\s*\{t\('header\.login\.label'\)\}/)

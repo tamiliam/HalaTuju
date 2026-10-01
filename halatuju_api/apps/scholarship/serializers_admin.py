@@ -8,8 +8,8 @@ from .models import (
     ScholarshipApplication, SponsorProfile,
 )
 from . import pool, serializers_admin_gift as _gift
+from .sgd_conversion import AdminApplicantDocumentSerializer   # TD-157: + sgd_conversion
 from .serializers import (
-    ApplicantDocumentSerializer,
     ConsentSerializer,
     FundingNeedSerializer,
     RefereeSerializer,
@@ -461,7 +461,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     # TD-280: the Malay pre-U track label the cockpit renders, SERVED rather than computed in the
     # browser out of a whole Malay catalogue. The model property holds the reasoning.
     pre_u_track_label = serializers.ReadOnlyField()
-    documents = ApplicantDocumentSerializer(many=True, read_only=True)
+    documents = AdminApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
     # Go-live transition (T2): the student's referring organisation (the source) and the

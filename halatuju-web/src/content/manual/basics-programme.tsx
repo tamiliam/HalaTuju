@@ -46,9 +46,9 @@ export const basicsProgramme: ManualChapter = {
         HalaTuju name at the top, and the console will remember. The page you are on is the coloured one.
         <br /><br />
         The pages are grouped by what they belong to: <strong>HalaTuju</strong> (the platform),
-        <strong> your organisation</strong> — the people, the money and the paperwork — and
-        <strong> your programme</strong>, which is one gift: its <strong>Configuration</strong> and its
-        <strong> Applications</strong>. If your organisation runs more than one gift, the trail across the
+        <strong> your organisation</strong> — the people, the sponsors, the billing and the paperwork — and
+        <strong> your programme</strong>, which is one gift: its <strong>Configuration</strong>, its
+        <strong> Applications</strong> and its money, <strong>Payments</strong> and <strong>Spending</strong>. If your organisation runs more than one gift, the trail across the
         top says which one you are in, and you can switch there. A single payment run or application
         belongs to one gift, so on those pages the trail simply names it; and <strong>Payments</strong> and
         <strong> Spending</strong> open once you are inside a gift. Inside a gift, the page&rsquo;s address

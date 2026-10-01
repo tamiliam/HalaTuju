@@ -38,7 +38,7 @@
  * `needsProgramme` of its own.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import CustomiseLayout from '@/components/admin/overview/CustomiseLayout'
 import IntakePicker from '@/components/admin/overview/IntakePicker'
@@ -80,14 +80,22 @@ export default function ProgrammeOverviewPage() {
   const [chosenIntake, setChosenIntake] = useState<{ gift?: string; id?: number }>({})
   const intake = chosenIntake.gift === programme ? chosenIntake.id : undefined
 
+  // ⚠ ONLY THE NEWEST READ MAY LAND (TD-301, the TD-298 ticket Spending uses). Switching gift starts
+  // a new read without cancelling the old; a slow reply for the gift you LEFT could otherwise land
+  // last and put its figures under a crumb naming the new gift — or, through the 404 branch, clear
+  // the NEW gift's round. Every read takes a ticket; a reply whose ticket is not the latest is dropped.
+  const latest = useRef(0)
   const load = useCallback(() => {
     if (!urlRead) return
     if (!token || !allowed) { setLoading(false); return }
+    const ticket = ++latest.current
+    const mine = () => ticket === latest.current
     setLoading(true)
     setError('')
     getProgrammeOverview({ programme, intake }, { token })
-      .then(setData)
+      .then((d) => { if (mine()) setData(d) })
       .catch((e) => {
+        if (!mine()) return
         // ⚠ A 404 IS THE FENCE'S OWN ANSWER ABOUT THE ROUND — "there is no such thing", never
         // "you may not" (`_gift_narrowing`). Dropping the round and reading again puts the person
         // back on a page that works; an error message about a cohort id would not.
@@ -98,7 +106,7 @@ export default function ProgrammeOverviewPage() {
         }
         setError(t(`${K}.error`))
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (mine()) setLoading(false) })
     // ⚠ `programme` AND `intake` ARE DEPENDENCIES. Switching gift in the breadcrumb, or picking a
     // round, must re-read — or the crumb would name one gift while the figures described another.
     // eslint-disable-next-line react-hooks/exhaustive-deps

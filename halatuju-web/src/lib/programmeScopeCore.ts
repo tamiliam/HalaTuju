@@ -20,6 +20,14 @@ export interface ProgrammeChoice {
   name: string
   /** False for a gift that is not switched on yet — a normal, and common, state. */
   isActive?: boolean
+  /**
+   * The organisation that runs this gift (`scopes.programmes[].organisation_id`). A super's list
+   * holds every tenant's gifts, but a payment run can only be created for the caller's OWN
+   * organisation's (`create_run` reads `admin.owning_organisation`), so Payments compares this
+   * with the role's `owning_org_id` before offering New run (TD-299). Display only, never a fence.
+   * Absent in a harness that does not set it, which then behaves as before.
+   */
+  organisationId?: number
 }
 
 export interface PinnedGift { code: string; name: string }
@@ -42,6 +50,16 @@ export interface ProgrammeScope {
    * non-empty: an empty list is a failed fetch, and that degrades as it always has (review F5).
    */
   unrecognised: boolean
+  /**
+   * The other half of `unrecognised` (TD-303): a gift was asked for and the list is EMPTY — the
+   * scopes fetch failed, or answered with no gifts — so nothing can confirm it. The page still
+   * opens (review F5's degrade, unchanged), but a money page must not offer an action that would
+   * send no gift while the address bar names one: the server would pick the org's only live gift.
+   */
+  unconfirmed: boolean
+  /** The shell's scopes fetch REJECTED (network or non-2xx). Separates a failed list from a
+   *  genuinely empty one, so a page says "could not be loaded" only when it was not (review F4). */
+  failed: boolean
   select: (code: string) => void
   /**
    * Re-fetch the list of gifts this caller may open.
@@ -78,7 +96,7 @@ export interface ProgrammeScope {
 }
 
 const EMPTY: ProgrammeScope = {
-  choices: [], chosen: '', programme: null, ambiguous: false, live: [], unrecognised: false,
+  choices: [], chosen: '', programme: null, ambiguous: false, live: [], unrecognised: false, unconfirmed: false, failed: false,
   select: () => {},
   reload: async () => {}, pinned: false, pinnedName: '', setPin: () => {},
   // Outside the shell there is no list to wait for, so a harness mount behaves as it always has.

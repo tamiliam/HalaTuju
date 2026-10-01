@@ -2109,11 +2109,11 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         if r['error'] or not (r['text'] or '').strip():
             ex = {'fields': {}, 'warnings': [], 'error': r['error'] or 'no text read'}
         else:
-            # Deterministic label-anchored capture first for the standardised-issuer docs;
-            # None (unrecognised layout) → Gemini reads it. parse_by_labels never raises.
+            # Deterministic label capture first (never raises); None → Gemini. TD-319: so does an EPF table read 'unknown'.
+            from .epf_contribution_fallback import deterministic_or_epf_fallback
             parsed = parse_by_labels(doc.doc_type, r['text'])
             if parsed is not None:
-                ex = {'fields': parsed, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+                ex = deterministic_or_epf_fallback(doc.doc_type, parsed, r['text'], extract_document_fields)
             else:
                 ex = extract_document_fields(r['text'], doc.doc_type)
                 ex['capture'] = 'ai'

@@ -423,14 +423,17 @@ function SearchPageInner() {
           {/* Spacer — pushes eligibility toggle right on desktop */}
           <div className="flex-1 min-w-0" />
 
-          {/* Eligibility toggle — prompts login if not authenticated */}
+          {/* Eligibility toggle — prompts login if not authenticated.
+              ⚠ IT MAY SHRINK AND ITS TEXT WRAPS ON PURPOSE (TD-312). It was `flex-shrink-0`, so in
+              Tamil its one-line description made /search 375 px wide on a 360 px phone. Only the
+              switch itself keeps its size. `navLayout.test.ts` pins these classes. */}
           <button
             type="button"
             onClick={handleEligibleToggle}
             disabled={eligibleLoading}
-            className="flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-2 min-w-0 max-w-full cursor-pointer disabled:opacity-60"
           >
-            <div className="relative inline-flex items-center">
+            <div className="relative inline-flex items-center shrink-0">
               <div className={clsx(
                 'w-10 h-5 rounded-full transition-colors',
                 eligibleOnly ? 'bg-brand-shape' : 'bg-ground-200'
@@ -440,7 +443,7 @@ function SearchPageInner() {
                 eligibleOnly && 'translate-x-5'
               )} />
             </div>
-            <div className="text-sm text-left">
+            <div className="min-w-0 break-words text-sm text-left">
               <span className="font-medium text-ground-700">{t('search.eligibleOnly')}</span>
               <span className="block text-xs text-ground-400">{t('search.eligibleToggleDesc')}</span>
             </div>

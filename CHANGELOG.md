@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## Next-tier batch 2: eleven web-console fixes and the TD-319 ruling - 2026-10-01
+
+Owner: "proceed with batch 2", and "allow" on TD-319. BUILT, not committed, pushed or deployed; an
+adversarial review reads the diff first, and the owner reads the new Tamil and the TD-297 sentence.
+Twelve entries close (TD-312, TD-288, TD-297, TD-299, TD-301, TD-303, TD-220, TD-158, TD-157,
+TD-057, TD-313, TD-319); the review raised TD-320: register open 144 -> **133**, defined 317. No
+migration; no ledger raised.
+
+- **Review fixes (2026-10-01, four LOW).** F1: an unreadable birth certificate that is also
+  wrong-type shows the red Wrong type chip. F2: the TD-220 comment says what the code does. F3: the
+  S$ note asks the engine's own `amounts._to_myr`; it means "converts at this rate", not "was the
+  slip counted". F4: the shell passes `failed`, so "could not be loaded" appears only on a FAILED
+  scopes fetch, never on a genuinely empty list. The manual sentence names billing under the
+  organisation. TD-319 also costs one Gemini call per `unknown` EPF in `reextract_documents` and
+  `eval_doc_recognition`; its all-AI `capture` label is TD-320.
+
+- **TD-312 — `/search` fits a 360 px phone in Tamil.** The eligibility toggle was `flex-shrink-0`,
+  so its one-line description pushed the row wide; it may now shrink (`min-w-0 max-w-full`), only
+  the switch keeps its size, and its text wraps. Measured in Chromium at 360 px on `next dev`: the
+  toggle's right edge is 304 px in Tamil (375 with the old classes put back in the page — the
+  review's figure), 269 in English, 304 in Malay; the document is 345 px (the viewport less its
+  scrollbar) in all three. `navLayout.test.ts` pins the classes, which is all jsdom can see.
+- **TD-288 — the income questions keep keyboard focus.** `Pills` and `Question` are module-scope
+  functions in `IncomeWizard.tsx`; the rendered focus test was written first and was red.
+- **TD-297 — the manual's grouping sentence** puts Payments and Spending in the programme (owner to
+  read; `manual.test.ts` reads it against the menu's scopes).
+- **TD-299 / TD-303 — Payments offers New run only for a gift the server would accept.** Not for
+  another organisation's gift (new line `admin.payments.otherOrgGift`), and not when the address
+  names a gift and the scopes list failed or came back empty (on a FAILED fetch only, the
+  existing `admin.programmes.loadFailed`). The scope gains `unconfirmed` and `failed`; the shell maps each gift's
+  `organisation_id`. Tested through the real `AppShell`.
+- **TD-301 — the Programme Overview drops a stale reply** (the TD-298 ticket), including the 404
+  branch that could clear the new gift's round.
+- **TD-220 — the payslip IC chip says which red it is:** "IC No does not match the IC on file" or
+  "IC No could not be read". Piece 1 of the entry (fewer misread digits) is TD-151's.
+- **TD-158 — a wrong-type birth certificate shows no green row**; a suspect one keeps its reads
+  beside the amber Genuine chip (the house rule).
+- **TD-157 — a Singapore payslip says "Converted from S$X at R = RM Y".** New
+  `apps/scholarship/sgd_conversion.py`: `sgd_conversion(doc)` reads the income engine's own
+  conversion; `AdminApplicantDocumentSerializer` adds it to the OFFICER's document payload only.
+  No new query. `serializers_admin.py` unchanged in length (an import swapped).
+- **TD-057 — a dashboard visit clears the apply-return marker.** The marker helpers moved verbatim
+  to the leaf `src/lib/applyReturn.ts` (re-exported), because importing `scholarship.ts` cost
+  `/dashboard` 6 kB of first-load JS; the leaf costs 238 bytes.
+- **TD-313 — TVET rows never print a raw requirement key**; a special key shows the served Malay
+  label alone. Trilingual labels remain open.
+- **TD-319 — an EPF statement whose table reads `unknown` asks Gemini for the contribution
+  fields** (`apps/scholarship/epf_contribution_fallback.py`, called from `vision.py` with no net
+  line). A readable statement never costs a call; a Gemini failure keeps the deterministic reading.
+  Stored statements are not re-read.
+
 ## Next-tier batch 1: nine small api fixes from the debt register - 2026-10-01
 
 Owner's "go" on the Next tier; the lead chose these nine. BUILT, not committed, pushed or deployed;

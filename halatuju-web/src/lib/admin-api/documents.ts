@@ -55,6 +55,10 @@ export interface AdminApplicantDocument {
   pathway_check?: PathwayCheck | null
   income_ic_check?: IncomeIcCheck | null
   income_proof_check?: IncomeProofCheck | null
+  /** TD-157: a Singapore payslip the means-test counted in ringgit — the S$ monthly figure, the
+   *  configured rate and the ringgit result, as formatted strings. Null for every other document,
+   *  and for a decided case (it was never converted). Officer payload only. */
+  sgd_conversion?: { sgd: string; rate: string; myr: string } | null
   str_check?: StrCheck | null
   utility_check?: UtilityCheck | null
   bc_check?: BcCheck | null

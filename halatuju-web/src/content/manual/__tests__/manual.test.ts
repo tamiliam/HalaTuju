@@ -10,6 +10,8 @@ import {
   FAQ, defaultFaqAudiences, canSeeAllFaq, ALL_FAQ_AUDIENCES, type QA,
 } from '../faq'
 import type { Audience } from '../types'
+import { NAV_ITEMS } from '@/lib/navigation'
+import { readWeb } from '@/test/sourceGuard'
 
 const ROLE_CHAPTERS = ['role-reviewer', 'role-qc', 'role-org-admin', 'role-admin-general',
                        'role-finance']
@@ -112,6 +114,33 @@ describe('anchor integrity', () => {
   })
   test('every chapter (a sidebar link) has at least one rendered section', () => {
     for (const c of CHAPTERS) expect(c.sections.length).toBeGreaterThan(0)
+  })
+})
+
+// TD-297: Payments and Spending moved to the programme group (TD-241, 2026-09-11) and the
+// manual's grouping sentence went on placing "the money" under the organisation. The sentence is
+// now read against the menu itself, so the next move of a money page makes this red.
+describe('"Finding your way around" names each money page in the group the menu puts it in', () => {
+  const src = readWeb('src/content/manual/basics-programme.tsx', 'the Basics chapter owns the grouping sentence')
+  const sentence = src.match(/The pages are grouped by what they belong to:([\s\S]*?)\. If your organisation/)
+  const flat = (s: string) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')
+  test('the sentence is still there', () => { expect(sentence).not.toBeNull() })
+  const [orgPart, programmePart] = flat(sentence![1]).split('your programme')
+  for (const id of ['payments', 'spending'] as const) {
+    test(`${id} is a programme page and the sentence says so`, () => {
+      const item = NAV_ITEMS.find((i) => i.id === id)
+      expect(item?.scope).toBe('programme')
+      const word = id === 'payments' ? 'Payments' : 'Spending'
+      expect(programmePart).toContain(word)
+      expect(orgPart).not.toContain(word)
+    })
+  }
+  // Review: Billing is money too and stays in the ORGANISATION menu — the sentence must say so,
+  // read against the menu's scope rather than against a word.
+  test('billing is an organisation page and the sentence puts it there', () => {
+    expect(NAV_ITEMS.find((i) => i.id === 'billing')?.scope).toBe('organisation')
+    expect(orgPart).toMatch(/billing/i)
+    expect(programmePart).not.toMatch(/billing/i)
   })
 })
 

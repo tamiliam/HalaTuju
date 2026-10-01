@@ -85,7 +85,23 @@ export default function PaymentsLandingPage() {
   // outside a gift; reached by URL, `useGiftGate` sends the person to the Programmes page (or,
   // for a role with no gift cards there, asks here). One gift, or one chosen: exactly as before.
   const gate = useGiftGate(role)
-  const { programme: gift } = useProgrammeScope()
+  const { programme: gift, unconfirmed, failed: scopesFailed } = useProgrammeScope()
+  // ⚠ NEW RUN IS OFFERED ONLY FOR A GIFT THE SERVER WOULD ACCEPT (TD-299, TD-303). Two states drew
+  // a button whose press could not do what the screen said:
+  //   · TD-299 — a super inside ANOTHER organisation's gift: `create_run` uses the caller's own
+  //     `owning_organisation`, so Create 404'd. Compared only when both ids are known; with no
+  //     organisation of its own the server's `no_org` answer is unchanged.
+  //   · TD-303 — the address names a gift and the list is empty (fetch failed): the press would
+  //     send no gift and the server would pick the org's only LIVE one, not the one in the URL.
+  // Display only: the server still re-fences every create. One line says why, instead.
+  const ownOrg = role?.owning_org_id
+  const foreignGift = !!gift && gift.organisationId !== undefined && ownOrg != null
+    && gift.organisationId !== ownOrg
+  // Review F4: "could not be loaded" only when the fetch FAILED; a genuinely empty list with a gift
+  // in the address hides New run with no line (nothing failed, and there is no gift to pay from).
+  const newRunBlocked = unconfirmed && scopesFailed ? 'admin.programmes.loadFailed'
+    : foreignGift ? 'admin.payments.otherOrgGift' : ''
+  const offerNewRun = canCreate && !newRunBlocked && !unconfirmed
 
   useEffect(() => {
     if (!token || !allowed || gate !== 'open') { setLoading(false); return }
@@ -164,11 +180,16 @@ export default function PaymentsLandingPage() {
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.payments.title')}</h1>
           <p className="mt-1 text-sm text-ground-500">{t('admin.payments.subtitle')}</p>
         </div>
-        {canCreate && (
+        {offerNewRun && (
           <button onClick={() => { setPayDate(''); setPayMonth(''); setError(''); setDialogOpen(true) }}
             className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
             + {t('admin.payments.newRun')}
           </button>
+        )}
+        {canCreate && newRunBlocked && (
+          <p className="max-w-xs text-right text-sm text-ground-500" data-testid="new-run-blocked">
+            {t(newRunBlocked)}
+          </p>
         )}
       </div>
 
@@ -317,7 +338,7 @@ export default function PaymentsLandingPage() {
         </div>
       )}
 
-      {dialogOpen && (
+      {dialogOpen && offerNewRun && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={() => !busy && setDialogOpen(false)}>
           <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>

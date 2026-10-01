@@ -4679,6 +4679,7 @@
         "rerun": "Re-run",
         "examYear": "SPM {year}",
         "intakeYear": "Intake {year}",
+        "sgdConverted": "Converted from S${sgd} at {rate} = RM {myr}",
         "viewer": {
           "newTab": "Open in new tab",
           "close": "Close",
@@ -4693,6 +4694,8 @@
         "fact": {
           "name": "Name",
           "ic_no": "IC No",
+          "ic_no_mismatch": "IC No does not match the IC on file",
+          "ic_no_unreadable": "IC No could not be read",
           "relationship": "Relationship",
           "wrong_card": "Wrong card",
           "subjects": "Subjects",
@@ -5589,6 +5592,7 @@
       "showCancelled": "Show {count} cancelled run(s)",
       "hideCancelled": "Hide cancelled runs",
       "noOrg": "Your account is not tied to an organisation, so it cannot create a payment run.",
+      "otherOrgGift": "This gift belongs to another organisation, so you cannot start a payment run for it here.",
       "studentsLabel": "students",
       "totalLabel": "Total",
       "studentsHeading": "Students",

@@ -1368,7 +1368,7 @@ defining line in the same change that fixes it; never write a new entry inside t
   - **TD-125** (B·M) — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet.
   - **TD-114** (B·M) — A fact can read Certain off a document that was never scored for genuineness.
   - **TD-069** (B·M) — STPM students get only two SPM elective slots, and the choice is kept only in the browser.
-- **The owner is asked 24 questions** (the Owner-decision tier): TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318, TD-319 (raised 2026-10-01).
+- **The owner is asked 23 questions** (the Owner-decision tier): TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318 (TD-319 ruled "allow" 2026-10-01 and built in batch 2).
 - ⚠ `td_open` jumped 99 → 159 on this date. Nothing was added: 31 entries had been written INSIDE
   the index and 94 June bullets had a shape the tool did not read. Do not read the jump as new debt.
 - The small-lane candidates are the **Next** tier (29 entries now, half a day each, student- or
@@ -1390,6 +1390,25 @@ defining line in the same change that fixes it; never write a new entry inside t
     EPF parser itself; either import order works.
   - The interview mail's mailto `List-Unsubscribe` subject now names the programme ("BrightPath
     Bursary", a tenant's own name) instead of "B40" — header only.
+- **Next-tier batch 2 is BUILT, not committed or pushed (2026-10-01):** ~~TD-312~~, ~~TD-288~~,
+  ~~TD-297~~, ~~TD-299~~, ~~TD-301~~, ~~TD-303~~, ~~TD-220~~, ~~TD-158~~, ~~TD-157~~, ~~TD-057~~,
+  ~~TD-313~~, ~~TD-319~~ closed; the review's four LOW findings fixed, and it raised **TD-320**
+  (Later: an EPF with Gemini figures is labelled all-AI). Register open 144 -> **133**, defined
+  317. No migration; no ledger raised. ⚠ `reextract_documents` / `eval_doc_recognition` now spend
+  one Gemini call per `unknown` EPF statement — a cohort-wide re-read is the owner's separate ask.
+  ⚠ **Before the push the owner reads:** the TD-297 manual sentence and three new strings in
+  en/ms/ta — `admin.payments.otherOrgGift`, `admin.scholarship.docsDrawer.fact.ic_no_mismatch` /
+  `ic_no_unreadable`, `admin.scholarship.docsDrawer.sgdConverted` (Tamil in the CHANGELOG/report).
+  - **TD-319 is the owner's "allow":** an EPF statement whose table reads `unknown` now costs one
+    Gemini call (`apps/scholarship/epf_contribution_fallback.py`). Stored statements are NOT
+    re-read — that is a separate batch only if the owner asks.
+  - **New officer-only payload field** `documents[].sgd_conversion` on the applicant detail
+    (`apps/scholarship/sgd_conversion.py`, `AdminApplicantDocumentSerializer`); the student's
+    document payload is unchanged.
+  - `serializers_admin.py` is 1233 lines against 1214 + 20 — **one line left**; `vision.py` and
+    `serializers.py` are at their ceilings. New work there is a move first.
+  - Web: `src/lib/applyReturn.ts` is a new leaf (the dashboard must not import `scholarship.ts`:
+    6 kB). `/profile` sits 0.92 kB under its 310 line — the tightest of the three.
 - Still standing from TD-309: `serializers.py` is AT its size ceiling (1215) and `check2_queries.py`
   has 6 lines left; the 0.5 kB per-route margin rule is folded into TD-304.
 

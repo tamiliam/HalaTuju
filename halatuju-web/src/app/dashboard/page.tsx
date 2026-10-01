@@ -30,6 +30,7 @@ import { KEY_RESUME_ACTION, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUI
 import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { useCachedResults } from '@/hooks/useCachedResults'
+import { clearApplyReturn } from '@/lib/applyReturn'   // the leaf, not @/lib/scholarship (6 kB)
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
   if (courseMerit === null || courseMerit === undefined) return 'none'
@@ -75,6 +76,10 @@ export default function DashboardPage() {
   const [reportGenerated, setReportGenerated] = useState(false)
   const [stpmResults, setStpmResults] = useState<StpmRankedCourse[] | null>(null)
   const [stpmFraming, setStpmFraming] = useState<StpmResultFraming | null>(null)
+
+  // TD-057: reaching the dashboard ABANDONS the apply form's edit-results detour, so its return
+  // marker goes — a later ordinary onboarding in this tab then ends here, not on the apply page.
+  useEffect(() => { clearApplyReturn() }, [])
 
   // The two cached values that are NOT results — read on the same signal, for the same reason.
   useEffect(() => {
