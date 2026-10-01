@@ -1337,6 +1337,16 @@ Read it at sprint start, before planning.
 
 ## Next Sprint — ▶ owner's pick (as of 2026-09-30, after the debt-register review)
 
+**STATE AT 2026-10-01 EVENING (lead).** Five deploys today, all live and clean: the Now-tier sweep
+(5af36e1f), Next-tier batch 1 (3a82e8e0 + 1fc39afa), Next-tier batch 2 (b582c93d) and Now sprint 1
+(849245c8: Node 24 is PROVEN - gate green, halatuju-web-00937-ctv serving, 0 errors; the image probe
+found TD-321, older than the move). The lapse-expired-offers scheduler job exists (daily 09:00 MYT).
+Register: 318 defined, 133 open. **The Opus weekly limit was hit at 2026-10-01 ~15:00 MYT (resets
+Sunday 2026-10-05 12:00 MYT)** - the owner-approved deletion of the dead interview-slot DELETE route
+(closes TD-257) and the next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
+for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
+
+
 **The debt register was read end to end on 2026-09-30 (docs only, no deploy).** 315 entries are
 defined, **159 are open**, all listed in working order in `docs/technical-debt.md` → Open Items
 Index. 36 were closed as overtaken, each with evidence on its defining line. Rules that came out of

@@ -9,8 +9,8 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-10-01** it runs to **TD-320**, with **317 ids carrying a defining entry
-and 132 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
+a running log; as of **2026-10-01** it runs to **TD-321**, with **318 ids carrying a defining entry
+and 133 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
 TD-320, raised by its review, and one, TD-255, closed by Now sprint 1 pending its deploy). See the Open Items Index
@@ -34,7 +34,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**317 entries carry a defining line; 132 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, and TD-255 closed by Now sprint 1, deploy pending). Every one of them was READ on
+**318 entries carry a defining line; 133 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, and TD-321 raised by that deploy's image probe). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -125,9 +125,10 @@ Class C, half a day each. Good small-change-lane work; several go together.
 - **TD-091** — Sponsor landing Tamil is a first draft, and the page is public. *(C · S · one owner sitting with TD-094, 105, 108, 183)*
 - **TD-070** — Sponsor sign-in, sign-up and the admin vetting buttons were never click-tested in a browser. *(C · S)*
 
-### Later — visible but larger, or small hygiene — 63
+### Later — visible but larger, or small hygiene — 64
 Class C at medium or large size, and class D that is small.
 
+- **TD-321** — Production serves every page image at full size: there is no sharp package, so Next never resizes. *(C · S · raised 2026-10-01)*
 - **TD-320** — An EPF statement whose contribution figures came from Gemini is labelled all-AI, though its identity fields were read exactly. *(C · S · raised 2026-10-01)*
 
 - **TD-291** — The Requests list does extra database reads per row; the student app polls a switched-off page. *(C · M)*
@@ -5819,7 +5820,7 @@ removing `docs/**` from `ignoredFiles`: every changelog line would then cost an 
 
 **Trigger:** the first api build that goes red on this test.
 
-### [TD-255] Production builds on Node 18, which is past end of life; the dev box runs Node 24 — medium — **RESOLVED 2026-10-01 (deploy pending; the lead confirms)**
+### [TD-255] Production builds on Node 18, which is past end of life; the dev box runs Node 24 — medium — **RESOLVED 2026-10-01 (node:24-alpine in the Dockerfile, the gate, .nvmrc and engines together; guarded by nodeVersion.test.ts; proven by the 849245c8 deploy - gate green, revision halatuju-web-00937-ctv serving, 0 errors)**
 
 **Resolved 2026-10-01 (Now sprint 1; deploy pending).** The four homes of the Node major now name
 **24** (Active LTS) together: `halatuju-web/Dockerfile` (`FROM node:24-alpine`; the `deps`,
@@ -6311,3 +6312,5 @@ depends on, not a defect.
 - ~~**TD-319 (raised 2026-10-01 by Next-tier batch 1's adversarial review, F2) — LOW-MEDIUM, reviewer-visible, AN OWNER DECISION (one fix is a paid call).**~~ **RESOLVED 2026-10-01 (owner's ruling, told it is a paid call per such statement: *"allow."* — decisions.md 2026-10-01. Next-tier batch 2 built fix (1): when the KWSP parser's reading says `contribution_status='unknown'`, `vision._run_field_extraction_impl` hands it to `epf_contribution_fallback.deterministic_or_epf_fallback`, which asks Gemini for the CONTRIBUTION fields only and takes them when Gemini reads `has`/`zero`; the deterministic name, NRIC, employer and balance always stand, a readable statement never costs a call, and a Gemini failure leaves the deterministic reading with no figure. Statements already stored are NOT re-read by this change — but the bulk `reextract_documents` command and `eval_doc_recognition` now spend one Gemini call per `unknown` EPF statement they read, so a cohort-wide re-read is the owner's separate ask. When Gemini's figures are used the document is labelled `capture='ai'` though its identity fields stayed deterministic: TD-320. `test_epf_contribution_fallback.py`)** When the in-house KWSP parser recognises a Penyata Ahli but cannot read its CARUMAN SEMASA table, it returns `contribution_status='unknown'` with no contribution figure — and `vision.run_field_extraction_for_document` (`vision.py:2114`, the `parse_by_labels(...) is not None` branch) KEEPS that deterministic result: it never falls back to Gemini, so the statement carries no contribution and `salary_figures._epf_monthly_salary` returns None (no EPF salary estimate; the officer verifies at interview). Until 2026-10-01 this was EVERY real statement: real OCR prints the table one cell per line and the parser read only one row per line, so every one of the five snapshots in `eval/snapshots/epf__*` that has a table read 'unknown'. Batch 1 taught the parser that layout (review F2): all five snapshots with a table now read (measured by hand: `apps/scholarship/eval/epf_table_check.py`; the committed tests use synthetic twins). What is LEFT is any layout it still cannot read whole — e.g. `epf__a72` (a Penyata cut off above its table) reads 'unknown' and stays unrecovered. **Production:** 64 live EPF statements (the lead's count, 2026-10-01); how many of them read 'unknown' is not yet measured, and statements already stored are not re-read by this change. **Fix, either:** (1) when the parse is 'unknown', fall back to Gemini for the contribution fields (a paid call per such statement — the owner's call); or (2) keep extending the parser to each layout as it is found (free, slower, and silent on a layout nobody has seen). **Trigger:** the owner's ruling, or the first officer report of an EPF with no salary figure.
 
 - **TD-320 (raised 2026-10-01 by Next-tier batch 2's adversarial review) — low, officer-visible.** When TD-319's fallback takes Gemini's contribution figures, the whole EPF document is labelled `capture='ai'` (the cockpit's "AI" provenance chip) although its name, NRIC, employer and balance were read deterministically; the label cannot say "identity exact, contribution AI". **Fix:** a per-field or split provenance (e.g. `capture='mixed'` with its own chip label), or leave it. **Trigger:** an officer asking which EPF fields the model supplied.
+
+- **TD-321 (raised 2026-10-01 by the TD-255 deploy probe) - low, pre-existing, student-visible as weight: production serves every next/image request UNOPTIMISED.** The web runs in standalone mode with no sharp package, so Next 14.2 logs "Error: sharp is required to be installed in standalone mode for the image optimization to function correctly" on every image request and serves the ORIGINAL file: /_next/image?url=/scholarship/hero.jpg&w=384 returns the full 157,789-byte JPEG. The same log line exists on the Node-18 revisions (halatuju-web-00933-8xd), so this is older than the Node move, which changed nothing here. Four files use next/image. **Fix:** add sharp (a native dependency; the Alpine image needs it to build, and the first-load budget is unaffected because it is server-side), or set images.unoptimized and serve sized assets by hand. **Trigger:** the next image added to a student page, or a phone-data complaint.
