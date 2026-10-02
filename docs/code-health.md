@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-02 | 7bc9ac4 | 90 | 44 | officerCockpit.ts 46.1 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | c993050 | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | 3703cdb | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | b13fc89 | 90 | 44 | officerCockpit.ts 47.8 | 18 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 131 | 0 | - | - | ok |
@@ -72,13 +73,13 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-02, c993050, window 2026-07-04 onward)
+## Latest run (2026-10-02, 7bc9ac4, window 2026-07-04 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju-web/src/lib/officerCockpit.ts` | 29 | 1647 | 47.8 |
-| `halatuju_api/apps/scholarship/vision.py` | 16 | 2321 | 37.1 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1647 | 46.1 |
+| `halatuju_api/apps/scholarship/vision.py` | 17 | 2285 | 38.8 |
 | `halatuju_api/apps/scholarship/views.py` | 15 | 2427 | 36.4 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 10 | 1354 | 13.5 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 984 | 12.8 |
@@ -89,12 +90,12 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 272 fix / 346 feat commits since 2026-07-04
+- 271 fix / 344 feat commits since 2026-07-04
 
 ### Files over 1000 lines
 - `2427  halatuju_api/apps/scholarship/views.py`
-- `2321  halatuju_api/apps/scholarship/vision.py`
 - `2316  halatuju_api/apps/courses/views.py`
+- `2285  halatuju_api/apps/scholarship/vision.py`
 - `1647  halatuju-web/src/lib/officerCockpit.ts`
 - `1384  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
@@ -113,7 +114,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### Python functions of 150+ lines
 - `333  halatuju_api/apps/courses/ranking_engine.py:379 calculate_fit_score`
 - `316  halatuju_api/apps/scholarship/views.py:1009 post`
-- `306  halatuju_api/apps/scholarship/vision.py:2009 _run_field_extraction_impl`
+- `306  halatuju_api/apps/scholarship/vision.py:1973 _run_field_extraction_impl`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
 - `290  halatuju_api/apps/courses/engine.py:569 check_eligibility`
 - `245  halatuju_api/apps/courses/views.py:119 get`
@@ -173,7 +174,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 3703cdb
+- budgets no looser than at c993050
 
 ## Reviews
 

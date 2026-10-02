@@ -1399,7 +1399,9 @@ the kill left the row unstamped, so it was re-picked hourly (three instance kill
 Cloud Scheduler job is **PAUSED**. Fixed (small change, CHANGELOG 2026-10-02): page 1 renders within
 4,000 px on its longer side and an absurd page box is refused (`apps/scholarship/pdf_pages.py`), and
 the sweep stamps `vision_error='reprocess_attempted'` + `vision_run_at` BEFORE each read, so a kill
-cannot re-pick a row. Resume the job only after that fix is deployed.
+cannot re-pick a row. **Deployed 2026-10-02 (`7bc9ac4e`, api-01087), the job RESUMED and run once by
+hand: 200, no kill, the slip read cleanly (name found, fields extracted by AI), 0 stuck documents
+remain.**
 
 **NOW SPRINT 2 (TD-253 + TD-207) IS BUILT, not committed, pushed or deployed (2026-10-01; review
 fixes F1/F3-F6 2026-10-02).** Register open **131** (TD-322 raised by the review: the invite flag
