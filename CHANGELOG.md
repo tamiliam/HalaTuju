@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-324: the shortlist gate, the sponsor band and the slip parser read the results held - 2026-10-02
+
+BUILT, not committed, pushed or deployed. The owner's ruling (2026-10-02): *"switch all three"*,
+on the lead's read-only production counts — 68 live applications agree under both accessors, 1
+live Form Six explorer (declared STPM, holds SPM), 0 live the other way, 0 'submitted' with the
+decision unreleased in any cohort, 1 current results slip skipped by the parser gate. Register open stays **130**
+(TD-324 closed, TD-326 raised), defined 323. No migration, no copy, no i18n key, no ledger raised.
+
+- `shortlisting._academic_ok`, `pool.academic_band` and `vision._extract_slip_deterministic` read
+  `exam_questions.results_held` instead of `heading_for`, each keeping its fallback. The explorer
+  is now tested on the SPM bar (not failed 'STPM PNGK not provided'), shown to sponsors as
+  'SPM · N As' (not a bare 'STPM'), and her SPM slip goes to the deterministic parser (not Gemini).
+  A declared-SPM student with a recorded STPM completion moves the other way (0 live).
+- Prose: `held_qualification`'s old "NOT A GATE, AND MUST NOT BECOME ONE" is now false for three
+  readers — rewritten as a dated sequence in `serializers_admin.py` and `exam_questions.py`;
+  `shortlisting.spm_merit`'s docstring rewritten (same question now; what still differs is the
+  answer's shape — that one ranks STPM by PNGK); CLAUDE.md and ARCHITECTURE_MAP likewise.
+- Tests: `test_exam_questions.TABLE` amended on the four rows where the accessors disagree (each
+  marked TD-324, with what superseded it); the fence now holds the three on `results_held`; six
+  pins, explorer and promote shape per reader, on real factory applications; the source guard
+  expects `results_held(` in the three files. `test_shortlisting.py`: its `SimpleNamespace` profile
+  gained the model's `stpm_grades={}` / `results_exam_type=''` (it had no `stpm_grades`, which
+  `results_held` reads, so five tests raised `AttributeError`), and the optional-STPM-floor test now
+  uses `grades=None` — its default SPM grades made it the explorer, who clears the SPM bar now.
+- **VERDICT_ENGINE_VERSION NOT bumped** (stays 2026-10-02.1): none of the three is read by
+  `build_verdict` — the band is display, the gate is a submit-time decision, and the parser gate
+  chooses which parser writes a document's stored fields at extraction; the verdict reads those
+  stored fields and no rule of its own changed.
+- After the deploy (lead): the one skipped slip keeps its Gemini reading until re-read — cockpit
+  Re-run on that one document on the live service (see halatuju_api/CLAUDE.md, NOW SPRINT 4).
+- Raised TD-326 (Later): Matric / Asasi / Poly as held results; `results_held` as the HIGHEST.
+- Gates: api `pytest -n auto` **7,558 → 7,563** passed, 3 skipped (+6 pins, −1 test superseded);
+  `manage.py check` clean; `makemigrations --check` "No changes detected"; web `npm run gates`
+  3,287 jest / 199 suites, i18n ALL PASSED (no web change; run because the band string has web
+  fixtures). Three bites (each reader reverted to `heading_for` in turn): 11 red each, all in
+  `test_exam_questions.py` — the table, the fence, the source guard and that reader's two pins;
+  bytes restored, SHA-256 equal.
+
 ## Small change: the stuck-read sweep can no longer OOM-loop the api - 2026-10-02
 
 - fix: since Now sprint 3 widened the hourly stuck-read sweep (`reprocess-ic-vision`) past ICs, it

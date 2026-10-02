@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## TD-324: the shortlist gate, the sponsor band and the slip parser read the results held; "held" means the HIGHEST — owner ruling, 2026-10-02
+
+**Decided by:** the owner, 2026-10-02: *"switch all three"* — on the lead's read-only production
+counts the same day. This supersedes point 2's third bullet of the entry below ("HELD on
+`heading_for`").
+
+**The counts the ruling was made on** (live applications unless said): 68 agree under both
+accessors; **1** is the Form Six explorer (declared STPM, holds SPM — the defect); **0** are the
+other direction (declared SPM, recorded STPM completion); **0** applications in any cohort are
+'submitted' with their decision unreleased (who a re-score would reach); **1** current results slip
+was skipped by the parser gate as `not_spm_exam`.
+
+**1. What moved.** `shortlisting._academic_ok` (a programme's grade bar), `pool.academic_band` (the
+sponsor card's academic line) and `vision._extract_slip_deterministic` (whether the SPM slip parser
+runs) read `exam_questions.results_held`, each keeping its old fallback (blank → 'spm' at the gate,
+'' for no profile, `.lower()` in vision). For the explorer: the gate tests her on the SPM bar
+instead of failing 'STPM PNGK not provided'; a sponsor reads 'SPM · N As' instead of a bare 'STPM';
+her SPM slip goes to the deterministic parser instead of Gemini. The other direction moves too, and
+is pinned openly (`test_exam_questions.TestTheResultsReadersOnThePromoteShape`) — 0 live today.
+
+**2. `held_qualification` is now a gate.** BrightPath #14 wrote it "NOT A GATE, AND MUST NOT BECOME
+ONE"; that is no longer true and the code says so as a dated sequence (`serializers_admin`,
+`exam_questions`). A change to `results_held` now moves who is shortlisted, what a sponsor reads and
+which parser runs: characterise first.
+
+**3. Who the gate change can reach.** The gate runs at submit. After that, only
+`rescore_pending_decisions` re-runs it: it re-scores EVERY application with status 'submitted' and
+`decision_released_at` NULL, in ANY cohort, scored or not, and resets `decision_due_at`, so the
+release job then emails the new verdict. It is reachable through the `rescore-pending` cron door
+(`CronRunView.JOBS`) as well as by hand. On 2026-10-02 (the lead) 0 such applications exist and no
+Scheduler job targets that door; a released decision is never re-scored. The parser gate acts at EXTRACTION, so the one
+skipped slip keeps its Gemini reading until it is re-read on the live service.
+
+**4. VERDICT_ENGINE_VERSION unchanged.** None of the three is read by `build_verdict`: the band is
+display, the gate is a submit-time decision, and the parser gate decides which parser writes a
+document's stored fields at extraction — the verdict reads those stored fields, unchanged by this.
+
+**5. For a future sprint, not built: "results held" is the HIGHEST completed qualification** (owner,
+2026-10-02). Matric, Asasi and Poly diplomas are STPM-equivalent HELD results and belong on the
+"which results do you hold" page as further answers beside SPM and STPM. When they are added,
+`results_held` is to be written as "highest" outright — a ranking over the completed
+qualifications — not as "the last form completed", which is what `results_exam_type` records
+today. That sprint also owes each new qualification its results form, catalogue requirements and a
+bursary grade bar. Registered as **TD-326** (Later).
+
 ## Which question each `exam_type` reader answers; what the STPM form keeps on the server — 2026-10-02
 
 **Decided by:** TD-218's own scope (six readers, each given the accessor it means), the brief's stop
@@ -27,7 +72,8 @@ imports do not rise (review F1 moved it there from `scholarship`).
   "STPM" over an empty row). It changes for exactly the applications where the two answers differ.
   No verdict fact, band, chip, shortlist or sponsor surface reads it.
 - **`shortlisting._academic_ok`, `pool.academic_band`, `vision._extract_slip_deterministic`:
-  results-held — but HELD on `heading_for`.** Each would fix the explorer, and each would ALSO move
+  results-held — but HELD on `heading_for`** *(superseded the same day: the owner's TD-324 ruling,
+  above, switched all three).* Each would fix the explorer, and each would ALSO move
   the other direction (declared SPM, recorded STPM completion), which is not the defect TD-218
   names: the gate would re-test her on a CGPA, the sponsor would read 'STPM · PNGK x', the SPM
   parser would be skipped. The rule: **a reader moves from the declaration to the results held

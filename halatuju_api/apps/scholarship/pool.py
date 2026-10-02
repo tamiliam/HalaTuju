@@ -12,7 +12,7 @@ gated behind the ``SPONSOR_POOL_ENABLED`` flag (off until lawyer sign-off).
 import hashlib
 import re
 
-from apps.courses.exam_questions import heading_for
+from apps.courses.exam_questions import results_held
 from .shortlisting import count_spm_a_grades
 
 # Fixed salt so a student's public alias is stable across deploys but not a
@@ -33,14 +33,13 @@ def academic_band(profile):
     """A coarse, non-identifying academic summary string for the card.
     SPM → A-count; STPM → PNGK. Returns '' when unknown.
 
-    ⚠ TD-218 (2026-10-02): this MEANS the results held — a sponsor reading 'STPM' for a Form Six
-    student with no STPM result (the bare 'STPM' below) is the defect shape — but it stays on the
-    DECLARED exam until the sprint-4 probe is read (TD-324): `results_held` would also turn a
-    declared-SPM student's 'SPM · N As' into 'STPM · PNGK x' on a recorded STPM completion, which
-    is a sponsor-visible change outside the defect."""
+    A summary of results, so it reads `results_held` — held on the declaration by Now sprint 4,
+    switched the same day on the owner's ruling (2026-10-02, TD-324: 68 live agree, 1 Form Six
+    explorer now reads 'SPM · N As' instead of a bare 'STPM', 0 declared-SPM students with a
+    recorded STPM completion whose card would turn to 'STPM · PNGK x')."""
     if profile is None:
         return ''
-    if heading_for(profile) == 'stpm':
+    if results_held(profile) == 'stpm':
         cgpa = getattr(profile, 'stpm_cgpa', None)
         return f'STPM · PNGK {cgpa}' if cgpa is not None else 'STPM'
     a = count_spm_a_grades(getattr(profile, 'grades', None) or {})

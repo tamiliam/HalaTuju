@@ -64,16 +64,18 @@ Ten profile shapes, every reader called for real (the document helpers patched t
 file" so each income check reaches its exam branch; the cohort's floors set unreachable so the
 gate's failure reason names the branch that ran). `head` = `heading_for`, `held` = `results_held`.
 The only cells that changed in this sprint are the four marked ◆, all in the student payload.
+The cells marked ▲ changed the same day on the owner's TD-324 ruling ("switch all three" — see
+"TD-324, same day" below); the left side of each arrow is what this sprint pinned.
 
 | Shape | head | held | shortlist gate | sponsor band | leaving-cert ask | semester ask | SPM parser | student payload |
 |---|---|---|---|---|---|---|---|---|
 | declared spm, SPM grades | spm | spm | SPM test | SPM · 5 As | yes | no | runs | spm |
 | declared stpm, STPM results | stpm | stpm | STPM test | STPM · PNGK 3.5 | no | yes | skipped | stpm |
-| **Form Six explorer** (declared stpm, SPM only) | stpm | **spm** | STPM test ('STPM PNGK not provided') | STPM | no | yes | skipped | stpm → **spm** ◆ |
+| **Form Six explorer** (declared stpm, SPM only) | stpm | **spm** | STPM test ('STPM PNGK not provided') → **SPM test** ▲ | STPM → **SPM · 5 As** ▲ | no | yes | skipped → **runs** ▲ | stpm → **spm** ◆ |
 | declared stpm, both sets | stpm | stpm | STPM test | STPM · PNGK 3.5 | no | yes | skipped | stpm |
-| explorer + recorded spm | stpm | spm | STPM test | STPM | no | yes | skipped | stpm → **spm** ◆ |
-| declared spm, both, recorded stpm | spm | **stpm** | SPM test | SPM · 5 As | yes | no | runs | spm → **stpm** ◆ |
-| declared stpm, both, recorded spm | stpm | spm | STPM test | STPM · PNGK 3.5 | no | yes | skipped | stpm → **spm** ◆ |
+| explorer + recorded spm | stpm | spm | STPM test → **SPM test** ▲ | STPM → **SPM · 5 As** ▲ | no | yes | skipped → **runs** ▲ | stpm → **spm** ◆ |
+| declared spm, both, recorded stpm | spm | **stpm** | SPM test → **STPM test** ▲ | SPM · 5 As → **STPM · PNGK 3.5** ▲ | yes | no | runs → **skipped** ▲ | spm → **stpm** ◆ |
+| declared stpm, both, recorded spm | stpm | spm | STPM test → **SPM test** ▲ | STPM · PNGK 3.5 → **SPM · 5 As** ▲ | no | yes | skipped → **runs** ▲ | stpm → **spm** ◆ |
 | #15 mirage (declared spm, STPM typed) | spm | spm | SPM test | SPM · 5 As | yes | no | runs | spm |
 | declared stpm, nothing at all | stpm | stpm | STPM test | STPM | no | yes | skipped | stpm |
 | blank everything | '' | '' | SPM test | SPM · 0 As | yes | no | runs | '' |
@@ -128,3 +130,29 @@ read-only field whose dotted source breaks on `None`). Pinned, and matched.
   ledger, the apply form, the pathway picker) that also mean results-held.
 - No backfill of `spm_elective_subjects`: nothing ever synced `spm_prereq_grades` from the web, so
   there is nothing to recover — STPM students repopulate on their next save, as after v2.21.0.
+
+## TD-324, same day
+
+**The ruling.** The owner read the probe's counts — 68 live agree, 1 live explorer, 0 the other
+way, 0 'submitted' with the decision unreleased in any cohort, 1 current slip skipped as `not_spm_exam` — and
+ruled "switch all three". The shortlist gate, the sponsor band and the slip-parser gate now read
+`results_held`; the ▲ cells in the table above are what moved. VERDICT_ENGINE_VERSION unchanged
+(none of the three feeds `build_verdict`). The one skipped slip needs a cockpit Re-run on the live
+service after the deploy: the parser gate acts at extraction, not on stored readings.
+
+**What the switch found.** `test_shortlisting.py` built its profile as a `SimpleNamespace` with no
+`stpm_grades`, and `results_held` reads that field directly, so five tests raised `AttributeError`.
+Production passes real `StudentProfile` rows, which always carry it; the stand-in described no real
+profile and gained the model's defaults. One more test (the optional STPM floor) was built on the
+default SPM grades with STPM declared — the explorer — and now cleared the SPM bar instead of
+reaching the STPM floor it is about; it now uses `grades=None` and says why. *Lesson (not new — rule
+8):* a fixture that omits a field the code under test does not read YET is a trip-wire for the day
+it does; a test that turned red on the switch was a claim about the shape, read before amending.
+
+**The owner's follow-on, recorded and not built:** "results held" means the HIGHEST completed
+qualification; Matric, Asasi and Poly are STPM-equivalent held results and belong on the first
+results page; when they are added the rule is written as "highest" outright. TD-326 (Later).
+
+**Still open by decision:** TD-325's three readers (the sponsor-profile prompt, the Check-2 facts
+ledger, the Plans step and pathway picker) — its trigger was this ruling, and the ruling did not
+name them.

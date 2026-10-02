@@ -31,6 +31,10 @@ def app(*, qualification='spm', grades=-1, stpm_pngk=None,
     profile = SimpleNamespace(
         exam_type=qualification,
         grades=_spm_grades() if grades == -1 else grades,
+        # The model's own defaults. Since TD-324 (2026-10-02) the gate reads `results_held`, which
+        # reads these two fields; a stand-in without them describes no real profile.
+        stpm_grades={},
+        results_exam_type='',
         stpm_cgpa=stpm_pngk,
         household_income=household_income,
         household_size=household_size,
@@ -145,12 +149,19 @@ class TestOptionalRequirements(TestCase):
     """
 
     def test_no_stpm_requirement_lets_an_stpm_applicant_through_with_no_pngk_at_all(self):
+        # `grades=None`: an STPM applicant with no results of either kind. Amended 2026-10-02
+        # (TD-324): this used the default SPM grades, which with no STPM results is the Form Six
+        # explorer — the owner's ruling now tests her on the SPM bar, which she clears, so that
+        # fixture no longer reaches the STPM floor this test is about. Her own pin is in
+        # test_exam_questions.TestTheResultsReadersOnTheExplorer.
         # With a floor set, a missing PNGK is a rejection — that is unchanged.
-        r = evaluate(app(qualification='stpm', stpm_pngk=None), cohort())
+        r = evaluate(app(qualification='stpm', stpm_pngk=None, grades=None), cohort())
         self.assertEqual(r.verdict, 'rejected')
         self.assertEqual(r.category, 'merit')
+        self.assertIn('STPM PNGK not provided', r.reason)   # the STPM branch ran
         # Unticked, the test does not run, so there is nothing to be missing.
-        r = evaluate(app(qualification='stpm', stpm_pngk=None), cohort(min_stpm_pngk=None))
+        r = evaluate(app(qualification='stpm', stpm_pngk=None, grades=None),
+                     cohort(min_stpm_pngk=None))
         self.assertEqual(r.verdict, 'shortlisted')
 
     def test_no_academic_requirement_at_all_passes_the_academic_test(self):

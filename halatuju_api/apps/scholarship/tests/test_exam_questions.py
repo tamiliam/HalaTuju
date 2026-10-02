@@ -7,10 +7,12 @@
    `results_held` must NEVER promote on presence alone.
 2. **The characterisation table** — every reader's answer on a fixed list of profile shapes,
    written against the tree BEFORE the switch (Now sprint 4, 2026-10-02) and kept here as the
-   contract. Only ONE reader's answers changed in that sprint — the student payload — and only
-   where `heading_for` and `results_held` disagree. Three readers that mean results-held were
-   deliberately HELD on the declaration pending the production probe (TD-324); their rows pin
-   the OLD answer on purpose, and the day one switches, its row changes in the same commit.
+   contract. A dated sequence: sprint 4 changed ONE reader's answers — the student payload — and
+   only where `heading_for` and `results_held` disagree, and HELD three readers that mean
+   results-held (the shortlist gate, the sponsor band, the slip parser) on the declaration
+   pending the production probe. The same day the owner ruled "switch all three" (TD-324: 68
+   live agree, 1 Form Six explorer, 0 the other way), and their cells were amended in that
+   change — each amended row says so. That is the only reason any cell here has moved.
 3. **A source guard** that none of the six readers reads the ambiguous field by name again.
 """
 import re
@@ -83,18 +85,22 @@ def _readers(p):
 
 
 # The characterisation table. Each row: heading_for, results_held, then each reader.
-#   shortlist / pool / spm_parser — HELD on the declaration (TD-324): they equal heading_for.
+#   shortlist / pool / spm_parser — sprint 4 HELD them on the declaration; SWITCHED to
+#     results_held on the owner's TD-324 ruling (2026-10-02). The rows marked TD-324 are the ones
+#     whose cells that ruling amended (sprint 4 pinned heading_for's answer there: stpm/STPM/False
+#     on the three explorer-shaped rows, spm/SPM/True on the promote row) — superseded by the
+#     ruling, not bent to fit.
 #   leaving_cert_ask / semester_ask — MEAN heading-for: unchanged by construction.
-#   payload — SWITCHED to results_held; the four rows marked * changed in sprint 4.
+#   payload — SWITCHED to results_held in sprint 4; the four rows marked * changed then.
 TABLE = {
     #                                   head    held    shortl  pool    leave  sem    parser payload
     'declared_spm':                    ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
     'declared_stpm_with_stpm':         ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
-    'form_six_explorer':               ('stpm', 'spm',  'stpm', 'STPM', False, True,  False, 'spm'),   # *
+    'form_six_explorer':               ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
     'declared_stpm_both':              ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
-    'explorer_recorded_spm':           ('stpm', 'spm',  'stpm', 'STPM', False, True,  False, 'spm'),   # *
-    'declared_spm_recorded_stpm':      ('spm',  'stpm', 'spm',  'SPM',  True,  False, True,  'stpm'),  # *
-    'declared_stpm_both_recorded_spm': ('stpm', 'spm',  'stpm', 'STPM', False, True,  False, 'spm'),   # *
+    'explorer_recorded_spm':           ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
+    'declared_spm_recorded_stpm':      ('spm',  'stpm', 'stpm', 'STPM', True,  False, False, 'stpm'),  # * TD-324
+    'declared_stpm_both_recorded_spm': ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
     'mirage_15':                       ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
     'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
     'blank':                           ('',     '',     'spm',  'SPM',  True,  False, True,  ''),
@@ -160,19 +166,20 @@ class TestTheCharacterisationTable(SimpleTestCase):
                 self.assertEqual(got['spm_parser'], parser)
                 self.assertEqual(got['payload'], payload)
 
-    def test_the_held_readers_still_equal_the_declaration(self):
-        """⚠ THE FENCE. shortlisting, pool and the slip parser MEAN results-held but are HELD on
-        the declaration until the owner reads the production count (TD-324). If this fails, a
-        held reader moved without that count — revert it, or bring the count and change the
-        table in the same commit."""
+    def test_the_results_readers_equal_results_held(self):
+        """⚠ THE FENCE. shortlisting, pool and the slip parser MEAN results-held and read it.
+        Dated: sprint 4 held them on the declaration (this test then asserted they equalled
+        `heading_for`); the owner's ruling of 2026-10-02 (TD-324) switched all three, and this
+        fence now holds them on `results_held`. If it fails, a reader drifted off the question it
+        means — and a change to `results_held` itself moves all three at once."""
         for shape in SHAPES:
             p = _profile(shape)
-            head = heading_for(p) or 'spm'
+            held = results_held(p) or 'spm'
             got = _readers(p)
             with self.subTest(shape=shape):
-                self.assertEqual(got['shortlist'], head)
-                self.assertEqual(got['pool'], head.upper())
-                self.assertEqual(got['spm_parser'], head == 'spm')
+                self.assertEqual(got['shortlist'], held)
+                self.assertEqual(got['pool'], held.upper())
+                self.assertEqual(got['spm_parser'], held == 'spm')
 
 
 class TestTheConvertedReadersOnTheExplorer(TestCase):
@@ -217,23 +224,86 @@ class TestTheConvertedReadersOnTheExplorer(TestCase):
         with mock.patch.object(epf_evidence, '_has_read_doc', return_value=False):
             self.assertTrue(epf_evidence.semester_result_gap(self.app))
 
-    def test_the_held_readers_still_treat_her_as_declared(self):
-        # TD-324: these change only on the owner's decision, with the production count read.
-        self.assertEqual(pool.academic_band(self.student), 'STPM')
-        cohort = SimpleNamespace(min_stpm_pngk=2.9, min_spm_a_count=None,
-                                 min_spm_bplus_count=None, min_merit_score=None)
-        self.assertEqual(shortlisting._academic_ok(self.student, cohort),
-                         (False, 'STPM PNGK not provided'))
+
+def _cohort(**floors):
+    base = dict(min_stpm_pngk=None, min_spm_a_count=None, min_spm_bplus_count=None,
+                min_merit_score=None)
+    base.update(floors)
+    return SimpleNamespace(**base)
+
+
+def _slip_gate(app):
+    """The slip-parser gate's verdict for this application, without a Vision call: `words=[]`
+    stops a parse that got PAST the gate at 'no_words'."""
+    doc = SimpleNamespace(application=app, content_type='image/jpeg')
+    return vision._extract_slip_deterministic(doc, b'img', words=[])[1]
+
+
+class TestTheResultsReadersOnTheExplorer(TestCase):
+    """TD-324: the Form Six explorer — declared STPM, SPM grades on file, no STPM results,
+    `results_exam_type` blank — through each switched reader, on a REAL application.
+
+    TD-324 (owner, 2026-10-02): the three results readers were switched to `results_held`.
+    Sprint 4 pinned the opposite in `TestTheConvertedReadersOnTheExplorer`
+    (`test_the_held_readers_still_treat_her_as_declared`: a bare 'STPM' band and 'STPM PNGK not
+    provided'); the ruling superseded it, so these pin the explorer's NEW answers, one reader
+    each."""
+
+    def setUp(self):
+        self.student = make_student(exam_type='stpm', grades=SPM)
+        self.app = make_application('submitted', student=self.student)
+        self.assertEqual(self.student.results_exam_type or '', '')   # the shape, not assumed
+
+    def test_the_shortlist_gate_tests_her_on_the_spm_bar(self):
+        # An STPM floor is set too: before TD-324 she failed it on 'STPM PNGK not provided'.
+        self.assertEqual(shortlisting._academic_ok(self.student, _cohort(min_stpm_pngk=2.9,
+                                                                         min_spm_a_count=6)),
+                         (False, '5 at A- (need 6)'))
+        self.assertEqual(shortlisting._academic_ok(self.student, _cohort(min_stpm_pngk=2.9,
+                                                                         min_spm_a_count=5)),
+                         (True, ''))
+
+    def test_the_sponsor_band_reads_her_spm_results(self):
+        self.assertEqual(pool.academic_band(self.student), 'SPM · 5 As')
+
+    def test_the_slip_gate_lets_the_spm_parser_run(self):
+        diag = _slip_gate(self.app)
+        self.assertNotEqual(diag.get('reason'), 'not_spm_exam')
+        self.assertEqual(diag.get('reason'), 'no_words')   # positive: it got past the gate
+
+
+class TestTheResultsReadersOnThePromoteShape(TestCase):
+    """TD-324, the other direction, pinned openly: declared SPM with a RECORDED STPM completion.
+    The switch moves her too — 0 live applications in this shape when the owner ruled
+    (2026-10-02)."""
+
+    def setUp(self):
+        self.student = make_student(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=3.5,
+                                    results_exam_type='stpm')
+        self.app = make_application('submitted', student=self.student)
+
+    def test_the_shortlist_gate_tests_her_on_her_pngk(self):
+        self.assertEqual(shortlisting._academic_ok(self.student, _cohort(min_stpm_pngk=3.6,
+                                                                         min_spm_a_count=1)),
+                         (False, 'PNGK 3.5 below 3.6'))
+
+    def test_the_sponsor_band_reads_her_stpm_results(self):
+        self.assertEqual(pool.academic_band(self.student), 'STPM · PNGK 3.5')
+
+    def test_the_slip_gate_skips_the_spm_parser(self):
+        self.assertEqual(_slip_gate(self.app),
+                         {'reason': 'not_spm_exam', 'exam_type': 'stpm'})
 
 
 #: The six readers TD-218 names (the admin serializers were converted first, as
-#: `held_qualification`), each with the accessor it must call.
+#: `held_qualification`), each with the accessor it must call. Dated: shortlisting, pool and
+#: vision called `heading_for(` after sprint 4 and `results_held(` since TD-324 (2026-10-02).
 _READERS = {
-    'apps/scholarship/shortlisting.py': 'heading_for(',
-    'apps/scholarship/pool.py': 'heading_for(',
+    'apps/scholarship/shortlisting.py': 'results_held(',
+    'apps/scholarship/pool.py': 'results_held(',
     'apps/scholarship/income_engine/occupation.py': 'heading_for(',
     'apps/scholarship/income_engine/epf_evidence.py': 'heading_for(',
-    'apps/scholarship/vision.py': 'heading_for(',
+    'apps/scholarship/vision.py': 'results_held(',
     'apps/scholarship/serializers.py': 'ResultsHeldField(',
 }
 _API = Path(__file__).resolve().parents[3]

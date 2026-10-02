@@ -195,6 +195,20 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
 # recorded completion wins; else the declaration, corrected only where ABSENCE of STPM results is
 # conclusive — moved there unchanged, with its reasons (BrightPath #14, #15, #106). The name stays
 # because the admin label, the merit source below, the audit command and their tests call it.
+#
+# ⚠ IT IS NOW A GATE. A dated sequence, because the old warning is quoted elsewhere:
+# * BrightPath #14 (2026-08-18) wrote it for the admin label and the merit ranking and said "NOT A
+#   GATE, AND MUST NOT BECOME ONE": `shortlisting`, `pool`, `income_engine` and `vision` all read
+#   `exam_type` for their own reasons, and widening this would re-band live applicants.
+# * Now sprint 4 (2026-10-02, TD-218) asked each of those readers which question it means. The
+#   income checks mean the exam she is heading for and read `heading_for`; the shortlist gate, the
+#   sponsor band and the slip-parser gate mean the results she holds and were held on the
+#   declaration pending a production count.
+# * The same day the owner ruled "switch all three" (TD-324) on that count — 68 live applications
+#   agree, 1 Form Six explorer (declared STPM, holds SPM), 0 the other way. So `shortlisting`
+#   (who clears a programme's grade bar), `pool` (the sponsor's academic line) and `vision` (whether
+#   the SPM slip parser runs) now read this rule. A change to it moves who is shortlisted and which
+#   parser runs, not only a label: characterise it first (`tests/test_exam_questions.py`).
 held_qualification = results_held
 
 

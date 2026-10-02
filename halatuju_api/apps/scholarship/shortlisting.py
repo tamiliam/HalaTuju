@@ -38,7 +38,7 @@ Consequences worth stating rather than discovering:
 """
 from dataclasses import dataclass
 
-from apps.courses.exam_questions import heading_for
+from apps.courses.exam_questions import results_held
 
 # SPM grades that count as an "A" (A+/A/A- all count — A- is the minimum "A").
 A_GRADES = {'A+', 'A', 'A-'}
@@ -77,13 +77,15 @@ def spm_merit(profile):
     """The UPU merit point (0-100) for an SPM profile — grades plus co-curriculum. None when
     there is nothing to score.
 
-    ⚠ THIS DELIBERATELY DOES NOT REUSE `serializers_admin._application_merit_score`, and the
-    reason is written on that module: it keys on `held_qualification`, whose own docstring says
-    **"NOT A GATE, AND MUST NOT BECOME ONE"** — widening it re-bands live applicants. That
-    function answers a DISPLAY question (what to rank this person by in the admin list); this one
-    answers a GATE question (does this applicant clear the programme's merit requirement), and the
-    engine keys on the DECLARED exam (`exam_questions.heading_for`) — see `_academic_ok` for why
-    that has not moved (TD-218). Same arithmetic, different question.
+    ⚠ THIS DOES NOT REUSE `serializers_admin._application_merit_score`. Dated: the Sabah S2
+    programme screens (2026-09-03) kept them apart because that function keyed on
+    `held_qualification`, then marked "NOT A GATE, AND MUST NOT BECOME ONE", while this gate keyed
+    on the declared exam. Since 2026-10-02 (TD-324, the owner's ruling) `_academic_ok` asks the
+    SAME question — `results_held`, of which `held_qualification` is an alias — so the reason is no
+    longer a different exam. What still differs is the SHAPE of the answer: that function returns
+    the STPM PNGK as the merit for an STPM holder (a ranking figure), this one only ever scores SPM
+    grades and is reached only on `_academic_ok`'s SPM branch, where the PNGK is `min_stpm_pngk`'s
+    business. Merging them is a refactor with its own characterisation, not a tidy-up.
 
     The arithmetic itself is not copied — `prepare_merit_inputs` / `calculate_merit_score` in
     `apps.courses.engine` are the single source, and are what the course selector uses too.
@@ -114,13 +116,15 @@ def _academic_ok(profile, cohort):
     programme, which is a legitimate thing for a programme to be. It is NOT a silent hole: it
     takes an admin clearing every box on a screen that shows what is ticked.
     """
-    # ⚠ TD-218 (2026-10-02): HELD ON THE DECLARED EXAM, deliberately. A cohort floor is a test of
-    # the results an applicant HOLDS, so `results_held` is arguably what this gate means — but it
-    # would move who is shortlisted, and not only the Form Six explorer (who declared STPM, holds
-    # SPM and fails 'STPM PNGK not provided'): it would also re-test a declared-SPM student on a
-    # recorded STPM completion. That is the owner's decision, made on the production count from
-    # the sprint-4 probe (TD-324). Until then this reads exactly what it read before.
-    exam = (heading_for(profile) or 'spm') if profile else 'spm'
+    # A cohort floor tests the results an applicant HOLDS, so this reads `results_held` — held on
+    # the declaration by Now sprint 4, switched the same day on the owner's ruling (2026-10-02,
+    # TD-324: 68 live agree, 1 Form Six explorer now tested on the SPM bar instead of 'STPM PNGK not
+    # provided', 0 the other way). It runs at submit, and again only through
+    # `rescore_pending_decisions` (the `rescore-pending` cron door or by hand), which re-scores every
+    # 'submitted' application with decision_released_at NULL in ANY cohort and resets
+    # decision_due_at so the release job emails the new verdict — 0 such applications and no
+    # Scheduler job on that door (lead, 2026-10-02).
+    exam = (results_held(profile) or 'spm') if profile else 'spm'
 
     if exam == 'stpm':
         floor = cohort.min_stpm_pngk

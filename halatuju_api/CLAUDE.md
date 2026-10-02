@@ -1369,10 +1369,30 @@ label and the prerequisite grades are bounded and dropped-not-fatal (F3/F4); rev
 name the SPM prerequisites line. **Measured on production (the lead, read-only, 2026-10-02):** 36
 STPM-declared profiles, none with SPM prerequisites on the server, 3 live applications; TD-218 —
 68 live agree, **1** live Form Six explorer, **0** live the other way. **What the lead runs before
-the deploy:** the migration above, then the re-labelled probe if the TIGHT rows are wanted. **What
-the owner must decide:** TD-324 — with 0 in the other direction today, whether to switch the
-shortlist gate, the sponsor band and the slip parser to the results held. Nothing else is needed to
-ship this.
+the deploy:** the migration above, then the re-labelled probe if the TIGHT rows are wanted.
+**TD-324 — RULED AND BUILT the same day (owner: "switch all three"; not committed, pushed or
+deployed).** The shortlist gate (`shortlisting._academic_ok`), the sponsor band
+(`pool.academic_band`) and the slip-parser gate (`vision._extract_slip_deterministic`) now read
+`results_held`; `held_qualification` is therefore a GATE now (its old "NOT A GATE" warning is
+rewritten as a dated sequence). Counts the ruling stood on: 68 live agree, 1 explorer, 0 the other
+way, 0 'submitted' with the decision unreleased in any cohort, 1 current slip skipped as `not_spm_exam`.
+VERDICT_ENGINE_VERSION unchanged. Rules: decisions.md 2026-10-02 "TD-324". **What the lead runs
+AFTER the deploy:** the parser gate acts at EXTRACTION only, so the ONE results slip it skipped
+keeps its Gemini reading until re-read. (a) DRY RUN, read-only: find it — the current
+`results_slip` whose `vision_fields->'fields'->'_slip_ocr_diag'->>'reason'` is `not_spm_exam` —
+note its application and doc id, and confirm that student's `results_held` now reads 'spm'. (b) Re-read
+THAT ONE document on the LIVE service with the cockpit's **Re-run** button (`POST
+admin/scholarship/applications/<pk>/documents/<doc_id>/re-run-vision/` → `reextract_document`; one
+billable Vision read, plus Gemini only if the deterministic parse fails). ⛔ NOT `reextract_documents`:
+it has no dry-run and no single-document scope — a new pass marker re-reads EVERY results slip.
+⛔ Never from a local checkout (no Storage access — it destroys `vision_fields`). ⚠ **The gate change reaches
+past submit through ONE door:** `rescore_pending_decisions` re-scores EVERY application with status
+'submitted' and `decision_released_at` NULL, in ANY cohort, scored or not, and resets
+`decision_due_at`, so the release job then emails the new verdict. It runs by hand AND through the
+`rescore-pending` cron door (`CronRunView.JOBS`). 0 such applications exist and no Scheduler job
+targets that door (lead, 2026-10-02) — count again before anyone runs it.
+Follow-on (owner, 2026-10-02): Matric / Asasi / Poly as held results, "highest" as the rule —
+**TD-326** (Later). Register open stays **130** (TD-324 closed, TD-326 raised), defined 323.
 
 **NOW SPRINT 3 (TD-322 + TD-114 + TD-151) IS BUILT, not committed, pushed or deployed
 (2026-10-02).** Register open **130** (TD-322 and TD-151 closed, TD-323 raised; TD-114 moved to
@@ -5853,8 +5873,10 @@ Five sprints, **S1 -> S2 -> S3 -> S4 -> S5**. **S1 and S2 are done.**
 - **THE VALUE IS THE SWITCH.** Do NOT add a companion `use_x` boolean: two columns can disagree
   (on-but-blank, off-but-4) and one cannot. Ticking writes a value, unticking clears one.
 - **`shortlisting.spm_merit` DOES NOT REUSE `serializers_admin._application_merit_score`**, which
-  keys on `held_qualification` — whose own docstring says **"NOT A GATE, AND MUST NOT BECOME ONE"**.
-  Same arithmetic (`courses.engine`), different question. Merit is **SPM-only**.
+  keys on `held_qualification` — whose docstring said **"NOT A GATE, AND MUST NOT BECOME ONE"**
+  until 2026-10-02, when the owner's TD-324 ruling made the academic gate read the same rule
+  (`results_held`). What still differs is the answer's shape: that one ranks an STPM holder by her
+  PNGK, this one scores SPM grades only. Same arithmetic (`courses.engine`). Merit is **SPM-only**.
 - **CREATED INACTIVE / CREATED CLOSED, ALWAYS**, whatever the client sends. An active second
   programme changes live behaviour instantly (S1's picker appears); `is_open` defaults TRUE on the
   model, so creating a year would otherwise let real students in with the same press.

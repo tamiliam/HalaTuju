@@ -225,8 +225,10 @@ intake anyway. Two consequences to know rather than discover: no academic requir
 the academic test, and neither income ceiling set passes the financial test with bucket `''` (not
 `'B'` — `'B'` means "passed the income test", and there was none). `min_merit_score` is the UPU merit
 out of 100 and applies to **SPM applicants only**; `shortlisting.spm_merit` deliberately does NOT
-reuse `serializers_admin._application_merit_score`, whose `held_qualification` docstring says
-**"NOT A GATE, AND MUST NOT BECOME ONE"**.
+reuse `serializers_admin._application_merit_score`, whose `held_qualification` docstring said
+**"NOT A GATE, AND MUST NOT BECOME ONE"** — until 2026-10-02, when the owner's TD-324 ruling put
+the academic gate itself on the same rule (`exam_questions.results_held`); the two now differ only
+in the shape of the answer (that one ranks an STPM holder by PNGK; this one scores SPM grades).
 
 **The screens that write them** (Sabah S2b, re-shaped 2026-09-03, sequenced 2026-09-06). The gifts
 an organisation runs are a SECTION of `Organisation → Overview`

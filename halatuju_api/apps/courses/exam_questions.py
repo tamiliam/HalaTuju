@@ -22,18 +22,22 @@ recorded completion can say 'stpm' for her, and even that is "a results form was
 "the exam was sat".
 
 ⚠ MOVING A READER FROM ``heading_for`` TO ``results_held`` IS AN OUTCOME CHANGE, NOT A RENAME.
-Three readers mean results-held and still read ``heading_for`` on purpose — the shortlist gate,
-the sponsor band and the slip-parser gate — because the switch would also move a student who
-declared SPM and has a recorded STPM completion (the #15 direction), not only the Form Six
-explorer. Each carries a dated TD-218 comment naming the production probe that must be read first
-(`docs/technical-debt.md`, TD-324). Widening ``results_held`` itself re-bands live applicants.
+The switch moves both directions: the Form Six explorer AND a student who declared SPM and has a
+recorded STPM completion. And ``results_held`` is a GATE: the shortlist gate, the sponsor band and
+the slip-parser gate read it, so widening it moves who is shortlisted, what a sponsor reads and
+which parser runs — characterise first (`apps/scholarship/tests/test_exam_questions.py`).
 
 History, as a dated sequence: BrightPath #14 (2026-08-18) wrote the results-held rule as
-`serializers_admin.held_qualification` for the admin label and the merit source; the
-`results_exam_type` column (2026-09) let a recorded completion win; Now sprint 4 (2026-10-02)
-moved the rule here unchanged, left `held_qualification` as an alias of ``results_held``, and gave
-the other readers named accessors. Which question each reader answers, and why, is in
-docs/decisions.md (2026-10-02, TD-218).
+`serializers_admin.held_qualification` for the admin label and the merit source, "not a gate";
+the `results_exam_type` column (2026-09) let a recorded completion win; Now sprint 4 (2026-10-02)
+moved the rule here unchanged, left `held_qualification` as an alias of ``results_held``, gave
+the other readers named accessors and HELD the shortlist gate, the sponsor band and the slip
+parser on ``heading_for`` pending a production count; the same day the owner ruled "switch all
+three" (TD-324: 68 live agree, 1 Form Six explorer, 0 the other way) and they read
+``results_held``. Which question each reader answers, and why, is in docs/decisions.md
+(2026-10-02, TD-218 and TD-324). The owner has also said (2026-10-02) that "results held" means
+the HIGHEST completed qualification; when Matric / Asasi / Poly join the results page this rule
+is to be written as "highest" outright (TD-326).
 """
 from rest_framework import serializers
 

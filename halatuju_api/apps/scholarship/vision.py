@@ -1928,16 +1928,16 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street
 
 def _extract_slip_deterministic(doc, image, words=None):
     """``(result|None, diag)``. Positional OCR parse of an SPM results slip →
-    ``{fields, warnings, error}``, or None to fall back to Gemini (no image, a student who
-    DECLARED STPM, or no parse). ``diag`` says WHY (incl. a sample of what Vision read), so a
+    ``{fields, warnings, error}``, or None to fall back to Gemini (no image, a student who HOLDS
+    STPM results, or no parse). ``diag`` says WHY (incl. a sample of what Vision read), so a
     Gemini-fallback slip can be diagnosed later. Y/X geometry pairs each subject with the grade on
     its own row, which Gemini mis-transposes on a watermark. ``words`` (a prior read of the SAME
-    blob) skips a second billable Vision call. ⚠ TD-218 (2026-10-02): the gate MEANS the results
-    held (a Form Six student uploads her SPM slip) but stays on the declared exam pending TD-324."""
+    blob) skips a second billable Vision call. The gate reads `results_held` (owner, 2026-10-02,
+    TD-324: 1 live Form Six explorer's SPM slip had been skipped, 0 live the other way)."""
     if image is None:
         return None, {'reason': 'no_image'}
-    from apps.courses.exam_questions import heading_for
-    exam_type = heading_for(getattr(doc.application, 'profile', None)).lower()
+    from apps.courses.exam_questions import results_held
+    exam_type = results_held(getattr(doc.application, 'profile', None)).lower()
     if exam_type and exam_type != 'spm':
         return None, {'reason': 'not_spm_exam', 'exam_type': exam_type}
     wd = {'words': words, 'error': None} if words is not None else _vision_words(image, doc.content_type)
