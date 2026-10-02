@@ -98,3 +98,42 @@ class TestReprocessUnreadIc(TestCase):
         self.assertIsNotNone(stuck.vision_run_at)
         self.assertEqual(stuck.vision_error, 'reprocess_failed')
         self.assertEqual(r['errored'], 1)
+
+    # ── 2026-10-02: one 2 MB PDF killed the instance mid-read, hourly. Stamp BEFORE reading. ──
+    def test_the_row_is_stamped_before_the_reader_is_called(self):
+        from apps.scholarship.services.blockers import REPROCESS_ATTEMPTED
+        doc = self._doc('salary_slip')
+        seen = {}
+
+        def reader(d):
+            row = ApplicantDocument.objects.get(pk=d.pk)
+            seen.update(error=row.vision_error, run_at=row.vision_run_at, fields=row.vision_fields)
+        with patch('apps.scholarship.reextract.reextract_document', side_effect=reader):
+            reprocess_unread_ic_documents()
+        self.assertEqual(seen['error'], REPROCESS_ATTEMPTED)
+        self.assertIsNotNone(seen['run_at'])
+        self.assertEqual(seen['fields'], {})             # F1: the pre-stamp never touches a read
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_error, '')           # a clean read leaves no marker behind
+
+    def test_a_process_killed_mid_read_never_re_picks_the_same_document(self):
+        from apps.scholarship.services.blockers import REPROCESS_ATTEMPTED, _stuck_unread_documents
+
+        class Killed(BaseException):                     # not an Exception: like an OOM kill,
+            pass                                         # nothing after the read gets to run
+        slip = self._doc('salary_slip', content_type='application/pdf')
+        ic = ApplicantDocument.objects.create(application=self.app, doc_type='ic',
+                                              storage_path='k-ic', vision_run_at=None)
+        for target, doc in (('apps.scholarship.reextract.reextract_document', slip),
+                            ('apps.scholarship.vision.run_vision_for_document', ic)):
+            with patch(target, side_effect=Killed), self.assertRaises(Killed):
+                reprocess_unread_ic_documents()
+            doc.refresh_from_db()
+            self.assertEqual(doc.vision_error, REPROCESS_ATTEMPTED)
+            self.assertIsNotNone(doc.vision_run_at)
+            self.assertNotIn(doc.id, [d.id for d in _stuck_unread_documents(200)])
+        with patch('apps.scholarship.vision.run_vision_for_document') as m, \
+                patch('apps.scholarship.reextract.reextract_document') as rx:
+            r = reprocess_unread_ic_documents()
+        m.assert_not_called(); rx.assert_not_called()
+        self.assertEqual(r['scanned'], 0)

@@ -53,6 +53,13 @@ comment-only edits → green.
 - **A test assumption about `'0'`.** `_salary_monthly_amount({'gross_income': '0'})` was already
   None (gross 0 falls through to a missing net), so a "zero keeps its meaning" test was wrong and
   was dropped rather than bent.
+- **INCIDENT after the deploy: the widened sweep OOM-looped the api.** At 06:00, 07:00 and 08:00
+  UTC the hourly `reprocess-ic-vision` run killed the instance (2140 MiB against 2048) on one 2 MB
+  scan-to-PDF salary slip: an unbounded 200 DPI raster of page 1, and no stamp written before the
+  kill, so the same row was re-picked every hour. Neither the build nor the review could see it —
+  no fixture had a large page box, and the loop guard was an `except` a process kill never reaches.
+  Job paused; fixed by a pixel budget on the raster and a stamp written before each read
+  (CHANGELOG 2026-10-02, lessons.md).
 
 ## Review round (2026-10-02): no HIGH/MEDIUM, four LOW, all fixed
 

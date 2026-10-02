@@ -1393,6 +1393,13 @@ their application, i.e. how many facts lose Certain — read that one) and `pyth
 billable Vision + Gemini read). **What the owner must do:** nothing to ship it; one question waits
 (TD-114, Owner-decision tier): pay for a re-read of the old unscored uploads, or leave them at
 Probable — plus whether officers should see a "genuineness not checked" line (copy).
+⚠ **2026-10-02, after the deploy:** the widened hourly sweep (`reprocess-ic-vision`) OOM-looped on
+ONE 2 MB scan-to-PDF salary slip — page 1 rendered at 200 DPI with no size bound went past 2 GiB,
+the kill left the row unstamped, so it was re-picked hourly (three instance kills, 06-08 UTC). The
+Cloud Scheduler job is **PAUSED**. Fixed (small change, CHANGELOG 2026-10-02): page 1 renders within
+4,000 px on its longer side and an absurd page box is refused (`apps/scholarship/pdf_pages.py`), and
+the sweep stamps `vision_error='reprocess_attempted'` + `vision_run_at` BEFORE each read, so a kill
+cannot re-pick a row. Resume the job only after that fix is deployed.
 
 **NOW SPRINT 2 (TD-253 + TD-207) IS BUILT, not committed, pushed or deployed (2026-10-01; review
 fixes F1/F3-F6 2026-10-02).** Register open **131** (TD-322 raised by the review: the invite flag

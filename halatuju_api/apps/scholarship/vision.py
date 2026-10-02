@@ -18,6 +18,9 @@ from typing import Optional
 from django.conf import settings
 from django.utils import timezone
 
+from .pdf_pages import pdf_first_page_png as _pdf_first_page_png
+from .pdf_pages import pdf_text_layer as _pdf_text_layer
+
 logger = logging.getLogger(__name__)
 
 # Stripped before name comparison — common MyKad name suffixes / parentage markers.
@@ -656,53 +659,14 @@ def _extract_address(text: str) -> str:
 # degrades to "unreadable" — today's behaviour — rather than crashing.
 _PDF_MAGIC = b'%PDF-'
 _MIN_PDF_TEXT = 25      # chars of real text → treat as a digital PDF (skip Vision)
-_RASTER_DPI = 200
+# The two page readers (_pdf_text_layer, _pdf_first_page_png) live in pdf_pages.py — page 1 renders
+# within a pixel budget since 2026-10-02 (an unbounded raster of one huge-page PDF killed the instance).
 
 
 def _is_pdf(content_type: str, data: bytes) -> bool:
     if (content_type or '').lower().split(';')[0].strip() == 'application/pdf':
         return True
     return bool(data) and data[:5] == _PDF_MAGIC
-
-
-def _pdf_text_layer(data: bytes) -> str:
-    """The concatenated text layer of a PDF (all pages). '' if none / encrypted /
-    library missing — caller then falls back to rasterise+OCR."""
-    try:
-        import io
-        from pypdf import PdfReader
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted:
-            try:
-                reader.decrypt('')
-            except Exception:  # noqa: BLE001
-                return ''
-        return '\n'.join((p.extract_text() or '') for p in reader.pages).strip()
-    except Exception as e:  # noqa: BLE001
-        logger.warning('PDF text-layer extraction failed: %s', e)
-        return ''
-
-
-def _pdf_first_page_png(data: bytes) -> Optional[bytes]:
-    """Rasterise page 1 of a PDF to PNG bytes (~200 DPI). None on failure /
-    library missing. Page 1 only — bounds the Vision cost to 1 unit per doc."""
-    try:
-        import io
-
-        import pypdfium2 as pdfium
-        pdf = pdfium.PdfDocument(data)
-        try:
-            if len(pdf) == 0:
-                return None
-            pil = pdf[0].render(scale=_RASTER_DPI / 72.0).to_pil()
-            buf = io.BytesIO()
-            pil.convert('RGB').save(buf, format='PNG')
-            return buf.getvalue()
-        finally:
-            pdf.close()
-    except Exception as e:  # noqa: BLE001
-        logger.warning('PDF rasterise failed: %s', e)
-        return None
 
 
 def _vision_document_text(image_bytes: bytes) -> dict:

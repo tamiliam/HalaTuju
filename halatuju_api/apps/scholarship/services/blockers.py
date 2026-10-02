@@ -110,6 +110,9 @@ def detect_vision_outage(window_hours=24):
 #: the sweep, so nothing it holds can be overwritten (review F1) — and never a superseded one.
 _SELF_HEAL_READ_TYPES = ('results_slip', 'offer_letter', 'salary_slip', 'epf', 'str',
                          'birth_certificate', 'guardianship_letter', 'income_support_doc')
+#: Written on a row BEFORE the sweep reads it; a completed read overwrites it. Left on a row, it
+#: means the process died mid-read — the sweep will not try again; an officer's Re-run can.
+REPROCESS_ATTEMPTED = 'reprocess_attempted'
 
 
 def _stuck_unread_documents(limit):
@@ -150,17 +153,28 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
     scanned = processed = errored = 0
     for doc in stuck:
         scanned += 1
+        # STAMP BEFORE READING (2026-10-02). A memory kill is not an exception: one 2 MB PDF took
+        # the instance past 2 GiB mid-read, nothing below ran, and the same row was re-picked every
+        # hour. Only the two stamp/error columns — never `vision_fields` (F1 above).
+        prior_error = doc.vision_error or ''
+        doc.vision_error, doc.vision_run_at = REPROCESS_ATTEMPTED, timezone.now()
+        doc.save(update_fields=['vision_error', 'vision_run_at'])
         try:
             if doc.doc_type in ('ic', 'parent_ic'):
                 err = run_vision_for_document(doc).get('error')
             else:
                 reextract_document(doc)
-                err = doc.vision_error
+                err = None
+            if doc.vision_error == REPROCESS_ATTEMPTED:   # a read that wrote no outcome of its own
+                doc.vision_error = prior_error
+                doc.save(update_fields=['vision_error'])
+            err = err if err is not None else doc.vision_error
             errored += 1 if err else 0
             processed += 0 if err else 1
         except Exception:
             errored += 1
-            doc.vision_error = doc.vision_error or 'reprocess_failed'
+            if doc.vision_error in ('', REPROCESS_ATTEMPTED):
+                doc.vision_error = 'reprocess_failed'
             doc.vision_run_at = timezone.now()
             doc.save(update_fields=['vision_error', 'vision_run_at'])
     return {'scanned': scanned, 'processed': processed, 'errored': errored}

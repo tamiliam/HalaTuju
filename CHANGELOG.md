@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: the stuck-read sweep can no longer OOM-loop the api - 2026-10-02
+
+- fix: since Now sprint 3 widened the hourly stuck-read sweep (`reprocess-ic-vision`) past ICs, it
+  killed the api instance at 06:00, 07:00 and 08:00 UTC ("Memory limit of 2048 MiB exceeded", the
+  request 503). One 2 MB scan-to-PDF salary slip was the cause: page 1 was rendered at 200 DPI with
+  no bound on the page's size, and the kill came mid-read, before anything stamped the row, so the
+  same document was picked again every hour. The sweep was paused in Cloud Scheduler. Two layers:
+  (1) **a pixel budget** — page 1 now renders with its longer side at most 4,000 px (an A4 page
+  still gets the full 200 DPI, 1654×2339), and a page box past 20,000 pt is refused with a warning
+  instead of rendered; the two PDF page readers moved verbatim into the new
+  `apps/scholarship/pdf_pages.py` (vision.py imports them under their old names, so no call site or
+  `patch()` target changed); (2) **stamp before reading** — `reprocess_unread_ic_documents` writes
+  `vision_error='reprocess_attempted'` + `vision_run_at` on the row BEFORE calling the reader
+  (only those two columns, never `vision_fields`), so a process kill cannot re-select the
+  document; a completed read overwrites the marker, and one that wrote no outcome of its own gets
+  its prior error back. Tests: `test_pdf_pages.py` (real generated PDFs: A4 size, huge page capped,
+  absurd page refused) and two in `test_reprocess_ic.py` (the row is stamped when the reader is
+  called; a `BaseException` kill leaves it stamped and never re-picked). No migration.
+
 ## Now sprint 4: the STPM form's SPM prerequisites survive a login (TD-069); every `exam_type` reader names its question (TD-218) - 2026-10-02
 
 BUILT, not committed, pushed or deployed; an adversarial review reads the diff first. Register
