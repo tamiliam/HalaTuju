@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-02 | c993050 | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | 3703cdb | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | b13fc89 | 90 | 44 | officerCockpit.ts 47.8 | 18 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 131 | 0 | - | - | ok |
 | 2026-10-01 | ee52eb1 | 90 | 44 | officerCockpit.ts 46.1 | 18 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 132 | 0 | - | - | ok |
@@ -71,7 +72,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-02, 3703cdb, window 2026-07-04 onward)
+## Latest run (2026-10-02, c993050, window 2026-07-04 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -81,8 +82,8 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/views.py` | 15 | 2427 | 36.4 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 10 | 1354 | 13.5 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 984 | 12.8 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1233 | 11.1 |
 | `halatuju_api/apps/courses/views_admin.py` | 9 | 1220 | 11 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1186 | 10.7 |
 | `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
 | `halatuju_api/apps/scholarship/academic_engine.py` | 7 | 891 | 6.2 |
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
@@ -93,16 +94,16 @@ drift tests are counted as the habit they cure). See TD-284.
 ### Files over 1000 lines
 - `2427  halatuju_api/apps/scholarship/views.py`
 - `2321  halatuju_api/apps/scholarship/vision.py`
-- `2309  halatuju_api/apps/courses/views.py`
+- `2316  halatuju_api/apps/courses/views.py`
 - `1647  halatuju-web/src/lib/officerCockpit.ts`
-- `1375  halatuju_api/apps/courses/models.py`
+- `1384  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1354  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1309  halatuju-web/src/lib/scholarship.ts`
-- `1233  halatuju_api/apps/scholarship/serializers_admin.py`
+- `1315  halatuju-web/src/lib/scholarship.ts`
 - `1220  halatuju_api/apps/courses/views_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
+- `1186  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
@@ -115,14 +116,14 @@ drift tests are counted as the habit they cure). See TD-284.
 - `306  halatuju_api/apps/scholarship/vision.py:2009 _run_field_extraction_impl`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
 - `290  halatuju_api/apps/courses/engine.py:569 check_eligibility`
-- `245  halatuju_api/apps/courses/views.py:118 get`
+- `245  halatuju_api/apps/courses/views.py:119 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `210  halatuju_api/apps/scholarship/verdict_engine.py:484 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:168 autofill_pathway_from_offer`
 - `183  halatuju_api/apps/courses/views_admin.py:604 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
-- `155  halatuju_api/apps/courses/views.py:1000 get`
+- `161  halatuju_api/apps/courses/views.py:1001 get`
 - `152  halatuju_api/apps/scholarship/help_engine.py:334 verdict_for_document`
 - `151  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
 
@@ -136,7 +137,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 20 edges (29 import statements)
 - reports -> courses: 2 edges (2 import statements)
 - reports -> scholarship: 1 edges (2 import statements)
-- scholarship -> courses: 22 edges (119 import statements)
+- scholarship -> courses: 25 edges (126 import statements)
 
 ### Suppressions
 - # noqa: 80
@@ -154,30 +155,41 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 39 of 196 web test files read source text (signals: readFileSync, apiSource)
+- 39 of 199 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 320 entries have a defining line; 130 carry no resolution marker on it
+- 322 entries have a defining line; 130 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 1281: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
 - line 1303: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1306: - **TD-069**: **STPM flow's SPM-prerequisite electives aren't durably persisted and stay capped at 2.** v2.21.0 fixed the main SPM grades flow (new `e
 - line 1320: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
 - line 1331: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
 - line 1608: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6006: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6320: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6025: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6339: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at b13fc89
+- budgets no looser than at 3703cdb
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-02 (c993050, Now sprint 4) — `xapp` 45 → 48 is the accessor move, accepted with the arithmetic
+
+**1 FAIL (`xapp`), 6 standing WARNs, `td_open` 130, `std` ok.** TD-218 moved the two exam-type
+accessors into `apps/courses/exam_questions.py` (so the profile view in `courses` can serve the
+answer), and the six scholarship readers now each carry `from apps.courses.exam_questions import …`
+where they used to read a profile ATTRIBUTE. Eight new import statements, every one in the
+ALLOWED direction (scholarship → courses); the enforced standard — `courses → scholarship` ≤ 25,
+module-level ≤ 1 (`test_code_standards.py`) — passed in the deploy gate unchanged. `xapp` counts
+statements and is blind to direction (TD-268, 2026-09-20), so a faithful move can only raise it.
+**Accepted. Do not undo the move to lower the number.** The reading is the tool's shortcoming,
+already registered.
 
 ### 2026-09-20 (thirteenth reading) — H19 closes the arc: every reading delta 0, and the six standing WARNs are now decided in one place
 
