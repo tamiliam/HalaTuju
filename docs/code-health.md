@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-02 | c5408ab | 90 | 44 | officerCockpit.ts 46.1 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | 7bc9ac4 | 90 | 44 | officerCockpit.ts 46.1 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | c993050 | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | 3703cdb | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 45 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
@@ -73,24 +74,24 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-02, 7bc9ac4, window 2026-07-04 onward)
+## Latest run (2026-10-02, c5408ab, window 2026-07-04 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1647 | 46.1 |
-| `halatuju_api/apps/scholarship/vision.py` | 17 | 2285 | 38.8 |
+| `halatuju_api/apps/scholarship/vision.py` | 18 | 2285 | 41.1 |
 | `halatuju_api/apps/scholarship/views.py` | 15 | 2427 | 36.4 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 10 | 1354 | 13.5 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 984 | 12.8 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 10 | 1200 | 12 |
 | `halatuju_api/apps/courses/views_admin.py` | 9 | 1220 | 11 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 9 | 1186 | 10.7 |
 | `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
 | `halatuju_api/apps/scholarship/academic_engine.py` | 7 | 891 | 6.2 |
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 271 fix / 344 feat commits since 2026-07-04
+- 272 fix / 341 feat commits since 2026-07-04
 
 ### Files over 1000 lines
 - `2427  halatuju_api/apps/scholarship/views.py`
@@ -104,7 +105,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1315  halatuju-web/src/lib/scholarship.ts`
 - `1220  halatuju_api/apps/courses/views_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
-- `1186  halatuju_api/apps/scholarship/serializers_admin.py`
+- `1200  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
@@ -159,7 +160,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - 39 of 199 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 322 entries have a defining line; 130 carry no resolution marker on it
+- 323 entries have a defining line; 130 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 1281: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
@@ -174,7 +175,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at c993050
+- budgets no looser than at 7bc9ac4
 
 ## Reviews
 
