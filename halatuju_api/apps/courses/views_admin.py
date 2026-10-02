@@ -30,6 +30,7 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
+from . import password_change_flag
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import _create_supabase_user, _service_headers
@@ -820,8 +821,10 @@ class AdminResendView(PartnerAdminMixin, APIView):
                 f'{supabase_url}/auth/v1/admin/users/{target.supabase_user_id}',
                 json={'password': temp_password,
                       # Reset the 7-day clock — a Resend gives a fresh temp password AND a fresh TTL.
-                      'user_metadata': {'name': target.name, 'must_change_password': True,
-                                        'temp_password_issued_at': timezone.now().isoformat()}},
+                      # TD-322: the flag goes to app_metadata; the old browser-writable copy is nulled.
+                      'app_metadata': password_change_flag.issued_fields(timezone.now()),
+                      'user_metadata': password_change_flag.scrubbed_user_metadata(
+                          {'name': target.name})},
                 headers=_service_headers(service_role_key),
             )
             if resp.status_code not in (200, 201):
@@ -859,7 +862,8 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
 
     Scoped tightly so this is NOT a general re-auth bypass: it only ever sets the CALLER'S OWN uid
     (from their JWT), and ONLY while that account still owes a password change
-    (`must_change_password`, read authoritatively from Supabase) OR the token proves a recovery
+    (`must_change_password` in `app_metadata`, read from Supabase — TD-322, `password_change_flag`;
+    never trusted from the browser-writable `user_metadata`) OR the token proves a recovery
     link for this account followed within the last 15 minutes (TD-207, `recovery_session`). An
     ordinary signed-in session is refused — it keeps the project's secure-change policy. ADMINS
     ONLY, on the real JWT subject (review F3): a student or sponsor with a reset link never
@@ -871,7 +875,8 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
         uid = auth_sub(request)
         if not uid:
             return Response({'error': 'not_authenticated'}, status=401)
-        if self.get_admin(request) is None:
+        admin = self.get_admin(request)
+        if admin is None:
             return Response({'error': 'not_an_admin'}, status=403)
         password = request.data.get('password') or ''
         if len(password) < 8:
@@ -892,21 +897,22 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
         if gr.status_code != 200:
             return Response({'error': 'user_lookup_failed'}, status=502)
         account = gr.json() or {}
-        meta = account.get('user_metadata') or {}
+        # TD-322: the flag is read from app_metadata (server-writable only); a user_metadata flag
+        # counts only for a pre-release invite the server's own Invitation row says is still live.
         # TD-207: a FRESH recovery session for THIS account is authority too ("Forgot password").
-        if not (meta.get('must_change_password')
+        if not (password_change_flag.owes_password_change(
+                    account, lambda: _invitations_for([admin]).get(admin.id))
                 or is_fresh_recovery_for(request, account.get('email'))):
             # Neither onboarding nor a reset — do not stand in for a normal (re-auth'd) change.
             return Response({'error': 'not_pending_password_change'}, status=403)
 
-        # Supabase admin updateUser MERGES user_metadata (omitting a key does NOT delete it), so we
-        # explicitly null the temp-password fields to clear them.
-        new_meta = {**meta, 'must_change_password': False,
-                    'temp_password_issued_at': None, 'temp_password_expired': None}
+        # Supabase admin updateUser MERGES metadata (omitting a key does NOT delete it), so the
+        # temp-password fields are cleared by sending null — in both homes, the old one included.
+        body = {'password': password, 'app_metadata': password_change_flag.cleared_fields(),
+                'user_metadata': password_change_flag.scrubbed_user_metadata(
+                    account.get('user_metadata'))}
         try:
-            pr = http_requests.put(
-                user_url, json={'password': password, 'user_metadata': new_meta},
-                headers=headers, timeout=15)
+            pr = http_requests.put(user_url, json=body, headers=headers, timeout=15)
         except Exception:  # noqa: BLE001
             return Response({'error': 'supabase_unreachable'}, status=502)
         if pr.status_code not in (200, 201):

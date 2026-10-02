@@ -5,7 +5,10 @@
  * would agree with a broken rule — the billing-month lesson, which cost eight hours of red tests
  * for exactly that reason.
  */
-import { DORMANT_DAYS, isOutstanding, outstanding, sendState, standingOf, tempPasswordExpired } from '../invitations'
+import {
+  DORMANT_DAYS, isOutstanding, outstanding, pendingPasswordChange, sendState, standingOf,
+  tempPasswordExpired,
+} from '../invitations'
 import type { AdminItem } from '../admin-api'
 
 const person = (over: Partial<AdminItem>): AdminItem => ({
@@ -119,5 +122,30 @@ describe('the temp-password gate (login page)', () => {
     expect(tempPasswordExpired(null, 7, NOW)).toBe(false)
     expect(tempPasswordExpired(undefined, 7, NOW)).toBe(false)
     expect(tempPasswordExpired('not-a-date', 7, NOW)).toBe(false)
+  })
+})
+
+describe('where the owed-password-change flag is read (TD-322)', () => {
+  const stamp = daysAgo(1)
+
+  it('reads app_metadata, the server-written home', () => {
+    expect(pendingPasswordChange({
+      app_metadata: { must_change_password: true, temp_password_issued_at: stamp },
+    })).toEqual({ owed: true, issuedAt: stamp })
+  })
+
+  it('lets app_metadata outrank a flag the browser wrote into user_metadata', () => {
+    expect(pendingPasswordChange({
+      app_metadata: { must_change_password: false },
+      user_metadata: { must_change_password: true, temp_password_issued_at: stamp },
+    })).toEqual({ owed: false, issuedAt: null })
+  })
+
+  it('falls back to user_metadata only when app_metadata has no flag at all', () => {
+    expect(pendingPasswordChange({
+      app_metadata: { provider: 'email' },
+      user_metadata: { must_change_password: true, temp_password_issued_at: stamp },
+    })).toEqual({ owed: true, issuedAt: stamp })
+    expect(pendingPasswordChange(null)).toEqual({ owed: false, issuedAt: null })
   })
 })

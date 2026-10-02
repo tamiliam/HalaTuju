@@ -9,12 +9,12 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-10-01** it runs to **TD-322**, with **319 ids carrying a defining entry
-and 131 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
+a running log; as of **2026-10-02** it runs to **TD-323**, with **320 ids carrying a defining entry
+and 130 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
 TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, one, TD-321,
-raised by its deploy, two, TD-253 and TD-207, closed by Now sprint 2, and one, TD-322, raised by its review). See the Open Items Index
+raised by its deploy, two, TD-253 and TD-207, closed by Now sprint 2, one, TD-322, raised by its review, two, TD-322 and TD-151, closed by Now sprint 3, and one, TD-323, raised by it). See the Open Items Index
 below, which lists all of them in working order and says how the figures were reached.
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
@@ -35,7 +35,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**319 entries carry a defining line; 131 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review). Every one of them was READ on
+**320 entries carry a defining line; 130 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -63,7 +63,7 @@ every citation behind a closure. This index lists ALL open entries, in the order
 > an officer sees it · **D** tooling and hygiene. Effort: **S** half a day, one file · **M** one to three
 > days · **L** longer, or a migration or an outside party. Tiers follow from the two.
 
-### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 23
+### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 24
 Each line is the question. Nothing here can be closed by engineering alone.
 
 - **TD-260** — About 600 students could not reclaim a lost account. Widen self-service, build a support relink tool, or both? *(A · M)*
@@ -89,17 +89,15 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-043** — Phone sign-in says coming soon. Pay for a code service, or hide the box? *(C · L)*
 - **TD-318** — WhatsApp STOP is built but does nothing until the inbound webhook is set in the Twilio console (an owner action). *(D · S · leftover of TD-135)*
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
+- **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 8
+### Now — money, identity, eligibility or security — 5
 Class A at any size, and class B that is small or medium. Schedule these first.
 
-- **TD-322** — An admin's "must change password" flag is browser-writable, so a stolen session can set a new password without the old one. *(B · S-M · raised 2026-10-02)*
 - **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S · partly done)*
 - **TD-229** — A second gift would make its students sign the first gift's agreement. Signing is off today. *(A · L)*
 - **TD-218** — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading. *(B · M)*
-- **TD-151** — The hardening pass for misread documents was never done: no problem-document set, no sanity check on figures. *(B · M)*
 - **TD-125** — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet. *(B · M)*
-- **TD-114** — A fact can read Certain off a document that was never scored for genuineness. *(B · M · partly done)*
 - **TD-069** — STPM students get only two SPM elective slots, and the choice is kept only in the browser. *(B · M)*
 
 ### Next — a student or an officer can see it, and it is small — 18
@@ -124,9 +122,10 @@ Class C, half a day each. Good small-change-lane work; several go together.
 - **TD-091** — Sponsor landing Tamil is a first draft, and the page is public. *(C · S · one owner sitting with TD-094, 105, 108, 183)*
 - **TD-070** — Sponsor sign-in, sign-up and the admin vetting buttons were never click-tested in a browser. *(C · S)*
 
-### Later — visible but larger, or small hygiene — 64
+### Later — visible but larger, or small hygiene — 65
 Class C at medium or large size, and class D that is small.
 
+- **TD-323** — A payslip figure the income engine refuses still shows a green Amount chip, and the EPF salary estimate has no sanity window. *(C · S · raised 2026-10-02)*
 - **TD-321** — Production serves every page image at full size: there is no sharp package, so Next never resizes. *(C · S · raised 2026-10-01)*
 - **TD-320** — An EPF statement whose contribution figures came from Gemini is labelled all-AI, though its identity fields were read exactly. *(C · S · raised 2026-10-01)*
 
@@ -1605,6 +1604,7 @@ Do one only when a sprint is already in that file.
   letter; backfill command). **DEFERRED — edge case for our population; lower priority than current fixes.** Owner
   go-ahead required before building. (Logged 2026-06-13, test #16 finding.)
   **Status 2026-09-30:** partly done — still to do: an IC or results slip that was never scored still counts as genuine; old uploads are not re-scored.
+  **Status 2026-10-02 (Now sprint 3):** the verdict half is DONE — a never-scored IC, results slip or offer now holds its fact at Probable, never Certain (`verdict_ladder._genuineness_unscored`, rule 1 of the approved design; a floor, not a step; inert while `DOC_GENUINENESS_CHECK_ENABLED` is off; VERDICT_ENGINE_VERSION 2026-10-02.1; `test_verdict_unscored_floor.py`). Knock-on, no copy change: the Check-2 facts ledger (`submission_review.build_facts_ledger`) reads "reported" instead of "verified" for name / qualification / pathway on the affected applications (the review counted 37). Income is exempt by choice (decisions.md 2026-10-02 item 2, with its owner question). What is LEFT is an owner question: re-scoring the old uploads costs money. The IC scorer is a Gemini read (no local model), the slip's adds a Gemini visual read, and no OCR text is stored for these types, so `rescore_unscored_documents` (built, dry-run by default) can only COUNT them and would score free only what has stored text — none today. The paid route already exists: `reextract_documents --doc-type <type> --pass-marker <new>`. Moved to the Owner-decision tier.
 - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
   route-dependent convention, causing the "one IC under all earners" + "duplicate Mother's IC" bugs.** Target: 27 fixed
   `(doc_type × person)` slots; every upload (wizard or Action Centre) tagged by person; re-upload overwrites the slot;
@@ -1919,7 +1919,7 @@ conflicts (it never swaps one institution for a different one) and surfaces them
 safe; this TD is about stopping the wrong `course_id` being assigned at the source. Low urgency (display +
 funding both key off `chosen_pathway`, not `course_id`, for these pre-U/poly rows).
 
-### [TD-151] Document-extraction & income-computation robustness (a recurring class of fix)
+### [TD-151] Document-extraction & income-computation robustness (a recurring class of fix) — **RESOLVED 2026-10-02** (Now sprint 3, the three bounded items: (1) the problem-document corpus — `eval/labels.json` → `regressions` (PII-free: #66 slip d912, #66 voucher d915, #37 EPF d411 replayed locally; #140 and #73 named, not yet in the local corpus) and the hand-run `eval/regression_check.py`, with `tests/test_regression_corpus.py` running the same checks on synthetic twins; (2) a payslip monthly figure outside RM100–20,000 is a misread and reads as no figure (`salary_figures._plausible_monthly`, bounds from the 88 readable slips in the local corpus, decisions.md 2026-10-02; `test_salary_plausibility.py`); (3) the stuck-read self-heal sweeps the slip, offer, income proofs and relationship documents as well as ICs (`services/blockers._SELF_HEAL_READ_TYPES`, both run stamps NULL, no stored read, live rows only; `--dry-run` counts; `test_reprocess_ic.py`). Left, raised as TD-323: the cockpit's Amount chip still reads green on a figure the engine discards, and the EPF-implied salary has no window. #73's IC-digit misread stays unfixed — no bounded fix exists.)
 **Status:** Open (logged 2026-06-29, promoted from the small-change consolidation review). **Context:** five
 small-lane fixes in June clustered on one theme — our OCR/Gemini pipeline mis-reads a real-world document and
 the income engine then mis-gates the applicant:
@@ -6324,4 +6324,5 @@ depends on, not a defect.
 - **TD-320 (raised 2026-10-01 by Next-tier batch 2's adversarial review) — low, officer-visible.** When TD-319's fallback takes Gemini's contribution figures, the whole EPF document is labelled `capture='ai'` (the cockpit's "AI" provenance chip) although its name, NRIC, employer and balance were read deterministically; the label cannot say "identity exact, contribution AI". **Fix:** a per-field or split provenance (e.g. `capture='mixed'` with its own chip label), or leave it. **Trigger:** an officer asking which EPF fields the model supplied.
 
 - **TD-321 (raised 2026-10-01 by the TD-255 deploy probe) - low, pre-existing, student-visible as weight: production serves every next/image request UNOPTIMISED.** The web runs in standalone mode with no sharp package, so Next 14.2 logs "Error: sharp is required to be installed in standalone mode for the image optimization to function correctly" on every image request and serves the ORIGINAL file: /_next/image?url=/scholarship/hero.jpg&w=384 returns the full 157,789-byte JPEG. The same log line exists on the Node-18 revisions (halatuju-web-00933-8xd), so this is older than the Node move, which changed nothing here. Four files use next/image. **Fix:** add sharp (a native dependency; the Alpine image needs it to build, and the first-load budget is unaffected because it is server-side), or set images.unoptimized and serve sized assets by hand. **Trigger:** the next image added to a student page, or a phone-data complaint.
-- **TD-322 (raised 2026-10-02 by the Now sprint 2 adversarial review) - medium, security: `must_change_password` lives in `user_metadata`, which any signed-in user can rewrite from the browser.** `supabase.auth.updateUser({ data: { must_change_password: true } })` needs no current password, so whoever holds a stolen ORDINARY admin session can switch the flag on and then set a new password through `admin/set-password/` - taking the account over without ever knowing the old password. The TD-207 recovery rule adds nothing against this attacker: they use the invite branch, not the recovery one. **Fix:** move the flag to `app_metadata` (server-writable only) at invite and Resend time and read it from there, keeping a one-release fallback that still honours `user_metadata` for invites already pending (and expires with their 7-day temp-password TTL). **Class B security, effort S-M, tier Now.**
+- ~~**TD-322 (raised 2026-10-02 by the Now sprint 2 adversarial review) - medium, security: `must_change_password` lives in `user_metadata`, which any signed-in user can rewrite from the browser.**~~ **RESOLVED 2026-10-02 (Now sprint 3: the flag and its clock live in `app_metadata`, which only the service role writes — the invite (`supabase_admin._create_supabase_user`), Resend, the expiry cron and the set-password clear all go through `apps/courses/password_change_flag.py`, and `AdminSetPasswordView` reads it from there. ONE-RELEASE FALLBACK: an account with no `app_metadata` flag at all is honoured on its `user_metadata` flag only while the server's own newest staff `Invitation` for that admin issued a password, is not revoked and is inside its `expires_at`; remove it after `LEGACY_FALLBACK_UNTIL` (2026-11-01 = this release + the 30-day maximum TTL). The web login reads `app_metadata` first (`lib/invitations.pendingPasswordChange`). Residual until then, stated in the module: an account invited before this release, inside its TTL, that ALREADY set its password under the old code. `test_admin_auth.py` AdminSetPasswordTest / ExpireTempPasswordsTest, `invitations.test.ts`)** `supabase.auth.updateUser({ data: { must_change_password: true } })` needs no current password, so whoever holds a stolen ORDINARY admin session can switch the flag on and then set a new password through `admin/set-password/` - taking the account over without ever knowing the old password. The TD-207 recovery rule adds nothing against this attacker: they use the invite branch, not the recovery one. **Fix:** move the flag to `app_metadata` (server-writable only) at invite and Resend time and read it from there, keeping a one-release fallback that still honours `user_metadata` for invites already pending (and expires with their 7-day temp-password TTL). **Class B security, effort S-M, tier Now.**
+- **TD-323 (raised 2026-10-02 by Now sprint 3, the TD-151 leftovers) - low, officer-visible: a payslip figure the income engine refuses still shows a green Amount chip, and the EPF-implied salary has no plausibility window.** `salary_figures._salary_monthly_amount` returns no figure for a read that is inconsistent (net > gross, #66) or, since TD-151, outside RM100–20,000 a month, so income falls to "verify at interview" - but `officerCockpit.ts` (the salary-slip `amount` fact) marks Amount `verified` whenever ANY amount was read, so the officer sees a green chip on a figure the verdict threw away. Separately `_epf_monthly_salary` reverses the statutory rates with no window, so a misread contribution total enters the engine as read. **Fix:** serve the engine's own verdict on the figure (usable / refused) on the document payload and colour the chip from it (a new chip state needs copy in three languages - owner); give the EPF estimate the same window once its real range is measured (only five statements read in the local corpus). **Trigger:** an officer asking why a green Amount did not count, or the next EPF misread.

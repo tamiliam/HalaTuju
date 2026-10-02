@@ -12,7 +12,7 @@ import {
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
 import { enforceCanonicalOrigin } from '@/lib/oauthOrigin'
 import { adminLanding } from '@/lib/adminLanding'
-import { tempPasswordExpired } from '@/lib/invitations'
+import { pendingPasswordChange, tempPasswordExpired } from '@/lib/invitations'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 
@@ -80,10 +80,10 @@ export default function AdminLoginPage() {
         // it runs and gives the friendly "ask for a resend" prompt. Recovery = the owner Resends.
         // ⚠ The TTL is SERVED on the role payload, resolved for the caller's organisation
         // (Org Config Sprint C) — never a hard-coded mirror of the platform's 7.
-        const meta = data.session.user.user_metadata || {}
-        if (meta.must_change_password
-            && tempPasswordExpired(meta.temp_password_issued_at,
-                                   role.temp_password_ttl_days ?? 7)) {
+        // TD-322: the flag is read from app_metadata (server-written), see pendingPasswordChange.
+        const pending = pendingPasswordChange(data.session.user)
+        if (pending.owed
+            && tempPasswordExpired(pending.issuedAt, role.temp_password_ttl_days ?? 7)) {
           const { adminSignOut } = await import('@/lib/admin-supabase')
           await adminSignOut()
           setError(t('errors.tempPasswordExpired'))
@@ -93,7 +93,7 @@ export default function AdminLoginPage() {
         // They just signed in with the temporary password we emailed them — make them choose
         // their own before they go anywhere. (Google signers never typed it, so the callback
         // route deliberately does NOT do this.)
-        if (meta.must_change_password) {
+        if (pending.owed) {
           router.push('/admin/set-password')
           return
         }

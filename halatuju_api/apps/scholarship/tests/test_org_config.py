@@ -777,7 +777,8 @@ class TestPerOrgStaffClocks(TestCase):
             owning_organisation=None, name='Platform Rev', email='sc-null@x.com')
         issued = (timezone.now() - timedelta(days=3)).isoformat()
         meta = {'must_change_password': True, 'temp_password_issued_at': issued}
-        get = mock.Mock(status_code=200, json=lambda: {'user_metadata': dict(meta)})
+        # TD-322: the flag's home is app_metadata (the user_metadata branch ends 2026-11-01).
+        get = mock.Mock(status_code=200, json=lambda: {'app_metadata': dict(meta)})
         put = mock.Mock(status_code=200)
         with mock.patch('apps.courses.management.commands.expire_temp_passwords'
                         '.http_requests.get', return_value=get), \

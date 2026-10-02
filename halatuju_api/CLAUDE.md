@@ -1347,6 +1347,26 @@ interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257
 **132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
 
+**NOW SPRINT 3 (TD-322 + TD-114 + TD-151) IS BUILT, not committed, pushed or deployed
+(2026-10-02).** Register open **130** (TD-322 and TD-151 closed, TD-323 raised; TD-114 moved to
+Owner-decision). Part 1 (TD-322, separable): the onboarding flag lives in Supabase `app_metadata`
+(`apps/courses/password_change_flag.py`); a browser-written `user_metadata` flag is refused unless a
+pre-release invite is still live on the server's own Invitation row — **remove that fallback after
+2026-11-01**. Part 2 (TD-114): a never-scored IC / slip / offer holds its fact at Probable
+(`verdict_ladder.py`, the ladder moved there verbatim), VERDICT_ENGINE_VERSION 2026-10-02.1 —
+**Certain → Probable for every live case whose IC, slip or offer was never scored** (the deploy
+re-bands those; the counts below say how many). Part 3 (TD-151): the problem-document corpus
+(`eval/labels.json` → `regressions`, hand-run `eval/regression_check.py`), a RM100–20,000 window on
+a payslip's monthly figure, and the stuck-read self-heal widened past ICs. Rules: decisions.md
+2026-10-02. **What the lead runs in production, BEFORE the deploy, read-only:**
+`python manage.py rescore_unscored_documents` (dry-run by default: `unscored` = every live
+never-scored IC / slip / offer; `unscored_latest` = those that are the latest of their type on
+their application, i.e. how many facts lose Certain — read that one) and `python manage.py reprocess_unread_ic
+--dry-run` (how many non-IC documents the widened 15-minute cron would re-read — each is one
+billable Vision + Gemini read). **What the owner must do:** nothing to ship it; one question waits
+(TD-114, Owner-decision tier): pay for a re-read of the old unscored uploads, or leave them at
+Probable — plus whether officers should see a "genuineness not checked" line (copy).
+
 **NOW SPRINT 2 (TD-253 + TD-207) IS BUILT, not committed, pushed or deployed (2026-10-01; review
 fixes F1/F3-F6 2026-10-02).** Register open **131** (TD-322 raised by the review: the invite flag
 is browser-writable - Now tier). An interview must answer (or delete) every agenda item before submit and before the

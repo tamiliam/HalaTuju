@@ -29,6 +29,23 @@ _SLIP_EPF_HI = 1.67
 # is inconsistent and must not be trusted for the income figure.
 _NET_OVER_GROSS_TOL = 1.02
 
+# TD-151 (2), 2026-10-02 — a PLAUSIBILITY window on a payslip's monthly figure. A figure outside it
+# is a misread, not a fact: it gets the same "unreliable → None → verify at interview" treatment as
+# net > gross, never a band of its own. The bounds come from the payslips we hold, measured on the
+# 2026-10-02 local snapshot corpus (88 readable slips, `eval/regression_check.py` replays it):
+# the smallest real monthly figure is RM357.22 and the largest RM9,900.04; #66's ringgit|sen voucher
+# misread RM326.00 as RM32,600. The ceiling (RM20,000) is ~2x the largest real slip and below that
+# misread; the floor (RM100) is ~3.5x below the smallest real slip and above a dropped-decimal
+# reading (÷100) of every wage up to RM10,000. Applied in the source currency, before the SGD step.
+_SLIP_MONTHLY_MIN = 100.0
+_SLIP_MONTHLY_MAX = 20000.0
+
+
+def _plausible_monthly(amount):
+    """True when a payslip's monthly figure is inside the plausibility window (or is 0/None, which
+    the callers already read as "no figure")."""
+    return not amount or _SLIP_MONTHLY_MIN <= amount <= _SLIP_MONTHLY_MAX
+
 
 def _salary_monthly_amount(f):
     """A salary slip's representative MONTHLY pay — gross preferred, else net — but ONLY when the
@@ -48,6 +65,8 @@ def _salary_monthly_amount(f):
     if gross and net and net > gross * _NET_OVER_GROSS_TOL:
         return None
     month = gross or net
+    if not _plausible_monthly(month):
+        return None                       # TD-151: RM0.50 or RM32,600 a month is a misread
     ytd = _parse_rm(f.get('gross_income_ytd'))
     # YTD is trustworthy only ALONGSIDE a readable monthly figure (the >= deflate guard).
     # Alone, its period is unknowable: an early-year slip's YTD ÷ 12 understates income up
@@ -55,7 +74,7 @@ def _salary_monthly_amount(f):
     # monthly cells → None → 'verify at interview', same as the garbled-read rule above.
     if ytd and month is not None:
         annualised = round(ytd / 12.0, 2)
-        if annualised >= month:
+        if annualised >= month and _plausible_monthly(annualised):
             return annualised
     return month
 

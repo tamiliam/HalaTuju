@@ -1,5 +1,68 @@
 # Architectural Decisions — HalaTuju
 
+## The onboarding flag is server-written; an unscored anchor caps at Probable; a payslip has a plausibility window — 2026-10-02
+
+**Decided by:** TD-322's own fix shape, the owner's approved design for TD-114 (2026-06-13,
+`docs/scholarship/verification-genuineness-gating-plan.md`, rule 1) and TD-151's hardening list;
+built in Now sprint 3. The choices below are the builder's where those were silent.
+
+**1. Where `must_change_password` lives (TD-322).** In `app_metadata`, which only the service role
+can write, with its clock (`temp_password_issued_at`) and `temp_password_expired` beside it. Every
+server writer and reader goes through `apps/courses/password_change_flag.py`; the set-password
+clear nulls the old `user_metadata` copies too. **The one-release fallback** honours a
+`user_metadata` flag only when the account's `app_metadata` has NO flag key at all AND the
+server's own newest staff `Invitation` for that admin issued a password (`credential_issued`), is
+not revoked and has not passed `expires_at`. The `user_metadata` timestamp is never consulted for
+it: the attacker writes it in the same call as the flag. The expiry cron keeps reading
+`user_metadata` for such accounts WITHOUT the invitation check (it rotates exactly when the
+invitation has expired, so the check could never pass) — but that branch is forgeable too (a stolen
+session can write the flag and an old clock and have the cron lock the owner out), so it is bounded
+by DATE: after 2026-11-01 it answers "nothing owed" (review F2). **Remove both fallbacks after 2026-11-01** (`LEGACY_FALLBACK_UNTIL` = this
+release + the 30-day maximum `temp_password_ttl_days`); a test pins that date against the registry's
+maximum. **Accepted residual until then:** an account invited before this release, inside its TTL,
+that already set its password under the old code (which cleared only `user_metadata`).
+
+**2. A never-scored anchor document (TD-114).** The approved design settles it: "a fact cannot be
+Certain unless a genuineness check actually RAN and passed on its anchor document — not-run →
+Probable at most." Built as a FLOOR in the ladder (`verdict_ladder._genuineness_unscored`), not a
+step: the 2026-07-07 ladder steps by SCORE and an unscored document has none, so it is not
+"suspect", adds no "may not be genuine" caveat, and does not stack with red chips. Anchors are the
+ladder's own (IC, results slip, offer). Inert while `DOC_GENUINENESS_CHECK_ENABLED` is off, as the
+design specified. VERDICT_ENGINE_VERSION 2026-10-02.1. **Income is exempt — a CHOICE, not an
+oversight (review F3).** Rule 1 as approved covers every fact, Income's anchors (STR, parent IC,
+EPF, birth certificate) included. It was not applied there because the 2026-07-07 ladder ruling
+keeps Income on its own model (STR precedence + headroom, flat genuineness cap), and TD-114's own
+status line named the IC and the results slip; folding a new floor into the income model is a
+change to the eligibility rule, not a follow-on. **Owner question: extend rule 1 to Income's
+anchors?** **Not built, owner questions:** (a) whether
+an officer should see a quiet "genuineness not checked" line (copy); (b) whether to pay to re-score
+old uploads — the IC scorer is a Gemini read, the slip's adds a Gemini visual read, and no OCR text
+is stored for these types, so no free re-score exists (`rescore_unscored_documents` counts them).
+
+**3. A payslip's monthly figure has a window (TD-151).** RM100 to RM20,000 a month, in the source
+currency, applied in `salary_figures._salary_monthly_amount` (the one place a payslip figure enters
+the engine) — outside it the figure is a misread and the slip gives no figure, the same
+"verify at interview" path net > gross already takes. No new state and no new copy. **Where the
+bounds come from:** the 88 readable payslips in the local snapshot corpus, measured 2026-10-02 —
+smallest real monthly figure RM357.22, largest RM9,900.04 — and #66's voucher, whose RM326.00 read
+as RM32,600. The ceiling is ~2x the largest real slip and below that misread; the floor is ~3.5x
+below the smallest real slip and above a dropped-decimal reading of every wage up to RM10,000. A
+year-to-date figure outside the window is ignored in favour of the month. The EPF-implied salary
+has no window yet (five statements read locally — too few to set one): TD-323.
+
+**4. The stuck-read self-heal (TD-151).** `reprocess_unread_ic` also re-reads the slip, offer,
+payslip, EPF, STR, birth certificate, guardianship letter and income-support document — but only
+when BOTH run stamps are NULL, `vision_fields` is EMPTY (no read is stored) and the row is live. A
+document carrying any stored read — one made before the stamps existed included — is never re-read
+by the sweep, so nothing it holds is overwritten or charged for again (review F1). `--dry-run`
+counts by type.
+
+**Owner rulings at the push, 2026-10-02 (the lead named the defaults; the owner said "yes"):** (a) the 59
+unscored live ICs and results slips are LEFT at Probable - no paid re-score; the counting command
+exists for the day that changes. (b) The widened 15-minute sweep MAY make its paid reads (4 documents
+today, every one with no stored reading). (c) Rule 1 stays off Income's anchors - the exemption is
+confirmed as a choice, not an oversight. A "genuineness not checked" officer line is not built.
+
 ## A complete interview, and a fresh recovery is authority to set a password — 2026-10-01
 
 **Decided by:** the owner's TD-253 ruling of 2026-09-18 (*"I want this to be a conscious decision on

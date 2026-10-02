@@ -1,6 +1,14 @@
 # Plan — Gate verdict confidence on genuineness ("a typed sheet must never read CERTAIN")
 
-**Status: DEFERRED (parked 2026-06-13).** A real gap, but an edge case for our population (high-performing
+**Status (2026-10-02): PARTLY BUILT.** Rule 2 (a confirmed fake bites harder) and rule 3 (the offer letter
+is scored) shipped with the 2026-07-07 genuineness ladder. Rule 1 shipped in Now sprint 3 for Identity,
+Academic and Pathway only: a never-scored IC / results slip / offer holds its fact at Probable
+(`verdict_ladder._genuineness_unscored`). Income is exempt by choice — the owner question "extend rule 1
+to Income's anchors?" is in decisions.md 2026-10-02. Rule 4 (backfill) is NOT done: the scorers need a
+paid read and no OCR text is stored, so `rescore_unscored_documents` only counts — whether to pay for
+the re-read is TD-114's owner question.
+
+**Earlier status: DEFERRED (parked 2026-06-13).** A real gap, but an edge case for our population (high-performing
 students, not forgers) — lower priority than the immediate fixes in flight. Captured here so it isn't lost.
 **Do not start without an explicit go-ahead** (run `Settings/_workflows/implementation-planning.md` to scope
 the sprint when picked up). Owner steer: "edge case after all; there are other more immediate fixes."

@@ -9,6 +9,8 @@ such document so the gate / verdict reflect the real read.
 Run via the internal cron endpoint job ``reprocess-ic-vision`` (e.g. every 15-30 min), or
 manually: ``python manage.py reprocess_unread_ic``. Billable (one Vision read per stuck doc);
 each doc is picked up only while it has no run, so the cost is bounded and one-off per doc.
+TD-151 (2026-10-02): the sweep also re-reads the slip, offer, income proofs and relationship
+documents stuck with no read at all (`services.blockers._SELF_HEAL_READ_TYPES`); `--dry-run` counts.
 """
 from django.core.management.base import BaseCommand
 
@@ -21,8 +23,15 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=200,
                             help='Max documents to re-process in one run.')
+        parser.add_argument('--dry-run', action='store_true',
+                            help='Count the stuck documents per type and read nothing (TD-151).')
 
     def handle(self, *args, **opts):
+        if opts['dry_run']:
+            r = reprocess_unread_ic_documents(limit=opts['limit'], dry_run=True)
+            self.stdout.write(f"reprocess_unread_ic DRY-RUN: would re-read {r['scanned']} "
+                              f"(by type {r['by_type']}); nothing was read")
+            return
         r = reprocess_unread_ic_documents(limit=opts['limit'])
         self.stdout.write(self.style.SUCCESS(
             f"reprocess_unread_ic: scanned={r['scanned']} processed={r['processed']} "

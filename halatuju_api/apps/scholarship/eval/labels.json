@@ -17,5 +17,43 @@
       "note": "Bill in another person's name — soft signal only, never a hard mismatch (accepted)."
     }
   },
-  "docs": {}
+  "docs": {},
+  "_regressions_README": "TD-151 (1), 2026-10-02. The PROBLEM-DOCUMENT corpus: every document that once caused a misread fix, with a PII-free assertion about the corrected reading. Keyed by the snapshot stem. Replayed by hand with `python apps/scholarship/eval/regression_check.py` (never collected by pytest - the snapshots are gitignored PII); the committed tests run the same checks on synthetic twins (tests/test_regression_corpus.py). An entry with `\"local\": false` names a case not yet in the local corpus: capture it (fetch_corpus.py / capture_ocr.py) and switch the flag. Add a case here whenever a document drives a fix.",
+  "regressions": {
+    "results_slip__a66__d912": {
+      "case": "#66",
+      "doc_type": "results_slip",
+      "local": true,
+      "checks": {"declared_subjects_match_stored": true, "signature_status": "genuine"},
+      "note": "Two-column SPM slip half-read by the positional parser (6/10 subjects, 3/4 grades mis-paired). The guard is the total the slip prints about itself: it must still be found and equal what the read kept."
+    },
+    "salary_slip__a66__d915": {
+      "case": "#66",
+      "doc_type": "salary_slip",
+      "local": true,
+      "checks": {"salary_amount_plausible": true},
+      "note": "Hand-written voucher whose ringgit|sen columns were concatenated (RM326.00 read as 32600, a false per-capita over the B40 line). The stored read must give a monthly figure inside the plausibility window, or none at all."
+    },
+    "epf__a37__d411": {
+      "case": "#37",
+      "doc_type": "epf",
+      "local": true,
+      "checks": {"signature_status": "not_epf", "epf_parser_declines": true},
+      "note": "An STR screenshot uploaded in the EPF slot (TD-117). The signature model must call it not an EPF statement, and the KWSP parser must not read it as a Penyata Ahli."
+    },
+    "results_slip__a140__clipped_certificate": {
+      "case": "#140",
+      "doc_type": "results_slip",
+      "local": false,
+      "checks": {"declared_subjects_found": true},
+      "note": "Certificate scanned with its left edge trimmed, so the total line prints 'JMLAH MATA PELAJARAN' (TD-217). The clip-tolerant anchor must still find the declared total. Synthetic twin: tests/test_clipped_subject_total.py."
+    },
+    "salary_slip__a73__father_payslip": {
+      "case": "#73",
+      "doc_type": "salary_slip",
+      "local": false,
+      "checks": {},
+      "note": "Scanned payslip whose IC number read with two digits wrong (state code and one serial digit) against the father's MyKad and STR (TD-220). OPEN: reading fewer digits wrongly has no bounded fix yet (TD-151), so no assertion is written; capture it so the next extraction change can be measured against it."
+    }
+  }
 }

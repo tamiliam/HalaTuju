@@ -24,14 +24,67 @@ class TestReprocessUnreadIc(TestCase):
         ApplicantDocument.objects.create(            # already processed → left alone
             application=self.app, doc_type='ic', storage_path='s-ic',
             vision_run_at=timezone.now())
-        ApplicantDocument.objects.create(            # non-IC pipeline → out of scope
-            application=self.app, doc_type='offer_letter', storage_path='off',
+        ApplicantDocument.objects.create(            # a photo-only type → out of scope
+            application=self.app, doc_type='photo', storage_path='ph',
             vision_run_at=None)
         with patch('apps.scholarship.vision.run_vision_for_document',
-                   return_value={'error': ''}) as m:
+                   return_value={'error': ''}) as m, \
+                patch('apps.scholarship.reextract.reextract_document') as rx:
             r = reprocess_unread_ic_documents()
         self.assertEqual([c.args[0].id for c in m.call_args_list], [stuck.id])
+        rx.assert_not_called()
         self.assertEqual(r, {'scanned': 1, 'processed': 1, 'errored': 0})
+
+    # ── TD-151 (3): the other read documents a submission gate depends on ──────────────────
+    def _doc(self, doc_type, **kw):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type=doc_type, storage_path=f'p/{doc_type}/{len(kw)}', **kw)
+
+    def test_sweeps_every_gating_read_type_left_with_no_read_at_all(self):
+        from apps.scholarship.services.blockers import _SELF_HEAL_READ_TYPES
+        stuck = [self._doc(t) for t in _SELF_HEAL_READ_TYPES]
+        with patch('apps.scholarship.reextract.reextract_document') as rx:
+            r = reprocess_unread_ic_documents()
+        self.assertEqual(sorted(c.args[0].id for c in rx.call_args_list),
+                         sorted(d.id for d in stuck))
+        self.assertEqual(r, {'scanned': len(stuck), 'processed': len(stuck), 'errored': 0})
+        self.assertIn('results_slip', _SELF_HEAL_READ_TYPES)
+        self.assertIn('offer_letter', _SELF_HEAL_READ_TYPES)
+
+    def test_never_re_reads_a_document_that_has_any_read_or_was_replaced(self):
+        now = timezone.now()
+        self._doc('results_slip', vision_run_at=now)                 # name check ran
+        self._doc('offer_letter', vision_fields_run_at=now)         # field extraction ran
+        # Review F1: an older read with BOTH stamps NULL but stored fields — never re-read, or the
+        # sweep would overwrite a read nobody asked it to redo.
+        self._doc('epf', vision_fields={'fields': {'employer': 'X'}})
+        self._doc('salary_slip', superseded_at=now)                  # replaced by a newer copy
+        with patch('apps.scholarship.reextract.reextract_document') as rx:
+            r = reprocess_unread_ic_documents()
+        rx.assert_not_called()
+        self.assertEqual(r['scanned'], 0)
+
+    def test_a_non_ic_read_that_raises_is_stamped_so_it_cannot_loop(self):
+        doc = self._doc('offer_letter')
+        with patch('apps.scholarship.reextract.reextract_document',
+                   side_effect=RuntimeError('boom')):
+            r = reprocess_unread_ic_documents()
+        doc.refresh_from_db()
+        self.assertIsNotNone(doc.vision_run_at)
+        self.assertEqual(r['errored'], 1)
+        with patch('apps.scholarship.reextract.reextract_document') as rx:
+            reprocess_unread_ic_documents()
+        rx.assert_not_called()
+
+    def test_dry_run_counts_by_type_and_reads_nothing(self):
+        self._doc('results_slip'); self._doc('epf')
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic',
+                                         storage_path='i', vision_run_at=None)
+        with patch('apps.scholarship.vision.run_vision_for_document') as m, \
+                patch('apps.scholarship.reextract.reextract_document') as rx:
+            r = reprocess_unread_ic_documents(dry_run=True)
+        m.assert_not_called(); rx.assert_not_called()
+        self.assertEqual(r, {'scanned': 3, 'by_type': {'results_slip': 1, 'epf': 1, 'ic': 1}})
 
     def test_records_outcome_if_run_raises(self):
         # run_vision should never raise, but if it does we stamp an outcome so the sweep

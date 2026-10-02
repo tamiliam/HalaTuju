@@ -24,6 +24,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.courses import password_change_flag
 from apps.courses.models import PartnerAdmin
 from apps.courses.views_admin import _service_headers, generate_temp_password
 
@@ -70,12 +71,14 @@ class Command(BaseCommand):
                 r = http_requests.get(f'{url}/auth/v1/admin/users/{uid}', headers=headers, timeout=15)
                 if r.status_code != 200:
                     continue
-                meta = (r.json() or {}).get('user_metadata') or {}
+                # TD-322: the flag and its clock live in app_metadata; a pre-release account still
+                # carries them in user_metadata, and is expired from there exactly as before.
+                source, meta = password_change_flag.rotation_state(r.json() or {})
             except Exception:  # noqa: BLE001 — one bad user must not stop the sweep
                 logger.warning('expire_temp_passwords: could not read user %s', uid, exc_info=True)
                 continue
 
-            if not meta.get('must_change_password'):
+            if source is None:
                 continue  # they set their own password → it is theirs now, never expire it
             issued_raw = meta.get('temp_password_issued_at')
             if not issued_raw:
@@ -95,7 +98,7 @@ class Command(BaseCommand):
             try:
                 pr = http_requests.put(
                     f'{url}/auth/v1/admin/users/{uid}',
-                    json={'password': generate_temp_password(groups=8), 'user_metadata': new_meta},
+                    json={'password': generate_temp_password(groups=8), source: new_meta},
                     headers=headers, timeout=15,
                 )
                 if pr.status_code in (200, 201):

@@ -101,7 +101,28 @@ def detect_vision_outage(window_hours=24):
     }
 
 
-def reprocess_unread_ic_documents(limit=200):
+#: TD-151 (3), 2026-10-02 — the READ documents the submission gates and the verdict depend on, swept
+#: like the IC when an upload's read never ran: the slip and offer (identity / academic / pathway
+#: blockers), the income-cluster proofs (`member_income_evidenced`, `usable_salary_slip`) and the two
+#: relationship documents. Stuck = BOTH run stamps NULL (`run_vision_match_for_document` always stamps
+#: `vision_run_at`, field extraction `vision_fields_run_at`) AND `vision_fields` EMPTY — a document
+#: that carries any stored read (one made before either stamp existed included) is never re-read by
+#: the sweep, so nothing it holds can be overwritten (review F1) — and never a superseded one.
+_SELF_HEAL_READ_TYPES = ('results_slip', 'offer_letter', 'salary_slip', 'epf', 'str',
+                         'birth_certificate', 'guardianship_letter', 'income_support_doc')
+
+
+def _stuck_unread_documents(limit):
+    from django.db.models import Q
+    return list(ApplicantDocument.objects
+                .filter(Q(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
+                        | Q(doc_type__in=_SELF_HEAL_READ_TYPES, vision_run_at__isnull=True,
+                            vision_fields_run_at__isnull=True, superseded_at__isnull=True,
+                            vision_fields={}))
+                .order_by('uploaded_at')[:limit])
+
+
+def reprocess_unread_ic_documents(limit=200, dry_run=False):
     """Self-heal IC / parent_ic documents stuck UN-PROCESSED (``vision_run_at`` is NULL).
 
     ``run_vision_for_document`` never raises and ALWAYS stamps ``vision_run_at``, so a NULL
@@ -112,18 +133,31 @@ def reprocess_unread_ic_documents(limit=200):
     such doc — once each: after a run, ``vision_run_at`` is set, so it's never re-picked (cost
     is one Vision read per stuck doc). Defensive: if a run ever does raise, we stamp an outcome
     so it can't loop. Returns ``{scanned, processed, errored}``.
+
+    TD-151 (3): the same sweep now covers the other read documents a submission gate depends on
+    (``_SELF_HEAL_READ_TYPES``), re-read through ``reextract.reextract_document`` — the one
+    dispatcher the cockpit's Re-run uses. ``dry_run`` counts what WOULD be re-read, per type, and
+    reads nothing (``{scanned, by_type}``) — run it before the first deploy to size the backlog.
     """
     from ..vision import run_vision_for_document
-    stuck = list(ApplicantDocument.objects
-                 .filter(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
-                 .order_by('uploaded_at')[:limit])
+    from ..reextract import reextract_document
+    stuck = _stuck_unread_documents(limit)
+    if dry_run:
+        by_type = {}
+        for doc in stuck:
+            by_type[doc.doc_type] = by_type.get(doc.doc_type, 0) + 1
+        return {'scanned': len(stuck), 'by_type': by_type}
     scanned = processed = errored = 0
     for doc in stuck:
         scanned += 1
         try:
-            res = run_vision_for_document(doc)
-            errored += 1 if res.get('error') else 0
-            processed += 0 if res.get('error') else 1
+            if doc.doc_type in ('ic', 'parent_ic'):
+                err = run_vision_for_document(doc).get('error')
+            else:
+                reextract_document(doc)
+                err = doc.vision_error
+            errored += 1 if err else 0
+            processed += 0 if err else 1
         except Exception:
             errored += 1
             doc.vision_error = doc.vision_error or 'reprocess_failed'

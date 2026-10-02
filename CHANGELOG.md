@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## Now sprint 3: the onboarding flag moves server-side (TD-322); an unscored document cannot read Certain (TD-114); the misread-document hardening pass (TD-151) - 2026-10-02
+
+BUILT, not committed, pushed or deployed; an adversarial review reads the diff first. Register
+open 131 -> **130** (TD-322 and TD-151 closed, TD-323 raised; TD-114's verdict half done, the
+rest an owner question), defined 320. No migration, no data change, no copy, no ledger raised
+(`verdict_engine.py`'s entry LOWERED after the ladder moved out).
+
+**Part 1 — TD-322 (security), separable:**
+- `must_change_password` and its clock are written to Supabase `app_metadata` (server-only) by the
+  invite, Resend and the expiry cron, cleared there by `admin/set-password/`, and read from there
+  by the set-password gate — new `apps/courses/password_change_flag.py`. A flag a browser wrote
+  into `user_metadata` is refused, unless the account has no `app_metadata` flag at all AND the
+  server's own Invitation row says a password was issued, not revoked, inside `expires_at`
+  (one-release fallback, removable after 2026-11-01). The web login reads `app_metadata` first
+  (`lib/invitations.pendingPasswordChange`). The TD-207 recovery path is unchanged.
+
+**Part 2 — TD-114:**
+- A never-scored IC, results slip or offer holds its fact at Probable, never Certain (a floor,
+  not a genuineness step; inert while `DOC_GENUINENESS_CHECK_ENABLED` is off). The ladder moved
+  verbatim from `verdict_engine.py` to `apps/scholarship/verdict_ladder.py` first (moves only;
+  `_apply_genuineness_ladder` stays as a seam). VERDICT_ENGINE_VERSION **2026-10-02.1**.
+  ⚠ Officer-facing knock-on, no copy change (review F4a): the Check-2 facts ledger
+  (`submission_review.build_facts_ledger`) derives each claim's status from these facts, so on the
+  affected applications (the reviewer counted 37) name / qualification / pathway will read
+  "reported" where they read "verified" before. Income (exempt from the floor) does not move.
+- New `rescore_unscored_documents` (dry-run by default): counts live never-scored anchor documents
+  per type and scores, with no paid call, only what has stored OCR text (offers exactly; slips
+  only when crediting the unread QR/crest could not change the band). No stored text exists for
+  these types today, so it counts; ICs need a Gemini read and are never touched.
+
+**Part 3 — TD-151:**
+- Problem-document corpus: `eval/labels.json` -> `regressions` (PII-free: #66 slip d912, #66
+  voucher d915, #37 EPF d411 replayed; #140 and #73 named, not yet local) and the hand-run
+  `eval/regression_check.py`; `test_regression_corpus.py` runs the same checks on synthetic twins.
+- A payslip monthly figure outside RM100–20,000 is a misread and reads as no figure (verify at
+  interview), the path net > gross already takes; bounds measured on the local corpus.
+- `reprocess_unread_ic` also re-reads the slip, offer, income proofs and relationship documents
+  stuck with no read at all (both stamps NULL, no stored read, live rows); `--dry-run` counts by type.
+- Tests: see the retrospective for the counts and bites.
+
 ## Now sprint 2: a complete interview before Approve/Decline (TD-253) and password reset for onboarded admins (TD-207) - 2026-10-01
 
 BUILT, not committed, pushed or deployed; an adversarial review reads the diff first, and the owner

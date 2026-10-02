@@ -63,6 +63,30 @@ export function tempPasswordExpired(
   return now.getTime() - issuedMs > ttlDays * 86_400_000
 }
 
+type Metadata = Record<string, unknown> | null | undefined
+
+/**
+ * Does this signed-in admin still owe a password change, and since when? (TD-322)
+ *
+ * ⚠ The server writes the flag to `app_metadata` (only the service role can); `user_metadata` is
+ * rewritable from any signed-in browser. So `app_metadata` decides whenever it carries the key,
+ * and `user_metadata` is read only for an account no server writer has touched since the move —
+ * a partner invited before it. That reading only routes the page: the api's set-password gate
+ * decides for itself (`apps/courses/password_change_flag.py`), so a forged flag here earns a
+ * refusal there, not a password. Drop the `user_metadata` branch with the api's fallback.
+ */
+export function pendingPasswordChange(
+  user: { app_metadata?: Metadata; user_metadata?: Metadata } | null | undefined
+): { owed: boolean; issuedAt: string | null } {
+  const app = user?.app_metadata || {}
+  const src = 'must_change_password' in app ? app : (user?.user_metadata || {})
+  const issued = src.temp_password_issued_at
+  return {
+    owed: Boolean(src.must_change_password),
+    issuedAt: typeof issued === 'string' ? issued : null,
+  }
+}
+
 /** Somebody whose invitation is still unanswered — the top table's membership rule. */
 export function isOutstanding(a: AdminItem): boolean {
   const s = a.invitation?.status

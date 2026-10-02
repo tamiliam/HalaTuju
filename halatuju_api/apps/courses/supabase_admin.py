@@ -11,6 +11,8 @@ import logging
 import requests as http_requests
 from django.utils import timezone
 
+from . import password_change_flag
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,8 +48,10 @@ def _create_supabase_user(supabase_url, service_role_key, email, name, temp_pass
             'email_confirm': True,
             # `temp_password_issued_at` starts the 7-day clock: the login gate refuses an unchanged
             # temp password past the TTL, and the daily `expire_temp_passwords` job rotates it dead.
-            'user_metadata': {'name': name, 'must_change_password': True,
-                              'temp_password_issued_at': timezone.now().isoformat()},
+            # ⚠ TD-322: the flag and its clock go in `app_metadata` (server-writable only), never
+            # `user_metadata` — the account's own browser can rewrite that. `password_change_flag`.
+            'user_metadata': {'name': name},
+            'app_metadata': password_change_flag.issued_fields(timezone.now()),
         },
         headers=_service_headers(service_role_key),
     )

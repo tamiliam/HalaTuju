@@ -361,7 +361,9 @@ class PartnerAccountCreationTest(TestCase):
         self.assertTrue(body['email_confirm'])
         self.assertTrue(body['password'])
         self.assertEqual(body['user_metadata']['name'], 'New Partner')
-        self.assertTrue(body['user_metadata']['must_change_password'])
+        # TD-322: the flag goes where only the server can write it, never in user_metadata.
+        self.assertTrue(body['app_metadata']['must_change_password'])
+        self.assertNotIn('must_change_password', body['user_metadata'])
 
     def test_supabase_uid_is_stored_on_the_row(self):
         self._invite()
@@ -392,7 +394,7 @@ class PartnerAccountCreationTest(TestCase):
     def test_the_create_body_stamps_the_temp_password_clock(self):
         # temp_password_issued_at starts the 7-day TTL the login gate + expire cron enforce.
         _, mock_post = self._invite()
-        meta = mock_post.call_args[1]['json']['user_metadata']
+        meta = mock_post.call_args[1]['json']['app_metadata']
         self.assertTrue(meta['must_change_password'])
         self.assertIn('temp_password_issued_at', meta)
         self.assertTrue(meta['temp_password_issued_at'])
@@ -477,7 +479,11 @@ class AdminResendTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(mock_put.call_args[0][0].endswith('/auth/v1/admin/users/target-uid'))
         new_password = mock_put.call_args[1]['json']['password']
-        self.assertTrue(mock_put.call_args[1]['json']['user_metadata']['must_change_password'])
+        sent = mock_put.call_args[1]['json']
+        self.assertTrue(sent['app_metadata']['must_change_password'])          # TD-322
+        self.assertTrue(sent['app_metadata']['temp_password_issued_at'])       # a fresh clock
+        self.assertIsNone(sent['user_metadata']['must_change_password'])       # old copy nulled
+        self.assertEqual(sent['user_metadata']['name'], 'Goban')
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(new_password, mail.outbox[0].body)
         self.assertEqual(mail.outbox[0].to, ['goban@example.com'])
@@ -529,13 +535,14 @@ class ExpireTempPasswordsTest(TestCase):
         return PartnerAdmin.objects.create(
             supabase_user_id=uid, role='reviewer', is_active=True, name='X', email=email)
 
-    def _run(self, metadata_by_uid):
+    def _run(self, metadata_by_uid, home='app_metadata'):
+        # TD-322: app_metadata is the home; the dated user_metadata branch has its own test below.
         def fake_get(url, **kw):
             uid = url.rstrip('/').rsplit('/', 1)[-1]
             if uid not in metadata_by_uid:
                 return MagicMock(status_code=404, text='nf', json=lambda: {})
             meta = metadata_by_uid[uid]
-            return MagicMock(status_code=200, text='ok', json=lambda m=meta: {'user_metadata': m})
+            return MagicMock(status_code=200, text='ok', json=lambda m=meta: {home: m})
         with patch(f'{self._MOD}.get', side_effect=fake_get) as g, \
                 patch(f'{self._MOD}.put') as p:
             p.return_value = MagicMock(status_code=200, text='ok')
@@ -546,9 +553,14 @@ class ExpireTempPasswordsTest(TestCase):
         return (timezone.now() - datetime.timedelta(days=days)).isoformat()
 
     def test_rotates_a_stale_unchanged_temp_password(self):
+        # The pre-release (user_metadata) path, pinned to a date inside its release so the test
+        # does not change meaning on 2026-11-01 (review F2).
+        from apps.courses import password_change_flag as pcf
         self._admin('u-stale', 'stale@example.com')
-        _, put = self._run({'u-stale': {'must_change_password': True,
-                                        'temp_password_issued_at': self._ago(8)}})
+        with patch.object(pcf, '_today', return_value=datetime.date(2026, 10, 2)):
+            _, put = self._run({'u-stale': {'must_change_password': True,
+                                            'temp_password_issued_at': self._ago(8)}},
+                               home='user_metadata')
         put.assert_called_once()
         body = put.call_args[1]['json']
         self.assertTrue(body['password'])                                  # rotated to a new secret
@@ -565,6 +577,42 @@ class ExpireTempPasswordsTest(TestCase):
         self._admin('u-changed', 'changed@example.com')
         _, put = self._run({'u-changed': {'must_change_password': False,
                                           'temp_password_issued_at': self._ago(30)}})
+        put.assert_not_called()
+
+    # ── TD-322: the flag's server-side home ────────────────────────────────────────────────────
+    def test_rotates_a_stale_temp_password_recorded_in_app_metadata(self):
+        self._admin('u-app', 'app@example.com')
+        _, put = self._run({'u-app': {'must_change_password': True,
+                                      'temp_password_issued_at': self._ago(8)}}, home='app_metadata')
+        put.assert_called_once()
+        body = put.call_args[1]['json']
+        self.assertTrue(body['app_metadata']['temp_password_expired'])   # answered in the same home
+        self.assertIsNone(body['app_metadata']['temp_password_issued_at'])
+        self.assertNotIn('user_metadata', body)
+
+    def test_app_metadata_saying_changed_outranks_a_browser_written_flag(self):
+        self._admin('u-both', 'both@example.com')
+        with patch(f'{self._MOD}.get') as g, patch(f'{self._MOD}.put') as p:
+            g.return_value = MagicMock(status_code=200, json=lambda: {
+                'app_metadata': {'must_change_password': False},
+                'user_metadata': {'must_change_password': True,
+                                  'temp_password_issued_at': self._ago(30)}})
+            call_command('expire_temp_passwords')
+        p.assert_not_called()
+
+    def test_the_user_metadata_rotation_fallback_ends_on_its_removal_date(self):
+        # Review F2: a stolen session on a pre-release account could forge the flag plus an old
+        # clock and have the cron rotate the owner's password. That branch is bounded by the same
+        # removal date as the set-password fallback — after it, user_metadata rotates nothing.
+        from apps.courses import password_change_flag as pcf
+        self._admin('u-legacy', 'legacy@example.com')
+        forged = {'u-legacy': {'must_change_password': True, 'temp_password_issued_at': self._ago(30)}}
+        with patch.object(pcf, '_today', return_value=pcf.LEGACY_FALLBACK_UNTIL):
+            _, put = self._run(dict(forged), home='user_metadata')
+        put.assert_called_once()                                    # still inside the release
+        after = pcf.LEGACY_FALLBACK_UNTIL + datetime.timedelta(days=1)
+        with patch.object(pcf, '_today', return_value=after):
+            _, put = self._run(dict(forged), home='user_metadata')
         put.assert_not_called()
 
     def test_never_fetches_or_rotates_a_google_row_with_no_uid(self):
@@ -590,27 +638,94 @@ class AdminSetPasswordTest(TestCase):
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("partner-uid")}')
         # Review F3: only an admin may use this endpoint, so the caller holds a PartnerAdmin row.
-        PartnerAdmin.objects.create(supabase_user_id='partner-uid', email=self._EMAIL,
-                                    name='Org Admin', role='org_admin', is_active=True)
+        self.admin = PartnerAdmin.objects.create(
+            supabase_user_id='partner-uid', email=self._EMAIL, name='Org Admin', role='org_admin',
+            is_active=True)
 
-    def _post(self, password, meta, get_status=200):
+    def _post(self, password, meta, get_status=200, app_meta=None):
+        account = {'user_metadata': meta}
+        if app_meta is not None:
+            account['app_metadata'] = app_meta
         with patch(f'{self._MOD}.get') as g, patch(f'{self._MOD}.put') as p:
-            g.return_value = MagicMock(status_code=get_status, json=lambda: {'user_metadata': meta})
+            g.return_value = MagicMock(status_code=get_status, json=lambda: account)
             p.return_value = MagicMock(status_code=200, text='ok')
             r = self.client.post('/api/v1/admin/set-password/', {'password': password}, format='json')
         return r, g, p
 
+    _PENDING = {'must_change_password': True, 'temp_password_issued_at': 'x'}
+
     def test_sets_the_password_and_clears_the_temp_flags(self):
-        r, _, p = self._post('a-strong-password', {'name': 'Rev', 'must_change_password': True,
-                                                   'temp_password_issued_at': 'x'})
+        r, _, p = self._post('a-strong-password', {'name': 'Rev'}, app_meta=dict(self._PENDING))
         self.assertEqual(r.status_code, 200)
         self.assertIn('/admin/users/partner-uid', p.call_args[0][0])   # the caller's OWN uid
         body = p.call_args[1]['json']
         self.assertEqual(body['password'], 'a-strong-password')
-        self.assertFalse(body['user_metadata']['must_change_password'])
-        # Nulled (not omitted) — Supabase merges user_metadata, so omitting wouldn't clear it.
-        self.assertIsNone(body['user_metadata']['temp_password_issued_at'])
+        self.assertIs(body['app_metadata']['must_change_password'], False)
+        # Nulled (not omitted) — Supabase merges metadata, so omitting wouldn't clear it.
+        self.assertIsNone(body['app_metadata']['temp_password_issued_at'])
+        self.assertIsNone(body['user_metadata']['must_change_password'])  # legacy copy nulled
         self.assertEqual(body['user_metadata']['name'], 'Rev')         # name preserved
+
+    # ── TD-322: the flag a browser can write is not a key ─────────────────────────────────────
+    def _invite(self, days_ago, **kw):
+        from apps.scholarship import invitations
+        fields = dict(audience='staff', email=self._EMAIL, partner_admin=self.admin,
+                      credential_issued=True, ttl_days=7,
+                      now=timezone.now() - datetime.timedelta(days=days_ago))
+        fields.update(kw)
+        return invitations.create_or_refresh(**fields)
+
+    _BROWSER_FLAG = {'name': 'Org Admin', 'must_change_password': True,
+                     'temp_password_issued_at': timezone.now().isoformat()}
+
+    def test_a_browser_written_flag_on_an_ordinary_session_is_refused(self):
+        # The attack: an ordinary signed-in session rewrites its own user_metadata, needing no
+        # password. No app_metadata flag and no pending invite → refused, nothing written.
+        r, _, p = self._post('attacker-password', dict(self._BROWSER_FLAG))
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.json()['error'], 'not_pending_password_change')
+        p.assert_not_called()
+
+    def test_app_metadata_saying_done_outranks_the_browser_flag(self):
+        # Once a server writer has touched the account, user_metadata is never consulted — even
+        # with an invitation still inside its TTL.
+        self._invite(days_ago=1)
+        r, _, p = self._post('attacker-password', dict(self._BROWSER_FLAG),
+                             app_meta={'must_change_password': False})
+        self.assertEqual(r.status_code, 403)
+        p.assert_not_called()
+
+    def test_a_pending_pre_release_invite_is_honoured_through_the_fallback(self):
+        self._invite(days_ago=6)                      # issued 6 days ago, 7-day TTL: still live
+        r, _, p = self._post('a-strong-password', dict(self._BROWSER_FLAG))
+        self.assertEqual(r.status_code, 200, r.content)
+        body = p.call_args[1]['json']
+        self.assertIs(body['app_metadata']['must_change_password'], False)  # moves to the new home
+        self.assertIsNone(body['user_metadata']['must_change_password'])
+
+    def test_the_fallback_expires_with_the_invitation_ttl(self):
+        self._invite(days_ago=8)                      # issued 8 days ago, 7-day TTL: expired
+        r, _, p = self._post('a-strong-password', dict(self._BROWSER_FLAG))
+        self.assertEqual(r.status_code, 403)
+        p.assert_not_called()
+
+    def test_the_fallback_needs_an_issued_unrevoked_invitation(self):
+        from apps.scholarship import invitations
+        for label, kw in (('no password issued', {'credential_issued': False}),
+                          ('revoked', {})):
+            with self.subTest(label):
+                inv = self._invite(days_ago=1, **kw)
+                if label == 'revoked':
+                    invitations.revoke(inv)
+                r, _, p = self._post('a-strong-password', dict(self._BROWSER_FLAG))
+                self.assertEqual(r.status_code, 403)
+                p.assert_not_called()
+
+    def test_the_fallback_has_a_removal_date_past_the_longest_ttl(self):
+        from apps.courses import org_config, password_change_flag
+        longest = org_config.SETTINGS['temp_password_ttl_days']['max']
+        self.assertGreaterEqual(password_change_flag.LEGACY_FALLBACK_UNTIL,
+                                datetime.date(2026, 10, 2) + datetime.timedelta(days=longest))
 
     def test_refuses_when_the_caller_is_not_pending_a_change(self):
         r, _, p = self._post('a-strong-password', {'must_change_password': False})
@@ -710,7 +825,7 @@ class AdminSetPasswordTest(TestCase):
         self.assertIn('/admin/users/partner-uid', p.call_args[0][0])
 
     def test_the_invite_flow_is_unchanged_without_any_recovery(self):
-        # Flag set, an ordinary session (no amr at all): onboarding still works exactly as before.
-        r, _, p = self._post('a-strong-password', {'must_change_password': True})
+        # Flag set by the server, an ordinary session (no amr at all): onboarding still works.
+        r, _, p = self._post('a-strong-password', {}, app_meta={'must_change_password': True})
         self.assertEqual(r.status_code, 200)
-        self.assertFalse(p.call_args[1]['json']['user_metadata']['must_change_password'])
+        self.assertIs(p.call_args[1]['json']['app_metadata']['must_change_password'], False)
