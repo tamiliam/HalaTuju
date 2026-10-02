@@ -39,6 +39,7 @@ from .engine import (
     prepare_merit_inputs,
     calculate_merit_score,
 )
+from .exam_questions import results_held
 from .pathways import check_all_pathways, get_pathway_fit_score
 from .pismp_taxonomy import classify_pismp, aliran_of, ALIRAN_VALUES, ALIRAN_LABELS
 from .serializers import (
@@ -1144,6 +1145,10 @@ class ProfileView(APIView):
             'pathway': profile.chosen_pathway,
             'application_open': application_open,
             'exam_type': profile.exam_type,
+            # TD-218 (2026-10-02): served at last — the web's results-held reader and its login
+            # hydrate were written against this key, and it was never on the payload.
+            'results_exam_type': profile.results_exam_type,
+            'results_held': results_held(profile),       # TD-218 review F1: the ONE rule, served
             'stpm_grades': profile.stpm_grades,
             'stpm_cgpa': profile.stpm_cgpa,
             'muet_band': profile.muet_band,
@@ -1151,6 +1156,8 @@ class ProfileView(APIView):
             'spm_prereq_grades': profile.spm_prereq_grades,
             'stream_subjects': profile.stream_subjects,
             'elective_subjects': profile.elective_subjects,
+            'spm_elective_subjects': profile.spm_elective_subjects,     # TD-069
+            'spm_stream': profile.spm_stream,
         })
 
     def put(self, request):

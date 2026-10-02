@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import SchoolSelect from '@/components/SchoolSelect'
-import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
@@ -124,6 +124,19 @@ export default function ProfileInputPage() {
       if (elektifStr) {
         try { syncPayload.elective_subjects = JSON.parse(elektifStr) } catch { /* ignore */ }
       }
+
+      // TD-069: the STPM path's SPM prerequisites, durably — the grades, which of them are
+      // electives, and the stream pill. Without these a logout/login emptied the section.
+      const spmPrereqStr = localStorage.getItem(KEY_SPM_PREREQ)
+      if (spmPrereqStr) {
+        try { syncPayload.spm_prereq_grades = JSON.parse(spmPrereqStr) } catch { /* ignore */ }
+      }
+      const spmElektifStr = localStorage.getItem(KEY_SPM_ELEKTIF)
+      if (spmElektifStr) {
+        try { syncPayload.spm_elective_subjects = JSON.parse(spmElektifStr) } catch { /* ignore */ }
+      }
+      const spmStream = localStorage.getItem(KEY_SPM_STREAM)
+      if (spmStream) syncPayload.spm_stream = spmStream
 
       // Include STPM data
       const examType = localStorage.getItem(KEY_EXAM_TYPE)

@@ -21,7 +21,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 
 import ScholarshipReview from './ScholarshipReview'
-import { sandboxApplication, sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
+import { sandboxApplication, sandboxProfileFormSix, sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
 import type { ApplicantDocument, ScholarshipApplication, StudentProfile } from '@/lib/api'
 import * as api from '@/lib/api'
 
@@ -125,5 +125,34 @@ describe('the read-back files each document under the fact it proves', () => {
     for (const cat of ['academic', 'pathway', 'income', 'other']) {
       expect(screen.queryByText(SECTION(cat))).toBeNull()
     }
+  })
+})
+
+describe('the results card reads the results we HOLD (TD-218)', () => {
+  /*
+   * The Form Six student declared STPM (the exam she is heading for) and holds ten SPM grades. The
+   * server now serves the application's `exam_type` as the results held — 'spm' for her — and the
+   * card must take BOTH its label and its grades from that one answer. Before TD-218 the label came
+   * from the profile's declaration ('STPM') and the grades from the payload, so she read "STPM"
+   * above an empty row while her SPM grades sat on file.
+   */
+  it('shows the Form Six explorer her SPM grades under an SPM label', async () => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [doc(1, 'ic')] })
+    mockApi.getConsentStatus.mockResolvedValue(
+      { is_minor: false, consents: [] } as unknown as api.ConsentStatus)
+    render(
+      <ScholarshipReview
+        app={{ ...sandboxApplication, exam_type: 'spm' } as ScholarshipApplication}
+        profile={sandboxProfileFormSix as unknown as StudentProfile}
+        token="sandbox-token" onEdit={jest.fn()} onBack={jest.fn()} onSubmit={jest.fn()}
+        submitting={false} submitError={null} canSubmit confirmed
+        t={(k: string) => k} lang="en"
+      />,
+    )
+    await waitFor(() => expect(screen.getByText(SECTION('identity'))).toBeTruthy())
+    expect(screen.getByText('SPM')).toBeTruthy()
+    expect(screen.queryByText('STPM')).toBeNull()
+    // positive: one of her ten SPM grades is drawn (Bahasa Tamil A, from the fixture)
+    expect(screen.getAllByText(/ A\+?$/).length).toBeGreaterThan(0)
   })
 })

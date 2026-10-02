@@ -1,8 +1,16 @@
 """
 Serializers for the courses API.
 """
+import re
+
 from rest_framework import serializers
 from .models import Course, FieldTaxonomy, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
+
+#: The shape of an SPM subject key as the web catalogue writes them ('bm', 'b_tamil', 'addmath').
+_SUBJECT_KEY = re.compile(r'[a-z0-9_]{1,40}')
+#: A sanity bound on the STPM path's SPM lists — NOT the form's cap of 7 (that is the web's
+#: MAX_SPM_ELECTIVES and is not copied here). Far above any real entry, far below abuse.
+_MAX_SPM_ENTRIES = 20
 
 
 class FieldTaxonomySerializer(serializers.ModelSerializer):
@@ -287,6 +295,10 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     from malformed input (e.g. string for siblings, invalid JSON for grades).
     """
 
+    # TD-069 review F3: declared here WITHOUT the model's max_length, so an over-long label reaches
+    # `validate_spm_stream` and is DROPPED there, instead of 400-ing the whole sync first.
+    spm_stream = serializers.CharField(required=False, allow_blank=True)
+
     def validate(self, attrs):
         """⚠ `results_exam_type` MUST BE BACKED BY RESULTS, and that is checked HERE — on the
         server — because the whole value of the field is that it cannot be set by a selection.
@@ -316,6 +328,40 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             attrs.pop('results_exam_type', None)
         return attrs
 
+    def validate_spm_elective_subjects(self, value):
+        """A list of subject KEYS, nothing else (TD-069). `elective_subjects` has never been
+        checked; this new field is, for shape only — there is no server-side list of SPM subject
+        keys to check membership against (the web's `subjects.ts` is the catalogue), and the cap
+        of 7 is the form's, so it is not repeated here. Duplicates and blanks are dropped."""
+        if (not isinstance(value, list) or len(value) > _MAX_SPM_ENTRIES
+                or not all(isinstance(k, str) for k in value)):
+            raise serializers.ValidationError('Expected a list of subject keys.')
+        keys = [k.strip() for k in value if k.strip()]
+        if any(not _SUBJECT_KEY.fullmatch(k) for k in keys):
+            raise serializers.ValidationError('Expected a list of subject keys.')
+        return list(dict.fromkeys(keys))
+
+    def validate_spm_stream(self, value):
+        """A form label ('science' / 'arts' / 'technical'), stored only so the form can light the
+        right pill again. Anything not key-shaped is DROPPED to blank rather than failing the sync
+        — failing a student's whole profile sync over a label would trade a cosmetic fault for
+        data loss (the same reasoning as `results_exam_type` above). Membership is not checked
+        here: the list of streams is the form's, and a copy of it here would be a mirror."""
+        value = (value or '').strip().lower()
+        return value if _SUBJECT_KEY.fullmatch(value) and len(value) <= 20 else ''   # model: 20
+
+    def validate_spm_prereq_grades(self, value):
+        """`{subject key: SPM grade}` (TD-069 review F4 — the web sends it since this sprint; it
+        had no check at all). A non-dict or an oversized one is refused; an entry whose key is not
+        key-shaped or whose grade is not an SPM grade is DROPPED, so one bad cell never costs the
+        student the rest of her grades. The grade list is the STPM engine's own — the consumer of
+        these grades — so it is read, not copied."""
+        from .stpm_engine import SPM_GRADE_ORDER
+        if not isinstance(value, dict) or len(value) > _MAX_SPM_ENTRIES:
+            raise serializers.ValidationError('Expected SPM grades by subject key.')
+        return {k: g for k, g in value.items()
+                if isinstance(k, str) and _SUBJECT_KEY.fullmatch(k) and g in SPM_GRADE_ORDER}
+
     class Meta:
         model = StudentProfile
         fields = [
@@ -332,6 +378,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'exam_type', 'results_exam_type',
             'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
             'spm_prereq_grades', 'stream_subjects', 'elective_subjects', 'referral_source',
+            # TD-069: the STPM path's SPM elective picks + stream, so its form rebuilds on login.
+            'spm_elective_subjects', 'spm_stream',
             'contact_email', 'contact_phone', 'whatsapp_opt_in',
             # Structured family roster (the profile-level home; two-way synced with an
             # open application by ProfileView.put).

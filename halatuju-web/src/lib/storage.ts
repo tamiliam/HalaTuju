@@ -64,6 +64,14 @@ export const KEY_KOKO_SCORE = 'halatuju_koko_score'
 /** SPM stream for STPM prereq entry: 'science' | 'arts' | 'technical' | 'vocational' */
 export const KEY_SPM_STREAM = 'halatuju_spm_stream'
 
+/** STPM path: the SPM stream (aliran) subjects picked as prerequisites — JSON array. Not
+ *  stored on the server: after a login the form derives it from the prerequisite grades (TD-069). */
+export const KEY_SPM_ALIRAN = 'halatuju_spm_aliran'
+
+/** STPM path: the SPM elective subjects picked as prerequisites — JSON array, up to
+ *  MAX_SPM_ELECTIVES. Synced to `profile.spm_elective_subjects` (TD-069). */
+export const KEY_SPM_ELEKTIF = 'halatuju_spm_elektif'
+
 /** UI locale: 'en' | 'ms' | 'ta' */
 export const KEY_LOCALE = 'halatuju_locale'
 

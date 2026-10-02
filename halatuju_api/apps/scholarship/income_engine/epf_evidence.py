@@ -1,12 +1,14 @@
 """The semester-result gap, and the EPF corroboration of employment.
 
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
-Moves only: not a line of this body was reworded. See `__init__.py`.
+Moves only: not a line of this body was reworded. See `__init__.py`. TD-218 (2026-10-02) then
+moved one read in `semester_result_gap` onto `heading_for`, answer for answer.
 """
 from __future__ import annotations
 
 from .identity_checks import _cluster_docs
 from .informal import informal_payslip_claimed, member_is_informal
+from apps.courses.exam_questions import heading_for
 from .occupation import _NON_EARNING_OCC, _docs_or_none, _has_read_doc, _member_occupation
 
 
@@ -24,14 +26,16 @@ def semester_result_gap(application):
         AND the offer's normalised ``reporting_date`` is a year OLDER than the cohort (the same
         past-intake signal the continuing-STPM award rule uses); Matric/Asasi (10-month) excluded —
         a past intake there = completed, a different conversation; or
-      * the legacy arm: the student applied with STPM credentials (``exam_type='stpm'`` — in Form 6
-        by definition; the programme currently processes post-SPM applicants, so this rarely fires).
+      * the legacy arm: the student DECLARED STPM (``heading_for`` — in Form 6 by definition, and
+        Form 6 runs in semesters; TD-218 keeps this on the declaration because the question is
+        where she is studying, not which results she holds). Rarely fires: the programme
+        currently processes post-SPM applicants.
     Clears when a ``semester_result`` field-extracts."""
     docs = _docs_or_none(application)
     if docs is None or _has_read_doc(application, 'semester_result'):
         return False
     prof = getattr(application, 'profile', None)
-    if (getattr(prof, 'exam_type', '') or '') == 'stpm':
+    if heading_for(prof) == 'stpm':
         return True
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
     if pathway not in _MULTI_YEAR_PATHWAYS:

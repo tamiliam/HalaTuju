@@ -1,6 +1,7 @@
 """Serializers for B40 Assistance Programme intake."""
 from rest_framework import serializers
 
+from apps.courses.exam_questions import ResultsHeldField
 from . import pool
 from .family import PROFESSION_CODES
 from .models import (
@@ -660,8 +661,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     profile_id = serializers.CharField(
         source='profile.pk', read_only=True, allow_null=True,
     )
-    # Profile-derived (read live from the canonical StudentProfile).
-    exam_type = serializers.CharField(source='profile.exam_type', read_only=True)
+    exam_type = ResultsHeldField()   # live: the results we HOLD, not the declared exam (TD-218)
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
     household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)

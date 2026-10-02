@@ -1347,6 +1347,33 @@ interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257
 **132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
 
+**NOW SPRINT 4 (TD-069 + TD-218) IS BUILT, not committed, pushed or deployed (2026-10-02).**
+Register open **130** (TD-069 and TD-218 closed; TD-324 raised — Owner-decision — and TD-325 —
+Later). Part 1 (TD-069): an STPM student's SPM prerequisites (grades, electives, stream pill) are
+synced and re-hydrated on login; the elective cap is `MAX_SPM_ELECTIVES`. Part 2 (TD-218):
+`apps/courses/exam_questions.py` (`heading_for` / `results_held`); the student payload's
+`exam_type` now serves the results held; the income checks read the declaration by name; the
+shortlist gate, sponsor band and slip parser are HELD on the declaration pending TD-324; the
+profile GET serves `results_exam_type`. VERDICT_ENGINE_VERSION unchanged. Rules: decisions.md
+2026-10-02 "Which question each `exam_type` reader answers". **The migration — MIGRATE-FIRST, by
+hand, on `api_student_profiles` (read from `Meta.db_table`; the legacy `student_profiles` table
+also exists):**
+`ALTER TABLE api_student_profiles ADD COLUMN spm_elective_subjects jsonb NOT NULL DEFAULT '[]'::jsonb;`
+`ALTER TABLE api_student_profiles ADD COLUMN spm_stream varchar(20) NOT NULL DEFAULT '';`
+then `INSERT INTO django_migrations (app, name, applied) VALUES ('courses', '0076_spm_prereq_selection', now());`
+⚠ KEEP the defaults (the old image inserts profiles without these columns until the deploy).
+**Adversarial review FIX-THEN-SHIP, fixed in place:** the profile GET also serves `results_held`
+and the apply form's Results step reads it (F1; the accessor module is `apps/courses/exam_questions.py`);
+the sign-in gate sends the STPM path's fields before the hydrate overwrites them (F2); the stream
+label and the prerequisite grades are bounded and dropped-not-fatal (F3/F4); reviewer Guide + FAQ
+name the SPM prerequisites line. **Measured on production (the lead, read-only, 2026-10-02):** 36
+STPM-declared profiles, none with SPM prerequisites on the server, 3 live applications; TD-218 —
+68 live agree, **1** live Form Six explorer, **0** live the other way. **What the lead runs before
+the deploy:** the migration above, then the re-labelled probe if the TIGHT rows are wanted. **What
+the owner must decide:** TD-324 — with 0 in the other direction today, whether to switch the
+shortlist gate, the sponsor band and the slip parser to the results held. Nothing else is needed to
+ship this.
+
 **NOW SPRINT 3 (TD-322 + TD-114 + TD-151) IS BUILT, not committed, pushed or deployed
 (2026-10-02).** Register open **130** (TD-322 and TD-151 closed, TD-323 raised; TD-114 moved to
 Owner-decision). Part 1 (TD-322, separable): the onboarding flag lives in Supabase `app_metadata`
@@ -1406,12 +1433,12 @@ defining line in the same change that fixes it; never write a new entry inside t
   - ~~**TD-153**~~ (B·S) — closed by the sweep (all of part b now gated).
   - ~~**TD-255**~~ (B·M) — closed by Now sprint 1 (Node 24), deploy pending.
   - ~~**TD-253**~~ (B·M) — closed by Now sprint 2 (built, not pushed).
-  - **TD-218** (B·M) — The exam-type answer does two jobs, so tapping STPM to look around can change ranking and document reading.
+  - ~~**TD-218**~~ (B·M) — closed by Now sprint 4 (built, not pushed); three readers held behind TD-324.
   - ~~**TD-207**~~ (B·M) — closed by Now sprint 2 (built, not pushed).
   - **TD-151** (B·M) — The hardening pass for misread documents was never done: no problem-document set, no sanity check on figures.
   - **TD-125** (B·M) — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet.
   - **TD-114** (B·M) — A fact can read Certain off a document that was never scored for genuineness.
-  - **TD-069** (B·M) — STPM students get only two SPM elective slots, and the choice is kept only in the browser.
+  - ~~**TD-069**~~ (B·M) — closed by Now sprint 4 (built, not pushed; migration courses/0076).
 - **The owner is asked 23 questions** (the Owner-decision tier): TD-043, TD-066, TD-075, TD-096, TD-128, TD-133, TD-140, TD-142, TD-143, TD-152, TD-179, TD-192, TD-198, TD-210, TD-211, TD-225, TD-227, TD-230, TD-260, TD-262, TD-265, TD-311, TD-318 (TD-319 ruled "allow" 2026-10-01 and built in batch 2).
 - ⚠ `td_open` jumped 99 → 159 on this date. Nothing was added: 31 entries had been written INSIDE
   the index and 94 June bullets had a shape the tool did not read. Do not read the jump as new debt.

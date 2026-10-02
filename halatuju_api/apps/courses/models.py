@@ -1015,6 +1015,15 @@ class StudentProfile(models.Model):
                   "those grades. Up to 7 (a student may sit many subjects). The merit "
                   "engine still uses only the best 2 (Sec3, 10%); the rest persist for "
                   "course-specific eligibility.")
+    # TD-069 (2026-10-02): the STPM path's SPM prerequisites rebuild after logout/login, as v2.21
+    # made the main flow's do. Its aliran picks need no column: spm_prereq_grades minus the four
+    # compulsory subjects minus these electives. Read by nothing but the onboarding form.
+    spm_elective_subjects = models.JSONField(
+        default=list, blank=True,
+        help_text="STPM path: which spm_prereq_grades keys are SPM electives (up to 7).")
+    spm_stream = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="STPM path: the SPM stream picked for the prerequisites (science/arts/technical).")
     referral_source = models.CharField(
         max_length=50, blank=True, null=True,
         help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',

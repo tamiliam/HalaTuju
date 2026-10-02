@@ -1,5 +1,80 @@
 # Architectural Decisions — HalaTuju
 
+## Which question each `exam_type` reader answers; what the STPM form keeps on the server — 2026-10-02
+
+**Decided by:** TD-218's own scope (six readers, each given the accessor it means), the brief's stop
+condition (a reader moves only where the characterisation shows no outcome moves except the Form
+Six explorer's), and TD-069's fix shape (mirror v2.21.0). Built in Now sprint 4. The choices below
+are the builder's where those were silent.
+
+**1. Two accessors, one home.** `apps/courses/exam_questions.py`: `heading_for(profile)` is the
+declaration VERBATIM ('' for no profile or value; no strip, no lower-casing, so a raw reader moved
+onto it keeps its exact answer and its own fallback), and `results_held(profile)` is
+`held_qualification`'s rule moved unchanged — the recorded completion wins, otherwise the
+declaration, corrected only where ABSENCE of STPM results is conclusive. Presence of STPM data never
+promotes (#15). `serializers_admin.held_qualification` is now the same function object. The module
+lives in `courses`, the model's own app, so the profile GET (a courses view) can serve
+`results_held` and scholarship's readers import it the permitted way round: `courses → scholarship`
+imports do not rise (review F1 moved it there from `scholarship`).
+
+**2. Which question each reader means, and whether it moved.**
+- **`income_engine` — `school_leaving_cert_gap` and `semester_result_gap`: heading-for.** Both ask
+  where the student is studying: a student heading for STPM is in Form Six, still at school, has no
+  leaving certificate to send and does owe a semester result. Moved; no answer changed.
+- **The student payload (`ApplicationReadSerializer.exam_type`): results-held.** The web's
+  "Your results" card picks which grades to show from it. Switched, keeping the wire name; the
+  card's label now reads the same field (it read the profile's declaration, so the explorer saw
+  "STPM" over an empty row). It changes for exactly the applications where the two answers differ.
+  No verdict fact, band, chip, shortlist or sponsor surface reads it.
+- **`shortlisting._academic_ok`, `pool.academic_band`, `vision._extract_slip_deterministic`:
+  results-held — but HELD on `heading_for`.** Each would fix the explorer, and each would ALSO move
+  the other direction (declared SPM, recorded STPM completion), which is not the defect TD-218
+  names: the gate would re-test her on a CGPA, the sponsor would read 'STPM · PNGK x', the SPM
+  parser would be skipped. The rule: **a reader moves from the declaration to the results held
+  only on a production count of both directions and the owner's ruling** (TD-324). Each carries a
+  dated TD-218 comment; `test_exam_questions.py` fences them.
+- **The admin serializers: results-held** (BrightPath #14, unchanged).
+- **Raw storage and mirroring stay on the field:** the intake snapshot (a frozen record of the
+  declaration), the course-guide report (about the exam she is heading for), the admin counts and
+  filters, the two management commands. Readers outside the six that mean results-held are TD-325.
+
+**3. VERDICT_ENGINE_VERSION is unchanged.** No switched reader feeds a verdict fact, band or chip:
+the two income readers keep their answers, and the student payload is read by the student's own
+screen only.
+
+**4. What the STPM path keeps on the server (TD-069).** The grades (`spm_prereq_grades`, which
+existed and was never sent), which of them are electives (`spm_elective_subjects`, new), and the
+stream pill (`spm_stream`, new — science and technical share four subjects, so it cannot be
+derived). NOT the aliran picks: they are exactly the grades minus the four compulsory subjects
+minus the electives, so the form derives them after a login. That differs from v2.21.0, which
+stored `stream_subjects` explicitly; the main flow had no explicit electives then and could not
+derive. The server checks the elective list's SHAPE only (a list of key-shaped strings, deduped) —
+there is no server-side catalogue of SPM subject keys, and the cap of 7 is the form's, so neither
+is copied here. An unreadable stream label is dropped, not fatal: failing the whole sync would lose
+the grades with it.
+
+**5. The profile GET serves `results_exam_type` AND `results_held` (review F1).** The web's
+results-held reader (`profileAcademicSummary`) and its login hydrate were written against
+`results_exam_type` in 2026-08 and it was never on the payload, so both were inert. Serving it alone
+would have woken a reader that lacks the Form Six rule, so the server's own answer is served too
+and `profileAcademicSummary` prefers it (falling back to its old logic only for an older server).
+**One rule, served — never a second copy in the browser.** This pulls the apply form's Results step,
+the apply-form half of TD-325, into this sprint; the Plans step and the pathway picker stay in
+TD-325.
+
+**6. Everything the login hydrate overwrites, the sign-in gate sends first (review F2).**
+`AuthGateModal.syncLocalStorageToBackend` reads localStorage before the provider's hydrate writes
+the server's copies, so a field it omits is silently replaced by another device's older copy. It
+now sends `spm_prereq_grades`, `spm_elective_subjects`, `spm_stream` and — left out by v2.21.0 —
+`elective_subjects`. When the hydrate writes the server's prerequisite grades it REMOVES the
+browser's aliran key, so the form re-derives aliran from those grades instead of mixing devices.
+
+**7. The STPM path's server checks (review F3/F4).** `spm_stream` is declared on the serializer
+without the model's `max_length`, so an over-long label reaches the validator and is dropped (the
+model's 20 is enforced there). `spm_prereq_grades` must be a dict of at most 20 entries; a cell
+whose key is not key-shaped or whose grade is not in the STPM engine's `SPM_GRADE_ORDER` is
+dropped, not fatal. Both lists are bounded at 20 — a sanity bound, not the form's cap of 7.
+
 ## The onboarding flag is server-written; an unscored anchor caps at Probable; a payslip has a plausibility window — 2026-10-02
 
 **Decided by:** TD-322's own fix shape, the owner's approved design for TD-114 (2026-06-13,

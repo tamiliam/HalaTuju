@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## Now sprint 4: the STPM form's SPM prerequisites survive a login (TD-069); every `exam_type` reader names its question (TD-218) - 2026-10-02
+
+BUILT, not committed, pushed or deployed; an adversarial review reads the diff first. Register
+open stays **130** (TD-069 and TD-218 closed, TD-324 and TD-325 raised), defined 322. ONE
+additive migration, `courses/0076_spm_prereq_selection` (migrate-first; DDL in its docstring). No
+data change, no copy, no new i18n key, no ledger raised, VERDICT_ENGINE_VERSION unchanged.
+
+**Part 1 — TD-069:**
+- `StudentProfile.spm_elective_subjects` (JSON list) and `spm_stream` (char). The sync accepts
+  them (shape-checked: a list of key-shaped strings, deduped; an unreadable stream label dropped),
+  the profile GET serves them.
+- Web: the onboarding profile sync now sends `spm_prereq_grades`, `spm_elective_subjects` and
+  `spm_stream` (it never sent the prerequisite grades at all); `auth-context` hydrates them on
+  login; the two raw localStorage strings became `KEY_SPM_ALIRAN` / `KEY_SPM_ELEKTIF` in
+  `lib/storage.ts`. The STPM page derives its aliran picks from grades minus core minus electives
+  when it has no saved key, so no aliran column.
+- Both elective caps are `MAX_SPM_ELECTIVES` (7, was 2). Fixed on the way: the elective dropdown
+  excluded EVERY elective pick, including the slot's own, so a chosen elective rendered as blank.
+- Merit engine unchanged (no scoring change).
+
+**Part 2 — TD-218:**
+- New `apps/courses/exam_questions.py`: `heading_for` (the declaration, verbatim) and
+  `results_held` (`held_qualification`'s rule, moved unchanged; `serializers_admin.held_qualification`
+  is now that function — `serializers_admin.py` 1233 → 1185 lines).
+- The six readers: the two income checks read `heading_for` (same answers); the student payload's
+  `exam_type` is `results_held` (wire name kept; the review card's label follows it); the shortlist
+  gate, the sponsor band and the slip-parser gate read `heading_for` behind a dated TD-218 comment,
+  HELD pending the production count (TD-324). Characterised on ten profile shapes before any
+  switch; the table is `test_exam_questions.TABLE` and the retro.
+- The profile GET now serves `results_exam_type` — the web's results-held reader and login hydrate
+  expected it and never got it.
+- Tests: `test_exam_questions.py` (15, incl. the table, the fence and a source guard over the six),
+  `test_spm_prereq_selection.py` (10), `stpm-grades/page.test.tsx` (7, mounts the real
+  AuthProvider), one in `ScholarshipReview.test.tsx`. Six bite-checks, all red, bytes restored.
+- Bundle: `/profile` 310 → 310 kB, `/onboarding/stpm-grades` 208 → 209 kB, median 227 unchanged.
+
+**Adversarial review — FIX-THEN-SHIP, fixed in place (2026-10-02):**
+- F1: the profile GET serves `results_held` and `profileAcademicSummary` reads it, so the apply
+  form's Results step agrees with the review card (the apply-form half of TD-325, pulled in). The
+  accessor module moved to `apps/courses/exam_questions.py` so a courses view can serve it.
+  `apply/page.results.test.tsx` (3).
+- F2: the sign-in gate also sends the STPM path's three fields and `elective_subjects`; the login
+  hydrate drops the browser's aliran when it writes the server's grades. `AuthGateModal.sync.test.tsx` (2).
+- F3/F4: an over-long stream label is dropped, not a 400; `spm_prereq_grades` is shape-checked
+  (bad cells dropped); both lists bounded at 20. Reviewer Guide + FAQ: the SPM prerequisites line.
+- F6: the probe marks its shortlist and slip-parser counts as upper bounds and adds tighter ones.
+- F7: TD-218's old status line is marked historical.
+- Measured blast radius (production, read-only, the lead): **1** live Form Six explorer, **0** live
+  applications in the other direction; 36 STPM-declared profiles, none with SPM prerequisites on the
+  server.
+- Gates after the fixes: api 7,552 passed / 3 skipped; jest 3,287 / 199 suites; tsc, lint, i18n,
+  bundle-budget green (`/profile` 310, `/onboarding/stpm-grades` 209, `/scholarship/apply` 271 kB).
+
 ## Now sprint 3: the onboarding flag moves server-side (TD-322); an unscored document cannot read Certain (TD-114); the misread-document hardening pass (TD-151) - 2026-10-02
 
 BUILT, not committed, pushed or deployed; an adversarial review reads the diff first. Register

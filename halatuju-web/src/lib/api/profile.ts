@@ -56,6 +56,9 @@ export interface StudentProfile {
   /** Which exam's results were last COMPLETED — '' when never recorded. Not the same
    *  question as `exam_type`, which a card tap sets with no results behind it. */
   results_exam_type?: '' | 'spm' | 'stpm'
+  /** The SERVER's answer to "which results do we hold?" (`exam_questions.results_held`, TD-218) —
+   *  served so every student screen uses the one rule, never a copy of it. */
+  results_held?: '' | 'spm' | 'stpm'
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
@@ -72,6 +75,11 @@ export interface StudentProfile {
   // The SPM subjects picked as electives/tambahan — the durable record of which
   // grade keys are electives, so the grades form survives a logout/login. Up to 7.
   elective_subjects?: string[]
+  // TD-069: the STPM path's SPM prerequisites — grades, which of them are electives, and the
+  // stream pill — so the STPM results form rebuilds after a logout/login like the SPM one does.
+  spm_prereq_grades?: Record<string, string>
+  spm_elective_subjects?: string[]
+  spm_stream?: string
   // Structured family roster (profile-level home; two-way synced with an open
   // application). Same field names as ScholarshipApplication's roster columns.
   father_name?: string
@@ -202,6 +210,9 @@ export interface SyncProfileData {
   coq_score?: number
   stream_subjects?: string[]
   elective_subjects?: string[]
+  spm_prereq_grades?: Record<string, string>   // TD-069: the STPM path's SPM prerequisites
+  spm_elective_subjects?: string[]
+  spm_stream?: string
 }
 
 export async function syncProfile(

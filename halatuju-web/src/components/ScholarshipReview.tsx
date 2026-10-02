@@ -122,7 +122,8 @@ export default function ScholarshipReview({
       {/* 2. Your results (locked) */}
       <Card title={s('section.results')} locked>
         <p className="text-xs font-medium text-ground-400">
-          {(profile?.exam_type || 'spm').toUpperCase()}
+          {/* `app.exam_type` is the results we HOLD (TD-218) — the same answer that picks the grades below. */}
+          {(app.exam_type || 'spm').toUpperCase()}
           {app.exam_type === 'stpm' && app.stpm_pngk != null ? ` · PNGK ${app.stpm_pngk}` : ''}
         </p>
         <div className="flex flex-wrap gap-1.5">

@@ -14,10 +14,11 @@ import {
   SPM_PREREQ_STREAM_POOLS,
   SPM_ALL_ELECTIVE_SUBJECTS,
   SPM_GRADE_OPTIONS,
+  MAX_SPM_ELECTIVES,
   getSubjectName,
 } from '@/lib/subjects'
 import { calculateCgpa } from '@/lib/api'
-import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_STREAM } from '@/lib/storage'
+import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_SPM_ELEKTIF } from '@/lib/storage'
 
 type Stream = 'science' | 'arts'
 
@@ -55,17 +56,22 @@ export default function StpmGradesPage() {
     const savedKoko = localStorage.getItem(KEY_KOKO_SCORE)
     if (savedKoko) setKokoScore(savedKoko)
     const savedSpm = localStorage.getItem(KEY_SPM_PREREQ)
-    if (savedSpm) setSpmGrades(JSON.parse(savedSpm))
+    const prereq: Record<string, string> = savedSpm ? JSON.parse(savedSpm) : {}
+    if (savedSpm) setSpmGrades(prereq)
     const savedSpmStream = localStorage.getItem(KEY_SPM_STREAM)
     if (savedSpmStream) setSpmStream(savedSpmStream)
-    const savedAliran = localStorage.getItem('halatuju_spm_aliran')
-    if (savedAliran) {
-      const parsed = JSON.parse(savedAliran) as string[]
-      // Pad to 4 slots
-      setSpmAliranSubjects([...parsed, '', '', '', ''].slice(0, 4))
-    }
-    const savedElektif = localStorage.getItem('halatuju_spm_elektif')
-    if (savedElektif) setSpmElektifSlots(JSON.parse(savedElektif))
+    const savedElektif = localStorage.getItem(KEY_SPM_ELEKTIF)
+    const elektif: string[] = savedElektif ? JSON.parse(savedElektif) : []
+    if (savedElektif) setSpmElektifSlots(elektif)
+    // TD-069: the server keeps the grades and the elective picks, not the aliran picks — after a
+    // login (no saved key) they are exactly what is left: grades minus the core minus electives.
+    const savedAliran = localStorage.getItem(KEY_SPM_ALIRAN)
+    const core = SPM_PREREQ_COMPULSORY.map(s => s.id)
+    const aliran: string[] = savedAliran
+      ? JSON.parse(savedAliran)
+      : Object.keys(prereq).filter(k => !core.includes(k) && !elektif.includes(k))
+    // Pad to 4 slots
+    if (aliran.length > 0) setSpmAliranSubjects([...aliran, '', '', '', ''].slice(0, 4))
   }, [])
 
   // Stream-specific subjects for the 3 main slots
@@ -140,7 +146,7 @@ export default function StpmGradesPage() {
   }
 
   const addSpmElektifSlot = () => {
-    if (spmElektifSlots.length < 2) setSpmElektifSlots(prev => [...prev, ''])
+    if (spmElektifSlots.length < MAX_SPM_ELECTIVES) setSpmElektifSlots(prev => [...prev, ''])
   }
 
   const removeSpmElektifSlot = (index: number) => {
@@ -172,9 +178,14 @@ export default function StpmGradesPage() {
     return [...coreIds, ...spmAliranSubjects.filter(Boolean), ...spmElektifSlots.filter(Boolean)]
   }, [spmAliranSubjects, spmElektifSlots])
 
+  // Elective pool = every non-core subject minus the core and the aliran picks. The OTHER elective
+  // slots are excluded per row below. (Excluding every elective pick here also removed each row's
+  // own pick from its own dropdown, so a chosen elective showed as unselected — TD-069.)
   const spmElektifPool = useMemo(() => {
-    return SPM_ALL_ELECTIVE_SUBJECTS.filter(s => !spmAllSelectedPrereq.includes(s.id))
-  }, [spmAllSelectedPrereq])
+    const coreIds = SPM_PREREQ_COMPULSORY.map(s => s.id)
+    const taken = [...coreIds, ...spmAliranSubjects.filter(Boolean)]
+    return SPM_ALL_ELECTIVE_SUBJECTS.filter(s => !taken.includes(s.id))
+  }, [spmAliranSubjects])
 
   const [academicCgpa, setAcademicCgpa] = useState(0)
   const [overallCgpa, setOverallCgpa] = useState(0)
@@ -222,8 +233,8 @@ export default function StpmGradesPage() {
     localStorage.setItem(KEY_KOKO_SCORE, kokoScore)
     localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify(spmGrades))
     localStorage.setItem(KEY_SPM_STREAM, spmStream)
-    localStorage.setItem('halatuju_spm_aliran', JSON.stringify(spmAliranSubjects.filter(Boolean)))
-    localStorage.setItem('halatuju_spm_elektif', JSON.stringify(spmElektifSlots.filter(Boolean)))
+    localStorage.setItem(KEY_SPM_ALIRAN, JSON.stringify(spmAliranSubjects.filter(Boolean)))
+    localStorage.setItem(KEY_SPM_ELEKTIF, JSON.stringify(spmElektifSlots.filter(Boolean)))
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     // Completed, so it is a RESULT and not merely a selection — see results_exam_type.
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
@@ -571,7 +582,7 @@ export default function StpmGradesPage() {
               </div>
             </div>
 
-            {/* D) Electives — 0-2 slots + add button */}
+            {/* D) Electives — 0 to MAX_SPM_ELECTIVES slots + add button */}
             <div>
               <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmOptional')}</div>
               <div className="space-y-2">
@@ -614,7 +625,7 @@ export default function StpmGradesPage() {
                     </button>
                   </div>
                 ))}
-                {spmElektifSlots.length < 2 && (
+                {spmElektifSlots.length < MAX_SPM_ELECTIVES && (
                   <button
                     onClick={addSpmElektifSlot}
                     className="w-full py-2.5 rounded-lg border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 text-sm transition-all"

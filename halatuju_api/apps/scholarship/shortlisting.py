@@ -38,6 +38,8 @@ Consequences worth stating rather than discovering:
 """
 from dataclasses import dataclass
 
+from apps.courses.exam_questions import heading_for
+
 # SPM grades that count as an "A" (A+/A/A- all count — A- is the minimum "A").
 A_GRADES = {'A+', 'A', 'A-'}
 # Grades at B+ or better (for the "+1 B+" floor → 5 strong subjects).
@@ -80,7 +82,8 @@ def spm_merit(profile):
     **"NOT A GATE, AND MUST NOT BECOME ONE"** — widening it re-bands live applicants. That
     function answers a DISPLAY question (what to rank this person by in the admin list); this one
     answers a GATE question (does this applicant clear the programme's merit requirement), and the
-    engine keys on `exam_type` like every other test here. Same arithmetic, different question.
+    engine keys on the DECLARED exam (`exam_questions.heading_for`) — see `_academic_ok` for why
+    that has not moved (TD-218). Same arithmetic, different question.
 
     The arithmetic itself is not copied — `prepare_merit_inputs` / `calculate_merit_score` in
     `apps.courses.engine` are the single source, and are what the course selector uses too.
@@ -111,7 +114,13 @@ def _academic_ok(profile, cohort):
     programme, which is a legitimate thing for a programme to be. It is NOT a silent hole: it
     takes an admin clearing every box on a screen that shows what is ticked.
     """
-    exam = (getattr(profile, 'exam_type', 'spm') or 'spm') if profile else 'spm'
+    # ⚠ TD-218 (2026-10-02): HELD ON THE DECLARED EXAM, deliberately. A cohort floor is a test of
+    # the results an applicant HOLDS, so `results_held` is arguably what this gate means — but it
+    # would move who is shortlisted, and not only the Form Six explorer (who declared STPM, holds
+    # SPM and fails 'STPM PNGK not provided'): it would also re-test a declared-SPM student on a
+    # recorded STPM completion. That is the owner's decision, made on the production count from
+    # the sprint-4 probe (TD-324). Until then this reads exactly what it read before.
+    exam = (heading_for(profile) or 'spm') if profile else 'spm'
 
     if exam == 'stpm':
         floor = cohort.min_stpm_pngk

@@ -2,13 +2,15 @@
 school-leaving certificate gap.
 
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
-Moves only: not a line of this body was reworded. See `__init__.py`.
+Moves only: not a line of this body was reworded. See `__init__.py`. TD-218 (2026-10-02) then
+moved one read in `school_leaving_cert_gap` onto `heading_for`, answer for answer.
 """
 from __future__ import annotations
 
 import datetime
 
 from ..document_snapshot import has_live_doc, live_docs
+from apps.courses.exam_questions import heading_for
 from .freshness import _INCOME_DOC_CURRENT_MONTHS
 from .identity_checks import _cluster_docs
 from .relationships import _MEMBER_ORDER
@@ -145,9 +147,12 @@ def school_leaving_cert_gap(application):
     """A post-SPM (SPM-track) applicant whose academic record can't be read from a results slip →
     ask for a school-leaving certificate (surat berhenti sekolah / testimonial) to corroborate.
     CONSERVATIVE: fires ONLY when there's no results slip on file (not for every post-SPM
-    applicant). Clears when a leaving cert that READ OR a results slip is present."""
+    applicant). Clears when a leaving cert that READ OR a results slip is present.
+
+    The DECLARED exam is the right question here (TD-218): a student heading for STPM is in Form
+    Six, still at school, and has no leaving certificate to send — whatever results she holds."""
     prof = getattr(application, 'profile', None)
-    if (getattr(prof, 'exam_type', 'spm') or 'spm') != 'spm':
+    if (heading_for(prof) or 'spm') != 'spm':
         return False
     docs = _docs_or_none(application)
     if docs is None or _has_read_doc(application, 'school_leaving_cert'):

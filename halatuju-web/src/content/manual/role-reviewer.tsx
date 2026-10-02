@@ -51,7 +51,9 @@ export const roleReviewer: ManualChapter = {
       body: (
         <>On <strong>Applications</strong> you&rsquo;ll see <strong>only the applicants assigned to you</strong>
         — not everyone&rsquo;s. Each row shows the name, source, qualification, merit score and status. Click a
-        name to open the review screen — everything is on that one page.</>
+        name to open the review screen — everything is on that one page. For an STPM student, the Academic
+        card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when
+        she has entered them.</>
       ),
       img: '/reviewer-guide/step1-list.png',
       alt: 'The Applications list showing your assigned applicants',

@@ -1,6 +1,7 @@
 """Admin-facing serializers for the B40 Assistance Programme (Sprint 6a)."""
 from rest_framework import serializers
 
+from apps.courses.exam_questions import results_held
 from apps.courses.utils import tidy_parentage_marker
 
 from .models import (
@@ -190,59 +191,11 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
         ]
 
 
-def _has_stpm_results(p):
-    """⚠ TRUSTWORTHY IN ONE DIRECTION ONLY — read `held_qualification` before using it elsewhere.
-
-    FALSE is conclusive: with no STPM grades and no CGPA on file there is nothing to hold.
-    TRUE is not. This profile is SHARED with the HalaTuju course guide, where anyone may type
-    STPM grades to explore STPM programmes, so the data can describe a hypothetical rather than a
-    result. Application #15 carries a 4.0 CGPA and five STPM subjects and sat none of them — she
-    took SPM in 2025 and is on a matriculation course (owner, 2026-08-18).
-    """
-    return bool(p.stpm_grades or {}) or p.stpm_cgpa is not None
-
-
-def held_qualification(p):
-    """Which qualification we hold RESULTS for — NOT which pathway the student is entering by
-    (BrightPath request #14).
-
-    ``profile.exam_type`` answers two different questions in this codebase: *"which results do I
-    hold?"* (onboarding, the dashboard) and *"which exam am I heading for?"* (sign-up, the bursary
-    application). For a Form Six student sitting STPM now, those genuinely disagree — she holds SPM
-    results and no STPM ones — and the single field can only carry one answer. The declared one
-    wins, which is how application #106 came to be labelled STPM with no STPM results behind it,
-    and (worse) ranked on an STPM CGPA that does not exist, so she carried no merit figure at all.
-
-    ⚠ IT RELIES ON ABSENCE, NEVER ON PRESENCE, and that asymmetry is the whole safety of it.
-    Absent STPM data is conclusive — there is nothing to hold. PRESENT STPM data proves nothing,
-    because this profile is shared with the course guide and anyone may type STPM grades there to
-    explore programmes. Application #15 carries a 4.0 CGPA and five STPM subjects and sat none of
-    them: she took SPM in 2025 and is on a MATRICULATION course (owner, 2026-08-18). So the
-    tempting 'latest results we hold' rule would have re-labelled a matriculation student as STPM
-    and re-based her merit onto a CGPA she never sat — on an AWARDED record. Measured before
-    writing this: the wide rule moves 3 live records, the narrow one moves exactly 1.
-
-    ⚠ NOT A GATE, AND MUST NOT BECOME ONE. `shortlisting` (who is shortlisted), `pool` (the
-    sponsor-facing band), `income_engine` (the semester-result gap) and `vision` (which slip parser
-    runs) all read `exam_type` for their own reasons and are correct to. This answers a display
-    question for the admin surface only. Widening it re-bands live applicants.
-
-    Self-correcting: the day her STPM results land, this returns 'stpm' again with nobody
-    remembering to change anything.
-    """
-    if not p:
-        return ''
-    # ⚠ THE RECORDED COMPLETION WINS WHEN THERE IS ONE. `results_exam_type` moves only when a
-    # results form is COMPLETED, so it answers this question directly instead of inferring it.
-    # Blank means never recorded — every row predates the column — and the inference below is
-    # what those rows had before, so nothing moves for them.
-    recorded = (getattr(p, 'results_exam_type', '') or '').strip().lower()
-    if recorded:
-        return recorded
-    declared = (getattr(p, 'exam_type', '') or '').strip().lower()
-    if declared == 'stpm' and not _has_stpm_results(p) and (p.grades or {}):
-        return 'spm'
-    return declared
+# ⚠ `held_qualification` IS `apps.courses.exam_questions.results_held` (TD-218, 2026-10-02). The rule — the
+# recorded completion wins; else the declaration, corrected only where ABSENCE of STPM results is
+# conclusive — moved there unchanged, with its reasons (BrightPath #14, #15, #106). The name stays
+# because the admin label, the merit source below, the audit command and their tests call it.
+held_qualification = results_held
 
 
 def _application_merit_score(obj):

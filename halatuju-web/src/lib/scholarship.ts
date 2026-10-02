@@ -486,9 +486,15 @@ export function profileAcademicSummary(profile?: StudentProfile | null): Academi
   // which is how a Form Six student holding ten SPM grades was told we had none. Blank means
   // never recorded (every row predates the column), so we fall back to the declaration —
   // which is exactly what these rows read before.
+  // ⚠ TD-218 (review F1, 2026-10-02): the SERVER's `results_held` wins when served — it carries the
+  // Form Six rule (declared STPM, no STPM results, SPM grades on file → SPM) that this fallback
+  // lacks, and it is what the review card reads, so the two cannot disagree. The fallback is only
+  // for a payload from an older server.
+  const served = profile?.results_held
   const recorded = profile?.results_exam_type
-  const examType: Qualification = recorded
-    ? (recorded === 'stpm' ? 'stpm' : 'spm')
+  const pick = served || recorded
+  const examType: Qualification = pick
+    ? (pick === 'stpm' ? 'stpm' : 'spm')
     : (profile?.exam_type === 'stpm' ? 'stpm' : 'spm')
   const grades = profile?.grades
   const aCount = countAGrades(grades)

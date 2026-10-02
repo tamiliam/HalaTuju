@@ -1,0 +1,258 @@
+"""TD-218 — `exam_type` answered two questions; each reader now names the one it means.
+
+`apps/courses/exam_questions.py` holds the two accessors. This file pins three things:
+
+1. **The accessors themselves**, including the Form Six explorer (declared STPM, holds SPM) and
+   #15's mirage (declared SPM, STPM grades typed into the course guide) — the case
+   `results_held` must NEVER promote on presence alone.
+2. **The characterisation table** — every reader's answer on a fixed list of profile shapes,
+   written against the tree BEFORE the switch (Now sprint 4, 2026-10-02) and kept here as the
+   contract. Only ONE reader's answers changed in that sprint — the student payload — and only
+   where `heading_for` and `results_held` disagree. Three readers that mean results-held were
+   deliberately HELD on the declaration pending the production probe (TD-324); their rows pin
+   the OLD answer on purpose, and the day one switches, its row changes in the same commit.
+3. **A source guard** that none of the six readers reads the ambiguous field by name again.
+"""
+import re
+from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
+
+from django.test import SimpleTestCase, TestCase
+
+from apps.courses.models import StudentProfile
+from apps.courses import exam_questions
+from apps.courses.exam_questions import heading_for, results_held
+from apps.scholarship import pool, serializers_admin, shortlisting, vision
+from apps.scholarship.income_engine import epf_evidence, occupation
+from apps.scholarship.serializers import ApplicationReadSerializer
+from apps.scholarship.tests.factories import make_application, make_student
+from apps.scholarship.tests.source_walk import floor_count, read_source
+
+SPM = {'bm': 'A', 'eng': 'A', 'math': 'A+', 'hist': 'A', 'moral': 'A'}
+STPM = {'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A'}
+
+#: name -> profile fields. The same list the sprint-4 retro's table is drawn from.
+SHAPES = {
+    'declared_spm': dict(exam_type='spm', grades=SPM),
+    'declared_stpm_with_stpm': dict(exam_type='stpm', stpm_grades=STPM, stpm_cgpa=3.5),
+    'form_six_explorer': dict(exam_type='stpm', grades=SPM),
+    'declared_stpm_both': dict(exam_type='stpm', grades=SPM, stpm_grades=STPM, stpm_cgpa=3.5),
+    'explorer_recorded_spm': dict(exam_type='stpm', grades=SPM, results_exam_type='spm'),
+    'declared_spm_recorded_stpm': dict(exam_type='spm', grades=SPM, stpm_grades=STPM,
+                                       stpm_cgpa=3.5, results_exam_type='stpm'),
+    'declared_stpm_both_recorded_spm': dict(exam_type='stpm', grades=SPM, stpm_grades=STPM,
+                                            stpm_cgpa=3.5, results_exam_type='spm'),
+    'mirage_15': dict(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=4.0),
+    'declared_stpm_nothing': dict(exam_type='stpm'),
+    'blank': dict(exam_type=''),
+}
+
+#: Floors unreachable on purpose, so `_academic_ok`'s failure reason NAMES the branch that ran.
+_COHORT = SimpleNamespace(min_stpm_pngk=4.1, min_spm_a_count=99, min_spm_bplus_count=None,
+                          min_merit_score=None)
+
+
+def _profile(shape):
+    return StudentProfile(supabase_user_id='char', **SHAPES[shape])
+
+
+def _readers(p):
+    """Every reader's answer for one unsaved profile. No database: the document helpers are
+    patched to "nothing on file" so each income check reaches its exam branch."""
+    app = SimpleNamespace(profile=p, chosen_pathway='', documents=object())
+    _ok, why = shortlisting._academic_ok(p, _COHORT)
+    with mock.patch.object(occupation, '_has_read_doc', return_value=False), \
+            mock.patch.object(occupation, 'has_live_doc', return_value=False), \
+            mock.patch.object(occupation, '_docs_or_none', return_value=object()):
+        leaving = occupation.school_leaving_cert_gap(app)
+    with mock.patch.object(epf_evidence, '_has_read_doc', return_value=False), \
+            mock.patch.object(epf_evidence, '_docs_or_none', return_value=object()):
+        semester = epf_evidence.semester_result_gap(app)
+    doc = SimpleNamespace(application=app, content_type='image/jpeg')
+    _res, diag = vision._extract_slip_deterministic(doc, b'img', words=[])
+    field = ApplicationReadSerializer().fields['exam_type']
+    return {
+        'shortlist': 'stpm' if 'PNGK' in why else 'spm',
+        'pool': pool.academic_band(p).split(' ')[0],
+        'leaving_cert_ask': leaving,
+        'semester_ask': semester,
+        'spm_parser': diag.get('reason') != 'not_spm_exam',
+        'payload': field.to_representation(field.get_attribute(app)),
+    }
+
+
+# The characterisation table. Each row: heading_for, results_held, then each reader.
+#   shortlist / pool / spm_parser — HELD on the declaration (TD-324): they equal heading_for.
+#   leaving_cert_ask / semester_ask — MEAN heading-for: unchanged by construction.
+#   payload — SWITCHED to results_held; the four rows marked * changed in sprint 4.
+TABLE = {
+    #                                   head    held    shortl  pool    leave  sem    parser payload
+    'declared_spm':                    ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
+    'declared_stpm_with_stpm':         ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
+    'form_six_explorer':               ('stpm', 'spm',  'stpm', 'STPM', False, True,  False, 'spm'),   # *
+    'declared_stpm_both':              ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
+    'explorer_recorded_spm':           ('stpm', 'spm',  'stpm', 'STPM', False, True,  False, 'spm'),   # *
+    'declared_spm_recorded_stpm':      ('spm',  'stpm', 'spm',  'SPM',  True,  False, True,  'stpm'),  # *
+    'declared_stpm_both_recorded_spm': ('stpm', 'spm',  'stpm', 'STPM', False, True,  False, 'spm'),   # *
+    'mirage_15':                       ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
+    'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
+    'blank':                           ('',     '',     'spm',  'SPM',  True,  False, True,  ''),
+}
+
+
+class TestTheAccessors(SimpleTestCase):
+    def test_heading_for_is_the_declaration_verbatim(self):
+        self.assertEqual(heading_for(_profile('form_six_explorer')), 'stpm')
+        self.assertEqual(heading_for(_profile('declared_spm_recorded_stpm')), 'spm')
+        # verbatim: no normalising, so a raw reader moved onto it keeps its exact answer
+        self.assertEqual(heading_for(SimpleNamespace(exam_type='STPM ')), 'STPM ')
+        self.assertEqual(heading_for(SimpleNamespace(exam_type=None)), '')
+        self.assertEqual(heading_for(SimpleNamespace()), '')
+        self.assertEqual(heading_for(None), '')
+
+    def test_results_held_reads_the_form_six_explorer_as_spm(self):
+        # She declared STPM (heading for it) and holds only SPM results.
+        self.assertEqual(results_held(_profile('form_six_explorer')), 'spm')
+
+    def test_results_held_never_promotes_on_typed_stpm_data(self):
+        """#15: a 4.0 CGPA and five STPM subjects, none of them sat. Presence proves nothing."""
+        self.assertEqual(results_held(_profile('mirage_15')), 'spm')
+
+    def test_a_recorded_completion_wins_both_ways(self):
+        self.assertEqual(results_held(_profile('explorer_recorded_spm')), 'spm')
+        self.assertEqual(results_held(_profile('declared_spm_recorded_stpm')), 'stpm')
+        self.assertEqual(results_held(_profile('declared_stpm_both_recorded_spm')), 'spm')
+
+    def test_absence_with_nothing_else_repeats_the_declaration(self):
+        self.assertEqual(results_held(_profile('declared_stpm_nothing')), 'stpm')
+        self.assertEqual(results_held(_profile('blank')), '')
+        self.assertEqual(results_held(None), '')
+
+    def test_held_qualification_IS_results_held(self):
+        # The admin label, the merit source and the audit command call the old name; it must be
+        # the same function, not a copy that can drift.
+        self.assertIs(serializers_admin.held_qualification, exam_questions.results_held)
+
+
+class TestTheCharacterisationTable(SimpleTestCase):
+    """Every reader on every shape. A change to any cell is an outcome change — read the module
+    docstring of `exam_questions` and TD-324 before editing a row."""
+
+    def test_the_table_covers_every_shape(self):
+        floor_count(list(TABLE), len(SHAPES), 'characterised shapes',
+                    'TD-218: the table must describe every shape SHAPES lists, or a reader '
+                    'can change on an uncharacterised profile.')
+        self.assertEqual(set(TABLE), set(SHAPES))
+
+    def test_every_reader_on_every_shape(self):
+        for shape, row in TABLE.items():
+            p = _profile(shape)
+            head, held, shortl, band, leave, sem, parser, payload = row
+            got = _readers(p)
+            with self.subTest(shape=shape):
+                self.assertEqual(heading_for(p), head)
+                self.assertEqual(results_held(p), held)
+                self.assertEqual(got['shortlist'], shortl)
+                self.assertEqual(got['pool'], band)
+                self.assertEqual(got['leaving_cert_ask'], leave)
+                self.assertEqual(got['semester_ask'], sem)
+                self.assertEqual(got['spm_parser'], parser)
+                self.assertEqual(got['payload'], payload)
+
+    def test_the_held_readers_still_equal_the_declaration(self):
+        """⚠ THE FENCE. shortlisting, pool and the slip parser MEAN results-held but are HELD on
+        the declaration until the owner reads the production count (TD-324). If this fails, a
+        held reader moved without that count — revert it, or bring the count and change the
+        table in the same commit."""
+        for shape in SHAPES:
+            p = _profile(shape)
+            head = heading_for(p) or 'spm'
+            got = _readers(p)
+            with self.subTest(shape=shape):
+                self.assertEqual(got['shortlist'], head)
+                self.assertEqual(got['pool'], head.upper())
+                self.assertEqual(got['spm_parser'], head == 'spm')
+
+
+class TestTheConvertedReadersOnTheExplorer(TestCase):
+    """The Form Six explorer through each reader, on a REAL application from the factory."""
+
+    def setUp(self):
+        self.student = make_student(exam_type='stpm', grades=SPM)
+        self.app = make_application('submitted', student=self.student)
+
+    def test_the_student_payload_serves_the_results_she_holds(self):
+        self.assertEqual(ApplicationReadSerializer(self.app).data['exam_type'], 'spm')
+
+    def test_the_payload_follows_her_stpm_results_when_they_land(self):
+        self.student.stpm_cgpa = 3.4
+        self.student.save(update_fields=['stpm_cgpa'])
+        self.app.refresh_from_db()
+        self.assertEqual(ApplicationReadSerializer(self.app).data['exam_type'], 'stpm')
+
+    def test_a_missing_profile_still_omits_the_key(self):
+        # Exactly what `source='profile.exam_type'` did for an object with no profile: DRF skips a
+        # read-only field whose dotted source breaks on None, so the key is ABSENT, not null.
+        # (Found by characterising before the switch: the first draft served None.)
+        from rest_framework import serializers as drf
+
+        class _Old(drf.Serializer):
+            exam_type = drf.CharField(source='profile.exam_type', read_only=True)
+
+        class _New(drf.Serializer):
+            exam_type = exam_questions.ResultsHeldField()
+
+        orphan = SimpleNamespace(profile=None)
+        self.assertNotIn('exam_type', _Old(orphan).data)
+        self.assertNotIn('exam_type', _New(orphan).data)
+        # positive control: with a profile both serve the key
+        self.assertIn('exam_type', _New(SimpleNamespace(profile=self.student)).data)
+
+    def test_the_income_readers_ask_by_the_exam_she_is_heading_for(self):
+        # In Form Six: no leaving certificate to ask for; the semester-result arm applies.
+        with mock.patch.object(occupation, '_has_read_doc', return_value=False), \
+                mock.patch.object(occupation, 'has_live_doc', return_value=False):
+            self.assertFalse(occupation.school_leaving_cert_gap(self.app))
+        with mock.patch.object(epf_evidence, '_has_read_doc', return_value=False):
+            self.assertTrue(epf_evidence.semester_result_gap(self.app))
+
+    def test_the_held_readers_still_treat_her_as_declared(self):
+        # TD-324: these change only on the owner's decision, with the production count read.
+        self.assertEqual(pool.academic_band(self.student), 'STPM')
+        cohort = SimpleNamespace(min_stpm_pngk=2.9, min_spm_a_count=None,
+                                 min_spm_bplus_count=None, min_merit_score=None)
+        self.assertEqual(shortlisting._academic_ok(self.student, cohort),
+                         (False, 'STPM PNGK not provided'))
+
+
+#: The six readers TD-218 names (the admin serializers were converted first, as
+#: `held_qualification`), each with the accessor it must call.
+_READERS = {
+    'apps/scholarship/shortlisting.py': 'heading_for(',
+    'apps/scholarship/pool.py': 'heading_for(',
+    'apps/scholarship/income_engine/occupation.py': 'heading_for(',
+    'apps/scholarship/income_engine/epf_evidence.py': 'heading_for(',
+    'apps/scholarship/vision.py': 'heading_for(',
+    'apps/scholarship/serializers.py': 'ResultsHeldField(',
+}
+_API = Path(__file__).resolve().parents[3]
+_RAW_GETATTR = re.compile(r"getattr\([^()]*,\s*'exam_type'")
+_RAW_ATTR = re.compile(r'\b\w+\.exam_type\b')
+
+
+class TestNoReaderReadsTheAmbiguousName(SimpleTestCase):
+    def test_each_reader_calls_its_named_accessor_and_never_the_raw_field(self):
+        why = ('TD-218: each of the six exam_type readers must call a named accessor from '
+               'apps/courses/exam_questions.py, never read profile.exam_type directly.')
+        seen = []
+        for rel, accessor in _READERS.items():
+            src = read_source(_API / rel, why)
+            with self.subTest(reader=rel):
+                # positive: the accessor is CALLED here (not merely imported)
+                self.assertGreaterEqual(src.count(accessor), 1, f'{rel} no longer calls {accessor}')
+                # negative: no raw read of the field by name — a getattr of it, or attribute access
+                self.assertIsNone(_RAW_GETATTR.search(src), f'{rel} reads the ambiguous field')
+                self.assertIsNone(_RAW_ATTR.search(src), f'{rel} reads the ambiguous field')
+            seen.append(rel)
+        floor_count(seen, 6, 'reader modules', why)

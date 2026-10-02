@@ -60,6 +60,8 @@ export interface ScholarshipApplication {
   cohort_name: string
   profile_id: string | null
   // Academic + financial fields are derived live from the canonical profile.
+  /** The results we HOLD (server `exam_questions.results_held`, TD-218) — NOT the exam the
+   *  student declared, which a card tap sets with no results behind it. */
   exam_type?: 'spm' | 'stpm'
   spm_a_count: number | null
   stpm_pngk: number | null

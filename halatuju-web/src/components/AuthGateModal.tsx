@@ -6,7 +6,7 @@ import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { syncProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import IcInput from './IcInput'
 import IcClaimPanel from './IcClaimPanel'
 import type { ClaimChannel } from '@/lib/profileClaim'
@@ -136,6 +136,18 @@ export default function AuthGateModal() {
       // TD-063: persist the student's stream/aliran picks on login.
       const aliran = localStorage.getItem(KEY_ALIRAN)
       if (aliran) syncData.stream_subjects = JSON.parse(aliran)
+      // ⚠ TD-069 review F2: everything the login hydrate overwrites must be SENT here first. This
+      // runs (and reads localStorage) before the provider's hydrate writes the server's copies,
+      // so a selection made on this device before signing in reaches the server instead of being
+      // replaced by an older one from another device. v2.21.0 left `elective_subjects` out; in now.
+      const elektif = localStorage.getItem(KEY_ELEKTIF)
+      if (elektif) syncData.elective_subjects = JSON.parse(elektif)
+      const spmPrereq = localStorage.getItem(KEY_SPM_PREREQ)
+      if (spmPrereq) syncData.spm_prereq_grades = JSON.parse(spmPrereq)
+      const spmElektif = localStorage.getItem(KEY_SPM_ELEKTIF)
+      if (spmElektif) syncData.spm_elective_subjects = JSON.parse(spmElektif)
+      const spmStream = localStorage.getItem(KEY_SPM_STREAM)
+      if (spmStream) syncData.spm_stream = spmStream
       const prof = localStorage.getItem(KEY_PROFILE)
       if (prof) {
         const p = JSON.parse(prof)

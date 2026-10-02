@@ -71,6 +71,14 @@ export const FAQ: Record<Audience, QA[]> = {
         money or the programme&rsquo;s overall figures on it; those belong to the people who run the gift.</>,
     },
     {
+      q: <>An STPM student&rsquo;s Academic card now shows <strong>SPM prerequisites</strong>. What are they?</>,
+      a: <>The SPM grades an STPM student enters alongside her STPM results, because many degree courses also
+        set SPM requirements. Since 2 October 2026 they are saved to her profile instead of only to her
+        browser, so they appear on the card once she has entered or re-saved them. They are what she typed;
+        check them against her SPM slip as you would her other grades. A student who has not entered any
+        shows none.</>,
+    },
+    {
       q: <>Why do I only see some applicants?</>,
       a: <>You see <strong>only the applicants assigned to you</strong>, so you can focus on your own. That&rsquo;s
         normal.</>,
