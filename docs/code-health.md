@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-03 | 699df64 | 90 | 44 | officerCockpit.ts 36.2 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 19 | 128 | 0 | - | - | ok |
 | 2026-10-03 | 1a9ccf0 | 90 | 44 | vision.py 36.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 19 | 132 | 0 | - | - | ok |
 | 2026-10-03 | 03d9f1f | 90 | 44 | vision.py 38.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 19 | 131 | 0 | - | - | ok |
 | 2026-10-02 | c5408ab | 90 | 44 | officerCockpit.ts 46.1 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
@@ -76,24 +77,24 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-03, 1a9ccf0, window 2026-07-05 onward)
+## Latest run (2026-10-03, 699df64, window 2026-07-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/vision.py` | 16 | 2285 | 36.6 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 22 | 1647 | 36.2 |
+| `halatuju_api/apps/scholarship/vision.py` | 14 | 2285 | 32 |
 | `halatuju_api/apps/scholarship/views.py` | 13 | 2435 | 31.7 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 10 | 1354 | 13.5 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1208 | 13.3 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 984 | 12.8 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 10 | 1200 | 12 |
 | `halatuju_api/apps/courses/views_admin.py` | 9 | 1220 | 11 |
+| `halatuju_api/apps/scholarship/serializers.py` | 6 | 1215 | 7.3 |
 | `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
-| `halatuju_api/apps/scholarship/academic_engine.py` | 7 | 891 | 6.2 |
-| `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
+| `halatuju_api/apps/scholarship/pathway_engine.py` | 10 | 631 | 6.3 |
 
 ### Fix ratio
-- 263 fix / 339 feat commits since 2026-07-05
+- 262 fix / 338 feat commits since 2026-07-05
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -107,12 +108,12 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1315  halatuju-web/src/lib/scholarship.ts`
 - `1220  halatuju_api/apps/courses/views_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
-- `1200  halatuju_api/apps/scholarship/serializers_admin.py`
+- `1208  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1138  halatuju_api/apps/scholarship/contracts.py`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
 - `1024  halatuju_api/apps/scholarship/profile_engine.py`
-- `1018  halatuju_api/apps/scholarship/sponsorship.py`
+- `1019  halatuju_api/apps/scholarship/sponsorship.py`
 
 ### Python functions of 150+ lines
 - `333  halatuju_api/apps/courses/ranking_engine.py:379 calculate_fit_score`
@@ -162,23 +163,23 @@ drift tests are counted as the habit they cure). See TD-284.
 - 39 of 201 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 326 entries have a defining line; 132 carry no resolution marker on it
+- 326 entries have a defining line; 128 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 1283: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1305: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1322: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1333: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
-- line 1610: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6046: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6360: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
-- line 6374: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money, AN OWNER DECISION: a gift with no agreement template pays the legacy fl
+- line 1279: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1301: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1318: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1329: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
+- line 1606: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 6052: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6366: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6380: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money, AN OWNER DECISION: a gift with no agreement template pays the legacy fl
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 03d9f1f
+- budgets no looser than at 1a9ccf0
 
 ## Reviews
 
