@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-03 | d683e2d | 90 | 44 | officerCockpit.ts 38 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 20 | 119 | 0 | - | - | ok |
 | 2026-10-03 | 699df64 | 90 | 44 | officerCockpit.ts 36.2 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 19 | 128 | 0 | - | - | ok |
 | 2026-10-03 | 1a9ccf0 | 90 | 44 | vision.py 36.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 19 | 132 | 0 | - | - | ok |
 | 2026-10-03 | 03d9f1f | 90 | 44 | vision.py 38.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 19 | 131 | 0 | - | - | ok |
@@ -77,38 +78,38 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-03, 699df64, window 2026-07-05 onward)
+## Latest run (2026-10-03, d683e2d, window 2026-07-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju-web/src/lib/officerCockpit.ts` | 22 | 1647 | 36.2 |
-| `halatuju_api/apps/scholarship/vision.py` | 14 | 2285 | 32 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 23 | 1650 | 38 |
 | `halatuju_api/apps/scholarship/views.py` | 13 | 2435 | 31.7 |
+| `halatuju_api/apps/scholarship/vision.py` | 12 | 2285 | 27.4 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1209 | 14.5 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 14 | 988 | 13.8 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 10 | 1354 | 13.5 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1208 | 13.3 |
-| `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 984 | 12.8 |
-| `halatuju_api/apps/courses/views_admin.py` | 9 | 1220 | 11 |
+| `halatuju_api/apps/courses/views_admin.py` | 10 | 1223 | 12.2 |
 | `halatuju_api/apps/scholarship/serializers.py` | 6 | 1215 | 7.3 |
+| `halatuju_api/apps/scholarship/pathway_engine.py` | 11 | 631 | 6.9 |
 | `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1061 | 6.4 |
-| `halatuju_api/apps/scholarship/pathway_engine.py` | 10 | 631 | 6.3 |
 
 ### Fix ratio
-- 262 fix / 338 feat commits since 2026-07-05
+- 261 fix / 337 feat commits since 2026-07-05
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
 - `2316  halatuju_api/apps/courses/views.py`
 - `2285  halatuju_api/apps/scholarship/vision.py`
-- `1647  halatuju-web/src/lib/officerCockpit.ts`
+- `1650  halatuju-web/src/lib/officerCockpit.ts`
 - `1384  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1371  halatuju-web/src/app/profile/page.tsx`
 - `1354  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1315  halatuju-web/src/lib/scholarship.ts`
-- `1220  halatuju_api/apps/courses/views_admin.py`
+- `1223  halatuju_api/apps/courses/views_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
-- `1208  halatuju_api/apps/scholarship/serializers_admin.py`
+- `1209  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1138  halatuju_api/apps/scholarship/contracts.py`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
@@ -123,9 +124,9 @@ drift tests are counted as the habit they cure). See TD-284.
 - `290  halatuju_api/apps/courses/engine.py:569 check_eligibility`
 - `245  halatuju_api/apps/courses/views.py:119 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
-- `210  halatuju_api/apps/scholarship/verdict_engine.py:484 _verdict_income`
+- `210  halatuju_api/apps/scholarship/verdict_engine.py:489 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:168 autofill_pathway_from_offer`
-- `183  halatuju_api/apps/courses/views_admin.py:604 post`
+- `183  halatuju_api/apps/courses/views_admin.py:607 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:235 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `161  halatuju_api/apps/courses/views.py:1001 get`
@@ -160,26 +161,27 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 39 of 201 web test files read source text (signals: readFileSync, apiSource)
+- 40 of 203 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 326 entries have a defining line; 128 carry no resolution marker on it
+- 327 entries have a defining line; 119 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 1279: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1301: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1318: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1329: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
-- line 1606: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6052: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6366: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
-- line 6380: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money, AN OWNER DECISION: a gift with no agreement template pays the legacy fl
+- line 1281: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1303: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1320: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1331: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
+- line 1608: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 6054: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6368: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6382: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money, AN OWNER DECISION: a gift with no agreement template pays the legacy fl
+- line 6384: - **TD-330 (raised 2026-10-03 by Later-tier batch 1's adversarial review, F3) — low, eligibility, unreachable today.** Two STR-breach readers in `inco
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 1a9ccf0
+- budgets no looser than at 699df64
 
 ## Reviews
 

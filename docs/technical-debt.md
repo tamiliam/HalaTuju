@@ -35,7 +35,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**327 entries carry a defining line; 121 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision; TD-069 and TD-218 closed by Now sprint 4, TD-324 and TD-325 raised by it; TD-324 closed by the owner's ruling the same day, TD-326 raised by it; TD-229 closed by Now sprint 5 part 1 on 2026-10-03, TD-327 and TD-328 raised by it; TD-329 raised by Now sprint 5 part 2, TD-125, which stays open until its key is deleted; TD-164, TD-169, TD-244 and TD-251 closed by Next-tier batch 3, TD-145 moved to Owner-decision with its resolver built; TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231 and TD-055 closed by Later-tier batch 1 on 2026-10-03, TD-290 and TD-294 built and held open for their live proof, TD-330 raised by its review). Every one of them was READ on
+**327 entries carry a defining line; 119 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision; TD-069 and TD-218 closed by Now sprint 4, TD-324 and TD-325 raised by it; TD-324 closed by the owner's ruling the same day, TD-326 raised by it; TD-229 closed by Now sprint 5 part 1 on 2026-10-03, TD-327 and TD-328 raised by it; TD-329 raised by Now sprint 5 part 2, TD-125, which stays open until its key is deleted; TD-164, TD-169, TD-244 and TD-251 closed by Next-tier batch 3, TD-145 moved to Owner-decision with its resolver built; TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231 and TD-055 closed by Later-tier batch 1 on 2026-10-03, TD-290 and TD-294 built and held open for their live proof, TD-330 raised by its review). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -117,7 +117,7 @@ Class C, half a day each. Good small-change-lane work; several go together.
 - **TD-091** — Sponsor landing Tamil is a first draft, and the page is public. *(C · S · one owner sitting with TD-094, 105, 108, 183)*
 - **TD-070** — Sponsor sign-in, sign-up and the admin vetting buttons were never click-tested in a browser. *(C · S)*
 
-### Later — visible but larger, or small hygiene — 61
+### Later — visible but larger, or small hygiene — 59
 Class C at medium or large size, and class D that is small.
 
 - **TD-330** — A malformed genuineness status on an STR no longer breaches it (TD-293 reads it as no signal); breach, or leave? *(D · S · raised 2026-10-03)*
@@ -149,8 +149,6 @@ Class C at medium or large size, and class D that is small.
 - **TD-308** — Check 2 re-reads the STR on every refresh with no budget watching it. *(D · S)*
 - **TD-304** — The page-weight guard reads rounded figures and ignores layout code. *(D · S · also fixes the 0.5 kB rounding trap)*
 - **TD-295** — One helper returns nothing on the wrong input; a note for developers. *(D · S)*
-- **TD-294** — A failed login-email lookup logs an error nobody sees. *(D · S)*
-- **TD-290** — Our own warnings reach Google's logs with no severity, so an alert would never fire. *(D · S)*
 - **TD-286** — Newer query budgets live in a test file, outside the frozen record. *(D · S)*
 - **TD-284** — Three code-health targets only warn; one miscounts the drift tests. *(D · S)*
 - **TD-279** — Two files are both called constants.py. *(D · S · same hazard as TD-277)*
@@ -614,7 +612,7 @@ Do one only when a sprint is already in that file.
   context and `useToast`, five callers repointed) took `/` from 231.112 to 230.716 kB — **0.40 kB**,
   under the 0.5 kB bar the brief set — and moved eight other routes by under a kilobyte each (none
   heavier). Reverted. Worth doing only alongside other work in `Toast.tsx`.
-- **TD-290 (raised 2026-09-21 by the audit of the safety net) — MEDIUM, and unproven.** Every
+- ~~**TD-290**~~ **RESOLVED 2026-10-03 (proven live on `halatuju-api-01093-mxc`: every `apps.*` line on the new revision arrives in Cloud Logging with its severity — the start-up INFO lines read `severity=INFO`, 0 lines at DEFAULT; the AUDIT read-metric still reads `jsonPayload.message`)** — (raised 2026-09-21 by the audit of the safety net) — MEDIUM, and unproven. Every
   `severity>=WARNING` entry in Cloud Logging since 2026-09-19, on both services, is a payload-less
   REQUEST log; not one line from Django's own `logger.warning` / `logger.exception` appears at
   WARNING or above. Either nothing warned in three days, or application warnings do not reach Cloud
@@ -731,7 +729,7 @@ Do one only when a sprint is already in that file.
   whose stored extraction is malformed, which is a product answer and not a performance
   refactor's to give. ~1h plus that decision.
   **Trigger:** a production count of malformed `vision_fields`, or the first officer 500.
-- **TD-294 (raised 2026-09-21 by the adversarial review of TD-282) — low, pre-existing.** Every
+- ~~**TD-294**~~ **RESOLVED 2026-10-03 (with TD-290: the line names its caller at ERROR and the formatter carries ERROR into Cloud Logging — proven by the same revision's severities; no production occurrence seen yet, which is the good outcome)** — (raised 2026-09-21 by the adversarial review of TD-282) — low, pre-existing. Every
   officer detail GET logs a full `OperationalError` traceback, *"Failed to fetch auth.users data
   for CSV export"*, straight after its `AUDIT applicant_detail_read` line. Seen on SQLite in the
   reviewer's probe (the statement is Postgres-only, so on SQLite it always raises); whether it
