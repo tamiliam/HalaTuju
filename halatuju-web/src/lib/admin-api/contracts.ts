@@ -33,6 +33,9 @@ export interface ContractScheduleRowData {
 
 export interface ContractTemplateSummary {
   id: number; organisation: string; version: string; status: ContractStatus
+  /** The GIFT this agreement is written for (TD-229, 2026-10-03) — one active per gift. `null`
+   *  only for a row the 0163 back-fill did not reach: it governs nobody, and the list says so. */
+  programme: { code: string; name: string } | null
   languages_available: string[]
   vetted_by_name: string; vetted_on: string | null
   deployed_by_at: string | null; created_at: string; updated_at: string
@@ -63,12 +66,17 @@ export interface ContractValidation {
 
 const CT = '/api/v1/admin/scholarship/contract-templates'
 
-export async function getContractTemplates(organisation?: string, options?: ApiOptions) {
-  const q = organisation ? `?organisation=${encodeURIComponent(organisation)}` : ''
+/** The templates the organisation fence allows, narrowed to ONE GIFT when `programme` is given.
+ *  The server re-resolves the code inside the caller's own organisation (`_gift_narrowing`):
+ *  another tenant's code is a 404, and omitting it lists every gift's templates. Not a fence. */
+export async function getContractTemplates(programme?: string, options?: ApiOptions) {
+  const q = programme ? `?programme=${encodeURIComponent(programme)}` : ''
   return adminFetch<{ templates: ContractTemplateSummary[] }>(`${CT}/${q}`, options)
 }
+/** A new DRAFT, written for the gift `programme` (TD-229). Omitted, the server uses the
+ *  organisation's one live gift or refuses `programme_required` — never a silent pick. */
 export async function createContractTemplate(
-  body: { version: string; organisation?: string; copy_from?: number }, options?: ApiOptions) {
+  body: { version: string; programme?: string; copy_from?: number }, options?: ApiOptions) {
   return adminMutate<ContractTemplateDetail>(`${CT}/`, 'POST', body, options)
 }
 export async function getContractTemplate(id: number, options?: ApiOptions) {

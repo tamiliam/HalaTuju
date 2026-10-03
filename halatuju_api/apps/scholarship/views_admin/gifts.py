@@ -103,7 +103,7 @@ def programme_delete_blocker(p):
     the database refuses regardless. This only names WHICH, in the order a person is most likely to
     be able to act on — students, before money they cannot undo.
     """
-    from ..models import Donation, PaymentRun, SponsorProgrammeMembership
+    from ..models import ContractTemplate, Donation, PaymentRun, SponsorProgrammeMembership
     holders = (
         # org-fence: every query filters on `p`, which every caller reached through the fence
         # (`_programmes_for` / `_programme_or_404`) — already inside the caller's organisation.
@@ -114,6 +114,13 @@ def programme_delete_blocker(p):
         ('has_money', Donation.objects.filter(programme=p)),
         # org-fence: as above.
         ('has_payment_runs', PaymentRun.objects.filter(programme=p)),
+        # org-fence: as above. TD-229 (2026-10-03), owner ruling the same day: a bursary agreement
+        # template is written for ONE gift. Only a template a BursaryAgreement REFERENCES holds the
+        # gift — a document somebody signed can never go, so the gift under it cannot either. A
+        # template nobody signed (draft, active or archived) goes WITH the gift, in the delete
+        # handler's transaction, exactly as an empty intake year does. Last in the list.
+        ('has_contract_templates',
+         ContractTemplate.objects.filter(programme=p, agreements__isnull=False).distinct()),
     )
     for code, qs in holders:
         count = qs.count()

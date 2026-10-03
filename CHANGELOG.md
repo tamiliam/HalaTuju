@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## Now sprint 5 part 1 — TD-229: the bursary agreement template belongs to a GIFT - 2026-10-03
+
+BUILT, not committed, pushed or deployed. The owner's ruling (2026-09-04): *"the template is PER
+GIFT"*. Register open **130 → 131** (TD-229 closed; TD-327 raised — Later — and TD-328 —
+Owner-decision), defined 325; `code_health.py` td_open 131. One migration (`scholarship/0163`,
+MIGRATE-FIRST, by hand — DDL + back-fill in its docstring and in halatuju_api/CLAUDE.md).
+
+- **Model:** `ContractTemplate.programme` (FK → `Programme`, PROTECT, nullable for the transition)
+  and the partial unique index `uniq_contract_template_active_per_programme` (ONE ACTIVE PER GIFT).
+  There was no organisation-level index to swap — "one active per org" was code-only in `deploy`.
+  Migration 0163 back-fills every template of the flagship's organisation onto the flagship
+  (`code = 'brightpath-flagship'`, alias fallback, no id literals); a second gift starts with none.
+- **Resolution:** new `apps/scholarship/contract_scope.py` — `active_template_for(programme)`,
+  `template_for_application` (the pinned agreement template, else `application.programme`'s active
+  one; never `chosen_programme`, never a neighbour's), `gift_for_new_template`. `contracts.py`'s
+  two org-level readers are gone (1,145 → 1,138 lines). Callers moved: `bursary.sign_agreement`,
+  `bursary.foundation_notify_emails`, `payments._schedule_row`, the student quiz GET + pass POST.
+- **Lifecycle:** `contracts.create_template` takes the gift (`programme_required` without one, or
+  for another organisation's); `contracts.deploy` archives within the gift and refuses a gift-less
+  template. `seed_contract_template --programme <code>` (omitted: the org's one live gift; several
+  → refused); `bursary_e2e` names its gift.
+- **Refusals, honest where a student can reach them:** `sign_agreement` refuses
+  `no_active_template` with the flag on OR off (the flag-off fall-through rendered from
+  `template=None`, which has raised since Sprint 5); `send_sign_invitation_emails` skips and reports
+  a student whose gift has no template (no email, no clock armed); the student award GET serves
+  `bursary_unavailable` and `/scholarship/award` says the agreement is not ready instead of offering
+  Accept. **Found on the way:** that GET called `particulars_for` / `render_agreement_html` without
+  the template both have required since Contract Sprint 5 — every flag-on preview was a TypeError,
+  untested. Fixed, and now tested.
+- **Admin:** the Contracts row moved Organisation → Programme (after Spending; same roles — nobody
+  gained or lost reach). `GET contract-templates/?programme=<code>` narrows through
+  `_gift_narrowing` inside the fence (another tenant's code 404); omitted lists every gift's.
+  `POST` takes the gift from `?programme=`/body; a super's organisation follows from the gift;
+  none named → the org's one live gift, several → `programme_required`. Summaries carry
+  `programme {code, name}`. The list shows a Gift column (NULL → "governs nobody"), New version
+  sends the crumb's gift and waits when none is chosen; the editor pins the crumb to the
+  template's gift; the schedule copy-from lists the organisation's versions across gifts.
+  `programme_delete_blocker` gains `has_contract_templates` (web copy in en/ms/ta) — narrowed by
+  the owner's ruling the same day to a template a BursaryAgreement REFERENCES: deleting a gift now
+  deletes its unsigned templates (draft/active/archived) inside the same transaction, before the
+  gift (audit line `templates=N`; a student's quiz pin on one is SET_NULL — 0 pins in production).
+  Tests: the blocker (unsigned → no block, signed → blocks), the gift + templates + clauses deleted
+  together, and a signed template refusing 400 with nothing deleted; both bites red.
+- **i18n** (en/ms/ta): new `admin.contracts.colGift`, `.noGift`, `.error.programmeRequired`,
+  `admin.programmes.error.hasContractTemplates`, `scholarship.award.error.no_active_template`;
+  re-worded `admin.contracts.subtitle` and `.deployArchives` (per gift); removed the unused
+  `admin.contracts.orgPick` / `.orgOther` (the super's organisation picker is gone).
+- **Tests:** new `test_td229_contract_per_gift.py` (22) and web `contracts/page.test.tsx` (3),
+  `scholarship/award/page.test.tsx` (2). Fixtures that seeded a template for one gift and signed
+  students of another (the TD-229 shape exactly) now seed for the students' own gift:
+  `test_bursary_agreement._ensure_active_template`, `test_contract_cutover._cohort` (flagship),
+  `test_contracts` (create names the gift), the two sign-invitation tests (the gift gets a
+  template; a new case pins the skip). `navigation.test.ts` / `giftHref.test.ts` re-typed for the
+  move. `test_org_fence` re-classifies the list view `contract-org-fenced+gift-narrowed (TD-229)`.
+  Web ledger: the contracts page's `exhaustive-deps` disable now carries a reason — removed from
+  `eslint_disable_without_reason`.
+- Docs: decisions.md 2026-10-03, the go-live playbook's template step (per gift), the register,
+  halatuju_api/CLAUDE.md (NOW SPRINT 5 PART 1, with the lead's read-only probe),
+  docs/retrospective-2026-10-03-now-sprint-5-td229.md.
+- Gates: api `pytest -n auto` **7,563 → 7,586** passed, 3 skipped (+22 new file, +1 sign-invitation
+  skip case); `manage.py check` clean; `makemigrations --check --dry-run` "No changes detected"; web
+  `npm run gates` **3,287 → 3,292** jest / 201 suites, tsc + lint + i18n ALL PASSED; `npm run
+  bundle-budget` ok — `/admin/contracts` 217 kB, `/admin/contracts/[id]` 223 kB, `/scholarship/award`
+  247 kB, median 228 kB (1.0 kB under 229; 5 routes may cross before the median does). Email/PDF
+  golden masters untouched and green. Three bites, each restored SHA-equal: deploy archiving by
+  organisation again (3 red), the resolver going back to the organisation (6 red — after a fixture
+  that was too kind was fixed: the second gift's template is now deployed FIRST), the award GET
+  without the template (1 red, a 500).
+
 ## TD-324: the shortlist gate, the sponsor band and the slip parser read the results held - 2026-10-02
 
 BUILT, not committed, pushed or deployed. The owner's ruling (2026-10-02): *"switch all three"*,

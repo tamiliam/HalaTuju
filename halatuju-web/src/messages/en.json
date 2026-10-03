@@ -2523,7 +2523,8 @@
         "parent_ic_nric_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both.",
         "parent_ic_name_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both.",
         "guarantor_phone_missing": "We don't have your parent or guardian's phone number on file. Please contact us so we can add it before signing.",
-        "guarantor_phone_unverified": "Please verify your parent or guardian's phone with the PIN before signing."
+        "guarantor_phone_unverified": "Please verify your parent or guardian's phone with the PIN before signing.",
+        "no_active_template": "Your agreement is not ready to sign yet. We will let you know when it is."
       },
       "bursary": {
         "heading": "Sign your Conditional Bursary Award Agreement",
@@ -5782,7 +5783,7 @@
     },
     "contracts": {
       "title": "Contract templates",
-      "subtitle": "Author, vet and deploy the bursary agreement — versioned per organisation.",
+      "subtitle": "Author, vet and deploy the bursary agreement — one active version per gift.",
       "newVersion": "New version",
       "startBlank": "Start blank",
       "copyFrom": "Copy from…",
@@ -5802,7 +5803,8 @@
       "error": {
         "versionTooLong": "That version name is too long (50 characters max). Please shorten it.",
         "versionExists": "A version with that name already exists. Choose a different name.",
-        "versionRequired": "Please enter a version name."
+        "versionRequired": "Please enter a version name.",
+        "programmeRequired": "Choose a gift in the breadcrumb first — each agreement is written for one gift."
       },
       "notDraftMsg": "This version is no longer a draft and can’t be edited.",
       "status": {
@@ -5884,8 +5886,6 @@
       "schedCopyHint": "Fills the grid — review, then Save.",
       "schedCopied": "Schedule copied — review and Save.",
       "schedEmpty": "No schedule yet. Copy one from another version above, or add rows.",
-      "orgPick": "Choose organisation…",
-      "orgOther": "Other… (type a code)",
       "schedMatches": "Matches award",
       "schedMismatch": "Total doesn’t match the award amount",
       "previewLocale": "Language",
@@ -5903,7 +5903,7 @@
       "submitForDeployment": "Submit for deployment",
       "revert": "Return to draft",
       "deploy": "Deploy",
-      "deployArchives": "Deploying archives the current active version.",
+      "deployArchives": "Deploying archives this gift's current active version.",
       "superOnlyDeploy": "Only a super admin can deploy.",
       "deployed": "Deployed — this version is now active.",
       "hierarchyHint": "Use ＋ to add a clause below, and Indent (→) / Outdent (←) to nest one. Numbering (1. / 1.1. / I.) is automatic. Only a top-level clause carries a quiz — a sub-clause is covered by its parent's.",
@@ -5914,7 +5914,9 @@
       "moveDown": "Move down",
       "uploadDoc": "Upload a document…",
       "uploadDocHint": "We'll read the clauses (and their 1 / 1.1 / i) structure) from a .docx; you review and edit before deploying.",
-      "uploadNeedsFile": "Choose a .docx file to upload, or pick another option."
+      "uploadNeedsFile": "Choose a .docx file to upload, or pick another option.",
+      "colGift": "Gift",
+      "noGift": "No gift — governs nobody"
     },
     "programmeOverview": {
       "title": "Overview",
@@ -6243,7 +6245,8 @@
         "hasMoney": "Money has been recorded against this gift, so it cannot be deleted.",
         "hasPaymentRuns": "This gift has paid students, so it cannot be deleted.",
         "inUse": "A record still depends on this gift, so it cannot be deleted.",
-        "confirmMismatch": "That does not match the required phrase. Nothing was deleted."
+        "confirmMismatch": "That does not match the required phrase. Nothing was deleted.",
+        "hasContractTemplates": "This gift has a signed bursary agreement, so it cannot be deleted."
       },
       "copyLink": "Copy apply link",
       "copied": "Link copied",

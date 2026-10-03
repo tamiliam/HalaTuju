@@ -73,6 +73,9 @@ export async function getStudentAward(
   finalising?: boolean
   is_minor: boolean
   bursary_preview?: BursaryPreview
+  /** TD-229: the flag is on and the student's GIFT has no active agreement template, so there is
+   *  nothing to preview or sign (`no_active_template`) — never another gift's document. */
+  bursary_unavailable?: string
   bursary_agreement?: BursaryAgreement
   // Gates the "View my award" panel — OFF while the accept/onboarding flow isn't exposed yet.
   acceptance_enabled?: boolean

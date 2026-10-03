@@ -204,7 +204,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     scope: 'organisation',
     headingKey: 'admin.nav.group.organisation',
     items: [
-      // The security fence: staff, sponsors, money out, contracts, billing.
+      // The security fence: staff, sponsors, billing (contracts moved to Programme, TD-229).
       // The old Administration hub is now this overview. `match` keeps the retired hub route
       // (a permanent redirect) highlighting here, so an old bookmark still lights the right row.
       // `exact` because /admin/organisation is a page, not a section — /admin/organisation/staff
@@ -245,8 +245,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
-      { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
-        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
         scope: 'organisation', roles: ['super', 'org_admin'],
         gate: { mode: 'probe', probe: 'billing', dark: 'soon' } },
@@ -363,6 +361,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'spending', href: '/admin/spending', labelKey: 'admin.spending.nav', chord: 'X',
         scope: 'programme', roles: ['super', 'org_admin', 'admin'],
         gate: { mode: 'always' }, needsProgramme: true },
+      // ⚠ MOVED HERE FROM ORGANISATION (TD-229, 2026-10-03): the agreement is PER GIFT (owner,
+      // 2026-09-04). Same roles. No `needsProgramme` — with no gift chosen it lists every gift's.
+      // Not a fence: the endpoint re-resolves `?programme=` inside the caller's own organisation.
+      { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
+        scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
     ],
   },
   {

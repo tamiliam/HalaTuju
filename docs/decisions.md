@@ -1,5 +1,67 @@
 # Architectural Decisions — HalaTuju
 
+## TD-229: the bursary agreement template belongs to a GIFT — built 2026-10-03 (owner ruling 2026-09-04)
+
+**Decided by:** the owner, 2026-09-04: *"the template is PER GIFT"* (recorded in TD-229). Built by
+Now sprint 5 part 1, 2026-10-03. Supersedes "exactly one ACTIVE template per organisation"
+(`contracts.deploy`, Contract Module Sprint 1).
+
+**1. One active per gift, and the database says so.** `ContractTemplate.programme` (FK to
+`Programme`, PROTECT, nullable for the migrate-first transition) and a partial unique index
+`uniq_contract_template_active_per_programme` on `programme_id WHERE status = 'active'`. There was
+no organisation-level index before — "one per org" lived only in `deploy`'s archive step — so this
+ADDS the rule to the schema rather than swapping one. `deploy` archives the same gift's previous
+active version and refuses a template with no gift (`programme_required`). `organisation` stays the
+tenant FENCE and the scope of `version` uniqueness: a version label is unique across an
+organisation's gifts.
+
+**2. Which document a student signs: their GIFT's, never a neighbour's.**
+`contract_scope.template_for_application` (new module; the readers left `contracts.py`, a ledgered
+giant file) returns the signed agreement's PINNED template if any, else the active template of
+`application.programme` — the gift, set-once from the cohort; never `chosen_programme`, which is
+the course. A gift with no active template resolves to nothing, and the sign path refuses
+`no_active_template` **with the flag on or off** (the flag-off fall-through rendered from
+`template=None`, which has raised since Sprint 5 removed the constants). The same resolution
+governs the comprehension quiz, the countersign notify list and the payment schedule.
+
+**3. PROTECT, and only a SIGNED template holds the gift — owner ruling, 2026-10-03.** The FK is
+PROTECT (the house pattern). The gift-delete handler deletes the gift's templates that NO
+`BursaryAgreement` references (draft, active or archived) inside its one transaction, before
+`p.delete()` — the same shape as an empty intake year (2026-09-07), and because of PROTECT that
+explicit delete is the only way the gift can go. `programme_delete_blocker` fires
+`has_contract_templates` only for a template a BursaryAgreement references: a document somebody
+signed outlives everything. Clauses and schedule rows cascade with each template; the audit line
+carries `templates=N`. ⚠ A student's quiz pin (`comprehension_template`) is SET_NULL, so deleting a
+template a student was quizzed on clears the pin silently — **0 pins in production on
+2026-10-03**. The typed-phrase dialog names the years that go but not the templates: the list
+payload carries no template count, so it was left as it is.
+
+**4. The back-fill is explicit and load-bearing.** Migration 0163 sets every template of the
+flagship's ORGANISATION onto the flagship (`code = 'brightpath-flagship'`, alias table as the
+fallback; no id literals). A second gift starts with none. A template left NULL governs nobody —
+pinned by `test_td229_contract_per_gift.TestTheBackfillIsLoadBearing`. Tightening to NOT NULL is
+TD-327.
+
+**5. The admin screen is a Programme-scope row.** Contracts moved from the Organisation group to
+the Programme group (after Spending), as Payments and Spending did in TD-241 — same roles (super,
+org_admin), nobody gained or lost reach. The list reads `?programme=<code>` through
+`_gift_narrowing` (inside the fence; another tenant's code is a 404); with no gift chosen it lists
+every gift's templates, each labelled, and New version waits for a gift. Create takes the gift from
+the scope; with none named the organisation's one LIVE gift is used (as `create_run` does), several
+→ `programme_required`. A super's organisation follows from the named gift. The page has no gift
+picker of its own (TD-241's one-control rule). No `needsProgramme`: the list is a read.
+
+**6. Honest where a student can reach it.** The student award GET (flag on) previews the GIFT's
+agreement, or serves `bursary_unavailable: 'no_active_template'` and the page says the agreement is
+not ready instead of offering Accept. ⚠ That GET called `particulars_for` and
+`render_agreement_html` without the template both have required since Contract Sprint 5 — every
+flag-on preview was a TypeError, untested; fixed in the same change. The sign-invitation command
+skips (and reports) a student whose gift has no template, so no email is sent and no clock armed.
+
+**7. Left, named.** TD-327 (NOT NULL). TD-328 (owner): a gift with no template is paid the legacy
+flat schedule (`payments._schedule_row` → `MONTHLY_RATE`); before this change a second gift's
+students were paid on the organisation's (the flagship's) template.
+
 ## TD-324: the shortlist gate, the sponsor band and the slip parser read the results held; "held" means the HIGHEST — owner ruling, 2026-10-02
 
 **Decided by:** the owner, 2026-10-02: *"switch all three"* — on the lead's read-only production

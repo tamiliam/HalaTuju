@@ -186,7 +186,6 @@
       "src/sandbox/surfaces.tsx": 626
     },
     "eslint_disable_without_reason": [
-      "src/app/admin/contracts/page.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/guide/page.tsx::@next/next/no-img-element::1",
       "src/app/admin/organisation/reviewers/[id]/page.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/organisation/reviewers/page.tsx::react-hooks/exhaustive-deps::1",

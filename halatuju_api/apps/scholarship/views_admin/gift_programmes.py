@@ -221,6 +221,10 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         right: those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift"
         (the S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer.
 
+        ⚠ ITS UNSIGNED AGREEMENT TEMPLATES GO WITH IT TOO — owner ruling, 2026-10-03 (TD-229). A
+        template is `PROTECT` from its gift, like a year, and is cleared here explicitly for the same
+        reasons; only a template a `BursaryAgreement` references holds the gift (`has_contract_templates`).
+
         ⚠ THE TYPED CONFIRMATION IS SERVER-SIDE, not a client courtesy. `confirm` must equal the
         gift's own code. A destructive verb that any client can fire with an empty body is one
         mis-wired button away from deleting somebody's gift, and the browser dialog is not the
@@ -250,10 +254,10 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
             return Response({'error': blocked_by, 'code': blocked_by, 'count': count},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        from ..models import ScholarshipCohort
+        from ..models import ContractTemplate, ScholarshipCohort
         code, name = p.code, p.name_en
         try:
-            # ⚠ ONE TRANSACTION, YEARS FIRST. If the gift's delete were to fail after the years had
+            # ⚠ ONE TRANSACTION, YEARS AND UNSIGNED AGREEMENT TEMPLATES FIRST (templates: TD-229). If the gift's delete were to fail after the years had
             # gone, an untouched gift would be left with its rules missing — which is worse than
             # either outcome on its own. `atomic` is what makes "the years go with it" true rather
             # than "the years go, and then we try".
@@ -263,6 +267,18 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
                 years = ScholarshipCohort.objects.filter(programme=p)
                 year_count = years.count()
                 years.delete()
+                # TD-229, owner ruling 2026-10-03: the gift's agreement templates go WITH it. The
+                # blocker above proved no BursaryAgreement references any of them (a signed one
+                # refuses `has_contract_templates`), and `ContractTemplate.programme` is PROTECT,
+                # so this explicit delete is the ONLY way the gift itself can then go. Clauses and
+                # schedule rows CASCADE with each template. ⚠ A student's quiz pin
+                # (`comprehension_template`) is SET_NULL, so deleting a template a student was
+                # quizzed on clears that pin silently — 0 pins in production on 2026-10-03, and a
+                # template with a pin and no signature belongs to a gift nobody can sign under yet.
+                # org-fence: as the years — `p` is this organisation's own gift.
+                templates = ContractTemplate.objects.filter(programme=p)
+                template_count = templates.count()
+                templates.delete()
                 p.delete()
         except ProtectedError:
             # The backstop, and it should be unreachable: a relation added later without a check
@@ -274,8 +290,8 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         # The year count is ON the audit line because it is the part a person cannot see afterwards:
         # the gift's own row is gone either way, but "and it took three years with it" is the fact
         # somebody reading this log later would otherwise have to guess at.
-        logger.info('AUDIT programme_deleted code=%s name=%s years=%s by=%s',
-                    code, name, year_count, admin.email or '')
+        logger.info('AUDIT programme_deleted code=%s name=%s years=%s templates=%s by=%s',
+                    code, name, year_count, template_count, admin.email or '')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

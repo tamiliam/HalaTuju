@@ -15,7 +15,7 @@ from .base import _AdminBase
 
 # ── Contract module (org-owned versioned bursary templates) — S3 admin API ────────
 # Access: super or org_admin ONLY, org-fenced (a cross-org template is 404, never
-# 403). Deploy is SUPER-only (org_admin -> 403). The service (apps.scholarship.
+# 403). Each template is written for ONE gift (TD-229); the gift narrows inside the fence. Deploy is SUPER-only (org_admin -> 403). The service (apps.scholarship.
 # contracts) owns the lifecycle + validation; these views are thin. generate-quiz
 # is draft-only and calls the mockable Gemini seam (never live in tests).
 
@@ -62,8 +62,12 @@ def _contract_schedule_dict(r):
 
 
 def _contract_template_summary(t):
+    # `programme` is the GIFT the template is written for (TD-229). None only for a row the
+    # migration-0163 back-fill did not reach — it governs nobody, and the screen says so.
+    gift = t.programme
     return {
         'id': t.id, 'organisation': t.organisation.code, 'version': t.version,
+        'programme': {'code': gift.code, 'name': gift.name_en} if gift is not None else None,
         'status': t.status, 'languages_available': t.languages_available,
         'vetted_by_name': t.vetted_by_name, 'vetted_on': t.vetted_on,
         'deployed_by_at': t.deployed_by_at, 'created_at': t.created_at,
@@ -133,7 +137,7 @@ class _ContractsBase(_AdminBase):
             return None, None, err
         from ..models import ContractTemplate
         template = (ContractTemplate.objects.filter(pk=pk)
-                    .select_related('organisation')
+                    .select_related('organisation', 'programme')
                     .prefetch_related('clauses', 'schedule_rows').first())
         if template is None:
             return None, None, self._not_found()
@@ -163,13 +167,24 @@ class _ContractsBase(_AdminBase):
 
 class AdminContractTemplateListView(_ContractsBase):
     """GET list (org-fenced; super may ?organisation=<code>). POST create a DRAFT
-    ({version, organisation? (super), copy_from?})."""
+    ({version, organisation? (super), programme?, copy_from?}).
+
+    ⚠ A TEMPLATE IS WRITTEN FOR ONE GIFT (TD-229, 2026-10-03). `?programme=<code>` narrows the
+    list to that gift through `_gift_narrowing` — INSIDE the organisation fence, never past it;
+    an unknown or another tenant's code is a 404. Omitted means every template the fence allows.
+    Create takes the gift from `?programme=` (or the body): a named gift must be the target
+    organisation's own (404 otherwise); with none named the organisation's one live gift is
+    used, and with several the answer is `programme_required` — never a silent pick.
+    """
     def get(self, request):
         admin, err = self._contract_admin(request)
         if err:
             return err
+        programme, gift_err = self._gift_narrowing(request, admin)
+        if gift_err:
+            return gift_err
         from ..models import ContractTemplate
-        qs = (ContractTemplate.objects.select_related('organisation')
+        qs = (ContractTemplate.objects.select_related('organisation', 'programme')
               .prefetch_related('clauses', 'schedule_rows')
               .order_by('organisation_id', '-created_at'))
         if not self.has_role(admin, 'super'):
@@ -178,16 +193,32 @@ class AdminContractTemplateListView(_ContractsBase):
             org_f = (request.query_params.get('organisation') or '').strip()
             if org_f:
                 qs = qs.filter(organisation__code=org_f)
+        if programme is not None:
+            qs = qs.filter(programme=programme)
         return Response({'templates': [_contract_template_summary(t) for t in qs]})
 
     def post(self, request):
         admin, err = self._contract_admin(request)
         if err:
             return err
-        org, oerr = self._target_org(request, admin)
-        if oerr:
-            return oerr
-        from .. import contracts
+        code = (request.query_params.get('programme') or request.data.get('programme') or '').strip()
+        named = self._programme_by_code(admin, code) if code else None
+        if code and named is None:
+            return self._not_found()   # unknown or another tenant's gift: 404, never 403
+        super_names_no_org = (self.has_role(admin, 'super')
+                              and not (request.data.get('organisation') or '').strip())
+        if named is not None and super_names_no_org:
+            org = named.organisation   # a super's gift names its organisation
+        else:
+            org, oerr = self._target_org(request, admin)
+            if oerr:
+                return oerr
+        from .. import contract_scope, contracts
+        programme, perr = contract_scope.gift_for_new_template(org, code)
+        if perr == 'not_found':
+            return self._not_found()   # the gift is not this organisation's
+        if perr:
+            return Response({'error': perr, 'code': perr}, status=status.HTTP_400_BAD_REQUEST)
         from ..models import ContractTemplate
         copy_from = None
         cf = request.data.get('copy_from')
@@ -198,7 +229,7 @@ class AdminContractTemplateListView(_ContractsBase):
                                 status=status.HTTP_400_BAD_REQUEST)
         try:
             template = contracts.create_template(
-                org, (request.data.get('version') or '').strip(),
+                org, (request.data.get('version') or '').strip(), programme=programme,
                 created_by_email=getattr(admin, 'email', '') or '', copy_from=copy_from)
         except contracts.ContractsError as e:
             return _contracts_err(e)
@@ -347,7 +378,7 @@ class AdminContractRevertView(_ContractsBase):
 
 class AdminContractDeployView(_ContractsBase):
     """POST — pending_deployment -> active (SUPER only; org_admin -> 403). Atomically
-    archives the org's previous active version."""
+    archives THE SAME GIFT's previous active version (TD-229) — another gift's stays active."""
     def post(self, request, pk):
         template, admin, err = self._template_for(request, pk)
         if err:

@@ -107,7 +107,7 @@ class Command(BaseCommand):
         counterparty + vetting attestation (test values), submit and deploy — so a
         real ACTIVE template governs the signing chain."""
         self._step(0, 'Seed + deploy a contract template for the owning org')
-        call_command('seed_contract_template', org=owner_org.code,
+        call_command('seed_contract_template', org=owner_org.code, programme='e2e-gift',
                      template_version='2026-e2e', fixture=_FIXTURE, verbosity=0)
         template = ContractTemplate.objects.get(organisation=owner_org, version='2026-e2e')
         contracts.update_config(

@@ -6,15 +6,24 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import { useProgrammeScope } from '@/lib/programmeScopeCore'
 import {
   getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
   updateContractConfig,
   type ContractTemplateSummary, type ContractStatus,
 } from '@/lib/admin-api'
 
-// Contract templates list — reached from the Contracts card in Administration → Organisation
-// (no top-level nav entry; the layout keeps "Administration" active). super + org_admin only.
-// New-version supports Start-blank or Copy-from an existing version.
+// Contract templates list — a PROGRAMME-scope row since TD-229 (2026-10-03): the owner ruled on
+// 2026-09-04 that the agreement is written PER GIFT, so the breadcrumb's gift says whose
+// templates these are. super + org_admin only. New-version supports Start-blank, Upload or
+// Copy-from a version IN THIS LIST — once a gift is chosen that is the gift's own versions only
+// (a copy is a new, unvetted draft). Copying a schedule across gifts is ScheduleEditor's.
+//
+// ⚠ THE GIFT COMES FROM THE BREADCRUMB AND NOWHERE ELSE — the page has no picker of its own (the
+// TD-241 rule for Payments: two controls answering "which gift" is two chances to write for the
+// wrong one). It travels as `?programme=<code>`, which the server re-resolves INSIDE the caller's
+// own organisation; with no gift chosen the list shows every gift's templates, each labelled,
+// and New version waits for a gift rather than letting the server guess.
 
 const STATUS_TONE: Record<ContractStatus, string> = {
   draft: 'bg-ground-100 text-ground-600',
@@ -30,7 +39,6 @@ export default function ContractsListPage() {
   const { t } = useT()
   const router = useRouter()
 
-  const isSuper = effectiveRole(role) === 'super'
   const allowed = canAccess('/admin/contracts', effectiveRole(role))
 
   const [templates, setTemplates] = useState<ContractTemplateSummary[]>([])
@@ -41,22 +49,24 @@ export default function ContractsListPage() {
   // Source: '' = start blank · 'upload' = populate from a .docx · a numeric id = copy that version.
   const [source, setSource] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
-  const [org, setOrg] = useState('')   // super only (org_admin uses own org)
-  const [orgOther, setOrgOther] = useState(false)   // super picked "Other…" → free-text
   const [error, setError] = useState<string | null>(null)
+  // The gift in the breadcrumb ('' = none chosen: several gifts, or not yet known).
+  const { chosen: gift, programme: giftChoice } = useProgrammeScope()
 
   const load = () => {
     if (!token) return
+    // ⚠ A REPLY FOR THE GIFT YOU LEFT IS DROPPED (the TD-298 shape): switching gift starts a new
+    // read without cancelling the old, and the slower answer must not overwrite the newer.
+    let current = true
     setLoading(true)
-    getContractTemplates(undefined, { token })
-      .then((d) => setTemplates(d.templates))
-      .catch(() => setError(t('admin.contracts.actionFailed')))
-      .finally(() => setLoading(false))
+    getContractTemplates(gift || undefined, { token })
+      .then((d) => { if (current) setTemplates(d.templates) })
+      .catch(() => { if (current) setError(t('admin.contracts.actionFailed')) })
+      .finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
   }
-  useEffect(load, [token])   // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Distinct org codes across existing templates — the dropdown of choices for a super.
-  const knownOrgs = Array.from(new Set(templates.map((tm) => tm.organisation))).filter(Boolean).sort()
+  // `gift` IS A DEPENDENCY — switching gift in the breadcrumb must re-read the list.
+  useEffect(load, [token, gift])   // eslint-disable-line react-hooks/exhaustive-deps
 
   if (role && !allowed) {
     return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
@@ -65,11 +75,11 @@ export default function ContractsListPage() {
   const submitNew = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
     if (source === 'upload' && !file) { setError(t('admin.contracts.uploadNeedsFile')); return }
+    if (!gift) { setError(t('admin.contracts.error.programmeRequired')); return }
     setCreating(true)
     try {
-      const body: Parameters<typeof createContractTemplate>[0] = { version: version.trim() }
+      const body: Parameters<typeof createContractTemplate>[0] = { version: version.trim(), programme: gift }
       if (source && source !== 'upload') body.copy_from = Number(source)
-      if (isSuper && org.trim()) body.organisation = org.trim()
       const created = await createContractTemplate(body, { token: token! })
       // Upload path: populate the new draft's clauses from the document (levels detected), then
       // land on the editor — that IS the review; nothing is live until vetting + deploy. A parse
@@ -98,6 +108,7 @@ export default function ContractsListPage() {
         version_too_long: t('admin.contracts.error.versionTooLong'),
         version_exists: t('admin.contracts.error.versionExists'),
         version_required: t('admin.contracts.error.versionRequired'),
+        programme_required: t('admin.contracts.error.programmeRequired'),
       }
       setError(friendly[code] || code || t('admin.contracts.actionFailed'))
       setCreating(false)
@@ -132,27 +143,11 @@ export default function ContractsListPage() {
                 <option key={tm.id} value={String(tm.id)}>{t('admin.contracts.copyFrom')} {tm.version}</option>
               ))}
             </select>
-            {isSuper ? (
-              // Super picks the owning org. Offer the orgs that already have templates as a
-              // dropdown (with "Other…" → free-text for a brand-new org); fall back to a plain
-              // box when there are no templates yet.
-              (knownOrgs.length > 0 && !orgOther) ? (
-                <select className={inputCls} value={org}
-                  onChange={(e) => { if (e.target.value === '__other__') { setOrgOther(true); setOrg('') } else setOrg(e.target.value) }}>
-                  <option value="" disabled>{t('admin.contracts.orgPick')}</option>
-                  {knownOrgs.map((code) => <option key={code} value={code}>{code}</option>)}
-                  <option value="__other__">{t('admin.contracts.orgOther')}</option>
-                </select>
-              ) : (
-                <input className={inputCls} placeholder="Organisation code"
-                  value={org} onChange={(e) => setOrg(e.target.value)} />
-              )
-            ) : (
-              // An org_admin has exactly one organisation (the server always uses their own),
-              // so show it prefilled + fixed rather than an empty box to fill in.
-              <input className={`${inputCls} bg-ground-50 text-ground-500`} disabled
-                value={role?.owning_org_name || ''} title="Your organisation" />
-            )}
+            {/* The gift this version is written for — the breadcrumb's, shown fixed. A super's
+                organisation follows from the gift on the server. */}
+            <input className={`${inputCls} bg-ground-50 text-ground-500`} disabled data-testid="contract-gift"
+              value={giftChoice?.name || t('admin.contracts.error.programmeRequired')}
+              title={t('admin.contracts.colGift')} />
           </div>
           {source === 'upload' && (
             <div className="rounded-lg border border-dashed border-ground-300 bg-ground-50 p-3">
@@ -179,6 +174,7 @@ export default function ContractsListPage() {
           <thead className="bg-ground-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colVersion')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colGift')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colStatus')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colLanguages')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colVetted')}</th>
@@ -190,6 +186,9 @@ export default function ContractsListPage() {
               <tr key={tm.id} className="hover:bg-info-50/40 cursor-pointer"
                 onClick={() => router.push(`/admin/contracts/${tm.id}`)}>
                 <td className="px-4 py-3 font-medium text-ground-900">{tm.version}</td>
+                <td className="px-4 py-3 text-ground-600">
+                  {tm.programme?.name ?? <span className="text-caution-700">{t('admin.contracts.noGift')}</span>}
+                </td>
                 <td className="px-4 py-3">
                   <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${STATUS_TONE[tm.status]}`}>
                     {t(`admin.contracts.status.${tm.status}`)}
@@ -201,10 +200,10 @@ export default function ContractsListPage() {
               </tr>
             ))}
             {!loading && templates.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-ground-400">{t('admin.contracts.noTemplates')}</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-center text-ground-400">{t('admin.contracts.noTemplates')}</td></tr>
             )}
             {loading && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-ground-400">{t('admin.contracts.loading')}</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-center text-ground-400">{t('admin.contracts.loading')}</td></tr>
             )}
           </tbody>
         </table>

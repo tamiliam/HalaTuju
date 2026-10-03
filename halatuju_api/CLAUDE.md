@@ -1347,6 +1347,48 @@ interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257
 **132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
 
+**NOW SPRINT 5 PART 1 (TD-229) IS BUILT, not committed, pushed or deployed (2026-10-03).**
+Register open **131** (TD-229 closed; TD-327 raised — Later — and TD-328 — Owner-decision), defined
+325. The bursary agreement template now belongs to a GIFT (owner ruling 2026-09-04):
+`ContractTemplate.programme` (PROTECT, nullable for the transition), ONE ACTIVE PER GIFT (a partial
+unique index — there was no org-level index before; "one per org" was code-only), `contracts.deploy`
+archives within the gift and refuses a gift-less template. Which template governs an application
+moved to `apps/scholarship/contract_scope.py` (`active_template_for(programme)`,
+`template_for_application`, `gift_for_new_template`): the APPLICATION'S gift (`application.programme`),
+never `chosen_programme`, never a neighbour's. A gift with no active template: the sign path refuses
+`no_active_template` (flag on OR off), the sign-invitation command skips and reports it, the student
+award page says the agreement is not ready. **Found and fixed on the way:** the student award GET
+(flag on) called `particulars_for` / `render_agreement_html` WITHOUT the template both have required
+since Contract Sprint 5 — every flag-on preview was a TypeError, untested. The admin Contracts row
+moved Organisation → Programme (after Spending; same roles); list/create take `?programme=` through
+`_gift_narrowing`. Deleting a gift (owner ruling 2026-10-03) deletes its UNSIGNED templates in the
+same transaction (audit `templates=N`); only a template a BursaryAgreement references blocks
+(`has_contract_templates`; a quiz pin on a deleted template is cleared — 0 pins today). Rules:
+decisions.md 2026-10-03 "TD-229". **The migration — MIGRATE-FIRST, by hand, `scholarship/0163`;
+the full DDL is in the migration's docstring** (one transaction):
+`ALTER TABLE contract_templates ADD COLUMN programme_id bigint NULL REFERENCES scholarship_programmes (id) DEFERRABLE INITIALLY DEFERRED;`
+`CREATE INDEX contract_templates_programme_id_4ed8c6f0 ON contract_templates (programme_id);`
+the back-fill `UPDATE contract_templates AS t SET programme_id = p.id FROM scholarship_programmes AS p WHERE p.id = COALESCE((SELECT id FROM scholarship_programmes WHERE code = 'brightpath-flagship'), (SELECT programme_id FROM scholarship_programme_code_aliases WHERE code = 'brightpath-flagship')) AND t.organisation_id = p.organisation_id AND t.programme_id IS NULL;`
+`SET CONSTRAINTS ALL IMMEDIATE;` (⚠ required — the deferred FK leaves pending trigger events after the UPDATE and Postgres refuses the CREATE INDEX otherwise; the first run on 2026-10-03 hit this and rolled back)
+`CREATE UNIQUE INDEX uniq_contract_template_active_per_programme ON contract_templates (programme_id) WHERE status = 'active';`
+**✅ APPLIED 2026-10-03 (second run): 3 drafts back-filled onto the flagship, both indexes present, ledger row recorded, 0 NULL. DO NOT RE-APPLY.**
+then `INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0163_contracttemplate_programme', now());`
+⚠ Between migrate and deploy the OLD image is safe: it never names `programme_id` (nullable), still
+resolves by organisation (yesterday's behaviour), and the flag is OFF. **What the lead runs BEFORE
+the migration, read-only (counts only):**
+(P1) every template, with its version label, per organisation — `SELECT o.code, t.id, t.version, t.status, t.title_en, t.created_at FROM contract_templates t JOIN partner_organisations o ON o.id = t.organisation_id ORDER BY o.code, t.created_at;` (the back-fill moves EVERY template of the flagship's organisation onto the flagship — read the labels for a draft meant for ANOTHER gift first, and if there is one, say so to the owner before migrating; more than ONE active in the flagship's organisation would make the unique index fail — the transaction then rolls back);
+(P2) gifts per organisation — `SELECT o.code, count(*) AS gifts, count(*) FILTER (WHERE p.is_active) AS live, bool_or(p.code = 'brightpath-flagship') AS has_flagship FROM scholarship_programmes p JOIN partner_organisations o ON o.id = p.organisation_id GROUP BY 1;`
+(P3) signed agreements per template — `SELECT t.status, count(DISTINCT t.id) AS templates, count(a.id) AS agreements FROM contract_templates t LEFT JOIN bursary_agreements a ON a.template_id = t.id GROUP BY 1;` and agreements with no template: `SELECT count(*) FROM bursary_agreements WHERE template_id IS NULL;`
+(P4, for TD-328 and the quiz pin) awarded/active students and quiz passes by gift — `SELECT p.code, a.status, count(*), count(a.comprehension_template_id) AS quiz_pinned FROM scholarship_applications a LEFT JOIN scholarship_programmes p ON p.id = a.programme_id WHERE a.status IN ('awarded', 'active', 'maintenance') GROUP BY 1, 2 ORDER BY 1, 2;` — every row NOT in `brightpath-flagship` is a student whose payment schedule source changes at the deploy (organisation template → legacy flat, TD-328), and that INCLUDES the NULL-code row: a payable student whose `application.programme` is NULL (any organisation) used to resolve through `owning_organisation` and now resolves to nothing; if any exist, show the owner before shipping. **Measured 2026-10-03 (lead): 3 templates, all draft, 0 active, 0 signed agreements; 3 live gifts incl. the flagship; 65 funded applications, all on the flagship, 0 NULL, 0 quiz pins.**
+⛔ **No template authoring or deploying between the migration and the code deploy** — the OLD image creates templates with `programme_id` NULL and its `deploy` archives by ORGANISATION, so a deploy in that window would archive the flagship's active template and activate a NULL-gift one that governs nobody under the new code. **After the migration AND again after the code deploy:** `SELECT p.code, t.status, count(*) FROM contract_templates t LEFT JOIN scholarship_programmes p ON p.id = t.programme_id GROUP BY 1, 2;` — every template on the flagship, and `SELECT count(*) FROM contract_templates WHERE programme_id IS NULL;` = **0** (then TD-327 can tighten it).
+**What the owner must decide:** TD-328 (pay a template-less gift the legacy flat schedule, or refuse
+until it has its own template); read the five new Tamil strings (`admin.contracts.colGift`,
+`.noGift`, `.error.programmeRequired`, `admin.programmes.error.hasContractTemplates`,
+`scholarship.award.error.no_active_template`) and the two re-worded ones (`admin.contracts.subtitle`,
+`.deployArchives`); and note the menu move (Contracts now sits under the gift, after Spending).
+A second gift (Sabah) has NO template after this — its students cannot sign until one is authored
+for it (go-live playbook Phase 1b).
+
 **NOW SPRINT 4 (TD-069 + TD-218) IS BUILT, not committed, pushed or deployed (2026-10-02).**
 Register open **130** (TD-069 and TD-218 closed; TD-324 raised — Owner-decision — and TD-325 —
 Later). Part 1 (TD-069): an STPM student's SPM prerequisites (grades, electives, stream pill) are

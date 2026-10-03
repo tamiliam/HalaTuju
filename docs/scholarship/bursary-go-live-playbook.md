@@ -8,9 +8,11 @@ flag is one env var, but the Phase-0 gates below are real-world prerequisites.
 > agreement TEXT (title, preamble, clauses, schedule, counterparty, quiz) is no longer hard-coded
 > in `bursary.py` — those constants were removed in Sprint 5. It now lives in an org-owned,
 > **versioned `ContractTemplate`** the org admin authors and deploys via
-> `/admin/contracts` (Administration → Organisation → Contracts). Signing renders from the
-> org's ACTIVE template; flag-on with no active template raises `no_active_template`, and a
-> student must have passed the quiz for that exact version (`comprehension_stale` otherwise).
+> `/admin/contracts` (inside a gift: Programme → Contracts, since TD-229). **A template is
+> written for ONE GIFT** (owner ruling 2026-09-04; built 2026-10-03): signing renders from the
+> ACTIVE template of the STUDENT'S GIFT (`application.programme`), never another gift's; a gift
+> with no active template refuses `no_active_template` (flag on or off), and a student must have
+> passed the quiz for that exact version (`comprehension_stale` otherwise). One ACTIVE per gift.
 > So "lawyer-vet + finalise the signatory" (old Phase 0.1/0.2) is now done by **authoring the
 > template, recording the vetting attestation, and deploying it** — see Phase 1b.
 
@@ -50,12 +52,24 @@ migrate-first convention). Then deploy code (Phase 3).
 
 After code deploy + migrate-first, and BEFORE flipping the flag:
 
-1. `python manage.py seed_contract_template --org brightpath --template-version 2026-v1 --fixture
-   apps/scholarship/fixtures/brightpath_contract_v1.json` — creates a **draft only** (no PII).
-2. In `/admin/contracts/<id>`: the org admin (Suresh) fills the counterparty **NRIC**, reviews
-   the clauses/quiz/schedule, records the **lawyer-vetting attestation** (who + date), and
-   **Submits for deployment**. A **super** then **Deploys** (the previous active version, if
-   any, auto-archives).
+1. `python manage.py seed_contract_template --org brightpath --programme brightpath-flagship
+   --template-version 2026-v1 --fixture apps/scholarship/fixtures/brightpath_contract_v1.json` —
+   creates a **draft only** (no PII), written for the named GIFT. `--programme` may be omitted
+   only while the organisation runs one live gift; with several the command refuses.
+   ⚠ **Each gift needs its own template** (TD-229). A second gift (e.g. Sabah) starts with NONE —
+   its students cannot sign, and are not sent the sign invitation, until one is authored, vetted
+   and deployed FOR THAT GIFT. (BrightPath's pre-2026-10-03 template was back-filled onto the
+   flagship by migration 0163.)
+   ⛔ **Migration 0163 is migrate-first: author or deploy NO template between the migration and
+   the code deploy.** The old image would create it with no gift and its `deploy` archives by
+   organisation — it would archive the flagship's active template and activate one that governs
+   nobody. Re-run `SELECT count(*) FROM contract_templates WHERE programme_id IS NULL;` after the
+   migration AND after the deploy; both must be 0.
+2. In `/admin/contracts/<id>` (open the gift first; the breadcrumb names it): the org admin
+   (Suresh) fills the counterparty **NRIC**, reviews the clauses/quiz/schedule, records the
+   **lawyer-vetting attestation** (who + date), and **Submits for deployment**. A **super** then
+   **Deploys** (the same gift's previous active version, if any, auto-archives; another gift's is
+   untouched).
 3. Verify a draft **payment run** matches the prior month, and that **Dec-2026 STPM rows grey
    out as `gap_month`** (the owner-confirmed exam-month skip — eyeball it before signing a run).
    `CONTRACTS_DRIVE_FOLDER` (default `04 Contracts`) must exist in the Workspace Drive for the

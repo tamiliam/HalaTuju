@@ -124,12 +124,13 @@ def _remaining(application):
 
 def _schedule_row(application):
     """The versioned contract-template schedule row governing this application (the
-    signed agreement's pinned template, else the org's active template), or ``None``
-    → the legacy flat behaviour (``MONTHLY_RATE`` + ``PATHWAY_PAYMENT_START_MONTH``,
-    byte-identical to pre-cutover). This is the ONE seam the payments module reads the
-    contract module through."""
-    from . import contracts
-    template = contracts.template_for_application(application)
+    signed agreement's pinned template, else THE APPLICATION'S GIFT's active template —
+    per gift since TD-229, 2026-10-03), or ``None`` → the legacy flat behaviour
+    (``MONTHLY_RATE`` + ``PATHWAY_PAYMENT_START_MONTH``, byte-identical to pre-cutover).
+    ⚠ A gift with no template therefore pays the legacy flat rate (TD-328). This is the
+    ONE seam the payments module reads the contract module through."""
+    from . import contract_scope, contracts
+    template = contract_scope.template_for_application(application)
     if template is None:
         return None
     return contracts.schedule_row_for(template, application)

@@ -16,11 +16,11 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
-from apps.scholarship import bursary, contracts, payments
+from apps.scholarship import bursary, contract_scope, contracts, payments
 from apps.scholarship.bursary import BursaryError
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 
-from apps.scholarship.tests.contract_helpers import brightpath_org, make_deployable
+from apps.scholarship.tests.contract_helpers import brightpath_org, flagship, make_deployable
 from apps.scholarship.tests.test_sponsorship import _token, TEST_JWT_SECRET
 
 GUAR_NAME, GUAR_NRIC, GUAR_PHONE = 'Rahmah Binti Ahmad', '700101-10-5555', '013-1112222'
@@ -34,8 +34,12 @@ def _deploy(version='2026-v1'):
 
 
 def _cohort(year=2026):
+    # In the FLAGSHIP gift, whose template `_deploy` seeds: since TD-229 (2026-10-03) the
+    # agreement and the schedule come from the application's GIFT, so a cohort in no gift is
+    # governed by no template at all.
     return ScholarshipCohort.objects.create(
-        code='cut', name='B40', year=year, owning_organisation=brightpath_org())
+        code='cut', name='B40', year=year, owning_organisation=brightpath_org(),
+        programme=flagship())
 
 
 def _app(cohort, *, pathway, suffix, award='3000', vircle='8000400175001',
@@ -78,9 +82,9 @@ class TestPaymentRunParity(TestCase):
                   (11, datetime.date(2026, 11, 1))]
         legacy = {m: self._amount_map(d, d) for m, d in months}
         # No active template yet → legacy flat behaviour.
-        self.assertIsNone(contracts.active_template_for(self.org))
+        self.assertIsNone(contract_scope.active_template_for(flagship()))
         _deploy()
-        self.assertIsNotNone(contracts.active_template_for(self.org))
+        self.assertIsNotNone(contract_scope.active_template_for(flagship()))
         templated = {m: self._amount_map(d, d) for m, d in months}
         self.assertEqual(legacy, templated)
         # And every eligible amount is exactly RM200 (sanity — not an empty match).
@@ -149,7 +153,7 @@ class TestSignAgreementGuards(TestCase):
     def test_no_active_template_raises_with_flag_on(self):
         app = _app(self.cohort, pathway='matric', suffix='nat')
         _make_signable(app)
-        self.assertIsNone(contracts.active_template_for(brightpath_org()))
+        self.assertIsNone(contract_scope.active_template_for(flagship()))
         with self.assertRaises(BursaryError) as cm:
             self._sign(app)
         self.assertEqual(cm.exception.code, 'no_active_template')
@@ -160,7 +164,7 @@ class TestSignAgreementGuards(TestCase):
         app = _app(self.cohort, pathway='matric', suffix='stale')
         _make_signable(app, comprehension_template=v1)   # passed the quiz on v1
         v2 = _deploy('2026-v2')                           # redeploy → v1 archived, v2 active
-        self.assertEqual(contracts.active_template_for(brightpath_org()), v2)
+        self.assertEqual(contract_scope.active_template_for(flagship()), v2)
         with self.assertRaises(BursaryError) as cm:
             self._sign(app)
         self.assertEqual(cm.exception.code, 'comprehension_stale')

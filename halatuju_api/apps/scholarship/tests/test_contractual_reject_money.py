@@ -256,7 +256,19 @@ class TestSignInvitationDarkGate(TestCase):
         mock_send.assert_not_called()              # #11: dark chain → dead-end email blocked
 
     def test_flag_on_sends(self):
+        # TD-229: the invitation goes out only when the student's GIFT has an active agreement,
+        # so this student is in the flagship and the flagship has one.
+        from apps.scholarship import contracts
+        from apps.scholarship.tests.contract_helpers import brightpath_org, flagship, make_deployable
+        t = make_deployable('2026-reject-money')
+        contracts.submit_for_deployment(t)
+        contracts.deploy(t, is_super=True)
         app = self._awarded()
+        app.cohort.owning_organisation = brightpath_org()
+        app.cohort.programme = flagship()
+        app.cohort.save(update_fields=['owning_organisation', 'programme'])
+        app.programme = flagship()
+        app.save(update_fields=['programme'])
         with override_settings(BURSARY_AGREEMENT_ENABLED=True,
                                SIGN_INVITE_APP_IDS=str(app.id)), \
              patch('apps.scholarship.management.commands.send_sign_invitation_emails'

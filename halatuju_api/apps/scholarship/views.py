@@ -1684,18 +1684,19 @@ class BankAccountView(APIView):
 
 class StudentComprehensionQuizView(APIView):
     """GET the comprehension checkpoints for the caller's AWARDED application, served
-    from the governing contract template (the org's active version). Returns
+    from the governing contract template (the active version of the application's GIFT,
+    TD-229). Returns
     ``{template_version, locale_used, checkpoints}`` — the FE renders these and posts
     ``template_version`` back on pass, so a mid-flight redeploy is caught (409)."""
     permission_classes = [SupabaseIsAuthenticated]
 
     def get(self, request):
-        from . import contracts
+        from . import contract_scope, contracts
         app = _current_application(request.user_id)
         if app is None or app.status != 'awarded':
             return Response({'error': 'no_application', 'code': 'no_application'},
                             status=status.HTTP_403_FORBIDDEN)
-        template = contracts.template_for_application(app)
+        template = contract_scope.template_for_application(app)
         locale = contracts.resolve_locale(request.query_params.get('locale', 'en'), template)
         return Response({
             'template_version': template.version if template else '',
@@ -1715,12 +1716,12 @@ class StudentComprehensionView(APIView):
 
     def post(self, request):
         from django.utils import timezone
-        from . import contracts
+        from . import contract_scope
         app = _current_application(request.user_id)
         if app is None or app.status != 'awarded':
             return Response({'error': 'no_application', 'code': 'no_application'},
                             status=status.HTTP_403_FORBIDDEN)
-        template = contracts.template_for_application(app)
+        template = contract_scope.template_for_application(app)
         if template is not None:
             posted = (request.data.get('template_version') or '').strip()
             if posted and posted != template.version:
@@ -2354,13 +2355,19 @@ class StudentAwardView(APIView):
         # already signed — the agreement status + a signed PDF URL. Never a donor field.
         from django.conf import settings as _settings
         if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False) and app:
-            from . import bursary
+            from . import bursary, contract_scope, contracts
             existing = getattr(app, 'bursary_agreement', None)
+            template = contract_scope.template_for_application(app) if existing is None else None
             if existing is not None:
                 payload['bursary_agreement'] = BursaryAgreementSerializer(existing).data
+            elif (offer or finalising) and template is None:
+                # TD-229: THIS GIFT has no active agreement — say so; never preview another's.
+                payload['bursary_unavailable'] = contract_scope.NO_TEMPLATE
             elif offer or finalising:
-                p = bursary.particulars_for(app)
-                locale = app.locale if app.profile else 'en'
+                # TD-229: until 2026-10-03 this called both helpers WITHOUT the template they
+                # have required since Contract Sprint 5 — a TypeError on every flag-on preview.
+                locale = contracts.resolve_locale(app.locale if app.profile else 'en', template)
+                p = bursary.particulars_for(app, template, locale)
                 preview_html = bursary.render_agreement_html(
                     app, p,
                     student={'name': getattr(app.profile, 'name', '') if app.profile else '',
@@ -2369,7 +2376,8 @@ class StudentAwardView(APIView):
                     foundation={'name': p['foundation_signatory_name'],
                                 'title': p['foundation_signatory_title'],
                                 'nric': p['foundation_signatory_nric'], 'signed_at': None},
-                    witness={'by': '', 'org': '', 'signed_at': None}, locale=locale)
+                    witness={'by': '', 'org': '', 'signed_at': None}, locale=locale,
+                    template=template)
                 payload['bursary_preview'] = {
                     'award_amount': str(p['award_amount']) if p['award_amount'] is not None else None,
                     'payment_schedule': p['payment_schedule'],

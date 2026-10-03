@@ -154,6 +154,8 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                 : c === 'has_benefactors' ? 'hasBenefactors'
                   : c === 'has_money' ? 'hasMoney'
                     : c === 'has_payment_runs' ? 'hasPaymentRuns'
+                    // TD-229: a template a student SIGNED holds the gift; unsigned ones go with it.
+                    : c === 'has_contract_templates' ? 'hasContractTemplates'
                       : c === 'in_use' ? 'inUse'
                         : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
 

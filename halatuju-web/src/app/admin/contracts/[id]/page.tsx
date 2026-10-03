@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { getContractTemplate, type ContractTemplateDetail, type ContractStatus } from '@/lib/admin-api'
 import ConfigForm from '@/components/contracts/ConfigForm'
 import ClauseEditor from '@/components/contracts/ClauseEditor'
@@ -47,6 +48,9 @@ export default function ContractEditorPage() {
     getContractTemplate(templateId, { token })
       .then(setTpl).catch(() => setNotFound(true)).finally(() => setLoading(false))
   }, [token, templateId])
+  // A template is written for ONE gift (TD-229), so the breadcrumb names THAT gift while it is
+  // open — from the server payload, never the person's pick (the run/application detail rule).
+  usePinProgramme(tpl?.programme)
 
   if (loading) return <p className="text-ground-400">{t('admin.contracts.loading')}</p>
   if (notFound || !tpl) return <p className="text-critical-600">{t('admin.contracts.actionFailed')}</p>
@@ -64,6 +68,9 @@ export default function ContractEditorPage() {
           {t(`admin.contracts.status.${tpl.status}`)}
         </span>
         <span className="text-xs text-ground-400 uppercase">{tpl.organisation}</span>
+        <span className="text-xs text-ground-500">
+          {tpl.programme?.name ?? <span className="text-caution-700">{t('admin.contracts.noGift')}</span>}
+        </span>
       </div>
 
       <div className="border-b border-ground-200 mb-6 flex gap-1 overflow-x-auto">

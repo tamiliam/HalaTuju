@@ -9,7 +9,8 @@ not approval::
 Authoring calls all refuse a non-draft template (``not_draft``) — the
 immutability guarantee that lets a signed ``BursaryAgreement`` PROTECT-reference
 the exact version it was rendered from, forever. Deploying a new version
-atomically archives the org's previous active version.
+atomically archives the previous active version OF THE SAME GIFT (per organisation
+until TD-229, 2026-10-03; which template governs an application: ``contract_scope``).
 
 Sprint 1 scope: model + service + seed + tests. The module is INERT — neither
 ``bursary.py`` nor ``payments.py`` reads it yet (that cutover is Sprint 2). No
@@ -251,10 +252,14 @@ def _require_draft(template):
 # Authoring (draft-only)
 # ─────────────────────────────────────────────────────────────────────────────
 @transaction.atomic
-def create_template(organisation, version, *, created_by_email='', copy_from=None):
-    """Create a new DRAFT template for ``organisation``. With ``copy_from`` (a
-    ContractTemplate), clone its config + clauses + schedule — but never its
-    lifecycle/attestation stamps (a new version starts unvetted, undeployed)."""
+def create_template(organisation, version, *, programme=None, created_by_email='', copy_from=None):
+    """Create a new DRAFT template for ``organisation``, written for the gift ``programme``
+    (REQUIRED since TD-229 — `programme_required` without one; a gift of another organisation
+    is refused the same way). With ``copy_from`` (a ContractTemplate), clone its config +
+    clauses + schedule — but never its lifecycle/attestation stamps (a new version starts
+    unvetted, undeployed)."""
+    if programme is None or programme.organisation_id != organisation.id:
+        raise ContractsError('programme_required')
     version = (version or '').strip()
     if not version:
         raise ContractsError('version_required')
@@ -266,7 +271,7 @@ def create_template(organisation, version, *, created_by_email='', copy_from=Non
     if ContractTemplate.objects.filter(organisation=organisation, version=version).exists():
         raise ContractsError('version_exists')
     template = ContractTemplate.objects.create(
-        organisation=organisation, version=version, status='draft',
+        organisation=organisation, programme=programme, version=version, status='draft',
         created_by_email=created_by_email or '',
     )
     if copy_from is not None:
@@ -904,12 +909,16 @@ def revert_to_draft(template):
 
 @transaction.atomic
 def deploy(template, *, deployed_by_email='', is_super=False):
-    """pending_deployment → active (SUPER only). Atomically archives the org's
-    previous active version — exactly one active template per org."""
+    """pending_deployment → active (SUPER only). Atomically archives THE SAME GIFT's
+    previous active version — exactly one active template per GIFT (TD-229; the
+    `uniq_contract_template_active_per_programme` index backs it). A template with no gift
+    governs nobody, so it is refused (`programme_required`)."""
     if not is_super:
         raise ContractsError('deploy_forbidden')
     if template.status != 'pending_deployment':
         raise ContractsError('not_pending')
+    if template.programme_id is None:
+        raise ContractsError('programme_required')
     result = validate_for_deployment(template)
     if not result.ok:
         err = ContractsError('not_deployable')
@@ -918,7 +927,7 @@ def deploy(template, *, deployed_by_email='', is_super=False):
     now = timezone.now()
     previous = (ContractTemplate.objects
                 .select_for_update()
-                .filter(organisation=template.organisation, status='active')
+                .filter(programme_id=template.programme_id, status='active')
                 .exclude(pk=template.pk))
     for old in previous:
         old.status = 'archived'
@@ -934,25 +943,9 @@ def deploy(template, *, deployed_by_email='', is_super=False):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Readers (the seams bursary.py / payments.py cut over to in Sprint 2)
+# Readers. WHICH template governs an application lives in `contract_scope.py` since
+# TD-229 (2026-10-03) — per GIFT, never per organisation. These read a template given.
 # ─────────────────────────────────────────────────────────────────────────────
-def active_template_for(organisation):
-    return (ContractTemplate.objects
-            .filter(organisation=organisation, status='active')
-            .order_by('-deployed_by_at', '-created_at')
-            .first())
-
-
-def template_for_application(application):
-    """The template governing this application: the signed agreement's pinned
-    template if any, else the owning org's active template."""
-    agreement = getattr(application, 'bursary_agreement', None)
-    if agreement is not None and agreement.template_id:
-        return agreement.template
-    org = getattr(application, 'owning_organisation', None)
-    return active_template_for(org) if org is not None else None
-
-
 def schedule_row_for(template, application):
     """The schedule row for this application's pathway: pathway + 'continuing'
     (via award._stpm_continuing), falling back to variant='' then ('default','')."""

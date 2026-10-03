@@ -16,6 +16,7 @@ the students you intend to notify this run.
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from apps.scholarship import contract_scope
 from apps.scholarship.emails import send_sign_invitation_email
 from apps.scholarship.models import ScholarshipApplication, Sponsorship
 from apps.scholarship.sponsorship import arm_sign_deadline
@@ -47,6 +48,12 @@ class Command(BaseCommand):
             award = app.sponsorships.filter(status__in=Sponsorship.HOLDING).first()
             if award is None:
                 skipped_no_award.append(aid)
+                continue
+            # TD-229: the student signs THEIR GIFT's agreement and nobody else's. A gift with no
+            # active template would send them to a signing step that can only refuse
+            # (`no_active_template`) — and arm a clock they cannot meet — so the operator is told.
+            if contract_scope.template_for_application(app) is None:
+                failed.append((aid, contract_scope.NO_TEMPLATE))
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
             ok = send_sign_invitation_email(

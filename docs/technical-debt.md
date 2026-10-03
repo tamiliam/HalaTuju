@@ -9,12 +9,12 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-10-02** it runs to **TD-326**, with **323 ids carrying a defining entry
-and 130 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
+a running log; as of **2026-10-03** it runs to **TD-328**, with **325 ids carrying a defining entry
+and 131 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
 TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, one, TD-321,
-raised by its deploy, two, TD-253 and TD-207, closed by Now sprint 2, one, TD-322, raised by its review, two, TD-322 and TD-151, closed by Now sprint 3, one, TD-323, raised by it, two, TD-069 and TD-218, closed by Now sprint 4, two, TD-324 and TD-325, raised by it, one, TD-324, closed by the owner's ruling the same day, and one, TD-326, raised by that ruling). See the Open Items Index
+raised by its deploy, two, TD-253 and TD-207, closed by Now sprint 2, one, TD-322, raised by its review, two, TD-322 and TD-151, closed by Now sprint 3, one, TD-323, raised by it, two, TD-069 and TD-218, closed by Now sprint 4, two, TD-324 and TD-325, raised by it, one, TD-324, closed by the owner's ruling the same day, one, TD-326, raised by that ruling, one, TD-229, closed by Now sprint 5 part 1 on 2026-10-03, and two, TD-327 and TD-328, raised by it). See the Open Items Index
 below, which lists all of them in working order and says how the figures were reached.
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
@@ -35,7 +35,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**323 entries carry a defining line; 130 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision; TD-069 and TD-218 closed by Now sprint 4, TD-324 and TD-325 raised by it; TD-324 closed by the owner's ruling the same day, TD-326 raised by it). Every one of them was READ on
+**325 entries carry a defining line; 131 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision; TD-069 and TD-218 closed by Now sprint 4, TD-324 and TD-325 raised by it; TD-324 closed by the owner's ruling the same day, TD-326 raised by it; TD-229 closed by Now sprint 5 part 1 on 2026-10-03, TD-327 and TD-328 raised by it). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -63,7 +63,7 @@ every citation behind a closure. This index lists ALL open entries, in the order
 > an officer sees it · **D** tooling and hygiene. Effort: **S** half a day, one file · **M** one to three
 > days · **L** longer, or a migration or an outside party. Tiers follow from the two.
 
-### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 24
+### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 25
 Each line is the question. Nothing here can be closed by engineering alone.
 
 - **TD-260** — About 600 students could not reclaim a lost account. Widen self-service, build a support relink tool, or both? *(A · M)*
@@ -89,13 +89,13 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-043** — Phone sign-in says coming soon. Pay for a code service, or hide the box? *(C · L)*
 - **TD-318** — WhatsApp STOP is built but does nothing until the inbound webhook is set in the Twilio console (an owner action). *(D · S · leftover of TD-135)*
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
+- **TD-328** — A gift with no agreement template pays the legacy flat schedule (RM200 a month, the old start months). Keep that, or refuse to pay until the gift has its own template? *(A · S · raised 2026-10-03 by TD-229)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 3
+### Now — money, identity, eligibility or security — 2
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 - **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S · partly done)*
-- **TD-229** — A second gift would make its students sign the first gift's agreement. Signing is off today. *(A · L)*
 - **TD-125** — The Google service-account key sits in a plain setting and now unlocks Sheets and Drive as well as Meet. *(B · M)*
 
 ### Next — a student or an officer can see it, and it is small — 18
@@ -120,9 +120,10 @@ Class C, half a day each. Good small-change-lane work; several go together.
 - **TD-091** — Sponsor landing Tamil is a first draft, and the page is public. *(C · S · one owner sitting with TD-094, 105, 108, 183)*
 - **TD-070** — Sponsor sign-in, sign-up and the admin vetting buttons were never click-tested in a browser. *(C · S)*
 
-### Later — visible but larger, or small hygiene — 67
+### Later — visible but larger, or small hygiene — 68
 Class C at medium or large size, and class D that is small.
 
+- **TD-327** — `ContractTemplate.programme` is still nullable; make it NOT NULL once production reads no template without a gift. *(D · S · raised 2026-10-03 by TD-229)*
 - **TD-326** — The first results page offers only SPM and STPM; Matric, Asasi and Poly diplomas are STPM-equivalent held results with no form, catalogue requirements or bursary grade bar, and `results_held` should read the HIGHEST completed qualification. *(B · L · raised 2026-10-02, owner; deferred by the owner to the Matric/Asasi/Poly sprint)*
 - **TD-325** — Three readers outside TD-218's six still read the declared exam where they may mean the results held: the sponsor-profile prompt, the Check-2 facts ledger, and the apply form's Plans step with the pathway picker (the Results step was fixed in sprint 4). *(C · S · raised 2026-10-02)*
 - **TD-323** — A payslip figure the income engine refuses still shows a green Amount chip, and the EPF salary estimate has no sanity window. *(C · S · raised 2026-10-02)*
@@ -3964,8 +3965,20 @@ PROGRAMME does not fire this one — that was TD-193's half and it is closed.
 
 ---
 
-### [TD-229] A second gift would have its students sign the first gift's agreement — medium
-**Status:** Open — **RULED 2026-09-04: the template is PER GIFT.** Surfaced 2026-09-03 while
+### [TD-229] A second gift would have its students sign the first gift's agreement — medium — **RESOLVED 2026-10-03** (Now sprint 5 part 1: `ContractTemplate.programme` + one ACTIVE per gift, migration 0163 with the flagship back-fill; the agreement renders from `application.programme`'s template via `apps/scholarship/contract_scope.py`; a gift with none refuses `no_active_template`)
+**Status 2026-10-03:** RESOLVED as ruled. `ContractTemplate` carries a nullable `programme` FK (PROTECT; a
+gift holding a SIGNED one is undeletable — owner ruling the same day; unsigned ones go with the
+gift — `programme_delete_blocker` → `has_contract_templates`), a partial unique
+index `uniq_contract_template_active_per_programme` (there was NO org-level index to swap — "one per org"
+was code-only in `deploy`), `contracts.deploy` archives within the gift and refuses a template with no
+gift, `contract_scope.template_for_application` resolves the APPLICATION'S gift (never
+`chosen_programme`, never a neighbour's), the sign path refuses `no_active_template` with the flag on OR
+off, the sign-invitation command skips such a student, the student award page says the agreement is not
+ready, and the admin Contracts screen is a Programme-scope row narrowed by the breadcrumb's gift.
+Deleting a gift (owner ruling 2026-10-03) takes its UNSIGNED templates with it in one transaction;
+only a template a BursaryAgreement references blocks (`has_contract_templates`). Left:
+the NOT NULL tightening (TD-327) and the no-template payment rate (TD-328, owner).
+**Status (history):** Open — **RULED 2026-09-04: the template is PER GIFT.** Surfaced 2026-09-03 while
 mapping what belongs to the organisation and what to the gift. The question below is settled; the
 work is not built.
 **⚠ THE RULING, and what it costs:** `ContractTemplate` gains a `programme` FK, and `contracts.deploy`'s
@@ -6349,3 +6362,5 @@ depends on, not a defect.
 - **TD-325 (raised 2026-10-02 by Now sprint 4) - low, sponsor/officer/student-visible copy: four readers outside TD-218's six still read the declared exam where they mean the results held.** **Status (2026-10-02, review F1):** the apply form's RESULTS step is done — `profileAcademicSummary` reads the served `results_held` (`apply/page.results.test.tsx`). Three remain: `profile_engine.py` feeds `qualification=` from `exam_type` into the anonymised sponsor-profile prompt; `submission_review.build_facts_ledger` records the 'qualification' claim from it; and the apply form's PLANS step (`scholarship/apply/page.tsx` `examType` — the degree branch) with `PathwayPicker.tsx` choose the STPM or SPM branch from `profile.exam_type` (that one may genuinely mean heading-for: a Form Six student plans a post-STPM degree — decide, do not assume). Each repeats the Form Six explorer's 'STPM' with nothing behind it. Raw storage and mirroring readers are correct and stay: the intake snapshot (`services/profile_sync.build_intake_snapshot`, a frozen record of what was declared), the course-guide report (`reports/views.py`, about the exam she is heading for), the admin counts and filters in `courses/views_admin.py` and `courses/serializers_admin.py`, and the two management commands. **Fix:** the backend two read `exam_questions.results_held`; the web two read the served `results_exam_type` through `profileAcademicSummary`'s rule. The sponsor prompt and the facts ledger are generated copy, so take them with the TD-324 decision. **Trigger:** TD-324's decision.
   **Status 2026-10-02:** trigger reached — the owner ruled TD-324 "switch all three" for the shortlist gate, the sponsor band and the slip parser. These three readers were NOT in that ruling and were not switched; they remain open here.
 - **TD-326 (raised 2026-10-02 by the owner, at the TD-324 ruling) - medium, eligibility + student/officer/sponsor visible: the first results page offers only SPM and STPM.** In the owner's words (2026-10-02): Matric, Asasi and Poly are STPM-equivalent HELD results and belong on the "which results do you hold" page as further answers; "results held" means the HIGHEST completed qualification; and when those options are added the rule should be written as "highest" outright rather than "last completed form". Today a matriculation, foundation (Asasi) or polytechnic-diploma student can only answer SPM or STPM, so `results_held` (`apps/courses/exam_questions.py`) — which since TD-324 decides the shortlist gate, the sponsor band and the slip parser — can only say 'spm' or 'stpm' for her (application #15, SPM 2025 and now on matriculation, is the standing example). **Fix:** a results form per new qualification on the first results page; catalogue requirements keyed on it; a bursary grade bar per qualification on the programme screens (`min_*` columns beside `min_spm_a_count` / `min_stpm_pngk`); `results_held` rewritten as the HIGHEST completed qualification (a ranking over the recorded completions, not the last form completed) with a characterisation table over every reader before it moves — it is a gate now; the sponsor band and the admin label taught the new values. **Class B (eligibility: it rewrites `results_held`, which TD-324 made a gate), effort L, tier Later — the owner deferred it to the Matric/Asasi/Poly sprint (2026-10-02).** **Trigger:** the owner scheduling it, or the first Matric / Asasi / Poly applicant an officer cannot place.
+- **TD-327 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - low, data integrity: `ContractTemplate.programme` is nullable.** It had to be, for the migrate-first order (the old image inserts templates without it). Migration 0163 back-fills every template of the flagship's organisation onto the flagship, every write path since sets the gift, and a template with NULL governs nobody (`contract_scope.active_template_for` cannot reach it; `contracts.deploy` refuses it, `programme_required`). **Fix:** once production reads `SELECT count(*) FROM contract_templates WHERE programme_id IS NULL` = 0 after the deploy, an `AlterField` to `null=False` (`ALTER TABLE contract_templates ALTER COLUMN programme_id SET NOT NULL`, hand-run, migrate-first). **Trigger:** the first sprint after the TD-229 deploy that touches the contract module.
+- **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money, AN OWNER DECISION: a gift with no agreement template pays the legacy flat schedule.** `payments._schedule_row` reads the governing template through `contract_scope.template_for_application`; with none it falls back to `MONTHLY_RATE` + `PATHWAY_PAYMENT_START_MONTH` (RM200 a month, no STPM exam-month gap, no `schedule_complete`). Until TD-229 a second gift's students were paid on the ORGANISATION's template (the flagship's), so for them the source of the rate changes at the deploy — the lead counts how many awarded/active students sit outside the flagship before it ships. **The same drop reaches a payable student whose `application.programme` is NULL, in ANY organisation:** before, the template resolved through `owning_organisation`; now it resolves to nothing, so that student falls to the legacy flat schedule too (the lead's probe P4 shows them as a NULL-code row). **Production 2026-10-03 (lead, read-only): 65 funded applications, all on `brightpath-flagship`, 0 with programme NULL; BrightPath's 3 templates are all DRAFT, 0 active — so today no student's rate changes at the deploy.** With `BURSARY_AGREEMENT_ENABLED` on nothing changes here (payment needs a countersigned agreement, and no agreement exists without a template). **The question:** keep paying a template-less gift the legacy flat schedule, or refuse to pay (a new eligibility reason) until the gift has its own template?

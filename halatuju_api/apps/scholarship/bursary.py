@@ -404,7 +404,7 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     back. The caller (respond_to_award) runs this BEFORE the consent + 'active' flip
     so a BursaryError aborts the whole acceptance. Returns the BursaryAgreement.
     """
-    from . import contracts, storage
+    from . import contract_scope, contracts, storage
     from .models import BursaryAgreement
 
     check = guarantor_identity_check(application, guarantor_name, guarantor_nric)
@@ -419,24 +419,24 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     if not guarantor_phone_verification_fresh(application):
         raise BursaryError('guarantor_phone_unverified')
 
-    # Contract-module cutover: the agreement is rendered from the org's ACTIVE template
-    # (or the one already pinned to a prior agreement). Flag-on with no active template is
-    # a hard error — never fall back to the hard-coded constants once the org is live.
-    # And the student must have passed the comprehension quiz for THIS exact version
-    # (comprehension_stale otherwise — the runtime quiz↔contract guard against a redeploy
-    # between "Understand" and "Sign").
-    template = contracts.template_for_application(application)
+    # The agreement is rendered from the ACTIVE template of the APPLICATION'S GIFT (or the one
+    # already pinned to a prior agreement) — per gift since TD-229, 2026-10-03. A gift with no
+    # active template REFUSES (`no_active_template`): no agreement is created, and another
+    # gift's wording is never borrowed. (Until TD-229 this refused only with the flag on; with
+    # it off the code fell through to `particulars_for(…, None)`, which cannot render — the
+    # constants it once fell back to were removed in Sprint 5 — so the refusal is now
+    # unconditional.) And the student must have passed the comprehension quiz for THIS exact
+    # version (comprehension_stale otherwise — the runtime quiz↔contract guard against a
+    # redeploy between "Understand" and "Sign").
+    template = contract_scope.template_for_application(application)
     if template is None:
-        if getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
-            raise BursaryError('no_active_template')
-    else:
-        if application.comprehension_template_id != template.id:
-            raise BursaryError('comprehension_stale')
-        locale = contracts.resolve_locale(locale, template)
+        raise BursaryError(contract_scope.NO_TEMPLATE)
+    if application.comprehension_template_id != template.id:
+        raise BursaryError('comprehension_stale')
+    locale = contracts.resolve_locale(locale, template)
 
     now = timezone.now()
-    version = template.version if template is not None else getattr(
-        settings, 'BURSARY_AGREEMENT_VERSION', '2026-v1')
+    version = template.version
     p = particulars_for(application, template, locale)
 
     student = {
@@ -619,8 +619,8 @@ def foundation_notify_emails(application=None):
     (comma-separated) if set, else every active super admin (the people who can
     countersign), else ``ADMIN_NOTIFY_EMAIL``. Returns a de-duplicated list."""
     if application is not None:
-        from . import contracts
-        template = contracts.template_for_application(application)
+        from . import contract_scope
+        template = contract_scope.template_for_application(application)
         emails = list((template.counterparty_notify_emails or []) if template else [])
         emails = [e for e in (str(x).strip() for x in emails) if e]
         if emails:

@@ -11,14 +11,14 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase, override_settings
 
 from apps.courses.models import StudentProfile
-from apps.scholarship import contracts
+from apps.scholarship import contract_scope, contracts
 from apps.scholarship.contracts import ContractsError
 from apps.scholarship.models import (
     BursaryAgreement, ContractTemplate, ScholarshipApplication, ScholarshipCohort,
 )
 
 from apps.scholarship.tests.contract_helpers import (
-    brightpath_org, make_deployable, seed_draft,
+    brightpath_org, flagship, make_deployable, seed_draft,
 )
 
 VALID_QUIZ = {'tag': 't', 'plain': 'p', 'question': 'q',
@@ -35,20 +35,21 @@ def _deploy(template, **kw):
 # ─────────────────────────────────────────────────────────────────────────────
 class TestCreateTemplate(TestCase):
     def test_creates_a_draft(self):
-        t = contracts.create_template(brightpath_org(), '2027-v1', created_by_email='a@b.c')
+        t = contracts.create_template(
+            brightpath_org(), '2027-v1', programme=flagship(), created_by_email='a@b.c')
         self.assertEqual(t.status, 'draft')
         self.assertEqual(t.version, '2027-v1')
         self.assertEqual(t.created_by_email, 'a@b.c')
 
     def test_blank_version_refused(self):
         with self.assertRaises(ContractsError) as cm:
-            contracts.create_template(brightpath_org(), '   ')
+            contracts.create_template(brightpath_org(), '   ', programme=flagship())
         self.assertEqual(cm.exception.code, 'version_required')
 
     def test_duplicate_version_refused(self):
-        contracts.create_template(brightpath_org(), 'dup')
+        contracts.create_template(brightpath_org(), 'dup', programme=flagship())
         with self.assertRaises(ContractsError) as cm:
-            contracts.create_template(brightpath_org(), 'dup')
+            contracts.create_template(brightpath_org(), 'dup', programme=flagship())
         self.assertEqual(cm.exception.code, 'version_exists')
 
     def test_over_long_version_refused_cleanly(self):
@@ -57,15 +58,15 @@ class TestCreateTemplate(TestCase):
         from apps.scholarship.models import ContractTemplate
         max_len = ContractTemplate._meta.get_field('version').max_length
         with self.assertRaises(ContractsError) as cm:
-            contracts.create_template(brightpath_org(), 'x' * (max_len + 1))
+            contracts.create_template(brightpath_org(), 'x' * (max_len + 1), programme=flagship())
         self.assertEqual(cm.exception.code, 'version_too_long')
         # Exactly at the limit is fine.
-        ok = contracts.create_template(brightpath_org(), 'y' * max_len)
+        ok = contracts.create_template(brightpath_org(), 'y' * max_len, programme=flagship())
         self.assertEqual(ok.version, 'y' * max_len)
 
     def test_copy_from_clones_content(self):
         src = seed_draft('2026-v1')
-        clone = contracts.create_template(brightpath_org(), '2027-v1', copy_from=src)
+        clone = contracts.create_template(brightpath_org(), '2027-v1', programme=flagship(), copy_from=src)
         self.assertEqual(clone.clauses.count(), src.clauses.count())
         self.assertEqual(clone.schedule_rows.count(), src.schedule_rows.count())
         self.assertEqual(clone.status, 'draft')
@@ -279,21 +280,25 @@ class TestLifecycle(TestCase):
 # ─────────────────────────────────────────────────────────────────────────────
 class TestReaders(TestCase):
     def test_active_template_for(self):
-        self.assertIsNone(contracts.active_template_for(brightpath_org()))
+        self.assertIsNone(contract_scope.active_template_for(flagship()))
         t = _deploy(make_deployable())
-        self.assertEqual(contracts.active_template_for(brightpath_org()), t)
+        self.assertEqual(contract_scope.active_template_for(flagship()), t)
 
     def test_template_for_application_prefers_pinned(self):
         active = _deploy(make_deployable('2026-v1'))
         pinned = ContractTemplate.objects.create(
-            organisation=brightpath_org(), version='pinned', status='archived')
-        cohort = ScholarshipCohort.objects.create(code='rd', name='B40', year=2026)
+            organisation=brightpath_org(), programme=flagship(), version='pinned', status='archived')
+        # In the flagship, so the gift's ACTIVE template really is there to lose to the pin.
+        cohort = ScholarshipCohort.objects.create(
+            code='rd', name='B40', year=2026, owning_organisation=brightpath_org(),
+            programme=flagship())
         profile = StudentProfile.objects.create(supabase_user_id='rd-1', grades={}, exam_type='spm')
         app = ScholarshipApplication.objects.create(
             cohort=cohort, profile=profile, status='awarded', chosen_pathway='matric')
         BursaryAgreement.objects.create(application=app, version='pinned', template=pinned)
-        # The signed agreement's pinned template wins over the org's active one.
-        self.assertEqual(contracts.template_for_application(app), pinned)
+        # The signed agreement's pinned template wins over the gift's active one.
+        self.assertEqual(contract_scope.active_template_for(app.programme), active)
+        self.assertEqual(contract_scope.template_for_application(app), pinned)
 
     def test_quiz_checkpoints_in_order_with_en_fallback(self):
         t = seed_draft()

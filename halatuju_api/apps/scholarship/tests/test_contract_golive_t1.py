@@ -303,6 +303,13 @@ class TestSignInvitationArmsDeadline(TestCase):
     def setUpTestData(cls):
         cls.org = brightpath_org()
         cls.cohort = _cohort(cls.org)
+        # TD-229: the invitation is sent only when THIS gift has an agreement to sign — so the
+        # gift these students belong to gets an active template of its own.
+        from apps.scholarship import contracts
+        from apps.scholarship.tests.contract_helpers import make_deployable
+        t = make_deployable('2026-gl-invite', programme=_gift().code)
+        contracts.submit_for_deployment(t)
+        contracts.deploy(t, is_super=True)
 
     @override_settings(BURSARY_AGREEMENT_ENABLED=True, SIGN_ACCEPT_DEADLINE_DAYS=30)
     @patch('apps.scholarship.management.commands.send_sign_invitation_emails.send_sign_invitation_email', return_value=True)
@@ -324,6 +331,28 @@ class TestSignInvitationArmsDeadline(TestCase):
             call_command('send_sign_invitation_emails')
         sp = svc.current_offer(app)
         self.assertIsNone(sp.accept_deadline)
+
+    @override_settings(BURSARY_AGREEMENT_ENABLED=True, SIGN_ACCEPT_DEADLINE_DAYS=30)
+    @patch('apps.scholarship.management.commands.send_sign_invitation_emails.send_sign_invitation_email', return_value=True)
+    def test_a_gift_with_no_template_is_not_invited_and_no_clock_starts(self, send):
+        """TD-229: a student whose GIFT has no active agreement would be invited to a signing
+        step that can only refuse — so no email, no clock, and the operator is told why."""
+        from io import StringIO
+        bare = Programme.objects.create(organisation=self.org, code='gl-bare', name_en='Bare Gift')
+        cohort = ScholarshipCohort.objects.create(
+            code='gl-bare', name='B40', year=2026, owning_organisation=self.org, programme=bare)
+        app = _fundable_app(cohort, suffix='inv-bare')
+        s = Sponsor.objects.create(
+            supabase_user_id='gl-inv-bare', name='Jane', email='bare@sponsor.example',
+            phone='0123', source='friend', consent_at=timezone.now(), status='approved')
+        Donation.objects.create(sponsor=s, amount=Decimal('9000'), programme=bare)
+        svc.fund_student(s, app)
+        out = StringIO()
+        with override_settings(SIGN_INVITE_APP_IDS=str(app.id)):
+            call_command('send_sign_invitation_emails', stdout=out)
+        send.assert_not_called()
+        self.assertIsNone(svc.current_offer(app).accept_deadline)
+        self.assertIn('no_active_template', out.getvalue())
 
 
 # ─────────────────────────────────────────────────────────────────────────────

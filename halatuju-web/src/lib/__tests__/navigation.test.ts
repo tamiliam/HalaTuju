@@ -73,11 +73,14 @@ describe('visibleNav per role', () => {
     //
     // The Programme group is present here because this snapshot runs with NO pathname — see
     // `programmeGroupFolded`: absent means not folded. The fold has its own tests below.
+    // ⚠ **TD-229 (2026-10-03): `contracts` MOVED FROM ORGANISATION TO PROGRAMME**, after
+    // `spending` — the owner ruled the bursary agreement is written PER GIFT. Nobody gained or
+    // lost reach (super + org_admin, as before); only its position moved.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
-      'contracts', 'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending',
+      'billing', 'orgSettings',
+      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -97,8 +100,8 @@ describe('visibleNav per role', () => {
     // page, so this removes a disabled row rather than a power.
     org_admin: [
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
-      'contracts', 'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending',
+      'billing', 'orgSettings',
+      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     admin: [
@@ -489,10 +492,11 @@ describe('visibleNav groups', () => {
   // and the question it answers ("how is this gift doing?") comes before picking a person out of
   // a list. Applications keeps its place directly under it — the frequency argument above is
   // untouched, it simply now has a page above it rather than nothing.
-  it('the programme scope is five rows, the overview first', () => {
+  // ⚠ SIX SINCE 2026-10-03: Contracts joined LAST (TD-229) — the agreement is written per gift.
+  it('the programme scope is six rows, the overview first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
-    expect(prog.items.map((i) => i.id))
-      .toEqual(['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending'])
+    expect(prog.items.map((i) => i.id)).toEqual(
+      ['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -511,8 +515,10 @@ describe('visibleNav groups', () => {
 
     it('hides Configuration, Payments and Spending while no gift is chosen', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
+      // `contracts` STAYS (TD-229): its list READS every gift's templates, each labelled, and
+      // the page's own New version waits for a gift — the Applications rule, not Payments'.
       expect(prog.items.map((i) => i.id))
-        .toEqual(['programmeOverview', 'applications'])
+        .toEqual(['programmeOverview', 'applications', 'contracts'])
     })
 
     /*
@@ -568,8 +574,8 @@ describe('visibleNav groups', () => {
 
     it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id))
-        .toEqual(['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending'])
+      expect(prog.items.map((i) => i.id)).toEqual(
+        ['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted

@@ -361,7 +361,7 @@ class TestFenceCoverageCompleteness(TestCase):
         # + super/org_admin role gate; the list filters to the caller's org; deploy is
         # super-only. ContractTemplate is not a watched applicant model → no static pragma.
         '_ContractsBase': 'base — shared contract gate + org-fenced template lookup',
-        'AdminContractTemplateListView': 'contract-org-fenced', 'AdminContractTemplateDetailView': 'contract-org-fenced',
+        'AdminContractTemplateListView': 'contract-org-fenced+gift-narrowed (TD-229)', 'AdminContractTemplateDetailView': 'contract-org-fenced',
         'AdminContractClausesView': 'contract-org-fenced', 'AdminContractScheduleView': 'contract-org-fenced',
         'AdminContractGenerateQuizView': 'contract-org-fenced', 'AdminContractVettingView': 'contract-org-fenced',
         'AdminContractValidateView': 'contract-org-fenced', 'AdminContractSubmitView': 'contract-org-fenced',

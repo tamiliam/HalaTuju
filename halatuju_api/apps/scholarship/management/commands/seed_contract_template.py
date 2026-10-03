@@ -6,7 +6,12 @@ deploys. Re-running with an existing version refuses (a version is immutable onc
 it exists) unless --replace-draft is passed (only ever replaces a DRAFT).
 
     python manage.py seed_contract_template --org brightpath --template-version 2026-v1 \
+        --programme brightpath-flagship \
         --fixture apps/scholarship/fixtures/brightpath_contract_v1.json
+
+A template is written for ONE GIFT (TD-229, 2026-10-03). ``--programme`` names it by code and
+must be one of the organisation's own gifts; omitted, the organisation's one live gift is used,
+and with several the command refuses — never a silent pick.
 
 (``--version`` is reserved by Django's BaseCommand, so the flag is
 ``--template-version``.)
@@ -16,7 +21,7 @@ import json
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.courses.models import PartnerOrganisation
-from apps.scholarship import contracts
+from apps.scholarship import contract_scope, contracts
 from apps.scholarship.models import ContractTemplate
 
 LANGS = ('en', 'ms', 'ta')
@@ -72,6 +77,9 @@ class Command(BaseCommand):
         parser.add_argument('--template-version', required=True,
                             help='Template version string (unique per org).')
         parser.add_argument('--fixture', required=True, help='Path to the fixture JSON.')
+        parser.add_argument('--programme', default='',
+                            help="The gift's code (e.g. 'brightpath-flagship'). Omitted: the "
+                                 "organisation's one live gift; several -> refused.")
         parser.add_argument('--created-by', default='', help='created_by_email stamp.')
         parser.add_argument('--replace-draft', action='store_true',
                             help='If a DRAFT of this version exists, delete and re-seed it.')
@@ -99,8 +107,13 @@ class Command(BaseCommand):
                 )
             existing.delete()
 
+        programme, perr = contract_scope.gift_for_new_template(org, (opts['programme'] or '').strip())
+        if perr:
+            raise CommandError(
+                f"No gift for this template ({perr}): pass --programme with one of "
+                f"{org.code}'s own gift codes.")
         template = contracts.create_template(
-            org, version, created_by_email=opts['created_by'] or '',
+            org, version, programme=programme, created_by_email=opts['created_by'] or '',
         )
         contracts.update_config(template, **_config_kwargs(fixture.get('config', {})))
         contracts.replace_clauses(template, [_flatten_clause(c) for c in fixture.get('clauses', [])])

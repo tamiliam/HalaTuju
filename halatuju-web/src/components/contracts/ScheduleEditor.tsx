@@ -34,8 +34,11 @@ export default function ScheduleEditor(
   const [others, setOthers] = useState<ContractTemplateSummary[]>([])
   useEffect(() => {
     if (!draft || !token) return
-    getContractTemplates(template.organisation, { token })
-      .then((d) => setOthers(d.templates.filter((t2) => t2.id !== template.id)))
+    // Any version of THIS organisation, whichever gift it was written for (TD-229): the list is
+    // fenced server-side and narrowed here, since a super's unnarrowed list spans every tenant.
+    getContractTemplates(undefined, { token })
+      .then((d) => setOthers(d.templates.filter(
+        (t2) => t2.id !== template.id && t2.organisation === template.organisation)))
       .catch(() => { /* copy control just won't appear */ })
   }, [draft, token, template.id, template.organisation])
 

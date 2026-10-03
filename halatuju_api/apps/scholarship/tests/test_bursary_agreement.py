@@ -42,14 +42,15 @@ def _token(uid, email='x@x.com'):
 
 
 def _ensure_active_template(cohort):
-    """Post-cutover, a flag-on signing goes through the org's ACTIVE contract template.
+    """Post-cutover, a flag-on signing goes through the ACTIVE contract template of the
+    application's GIFT (per gift since TD-229, 2026-10-03 — it was the org's).
     Point the cohort at BrightPath (the org migration 0098 seeds) and deploy a template
     whose counterparty is 'Suresh' — the name the old `FOUNDATION_SIGNATORY_NAME` setting
     carried, kept here so the render assertions in this module stay valid. That setting was
     DELETED in Org Config Sprint F (dead since Sprint 5 moved the party onto the template);
     'Suresh' is now just this fixture's chosen name. Idempotent within a test."""
     import datetime
-    from apps.scholarship import contracts
+    from apps.scholarship import contract_scope, contracts
     from apps.scholarship.tests.contract_helpers import brightpath_org, seed_draft
     org = brightpath_org()
     cohort.owning_organisation = org
@@ -59,9 +60,11 @@ def _ensure_active_template(cohort):
     cohort.programme, _ = Programme.objects.get_or_create(
         organisation=org, code='bursary-gift', defaults={'name_en': 'Bursary Gift'})
     cohort.save(update_fields=['owning_organisation', 'programme'])
-    active = contracts.active_template_for(org)
+    active = contract_scope.active_template_for(cohort.programme)
     if active is None:
-        t = seed_draft('2026-bursary-test')
+        # Written for THIS cohort's gift — a template seeded for another gift (the flagship)
+        # would govern none of these students, which is the rule TD-229 built.
+        t = seed_draft('2026-bursary-test', programme=cohort.programme.code)
         contracts.update_config(t, counterparty_name='Suresh', counterparty_nric='000000-00-0000')
         contracts.record_vetting(t, vetted_by_name='Legal Reviewer',
                                  vetted_on=datetime.date(2026, 7, 1), attested_by_email='a@b.c')

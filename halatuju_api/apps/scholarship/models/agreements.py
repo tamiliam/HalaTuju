@@ -139,12 +139,21 @@ class BursaryAgreement(models.Model):
 # was rendered from, forever. Module is INERT in Sprint 1 — nothing reads it yet.
 # ─────────────────────────────────────────────────────────────────────────────
 class ContractTemplate(models.Model):
-    """A versioned bursary-agreement template owned by one organisation.
+    """A versioned bursary-agreement template owned by one organisation and written for
+    ONE GIFT (``programme``).
 
     English is authoritative (the lawyer vets English only); ms/ta are courtesy
     translations offered only when fully translated. Exactly one ACTIVE template
-    per org at a time — deploying a new version atomically archives the previous
-    active one (see ``contracts.deploy``)."""
+    per GIFT at a time — deploying a new version atomically archives that gift's
+    previous active one (see ``contracts.deploy``), and the partial unique constraint
+    below makes the database refuse a second.
+
+    ⚠ PER GIFT, NOT PER ORGANISATION (owner ruling 2026-09-04; built TD-229, 2026-10-03).
+    Until 2026-10-03 the rule was one active per organisation, so a second gift's students
+    would have signed wording written for the first. ``organisation`` stays as the tenant
+    FENCE (and the scope of ``version`` uniqueness); ``programme`` says whose agreement it
+    is. An agreement renders from the template of the APPLICATION'S gift
+    (``contract_scope.template_for_application``) and never borrows another gift's."""
     STATUS_CHOICES = (
         ('draft', 'Draft'),
         ('pending_deployment', 'Pending deployment'),
@@ -164,6 +173,18 @@ class ContractTemplate(models.Model):
     organisation = models.ForeignKey(
         'courses.PartnerOrganisation', on_delete=models.PROTECT,
         related_name='contract_templates',
+    )
+    # ⚠ NULLABLE ONLY FOR THE MIGRATE-FIRST TRANSITION (migration 0163). The live template was
+    # back-filled onto the flagship by hand; every write path since sets it. A template with
+    # NULL here governs NOBODY — `contract_scope.active_template_for` cannot reach it and
+    # `contracts.deploy` refuses it. Tightening to NOT NULL is owed: TD-327.
+    # PROTECT, the house pattern for a gift's children (`ScholarshipCohort.programme`). Deleting a
+    # gift deletes its UNSIGNED templates explicitly in the handler (owner, 2026-10-03); one a
+    # BursaryAgreement references blocks it (`programme_delete_blocker` → has_contract_templates).
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='contract_templates',
+        help_text='The gift this agreement is written for. One ACTIVE template per gift.',
     )
     version = models.CharField(max_length=50)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
@@ -220,6 +241,12 @@ class ContractTemplate(models.Model):
             models.UniqueConstraint(
                 fields=['organisation', 'version'],
                 name='uniq_contract_template_org_version',
+            ),
+            # One ACTIVE per gift. Postgres ignores NULLs in a unique index, so a template not
+            # yet back-filled never collides — and never resolves either (see `programme`).
+            models.UniqueConstraint(
+                fields=['programme'], condition=models.Q(status='active'),
+                name='uniq_contract_template_active_per_programme',
             ),
         ]
 

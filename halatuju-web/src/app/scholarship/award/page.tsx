@@ -40,6 +40,8 @@ export default function ScholarshipAwardPage() {
   const [finalising, setFinalising] = useState(false)
   const [isMinor, setIsMinor] = useState(false)
   const [preview, setPreview] = useState<BursaryPreview | null>(null)
+  // TD-229: this gift has no agreement to sign yet — say so instead of a plain Accept.
+  const [unavailable, setUnavailable] = useState(false)
   const [signed, setSigned] = useState<BursaryAgreement | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -88,6 +90,7 @@ export default function ScholarshipAwardPage() {
         setIsMinor(res.is_minor)
         setFinalising(!!res.finalising)
         setPreview(res.bursary_preview ?? null)
+        setUnavailable(!!res.bursary_unavailable)
         setSigned(res.bursary_agreement ?? null)
       })
       .catch(() => { if (active) setOffer(null) })
@@ -115,7 +118,7 @@ export default function ScholarshipAwardPage() {
       'student_signature_required', 'guarantor_required',
       'parent_ic_missing', 'parent_ic_required',
       'parent_ic_nric_mismatch', 'parent_ic_name_mismatch',
-      'guarantor_phone_missing', 'guarantor_phone_unverified',
+      'guarantor_phone_missing', 'guarantor_phone_unverified', 'no_active_template',
     ]
     return known.includes(code)
       ? t(`scholarship.award.error.${code}`)
@@ -317,6 +320,11 @@ export default function ScholarshipAwardPage() {
   const deadline = offer.accept_deadline
     ? new Date(offer.accept_deadline).toLocaleDateString(localeTag, { day: 'numeric', month: 'long', year: 'numeric' })
     : ''
+
+  if (unavailable && !preview && !signed) {
+    return wrap(<p className="rounded-2xl border bg-ground-0 p-8 text-center text-ground-700 shadow-sm"
+      data-testid="award-agreement-unavailable">{t('scholarship.award.error.no_active_template')}</p>)
+  }
 
   // ── The bursary SIGNING page (agreement in play, not yet signed) ──
   if (preview) {
