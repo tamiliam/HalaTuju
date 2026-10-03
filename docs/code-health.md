@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-03 | 03d9f1f | 90 | 44 | vision.py 38.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 19 | 131 | 0 | - | - | ok |
 | 2026-10-02 | c5408ab | 90 | 44 | officerCockpit.ts 46.1 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | 7bc9ac4 | 90 | 44 | officerCockpit.ts 46.1 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
 | 2026-10-02 | c993050 | 90 | 44 | officerCockpit.ts 47.8 | 17 | 15 | 4 | 48 | 139 | 0 | 3 | 20 | 130 | 0 | - | - | ok |
@@ -74,14 +75,14 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-02, c5408ab, window 2026-07-04 onward)
+## Latest run (2026-10-03, 03d9f1f, window 2026-07-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1647 | 46.1 |
-| `halatuju_api/apps/scholarship/vision.py` | 18 | 2285 | 41.1 |
-| `halatuju_api/apps/scholarship/views.py` | 15 | 2427 | 36.4 |
+| `halatuju_api/apps/scholarship/vision.py` | 17 | 2285 | 38.8 |
+| `halatuju-web/src/lib/officerCockpit.ts` | 23 | 1647 | 37.9 |
+| `halatuju_api/apps/scholarship/views.py` | 13 | 2435 | 31.7 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 10 | 1354 | 13.5 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 13 | 984 | 12.8 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 10 | 1200 | 12 |
@@ -91,10 +92,10 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/serializers.py` | 5 | 1215 | 6.1 |
 
 ### Fix ratio
-- 272 fix / 341 feat commits since 2026-07-04
+- 266 fix / 340 feat commits since 2026-07-05
 
 ### Files over 1000 lines
-- `2427  halatuju_api/apps/scholarship/views.py`
+- `2435  halatuju_api/apps/scholarship/views.py`
 - `2316  halatuju_api/apps/courses/views.py`
 - `2285  halatuju_api/apps/scholarship/vision.py`
 - `1647  halatuju-web/src/lib/officerCockpit.ts`
@@ -106,8 +107,8 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1220  halatuju_api/apps/courses/views_admin.py`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
 - `1200  halatuju_api/apps/scholarship/serializers_admin.py`
-- `1145  halatuju_api/apps/scholarship/contracts.py`
 - `1142  halatuju-web/src/app/scholarship/apply/page.tsx`
+- `1138  halatuju_api/apps/scholarship/contracts.py`
 - `1061  halatuju_api/apps/scholarship/org_requests.py`
 - `1024  halatuju_api/apps/scholarship/profile_engine.py`
 - `1018  halatuju_api/apps/scholarship/sponsorship.py`
@@ -157,25 +158,26 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 39 of 199 web test files read source text (signals: readFileSync, apiSource)
+- 39 of 201 web test files read source text (signals: readFileSync, apiSource)
 
 ### Debt register
-- 323 entries have a defining line; 130 carry no resolution marker on it
+- 325 entries have a defining line; 131 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 1281: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1303: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1320: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1331: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
-- line 1608: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6025: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6339: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 1282: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1304: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1321: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1332: - **TD-079**: **Resolution sync writes on GET + a deleted compulsory doc doesn't resurface its resolved ticket.** `resolution.sync_resolution_items` (
+- line 1609: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 6038: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6352: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6366: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money, AN OWNER DECISION: a gift with no agreement template pays the legacy fl
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 7bc9ac4
+- budgets no looser than at c5408ab
 
 ## Reviews
 
