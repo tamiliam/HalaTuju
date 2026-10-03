@@ -12942,3 +12942,25 @@ than guessed. **Trigger:** the first `contracts.deploy` on production (today: 3 
 **Also 2026-10-04, TD-329:** before the old Google key is deleted, a log-based alert is set on the
 keyless path's failure lines (now carrying severity, TD-290), so a silent failure cannot hide;
 deletion itself still waits for the owner's explicit yes.
+
+## 2026-10-04 — TD-330 ruled: a stored verdict that cannot be read is UNKNOWN, never a fail
+
+**Owner:** *"I go with your pick."* A corrupted genuineness value on an STR (never seen in 1,356
+documents) reads as "no verdict" — the STR still counts, the income fact is capped at Probable
+(never Certain), and the officer sees it. Not a free pass, not a punishment for our own fault. The
+two breach readers in `income_engine/evidence.py` therefore keep the TD-293 tolerant reading.
+
+## 2026-10-04 — TD-145 ruled: a different university on the offer is FLAGGED and the student asked
+
+**Owner's outcome, in their words:** *"Student declares UMK but uploads, say, UTHM. This should
+be flagged and student asked to confirm. When confirmed, the pathway values be updated to reflect
+the new value. If instead the student uploads UM Saluran Satu, the system flags and asks to
+confirm. If student confirms the system should alert that IPTS is not supported, and mark it as
+red."* So the July #48 one-campus rule ("a one-campus course reads `match` without comparing") is
+narrowed: a one-campus course still compares the offer's university with the catalogue's — by the
+campus's own name AND acronym, so "UTHM - Kampus Pagoh" still matches UTHM — and a DIFFERENT public
+university raises `pathway_confirm`; confirming updates the pathway (the existing
+`confirm_pathway`). A self-funded / parallel route of a public university (UM **Saluran Satu**,
+UTM SPACE, CCE, Pendidikan Berterusan, Sdn Bhd) is an IPTS option: flagged, and on confirmation
+read red (`not_offer_letter` / `offer_not_official`) with the student told private routes are not
+supported. Measured before the ruling: 0 live offers change under the narrowed rule.
