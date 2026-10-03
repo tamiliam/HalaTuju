@@ -60,6 +60,10 @@ class TestDeclineCooloff(TestCase):
         self.assertEqual(len(mail.outbox), n)                   # email EMBARGOED — not sent yet
 
     def test_student_sees_in_review_while_email_embargoed(self):
+        # SUPERSEDED IN PART by TD-164 (2026-10-03): the mask is no longer a hard-coded
+        # 'interviewed' but the stage the decline came FROM (`pre_decline_status`). This case
+        # declines from 'interviewed', so it still reads 'interviewed'; the other stages are
+        # pinned in test_student_status_mask.py.
         from apps.scholarship.serializers import ApplicationReadSerializer
         app = self._app()
         services.admin_reject(app, self.admin, 'interview')

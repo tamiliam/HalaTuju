@@ -376,5 +376,7 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
             'award_total': str(sum(_Decimal(r['award_amount']) for r in rows)),
             'paid_total': str(sum(_Decimal(r['paid_to_date']) for r in rows)),
             'remaining_total': str(sum(_Decimal(r['remaining']) for r in rows)),
+            # TD-244: funded students holding a wallet Vircle has not reported live.
+            'wallet_not_live': sum(1 for r in rows if r['wallet_not_live']),
         }
         return Response({'rows': rows, 'totals': totals})

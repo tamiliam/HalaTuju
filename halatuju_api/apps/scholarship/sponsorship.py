@@ -15,6 +15,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from . import branding as _branding
 from . import money
 from . import pool
 from . import usage as _usage
@@ -682,7 +683,7 @@ def release_award_offer_emails(now=None):
             ok = send_award_offer_email(
                 to_email=app.notify_email, applicant_name=name,
                 lang=getattr(app, 'locale', '') or 'en',
-                guardian_note=not can_register(app))
+                guardian_note=not can_register(app), branding=_branding.for_application(app))
         if not ok:
             # Stamp ONLY on success. This query filters offer_emailed_at__isnull=True, so stamping
             # a FAILED send would permanently suppress that student's award email — they'd simply

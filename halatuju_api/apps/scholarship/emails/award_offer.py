@@ -232,7 +232,7 @@ def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=Fa
            'domain': b.frontend_domain}
     subject = AWARD_OFFER_SUBJECTS[lang].format(**fmt)
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
-    guide = vircle_guide_attachment()
+    guide = vircle_guide_attachment(b)
     return _send_html(
         to_email, subject, text_body, _award_offer_html(text_body, lang, b),
         from_email=b.email_from,

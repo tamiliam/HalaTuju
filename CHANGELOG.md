@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## Next-tier batch 3 — five student/officer fixes (TD-164, TD-169, TD-145, TD-244, TD-251) - 2026-10-03
+
+BUILT, not committed, pushed or deployed. Four closed (TD-164, TD-169, TD-244, TD-251); TD-145 stays
+OPEN, moved to Owner-decision with its resolver built and its switch held. Register open **132 →
+128**, defined 326; `code_health.py` td_open 128. No migration, no new package.
+`VERDICT_ENGINE_VERSION` unchanged (`2026-10-02.1`): no fact or band moves.
+
+- **TD-164 (student-facing):** `ApplicationReadSerializer.get_status` masks an email-embargoed
+  decline to `pre_decline_status` (the snapshot `cancel_pending_decline` restores), blank → the old
+  `'interviewed'`, and `'recommended'` is still masked as `'interviewed'` (rule 2 now applies to the
+  restored value too). A student declined in the 7-day cool-off no longer sees a stage she never
+  reached. Every value the snapshot can hold is in the web's
+  `LIVE_APPLICATION_STATES`. The org-admin reject is untouched (immediate, never masked).
+  **Review F1 (lead's ruling):** a pre-decline `shortlisted` is shown as `profile_complete` — the
+  only snapshot that re-opens a write surface (the editable form, every write 403s). A contractual
+  decline of an `active` student shows `active`. `test_decision_cooloff.py`'s masking test carries
+  its superseding note; `tests/test_student_status_mask.py` (7).
+- **TD-169:** `vircle_guide_attachment(branding)` — the attachment's NAME follows the sending brand
+  (`_guide_attachment_name`); a brand whose programme name resolves to the platform's keeps the
+  configured `VIRCLE_GUIDE_FILENAME` byte-for-byte (the 113 goldens are unchanged, never
+  regenerated). The Drive lookup still asks for BrightPath's PDF by its own name. Both callers pass
+  their branding (`send_vircle_install_email`, `send_award_offer_email`), and — **review F3** — so
+  do all four production callers, through `branding.for_application(app)`: the award release cron
+  (`sponsorship.release_award_offer_emails`), `send_award_offer_emails`, the execution-time Vircle
+  setup (`bursary.send_vircle_setup_at_execution`) and `send_vircle_install_emails`
+  (`tests/test_award_sends_branding.py`, 5, incl. a BrightPath-is-platform control). The
+  contract-mode sign email still passes none (it carries no attachment). The org-2 leak test now
+  asserts no platform token in any attachment name AND that the guide is attached under the
+  tenant's name on all nine guide-carrying sends.
+- **TD-251:** `vircle_airtable.apply_update` reads a present, non-blank activated phone
+  (`_ACTIVATED_PHONE_KEYS`: `Activated phone` and five spellings — aliases added, none replaced) as
+  the activation, stamped at the row's arrival — only on a row with NO Status (**review F2**: a
+  Status present and not Done silences the phone); an existing date is never overwritten; `Pending
+  Vircle Activation` still activates nothing (both tests stand). A row that sets a wallet and
+  stamps no activation now logs a WARNING naming the payload's field NAMES only (step 3's second
+  half; logging every row's names is not built). `vircle_id`
+  overwrite rules untouched; the relay sheet's "Activated On" mirrors the DB and needed no change.
+  `tests/test_vircle_activation_signal.py` (8).
+- **TD-244 (a report, never an email):** `FundingSummaryRowSerializer.wallet_not_live` (a wallet
+  id held, no `vircle_activated_at`) and `totals.wallet_not_live`; the Payments funding summary
+  names those students in an amber line above the table (nothing drawn at 0 — 0 today). The finance
+  key snapshot in `test_payment_endpoints.py` was extended deliberately, with its reason; the web
+  interface and `financeAllowlistDrift` follow. i18n `admin.payments.funding.walletNotLive` en/ms/ta;
+  the finance manual's funding-summary section says what the line means and what to do.
+- **TD-145 (held):** `pathway_engine.catalogue_declared_institution` resolves a course_id-only
+  pick to its ONE catalogue campus (multi-campus → nothing). NOT wired: since #48 a course_id's
+  institution axis is `offer_pathway.institution_agreement`'s, whose one-campus rule answers
+  `match` without comparing, so wiring `_declared_pathway` would move no verdict; the real switch
+  is that rule, an owner's. Dated comments at both sites; `tests/test_declared_catalogue_institution.py`
+  (5, incl. the PINNED blind spot). The lead's read-only probe: scratchpad `batch3_probe.py`.
+- **Bites:** twelve injected faults (eight, then four for the review fixes), each turned its guard red, restored by bytes with the SHA-256
+  equal (retro).
+
 ## Now sprint 5 part 2 — TD-125: the Google Workspace credentials go keyless - 2026-10-03
 
 BUILT, not committed, pushed or deployed. TD-125 stays OPEN until the lead's live proof and the

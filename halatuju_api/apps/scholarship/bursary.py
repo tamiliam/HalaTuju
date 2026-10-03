@@ -723,7 +723,9 @@ def send_vircle_setup_at_execution(application):
         lang = getattr(application, 'locale', 'en') or 'en'
         to = (getattr(application, 'notify_email', '') or ''
               or getattr(getattr(application, 'profile', None), 'contact_email', '') or '')
-        if emails.send_vircle_install_email(to, name, lang=lang):
+        from . import branding as _branding
+        if emails.send_vircle_install_email(to, name, lang=lang,
+                                            branding=_branding.for_application(application)):
             vircle.raise_setup_task(application)
     except Exception:
         logger.exception('bursary: execution-time Vircle setup failed (app %s)',

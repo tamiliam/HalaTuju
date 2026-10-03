@@ -292,6 +292,9 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str)
     if not rows:
         return 'unknown'                     # catalogue gap — can't judge
     if len(rows) == 1:
+        # ⏸ TD-145 (2026-10-03, HELD for the owner): a GENUINE offer from a different university
+        # also lands here and reads 'match'. The switch would be `'clash' if
+        # offer_contradicts_course_institution(...)` — it reverses this rule, so it waits on a ruling.
         return 'match'                       # nowhere else to go
     if not (recorded or '').strip():
         return 'unknown'                     # nothing recorded to compare the letter against

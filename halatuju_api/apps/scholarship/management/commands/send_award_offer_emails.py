@@ -15,6 +15,7 @@ NO sent-tracking — re-running re-sends, so list only the students you intend t
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from apps.scholarship import branding as _branding
 from apps.scholarship.emails import send_award_offer_email
 from apps.scholarship.models import ScholarshipApplication, Sponsorship
 from apps.scholarship.text import id_list
@@ -46,7 +47,8 @@ class Command(BaseCommand):
             with _usage.usage_context(application=app):
                 ok = send_award_offer_email(
                     to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en',
-                    guardian_note=not can_register(app))
+                    guardian_note=not can_register(app),
+                    branding=_branding.for_application(app))   # TD-169
             if ok:
                 # Stamp the award as emailed so the cool-off cron never re-sends it (idempotent
                 # across the manual force-send and the scheduled release). Code-health S3 #7:

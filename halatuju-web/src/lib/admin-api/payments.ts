@@ -99,10 +99,15 @@ export interface FundingSummaryRow {
   remaining: string
   vircle_id: string
   last_run: { reference: string; payment_date: string } | null
+  /** TD-244 (2026-10-03): a wallet id is held but Vircle has not reported it switched on. */
+  wallet_not_live: boolean
 }
 export interface FundingSummary {
   rows: FundingSummaryRow[]
-  totals: { students: number; award_total: string; paid_total: string; remaining_total: string }
+  totals: {
+    students: number; award_total: string; paid_total: string; remaining_total: string
+    wallet_not_live: number
+  }
 }
 export async function getFundingSummary(programme?: string, options?: ApiOptions) {
   return adminFetch<FundingSummary>(

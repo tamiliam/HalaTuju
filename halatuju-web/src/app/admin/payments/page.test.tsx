@@ -16,9 +16,11 @@ import GiftProgrammes from '@/components/admin/GiftProgrammes'
 import { GiftScope, TWO_GIFTS, crumbText } from '@/test/giftScope'
 import { hasGiftDoor } from '@/lib/navigation'
 
-// `t` echoes its key — except "Pays from", whose NAME is the point of asserting it.
+// `t` echoes its key — except "Pays from", whose NAME is the point of asserting it, and the
+// TD-244 wallet line, whose count and NAMES are.
 jest.mock('@/lib/i18n', () => ({ useT: () => ({
-  t: (k: string, p?: Record<string, string>) => (k === 'admin.payments.paysFrom' ? `${k}:${p?.name}` : k),
+  t: (k: string, p?: Record<string, string>) => (k === 'admin.payments.paysFrom' ? `${k}:${p?.name}`
+    : k === 'admin.payments.funding.walletNotLive' ? `${k}:${p?.count}:${p?.names}` : k),
   locale: 'en',
 }) }))
 // ⚠ `owning_org_id` matters — the picker filters the scope list on it, because the server reads
@@ -47,15 +49,16 @@ const FUNDING = {
       application_id: 1, name: 'RASEKA A/P MURUGESE', ref: 'B40-0119', status: 'active',
       award_amount: '3000', paid_to_date: '1000', remaining: '2000', vircle_id: '1234567890123',
       last_run: { reference: 'PR-2026-07-26-01', payment_date: '2026-07-26' },
-      programme: 'B40',
+      programme: 'B40', wallet_not_live: false,
     },
     {
       application_id: 2, name: 'NEVER PAID', ref: 'B40-0200', status: 'active',
       award_amount: '3000', paid_to_date: '0', remaining: '3000', vircle_id: '',
-      last_run: null, programme: 'B40',
+      last_run: null, programme: 'B40', wallet_not_live: false,
     },
   ],
-  totals: { students: 2, award_total: '6000', paid_total: '1000', remaining_total: '5000' },
+  totals: { students: 2, award_total: '6000', paid_total: '1000', remaining_total: '5000',
+            wallet_not_live: 0 },
 } as unknown as api.FundingSummary
 
 // `is_active` arrived on the scopes payload on 2026-09-03, when the endpoint started offering
@@ -373,5 +376,32 @@ describe('the Last paid column', () => {
     render(<PaymentsLandingPage />)
     await screen.findByText('26/07/2026')
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * TD-244 (2026-10-03): a REPORT, never an email. Funded students holding a wallet id that Vircle
+ * has not reported switched on are NAMED above the funding table; nothing is drawn when there are
+ * none (0 in production at the time of writing).
+ */
+describe('the wallet-not-live line', () => {
+  it('names each student whose wallet is held but not switched on, with the count', async () => {
+    const rows = [
+      { ...FUNDING.rows[0], wallet_not_live: true },
+      FUNDING.rows[1],
+      { ...FUNDING.rows[0], application_id: 3, name: 'SECOND STUDENT', wallet_not_live: true },
+    ]
+    mockApi.getFundingSummary.mockResolvedValue(
+      { rows, totals: { ...FUNDING.totals, students: 3, wallet_not_live: 2 } } as api.FundingSummary)
+    render(<PaymentsLandingPage />)
+    const line = await screen.findByRole('status')
+    expect(line.textContent).toBe(
+      'admin.payments.funding.walletNotLive:2:RASEKA A/P MURUGESE, SECOND STUDENT')
+  })
+
+  it('draws nothing when every held wallet is live', async () => {
+    render(<PaymentsLandingPage />)
+    await screen.findByText('26/07/2026')
+    expect(screen.queryByText(/admin.payments.funding.walletNotLive/)).toBeNull()
   })
 })

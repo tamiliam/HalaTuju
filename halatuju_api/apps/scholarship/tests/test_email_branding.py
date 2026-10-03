@@ -306,6 +306,7 @@ def test_org2_branding_appears_and_platform_never_leaks():
     specs = _inspire_specs(B)
     assert len(specs) >= 21, 'the leak test must exercise every branding-accepting send_*'
 
+    guided = 0
     for name, (fn, kw) in specs.items():
         lang = name.rsplit('.', 1)[-1]
         lang = lang if lang in LANGS else 'en'
@@ -324,9 +325,19 @@ def test_org2_branding_appears_and_platform_never_leaks():
         # closed) sets none — either way it must never be a platform address.
         assert cap['reply_to'] in ([], ['help@inspire.example']), f'{name}: reply-to not the tenant'
 
-        # (2) NOTHING of the platform's brand leaks through.
+        # (2) NOTHING of the platform's brand leaks through — the attachment NAMES included
+        # (TD-169, 2026-10-03: the Vircle guide was named after BrightPath on every send).
+        names = ' '.join(cap['attachments'])
         for tok in _PLATFORM_LEAK_TOKENS:
             assert tok not in blob, f'{name}: platform token {tok!r} leaked into tenant mail'
+            assert tok not in names, f'{name}: platform token {tok!r} leaked into an attachment name'
+        if name.startswith(('vircle_install.', 'award_offer.', 'award_offer_guardian.')):
+            # The positive half: the guide IS attached, under the tenant's own name — so the
+            # negative above cannot pass merely because the attachment went missing.
+            assert cap['attachments'] == [
+                'Inspire Grant eWallet by Vircle - Installation Guide.pdf'], (name, cap['attachments'])
+            guided += 1
+    assert guided == 9, f'expected the guide on 9 tenant sends, saw {guided}'
 
     # The coach persona also swaps: the prompt names the tenant coach, never the platform one.
     from apps.scholarship import help_engine

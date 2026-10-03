@@ -1355,6 +1355,43 @@ interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257
 **132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
 
+**NEXT-TIER BATCH 3 IS BUILT, not committed, pushed or deployed (2026-10-03).** TD-164, TD-169,
+TD-244, TD-251 closed; TD-145 OPEN, moved to Owner-decision (resolver built, switch HELD). Register
+open **128**, defined 326. No migration, no new package. **`VERDICT_ENGINE_VERSION` UNCHANGED
+(`2026-10-02.1`)** — no fact or band moves: TD-164 is the student serializer, TD-145's wiring is
+held. Rules: decisions.md 2026-10-03 "Next-tier batch 3". Retro
+`docs/retrospective-2026-10-03-next-batch-3.md`. Gates (builder, after the review fixes, 2026-10-03): pytest **7,630** passed /
+3 skipped (7,604 before); jest **3,294** (3,292); `npm run gates` green; bundle median 228 kB
+unchanged (1.0 kB headroom; `/admin/payments` 227 kB); `check` clean; `makemigrations --check` clean.
+- TD-164: the student's mask for an embargoed decline = `pre_decline_status` (blank →
+  'interviewed'; 'recommended' still masked; a pre-decline 'shortlisted' shows 'profile_complete' —
+  the lead's ruling on review F1, the only snapshot that re-opens a write surface). `serializers.py` is AT its ceiling (1215) — the
+  change was a line swap.
+- TD-169: `vircle_guide_attachment(branding)`; a platform-named brand keeps `VIRCLE_GUIDE_FILENAME`
+  byte-for-byte (goldens untouched). All four production callers pass `branding.for_application(app)`
+  (release cron, `send_award_offer_emails`, execution-time Vircle setup, `send_vircle_install_emails`
+  — review F3). ⚠ The contract-mode sign email still passes none (no attachment; flag off).
+- TD-251: `vircle_airtable._ACTIVATED_PHONE_KEYS` — a present activated phone IS the activation
+  (stamped at arrival, never overwrites) on a row with NO Status; a present non-Done Status silences
+  it (review F2); a wallet set with no activation logs a WARNING with the
+  payload's field NAMES (search the log for `wallet set, NO activation` after the next activation —
+  it shows the real key spelling if ours missed it).
+- TD-244: `wallet_not_live` on the finance funding row + `totals.wallet_not_live`; an amber line on
+  Payments names the students.
+- TD-145: `pathway_engine.catalogue_declared_institution` built, NOT wired. ⚠ Wiring it into
+  `_declared_pathway` moves nothing — a course_id's institution axis is
+  `offer_pathway.institution_agreement`, whose one-campus rule answers `match` unread. The switch
+  is that rule; owner's call. ⛔ Do not "finish" it without the ruling.
+**Adversarial review: FIX-THEN-SHIP, F1–F4 fixed in place (2026-10-03).** Lead's production counts:
+0 mid-embargo, 0 funded wallet-without-activation (65 activated), TD-145 T4 = T6 = 0.
+**What the lead runs read-only BEFORE the deploy:** the scratchpad probe `batch3_probe.py` (counts
+only, `BEGIN READ ONLY` per transaction): T1–T4 size TD-145's literal shape and its held switch
+(T4/T6 are UPPER bounds — the real identity test matches more variants); the TD-164 pair (how many
+students are mid-embargo now, and how many of them will see a different stage after the deploy —
+their screen changes at the deploy, by design); the TD-244 count (0 expected — then the amber line
+draws nothing). **What the owner must decide:** TD-145's switch; read the Tamil first draft
+`admin.payments.funding.walletNotLive`.
+
 **NOW SPRINT 5 PART 2 (TD-125) IS BUILT, not committed, pushed or deployed (2026-10-03).**
 TD-125 stays OPEN (closes on the live proof + the key's deletion); TD-329 raised (Now — remove the
 key path, the env var and the key). Register open **132**, defined 326. No migration, no new

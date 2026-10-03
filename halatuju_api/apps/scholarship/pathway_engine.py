@@ -165,7 +165,24 @@ def _declared_pathway(application) -> tuple:
     inst = '' if from_offer else (cp.get('institution') or '').strip()
     if not inst:
         inst = (getattr(application, 'pre_u_institution', '') or '').strip()
+    # ⏸ TD-145 resolver BUILT 2026-10-03, NOT WIRED: `catalogue_declared_institution` below.
+    # Wiring it here moves no verdict (a course_id's institution axis is `institution_agreement`'s,
+    # whose one-campus rule says 'match' without comparing); the switch is that rule, an owner's.
     return prog, inst
+
+
+def catalogue_declared_institution(application) -> str:
+    """TD-145: the institution a degree pick DECLARES when the form stored only `course_id` —
+    the catalogue's campus when the course has exactly ONE (`sole_catalogue_institution`), else
+    ''. A multi-campus course resolves to nothing, never a guess; a recorded institution, an
+    offer-autofilled pick, or no course_id → ''. Read-only."""
+    cp = getattr(application, 'chosen_programme', None)
+    cp = cp if isinstance(cp, dict) else {}
+    cid = (cp.get('course_id') or '').strip()
+    if not cid or cp.get('source') == 'offer_letter_auto' or (cp.get('institution') or '').strip():
+        return ''
+    from .offer_pathway import sole_catalogue_institution
+    return sole_catalogue_institution(cid)
 
 
 def _name_status(candidate: str, profile_name: str, extracted: bool) -> str:

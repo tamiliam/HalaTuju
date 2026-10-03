@@ -25,6 +25,7 @@ has been asked. Use --dry-run to see exactly who would be emailed, without sendi
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from apps.scholarship import branding as _branding
 from apps.scholarship.emails import send_vircle_install_email
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.resolution import VIRCLE_CODE, VIRCLE_SETUP_STATES
@@ -70,7 +71,8 @@ class Command(BaseCommand):
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
             ok = send_vircle_install_email(
-                to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
+                to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en',
+                branding=_branding.for_application(app))   # TD-169
             if not ok:
                 failed.append((aid, 'send_failed'))
                 continue

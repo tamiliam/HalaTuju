@@ -2,6 +2,7 @@
 
 Moved here VERBATIM from `emails.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
+TD-169 (2026-10-03) then threaded `branding` into the attachment NAME (`_guide_attachment_name`).
 """
 import os
 
@@ -160,7 +161,21 @@ _VIRCLE_GUIDE_PATH = os.path.join(
 _VIRCLE_GUIDE_FILENAME = f'{_P.programme_name("en")} eWallet by Vircle - Installation Guide.pdf'
 
 
-def vircle_guide_attachment():
+def _guide_attachment_name(branding=None):
+    """The name the student SEES on the attachment (TD-169, 2026-10-03). The Drive LOOKUP name
+    (``VIRCLE_GUIDE_FILENAME``) names the platform's PDF and is not this. A brand whose programme
+    name resolves to the platform's (BrightPath; a tenant with no name of its own) keeps that
+    configured name byte-for-byte — the email goldens pin it; any other tenant's attachment is
+    named after ITS programme, never BrightPath's."""
+    configured = getattr(settings, 'VIRCLE_GUIDE_FILENAME', '') or _VIRCLE_GUIDE_FILENAME
+    own = (branding or _P).programme_name('en')
+    if own == _P.programme_name('en'):
+        return configured
+    safe = ''.join(ch for ch in own if ch not in '\\/:*?"<>|').strip() or 'Bursary'
+    return f'{safe} eWallet by Vircle - Installation Guide.pdf'
+
+
+def vircle_guide_attachment(branding=None):
     """The installation guide as a ``(filename, content, mimetype)`` triple, or None.
 
     Source of truth is the LIVE copy in the owner's Drive (``VIRCLE_GUIDE_FOLDER``) so an edit to
@@ -168,11 +183,10 @@ def vircle_guide_attachment():
     briefly (``VIRCLE_GUIDE_CACHE_SECONDS``) so a batch send doesn't re-download per email. Falls
     back to the bundled repo asset when Drive is disabled/unreachable — a slightly-stale guide
     beats no guide, and no attachment still beats no email at all."""
-    filename = getattr(settings, 'VIRCLE_GUIDE_FILENAME', '') or _VIRCLE_GUIDE_FILENAME
     content = _vircle_guide_bytes_from_drive() or _vircle_guide_bytes_from_asset()
     if content is None:
         return None
-    return (filename, content, 'application/pdf')
+    return (_guide_attachment_name(branding), content, 'application/pdf')
 
 
 def _vircle_guide_bytes_from_drive():
@@ -260,7 +274,7 @@ def send_vircle_install_email(to_email, applicant_name, lang='en', branding=None
            'programme': b.programme_name(lang), 'signoff': b.team_signoff(lang)}
     subject = VIRCLE_INSTALL_SUBJECTS[lang].format(**fmt)
     text_body = VIRCLE_INSTALL_BODIES[lang].format(**fmt)
-    guide = vircle_guide_attachment()
+    guide = vircle_guide_attachment(b)
     return _send_html(
         to_email, subject, text_body, _vircle_install_html(text_body, lang, b),
         from_email=b.email_from,

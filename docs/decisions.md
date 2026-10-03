@@ -1,5 +1,36 @@
 # Architectural Decisions — HalaTuju
 
+## Next-tier batch 3: what an embargoed decline shows, what counts as a Vircle activation, and a held pathway switch — 2026-10-03
+
+**1. During the decline cool-off the student sees the stage she was declined FROM (TD-164).**
+`pre_decline_status`, the same snapshot cancel restores — never a hard-coded `'interviewed'`.
+`'recommended'` stays masked as `'interviewed'`; a legacy row with no snapshot reads
+`'interviewed'`. The mask still hides the rejection itself until the email goes. **One exception
+(the lead's ruling on adversarial review F1): a pre-decline `'shortlisted'` is shown as
+`'profile_complete'`.** Why: shortlisted is the only snapshot that re-opens a WRITE surface — the
+editable five-step form, where every Save / Confirm / upload 403s and the documents list reads empty
+— so she would write to help and a person would reveal the decline before the email does.
+`'profile_complete'` is the locked, passive Action Centre. Every other snapshot shows as itself
+(a contractual decline of an `'active'` student shows `'active'`).
+
+**2. "Activate DNQR" is an activation (TD-251).** A present, non-blank activated phone in Vircle's
+inbound row stamps `vircle_activated_at` with the row's arrival, as `Status = Done` does — on a row
+that carries NO Status (the "Activate DNQR" shape); a Status present and not Done silences it
+(review F2). Presence, never a date: the value is a phone number. A date already stored is never overwritten, and
+`Pending Vircle Activation` activates nothing. `_ACTIVE_STATUS` stays `done` alone — no other
+spelling has been seen, and the payment run treats activation as advisory anyway.
+
+**3. The un-activated wallet is a REPORT on the funding summary (TD-244)** — a boolean on each
+finance row and a count in the totals, named on screen. It extends the finance allowlist by one
+yes/no about payment readiness; no date, no contact. Never an email (2026-09-12 ruling stands).
+
+**4. TD-145's switch is the one-campus rule, and it is the owner's to make.** A one-campus course
+answers `institution_agreement = 'match'` without comparing (#48, 2026-07-25), so filling the
+declared institution from the catalogue changes no verdict. Catching a genuine offer from a
+different university means letting `offer_contradicts_course_institution` turn that `match` into a
+`clash` — a red Pathway chip and one band step until the student confirms. Built as a resolver
+only; the switch waits on the ruling and on the probe's T4/T6 counts.
+
 ## TD-125: keyless domain-wide delegation through IAM, not a key in Secret Manager — built 2026-10-03
 
 **Decided by:** the lead's brief for Now sprint 5 part 2, 2026-10-03 (TD-125 offered both options

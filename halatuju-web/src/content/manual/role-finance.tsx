@@ -72,7 +72,10 @@ export const roleFinance: ManualChapter = {
         <>Below the runs list you&rsquo;ll find the <strong>funding summary</strong>: every student your
         organisation is currently funding, what they were awarded, what has been paid so far, what remains, their
         eWallet ID, and when they were last paid. It is the reconciliation view &mdash; use it to answer
-        &ldquo;how much of this award is left?&rdquo; without opening anything else.</>
+        &ldquo;how much of this award is left?&rdquo; without opening anything else. If Vircle has given a student
+        a wallet but has not yet told us it is switched on, an amber line above the table <strong>names those
+        students</strong>. Nothing emails Vircle about it any more, so this line is the reminder: ask Vircle to
+        activate the wallet, or to press <em>Get Details</em> on that student&rsquo;s row.</>
       ),
       img: '/manual/finance-funding-summary.png',
       alt: 'The funding summary table on the Payments page',

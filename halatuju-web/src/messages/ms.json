@@ -5678,6 +5678,7 @@
       "funding": {
         "title": "Ringkasan pembiayaan",
         "subtitle": "Jumlah yang dianugerahkan kepada setiap pelajar, yang telah dibayar, dan bakinya.",
+        "walletNotLive": "eWallet belum diaktifkan ({count}): {names}. Vircle telah memberi pelajar ini ID eWallet tetapi belum melaporkannya aktif — minta Vircle menyemaknya.",
         "totals": "{count} pelajar",
         "col": {
           "student": "Pelajar",

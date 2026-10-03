@@ -285,6 +285,16 @@ export default function PaymentsLandingPage() {
         <div className="mt-8">
           <h2 className="text-lg font-bold text-ground-900">{t('admin.payments.funding.title')}</h2>
           <p className="mt-1 text-sm text-ground-500">{t('admin.payments.funding.subtitle')}</p>
+          {/* TD-244: a REPORT, never an email — the students Vircle gave a wallet but has not
+              reported switched on. Nothing else chases Vircle since the 48-hour chaser retired. */}
+          {funding.totals.wallet_not_live > 0 && (
+            <p role="status" className="mt-3 rounded-lg border border-caution-200 bg-caution-50 px-4 py-3 text-sm text-caution-800">
+              {t('admin.payments.funding.walletNotLive', {
+                count: String(funding.totals.wallet_not_live),
+                names: funding.rows.filter((r) => r.wallet_not_live).map((r) => r.name || r.ref || '—').join(', '),
+              })}
+            </p>
+          )}
           <TableFrame className="mt-3" minWidth={720}
             label={t('admin.payments.funding.title')}>
             <table className="w-full text-sm">

@@ -5678,6 +5678,7 @@
       "funding": {
         "title": "Funding summary",
         "subtitle": "What each student was awarded, what has been paid, and what remains.",
+        "walletNotLive": "Wallet not yet switched on ({count}): {names}. Vircle gave these students an eWallet ID but has not reported it active — ask Vircle to check.",
         "totals": "{count} students",
         "col": {
           "student": "Student",

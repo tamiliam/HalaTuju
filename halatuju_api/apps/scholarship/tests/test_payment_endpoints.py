@@ -353,8 +353,12 @@ class TestFundingSummaryEndpoint(_FinanceBase):
     # gift once an org runs more than one, and this snapshot failing is exactly how that addition
     # was reviewed rather than slipped in. It names the gift and nothing else — no code, no
     # organisation — so it widens what finance sees by one non-identifying fact.
+    # `wallet_not_live` added DELIBERATELY by TD-244 (2026-10-03): a yes/no that Vircle has not
+    # reported this student's wallet switched on — the report that replaced the retired chaser.
+    # Payment readiness, which finance already reads off `vircle_id`; no date, no contact.
     KEYS = {'application_id', 'name', 'ref', 'status', 'pathway', 'award_amount',
-            'paid_to_date', 'remaining', 'vircle_id', 'last_run', 'programme'}
+            'paid_to_date', 'remaining', 'vircle_id', 'last_run', 'programme',
+            'wallet_not_live'}
 
     def test_role_gate(self):
         for uid in ('pe-mk', 'pe-ap', 'pe-fi'):
@@ -427,6 +431,28 @@ class TestFundingSummaryEndpoint(_FinanceBase):
         self.assertEqual(Decimal(row['paid_to_date']), Decimal('200'))
         self.assertEqual(Decimal(row['remaining']), Decimal('1800'))   # 2000 award - 200 paid
         self.assertEqual(row['last_run']['reference'], reference)
+
+    def test_wallet_not_live_names_a_wallet_vircle_has_not_switched_on(self):
+        """TD-244: a held wallet with no activation date is flagged and counted; an activated
+        one is not; a student with no wallet at all is not (that is `vircle_unconfirmed` on the
+        run, a different gap)."""
+        from django.utils import timezone
+        self._auth('pe-fi')
+        body = self.client.get(self.URL).json()
+        row = next(r for r in body['rows'] if r['application_id'] == self.app_a.id)
+        self.assertIs(row['wallet_not_live'], True)          # wallet held, never activated
+        self.assertEqual(body['totals']['wallet_not_live'], 1)
+        ScholarshipApplication.objects.filter(pk=self.app_a.pk).update(
+            vircle_activated_at=timezone.now())
+        body = self.client.get(self.URL).json()
+        row = next(r for r in body['rows'] if r['application_id'] == self.app_a.id)
+        self.assertIs(row['wallet_not_live'], False)
+        self.assertEqual(body['totals']['wallet_not_live'], 0)
+        ScholarshipApplication.objects.filter(pk=self.app_a.pk).update(
+            vircle_id='', vircle_activated_at=None)
+        row = next(r for r in self.client.get(self.URL).json()['rows']
+                   if r['application_id'] == self.app_a.id)
+        self.assertIs(row['wallet_not_live'], False)          # no wallet: not this report
 
     def test_last_run_is_null_before_any_completed_run(self):
         self._auth('pe-fi')

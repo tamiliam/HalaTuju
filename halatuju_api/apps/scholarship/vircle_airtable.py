@@ -55,6 +55,14 @@ _ACTIVATED_KEYS = ('Activated', 'activated', 'Activated On', 'activated_on', 'Ac
 # including the pending one — must NEVER stamp an activation.
 _STATUS_KEYS = ('Status', 'status')
 _ACTIVE_STATUS = 'done'
+# TD-251 (2026-10-03). Their table has TWO buttons. "Get Details" posts the whole row, Status
+# included; "Activate DNQR" — the one pressed AT activation — posts only Name, NRIC, Wallet id and
+# the phone the wallet was activated on: no Status, no date. A present, non-blank activated phone
+# IS the activation (presence, never a date: the value is a phone number, so it is never parsed —
+# the stamp is the row's arrival, exactly as the six of 11 Sep and #144's hand repair were).
+# Spellings we have SEEN or that a person would type; add aliases here, never replace one.
+_ACTIVATED_PHONE_KEYS = ('Activated phone', 'Activated Phone', 'activated phone',
+                         'activated_phone', 'Activated Phone Number', 'activated_phone_number')
 
 
 def format_nric(value) -> str:
@@ -236,8 +244,13 @@ def apply_update(payload: dict) -> dict:
     activated_raw = _first(payload, _ACTIVATED_KEYS)
     if activated_raw.lower() in ('false', '0', 'no'):
         activated_raw = ''
-    status_done = _first(payload, _STATUS_KEYS).strip().lower() == _ACTIVE_STATUS
-    if activated_raw or status_done:
+    status_raw = _first(payload, _STATUS_KEYS).strip().lower()
+    status_done = status_raw == _ACTIVE_STATUS
+    # A Status that is PRESENT and not Done silences the phone (review F2, 2026-10-03): a "Get
+    # Details" row reading 'Pending Vircle Activation' with a phone already filled is NOT live. The
+    # "Activate DNQR" short payload carries no Status at all, so it is the only row the phone decides.
+    phone_signal = bool(_first(payload, _ACTIVATED_PHONE_KEYS)) and not status_raw
+    if activated_raw or status_done or phone_signal:
         if app.vircle_activated_at:
             result['activated'] = 'kept'
         else:
@@ -247,6 +260,11 @@ def apply_update(payload: dict) -> dict:
             fields.append('vircle_activated_at')
             result['activated'] = 'set'
 
+    if result['wallet'] == 'set' and result['activated'] == 'none':
+        # TD-251 step 3: a wallet with no activation is the shape that hid #144. Field NAMES
+        # only — the values carry a student's NRIC and wallet.
+        logger.warning('Vircle Airtable inbound: wallet set, NO activation app_id=%s keys=%s',
+                       app.id, ','.join(sorted(str(k) for k in payload)))
     if fields:
         app.save(update_fields=fields)
         # The sheet in Drive is how a person sees this; it used to wait up to 15 minutes for a

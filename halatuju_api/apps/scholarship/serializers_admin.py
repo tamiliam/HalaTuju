@@ -904,6 +904,11 @@ class FundingSummaryRowSerializer(serializers.Serializer):
     # not a grouping: grouping is a layout change to a live finance screen and owes a design
     # pass; the fact itself is useful now and costs no redesign.
     programme = serializers.SerializerMethodField()
+    # TD-244 (2026-10-03) — Vircle gave this student a wallet but has not reported it switched on
+    # (`vircle_id` held, `vircle_activated_at` null). A REPORT, never an email (decisions.md "The
+    # 48-hour activation chaser is retired"): the screen names them so the gap is somebody's job.
+    # A yes/no about payment readiness — no date, no phone, nothing about the student.
+    wallet_not_live = serializers.SerializerMethodField()
 
     # Coarse funding status — the three payable states, nothing finer. A finance admin needs to
     # know a student is in the paying loop, not where they sit in the review funnel.
@@ -939,6 +944,9 @@ class FundingSummaryRowSerializer(serializers.Serializer):
 
     def get_vircle_id(self, obj):
         return (obj.vircle_id or '').strip()
+
+    def get_wallet_not_live(self, obj):
+        return bool((obj.vircle_id or '').strip()) and obj.vircle_activated_at is None
 
     def get_programme(self, obj):
         """The gift funding this student — ``{id, name}`` or None. Name only (no code, no
