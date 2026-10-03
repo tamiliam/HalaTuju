@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from ..models import Programme
 from .base import _AdminBase
-from .gifts import _programme_row, programme_delete_blocker
+from .gifts import _programme_row, programme_delete_blocker, programme_delete_blockers
 
 #: The package's logger name, spelled out — see the note in `requests.py`.
 logger = logging.getLogger('apps.scholarship.views_admin')
@@ -64,7 +64,9 @@ class AdminProgrammeListView(_ProgrammeScopedBase):
         admin, err = self._gate(request)
         if err:
             return err
-        rows = [_programme_row(p) for p in self._programmes_for(admin).order_by('code')]
+        programmes = self._programmes_for(admin).order_by('code')
+        held = programme_delete_blockers(programmes)        # TD-231: one query, not one per gift
+        rows = [_programme_row(p, held.get(p.pk)) for p in programmes]
         return Response({'programmes': rows})
 
     def post(self, request):

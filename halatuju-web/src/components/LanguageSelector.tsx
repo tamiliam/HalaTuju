@@ -26,7 +26,7 @@
 
 import { useRef, useState } from 'react'
 
-import { useToast } from '@/components/Toast'
+import { useToast } from '@/components/ToastContext'
 import { useT, LOCALE_LABELS, type Locale } from '@/lib/i18n'
 
 export default function LanguageSelector() {

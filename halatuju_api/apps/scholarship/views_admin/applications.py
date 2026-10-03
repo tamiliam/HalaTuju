@@ -110,6 +110,9 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(assigned_to__isnull=True)
         elif assigned_f and assigned_f.isdigit():
             qs = qs.filter(assigned_to_id=int(assigned_f))
+        # TD-162: every row's first-assignment readiness, as one EXISTS column, not one query a row.
+        from ..services.queries_sla import with_open_student_tasks
+        qs = with_open_student_tasks(qs)
         # Sorting (?sort=name|merit, ?dir=asc|desc). Default (no sort) = newest
         # submitted first, as before. Name sorts in the DB; merit is COMPUTED (no
         # column), so we materialise the filtered set, sort in Python, then paginate

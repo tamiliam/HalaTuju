@@ -19,8 +19,10 @@ The rules, each tested in ``tests/test_epf_contribution_fallback.py``:
   ``zero``; the deterministic name, NRIC, employer number, balance and address always stand.
 * Gemini failing (an error, or its own ``unknown``) leaves the deterministic reading exactly as it
   was — no figure, still ``unknown``, still ``capture='deterministic'``.
-* When Gemini's figures do land, ``capture`` is ``'ai'``: the figures that decide the salary
-  estimate came from the model, and the officer's capture chip should say so.
+* When Gemini's figures do land, ``capture`` is ``'mixed'`` (TD-320, 2026-10-03; ``'ai'`` from
+  2026-10-01 until then): the identity fields were read exactly and the figures that decide the
+  salary estimate came from the model, and the officer's capture chip ("Exact + AI") says both.
+  Statements stored before TD-320 keep their ``'ai'`` until they are re-read.
 
 Never raises: the extraction it is handed never raises, and anything unexpected leaves the
 deterministic reading in place.
@@ -56,4 +58,4 @@ def deterministic_or_epf_fallback(doc_type: str, parsed: dict, ocr_text: str, ex
     except Exception:   # a fallback must never cost the reading it falls back from
         return ex
     return {'fields': {**parsed, **taken}, 'warnings': list((ai or {}).get('warnings') or []),
-            'error': '', 'capture': 'ai'}
+            'error': '', 'capture': 'mixed'}

@@ -32,7 +32,7 @@ caller writes ``nric_verified``. Recomputing it on every read would make the loc
 deleting the evidence: upload a matching card, lock; delete the card, unlock; change the number.
 A lock you can undo by removing the proof is not a lock.
 """
-from .genuineness.bands import canonical_status
+from .genuineness.bands import canonical_status, stored_status
 from .vision import name_match, nric_close, nric_match
 
 # The name comparisons that mean "the same person". ``partial`` is one set being a strict
@@ -42,8 +42,7 @@ _SAME_PERSON = frozenset({'match', 'partial'})
 
 def _authenticity_status(doc):
     """The stored genuineness verdict for a document, or '' when it was never scored."""
-    fields = getattr(doc, 'vision_fields', None) or {}
-    return ((fields.get('authenticity') or {}).get('status') or '').strip()
+    return stored_status(getattr(doc, 'vision_fields', None)).strip()       # TD-293
 
 
 def card_is_genuine(doc):

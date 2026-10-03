@@ -18,6 +18,8 @@ the route it falls through TO, never a second home for the income rule itself.
 """
 from __future__ import annotations
 
+import copy
+
 from .verdict_engine import (_fact, _income_open_item, _item, _latest_doc_for_member,
                              _usable_relationship_fields, _utility_context)
 
@@ -225,7 +227,7 @@ def _salary_place_verdict(application, members, evidence, found, gap, review):
     return _fact('income', 'recommend', evidence, [_income_open_item(application)])
 
 
-def verdict_income_salary(application, student_name, present, any_route=False):
+def verdict_income_salary(application, student_name, present, any_route=False, utility=None):
     """Salary (non-STR) route: one or more working household members, each with their
     own IC + (optional) payslip + EPF, tagged via ``household_member``. Relationship to
     the student: father/brother/sister via the SHARED student-IC patronymic (siblings
@@ -244,18 +246,24 @@ def verdict_income_salary(application, student_name, present, any_route=False):
     dispositive STR and the household nonetheless has a complete salary cluster (§6 rule 2, and
     TD-262 item 1 / rule 4). Such a student never touched the salary checkboxes, so
     ``income_working_members`` is empty and the earners must be reconstructed from the
-    documents they actually tagged — the same reconstruction the submission gate uses."""
+    documents they actually tagged — the same reconstruction the submission gate uses.
+
+    ``utility`` (TD-287, 2026-10-03): the caller's own ``_utility_context`` reading of this same
+    household, when it has already taken one — every fall-through from ``_verdict_income`` has.
+    The bills are read once per verdict, not twice; a deep copy goes into the fact, so the two
+    facts never share an item. ``None`` reads them here, exactly as before."""
     from .income_engine import effective_working_members
+    utility = _utility_context(application) if utility is None else copy.deepcopy(utility)
     members = effective_working_members(application, any_route=any_route)
     if not members:
         # No working member declared → no income information yet → red (see STR route).
-        return _fact('income', 'gap', _utility_context(application),
+        return _fact('income', 'gap', utility,
                      [_item('income_earner_undeclared')])
 
     rel_docs = _salary_relationship_docs(application)
     member_evidence, found = _salary_member_scan(application, members, student_name,
                                                  present, rel_docs)
-    evidence = _utility_context(application) + member_evidence
+    evidence = utility + member_evidence
     if found['any_financial']:
         evidence.append(_item('income_proof_present'))
     gap, review = _salary_unresolved(members, rel_docs, found)

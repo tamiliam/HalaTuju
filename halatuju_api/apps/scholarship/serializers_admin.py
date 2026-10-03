@@ -63,7 +63,8 @@ def _verified_email(application):
     if getattr(p, 'supabase_user_id', None):
         try:
             from apps.courses.views_admin import _fetch_auth_data
-            auth = _fetch_auth_data([p.supabase_user_id]).get(p.supabase_user_id, {})
+            auth = _fetch_auth_data([p.supabase_user_id], purpose='the applicant login email'
+                                    ).get(p.supabase_user_id, {})
             login_email = (auth.get('email') or '').strip()
             if login_email:
                 return login_email

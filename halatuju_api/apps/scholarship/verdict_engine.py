@@ -39,12 +39,13 @@ Statuses (colour = the cockpit's Kent band, `officerCockpit.factTileTone` +
 """
 from __future__ import annotations
 
+import copy
 from dataclasses import asdict, dataclass, field
 
 from .document_snapshot import latest_doc, present_doc_types
 from .services import ic_identity_blockers
 from .vision import name_match
-from .genuineness.bands import canonical_status
+from .genuineness.bands import canonical_status, stored_status
 
 
 # ⚠⚠ THE PREDICTOR'S OWN VERSION. BUMP IT WHEN A CHANGE HERE CAN ALTER A FACT'S STATUS, ITS BAND,
@@ -85,7 +86,10 @@ from .genuineness.bands import canonical_status
 #   2026-10-01.1 — TD-089: a guardian is linked off the letter's guardian AND ward names.
 #   2026-10-02.1 — TD-114: a never-scored IC / slip / offer holds its fact at Probable (verdict_ladder);
 #                  TD-151: a payslip figure outside RM100-20,000 a month is a misread (no figure).
-VERDICT_ENGINE_VERSION = '2026-10-02.1'
+#   2026-10-03.1 — TD-323: an EPF-implied salary under RM100 a month is no BAND figure (the earner
+#                  falls to a declared amount, else verify at interview). No ceiling; the evidence,
+#                  gate and divergence readers are unchanged (review F1).
+VERDICT_ENGINE_VERSION = '2026-10-03.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -179,8 +183,7 @@ def _doc_wrong_type(doc):
     birth-certificate slot must not confirm a mother↔student relationship (#27, owner 2026-07-08)."""
     if doc is None:
         return False
-    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-    raw = (vf.get('authenticity') or {}).get('status', '')
+    raw = stored_status(doc.vision_fields)                                  # TD-293
     return canonical_status(raw, getattr(doc, 'doc_type', None)).startswith('not_')
 
 
@@ -370,7 +373,7 @@ def _utility_context(application):
         items.append(_item('household_size_confirm', described=hs['described'], size=hs['size']))  # SOFT
     return items
 
-def _str_precedence_verdict(application):
+def _str_precedence_verdict(application, utility=None):
     """STR PRECEDENCE (owner 2026-07-07), route-agnostic. A genuine, approved, non-breached STR whose
     recipient matches — exhaustively, name OR nric (``household_str_status``) — a parent/guardian whose
     relationship to the student is CONFIRMED settles income B40 BEFORE the route split; the salary
@@ -407,7 +410,8 @@ def _str_precedence_verdict(application):
         rel = 'match'
     if rel != 'match':
         return None            # recipient not yet an established parent/guardian → route logic runs
-    evidence = _utility_context(application)
+    # TD-287 (review F5): the caller's own bills reading, deep-copied; None reads them here.
+    evidence = _utility_context(application) if utility is None else copy.deepcopy(utility)
     if ic_name:
         evidence.append(_item('earner_ic_present', member=member, name=ic_name))
     evidence.append(_item('relationship_confirmed', member=member))
@@ -423,7 +427,7 @@ def _str_precedence_verdict(application):
 _INCOME_BAND_ORDER = ('gap', 'recommend', 'review', 'verified')
 
 
-def _stronger_income_fact(current, application, student_name, present):
+def _stronger_income_fact(current, application, student_name, present, utility=None):
     """TD-262 items 1 and 1b — **"the stronger proof should be given preference"** (owner
     2026-09-19, `docs/decisions.md`). An STR-route household whose STR was stale, unreadable or in
     somebody else's name was capped at Unsure with the payslips on file NEVER ASSESSED: the
@@ -473,7 +477,8 @@ def _stronger_income_fact(current, application, student_name, present):
                                         verdict_income_salary)
     if not salary_evidence_stands_without_the_str(application):
         return current
-    salary = verdict_income_salary(application, student_name, present, any_route=True)
+    salary = verdict_income_salary(application, student_name, present, any_route=True,
+                                   utility=utility)   # TD-287: the bills, read once
     if not any(i['code'] == 'income_proof_present' for i in salary['evidence']):
         return current
     if _INCOME_BAND_ORDER.index(salary['status']) <= _INCOME_BAND_ORDER.index(current['status']):
@@ -504,7 +509,7 @@ def _verdict_income(application):
     # Lazy: `verdict_income_salary` imports this module's `_fact` / `_item` primitives, so the
     # edge has to be one-way at import time (the `income_engine` pattern above).
     from .verdict_income_salary import verdict_income_salary
-    evidence, gap, review = _utility_context(application), [], []
+    evidence, gap, review = list(utility := _utility_context(application)), [], []  # TD-287
     present = _present_doc_types(application)
     # IC-aware (#88): prefer the student's verified IC read when the typed name lacks the
     # patronymic connector, so the father link doesn't silently die on a typing habit.
@@ -517,7 +522,7 @@ def _verdict_income(application):
     # salary route is explored ONLY when no such STR exists. Route- and tag-agnostic, so a
     # misfiled route/earner (e.g. #45 on the salary route with the STR tagged 'mother') no longer
     # drops a genuine-STR household to salary.
-    settled = _str_precedence_verdict(application)
+    settled = _str_precedence_verdict(application, utility)
     if settled is not None:
         return settled
 
@@ -525,7 +530,7 @@ def _verdict_income(application):
 
     # Salary (non-STR) route → multi-earner path.
     if route == 'salary':
-        return verdict_income_salary(application, student_name, present)
+        return verdict_income_salary(application, student_name, present, utility=utility)
 
     # Wizard not walked → no income information at all yet. Like a missing IC / slip /
     # offer, "nothing provided" is a hard red (can't verify), not a soft amber — the
@@ -548,7 +553,7 @@ def _verdict_income(application):
     # holds §8's 🔴 row: with no STR *and* no salary evidence there is "no usable income evidence
     # at all", which stays RED and keeps asking for the STR.
     if str_doc is None and salary_income_satisfied(application):
-        return verdict_income_salary(application, student_name, present, any_route=True)
+        return verdict_income_salary(application, student_name, present, True, utility)
 
     # ── Earner IC (the income docs are issued in their name) ──────────────────
     # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
@@ -665,7 +670,7 @@ def _verdict_income(application):
     # adult's payslip would lift the card off the floor `test_unrelated_earner_ic_...` pins).
     if gap:
         red = _fact('income', 'gap', evidence, gap + review)
-        return (_stronger_income_fact(red, application, student_name, present)
+        return (_stronger_income_fact(red, application, student_name, present, utility)
                 if str_doc is not None else red)
     if str_failed:
         # §6 evidence-driven fall-through, in the salary module for the usual reason (this file is
@@ -682,7 +687,7 @@ def _verdict_income(application):
     # `_stronger_income_fact`, which can only ever RAISE a household.
     if str_unsure or str_mismatch:
         return _stronger_income_fact(_fact('income', 'recommend', evidence, review),
-                                     application, student_name, present)
+                                     application, student_name, present, utility)
     if review:
         return _fact('income', 'review', evidence, review)
     # Income GREEN only when the whole cluster adds up: a CURRENT STR whose recipient is
@@ -885,8 +890,7 @@ def _suspect_genuineness(application, doc_types):
     reviewer is the authority."""
     for dt in doc_types:
         d = _latest_doc(application, dt)
-        vf = d.vision_fields if (d and isinstance(d.vision_fields, dict)) else {}
-        raw = (vf.get('authenticity') or {}).get('status', '')
+        raw = stored_status(d.vision_fields if d else None)                 # TD-293
         st = canonical_status(raw, getattr(d, 'doc_type', None) or dt)
         if st and st != 'genuine':
             return st

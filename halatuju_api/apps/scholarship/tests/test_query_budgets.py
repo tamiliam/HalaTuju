@@ -309,7 +309,10 @@ class TestTheStudentApplicationReadQueryBudget(TestCase):
 #:                 away: 42 queries. Asking the cheap half of the gate first makes it 27.
 #:   `taken`     — a readable payslip, so the reading IS the answer. 39 either way: the reorder
 #:                 buys nothing here, and that is the proof it is a reorder and not a shortcut.
-FALL_THROUGH_BUDGETS = {'discarded': 27, 'taken': 39}
+#:   2026-10-03 (TD-287): `taken` 39 -> 35. The salary reading reused `_verdict_income`'s own
+#:                 `_utility_context` instead of reading the bills a second time — exactly its four
+#:                 reads. `discarded` never takes the reading, so it does not move.
+FALL_THROUGH_BUDGETS = {'discarded': 27, 'taken': 35}
 
 
 class TestTheStrFallThroughDoesNotPayForAReadingItDiscards(TestCase):
@@ -430,3 +433,81 @@ class TestHasValidStrQueryBudget(WhoseStrBase):
                  for m in (self._cost(s),) if limit > m]
         self.assertEqual(loose, [], 'A has_valid_str budget sits above what it now costs.\n'
                          + '\n'.join(loose))
+
+
+
+#: TD-162 + TD-231 (2026-10-03): the officer's two LIST endpoints, each read at two page sizes so
+#: the pair separates the fixed cost from the per-row one — a constant gap between the readings is
+#: work every row pays. Ordinary constants for the reason STUDENT_READ_BUDGETS gives (TD-286).
+#:   applicant list — 2 vs 5 rows, each row submitted and owing the student an open officer task.
+#:                    MEASURED 6 / 9 before TD-162 (one open-tasks EXISTS per row); 4 / 4 after —
+#:                    the two readings EQUAL is the point: a row now costs nothing extra.
+#:   gift list      — 1 vs 4 gifts, each held by an applicant. MEASURED 9 / 27 before TD-231 (one
+#:                    delete-blocker count per gift — up to five on an empty gift); 9 / 24 after.
+#:                    ⚠ The remaining 5 per gift are the card's OWN counts in `_programme_row`
+#:                    (open year, has-students, years, applications, awarded) — not TD-231's, and
+#:                    left as they are: an org runs three gifts. This budget is what notices growth.
+LIST_ROUTE_APPLICANTS = 'api/v1/admin/scholarship/applications/'
+LIST_ROUTE_GIFTS = 'api/v1/admin/scholarship/programmes/'
+LIST_BUDGETS = {
+    f'{LIST_ROUTE_APPLICANTS}::GET::2-rows': 4,
+    f'{LIST_ROUTE_APPLICANTS}::GET::5-rows': 4,
+    f'{LIST_ROUTE_GIFTS}::GET::1-gift': 9,
+    f'{LIST_ROUTE_GIFTS}::GET::4-gifts': 24,
+}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheOfficerListsQueryBudget(TestCase):
+    """The two lists an officer opens most, counted. A per-row read that comes back fails the
+    LARGER reading while the smaller holds — the shape that says it is an N+1."""
+
+    def _applicants(self, rows):
+        from apps.scholarship.models import ResolutionItem
+        org = make_org()
+        cohort = make_cohort(programme=make_programme(organisation=org), owning_organisation=org)
+        for _ in range(rows):
+            app = make_application('profile_complete', cohort=cohort)
+            ResolutionItem.objects.create(application=app, code='officer_query', source='officer',
+                                          status='open', kind='question')
+        return authed_client(make_admin('org_admin', owning_org=org)), f'/{LIST_ROUTE_APPLICANTS}'
+
+    def _gifts(self, gifts):
+        org = make_org()
+        for _ in range(gifts):
+            make_application('submitted', cohort=make_cohort(
+                programme=make_programme(organisation=org), owning_organisation=org))
+        return authed_client(make_admin('org_admin', owning_org=org)), f'/{LIST_ROUTE_GIFTS}'
+
+    def _reading(self, key):
+        route, _get, size = key.split('::')
+        n = int(size.split('-')[0])
+        client, url = (self._applicants(n) if route == LIST_ROUTE_APPLICANTS else self._gifts(n))
+        self.assertEqual(client.get(url).status_code, 200)            # warm-up, as above
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        body = response.json()
+        listed = body.get('applications', body.get('programmes'))
+        self.assertEqual(len(listed), n, 'the fixture stopped listing what it is named for')
+        return len(captured.captured_queries)
+
+    def test_each_list_stays_inside_its_budget(self):
+        for key, limit in LIST_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(
+                    now, limit,
+                    f'{key} now costs {now} queries; the budget is {limit}. ⚠ DO NOT RAISE IT. '
+                    f'If the larger reading moved and the smaller did not, a per-row read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'LIST_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in LIST_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], 'A list budget sits above what the endpoint now costs.\n'
+                         + '\n'.join(loose))
+
+    def test_the_budgeted_routes_still_resolve(self):
+        for route in (LIST_ROUTE_APPLICANTS, LIST_ROUTE_GIFTS):
+            self.assertEqual(resolve('/' + route).route, route)

@@ -44,8 +44,9 @@ export interface AdminApplicantDocument {
     warnings?: string[]
     student_verdict?: string
     // How this doc's fields were read: 'deterministic' (label-anchored parser) vs 'ai'
-    // (Gemini fallback) — surfaced to the officer as a capture-confidence badge.
-    capture?: 'deterministic' | 'ai'
+    // (Gemini fallback) — surfaced to the officer as a capture-confidence badge. 'mixed' (TD-320):
+    // an EPF statement whose identity was read exactly and whose contribution figures came from AI.
+    capture?: 'deterministic' | 'ai' | 'mixed'
     error?: string
   }
   // Per-fact verification checks (the admin detail serializes documents via
@@ -59,6 +60,9 @@ export interface AdminApplicantDocument {
    *  configured rate and the ringgit result, as formatted strings. Null for every other document,
    *  and for a decided case (it was never converted). Officer payload only. */
   sgd_conversion?: { sgd: string; rate: string; myr: string } | null
+  // TD-323: the engine READ this slip/EPF's income figure and refused it (officer-only; served by
+  // sgd_conversion.figure_refused). null for other documents; absent on an older payload.
+  figure_refused?: boolean | null
   str_check?: StrCheck | null
   utility_check?: UtilityCheck | null
   bc_check?: BcCheck | null

@@ -9,7 +9,7 @@ unchanged. The one rule ADDED after the move is marked ``TD-114`` below.
 """
 from __future__ import annotations
 
-from .genuineness.bands import canonical_status
+from .genuineness.bands import canonical_status, stored_authenticity, stored_status
 from .services import ic_identity_blockers
 from .verdict_engine import _item, _latest_doc, _suspect_genuineness
 
@@ -56,8 +56,7 @@ def _genuineness_reason(application, doc_types):
     """The human reason string from the first non-genuine feeding doc (for the ic_low_confidence copy)."""
     for dt in doc_types:
         d = _latest_doc(application, dt)
-        vf = d.vision_fields if (d and isinstance(d.vision_fields, dict)) else {}
-        auth = vf.get('authenticity') or {}
+        auth = stored_authenticity(d.vision_fields if d else None)          # TD-293
         if canonical_status(auth.get('status'), getattr(d, 'doc_type', None) or dt) not in ('', 'genuine'):
             return auth.get('reason', '')
     return ''
@@ -229,7 +228,6 @@ def _genuineness_unscored(application, doc_types):
         d = _latest_doc(application, dt)
         if d is None:
             continue        # a missing document is the base band's gap, not this rule's
-        vf = d.vision_fields if isinstance(d.vision_fields, dict) else {}
-        if not canonical_status((vf.get('authenticity') or {}).get('status', ''), dt):
+        if not canonical_status(stored_status(d.vision_fields), dt):         # TD-293
             return True
     return False

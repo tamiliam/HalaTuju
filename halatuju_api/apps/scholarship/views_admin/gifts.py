@@ -5,7 +5,7 @@ from `views_admin.py` at code health H11. The endpoints are in `gift_programmes.
 Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
 """
-from django.db.models import Q
+from django.db.models import IntegerField, OuterRef, Q, Subquery
 
 from .. import branding
 from ..models import Donation, ScholarshipApplication
@@ -103,8 +103,42 @@ def programme_delete_blocker(p):
     the database refuses regardless. This only names WHICH, in the order a person is most likely to
     be able to act on — students, before money they cannot undo.
     """
+    from ..models import Programme
+    # org-fence: `p` reached every caller through the fence, and this narrows to that one row.
+    return programme_delete_blockers(Programme.objects.filter(pk=p.pk)).get(p.pk, (None, 0))
+
+
+class _CountOf(Subquery):
+    """``(SELECT count(*) FROM (<subquery>))`` — how many rows a correlated queryset holds, as a
+    column of the outer query. Counts what the queryset yields, so a ``.distinct()`` inside it is
+    honoured exactly as ``.count()`` honoured it."""
+    template = '(SELECT count(*) FROM (%(subquery)s) _held)'
+    output_field = IntegerField()
+
+
+def programme_delete_blockers(programmes):
+    """``{pk: (code, count)}`` for every gift in ``programmes`` — ONE query for the whole list
+    (TD-231, 2026-10-03). The list used to run up to five counts PER GIFT.
+
+    ⚠ STILL ONE RULE. ``programme_delete_blocker`` (the delete handler's reader) is this function
+    asked about one gift, and both read the same holder table, ``_delete_holders``, in the same
+    order — so the disabled button and the refusal still cannot disagree. The holder querysets are
+    built against ``OuterRef('pk')`` instead of a gift, and each becomes a counted column."""
+    holders = _delete_holders(OuterRef('pk'))
+    columns = {f'held_{code}': _CountOf(qs.values('pk')) for code, qs in holders}
+    answer = {}
+    # org-fence: `programmes` is the caller's already-fenced queryset; this only adds columns.
+    for row in programmes.order_by().annotate(**columns).values('pk', *columns):
+        answer[row['pk']] = next(((code, row[f'held_{code}']) for code, _qs in holders
+                                  if row[f'held_{code}']), (None, 0))
+    return answer
+
+
+def _delete_holders(p):
+    """The holder table, in the order a person is most likely to be able to act on. ``p`` is a
+    gift or ``OuterRef('pk')`` (see ``programme_delete_blockers``)."""
     from ..models import ContractTemplate, Donation, PaymentRun, SponsorProgrammeMembership
-    holders = (
+    return (
         # org-fence: every query filters on `p`, which every caller reached through the fence
         # (`_programmes_for` / `_programme_or_404`) — already inside the caller's organisation.
         ('has_applications', programme_student_queryset(p)),
@@ -122,11 +156,6 @@ def programme_delete_blocker(p):
         ('has_contract_templates',
          ContractTemplate.objects.filter(programme=p, agreements__isnull=False).distinct()),
     )
-    for code, qs in holders:
-        count = qs.count()
-        if count:
-            return code, count
-    return None, 0
 
 
 def _apply_copy_terms(p):
@@ -141,14 +170,15 @@ def _apply_copy_terms(p):
     return ac.sensitive_terms(*parts)
 
 
-def _programme_row(p):
+def _programme_row(p, blocker=None):
     """One gift, with the counts its card shows. Deliberately not a serializer: the shape is three
-    joins wide and exists only here."""
+    joins wide and exists only here. ``blocker`` is this gift's ``programme_delete_blockers`` entry
+    when the caller read the whole list at once (TD-231); ``None`` reads it here."""
     from ..models import ScholarshipCohort
     cohorts = ScholarshipCohort.objects.filter(programme=p)
     students = programme_student_queryset(p)
     open_year = cohorts.filter(is_open=True, is_active=True).values_list('year', flat=True).first()
-    blocked_by, blocked_count = programme_delete_blocker(p)
+    blocked_by, blocked_count = blocker if blocker is not None else programme_delete_blocker(p)
     return {
         'id': p.id, 'code': p.code,
         'name_en': p.name_en, 'name_ms': p.name_ms, 'name_ta': p.name_ta,

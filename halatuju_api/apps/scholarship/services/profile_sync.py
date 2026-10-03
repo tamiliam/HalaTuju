@@ -2,7 +2,8 @@
 Writing the apply form back to the canonical profile, and the intake snapshot.
 
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
-Moves only: not a line of this body was reworded. See `__init__.py`.
+Moves only: not a line of this body was reworded. See `__init__.py`. Then, on 2026-10-03
+(TD-055), the guardians write-back became a merge (`merge_guardians`) instead of an overwrite.
 """
 from django.utils import timezone
 
@@ -40,6 +41,45 @@ _APP_FIELDS = (
 )
 
 
+#: The two keys the apply form's My Family block owns on the FIRST guardian entry.
+_APPLY_GUARDIAN_KEYS = ('name', 'phone')
+
+
+def _same_name(a, b):
+    return ' '.join(str(a or '').split()).casefold() == ' '.join(str(b or '').split()).casefold()
+
+
+def merge_guardians(existing, incoming):
+    """TD-055 (2026-10-03): the apply form's guardians list, MERGED onto the stored one.
+
+    The form collects ONE parent/guardian — ``[{name, phone}]``, or ``[]`` when both boxes are
+    blank — and used to REPLACE the whole stored list with it, so any other key on that entry
+    (``relationship``, ``occupation``, ``income`` — the model's documented shape) and any second
+    entry were thrown away. Now the form writes only what it owns:
+
+    * a filled form replaces entry 0's ``name`` and ``phone`` and keeps every later entry; entry 0's
+      other keys are kept ONLY when the form names the SAME person (names equal, ignoring case and
+      surrounding space) — a different name is a different guardian, and carrying the old one's
+      relationship, occupation or income onto them would be a false record (review F4);
+    * a blanked form removes entry 0's ``name`` and ``phone``; the entry goes only if nothing else
+      is left on it; later entries stay.
+
+    ⚠ For every list the apply form can have written itself — ``[]`` or one ``{name, phone}`` —
+    the stored answer is IDENTICAL to the old overwrite (pinned in ``test_guardians_merge.py``).
+    It differs only where some other writer stored more."""
+    if not isinstance(incoming, list) or (incoming and not isinstance(incoming[0], dict)):
+        return incoming                     # not the form's shape: written as sent, as before
+    existing = [dict(g) for g in (existing if isinstance(existing, list) else [])
+                if isinstance(g, dict)]
+    first = existing[0] if existing else {}
+    rest = existing[1:]
+    kept = {k: v for k, v in first.items() if k not in _APPLY_GUARDIAN_KEYS}
+    if incoming:
+        same = _same_name(first.get('name'), incoming[0].get('name'))
+        return [{**(kept if same else {}), **incoming[0]}] + rest
+    return ([kept] if kept else []) + rest
+
+
 def sync_profile_fields(profile, data):
     """
     Write the form's financial + About Me/My Family fields back to the canonical
@@ -59,10 +99,11 @@ def sync_profile_fields(profile, data):
                 setattr(profile, field, data[field])
                 updated.append(field)
 
-    # Parent/guardian name + phone live in the guardians JSON list.
+    # Parent/guardian name + phone live in the guardians JSON list — MERGED, never replaced (TD-055).
     if 'guardians' in data and data['guardians'] is not None:
-        if profile.guardians != data['guardians']:
-            profile.guardians = data['guardians']
+        merged = merge_guardians(profile.guardians, data['guardians'])
+        if profile.guardians != merged:
+            profile.guardians = merged
             updated.append('guardians')
 
     # Changing the contact phone invalidates any prior verification (mirrors PUT /profile/).

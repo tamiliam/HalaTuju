@@ -30,11 +30,32 @@ def band_for(probability: float) -> str:
     return 'suspect'
 
 
+def stored_authenticity(vision_fields) -> dict:
+    """TD-293 (2026-10-03): a document's stored ``authenticity`` block — ALWAYS a dict, ``{}`` when
+    ``vision_fields`` or the block is anything else. The one reader for the old
+    ``(vf.get('authenticity') or {})`` idiom, which guarded ``vision_fields`` and then assumed the
+    block was a dict: a stored string there raised ``AttributeError`` and 500'd the officer's view."""
+    a = vision_fields.get('authenticity') if isinstance(vision_fields, dict) else None
+    return a if isinstance(a, dict) else {}
+
+
+def stored_status(vision_fields) -> str:
+    """TD-293: the stored genuineness status — ALWAYS a string, ``''`` when unscored OR malformed.
+
+    ⚠ A MALFORMED VALUE READS AS NO SIGNAL — the same as a document never scored, which since
+    TD-114 holds its fact at Probable and leaves the officer to look. It is never read as genuine
+    and never as fake: we cannot read what the scorer said, so we claim neither. No document holds
+    such a value (the lead's count, 2026-09-21: 0 of 1,356), and every writer stores a string."""
+    s = stored_authenticity(vision_fields).get('status')
+    return s if isinstance(s, str) else ''
+
+
 def canonical_status(raw, doc_type=None) -> str:
     """Fold any genuineness status — current OR legacy (likely_genuine / low_confidence / wrong_type
     / not_an_ic) — to the canonical enum: 'genuine' / 'suspect' / 'not_<type>' / '' (no signal). So
-    existing stored authenticity (from live IC/supporting runs) keeps working without a backfill."""
-    s = (raw or '').strip().lower()
+    existing stored authenticity (from live IC/supporting runs) keeps working without a backfill.
+    TD-293: a non-string ``raw`` (a stored ``12345``) is no signal, never an ``AttributeError``."""
+    s = (raw if isinstance(raw, str) else '').strip().lower()
     if not s:
         return ''
     if s in _GENUINE:

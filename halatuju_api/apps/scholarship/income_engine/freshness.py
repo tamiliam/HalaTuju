@@ -81,10 +81,8 @@ def _doc_genuine_rank(doc):
     suspect / not_<type> / wrong-type / low-confidence. Dedup ranks this FIRST so a non-genuine copy
     (a SARA letter in the STR slot, an EPF filed as a payslip) can NEVER supersede a genuine one — we
     keep the real document even when a fake / wrong-type copy is newer."""
-    vf = getattr(doc, 'vision_fields', None)
-    st = ''
-    if isinstance(vf, dict) and isinstance(vf.get('authenticity'), dict):
-        st = (vf['authenticity'].get('status') or '').strip()
+    from ..genuineness.bands import stored_status
+    st = stored_status(getattr(doc, 'vision_fields', None)).strip()        # TD-293
     return 1 if st in ('', 'genuine', 'likely_genuine') else 0
 
 

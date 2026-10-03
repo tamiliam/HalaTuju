@@ -42,7 +42,7 @@ jest.mock('@/hooks/useCachedResults', () => ({
   useCachedResults: () => ({ results: { view: 'none' }, ready: false }) }))
 jest.mock('@/hooks/useSavedCourses', () => ({
   useSavedCourses: () => ({ savedIds: new Set(), toggleSave: jest.fn() }) }))
-jest.mock('@/components/Toast', () => ({ useToast: () => ({ showToast: jest.fn() }) }))
+jest.mock('@/components/ToastContext', () => ({ useToast: () => ({ showToast: jest.fn() }) }))
 jest.mock('@tanstack/react-query', () => ({
   useQuery: () => ({ data: undefined, isLoading: false, error: null }) }))
 jest.mock('@/lib/api', () => ({ __esModule: true,

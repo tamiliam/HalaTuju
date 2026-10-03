@@ -37,6 +37,15 @@ _NET_OVER_GROSS_TOL = 1.02
 # misread RM326.00 as RM32,600. The ceiling (RM20,000) is ~2x the largest real slip and below that
 # misread; the floor (RM100) is ~3.5x below the smallest real slip and above a dropped-decimal
 # reading (÷100) of every wage up to RM10,000. Applied in the source currency, before the SGD step.
+# TD-323 (2026-10-03, after the adversarial review's F1): an EPF statement's implied salary takes
+# the FLOOR only (`_SLIP_MONTHLY_MIN`), and only where it becomes the BAND figure
+# (`epf_band_salary`, read by `amounts.earner_monthly_income`). NO CEILING: a very high implied
+# salary stays a figure and bands red "above the line" (interview), exactly as before — a ceiling
+# would turn it into "no figure" and let a declared amount or a silent divergence check stand in
+# for the strongest evidence on file. `_epf_monthly_salary` itself is UNWINDOWED, because its other
+# readers (the payslip/EPF divergence anomaly, `income_shown`, the evidence and submission gates)
+# ask "was a figure read?", not "how big is it?". The five corpus statements with a table imply
+# RM1,647.69 – RM7,316.67 (`eval/epf_table_check.py`).
 _SLIP_MONTHLY_MIN = 100.0
 _SLIP_MONTHLY_MAX = 20000.0
 
@@ -128,9 +137,33 @@ def epf_no_employer(f):
                for k in ('employer_number', 'employer'))
 
 
+def epf_band_salary(f):
+    """TD-323: the EPF-implied salary as the BAND figure — `_epf_monthly_salary` with the payslip
+    FLOOR only. Below RM100 a month (a single RM110 contribution over a year reads ~RM83) is a
+    non-income, not a wage: None, so the earner falls to a declared amount or verify-at-interview.
+    0.0 (no employer) is a fact and stands. No ceiling — see `_SLIP_MONTHLY_MIN`'s note."""
+    sal = _epf_monthly_salary(f)
+    return None if sal and sal < _SLIP_MONTHLY_MIN else sal
+
+
+def epf_figure_refused(f):
+    """TD-323: did this EPF statement imply a salary the band then REFUSED (under the floor)?
+    The cockpit's Contribution chip is coloured from this — served, never mirrored."""
+    return _epf_monthly_salary(f) is not None and epf_band_salary(f) is None
+
+
+def slip_figure_refused(f):
+    """TD-323: did this payslip show an amount the engine then REFUSED — net > gross, outside the
+    window, a zero, or a figure that does not parse? The cockpit's Amount chip is coloured from
+    this; "read" means exactly what the chip already reads (a non-blank gross or net)."""
+    read = str(f.get('gross_income') or f.get('net_income') or '').strip()
+    return bool(read) and not _salary_monthly_amount(f)
+
+
 def _epf_monthly_salary(f):
     """Estimate MONTHLY salary from an EPF statement (TD-123 contract). Returns a float
-    (0.0 = unemployed), or None when nothing usable.
+    (0.0 = unemployed), or None when nothing usable. UNWINDOWED (TD-323 review F1): the band reads
+    `epf_band_salary`, every other reader reads this.
 
     - **Unemployed** iff ``No. Majikan == 000000000`` (the only employment check) → 0.0.
     - Otherwise reverse the statutory rates (hardcode employee **11%**, employer **13%**) from

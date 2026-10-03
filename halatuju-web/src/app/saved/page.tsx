@@ -15,7 +15,7 @@ import {
   type StpmRequirements,
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
-import { useToast } from '@/components/Toast'
+import { useToast } from '@/components/ToastContext'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'

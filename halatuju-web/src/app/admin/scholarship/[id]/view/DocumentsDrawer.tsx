@@ -179,6 +179,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                       const DETERMINISTIC_FIRST = ['ic', 'parent_ic', 'results_slip', 'birth_certificate', 'str', 'epf', 'school_leaving_cert']
                       const cap = stored === 'deterministic' ? 'deterministic'
                         : stored === 'ai' ? 'ai'
+                        : stored === 'mixed' ? 'mixed'   // TD-320: identity exact, contribution AI
                         : DETERMINISTIC_FIRST.includes(d.doc_type) ? 'deterministic' : 'ai'
                       return (
                         <span

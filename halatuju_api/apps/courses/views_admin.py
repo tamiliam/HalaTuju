@@ -498,11 +498,14 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
         return response
 
 
-def _fetch_auth_data(user_ids):
+def _fetch_auth_data(user_ids, purpose='CSV export'):
     """Look up email + last_sign_in from Supabase Auth's auth.users for the given user IDs.
 
     Returns {supabase_user_id: {'email': str, 'last_sign_in': 'YYYY-MM-DD' or ''}}.
-    Failures are logged but never break the export.
+    Failures are logged but never break the caller. TD-294 (2026-10-03): ``purpose`` names the
+    caller in that ERROR line — the officer's applicant-detail GET reads the login email through
+    here too, and its failure used to be reported as a "CSV export" nobody had run. Since TD-290
+    the line reaches Cloud Logging at ERROR severity with its traceback in ``stack_trace``.
     """
     if not user_ids:
         return {}
@@ -518,7 +521,7 @@ def _fetch_auth_data(user_ids):
                 for uid, email, lsi in cur.fetchall()
             }
     except Exception:
-        logger.exception('Failed to fetch auth.users data for CSV export')
+        logger.exception('Failed to fetch auth.users data for %s', purpose)
         return {}
 
 

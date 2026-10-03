@@ -356,11 +356,11 @@ def offer_official_status(doc) -> str:
       * 'unknown'     — genuineness not computed yet (flag off / AI outage / not re-run since the
                         signature model shipped). Never gate on our own gap — defer to the reviewer.
     """
-    vf = getattr(doc, 'vision_fields', None)
-    auth = vf.get('authenticity') if isinstance(vf, dict) else None
-    if not isinstance(auth, dict) or not auth.get('status'):
-        return 'unknown'
-    return 'genuine' if auth.get('status') == 'genuine' else 'not_genuine'
+    from .genuineness.bands import stored_status
+    status = stored_status(getattr(doc, 'vision_fields', None))   # TD-293 review F7: one reader
+    if not status:
+        return 'unknown'      # unscored OR malformed — no signal, as `stored_status` reads it
+    return 'genuine' if status == 'genuine' else 'not_genuine'
 
 
 def offer_band(doc) -> str:

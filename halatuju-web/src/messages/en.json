@@ -4714,6 +4714,8 @@
           "amount": "Amount",
           "period": "Period",
           "contribution": "Contribution",
+          "amount_unusable": "Amount looks misread",
+          "contribution_unusable": "Contribution looks misread",
           "balance": "Balance",
           "genuine": "Genuine",
           "wrongType": "Wrong type",
@@ -4773,6 +4775,10 @@
           "ai": {
             "label": "AI",
             "hint": "Read by AI (Gemini) — please verify the captured values."
+          },
+          "mixed": {
+            "label": "Exact + AI",
+            "hint": "Name, IC and balance read exactly from the statement's labels; the contribution figures were read by AI (Gemini) — please verify those."
           }
         },
         "certValue": {

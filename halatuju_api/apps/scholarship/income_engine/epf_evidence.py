@@ -49,8 +49,8 @@ def semester_result_gap(application):
 
 def _doc_authenticity(doc):
     """The stored genuineness result for a document ({} when unscored)."""
-    vf = getattr(doc, 'vision_fields', None)
-    return (vf.get('authenticity') or {}) if isinstance(vf, dict) else {}
+    from ..genuineness.bands import stored_authenticity
+    return stored_authenticity(getattr(doc, 'vision_fields', None))          # TD-293
 
 
 def slip_epf_evidence(application, member):

@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## Later-tier batch 1 — ten small items (TD-323, TD-320, TD-290, TD-294, TD-287, TD-289, TD-162, TD-231, TD-293, TD-055) - 2026-10-03
+
+BUILT, not committed, pushed or deployed. Eight closed (TD-323, TD-320, TD-287, TD-289, TD-293,
+TD-162, TD-231, TD-055); TD-290 and TD-294 BUILT and held OPEN for their live proof in Cloud
+Logging (the security hook blocked the first write of TD-290's test over `ast.literal_eval`; the
+owner approved the file as written).
+Register open **128 → 121**, defined 327 (TD-330 raised by the review); `code_health.py` td_open
+121. No migration, no new package. **`VERDICT_ENGINE_VERSION` 2026-10-02.1 → `2026-10-03.1`**
+(TD-323's EPF floor can move an income band figure). Adversarial review FIX-THEN-SHIP; F1–F7 applied.
+
+- **TD-323 (officer-visible):** the document's `figure_refused`, OFFICER-ONLY
+  (`sgd_conversion.AdminApplicantDocumentSerializer`, beside `sgd_conversion`; review F2 moved it
+  off the student's `income_proof_check`, and a test pins its absence there), from
+  `salary_figures.slip_figure_refused` / `epf_figure_refused`. The cockpit's Amount /
+  Contribution chip shows an amber "Amount looks misread" / "Contribution looks misread" on a
+  figure the engine refused, never green. The EPF estimate takes the payslip FLOOR only (RM100),
+  and only as the BAND figure: `epf_band_salary`, read by `earner_monthly_income`. **No ceiling**
+  (review F1): a RM25,000 EPF stays a figure, red above the line, as before; `_epf_monthly_salary`
+  is unwindowed, so the divergence anomaly, `income_shown`, `member_income_evidenced` and the
+  submission gates are exactly as before and nobody is newly blocked. An employer-less 0.0 is
+  untouched. `test_salary_plausibility.py` (one test per reader class on both shapes),
+  `view.figureRefused.test.tsx`.
+- **TD-320 (officer-visible):** the TD-319 contribution fallback stores `capture='mixed'`; the
+  drawer badge reads "Exact + AI" with a hint naming which half the model read. Old rows keep
+  `'ai'` until re-read.
+- **TD-290:** `halatuju/logging_json.py` `CloudRunJsonFormatter` — one JSON object per line with
+  `severity`, the old `timestamp`/`level`/`logger`/`message` keys unchanged (the `AUDIT …` message is
+  byte-identical, so the `applicant_record_reads` metric is unaffected) and a traceback in
+  `stack_trace`, never in `message`. Wired in `settings/base.py`; `development.py` still uses
+  `simple`. `test_log_severity.py` (builds the formatter FROM `base.py`'s dict).
+- **TD-294:** `_fetch_auth_data(user_ids, purpose='CSV export')` — the applicant-detail serializer
+  passes `'the applicant login email'`, so its ERROR no longer claims an export.
+  `test_log_severity.py`.
+- **TD-287:** `_verdict_income` passes its `_utility_context` to `verdict_income_salary`
+  (`utility=`, deep-copied) on all three fall-throughs, and to `_str_precedence_verdict` (review F5).
+  Same answer on four paths; `FALL_THROUGH_BUDGETS['taken']` 39 → 35. `test_utility_context_once.py`.
+- **TD-289:** `src/components/ToastContext.ts` holds the context + `useToast`; five callers
+  repointed. `/` 3.33 → 2.94 kB page JS (232 → 231 kB); median 228 kB unchanged, so the ledger
+  stays. `toastSplit.test.ts`.
+- **TD-162:** `services.queries_sla.with_open_student_tasks` — the applicant list's readiness is
+  one `EXISTS` column. 6/9 → 4/4 queries at 2/5 rows.
+- **TD-231:** `views_admin.gifts.programme_delete_blockers` — the gift list's delete blockers in
+  one query from the shared holder table; the delete handler asks the same function about one
+  gift. 9/27 → 9/24 at 1/4 gifts. Both pinned in `LIST_BUDGETS` (`test_query_budgets.py`);
+  agreement in `test_list_shaped_readers.py`.
+- **TD-293:** `genuineness.bands.stored_status` / `stored_authenticity` replace the
+  `(vf.get('authenticity') or {})` idiom and its cousins at fifteen sites (fourteen in the
+  engines, one in `rescore_unscored_documents`); `canonical_status` refuses a
+  non-string. A malformed value is no signal; `pathway_engine.offer_official_status` aligned (review
+  F7). Both former 500 shapes are in the ON==OFF matrix; `test_stored_genuineness_reader.py`. The two
+  STR-breach readers now read a malformed status as no breach — raised as TD-330 (review F3).
+- **TD-055:** `services.profile_sync.merge_guardians` — the apply form merges its one guardian
+  instead of replacing the list; entry 0's other keys survive only for the SAME name (review F4).
+  `test_guardians_merge.py`.
+
 ## Next-tier batch 3 — five student/officer fixes (TD-164, TD-169, TD-145, TD-244, TD-251) - 2026-10-03
 
 BUILT, not committed, pushed or deployed. Four closed (TD-164, TD-169, TD-244, TD-251); TD-145 stays

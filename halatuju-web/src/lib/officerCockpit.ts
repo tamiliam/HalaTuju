@@ -496,13 +496,16 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     if (dt === 'salary_slip') {
       // CONSISTENT chip set for every salary slip: Amount + Period always present, grey ('unknown')
       // when not read — never omitted, so two payslips don't show different numbers of chips.
-      facts.push({ key: 'amount', status: (has('amount') || has('gross_income') || has('net_income')) ? 'verified' : 'unknown' })
+      // TD-323: amber, never green, on a figure the engine refused (served `figure_refused`).
+      facts.push(doc.figure_refused ? { key: 'amount_unusable', status: 'partial' }
+        : { key: 'amount', status: (has('amount') || has('gross_income') || has('net_income')) ? 'verified' : 'unknown' })
       facts.push({ key: 'period', status: has('period') ? 'verified' : 'unknown' })
     } else {
       // EPF: surface what we already collect (the FE previously looked for a wrong key so NONE
       // showed). Contribution = the income figure; Balance = JUMLAH SIMPANAN; Date = statement
       // currency. Keys match income_engine.student_income_proof_check's EPF points.
-      facts.push({ key: 'contribution', status: has('avgContribution') ? 'verified' : 'unknown' })
+      facts.push(doc.figure_refused ? { key: 'contribution_unusable', status: 'partial' }
+        : { key: 'contribution', status: has('avgContribution') ? 'verified' : 'unknown' })
       facts.push({ key: 'balance', status: has('totalAccumulated') ? 'verified' : 'unknown' })
       facts.push({ key: 'current', status: has('statementDate') ? 'verified' : 'unknown' })
     }

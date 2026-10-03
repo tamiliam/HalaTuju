@@ -583,13 +583,15 @@ SIGN_ACCEPT_DEADLINE_DAYS = int(os.environ.get('SIGN_ACCEPT_DEADLINE_DAYS', '30'
 # reminder cron ('bursary-signing-reminders') nudges the responsible party again.
 BURSARY_SIGN_REMINDER_DAYS = int(os.environ.get('BURSARY_SIGN_REMINDER_DAYS', '3'))
 
-# Logging configuration (structured JSON for Cloud Run)
+# Logging configuration (structured JSON for Cloud Run). TD-290 (2026-10-03): a real JSON
+# formatter that carries `severity` — the old JSON-shaped format string named it `level`, so Cloud
+# Logging stored every warning and error of ours at DEFAULT. See halatuju/logging_json.py.
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'json': {
-            'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
+            '()': 'halatuju.logging_json.CloudRunJsonFormatter',
         },
         'simple': {
             'format': '%(levelname)s %(message)s',

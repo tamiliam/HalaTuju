@@ -62,7 +62,9 @@ class TestEpfUnknownFallsBackToGemini(TestCase):
         self.assertEqual(f['employer_contribution_total'], 'RM1560.00')
         self.assertEqual(f['employee_contribution_total'], 'RM1320.00')
         self.assertEqual(f['months_counted'], '6')
-        self.assertEqual(vf['capture'], 'ai')
+        # TD-320 (2026-10-03) superseded 'ai' here: the name/NRIC/employer/balance stayed exact, so
+        # the honest label is a MIXED capture, not an all-AI one.
+        self.assertEqual(vf['capture'], 'mixed')
         # ...and the salary estimate that had nothing to work from now has: max(1560/(6·.13), 1320/(6·.11))
         self.assertEqual(_epf_monthly_salary(f), 2000.0)
 

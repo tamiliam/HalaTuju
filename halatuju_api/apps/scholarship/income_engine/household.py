@@ -94,11 +94,10 @@ def _member_income_genuine(application, member):
     """False when any of a member's summed income documents (salary slip / EPF) is genuineness
     SUSPECT or a WRONG type — such a read can't CONFIRM a figure, so it must not earn a verified
     tick. Unscored/genuine → True (fail-open, as elsewhere)."""
-    from ..genuineness.bands import canonical_status
+    from ..genuineness.bands import canonical_status, stored_status
     for dt in ('salary_slip', 'epf'):
         for d in _cluster_docs(application, member, dt):
-            vf = d.vision_fields if isinstance(d.vision_fields, dict) else {}
-            st = canonical_status((vf.get('authenticity') or {}).get('status', ''), dt)
+            st = canonical_status(stored_status(d.vision_fields), dt)          # TD-293
             if st == 'suspect' or st.startswith('not_'):
                 return False
     return True

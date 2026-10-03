@@ -1345,6 +1345,40 @@ Read it at sprint start, before planning.
 
 ## Next Sprint — ▶ owner's pick (as of 2026-09-30, after the debt-register review)
 
+**LATER-TIER BATCH 1 IS BUILT, not committed, pushed or deployed (2026-10-03).** Eight closed
+(TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231, TD-055); TD-290 and TD-294 BUILT and held
+OPEN for their live proof; TD-330 raised by the review (Later). Register open **121**, defined 327
+(`code_health.py` td_open 121). No migration, no new package. **Adversarial review FIX-THEN-SHIP,
+F1–F7 applied.** **`VERDICT_ENGINE_VERSION` BUMPED `2026-10-02.1` → `2026-10-03.1`** (TD-323: an
+EPF-implied salary UNDER RM100 a month is no BAND figure — declared amount, else verify at
+interview — through `epf_band_salary` in `earner_monthly_income` only. NO ceiling: a high estimate
+stays a figure; the divergence anomaly and the evidence/submission gates read the unwindowed
+`_epf_monthly_salary`, so nobody is newly blocked. TD-287 moves no answer). Rules: decisions.md
+2026-10-03 "Later-tier batch 1". Retro `docs/retrospective-2026-10-03-later-batch-1.md`. Gates
+(builder, after the review fixes): pytest **7,671** passed / 3 skipped (7,630 before); jest **3,301** (3,294); `npm run gates`
+green; bundle median **228 kB** unchanged (`/` 232 → 231 kB; ledger untouched); `check` and
+`makemigrations --check` clean. New OFFICER-ONLY served field: the document's `figure_refused` (`AdminApplicantDocumentSerializer`; absent from the student's payload, pinned); new
+`vision_fields.capture` value `'mixed'`; new list budgets `LIST_BUDGETS` in `test_query_budgets.py`.
+**What the lead runs read-only BEFORE the deploy** — the scratchpad probe `later_batch1_probe.sql`
+(counts only, `BEGIN READ ONLY` per block): (Q1) live EPF statements whose implied salary is
+above 0 and BELOW RM100 a month, and the applications they touch — the only band figures that can
+move under 2026-10-03.1 (the lead measured 0 of 64 outside the old window before the review); (Q2) live salary slips whose Amount chip turns from green to amber at the
+deploy (display only — the engine already refused them); (Q3) profiles whose stored `guardians`
+list is richer than the apply form writes (more than one entry, or extra keys) — the only students
+for whom TD-055 stores something different (0 and 0 = invisible today).
+**What the first alert on the new severity should look like (TD-290/TD-294).** After the deploy,
+in Logs Explorer for `halatuju-api`: `jsonPayload.logger="apps.courses.views_admin" severity=ERROR`
+with `jsonPayload.message="Failed to fetch auth.users data for the applicant login email"` and the
+traceback in `jsonPayload.stack_trace` — IF the production DB role cannot read `auth.users`; if it
+can, there is no such line, and the first proof is any `severity>=WARNING` entry whose
+`jsonPayload.logger` starts `apps.` (e.g. a `Vircle sheet:` or `wallet set, NO activation`
+warning). Also check that `jsonPayload.message=~"^AUDIT applicant_detail_read"` still matches at
+INFO and the `applicant_record_reads` metric keeps counting. TD-290 closes on that sighting; TD-294
+with it. ⚠ A line still at DEFAULT severity means the formatter is not wired in the image.
+**What the owner must decide:** read the Tamil first drafts — `admin.scholarship.docsDrawer.fact.amount_unusable`
+"தொகை தவறாகப் படிக்கப்பட்டது போல் தெரிகிறது", `…fact.contribution_unusable` "பங்களிப்பு தவறாகப்
+படிக்கப்பட்டது போல் தெரிகிறது", `…capture.mixed.label` "சரியான + AI" and its hint.
+
 **STATE AT 2026-10-01 EVENING (lead).** Five deploys today, all live and clean: the Now-tier sweep
 (5af36e1f), Next-tier batch 1 (3a82e8e0 + 1fc39afa), Next-tier batch 2 (b582c93d) and Now sprint 1
 (849245c8: Node 24 is PROVEN - gate green, halatuju-web-00937-ctv serving, 0 errors; the image probe

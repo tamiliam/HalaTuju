@@ -49,12 +49,30 @@ def sgd_conversion(doc):
     return {'sgd': _two_places(amt), 'rate': f'{amounts.sgd_to_myr_rate():g}', 'myr': _two_places(myr)}
 
 
+def figure_refused(doc):
+    """TD-323 (2026-10-03): for a salary slip / EPF, did the income engine READ a figure and then
+    refuse it (`salary_figures.slip_figure_refused` / `epf_figure_refused`)? None for every other
+    document. The cockpit colours its Amount / Contribution chip from this — served, never
+    mirrored. Officer-only (review F2): the student's payload never carries it."""
+    dt = getattr(doc, 'doc_type', '')
+    if dt not in ('salary_slip', 'epf'):
+        return None
+    from .income_engine.salary_figures import _doc_fields, epf_figure_refused, slip_figure_refused
+    f = _doc_fields(doc)
+    return slip_figure_refused(f) if dt == 'salary_slip' else epf_figure_refused(f)
+
+
 class AdminApplicantDocumentSerializer(ApplicantDocumentSerializer):
-    """The officer's document payload: every field the student's has, plus ``sgd_conversion``."""
+    """The officer's document payload: every field the student's has, plus ``sgd_conversion`` and
+    ``figure_refused`` (TD-323) — both officer-only, which is why they live here."""
     sgd_conversion = serializers.SerializerMethodField()
+    figure_refused = serializers.SerializerMethodField()
 
     class Meta(ApplicantDocumentSerializer.Meta):
-        fields = ApplicantDocumentSerializer.Meta.fields + ['sgd_conversion']
+        fields = ApplicantDocumentSerializer.Meta.fields + ['sgd_conversion', 'figure_refused']
 
     def get_sgd_conversion(self, obj):
         return sgd_conversion(obj)
+
+    def get_figure_refused(self, obj):
+        return figure_refused(obj)

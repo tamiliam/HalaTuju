@@ -33,7 +33,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.scholarship.genuineness import assess, signature_genuineness
-from apps.scholarship.genuineness.bands import canonical_status
+from apps.scholarship.genuineness.bands import canonical_status, stored_status
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument
 
@@ -44,7 +44,7 @@ FREE_TYPES = ('results_slip', 'offer_letter')
 
 def is_unscored(doc):
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-    return not canonical_status((vf.get('authenticity') or {}).get('status', ''), doc.doc_type)
+    return not canonical_status(stored_status(vf), doc.doc_type)              # TD-293
 
 
 def _record(sg, basis):

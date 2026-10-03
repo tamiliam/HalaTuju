@@ -1,5 +1,57 @@
 # Architectural Decisions — HalaTuju
 
+## Later-tier batch 1: a refused figure is never green, a mixed capture says so, logs carry severity, and malformed genuineness is no signal — 2026-10-03
+
+**1. A figure the income engine refuses is served as refused, and the cockpit's chip reads that (TD-323).**
+The document's `figure_refused` — OFFICER-ONLY, on `AdminApplicantDocumentSerializer`, never on the
+student's payload — comes from `income_engine/salary_figures.py` (`slip_figure_refused` /
+`epf_figure_refused`); the web never re-derives the window — the rule
+varies by document and lives in one place, so it is SERVED (the house rule: serve a rule that
+varies, guard a constant). A refused payslip amount shows an AMBER "Amount looks misread"; a
+refused EPF estimate an amber "Contribution looks misread". Amber, not red: a misread is "verify at
+interview", not evidence against the family. An older payload with no field reads as not refused.
+
+**2. The EPF-implied salary takes the payslip FLOOR, as the band figure only — and no ceiling (TD-323,
+the lead's ruling on adversarial review F1).** Under RM100 a month is a non-income, not a wage:
+`epf_band_salary` → no figure, so the earner falls to a declared amount or verify-at-interview.
+Above RM20,000 STAYS a figure (red above the line, interview), as before: a ceiling would turn the
+strongest evidence on file into "no figure", let a declared amount stand in for it, and silence
+the payslip/EPF divergence check on a doctored slip. Every other reader — the divergence anomaly,
+`income_shown`, the evidence and submission gates — reads the unwindowed `_epf_monthly_salary`,
+because they ask whether a figure was READ, not how big it is; nobody is newly blocked. An
+employer-less statement (0.0) is a fact. The floor can move a band figure, so
+`VERDICT_ENGINE_VERSION` → `2026-10-03.1`.
+
+**3. An EPF statement whose identity was read exactly and whose contribution came from Gemini is
+`capture='mixed'`, shown as "Exact + AI" (TD-320).** Not a per-field provenance map: the only mixed
+case is TD-319's contribution fallback, and the chip's hint names which half the model supplied.
+Statements stored before keep `'ai'` until re-read; nothing is back-filled.
+
+**4. Our log lines are JSON objects with a `severity` (TD-290).** `halatuju/logging_json.py` writes
+the same four keys as before (`timestamp`, `level`, `logger`, `message`) plus `severity`, and a
+traceback goes to `stack_trace`, never into `message` — so the `applicant_record_reads` metric,
+which regexes `jsonPayload.message`, sees byte-identical audit lines. A failed `auth.users` lookup
+names its caller (TD-294).
+
+**5. A malformed stored genuineness status reads as NO SIGNAL (TD-293)** — the same as a document
+never scored (Probable, the officer looks), never as genuine and never as fake. One tolerant
+reader, `genuineness.bands.stored_status` / `stored_authenticity`; `canonical_status` refuses a
+non-string; `offer_official_status` reads it the same way (review F7). No stored document holds
+such a value today. The two STR-breach readers are the open question: TD-330 (breach, or leave).
+
+**6. The apply form MERGES its one guardian into the stored list (TD-055).** It owns `name` and
+`phone` on the first entry and nothing else; later entries survive, and a blanked form removes only
+what it owns. The first entry's other keys survive only when the form names the SAME person
+(case and spacing ignored) — a new name is a new guardian, never the old one's relationship,
+occupation or income under it (review F4). For every list the form alone can have written, the stored answer
+is identical to the old overwrite.
+
+**7. A list-shaped reader is the same rule asked about many rows (TD-162, TD-231).** The applicant
+list's readiness is one `EXISTS` column built from the same filter `open_student_tasks` uses; the
+gift list's delete blockers are one query built from the same holder table the delete handler
+reads (`_delete_holders`), and the single-gift answer IS the list function asked about one gift.
+Pinned by `LIST_BUDGETS` (constants, as TD-286 still requires).
+
 ## Next-tier batch 3: what an embargoed decline shows, what counts as a Vircle activation, and a held pathway switch — 2026-10-03
 
 **1. During the decline cool-off the student sees the stage she was declined FROM (TD-164).**

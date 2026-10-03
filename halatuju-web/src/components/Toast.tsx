@@ -1,7 +1,8 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { useState, useCallback, useEffect, type ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
+import { ToastContext } from '@/components/ToastContext'
 
 interface ToastState {
   message: string
@@ -9,15 +10,7 @@ interface ToastState {
   id: number
 }
 
-interface ToastContextValue {
-  showToast: (message: string, type: 'success' | 'error') => void
-}
-
-const ToastContext = createContext<ToastContextValue>({ showToast: () => {} })
-
-export function useToast() {
-  return useContext(ToastContext)
-}
+// The context and `useToast` live in `ToastContext.ts` (TD-289) — import the hook from there.
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastState[]>([])

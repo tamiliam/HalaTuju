@@ -4714,6 +4714,8 @@
           "amount": "Jumlah",
           "period": "Tempoh",
           "contribution": "Caruman",
+          "amount_unusable": "Jumlah kelihatan salah baca",
+          "contribution_unusable": "Caruman kelihatan salah baca",
           "balance": "Baki",
           "genuine": "Tulen",
           "wrongType": "Jenis salah",
@@ -4773,6 +4775,10 @@
           "ai": {
             "label": "AI",
             "hint": "Dibaca oleh AI (Gemini) — sila sahkan nilai yang ditangkap."
+          },
+          "mixed": {
+            "label": "Tepat + AI",
+            "hint": "Nama, IC dan baki dibaca terus daripada label penyata; angka caruman dibaca oleh AI (Gemini) — sila sahkan angka tersebut."
           }
         },
         "certValue": {

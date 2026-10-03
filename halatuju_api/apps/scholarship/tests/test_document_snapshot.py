@@ -40,14 +40,15 @@ wrong; that was the stop condition this work was written under.
         the snapshot, but a crash would, and a payload that 500s is not identical to one that
         does not.
 
-⚠ **TWO SHAPES OF GARBAGE CRASH THE ENDPOINT, AND THEY DID BEFORE THIS SPRINT.** Building the
+⚠ **TWO SHAPES OF GARBAGE CRASHED THE ENDPOINT, AND THEY DID BEFORE THIS SPRINT.** Building the
 matrix found that a stored ``vision_fields`` of ``{'authenticity': 'a string'}`` or
-``{'authenticity': {'status': 12345}}`` makes the officer's detail GET raise
-``AttributeError`` — a 500 on an officer's screen from one bad JSON value. It is **not** TD-282's
-doing: the same exception is raised with the snapshot switched off, which
-``TheGarbageThatCrashesTheEndpointCrashedItBefore`` below asserts in both directions rather than
-leaving the discovery in a commit message. Fixing it would turn a 500 into a 200, which is a
-behaviour change and out of this sprint's scope. It is TD-293.
+``{'authenticity': {'status': 12345}}`` made the officer's detail GET raise
+``AttributeError`` — a 500 on an officer's screen from one bad JSON value. It was **not** TD-282's
+doing: the same exception was raised with the snapshot switched off. TD-293 (2026-10-03) fixed it
+with one tolerant reader, ``genuineness.bands.stored_status`` (a malformed value reads as no
+genuineness signal), and both shapes then moved into the ``garbage-vision-fields`` set below, as
+the old test asked — so the ON==OFF matrix now covers them, and
+``TheGarbageThatCrashedTheEndpointNowAnswers`` pins the 200.
 
 ⚠ **IDENTICAL TIMESTAMPS — READ THIS BEFORE CHANGING THE ORDERING.** Every one of these reads
 is ``ORDER BY uploaded_at DESC`` with **no tie-breaker**, so when two documents share a
@@ -184,23 +185,27 @@ def _documents(application, which):
             uploaded_at=stamp)
         return
     if which == 'garbage-vision-fields':
-        # Every shape here is garbage the payload SURVIVES. The two that crash it are in
-        # CRASHING_GARBAGE below, with their own test and their own TD, because a fixture
+        # Every shape here is garbage the payload SURVIVES. The two that crashed it until TD-293 sat
+        # in CRASHING_GARBAGE below, with their own test and their own TD, because a fixture
         # quietly trimmed to what passes is how a defect stops being recorded.
         _add(application, 'ic', fields=['not', 'a', 'dict'], i=0)
         _add(application, 'str', fields='a bare string', i=1)
         _add(application, 'results_slip', fields=42, i=2)
         _add(application, 'epf', fields={'fields': {'nested': {'deep': None}}}, i=3)
         _add(application, 'water_bill', fields={'fields': [], 'authenticity': {}}, i=4)
+        # TD-293 (2026-10-03): the two shapes that used to 500 the endpoint, moved here from the
+        # retired CRASHING_GARBAGE once the readers became tolerant.
+        _add(application, 'ic', fields={'authenticity': 'not a dict'}, i=5)
+        _add(application, 'electricity_bill', fields={'authenticity': {'status': 12345}}, i=6)
         return
     raise AssertionError(f'unknown document set {which!r}')
 
 
-#: ``name -> (vision_fields, doc_type, routes)`` — the stored JSON shapes that make the officer's
-#: detail GET raise, with the snapshot open OR closed. TD-293. Not "known failures to skip": the
-#: test below asserts the two paths raise the SAME exception, which is the identity claim this
-#: file makes everywhere else, applied to a case whose answer happens to be an error.
-CRASHING_GARBAGE = (
+#: ``name -> (vision_fields, doc_type, routes)`` — the stored JSON shapes that USED to make the
+#: officer's detail GET raise, with the snapshot open OR closed (TD-293, fixed 2026-10-03). Kept,
+#: each ALONE on an applicant, so the test below proves the page answers for each shape by itself —
+#: the matrix's set holds them beside other documents, where one could mask the other.
+FORMERLY_CRASHING_GARBAGE = (
     # `(vf.get('authenticity') or {}).get('status', '')` — the idiom guards `vision_fields`
     # against not being a dict and then assumes `authenticity` IS one.
     ('authenticity-is-a-string', {'authenticity': 'not a dict'}, 'ic', ('str', 'salary')),
@@ -403,19 +408,15 @@ class TheSnapshotChangesNoResponseByte(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
-class TheGarbageThatCrashesTheEndpointCrashedItBefore(TestCase):
-    """TD-293 — two stored ``vision_fields`` shapes 500 the officer's detail GET.
+class TheGarbageThatCrashedTheEndpointNowAnswers(TestCase):
+    """TD-293 — two stored ``vision_fields`` shapes used to 500 the officer's detail GET.
 
-    Found while building the ON==OFF matrix. The point of THIS test is narrow and it is the
-    same point the matrix makes everywhere else: **the snapshot did not cause it, and did not
-    change it.** The same exception, of the same type, is raised with the snapshot open and
-    with it closed.
-
-    ⚠ It is NOT a licence to leave the defect. Fixing it turns a 500 into a 200, which is a
-    behaviour change, so it belongs to the sprint that decides what the officer should see for a
-    document whose stored extraction is malformed — not to a performance refactor. When that
-    lands, this test is the thing that has to be rewritten, deliberately, and the matrix above
-    gains the two shapes.
+    Found while building the ON==OFF matrix (TD-282), where this class asserted the two shapes
+    raised the SAME exception with the snapshot open and closed. Rewritten deliberately on
+    2026-10-03 when TD-293 made the readers tolerant, as its own docstring asked: the page now
+    answers 200 for each shape, open and closed, and the matrix's ``garbage-vision-fields`` set
+    carries both shapes. What the officer sees: the malformed genuineness reads as NO SIGNAL —
+    the same as a document never scored (``genuineness.bands.stored_status``).
     """
 
     def _case(self, fields, doc_type, route):
@@ -446,23 +447,16 @@ class TheGarbageThatCrashesTheEndpointCrashedItBefore(TestCase):
             if patcher:
                 patcher.stop()
 
-    def test_the_two_shapes_fail_identically_with_and_without_the_snapshot(self):
-        for name, fields, doc_type, routes in CRASHING_GARBAGE:
+    def test_each_shape_answers_with_and_without_the_snapshot(self):
+        for name, fields, doc_type, routes in FORMERLY_CRASHING_GARBAGE:
             for route in routes:
                 with self.subTest(shape=name, route=route):
                     client, url = self._case(fields, doc_type, route)
-                    off = self._raised(client, url, snapshot=False)
-                    on = self._raised(client, url, snapshot=True)
-                    self.assertIsNotNone(
-                        off,
-                        f'{name}/{route} no longer crashes the endpoint WITHOUT the snapshot. '
-                        f'TD-293 has been fixed — good: move this shape into DOCUMENT_SETS '
-                        f'`garbage-vision-fields` so the ON==OFF matrix covers it, and delete '
-                        f'it from CRASHING_GARBAGE.')
-                    self.assertEqual(
-                        off, on,
-                        f'{name}/{route}: the snapshot CHANGED how this fails. That makes it '
-                        f'TD-282\'s defect and not TD-293\'s.')
+                    self.assertIsNone(self._raised(client, url, snapshot=False),
+                                      f'{name}/{route} 500s the officer page again (TD-293)')
+                    self.assertIsNone(self._raised(client, url, snapshot=True),
+                                      f'{name}/{route} 500s the officer page again (TD-293)')
+                    self.assertEqual(client.get(url).status_code, 200)
 
 
 def _first_difference(a: bytes, b: bytes) -> str:

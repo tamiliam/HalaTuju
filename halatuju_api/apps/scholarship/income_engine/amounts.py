@@ -10,7 +10,8 @@ import re
 
 from .evidence import declared_amount, has_income_support_doc, has_valid_str
 from .identity_checks import _cluster_docs
-from .salary_figures import _SLIP_EPF_HI, _SLIP_EPF_LO, _doc_fields, _epf_monthly_salary, _parse_rm, _salary_monthly_amount
+from .salary_figures import (_SLIP_EPF_HI, _SLIP_EPF_LO, _doc_fields, _epf_monthly_salary, _parse_rm,
+                             _salary_monthly_amount, epf_band_salary)
 
 
 # Foreign (Singapore) salary → MYR for the B40 means-test (owner 2026-07-05). A Malaysian working
@@ -79,7 +80,7 @@ def earner_monthly_income(application, member):
         if amt:
             return _to_myr(amt, f, application), 'salary'   # SGD → MYR when the slip is Singaporean
     for epf in _cluster_docs(application, member, 'epf'):
-        sal = _epf_monthly_salary(_doc_fields(epf))
+        sal = epf_band_salary(_doc_fields(epf))     # TD-323: the floor, for the band figure only
         if sal is not None:
             return sal, 'epf_estimate'
     declared = declared_amount(application, member)

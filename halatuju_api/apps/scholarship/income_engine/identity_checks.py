@@ -53,9 +53,8 @@ def _bc_anchorable(bc) -> bool:
     number. A BC with no genuineness signal yet is *indeterminate* and may still anchor: the chain
     only ever DEMOTES a red to a verified-green (never asserts a mismatch), so leaning on the strong
     number corroboration is safe and the reviewer stays the authority."""
-    from ..genuineness.bands import canonical_status
-    vf = getattr(bc, 'vision_fields', None)
-    raw = (vf.get('authenticity') or {}).get('status', '') if isinstance(vf, dict) else ''
+    from ..genuineness.bands import canonical_status, stored_status
+    raw = stored_status(getattr(bc, 'vision_fields', None))                 # TD-293
     return canonical_status(raw, 'birth_certificate') in ('genuine', '')
 
 

@@ -63,11 +63,30 @@ def query_sla(application, now=None):
     }
 
 
+#: What makes a ResolutionItem a task the student still owes — read by BOTH shapes below.
+_OPEN_STUDENT_TASK = {'source__in': ('officer', 'check2'), 'status': 'open'}
+
+#: The list annotation's name (TD-162). Read by `is_ready_for_assignment` when it is present.
+OPEN_STUDENT_TASKS_ANNOTATION = 'annot_has_open_student_tasks'
+
+
 def open_student_tasks(application):
     """Every still-open task the student owes — the items shown in their Action Centre /
     the Check-2 Outstanding box (officer-raised + Check-2 queries/doc-requests). Broader
     than ``open_clarify_queries`` (which is only the clarify-SLA subset)."""
-    return application.resolution_items.filter(source__in=('officer', 'check2'), status='open')
+    return application.resolution_items.filter(**_OPEN_STUDENT_TASK)
+
+
+def with_open_student_tasks(queryset):
+    """TD-162 (2026-10-03): the applicant LIST asks ``is_ready_for_assignment`` of every row, and
+    each row used to cost its own ``open_student_tasks(...).exists()``. This annotates the same
+    question onto the list's queryset as ONE ``EXISTS`` column, built from the same filter, and
+    ``is_ready_for_assignment`` reads it when it is there. Same answer, one query for the page."""
+    from django.db.models import Exists, OuterRef
+
+    from ..models import ResolutionItem
+    return queryset.annotate(**{OPEN_STUDENT_TASKS_ANNOTATION: Exists(
+        ResolutionItem.objects.filter(application=OuterRef('pk'), **_OPEN_STUDENT_TASK))})
 
 
 def is_ready_for_assignment(application, now=None):
@@ -82,7 +101,10 @@ def is_ready_for_assignment(application, now=None):
     from datetime import timedelta
     if application.profile_completed_at is None:
         return False
-    if not open_student_tasks(application).exists():
+    has_open = getattr(application, OPEN_STUDENT_TASKS_ANNOTATION, None)   # TD-162: the list's
+    if has_open is None:
+        has_open = open_student_tasks(application).exists()
+    if not has_open:
         return True
     now = now or timezone.now()
     return now >= application.profile_completed_at + timedelta(days=query_sla_days(application))

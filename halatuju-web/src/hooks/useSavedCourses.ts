@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { getSavedCourses, saveCourse, unsaveCourse } from '@/lib/api'
-import { useToast } from '@/components/Toast'
+import { useToast } from '@/components/ToastContext'
 import { KEY_RESUME_ACTION, hasGrades } from '@/lib/storage'
 
 /**

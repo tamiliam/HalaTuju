@@ -11,10 +11,12 @@ Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 
 Changed since the move, deliberately and once: `has_valid_str` now also asks WHOSE STR it is
-(TD-285, owner ruling 2026-09-29). Nothing else in this module was touched.
+(TD-285, owner ruling 2026-09-29). Then, on 2026-10-03 (TD-293), its three stored-genuineness
+reads moved onto `genuineness.bands.stored_status`, so a malformed value reads as no signal.
 """
 from __future__ import annotations
 
+from ..genuineness.bands import stored_status
 from ..document_snapshot import has_live_doc, latest_doc
 from ..income_str_ownership import str_check_names_a_stranger
 from .identity_checks import _cluster_docs, _member_ic_doc, student_income_ic_check, student_income_proof_check
@@ -77,8 +79,7 @@ def household_str_status(application):
     if str_doc is None:
         return None, None
     # Genuineness guard: a positively non-genuine STR is breached (mirrors str_not_breached).
-    vf = getattr(str_doc, 'vision_fields', None) or {}
-    auth = (vf.get('authenticity') or {}).get('status', '') if isinstance(vf, dict) else ''
+    auth = stored_status(getattr(str_doc, 'vision_fields', None))           # TD-293
     if auth and auth not in ('genuine', 'likely_genuine'):
         return None, None
     sc = student_str_check(str_doc)
@@ -108,8 +109,7 @@ def str_not_breached(application):
     cs = (sc or {}).get('current_status', '')
     if not cs or cs in ('wrong_type', 'rejected'):     # no read at all, or a failed STR → breached
         return False
-    vf = getattr(str_doc, 'vision_fields', None) or {}
-    auth = (vf.get('authenticity') or {}).get('status', '') if isinstance(vf, dict) else ''
+    auth = stored_status(getattr(str_doc, 'vision_fields', None))           # TD-293
     return not (auth and auth not in ('genuine', 'likely_genuine'))   # a positive non-genuine call → breached
 
 
@@ -135,8 +135,7 @@ def _salary_slip_not_wrongtype(doc) -> bool:
     'genuine', or 'suspect' (informal) → True. So an unscored legacy slip counts unchanged; only a
     slip EXPLICITLY scored not_salary is excluded."""
     from ..genuineness.bands import canonical_status
-    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
-    raw = (vf.get('authenticity') or {}).get('status', '')
+    raw = stored_status(getattr(doc, 'vision_fields', None))                # TD-293
     return not canonical_status(raw, 'salary_slip').startswith('not_')
 
 

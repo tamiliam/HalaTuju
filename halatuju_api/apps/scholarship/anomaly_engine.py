@@ -351,8 +351,8 @@ def _ic_authenticity_status(doc) -> str:
     """The stored genuineness status for an IC doc — '' if the check didn't run."""
     if doc is None or not isinstance(getattr(doc, 'vision_fields', None), dict):
         return ''
-    a = doc.vision_fields.get('authenticity')
-    return a.get('status', '') if isinstance(a, dict) else ''
+    from .genuineness.bands import stored_status
+    return stored_status(doc.vision_fields)                                 # TD-293
 
 
 def _detect_ic_low_confidence(application) -> Optional[Anomaly]:
@@ -392,8 +392,8 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
         doc = latest_doc(application, dt)
         raw = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status
         if needs_attention(raw, dt):         # canonical 'suspect' / 'not_<type>' (folds legacy)
-            vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
-            seen = (vf.get('authenticity') or {}).get('doc_seen', '')
+            from .genuineness.bands import stored_authenticity
+            seen = stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '')
             return Anomaly('document_not_genuine',
                            {'doc': label, 'status': canonical_status(raw, dt), 'seen': seen})
     return None
