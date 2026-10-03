@@ -198,8 +198,10 @@ describe('pagination', () => {
 
     mockApi.listSponsors.mockResolvedValue({ sponsors: many(26) })
     render(<AdminSponsorsList />)
-    await waitFor(() => expect(screen.getAllByText('Sponsor 000').length).toBeGreaterThan(0))
-    expect(screen.getAllByText('admin.pageOf').length).toBeGreaterThan(0)
+    // ⚠ RACE (deploy gate 2026-10-03): the first render's 25 rows are still mounted, so waiting
+    // for 'Sponsor 000' passes at once and the footer assertion raced the SECOND fetch — green on
+    // a fast box, red on the Cloud Build worker. Wait for the footer itself.
+    expect((await screen.findAllByText('admin.pageOf')).length).toBeGreaterThan(0)
   })
 
   it('renders one page of twenty-five and moves to the next', async () => {
