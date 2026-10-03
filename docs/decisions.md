@@ -12931,3 +12931,14 @@ sentence; the historical answered plain rows with no income read title-only on t
 
 **Revisit if:** another clarify's copy quotes a param that is not always set (give it the same
 shape: a variant, or a param that is always filled), or the catalogues gain conditional syntax.
+
+## 2026-10-04 — TD-328: the flat RM200 default stays until the first live template, then goes
+
+**Owner ruling:** *"the flat RM200 can remain until the first template goes live. After that the
+default could be deleted."* So a gift with no agreement template is paid the legacy flat schedule
+only while NO template is active anywhere; the day the first template is deployed on production,
+the default is removed and a gift without its own template is refused at the payment run rather
+than guessed. **Trigger:** the first `contracts.deploy` on production (today: 3 drafts, 0 active).
+**Also 2026-10-04, TD-329:** before the old Google key is deleted, a log-based alert is set on the
+keyless path's failure lines (now carrying severity, TD-290), so a silent failure cannot hide;
+deletion itself still waits for the owner's explicit yes.
