@@ -1,7 +1,7 @@
 """Google Sheets seam for the Vircle relay sheet.
 
 Mirrors ``meeting.py``: the same Workspace **service account with domain-wide delegation**
-(``GOOGLE_MEET_SA_JSON``, impersonating ``MEET_ORGANISER_EMAIL``), the same best-effort
+(built by ``google_dwd.dwd_credentials``, impersonating ``MEET_ORGANISER_EMAIL``), the same best-effort
 contract, the same lazy imports so the module loads without the Google client libraries.
 
 What it writes: one sheet in ``My Drive / <VIRCLE_DRIVE_FOLDER>`` (default "03 Vircle") of the
@@ -29,6 +29,8 @@ import logging
 import re
 
 from django.conf import settings
+
+from apps.scholarship import google_dwd
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ STATUS_PARENT_ACCOUNT = 'Parent must register — student added as a child (born
 def sheets_enabled() -> bool:
     """True only when the Workspace credentials are present. (There is no separate on/off flag:
     if we can reach Drive, we mirror; if we can't, the DB is still the record.)"""
-    return bool(getattr(settings, 'GOOGLE_MEET_SA_JSON', ''))
+    return google_dwd.dwd_available()
 
 
 def _services():
@@ -89,16 +91,12 @@ def _services():
         return None, None
     pinned = bool(getattr(settings, 'VIRCLE_SHEET_ID', ''))
     try:
-        import json
-
-        from google.oauth2 import service_account  # type: ignore
         from googleapiclient.discovery import build  # type: ignore
 
         scopes = [_SHEETS_SCOPE] if pinned else [_SHEETS_SCOPE, _DRIVE_SCOPE]
-        info = json.loads(settings.GOOGLE_MEET_SA_JSON)
-        creds = service_account.Credentials.from_service_account_info(
-            info, scopes=scopes,
-        ).with_subject(settings.MEET_ORGANISER_EMAIL)
+        creds = google_dwd.dwd_credentials(scopes)
+        if creds is None:
+            return None, None
         # cache_discovery=False — no file cache on Cloud Run's read-only FS.
         sheets = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         drive = None if pinned else build('drive', 'v3', credentials=creds, cache_discovery=False)
@@ -274,15 +272,11 @@ def _drive_for_upload():
     if not sheets_enabled():
         return None
     try:
-        import json
-
-        from google.oauth2 import service_account  # type: ignore
         from googleapiclient.discovery import build  # type: ignore
 
-        info = json.loads(settings.GOOGLE_MEET_SA_JSON)
-        creds = service_account.Credentials.from_service_account_info(
-            info, scopes=[_DRIVE_SCOPE],
-        ).with_subject(settings.MEET_ORGANISER_EMAIL)
+        creds = google_dwd.dwd_credentials([_DRIVE_SCOPE])
+        if creds is None:
+            return None
         return build('drive', 'v3', credentials=creds, cache_discovery=False)
     except Exception:
         logger.warning('Payments CSV: could not build Drive service', exc_info=True)
@@ -344,14 +338,10 @@ def _sheet_values_or_none(spreadsheet_id, cell_range):
     if not (sheets_enabled() and spreadsheet_id):
         return None
     try:
-        import json
-
-        from google.oauth2 import service_account  # type: ignore
         from googleapiclient.discovery import build  # type: ignore
-        info = json.loads(settings.GOOGLE_MEET_SA_JSON)
-        creds = service_account.Credentials.from_service_account_info(
-            info, scopes=[_SHEETS_SCOPE],
-        ).with_subject(settings.MEET_ORGANISER_EMAIL)
+        creds = google_dwd.dwd_credentials([_SHEETS_SCOPE])
+        if creds is None:
+            return None
         svc = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         return svc.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=cell_range).execute().get('values', [])

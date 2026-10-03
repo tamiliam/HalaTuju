@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Now sprint 5 part 2 — TD-125: the Google Workspace credentials go keyless - 2026-10-03
+
+BUILT, not committed, pushed or deployed. TD-125 stays OPEN until the lead's live proof and the
+key's deletion; TD-329 raised (the key path's removal). Register open **131 → 132**, defined 326;
+`code_health.py` td_open 132. No migration, no new package (google-auth 2.58.0 in the lock already
+has `iam.Signer` and `service_account.Credentials(signer, …, subject=)`; `requests` is pinned).
+
+- **One home:** new `apps/scholarship/google_dwd.py` — `dwd_credentials(scopes)` and
+  `dwd_available()`. With `GOOGLE_DWD_SERVICE_ACCOUNT` (new setting, default empty) it signs the
+  domain-wide-delegation assertion AS `halatuju-meet` through the IAM Credentials API, authenticated
+  by the api's runtime identity (`google.auth.default()`, called lazily) — no private key. Otherwise
+  the deprecated `GOOGLE_MEET_SA_JSON` key path, kept as a one-env-var rollback. Keyless wins when
+  both are set. It RAISES on a broken configuration; every caller already catches, so best-effort
+  is unchanged and a failed sheet read is still a finding, not an empty sheet (TD-242).
+- **Callers moved, scopes unchanged:** `meeting._calendar_service` (calendar.events),
+  `sheets._services` (spreadsheets, + drive only when no sheet is pinned — the owner's
+  least-privilege rule), `sheets._drive_for_upload` (drive), `sheets._sheet_values_or_none`
+  (spreadsheets). The gates `meeting.meet_enabled` and `sheets.sheets_enabled` read
+  `dwd_available()`. `sync_vircle_sheet`'s failure message names the new setting.
+- **Settings:** `GOOGLE_DWD_SERVICE_ACCOUNT` beside `GOOGLE_MEET_SA_JSON` in
+  `halatuju/settings/base.py`; the key setting is marked deprecated, removal TD-329.
+- **Tests:** `test_google_dwd.py` (16) — which path is chosen, the subject and scopes passed
+  through, a real (unpatched) `service_account.Credentials` built on the keyless shape, a broken
+  runtime identity raising, every caller asking for its exact scopes, every site staying
+  best-effort, and a source guard that no credential build is left outside the helper.
+  `test_spending_import.TestFailedReadIsAFinding` now pins `GOOGLE_DWD_SERVICE_ACCOUNT=''` so it
+  still drives the key path it was written for; its expectations are unchanged.
+- **Ratchet:** four `# type: ignore` lines left with the credential builds, so
+  `counts.type_ignore` budget 15 → 11 (the tightness test's number; baseline untouched).
+- **Production steps** (IAM grant, enable `iamcredentials.googleapis.com`, deploy, set the env
+  var, prove, then — owner-gated — remove the key env var and delete the key) are in
+  halatuju_api/CLAUDE.md, top of "## Next Sprint".
+
 ## Now sprint 5 part 1 — TD-229: the bursary agreement template belongs to a GIFT - 2026-10-03
 
 BUILT, not committed, pushed or deployed. The owner's ruling (2026-09-04): *"the template is PER

@@ -1,5 +1,38 @@
 # Architectural Decisions — HalaTuju
 
+## TD-125: keyless domain-wide delegation through IAM, not a key in Secret Manager — built 2026-10-03
+
+**Decided by:** the lead's brief for Now sprint 5 part 2, 2026-10-03 (TD-125 offered both options
+since 2026-06-18). Built the same day; live proof and key deletion pending.
+
+**1. The api signs as the DWD account; it never holds its key.** The Workspace delegation (Meet,
+Drive, Sheets acting as `MEET_ORGANISER_EMAIL`) needs a JWT assertion signed by the delegated
+service account. Instead of a private key, the api's runtime identity (on Cloud Run,
+`90344691621-compute@…`) holds `roles/iam.serviceAccountTokenCreator` on `halatuju-meet` and asks
+the IAM Credentials API to sign (`google.auth.iam.Signer`, the `signBlob` call), then exchanges the
+assertion as usual (`service_account.Credentials(signer, email, token_uri, scopes=, subject=)` —
+google-auth's documented keyless-DWD pattern). Built in ONE place, `apps/scholarship/google_dwd.py`.
+
+**2. The DWD identity does not change.** The Workspace admin's delegation entry is keyed on
+`halatuju-meet`'s client id (109796704827434849781) with today's scopes, so keeping that account as
+the signer means no Workspace change and no scope re-grant. The runtime SA is NOT given delegation.
+
+**3. Why not Secret Manager.** Moving the key into Secret Manager hides it better but keeps a
+long-lived, exportable credential that unlocks the organiser's Drive, Sheets and Calendar; it still
+has to be rotated, and anyone who can read the secret (or the running container) can copy it.
+Keyless leaves nothing to leak or rotate: the signing right lives in IAM, is revocable in one
+binding, is audited per call, and only works from our own runtime identity. Cost: one IAM call per
+token refresh (hourly per process) and the `iamcredentials.googleapis.com` API enabled — free.
+
+**4. The key path stays until production is proven, then goes (TD-329).** The keyless setting
+(`GOOGLE_DWD_SERVICE_ACCOUNT`) wins when both are set, so the switch and its rollback are each one
+env var. The key is removed — setting, env var, and the key itself in GCP — only after a live proof.
+
+**5. The helper raises; callers stay best-effort.** Each of the four call sites already wraps its
+credential build in `try/except Exception` and returns its own empty answer, so a misconfigured IAM
+binding can never break a booking, an email send or a payment run. The helper does not swallow,
+because `sheets._sheet_values_or_none` must still tell a FAILED read from an empty sheet (TD-242).
+
 ## TD-229: the bursary agreement template belongs to a GIFT — built 2026-10-03 (owner ruling 2026-09-04)
 
 **Decided by:** the owner, 2026-09-04: *"the template is PER GIFT"* (recorded in TD-229). Built by

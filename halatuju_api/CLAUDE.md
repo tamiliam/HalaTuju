@@ -150,6 +150,14 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
   account with it (`AdminInviteView` / `AdminResendView`). Without it, partner onboarding 500s.
 - `GEMINI_API_KEY` — Google Gemini API key for AI report generation (primary)
 - `OPENAI_API_KEY` — OpenAI API key for report generation (fallback when all Gemini models fail)
+- `MEET_ORGANISER_EMAIL` — the Workspace mailbox Meet / Drive / Sheets act as (domain-wide delegation).
+- `GOOGLE_DWD_SERVICE_ACCOUNT` — **(TD-125, 2026-10-03)** the delegated service account's EMAIL
+  (`halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com`). Not a secret. When set, the api
+  signs the delegation assertion as that account through the IAM Credentials API — no key. Needs the
+  runtime SA to hold `roles/iam.serviceAccountTokenCreator` on it and `iamcredentials.googleapis.com`
+  enabled. Wins over the key. Built in ONE place: `apps/scholarship/google_dwd.py`.
+- `GOOGLE_MEET_SA_JSON` — **DEPRECATED 2026-10-03** (secret): the same account's private-key JSON. Kept
+  only as the rollback for the keyless path; removed with the key itself under TD-329.
 - `SPONSOR_MOCK_DONATIONS_ENABLED` — **default OFF — NEVER set in production** (TD-258). Gates the
   MOCK sponsor donation endpoint (`POST /api/v1/sponsor/wallet/donate/`), which mints a confirmed,
   programme-less balance out of nothing. Off → the route answers 404 like a route that is not there.
@@ -1346,6 +1354,43 @@ Sunday 2026-10-05 12:00 MYT)** — later lifted the same day: the owner-approved
 interview-slot DELETE route is now BUILT, not committed or pushed (closes TD-257; register open
 **132**; the TD-219 ledger is EMPTY — see the Now sprint 1 note below). The next four Now sprints (TD-253+207, TD-114+151, TD-069+218, TD-229+125) wait
 for a builder unless the owner says otherwise. The blocks below are the sprints' own notes.
+
+**NOW SPRINT 5 PART 2 (TD-125) IS BUILT, not committed, pushed or deployed (2026-10-03).**
+TD-125 stays OPEN (closes on the live proof + the key's deletion); TD-329 raised (Now — remove the
+key path, the env var and the key). Register open **132**, defined 326. No migration, no new
+package. The Workspace credentials (Meet, Drive, Sheets acting as `MEET_ORGANISER_EMAIL`) have ONE
+home, `apps/scholarship/google_dwd.py` (`dwd_credentials(scopes)`, `dwd_available()`). With
+`GOOGLE_DWD_SERVICE_ACCOUNT` set, the runtime SA signs the delegation assertion AS `halatuju-meet`
+through the IAM Credentials API — no key; otherwise the deprecated `GOOGLE_MEET_SA_JSON` key path.
+**Keyless wins when both are set, and it NEVER falls back to the key on a failure** — so a success
+with the setting present IS the keyless path. Rules: decisions.md 2026-10-03 "TD-125".
+**Production steps, IN THIS ORDER** (always `--account tamiliam@gmail.com --project gen-lang-client-0871147736`):
+(a0) enable the API (free; idempotent):
+`gcloud services enable iamcredentials.googleapis.com --project gen-lang-client-0871147736 --account tamiliam@gmail.com`
+(a) let the runtime SA sign as the DWD account:
+`gcloud iam service-accounts add-iam-policy-binding halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com --member serviceAccount:90344691621-compute@developer.gserviceaccount.com --role roles/iam.serviceAccountTokenCreator --project gen-lang-client-0871147736 --account tamiliam@gmail.com`
+(b) deploy the code. Safe on its own: with `GOOGLE_DWD_SERVICE_ACCOUNT` unset it runs today's key
+path, byte-for-byte the same credentials.
+(c) switch: `gcloud run services update halatuju-api --region asia-southeast1 --project gen-lang-client-0871147736 --account tamiliam@gmail.com --update-env-vars GOOGLE_DWD_SERVICE_ACCOUNT=halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com`
+(⚠ `--update-env-vars`, never `--set-env-vars`; leave `GOOGLE_MEET_SA_JSON` in place — it is the rollback.)
+(d) PROVE it live on the new revision. The positive proof is the relay-sheet job, which the daily
+Scheduler job already runs (07:05 MYT since 2026-09-18 — not every 15 minutes any more) and which
+only REWRITES a generated mirror from the database (it writes nothing to our DB):
+`curl -s -X POST -H "X-Cron-Secret: <CRON_SECRET>" https://halatuju-api-90344691621.asia-southeast1.run.app/api/v1/internal/cron/sync-vircle-sheet/`
+**Success = the response's `output` reads `Relay sheet updated (N rows): https://docs.google.com/spreadsheets/d/…`.**
+Failure = `Relay sheet NOT written`, and the service log carries `Vircle sheet: could not build
+Sheets service` (an IAM problem: `Error calling the IAM signBlob API` — check (a0)/(a)) or `Vircle
+sheet: write failed` (a Google problem: `unauthorized_client` means the DWD identity or scopes, which
+this change did not touch). That proves the Sheets scope; for Drive as well, the read-only door
+`spending-ingest-report` (same curl, that job name) lists the spending folder — but a quiet week
+prints `nothing new to read` either way, so read it beside the log: **no** `Spending: could not
+list` warning on that request = Drive worked. Meet is proven by the next interview booking (no
+safe dry-run exists). Rollback at any point: `--remove-env-vars GOOGLE_DWD_SERVICE_ACCOUNT`.
+(e) ONLY AFTER (d), and both OWNER-GATED (irreversible): `--remove-env-vars GOOGLE_MEET_SA_JSON`;
+then `gcloud iam service-accounts keys list --iam-account halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com --managed-by user --project gen-lang-client-0871147736 --account tamiliam@gmail.com`
+and `gcloud iam service-accounts keys delete <KEY_ID> --iam-account halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com --project gen-lang-client-0871147736 --account tamiliam@gmail.com`
+for each user-managed key. Then TD-125 closes, and TD-329 removes the key path from the code.
+**What the owner must decide:** only step (e) — the yes to remove the env var and delete the key.
 
 **NOW SPRINT 5 PART 1 (TD-229) IS BUILT, not committed, pushed or deployed (2026-10-03).**
 Register open **131** (TD-229 closed; TD-327 raised — Later — and TD-328 — Owner-decision), defined

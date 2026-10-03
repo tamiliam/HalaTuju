@@ -10,8 +10,9 @@ Design rules (so a Google outage or a not-yet-configured Workspace never breaks 
 booking):
   * Every public function is **best-effort** — it returns ``None`` (create) / ``False``
     (update, cancel) and logs, rather than raising, on any failure.
-  * It is fully **inert** until ``settings.INTERVIEW_MEET_ENABLED`` is true AND
-    ``settings.GOOGLE_MEET_SA_JSON`` holds the service-account credentials. So the
+  * It is fully **inert** until ``settings.INTERVIEW_MEET_ENABLED`` is true AND the
+    Workspace delegation is configured (``google_dwd.dwd_available()`` — keyless via
+    ``GOOGLE_DWD_SERVICE_ACCOUNT`` since TD-125, 2026-10-03, or the deprecated key). So the
     scheduling surface can ship and go live before the Workspace account exists.
   * The Google client libraries are imported **lazily** inside the functions, so the
     module imports cleanly even if ``google-api-python-client`` isn't installed, and
@@ -26,6 +27,8 @@ from datetime import timedelta
 
 from django.conf import settings
 
+from apps.scholarship import google_dwd
+
 logger = logging.getLogger(__name__)
 
 # Calendar scope: create/update events (incl. conferenceData for the Meet link).
@@ -36,7 +39,7 @@ def meet_enabled() -> bool:
     """True only when auto-Meet is switched on AND credentials are present."""
     return bool(
         getattr(settings, 'INTERVIEW_MEET_ENABLED', False)
-        and getattr(settings, 'GOOGLE_MEET_SA_JSON', '')
+        and google_dwd.dwd_available()
     )
 
 
@@ -49,15 +52,11 @@ def _calendar_service():
     if not meet_enabled():
         return None
     try:
-        import json
-
-        from google.oauth2 import service_account  # type: ignore
         from googleapiclient.discovery import build  # type: ignore
 
-        info = json.loads(settings.GOOGLE_MEET_SA_JSON)
-        creds = service_account.Credentials.from_service_account_info(
-            info, scopes=_SCOPES,
-        ).with_subject(settings.MEET_ORGANISER_EMAIL)
+        creds = google_dwd.dwd_credentials(_SCOPES)
+        if creds is None:
+            return None
         # cache_discovery=False — no file cache on Cloud Run's read-only FS.
         return build('calendar', 'v3', credentials=creds, cache_discovery=False)
     except Exception:
