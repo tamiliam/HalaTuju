@@ -339,6 +339,11 @@ export default function OrganisationInvitationsPage() {
               else void resendSponsor(row)
             } : undefined}
             onCancel={canManage ? (row: InvitationRow) => { void cancel(row) } : undefined}
+            /* An org_admin cancels only what this page lets them invite (`invitable_roles`) —
+               never an organisation admin's invitation; a sponsor row carries no role. A super
+               cancels any. The server holds the same rule (404). */
+            canCancel={(row: InvitationRow) =>
+              r === 'super' || !row.role || invitable.includes(row.role)}
             empty={emptyWords}
           />
         )}

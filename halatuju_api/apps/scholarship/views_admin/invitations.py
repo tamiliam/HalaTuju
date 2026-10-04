@@ -7,6 +7,7 @@ and every importer are unchanged.
 import logging
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -204,8 +205,9 @@ class AdminInvitationsView(_ReviewersBase):
 class AdminInvitationCancelView(_ReviewersBase):
     """POST admin/invitations/<id>/cancel/ — withdraw an invitation nobody has answered (TD-214).
 
-    ⚠ **A STATUS, NEVER A DELETE.** It sets `revoked_at` through `invitations.revoke`, so the row
-    reads `revoked` for ever and the history of who was asked survives. Only an OPEN invitation
+    ⚠ **A STATUS, NEVER A DELETE.** It sets `revoked_at` (the field `invitations.revoke` sets), so the row
+    reads `revoked` for ever and the history of who was asked survives. (Who cancelled is on the
+    AUDIT line; there is no `revoked_by` column, and adding one is a migration.) Only an OPEN invitation
     (`invitations.is_open`: not accepted, not already withdrawn) can be cancelled; anything else is
     `400 not_open`, and somebody who has arrived is revoked on Organisation → People instead.
 
@@ -237,22 +239,34 @@ class AdminInvitationCancelView(_ReviewersBase):
             qs = qs.filter(organisation_id=org_id)
         inv = qs.first()
         invitable = {r for roles in inv_service.KIND_INVITABLE_ROLES.values() for r in roles}
-        if inv is None or (inv.audience == 'staff' and not admin.is_super
-                           and inv.role not in invitable):
+        account = inv.partner_admin if inv is not None and inv.audience == 'staff' else None
+        # An org_admin acts only on what this page could have sent — judged on the invitation's
+        # role AND the account's role NOW (a never-signed-in invitee a super has since promoted to
+        # org_admin is not theirs to switch off; review fix 2026-10-05).
+        if inv is None or (not admin.is_super and inv.audience == 'staff' and (
+                inv.role not in invitable or (account is not None and account.role not in invitable))):
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
-        account = inv.partner_admin if inv.audience == 'staff' else None
-        if not inv_service.is_open(inv) or (account is not None and account.first_seen_at):
-            return Response({'error': 'not_open', 'code': 'not_open'},
-                            status=status.HTTP_400_BAD_REQUEST)
         if account is not None and account.is_super:
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
+        not_open = Response({'error': 'not_open', 'code': 'not_open'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ CONDITIONAL WRITES, NOT A READ THEN A WRITE (review fix 2026-10-05): an acceptance or a
+        # first sign-in landing between the read above and this block must win. Each UPDATE carries
+        # its own "still open" condition; if either touches no row, nothing is written at all.
+        now = timezone.now()
         with transaction.atomic():
-            inv_service.revoke(inv)
-            if account is not None and account.is_active:
-                account.is_active = False
-                account.save(update_fields=['is_active'])
+            closed = Invitation.objects.filter(
+                pk=inv.pk, accepted_at__isnull=True, revoked_at__isnull=True,
+            ).update(revoked_at=now, updated_at=now)
+            if not closed:
+                return not_open
+            if account is not None and not type(account).objects.filter(
+                    pk=account.pk, first_seen_at__isnull=True).update(is_active=False):
+                transaction.set_rollback(True)
+                return not_open
+        inv.revoked_at = now
         logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s by=%s',
                     inv.id, inv.audience, inv.role or '-', account.id if account else '-',
                     admin.email or '')

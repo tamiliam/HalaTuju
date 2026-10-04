@@ -35,6 +35,14 @@ TD-334 and TD-228 are fence work and TD-214 touches an invitation link → adver
   new `_AdminBase._org_narrowing` (super: any organisation; anybody else: only their own; else 404)
   and the new `lib/orgScope` context fed by the shell. Two `_admitted` query budgets
   (`super-narrowed-2/6-rows` = 7, flat). Sponsors and Sources stay open.
+- **Review fixes (verdict SHIP).** TD-333: a plural "s" still reads its family ("DIPLOMAS",
+  "BACHELORS", "FOUNDATIONS", "DEGREES"); "DIPLOMASI" and "PERSIJILAN" still do not. TD-214: the
+  cancel writes are conditional UPDATEs inside the transaction (an acceptance or first sign-in that
+  lands between the read and the write wins — `not_open`, nothing written); an org_admin is also
+  refused (404) when the invitee's ACCOUNT has since been made an organisation admin; and Cancel is
+  not shown to an org_admin on an organisation-admin row. Raised TD-335 (a cancelled staff address
+  cannot be re-invited until People → Restore) and TD-336 (the Overview pools platform money for an
+  organisation-less super). Register open **90** after both.
 
 ## Later-tier batch 4 — eight items closed, four left open (TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286, TD-246) - 2026-10-04
 

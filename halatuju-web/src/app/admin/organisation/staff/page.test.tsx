@@ -423,6 +423,28 @@ describe('cancelling an invitation sent by mistake (TD-214)', () => {
     await waitFor(() => expect(screen.getByText('admin.invitations.cancelFailed')).toBeTruthy())
   })
 
+  it('⚠ never offers an org_admin Cancel on an organisation-admin invitation; a super gets it', async () => {
+    // Review fix (2026-10-05): the rows an org_admin could not have sent. The server 404s it too.
+    const withOrgAdminRow = async (kind: api.InvitationKind) => {
+      const p = payloadFor(kind)
+      return kind === 'admins'
+        ? { ...p, invitations: [row({ id: 9, name: 'Org Head', role: 'org_admin', status: 'invited',
+                                      accepted_at: null, admin_id: 11 })] }
+        : p
+    }
+    mockApi.getInvitations.mockImplementation(withOrgAdminRow)
+    const { unmount } = render(<OrganisationInvitationsPage />)
+    await waitFor(() => expect(screen.getByText('Org Head')).toBeTruthy())
+    expect(screen.getByText('admin.resend')).toBeTruthy()
+    expect(screen.queryByText('admin.invitations.cancel')).toBeNull()
+    unmount()
+
+    viewerRole = { role: 'super', is_super_admin: true }
+    render(<OrganisationInvitationsPage />)
+    await waitFor(() => expect(screen.getByText('Org Head')).toBeTruthy())
+    expect(screen.getByText('admin.invitations.cancel')).toBeTruthy()
+  })
+
   it('⚠ offers it to nobody who may only look', async () => {
     viewerRole = { role: 'finance' }
     render(<OrganisationInvitationsPage />)

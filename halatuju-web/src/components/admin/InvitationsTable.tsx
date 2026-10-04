@@ -36,7 +36,7 @@ import type { InvitationRow } from '@/lib/admin-api'
  * on a staff table the day one arrives with a blank role — a real value gone missing, reported as
  * nothing at all.
  */
-export default function InvitationsTable({ rows, canAct, busyId, onResend, onCancel,
+export default function InvitationsTable({ rows, canAct, busyId, onResend, onCancel, canCancel,
                                            showRole = true, empty }: {
   rows: InvitationRow[]
   canAct?: boolean
@@ -44,6 +44,9 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
   onResend?: (r: InvitationRow) => void
   /** TD-214: withdraw an unanswered invitation. Offered on the same rows as Resend. */
   onCancel?: (r: InvitationRow) => void
+  /** Which rows THIS viewer may cancel (default: all). An org_admin never gets it on an
+   *  organisation-admin row — one they could not have sent; the server 404s it anyway. */
+  canCancel?: (r: InvitationRow) => boolean
   /** Whether this kind's invitations carry a staff role. False for sponsors and sources. */
   showRole?: boolean
   /** What to say when there is nothing to list. ⚠ **THE EMPTY STATE IS NOW THE USUAL STATE** —
@@ -131,7 +134,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
                         {t('admin.resend')}
                       </button>
                     )}
-                    {canAct && waiting && onCancel && (
+                    {canAct && waiting && onCancel && (canCancel?.(r) ?? true) && (
                       <button disabled={busyId === r.id} onClick={() => onCancel(r)}
                         className="ml-3 text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
                         {t('admin.invitations.cancel')}

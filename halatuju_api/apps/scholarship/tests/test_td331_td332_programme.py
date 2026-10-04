@@ -174,7 +174,12 @@ class LevelIsReadFromTheRightPlaceTest(_Catalogue):
                            ('PROGRAM ASASI SAINS', 'asasi'), ('FOUNDATION IN LAW', 'asasi'),
                            ('PISMP AMBILAN JUN', 'pismp'), ('INSTITUT PENDIDIKAN GURU PERGURUAN', 'pismp'),
                            ('TINGKATAN 6 SAINS', 'stpm'), ('KOLEJ MATRIKULASI PERAK', 'matric'),
-                           ('KAJIAN DIPLOMASI', ''), ('', 'diploma')):
+                           ('KAJIAN DIPLOMASI', ''), ('', 'diploma'),
+                           # review fix (2026-10-05): a plural still reads its family…
+                           ('DIPLOMAS IN BUSINESS', 'diploma'), ('BACHELORS OF SCIENCE', 'degree'),
+                           ('FOUNDATIONS IN LAW', 'asasi'), ('DEGREES IN ARTS', 'degree'),
+                           # …and a level word inside a longer word still does not.
+                           ('PERSIJILAN KEMAHIRAN', '')):
             with self.subTest(text=text):
                 inst = 'POLITEKNIK UNGKU OMAR' if not text else ''
                 self.assertEqual(op.detect_pathway_type(text, inst), want)

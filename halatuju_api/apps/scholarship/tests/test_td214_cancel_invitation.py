@@ -6,6 +6,8 @@ per audience is pinned here: a sponsor invitation no longer closes on registrati
 registrant into its gift; a staff invitation's never-used account is switched off, so the temporary
 password in the letter no longer opens the console.
 """
+from unittest import mock
+
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -122,7 +124,58 @@ class TestCancelAnInvitation(TestCase):
         account.refresh_from_db()
         self.assertTrue(account.is_active)
 
+    def test_an_answer_landing_between_the_read_and_the_write_wins(self):
+        # Review fix (2026-10-05): the writes are conditional. The view READS an open invitation;
+        # before it writes, the invitee signs in (accepted + first seen). Nothing may be written.
+        from django.db.models.query import QuerySet
+        inv, account = self._staff_inv()
+        real_first = QuerySet.first
+
+        def first_then_they_arrive(qs):
+            row = real_first(qs)
+            if isinstance(row, Invitation) and row.pk == inv.pk:
+                Invitation.objects.filter(pk=inv.pk).update(accepted_at=timezone.now())
+                type(account).objects.filter(pk=account.pk).update(first_seen_at=timezone.now())
+            return row
+
+        with mock.patch.object(QuerySet, 'first', first_then_they_arrive):
+            r = self._cancel(self.org_admin, inv)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_open'))
+        inv.refresh_from_db()
+        account.refresh_from_db()
+        self.assertIsNone(inv.revoked_at)
+        self.assertTrue(account.is_active)
+
+    def test_a_first_sign_in_alone_rolls_the_cancel_back(self):
+        # The invitation is still open but the account has arrived: neither write survives.
+        from django.db.models.query import QuerySet
+        inv, account = self._staff_inv()
+        real_first = QuerySet.first
+
+        def first_then_sign_in(qs):
+            row = real_first(qs)
+            if isinstance(row, Invitation) and row.pk == inv.pk:
+                type(account).objects.filter(pk=account.pk).update(first_seen_at=timezone.now())
+            return row
+
+        with mock.patch.object(QuerySet, 'first', first_then_sign_in):
+            r = self._cancel(self.org_admin, inv)
+        self.assertEqual(r.json()['code'], 'not_open')
+        inv.refresh_from_db()
+        account.refresh_from_db()
+        self.assertIsNone(inv.revoked_at)
+        self.assertTrue(account.is_active)
+
     # ── the fence and the role gate ────────────────────────────────────────────
+    def test_an_org_admin_cannot_cancel_an_invitee_since_promoted_to_org_admin(self):
+        # Review fix (2026-10-05): invited as a reviewer, promoted by a super before signing in.
+        inv, account = self._staff_inv(role='reviewer')
+        type(account).objects.filter(pk=account.pk).update(role='org_admin')
+        self.assertEqual(self._cancel(self.org_admin, inv).status_code, 404)
+        account.refresh_from_db()
+        self.assertTrue(account.is_active)
+        self.assertEqual(self._cancel(self.super, inv).status_code, 200)   # a super still may
+
     def test_another_organisations_invitation_is_404_never_403(self):
         inv = self._sponsor_inv()
         r = self._cancel(self.foreign_admin, inv)
