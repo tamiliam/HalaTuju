@@ -3028,6 +3028,10 @@
     "pageNotFound": "Page Not Found",
     "pageNotFoundDesc": "The page you are looking for does not exist or has been moved.",
     "backToHome": "Back to Home",
+    "backToConsole": "Back to the console",
+    "backToPortal": "Back to the sponsor portal",
+    "recordNotFound": "We could not find that.",
+    "recordNotFoundDesc": "Check the address, or go back to the list you came from.",
     "authFailed": "Authentication failed. Please try again.",
     "authOriginMismatch": "This sign-in began at a different web address from the one you have come back to ({host}), and the security key it created is stored only at the address it started from. Please sign in again, staying on the same address the whole way through.",
     "noAdminAccess": "This account does not have admin access.",
@@ -3288,7 +3292,6 @@
       },
       "detail": {
         "back": "All reviewers",
-        "loadFailed": "This reviewer could not be loaded.",
         "joined": "Joined {date}",
         "noHistory": "No cases have been assigned to this reviewer yet.",
         "outcomes": "Outcomes",
@@ -3538,7 +3541,6 @@
         "dormant": "{date}"
       },
       "detail": {
-        "loadFailed": "Could not load this sponsor.",
         "trusted": "Trusted",
         "registeredOn": "Registered {date}",
         "vettedBy": "Vetted by {who}, {date}",
@@ -6212,14 +6214,14 @@
       },
       "resent": "Invitation sent again.",
       "resendFailed": "We could not send it. The row below shows what happened.",
-      "waitingHeading": "Waiting to reply",
-      "allAccepted": "Nobody is waiting — everyone invited has accepted.",
-      "seePeople": "See who is in",
-      "seeSponsors": "See the benefactors",
       "cancel": "Cancel invitation",
       "cancelConfirm": "Cancel the invitation to {email}? Its link will stop working. If it gave them an account they never used, that account is switched off too.",
       "cancelled": "Invitation cancelled.",
-      "cancelFailed": "We could not cancel it. Reload the page and try again."
+      "cancelFailed": "We could not cancel it. Reload the page and try again.",
+      "waitingHeading": "Waiting to reply",
+      "allAccepted": "Nobody is waiting — everyone invited has accepted.",
+      "seePeople": "See who is in",
+      "seeSponsors": "See the benefactors"
     },
     "soon": "Soon",
     "programmes": {

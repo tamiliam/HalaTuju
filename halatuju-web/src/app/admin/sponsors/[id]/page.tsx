@@ -7,6 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
+import RecordState from '@/components/admin/RecordState'
 import { effectiveRole } from '@/lib/navigation'
 import {
   canRecordCredit, canSetMembership, creditActions, creditableProgrammes, creditChain,
@@ -91,7 +92,8 @@ export default function AdminSponsorDetailPage() {
   const viewerRole = effectiveRole(role)
 
   const [detail, setDetail] = useState<AdminSponsorDetail | null>(null)
-  const [error, setError] = useState('')
+  // A BOOLEAN, not a message — `RecordState` owns the wording (see reviewers/[id]).
+  const [loadFailed, setLoadFailed] = useState(false)
   // One busy flag and one error line for the whole credits block: only one action can be in
   // flight at a time, and a second Sign fired mid-request would race the reload.
   const [busy, setBusy] = useState(false)
@@ -111,7 +113,7 @@ export default function AdminSponsorDetailPage() {
     if (!token || !id) return Promise.resolve()
     return getSponsorDetail(id, { token })
       .then(setDetail)
-      .catch(() => setError(t('admin.sponsors.detail.loadFailed')))
+      .catch(() => setLoadFailed(true))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
@@ -147,8 +149,7 @@ export default function AdminSponsorDetailPage() {
   const pagedStudents = usePagedRows(detail?.sponsorships ?? [])
   const pagedReferrals = usePagedRows(detail?.referrals ?? [])
 
-  if (error) return <div className="text-critical-600">{error}</div>
-  if (!detail) return <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
+  if (!detail) return <RecordState loading={!loadFailed} />
 
   const pending = pendingTotal(detail.credits)
   const creditable = creditableProgrammes(detail)

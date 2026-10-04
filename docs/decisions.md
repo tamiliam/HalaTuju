@@ -13003,3 +13003,35 @@ prefix `/api/v1/admin/` and `/api/v1/sponsor/`. Anonymous sessions pass the midd
 
 **Nothing changes in code or tests** — the docs were the stale third of the three; code and tests
 already agreed.
+
+## 2026-10-05 — Request #25: the console gets its own 404, and it costs the 404 STATUS on `/admin/*`
+
+**The decision.** `app/admin/[...notFound]/page.tsx` catches every `/admin/…` address no real
+route claimed and throws `notFound()`, so `app/admin/not-found.tsx` answers — inside the admin
+layout, with the menu still there and a way back derived from the route registry
+(`adminLanding(role)`). Before this, a mistyped console address reached the ROOT 404, whose button
+goes to `/`: a signed-in officer was pushed out to the public site although their session had
+never ended (press Back twice and they were still signed in).
+
+**What it costs, and why it was taken anyway.** In **Next 14.2 only the ROOT `not-found.tsx` sets
+the response status**; a nested boundary renders the right page and leaves the status at **200**.
+So `/admin/<nonsense>` now answers 200 where it answered 404. This was MEASURED, not assumed: two
+throwaway probe routes (one under a server-only layout chain, one under a `'use client'` layout)
+were built and served with `next start`, and **both answered 200**, while `/nonsense` — which
+reaches the root boundary — answered 404. It is the router, not the `'use client'` on
+`app/admin/layout.tsx` and not the catch-all. The trade: the addresses that lost the status are
+all behind the admin auth gate and are not indexed, and what was gained is the person who mistyped
+one no longer being ejected from the console. ⚠ **Re-test on a Next upgrade** — if a later version
+sets the status on a nested boundary, nothing else has to change and the 200 simply goes away.
+The same pair exists for the sponsor portal (`app/sponsor/not-found.tsx`), where the landing is a
+literal `/sponsor` **by decision**: that portal has exactly one entrance and no role to derive
+from, which is the opposite of the console (see 2026-09-08).
+
+**And the wording is a fence rule, not a style preference.** `components/admin/RecordState.tsx`
+says "We could not find that." and must keep saying something equally neutral, because the admin
+organisation fence answers **404, never 403**, for a record belonging to another organisation:
+"this record does not exist" is FALSE for such a record, and "you do not have access" LEAKS that it
+exists. Both are the obvious improvement to make and both undo the fence, so the three locales are
+checked for them by `components/admin/__tests__/RecordState.test.tsx`. Two per-screen sentences
+that named the wrong cause — `admin.reviewers.detail.loadFailed` and
+`admin.sponsors.detail.loadFailed` — were deleted rather than left as copy nothing renders.

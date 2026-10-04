@@ -3028,6 +3028,10 @@
     "pageNotFound": "Halaman Tidak Dijumpai",
     "pageNotFoundDesc": "Halaman yang anda cari tidak wujud atau telah dipindahkan.",
     "backToHome": "Kembali ke Laman Utama",
+    "backToConsole": "Kembali ke konsol",
+    "backToPortal": "Kembali ke portal penaja",
+    "recordNotFound": "Kami tidak dapat menemuinya.",
+    "recordNotFoundDesc": "Sila periksa alamat itu, atau kembali ke senarai yang anda datang daripadanya.",
     "authFailed": "Pengesahan gagal. Sila cuba lagi.",
     "authOriginMismatch": "Log masuk ini bermula di alamat web yang berbeza daripada alamat yang anda kembali ini ({host}), dan kunci keselamatan yang dijananya hanya tersimpan di alamat asal tersebut. Sila log masuk semula dan kekal pada alamat yang sama sepanjang proses.",
     "noAdminAccess": "Akaun ini tiada akses pentadbir.",
@@ -3288,7 +3292,6 @@
       },
       "detail": {
         "back": "Semua penilai",
-        "loadFailed": "Penilai ini tidak dapat dimuatkan.",
         "joined": "Menyertai {date}",
         "noHistory": "Belum ada kes ditugaskan kepada penilai ini.",
         "outcomes": "Keputusan",
@@ -3538,7 +3541,6 @@
         "dormant": "{date}"
       },
       "detail": {
-        "loadFailed": "Tidak dapat memuatkan penaja ini.",
         "trusted": "Dipercayai",
         "registeredOn": "Berdaftar {date}",
         "vettedBy": "Disemak oleh {who}, {date}",
@@ -6212,14 +6214,14 @@
       },
       "resent": "Jemputan dihantar semula.",
       "resendFailed": "Kami tidak dapat menghantarnya. Baris di bawah menunjukkan apa yang berlaku.",
-      "waitingHeading": "Menunggu jawapan",
-      "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
-      "seePeople": "Lihat siapa yang ada",
-      "seeSponsors": "Lihat penderma",
       "cancel": "Batalkan jemputan",
       "cancelConfirm": "Batalkan jemputan kepada {email}? Pautannya tidak akan berfungsi lagi. Jika ia memberi mereka akaun yang belum pernah digunakan, akaun itu juga dimatikan.",
       "cancelled": "Jemputan dibatalkan.",
-      "cancelFailed": "Kami tidak dapat membatalkannya. Muat semula halaman dan cuba lagi."
+      "cancelFailed": "Kami tidak dapat membatalkannya. Muat semula halaman dan cuba lagi.",
+      "waitingHeading": "Menunggu jawapan",
+      "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
+      "seePeople": "Lihat siapa yang ada",
+      "seeSponsors": "Lihat penderma"
     },
     "soon": "Akan datang",
     "programmes": {

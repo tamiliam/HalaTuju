@@ -32,7 +32,18 @@ export async function adminFetch<T>(path: string, options?: ApiOptions): Promise
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Admin API error: ${res.status}`)
+    // ⚠ THE STATUS TRAVELS, SAME SHAPE AS `adminMutate` BELOW. It did not until 2026-10-05, and
+    // the read path is where it matters most: every detail screen loads by GET, so a 404 (a
+    // record that is gone, or one the organisation fence refuses to admit exists) arrived at the
+    // caller indistinguishable from a dropped connection. One `Error`, no status, no code — so a
+    // screen could only ever say "something failed". Deliberately NOT carrying `body`: that is
+    // `adminMutate`'s, for refusal codes that ship a detail with them (`too_early` → `earliest`);
+    // a GET has no such payload, and a second shape is how two helpers start to disagree.
+    const err = new Error(body.error || `Admin API error: ${res.status}`) as Error
+      & { status?: number; code?: string }
+    err.status = res.status
+    err.code = body.code || body.error || ''
+    throw err
   }
 
   return res.json()

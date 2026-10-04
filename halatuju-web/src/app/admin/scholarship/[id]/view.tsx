@@ -23,6 +23,7 @@ import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
+import RecordState from '@/components/admin/RecordState'
 import { formatNric } from '@/lib/scholarship'
 import { isValidPhone } from '@/lib/scholarship'
 import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
@@ -785,8 +786,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     } catch { setError(t('admin.scholarship.visionError')) } finally { setBusy('') }
   }
 
-  if (error && !app) return <div className="text-critical-600 mt-8">{error}</div>
-  if (!app) return <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
+  if (!app) return <RecordState loading={!error} />
 
   // Field-level "verified" ticks — a small badge beside a value that MATCHES an uploaded,
   // machine-read document (see lib/fieldVerification). vtip() → the hover tooltip naming the source

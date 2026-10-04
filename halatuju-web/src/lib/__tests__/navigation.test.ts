@@ -348,9 +348,33 @@ describe('the registry and the app router agree', () => {
     return out
   }
 
-  const dirs = routeDirs()
+  /**
+   * ⚠ **THE CATCH-ALL IS NOT A ROUTE ANYBODY GOES TO — IT IS THE 404 SINK** (request #25,
+   * 2026-10-05). `app/admin/[...notFound]/page.tsx` matches every `/admin/…` address no real
+   * route claimed and does one thing: `notFound()`, so the console's own 404 answers instead of
+   * the public site's. Neither of the two tests below can read it honestly — it has no registry
+   * row (nothing navigates to it) and no non-dynamic ancestor to hang off (its FIRST segment is
+   * the catch-all, so the "nearest section" of a detail page resolves to `/admin/` and nothing
+   * matches that). It is excluded by a RULE — a `[...x]` segment — not by its name, and the
+   * exclusion is paid for by `the console keeps exactly one 404 sink` below, which fails if it is
+   * deleted, renamed, moved, or joined by a second one.
+   */
+  const isCatchAll = (seg: string) => seg.split('/').some((s) => s.startsWith('[...'))
+  const dirs = routeDirs().filter((seg) => !isCatchAll(seg))
   /** A route with a `[param]` segment anywhere in it. */
   const isDynamic = (seg: string) => seg.split('/').some((s) => s.startsWith('['))
+
+  it('the console keeps exactly one 404 sink, and it is the top-level catch-all', () => {
+    const catchAlls = routeDirs().filter(isCatchAll)
+    expect(catchAlls).toEqual(['[...notFound]'])
+    // Throwing is the whole job. A catch-all that RENDERS something would be a page at every
+    // unmatched address rather than a 404, and the status would be 200.
+    const src = fs.readFileSync(path.join(ADMIN_DIR, '[...notFound]', 'page.tsx'), 'utf8')
+    expect(src).toContain('notFound()')
+    // …and the boundary it throws to has to exist, or Next falls back to the ROOT 404, whose way
+    // out is the public site — the defect this pair was built to fix.
+    expect(fs.existsSync(path.join(ADMIN_DIR, 'not-found.tsx'))).toBe(true)
+  })
 
   it('found the router (parse sanity — not a no-op)', () => {
     expect(dirs.length).toBeGreaterThanOrEqual(14)

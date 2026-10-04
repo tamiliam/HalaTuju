@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { formatNricDisplay } from '@/lib/scholarship'
+import RecordState from '@/components/admin/RecordState'
 
 export default function AdminStudentDetail() {
   const { id } = useParams<{ id: string }>()
@@ -26,16 +27,18 @@ export default function AdminStudentDetail() {
     if (!token || !id) return
     getPartnerStudent(id, { token })
       .then(setData)
-      .catch(() => setError(t('apiErrors.studentNotFound')))
+      // ⚠ NOT `apiErrors.studentNotFound` any more. A failed GET is ALSO a dropped connection and
+      // a cross-org record the fence refuses to admit exists; claiming "Student not found" told
+      // the officer something we do not know. The load path now draws `RecordState`, which owns
+      // the neutral wording; this string is what a DELETE failure says.
+      .catch(() => setError(t('errors.somethingWentWrong')))
   }, [token, id])
 
-  if (error) {
-    return <div className="text-critical-600 mt-8">{error}</div>
-  }
-
-  if (!data) {
-    return <div className="mt-8 text-center text-ground-500">{t('common.loading')}</div>
-  }
+  // ⚠ ORDER MATTERS, AND IT IS THE OPPOSITE WAY ROUND FROM THE OBVIOUS ONE. `!data` is asked
+  // FIRST so a load failure reaches the shared not-found state; `error` with `data` present is a
+  // failed delete, which keeps the line it always had.
+  if (!data) return <RecordState loading={!error} />
+  if (error) return <div className="text-critical-600 mt-8">{error}</div>
 
   const handleDelete = async () => {
     if (deleteConfirm !== 'delete') return

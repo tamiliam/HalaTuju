@@ -10,6 +10,7 @@ import {
   getReviewerDetail, setReviewerPaused, setReviewerProgramme, type AdminReviewerDetail,
 } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import RecordState from '@/components/admin/RecordState'
 import {
   credentialLines, displayPhone, hasNoHistory, orderedLanguages, outcomeSegments, phoneState,
   turnaroundBand, type OutcomeKey,
@@ -93,7 +94,10 @@ export default function AdminReviewerDetailPage() {
   const mayView = canAccess('/admin/organisation/reviewers', effectiveRole(role))
 
   const [detail, setDetail] = useState<AdminReviewerDetail | null>(null)
-  const [error, setError] = useState('')
+  // A BOOLEAN, not a message. The load's only reader is `RecordState`, which owns the wording
+  // (and must: a 404 here is also a reviewer belonging to another organisation). A string kept
+  // here would be copy nothing renders.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [pauseError, setPauseError] = useState('')
   const [giftError, setGiftError] = useState('')
@@ -109,15 +113,14 @@ export default function AdminReviewerDetailPage() {
     if (!token || !id) return
     getReviewerDetail(id, { token })
       .then(setDetail)
-      .catch(() => setError(t('admin.reviewers.detail.loadFailed')))
+      .catch(() => setLoadFailed(true))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
   useEffect(() => { load() }, [load])
 
   if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
-  if (error) return <div className="text-critical-600">{error}</div>
-  if (!detail) return <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
+  if (!detail) return <RecordState loading={!loadFailed} />
 
   const band = turnaroundBand(detail.turnaround_days)
   const segments = outcomeSegments(detail)

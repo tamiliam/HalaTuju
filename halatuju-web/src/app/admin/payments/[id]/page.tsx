@@ -16,6 +16,7 @@ import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
+import RecordState from '@/components/admin/RecordState'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import {
@@ -95,7 +96,11 @@ export default function PaymentRunDetailPage() {
   usePinProgramme(run?.programme)
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
-  if (!run) return <p className="text-ground-400">{t('common.loading')}</p>
+  // ⚠ `loading={!error}` — THIS is the line the sprint exists for. It used to read `if (!run)
+  // return <Loading/>`, and `load()`'s `.catch(() => setError(…))` sets a message that is only
+  // rendered FURTHER DOWN the page, past this return. A run that is gone (or belongs to another
+  // organisation, which the fence answers 404 for) span on "Loading…" for ever.
+  if (!run) return <RecordState loading={!error} />
 
   const isCompleted = run.status === 'completed'
   // One pure decision for the whole conditional chain (lib/paymentStatus.signOffView), so the

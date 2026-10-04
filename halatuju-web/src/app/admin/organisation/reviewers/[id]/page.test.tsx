@@ -211,13 +211,18 @@ describe('the role gate and failure', () => {
     expect(screen.queryByText('Kavitha Raman')).toBeNull()
   })
 
-  it('shows an error rather than a half-empty record when the fetch fails', async () => {
-    mockApi.getReviewerDetail.mockRejectedValue(new Error('boom'))
-    render(<AdminReviewerDetailPage />)
-    await waitFor(() =>
-      expect(screen.getByText('admin.reviewers.detail.loadFailed')).toBeTruthy())
-    expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
-  })
+  it('shows the shared not-found state rather than a half-empty record when the fetch fails',
+     async () => {
+       // ⚠ The wording moved to `components/admin/RecordState` on 2026-10-05 and
+       // `admin.reviewers.detail.loadFailed` was deleted with it: this screen's own sentence
+       // named a cause the rejection does not carry — the identical 404 is a reviewer belonging
+       // to another organisation, which the fence refuses to admit exists. What this test has
+       // always been about is unchanged: not a half-drawn record.
+       mockApi.getReviewerDetail.mockRejectedValue(new Error('boom'))
+       render(<AdminReviewerDetailPage />)
+       await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
+       expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
+     })
 
   it('links back to the list it came from', async () => {
     await loaded()

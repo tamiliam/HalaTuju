@@ -44,6 +44,50 @@ TD-334 and TD-228 are fence work and TD-214 touches an invitation link → adver
   cannot be re-invited until People → Restore) and TD-336 (the Overview pools platform money for an
   organisation-less super). Register open **90** after both.
 
+## Request #25 — a record that is gone no longer spins, and the console has its own 404 - 2026-10-05
+
+Built locally, NOT deployed. WEB ONLY — no api change, no migration, no new package, no paid call.
+Lane: sprint (analysis #61, approved). jest **3328 → 3372** (+44), 218 suites, 0 failures.
+`next build` green; first-load-JS budget ok (median **227.776 kB** against 229, 88 routes).
+
+- **The spinner, which is what was actually broken.** `/admin/payments/[id]` for a run that is gone
+  answered 200, mounted, failed its GET, called `setError(…)` — and an EARLIER
+  `if (!run) return <Loading/>` fired, so the message was set and the only place it is drawn sat
+  further down the page. The screen span on "Loading…" for ever. ⚠ The other four screens named in
+  the brief were **already guarding `error` before `!data`** and did NOT spin (verified at HEAD
+  9c0fe4a3): `scholarship/[id]/view.tsx:788`, `sponsors/[id]:150`, `students/[id]:32`,
+  `organisation/reviewers/[id]:119`. What was wrong with those four was the WORDING and that each
+  said it differently.
+- **One shared state, one line per call site.** `components/admin/RecordState.tsx` renders "still
+  loading" or "we could not find that" from `loading`, passed in. All five screens now read
+  `if (!x) return <RecordState loading={!error} />`. The design was forced by two budgets:
+  `scholarship/[id]/view.tsx` is in the `oversize_files` ledger at 1338 with a 20-line allowance
+  and **stayed at 1354** (4 to spare), and `sponsors/[id]/page.tsx` went **597 → 598** against the
+  600 ceiling it is not yet listed under. No ledger gained a member and no number was raised.
+- **The wording is a fence rule.** The admin org fence answers 404, never 403, for another
+  organisation's record, so the copy is neutral: "We could not find that." — never "does not
+  exist" (false for a cross-org record) and never "you do not have access" (leaks that it exists).
+  `RecordState.test.tsx` checks all three locales for both. `admin.reviewers.detail.loadFailed`
+  and `admin.sponsors.detail.loadFailed` named the wrong cause and are **deleted** (5402 → 5400
+  keys); those two pages now hold a `loadFailed` boolean instead of copy nothing renders.
+- **The console's own 404** — `app/admin/not-found.tsx`, inside `app/admin/layout.tsx` so it can
+  read `useAdminAuth()`, with its way back **derived** from the registry (`adminLanding(role)`),
+  never a literal. Plus `app/admin/[...notFound]/page.tsx`, the sink that turns a mistyped console
+  address into a throw it can answer, and `app/sponsor/not-found.tsx` (literal `/sponsor` — one
+  landing, no role to derive). The route table was read after the build: all 38 real admin routes
+  intact, nothing shadowed.
+- **⚠ IT COSTS THE 404 STATUS ON `/admin/*`.** Next 14.2 sets the status only on the ROOT
+  `not-found`; a nested boundary renders the right page at **200**. Measured with two throwaway
+  probe routes (server and client layout chains) — both 200, while `/nonsense` stayed 404 — so it
+  is the router, not this code. Trade taken deliberately, written up in docs/decisions.md
+  2026-10-05, to re-test on a Next upgrade.
+- **The read path now carries the HTTP status.** `adminMutate` has always attached `status` and
+  `code`; `adminFetch` threw a bare `Error`, so on the GET every one of these screens loads by, a
+  404 was indistinguishable from a dropped connection. Same shape as the write path, minus `body`
+  (a GET carries no refusal detail).
+- **Malay and Tamil are honest first drafts, NOT reviewed** — 4 new `errors.*` keys each. Tamil
+  follows the style guide's sandhi rules (dative + த, accusative + ச, verbal participle + ச).
+
 ## Later-tier batch 4 — eight items closed, four left open (TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286, TD-246) - 2026-10-04
 
 Built locally, NOT deployed. Register open **98 → 92** (`code_health.py` td_open 92; eight closed,

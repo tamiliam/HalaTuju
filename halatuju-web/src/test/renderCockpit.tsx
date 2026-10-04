@@ -123,6 +123,14 @@ export interface CockpitOptions extends CockpitAuth {
   /** Mount inside this — e.g. a `ProgrammeScopeProvider`, to see what the page tells the
    *  breadcrumb (2026-09-28). Absent, the page mounts bare, exactly as before. */
   wrapper?: JSXElementConstructor<{ children: ReactNode }>
+  /**
+   * Make the detail GET REJECT with a 404, the way a deleted application and one belonging to
+   * ANOTHER organisation both arrive (the org fence answers 404, never 403). Added 2026-10-05
+   * for request #25: the cockpit's unhappy path could not be mounted at all before, because
+   * `primeCockpitApi` is called INSIDE this function and a test had no window to reject in.
+   * Everything else is primed as usual, so the failure under test is the one being asked for.
+   */
+  loadFails?: boolean
 }
 
 export interface MountedCockpit extends RenderResult {
@@ -148,6 +156,12 @@ export function renderCockpit(options: CockpitOptions): MountedCockpit {
     ?? buildApplicationDetail(options.stage ?? 'interviewing', options.build ?? {})
   authModule.__cockpitAuth = authFor(options)
   primeCockpitApi(app)
+  if (options.loadFails) {
+    const gone = new Error('Not found') as Error & { status?: number; code?: string }
+    gone.status = 404
+    gone.code = 'not_found'
+    api.getScholarshipApplication.mockRejectedValue(gone)
+  }
   const result = render(<AdminScholarshipDetailView />,
                         options.wrapper ? { wrapper: options.wrapper } : undefined)
   return Object.assign(result, { app, api })
