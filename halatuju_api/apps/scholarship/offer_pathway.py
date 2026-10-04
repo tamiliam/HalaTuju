@@ -260,6 +260,29 @@ def _refers_to_campus(name: str, acronym: str, hint: str) -> bool:
     return bool(acr and acr in hint_tokens)
 
 
+def _names_another_institution(campus_name: str, campus_acronym: str, hint: str) -> str:
+    """TD-145: how ``hint`` EXACTLY names ONE catalogue ``Institution`` that is not this campus —
+    'name' (bracket-stripped name equal), 'acronym' (a WHOLE token: 'um' never 'umk') or ''. Shared
+    WORDS prove nothing (UKM's are all generic; "…, BANGI, SELANGOR" once hit "KM Selangor"), so
+    there is no token tier. 0/2+ hits, or this campus under another row (same name or acronym) → ''."""
+    from django.db.models import Q
+    from apps.courses.models import Institution
+    hn, ht = _norm_inst_name(hint), distinctive_tokens(hint)
+    q = Q(institution_name__istartswith=hn) if hn else Q()   # filtered — never a whole-table scan
+    for t in ht:
+        q |= Q(acronym__iexact=t)
+    hits = {}
+    for n, a in (Institution.objects.filter(q).values_list('institution_name', 'acronym') if q else ()):
+        nn, a = _norm_inst_name(n), (a or '').strip().lower()
+        if nn == hn or (a and a in ht):
+            hits[nn] = (a, 'name' if nn == hn else 'acronym')
+    if len(hits) != 1:
+        return ''
+    ((name, (acr, how)),) = hits.items()
+    same = name == _norm_inst_name(campus_name) or (acr and acr == (campus_acronym or '').strip().lower())
+    return '' if same else how
+
+
 def institution_agreement(course_id: str, recorded: str, offer_institution: str) -> str:
     """Do the RECORDED institution and the OFFER LETTER's refer to the same place?
     ``'match'`` / ``'clash'`` / ``'unknown'`` — judged through the CATALOGUE, not by string overlap.
@@ -274,12 +297,11 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str)
 
     The rules, in order:
 
-    1. **One campus → ``'match'``, without comparing anything** (the owner's rule, and the reason
-       this is a fix rather than a better heuristic): if the catalogue offers that course at exactly
-       one institution, there is nowhere else the student could be going, so an institution clash is
-       not *unlikely* — it is impossible. Any difference in the two strings is a naming variant by
-       definition. A string heuristic would have to keep growing to cover "UTHM Pagoh", "Kampus
-       Pagoh, UTHM", English/Malay forms, campus codes; this needs none of them.
+    1. **One campus → compare the letter with THAT campus** (TD-145, owner 2026-10-04; #48 matched
+       without comparing, so a genuine offer from a DIFFERENT university read green). Names the
+       campus (``_refers_to_campus``: tokens, name, ACRONYM — "UTHM - KAMPUS (CAWANGAN PAGOH)" is
+       UTHM) → ``'match'``; EXACTLY names one other catalogue institution → ``'clash'``; anything we
+       cannot place → ``'unknown'``, never a clash, so a variant cannot re-open the #48 false alarm.
     2. **No campuses on file → ``'unknown'``.** A catalogue gap (#132/#136) is not evidence of
        disagreement.
     3. **Multi-campus → resolve BOTH sides to a catalogue campus** and agree iff they land on the
@@ -292,10 +314,13 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str)
     if not rows:
         return 'unknown'                     # catalogue gap — can't judge
     if len(rows) == 1:
-        # ⏸ TD-145 (2026-10-03, HELD for the owner): a GENUINE offer from a different university
-        # also lands here and reads 'match'. The switch would be `'clash' if
-        # offer_contradicts_course_institution(...)` — it reverses this rule, so it waits on a ruling.
-        return 'match'                       # nowhere else to go
+        name, acronym = rows[0]
+        other = _names_another_institution(name, acronym, offer_institution)
+        if _refers_to_campus(name, acronym, offer_institution):
+            # …unless the letter IS another row's exact name: "Universiti Teknologi MARA" contains
+            # UTM's words but is not UTM. Pagoh stays a match (no row is named "uthm - kampus").
+            return 'clash' if other == 'name' else 'match'
+        return 'clash' if other else 'unknown'
     if not (recorded or '').strip():
         return 'unknown'                     # nothing recorded to compare the letter against
     def _which(hint):
@@ -448,31 +473,8 @@ def preu_course_id(pathway: str, track: str) -> str:
     return PREU_COURSE_SLUG.get(((pathway or '').strip().lower(), (track or '').strip().lower()), '')
 
 
-_SCHOOL_POSTCODE = re.compile(r'\b\d{5}\b')
-_SCHOOL_ACRONYM_EXPAND = {
-    'SMK': 'Sekolah Menengah Kebangsaan',
-    'SMJK': 'Sekolah Menengah Jenis Kebangsaan',
-    'SMKA': 'Sekolah Menengah Kebangsaan Agama',
-    'KTE': 'Kolej Tingkatan Enam',
-    'SM': 'Sekolah Menengah',
-}
-
-
-def clean_school_name(*candidates: str) -> str:
-    """Casing-only standardisation of a recorded STPM school name — NO catalogue lookup, so the
-    school IDENTITY never changes (avoids the SMK↔SMJK / "Tun Hussein Onn" vs "Bandar Tun Hussein
-    Onn 2" mis-match that catalogue-matching a 250-school bidang would cause). Of the given
-    recorded values it picks the address-free (no postcode) and fullest one, expands a leading
-    acronym (SMK/SMJK/SMKA/KTE/SM) to its full form for a consistent style, and Title-cases it."""
-    cands = [c.strip() for c in candidates if c and c.strip()]
-    if not cands:
-        return ''
-    addr_free = [c for c in cands if not _SCHOOL_POSTCODE.search(c)] or cands
-    best = max(addr_free, key=len)
-    toks = best.split()
-    if toks and toks[0].upper() in _SCHOOL_ACRONYM_EXPAND:
-        best = _SCHOOL_ACRONYM_EXPAND[toks[0].upper()] + ' ' + ' '.join(toks[1:])
-    return best.title()
+# STPM school-name casing — moved VERBATIM to `school_names` (TD-145); imported back here.
+from .school_names import _SCHOOL_ACRONYM_EXPAND, _SCHOOL_POSTCODE, clean_school_name
 
 
 # Acronyms in a programme name that must stay UPPER-CASE when a shouty (all-caps) offer

@@ -163,11 +163,13 @@ def _declared_pathway(application) -> tuple:
     from_offer = cp.get('source') == 'offer_letter_auto'
     prog = '' if from_offer else (cp.get('course_name') or '').strip()
     inst = '' if from_offer else (cp.get('institution') or '').strip()
+    if not inst and application is not None:
+        # TD-145: a course_id-only pick declares the catalogue's ONE campus, ahead of a stale pre-U
+        # school. Feeds pathway_confirm's "you told us X"; the course_id's institution VERDICT stays
+        # `offer_pathway.institution_agreement`'s.
+        inst = catalogue_declared_institution(application)
     if not inst:
         inst = (getattr(application, 'pre_u_institution', '') or '').strip()
-    # ⏸ TD-145 resolver BUILT 2026-10-03, NOT WIRED: `catalogue_declared_institution` below.
-    # Wiring it here moves no verdict (a course_id's institution axis is `institution_agreement`'s,
-    # whose one-campus rule says 'match' without comparing); the switch is that rule, an owner's.
     return prog, inst
 
 
@@ -313,9 +315,9 @@ def offer_reporting_bonus(doc) -> bool:
     # gate 3b (owner 2026-07-10): a public university's PRIVATE continuing-education arm (UTM SPACE,
     # UM CCE, …) is an IPTS option — the scorer vetoes it to not_offer_letter (1.6.0), and the +1
     # date bonus must never lift it back to amber. Reads the extracted issuer/institution, so it bites
-    # on DEPLOY (before any re-run). 'SPACE' padded so it never matches AEROSPACE.
-    if ('PENDIDIKAN BERTERUSAN' in haystack or 'CONTINUING EDUCATION' in haystack
-            or ' SPACE ' in f' {haystack} '):
+    # on DEPLOY (before any re-run). The scorer's OWN test (one list of tells, Saluran Terbuka too).
+    from .genuineness.results_doc import _private_arm_offer
+    if _private_arm_offer(haystack):
         return False                                    # gate 3b: private continuing-education arm
     return True
 

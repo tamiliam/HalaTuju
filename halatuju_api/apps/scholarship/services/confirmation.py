@@ -225,6 +225,7 @@ def confirm_pathway(application):
             if 'chosen_programme' not in update_fields:
                 update_fields.append('chosen_programme')
 
+    _settle_stale_course_id(application, offer, prog, offer_type)   # TD-145: before the alignment
     # Align the institution to the recommender CATALOGUE — the single source of truth (owner
     # 2026-07-18). Offer letters often print the institution ALL-CAPS ("INSTITUT PENDIDIKAN GURU
     # KAMPUS TUANKU BAINUN") and confirm_pathway stored that raw text; the catalogue holds the clean
@@ -246,3 +247,62 @@ def confirm_pathway(application):
 
     application.save(update_fields=update_fields)
     return True
+
+
+def _settle_stale_course_id(application, offer, prog, offer_type):
+    """TD-145 (owner 2026-10-04): a tertiary confirm to a DIFFERENT place must not keep the old
+    ``course_id``.
+
+    The sponsor card (``card_display.programme_split``) and ``course_href`` prefer the catalogue's
+    name and link through ``course_id`` over the free-text name, so a student who picked a UMK
+    course and confirmed a UTHM offer would otherwise show UMK's course, and a link to it, beside
+    "UTHM". The id is STALE when either
+      * it is a pre-U virtual course (stpm-sains, matric-…) and the RECONCILED pathway is tertiary —
+        left in place, the catalogue alignment below would pick one of its ~240 SCHOOLS as the
+        institution; or
+      * the verdict's own test says the confirmed institution is a different place:
+        ``institution_agreement(cid, '', inst) == 'clash'``. 'unknown' (a variant we cannot place,
+        "UNIVERSITI KEBANGSAAN MALAYSIA, 43600 BANGI") keeps the id — the confirm and the chip
+        never disagree; or, for a MULTI-campus course (where that test can only say 'unknown' with
+        nothing recorded), the letter names none of its campuses AND exactly names another known
+        catalogue institution (a poly diploma pick, a UTHM letter).
+    A stale id is re-pinned when ``resolve_catalogue_course`` names a UNIQUE tertiary course at the
+    new place AT THE SAME LEVEL as the letter (``detect_pathway_type``: a degree letter never pins a
+    diploma), else the key is dropped. Pre-U and PISMP confirms (pinned above by their own rules)
+    keep what they have. Mutates ``application.chosen_programme`` only; the caller saves it."""
+    from .. import offer_pathway as op
+    # ⚠ The RECONCILED type: confirm_pathway has already moved a stpm→degree switch to 'degree'.
+    pw = (application.chosen_pathway or '').strip().lower()
+    if op.is_pre_u(pw) or pw == 'pismp' or offer_type == 'pismp':
+        return
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    cid, inst = (cp.get('course_id') or '').strip(), (cp.get('institution') or '').strip()
+    preu_ids = set(op.PREU_COURSE_SLUG.values())
+    if not cid or not (cid in preu_ids or (inst and _names_another_place(op, cid, inst))):
+        return
+    cp = dict(cp)
+    match = op.resolve_catalogue_course(prog, inst) or {}
+    pinned, level = match.get('course_id') or '', op.detect_pathway_type(prog, '')
+    # Never a pre-U virtual course: the catalogue links them to ~250 schools whose names share a
+    # university's tokens ("SMK Bandar Tun Hussein Onn 2"), so a 'Sains' degree at UTHM can
+    # "resolve" to stpm-sains. A tertiary confirm re-pins only to a tertiary course of its level.
+    if (pinned and pinned not in preu_ids and level
+            and level == op.detect_pathway_type(match.get('course_name') or '', '')
+            and not op.offer_contradicts_course_institution(pinned, inst)):
+        cp['course_id'] = pinned
+    else:
+        cp.pop('course_id', None)
+        # Ids only — never a name (the doc and the application are enough to find it).
+        logger.warning('pathway confirm dropped a stale course_id (doc %s, application %s)',
+                       offer.id, application.id)
+    application.chosen_programme = cp
+
+
+def _names_another_place(op, cid, inst):
+    """TD-145: is ``inst`` demonstrably NOT where course ``cid`` is taught? The verdict's own clash,
+    or — multi-campus — no campus named AND the letter exactly names another catalogue institution.
+    A place we cannot read is never 'another place' (the id is kept)."""
+    if op.institution_agreement(cid, '', inst) == 'clash':
+        return True
+    return bool(op.offer_contradicts_course_institution(cid, inst)
+                and op._names_another_institution('', '', inst))

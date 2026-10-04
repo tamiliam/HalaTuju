@@ -85,7 +85,10 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       college that misses the UA list. Pairs with the reporting-bonus gate-3b block
 #       (pathway_engine) so the +1 date bonus can't lift it back to amber. Backfill: re-run offers
 #       (reextract_offers) — a private-arm offer that stored 'genuine' pre-1.6.0 re-scores to fake.
-MODEL_VERSION = '1.6.0'
+#   1.7.0 (2026-10-04) — TD-145: Saluran Terbuka (SATU) joins the private-arm veto — red at once, no
+#       question (owner option 1). #31's UM "[SALURAN TERBUKA UNIVERSITI MALAYA (SATU)]" read
+#       'suspect'. Backfill: re-run #31's offer from the LIVE cockpit, never locally.
+MODEL_VERSION = '1.7.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -481,14 +484,19 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 # IPTS option — disqualifying, like any private college (owner 2026-07-10). It prints the PARENT UA
 # name, so the ua_offer NAME anchor fires and the letter would read 'genuine'. The ARM names itself
 # on the letterhead / "Entiti Pengendali", which is the forge-resistant 'tell'. 'SPACE' is matched as
-# a standalone token (never AEROSPACE); the two phrases are safe as substrings.
-_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD')
+# a standalone token (never AEROSPACE); the phrases are safe as substrings.
+# Saluran Terbuka (SATU) — a public university's OWN open, self-funded admission channel outside
+# UPU (UM's "SALURAN TERBUKA UNIVERSITI MALAYA (SATU)", #31) — is the same IPTS option: red at once,
+# no question (owner, TD-145, 2026-10-04). Matched as the two-word phrases ONLY: the lone word
+# 'SATU' is Malay for "one" and sits on ordinary letters ("Semester Satu").
+_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD',
+                        'SALURAN TERBUKA', 'SALURAN SATU')
 
 
 def _private_arm_offer(ocr_text: str) -> bool:
-    """True when an offer is from a public university's PRIVATE continuing-education arm (SPACE /
-    Pendidikan Berterusan / Continuing Education) or a Sdn. Bhd. operator — an IPTS option. Read off
-    the OCR text; pure + deterministic."""
+    """True when an offer is from a public university's PRIVATE arm (SPACE / Pendidikan Berterusan /
+    Continuing Education / Saluran Terbuka (SATU)) or a Sdn. Bhd. operator — an IPTS option. Read
+    off the OCR text; pure + deterministic."""
     tn = _norm_fold_upper_alnum(ocr_text)
     if any(p in tn for p in _PRIVATE_ARM_PHRASES):
         return True
@@ -513,7 +521,8 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
         return {'status': 'not_offer_letter', 'probability': r['probability'], 'type': r['type'],
                 'present': r['present'], 'missing': r['missing'],
                 'reason': ('private / continuing-education arm (SPACE / Pendidikan Berterusan / '
-                           'Sdn Bhd) — an IPTS option, not a supported public offer')[:300],
+                           'Saluran Terbuka (SATU) / Sdn Bhd) — an IPTS option, not a supported '
+                           'public offer')[:300],
                 'model_version': MODEL_VERSION}
 
     identity = _IDENTITY.get(doc_type)

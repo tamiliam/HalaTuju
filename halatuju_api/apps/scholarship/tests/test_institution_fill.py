@@ -452,6 +452,9 @@ class TestInstitutionAgreement(_Base):
 
     def test_one_campus_cannot_clash_however_the_letter_spells_it(self):
         # The owner's rule: "The course selector only has one option, UTHM. So there is a match."
+        # Narrowed by TD-145 (2026-10-04): the letter IS now compared — but every spelling of the
+        # ONE campus (name, tokens, acronym) still matches, and only a letter that positively names
+        # ANOTHER catalogue institution clashes (see test_td145_wrong_university.py).
         self._course('TST-ANIM', 'Diploma Teknologi Animasi',
                      ('Universiti Tun Hussein Onn Malaysia', 'uthm', 'UTHM'))
         for spelling in ('UTHM - KAMPUS (CAWANGAN PAGOH)', 'Kampus Pagoh, UTHM',

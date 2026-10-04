@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-145 — a different university on the offer is flagged; Saluran Terbuka reads red - 2026-10-04
+
+BUILT, not committed, pushed or deployed. Owner's ruling of 2026-10-04 plus the same-day amendment
+(option 1). Register open **118 → 119** (`code_health.py` td_open 119): TD-145 closed, TD-331 and TD-332 raised (Later). No migration, no new package,
+no web change. **Genuineness `MODEL_VERSION` 1.6.0 → `1.7.0`**; **`VERDICT_ENGINE_VERSION`
+2026-10-03.1 → `2026-10-04.1`**. ⚠ After deploy, re-run #31's offer from the live cockpit — never
+locally.
+
+- **One-campus rule narrowed (`offer_pathway.institution_agreement`, student + officer visible):** a
+  one-campus course now compares the letter with its campus. Refers to it (name, tokens or acronym —
+  "UTHM - KAMPUS (CAWANGAN PAGOH)" still matches UTHM) → match, UNLESS the letter is another
+  catalogue row's exact name (UTM pick, "UNIVERSITI TEKNOLOGI MARA" letter → clash). EXACTLY names
+  ONE other catalogue institution (`_names_another_institution`: equal bracket-stripped name or a
+  whole-token acronym, a unique hit, not this campus's name/acronym; NO shared-word tier — a UKM
+  letter's address tail once hit "KM Selangor"; a filtered query, never a table scan) → clash,
+  which flows through the existing plumbing: red Pathway chip and the one-tap `pathway_confirm`.
+  Anything we cannot place → unknown, never a clash (the Pagoh safety rule). UM ≠ UMK.
+- **Declared side from the catalogue (`pathway_engine._declared_pathway`):** a course_id-only pick
+  declares `catalogue_declared_institution` (one-campus only) ahead of the pre-U school, so the
+  query tells the student which university they picked.
+- **Confirm drops a stale `course_id` (`services.confirmation._settle_stale_course_id`):** the id is
+  stale when the verdict's own test reads `institution_agreement(cid, '', inst) == 'clash'` (unknown
+  keeps it — confirm and chip never disagree), or when it is a pre-U virtual course after a tertiary
+  confirm (else the alignment wrote a SCHOOL as the institution). A stale id re-pins to a unique
+  tertiary catalogue course at the new place AT THE LETTER'S LEVEL (a degree never pins a diploma),
+  else the key is removed with a warning (doc id + application id only). Never a pre-U course.
+  A MULTI-campus pick (where the verdict can only say unknown) is stale when the letter names none
+  of its campuses AND exactly names another catalogue institution (second review).
+- **Room:** `clean_school_name` and its two constants moved VERBATIM from `offer_pathway.py` to the
+  new leaf `school_names.py` (imported back; `op.clean_school_name` unchanged), so `offer_pathway.py`
+  stays within its size allowance without trimming comments.
+- **Saluran Terbuka (SATU) is a private-arm tell (`genuineness/results_doc.py`):** `SALURAN TERBUKA`
+  and `SALURAN SATU` (never lone `SATU`) → `not_offer_letter`, reason names Saluran Terbuka (SATU).
+  The reporting-date bonus gate 3b now asks the scorer's own `_private_arm_offer`, so the two lists
+  cannot drift. Measured on the local offer corpus (eval snapshots): exactly one letter changes,
+  #31, suspect → not_offer_letter.
+- Tests: `test_td145_wrong_university.py` (25 — 17 + the reviews' eight failing inputs); `test_declared_catalogue_institution.py` reversed
+  its pinned blind spot; `test_institution_fill.py` comment updated. Full suite 7688 passed.
+
 ## Later-tier batch 1 — ten small items (TD-323, TD-320, TD-290, TD-294, TD-287, TD-289, TD-162, TD-231, TD-293, TD-055) - 2026-10-03
 
 BUILT, not committed, pushed or deployed. Eight closed (TD-323, TD-320, TD-287, TD-289, TD-293,

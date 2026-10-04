@@ -1345,6 +1345,28 @@ Read it at sprint start, before planning.
 
 ## Next Sprint — ▶ owner's pick (as of 2026-09-30, after the debt-register review)
 
+**TD-145 IS BUILT, not committed, pushed or deployed (2026-10-04).** Owner's ruling + same-day
+amendment (decisions.md 2026-10-04 "TD-145 ruled" and its addendum). Register open **119**
+(`code_health.py` td_open 119; TD-331, TD-332 raised, Later). No migration, no new package, no web change (no copy lists routes).
+**Genuineness `MODEL_VERSION` 1.6.0 → `1.7.0`**; **`VERDICT_ENGINE_VERSION` 2026-10-03.1 →
+`2026-10-04.1`**. What changed:
+- `offer_pathway.institution_agreement` rule 1 COMPARES a one-campus course's letter: refers to the
+  campus (`_refers_to_campus`) → match, unless the letter is another row's EXACT name (UTM vs
+  "Universiti Teknologi MARA"); EXACTLY names ONE other catalogue `Institution`
+  (`_names_another_institution` — equal name or whole-token acronym ONLY; ⚠ never add a shared-word
+  tier: UKM's words are all generic and an address tail hit "KM Selangor") → clash → red Pathway
+  chip + `pathway_confirm`; unplaceable → unknown, NEVER a clash (the Pagoh safety rule). A 2-letter acronym (UM) is never a
+  token, so a letter reading only "UM" is unknown; "Universiti Malaya" resolves by name.
+- `_declared_pathway` declares `catalogue_declared_institution` (wired) ahead of the pre-U school.
+- `services.confirmation._settle_stale_course_id`: stale = `institution_agreement(cid,'',inst)=='clash'`
+  or a pre-U virtual id after a tertiary confirm; re-pins to a unique tertiary course of the letter's
+  LEVEL, else drops `course_id` (WARNING, ids only). `clean_school_name` moved to `school_names.py`.
+- `_PRIVATE_ARM_PHRASES` + `SALURAN TERBUKA` / `SALURAN SATU` (never lone `SATU`); gate 3b reuses
+  `_private_arm_offer`. Local offer corpus: only #31 moves (suspect → not_offer_letter).
+- ⚠ **#31 must be re-run from the cockpit after deploy, NEVER locally** (no Storage access → it
+  would wipe `vision_fields`). ⚠ `pathway_engine.py` (633) sits EXACTLY at its oversize allowance
+  (budget + 20); `offer_pathway.py` is 617 of 631 after the `school_names` move.
+
 **LATER-TIER BATCH 1 IS BUILT, not committed, pushed or deployed (2026-10-03).** Eight closed
 (TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231, TD-055); TD-290 and TD-294 BUILT and held
 OPEN for their live proof; TD-330 raised by the review (Later). Register open **121**, defined 327

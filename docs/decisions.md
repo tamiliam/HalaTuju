@@ -12964,3 +12964,19 @@ university raises `pathway_confirm`; confirming updates the pathway (the existin
 UTM SPACE, CCE, Pendidikan Berterusan, Sdn Bhd) is an IPTS option: flagged, and on confirmation
 read red (`not_offer_letter` / `offer_not_official`) with the student told private routes are not
 supported. Measured before the ruling: 0 live offers change under the narrowed rule.
+
+## 2026-10-04 — Addendum: TD-145 amended — private routes read red at once, no question
+
+**Owner, the same day (option 1):** private routes read red at once, with NO question, which
+overrides the "flags and asks to confirm" half of the sentence above for a self-funded / parallel
+route. #31's SATU letter is the sample: a Universiti Malaya letter headed "PEMAKLUMAN KEMASUKAN KE
+UNIVERSITI MALAYA [SALURAN TERBUKA UNIVERSITI MALAYA (SATU)]", which itself says the official offer
+via SATU follows only after the UPU appeal results. **Saluran Terbuka** is added to the private-arm
+tells (`SALURAN TERBUKA`, `SALURAN SATU`; never the lone word "satu", Malay for "one"), so such a
+letter reads `not_offer_letter` with the private-arm reason (genuineness model 1.7.0). The
+different-public-university half stands as ruled: flagged, the student asked, and the confirm
+updates the pathway — and **the confirm drops a stale `course_id`** (or re-pins it to a unique
+course at the new university), so the sponsor card can no longer show the old university's course
+beside the new one. A letter whose university we cannot place reads "unknown", never a clash, so
+#48's Pagoh naming variant stays green. #31 is re-run from the live cockpit after deploy, never
+locally.

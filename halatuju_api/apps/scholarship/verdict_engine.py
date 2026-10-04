@@ -89,7 +89,9 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-10-03.1 — TD-323: an EPF-implied salary under RM100 a month is no BAND figure (the earner
 #                  falls to a declared amount, else verify at interview). No ceiling; the evidence,
 #                  gate and divergence readers are unchanged (review F1).
-VERDICT_ENGINE_VERSION = '2026-10-03.1'
+#   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (a different one →
+#                  pathway_confirm, red until answered); Saluran Terbuka (SATU) reads red at once.
+VERDICT_ENGINE_VERSION = '2026-10-04.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

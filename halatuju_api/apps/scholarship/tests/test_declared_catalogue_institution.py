@@ -1,18 +1,16 @@
-"""TD-145 (2026-10-03): the declared institution of a degree pick that stored only `course_id`.
+"""TD-145: the declared institution of a degree pick that stored only `course_id`.
 
-BUILT, NOT WIRED — and why, so the next reader does not "finish the job" blind:
+Built 2026-10-03, WIRED 2026-10-04 on the owner's ruling ("Student declares UMK but uploads, say,
+UTHM. This should be flagged and student asked to confirm."):
 
 * The resolver (`pathway_engine.catalogue_declared_institution`) answers the entry's question:
   course_id -> the catalogue's ONE campus, or '' (multi-campus is never a guess).
-* Wiring it into `_declared_pathway`, as the entry proposed in June, would move NO verdict today.
-  Since #48 (2026-07-25) a course_id's institution axis is decided by
-  `offer_pathway.institution_agreement`, and its rule 1 answers 'match' for a one-campus course
-  WITHOUT comparing — so `declared_institution` never reaches the comparison for these records.
-* The switch that WOULD catch a genuine wrong-university offer is that rule 1 itself
-  (`offer_contradicts_course_institution` already exists to say "this names another place").
-  It reverses an owner rule, so it waits on the owner and on the lead's read-only probe
-  (scratchpad `batch3_probe.py`). The PINNED test below is today's blind spot, on purpose: when
-  the owner rules, it is edited deliberately, never quietly.
+* `_declared_pathway` now uses it, ahead of the free-text pre-U school, so the `pathway_confirm`
+  query names the institution the student actually PICKED. It moves no verdict by itself: a
+  course_id's institution axis is `offer_pathway.institution_agreement`'s.
+* That axis's rule 1 was narrowed the same day: a one-campus course compares the letter with its
+  campus, and a letter that POSITIVELY names another catalogue institution is a clash. The test
+  that pinned the old blind spot is kept below, its claim reversed.
 """
 from django.test import TestCase
 
@@ -68,16 +66,20 @@ class CatalogueDeclaredInstitutionTest(_Catalogue):
                 self.assertEqual(catalogue_declared_institution(self._app(**cp)), '')
 
 
-class HeldWiringTest(_Catalogue):
-    def test_declared_pathway_is_unchanged_until_the_switch(self):
-        # The wiring is HELD: a course_id-only pick still declares no institution.
+class WiredTest(_Catalogue):
+    def test_declared_pathway_declares_the_catalogue_campus(self):
+        # WIRED (owner 2026-10-04): a course_id-only pick declares its one campus…
         self.assertEqual(_declared_pathway(self._app(course_id='UMK-ONE')),
+                         ('Ijazah Sarjana Muda Sains', UMK))
+        # …and a multi-campus pick still declares nothing — never a guess.
+        self.assertEqual(_declared_pathway(self._app(course_id='TWO-CAMPUS')),
                          ('Ijazah Sarjana Muda Sains', ''))
 
-    def test_PINNED_a_genuine_other_university_offer_reads_match_today(self):
-        # ⚠ PINNED BLIND SPOT (TD-145, owner's ruling pending). The signal exists…
+    def test_a_genuine_other_university_offer_now_clashes(self):
+        # The blind spot this test used to PIN is closed (TD-145 ruled). The signal…
         self.assertTrue(op.offer_contradicts_course_institution('UMK-ONE', 'UNIVERSITI MALAYA'))
-        # …and the one-campus rule does not consult it.
-        self.assertEqual(op.institution_agreement('UMK-ONE', '', 'UNIVERSITI MALAYA'), 'match')
-        # The naming variant the rule exists for stays a match either way (#48's shape).
+        # …is now consulted by the one-campus rule: a letter that names another university clashes.
+        self.assertEqual(op.institution_agreement('UMK-ONE', '', 'UNIVERSITI MALAYA'), 'clash')
+        # The naming variant the rule exists for stays a match (#48's shape).
         self.assertFalse(op.offer_contradicts_course_institution('UMK-ONE', 'UMK - KAMPUS JELI'))
+        self.assertEqual(op.institution_agreement('UMK-ONE', '', 'UMK - KAMPUS JELI'), 'match')
