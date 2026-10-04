@@ -13,6 +13,7 @@ import { withGiftHrefs } from '@/lib/giftHref'
 import { pageWidthFor, WIDTH_CLASS } from '@/lib/pageWidth'
 import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
 import { ProgrammeScopeProvider, useProgrammeScope } from '@/lib/programmeScope'
+import { OrgScopeProvider } from '@/lib/orgScope'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
@@ -131,6 +132,8 @@ function Chrome(
   const [mobileNav, setMobileNav] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState('')
+  // TD-228: the crumb's organisation, handed to the page beneath (`lib/orgScope`) — one answer.
+  const orgScope = useMemo(() => ({ selected: selectedOrg, select: setSelectedOrg }), [selectedOrg])
 
   /*
    * The rail starts on hover-open for everyone, then adopts the person's saved choice after
@@ -379,7 +382,9 @@ function Chrome(
             answer. Left-aligned, never `mx-auto`: centring is what made the B40 cockpit look like
             a different console. */}
         <main className="min-w-0 flex-1 p-4 md:p-6">
-          <div className={WIDTH_CLASS[pageWidthFor(pathname)]}>{children}</div>
+          <div className={WIDTH_CLASS[pageWidthFor(pathname)]}>
+            <OrgScopeProvider value={orgScope}>{children}</OrgScopeProvider>
+          </div>
         </main>
       </div>
 

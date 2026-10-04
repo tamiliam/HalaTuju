@@ -4,12 +4,18 @@ Moved verbatim from the package root at code health H12. Part of the `views_admi
 package: every name below is re-exported from `views_admin/__init__.py`, so `urls.py`
 and every importer are unchanged.
 """
+import logging
+
+from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 
 from .gift_programmes import AdminProgrammeListView
 
 from .reviewers import _ReviewersBase
+
+# ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
+logger = logging.getLogger('apps.scholarship.views_admin')
 
 
 class AdminInvitationsView(_ReviewersBase):
@@ -193,3 +199,61 @@ class AdminInvitationsView(_ReviewersBase):
         inv_service.record_send(inv, ok, error)
         return Response({'id': inv.id, 'emailed': ok},
                         status=status.HTTP_201_CREATED if ok else status.HTTP_502_BAD_GATEWAY)
+
+
+class AdminInvitationCancelView(_ReviewersBase):
+    """POST admin/invitations/<id>/cancel/ — withdraw an invitation nobody has answered (TD-214).
+
+    ⚠ **A STATUS, NEVER A DELETE.** It sets `revoked_at` through `invitations.revoke`, so the row
+    reads `revoked` for ever and the history of who was asked survives. Only an OPEN invitation
+    (`invitations.is_open`: not accepted, not already withdrawn) can be cancelled; anything else is
+    `400 not_open`, and somebody who has arrived is revoked on Organisation → People instead.
+
+    ⚠ **THE LINK STOPS WORKING.** A SPONSOR invitation carries no credential: once withdrawn it no
+    longer closes on their registration (`views_sponsor._close_admin_invitation`) nor files them
+    into its gift (`sponsorship.signup_programme_for`) — both read open invitations only. A STAFF
+    invitation provisioned an account with a temporary password up front, so withdrawing it also
+    switches that never-used account off (`is_active=False`, exactly People → Revoke): otherwise
+    the password in the letter would still open the console. Refused if they have signed in.
+
+    Fenced like the list: an invitation of another organisation is 404, never 403. Only a super or
+    an org_admin acts, and an org_admin only on what this page could have sent
+    (`KIND_INVITABLE_ROLES`) — never an organisation-admin invitation, which a super appoints.
+    Audited: the AUDIT line names who cancelled what.
+    """
+
+    def post(self, request, pk):
+        admin, org_id, err = self._side(request)
+        if err:
+            return err
+        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+            return self._deny_role()
+        from .. import invitations as inv_service
+        from ..models import Invitation
+
+        # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
+        qs = Invitation.objects.select_related('partner_admin').filter(pk=pk)
+        if org_id is not None:
+            qs = qs.filter(organisation_id=org_id)
+        inv = qs.first()
+        invitable = {r for roles in inv_service.KIND_INVITABLE_ROLES.values() for r in roles}
+        if inv is None or (inv.audience == 'staff' and not admin.is_super
+                           and inv.role not in invitable):
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        account = inv.partner_admin if inv.audience == 'staff' else None
+        if not inv_service.is_open(inv) or (account is not None and account.first_seen_at):
+            return Response({'error': 'not_open', 'code': 'not_open'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if account is not None and account.is_super:
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        with transaction.atomic():
+            inv_service.revoke(inv)
+            if account is not None and account.is_active:
+                account.is_active = False
+                account.save(update_fields=['is_active'])
+        logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s by=%s',
+                    inv.id, inv.audience, inv.role or '-', account.id if account else '-',
+                    admin.email or '')
+        return Response({'id': inv.id, 'status': inv_service.status_of(inv)})

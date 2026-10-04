@@ -383,6 +383,54 @@ describe('an empty table says WHICH empty it is', () => {
   })
 })
 
+describe('cancelling an invitation sent by mistake (TD-214)', () => {
+  afterEach(() => jest.restoreAllMocks())
+
+  it('offers Cancel on a waiting sponsor row, asks first, cancels it and reloads', async () => {
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.cancelInvitation.mockResolvedValue({ id: 3, status: 'revoked' })
+    await loaded()
+    await pick('sponsors')
+    await waitFor(() => expect(screen.getByText('Donor')).toBeTruthy())
+    const calls = mockApi.getInvitations.mock.calls.length
+    fireEvent.click(screen.getByText('admin.invitations.cancel'))
+    expect(confirm).toHaveBeenCalledWith('admin.invitations.cancelConfirm')
+    await waitFor(() => expect(mockApi.cancelInvitation).toHaveBeenCalledWith(3, { token: 'tok' }))
+    await waitFor(() => expect(screen.getByText('admin.invitations.cancelled')).toBeTruthy())
+    expect(mockApi.getInvitations.mock.calls.length).toBeGreaterThan(calls)
+  })
+
+  it('offers it on a waiting STAFF row too, by the invitation id — not the account', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.cancelInvitation.mockResolvedValue({ id: 1, status: 'revoked' })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.invitations.cancel'))
+    await waitFor(() => expect(mockApi.cancelInvitation).toHaveBeenCalledWith(1, { token: 'tok' }))
+  })
+
+  it('does nothing when the person says no', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(false)
+    await loaded()
+    fireEvent.click(screen.getByText('admin.invitations.cancel'))
+    expect(mockApi.cancelInvitation).not.toHaveBeenCalled()
+  })
+
+  it('says so when the server refuses, rather than looking successful', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.cancelInvitation.mockRejectedValue(new Error('not_open'))
+    await loaded()
+    fireEvent.click(screen.getByText('admin.invitations.cancel'))
+    await waitFor(() => expect(screen.getByText('admin.invitations.cancelFailed')).toBeTruthy())
+  })
+
+  it('⚠ offers it to nobody who may only look', async () => {
+    viewerRole = { role: 'finance' }
+    render(<OrganisationInvitationsPage />)
+    await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
+    expect(screen.queryByText('admin.invitations.cancel')).toBeNull()
+  })
+})
+
 describe('the page shell', () => {
   it('carries the Invitations and Emails tabs', async () => {
     await loaded()

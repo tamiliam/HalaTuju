@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Later-tier batch 5 — four items closed, two built in part (TD-333, TD-334, TD-214, TD-194; TD-076, TD-228) - 2026-10-05
+
+Built locally, NOT deployed. Register open **92 → 88** (`code_health.py` td_open 88). No migration, no
+new package, no paid call. **One deploy change (web):** `cloudbuild.yaml` passes
+`--build-arg COMMIT_SHA=$COMMIT_SHA` and the Dockerfile sets `NEXT_PUBLIC_APP_VERSION` from it.
+**New copy:** four Invitations strings in en/ms/ta (the Tamil is a first draft for the owner).
+TD-334 and TD-228 are fence work and TD-214 touches an invitation link → adversarial review.
+
+- **TD-334 — an organisation-less super names a gift on the money reads.** The run list, the funding
+  summary and both Spending endpoints answer `400 programme_required` when a super with no
+  organisation of their own sends no `?programme=` (`_AdminBase._gift_required_for_orgless_super`).
+  A super with an organisation and an org_admin read exactly as before. Three tests that asserted the
+  pooled read are re-pointed (gift named → 200; none → 400).
+- **TD-333 — "(DIPLOMASI)" is not a diploma.** `offer_pathway.detect_pathway_type` matches every level
+  word as a whole word; the families and their order are unchanged and "Bacelor" joins the degree
+  words. A degree letter printing "(Diplomasi)" now resolves to its course.
+- **TD-214 — an invitation sent by mistake can be cancelled.** `POST admin/invitations/<id>/cancel/`
+  (super / org_admin, org-fenced, 404 across organisations) marks it revoked — never deleted — only
+  while unanswered (`400 not_open` otherwise). A sponsor invitation stops closing on registration and
+  stops filing the registrant into its gift; a staff invitation also switches its never-used account
+  off, so the letter's temporary password stops working. AUDIT line names who cancelled. A Cancel
+  button beside Resend asks first.
+- **TD-194 — the console can be reviewed locally.** `python manage.py seed_local_console --email you@x`
+  seeds a made-up organisation, gift and one application per funnel stage (the test factory) on the
+  local SQLite database and makes you a super admin; SQLite only — it refuses any other database.
+  Recipe in `halatuju_api/CLAUDE.md` → Testing.
+- **TD-076 (half) — the Settings version comes from the build.** `src/lib/appVersion.ts` reads the
+  build-stamped commit (short SHA; `dev` locally) instead of the typed `2.26.1`. The thin-page half
+  stays open (needs a mock-up).
+- **TD-228 (Requests) — the organisation crumb narrows the Requests list.** `?org=<code>` through the
+  new `_AdminBase._org_narrowing` (super: any organisation; anybody else: only their own; else 404)
+  and the new `lib/orgScope` context fed by the shell. Two `_admitted` query budgets
+  (`super-narrowed-2/6-rows` = 7, flat). Sponsors and Sources stay open.
+
 ## Later-tier batch 4 — eight items closed, four left open (TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286, TD-246) - 2026-10-04
 
 Built locally, NOT deployed. Register open **98 → 92** (`code_health.py` td_open 92; eight closed,

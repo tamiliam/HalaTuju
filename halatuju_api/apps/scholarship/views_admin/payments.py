@@ -153,6 +153,7 @@ class AdminPaymentRunListView(_PaymentsBase):
         if err:
             return err
         programme, gift_err = self._gift_narrowing(request, admin)
+        gift_err = gift_err or self._gift_required_for_orgless_super(admin, programme)  # TD-334
         if gift_err:
             return gift_err
         from ..models import PaymentRun
@@ -342,6 +343,7 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
         if err:
             return err
         programme, gift_err = self._gift_narrowing(request, admin)
+        gift_err = gift_err or self._gift_required_for_orgless_super(admin, programme)  # TD-334
         if gift_err:
             return gift_err
         # ⚠⚠ **A SUPER SEES EVERY ORGANISATION HERE TOO (2026-09-12).** This endpoint returned

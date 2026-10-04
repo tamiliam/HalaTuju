@@ -101,7 +101,7 @@ from .interviews import (
     _validate_findings, AdminInterviewReopenView, AdminInterviewSubmitView, AdminInterviewView,
     interview_agenda_full,
 )
-from .invitations import AdminInvitationsView
+from .invitations import AdminInvitationCancelView, AdminInvitationsView
 from .lifecycle import (
     AdminApplicationWitnessView, AdminAssignableAdminsView, AdminCloseApplicationView,
     AdminDisbursementActionView, AdminDisbursementScheduleView, AdminMaintenanceSubstateView,

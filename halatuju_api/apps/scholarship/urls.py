@@ -153,7 +153,7 @@ from .views_admin import (
     AdminReviewerPauseView,
     AdminReviewerProgrammeView,
     AdminReviewerSystemEmailsView,
-    AdminInvitationsView,
+    AdminInvitationCancelView, AdminInvitationsView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -351,6 +351,7 @@ urlpatterns = [
     path('admin/reviewers/system-emails/', AdminReviewerSystemEmailsView.as_view()),
     # Organisation -> Invitations: who has been asked to join, in four kinds.
     path('admin/invitations/', AdminInvitationsView.as_view()),
+    path('admin/invitations/<int:pk>/cancel/', AdminInvitationCancelView.as_view()),  # TD-214
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

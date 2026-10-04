@@ -180,6 +180,22 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 
 ## Testing
 
+### Reviewing the console locally (TD-194, 2026-10-05) — no production data, ever
+
+```bash
+cd halatuju_api                      # NO DATABASE_URL / DB_HOST in the environment → SQLite
+python manage.py migrate
+python manage.py seed_local_console --email you@example.com   # made-up org, gift, applications
+SUPABASE_URL=https://pbrrlyoyyiftckqvzvvo.supabase.co python manage.py runserver
+cd ../halatuju-web && npm run dev    # .env.local already points at http://localhost:8000
+```
+
+Sign in at http://localhost:3000/admin with that address. Supabase does the sign-in only; the
+local API verifies the token through the public JWKS (`SUPABASE_URL`) and links your account to
+the seeded super admin on the first VERIFIED sign-in. Development settings allow every origin, so
+nothing changes on the live API. The command refuses any database that is not SQLite. It cannot
+show documents (no Storage) — never re-run extraction locally.
+
 ### ⚠ The FRONTEND gate list — all four, before any push that deploys web
 
 ```bash
@@ -1404,6 +1420,23 @@ amendment (decisions.md 2026-10-04 "TD-145 ruled" and its addendum). Register op
 - ⚠ **#31 must be re-run from the cockpit after deploy, NEVER locally** (no Storage access → it
   would wipe `vision_fields`). ⚠ `pathway_engine.py` (633) sits EXACTLY at its oversize allowance
   (budget + 20); `offer_pathway.py` is 617 of 631 after the `school_names` move.
+
+**LATER-TIER BATCH 5 IS BUILT, not committed, pushed or deployed (2026-10-05).** Four closed (TD-333,
+TD-334, TD-214, TD-194); TD-076 and TD-228 built in part, left open with a dated status. Register open
+**88**. No migration, no new package, no env var to set by hand. Behaviour notes:
+- **TD-334.** An organisation-less super gets `400 programme_required` on the payment-run list, the
+  funding summary and Spending (read + category correction) without `?programme=`. The console always
+  sends one (gift gate); a direct API reader must now name a gift.
+- **TD-214.** `POST /api/v1/admin/invitations/<id>/cancel/` — revokes an OPEN invitation; for a staff
+  invitation it also sets the never-used `PartnerAdmin.is_active=False`. Audit line
+  `AUDIT invitation_cancelled`. New strings `admin.invitations.cancel*` (Tamil = first draft).
+- **TD-076 (web deploy change).** `cloudbuild.yaml` now passes `--build-arg COMMIT_SHA=$COMMIT_SHA` to
+  the image build; the Dockerfile turns it into `NEXT_PUBLIC_APP_VERSION`, which Settings shows (short
+  SHA). Nothing to set in Cloud Run.
+- **TD-228.** `GET /api/v1/admin/scholarship/requests/?org=<code>` narrows (super any; others own; else
+  404). Sponsors and Sources not yet.
+- **TD-333.** Whole-word level words in `detect_pathway_type`; before the deploy, a read-only count of
+  stored offer letters whose only level word is glued to another word is worth taking.
 
 **LATER-TIER BATCH 4 IS BUILT, not committed, pushed or deployed (2026-10-04).** Eight closed
 (TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286, TD-246 — the last as overtaken); TD-216,

@@ -594,10 +594,14 @@ class TestCheck2SyncQueryBudget(WhoseStrBase):
 #:   MEASURED before TD-291: org_admin 2-rows 7 · 6-rows 15 (2 a row); super 2-rows 11 · 6-rows
 #:   27 (4 a row) — the audit's shape (27 / 51 at twelve rows). After the prefetch: 5 / 5 and
 #:   6 / 6 — the two readings of each role EQUAL, so a row costs nothing extra, which is the point.
+#: TD-228 (2026-10-05): `super-narrowed` is the super's list named to ONE organisation by the crumb
+#: (`?org=<code>`), with a second organisation's request on the table that must not be listed — the
+#: super reading plus the one lookup that resolves the code, and still flat across rows.
 REQUESTS_ROUTE = 'api/v1/admin/scholarship/requests/'
 REQUESTS_BUDGETS = {key: RECORD.get(key) for key in (
     f'{REQUESTS_ROUTE}::GET::org_admin-2-rows', f'{REQUESTS_ROUTE}::GET::org_admin-6-rows',
-    f'{REQUESTS_ROUTE}::GET::super-2-rows', f'{REQUESTS_ROUTE}::GET::super-6-rows')}
+    f'{REQUESTS_ROUTE}::GET::super-2-rows', f'{REQUESTS_ROUTE}::GET::super-6-rows',
+    f'{REQUESTS_ROUTE}::GET::super-narrowed-2-rows', f'{REQUESTS_ROUTE}::GET::super-narrowed-6-rows')}
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
@@ -629,6 +633,12 @@ class TestTheRequestsListQueryBudget(TestCase):
                                               approved_at=timezone.now(), approved_by=sup)
         client = authed_client(oa if role == 'org_admin' else sup)
         url = f'/{REQUESTS_ROUTE}'
+        if role == 'super-narrowed':                 # TD-228: another organisation, not listed
+            other = make_org()
+            OrgRequest.objects.create(organisation=other, kind='feature', title='Elsewhere',
+                                      description='not this organisation',
+                                      submitted_by=make_admin('org_admin', owning_org=other))
+            url += f'?org={org.code}'
         self.assertEqual(client.get(url).status_code, 200)            # warm-up, as above
         with CaptureQueriesContext(connection) as captured:
             response = client.get(url)
@@ -640,7 +650,7 @@ class TestTheRequestsListQueryBudget(TestCase):
         comments = [c['body'] for c in listed[0]['comments']]
         self.assertEqual(comments, ['shared'] if role == 'org_admin' else ['shared', 'internal'])
         self.assertEqual(len(listed[0]['attachments']), 1)
-        if role == 'super':
+        if role.startswith('super'):
             self.assertEqual(listed[0]['analyses'][0]['cited_files'], ['a.py'])
         return len(captured.captured_queries)
 
@@ -661,7 +671,7 @@ class TestTheRequestsListQueryBudget(TestCase):
                          + LOWER_IT + '\n' + '\n'.join(loose))
 
     def test_a_row_costs_nothing_extra(self):
-        for role in ('org_admin', 'super'):
+        for role in ('org_admin', 'super', 'super-narrowed'):
             self.assertEqual(REQUESTS_BUDGETS[f'{REQUESTS_ROUTE}::GET::{role}-2-rows'],
                              REQUESTS_BUDGETS[f'{REQUESTS_ROUTE}::GET::{role}-6-rows'], role)
 

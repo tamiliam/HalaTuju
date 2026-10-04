@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import { useT, LOCALE_LABELS } from '@/lib/i18n'
 import { clearAll } from '@/lib/storage'
+import { appVersion } from '@/lib/appVersion'
 import LanguageSelector from '@/components/LanguageSelector'
 import ThemeSelector from '@/components/ThemeSelector'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
-// Manually bumped at release (no central runtime version source yet — see TD-076).
-const VERSION = '2.26.1'
 
 export default function SettingsPage() {
   const { t, locale } = useT()
@@ -63,7 +62,8 @@ export default function SettingsPage() {
           <div className="space-y-2 text-sm text-ground-600">
             <div className="flex justify-between">
               <span>{t('settings.version')}</span>
-              <span className="font-mono text-ground-900">{VERSION}</span>
+              {/* The build's commit, stamped by the deploy — never typed (TD-076). */}
+              <span className="font-mono text-ground-900">{appVersion()}</span>
             </div>
             <div className="flex justify-between">
               <span>{t('settings.currentLanguage')}</span>

@@ -43,6 +43,8 @@ class _SpendingBase(_AdminBase):
     explicit scope. The owner opened their own console as super, was refused, and asked for the
     platform view (`docs/decisions.md`, 2026-09-11, superseding the S4a ruling). It is spelled as
     a sentinel object precisely so that it can only ever be chosen, never fallen into.
+    ⚠ TD-334 (2026-10-05): a super with NO organisation must name a gift (`programme_required`
+    otherwise), so `ALL_ORGS` reaches them narrowed to that one gift, never pooled.
 
     ⚠ A super's own `owning_organisation`, if they have one, is deliberately IGNORED here. A super
     who saw one tenant on this page and every tenant on the neighbouring Payments list would have
@@ -66,6 +68,7 @@ class _SpendingBase(_AdminBase):
         if not (admin.is_super or admin.role in _SPENDING_ROLES):
             return None, None, None, self._deny_role()
         programme, err = self._gift_narrowing(request, admin)
+        err = err or self._gift_required_for_orgless_super(admin, programme)  # TD-334
         if err:
             return None, None, None, err
         if admin.is_super:

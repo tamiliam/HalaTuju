@@ -35,6 +35,10 @@ ENV NEXT_PUBLIC_SUPABASE_URL=https://pbrrlyoyyiftckqvzvvo.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ADKtlHpjwGRqWGpYd1JuCg_riPMtc3l
 # Cloudflare Turnstile PUBLIC site key (secret stays in Supabase + the Edge Function).
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADi6qwQ0qHQQ5BSg
+# The commit this image is built from, shown on the Settings page (TD-076). Cloud Build passes
+# `--build-arg COMMIT_SHA=$COMMIT_SHA`; a local build passes nothing and the page says `dev`.
+ARG COMMIT_SHA=
+ENV NEXT_PUBLIC_APP_VERSION=${COMMIT_SHA}
 
 RUN npm run build
 

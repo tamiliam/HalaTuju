@@ -94,9 +94,11 @@ class _Base(TestCase):
 
 class TestAccessControl(_Base):
     def test_list_role_gate(self):
-        for uid in ('pe-mk', 'pe-ap', 'pe-su'):
+        # RE-POINTED by TD-334 (2026-10-05): the organisation-less super names a gift, as the
+        # console always does; without one it is `programme_required` (TestTd334, below).
+        for uid, q in (('pe-mk', ''), ('pe-ap', ''), ('pe-su', '?programme=pe-pa')):
             self._auth(uid)
-            self.assertEqual(self.client.get('/api/v1/admin/scholarship/payment-runs/').status_code, 200, uid)
+            self.assertEqual(self.client.get(f'/api/v1/admin/scholarship/payment-runs/{q}').status_code, 200, uid)
         for uid in ('pe-rv', 'pe-qc', 'pe-pt'):
             self._auth(uid)
             self.assertEqual(self.client.get('/api/v1/admin/scholarship/payment-runs/').status_code, 403, uid)
@@ -401,12 +403,18 @@ class TestFundingSummaryEndpoint(_FinanceBase):
 
         **Do not "restore" the refusal.** The organisation is still the fence for everybody else:
         the two tests above this one prove each finance admin sees only their own tenant.
+
+        RE-POINTED by TD-334 (2026-10-05): the super still opens ANY organisation's gift (both
+        gifts below, one per tenant), but naming none is `programme_required` — the web gift gate
+        never sends that, and the server no longer pools every tenant into one list for it.
         """
         self._auth('pe-su')
+        for prog, app in ((self.prog_a, self.app_a), (self.prog_b, self.app_b)):
+            resp = self.client.get(f'{self.URL}?programme={prog.code}')
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual({r['application_id'] for r in resp.json()['rows']}, {app.id})
         resp = self.client.get(self.URL)
-        self.assertEqual(resp.status_code, 200)
-        ids = {r['application_id'] for r in resp.json()['rows']}
-        self.assertEqual(ids, {self.app_a.id, self.app_b.id})
+        self.assertEqual((resp.status_code, resp.json()['code']), (400, 'programme_required'))
 
     def test_totals_reconcile_with_the_rows(self):
         self._auth('pe-fi')

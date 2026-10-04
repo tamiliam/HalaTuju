@@ -36,7 +36,7 @@ export {
 export type { AdminItem } from './admin-api/admins'
 
 // Every invitation this organisation has sent, of every kind.
-export { getInvitations, inviteSponsor } from './admin-api/invitations'
+export { cancelInvitation, getInvitations, inviteSponsor } from './admin-api/invitations'
 export type { InvitationKind, InvitationRow, InvitationsPayload } from './admin-api/invitations'
 
 // An admin's own profile, and a reviewer's own credentials.

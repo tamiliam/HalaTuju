@@ -709,14 +709,23 @@ class TestWhoMayOpenIt(_EndpointBase):
         The owner opened their own console as super, was refused, and asked for the platform view
         (`docs/decisions.md`, 2026-09-11). **Do not "restore" the refusal** — the property that
         replaced it is `test_None_is_NOT_the_platform_scope_and_still_reads_nothing`.
+
+        RE-POINTED by TD-334 (2026-10-05): the super still opens the screen — on a GIFT, which
+        the web gift gate always names. Naming none is `programme_required`, never every tenant
+        pooled (the read and the correction both, through the one door).
         """
         PartnerAdmin.objects.create(
             supabase_user_id='ep-super', is_super_admin=True, is_active=True,
             name='Super', email='s@x.com')
         self.auth('ep-super')
-        res = self.client.get(self.URL)
+        res = self.client.get(f'{self.URL}?programme={self.cohort.programme.code}')
         self.assertEqual(res.status_code, 200)
         self.assertIn('totals', res.json())
+        res = self.client.get(self.URL)
+        self.assertEqual((res.status_code, res.json()['code']), (400, 'programme_required'))
+        res = self.client.post(self.WRITE_URL, {'merchant': 'A SHOP', 'category': 'food'},
+                               format='json')
+        self.assertEqual((res.status_code, res.json()['code']), (400, 'programme_required'))
 
     def test_a_tenant_admin_sees_ONLY_their_own_tenant_through_the_endpoint(self):
         """⚠⚠ **THIS TEST EXISTS BECAUSE A BITE-CHECK FOUND ITS ABSENCE (S6, 2026-09-11).**

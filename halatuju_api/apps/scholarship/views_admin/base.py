@@ -147,6 +147,42 @@ class _AdminBase(PartnerAdminMixin, APIView):
                                   status=status.HTTP_404_NOT_FOUND)
         return programme, None
 
+    def _gift_required_for_orgless_super(self, admin, programme):
+        """TD-334 (2026-10-05): a 400 `programme_required` when a super with NO organisation of
+        their own names no gift on a money read (Payments list, funding summary, Spending).
+
+        For them "do not narrow" (above) meant every organisation pooled into one list — the web
+        gift gate never sends that request, but the server must not depend on it. A super WITH an
+        organisation, and an organisation's own admins, keep exactly what they read before.
+        """
+        if programme is None and admin.is_super and admin.owning_organisation_id is None:
+            return Response({'error': 'programme_required', 'code': 'programme_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return None
+
+    def _org_narrowing(self, request, admin):
+        """Read `?org=<organisation code>` — the ORGANISATION crumb (TD-228, 2026-10-05). Returns
+        `(organisation|None, error|None)`; the sibling of `_gift_narrowing`, by the same rules.
+
+        ⚠ ABSENT MEANS "DO NOT NARROW". ⚠ IT NARROWS INSIDE THE FENCE AND CAN NEVER WIDEN: a
+        super (who alone sees more than one organisation, and alone is shown the crumb) may name
+        any organisation; anybody else resolves only their OWN, so another organisation's code and
+        an unknown one are the same answer — 404, never 403 — and cannot confirm it exists.
+        """
+        code = (request.query_params.get('org') or '').strip()
+        if not code:
+            return None, None
+        from apps.courses.models import PartnerOrganisation
+        qs = PartnerOrganisation.objects.filter(code=code)
+        if not self.has_role(admin, 'super'):
+            own = admin.owning_organisation_id if admin is not None else None
+            qs = qs.filter(pk=own) if own else qs.none()
+        org = qs.first()
+        if org is None:
+            return None, Response({'error': 'not_found', 'code': 'not_found'},
+                                  status=status.HTTP_404_NOT_FOUND)
+        return org, None
+
     def _intake_narrowing(self, request, admin, programme):
         """Read `?intake=<cohort id>` and resolve it. Returns `(cohort|None, error|None)`.
 

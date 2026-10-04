@@ -154,12 +154,30 @@ class LevelIsReadFromTheRightPlaceTest(_Catalogue):
         # more general than the course and TD-150 now refuses the match on its own ("cannot tell" —
         # the next test). The LEVEL rule this test was written for is held with that one refusal
         # switched off: a course NAMED "Diplomasi" is not a diploma, so the degree letter still
-        # reaches it. (A letter that PRINTS "(DIPLOMASI)" cannot show it: `detect_pathway_type`
-        # reads the letter itself as a diploma by substring — TD-333.)
+        # reaches it. (A letter that PRINTS "(DIPLOMASI)" is the next test — TD-333, closed.)
         from unittest import mock
         with mock.patch.object(op, 'names_a_specialisation_the_letter_does_not', return_value=False):
             self.assertEqual(op.resolve_catalogue_course(
                 'IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA', UTHM.upper())['course_id'], 'TD-UTHM-HUB')
+
+    def test_a_letter_that_prints_diplomasi_reads_as_a_degree_td333(self):
+        # TD-333 (2026-10-05): the LETTER side of the same trap. Level words match as whole words,
+        # so "(DIPLOMASI)" no longer types a degree letter as a diploma, and it reaches its course.
+        letter = 'IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA (DIPLOMASI) DENGAN KEPUJIAN'
+        self.assertEqual(op.detect_pathway_type(letter, UTHM.upper()), 'degree')
+        self.assertEqual(op.resolve_catalogue_course(letter, UTHM.upper())['course_id'], 'TD-UTHM-HUB')
+
+    def test_the_whole_word_rule_keeps_every_level_family_td333(self):
+        for text, want in (('DIPLOMA PENGURUSAN', 'diploma'), ('(DIPLOMA) KEJURUTERAAN', 'diploma'),
+                           ('SIJIL KEMAHIRAN', 'diploma'), ('BACELOR SAINS', 'degree'),
+                           ('BACHELOR OF ARTS', 'degree'), ('SARJANA MUDA SAINS', 'degree'),
+                           ('PROGRAM ASASI SAINS', 'asasi'), ('FOUNDATION IN LAW', 'asasi'),
+                           ('PISMP AMBILAN JUN', 'pismp'), ('INSTITUT PENDIDIKAN GURU PERGURUAN', 'pismp'),
+                           ('TINGKATAN 6 SAINS', 'stpm'), ('KOLEJ MATRIKULASI PERAK', 'matric'),
+                           ('KAJIAN DIPLOMASI', ''), ('', 'diploma')):
+            with self.subTest(text=text):
+                inst = 'POLITEKNIK UNGKU OMAR' if not text else ''
+                self.assertEqual(op.detect_pathway_type(text, inst), want)
 
     def test_a_letter_that_omits_the_specialisation_cannot_tell_td150(self):
         self.assertIsNone(op.resolve_catalogue_course(

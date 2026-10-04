@@ -414,6 +414,7 @@ class TestFenceCoverageCompleteness(TestCase):
         # sponsor invitation has no staff row to fence through (it creates no account), so
         # fencing through the invitee would silently drop that whole kind.
         'AdminInvitationsView': 'invitation-org-fenced',
+        'AdminInvitationCancelView': 'invitation-org-fenced',   # TD-214: 404 on another org's
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

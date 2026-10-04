@@ -6215,7 +6215,11 @@
       "waitingHeading": "Menunggu jawapan",
       "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
       "seePeople": "Lihat siapa yang ada",
-      "seeSponsors": "Lihat penderma"
+      "seeSponsors": "Lihat penderma",
+      "cancel": "Batalkan jemputan",
+      "cancelConfirm": "Batalkan jemputan kepada {email}? Pautannya tidak akan berfungsi lagi. Jika ia memberi mereka akaun yang belum pernah digunakan, akaun itu juga dimatikan.",
+      "cancelled": "Jemputan dibatalkan.",
+      "cancelFailed": "Kami tidak dapat membatalkannya. Muat semula halaman dan cuba lagi."
     },
     "soon": "Akan datang",
     "programmes": {

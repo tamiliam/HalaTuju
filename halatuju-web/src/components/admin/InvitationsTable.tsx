@@ -20,6 +20,9 @@ import type { InvitationRow } from '@/lib/admin-api'
  * fired again and is deleted rather than left as a dead arm. **Revoke and Restore now live on the
  * person**, in Organisation → People, beside Pause — one screen decides whether somebody is in.
  * A sponsor invitation still gets nothing but Resend: it provisions no account.
+ * **TD-214 (2026-10-05) adds Cancel beside it** — the invitation's own verb, for one sent by
+ * mistake: the row is kept as `revoked` and leaves this waiting list (the server decides; a staff
+ * invitation's never-used account is switched off with it).
  *
  * ⚠ **ROLE IS THE SAME STORY, AND THE COLUMN IS DROPPED RATHER THAN DASHED** (owner, 2026-09-08,
  * on seeing a live sponsors table). The two staff tables each hold several roles — Admin · Finance ·
@@ -33,12 +36,14 @@ import type { InvitationRow } from '@/lib/admin-api'
  * on a staff table the day one arrives with a blank role — a real value gone missing, reported as
  * nothing at all.
  */
-export default function InvitationsTable({ rows, canAct, busyId, onResend,
+export default function InvitationsTable({ rows, canAct, busyId, onResend, onCancel,
                                            showRole = true, empty }: {
   rows: InvitationRow[]
   canAct?: boolean
   busyId?: number | null
   onResend?: (r: InvitationRow) => void
+  /** TD-214: withdraw an unanswered invitation. Offered on the same rows as Resend. */
+  onCancel?: (r: InvitationRow) => void
   /** Whether this kind's invitations carry a staff role. False for sponsors and sources. */
   showRole?: boolean
   /** What to say when there is nothing to list. ⚠ **THE EMPTY STATE IS NOW THE USUAL STATE** —
@@ -124,6 +129,12 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend,
                       <button disabled={busyId === r.id} onClick={() => onResend(r)}
                         className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
                         {t('admin.resend')}
+                      </button>
+                    )}
+                    {canAct && waiting && onCancel && (
+                      <button disabled={busyId === r.id} onClick={() => onCancel(r)}
+                        className="ml-3 text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
+                        {t('admin.invitations.cancel')}
                       </button>
                     )}
                   </td>

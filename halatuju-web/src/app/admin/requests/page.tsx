@@ -6,6 +6,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { useOrgScope } from '@/lib/orgScope'
 import {
   getOrgRequests, createOrgRequest, uploadOrgRequestAttachment, type OrgRequestDetail,
 } from '@/lib/admin-api'
@@ -42,6 +43,8 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true)
   const [dark, setDark] = useState(false)
   const [error, setError] = useState('')
+  // TD-228: the organisation crumb narrows this list (a super's; the server re-fences `?org=`).
+  const { selected: org } = useOrgScope()
 
   // Submit form (org_admin)
   const [kind, setKind] = useState<'bug' | 'feature'>('bug')
@@ -62,7 +65,7 @@ export default function AdminRequestsPage() {
   const load = useCallback(() => {
     if (!token) return
     setLoading(true)
-    getOrgRequests(statusF ? { status: statusF } : undefined, { token })
+    getOrgRequests({ status: statusF || undefined, org: org || undefined }, { token })
       .then((d) => { setRequests(d.requests); setDark(false) })
       .catch((e) => {
         // A 404 = the feature is dark (REQUESTS_ENABLED off) — show the coming-soon shell.
@@ -71,7 +74,7 @@ export default function AdminRequestsPage() {
       })
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, statusF])
+  }, [token, statusF, org])
 
   useEffect(() => { load() }, [load])
 

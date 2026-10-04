@@ -43,26 +43,28 @@ def detect_pathway_type(programme: str, institution: str) -> str:
 
     Only ``stpm``/``matric`` are treated as *pre-U* (no catalogue) by the caller; the rest
     go through the catalogue resolver. Order matters — a Form-6 letter says "Tingkatan
-    Enam", a matriculation letter "Matrikulasi", and those win over a stray 'diploma'."""
+    Enam", a matriculation letter "Matrikulasi", and those win over a stray 'diploma'. Level
+    words match as WHOLE words (TD-333): "(DIPLOMASI)" in a degree's name is not a diploma."""
     t = f"{programme} {institution}".lower()
-    if any(k in t for k in ('tingkatan enam', 'tingkatan 6', 'form 6', 'form six', 'stpm')):
+
+    def has(*ks):
+        return re.search(rf"(?<![a-z])(?:{'|'.join(ks)})(?![a-z])", t) is not None
+    if has('tingkatan enam', 'tingkatan 6', 'form 6', 'form six', 'stpm'):
         return 'stpm'
-    if 'matrikulasi' in t or 'matriculation' in t:
+    if has('matrikulasi', 'matriculation'):
         return 'matric'
-    if 'asasi' in t or 'foundation' in t:
+    if has('asasi', 'foundation'):
         return 'asasi'
-    if 'pismp' in t or 'perguruan' in t:
+    if has('pismp', 'perguruan'):
         return 'pismp'
-    if 'diploma' in t or 'sijil' in t:
+    if has('diploma', 'sijil'):
         return 'diploma'
-    if any(k in t for k in ('ijazah', 'sarjana muda', 'bachelor', 'degree')):
+    if has('ijazah', 'sarjana muda', 'bachelor', 'bacelor', 'degree'):
         return 'degree'
     # A bare polytechnic name with no programme keyword (an occasional extraction quirk, #125):
     # a polytechnic's default level is a diploma. LAST — so an "Ijazah/Asasi … @ Politeknik" is
     # still caught by the specific branches above.
-    if 'politeknik' in t or 'polytechnic' in t:
-        return 'diploma'
-    return ''
+    return 'diploma' if has('politeknik', 'polytechnic') else ''
 
 
 def is_pre_u(pathway_type: str) -> bool:

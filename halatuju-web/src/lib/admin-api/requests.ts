@@ -130,9 +130,13 @@ export interface OrgRequestDetail {
 }
 
 export async function getOrgRequests(
-  filters?: { status?: string }, options?: ApiOptions
+  filters?: { status?: string; org?: string }, options?: ApiOptions
 ): Promise<{ requests: OrgRequestDetail[] }> {
-  const qs = filters?.status ? `?status=${encodeURIComponent(filters.status)}` : ''
+  // `org` is the organisation crumb (TD-228) — re-fenced server-side; omitted, nothing narrows.
+  const params = new URLSearchParams()
+  if (filters?.status) params.set('status', filters.status)
+  if (filters?.org) params.set('org', filters.org)
+  const qs = params.toString() ? `?${params}` : ''
   return adminFetch(`/api/v1/admin/scholarship/requests/${qs}`, options)
 }
 

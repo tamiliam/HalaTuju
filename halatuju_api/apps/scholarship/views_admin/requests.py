@@ -123,6 +123,11 @@ class AdminOrgRequestListView(_OrgRequestsBase):
         admin, err = self._org_side(request)
         if err:
             return err
+        # TD-228: the organisation crumb's `?org=` narrows INSIDE the fence below (404 on a code
+        # the caller may not name); absent, the list is exactly what the fence allows.
+        org, err = self._org_narrowing(request, admin)
+        if err:
+            return err
         # TD-291: every per-row read is PREFETCHED — the thread, the attachments and (owner
         # payload only) the analyses — so the page costs the same few queries at any length. The
         # readers (`org_requests.comments_for`, `approved_analysis`, `get_analyses`) filter the
@@ -139,6 +144,8 @@ class AdminOrgRequestListView(_OrgRequestsBase):
             OrgRequest.objects.select_related('organisation', 'submitted_by')
             .prefetch_related(*prefetch),
             admin, field='organisation_id')
+        if org is not None:
+            qs = qs.filter(organisation=org)
         return Response({'requests': [self._serialize(admin, r) for r in qs]})
 
     def post(self, request):

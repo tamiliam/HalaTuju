@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
-  getInvitations, inviteSponsor,
+  cancelInvitation, getInvitations, inviteSponsor,
   type AdminItem, type InvitationKind, type InvitationRow, type InvitationsPayload,
 } from '@/lib/admin-api'
 import {
@@ -115,6 +115,22 @@ export default function OrganisationInvitationsPage() {
     }
     if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme('') }
     void load()
+  }
+
+  /** TD-214: withdraw an invitation sent by mistake. Asks first — for a staff invitation it also
+   *  switches the never-used account off — and reloads, so the row leaves the waiting list. */
+  const cancel = async (row: InvitationRow) => {
+    if (!token || !window.confirm(t('admin.invitations.cancelConfirm', { email: row.email }))) return
+    setResendingId(row.id)
+    try {
+      await cancelInvitation(row.id, { token })
+      setMessage({ type: 'success', text: t('admin.invitations.cancelled') })
+    } catch {
+      setMessage({ type: 'warning', text: t('admin.invitations.cancelFailed') })
+    } finally {
+      setResendingId(null)
+      void load()
+    }
   }
 
   /**
@@ -322,6 +338,7 @@ export default function OrganisationInvitationsPage() {
               if (row.admin_id) void resend(asStaffRow(row)).then(load)
               else void resendSponsor(row)
             } : undefined}
+            onCancel={canManage ? (row: InvitationRow) => { void cancel(row) } : undefined}
             empty={emptyWords}
           />
         )}

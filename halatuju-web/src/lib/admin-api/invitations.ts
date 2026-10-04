@@ -70,3 +70,10 @@ export async function inviteSponsor(
     '/api/v1/admin/invitations/', 'POST', { audience: 'sponsor', ...data }, options)
 }
 
+
+/** TD-214: withdraw an invitation nobody has answered. The row is kept and reads `revoked`; a
+ *  staff invitation's never-used account is switched off with it. 400 `not_open` once answered. */
+export async function cancelInvitation(id: number, options?: ApiOptions) {
+  return adminMutate<{ id: number; status: 'revoked' }>(
+    `/api/v1/admin/invitations/${id}/cancel/`, 'POST', {}, options)
+}
