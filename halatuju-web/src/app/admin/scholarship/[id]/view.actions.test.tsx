@@ -105,6 +105,18 @@ describe('the reporting-date box appears only where a human may settle it', () =
     // The success state: the screen now states the date on file.
     expect(await screen.findByText('admin.scholarship.reportingDateEntry.current')).toBeTruthy()
   })
+
+  it('a failed save says why and keeps the typed date (TD-165)', async () => {
+    const { api } = renderCockpit({ role: 'super', stage: 'interviewing',
+                                    build: { reporting_date: null } })
+    await loaded()
+    fireEvent.change(dateBox() as HTMLInputElement, { target: { value: '2026-07-01' } })
+    api.setReportingDate.mockRejectedValue(new Error('A reporting date cannot be in 2019.'))
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.reportingDateEntry.save' }))
+    expect(await screen.findByText('A reporting date cannot be in 2019.')).toBeTruthy()
+    expect((dateBox() as HTMLInputElement).value).toBe('2026-07-01')
+    expect(screen.queryByText('admin.scholarship.reportingDateEntry.current')).toBeNull()
+  })
 })
 
 describe('assigning a reviewer', () => {

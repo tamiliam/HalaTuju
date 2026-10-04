@@ -357,6 +357,7 @@ def document_red_blockers(application):
     from .. import income_engine
     from ..academic_engine import student_slip_check
     from ..pathway_engine import student_offer_check
+    from ..doc_red_keys import person_red     # the person-red keys' one home (TD-110)
     codes = set()
     # #4 (2026-06-11): a person-mismatch on an income PROOF only hard-blocks when that proof is
     # COMPULSORY for the chosen route — i.e. a salary-route salary slip tagged to a SELECTED
@@ -376,9 +377,6 @@ def document_red_blockers(application):
     # offer_letter) still always block -- they're not income-cluster docs.
     income_ok = income_engine.income_established(application)
 
-    def has(d, *keys):
-        return any(d.get(k) == 'mismatch' for k in keys)
-
     for doc in live_docs(application):
         dt = doc.doc_type
         if income_ok and dt in _INCOME_CLUSTER_DOC_TYPES:
@@ -396,25 +394,24 @@ def document_red_blockers(application):
         elif dt == 'offer_letter':
             # Name / IC are hard identity reds; the pathway-clash is a SOFT "is this
             # where you're going?" signal and is deliberately not gated here.
-            if has(student_offer_check(doc), 'name', 'ic'):
+            if person_red(dt, student_offer_check(doc)):
                 codes.add('offer_letter_mismatch')
         elif dt == 'parent_ic':
             chk = income_engine.student_income_ic_check(doc)
-            if has(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
+            if person_red(dt, chk):
                 codes.add('parent_ic_person_mismatch')
         elif dt == 'salary_slip':
             # Only a COMPULSORY salary slip (salary route + a SELECTED working member) blocks on a
             # person-mismatch — an optional/extraneous slip must not (see the note above).
             compulsory = route == 'salary' and (doc.household_member or '') in selected_members
-            if compulsory and has(income_engine.student_income_proof_check(doc),
-                                  'name_status', 'nric_status'):
+            if compulsory and person_red(dt, income_engine.student_income_proof_check(doc)):
                 codes.add('salary_slip_person_mismatch')
         elif dt == 'epf':
             pass  # EPF is supplementary on BOTH routes (never substitutes the salary slip), so a
                   # person-mismatch on it never blocks submission — the cluster coach handles it.
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
-            if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
+            if person_red(dt, chk) or chk.get('current_status') in income_engine.STR_RED_STATES:
                 codes.add('str_person_mismatch')
         elif dt == 'birth_certificate':
             # ⚠ THE FATHER ROW IS DELIBERATELY NOT A BLOCKER (BrightPath #23, owner 2026-09-08).
@@ -422,10 +419,10 @@ def document_red_blockers(application):
             # name — a father may legitimately have no Malaysian IC (Lina's has none), and a
             # foreign or absent father must never be what stops a student submitting. The row is
             # still READ and still shown to the officer; it just does not hold the door.
-            if has(income_engine.student_bc_check(doc), 'child_status', 'mother_status'):
+            if person_red(dt, income_engine.student_bc_check(doc)):
                 codes.add('birth_cert_person_mismatch')
         elif dt == 'guardianship_letter':
-            if has(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
+            if person_red(dt, income_engine.student_guardianship_check(doc)):
                 codes.add('guardianship_person_mismatch')
     return list(codes)
 

@@ -192,4 +192,38 @@ describe('rejecting a stuck applicant outright', () => {
     expect((screen.getByLabelText('admin.scholarship.orgReject.whyLabel') as HTMLTextAreaElement)
       .value).toBe('No documents after four reminders.')
   })
+
+  it('a reason of spaces only is no reason — Continue stays disabled (TD-165)', async () => {
+    // The endpoint refuses a blank reason (400 comments_required) after `.strip()`; the button
+    // must refuse the same thing, or the officer reaches the confirm step with nothing to send.
+    renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
+    fireEvent.change(screen.getByLabelText('admin.scholarship.orgReject.whyLabel'),
+                     { target: { value: '   \u0009  ' } })
+    expect((screen.getByRole('button', { name: 'admin.scholarship.orgReject.submit' }) as HTMLButtonElement)
+      .disabled).toBe(true)
+  })
+
+  it('⚠ A FAILED REJECT KEEPS THE TYPED REASON and says why (TD-165)', async () => {
+    // The action is irreversible and the reason is its only audit record; a transient server
+    // failure must leave the officer on the confirm step with their sentence intact.
+    const { api } = renderCockpit({ role: 'org_admin', stage: 'shortlisted' })
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.start' }))
+    fireEvent.change(screen.getByLabelText('admin.scholarship.orgReject.whyLabel'),
+                     { target: { value: 'No documents after four reminders.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.submit' }))
+    api.orgRejectApplication.mockRejectedValue(new Error('The server refused: try again.'))
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.confirmYes' }))
+
+    expect(await screen.findByText('The server refused: try again.')).toBeTruthy()
+    expect(screen.getByText('admin.scholarship.orgReject.confirmTitle')).toBeTruthy()
+    expect(screen.queryByText('admin.scholarship.orgReject.recordTitle')).toBeNull()
+    await waitFor(() => expect((screen.getByRole('button',
+      { name: 'admin.scholarship.orgReject.confirmYes' }) as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: 'admin.scholarship.orgReject.back' }))
+    expect((screen.getByLabelText('admin.scholarship.orgReject.whyLabel') as HTMLTextAreaElement)
+      .value).toBe('No documents after four reminders.')
+  })
 })

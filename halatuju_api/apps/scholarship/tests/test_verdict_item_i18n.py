@@ -52,7 +52,11 @@ def _emitting_sources():
         src = path.read_text(encoding='utf-8')
         if '_item(' not in src:
             continue
-        if path.name == 'verdict_engine.py' or 'verdict_engine import' in src:
+        # A PATH relative to the app, never a bare name (TD-277): under `rglob` a bare
+        # `path.name == 'verdict_engine.py'` would also select any future file of that name in a
+        # sub-package.
+        rel = path.relative_to(_SCHOLARSHIP).as_posix()
+        if rel == 'verdict_engine.py' or 'verdict_engine import' in src:
             out.append((path, src))
     if len(out) < 2:
         raise AssertionError(

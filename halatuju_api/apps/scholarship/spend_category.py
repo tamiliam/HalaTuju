@@ -343,6 +343,7 @@ class SortReport:
     merchants_by_rung: dict = field(default_factory=dict)
     merchants_asked: int = 0                             # names actually sent to the model
     merchants_answered: int = 0
+    merchants_reasked: int = 0                           # stale `ai` answers re-asked (TD-239)
 
     owner_rows_untouched: int = 0
     applied: bool = False
@@ -373,6 +374,7 @@ class SortReport:
         out += [
             f'merchants asked      : {self.merchants_asked}',
             f'merchants answered   : {self.merchants_answered}',
+            f'merchants re-asked   : {self.merchants_reasked} (answered by an older prompt)',
         ]
         return out
 
@@ -440,23 +442,45 @@ def merchant_verdicts(merchants, stats, stored, *, use_ai=True, report=None):
     return verdicts
 
 
-def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
+def stale_ai_merchants(version: str) -> set[str]:
+    """Merchants whose stored `ai` answer was NOT given by prompt `version` (TD-239)."""
+    from .models import MerchantCategory
+
+    return set(MerchantCategory.objects.filter(decided_by=BY_MODEL).exclude(reason=version)
+               .values_list('merchant', flat=True))
+
+
+def sort_transactions(*, apply=False, resort=False, use_ai=True,
+                      reask_version=None) -> SortReport:
     """Run the ladder over the stored transactions. **Report-first by default.**
 
     `resort=False` (the default) considers only rows nothing has decided yet — `decided_by=''`,
     which covers both a never-sorted row and one an earlier run left honestly unplaced.
     `resort=True` re-considers every row **except** an `owner` one.
 
+    `reask_version` (TD-239) re-asks the model about every merchant whose stored `ai` answer came
+    from a different prompt — and their rows with it. It must NAME the current `PROMPT_VERSION`:
+    deliberately never automatic on a bump, and a typo on either side is refused rather than
+    re-billing the whole list. A merchant the new prompt does not answer keeps its old verdict.
+
     ⚠ `apply=False` MUST BE UNABLE TO WRITE, not merely choose not to. There is exactly one
     `bulk_update` and one `update_or_create` loop, both behind the flag, and a test asserts nothing
     changed after a report run.
     """
     from django.db import transaction as db_transaction
+    from django.db.models import Q
 
     from .models import BursarySpendTxn, MerchantCategory
 
     report = SortReport(applied=bool(apply))
     stored = _stored_verdicts()
+    stale: set[str] = set()
+    if reask_version is not None:
+        if reask_version != PROMPT_VERSION or not use_ai:
+            raise ValueError(f're-asking needs the model on and the CURRENT prompt version '
+                             f'({PROMPT_VERSION!r}); got {reask_version!r}, use_ai={use_ai}')
+        stale = stale_ai_merchants(reask_version)
+    kept = {m: stored.pop(m) for m in stale if m in stored}   # the fallback if nothing answers
 
     # Stats come from EVERY successful spend row we hold, not from the rows being sorted — a
     # merchant's pattern is a property of the merchant, and narrowing to this batch would make the
@@ -477,7 +501,7 @@ def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
     # org-fence: NONE, by design (the nightly sorter).
     rows = BursarySpendTxn.objects.exclude(decided_by=BY_OWNER)
     if not resort:
-        rows = rows.filter(decided_by='')
+        rows = rows.filter(Q(decided_by='') | Q(decided_by=BY_MODEL, merchant__in=stale))
     rows = list(rows.only('id', 'merchant', 'amount', 'duitnow_type', 'category', 'decided_by'))
     # org-fence: NONE, deliberately - the sorter counts across the platform (see above).
     report.owner_rows_untouched = BursarySpendTxn.objects.filter(decided_by=BY_OWNER).count()
@@ -485,7 +509,9 @@ def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
     # ⚠ Rung 1 is per ROW, so a person-transfer row never contributes its merchant to rung 4 — we
     # must not pay to ask the model about somebody's name.
     merchants = sorted({r.merchant for r in rows if r.duitnow_type != DUITNOW_P2P and r.merchant})
+    report.merchants_reasked = len(stale.intersection(merchants))
     verdicts = merchant_verdicts(merchants, stats, stored, use_ai=use_ai, report=report)
+    row_verdicts = {**{m: v for m, v in kept.items() if m in merchants}, **verdicts}
 
     changed = []
     for row in rows:
@@ -493,7 +519,7 @@ def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
         if row.duitnow_type == DUITNOW_P2P:
             category, decided_by = 'transfer', BY_DUITNOW
         else:
-            verdict = verdicts.get(row.merchant)
+            verdict = row_verdicts.get(row.merchant)
             if verdict and verdict[1] == BY_INFERENCE:
                 # The ceiling lives HERE, on the transaction, and nowhere else.
                 if inferred_category(stats.get(row.merchant), row.amount):
@@ -520,6 +546,10 @@ def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
                     changed, ['category', 'decided_by'], batch_size=500)
             for merchant, (category, decided_by) in verdicts.items():
                 if decided_by == BY_OWNER:
+                    continue
+                if decided_by == BY_MODEL and stored.get(merchant) == (category, decided_by):
+                    # A REUSED answer: rewriting it would stamp an older prompt's verdict with
+                    # today's PROMPT_VERSION, and the version is what `reask_version` reads.
                     continue
                 MerchantCategory.objects.update_or_create(
                     merchant=merchant,

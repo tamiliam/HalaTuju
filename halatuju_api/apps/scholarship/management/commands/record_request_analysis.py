@@ -86,14 +86,15 @@ _ANALYSIS_PATH = '/api/v1/admin/scholarship/requests/{rid}/analysis/'
 _DETAIL_PATH = '/api/v1/admin/scholarship/requests/{rid}/'
 
 
-def _repo_sha():
-    """The commit the analysis was read against, or '' if git is unavailable.
+def _repo_sha(root=None):
+    """The commit the analysis was read against — the CURRENT tree's HEAD, a worktree's own when run
+    from one (TD-236) — or '' if git is unavailable.
 
     Best-effort by design: a missing SHA weakens the record slightly, and failing the whole
     command over it would be worse.
     """
     try:
-        out = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=_REPO_ROOT,
+        out = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root or _REPO_ROOT,
                              capture_output=True, text=True, timeout=10)
         return out.stdout.strip() if out.returncode == 0 else ''
     except Exception:       # noqa: BLE001 — never fail an analysis over provenance metadata
@@ -116,7 +117,19 @@ def _missing_paths(paths):
 
 # ── The local credential file (gitignored, repo root) ────────────────────────
 
-_ENV_PATH = os.path.join(_REPO_ROOT, '.env')
+def _env_path(root=None):
+    """The tree's own `.env`, else the MAIN checkout's (TD-236): a worktree has none, and shares
+    its git dir with the checkout that holds the credential. Only the credential comes from there —
+    the SHA and the cited paths are always read from the tree the command runs in."""
+    own = os.path.join(root or _REPO_ROOT, '.env')
+    try:
+        out = subprocess.run(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+                             cwd=root or _REPO_ROOT, capture_output=True, text=True, timeout=10)
+        common = out.stdout.strip() if out.returncode == 0 else ''
+    except (OSError, subprocess.SubprocessError):   # no git: no main checkout to fall back to
+        common = ''
+    shared = os.path.join(os.path.dirname(os.path.normpath(common)), '.env') if common else own
+    return own if os.path.exists(own) or not os.path.exists(shared) else shared
 
 
 def _env_value(key):
@@ -129,7 +142,7 @@ def _env_value(key):
     if live:
         return live
     try:
-        with open(_ENV_PATH, encoding='utf-8') as fh:
+        with open(_env_path(), encoding='utf-8') as fh:
             for line in fh:
                 line = line.strip()
                 if not line or line.startswith('#') or '=' not in line:
@@ -149,7 +162,7 @@ def _env_write(values):
     preserve comments and ordering or it will quietly eat someone's notes.
     """
     try:
-        with open(_ENV_PATH, encoding='utf-8') as fh:
+        with open(_env_path(), encoding='utf-8') as fh:
             lines = fh.read().splitlines()
     except OSError:
         lines = []
@@ -163,7 +176,7 @@ def _env_write(values):
         else:
             out.append(line)
     out.extend(f'{k}={v}' for k, v in remaining.items())
-    with open(_ENV_PATH, 'w', encoding='utf-8') as fh:
+    with open(_env_path(), 'w', encoding='utf-8') as fh:
         fh.write('\n'.join(out) + '\n')
 
 
@@ -448,7 +461,7 @@ class Command(BaseCommand):
                 f'Stored, but could not delete {path} - remove it by hand, it holds a credential.'))
 
         self.stdout.write(self.style.SUCCESS(
-            f'Stored {", ".join(sorted(values))} in {_ENV_PATH} (gitignored).'))
+            f'Stored {", ".join(sorted(values))} in {_env_path()} (gitignored).'))
         self.stdout.write('Future runs mint their own short-lived token. No more manual fetching.')
 
     def handle(self, *args, **options):

@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## Later-tier batch 3 — ten small items closed, two left open (TD-277, TD-270, TD-284, TD-273, TD-263, TD-239, TD-236, TD-165, TD-291, TD-110) - 2026-10-04
+
+Built locally, NOT deployed. Register open **108 → 98** (`code_health.py` td_open 98); TD-174 and
+TD-077 looked at and left open with a dated status. No migration, no new package, no stored-data
+change, no new copy. One new served field (`agreement_enabled` on the student's award payload).
+TD-110 touches the document-is-wrong rule (eligibility-adjacent) → adversarial review first.
+
+- **TD-110 — the person-red keys have one home.** `apps/scholarship/doc_red_keys.py`
+  (`PERSON_RED_KEYS`, `person_red`) is read by both `resolution.doc_match_verdict` (the Action
+  Centre) and `services.blockers.document_red_blockers` (the consent gate). No answer moves.
+  `test_doc_red_keys_drift.py` drives both over one matrix and pins every disagreement it found —
+  none changed, each an owner's question: a slip GRADE mismatch (task held, gate open — owner
+  2026-07-08), the IC-number chain rescue (Action Centre only), EPF (task held, gate never), a
+  non-official offer (refused here; the gate has its own blocker), and an unreadable slip SUBJECT
+  table (task held, gate reads the name only). `results_slip` keeps its keys at each reader. The
+  table itself is pinned as a literal (shrinking it is a deliberate, owner-visible edit). A check returning None now reads as not a mismatch at the gate (it used to raise); unreachable today — None only for a wrong doc type or a salary slip/EPF with no member, and the gate only checks a compulsory slip, which has a member.
+- **TD-291 — the Requests list is a flat query count; the student page stops asking a dark route.**
+  The list prefetches the thread, attachments and (owner only) analyses; `comments_for`,
+  `approved_analysis` and `get_analyses` read the loaded rows (`org_requests.prefetched_rows`).
+  org_admin 7 / 15 → 5 / 5 and super 11 / 27 → 6 / 6 queries at 2 / 6 requests
+  (`TestTheRequestsListQueryBudget`). The award payload serves `agreement_enabled`
+  (BURSARY_AGREEMENT_ENABLED) and `/scholarship/application` calls `getBursaryAgreement` only when it
+  is true (`page.agreement.test.tsx`).
+- **TD-239 — a better prompt can re-ask what an older one answered.** `sort_spending
+  --reask-version <current PROMPT_VERSION>` re-asks only merchants whose stored `ai` answer carries
+  another version (never an owner's; refused on a typo or with `--no-ai`; an unanswered merchant
+  keeps its old verdict). ⚠ Report mode also calls the model and pays; `merchants asked` is the paid
+  count — run it once, with `--apply`. Fixed on the way: a reused `ai` answer was re-stamped with today's version
+  whenever a new row at that shop was sorted. `test_spend_reask.py` (Gemini mocked).
+- **TD-236 — `record_request_analysis` runs from a worktree.** `.env` is the tree's own, else the
+  main checkout's via `git rev-parse --git-common-dir`; the SHA is still the current tree's HEAD.
+  `test_record_request_analysis_worktree.py` (git faked at the seam — the gate image has no git).
+- **TD-263 — Re-quote is offered only for a feature**, the service's own rule; the pinned
+  disagreement in `requestStatusDrift.test.ts` is re-pointed to the agreed rule. The request page now
+  passes the EFFECTIVE kind (`triaged_kind || kind`), as `org_requests._effective_kind` reads it.
+- **TD-270 — import loops are reported.** `importCycles.test.ts`: zero VALUE cycles anywhere in
+  `src/`; the one type-only loop (five `admin-api` modules) is a closed set that may only shrink.
+- **TD-273 — every cockpit panel reads every prop it declares** (`view.panelProps.test.ts`, 19
+  components, 183 props).
+- **TD-165 — the reject card's last error cases are tested** (spaces-only reason; a failed reject
+  keeps the reason; a failed reporting-date save keeps the date). Nothing needed fixing.
+- **TD-277 — guards select files by PATH, not name** (`test_verdict_item_i18n.py`,
+  `crossTreePaths.test.ts`); the rule is in `halatuju_api/CLAUDE.md`.
+- **TD-284 — `guard%` no longer counts drift tests** (workspace `Settings/_tools/code_health.py`:
+  `*Drift.test.ts` leave the ratio and are reported as `drift 15`; 20% → 14%, a DEFINITION change).
+  `fix%` and `big` stay WARN-only by design, the reason written at the thresholds.
+- **Left open:** TD-174 (which mail bills whom is a billing-policy call, and more than six files);
+  TD-077 (a new badge needs Stitch and copy in three languages).
+
 ## Later-tier batch 2 — ten small items closed, two left open (TD-329, TD-331, TD-332, TD-308, TD-304, TD-295, TD-279, TD-266, TD-195, TD-053) - 2026-10-04
 
 Built locally, NOT deployed. Register open **118 → 108** (`code_health.py` td_open 108); TD-286 and

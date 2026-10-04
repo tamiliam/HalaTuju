@@ -57,7 +57,10 @@ const apiTestFiles = (): string[] => walkFloor(
   path.join(API_ROOT, 'apps'), API_SOURCE_FLOOR,
   'six of these read the web tree by path, and a web-only sprint runs no api gate at all',
   { exts: ['.py'], skip: ['migrations'] },
-).filter((f) => path.basename(f).startsWith('test_') || path.basename(f) === 'source_walk.py')
+).filter((f) => path.basename(f).startsWith('test_')
+  // The shared helper by its repo-relative PATH, never a bare name (TD-277): `=== 'source_walk.py'`
+  // would also select any future file of that name anywhere under apps/.
+  || path.relative(API_ROOT, f).split(path.sep).join('/') === 'apps/scholarship/tests/source_walk.py')
 
 function webReferences(): Array<[string, string]> {
   const out: Array<[string, string]> = []

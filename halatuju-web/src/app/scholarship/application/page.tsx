@@ -64,13 +64,15 @@ export default function ScholarshipApplicationPage() {
         if (!active) return
         setAward(res.offer)
         setAcceptanceEnabled(!!res.acceptance_enabled)
+        // Bursary agreement (flag-gated): a signed student gets a small "your agreement"
+        // panel with a PDF download. Asked ONLY while the feature is on (TD-291) — the route
+        // 404s while it is off, and this page used to ask it on every load. Unsigned → 404 → hide.
+        if (!res.agreement_enabled) return
+        getBursaryAgreement({ token })
+          .then((agreement) => { if (active) setBursary(agreement) })
+          .catch(() => { if (active) setBursary(null) })
       })
       .catch(() => { if (active) setAward(null) })
-    // Bursary agreement (flag-gated): a signed student gets a small "your agreement"
-    // panel with a PDF download. 404s while the flag is off / unsigned → hide it.
-    getBursaryAgreement({ token })
-      .then((res) => { if (active) setBursary(res) })
-      .catch(() => { if (active) setBursary(null) })
     return () => { active = false }
   }, [status, token, router])
 

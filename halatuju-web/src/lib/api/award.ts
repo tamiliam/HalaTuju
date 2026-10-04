@@ -79,6 +79,8 @@ export async function getStudentAward(
   bursary_agreement?: BursaryAgreement
   // Gates the "View my award" panel — OFF while the accept/onboarding flow isn't exposed yet.
   acceptance_enabled?: boolean
+  /** TD-291: BURSARY_AGREEMENT_ENABLED. Ask `getBursaryAgreement` only when true — it 404s while off. */
+  agreement_enabled?: boolean
 }> {
   return apiRequest('/api/v1/scholarship/award/', options)
 }

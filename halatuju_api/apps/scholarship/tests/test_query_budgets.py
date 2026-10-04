@@ -566,3 +566,88 @@ class TestCheck2SyncQueryBudget(WhoseStrBase):
                 app = self._app(state)
                 self.assertEqual(check2_queries._gap_sets(app),
                                  check2_queries._gap_sets.__wrapped__(app))
+
+
+#: TD-291 (2026-10-04): the Requests list (`GET /admin/scholarship/requests/`), 2 vs 6 requests,
+#: each carrying a shared and an internal comment, one screenshot and one approved analysis — the
+#: four per-row reads the audit found (`comments_for`, the attachments, `approved_analysis` and
+#: `get_analyses`). Ordinary constants for the reason STUDENT_READ_BUDGETS gives (TD-286).
+#:   MEASURED before TD-291: org_admin 2-rows 7 · 6-rows 15 (2 a row); super 2-rows 11 · 6-rows
+#:   27 (4 a row) — the audit's shape (27 / 51 at twelve rows). After the prefetch: 5 / 5 and
+#:   6 / 6 — the two readings of each role EQUAL, so a row costs nothing extra, which is the point.
+REQUESTS_ROUTE = 'api/v1/admin/scholarship/requests/'
+REQUESTS_BUDGETS = {
+    f'{REQUESTS_ROUTE}::GET::org_admin-2-rows': 5,
+    f'{REQUESTS_ROUTE}::GET::org_admin-6-rows': 5,
+    f'{REQUESTS_ROUTE}::GET::super-2-rows': 6,
+    f'{REQUESTS_ROUTE}::GET::super-6-rows': 6,
+}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   REQUESTS_ENABLED=True)
+class TestTheRequestsListQueryBudget(TestCase):
+    """A per-row read that comes back fails the LARGER reading while the smaller holds."""
+
+    def _reading(self, key):
+        from django.utils import timezone
+
+        from apps.scholarship.models import (
+            OrgRequest, OrgRequestAnalysis, OrgRequestAttachment, OrgRequestComment)
+        role, n = key.split('::')[2].rsplit('-', 2)[0], int(key.split('::')[2].rsplit('-', 2)[1])
+        OrgRequest.objects.all().delete()       # the super's list is global; start each reading clean
+        org = make_org()
+        oa = make_admin('org_admin', owning_org=org)
+        sup = make_admin('super', super_admin=True)
+        for i in range(n):
+            req = OrgRequest.objects.create(organisation=org, submitted_by=oa, kind='feature',
+                                            title=f'Request {i}', description='a page')
+            OrgRequestComment.objects.create(org_request=req, author_kind='org', author_admin=oa,
+                                             body='shared', visibility='shared')
+            OrgRequestComment.objects.create(org_request=req, author_kind='owner', author_admin=sup,
+                                             body='internal', visibility='internal')
+            OrgRequestAttachment.objects.create(
+                org_request=req, storage_path=f'requests/{org.id}/{req.id}/shot.png',
+                original_filename='shot.png', content_type='image/png', size=10, uploaded_by=oa)
+            OrgRequestAnalysis.objects.create(org_request=req, body='read', cited_files=['a.py'],
+                                              approved_at=timezone.now(), approved_by=sup)
+        client = authed_client(oa if role == 'org_admin' else sup)
+        url = f'/{REQUESTS_ROUTE}'
+        self.assertEqual(client.get(url).status_code, 200)            # warm-up, as above
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        listed = response.json()['requests']
+        self.assertEqual(len(listed), n, 'the fixture stopped listing what it is named for')
+        # The prefetch must not change WHAT is served: the org sees the shared comment only, the
+        # owner both, and the owner payload still names the approved analysis.
+        comments = [c['body'] for c in listed[0]['comments']]
+        self.assertEqual(comments, ['shared'] if role == 'org_admin' else ['shared', 'internal'])
+        self.assertEqual(len(listed[0]['attachments']), 1)
+        if role == 'super':
+            self.assertEqual(listed[0]['analyses'][0]['cited_files'], ['a.py'])
+        return len(captured.captured_queries)
+
+    def test_each_reading_stays_inside_its_budget(self):
+        for key, limit in REQUESTS_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(
+                    now, limit,
+                    f'{key} now costs {now} queries; the budget is {limit}. ⚠ DO NOT RAISE IT. '
+                    f'If the 6-row reading moved and the 2-row did not, a per-row read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'REQUESTS_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in REQUESTS_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], 'A Requests-list budget sits above what it now costs.\n'
+                         + '\n'.join(loose))
+
+    def test_a_row_costs_nothing_extra(self):
+        for role in ('org_admin', 'super'):
+            self.assertEqual(REQUESTS_BUDGETS[f'{REQUESTS_ROUTE}::GET::{role}-2-rows'],
+                             REQUESTS_BUDGETS[f'{REQUESTS_ROUTE}::GET::{role}-6-rows'], role)
+
+    def test_the_budgeted_route_still_resolves(self):
+        self.assertEqual(resolve('/' + REQUESTS_ROUTE).route, REQUESTS_ROUTE)

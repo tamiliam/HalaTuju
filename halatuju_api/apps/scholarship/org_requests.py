@@ -227,10 +227,20 @@ def comments_for(req, *, viewer_is_org):
     happily render an internal comment. Filtering at the query is the only place that distinguishes
     rows rather than columns.
     """
+    rows = prefetched_rows(req, 'comments')
+    if rows is not None:                     # the Requests LIST prefetched them (TD-291)
+        return [c for c in rows if not viewer_is_org or c.visibility == VISIBILITY_SHARED]
     qs = req.comments.all().select_related('author_admin')
     if viewer_is_org:
         qs = qs.filter(visibility=VISIBILITY_SHARED)
     return list(qs)
+
+
+def prefetched_rows(req, name):
+    """`req.<name>` as already loaded by a list view's prefetch, else None (TD-291). A `.filter`
+    on a related manager IGNORES a prefetch, so each reader filters the loaded rows itself."""
+    cache = getattr(req, '_prefetched_objects_cache', None) or {}
+    return list(cache[name]) if name in cache else None
 
 
 def can_comment(req):
@@ -612,6 +622,10 @@ def approved_analysis(req):
 
     Approved, not superseded, and carrying at least one cited file.
     """
+    rows = prefetched_rows(req, 'analyses')
+    if rows is not None:                     # same rule, over the prefetched rows (TD-291)
+        live = [a for a in rows if a.approved_at and not a.superseded_at and a.cited_files != []]
+        return max(live, key=lambda a: (a.approved_at, a.id), default=None)
     return (req.analyses
             .filter(approved_at__isnull=False, superseded_at__isnull=True)
             .exclude(cited_files=[])

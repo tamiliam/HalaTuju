@@ -385,6 +385,16 @@ class TestStudentAward(TestCase):
         for v in ('Jane Sponsor', 'jane@sponsor.example'):
             self.assertNotIn(v, blob, 'sponsor identity leaked to student')
 
+    def test_the_payload_says_whether_the_agreement_route_is_live(self):
+        """TD-291: the student page asks `/scholarship/bursary-agreement/` only when this is true —
+        that route 404s while the flag is off, and every page load used to ask it anyway."""
+        self._auth()
+        for flag in (False, True):
+            with self.subTest(flag=flag), override_settings(BURSARY_AGREEMENT_ENABLED=flag):
+                r = self.client.get('/api/v1/scholarship/award/')
+                self.assertEqual(r.status_code, 200, r.content)
+                self.assertIs(r.json()['agreement_enabled'], flag)
+
     def test_accept_activates(self):
         self._auth()
         r = self.client.post('/api/v1/scholarship/award/', {'action': 'accept'}, format='json')

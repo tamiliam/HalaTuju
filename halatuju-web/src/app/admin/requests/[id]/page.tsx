@@ -134,7 +134,9 @@ export default function AdminRequestDetailPage() {
   if (loading) return <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
   if (!req) return <p className="text-critical-600">{error || t('admin.requests.error.generic')}</p>
 
-  const triagedKind = req.triaged_kind || ''
+  // The EFFECTIVE kind, as the service reads it (`org_requests._effective_kind`: triaged_kind or
+  // kind) — so the quote / requote / schedule kind gates agree with the server (TD-263).
+  const triagedKind = req.triaged_kind || req.kind || ''
   const unanswered = hasUnansweredQuestions(req.comments)
   const actions = requestActionsFor(reqRole, req.status, triagedKind, unanswered)
   const has = (a: RequestAction) => actions.includes(a)

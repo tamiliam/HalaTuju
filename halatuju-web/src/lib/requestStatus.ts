@@ -97,7 +97,7 @@ export type RequestAction =
  *     (quoted/deferred); defer (quoted); modify (quoted/deferred); withdraw
  *     (submitted/triaged/quoted/deferred).
  *   super (owner) — triage (submitted); quote (triaged + feature); schedule (triaged + bug, or
- *     approved); requote (deferred); done (scheduled); decline (submitted/triaged/quoted/deferred);
+ *     approved); requote (deferred + feature); done (scheduled); decline (submitted/triaged/quoted/deferred);
  *     ai_rerun (submitted/triaged).
  *
  * Two of these names are the web's own: `accept` is the api's `approve` transition, and `withdraw`
@@ -133,7 +133,8 @@ export function requestActionsFor(
   if (status === 'submitted') out.push('triage')
   if (status === 'triaged' && triagedKind === 'feature') out.push('quote')
   if ((status === 'triaged' && triagedKind === 'bug') || status === 'approved') out.push('schedule')
-  if (status === 'deferred') out.push('requote')
+  // The same kind gate as `quote`: `org_requests.requote` refuses a non-feature (`bug_is_free`). TD-263.
+  if (status === 'deferred' && triagedKind === 'feature') out.push('requote')
   if (status === 'scheduled') out.push('done')
   if (['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('decline')
   if (status === 'submitted' || status === 'triaged') out.push('ai_rerun')

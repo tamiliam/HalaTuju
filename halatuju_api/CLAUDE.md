@@ -662,6 +662,12 @@ Four rules for the number itself:
 4. **Never lower a floor to make red go away, and never convert one to a skip.** A skipped drift
    test is how the 64-subject drift shipped.
 
+⚠ **Allowlist a PATH, never a NAME (TD-277).** A guard that exempts or selects a file by its bare
+name (`path.name == 'funding.py'`, `basename(f) === 'source_walk.py'`) silently widens to every
+future file of that name anywhere in the tree. Key it on the path relative to the app or the repo.
+Swept 2026-10-04: the last two (`test_verdict_item_i18n.py`, `crossTreePaths.test.ts`) now key on
+paths; directory-name skips (`migrations`, `__tests__`) are a convention, not an allowlist.
+
 ⚠ **Watch for a corpus fed to `parametrize` or `.each`.** An empty list there generates ZERO tests:
 the file collects clean, reports nothing, and is green for ever. `test_slip_fixtures.py` was
 exactly this.
@@ -1386,6 +1392,27 @@ amendment (decisions.md 2026-10-04 "TD-145 ruled" and its addendum). Register op
 - ⚠ **#31 must be re-run from the cockpit after deploy, NEVER locally** (no Storage access → it
   would wipe `vision_fields`). ⚠ `pathway_engine.py` (633) sits EXACTLY at its oversize allowance
   (budget + 20); `offer_pathway.py` is 617 of 631 after the `school_names` move.
+
+**LATER-TIER BATCH 3 IS BUILT, not committed, pushed or deployed (2026-10-04).** Ten closed
+(TD-277, TD-270, TD-284, TD-273, TD-263, TD-239, TD-236, TD-165, TD-291, TD-110); TD-174 and TD-077
+left open with a dated status. Register open **98**. No migration, no new package, no env var, no
+copy. Behaviour notes:
+- The student award GET (`/scholarship/award/`) serves **`agreement_enabled`** (=
+  `BURSARY_AGREEMENT_ENABLED`); `/scholarship/application` asks `/scholarship/bursary-agreement/`
+  only when it is true. Additive.
+- `sort_spending --reask-version <v>` — PAID, never automatic: `<v>` must be the current
+  `spend_category.PROMPT_VERSION`. ⚠ Report mode ALSO calls the model and pays; `merchants asked` is
+  the paid count (`merchants re-asked` overcounts); run `--reask-version` once, with `--apply`. A
+  reused `ai` answer is no longer re-stamped with the current version.
+- `record_request_analysis` now runs from a worktree: `.env` falls back to the main checkout's
+  (git common dir); the SHA is the worktree's own HEAD. The TD-236 "fast-forward main first"
+  workaround is no longer needed.
+- The Requests list (`GET /admin/scholarship/requests/`) prefetches its per-row reads — budgets in
+  `test_query_budgets.REQUESTS_BUDGETS` (org 5, super 6, flat). A per-row reader of a request must
+  read `org_requests.prefetched_rows(req, name)` first, or the prefetch is silently ignored.
+- The person-red keys of a document live in `apps/scholarship/doc_red_keys.py`; any change to them,
+  or to either reader, answers to `tests/test_doc_red_keys_drift.py`, whose `KNOWN_DIFFERENCES` (the
+  Action Centre vs the gate) may only shrink — each row is an owner's question.
 
 **LATER-TIER BATCH 1 IS BUILT, not committed, pushed or deployed (2026-10-03).** Eight closed
 (TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231, TD-055); TD-290 and TD-294 BUILT and held

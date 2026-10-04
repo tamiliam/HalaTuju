@@ -8,8 +8,8 @@
  *
  * Characterised first (the H8 rule): every status × role × kind × question-state was put through
  * `requestActionsFor` and compared with `org_requests.TRANSITIONS` on the untouched tree.
- * They agree on every row but ONE, which is pinned below as a disagreement, not merged — see
- * `requote`, and TD-263.
+ * They agreed on every row but ONE, pinned below as a disagreement — `requote`, TD-263 — until
+ * the client took the service's kind gate on 2026-10-04.
  *
  * What is read from the api, not restated here: the status list, the transition table, the
  * terminal set and the shaping window. What IS restated is the NAME MAP, because the two sides
@@ -159,25 +159,27 @@ describe('the kind gates: a bug is free, so it is never quoted', () => {
   })
 
   /**
-   * ⚠ PINNED DISAGREEMENT (TD-263) — not merged, not fixed, and no winner picked here.
-   *
-   * `requote` is offered at `deferred` for ANY kind; the service refuses a non-feature requote
-   * with `bug_is_free`. It is unreachable today, and this test is what says so: the only road
-   * into `deferred` is `defer`, whose only road in is `quoted`, which a bug can never reach. Add
-   * a second road into `deferred` — or a way to re-triage a quoted request to a bug — and the
-   * button becomes a 400. This assertion goes red at exactly that moment.
+   * RESOLVED 2026-10-04 (TD-263). Until then this row was a PINNED DISAGREEMENT: `requote` was
+   * offered at `deferred` for ANY kind while the service refuses a non-feature requote with
+   * `bug_is_free`. It was unreachable (the chain below), and the client now carries the same kind
+   * gate as `quote`, so the offer matches the service whether or not a second road into `deferred`
+   * is ever added. The assertion that pinned the kind-blind offer is RE-POINTED to the agreed rule.
    */
-  test('a bug cannot reach `deferred` today, which is why the missing kind gate is harmless', () => {
-    // The chain, read off the table's DESTINATIONS (which the from-sets alone cannot show):
-    // the only way to land on `deferred` is `defer`; the only way to land on `quoted` is `quote`
-    // or `requote`; and both of those refuse anything but a feature (the test above).
+  test('requote is offered at `deferred` only for a feature, as the service allows', () => {
+    expect(requestActionsFor('super', 'deferred', 'feature', false)).toContain('requote')
+    expect(requestActionsFor('super', 'deferred', 'bug', false)).not.toContain('requote')
+    expect(requestActionsFor('super', 'deferred', '', false)).not.toContain('requote')
+  })
+
+  test('a bug still cannot reach `deferred` today (the chain that made the old gap harmless)', () => {
+    // Read off the table's DESTINATIONS (which the from-sets alone cannot show): the only way to
+    // land on `deferred` is `defer`; the only way to land on `quoted` is `quote` or `requote`; and
+    // both of those refuse anything but a feature (the test above).
     const landingOn = (status: string) => [
       ...serviceSrc.matchAll(new RegExp(`'([a-z_]+)':\\s*\\(\\([^)]*\\),\\s*'${status}'\\)`, 'g')),
     ].map((m) => m[1]).sort()
     expect(landingOn('deferred')).toEqual(['defer'])
     expect(TRANSITIONS.defer).toEqual(['quoted'])
     expect(landingOn('quoted')).toEqual(['quote', 'requote'])
-    // The offer itself, pinned as it is today — kind-blind, and therefore wider than the service.
-    expect(requestActionsFor('super', 'deferred', 'bug', false)).toContain('requote')
   })
 })

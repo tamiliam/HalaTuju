@@ -2349,6 +2349,9 @@ class StudentAwardView(APIView):
             # Gates the "View my award" panel on /scholarship/application. OFF = the accept +
             # onboarding flow isn't exposed yet (the student is invited by email later).
             'acceptance_enabled': getattr(_award_settings, 'AWARD_ACCEPTANCE_ENABLED', False),
+            # TD-291: the page asks for the signed agreement only when this is on; the agreement
+            # route 404s while it is off, and every page load used to ask it anyway.
+            'agreement_enabled': getattr(_award_settings, 'BURSARY_AGREEMENT_ENABLED', False),
         }
         # Bursary agreement (flag-gated): surface the contract the student is about to
         # sign (particulars + rendered body) when an offer/active award exists, and — if

@@ -238,10 +238,9 @@ def doc_match_verdict(doc):
     ``'pending'`` (not scanned yet — hold the task), or ``'ok'`` (accept — resolve
     the task).
 
-    Mirrors the consent-gate per-document classification
-    (``services.document_red_blockers`` / ``document_unreadable_blockers``) so the
-    Action Centre and the gate never disagree: a CONFIRMED ``mismatch`` (or an STR
-    rejected/stale) or an UNREADABLE scan keeps a task open.
+    Reads the same person-red keys as the consent gate (``services.document_red_blockers``) from
+    ``doc_red_keys.PERSON_RED_KEYS`` (TD-110); where the two deliberately differ — the slip's grade
+    row, the IC-number chain, EPF, a non-official offer — ``test_doc_red_keys_drift`` pins it.
 
     **Race fix (2026-06-12):** a document that has NOT yet been read — the scan was
     deferred or skipped under the hourly doc-assist cap, so its fields are still
@@ -260,6 +259,7 @@ def doc_match_verdict(doc):
     from . import income_engine
     from .academic_engine import student_slip_check
     from .pathway_engine import student_offer_check, offer_official_status
+    from .doc_red_keys import person_red     # the person-red keys' one home (TD-110)
     from .services import is_ic_decode_error
 
     dt = doc.doc_type
@@ -291,7 +291,7 @@ def doc_match_verdict(doc):
             return 'pending'
     elif dt == 'offer_letter':
         chk = student_offer_check(doc) or {}
-        if red(chk, 'name', 'ic'):
+        if person_red(dt, chk):
             return 'mismatch'
         # V2 (#3): a NON-OFFICIAL offer (conditional / private-IPTS / a pemakluman or UPU-semakan
         # notification) must NOT resolve an "upload your official offer" request — the officer sees
@@ -309,7 +309,7 @@ def doc_match_verdict(doc):
         chk = income_engine.student_income_ic_check(doc) or {}
         # IC-number chain verified the earner from the BC↔proof number match (#9) — a card that's
         # the wrong family member's is then a soft note, not a red block.
-        if not chk.get('chain_verified') and red(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
+        if not chk.get('chain_verified') and person_red(dt, chk):
             return 'mismatch'
         ran = bool(getattr(doc, 'vision_run_at', None))
         err = getattr(doc, 'vision_error', '') or ''
@@ -319,7 +319,7 @@ def doc_match_verdict(doc):
         if (not err or is_ic_decode_error(err)) and not chk.get('readable'):
             return 'unreadable'
     elif dt in ('salary_slip', 'epf'):
-        if red(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
+        if person_red(dt, income_engine.student_income_proof_check(doc)):
             return 'mismatch'
         # V2 (#4): a Gemini error / blank read used to fall through to 'ok' and resolve the request
         # UNVERIFIED. Hold instead: not scanned yet → 'pending'; read nothing/badly → 'unreadable'.
@@ -330,13 +330,13 @@ def doc_match_verdict(doc):
             return 'unreadable'
     elif dt == 'str':
         chk = income_engine.student_str_check(doc) or {}
-        if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
+        if person_red(dt, chk) or chk.get('current_status') in income_engine.STR_RED_STATES:
             return 'mismatch'
     elif dt == 'birth_certificate':
         # The FATHER row is not a blocker (#23): it is checked against the patronymic in the
         # student's own name, and a father with no Malaysian IC must not stop a re-upload from
         # resolving. Child + mother still do.
-        if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status'):
+        if person_red(dt, income_engine.student_bc_check(doc)):
             return 'mismatch'
         # V2 (#4): same hold — an errored/blank BC extraction must not resolve the request as read.
         sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
@@ -345,7 +345,7 @@ def doc_match_verdict(doc):
         if sv in ('wrong_doc', 'unreadable', 'incomplete'):
             return 'unreadable'
     elif dt == 'guardianship_letter':
-        if red(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
+        if person_red(dt, income_engine.student_guardianship_check(doc)):
             return 'mismatch'
         # V1 (#1): now that guardianship_letter actually field-extracts on upload, a file that
         # read NOTHING guardianship-shaped (a selfie / wrong document) must be HELD for

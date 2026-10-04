@@ -7,11 +7,11 @@ Part of the `views_admin` package. Every name below is re-exported from
 import logging
 
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.response import Response
 
-from ..models import OrgRequest
+from ..models import OrgRequest, OrgRequestAnalysis, OrgRequestComment
 from ..serializers_admin import OrgRequestOrgSerializer, OrgRequestOwnerSerializer
 from .base import _AdminBase
 
@@ -123,9 +123,21 @@ class AdminOrgRequestListView(_OrgRequestsBase):
         admin, err = self._org_side(request)
         if err:
             return err
+        # TD-291: every per-row read is PREFETCHED — the thread, the attachments and (owner
+        # payload only) the analyses — so the page costs the same few queries at any length. The
+        # readers (`org_requests.comments_for`, `approved_analysis`, `get_analyses`) filter the
+        # loaded rows themselves; `test_query_budgets.TestTheRequestsListQueryBudget` holds it.
+        # org-fence: a prefetch only loads children of the fenced requests below.
+        prefetch = [Prefetch('comments', OrgRequestComment.objects.select_related('author_admin')),
+                    'attachments']
+        if self.has_role(admin, 'super'):
+            # org-fence: as above — children of the fenced list only.
+            prefetch.append(Prefetch('analyses',
+                                     OrgRequestAnalysis.objects.select_related('approved_by')))
         # org-fence: list scoped to the caller's organisation (super global) via _org_scoped.
         qs = self._org_scoped(
-            OrgRequest.objects.select_related('organisation', 'submitted_by'),
+            OrgRequest.objects.select_related('organisation', 'submitted_by')
+            .prefetch_related(*prefetch),
             admin, field='organisation_id')
         return Response({'requests': [self._serialize(admin, r) for r in qs]})
 

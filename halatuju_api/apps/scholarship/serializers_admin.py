@@ -1181,7 +1181,9 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
         from . import org_requests
         current = org_requests.approved_analysis(obj)
         out = []
-        for a in obj.analyses.all().select_related('approved_by').order_by('-id'):
+        loaded = org_requests.prefetched_rows(obj, 'analyses')   # the LIST prefetches (TD-291)
+        for a in (sorted(loaded, key=lambda x: -x.id) if loaded is not None else
+                  obj.analyses.all().select_related('approved_by').order_by('-id')):
             out.append({
                 'id': a.id,
                 'body': a.body,
