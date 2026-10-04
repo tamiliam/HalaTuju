@@ -156,8 +156,14 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
   signs the delegation assertion as that account through the IAM Credentials API — no key. Needs the
   runtime SA to hold `roles/iam.serviceAccountTokenCreator` on it and `iamcredentials.googleapis.com`
   enabled. Wins over the key. Built in ONE place: `apps/scholarship/google_dwd.py`.
-- `GOOGLE_MEET_SA_JSON` — **DEPRECATED 2026-10-03** (secret): the same account's private-key JSON. Kept
-  only as the rollback for the keyless path; removed with the key itself under TD-329.
+- `GOOGLE_MEET_SA_JSON` — **GONE 2026-10-04** (owner's yes, TD-329): removed from Cloud Run
+  (api-01095-ch2) and the user-managed key on `halatuju-meet` DELETED in GCP; only Google's two
+  system-managed keys remain. The code path still reads the setting (dead; TD-329 removes it). If the
+  keyless path ever breaks, the alert policy "Google Workspace keyless path failed (Sheets / Drive /
+  Meet)" (`alertPolicies/10163327245873580870`, channel HalaTuju security alerts → tamiliam@gmail.com,
+  ≤1 email/hour, log match on severity≥WARNING `jsonPayload.message` starting Vircle sheet / Payments
+  CSV / Drive read / Drive write / Sheet read / Spending / Contract PDF / Meet) fires; recovery = fix the
+  IAM grant, or mint a new key and set this var again (~10 min).
 - `SPONSOR_MOCK_DONATIONS_ENABLED` — **default OFF — NEVER set in production** (TD-258). Gates the
   MOCK sponsor donation endpoint (`POST /api/v1/sponsor/wallet/donate/`), which mints a confirmed,
   programme-less balance out of nothing. Off → the route answers 404 like a route that is not there.
@@ -1484,6 +1490,11 @@ then `gcloud iam service-accounts keys list --iam-account halatuju-meet@gen-lang
 and `gcloud iam service-accounts keys delete <KEY_ID> --iam-account halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com --project gen-lang-client-0871147736 --account tamiliam@gmail.com`
 for each user-managed key. Then TD-125 closes, and TD-329 removes the key path from the code.
 **What the owner must decide:** only step (e) — the yes to remove the env var and delete the key.
+**ALL STEPS DONE 2026-10-04.** (e) ran on the owner's yes after the TD-329 alert policy was created
+first (`alertPolicies/10163327245873580870`): env var removed → `halatuju-api-01095-ch2`; the sheet
+sync re-run on that revision via `gcloud scheduler jobs run halatuju-vircle-sheet-sync` → POST 200, no
+warning on the path; key `7ef25e69…` deleted; `keys list` shows only the two SYSTEM_MANAGED keys.
+TD-125 CLOSED. TD-329 = the dead code path only (Later; next api deploy).
 
 **NOW SPRINT 5 PART 1 (TD-229) IS BUILT, not committed, pushed or deployed (2026-10-03).**
 Register open **131** (TD-229 closed; TD-327 raised — Later — and TD-328 — Owner-decision), defined

@@ -2,9 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-329 / TD-125 — the old Google key is gone; an alert watches the keyless path - 2026-10-04
+
+PRODUCTION SET-UP, no code. In order, with the owner's yes for the irreversible part: (1) Cloud
+Monitoring alert policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
+(`alertPolicies/10163327245873580870`; log match on api warnings whose message starts Vircle sheet /
+Payments CSV / Drive read / Drive write / Sheet read / Spending / Contract PDF / Meet; channel HalaTuju
+security alerts → tamiliam@gmail.com; ≤1 email/hour; filter checked against real September lines);
+(2) `GOOGLE_MEET_SA_JSON` removed from the api → `halatuju-api-01095-ch2`; (3) the Vircle sheet sync
+re-run on that revision → 200, no warning (keyless never falls back to the key, so this is the proof);
+(4) the one user-managed key on `halatuju-meet` deleted — only Google's two system keys remain.
+Register: **TD-125 RESOLVED**; TD-329 shrinks to the dead code path (Later, next api deploy); open
+**119 → 118**.
+
 ## TD-145 — a different university on the offer is flagged; Saluran Terbuka reads red - 2026-10-04
 
-BUILT, not committed, pushed or deployed. Owner's ruling of 2026-10-04 plus the same-day amendment
+LIVE 2026-10-04 (`2269a516` → `halatuju-api-01094-qbz`); #31 re-run by the owner from the cockpit → not_offer_letter 1.7.0, Pathway + Official chips red (proven). Owner's ruling of 2026-10-04 plus the same-day amendment
 (option 1). Register open **118 → 119** (`code_health.py` td_open 119): TD-145 closed, TD-331 and TD-332 raised (Later). No migration, no new package,
 no web change. **Genuineness `MODEL_VERSION` 1.6.0 → `1.7.0`**; **`VERDICT_ENGINE_VERSION`
 2026-10-03.1 → `2026-10-04.1`**. ⚠ After deploy, re-run #31's offer from the live cockpit — never
