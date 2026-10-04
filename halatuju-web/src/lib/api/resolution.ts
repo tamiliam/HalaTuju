@@ -3,7 +3,8 @@
  * what they send back.
  *
  * ⚠ `ResolutionItem` is one half of a keep-in-sync pair with `AdminResolutionItem` in
- * `admin-api/resolution.ts`, and the two have fallen out of step (TD-266).
+ * `admin-api/resolution.ts`; since TD-266 (2026-10-04) both declare exactly what the one
+ * serializer sends.
  * drift-test: halatuju-web/src/lib/__tests__/webMirrorDrift.test.ts
  */
 import { apiRequest } from './client'

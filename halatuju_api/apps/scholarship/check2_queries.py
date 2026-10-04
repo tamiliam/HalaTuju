@@ -25,6 +25,7 @@ from django.utils import timezone
 
 from . import high_utility_variant as hu
 from .models import ResolutionItem
+from .str_check_memo import one_str_reading
 from .submission_review import completeness_gaps
 
 # Completeness-gap code → clarify-query spec. The gap code IS the query code (the
@@ -282,6 +283,7 @@ def _asked(application, code):
     return any(requirements.asks_for(application, kind, item) for kind, item in governors)
 
 
+@one_str_reading      # TD-308: one STR reading per pass — the helpers below each asked for it
 def _gap_sets(application):
     """The current STEP-1 completeness gap set + the per-member proof-wanted set — the shared,
     side-effect-free computation behind ``sync_check2_queries`` and ``clarify_overflow_count``.

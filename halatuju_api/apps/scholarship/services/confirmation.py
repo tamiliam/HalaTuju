@@ -265,7 +265,11 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
         "UNIVERSITI KEBANGSAAN MALAYSIA, 43600 BANGI") keeps the id — the confirm and the chip
         never disagree; or, for a MULTI-campus course (where that test can only say 'unknown' with
         nothing recorded), the letter names none of its campuses AND exactly names another known
-        catalogue institution (a poly diploma pick, a UTHM letter).
+        catalogue institution (a poly diploma pick, a UTHM letter); or
+      * TD-331 (2026-10-04): the place is the same but the letter names a DIFFERENT catalogue course
+        there — the verdict's own ``programme_agreement(cid, prog, inst) == 'clash'`` — and the
+        letter states its level (``detect_pathway_type``). 'unknown' (an umbrella name, a course
+        we cannot pin, a letter with no level word) keeps the id: cannot tell is not a change.
     A stale id is re-pinned when ``resolve_catalogue_course`` names a UNIQUE tertiary course at the
     new place AT THE SAME LEVEL as the letter (``detect_pathway_type``: a degree letter never pins a
     diploma), else the key is dropped. Pre-U and PISMP confirms (pinned above by their own rules)
@@ -278,11 +282,14 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     cid, inst = (cp.get('course_id') or '').strip(), (cp.get('institution') or '').strip()
     preu_ids = set(op.PREU_COURSE_SLUG.values())
-    if not cid or not (cid in preu_ids or (inst and _names_another_place(op, cid, inst))):
+    level = op.detect_pathway_type(prog, '')
+    if not cid or not (cid in preu_ids or (inst and (
+            _names_another_place(op, cid, inst)
+            or (level and op.programme_agreement(cid, prog, inst) == 'clash')))):
         return
     cp = dict(cp)
     match = op.resolve_catalogue_course(prog, inst) or {}
-    pinned, level = match.get('course_id') or '', op.detect_pathway_type(prog, '')
+    pinned = match.get('course_id') or ''
     # Never a pre-U virtual course: the catalogue links them to ~250 schools whose names share a
     # university's tokens ("SMK Bandar Tun Hussein Onn 2"), so a 'Sains' degree at UTHM can
     # "resolve" to stpm-sains. A tertiary confirm re-pins only to a tertiary course of its level.

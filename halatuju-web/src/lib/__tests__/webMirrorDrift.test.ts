@@ -20,6 +20,7 @@ import * as path from 'path'
 
 import { MALAYSIAN_STATES } from '@/lib/scholarship'
 import { isPreSubmissionStage, showsPostSubmissionCards } from '@/lib/officerCockpit'
+import { readApi } from '@/test/apiSource'
 
 const SRC = path.join(__dirname, '..', '..')
 
@@ -143,44 +144,42 @@ describe('isPreSubmissionStage vs the Assignment card\'s own guard in view.tsx',
 
 // ── 4. The two ResolutionItem interfaces ──────────────────────────────────────────────────────
 /**
- * ⚠ PINNED DISAGREEMENT (TD-266) — reported, not fixed, and no winner picked here.
- *
- * `AdminResolutionItem` says it "Mirrors the student-facing ResolutionItem … but kept separate".
- * Both are read from ONE backend serializer (`ResolutionItemSerializer`), and the admin payload's
- * own docstring says it returns "system + officer + **check2**" items — so the admin copy is not a
- * narrower view by design, it is a stale copy: it is missing two `kind` values, one `source`
- * value, and the `vircle_expected` field the serializer always sends.
- *
- * The end state lesson 290 asks for is to DELETE one side. That is a type change under the
- * cockpit, so it is the next sprint's, not this one's. These rows pin the gap so it cannot widen.
+ * TD-266 (closed 2026-10-04). `AdminResolutionItem` and `ResolutionItem` are read from ONE backend
+ * serializer (`ResolutionItemSerializer`), and the admin payload returns system + officer +
+ * **check2** items. Until this date the admin copy was stale — two `kind` values, one `source`
+ * value and the `vircle_expected` field short. It now declares what the serializer sends, and these
+ * rows hold BOTH halves to that: identical to each other, field for field, and keyed exactly as the
+ * serializer's `Meta.fields`. (The cockpit reads `caveats` with no switch over `kind`, so widening
+ * the type changed nothing on screen.)
  */
-describe('PINNED: the two ResolutionItem interfaces have fallen out of step (TD-266)', () => {
+describe("the two ResolutionItem interfaces are one shape, and it is the serializer's (TD-266)", () => {
   // ⚠ Both sides MOVED at code health H13 — see the note on the booking grid above.
   const student = interfaceFields(
     read('lib', 'api', 'resolution.ts'), 'ResolutionItem', 'lib/api/resolution.ts')
   const admin = interfaceFields(
     read('lib', 'admin-api', 'resolution.ts'), 'AdminResolutionItem', 'lib/admin-api/resolution.ts')
+  const serializerSrc = readApi('apps/scholarship/serializers.py')
+  const block = serializerSrc.match(
+    /class ResolutionItemSerializer\(([\s\S]*?)\n\S/)?.[0].match(/fields = \[([\s\S]*?)\]/)
+  const served = block ? [...block[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]) : []
 
-  test('parse sanity: both interfaces parsed', () => {
+  test("parse sanity: both interfaces and the serializer's field list parsed", () => {
     expect(Object.keys(student).length).toBeGreaterThan(10)
     expect(Object.keys(admin).length).toBeGreaterThan(10)
+    expect(served.length).toBeGreaterThan(10)
   })
 
-  test('the shared fields are declared identically — the half that did NOT drift', () => {
-    const shared = Object.keys(admin).filter((k) => k in student && !['kind', 'source'].includes(k))
-    expect(shared.length).toBeGreaterThanOrEqual(8)
-    for (const key of shared) expect(`${key}: ${admin[key]}`).toBe(`${key}: ${student[key]}`)
+  test('the two interfaces declare the same fields with the same types', () => {
+    expect(Object.keys(admin).sort()).toEqual(Object.keys(student).sort())
+    for (const key of Object.keys(student)) expect(`${key}: ${admin[key]}`).toBe(`${key}: ${student[key]}`)
   })
 
-  test('the admin copy declares no field the student copy does not', () => {
-    expect(Object.keys(admin).filter((k) => !(k in student))).toEqual([])
+  test('their keys are exactly what ResolutionItemSerializer sends', () => {
+    expect(Object.keys(admin).sort()).toEqual([...served].sort())
   })
 
-  test('the gap is exactly the three things named in TD-266', () => {
-    expect(Object.keys(student).filter((k) => !(k in admin))).toEqual(['vircle_expected'])
-    expect(student.kind).toBe("'doc' | 'confirm' | 'explanation' | 'clarify' | 'human'")
-    expect(admin.kind).toBe("'doc' | 'confirm' | 'explanation'")
-    expect(student.source).toBe("'system' | 'officer' | 'check2'")
-    expect(admin.source).toBe("'system' | 'officer'")
+  test('the Check 2 values the admin payload carries are declared', () => {
+    expect(admin.kind).toBe("'doc' | 'confirm' | 'explanation' | 'clarify' | 'human'")
+    expect(admin.source).toBe("'system' | 'officer' | 'check2'")
   })
 })

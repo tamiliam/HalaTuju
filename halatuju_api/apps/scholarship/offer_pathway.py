@@ -24,6 +24,7 @@ from __future__ import annotations
 import re
 
 from .document_snapshot import SNAPSHOT_ORDER
+from .catalogue_levels import course_levels
 from .pathway_engine import distinctive_tokens
 
 
@@ -527,8 +528,11 @@ def resolve_catalogue_course(programme: str, institution: str):
     ``{course_id, course_name, institution}`` ONLY when exactly one catalogue course —
     offered at an institution whose name aligns with the offer's — has a programme name
     that aligns with the offer's. Any ambiguity (zero or >1) → ``None`` (caller falls back
-    to labels). Conservative by design: a wrong ``course_id`` is worse than no id."""
+    to labels). Conservative by design: a wrong ``course_id`` is worse than no id. TD-332: a TERTIARY
+    letter skips pre-U virtual courses and courses of another level (``catalogue_levels``)."""
     from apps.courses.models import Institution, CourseInstitution
+    ltype = detect_pathway_type(programme, '') or detect_pathway_type(programme, institution)
+    tertiary = ltype in ('asasi', 'pismp', 'diploma', 'degree')
 
     pj = distinctive_tokens(programme)
     ij = distinctive_tokens(institution)
@@ -543,9 +547,12 @@ def resolve_catalogue_course(programme: str, institution: str):
         return None
 
     uniq = {}
-    for off in (CourseInstitution.objects
-                .filter(institution_id__in=inst_ids)
-                .select_related('course', 'institution')):
+    offers = CourseInstitution.objects.filter(institution_id__in=inst_ids)
+    if tertiary:
+        offers = offers.exclude(course_id__in=PREU_COURSE_SLUG.values())
+    for off in offers.select_related('course', 'institution'):
+        if tertiary and (fams := course_levels(off.course)) and ltype not in fams:
+            continue
         if _name_aligns(pj, distinctive_tokens(off.course.course)):
             uniq[off.course.course_id] = {
                 'course_id': off.course.course_id,

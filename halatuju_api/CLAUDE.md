@@ -155,15 +155,19 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
   (`halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com`). Not a secret. When set, the api
   signs the delegation assertion as that account through the IAM Credentials API — no key. Needs the
   runtime SA to hold `roles/iam.serviceAccountTokenCreator` on it and `iamcredentials.googleapis.com`
-  enabled. Wins over the key. Built in ONE place: `apps/scholarship/google_dwd.py`.
+  enabled. The ONLY way since TD-329. Built in ONE place: `apps/scholarship/google_dwd.py`.
 - `GOOGLE_MEET_SA_JSON` — **GONE 2026-10-04** (owner's yes, TD-329): removed from Cloud Run
   (api-01095-ch2) and the user-managed key on `halatuju-meet` DELETED in GCP; only Google's two
-  system-managed keys remain. The code path still reads the setting (dead; TD-329 removes it). If the
-  keyless path ever breaks, the alert policy "Google Workspace keyless path failed (Sheets / Drive /
+  system-managed keys remain. **Removed from the code 2026-10-04 (TD-329)** — the setting, the key
+  branch of `dwd_credentials` and `_key_json` are deleted; setting the var again now does NOTHING
+  (`test_google_dwd.test_the_key_path_is_gone` keeps the code from coming back). If the keyless
+  path ever breaks, the alert policy "Google Workspace keyless path failed (Sheets / Drive /
   Meet)" (`alertPolicies/10163327245873580870`, channel HalaTuju security alerts → tamiliam@gmail.com,
   ≤1 email/hour, log match on severity≥WARNING `jsonPayload.message` starting Vircle sheet / Payments
   CSV / Drive read / Drive write / Sheet read / Spending / Contract PDF / Meet) fires; recovery = fix the
-  IAM grant, or mint a new key and set this var again (~10 min).
+  IAM grant (`roles/iam.serviceAccountTokenCreator` for the runtime SA on `halatuju-meet`, and
+  `iamcredentials.googleapis.com` enabled). A key fallback would now mean restoring the code from git
+  (before TD-329) as well as minting a key — a deploy, not an env var.
 - `SPONSOR_MOCK_DONATIONS_ENABLED` — **default OFF — NEVER set in production** (TD-258). Gates the
   MOCK sponsor donation endpoint (`POST /api/v1/sponsor/wallet/donate/`), which mints a confirmed,
   programme-less balance out of nothing. Off → the route answers 404 like a route that is not there.
@@ -451,6 +455,14 @@ turns the gate red before the image is pushed.
   LAYOUT loads is downloaded on first paint and is not in the number (`/login` prints 87.6 kB; the
   browser fetches ~231). Moving weight from a page into a layout "passes" without making anything
   lighter. TD-304.
+- **Since TD-304 (2026-10-04) the reader budgets EXACT bytes** — each route's page entry from
+  `.next/app-build-manifest.json`, gzipped at level 9 as Next does — after checking every exact
+  figure against the printed one (a mismatch FAILS: the manifest is another build's). So the 0.5 kB
+  rounding trap is gone, and a "LOWER it to" note names a whole kB at or above the exact figure.
+  It also PRINTS a **first-paint JS** line (page + every layout above it) that has NO budget: first
+  reading median 257.8 kB, worst 324.6 kB (`/profile`). A budget on it is a new standard — owner's
+  call, with TD-286 — so do not add one in passing. ⚠ `--from-log` now needs the SAME build's
+  `.next/` beside the log.
 - ⚠ **87.2 kB is the FLOOR** under every route (React + the Next runtime + the shared chunk). No
   target below that is reachable by any change — subtract it before setting one.
 - ⚠ **What it cannot see:** it does not run in `npm test`; it reads what Next PRINTS (gzipped
@@ -518,7 +530,9 @@ nothing bulk-creates). TD-292 holds the `, '-id'` fix and why it needs a version
 A function that writes a document and reads one back must see its own write, and inside a
 snapshot it would not. This is why the scope is an explicit `with` around one handler and NOT a
 request-wide middleware, and why `check2_queries` (which sits inside a write) was deliberately
-left on its own query. ⚠ **"Read-only" here means ONLY "never writes `applicant_documents`".**
+left on its own query. (TD-308, 2026-10-04: inside that write path the ONE thing shared is the STR
+reading — `str_check_memo.one_str_reading` wraps the side-effect-free `_gap_sets`, so
+`student_str_check` reads each STR once per pass. Same rule: never widen it around a write.) ⚠ **"Read-only" here means ONLY "never writes `applicant_documents`".**
 The detail GET is not read-only in the ordinary sense: building the payload runs
 `sync_resolution_items`, which creates and resolves ResolutionItem rows off verdict facts and can
 email the student. So a wrong row under the snapshot would be persisted and sent, not merely

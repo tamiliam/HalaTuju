@@ -20,9 +20,10 @@ import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 import { pySeq, readApi } from '@/test/apiSource'
 
 // ⚠ `services.py` became the PACKAGE `services/` at code health H15 (2026-09-20).
-// `POST_SHORTLIST_EDITABLE` is a cross-cutting status tuple and lives in `services/constants.py`;
+// `POST_SHORTLIST_EDITABLE` is a cross-cutting status tuple and lives in `services/status_constants.py`
+// (renamed from `services/constants.py` by TD-279, 2026-10-04 — one `constants.py` per app);
 // the path follows the code, and `readApi` throws if it moves again.
-const SERVICES = 'apps/scholarship/services/constants.py'
+const SERVICES = 'apps/scholarship/services/status_constants.py'
 const VIEWS = 'apps/scholarship/views.py'
 const servicesSrc = readApi(SERVICES)
 const viewsSrc = readApi(VIEWS)

@@ -44,12 +44,14 @@ import { Icon } from '@/components/admin/icons'
 /** Labels, pills and counts all fade on the same curve; kept here so they cannot drift apart. */
 const fade = (open: boolean) => `transition-opacity duration-100 ${open ? 'opacity-100' : 'opacity-0'}`
 
-function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
+function NavRow({ item, active, badge, open, chordHint, focusChip, onNavigate }: {
   item: VisibleNavItem
   active: boolean
   badge?: number
   open: boolean
   chordHint: boolean
+  /** False while the pointer is inside the rail: the HOVERED row's chip is the one to show (TD-195). */
+  focusChip: boolean
   onNavigate?: () => void
 }) {
   const { t } = useT()
@@ -106,13 +108,18 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
 
       {/*
         The "Go to" chip, on hover or keyboard focus.
+        TD-195: the FOCUS chip is withheld while the pointer is anywhere in the rail. After a
+        G-then-letter jump the target row keeps focus-visible while the pointer hovers another row,
+        and both chips showed at once. The hover chip always wins; the focus chip returns the moment
+        the pointer leaves the rail, so a keyboard user still sees it (never drop it — that is the
+        whole reason the chord hint exists).
         aria-hidden: a screen reader already has the link's name and its aria-current, and the
         chord letter announced mid-list is noise. It sits OUTSIDE the rail (`left-full`), which
         is why the rail must not clip — see the overflow note on the <nav>.
       */}
       <span
         aria-hidden
-        className="pointer-events-none absolute left-full top-1/2 z-30 ml-2.5 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-lg bg-ground-900 px-2 py-1 text-[11.5px] font-normal text-ground-50 shadow-lg group-hover/row:flex group-focus-visible/row:flex"
+        className={`pointer-events-none absolute left-full top-1/2 z-30 ml-2.5 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-lg bg-ground-900 px-2 py-1 text-[11.5px] font-normal text-ground-50 shadow-lg group-hover/row:flex ${focusChip ? 'group-focus-visible/row:flex' : ''}`}
       >
         {t('admin.shell.goTo', { page: t(item.labelKey) })}
         {chordHint && item.chord && (
@@ -159,6 +166,9 @@ export function Sidebar({
 }) {
   const { t } = useT()
   const [hovering, setHovering] = useState(false)
+  // The POINTER alone — `hovering` also turns on for keyboard focus, so it cannot tell the two
+  // apart, and TD-195 needs exactly that difference.
+  const [pointerInside, setPointerInside] = useState(false)
   const open = pinned || hovering
 
   // The heading names the THING (BrightPath), with the scope as a quiet tag beside it — the
@@ -180,8 +190,8 @@ export function Sidebar({
     <nav
       aria-label={t('admin.shell.primaryNav')}
       data-open={open ? 'yes' : 'no'}
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
+      onMouseEnter={() => { setHovering(true); setPointerInside(true) }}
+      onMouseLeave={() => { setHovering(false); setPointerInside(false) }}
       onFocus={() => setHovering(true)}
       onBlur={(e) => {
         // Close only once focus has genuinely left the rail — tabbing from one row to the next
@@ -231,6 +241,7 @@ export function Sidebar({
                   badge={i.badge ? badgeCounts[i.badge] : undefined}
                   open={open}
                   chordHint={chords}
+                  focusChip={!pointerInside}
                   onNavigate={onNavigate}
                 />
               ))}

@@ -152,6 +152,28 @@ describe('the Go-to chip', () => {
     expect(within(staff).getByText(/admin.shell.goTo/).querySelector('kbd')).toBeNull()
   })
 
+  // TD-195: after a G-then-letter jump the target row keeps focus-visible while the pointer hovers
+  // another row, and two chips showed at once. jsdom cannot evaluate `:hover`/`:focus-visible`, so
+  // this pins the class the browser keys on: the focus branch is withheld while the POINTER is in
+  // the rail (the hover branch never is), and returns when it leaves. Keyboard focus alone — which
+  // also opens the rail — must NOT withhold it, or a keyboard user would lose the chord hint.
+  it('shows one chip at a time: the focus chip steps aside while the pointer is in the rail', () => {
+    const nav = renderRail()
+    const chip = () => within(within(nav).getByText('admin.nav.invitations').closest('a') as HTMLElement)
+      .getByText(/admin.shell.goTo/)
+    expect(chip().className).toContain('group-focus-visible/row:flex')
+
+    fireEvent.focus(nav)                       // keyboard opens the rail: focus chip still offered
+    expect(chip().className).toContain('group-focus-visible/row:flex')
+
+    fireEvent.mouseEnter(nav)                  // the pointer arrives: only the hovered row's chip
+    expect(chip().className).not.toContain('group-focus-visible/row:flex')
+    expect(chip().className).toContain('group-hover/row:flex')
+
+    fireEvent.mouseLeave(nav)                  // and leaves: the focus chip is back
+    expect(chip().className).toContain('group-focus-visible/row:flex')
+  })
+
   it('is hidden from assistive tech — the link already carries its own name', () => {
     const nav = renderRail()
     const staff = within(nav).getByText('admin.nav.invitations').closest('a') as HTMLElement

@@ -239,9 +239,11 @@ class ConfirmDropsStaleCourseIdTest(_Catalogue):
         self.assertNotIn('course_id', app.chosen_programme)
 
     def test_a_degree_letter_never_re_pins_to_a_diploma(self):
-        # UPNM holds only the DIPLOMA of this programme: the resolver finds it, the level differs.
-        self.assertEqual(op.resolve_catalogue_course('IJAZAH SARJANA MUDA KEJURUTERAAN AWAM',
-                                                     UPNM.upper())['course_id'], 'TD-UPNM-DIP')
+        # UPNM holds only the DIPLOMA of this programme. Re-pointed by TD-332 (2026-10-04): the
+        # resolver itself now refuses the other level (it used to find the diploma and leave the
+        # level check to the confirm alone); the confirm's own check below is unchanged.
+        self.assertIsNone(op.resolve_catalogue_course('IJAZAH SARJANA MUDA KEJURUTERAAN AWAM',
+                                                      UPNM.upper()))
         app = self._app('TD-UMK-SAINS', 'Ijazah Sarjana Muda Perniagaan Tani')
         self._offer(app, 'IJAZAH SARJANA MUDA KEJURUTERAAN AWAM', UPNM.upper())
         self.assertTrue(confirm_pathway(app))

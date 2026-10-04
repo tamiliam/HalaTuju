@@ -558,9 +558,9 @@ def parse_reporting_date(raw):
 
 
 def _latest_offer(application):
-    # TD-282: the shared snapshot when the officer's detail GET has one open, else the same
-    # single-row read this always did. (It used to go through `ApplicantDocument.objects`
-    # rather than the related manager; identical rows, one fewer way of spelling it.)
+    # TD-282: snapshot-aware read. TD-295: an APPLICATION only — `.documents` reads an id as no offer.
+    if isinstance(application, (int, str)):
+        raise TypeError('_latest_offer takes the application, not its id (TD-295)')
     from .document_snapshot import latest_doc
     return latest_doc(application, 'offer_letter')
 

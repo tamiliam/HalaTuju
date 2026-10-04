@@ -511,3 +511,58 @@ class TestTheOfficerListsQueryBudget(TestCase):
     def test_the_budgeted_routes_still_resolve(self):
         for route in (LIST_ROUTE_APPLICANTS, LIST_ROUTE_GIFTS):
             self.assertEqual(resolve('/' + route).route, route)
+
+
+#: TD-308 (2026-10-04): `check2_queries.sync_check2_queries` — the Check-2 reconcile that runs on
+#: the student's Action Centre read, at `confirm_profile` and in the hourly query-email sweep — on
+#: one SUBMITTED STR-route household, by the STR it holds (the TD-285 fixture). Ordinary constants
+#: for the reason STUDENT_READ_BUDGETS gives (TD-286).
+#:   MEASURED before TD-308: own_both 72 · stranger 83 · own_unread 79 · none 60 — the gap pass took
+#:   `student_str_check` of the same STR two or three times (`str_owner_ic_asks`, and `has_valid_str`
+#:   behind the declared-wage ask and the high-utility wording), about seven queries each.
+#:   After `str_check_memo.one_str_reading`: one reading per pass. `none` holds no STR, so it does
+#:   not move — that is the control.
+SYNC_CHECK2_BUDGETS = {'own_both': 58, 'stranger': 62, 'own_unread': 58, 'none': 60}
+
+
+class TestCheck2SyncQueryBudget(WhoseStrBase):
+    """The Check-2 sync's own cost, per STR shape — a ceiling, a tightness check, and the proof
+    that reading the STR once changed no answer."""
+
+    def _app(self, state):
+        return self.build('str', state, True, 'none', submitted=True)
+
+    def _cost(self, state):
+        from apps.scholarship import check2_queries
+        app = self._app(state)
+        check2_queries.sync_check2_queries(app)       # warm the lazy imports; raise the items
+        with CaptureQueriesContext(connection) as captured:
+            check2_queries.sync_check2_queries(app)
+        return len(captured.captured_queries)
+
+    def test_each_shape_stays_inside_its_budget(self):
+        for state, limit in SYNC_CHECK2_BUDGETS.items():
+            with self.subTest(state=state):
+                now = self._cost(state)
+                self.assertLessEqual(
+                    now, limit,
+                    f'`sync_check2_queries` ({state}) now costs {now} queries; the budget is '
+                    f'{limit}. ⚠ DO NOT RAISE IT. The likely cause is a gap helper that reads the '
+                    f'STR (or another document) outside `_gap_sets`, where `one_str_reading` '
+                    f'cannot share it — or a new per-member read inside the pass.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'SYNC_CHECK2_BUDGETS["{s}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for s, limit in SYNC_CHECK2_BUDGETS.items()
+                 for m in (self._cost(s),) if limit > m]
+        self.assertEqual(loose, [], 'A Check-2 sync budget sits above what it now costs.\n'
+                         + '\n'.join(loose))
+
+    def test_one_reading_gives_the_same_gaps_as_many(self):
+        """The memo is a cost change only: the gap pass answers exactly as it does unwrapped."""
+        from apps.scholarship import check2_queries
+        for state in SYNC_CHECK2_BUDGETS:
+            with self.subTest(state=state):
+                app = self._app(state)
+                self.assertEqual(check2_queries._gap_sets(app),
+                                 check2_queries._gap_sets.__wrapped__(app))

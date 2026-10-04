@@ -5,7 +5,7 @@ so a SimpleNamespace stand-in is explicit and correct here.
 """
 from types import SimpleNamespace
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 
 from apps.scholarship.pathway_engine import (
     offer_pathway_match, student_offer_check,
@@ -444,3 +444,25 @@ class TestDeclaredPathwayCircularity(SimpleTestCase):
             {'course_name': 'Diploma Kejuruteraan', 'institution': 'UPM', 'source': 'student'},
             track='ignored', inst='ignored')
         self.assertEqual(_declared_pathway(app), ('Diploma Kejuruteraan', 'UPM'))
+
+
+class LatestOfferTakesTheApplicationTest(TestCase):
+    """TD-295 (2026-10-04): `_latest_offer` reads through `application.documents` (TD-282), so a
+    bare id — which the old `ApplicantDocument.objects.filter(application=…)` form answered — would
+    quietly read as "no offer". It now refuses one loudly; a real application answers as before."""
+
+    def test_a_bare_id_is_refused(self):
+        from apps.scholarship.pathway_engine import _latest_offer
+        for bad in (7, '7'):
+            with self.subTest(bad=bad), self.assertRaises(TypeError):
+                _latest_offer(bad)
+
+    def test_an_application_still_answers(self):
+        from apps.scholarship.models import ApplicantDocument
+        from apps.scholarship.pathway_engine import _latest_offer
+        from apps.scholarship.tests.factories import make_application
+        app = make_application('profile_complete')
+        self.assertIsNone(_latest_offer(app))
+        doc = ApplicantDocument.objects.create(application=app, doc_type='offer_letter',
+                                               storage_path=f'{app.id}/offer/td295')
+        self.assertEqual(_latest_offer(app), doc)

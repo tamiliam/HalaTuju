@@ -12,7 +12,7 @@ booking):
     (update, cancel) and logs, rather than raising, on any failure.
   * It is fully **inert** until ``settings.INTERVIEW_MEET_ENABLED`` is true AND the
     Workspace delegation is configured (``google_dwd.dwd_available()`` — keyless via
-    ``GOOGLE_DWD_SERVICE_ACCOUNT`` since TD-125, 2026-10-03, or the deprecated key). So the
+    ``GOOGLE_DWD_SERVICE_ACCOUNT``, TD-125/TD-329). So the
     scheduling surface can ship and go live before the Workspace account exists.
   * The Google client libraries are imported **lazily** inside the functions, so the
     module imports cleanly even if ``google-api-python-client`` isn't installed, and

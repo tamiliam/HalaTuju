@@ -1,7 +1,9 @@
 """
 Status/type constants the rest of the app reads off `services`.
 
-Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
+Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20), and
+renamed from `services/constants.py` by TD-279 (2026-10-04) so the app holds one `constants.py`
+(`apps/scholarship/constants.py`, the public leaf) — a bare-name guard can then never confuse them.
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 

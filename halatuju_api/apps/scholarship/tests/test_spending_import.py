@@ -572,18 +572,23 @@ class TestFailedReadIsAFinding(TestCase):
 
     def test_the_sheets_seam_tells_a_failed_read_from_an_empty_sheet(self):
         from apps.scholarship import sheets
-        # A credential that cannot even be parsed: the read RAISES inside the seam.
-        # TD-125 (2026-10-03): the credentials are now built by `google_dwd.dwd_credentials`, where
-        # the keyless GOOGLE_DWD_SERVICE_ACCOUNT wins over the key — pinned empty so this test
-        # still drives the deprecated key path it was written against. Expectations unchanged.
-        with self.settings(GOOGLE_MEET_SA_JSON='{not json', GOOGLE_DWD_SERVICE_ACCOUNT=''):
+        import google.auth.exceptions
+        dwd = 'halatuju-meet@example-project.iam.gserviceaccount.com'
+        # A keyless build that FAILS: the runtime identity cannot be found, so the read RAISES
+        # inside the seam. TD-329 (2026-10-04) deleted the key path this test was first written
+        # against; it now drives the only path there is. Expectations unchanged.
+        with self.settings(GOOGLE_DWD_SERVICE_ACCOUNT=dwd), \
+                mock.patch('google.auth.default', side_effect=(
+                    google.auth.exceptions.DefaultCredentialsError('no runtime identity'))):
             self.assertIsNone(sheets.read_spending_report('id-lost'))
             self.assertEqual(sheets.read_sheet_values('id-lost', 'A1:B2'), [],
                              'the general reader keeps its [] contract')
         api = mock.Mock()
         api.spreadsheets.return_value.values.return_value.get.return_value.execute.return_value = {}
-        with self.settings(GOOGLE_MEET_SA_JSON='{}', GOOGLE_DWD_SERVICE_ACCOUNT=''), \
-                mock.patch('google.oauth2.service_account.Credentials.from_service_account_info'), \
+        with self.settings(GOOGLE_DWD_SERVICE_ACCOUNT=dwd), \
+                mock.patch('google.auth.default', return_value=(mock.Mock(), 'p')), \
+                mock.patch('google.auth.iam.Signer'), \
+                mock.patch('google.oauth2.service_account.Credentials'), \
                 mock.patch('googleapiclient.discovery.build', return_value=api):
             self.assertEqual(sheets.read_spending_report('id-empty'), [])
 

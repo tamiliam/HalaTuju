@@ -168,6 +168,15 @@ def str_proof_quality(doc):
 
 
 def student_str_check(doc):
+    """``_read_str_check`` (below) — taken ONCE per document inside a Check-2 gap pass (TD-308,
+    ``str_check_memo``), and every time everywhere else."""
+    if getattr(doc, 'doc_type', '') != 'str':
+        return None
+    from ..str_check_memo import remembered
+    return remembered(doc, _read_str_check)
+
+
+def _read_str_check(doc):
     """For an STR document: the recipient facts (name · NRIC · status · year) matched against the
     HOUSEHOLD — every parent/guardian's IC, on name OR nric independently — plus whether it's
     CURRENT (this cohort year + approved). Returns ``{name, nric, status, year, member,

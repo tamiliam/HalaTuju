@@ -12980,3 +12980,26 @@ course at the new university), so the sponsor card can no longer show the old un
 beside the new one. A letter whose university we cannot place reads "unknown", never a clash, so
 #48's Pagoh naming variant stays green. #31 is re-run from the live cockpit after deploy, never
 locally.
+
+## 2026-10-04 — Correction (TD-053): `/profile/sync/` is NOT on the NRIC-gate whitelist
+
+**What the record said.** "NRIC as hard identity gate via middleware — NRIC Hard Gate Sprint,
+2026-03-20" lists the gate's whitelist as `/profile/`, `/profile/claim-nric/`, `/profile/sync/`,
+`/admin/`. That entry is left as written; this one corrects it.
+
+**What the code has done since 2026-03-19** (`3af24e91`, *"fix: resolve onboarding redirect loop
+and empty profile creation"* — one day BEFORE that entry was dated): `/profile/sync/` was taken OFF
+the whitelist, because letting a user with no NRIC sync created empty student profiles that showed
+up in admin. A student with no NRIC gets `403 nric_required` from sync, and the AuthProvider routes
+her to `/onboarding/ic` first. `test_nric_gate.py::test_blocks_profile_sync_without_nric` and
+`test_nric_gate_integration.py::test_profile_sync_blocked_without_nric` have pinned exactly that
+since the same commit.
+
+**The whitelist today** (`halatuju_api/halatuju/middleware/supabase_auth.py`, `NRIC_GATE_EXACT` /
+`NRIC_GATE_PREFIX` — the code is the authority, not this list): exact `/api/v1/profile/` and
+`/api/v1/profile/claim-nric/`, the two TD-254 challenge doors `…/claim-nric/send-code/` and
+`…/claim-nric/confirm-code/`, the public `/api/v1/sponsor-interest/` and `/api/v1/scholarship/intake/`;
+prefix `/api/v1/admin/` and `/api/v1/sponsor/`. Anonymous sessions pass the middleware untouched.
+
+**Nothing changes in code or tests** — the docs were the stale third of the three; code and tests
+already agreed.

@@ -7,7 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 from django.utils import timezone
 
 from ..models import Consent, OnboardingResponse
-from .constants import ONBOARDING_CONSENT_TYPE
+from .status_constants import ONBOARDING_CONSENT_TYPE
 from .errors import OnboardingError
 
 # ── Consent / minor logic (Sprint 5a, hardened in S17) ──────────────────

@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## Later-tier batch 2 — ten small items closed, two left open (TD-329, TD-331, TD-332, TD-308, TD-304, TD-295, TD-279, TD-266, TD-195, TD-053) - 2026-10-04
+
+Built locally, NOT deployed. Register open **118 → 108** (`code_health.py` td_open 108); TD-286 and
+TD-187 looked at and left open with a dated status. No migration, no new package, no stored-data
+change, no new copy. TD-331/TD-332 touch the offer-letter pathway reading → adversarial review first.
+
+- **TD-329 — the dead Google key path is deleted.** `GOOGLE_MEET_SA_JSON` (settings),
+  `google_dwd._key_json` and the key branch of `dwd_credentials` are gone; keyless is the only path
+  and `dwd_available()` means "the keyless account email is set". The key-path test rows are removed;
+  `test_the_key_path_is_gone` refuses the setting or a key-JSON credential build anywhere under
+  `apps/`/`halatuju/`. The TD-242 sheets-seam test is RE-POINTED (not deleted) at a keyless build whose
+  runtime identity fails — same expectations. Docstrings, the relay-sheet warning and the CLAUDE.md
+  env list updated. Nothing to change in Cloud Run (the var and the key went 2026-10-04).
+- **TD-332 — a degree letter no longer resolves to a school's pre-U course.**
+  `offer_pathway.resolve_catalogue_course`: a letter that is tertiary by `detect_pathway_type`
+  (asasi/pismp/diploma/degree; read from the programme first, the institution only as a fallback)
+  skips the `PREU_COURSE_SLUG` courses and any course whose `Course.level` field names another level
+  (whole words, new leaf `catalogue_levels.py`; the name's whole words only if the field is blank, so
+  "Diplomasi" is not a diploma); an unrecognised level never skips; an untyped letter is judged as before.
+  "IJAZAH SARJANA MUDA SAINS GUNAAN" at UTHM → no longer stpm-sains → `programme_agreement` 'unknown',
+  not a false 'clash'. One TD-145 assertion re-pointed (the resolver itself now refuses a degree
+  letter at a diploma-only place).
+- **TD-331 — a same-university confirm that changes the programme settles the course id.**
+  `_settle_stale_course_id` also treats the id as stale when `programme_agreement == 'clash'` and the
+  letter states its level; re-pinned to the unique same-level course there, else dropped. 'unknown'
+  keeps the id; pre-U / PISMP untouched. The sponsor card now follows (`programme_split`).
+- **TD-308 — Check 2 reads the STR once per pass, and is budgeted.** New leaf
+  `apps/scholarship/str_check_memo.py` (`one_str_reading` on `_gap_sets`; a ContextVar memo, deep
+  copies, reset in `finally`). `sync_check2_queries`: 72 → 58 (own STR), 83 → 62 (stranger),
+  79 → 58 (unread), 60 → 60 (no STR, the control). `SYNC_CHECK2_BUDGETS` in `test_query_budgets.py`
+  with a gaps-unchanged row; `test_str_check_memo.py`.
+- **TD-304 — the page-weight guard reads exact bytes and prints the layout code.**
+  `scripts/bundle-budget.js` budgets each route's exact gzip bytes from `.next/app-build-manifest.json`
+  after proving they match the printed table (a mismatch fails the gate). A new "first-paint JS" line
+  (page + layouts) is printed, NOT budgeted. Reading 2026-10-04: budgeted median **227.665 kB** (1.3
+  under 229; 4 routes may cross first), `/profile` 309.626 / 310, `/scholarship/application`
+  273.003 / 274, `/scholarship/apply` 271.256 / 272; first-paint median **257.8 kB**, worst 324.591
+  (`/profile`), layouts add 30.1 kB to the median — no budget raised, none invented.
+  `bundleBudgetReader.test.ts`.
+- **TD-295** — `pathway_engine._latest_offer` refuses a bare id (`TypeError`) instead of reading it as
+  "no offer"; zero net lines (the file is at its allowance).
+- **TD-279** — `apps/scholarship/services/constants.py` → `services/status_constants.py` (`git mv`,
+  body untouched; importers and the web drift test follow). One `constants.py` per app.
+- **TD-266** — `AdminResolutionItem` declares what `ResolutionItemSerializer` sends (`clarify`/`human`,
+  `check2`, `vircle_expected`); `webMirrorDrift.test.ts` §4 now proves the admin and student types are
+  identical and keyed exactly as the serializer's `Meta.fields`. Nothing on screen moves.
+- **TD-195** — only one "Go to" chip at a time: the focus chip steps aside while the pointer is in
+  the rail and returns when it leaves; keyboard focus alone still shows it (`Sidebar.test.tsx`).
+- **TD-053** — `docs/decisions.md` gains a dated correction: `/profile/sync/` has NOT been on the
+  NRIC-gate whitelist since `3af24e91` (2026-03-19); code and tests already agreed.
+- **Left open:** TD-286 (moving the constant budgets into the frozen `query_budgets` record needs the
+  ruling the entry asks for — a declared `_admitted` record is sketched in its status line); TD-187
+  (no CSS-only fix — the chip must leave the rail's overflow via a portal and `AppShell` must bound
+  the rail to the viewport; not walkable locally, TD-194; trigger not reached at 19 rows).
+
 ## TD-329 / TD-125 — the old Google key is gone; an alert watches the keyless path - 2026-10-04
 
 PRODUCTION SET-UP, no code. In order, with the owner's yes for the irreversible part: (1) Cloud

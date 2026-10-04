@@ -38,7 +38,7 @@ from .errors import (
     AmbiguousOpenCohort, AssignmentError, IncompleteProfileError, OnboardingError,
     PauseError, RoundFinishedError,
 )
-from .constants import (
+from .status_constants import (
     ONBOARDING_CONSENT_TYPE, POST_SHORTLIST_EDITABLE,
 )
 from .profile_sync import (

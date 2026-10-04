@@ -171,8 +171,8 @@ def str_owner_ic_asks(application) -> dict:
     them — ``str_ic_slots`` of the household's live STR, the same rule the Documents page offers
     from (TD-309).
 
-    ⚠ IT RE-READS THE STR on every call (TD-308): `check2_queries._gap_sets` has no STR reading in
-    hand, and threading one through the oversize-ledgered `check2_queries.py` is its own change."""
+    Inside `check2_queries._gap_sets` the STR is read once for the whole pass (TD-308,
+    `str_check_memo.one_str_reading`), so this shares the reading the other helpers took."""
     return str_ic_slots(_latest_str_check(application), application)
 
 

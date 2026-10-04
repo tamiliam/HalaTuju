@@ -1,5 +1,6 @@
-"""TD-125 (2026-10-03): the Workspace delegation credentials have ONE home, `google_dwd`, and the
-keyless path (the runtime identity signs as the DWD account through IAM) wins over the key.
+"""TD-125 (2026-10-03): the Workspace delegation credentials have ONE home, `google_dwd`, and they
+are keyless (the runtime identity signs as the DWD account through IAM). TD-329 (2026-10-04)
+deleted the old key path; `test_the_key_path_is_gone` keeps it gone.
 
 No network: `google.auth.default` and `google.auth.iam.Signer` are patched, and the callers'
 tests patch `google_dwd.dwd_credentials` itself.
@@ -19,7 +20,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
 @override_settings(MEET_ORGANISER_EMAIL=ORGANISER)
 class TestWhichPathIsChosen(SimpleTestCase):
 
-    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, GOOGLE_MEET_SA_JSON='')
+    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA)
     def test_keyless_when_the_service_account_email_is_set(self):
         source = mock.Mock(name='runtime-identity')
         with mock.patch('google.auth.default', return_value=(source, 'proj')) as default, \
@@ -34,23 +35,13 @@ class TestWhichPathIsChosen(SimpleTestCase):
         creds_cls.assert_called_once_with(
             signer_cls.return_value, DWD_SA, 'https://oauth2.googleapis.com/token',
             scopes=SCOPES, subject=ORGANISER)
-        creds_cls.from_service_account_info.assert_not_called()
         self.assertIs(creds, creds_cls.return_value)
-
-    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, GOOGLE_MEET_SA_JSON='{"type": "x"}')
-    def test_keyless_wins_when_both_are_set(self):
-        with mock.patch('google.auth.default', return_value=(mock.Mock(), 'p')), \
-                mock.patch('google.auth.iam.Signer'), \
-                mock.patch('google.oauth2.service_account.Credentials') as creds_cls:
-            google_dwd.dwd_credentials(SCOPES)
-        creds_cls.assert_called_once()
-        creds_cls.from_service_account_info.assert_not_called()
 
     def test_the_real_keyless_credentials_carry_subject_scopes_and_signer(self):
         """Unpatched `service_account.Credentials`: proves the installed google-auth accepts the
         (signer, email, token_uri, scopes=, subject=) shape — no network until a refresh."""
         signer = mock.Mock(key_id=None)
-        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, GOOGLE_MEET_SA_JSON=''), \
+        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA), \
                 mock.patch('google.auth.default', return_value=(mock.Mock(), 'p')), \
                 mock.patch('google.auth.iam.Signer', return_value=signer):
             creds = google_dwd.dwd_credentials(SCOPES)
@@ -59,34 +50,26 @@ class TestWhichPathIsChosen(SimpleTestCase):
         self.assertEqual(list(creds.scopes), SCOPES)
         self.assertEqual(creds._subject, ORGANISER)
 
-    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='', GOOGLE_MEET_SA_JSON='{"type": "x"}')
-    def test_the_deprecated_key_path_when_only_the_json_is_set(self):
-        with mock.patch('google.auth.default') as default, \
-                mock.patch('google.oauth2.service_account.Credentials') as creds_cls:
-            creds = google_dwd.dwd_credentials(SCOPES)
-        default.assert_not_called()
-        creds_cls.from_service_account_info.assert_called_once_with({'type': 'x'}, scopes=SCOPES)
-        creds_cls.from_service_account_info.return_value.with_subject.assert_called_once_with(
-            ORGANISER)
-        self.assertIs(creds, creds_cls.from_service_account_info.return_value
-                      .with_subject.return_value)
-
-    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='', GOOGLE_MEET_SA_JSON='')
-    def test_none_and_unavailable_when_neither_is_set(self):
+    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='')
+    def test_none_and_unavailable_when_not_set(self):
         with mock.patch('google.auth.default') as default:
             self.assertIsNone(google_dwd.dwd_credentials(SCOPES))
         default.assert_not_called()
         self.assertFalse(google_dwd.dwd_available())
 
-    def test_available_on_either_setting(self):
-        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, GOOGLE_MEET_SA_JSON=''):
+    def test_available_only_on_the_keyless_setting(self):
+        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA):
             self.assertTrue(google_dwd.dwd_available())
-        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='', GOOGLE_MEET_SA_JSON='{}'):
-            self.assertTrue(google_dwd.dwd_available())
-        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='   ', GOOGLE_MEET_SA_JSON=''):
+        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='   '):
             self.assertFalse(google_dwd.dwd_available(), 'whitespace is not a configuration')
+        # TD-329: a key setting left behind in some environment configures nothing.
+        with override_settings(GOOGLE_DWD_SERVICE_ACCOUNT='', GOOGLE_MEET_SA_JSON='{"type": "x"}'):
+            self.assertFalse(google_dwd.dwd_available())
+            with mock.patch('google.auth.default') as default:
+                self.assertIsNone(google_dwd.dwd_credentials(SCOPES))
+            default.assert_not_called()
 
-    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, GOOGLE_MEET_SA_JSON='')
+    @override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA)
     def test_a_broken_runtime_identity_RAISES_so_the_caller_can_tell_failed_from_empty(self):
         """The helper never swallows: each caller's own try/except owns best-effort (TD-242)."""
         import google.auth.exceptions
@@ -96,8 +79,7 @@ class TestWhichPathIsChosen(SimpleTestCase):
                 google_dwd.dwd_credentials(SCOPES)
 
 
-@override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, GOOGLE_MEET_SA_JSON='',
-                   MEET_ORGANISER_EMAIL=ORGANISER)
+@override_settings(GOOGLE_DWD_SERVICE_ACCOUNT=DWD_SA, MEET_ORGANISER_EMAIL=ORGANISER)
 class TestEveryCallerGoesThroughTheHelper(SimpleTestCase):
     """Each credential site asks the helper for EXACTLY the scopes it asked for before TD-125.
     ⚠ sheets.py's two scope lists are the owner's least-privilege rule — do not simplify."""
@@ -156,14 +138,27 @@ class TestEveryCallerGoesThroughTheHelper(SimpleTestCase):
                               'a failed read is None (a finding), never [] (TD-242)')
 
     def test_no_credential_build_is_left_outside_the_helper(self):
-        """Positive + negative: the helper holds the key path, the callers hold none."""
+        """Positive + negative: the helper holds the one credential build, the callers hold none."""
         from apps.scholarship.tests.source_walk import API_ROOT, read_source
         why = 'TD-125: the DWD credentials have one home, apps/scholarship/google_dwd.py'
         helper = read_source(API_ROOT / 'apps/scholarship/google_dwd.py', why)
-        self.assertEqual(helper.count('from_service_account_info'), 1)
         self.assertEqual(helper.count('iam.Signer('), 1)
         for rel in ('apps/scholarship/meeting.py', 'apps/scholarship/sheets.py'):
             src = read_source(API_ROOT / rel, why)
-            self.assertNotIn('from_service_account_info', src, rel)
-            self.assertNotIn('GOOGLE_MEET_SA_JSON', src, rel)
+            self.assertNotIn('service_account.Credentials', src, rel)
             self.assertGreaterEqual(src.count('google_dwd.dwd_credentials('), 1, rel)
+
+    def test_the_key_path_is_gone(self):
+        """TD-329 (2026-10-04): the env var and the GCP key are deleted, so the code that read
+        them is too. No source under apps/ or halatuju/ may read the key setting or build
+        credentials from key JSON again — a key is a secret we chose not to hold."""
+        from apps.scholarship.tests.source_walk import API_ROOT, walk_sources
+        why = 'TD-329: the DWD key path was deleted; credentials are keyless (google_dwd.py)'
+        files = [f for root, floor in (('apps', 400), ('halatuju', 8))
+                 for f in walk_sources(API_ROOT / root, '*.py', floor, why)
+                 if 'tests' not in f.parts]
+        for f in files:
+            src = f.read_text(encoding='utf-8')
+            self.assertNotIn("'GOOGLE_MEET_SA_JSON'", src, str(f))
+            self.assertNotIn('from_service_account_info', src, str(f))
+            self.assertNotIn('from_service_account_file', src, str(f))

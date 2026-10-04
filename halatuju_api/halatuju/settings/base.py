@@ -480,23 +480,18 @@ REQUESTS_QUOTE_MARGIN_PCT = int(os.environ.get('REQUESTS_QUOTE_MARGIN_PCT', '50'
 # scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
 # When off (or creds missing / API error), booking still succeeds — the email simply has
 # no link (or uses a manually-pasted one). Needs a Workspace service account w/ domain-wide
-# delegation; see GOOGLE_DWD_SERVICE_ACCOUNT (GOOGLE_MEET_SA_JSON, deprecated) + MEET_ORGANISER_EMAIL.
+# delegation; see GOOGLE_DWD_SERVICE_ACCOUNT + MEET_ORGANISER_EMAIL.
 INTERVIEW_MEET_ENABLED = os.environ.get('INTERVIEW_MEET_ENABLED', '').lower() in ('1', 'true', 'yes')
 # The Workspace mailbox that organises the interview calendar events (Meet links are
 # created on its calendar). The service account impersonates it via domain-wide delegation.
 MEET_ORGANISER_EMAIL = os.environ.get('MEET_ORGANISER_EMAIL', 'info@halatuju.xyz')
 # TD-125 (2026-10-03): the Workspace DWD credentials are built in ONE place,
-# apps/scholarship/google_dwd.py, which tries these two in order.
-# 1. KEYLESS: the DWD service account's EMAIL (halatuju-meet@…). The api's runtime identity signs
-#    the delegation assertion as that account through the IAM Credentials API (needs
-#    roles/iam.serviceAccountTokenCreator on it, and iamcredentials.googleapis.com enabled). Not a
-#    secret. Wins when set.
+# apps/scholarship/google_dwd.py, KEYLESS: this is the DWD service account's EMAIL (halatuju-meet@…).
+# The api's runtime identity signs the delegation assertion as that account through the IAM
+# Credentials API (needs roles/iam.serviceAccountTokenCreator on it, and iamcredentials.googleapis.com
+# enabled). Not a secret. Empty → Meet / Drive / Sheets no-op. The old key setting
+# (GOOGLE_MEET_SA_JSON) and its code path were deleted by TD-329 (2026-10-04).
 GOOGLE_DWD_SERVICE_ACCOUNT = os.environ.get('GOOGLE_DWD_SERVICE_ACCOUNT', '')
-# 2. DEPRECATED 2026-10-03 — the service-account key JSON (the whole key, as a string). Kept only
-#    so a rollback of the keyless path is one env var. Removed (this setting, the Cloud Run env
-#    var and the key itself in GCP) once production is proven on the keyless path — TD-329.
-#    Secret — set via Cloud Run env var, NEVER committed. Both empty → Meet / Drive / Sheets no-op.
-GOOGLE_MEET_SA_JSON = os.environ.get('GOOGLE_MEET_SA_JSON', '')
 # Interview defaults.
 INTERVIEW_DURATION_MIN = int(os.environ.get('INTERVIEW_DURATION_MIN', '30'))  # matches the "about 30 minutes" copy
 # How close to the start a student may still self-reschedule / cancel (hours before).

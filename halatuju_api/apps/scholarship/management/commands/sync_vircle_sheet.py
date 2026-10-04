@@ -42,6 +42,5 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING(
                 'Relay sheet NOT written — Drive unreachable or unconfigured. The database is '
-                'still the record; check GOOGLE_DWD_SERVICE_ACCOUNT (or the deprecated '
-                'GOOGLE_MEET_SA_JSON), the drive+spreadsheets scopes on '
+                'still the record; check GOOGLE_DWD_SERVICE_ACCOUNT, the drive+spreadsheets scopes on '
                 'the service account, and that the folder exists.'))
