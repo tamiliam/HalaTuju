@@ -305,6 +305,10 @@ _READERS = {
     'apps/scholarship/income_engine/epf_evidence.py': 'heading_for(',
     'apps/scholarship/vision.py': 'results_held(',
     'apps/scholarship/serializers.py': 'ResultsHeldField(',
+    # TD-325 (2026-10-04): the sponsor-profile prompt and the Check-2 facts ledger name the
+    # results we hold (owner ruling TD-324), so they read `results_held` too.
+    'apps/scholarship/profile_engine.py': 'results_held(',
+    'apps/scholarship/submission_review.py': 'results_held(',
 }
 _API = Path(__file__).resolve().parents[3]
 _RAW_GETATTR = re.compile(r"getattr\([^()]*,\s*'exam_type'")
@@ -313,7 +317,7 @@ _RAW_ATTR = re.compile(r'\b\w+\.exam_type\b')
 
 class TestNoReaderReadsTheAmbiguousName(SimpleTestCase):
     def test_each_reader_calls_its_named_accessor_and_never_the_raw_field(self):
-        why = ('TD-218: each of the six exam_type readers must call a named accessor from '
+        why = ('TD-218/TD-325: each of the eight exam_type readers must call a named accessor from '
                'apps/courses/exam_questions.py, never read profile.exam_type directly.')
         seen = []
         for rel, accessor in _READERS.items():
@@ -325,4 +329,36 @@ class TestNoReaderReadsTheAmbiguousName(SimpleTestCase):
                 self.assertIsNone(_RAW_GETATTR.search(src), f'{rel} reads the ambiguous field')
                 self.assertIsNone(_RAW_ATTR.search(src), f'{rel} reads the ambiguous field')
             seen.append(rel)
-        floor_count(seen, 6, 'reader modules', why)
+        floor_count(seen, 8, 'reader modules', why)
+
+
+class TestTheTd325ReadersOnTheExplorer(TestCase):
+    """TD-325 (2026-10-04): the sponsor-profile prompt and the Check-2 facts ledger, on the Form
+    Six explorer (declared STPM, SPM grades on file, no STPM results). Before TD-325 both repeated
+    the declaration — 'stpm' — with nothing behind it."""
+
+    def setUp(self):
+        self.student = make_student(exam_type='stpm', grades=SPM)
+        self.app = make_application('submitted', student=self.student)
+
+    def test_the_facts_ledger_claims_the_results_she_holds(self):
+        from apps.scholarship import submission_review
+        with mock.patch.object(submission_review, '_verdict_map', return_value={}):
+            rows = submission_review.build_facts_ledger(self.app)
+        qual = [r for r in rows if r['claim'] == 'qualification']
+        self.assertEqual(len(qual), 1)
+        self.assertEqual(qual[0]['value'], 'spm')
+
+    def test_the_facts_ledger_follows_her_stpm_results_when_they_land(self):
+        from apps.scholarship import submission_review
+        self.student.stpm_grades, self.student.stpm_cgpa = STPM, 3.5
+        self.student.save()
+        with mock.patch.object(submission_review, '_verdict_map', return_value={}):
+            rows = submission_review.build_facts_ledger(self.app)
+        self.assertEqual([r['value'] for r in rows if r['claim'] == 'qualification'], ['stpm'])
+
+    def test_the_sponsor_prompt_names_the_results_she_holds(self):
+        from apps.scholarship import profile_engine
+        prompt = profile_engine._build_prompt(self.app)
+        self.assertIn('Qualification: spm ', prompt)
+        self.assertNotIn('Qualification: stpm', prompt)

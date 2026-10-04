@@ -1,5 +1,5 @@
 {
-  "_how_this_works": "The code standards this service is held to, as numbers. `baseline` is FROZEN: it records every limit and every ledger exactly as code health H4 found them on 2026-09-19, and it is never maintained. `budget` is the live limit; it starts identical to `baseline` and may only ever get TIGHTER. `apps/scholarship/tests/test_code_standards.py` asserts all of it on every run, and since H2 that suite runs inside the Cloud Build deploy gate, so a change that breaks a standard cannot ship. If a test here told you to lower a number or remove a line, edit `budget` and only `budget` — never raise a limit, and never add a name to a ledger. THE ONE EXCEPTION IS A MOVE: see `_moved`.",
+  "_how_this_works": "The code standards this service is held to, as numbers. `baseline` is FROZEN: it records every limit and every ledger exactly as code health H4 found them on 2026-09-19, and it is never maintained. `budget` is the live limit; it starts identical to `baseline` and may only ever get TIGHTER. `apps/scholarship/tests/test_code_standards.py` asserts all of it on every run, and since H2 that suite runs inside the Cloud Build deploy gate, so a change that breaks a standard cannot ship. If a test here told you to lower a number or remove a line, edit `budget` and only `budget` — never raise a limit, and never add a name to a ledger. THE ONE EXCEPTION IS A MOVE: see `_moved`. A query budget set after the freeze lives in `_admitted` (TD-286).",
   "_moved_how_this_works": "Every ledger here is keyed on a FILE PATH, so a file that MOVES orphans its entry — the same debt at the new path is unlisted (which fails) and cannot be added (a ledger may only shrink). `_moved` is how a key follows its code: each record names ONE key the frozen `baseline` already holds (`from`) and ONE key it does not (`to`), and the tests read the baseline THROUGH it. A relabel is all it can do — the ledger's length and total are the same numbers either side, and `budget <= baseline` then holds the new key to exactly the room the old one had. So a move buys NOTHING: not a bigger number, not an extra member, not a merge onto a key that already exists, and not a path that is not a real file. ⚠ `_moved` is a SIBLING of `baseline`, never a part of it, so declaring an honest move does NOT move `BASELINE_SHA256` — H11's hand re-pin was the loophole, not the fix. Prune a record once the budget line it follows is gone. TD-272.",
   "_moved": [
     {
@@ -15,6 +15,177 @@
       "ledger": "long_functions",
       "from": "apps/scholarship/services.py::autofill_pathway_from_offer",
       "to": "apps/scholarship/services/offer_sync.py::autofill_pathway_from_offer"
+    }
+  ],
+  "_admitted_how_this_works": "Budgets set AFTER the H4 freeze, admitted by a dated record instead of a rewrite of the frozen `baseline` (TD-286, lead ruling 2026-10-04). Each record names the date, the sprint or TD that set the number, why it exists, its ledger (`query_budgets` ONLY), its key and its value. THE VALUE IS THE LIVE BUDGET: `apps/scholarship/tests/test_query_budgets.py` reads every number from here or from `budget.query_budgets`, and holds none of its own. A record may be ADDED (a new standard is stricter, not looser) or its value LOWERED (the tightness tests say by how much); it may never be RAISED, and `Settings/_tools/code_health.py` refuses a raised one at every close by comparing this array with the last recorded run's copy. `test_code_standards.py` refuses a record that is incomplete, names another ledger, or shadows a frozen key. `_admitted` is a sibling of `baseline`, so admitting a budget never moves `BASELINE_SHA256`.",
+  "_admitted": [
+    {
+      "on": "2026-09-21",
+      "by": "the api audit (TD-286)",
+      "why": "The student's own application list read, measured after the api audit narrowed income_shown to the members the web asks about (22 / 25 / 29 before). Three household shapes, because the cost is per declared earner and one fixture would pin a number without its slope.",
+      "ledger": "query_budgets",
+      "key": "api/v1/scholarship/applications/::GET::str-route-no-working-members",
+      "value": 7
+    },
+    {
+      "on": "2026-09-21",
+      "by": "the api audit (TD-286)",
+      "why": "The student's own application list read, measured after the api audit narrowed income_shown to the members the web asks about (22 / 25 / 29 before). Three household shapes, because the cost is per declared earner and one fixture would pin a number without its slope.",
+      "ledger": "query_budgets",
+      "key": "api/v1/scholarship/applications/::GET::salary-route-one-member",
+      "value": 13
+    },
+    {
+      "on": "2026-09-21",
+      "by": "the api audit (TD-286)",
+      "why": "The student's own application list read, measured after the api audit narrowed income_shown to the members the web asks about (22 / 25 / 29 before). Three household shapes, because the cost is per declared earner and one fixture would pin a number without its slope.",
+      "ledger": "query_budgets",
+      "key": "api/v1/scholarship/applications/::GET::salary-route-two-members",
+      "value": 20
+    },
+    {
+      "on": "2026-09-21",
+      "by": "the api audit (TD-286)",
+      "why": "The STR fall-through when the salary reading is DISCARDED: asking the cheap half of the gate first took it from 42 to 27 queries, and this ceiling holds the reorder.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.verdict_engine._verdict_income::str-fall-through-discarded",
+      "value": 27
+    },
+    {
+      "on": "2026-10-03",
+      "by": "Later-tier batch 1 (TD-287; first set 39 by the api audit, 2026-09-21)",
+      "why": "The STR fall-through when the salary reading is TAKEN: 39 at the audit, 35 once the salary reading reused the utility context instead of reading the bills a second time.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.verdict_engine._verdict_income::str-fall-through-taken",
+      "value": 35
+    },
+    {
+      "on": "2026-09-29",
+      "by": "TD-285",
+      "why": "The cost of has_valid_str per STR shape, read on the officer view, the student read and the verdict; TD-285's bite put a query inside it and every other budget stayed green, so it is measured on its own.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.income_engine.has_valid_str::own_both",
+      "value": 8
+    },
+    {
+      "on": "2026-09-29",
+      "by": "TD-285",
+      "why": "The cost of has_valid_str per STR shape, read on the officer view, the student read and the verdict; TD-285's bite put a query inside it and every other budget stayed green, so it is measured on its own.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.income_engine.has_valid_str::stranger",
+      "value": 6
+    },
+    {
+      "on": "2026-09-29",
+      "by": "TD-285",
+      "why": "The cost of has_valid_str per STR shape, read on the officer view, the student read and the verdict; TD-285's bite put a query inside it and every other budget stayed green, so it is measured on its own.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.income_engine.has_valid_str::own_unread",
+      "value": 6
+    },
+    {
+      "on": "2026-09-29",
+      "by": "TD-285",
+      "why": "The cost of has_valid_str per STR shape, read on the officer view, the student read and the verdict; TD-285's bite put a query inside it and every other budget stayed green, so it is measured on its own.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.income_engine.has_valid_str::none",
+      "value": 1
+    },
+    {
+      "on": "2026-10-03",
+      "by": "Later-tier batch 1 (TD-162)",
+      "why": "The officer applicant list at two rows: 6 before TD-162 removed the per-row open-tasks query, 4 after, and EQUAL to the five-row reading, which is the point.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/applications/::GET::2-rows",
+      "value": 4
+    },
+    {
+      "on": "2026-10-03",
+      "by": "Later-tier batch 1 (TD-162)",
+      "why": "The officer applicant list at five rows: 9 before TD-162 removed the per-row open-tasks query, 4 after, so a row now costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/applications/::GET::5-rows",
+      "value": 4
+    },
+    {
+      "on": "2026-10-03",
+      "by": "Later-tier batch 1 (TD-231)",
+      "why": "The gift list with one gift held by an applicant: 9, the card's own counts; the delete-blocker counts TD-231 moved out were per gift.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/programmes/::GET::1-gift",
+      "value": 9
+    },
+    {
+      "on": "2026-10-03",
+      "by": "Later-tier batch 1 (TD-231)",
+      "why": "The gift list with four gifts: 27 before TD-231, 24 after; the remaining five per gift are the card's own counts and this ceiling notices growth.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/programmes/::GET::4-gifts",
+      "value": 24
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 2 (TD-308)",
+      "why": "The Check-2 reconcile on a submitted STR-route household, per STR shape: 72 / 83 / 79 / 60 before one STR reading per pass; the none shape holds no STR and is the control.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.check2_queries.sync_check2_queries::own_both",
+      "value": 58
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 2 (TD-308)",
+      "why": "The Check-2 reconcile on a submitted STR-route household, per STR shape: 72 / 83 / 79 / 60 before one STR reading per pass; the none shape holds no STR and is the control.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.check2_queries.sync_check2_queries::stranger",
+      "value": 62
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 2 (TD-308)",
+      "why": "The Check-2 reconcile on a submitted STR-route household, per STR shape: 72 / 83 / 79 / 60 before one STR reading per pass; the none shape holds no STR and is the control.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.check2_queries.sync_check2_queries::own_unread",
+      "value": 58
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 2 (TD-308)",
+      "why": "The Check-2 reconcile on a submitted STR-route household, per STR shape: 72 / 83 / 79 / 60 before one STR reading per pass; the none shape holds no STR and is the control.",
+      "ledger": "query_budgets",
+      "key": "apps.scholarship.check2_queries.sync_check2_queries::none",
+      "value": 60
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 3 (TD-291)",
+      "why": "The Requests list with a shared and an internal comment, a screenshot and an approved analysis per row: 7 / 15 for an organisation admin and 11 / 27 for a super before the prefetch, and the two readings of each role EQUAL after.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/requests/::GET::org_admin-2-rows",
+      "value": 5
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 3 (TD-291)",
+      "why": "The Requests list with a shared and an internal comment, a screenshot and an approved analysis per row: 7 / 15 for an organisation admin and 11 / 27 for a super before the prefetch, and the two readings of each role EQUAL after.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/requests/::GET::org_admin-6-rows",
+      "value": 5
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 3 (TD-291)",
+      "why": "The Requests list with a shared and an internal comment, a screenshot and an approved analysis per row: 7 / 15 for an organisation admin and 11 / 27 for a super before the prefetch, and the two readings of each role EQUAL after.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/requests/::GET::super-2-rows",
+      "value": 6
+    },
+    {
+      "on": "2026-10-04",
+      "by": "Later-tier batch 3 (TD-291)",
+      "why": "The Requests list with a shared and an internal comment, a screenshot and an approved analysis per row: 7 / 15 for an organisation admin and 11 / 27 for a super before the prefetch, and the two readings of each role EQUAL after.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/requests/::GET::super-6-rows",
+      "value": 6
     }
   ],
   "_history": [

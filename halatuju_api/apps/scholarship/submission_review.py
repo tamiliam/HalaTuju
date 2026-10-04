@@ -31,6 +31,8 @@ Verification taxonomy for a ledger row:
 """
 from __future__ import annotations
 
+from apps.courses.exam_questions import results_held
+
 from .anomaly_engine import sibling_tertiary_count, detect_anomalies
 from .document_snapshot import latest_doc
 from .verdict_engine import build_verdict
@@ -92,7 +94,9 @@ def build_facts_ledger(application) -> list[dict]:
     # Identity / academic / pathway / income — anchored on the verification verdict.
     add('name', getattr(profile, 'name', ''), 'identity_verdict',
         _ver_from_verdict(verdicts.get('identity', 'gap')))
-    add('qualification', getattr(profile, 'exam_type', ''), 'academic_verdict',
+    # The results we HOLD (TD-325), never the declared exam: the academic verdict verifies held
+    # results, so the claim it anchors must name them.
+    add('qualification', results_held(profile), 'academic_verdict',
         _ver_from_verdict(verdicts.get('academic', 'gap')))
     add('pathway', _pathway_value(application), 'pathway_verdict',
         _ver_from_verdict(verdicts.get('pathway', 'gap')))

@@ -24,7 +24,8 @@ from __future__ import annotations
 import re
 
 from .document_snapshot import SNAPSHOT_ORDER
-from .catalogue_levels import course_levels
+from .catalogue_levels import (
+    course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
 from .pathway_engine import distinctive_tokens
 
 
@@ -529,14 +530,15 @@ def resolve_catalogue_course(programme: str, institution: str):
     offered at an institution whose name aligns with the offer's — has a programme name
     that aligns with the offer's. Any ambiguity (zero or >1) → ``None`` (caller falls back
     to labels). Conservative by design: a wrong ``course_id`` is worse than no id. TD-332: a TERTIARY
-    letter skips pre-U virtual courses and courses of another level (``catalogue_levels``)."""
+    letter skips pre-U virtual courses and courses of another level; TD-150: a private-arm letter and
+    a course more specific than the letter never match (all three in ``catalogue_levels``)."""
     from apps.courses.models import Institution, CourseInstitution
     ltype = detect_pathway_type(programme, '') or detect_pathway_type(programme, institution)
     tertiary = ltype in ('asasi', 'pismp', 'diploma', 'degree')
 
     pj = distinctive_tokens(programme)
     ij = distinctive_tokens(institution)
-    if not pj or not ij:
+    if not pj or not ij or private_arm_letter(programme, institution):
         return None
 
     inst_ids = [
@@ -553,7 +555,9 @@ def resolve_catalogue_course(programme: str, institution: str):
     for off in offers.select_related('course', 'institution'):
         if tertiary and (fams := course_levels(off.course)) and ltype not in fams:
             continue
-        if _name_aligns(pj, distinctive_tokens(off.course.course)):
+        base = distinctive_tokens(_ALIRAN_SUFFIX_RE.sub('', off.course.course or ''))
+        if (_name_aligns(pj, distinctive_tokens(off.course.course))
+                and not names_a_specialisation_the_letter_does_not(pj, base)):
             uniq[off.course.course_id] = {
                 'course_id': off.course.course_id,
                 'course_name': off.course.course,

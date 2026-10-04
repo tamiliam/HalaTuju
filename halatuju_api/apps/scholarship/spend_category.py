@@ -344,6 +344,11 @@ class SortReport:
     merchants_asked: int = 0                             # names actually sent to the model
     merchants_answered: int = 0
     merchants_reasked: int = 0                           # stale `ai` answers re-asked (TD-239)
+    # TD-238: what the asking COST, as metered (`usage_context(source='spend_category')`). Units,
+    # not ringgit: no price is held in code here (an internal price table is an owner ruling).
+    model_calls: int = 0
+    tokens_in: int = 0
+    tokens_out: int = 0
 
     owner_rows_untouched: int = 0
     applied: bool = False
@@ -375,8 +380,19 @@ class SortReport:
             f'merchants asked      : {self.merchants_asked}',
             f'merchants answered   : {self.merchants_answered}',
             f'merchants re-asked   : {self.merchants_reasked} (answered by an older prompt)',
+            f'model calls (metered): {self.model_calls} · tokens in {self.tokens_in} · '
+            f'tokens out {self.tokens_out} (the bill is on the usage screen, not here)',
         ]
         return out
+
+
+def _meter_since(report, started):
+    """TD-238: fill the report's metered calls and tokens from this run's `spend_category` events."""
+    from django.db.models import Count, Sum
+    from .models import UsageEvent
+    agg = UsageEvent.objects.filter(source='spend_category', created_at__gte=started).aggregate(
+        n=Count('id'), i=Sum('input_tokens'), o=Sum('output_tokens'))
+    report.model_calls, report.tokens_in, report.tokens_out = agg['n'], agg['i'] or 0, agg['o'] or 0
 
 
 def _stored_verdicts():
@@ -430,11 +446,14 @@ def merchant_verdicts(merchants, stats, stored, *, use_ai=True, report=None):
             report.note_merchant(decided_by)
 
     if unplaced and use_ai:
+        from django.utils import timezone
+        started = timezone.now()
         if report is not None:
             report.merchants_asked = len(unplaced)
         answers = ask_model(unplaced)
         if report is not None:
             report.merchants_answered = len(answers)
+            _meter_since(report, started)
         for merchant, category in answers.items():
             verdicts[merchant] = (category, BY_MODEL)
             if report is not None:

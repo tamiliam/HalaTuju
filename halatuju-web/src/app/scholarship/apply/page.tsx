@@ -134,7 +134,11 @@ export default function ScholarshipApplyPage() {
   const populatedRef = useRef(false)
   // Context for the Plans step: SPM leavers get the eligible-pathway dropdown;
   // STPM students get the degree branch (P5), so the pathway requirement is skipped.
-  const examType: 'spm' | 'stpm' = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
+  // ⚠ The RESULTS we hold, not the declared exam (TD-325; owner ruling TD-324): both branches
+  // are eligibility checks on results, so a Form Six explorer with no STPM results was sent to an
+  // STPM degree check fed nothing and shown an empty picker. `profileAcademicSummary` reads the
+  // served `results_held` — the same rule as the Results step.
+  const examType: 'spm' | 'stpm' = profileAcademicSummary(profile).examType
   // ⚠ THE RESULTS STEP NAMES NO EXAM. It used to read "My SPM Results" / "My STPM Results" off
   // the DECLARED exam — which is a claim we cannot back: the declaration moves on a card tap and
   // needs no results behind it, so a Form Six student holding ten SPM grades was shown "My STPM
@@ -212,7 +216,7 @@ export default function ScholarshipApplyPage() {
   useEffect(() => {
     if (status !== 'ready' || !token || !profile) return
     setPathwayLoading(true)
-    if (profile.exam_type === 'stpm') {
+    if (profileAcademicSummary(profile).examType === 'stpm') {
       checkStpmEligibility({
         stpm_grades: profile.stpm_grades || {},
         spm_grades: profile.grades || {},

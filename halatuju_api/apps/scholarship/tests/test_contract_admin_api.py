@@ -20,6 +20,7 @@ from apps.scholarship import contracts
 from apps.scholarship.models import ContractTemplate
 
 from apps.scholarship.tests.contract_helpers import brightpath_org, make_deployable, seed_draft
+from apps.scholarship.tests.factories import make_programme
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 BASE = '/api/v1/admin/scholarship/contract-templates/'
@@ -124,7 +125,9 @@ class TestCreateAndAuthor(_Base):
 class TestOrgFence(_Base):
     def setUp(self):
         super().setUp()
-        self.t_b = ContractTemplate.objects.create(organisation=self.org_b, version='b1')
+        self.t_b = ContractTemplate.objects.create(
+            organisation=self.org_b, programme=make_programme(organisation=self.org_b),
+            version='b1')
 
     def test_cross_org_read_404(self):
         self._auth('ct-oa')   # org A admin
@@ -318,7 +321,9 @@ class TestImportDocx(_Base):
         mock_gemini.assert_not_called()
 
     def test_import_cross_org_404(self):
-        other = ContractTemplate.objects.create(organisation=self.org_b, version='imp-b')
+        other = ContractTemplate.objects.create(
+            organisation=self.org_b, programme=make_programme(organisation=self.org_b),
+            version='imp-b')
         docx_file = SimpleUploadedFile(
             'c.docx', _docx_bytes(['x']),
             content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')

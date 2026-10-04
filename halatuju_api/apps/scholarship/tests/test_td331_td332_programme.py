@@ -150,8 +150,20 @@ class LevelIsReadFromTheRightPlaceTest(_Catalogue):
             'DIPLOMA PENGURUSAN ZENTARA', 'PUSAT ASASI ZENTARA')['course_id'], 'TD-ZEN-DIP')
 
     def test_diplomasi_is_not_a_diploma(self):
-        self.assertEqual(op.resolve_catalogue_course(
-            'IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA', UTHM.upper())['course_id'], 'TD-UTHM-HUB')
+        # RE-POINTED by TD-150 (2026-10-04). This letter omits the course's "(Diplomasi)", so it is
+        # more general than the course and TD-150 now refuses the match on its own ("cannot tell" —
+        # the next test). The LEVEL rule this test was written for is held with that one refusal
+        # switched off: a course NAMED "Diplomasi" is not a diploma, so the degree letter still
+        # reaches it. (A letter that PRINTS "(DIPLOMASI)" cannot show it: `detect_pathway_type`
+        # reads the letter itself as a diploma by substring — TD-333.)
+        from unittest import mock
+        with mock.patch.object(op, 'names_a_specialisation_the_letter_does_not', return_value=False):
+            self.assertEqual(op.resolve_catalogue_course(
+                'IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA', UTHM.upper())['course_id'], 'TD-UTHM-HUB')
+
+    def test_a_letter_that_omits_the_specialisation_cannot_tell_td150(self):
+        self.assertIsNone(op.resolve_catalogue_course(
+            'IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA', UTHM.upper()))
 
     def test_the_level_field_decides_not_the_name(self):
         # "Program Asasi Pengurusan" is levelled Diploma in the catalogue (UU0345001's shape).

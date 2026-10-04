@@ -20,7 +20,7 @@ import {
 import {
   eligiblePathways, PATHWAY_ORDER, programmesForPathway, isProgrammePathway,
   eligibleMatricTracks, STPM_STREAMS, stpmDegreesToCourses, UNCERTAINTY_REASONS,
-  pismpAlirans, bidangForAliran, aliranForChosen,
+  pismpAlirans, bidangForAliran, aliranForChosen, profileAcademicSummary,
   type ChosenProgramme, type PismpAliran,
 } from '@/lib/scholarship'
 import { collegesForTrack } from '@/data/matric-colleges'
@@ -46,7 +46,8 @@ export default function PathwayPicker({
   token: string | null
 }) {
   const { t } = useT()
-  const examType: 'spm' | 'stpm' = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
+  // The RESULTS we hold, not the declared exam (TD-325) — the same rule as /apply's Plans step.
+  const examType: 'spm' | 'stpm' = profileAcademicSummary(profile).examType
 
   // Eligibility data feeds the eligible-only dropdowns (same call /apply makes).
   const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
@@ -84,7 +85,7 @@ export default function PathwayPicker({
   useEffect(() => {
     if (!token || !profile) return
     setLoading(true)
-    if (profile.exam_type === 'stpm') {
+    if (profileAcademicSummary(profile).examType === 'stpm') {
       checkStpmEligibility({
         stpm_grades: profile.stpm_grades || {}, spm_grades: profile.grades || {},
         cgpa: profile.stpm_cgpa ?? 0, muet_band: profile.muet_band ?? 0,

@@ -97,6 +97,31 @@ def _budgets():
         return json.load(fh)['budget']['query_budgets']
 
 
+def _record():
+    """EVERY query budget this file reads — the live `budget.query_budgets` (the two H18 froze)
+    plus the post-freeze budgets ADMITTED by a dated record in `_admitted` (TD-286, 2026-10-04).
+    This file holds no numbers of its own: each dict below is looked up here by its key."""
+    with open(BUDGET_PATH, encoding='utf-8') as fh:
+        data = json.load(fh)
+    record = dict(data['budget']['query_budgets'])
+    record.update({r['key']: r['value'] for r in data.get('_admitted', [])
+                   if isinstance(r, dict) and r.get('ledger') == 'query_budgets'})
+    return record
+
+
+RECORD = _record()
+
+#: The message every tightness failure below ends with.
+LOWER_IT = ('Lower that budget in halatuju_api/code-standards.json — the value of its "_admitted" '
+            'record (TD-286) — exactly as each line says. It may go DOWN, never up.')
+
+
+def _from_record(stem, names):
+    """`{name: budget}` for the keys `<stem>::<name>`. A key the record lacks reads None, and
+    `TestEveryBudgetThisFileReadsIsInTheRecord` names it — rather than a bare KeyError at import."""
+    return {name: RECORD.get(f'{stem}::{name}') for name in names}
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestTheOfficerApplicantViewQueryBudget(TestCase):
     """One officer, one applicant, one GET — counted."""
@@ -200,22 +225,16 @@ class TestTheOfficerApplicantViewQueryBudget(TestCase):
 
 #: The STUDENT's own application read, `GET /api/v1/scholarship/applications/`.
 #:
-#: ⚠ THE NUMBERS LIVE HERE AND NOT IN `code-standards.json`, AND THAT IS A RULE, NOT A SHORTCUT.
-#: `query_budgets` is a frozen H4-era ledger, and `test_code_standards.py` refuses a ledger that
-#: GAINS a member — adding a key means editing the frozen `baseline` and re-pinning
-#: `BASELINE_SHA256` by hand, which H11 did once and its own retrospective called the way a guard
-#: stops being read. So this pair is an ordinary constant with the same two assertions on it: a
-#: ceiling that may not be exceeded and a tightness check that fails when the code improves. It
-#: is a smaller instrument than the ledger and it says so; raising it to the ledger is TD-286.
+#: Dated: until TD-286 (2026-10-04) this budget and the five below were CONSTANTS in this file,
+#: because `query_budgets` is a frozen H4-era ledger and a new key would have meant re-pinning
+#: `BASELINE_SHA256`. They are now dated `_admitted` records in `code-standards.json`, read through
+#: `RECORD`; the frozen `baseline` was not touched.
 STUDENT_READ_ROUTE = 'api/v1/scholarship/applications/'
 #: Measured 2026-09-21, after the audit narrowed `income_shown` to the members the web asks about.
 #: Before that it was 22 / 25 / 29 — all five of `_MEMBER_ORDER` on every read, at three queries
 #: each, on the very call that feeds the student's Documents tab.
-STUDENT_READ_BUDGETS = {
-    'str-route-no-working-members': 7,
-    'salary-route-one-member': 13,
-    'salary-route-two-members': 20,
-}
+STUDENT_READ_BUDGETS = _from_record(f'{STUDENT_READ_ROUTE}::GET', (
+    'str-route-no-working-members', 'salary-route-one-member', 'salary-route-two-members'))
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -279,9 +298,8 @@ class TestTheStudentApplicationReadQueryBudget(TestCase):
                              f'code {measured} — LOWER it to {measured}')
         self.assertEqual(
             loose, [],
-            'A student-read budget sits above what the endpoint now costs. Edit '
-            'STUDENT_READ_BUDGETS in this file exactly as each line says — the ratchet catching '
-            'up with your improvement.\n' + '\n'.join(loose))
+            'A student-read budget sits above what the endpoint now costs — the ratchet '
+            'catching up with your improvement. ' + LOWER_IT + '\n' + '\n'.join(loose))
 
     def test_the_narrowed_field_still_answers_the_members_the_web_asks_about(self):
         """⚠ THE HALF A QUERY COUNT CANNOT SEE. Serving NOTHING would pass every assertion above
@@ -312,7 +330,9 @@ class TestTheStudentApplicationReadQueryBudget(TestCase):
 #:   2026-10-03 (TD-287): `taken` 39 -> 35. The salary reading reused `_verdict_income`'s own
 #:                 `_utility_context` instead of reading the bills a second time — exactly its four
 #:                 reads. `discarded` never takes the reading, so it does not move.
-FALL_THROUGH_BUDGETS = {'discarded': 27, 'taken': 35}
+FALL_THROUGH_TARGET = 'apps.scholarship.verdict_engine._verdict_income'
+FALL_THROUGH_BUDGETS = {case: RECORD.get(f'{FALL_THROUGH_TARGET}::str-fall-through-{case}')
+                        for case in ('discarded', 'taken')}
 
 
 class TestTheStrFallThroughDoesNotPayForAReadingItDiscards(TestCase):
@@ -390,7 +410,7 @@ class TestTheStrFallThroughDoesNotPayForAReadingItDiscards(TestCase):
         self.assertEqual(
             loose, [],
             'A fall-through budget sits above what the engine now costs — the ratchet catching '
-            'up with an improvement. If TD-282 has landed, expect both.\n' + '\n'.join(loose))
+            'up with an improvement. ' + LOWER_IT + '\n' + '\n'.join(loose))
 
 
 #: `income_engine.has_valid_str` on one household, by the STR it holds. Measured 2026-09-29 (TD-285)
@@ -402,7 +422,8 @@ class TestTheStrFallThroughDoesNotPayForAReadingItDiscards(TestCase):
 #: (the officer and student fixtures hold no STR that reads; both fall-through fixtures answer
 #: before the declared arm). A predicate read on the officer view, the student read and the
 #: verdict, measured by nothing, is where the next per-request read would have hidden.
-HAS_VALID_STR_BUDGETS = {'own_both': 8, 'stranger': 6, 'own_unread': 6, 'none': 1}
+HAS_VALID_STR_BUDGETS = _from_record('apps.scholarship.income_engine.has_valid_str',
+                                     ('own_both', 'stranger', 'own_unread', 'none'))
 
 
 class TestHasValidStrQueryBudget(WhoseStrBase):
@@ -431,14 +452,14 @@ class TestHasValidStrQueryBudget(WhoseStrBase):
         loose = [f'HAS_VALID_STR_BUDGETS["{s}"]: budget {limit}, code {m} — LOWER it to {m}'
                  for s, limit in HAS_VALID_STR_BUDGETS.items()
                  for m in (self._cost(s),) if limit > m]
-        self.assertEqual(loose, [], 'A has_valid_str budget sits above what it now costs.\n'
-                         + '\n'.join(loose))
+        self.assertEqual(loose, [], 'A has_valid_str budget sits above what it now costs. '
+                         + LOWER_IT + '\n' + '\n'.join(loose))
 
 
 
 #: TD-162 + TD-231 (2026-10-03): the officer's two LIST endpoints, each read at two page sizes so
 #: the pair separates the fixed cost from the per-row one — a constant gap between the readings is
-#: work every row pays. Ordinary constants for the reason STUDENT_READ_BUDGETS gives (TD-286).
+#: work every row pays. Admitted records since TD-286 (see STUDENT_READ_BUDGETS).
 #:   applicant list — 2 vs 5 rows, each row submitted and owing the student an open officer task.
 #:                    MEASURED 6 / 9 before TD-162 (one open-tasks EXISTS per row); 4 / 4 after —
 #:                    the two readings EQUAL is the point: a row now costs nothing extra.
@@ -449,12 +470,9 @@ class TestHasValidStrQueryBudget(WhoseStrBase):
 #:                    left as they are: an org runs three gifts. This budget is what notices growth.
 LIST_ROUTE_APPLICANTS = 'api/v1/admin/scholarship/applications/'
 LIST_ROUTE_GIFTS = 'api/v1/admin/scholarship/programmes/'
-LIST_BUDGETS = {
-    f'{LIST_ROUTE_APPLICANTS}::GET::2-rows': 4,
-    f'{LIST_ROUTE_APPLICANTS}::GET::5-rows': 4,
-    f'{LIST_ROUTE_GIFTS}::GET::1-gift': 9,
-    f'{LIST_ROUTE_GIFTS}::GET::4-gifts': 24,
-}
+LIST_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{LIST_ROUTE_APPLICANTS}::GET::2-rows', f'{LIST_ROUTE_APPLICANTS}::GET::5-rows',
+    f'{LIST_ROUTE_GIFTS}::GET::1-gift', f'{LIST_ROUTE_GIFTS}::GET::4-gifts')}
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -505,8 +523,8 @@ class TestTheOfficerListsQueryBudget(TestCase):
         loose = [f'LIST_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
                  for k, limit in LIST_BUDGETS.items() for m in (self._reading(k),)
                  if limit - SHRINK_SLACK > m]
-        self.assertEqual(loose, [], 'A list budget sits above what the endpoint now costs.\n'
-                         + '\n'.join(loose))
+        self.assertEqual(loose, [], 'A list budget sits above what the endpoint now costs. '
+                         + LOWER_IT + '\n' + '\n'.join(loose))
 
     def test_the_budgeted_routes_still_resolve(self):
         for route in (LIST_ROUTE_APPLICANTS, LIST_ROUTE_GIFTS):
@@ -515,14 +533,15 @@ class TestTheOfficerListsQueryBudget(TestCase):
 
 #: TD-308 (2026-10-04): `check2_queries.sync_check2_queries` — the Check-2 reconcile that runs on
 #: the student's Action Centre read, at `confirm_profile` and in the hourly query-email sweep — on
-#: one SUBMITTED STR-route household, by the STR it holds (the TD-285 fixture). Ordinary constants
-#: for the reason STUDENT_READ_BUDGETS gives (TD-286).
+#: one SUBMITTED STR-route household, by the STR it holds (the TD-285 fixture). Admitted records
+#: since TD-286 (see STUDENT_READ_BUDGETS).
 #:   MEASURED before TD-308: own_both 72 · stranger 83 · own_unread 79 · none 60 — the gap pass took
 #:   `student_str_check` of the same STR two or three times (`str_owner_ic_asks`, and `has_valid_str`
 #:   behind the declared-wage ask and the high-utility wording), about seven queries each.
 #:   After `str_check_memo.one_str_reading`: one reading per pass. `none` holds no STR, so it does
 #:   not move — that is the control.
-SYNC_CHECK2_BUDGETS = {'own_both': 58, 'stranger': 62, 'own_unread': 58, 'none': 60}
+SYNC_CHECK2_BUDGETS = _from_record('apps.scholarship.check2_queries.sync_check2_queries',
+                                   ('own_both', 'stranger', 'own_unread', 'none'))
 
 
 class TestCheck2SyncQueryBudget(WhoseStrBase):
@@ -555,8 +574,8 @@ class TestCheck2SyncQueryBudget(WhoseStrBase):
         loose = [f'SYNC_CHECK2_BUDGETS["{s}"]: budget {limit}, code {m} — LOWER it to {m}'
                  for s, limit in SYNC_CHECK2_BUDGETS.items()
                  for m in (self._cost(s),) if limit > m]
-        self.assertEqual(loose, [], 'A Check-2 sync budget sits above what it now costs.\n'
-                         + '\n'.join(loose))
+        self.assertEqual(loose, [], 'A Check-2 sync budget sits above what it now costs. '
+                         + LOWER_IT + '\n' + '\n'.join(loose))
 
     def test_one_reading_gives_the_same_gaps_as_many(self):
         """The memo is a cost change only: the gap pass answers exactly as it does unwrapped."""
@@ -571,17 +590,14 @@ class TestCheck2SyncQueryBudget(WhoseStrBase):
 #: TD-291 (2026-10-04): the Requests list (`GET /admin/scholarship/requests/`), 2 vs 6 requests,
 #: each carrying a shared and an internal comment, one screenshot and one approved analysis — the
 #: four per-row reads the audit found (`comments_for`, the attachments, `approved_analysis` and
-#: `get_analyses`). Ordinary constants for the reason STUDENT_READ_BUDGETS gives (TD-286).
+#: `get_analyses`). Admitted records since TD-286 (see STUDENT_READ_BUDGETS).
 #:   MEASURED before TD-291: org_admin 2-rows 7 · 6-rows 15 (2 a row); super 2-rows 11 · 6-rows
 #:   27 (4 a row) — the audit's shape (27 / 51 at twelve rows). After the prefetch: 5 / 5 and
 #:   6 / 6 — the two readings of each role EQUAL, so a row costs nothing extra, which is the point.
 REQUESTS_ROUTE = 'api/v1/admin/scholarship/requests/'
-REQUESTS_BUDGETS = {
-    f'{REQUESTS_ROUTE}::GET::org_admin-2-rows': 5,
-    f'{REQUESTS_ROUTE}::GET::org_admin-6-rows': 5,
-    f'{REQUESTS_ROUTE}::GET::super-2-rows': 6,
-    f'{REQUESTS_ROUTE}::GET::super-6-rows': 6,
-}
+REQUESTS_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{REQUESTS_ROUTE}::GET::org_admin-2-rows', f'{REQUESTS_ROUTE}::GET::org_admin-6-rows',
+    f'{REQUESTS_ROUTE}::GET::super-2-rows', f'{REQUESTS_ROUTE}::GET::super-6-rows')}
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
@@ -641,8 +657,8 @@ class TestTheRequestsListQueryBudget(TestCase):
         loose = [f'REQUESTS_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
                  for k, limit in REQUESTS_BUDGETS.items() for m in (self._reading(k),)
                  if limit - SHRINK_SLACK > m]
-        self.assertEqual(loose, [], 'A Requests-list budget sits above what it now costs.\n'
-                         + '\n'.join(loose))
+        self.assertEqual(loose, [], 'A Requests-list budget sits above what it now costs. '
+                         + LOWER_IT + '\n' + '\n'.join(loose))
 
     def test_a_row_costs_nothing_extra(self):
         for role in ('org_admin', 'super'):
@@ -651,3 +667,33 @@ class TestTheRequestsListQueryBudget(TestCase):
 
     def test_the_budgeted_route_still_resolves(self):
         self.assertEqual(resolve('/' + REQUESTS_ROUTE).route, REQUESTS_ROUTE)
+
+
+class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
+    """TD-286 (2026-10-04): the numbers live in `code-standards.json` and nowhere here. A key this
+    file measures that the record lacks reads None above; this names it. And the reverse: an
+    `_admitted` record nothing here measures is a ceiling on nothing."""
+
+    MEASURED = {
+        **{f'{STUDENT_READ_ROUTE}::GET::{k}': v for k, v in STUDENT_READ_BUDGETS.items()},
+        **{f'{FALL_THROUGH_TARGET}::str-fall-through-{k}': v
+           for k, v in FALL_THROUGH_BUDGETS.items()},
+        **{f'apps.scholarship.income_engine.has_valid_str::{k}': v
+           for k, v in HAS_VALID_STR_BUDGETS.items()},
+        **LIST_BUDGETS,
+        **{f'apps.scholarship.check2_queries.sync_check2_queries::{k}': v
+           for k, v in SYNC_CHECK2_BUDGETS.items()},
+        **REQUESTS_BUDGETS,
+    }
+
+    def test_every_measured_key_has_a_budget(self):
+        missing = sorted(k for k, v in self.MEASURED.items() if v is None)
+        self.assertEqual(missing, [], 'code-standards.json has no budget for: ' + ', '.join(missing))
+
+    def test_every_admitted_budget_is_measured_here(self):
+        with open(BUDGET_PATH, encoding='utf-8') as fh:
+            admitted = [r['key'] for r in json.load(fh).get('_admitted', [])
+                        if isinstance(r, dict) and r.get('ledger') == 'query_budgets']
+        self.assertEqual(sorted(set(admitted) - set(self.MEASURED)), [],
+                         'an "_admitted" query budget that no reading here measures')
+        self.assertGreaterEqual(len(self.MEASURED), 21)

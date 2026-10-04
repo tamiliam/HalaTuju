@@ -25,6 +25,8 @@ import time
 
 from django.conf import settings
 
+from apps.courses.exam_questions import results_held
+
 from .document_snapshot import SNAPSHOT_ORDER
 from .models import FundingNeed
 from .shortlisting import count_spm_a_grades
@@ -81,7 +83,10 @@ DEFAULT_LANGUAGE = 'English'
 #                  ordering is correct, and (b) a TIME & DATES rule requires date-proof phrasing — a
 #                  reporting/intake date stated as a plain fact of WHEN the place begins, never a
 #                  countdown or cross-event relative timing — so a profile doesn't age between reads.
-PROMPT_VERSION = '2026-07-21.1'
+#   2026-10-04.1 — TD-325 (an INPUT change): `Qualification:` is `exam_questions.results_held` (the
+#                  results HELD; owner ruling TD-324), not the declared exam — a Form Six explorer
+#                  read 'stpm' with nothing behind it.
+PROMPT_VERSION = '2026-10-04.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -718,7 +723,9 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         alias=alias,
         pronouns=_pronouns(application),
         school=pval('school'),
-        qualification=(pval('exam_type', 'n/a') or 'n/a'),
+        # The results we HOLD, not the exam declared (TD-325; owner ruling TD-324: results held =
+        # the highest completed qualification). A Form Six explorer is 'spm' here, not 'stpm'.
+        qualification=(results_held(profile) or 'n/a'),
         merit=_merit(application),
         grades_summary=_grades_summary(profile),
         stpm_pngk=pval('stpm_cgpa', 'n/a'),

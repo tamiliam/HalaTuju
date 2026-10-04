@@ -10,11 +10,18 @@ import {
   FAQ, defaultFaqAudiences, canSeeAllFaq, ALL_FAQ_AUDIENCES, type QA,
 } from '../faq'
 import type { Audience } from '../types'
+import path from 'path'
 import { NAV_ITEMS } from '@/lib/navigation'
-import { readWeb } from '@/test/sourceGuard'
+import { readWeb, walkFloor, floorCount, WEB_ROOT } from '@/test/sourceGuard'
 
-const ROLE_CHAPTERS = ['role-reviewer', 'role-qc', 'role-org-admin', 'role-admin-general',
-                       'role-finance']
+// TD-168 (2026-10-04): DERIVED from the registry, never hand-listed. The hand-kept array let the
+// finance chapter (Sprint 14) register while every test here stayed green covering nothing new.
+// Now a chapter is covered the moment it is registered; the drift test below catches a role
+// chapter FILE that never made it into the registry. The per-role assertions stay hand-written —
+// they are the contract `visibleChapters` is deliberately role-filtered to keep.
+const ROLE_CHAPTERS = floorCount(
+  CHAPTERS.filter((c) => c.group === 'role').map((c) => c.slug), 5, 'role chapters',
+  'TD-168: org_admin and super must see every role chapter; five were registered on 2026-10-04.')
 const slugs = (role: ManualRole | undefined) => visibleChapters(role).map((c) => c.slug)
 
 describe('chapter visibility per role', () => {
@@ -46,6 +53,15 @@ describe('chapter visibility per role', () => {
     for (const r of ['org_admin', 'super'] as ManualRole[]) {
       expect(slugs(r)).toEqual(expect.arrayContaining(ROLE_CHAPTERS))
     }
+  })
+
+  test('every role chapter file is registered as a role chapter (TD-168 drift test)', () => {
+    const why = 'TD-168: a role-*.tsx chapter that is not in CHAPTERS (group "role") is invisible '
+      + 'to every reader and to every test above; register it in src/content/manual/index.ts.'
+    const files = walkFloor(path.join(WEB_ROOT, 'src', 'content', 'manual'), 5, why, { exts: ['.tsx'] })
+      .map((f) => path.basename(f, '.tsx'))
+      .filter((b) => b.startsWith('role-'))
+    expect(floorCount(files, 5, 'role chapter files', why).sort()).toEqual([...ROLE_CHAPTERS].sort())
   })
 
   test('a partner / unknown role sees no role chapter', () => {

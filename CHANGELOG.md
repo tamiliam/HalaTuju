@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## Later-tier batch 4 — eight items closed, four left open (TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286, TD-246) - 2026-10-04
+
+Built locally, NOT deployed. Register open **98 → 92** (`code_health.py` td_open 92; eight closed,
+TD-333 and TD-334 raised). **One migration — `scholarship/0164`, migrate-first by hand (DDL and pre-check in
+its docstring and in `halatuju_api/CLAUDE.md`).** No new package, no paid call, no new copy.
+TD-150 (eligibility-adjacent), TD-079 (writes the student's queue) and TD-327 (schema) →
+adversarial review: FIX-FIRST, three fixes applied (below).
+
+- **TD-327 — a contract template always has a gift.** `ContractTemplate.programme` is NOT NULL
+  (`0164_contracttemplate_programme_not_null`: `ALTER TABLE contract_templates ALTER COLUMN
+  programme_id SET NOT NULL;` after `SELECT count(*) FROM contract_templates WHERE programme_id IS
+  NULL;` reads 0). Its RunPython refuses a non-production database still holding a NULL template.
+  Tests that built a template without a gift give it one; the three TD-229 tests that forced a NULL
+  are re-pointed (an in-memory orphan; the database refusing NULL; the 0163 back-fill proved by its
+  manager calls).
+- **TD-325 — the results we HOLD, in four more places** (owner ruling TD-324). The sponsor-profile
+  prompt and the Check-2 facts ledger read `exam_questions.results_held` and joined the TD-218 reader
+  fence (8 modules). The apply form's Plans step and `PathwayPicker` pick the SPM pathway dropdown or
+  the STPM degree picker by the served `results_held` — decided, not assumed: both are eligibility
+  checks on results, and the Form Six explorer got an empty STPM degree picker. **The sponsor-profile
+  `PROMPT_VERSION` is bumped `2026-07-21.1` → `2026-10-04.1`** (an input changed): every stored profile
+  now reads stale to `refresh_sponsor_profiles`, which is a manual, PAID sweep — nothing regenerates
+  on its own.
+- **TD-150 — "cannot tell" is no match, on two more shapes.** `resolve_catalogue_course` refuses a
+  course more specific than the letter (#95: a generic "Diploma Teknologi Maklumat" pinned to a
+  campus's only IT specialisation; "Kepujian"/"Honours" and a PISMP "(SJKT)" are not
+  specialisations, nor — review fix — UPU's "Baru" marker, a trailing "#" or "Bacelor", which had
+  blocked UR4851001) and any letter from a private arm or a Sdn. Bhd. operator (#31, Saluran Terbuka —
+  the genuineness check's own phrases). A letter with MORE words (a code prefix) still matches. ⚠ An
+  undeclared student holding a generic letter is now asked to pick the exact course
+  (`pathway_undeclared`) instead of confirming an arbitrary specialisation. Found: TD-333.
+- **TD-079 — deleting a document re-asks for it.** `resolution.after_document_deleted` re-opens the
+  RESOLVED (not waived) student-visible ticket of that document type whose gap is back, and
+  re-notifies — Completed stage only; only a ticket the system or the student closed (review fix: an
+  officer's hand resolution stays closed, and no reopened ticket loses its typed text). The reconcile stays on the reads, by decision; pinned that a
+  read in steady state writes nothing and sends nothing (officer detail GET, Action Centre GET).
+- **TD-286 — post-freeze query budgets are dated records, not test constants.** The 21 live in an
+  `_admitted` array of `halatuju_api/code-standards.json` (`{on, by, why, ledger, key, value}`);
+  `test_query_budgets.py` holds no numbers. `test_code_standards.py` refuses a bad record, any
+  ledger but `query_budgets`, and a shadow of a frozen key; `code_health.py` refuses a raised one.
+  The frozen baseline and `BASELINE_SHA256` are untouched.
+- **TD-256 — the debt register's duplicate-id check runs at every close.** `code_health.py` performs
+  the api test's check (FAIL on a new collision) and reads the declared collisions from
+  `<!-- td-known-collisions: 151, 152 -->` in the register; the api test asserts the two lists agree.
+- **TD-168 — the manual's role chapters are derived from the registry**, with a drift test that a
+  `role-*.tsx` file is registered.
+- **TD-246 — closed as overtaken:** Payments and Spending draw nothing until one gift is chosen, and a
+  gift is one organisation (`test_td246_one_org_through_the_gift.py`, a super across two). The
+  server still pools organisations for an organisation-less super who names no gift — TD-334, raised.
+- **TD-238 (partly):** the spending sort report prints model calls and tokens beside merchants asked
+  (`spend_category._meter_since`); a ringgit estimate needs the owner's price table.
+- **Left open:** TD-216 (the box split is a column plus a labelled box — Stitch, copy); TD-228
+  (Sponsors, Sources, Requests — 6+ files, trigger not fired); TD-245 (needs a table); TD-238 (above).
+
 ## Later-tier batch 3 — ten small items closed, two left open (TD-277, TD-270, TD-284, TD-273, TD-263, TD-239, TD-236, TD-165, TD-291, TD-110) - 2026-10-04
 
 Built locally, NOT deployed. Register open **108 → 98** (`code_health.py` td_open 98); TD-174 and

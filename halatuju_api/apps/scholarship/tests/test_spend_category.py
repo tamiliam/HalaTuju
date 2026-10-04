@@ -400,6 +400,41 @@ class TestOwnerOutranksEverything(TestCase):
         self.assertEqual((stored.category, stored.decided_by), ('study', 'owner'))
 
 
+class TestTheReportSaysWhatTheAskingCost(TestCase):
+    """TD-238 (2026-10-04): the run reports the merchants asked AND what the asking was metered at —
+    the calls and the tokens `usage_context(source='spend_category')` recorded — so a run that
+    suddenly asks about every shop again reads as such in its own report. Units, not ringgit."""
+
+    def _metered_seam(self, reply, tokens=(1200, 80)):
+        from apps.scholarship import usage
+
+        def seam(*_a, **_k):
+            usage.record_usage('gemini', model='m', input_tokens=tokens[0], output_tokens=tokens[1])
+            return reply
+        return seam
+
+    def test_the_first_run_reports_its_calls_and_tokens(self):
+        app = make_app()
+        txn(app, 'GLASSEYE EYEWEAR TRADING', 130)
+        txn(app, 'QUANTUM PRISMA TRADING', 30)
+        reply = answer({'GLASSEYE EYEWEAR TRADING': 'health', 'QUANTUM PRISMA TRADING': 'health'})
+        with mock.patch(SEAM, side_effect=self._metered_seam(reply)):
+            report = sc.sort_transactions(apply=True)
+        self.assertEqual((report.merchants_asked, report.model_calls), (2, 1))
+        self.assertEqual((report.tokens_in, report.tokens_out), (1200, 80))
+        self.assertIn('model calls (metered): 1 · tokens in 1200 · tokens out 80 (the bill is '
+                      'on the usage screen, not here)', report.lines())
+
+    def test_a_run_that_asks_nothing_reports_nothing_spent(self):
+        app = make_app()
+        txn(app, 'GLASSEYE EYEWEAR TRADING', 130)
+        reply = answer({'GLASSEYE EYEWEAR TRADING': 'health'})
+        with mock.patch(SEAM, side_effect=self._metered_seam(reply)):
+            sc.sort_transactions(apply=True)
+            again = sc.sort_transactions(apply=True, resort=True)
+        self.assertEqual((again.merchants_asked, again.model_calls, again.tokens_in), (0, 0, 0))
+
+
 class TestTheModelIsNeverAskedTwice(TestCase):
     """⚠⚠ THE COST DESIGN. Asserted on the CALL COUNT, not on the stored value - a stored answer
     that is still re-asked is a silent bill that nothing else in the suite would notice."""

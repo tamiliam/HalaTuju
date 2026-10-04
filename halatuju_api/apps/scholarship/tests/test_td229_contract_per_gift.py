@@ -94,13 +94,25 @@ class TestOneActivePerGift(TestCase):
                 status='active')
 
     def test_a_template_without_a_gift_cannot_be_deployed(self):
+        # Since TD-327 (0164) the database refuses a NULL gift, so the orphan is built IN MEMORY:
+        # `deploy`'s own `programme_required` guard still stands in front of the column.
         t = make_deployable('2026-orphan')
         contracts.submit_for_deployment(t)
-        ContractTemplate.objects.filter(pk=t.pk).update(programme=None)
-        t.refresh_from_db()
+        t.programme = None
         with self.assertRaises(contracts.ContractsError) as cm:
             contracts.deploy(t, is_super=True)
         self.assertEqual(cm.exception.code, 'programme_required')
+        t.refresh_from_db()
+        self.assertEqual(t.status, 'pending_deployment')
+
+    def test_the_database_refuses_a_template_without_a_gift_td327(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            ContractTemplate.objects.create(organisation=brightpath_org(), version='no-gift')
+        t = make_deployable('2026-homed')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            ContractTemplate.objects.filter(pk=t.pk).update(programme=None)
+        t.refresh_from_db()
+        self.assertEqual(t.programme_id, flagship().id)
 
     def test_create_refuses_no_gift_and_another_organisations_gift(self):
         with self.assertRaises(contracts.ContractsError) as cm:
@@ -167,30 +179,58 @@ class TestAGiftWithNoTemplateRefuses(TestCase):
         self.assertIsNone(contract_scope.template_for_application(app))
 
 
+class _FakeApps:
+    """Hands a migration function the REAL Programme models and a stand-in ContractTemplate.
+
+    Since TD-327 (0164) a template with no gift cannot be stored, so the NULL rows 0163 back-filled
+    (and 0164 refuses) can no longer be built in the test database. The two data functions are
+    proved instead by what they ASK of the ContractTemplate manager."""
+
+    def __init__(self, template_manager):
+        from django.apps import apps as django_apps
+        self._real = django_apps
+        self._template = type('ContractTemplate', (), {'objects': template_manager})
+
+    def get_model(self, app_label, name):
+        if name == 'ContractTemplate':
+            return self._template
+        return self._real.get_model(app_label, name)
+
+
 class TestTheBackfillIsLoadBearing(TestCase):
-    def test_a_template_with_no_gift_governs_nobody(self):
+    def test_a_gift_less_template_can_no_longer_exist_td327(self):
+        # Until TD-327 this test proved that a template whose 0163 UPDATE was skipped governs
+        # nobody. The column is NOT NULL now, so that state is refused at the database instead.
         t = _deployed('2026-a', flagship(), 'Flagship Signatory')
         app = make_application('awarded', cohort=make_cohort(programme=flagship()))
         self.assertEqual(contract_scope.template_for_application(app), t)
-        # What production looks like if migration 0163's UPDATE is skipped: the live template
-        # still exists, still says ACTIVE — and no student of any gift can reach it.
-        ContractTemplate.objects.filter(pk=t.pk).update(programme=None)
-        self.assertIsNone(contract_scope.active_template_for(flagship()))
-        self.assertIsNone(contract_scope.template_for_application(app))
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            ContractTemplate.objects.filter(pk=t.pk).update(programme=None)
+        self.assertEqual(contract_scope.template_for_application(app), t)
 
     def test_the_migration_backfill_puts_the_flagships_organisation_on_the_flagship(self):
         from importlib import import_module
-        from django.apps import apps as django_apps
+        from unittest.mock import MagicMock
         mig = import_module('apps.scholarship.migrations.0163_contracttemplate_programme')
-        mine = make_deployable('2026-mine')
-        other_org = make_org()
-        theirs = ContractTemplate.objects.create(organisation=other_org, version='theirs')
-        ContractTemplate.objects.filter(pk=mine.pk).update(programme=None)
-        mig.backfill_flagship_templates(django_apps, None)
-        mine.refresh_from_db()
-        theirs.refresh_from_db()
-        self.assertEqual(mine.programme_id, flagship().id)
-        self.assertIsNone(theirs.programme_id)   # another organisation is never re-homed
+        manager = MagicMock()
+        mig.backfill_flagship_templates(_FakeApps(manager), None)
+        # Only the flagship's OWN organisation, only rows not yet homed — another organisation's
+        # template is never re-homed onto the flagship.
+        manager.filter.assert_called_once_with(
+            organisation_id=flagship().organisation_id, programme__isnull=True)
+        manager.filter.return_value.update.assert_called_once_with(programme=flagship())
+
+    def test_0164_refuses_a_database_still_holding_a_gift_less_template(self):
+        from importlib import import_module
+        from unittest.mock import MagicMock
+        mig = import_module('apps.scholarship.migrations.0164_contracttemplate_programme_not_null')
+        manager = MagicMock()
+        manager.filter.return_value.count.return_value = 2
+        with self.assertRaisesRegex(RuntimeError, 'TD-327: 2 contract template'):
+            mig.refuse_null_templates(_FakeApps(manager), None)
+        manager.filter.assert_called_once_with(programme__isnull=True)
+        manager.filter.return_value.count.return_value = 0
+        mig.refuse_null_templates(_FakeApps(manager), None)   # a clean database passes
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

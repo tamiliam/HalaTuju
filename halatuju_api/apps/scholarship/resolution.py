@@ -7,7 +7,8 @@ docs/scholarship/verification-verdict-plan.md).
 ``source='system'`` ResolutionItem per (application, code), created once and
 auto-resolved the moment its code leaves ``verdict.unresolved`` (e.g. the student
 uploads the STR letter → the income gap clears → the ticket closes). It never
-re-nags an answered item and never touches officer-raised items.
+re-nags an answered item and never touches officer-raised items. The one re-ask is the
+student's own deletion of the document (``after_document_deleted``, TD-079).
 
 ``CODE_TO_TICKET`` maps the *ticketable* verdict codes → ``{fact, kind, doc_type}``.
 Codes NOT in the map are deliberately excluded from the student queue (confirmed
@@ -131,7 +132,8 @@ def sync_resolution_items(application):
 
       - ticketable code with no system item yet  → create an open item
       - OPEN system item whose code has cleared   → auto-resolve it
-      - already-resolved system items             → left as-is (no re-nag)
+      - already-resolved system items             → left as-is (no re-nag; a document
+        DELETION re-opens its own ticket — ``after_document_deleted``, TD-079)
       - officer items                             → untouched
 
     **Check 2 gate:** student-facing queries only exist AFTER the student submits
@@ -195,6 +197,32 @@ def sync_resolution_items(application):
         bump_query_notify_on_new_item(application)
 
     return open_items(application)
+
+
+def after_document_deleted(application, doc_type):
+    """TD-079 (2026-10-04): the student REMOVED a document — re-ask for it, then reconcile.
+
+    The no-re-nag rule keeps a RESOLVED system ticket resolved when its gap returns, so deleting
+    the offer letter that closed ``offer_letter_missing`` left the gap on the officer's verdict and
+    nothing in the student's queue. (A document the submitted bar holds — the IC, say — un-submits
+    her instead, and the form asks: ``revert_if_profile_incomplete``.) A deletion is the student's own act on that very slot, so here — and only
+    here, never on a read — a RESOLVED (not waived, not officer-resolved) student-visible document ticket of that
+    ``doc_type`` whose gap is back is RE-OPENED and re-notified, exactly as Check 2 re-opens a gap
+    that re-fires. Gated like a create (``auto_queries_allowed``): past Completed nobody is asked."""
+    from .services import auto_queries_allowed
+    if auto_queries_allowed(application):
+        back = [c for c in _ticketable_unresolved(application)
+                if c in STUDENT_DOC_REQUEST_CODES and CODE_TO_TICKET[c].get('doc_type') == doc_type]
+        # Only a ticket the SYSTEM or the STUDENT closed: an officer's hand resolution is a
+        # decision ("awaiting UPU"), and its typed reason is the audit trail — kept (review fix).
+        reopened = application.resolution_items.filter(
+            source='system', status='resolved', resolved_by__in=('system', 'student'),
+            code__in=back,
+        ).update(status='open', resolved_by='', resolved_at=None, resolution_doc=None)
+        if reopened:
+            from .services import bump_query_notify_on_new_item
+            bump_query_notify_on_new_item(application)
+    sync_resolution_items(application)
 
 
 def resolve_item(item, *, text='', doc=None, by='student'):

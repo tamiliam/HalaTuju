@@ -174,15 +174,15 @@ class ContractTemplate(models.Model):
         'courses.PartnerOrganisation', on_delete=models.PROTECT,
         related_name='contract_templates',
     )
-    # ⚠ NULLABLE ONLY FOR THE MIGRATE-FIRST TRANSITION (migration 0163). The live template was
-    # back-filled onto the flagship by hand; every write path since sets it. A template with
-    # NULL here governs NOBODY — `contract_scope.active_template_for` cannot reach it and
-    # `contracts.deploy` refuses it. Tightening to NOT NULL is owed: TD-327.
+    # NOT NULL since TD-327 (migration 0164, 2026-10-04). 0163 added it NULLABLE for the
+    # migrate-first transition and back-filled the live templates onto the flagship; every write
+    # path since sets it, so the column now refuses a template that governs nobody.
+    # `contracts.deploy` still refuses `programme_required` (an unsaved in-memory template).
     # PROTECT, the house pattern for a gift's children (`ScholarshipCohort.programme`). Deleting a
     # gift deletes its UNSIGNED templates explicitly in the handler (owner, 2026-10-03); one a
     # BursaryAgreement references blocks it (`programme_delete_blocker` → has_contract_templates).
     programme = models.ForeignKey(
-        'Programme', on_delete=models.PROTECT, null=True, blank=True,
+        'Programme', on_delete=models.PROTECT,
         related_name='contract_templates',
         help_text='The gift this agreement is written for. One ACTIVE template per gift.',
     )
@@ -242,8 +242,7 @@ class ContractTemplate(models.Model):
                 fields=['organisation', 'version'],
                 name='uniq_contract_template_org_version',
             ),
-            # One ACTIVE per gift. Postgres ignores NULLs in a unique index, so a template not
-            # yet back-filled never collides — and never resolves either (see `programme`).
+            # One ACTIVE per gift. (`programme` is NOT NULL since TD-327, so no row escapes it.)
             models.UniqueConstraint(
                 fields=['programme'], condition=models.Q(status='active'),
                 name='uniq_contract_template_active_per_programme',

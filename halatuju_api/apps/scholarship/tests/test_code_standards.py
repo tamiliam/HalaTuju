@@ -84,6 +84,16 @@ deliberately re-pinned in the same commit — the second such re-pin, after H5's
 froze is 315 queries for one applicant (385 with three documents), which is an N+1, NOT an
 approval: see TD-282 and the `_history` note in the JSON.
 
+**ADMITTED SINCE THE FREEZE (TD-286, lead ruling 2026-10-04): `_admitted`.** A query budget set
+AFTER H18 is not written into the frozen `baseline` (that would re-pin `BASELINE_SHA256`, the
+loophole H11 named) and no longer lives as a constant in a test file. It is a dated record in the
+`_admitted` array of `code-standards.json` — `{on, by, why, ledger, key, value}` — and the record's
+value IS the live budget `test_query_budgets.py` reads. `TestAnAdmittedBudgetIsAStandard` below
+refuses an incomplete record, any ledger but `query_budgets` (an admission may add a CEILING, never
+an exemption), a key that shadows a frozen one, and a duplicate. What it cannot see is a value
+RAISED since the last commit — no git in the gate — so `code_health.py`'s `std` reading compares
+the array with the last recorded run's copy and FAILs the close on a rise.
+
 **NOT IN H4/H5, on purpose** (later sprints add them, each with its own test here or in the web
 half):
   * the first-load-JS budget — H18, and it lives in the WEB half (`halatuju-web/`), because the
@@ -216,6 +226,12 @@ PATH_KEYED_LEDGERS = frozenset({'oversize_files', 'long_functions', 'runtime_ski
 #: reasoning the web half applies to an eslint-disable reason, one notch stricter.
 MOVE_FIELDS = ('on', 'why', 'ledger', 'from', 'to')
 MIN_MOVE_WORDS = 5
+
+#: TD-286. An `_admitted` record's fields; `value` is a positive whole number, the rest non-empty
+#: strings. `query_budgets` is the ONLY ledger a record may name: an admission adds a ceiling (a
+#: stricter rule), whereas a new member of any other ledger is a new exemption — refused by rule 2.
+ADMIT_FIELDS = ('on', 'by', 'why', 'ledger', 'key', 'value')
+ADMITTABLE_LEDGERS = frozenset({'query_budgets'})
 
 #: H5. The model whose hand-built fixtures are ledgered, and the call that builds one. Counted
 #: from the AST — never from a string match — because a guard that fires on the words in a
@@ -547,6 +563,56 @@ def effective_baseline(baseline, moves, exists=_in_api_tree):
             continue
         entries[new] = entries.pop(old)
     return effective, problems
+
+
+def admission_problems(admitted, frozen_keys, today=None):
+    """TD-286: one sentence per `_admitted` record that is not an honest admission (see
+    ADMIT_FIELDS). `frozen_keys` are the keys `baseline` and `budget` already hold for that ledger,
+    which an admission may never shadow. Returns `(problems, admitted_keys)`."""
+    import datetime
+    today = today or datetime.date.today()
+    problems, keys = [], []
+    if not isinstance(admitted, list):
+        return ['"_admitted" must be an ARRAY of admission records (it may be empty).'], keys
+    for i, rec in enumerate(admitted):
+        at = f'_admitted[{i}]'
+        if not isinstance(rec, dict):
+            problems.append(f'{at}: every entry must be an object carrying {", ".join(ADMIT_FIELDS)}.')
+            continue
+        blank = [f for f in ADMIT_FIELDS if f != 'value'
+                 and (not isinstance(rec.get(f), str) or not rec[f].strip())]
+        value = rec.get('value')
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            blank.append('value (a positive whole number)')
+        if blank:
+            problems.append(f'{at}: missing or wrong {", ".join(blank)}.')
+            continue
+        if rec['ledger'] not in ADMITTABLE_LEDGERS:
+            problems.append(f'{at}: ledger "{rec["ledger"]}" cannot admit a member — only '
+                            f'{", ".join(sorted(ADMITTABLE_LEDGERS))} holds ceilings; a new member '
+                            f'of any other ledger is an EXEMPTION, which rule 2 refuses.')
+            continue
+        try:
+            on = datetime.date.fromisoformat(rec['on'])
+        except ValueError:
+            problems.append(f'{at}: "on" must be a YYYY-MM-DD date, not "{rec["on"]}".')
+            continue
+        if on > today:
+            problems.append(f'{at}: "on" is {rec["on"]}, which has not happened yet.')
+            continue
+        if len(re.findall(r'[A-Za-z]{2,}', rec['why'])) < MIN_MOVE_WORDS:
+            problems.append(f'{at}: "why" needs at least {MIN_MOVE_WORDS} words saying what the '
+                            f'number measures and what set it.')
+            continue
+        if rec['key'] in frozen_keys:
+            problems.append(f'{at}: "{rec["key"]}" is already a frozen or budgeted key — an '
+                            f'admission may not shadow it (lower the budget there instead).')
+            continue
+        if rec['key'] in keys:
+            problems.append(f'{at}: "{rec["key"]}" is admitted twice.')
+            continue
+        keys.append(rec['key'])
+    return problems, keys
 
 
 class _Standard(SimpleTestCase):
@@ -1065,6 +1131,51 @@ class TestADeclaredMoveBuysNothing(_Standard):
             f'been paid, so the relabel has nothing left to do. Delete the record from '
             f'{os.path.basename(BUDGET_PATH)}; the story of the move belongs in "_history" and '
             f'the CHANGELOG, not in a live lens over the frozen record.\n' + '\n'.join(stale))
+
+
+class TestAnAdmittedBudgetIsAStandard(_Standard):
+    """TD-286 (2026-10-04): every post-freeze query budget is a dated, reasoned record in
+    `_admitted`, and nothing else may enter that way."""
+
+    def _problems(self):
+        frozen = set(self.baseline['query_budgets']) | set(self.budget['query_budgets'])
+        return admission_problems(self.file.get('_admitted', []), frozen)
+
+    def test_every_admission_is_honest(self):
+        problems, _keys = self._problems()
+        self.assertEqual(
+            problems, [],
+            f'A record in the "_admitted" array of {os.path.basename(BUDGET_PATH)} is not an '
+            f'honest admission. Each says when, by which sprint or TD, why, which ledger '
+            f'(query_budgets only), which key and what ceiling.\n' + '\n'.join(problems))
+
+    def test_the_admissions_are_really_there(self):
+        _problems, keys = self._problems()
+        from apps.scholarship.tests.source_walk import floor_count
+        floor_count(keys, 21, 'admitted query budgets',
+                    'TD-286: the post-freeze budgets moved out of test_query_budgets.py into '
+                    '"_admitted" on 2026-10-04 (21 of them); fewer means one was deleted, and a '
+                    'deleted ceiling is a standard gone, not a debt paid.')
+
+    def test_an_admission_cannot_be_an_exemption_or_a_shadow(self):
+        why = 'measures one read of a page'
+        recs = [{'on': '2026-10-04', 'by': 'x', 'why': why, 'ledger': 'oversize_files',
+                 'key': 'a.py', 'value': 900},
+                {'on': '2026-10-04', 'by': 'x', 'why': why, 'ledger': 'query_budgets',
+                 'key': 'frozen', 'value': 5},
+                {'on': '2026-10-04', 'by': 'x', 'why': why, 'ledger': 'query_budgets',
+                 'key': 'fresh', 'value': True},
+                {'on': '2999-01-01', 'by': 'x', 'why': why, 'ledger': 'query_budgets',
+                 'key': 'later', 'value': 5},
+                {'on': '2026-10-04', 'by': 'x', 'why': 'meh', 'ledger': 'query_budgets',
+                 'key': 'shrug', 'value': 5}]
+        problems, keys = admission_problems(recs, {'frozen'})
+        self.assertEqual(len(problems), 5, problems)
+        self.assertEqual(keys, [])
+        ok = dict(recs[1], key='fresh-key')
+        twice, keys = admission_problems([ok, ok], {'frozen'})
+        self.assertEqual((len(twice), keys), (1, ['fresh-key']))
+        self.assertTrue(twice[0].startswith('_admitted[1]:'))
 
 
 # ── The ratchet's own arithmetic, proven on a throwaway budget ──────────────────────────────

@@ -1387,11 +1387,9 @@ class DocumentDetailView(APIView):
         # Removing a compulsory document can drop a confirmed profile below
         # complete — un-confirm it so the status reflects reality.
         revert_if_profile_incomplete(application)
-        # S3: keep the ticket queue consistent after a deletion (idempotent). Note
-        # an already-resolved system ticket is NOT re-created if its gap returns
-        # (the no-re-nag rule); the gap still shows on the officer's verdict.
-        from .resolution import sync_resolution_items
-        sync_resolution_items(application)
+        # TD-079: re-open the resolved ticket whose gap this deletion brought back, then sync.
+        from .resolution import after_document_deleted
+        after_document_deleted(application, doc.doc_type)
         return Response({'status': 'deleted'})
 
 

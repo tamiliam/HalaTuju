@@ -410,6 +410,18 @@ message itself tells you what to do; this table is the why.
 | **A route may not get heavier** — no route's first-load JS may reach **300 kB** unless it is in the `first_load_js` ledger with its own number, no ledgered route may pass that number, and the **median across all routes** may not rise above **229 kB** (256 until TD-300, 2026-09-28) | `scripts/bundle-budget.js` **in the deploy gate** (+ `codeStandards.test.ts` for the ledger and the wiring) | A visitor downloaded 1.53 MB of message catalogues to read one language, and nothing counted it for a year. See **The two budgets H18 added** below — this one is NOT measured by jest and that matters |
 | **Opening one applicant may not cost more queries** — the officer's applicant-detail GET is pinned at **38**, with or without documents, with ZERO slack | `test_query_budgets.py` (the reading) + `test_code_standards.py` (the ratchet) | It was **315** and **385** — an N+1 nobody had counted since June. TD-282 fixed it with the document snapshot (below); the two numbers are now EQUAL because a document costs nothing extra to open. The budget's job now is to notice if that comes undone |
 
+**Post-freeze query budgets — `_admitted` (TD-286, 2026-10-04).** A query budget set after H18 is a
+dated record in the `_admitted` array of `halatuju_api/code-standards.json` — `{on, by, why, ledger,
+key, value}`, `ledger` = `query_budgets` only — and its `value` IS the live budget
+`test_query_budgets.py` reads (that file holds no numbers). ADD a record for a new reading; LOWER a
+value when the tightness test says so; NEVER raise one (`code_health.py`'s `std` reading compares
+the array with the last close and FAILs a rise). Never put a new budget in the frozen `baseline`.
+
+**The debt register is not the api gate's (TD-256, 2026-10-04).** The api trigger ignores `docs/**`,
+so `test_technical_debt_register.py` does not run on a docs edit. `code_health.py`, run at every
+close, performs the same duplicate-id check and FAILs on a new collision; the declared collisions
+are the `<!-- td-known-collisions: … -->` comment in the register.
+
 **The two budget files.** `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`.
 Each sits inside its own service folder, so it is inside the path filter of the Cloud Build trigger
 that runs the tests reading it. Each holds a frozen `baseline` (every number and every ledger as H4
@@ -537,7 +549,7 @@ The detail GET is not read-only in the ordinary sense: building the payload runs
 `sync_resolution_items`, which creates and resolves ResolutionItem rows off verdict facts and can
 email the student. So a wrong row under the snapshot would be persisted and sent, not merely
 drawn — which is why the matrix also compares what the FIRST, cold open leaves behind (items and
-mail) on twin applications, not only the bytes of a warmed one. `test_document_snapshot.py` holds the test that a write is
+mail) on twin applications, not only the bytes of a warmed one. (TD-079, 2026-10-04: a SECOND, steady-state open writes nothing and sends nothing — `test_td079_resolution_reads_and_deletes.py`; the writes happen only when the verdict moved.) `test_document_snapshot.py` holds the test that a write is
 visible to a read taken OUTSIDE the block — and the test that the detail GET writes no document
 at all, which is the precondition for opening one there.
 
@@ -1392,6 +1404,52 @@ amendment (decisions.md 2026-10-04 "TD-145 ruled" and its addendum). Register op
 - ⚠ **#31 must be re-run from the cockpit after deploy, NEVER locally** (no Storage access → it
   would wipe `vision_fields`). ⚠ `pathway_engine.py` (633) sits EXACTLY at its oversize allowance
   (budget + 20); `offer_pathway.py` is 617 of 631 after the `school_names` move.
+
+**LATER-TIER BATCH 4 IS BUILT, not committed, pushed or deployed (2026-10-04).** Eight closed
+(TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286, TD-246 — the last as overtaken); TD-216,
+TD-228, TD-238 (partly done) and TD-245 left open with a dated status; TD-333 and TD-334 (review)
+raised. Register open **92**, defined 331. Adversarial review FIX-FIRST; its three fixes are in. No new package, no env var, no copy. **ONE MIGRATION — `scholarship/0164`.**
+
+⛔ **0164 IS MIGRATE-FIRST, BY HAND, BEFORE THE PUSH** (`sqlmigrate` renders SQLite here):
+1. Pre-check, read-only — it MUST read **0**; if not, STOP and find who wrote the NULL template:
+   `SELECT count(*) FROM contract_templates WHERE programme_id IS NULL;`
+2. In ONE transaction:
+   ```sql
+   BEGIN;
+   ALTER TABLE contract_templates ALTER COLUMN programme_id SET NOT NULL;
+   INSERT INTO django_migrations (app, name, applied)
+        VALUES ('scholarship', '0164_contracttemplate_programme_not_null', now());
+   COMMIT;
+   ```
+3. Then deploy. Between the two the serving image (TD-229 onward) is safe: every path that creates
+   a template goes through `contracts.create_template`, which refuses `programme_required`.
+   Reverse (local only): `ALTER TABLE contract_templates ALTER COLUMN programme_id DROP NOT NULL;`.
+**✅ APPLIED 2026-10-05 (owner's yes): pre-check 0, column NOT NULL, ledger row 0164 recorded, 3 templates. DO NOT RE-APPLY.**
+
+Behaviour notes:
+- **TD-150 moves live answers.** `offer_pathway.resolve_catalogue_course` now returns no id for a
+  letter LESS specific than the course (letter tokens a strict subset of the course's, ignoring
+  "Kepujian/Honours", UPU's "Baru", "Bacelor" and a PISMP "(SJKT)" suffix) and for a private-arm / Sdn. Bhd. letter
+  (`catalogue_levels.private_arm_letter`, the genuineness phrases). Through `offer_is_resolvable` an
+  UNDECLARED student holding such a letter gets `pathway_undeclared` (pick the exact course) where
+  `pathway_confirm` used to pin an arbitrary specialisation; `programme_agreement` reads 'unknown'
+  instead of 'match' for such a letter; autofill and the confirm re-pin leave it label-only. No
+  version bump (no band moves; a pathway item's CODE can). Worth a production count of open
+  `pathway_confirm` items whose letter no longer resolves before the deploy.
+- **TD-079.** `DocumentDetailView.delete` → `resolution.after_document_deleted`: re-opens the RESOLVED
+  student-visible document ticket of the deleted type whose gap is back, clears its stamps and
+  re-notifies (Completed stage only) — only one the system or the student closed; an officer's hand
+  resolution and every ticket's typed text are kept. A deleted IC/slip/parent IC/income proof un-submits the student
+  instead (`revert_if_profile_incomplete`) — the form asks. The two GETs still reconcile, by decision;
+  a steady-state GET writes nothing (`test_td079_resolution_reads_and_deletes.py`).
+- **TD-325.** The sponsor-profile prompt's `Qualification:` and the facts ledger's `qualification`
+  claim read `results_held`; the apply form's Plans step and `PathwayPicker` (/profile) choose the
+  SPM or STPM branch by the served `results_held`. **Sponsor-profile `PROMPT_VERSION` →
+  `2026-10-04.1`**: every stored profile reads stale; `refresh_sponsor_profiles` is manual and PAID —
+  run it only on the owner's word.
+- **TD-238.** `sort_spending` prints `model calls (metered)` and the run's tokens in/out.
+- **TD-286 / TD-256** — see **Code standards** above (`_admitted`; the register's duplicate check
+  runs in `code_health.py`).
 
 **LATER-TIER BATCH 3 IS BUILT, not committed, pushed or deployed (2026-10-04).** Ten closed
 (TD-277, TD-270, TD-284, TD-273, TD-263, TD-239, TD-236, TD-165, TD-291, TD-110); TD-174 and TD-077

@@ -16,7 +16,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
-import { sandboxProfileFormSix, sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
+import { sandboxProfileFormSix, sandboxProfileSpm, sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
+import { checkEligibility, checkStpmEligibility } from '@/lib/api'
 
 // ONE router object: the page's effects depend on it, and a fresh object per render re-runs
 // the applications fetch for ever (the page never leaves "loading").
@@ -74,5 +75,33 @@ describe('the Results step for the Form Six explorer', () => {
   it('leaves an ordinary SPM student exactly as she was', async () => {
     await openResults({ ...sandboxProfileSpm, results_held: 'spm' })
     expect(screen.getByText(/scholarship\.apply\.aGradesWord/)).toBeTruthy()
+  })
+})
+
+// TD-325 (2026-10-04): the PLANS step picks its branch — the SPM pathway dropdown or the STPM
+// degree picker — by the results we HOLD, not the declared exam. Both branches are eligibility
+// checks on results, so the explorer was sent to an STPM degree check fed no STPM grades and
+// shown an empty picker. Which check the page asks for is what decides the branch.
+describe('the Plans step chooses its eligibility check by the results held (TD-325)', () => {
+  const mount = (profile: Record<string, unknown>) => render(
+    <AuthContext.Provider value={{ status: 'ready', profile, token: 'tkn', showAuthGate: () => {} } as never}>
+      <ScholarshipApplyPage />
+    </AuthContext.Provider>,
+  )
+  beforeEach(() => {
+    (checkEligibility as jest.Mock).mockClear();
+    (checkStpmEligibility as jest.Mock).mockClear()
+  })
+
+  it('asks the SPM check for the Form Six explorer the server says holds SPM', async () => {
+    mount({ ...sandboxProfileFormSix, results_held: 'spm' })
+    await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
+    expect(checkStpmEligibility).not.toHaveBeenCalled()
+  })
+
+  it('asks the STPM degree check for a student who holds STPM results', async () => {
+    mount({ ...sandboxProfileStpm, results_held: 'stpm' })
+    await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
+    expect(checkEligibility).not.toHaveBeenCalled()
   })
 })

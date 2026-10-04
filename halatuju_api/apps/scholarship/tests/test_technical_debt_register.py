@@ -99,6 +99,16 @@ class TestTechnicalDebtRegister(SimpleTestCase):
             'existing citation of that number now points somewhere else — check before removing '
             'it from KNOWN_COLLISIONS.'))
 
+    def test_the_register_declares_the_same_collisions_the_close_tool_reads(self):
+        """TD-256 (2026-10-04): the api trigger ignores `docs/**`, so this suite cannot be the
+        register's gate — a docs-only edit never runs it. `Settings/_tools/code_health.py`, run at
+        every close, performs the same duplicate check and reads the declared collisions from a
+        `<!-- td-known-collisions: … -->` comment in the register. This keeps the two lists one."""
+        text = open(_REGISTER, encoding='utf-8').read()
+        found = re.findall(r'<!--\s*td-known-collisions:\s*([\d,\s]*)-->', text)
+        self.assertEqual(len(found), 1, 'the register must carry exactly one collisions comment')
+        self.assertEqual({int(n) for n in re.findall(r'\d+', found[0])}, KNOWN_COLLISIONS)
+
     def test_the_scan_actually_reads_the_register(self):
         """The floor. If the path or the format moved, the assertion above would pass over an empty
         list for ever — a guard that protects nothing while looking green."""
