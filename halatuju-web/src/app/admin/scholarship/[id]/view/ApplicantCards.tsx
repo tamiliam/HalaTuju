@@ -163,7 +163,7 @@ export function ApplicantCards({
                     {guardian?.phone ? formatPhone(guardian.phone) : '—'}
                     {canCorrectGuardian && <GuardianCorrect appId={app.id} name={guardian?.name || ''} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
                     {canCorrectGuardian && <GuardianCallRecord appId={app.id} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
-                  </>} note={app.guardian_needs_call ? t('admin.scholarship.guardianNeedsCall') : undefined} />
+                  </>} note={app.guardian_needs_call ? t('admin.scholarship.call.needs') : undefined} />
                 </dl>
               </Card>
               </div>

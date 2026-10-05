@@ -12,7 +12,7 @@ import { installCockpitConsoleGuard, renderCockpit } from '@/test/renderCockpit'
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
-const correct = () => screen.queryByRole('button', { name: 'admin.scholarship.guardianCorrect' })
+const correct = () => screen.queryByRole('button', { name: 'profile.edit' })
 
 describe('the Correct action on the parent/guardian phone', () => {
   it.each(['super', 'org_admin'] as const)('%s is offered it', async (role) => {
@@ -43,7 +43,7 @@ describe('the Correct action on the parent/guardian phone', () => {
   })
 
   it.each([
-    ['guardian_contact_locked', 'admin.scholarship.guardianLocked'],
+    ['guardian_contact_locked', 'profile.contactLocked'],
     ['guardian_phone_invalid', 'scholarship.apply.error.phone'],
   ])('a %s refusal reads as words, not "something went wrong" (review F6)', async (code, words) => {
     const { api } = renderCockpit({ role: 'super', stage: 'awarded' })

@@ -69,7 +69,7 @@ export default function GuardianContactSection() {
   return (
     <div className="border-t border-ground-100 pt-3 mt-3 space-y-2" data-testid="guardian-contact">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-ground-900">{t('profile.guardianContact')}</span>
+        <span className="text-sm font-medium text-ground-900">{t('scholarship.apply.parentHeading')}</span>
         {!locked && !editing && (
           <button onClick={startEditing} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
             {t('profile.edit')}
@@ -106,7 +106,7 @@ export default function GuardianContactSection() {
             <span className="text-sm text-ground-500 shrink-0">{t('scholarship.apply.field.parentPhone')}</span>
             <span className="text-sm text-ground-900 text-right">{contact.phone ? toLocalPhone(contact.phone) : '—'}</span>
           </div>
-          {locked && <p className="text-xs text-caution-700">{t('profile.guardianContactLocked')}</p>}
+          {locked && <p className="text-xs text-caution-700">{t('profile.contactLocked')}</p>}
         </>
       )}
     </div>

@@ -40,10 +40,10 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
   (`guardian_contact_changes`; Django's staff-only `/admin/` site is the one exception).
 - **Recording a call to the parent ("Record call") is super + `org_admin` only (request #26 consent
   framing, 2026-10-05)** — `POST admin/scholarship/applications/<pk>/guardian-call/`, the same
-  gate and cross-organisation rule as the correction. A "Parent's number corrected" call also stores
+  gate and cross-organisation rule as the correction. A "Corrected" call also stores
   the number. A shared phone with no consenting call holds back the award good-news email, the
   "ready to sign" invitation, the guarantor PIN and the signature itself (owner ruling A).
-- **The "Shared phone — call the parent" filter on Applications is super + `org_admin` only**
+- **The "Shared phone: call parent" filter on Applications is super + `org_admin` only**
   (`?parent_call=needed`, owner ruling B) — the same roles that see the flag; inside the list's
   organisation fence. `admin`, `qc`, `reviewer`, `finance` and `partner` are refused.
   Manual: `role-org-admin` § *Correcting a parent's phone number*; FAQ: org_admin.

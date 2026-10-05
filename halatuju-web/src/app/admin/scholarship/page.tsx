@@ -297,7 +297,7 @@ export default function AdminScholarshipList() {
         {canAssign && (
           <button type="button" aria-pressed={parentCallF} onClick={() => { setParentCallF((v) => !v); setPage(1) }}
             className={`rounded-full border px-3 py-2 text-sm ${parentCallF ? 'border-caution-400 bg-caution-50 text-caution-800' : 'border-ground-300 text-ground-700'}`}>
-            {t('admin.scholarship.guardianNeedsCall')}
+            {t('admin.scholarship.call.needs')}
           </button>
         )}
       </div>

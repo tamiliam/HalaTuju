@@ -14,18 +14,18 @@ import { buildApplicationDetail } from '@/test/adminApplicationDetail'
 installCockpitConsoleGuard()
 
 const loaded = () => screen.findByText('Test Student 07')
-const recordCall = () => screen.queryByRole('button', { name: 'admin.scholarship.guardianRecordCall' })
+const recordCall = () => screen.queryByRole('button', { name: 'admin.scholarship.call.record' })
 const flagged = () => ({ ...buildApplicationDetail('awarded'), guardian_needs_call: true })
 
 describe('the shared-phone flag and Record call', () => {
   it('shows the flag only when the payload says the parent needs a call', async () => {
     const view = renderCockpit({ role: 'super', app: flagged() })
     await loaded()
-    expect(screen.getByText('admin.scholarship.guardianNeedsCall')).toBeTruthy()
+    expect(screen.getByText('admin.scholarship.call.needs')).toBeTruthy()
     view.unmount()
     renderCockpit({ role: 'super', stage: 'awarded' })
     await loaded()
-    expect(screen.queryByText('admin.scholarship.guardianNeedsCall')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.call.needs')).toBeNull()
   })
 
   it.each(['super', 'org_admin'] as const)('%s may record a call', async (role) => {
@@ -48,7 +48,7 @@ describe('the shared-phone flag and Record call', () => {
     return view
   }
   const pick = (value: string) => fireEvent.change(
-    screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' }), { target: { value } })
+    screen.getByRole('combobox', { name: 'admin.scholarship.call.record' }), { target: { value } })
   const save = () => screen.getByRole('button', { name: 'common.save' }) as HTMLButtonElement
 
   it('a confirmed call sends the number it DISPLAYED and an explicit consent, then re-reads the case', async () => {
@@ -97,20 +97,23 @@ describe('the shared-phone flag and Record call', () => {
       { token: 'test-token' }))
   })
 
-  it('a number that changed since the dialog opened is refused in words', async () => {
+  it('a number that changed since the dialog opened is refused in words, and the case is re-read', async () => {
     const { api } = await open()
     api.recordGuardianCall.mockRejectedValue(Object.assign(new Error('stale'), { code: 'called_number_mismatch' }))
+    const reads = api.getScholarshipApplication.mock.calls.length
     pick('shared_confirmed')
     fireEvent.click(screen.getByRole('radio', { name: 'profile.yes' }))
     fireEvent.click(save())
-    expect((await screen.findByRole('alert')).textContent).toBe('admin.scholarship.guardianCallStale')
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.scholarship.call.stale')
+    // Re-read so that reopening the dialog shows the CURRENT number — the advice then works.
+    await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBeGreaterThan(reads))
   })
 
-  it('with no parent number on file, only "corrected" and "could not reach" are offered', async () => {
+  it('with no parent number on file, only "corrected" is offered — nothing was dialled', async () => {
     const base = flagged()
     await open({ ...base, guardians: [{ name: 'G', phone: '' }] })
-    const values = Array.from(screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' })
+    const values = Array.from(screen.getByRole('combobox', { name: 'admin.scholarship.call.record' })
       .querySelectorAll('option')).map((o) => (o as HTMLOptionElement).value)
-    expect(values).toEqual(['', 'parent_number_corrected', 'could_not_reach'])
+    expect(values).toEqual(['', 'parent_number_corrected'])
   })
 })

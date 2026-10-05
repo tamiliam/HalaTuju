@@ -9,7 +9,7 @@
  *  * The number sent is the number this dialog DISPLAYED — the one the admin dialled. If the parent
  *    phone changed meanwhile, the server refuses (`called_number_mismatch`) and the admin is told,
  *    so a call is never recorded against a number nobody dialled. With no number on file, only
- *    "corrected" (type the number) and "could not reach" are offered.
+ *    "corrected" (type the number now obtained) is offered — there was nothing to dial.
  *  * Consent is an explicit Yes / No with NOTHING pre-selected — an untouched box must never read
  *    as "the parent refused". "Could not reach" asks no consent: nobody was spoken to.
  * For "Parent's number corrected" the typed number IS stored as the parent phone in the same action.
@@ -24,8 +24,11 @@ import { isValidMobile, toLocalPhone } from '@/lib/guardianPhone'
 import { GUARDIAN_REFUSAL } from './GuardianCorrect'
 import type { T } from './shared'
 
-const CONFIRMING: GuardianCallOutcome[] = ['shared_confirmed', 'parent_number_confirmed']
-const ALWAYS: GuardianCallOutcome[] = ['parent_number_corrected', 'could_not_reach']
+/** Every outcome, and its (short — the catalogue rides on every route) label key. */
+const LABEL: Record<GuardianCallOutcome, string> = {
+  shared_confirmed: 'shared', parent_number_confirmed: 'own', parent_number_corrected: 'fixed', could_not_reach: 'unreached',
+}
+const ALL = Object.keys(LABEL) as GuardianCallOutcome[]
 
 export function GuardianCallRecord({ appId, phone, t, onDone }: {
   appId: number
@@ -63,24 +66,28 @@ export function GuardianCallRecord({ appId, phone, t, onDone }: {
       setOpen(false)
       await onDone?.()
     } catch (e) {
-      setError(t(GUARDIAN_REFUSAL[(e as Error & { code?: string }).code || ''] || 'errors.somethingWentWrong'))
+      const code = (e as Error & { code?: string }).code || ''
+      setError(t(GUARDIAN_REFUSAL[code] || 'errors.somethingWentWrong'))
+      // The number changed since this opened: re-read the case, so reopening shows the current one.
+      if (code === 'called_number_mismatch') await onDone?.()
     } finally { setBusy(false) }
   }
 
   if (!open) {
     return (
       <button type="button" onClick={begin} className="ml-2 text-xs font-medium text-primary-600 hover:underline">
-        {t('admin.scholarship.guardianRecordCall')}
+        {t('admin.scholarship.call.record')}
       </button>
     )
   }
   const field = 'w-full rounded-md border border-ground-300 px-2 py-1.5 text-sm'
-  const outcomes = shown ? [...CONFIRMING, ...ALWAYS] : ALWAYS
+  // No number on file: nothing was dialled, so the only honest record is the number now obtained.
+  const outcomes = shown ? ALL : ['parent_number_corrected' as const]
   return (
-    <div role="dialog" aria-label={t('admin.scholarship.guardianRecordCall')} className="mt-2 space-y-2 rounded-lg border border-ground-200 bg-ground-50 p-3">
-      <select aria-label={t('admin.scholarship.guardianRecordCall')} value={outcome} onChange={e => setOutcome(e.target.value as GuardianCallOutcome | '')} className={field}>
+    <div role="dialog" aria-label={t('admin.scholarship.call.record')} className="mt-2 space-y-2 rounded-lg border border-ground-200 bg-ground-50 p-3">
+      <select aria-label={t('admin.scholarship.call.record')} value={outcome} onChange={e => setOutcome(e.target.value as GuardianCallOutcome | '')} className={field}>
         <option value="">—</option>
-        {outcomes.map(o => <option key={o} value={o}>{t(`admin.scholarship.guardianCallOutcome.${o}`)}</option>)}
+        {outcomes.map(o => <option key={o} value={o}>{t(`admin.scholarship.call.${LABEL[o]}`)}</option>)}
       </select>
       {corrected
         ? <input aria-label={t('scholarship.apply.field.parentPhone')} value={number} onChange={e => setNumber(toLocalPhone(e.target.value))} inputMode="tel" placeholder="012-345 6789" className={field} />
@@ -88,7 +95,7 @@ export function GuardianCallRecord({ appId, phone, t, onDone }: {
       {corrected && number.trim() !== '' && !isValidMobile(number) && <p className="text-xs text-critical-600">{t('scholarship.apply.error.phone')}</p>}
       {reached && (
         <fieldset className="text-sm">
-          <legend className="mb-1">{t('admin.scholarship.guardianCallConsent')}</legend>
+          <legend className="mb-1">{t('admin.scholarship.call.consent')}</legend>
           {([true, false] as const).map(v => (
             <label key={String(v)} className="mr-4 inline-flex items-center gap-1">
               <input type="radio" name={`consent-${appId}`} checked={consent === v} onChange={() => setConsent(v)} />

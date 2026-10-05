@@ -198,3 +198,47 @@ class TestTheRecordFixes(TestCase):
         self._call(outcome='parent_number_corrected', number=OTHER)
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.guardians, [{'name': 'Ravi', 'phone': OTHER}])
+
+
+class TestTheListAndTheCaseFlagAgree(TestCase):
+    """Second review, finding 4: `needing_call_profile_ids` (the list, two queries for a set) and
+    `needs_parent_call` (the case flag, one profile) are two implementations of one rule. They agree
+    today; this pins that they keep agreeing, over every shape the rule distinguishes."""
+
+    def _student(self, parent_phone, contact_phone=SHARED):
+        student = make_student(guardians=[{'name': 'P', 'phone': parent_phone}],
+                               contact_phone=contact_phone)
+        return student, make_application('recommended', student=student)
+
+    def test_both_give_the_same_answer_for_every_case(self):
+        cases = {}
+        cases['shared, no call'] = self._student(SHARED)
+        s, a = self._student(SHARED)
+        _clear(s, a, SHARED)
+        cases['shared, cleared'] = (s, a)
+        s, a = self._student(SHARED)
+        _clear(s, a, SHARED)                                     # cleared for the OLD number…
+        s.guardians = [{'name': 'P', 'phone': '012-111 2222'}]   # …then both phones move together
+        s.contact_phone = '012-111 2222'
+        s.save(update_fields=['guardians', 'contact_phone'])
+        cases['cleared for an old number'] = (s, a)
+        s, a = self._student(SHARED)
+        parent_call.record_call(s, application=a, outcome='shared_confirmed', consent=False, number=SHARED)
+        cases['consent no'] = (s, a)
+        s, a = self._student(SHARED)
+        parent_call.record_call(s, application=a, outcome='could_not_reach', consent=None, number=SHARED)
+        cases['could not reach'] = (s, a)
+        cases['not shared'] = self._student(OTHER)
+        cases['no parent phone'] = self._student('')
+        cases['no contact phone'] = self._student(SHARED, contact_phone='')
+
+        from apps.scholarship.models import ScholarshipApplication
+        listed = set(parent_call.needing_call_profile_ids(
+            ScholarshipApplication.objects.filter(pk__in=[a.pk for _, a in cases.values()])))
+        expected_flagged = {'shared, no call', 'cleared for an old number', 'consent no', 'could not reach'}
+        for label, (student, _) in cases.items():
+            with self.subTest(case=label):
+                student.refresh_from_db()
+                flag = parent_call.needs_parent_call(student)
+                self.assertEqual(flag, student.pk in listed)
+                self.assertEqual(flag, label in expected_flagged)

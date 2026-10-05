@@ -218,20 +218,20 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
-      q: <>An applicant shows <strong>&ldquo;Shared phone &mdash; call the parent&rdquo;</strong>. What do I do?</>,
+      q: <>An applicant shows <strong>&ldquo;Shared phone: call parent&rdquo;</strong>. What do I do?</>,
       a: <>The parent phone they gave is also their own number. That is often a genuine family phone, so it is
         not refused &mdash; but we want a parent to know about the bursary and agree. Call the number, then press
         <strong> Record call</strong> beside it and choose what happened. If the parent confirmed and agreed, the
-        flag clears. If they gave you a different number, choose <strong>Parent&rsquo;s number corrected</strong>
+        flag clears. If they gave you a different number, choose <strong>Corrected</strong>
         and type it: it is saved as the parent phone in the same step. Until a call clears the flag, the
         student&rsquo;s award good-news email waits, and so does signing the bursary agreement. To see every
-        student who still needs a call, press <strong>Shared phone &mdash; call the parent</strong> above the
+        student who still needs a call, press <strong>Shared phone: call parent</strong> above the
         Applications list.</>,
     },
     {
       q: <>A student says their <strong>parent&rsquo;s phone number</strong> is wrong. Can I fix it?</>,
       a: <>Yes. On the applicant&rsquo;s page, in <strong>Family &amp; finances</strong>, press
-        <strong> Correct</strong> beside the parent or guardian phone, enter the right name and number, and save.
+        <strong> Edit</strong> beside the parent or guardian phone, enter the right name and number, and save.
         You can do this at any time, even while the student is signing their bursary agreement (when they cannot
         change it themselves) &mdash; unless that agreement is with another organisation, when the platform team
         does it. Every change made here is recorded with who made it. Students can also correct it on their

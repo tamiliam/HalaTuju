@@ -23,7 +23,7 @@ const EMPTY: api.AdminScholarshipListData = {
   count: 0, total_count: 0, total_pages: 1, page: 1, page_size: 25,
   next: null, previous: null, applications: [],
 }
-const chip = () => screen.queryByRole('button', { name: 'admin.scholarship.guardianNeedsCall' })
+const chip = () => screen.queryByRole('button', { name: 'admin.scholarship.call.needs' })
 
 beforeEach(() => {
   jest.clearAllMocks()

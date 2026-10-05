@@ -213,7 +213,7 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>The parent or guardian phone a student gave when applying is the number we will later text a PIN to
         when the bursary agreement is signed, so a typo matters. On an applicant&rsquo;s page, in <strong>Family
-        &amp; finances</strong>, press <strong>Correct</strong> beside it to fix the name or number. You (and the
+        &amp; finances</strong>, press <strong>Edit</strong> beside it to fix the name or number. You (and the
         platform team) can do this at any time &mdash; except while the student is signing an agreement with
         another organisation; students can fix it themselves on their profile, except while they are signing.
         Every change made here is recorded &mdash; who made it, and the old and new values.</>
@@ -224,13 +224,13 @@ export const roleOrgAdmin: ManualChapter = {
       title: 'Calling the parent',
       body: (
         <>When a student gives their own phone number as their parent&rsquo;s, the applicant page says
-        <strong> &ldquo;Shared phone &mdash; call the parent&rdquo;</strong>. It is not an accusation &mdash; many
+        <strong> &ldquo;Shared phone: call parent&rdquo;</strong>. It is not an accusation &mdash; many
         families share a phone &mdash; it asks for a reasonable, recorded step: call, then press <strong>Record
         call</strong> and choose the outcome, whether the parent was told about the bursary and agreed, the name
         they gave, and a note &mdash; choose Yes or No for consent; nothing is pre-selected. A confirmed call with
         consent clears the flag; until then the award good-news email waits, and so does signing the bursary
-        agreement. If the parent gives a different number, &ldquo;Parent&rsquo;s number corrected&rdquo; saves it
-        as the parent phone in the same step. The <strong>Shared phone &mdash; call the parent</strong> button
+        agreement. If the parent gives a different number, &ldquo;Corrected&rdquo; saves it
+        as the parent phone in the same step. The <strong>Shared phone: call parent</strong> button
         above the Applications list shows everyone still waiting for a call.</>
       ),
     },

@@ -27,23 +27,23 @@ it('draws nothing for a student who has never applied', async () => {
   const { container } = render(<GuardianContactSection />)
   await waitFor(() => expect(mockApi.getGuardianContact).toHaveBeenCalledWith({ token: 'tok' }))
   expect(container.innerHTML).toBe('')
-  expect(screen.queryByText('profile.guardianContact')).toBeNull()
+  expect(screen.queryByText('scholarship.apply.parentHeading')).toBeNull()
 })
 
 it('shows the contact on its own line, editable, for an applicant', async () => {
   mockApi.getGuardianContact.mockResolvedValue(contact())
   render(<GuardianContactSection />)
-  expect(await screen.findByText('profile.guardianContact')).toBeTruthy()
+  expect(await screen.findByText('scholarship.apply.parentHeading')).toBeTruthy()
   expect(screen.getByText('Ravi a/l Muthu')).toBeTruthy()
   expect(screen.getByText('012-345 6789')).toBeTruthy()
-  expect(screen.queryByText('profile.guardianContactLocked')).toBeNull()
+  expect(screen.queryByText('profile.contactLocked')).toBeNull()
   expect(screen.getByRole('button', { name: 'profile.edit' })).toBeTruthy()
 })
 
 it('is read-only with the locked note while the agreement is being signed', async () => {
   mockApi.getGuardianContact.mockResolvedValue(contact({ guardian_contact_locked: true }))
   render(<GuardianContactSection />)
-  expect(await screen.findByText('profile.guardianContactLocked')).toBeTruthy()
+  expect(await screen.findByText('profile.contactLocked')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'profile.edit' })).toBeNull()
   expect(screen.getByText('012-345 6789')).toBeTruthy()
 })
@@ -78,7 +78,7 @@ it('a save refused as locked turns into the locked note', async () => {
   render(<GuardianContactSection />)
   fireEvent.click(await screen.findByRole('button', { name: 'profile.edit' }))
   fireEvent.click(screen.getByRole('button', { name: 'profile.save' }))
-  expect(await screen.findByText('profile.guardianContactLocked')).toBeTruthy()
+  expect(await screen.findByText('profile.contactLocked')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'profile.edit' })).toBeNull()
 })
 

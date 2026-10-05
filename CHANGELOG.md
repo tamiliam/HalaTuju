@@ -102,6 +102,28 @@ reviewed) and one sentence in the application-complete email (EN + BM).
   - Gates: pytest 7899 passed, 3 skipped; jest 3448 / 227; i18n 5420 keys; tsc and makemigrations
     clean; bundle-budget ok — `/profile` 299.592 kB (budget 301), median 228.133 kB (budget 229),
     1 route may cross before the median does.
+- **Follow-up 5 — the bundle line, and the final review's small findings (after the rebase onto
+  `a3f56a44`):**
+  - **`/scholarship/application` was 0.009 kB over its 274 kB line** — our 13 catalogue keys plus
+    main's, on a route already at its edge. Our footprint went from +272 to −7 gz bytes of `en.json`:
+    two keys REUSE honest existing strings ("Parent / guardian" for the profile line, "Edit" for the
+    admin correction), the student and admin "locked" notes are ONE sentence, the call strings are
+    shorter under a short `admin.scholarship.call.*` group, and **seven dead keys were deleted**
+    (`sponsorPortal.trust.verifiedDetail`, `sponsorPortal.trust.verifiedBadge`,
+    `sponsorPortal.signInBody`, `sponsorPortal.registerIntro`, `errors.notSignedIn`,
+    `errors.claimFailed`, `sponsorAuth.mobileInvalid` — no source, test or api file names their path
+    or their leaf, and no dynamic prefix reaches them; namespace floors kept).
+  - **A stale-number refusal re-reads the case**, so reopening the dialog shows the current number,
+    and the sentence now says what works ("Number changed. Reopen to call again.").
+  - **With no parent number on file only "Corrected" is offered** — nothing was dialled.
+  - **One test pins the list and the case flag to the same answer** over every case the rule draws.
+  - **TD-347 raised** (finding 3, not fixed by ruling): the accept deadline can lapse while signing
+    waits for a call; a naive skip is wrong; MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.
+  - **Bundle:** `/scholarship/application` 274.009 → 273.728 kB (line 274); `/profile` 299.538 →
+    298.941 kB and its line LOWERED 301 → 300 as the ratchet required (TD-309 way); median 227.941 kB
+    (line 229), 1 route may cross before the median does.
+  - Gates: pytest 7919 passed, 3 skipped; jest 3722 / 239; i18n 5416 keys; tsc and makemigrations
+    clean; bundle-budget ok.
 - Tests: pytest 7826 → 7852 passed after the first commit, 7857 after the follow-up; jest 3378 →
   3391 (219 → 221 suites), 3392 / 222 after the follow-up.
 

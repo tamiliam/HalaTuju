@@ -22,8 +22,8 @@ import type { T } from './shared'
  *  form's phone sentence. */
 export const GUARDIAN_REFUSAL: Record<string, string> = {
   guardian_phone_invalid: 'scholarship.apply.error.phone',
-  guardian_contact_locked: 'admin.scholarship.guardianLocked',
-  called_number_mismatch: 'admin.scholarship.guardianCallStale',
+  guardian_contact_locked: 'profile.contactLocked',
+  called_number_mismatch: 'admin.scholarship.call.stale',
 }
 
 export function GuardianCorrect({ appId, name, phone, t, onDone }: {
@@ -58,13 +58,13 @@ export function GuardianCorrect({ appId, name, phone, t, onDone }: {
   if (!open) {
     return (
       <button type="button" onClick={begin} className="ml-2 text-xs font-medium text-primary-600 hover:underline">
-        {t('admin.scholarship.guardianCorrect')}
+        {t('profile.edit')}
       </button>
     )
   }
   const field = 'w-full rounded-md border border-ground-300 px-2 py-1.5 text-sm'
   return (
-    <div role="dialog" aria-label={t('admin.scholarship.guardianCorrect')} className="mt-2 space-y-2 rounded-lg border border-ground-200 bg-ground-50 p-3">
+    <div role="dialog" aria-label={t('profile.edit')} className="mt-2 space-y-2 rounded-lg border border-ground-200 bg-ground-50 p-3">
       <input aria-label={t('scholarship.apply.field.parentName')} value={draftName} onChange={e => setDraftName(e.target.value)} maxLength={255} className={field} />
       <input aria-label={t('scholarship.apply.field.parentPhone')} value={draftPhone} onChange={e => setDraftPhone(toLocalPhone(e.target.value))} inputMode="tel" className={field} />
       {draftPhone.trim() !== '' && !isValidMobile(draftPhone) && <p className="text-xs text-critical-600">{t('scholarship.apply.error.phone')}</p>}

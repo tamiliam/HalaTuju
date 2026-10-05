@@ -197,7 +197,32 @@ Left as known, per the lead: a student with no parent or guardian at all cannot 
 organisation's call clears the flag for another when nothing is frozen; one log line per held
 student per hour.
 
-## 9. Not covered
+## 9. The bundle line after the rebase, and the final review (follow-up 5)
+
+**The bundle.** On `a3f56a44`, `/scholarship/application` read 274.009 kB against 274 — the shared en
+catalogue rides on every route, our 13 keys (+272 gz bytes) plus main's tipped a route already at its
+edge. The lever was OUR OWN strings: reuse where an existing sentence is honest, one "locked" sentence
+for student and admin, shorter call strings under a short group. That got ~140 bytes, short of the
+~150 asked. Seven genuinely dead keys were then deleted the TD-309 way, each proven unreferenced: no
+`src`, test, script or api file names the full path OR the leaf, and no dynamic prefix in source
+(`${…}` after a dot) reaches its parent. (A blanket finder was NOT trusted: its first pass listed
+`sponsorLanding.faq.a1`…`a6` and `pathways.*`, which are reached through ``faq.a${i}`` and through
+reason codes the api SERVES — both live.) Net: our catalogue footprint is −7 gz bytes.
+
+**The findings.** (1) After a stale-number refusal the dialog kept the old number, so the advice
+"close and record again" refused again until a reload — the dialog now re-reads the case on that
+refusal. (2) With no number on file, "could not reach" always failed — only "corrected" is offered.
+(4) The list and the case flag are two implementations of one rule — one test now runs both over
+eight shapes and asserts the same answer. (3) is TD-347: not fixed, by ruling.
+
+Gates: pytest **7919** passed, 3 skipped; jest **3722 / 239**; check-i18n **5416**; tsc and
+makemigrations clean; next build compiled (warm); bundle-budget **ok** — `/scholarship/application`
+**273.728 kB** (line 274, 272 bytes under), `/profile` **298.941 kB** (its line lowered 301 → 300 as
+the ratchet required), median **227.941 kB**, routes that may cross **1**. Bite-checked: the stale
+re-read, the corrected-only offer, and the agreement test (twice — the list ignoring consent, and
+ignoring the number).
+
+## 10. Not covered
 
 * Malay and Tamil strings are first drafts and need the owner's review.
 * Nothing was exercised against a real Twilio or a real browser; the signing path is mocked at the
