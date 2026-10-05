@@ -58,6 +58,10 @@ applies `0165` to production migrate-first; the owner gates the push.
 | bundle-budget median | 227.676 kB | 227.740 kB (budget 229) |
 | i18n | — | all passed, 5403 keys per locale |
 
+After the gap A/B follow-up: pytest **7857** passed, 3 skipped; jest **3392 / 222 suites**; tsc clean;
+next build compiled; `/profile` **309.953 kB (unchanged)**, median **227.740 kB (unchanged)**,
+`/scholarship/award` 247.414 kB; i18n all passed, 5403 keys (no new string).
+
 ## 4. ⚠ GO-LIVE OPERATIONAL STEP (before anyone sets `BURSARY_AGREEMENT_ENABLED`)
 
 When the flag flips, **every student holding an offered award freezes at the same moment** — they can
@@ -66,14 +70,40 @@ prompt every awarded student (65 today) to check their parent/guardian phone on 
 them time to do it. A wrong number found after the flip is a support ticket per student; found before
 it is a self-service fix.
 
-## 5. Not covered, on purpose or for later
+## 5. The two gaps this build reported — both closed in a follow-up commit
 
-* **A second application round** re-runs the apply form, whose `sync_profile_fields` writes
-  `guardians` with no freeze check. Whether a student holding an offered award can submit a new
-  application was NOT verified. If they can, that is a way round R2 (low risk: it needs an open round
-  and is visible on the case). Not changed here: R7 forbids changing `merge_guardians`' callers'
-  semantics without a ruling.
-* `sign_agreement` does not compare the verified number with the current profile number; it relies
-  on the freeze to keep them equal during the window. Worth a belt-and-braces check when signing goes
-  live.
+The first commit's retro listed two things it had not covered. The lead verified the first was
+real and asked for both to ship closed.
+
+**Gap A — a second application moved a frozen phone. PRE-EXISTING, not introduced here.** How it was
+found: while reading the writers of `guardians` for the freeze, the apply form's
+`create_application` → `sync_profile_fields` showed no freeze check, and the only guard in front of
+it (views.py) is "one live application per student PER ROUND". The lead confirmed a round is open
+until 1 Nov, so a student holding an offered award in one round could apply to another with their
+own number in the parent box — and with signing on, receive the guarantor PIN themselves. The
+2026-07-01 "locked phone" design had the same hole. How it was closed: in `create_application`,
+when `contact_frozen(profile)`, the form's `guardians` are dropped before the sync; the stored one
+stands, the application is created, every other field syncs. Not in `sync_profile_fields` itself,
+because the admin correction path calls it while frozen. **Every write was re-checked by grepping
+for the WRITE, not the helper** (assignments to `guardians`, `merge_guardians(` calls, `update_fields`
+naming it, generic field copies): the only writers are `profile_sync` (reached from intake and
+`guardian_contact.py`), the throwaway rolled-back eval fixtures, the local `bursary_e2e` command, and
+Django's own `/admin/` site for staff — no other student-reachable writer.
+
+**Gap B — signing trusted that the verified number was still the number on file.** Closed with one
+more refusal in the existing chain: `guarantor_phone_changed` unless `application.guarantor_phone`
+and `guarantor_phone_for(application)` are the same number in E.164. This is also what makes an R3
+admin correction in the window correct: the old PIN vouched for the wrong phone. The award page
+maps the code to the existing "verify your parent's phone with the PIN" words — a new string would
+have ridden on `/profile`'s first load through the shared catalogue (47 bytes of headroom) — and puts
+the PIN step back (it does the same for a stale `guarantor_phone_unverified`, which used to leave the
+page showing "verified" with no way to re-send).
+
+Bite-checked: removing the intake guard fails the flag-on gap-A test; removing the signing check
+fails the gap-B test; removing the award-page mapping fails its jest test.
+
+## 6. Not covered
+
 * Malay and Tamil strings are first drafts and need the owner's review.
+* Nothing was exercised against a real Twilio or a real browser; the signing path is mocked at the
+  PDF, storage and Twilio seams.

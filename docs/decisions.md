@@ -51,6 +51,16 @@ email now asks the student to check the number (R5, English and Malay).
 an `apps.courses → apps.scholarship` import, a back-edge held at its budget (25) by
 `TestTheAppBoundary`.
 
+**6. Follow-up the same day — two holes closed, the shape unchanged.** (a) While frozen, a SECOND
+application's `guardians` are dropped in `create_application` (the stored one stands; the
+application is still created). Until now the only guard was one application per ROUND, so the
+2026-07-01 "locked" phone could be rewritten by applying to another open round — pre-existing, not
+introduced here. (b) `sign_agreement` refuses `guarantor_phone_changed` unless the number the PIN
+was checked against (`application.guarantor_phone`) is the number on file, compared as E.164
+(`bursary.same_phone`). It is one more refusal in the same chain, after `guarantor_phone_unverified`;
+it is what makes an R3 admin correction during the window safe — the old check vouched for the
+wrong phone, so the guarantor re-verifies.
+
 **This NARROWS — it does not reverse — "Bursary signing: in-house e-signature, parent PIN on a locked
 phone" (2026-07-01).** The phone is still locked at the moment it matters: whenever a PIN could be
 sent to it. What changed is that "locked" no longer means "locked for ever, for everyone, with no way

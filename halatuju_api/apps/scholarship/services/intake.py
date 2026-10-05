@@ -138,6 +138,14 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     data.pop('programme_code', None)
 
     # 1. Profile is the single source of truth — sync financial fields to it.
+    # ⚠ Request #26, gap A: while bursary signing is possible for this student their parent
+    # phone is FROZEN (it is where the signing PIN goes). A second application to another open
+    # round must not be a way round that, so the form's guardians are DROPPED here and the stored
+    # one stands; every other field syncs, and the application is still created. Local import:
+    # guardian_contact imports this package.
+    from ..guardian_contact import contact_frozen
+    if 'guardians' in data and contact_frozen(profile):
+        data.pop('guardians')
     sync_profile_fields(profile, data)
 
     # 2. Create the application from per-application fields only; academic +

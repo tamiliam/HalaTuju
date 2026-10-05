@@ -321,6 +321,12 @@ def guarantor_phone_for(application):
     return ''
 
 
+def same_phone(a, b):
+    """One number, however typed: the E.164 the PIN is actually sent to (`normalise_msisdn`)."""
+    from .whatsapp import normalise_msisdn
+    return bool(a and b) and (normalise_msisdn(a) or a.strip()) == (normalise_msisdn(b) or b.strip())
+
+
 def guarantor_phone_verification_fresh(application):
     """True when the guarantor's phone-PIN check was stamped within the freshness TTL.
     The window stops a signature riding a days-old verification."""
@@ -418,6 +424,10 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
         raise BursaryError('guarantor_phone_missing')
     if not guarantor_phone_verification_fresh(application):
         raise BursaryError('guarantor_phone_unverified')
+    # Request #26: the PIN must have gone to the number on file NOW. An admin correction in the
+    # window (owner R3) means the old check vouched for the wrong phone — re-verify, never trust it.
+    if not same_phone(application.guarantor_phone, guarantor_phone_for(application)):
+        raise BursaryError('guarantor_phone_changed')
 
     # The agreement is rendered from the ACTIVE template of the APPLICATION'S GIFT (or the one
     # already pinned to a prior agreement) — per gift since TD-229, 2026-10-03. A gift with no

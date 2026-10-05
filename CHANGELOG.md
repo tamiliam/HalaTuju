@@ -30,9 +30,21 @@ reviewed) and one sentence in the application-complete email (EN + BM).
   to the under-18 sentence (R5). The email golden was regenerated: only `profile_complete_student.*`
   moved.
 - **Manual + FAQ + role matrix** carry the new org_admin power (currency rule).
+- **Follow-up — two gaps the build reported, closed (second commit):**
+  - **A second application could move a frozen phone** (pre-existing since 2026-07-01).
+    `create_application` synced the form's `guardians` with no freeze check, and the only guard was
+    "one live application per ROUND" — so a student holding an offer could apply to another open
+    round with their own number as the parent's. Now, while frozen, the form's guardians are dropped
+    and the stored one stands; the application is still created and every other field syncs.
+  - **Signing refuses a phone changed after the PIN** — `sign_agreement` now requires the number
+    the PIN was checked against (`guarantor_phone`) to be the number on file
+    (`guarantor_phone_for`), compared as the E.164 the PIN goes to; else `guarantor_phone_changed`.
+    The award page shows the existing "verify with the PIN" words for it (no new string: the
+    catalogue rides on /profile's first load) and puts the PIN step back.
 - **Bundle:** `/profile` 309.805 → 309.953 kB (budget 310; the section is a lazy chunk); median
   227.676 → 227.740 kB.
-- Tests: pytest 7826 → 7852 passed; jest 3378 → 3391 (219 → 221 suites).
+- Tests: pytest 7826 → 7852 passed after the first commit, 7857 after the follow-up; jest 3378 →
+  3391 (219 → 221 suites), 3392 / 222 after the follow-up.
 
 ## Small change — profile pathway follows a confirmed offer; apply-stage fields hidden after submit - 2026-10-05
 

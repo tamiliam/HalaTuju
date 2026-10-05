@@ -120,8 +120,11 @@ export default function ScholarshipAwardPage() {
       'parent_ic_nric_mismatch', 'parent_ic_name_mismatch',
       'guarantor_phone_missing', 'guarantor_phone_unverified', 'no_active_template',
     ]
-    return known.includes(code)
-      ? t(`scholarship.award.error.${code}`)
+    // Request #26: the number changed after the PIN was checked. Same words as "unverified" (verify
+    // with the PIN again) — a new string would ride on /profile's first load via the catalogue.
+    const key = code === 'guarantor_phone_changed' ? 'guarantor_phone_unverified' : code
+    return known.includes(key)
+      ? t(`scholarship.award.error.${key}`)
       : t('scholarship.award.error.generic')
   }
 
@@ -237,6 +240,8 @@ export default function ScholarshipAwardPage() {
     } catch (e) {
       const code = (e as Error & { code?: string }).code || ''
       setError(messageForCode(code))
+      // The PIN no longer vouches for the number on file (changed, or gone stale): show the PIN step again.
+      if (code === 'guarantor_phone_changed' || code === 'guarantor_phone_unverified') { setPhoneVerified(false); setPinSent(false); setPinCode('') }
     } finally {
       setSubmitting(false)
     }
