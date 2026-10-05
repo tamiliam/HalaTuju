@@ -78,4 +78,7 @@ from .items import (
 from .spending import (
     SPEND_CATEGORY_CHOICES, SPEND_DECIDED_BY_CHOICES, BursarySpendTxn, MerchantCategory,
 )
+# Request #26 (2026-10-05) — the 64th model, NEW rather than moved: the change record for the
+# parent/guardian contact. Points at ScholarshipApplication, so it imports after .applications.
+from .guardian import GuardianContactChange
 

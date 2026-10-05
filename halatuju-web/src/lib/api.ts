@@ -22,6 +22,10 @@ export {
 } from './api/profile'
 export type { StudentProfile, SyncProfileData } from './api/profile'
 
+// The parent/guardian contact the student may correct (request #26).
+export { getGuardianContact, updateGuardianContact } from './api/guardianContact'
+export type { GuardianContact } from './api/guardianContact'
+
 // The course catalogue, the search, and a student's saved list.
 export {
   searchCourses, checkEligibility, getCourses, getCourse, getInstitutions, getSavedCourses,

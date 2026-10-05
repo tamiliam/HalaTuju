@@ -20,10 +20,11 @@ import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import { Card, Field, Grades, joinOr, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
+import { GuardianCorrect } from './GuardianCorrect'
 
 export function ApplicantCards({
   app, t, vtip, incomeValue, incomeTip, incomeNote,
-  sizeValue, sizeTip, sizeNote, sizeNoteTone, perCapita,
+  sizeValue, sizeTip, sizeNote, sizeNoteTone, perCapita, canCorrectGuardian, onGuardianCorrected,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -36,6 +37,9 @@ export function ApplicantCards({
   sizeNote: string | undefined
   sizeNoteTone: 'amber' | 'muted'
   perCapita: number | null
+  /** Request #26: super / org_admin may correct the parent/guardian contact (the server re-gates). */
+  canCorrectGuardian?: boolean
+  onGuardianCorrected?: () => void | Promise<void>
 }) {
   return (<>
 
@@ -154,7 +158,10 @@ export function ApplicantCards({
                   <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
                   <Field label={t('admin.scholarship.perCapita')} value={perCapita != null ? `RM ${Number(perCapita).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null} />
                   <Field label={personLabel} value={guardian?.name} verifiedLabel={vtip('parentName')} />
-                  <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
+                  <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={<>
+                    {guardian?.phone ? formatPhone(guardian.phone) : '—'}
+                    {canCorrectGuardian && <GuardianCorrect appId={app.id} name={guardian?.name || ''} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
+                  </>} />
                 </dl>
               </Card>
               </div>

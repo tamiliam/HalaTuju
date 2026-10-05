@@ -218,6 +218,14 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
+      q: <>A student says their <strong>parent&rsquo;s phone number</strong> is wrong. Can I fix it?</>,
+      a: <>Yes. On the applicant&rsquo;s page, in <strong>Family &amp; finances</strong>, press
+        <strong> Correct</strong> beside the parent or guardian phone, enter the right name and number, and save.
+        You can do this at any time, even while the student is signing their bursary agreement (when they cannot
+        change it themselves). Every change is recorded with who made it. Students can also correct it on their
+        own profile, except while they are signing.</>,
+    },
+    {
       q: <>Can I choose which panels the <strong>Overview</strong> shows?</>,
       a: <>Yes. Open a gift&rsquo;s Overview and press <strong>Customise</strong> at the top right. Each panel
         has a switch; turn off the ones you do not want and press <strong>Save</strong>. It applies to your

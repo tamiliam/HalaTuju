@@ -136,7 +136,9 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
          'responding quickly helps your application move along.'),
         ('We invite you to a short interview.', 'Once the review is settled, we’ll offer you three '
          'time slots — pick the one that suits you best. If you’re under 18, please choose a time a '
-         'parent or guardian can join too, as they’ll need to be with you for the call.'),
+         'parent or guardian can join too, as they’ll need to be with you for the call. Please also '
+         'check that your parent or guardian’s phone number on your profile is correct, as we will use '
+         'it later.'),
         ('The interview itself.', 'It’s a short video call, about 30 minutes, on Google Meet. We’ll '
          'email the joining link as soon as you book, with a reminder before the call. Please join '
          'with your camera on so we can meet you face to face. If you’re under 18, your parent or '
@@ -165,7 +167,8 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
         ('Kami menjemput anda ke temu duga ringkas.', 'Setelah semakan selesai, kami akan menawarkan '
          'anda tiga slot masa — pilih yang paling sesuai untuk anda. Jika anda di bawah 18 tahun, '
          'sila pilih masa yang membolehkan ibu bapa atau penjaga turut menyertai, kerana mereka '
-         'perlu bersama anda semasa panggilan.'),
+         'perlu bersama anda semasa panggilan. Sila semak juga bahawa nombor telefon ibu bapa atau '
+         'penjaga dalam profil anda adalah betul, kerana kami akan menggunakannya kemudian.'),
         ('Temu duga itu sendiri.', 'Ia panggilan video ringkas, kira-kira 30 minit, melalui Google '
          'Meet. Kami akan menghantar pautan untuk menyertai sebaik sahaja anda menempah, dengan '
          'peringatan sebelum panggilan. Sila sertai dengan kamera dibuka supaya kami dapat bertemu '

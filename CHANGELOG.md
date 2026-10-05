@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #26 — a student (or an admin) can correct the parent/guardian phone - 2026-10-05
+
+Sprint lane (analysis #69 + owner rulings R1–R7). Built locally, **NOT pushed, NOT deployed**.
+**One migration, MIGRATE-FIRST:** `scholarship 0165_guardian_contact_changes` (one new table, RLS +
+service_role policy; the Postgres DDL is in the migration's docstring). No backfill, no data moved,
+no paid call. **New copy:** three strings in en/ms/ta (Malay and Tamil are first drafts, not
+reviewed) and one sentence in the application-complete email (EN + BM).
+
+- **The request.** "How do I change my father's phone number? it is a typo." Nobody could: the
+  profile never wrote `guardians`, the admin payload has it read-only. That number is the ONLY one
+  the bursary-signing PIN goes to (`bursary.guarantor_phone_for`).
+- **The student corrects it on /profile** — a new "Parent / guardian contact" line in Family &
+  Background (its own line, not tied to Father/Mother), shown ONLY to students who have applied.
+  `GET/PUT /api/v1/scholarship/guardian-contact/`.
+- **Frozen only while signing is possible (R2):** `BURSARY_AGREEMENT_ENABLED` on AND an offered
+  award — the exact rule the PIN views use, now one function in `apps/scholarship/signing_window.py`
+  (`_award_application` lifted out of `views.py`, unchanged). With the flag off (production) nobody
+  is frozen. A frozen student sees a read-only line and a note to contact the team.
+- **Super and org_admin correct it any time, frozen or not (R3):** "Correct" beside the phone on the
+  applicant summary → `POST admin/scholarship/applications/<pk>/guardian-contact/`. Every other role
+  403; another organisation 404. Classified in `test_org_fence.FENCED_OR_EXEMPT`.
+- **Every real change is recorded** in `guardian_contact_changes` (old/new name + phone, who, role,
+  application); a no-op writes nothing. Writes go through `sync_profile_fields` → `merge_guardians`
+  (TD-055) — storage, `guarantor_phone_for` and merge semantics unchanged (R7).
+- **The application-complete email** now asks the student to check the parent/guardian phone, next
+  to the under-18 sentence (R5). The email golden was regenerated: only `profile_complete_student.*`
+  moved.
+- **Manual + FAQ + role matrix** carry the new org_admin power (currency rule).
+- **Bundle:** `/profile` 309.805 → 309.953 kB (budget 310; the section is a lazy chunk); median
+  227.676 → 227.740 kB.
+- Tests: pytest 7826 → 7852 passed; jest 3378 → 3391 (219 → 221 suites).
+
 ## Small change — profile pathway follows a confirmed offer; apply-stage fields hidden after submit - 2026-10-05
 
 Small-change lane. Two owner rulings of 2026-10-05. No migration, no new package, no paid call.

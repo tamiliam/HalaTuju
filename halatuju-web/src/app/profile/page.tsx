@@ -24,6 +24,7 @@ import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
+import LazyGuardianContactSection from '@/components/profile/LazyGuardianContactSection'
 import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
 import type { OtherMember } from '@/lib/familyRoster'
 import type { StudentProfile } from '@/lib/api'
@@ -1191,6 +1192,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+                <LazyGuardianContactSection />{/* request #26: only for applicants; its own edit + lock */}
               </div>
             )}
           </div>

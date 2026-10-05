@@ -1,5 +1,61 @@
 # Architectural Decisions — HalaTuju
 
+## Parent/guardian contact: editable by the student EXCEPT while signing is possible; super + org_admin correct it any time — owner rulings, request #26, 2026-10-05
+
+**The request.** A student asked how to change their father's phone number ("it is a typo"). Nobody
+could: the profile page never wrote `guardians`, and the admin serializer publishes it read-only. The
+number matters because `bursary.guarantor_phone_for` reads it, and it is the ONLY number the
+bursary-signing PIN is sent to.
+
+**1. The student may correct it (R1), and it is frozen ONLY while bursary signing is actually possible
+for that student (R2).** "Possible" is read from one place, `apps/scholarship/signing_window.py`:
+`BURSARY_AGREEMENT_ENABLED` on AND an application with an OFFERED sponsorship — exactly the two
+refusals the guarantor-PIN views make (`bursary_disabled`, `no_offer`). `_award_application` was a
+private helper in `views.py`; it was LIFTED there, unchanged in its query, and `views.py` imports it
+back under the old name, so the PIN views and the freeze cannot drift (the `adminLanding` /
+`defaultRoute` lesson). `test_guardian_contact.py` drives the real send view across six states with
+the flag on and off and asserts the two agree.
+*Why not "frozen from 'awarded'":* signing is OFF in production (`BURSARY_AGREEMENT_ENABLED` unset),
+65 applications sit at 'awarded' and 0 at 'active'. A status freeze would lock all 65 indefinitely to
+protect a control that cannot run, and completion → award has measured 23 days on average, 83 at
+most — a long time to be unable to fix a typo. And the phone is not the only gate: the guarantor's
+typed name + NRIC must match the OCR'd parent IC (`guarantor_identity_check`), which is the stronger
+check. With the flag OFF nobody is frozen; when it goes ON, students in the window freeze
+automatically. Once the student and guarantor have signed, the offer is no longer 'offered', the
+PIN views answer `no_offer`, and the contact is editable again — the number that WAS verified is
+stamped on the application (`guarantor_phone`), so a later edit cannot rewrite what was checked.
+⚠ This is earlier than "agreement executed" (the Foundation's countersignature): the brief said
+"executed"; the single-source rule decided it, because after the in-session signature no PIN can be
+sent to the number at all.
+
+**2. An administrator may correct it at ANY time, including while frozen (R3) — super and org_admin
+ONLY.** Admin, reviewer, qc, finance and partner are refused (403); another organisation's
+application is 404, never 403 (`_require_app_write`, then narrowed to the two roles, the
+`AdminOrgRejectView` shape). Every REAL change — student or admin — writes a
+`GuardianContactChange` row (`guardian_contact_changes`: old/new name and phone, who, which role,
+which application); a save that changes nothing writes none.
+
+**3. Nothing about storage moves (R7).** The contact stays entry 0 of `StudentProfile.guardians`,
+written through `profile_sync.sync_profile_fields` → `merge_guardians` (TD-055); no migration of
+existing data, no backfill, and `guarantor_phone_for` / `merge_guardians` are untouched. The phone
+must pass `whatsapp.normalise_msisdn` — the function that turns it into E.164 for the PIN — so an
+accepted number can always be texted. It is stored as typed, like the apply form stores it.
+
+**4. Shown only to applicants (R4); no emergency-contact field (R6).** The profile line is its own
+"Parent / guardian contact", never attached to Father or Mother: the guardian's name matches
+`father_name` on 30 profiles, `mother_name` on 53 and NEITHER on 60 of 143. The application-complete
+email now asks the student to check the number (R5, English and Malay).
+
+**5. Where the student endpoint lives.** `GET/PUT /api/v1/scholarship/guardian-contact/`, not on
+`/api/v1/profile/`: ProfileView is in `apps/courses`, and reaching scholarship's rules from there adds
+an `apps.courses → apps.scholarship` import, a back-edge held at its budget (25) by
+`TestTheAppBoundary`.
+
+**This NARROWS — it does not reverse — "Bursary signing: in-house e-signature, parent PIN on a locked
+phone" (2026-07-01).** The phone is still locked at the moment it matters: whenever a PIN could be
+sent to it. What changed is that "locked" no longer means "locked for ever, for everyone, with no way
+to fix a typo".
+
 ## A named closed gift says closed on its own page; other open gifts are offered by link, never by redirect — 2026-10-05 (owner's live test)
 
 **Decision.** `/scholarship/apply?p=<code>` for a gift whose round has closed no longer bounces to

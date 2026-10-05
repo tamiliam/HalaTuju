@@ -468,3 +468,13 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
 }
 
+/** Request #26: correct the parent/guardian contact of the student behind this application.
+ *  Super + org_admin only (403 otherwise; 404 across organisations). Allowed at ANY time,
+ *  including while the student is locked out because bursary signing is possible, and every
+ *  real change is recorded server-side. `changed: false` means the values were already these. */
+export async function correctGuardianContact(
+  id: number, body: { name: string; phone: string }, options?: ApiOptions,
+) {
+  return adminMutate<{ name: string; phone: string; changed: boolean }>(
+    `/api/v1/admin/scholarship/applications/${id}/guardian-contact/`, 'POST', body, options)
+}

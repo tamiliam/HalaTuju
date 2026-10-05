@@ -73,7 +73,7 @@ export type {
 // The cockpit list, the whole detail payload, and assignment.
 export {
   getScholarshipApplications, assignApplication, requestMoreInfo, getAssignableAdmins,
-  getScholarshipApplication,
+  getScholarshipApplication, correctGuardianContact,
 } from './admin-api/applications'
 export type {
   AdminScholarshipListItem, AdminCompleteness, AdminInterviewSession, AdminSponsorProfile,

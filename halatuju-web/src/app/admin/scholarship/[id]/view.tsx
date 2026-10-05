@@ -940,7 +940,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         app={app} t={t} vtip={vtip}
         incomeValue={incomeValue} incomeTip={incomeTip} incomeNote={incomeNote}
         sizeValue={sizeValue} sizeTip={sizeTip} sizeNote={sizeNote} sizeNoteTone={sizeNoteTone}
-        perCapita={perCapita}
+        perCapita={perCapita} canCorrectGuardian={canAssign} onGuardianCorrected={refreshApp}
       />
 
 

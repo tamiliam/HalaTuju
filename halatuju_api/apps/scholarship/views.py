@@ -37,6 +37,8 @@ from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
 from . import whatsapp
+# `_award_application` lives in signing_window.py (request #26): the guardian-contact freeze reads the SAME rule.
+from .signing_window import award_application as _award_application
 from .serializers_admin import interview_schedule_payload
 from .services import (
     CONSENT_VERSION,
@@ -2218,16 +2220,6 @@ class VircleAirtableUpdateView(APIView):
             return Response({'error': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
         payload = request.data if isinstance(request.data, dict) else {}
         return Response(vircle_airtable.apply_update(payload))
-
-
-def _award_application(user_id):
-    """The caller's application that currently has an OFFERED award (independent of
-    the editable-funnel scoping — an awardable student may be at 'recommended')."""
-    return (
-        ScholarshipApplication.objects
-        .filter(profile_id=user_id, sponsorships__status='offered')
-        .select_related('profile').distinct().first()
-    )
 
 
 def _mask_phone(phone):

@@ -2,6 +2,7 @@
 from django.urls import path
 
 from .views_branding import BrandingView
+from .views_guardian_contact import StudentGuardianContactView
 from .views import (
     ApplicationConfirmView,
     ApplicationOnboardingCompleteView,
@@ -61,6 +62,7 @@ from .views_sponsor import (
 )
 from .views_admin import (
     AdminApplicationDetailView,
+    AdminGuardianContactView,
     AdminVerdictSummaryView,
     AdminApplicationListView,
     AdminBursaryCountersignView,
@@ -232,6 +234,8 @@ urlpatterns = [
     # Post-award parent gate — SMS PIN to the guarantor's locked phone before signing
     path('scholarship/award/guarantor/verify-phone/send/', GuarantorPhoneVerifyStartView.as_view()),
     path('scholarship/award/guarantor/verify-phone/check/', GuarantorPhoneVerifyCheckView.as_view()),
+    # Request #26: the student corrects their parent/guardian contact (frozen only while signing)
+    path('scholarship/guardian-contact/', StudentGuardianContactView.as_view()),
     # S3: the student's resolution queue (IBKR Action Centre)
     path('scholarship/resolution-items/', ResolutionItemListView.as_view()),
     path('scholarship/resolution-items/<int:pk>/resolve/', ResolutionItemResolveView.as_view()),
@@ -460,6 +464,8 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
     path('admin/scholarship/applications/<int:pk>/org-reject/', AdminOrgRejectView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reporting-date/', AdminReportingDateView.as_view()),
+    # Request #26: super / org_admin correct the parent/guardian contact, any time, recorded
+    path('admin/scholarship/applications/<int:pk>/guardian-contact/', AdminGuardianContactView.as_view()),
     path('admin/scholarship/applications/<int:pk>/nudge/', AdminNudgeStudentView.as_view()),
     # Break-glass: release an IC lock so an orphaned claim stops blocking the number's real
     # owner. SUPER ONLY — narrower than the gate that takes the lock, on purpose.

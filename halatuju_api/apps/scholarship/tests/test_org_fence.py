@@ -481,6 +481,9 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminReportingDateView': 'gate',
         # Fenced by _require_app_write, then narrowed to super/org_admin (manual nudge send).
         'AdminNudgeStudentView': 'gate',
+        # Request #26: fenced by _require_app_write, then narrowed to super/org_admin (owner R3);
+        # corrects the parent/guardian contact at any time, recorded in guardian_contact_changes.
+        'AdminGuardianContactView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

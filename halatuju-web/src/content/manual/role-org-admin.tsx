@@ -208,6 +208,17 @@ export const roleOrgAdmin: ManualChapter = {
       ),
     },
     {
+      anchor: 'org-admin-guardian-contact',
+      title: 'Correcting a parent’s phone number',
+      body: (
+        <>The parent or guardian phone a student gave when applying is the number we will later text a PIN to
+        when the bursary agreement is signed, so a typo matters. On an applicant&rsquo;s page, in <strong>Family
+        &amp; finances</strong>, press <strong>Correct</strong> beside it to fix the name or number. You (and the
+        platform team) can do this at any time; students can fix it themselves on their profile, except while
+        they are signing. Every change is recorded &mdash; who made it, and the old and new values.</>
+      ),
+    },
+    {
       anchor: 'org-admin-what-stays-platform',
       title: 'What stays with the platform',
       body: (
