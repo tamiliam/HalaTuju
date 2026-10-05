@@ -7,7 +7,7 @@
  */
 import {
   MERCHANT_SORT_LABEL, STUDENT_SORT_LABEL, filterMerchants, filterStudents,
-  merchantFirstDir, shopsWithUnplacedMoney,
+  merchantAverage, merchantFirstDir, shopsWithUnplacedMoney,
   sortMerchants, sortStudents, studentFirstDir, type MerchantSortKey, type StudentSortKey,
 } from '../spendingTable'
 import type { SpendingMerchantRow, SpendingStudentRow } from '../admin-api'
@@ -89,6 +89,38 @@ describe('sorting the shops', () => {
     const rows = [shop({ merchant: 'B' }), shop({ merchant: 'A' })]
     sortMerchants(rows, 'shop', 'asc', LABELS)
     expect(rows.map((r) => r.merchant)).toEqual(['B', 'A'])
+  })
+})
+
+describe('the average per transaction (request #29)', () => {
+  test('is total ÷ visits, to the sen', () => {
+    expect(merchantAverage({ total: '259.20', visits: 9 })).toBe('28.80')
+    expect(merchantAverage({ total: '130.00', visits: 1 })).toBe('130.00')
+    expect(merchantAverage({ total: '2000', visits: 3 })).toBe('666.67')
+  })
+
+  test('rounds half a sen UP, and never goes through a float of the total', () => {
+    // 0.05 ÷ 2 = 2.5 sen → 3. As a float, 0.3 / 3 is 0.09999…; in sen it is exactly 10.
+    expect(merchantAverage({ total: '0.05', visits: 2 })).toBe('0.03')
+    expect(merchantAverage({ total: '0.30', visits: 3 })).toBe('0.10')
+    expect(merchantAverage({ total: '401.03', visits: 16 })).toBe('25.06')
+  })
+
+  test('⚠ NO VISITS IS NO AVERAGE — null (a dash), never NaN or Infinity', () => {
+    expect(merchantAverage({ total: '0.00', visits: 0 })).toBeNull()
+    expect(merchantAverage({ total: '12.00', visits: 0 })).toBeNull()
+  })
+
+  test('sorts as a number, biggest first, with no-visit shops last in BOTH directions', () => {
+    // ⚠ 9.00 vs 10.00 is the discriminator: as text '9.00' > '10.00'.
+    const rows = [shop({ merchant: 'NONE', total: '0.00', visits: 0 }),
+                  shop({ merchant: 'NINE', total: '18.00', visits: 2 }),
+                  shop({ merchant: 'TEN', total: '30.00', visits: 3 })]
+    expect(sortMerchants(rows, 'average', 'desc', LABELS).map((r) => r.merchant))
+      .toEqual(['TEN', 'NINE', 'NONE'])
+    expect(sortMerchants(rows, 'average', 'asc', LABELS).map((r) => r.merchant))
+      .toEqual(['NINE', 'TEN', 'NONE'])
+    expect(merchantFirstDir('average')).toBe('desc')
   })
 })
 
@@ -230,7 +262,7 @@ describe('every column can be sorted and every column has a name', () => {
   // the header renders, the click does nothing, or the header reads as a raw dotted key. These
   // two lists are the only place that pairing is written down, so they are asserted complete.
   const MERCHANT_KEYS: MerchantSortKey[] =
-    ['shop', 'countedAs', 'decidedBy', 'visits', 'total', 'lastSeen', 'decidedAt']
+    ['shop', 'countedAs', 'decidedBy', 'visits', 'total', 'average', 'lastSeen', 'decidedAt']
   const STUDENT_KEYS: StudentSortKey[] =
     ['name', 'transactions', 'spent', 'unplaced', 'balance']
 

@@ -5774,6 +5774,7 @@
         "decidedBy": "Determined by",
         "visits": "Transactions",
         "total": "Total",
+        "average": "Average",
         "lastSeen": "Last transaction",
         "decidedAt": "Determined on"
       },

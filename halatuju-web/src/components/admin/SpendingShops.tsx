@@ -30,8 +30,8 @@ import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { useState } from 'react'
 import {
-  MERCHANT_DEFAULT_SORT, MERCHANT_SORT_LABEL, filterMerchants, merchantFirstDir, sortMerchants,
-  type MerchantSortKey,
+  MERCHANT_DEFAULT_SORT, MERCHANT_SORT_LABEL, filterMerchants, merchantAverage, merchantFirstDir,
+  sortMerchants, type MerchantSortKey,
 } from '@/lib/spendingTable'
 import type { SpendingMerchantRow } from '@/lib/admin-api'
 
@@ -47,6 +47,12 @@ export const rm = (v: string) => {
 }
 
 /** The pill under "How we decided". Only `owner` — your own answer — carries the accent. */
+/** Average per transaction, in the same `RM` form as Total; a dash when there are no visits. */
+const avg = (m: SpendingMerchantRow) => {
+  const a = merchantAverage(m)
+  return a === null ? '—' : `RM${rm(a)}`
+}
+
 export function decidedPill(decidedBy: string) {
   return decidedBy === 'owner'
     ? 'bg-info-100 text-info-700'
@@ -183,6 +189,8 @@ export default function SpendingShops({
               <span className="tabular-nums">RM{rm(m.total)}</span>
               <span>{t('admin.spending.col.visits')}{' '}
                 <span>{m.visits}</span></span>
+              <span>{t('admin.spending.col.average')}{' '}
+                <span>{avg(m)}</span></span>
               {m.last_seen && <span>{formatDate(m.last_seen)}</span>}
             </div>
             {heldBack(m, 'mt-1 text-[11px] text-ground-500')}
@@ -191,7 +199,7 @@ export default function SpendingShops({
         {empty && <p className="py-6 text-center text-sm text-ground-400">{emptyMessage}</p>}
       </div>
 
-      <TableFrame className="hidden md:block" minWidth={760} label={t(labelKey)}>
+      <TableFrame className="hidden md:block" minWidth={840} label={t(labelKey)}>
         <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
@@ -200,6 +208,7 @@ export default function SpendingShops({
               <SortHeader col="decidedBy" label={t(MERCHANT_SORT_LABEL.decidedBy)} sort={sort} onSort={onSort} />
               <SortHeader col="visits" label={t(MERCHANT_SORT_LABEL.visits)} sort={sort} onSort={onSort} align="right" />
               <SortHeader col="total" label={t(MERCHANT_SORT_LABEL.total)} sort={sort} onSort={onSort} align="right" />
+              <SortHeader col="average" label={t(MERCHANT_SORT_LABEL.average)} sort={sort} onSort={onSort} align="right" />
               <SortHeader col="lastSeen" label={t(MERCHANT_SORT_LABEL.lastSeen)} sort={sort} onSort={onSort} />
               <SortHeader col="decidedAt" label={t(MERCHANT_SORT_LABEL.decidedAt)} sort={sort} onSort={onSort} />
             </tr>
@@ -224,6 +233,7 @@ export default function SpendingShops({
                 <td className="px-4 py-3 text-right font-medium tabular-nums text-ground-900">
                   RM{rm(m.total)}
                 </td>
+                <td className="px-4 py-3 text-right tabular-nums text-ground-700">{avg(m)}</td>
                 <td className="px-4 py-3 text-ground-500">
                   {m.last_seen ? formatDate(m.last_seen) : '—'}
                 </td>
@@ -233,7 +243,7 @@ export default function SpendingShops({
               </tr>
             ))}
             {empty && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-ground-400">
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-ground-400">
                 {emptyMessage}
               </td></tr>
             )}

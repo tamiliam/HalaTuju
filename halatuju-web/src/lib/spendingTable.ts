@@ -25,7 +25,7 @@ import type { SpendingMerchantRow, SpendingStudentRow } from './admin-api'
 // ── shops ─────────────────────────────────────────────────────────────────────
 
 export type MerchantSortKey =
-  'shop' | 'countedAs' | 'decidedBy' | 'visits' | 'total' | 'lastSeen' | 'decidedAt'
+  'shop' | 'countedAs' | 'decidedBy' | 'visits' | 'total' | 'average' | 'lastSeen' | 'decidedAt'
 
 export const MERCHANT_SORT_LABEL: Record<MerchantSortKey, string> = {
   shop: 'admin.spending.col.shop',
@@ -33,8 +33,28 @@ export const MERCHANT_SORT_LABEL: Record<MerchantSortKey, string> = {
   decidedBy: 'admin.spending.col.decidedBy',
   visits: 'admin.spending.col.visits',
   total: 'admin.spending.col.total',
+  average: 'admin.spending.col.average',
   lastSeen: 'admin.spending.col.lastSeen',
   decidedAt: 'admin.spending.col.decidedAt',
+}
+
+/**
+ * Average spend per TRANSACTION at a shop — `total ÷ visits` (request #29; the organisation's own
+ * definition: "total spend / number of transactions"). A 2-decimal STRING for `rm`, or `null`
+ * when the shop has no transactions, which the screen shows as a dash — never NaN or Infinity.
+ *
+ * ⚠ Done in whole SEN, from the string, so `'0.30'` is 30 and never 0.29999…; the one division
+ * rounds half up to the nearest sen.
+ */
+export function merchantAverage(r: Pick<SpendingMerchantRow, 'total' | 'visits'>): string | null {
+  if (!(r.visits > 0)) return null
+  const text = String(r.total).trim()
+  const sign = text.startsWith('-') ? '-' : ''
+  const [whole, frac = ''] = text.replace(/^[-+]/, '').split('.')
+  const sen = Number(whole || '0') * 100 + Number((frac + '00').slice(0, 2))
+  if (!Number.isFinite(sen)) return null
+  const avg = Math.round(sen / r.visits)
+  return `${sign}${Math.floor(avg / 100)}.${String(avg % 100).padStart(2, '0')}`
 }
 
 /**
@@ -54,7 +74,7 @@ const DECIDED_UNKNOWN = 5
 /** The tables start biggest/newest-first; names start A→Z. Clicking flips from there. */
 const MERCHANT_FIRST_DIR: Record<MerchantSortKey, SortDir> = {
   shop: 'asc', countedAs: 'asc', decidedBy: 'desc',
-  visits: 'desc', total: 'desc', lastSeen: 'desc', decidedAt: 'desc',
+  visits: 'desc', total: 'desc', average: 'desc', lastSeen: 'desc', decidedAt: 'desc',
 }
 
 export function merchantFirstDir(key: MerchantSortKey): SortDir {
@@ -86,6 +106,7 @@ export function sortMerchants(
                                   DECIDED_RANK[b.decided_by] ?? DECIDED_UNKNOWN),
     visits: (a, b) => byNumber(a.visits, b.visits),
     total: (a, b) => byNumber(a.total, b.total),
+    average: (a, b) => byNumber(merchantAverage(a), merchantAverage(b)),
     lastSeen: (a, b) => byDate(a.last_seen, b.last_seen),
     decidedAt: (a, b) => byDate(a.decided_at, b.decided_at),
   }
@@ -101,6 +122,8 @@ export function sortMerchants(
   const unknown: Partial<Record<MerchantSortKey, (r: SpendingMerchantRow) => boolean>> = {
     lastSeen: (r) => !r.last_seen,
     decidedAt: (r) => !r.decided_at,
+    // A shop with no transactions has no average (the dash), not an average of zero.
+    average: (r) => merchantAverage(r) === null,
   }
   return sortRows(rows, compare[key], dir, unknown[key])
 }

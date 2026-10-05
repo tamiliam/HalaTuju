@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Requests #27-#29 — payment-run skipped count, merchant average, Micro stall - 2026-10-06
 
+- **#29** The spending screen's merchant list has an "Average" column — total ÷ transactions, per transaction as the organisation defined it — computed in the browser in whole sen (`spendingTable.merchantAverage`), sortable, and a dash for a shop with no transactions. New string `admin.spending.col.average` (Malay and Tamil are first drafts).
 - **#27** The payment run's "Skipped this run" heading now carries its count, styled like the Students figure; it is the length of the list on screen (no server change), and the block still appears only when someone was skipped.
 
 ## One application per organisation — the server decides, the apply page asks - 2026-10-05

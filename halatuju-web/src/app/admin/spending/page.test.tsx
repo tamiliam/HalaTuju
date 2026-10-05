@@ -537,6 +537,48 @@ describe('the decided date', () => {
   })
 })
 
+describe('the Average column (request #29) — total ÷ transactions, per shop', () => {
+  const WITH_EMPTY = {
+    ...OVERVIEW,
+    merchants: [...OVERVIEW.merchants,
+      { ...OVERVIEW.merchants[1], merchant: 'NO VISITS', visits: 0, total: '0.00' }],
+  }
+
+  it('shows each shop’s average in the money form Total uses, and a dash for no visits', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue(WITH_EMPTY)
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    // 259.20 ÷ 9, 272.25 ÷ 15, 401.03 ÷ 16 (25.064… → 25.06) — once per rendering, so two.
+    expect(screen.getAllByText('RM28.80')).toHaveLength(2)
+    expect(screen.getAllByText('RM18.15')).toHaveLength(2)
+    expect(screen.getAllByText('RM25.06')).toHaveLength(2)
+    const row = bodyRows().find((r) => (r.textContent || '').includes('NO VISITS')) as HTMLElement
+    const cells = within(row).getAllByRole('cell')
+    const header = screen.getAllByRole('columnheader')
+      .findIndex((h) => (h.textContent || '').includes('admin.spending.col.average'))
+    expect(header).toBeGreaterThan(-1)
+    expect(cells[header].textContent).toBe('—')
+    expect(document.body.textContent).not.toMatch(/NaN|Infinity/)
+  })
+
+  it('sorts on a header click — biggest average first — with no-visit shops last both ways', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue(WITH_EMPTY)
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    const header = () => screen.getByRole('button', { name: /admin\.spending\.col\.average/ })
+    fireEvent.click(header())
+    expect(shopOrder()).toEqual([
+      'GLASSEYE EYEWEAR TRADING', 'AL HUDHA ENTERPRISE', 'SHOPEE MARKETPLACE', '99 SPEEDMART',
+      'NO VISITS',
+    ])
+    fireEvent.click(header())
+    expect(shopOrder()).toEqual([
+      '99 SPEEDMART', 'SHOPEE MARKETPLACE', 'AL HUDHA ENTERPRISE', 'GLASSEYE EYEWEAR TRADING',
+      'NO VISITS',
+    ])
+  })
+})
+
 describe('the Unsorted tab', () => {
   it('lists only the shops with money we could not place', async () => {
     render(<SpendingPage />)
