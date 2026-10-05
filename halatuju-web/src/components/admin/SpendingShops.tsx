@@ -46,13 +46,13 @@ export const rm = (v: string) => {
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${cents}`
 }
 
-/** The pill under "How we decided". Only `owner` — your own answer — carries the accent. */
 /** Average per transaction, in the same `RM` form as Total; a dash when there are no visits. */
 const avg = (m: SpendingMerchantRow) => {
   const a = merchantAverage(m)
   return a === null ? '—' : `RM${rm(a)}`
 }
 
+/** The pill under "How we decided". Only `owner` — your own answer — carries the accent. */
 export function decidedPill(decidedBy: string) {
   return decidedBy === 'owner'
     ? 'bg-info-100 text-info-700'
