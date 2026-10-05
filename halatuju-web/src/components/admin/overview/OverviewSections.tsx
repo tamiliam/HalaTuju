@@ -37,11 +37,12 @@ import {
  *  key this way must spell it exactly like this or its keys go unchecked. */
 const K = 'admin.programmeOverview'
 
-/** The eleven category codes the server always sends, in the order it sends them. Written out so
- *  the i18n guard can enumerate them and so a label is never assembled from an unknown code. */
-const CATEGORY_CODES = [
+/** The twelve category codes the server always sends, in the order it sends them. Written out so
+ *  the i18n guard can enumerate them and so a label is never assembled from an unknown code.
+ *  ⚠ A code missing here is DROPPED from the chart: drift-test: halatuju-web/src/lib/__tests__/spendCategoryDrift.test.ts */
+export const CATEGORY_CODES = [
   'food', 'groceries', 'transport', 'study', 'phone', 'hostel',
-  'health', 'clothing', 'transfer', 'unsorted', 'none',
+  'health', 'clothing', 'micro_stall', 'transfer', 'unsorted', 'none',
 ]
 
 /** The translator handle, as `useT` hands it over. Passed in rather than read from the context

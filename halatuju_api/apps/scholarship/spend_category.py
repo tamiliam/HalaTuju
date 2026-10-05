@@ -70,13 +70,14 @@ logger = logging.getLogger(__name__)
 # asserts it is EXACTLY `models.SPEND_CATEGORY_CHOICES`, so the two cannot drift apart.
 CATEGORY_CODES: tuple[str, ...] = (
     'food', 'groceries', 'transport', 'study', 'phone', 'hostel', 'health', 'clothing',
-    'transfer', 'unsorted',
+    'micro_stall', 'transfer', 'unsorted',
 )
 
-#: What the model may answer. **`transfer` is deliberately absent** (see the docstring) and so is
-#: nothing else: `unsorted` is a legitimate answer meaning "I do not know", and storing it is what
-#: stops us paying to ask the same unanswerable name every week.
-AI_VOCABULARY: frozenset[str] = frozenset(CATEGORY_CODES) - {'transfer'}
+#: What the model may answer. **`transfer` is deliberately absent** (see the docstring), and so is
+#: `micro_stall` (request #28, 2026-10-06): only a PERSON who looked a shop up and found nothing
+#: may say so — the set, prompt and schema are unchanged, so `PROMPT_VERSION` is too. `unsorted` is
+#: a legitimate answer meaning "I do not know"; storing it stops us re-asking the same name weekly.
+AI_VOCABULARY: frozenset[str] = frozenset(CATEGORY_CODES) - {'transfer', 'micro_stall'}
 
 BY_DUITNOW = 'duitnow'
 BY_RULE = 'rule'

@@ -38,6 +38,7 @@ import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
 import { SECTION_KEYS } from '@/lib/overviewLayout'
+import { CATEGORY_CODES } from '@/components/admin/overview/OverviewSections'
 import { MERCHANT_SORT_LABEL, STUDENT_SORT_LABEL } from '@/lib/spendingTable'
 
 const SRC_DIR = path.join(__dirname, '..', '..')     // .../src
@@ -282,10 +283,9 @@ describe.each(SPECS)('$ns', ({ ns, minLeaves }) => {
 const OV = 'admin.programmeOverview'
 const SPEND = 'sponsorPortal.myStudents.detail.spend'
 
-/** The ELEVEN slices `by_category` always sends: the ten `SPEND_CATEGORY_CHOICES`, plus the
- *  `none` a blank category travels as. `unsorted` and `none` are DIFFERENT states. */
-const CATEGORY_CODES = ['food', 'groceries', 'transport', 'study', 'phone', 'hostel',
-                        'health', 'clothing', 'transfer', 'unsorted', 'none']
+/* The slices `by_category` always sends — every `SPEND_CATEGORY_CHOICES` code plus the `none` a
+ * blank category travels as — read from the chart's OWN list (`CATEGORY_CODES`, imported above),
+ * not a third copy; `spendCategoryDrift.test.ts` pins that list to the model's (request #28). */
 
 const DYNAMIC: Array<[string, string[]]> = [
   // ── admin.spending: the sorter's rungs, the four headline figures, the three refusal codes

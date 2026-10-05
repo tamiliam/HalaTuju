@@ -579,6 +579,37 @@ describe('the Average column (request #29) — total ÷ transactions, per shop',
   })
 })
 
+describe('"checked, still unknown" (request #28)', () => {
+  it('tells an untouched unsorted shop from one a person marked unsorted', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({
+      ...OVERVIEW,
+      merchants: [
+        { ...OVERVIEW.merchants[3], merchant: 'NEVER LOOKED AT', decided_by: '' },
+        { ...OVERVIEW.merchants[3], merchant: 'CHECKED BY A PERSON', decided_by: 'owner' },
+      ],
+    })
+    render(<SpendingPage />)
+    await screen.findAllByText('NEVER LOOKED AT')
+    const rowOf = (name: string) =>
+      bodyRows().find((r) => (r.textContent || '').includes(name)) as HTMLElement
+    expect(within(rowOf('NEVER LOOKED AT')).getByText('admin.spending.by.none')).not.toBeNull()
+    expect(within(rowOf('CHECKED BY A PERSON')).getByText('admin.spending.by.owner')).not.toBeNull()
+  })
+
+  it('lets a person choose "unsorted" deliberately, and offers Micro stall when the server does', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({
+      ...OVERVIEW,
+      categories: [...OVERVIEW.categories, { code: 'micro_stall', label: 'Micro stall' }],
+    })
+    render(<SpendingPage />)
+    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    expect(within(controls[0]).getByRole('option', { name: 'Micro stall' })).not.toBeNull()
+    fireEvent.change(controls[0], { target: { value: 'unsorted' } })
+    await waitFor(() => expect(mockApi.setSpendingCategory)
+      .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'unsorted', undefined, { token: 'tok' }))
+  })
+})
+
 describe('the Unsorted tab', () => {
   it('lists only the shops with money we could not place', async () => {
     render(<SpendingPage />)

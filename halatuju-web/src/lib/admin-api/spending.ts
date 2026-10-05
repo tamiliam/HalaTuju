@@ -71,7 +71,8 @@ export interface SpendingOverview {
     /** The newest transaction date we hold, or null before the first import. */
     data_to: string | null
   }
-  /** The ten codes, served BY THE SERVER from the model choices so the dropdown cannot drift
+  /** Every code (eleven since request #28 added the person-only `micro_stall`), served BY THE
+   *  SERVER from the model choices so the dropdown cannot drift
    *  away from what the database will accept. Never hard-code this list here. */
   categories: { code: string; label: string }[]
 }

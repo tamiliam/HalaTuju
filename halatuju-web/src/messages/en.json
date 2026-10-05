@@ -220,6 +220,7 @@
             "hostel": "Hostel & bills",
             "health": "Health & pharmacy",
             "clothing": "Clothing & shoes",
+            "micro_stall": "Micro stall – no online info",
             "transfer": "Sent to a person",
             "unsorted": "Not yet sorted"
           }
@@ -6062,6 +6063,7 @@
         "hostel": "Hostel & bills",
         "health": "Health & pharmacy",
         "clothing": "Clothing & shoes",
+        "micro_stall": "Micro stall – no online info",
         "transfer": "Sent to a person",
         "unsorted": "Not categorised",
         "none": "Not yet sorted"

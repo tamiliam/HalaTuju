@@ -585,15 +585,18 @@ class FiguresTests(_Base):
                   self._body('ov-oa')['applications_series']['awards_per_month']}
         self.assertEqual(months['2026-07'], 1)
 
-    def test_all_eleven_category_slices_are_present_and_the_blank_one_is_its_own(self):
+    def test_every_category_slice_is_present_and_the_blank_one_is_its_own(self):
         """⚠⚠ `unsorted` (the sorter looked and could not place it) and `none` (nothing has
         looked yet) are DIFFERENT STATES. Neither is folded into the other and neither is
-        hidden at zero."""
+        hidden at zero. (Eleven slices until request #28 added `micro_stall`, 2026-10-06: the
+        count is now every model choice plus `none`, so it cannot silently fall behind.)"""
+        from apps.scholarship.models import SPEND_CATEGORY_CHOICES
         slices = self._body('ov-oa')['money_series']['by_category']
         codes = [s['code'] for s in slices]
-        self.assertEqual(len(slices), 11)
+        self.assertEqual(len(slices), 12)
+        self.assertEqual(codes, [c for c, _ in SPEND_CATEGORY_CHOICES] + ['none'])
         self.assertEqual(codes[-2:], ['unsorted', 'none'])
-        self.assertEqual(len(set(codes)), 11)
+        self.assertEqual(len(set(codes)), 12)
         by_code = {s['code']: s for s in slices}
         self.assertEqual(by_code['none']['total'], '100.00')
         self.assertEqual(by_code['none']['transactions'], 1)

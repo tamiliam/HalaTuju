@@ -23,6 +23,10 @@ from django.db import models
 #:
 #: ⚠ `unsorted` IS NOT A FAILURE STATE, IT IS AN HONEST ONE. It is what stops the other nine
 #: reading as complete when they are not. Never fold it into "other" and never hide it.
+#:
+#: ⚠ `micro_stall` (request #28, 2026-10-06) is a REAL category a PERSON assigns after looking a
+#: shop up and finding nothing online — the model may never answer it (`spend_category.AI_VOCABULARY`).
+#: It is not "Other" and not "Flagged for review"; the organisation rejected both on purpose.
 SPEND_CATEGORY_CHOICES = [
     ('food', 'Food & drink'),
     ('groceries', 'Groceries'),
@@ -32,6 +36,7 @@ SPEND_CATEGORY_CHOICES = [
     ('hostel', 'Hostel & bills'),
     ('health', 'Health & pharmacy'),
     ('clothing', 'Clothing & shoes'),
+    ('micro_stall', 'Micro stall – no online info'),
     ('transfer', 'Sent to a person'),
     ('unsorted', 'Not yet sorted'),
 ]

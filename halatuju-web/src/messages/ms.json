@@ -220,6 +220,7 @@
             "hostel": "Asrama & bil",
             "health": "Kesihatan & farmasi",
             "clothing": "Pakaian & kasut",
+            "micro_stall": "Gerai mikro – tiada maklumat dalam talian",
             "transfer": "Dihantar kepada seseorang",
             "unsorted": "Belum diasingkan"
           }
@@ -6062,6 +6063,7 @@
         "hostel": "Asrama & bil",
         "health": "Kesihatan & farmasi",
         "clothing": "Pakaian & kasut",
+        "micro_stall": "Gerai mikro – tiada maklumat dalam talian",
         "transfer": "Dihantar kepada seseorang",
         "unsorted": "Belum dikategorikan",
         "none": "Belum dikelaskan"
