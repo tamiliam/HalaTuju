@@ -1218,3 +1218,15 @@ back cleanly (nothing applied; verified before retrying) and `SET CONSTRAINTS AL
 before the CREATE INDEX fixed it. **Rule:** when a hand-written migrate-first script adds a
 deferred FK, writes rows, and then creates an index, settle the constraints first — and always
 verify the rollback left nothing behind before the second run.
+
+## 2026-10-05 — an RLS audit that reads `qual` only has checked READS, not WRITES
+
+The June security audit called the advisory tables safe because every policy compared
+`auth.uid()` to the row owner. That proved a student could not READ someone else's row. It said
+nothing about what a student could WRITE to their OWN row: eight leftover INSERT/UPDATE/DELETE
+policies let any signed-in student change `api_student_profiles` (NRIC flags, income flags,
+guardians) through PostgREST with the public key, past every Django rule. Found only when request
+#26's review asked "can the student write this field without Django?". **Rule:** for every table a
+Django rule protects, list the policies by `cmd`; any student-role INSERT/UPDATE/DELETE on it is a
+bypass unless the browser genuinely writes that table directly. Own-row is an isolation property,
+not an integrity property. (request #26)

@@ -1422,6 +1422,21 @@ Read it at sprint start, before planning.
 
 ## Next Sprint — ▶ owner's pick (as of 2026-09-30, after the debt-register review)
 
+**REQUEST #26 IS LIVE (2026-10-05)** — parent/guardian phone correction + the parent-call consent
+record. Migration `0165` applied migrate-first (ledger through 0165, no gap). Retro
+`docs/retrospective-2026-10-05-request26-guardian-contact.md`. What the next session must know:
+- ⛔ **TD-347 MUST be fixed before anyone sets `BURSARY_AGREEMENT_ENABLED`** (an accept deadline can
+  lapse while the offer waits for a parent call). Also before the flip: prompt every awarded student
+  to check the parent phone on /profile (retro §4).
+- Owner actions open: Record a call for #116, #62, #125, and #25 (Swetha — Vircle phone, the flag
+  cannot see her); not #20. Malay/Tamil strings are first drafts. Label "Own number confirmed" is
+  read as situation B (parent's own number) — confirm wording with the ms/ta review.
+- ⚠ **Advisory tables are now READ-ONLY to students via the public key** (decisions.md 2026-10-05).
+  A browser-side write to `api_student_profiles` / `saved_courses` / `admission_outcomes` /
+  `generated_reports` will now fail — go through Django. Undo script in `docs/security/`.
+- `/profile` line is **300** (postcode table lazy on the 5th digit); `/scholarship/application`
+  sits ~0.27 kB under 274. Every new en key costs every route.
+
 **TD-145 IS BUILT, not committed, pushed or deployed (2026-10-04).** Owner's ruling + same-day
 amendment (decisions.md 2026-10-04 "TD-145 ruled" and its addendum). Register open **119**
 (`code_health.py` td_open 119; TD-331, TD-332 raised, Later). No migration, no new package, no web change (no copy lists routes).

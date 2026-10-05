@@ -1,8 +1,9 @@
 # Retrospective — request #26: correcting the parent/guardian phone (2026-10-05)
 
-Sprint lane (analysis #69, owner rulings R1–R7). Built locally on `feat/req26-guardian-contact`,
-**not pushed, not deployed, migration not applied anywhere but the local test database.** The lead
-applies `0165` to production migrate-first; the owner gates the push.
+Sprint lane (analysis #69, owner rulings R1–R7). **LIVE 2026-10-05.** `0165` (and the missed `0162`
+ledger row) applied to production migrate-first by the owner in the SQL editor; pushed
+`a3f56a44..073cdad3`; both builds SUCCESS — api `halatuju-api-01104-vbm`, web `halatuju-web-00955-p8n`,
+100% traffic. Smoke: `/profile` 200, `/api/v1/scholarship/guardian-contact/` 401 (exists, needs sign-in).
 
 ---
 
@@ -222,7 +223,39 @@ the ratchet required), median **227.941 kB**, routes that may cross **1**. Bite-
 re-read, the corrected-only offer, and the agreement test (twice — the list ignoring consent, and
 ignoring the number).
 
-## 10. Not covered
+## 10. The security hole the review found, and what went wrong
+
+**What was found.** While checking that a student could not dodge the signing freeze, the adversarial
+review asked: can a student write `api_student_profiles.guardians` WITHOUT Django? Yes. Eight leftover
+RLS policies let a signed-in student INSERT/UPDATE/DELETE their own rows in `api_student_profiles`,
+`admission_outcomes`, `generated_reports` and `saved_courses` through PostgREST with the public key —
+past NRIC verification, income/benefit flags, verification flags and the new freeze. The web app makes
+zero direct table calls, so nothing legitimate used them. Owner approved removal; ran the SQL
+2026-10-05. Undo: `docs/security/2026-10-05-restore-student-write-policies.sql`.
+
+**Exposure.** Edge logs exist from 2026-07-07. Every day to 2026-10-05 was counted one 24 h window at
+a time: **no direct `/rest/v1/` write, ever.** The only 13 direct calls: our own service-key reads from
+Malaysia (07-08 ×1, 07-09 ×9 — Python 3.13, this machine's tooling) and three public-key probes that
+got nothing (07-31 ×2 from Google Cloud US: 404 and 0 rows; 09-12 ×1 from netcup DE: 401).
+
+**What went wrong (three entries).**
+1. *The June security audit called the advisory tables safe.* Why: it inspected `qual` (who may READ)
+   and never `cmd` (what a student may WRITE) — read isolation was mistaken for integrity. Fix:
+   `docs/security-posture.md` now carries a write-integrity section and the re-audit rule "look at
+   `cmd`"; lesson recorded in `docs/lessons.md`.
+2. *Production DDL could not go through the MCP this session* (`apply_migration` declined twice).
+   Why: the owner's permission choice, correctly a question, not an obstacle. Fix: none needed in code —
+   the SQL-editor hand-off (paste-ready SQL + a read-back check after "done") worked first time for both
+   0165 and the policy drop; it is now the default path when the MCP write is declined.
+3. *The `0162` ledger row had been missing since 2026-10-01* (a state-only migration from another
+   session). Why: a state-only migration has no DDL, so "the table exists" looks like "applied". Fix:
+   sprint-close step 3a (ledger diff) caught it before 0165 could land on a gap; recorded with 0165.
+
+**Close gates (on `7ab5d43e`):** pytest **7919 passed, 3 skipped**; jest **3722 / 239 suites**;
+`code_health.py` 0 FAIL (5 standing WARNs, deltas 0; `td_open` +1 = TD-347); migration ledger
+production = files through `0165`, no gap.
+
+## 11. Not covered
 
 * Malay and Tamil strings are first drafts and need the owner's review.
 * Nothing was exercised against a real Twilio or a real browser; the signing path is mocked at the

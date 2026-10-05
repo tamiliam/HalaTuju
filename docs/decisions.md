@@ -13294,3 +13294,21 @@ application stage."* The two fields now show only while the application is at th
 `lib/applicationStatus.isApplyStage`; every later and every ended status hides them. The reasons
 keep their older guard too (hidden once `pathway_certainty` is `sure`). The stored answers are
 untouched; only the cockpit stops showing them.
+
+## 2026-10-05 — Advisory tables are read-only to students through the public key
+
+**Decision:** students may READ their own rows in `api_student_profiles`, `admission_outcomes`,
+`generated_reports` and `saved_courses` through PostgREST, and may not write them. Every write goes
+through Django (service role). The eight leftover own-row INSERT/UPDATE/DELETE policies were
+dropped on the owner's approval (request #26 review). The RESTRICTIVE "block anonymous users",
+own-row SELECT and service-role policies stay; RLS stays on.
+**Alternatives considered:** keep the write policies and add column-level guards or triggers for
+the protected fields (rejected: it duplicates Django's rules in SQL and the browser makes no direct
+table writes, so it protects a path nobody uses); keep them as they were (rejected: any signed-in
+student could rewrite their NRIC/income/verification flags and the parent phone past every rule).
+**Rationale:** one writer, one set of rules. The web app makes zero direct table calls; the only
+Edge Function writes `contact_submissions` with the service role.
+**Trade-offs:** a future feature that wants the browser to write one of these tables directly
+must add a narrow policy for exactly that and say why here.
+**Revisit if:** the browser needs a direct write (e.g. offline saves). Undo script:
+`docs/security/2026-10-05-restore-student-write-policies.sql`.
