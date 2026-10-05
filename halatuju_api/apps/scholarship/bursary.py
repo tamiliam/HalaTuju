@@ -428,6 +428,9 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     # window (owner R3) means the old check vouched for the wrong phone — re-verify, never trust it.
     if not same_phone(application.guarantor_phone, guarantor_phone_for(application)):
         raise BursaryError('guarantor_phone_changed')
+    from .parent_call import refuse_signing_until_called   # owner ruling A: signing waits for the call
+    if (waits := refuse_signing_until_called(application)):
+        raise BursaryError(waits)
 
     # The agreement is rendered from the ACTIVE template of the APPLICATION'S GIFT (or the one
     # already pinned to a prior agreement) — per gift since TD-229, 2026-10-03. A gift with no

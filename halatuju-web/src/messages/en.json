@@ -33,7 +33,8 @@
     "dismiss": "Dismiss",
     "menu": "Menu",
     "unsavedChanges": "Unsaved changes",
-    "languageLoadFailed": "We could not load that language. Please reload the page and try again."
+    "languageLoadFailed": "We could not load that language. Please reload the page and try again.",
+    "note": "Note"
   },
   "header": {
     "myProfile": "My Profile",
@@ -4301,6 +4302,7 @@
       "guardianNeedsCall": "Shared phone — call the parent",
       "guardianRecordCall": "Record call",
       "guardianCallConsent": "Parent told about the bursary and agreed",
+      "guardianCallStale": "The parent's number changed while this was open. Close it, check the number, and record the call again.",
       "guardianCallOutcome": {
         "shared_confirmed": "Shared number — parent confirmed",
         "parent_number_confirmed": "Parent's own number confirmed",

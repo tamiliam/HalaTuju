@@ -224,7 +224,9 @@ export const FAQ: Record<Audience, QA[]> = {
         <strong> Record call</strong> beside it and choose what happened. If the parent confirmed and agreed, the
         flag clears. If they gave you a different number, choose <strong>Parent&rsquo;s number corrected</strong>
         and type it: it is saved as the parent phone in the same step. Until a call clears the flag, the
-        student&rsquo;s award good-news email waits.</>,
+        student&rsquo;s award good-news email waits, and so does signing the bursary agreement. To see every
+        student who still needs a call, press <strong>Shared phone &mdash; call the parent</strong> above the
+        Applications list.</>,
     },
     {
       q: <>A student says their <strong>parent&rsquo;s phone number</strong> is wrong. Can I fix it?</>,

@@ -57,3 +57,19 @@ it('a phone changed after the PIN check reads as words and brings the PIN step b
   await waitFor(() => expect(screen.queryByText('scholarship.award.bursary.guarantor.pin.verified')).toBeNull())
   expect(screen.getByText('scholarship.award.bursary.guarantor.pin.send')).toBeTruthy()
 })
+
+it('a PIN refused because the parent still needs a call reads as words (owner ruling A)', async () => {
+  mockApi.sendGuarantorPin.mockRejectedValue(Object.assign(new Error('call'), { code: 'parent_call_needed' }))
+  render(<ScholarshipAwardPage />)
+  fireEvent.click(await screen.findByText('scholarship.award.bursary.guarantor.pin.send'))
+  expect(await screen.findByText('scholarship.award.error.no_active_template')).toBeTruthy()
+  expect(screen.queryByText('scholarship.award.bursary.guarantor.pin.error.generic')).toBeNull()
+})
+
+it('a signature refused because the parent still needs a call reads as words (owner ruling A)', async () => {
+  const { container } = render(<ScholarshipAwardPage />)
+  await screen.findByText('scholarship.award.bursary.guarantor.pin.send')
+  mockApi.respondToAward.mockRejectedValue(Object.assign(new Error('call'), { code: 'parent_call_needed' }))
+  fireEvent.submit(container.querySelector('form')!)
+  expect(await screen.findByText('scholarship.award.error.no_active_template')).toBeTruthy()
+})

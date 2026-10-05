@@ -40,42 +40,77 @@ describe('the shared-phone flag and Record call', () => {
     expect(recordCall()).toBeNull()
   })
 
-  it('a confirmed call sends the outcome and consent, never a number, then re-reads the case', async () => {
-    const { api } = renderCockpit({ role: 'org_admin', app: flagged() })
+  const open = async (app = flagged()) => {
+    const view = renderCockpit({ role: 'org_admin', app })
     await loaded()
-    api.recordGuardianCall.mockResolvedValue({ id: 1, outcome: 'shared_confirmed', name: 'G', phone: 'p', needs_call: false })
-    const reads = api.getScholarshipApplication.mock.calls.length
+    view.api.recordGuardianCall.mockResolvedValue({ id: 1, outcome: 'shared_confirmed', name: 'G', phone: 'p', needs_call: false })
     fireEvent.click(recordCall()!)
-    fireEvent.change(screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' }),
-      { target: { value: 'shared_confirmed' } })
-    fireEvent.click(screen.getByRole('checkbox'))
-    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+    return view
+  }
+  const pick = (value: string) => fireEvent.change(
+    screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' }), { target: { value } })
+  const save = () => screen.getByRole('button', { name: 'common.save' }) as HTMLButtonElement
+
+  it('a confirmed call sends the number it DISPLAYED and an explicit consent, then re-reads the case', async () => {
+    const { api } = await open()
+    const reads = api.getScholarshipApplication.mock.calls.length
+    pick('shared_confirmed')
+    expect(save().disabled).toBe(true)                       // nothing pre-selected: no consent yet
+    expect(screen.getAllByRole('radio').some((r) => (r as HTMLInputElement).checked)).toBe(false)
+    fireEvent.click(screen.getByRole('radio', { name: 'profile.yes' }))
+    fireEvent.click(save())
     await waitFor(() => expect(api.recordGuardianCall).toHaveBeenCalledWith(7, {
-      outcome: 'shared_confirmed', consent: true, number: '', parent_name: '', note: '',
+      outcome: 'shared_confirmed', consent: true, number: '0123456788', parent_name: '', note: '',
     }, { token: 'test-token' }))
     await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBeGreaterThan(reads))
   })
 
-  it('a corrected number is sent in the stored form; could-not-reach sends no consent', async () => {
-    const { api } = renderCockpit({ role: 'super', app: flagged() })
-    await loaded()
-    api.recordGuardianCall.mockResolvedValue({ id: 1, outcome: 'x' as never, name: '', phone: '', needs_call: false })
-    fireEvent.click(recordCall()!)
-    const outcome = screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' })
-    fireEvent.change(outcome, { target: { value: 'parent_number_corrected' } })
+  it('"No" is only ever a choice someone made', async () => {
+    const { api } = await open()
+    pick('parent_number_confirmed')
+    fireEvent.click(screen.getByRole('radio', { name: 'profile.no' }))
+    fireEvent.click(save())
+    await waitFor(() => expect(api.recordGuardianCall).toHaveBeenLastCalledWith(7,
+      expect.objectContaining({ consent: false }), { token: 'test-token' }))
+  })
+
+  it('a corrected number is sent in the stored form, with the consent chosen', async () => {
+    const { api } = await open()
+    pick('parent_number_corrected')
     fireEvent.change(screen.getByRole('textbox', { name: 'scholarship.apply.field.parentPhone' }),
       { target: { value: '+60139998888' } })
-    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+    expect(save().disabled).toBe(true)
+    fireEvent.click(screen.getByRole('radio', { name: 'profile.yes' }))
+    fireEvent.click(save())
     await waitFor(() => expect(api.recordGuardianCall).toHaveBeenLastCalledWith(7,
-      expect.objectContaining({ outcome: 'parent_number_corrected', number: '013-999 8888', consent: false }),
+      expect.objectContaining({ outcome: 'parent_number_corrected', number: '013-999 8888', consent: true }),
       { token: 'test-token' }))
+  })
 
-    fireEvent.click(await screen.findByRole('button', { name: 'admin.scholarship.guardianRecordCall' }))
-    fireEvent.change(screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' }),
-      { target: { value: 'could_not_reach' } })
-    expect(screen.queryByRole('checkbox')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+  it('could-not-reach asks no consent and sends the number dialled', async () => {
+    const { api } = await open()
+    pick('could_not_reach')
+    expect(screen.queryByRole('radio')).toBeNull()
+    fireEvent.click(save())
     await waitFor(() => expect(api.recordGuardianCall).toHaveBeenLastCalledWith(7,
-      expect.objectContaining({ outcome: 'could_not_reach', consent: null }), { token: 'test-token' }))
+      expect.objectContaining({ outcome: 'could_not_reach', consent: null, number: '0123456788' }),
+      { token: 'test-token' }))
+  })
+
+  it('a number that changed since the dialog opened is refused in words', async () => {
+    const { api } = await open()
+    api.recordGuardianCall.mockRejectedValue(Object.assign(new Error('stale'), { code: 'called_number_mismatch' }))
+    pick('shared_confirmed')
+    fireEvent.click(screen.getByRole('radio', { name: 'profile.yes' }))
+    fireEvent.click(save())
+    expect((await screen.findByRole('alert')).textContent).toBe('admin.scholarship.guardianCallStale')
+  })
+
+  it('with no parent number on file, only "corrected" and "could not reach" are offered', async () => {
+    const base = flagged()
+    await open({ ...base, guardians: [{ name: 'G', phone: '' }] })
+    const values = Array.from(screen.getByRole('combobox', { name: 'admin.scholarship.guardianRecordCall' })
+      .querySelectorAll('option')).map((o) => (o as HTMLOptionElement).value)
+    expect(values).toEqual(['', 'parent_number_corrected', 'could_not_reach'])
   })
 })

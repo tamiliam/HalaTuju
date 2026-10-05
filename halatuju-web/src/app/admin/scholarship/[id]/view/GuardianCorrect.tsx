@@ -23,6 +23,7 @@ import type { T } from './shared'
 export const GUARDIAN_REFUSAL: Record<string, string> = {
   guardian_phone_invalid: 'scholarship.apply.error.phone',
   guardian_contact_locked: 'admin.scholarship.guardianLocked',
+  called_number_mismatch: 'admin.scholarship.guardianCallStale',
 }
 
 export function GuardianCorrect({ appId, name, phone, t, onDone }: {

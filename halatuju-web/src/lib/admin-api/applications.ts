@@ -407,11 +407,15 @@ export async function getScholarshipApplications(
      *  a real answer, not a missing one. The server re-fences the code on the caller's own
      *  organisation and 404s an unknown one; it is a narrowing, never a fence. */
     programme?: string
+    /** Request #26: `'needed'` lists only students whose parent phone needs a call. Super +
+     *  org_admin only (the server 403s anyone else). */
+    parentCall?: 'needed'
   } = {},
   options?: ApiOptions
 ) {
   const q = new URLSearchParams()
   if (filters.programme) q.set('programme', filters.programme)
+  if (filters.parentCall) q.set('parent_call', filters.parentCall)
   if (filters.status) q.set('status', filters.status)
   if (filters.bucket) q.set('bucket', filters.bucket)
   if (filters.source) q.set('source', filters.source)

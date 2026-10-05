@@ -110,6 +110,14 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(assigned_to__isnull=True)
         elif assigned_f and assigned_f.isdigit():
             qs = qs.filter(assigned_to_id=int(assigned_f))
+        # Request #26, owner ruling B: ?parent_call=needed — the students whose parent phone needs a
+        # call. super + org_admin only (the roles that see the flag and Record call); inside the fence
+        # above, because it narrows `qs` itself. Two queries for the whole set, never one per row.
+        if request.GET.get('parent_call') == 'needed':
+            if not (admin.is_super or admin.role == 'org_admin'):
+                return self._deny_role()
+            from ..parent_call import needing_call_profile_ids
+            qs = qs.filter(profile_id__in=needing_call_profile_ids(qs))
         # TD-162: every row's first-assignment readiness, as one EXISTS column, not one query a row.
         from ..services.queries_sla import with_open_student_tasks
         qs = with_open_student_tasks(qs)

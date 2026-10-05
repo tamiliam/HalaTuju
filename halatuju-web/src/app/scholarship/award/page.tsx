@@ -31,6 +31,10 @@ type GuardianRelationship = typeof GUARDIAN_RELATIONSHIPS[number]
  *  page becomes the SIGNING page: the full agreement body + a student typed-name
  *  signature (adult) + a parent/guardian surety (guarantor) block, all on the
  *  same device, same session. The donor is never named. */
+const REUSED_WORDS: Record<string, string> = {
+  guarantor_phone_changed: 'guarantor_phone_unverified', parent_call_needed: 'no_active_template',
+}
+
 export default function ScholarshipAwardPage() {
   const { t, locale } = useT()
   const { status, token } = useAuth()
@@ -120,9 +124,10 @@ export default function ScholarshipAwardPage() {
       'parent_ic_nric_mismatch', 'parent_ic_name_mismatch',
       'guarantor_phone_missing', 'guarantor_phone_unverified', 'no_active_template',
     ]
-    // Request #26: the number changed after the PIN was checked. Same words as "unverified" (verify
-    // with the PIN again) — a new string would ride on /profile's first load via the catalogue.
-    const key = code === 'guarantor_phone_changed' ? 'guarantor_phone_unverified' : code
+    // Request #26: existing sentences, honestly reused — a new string would ride on /profile's first
+    // load via the catalogue. A number changed after the PIN → verify again; a parent call still
+    // needed (owner ruling A) → the agreement is not ready to sign yet, and we will say when it is.
+    const key = REUSED_WORDS[code] || code
     return known.includes(key)
       ? t(`scholarship.award.error.${key}`)
       : t('scholarship.award.error.generic')
@@ -130,6 +135,7 @@ export default function ScholarshipAwardPage() {
 
   /** Friendly message for a parent-PIN error code; falls back to a generic line. */
   function pinMessage(code: string): string {
+    if (code === 'parent_call_needed') return messageForCode(code)
     const known = [
       'guarantor_phone_missing', 'rate_limited', 'invalid_number',
       'unconfigured', 'incorrect', 'code_required', 'bursary_disabled', 'no_offer',

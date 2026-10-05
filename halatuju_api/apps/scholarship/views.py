@@ -2250,6 +2250,9 @@ class GuarantorPhoneVerifyStartView(APIView):
         if app is None:
             return Response({'error': 'no_offer', 'code': 'no_offer'},
                             status=status.HTTP_403_FORBIDDEN)
+        from .parent_call import refuse_signing_until_called   # request #26, owner ruling A
+        if (waits := refuse_signing_until_called(app)):
+            return Response({'error': waits, 'code': waits}, status=status.HTTP_409_CONFLICT)
         phone = bursary.guarantor_phone_for(app)
         if not phone:
             return Response({'error': 'guarantor_phone_missing', 'code': 'guarantor_phone_missing'},

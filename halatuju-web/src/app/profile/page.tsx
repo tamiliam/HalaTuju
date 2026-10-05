@@ -439,6 +439,7 @@ export default function ProfilePage() {
   }
 
   const saveSection = async () => {
+    postcode.edited()   // a postcode answer landing after Save must not fill unsaved City/State (review 7b)
     const ok = await handleSave()
     // Only leave the editor on a successful save — a validation failure (e.g. a bad
     // household size) keeps the section open so the inline error is visible and the

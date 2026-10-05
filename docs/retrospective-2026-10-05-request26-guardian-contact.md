@@ -172,7 +172,32 @@ room), routes that may cross before the median **1**. Every guard was bite-check
 * Before the hourly release runs after the deploy, expect it to report `held_for_parent_call=[…]`
   for any flagged student whose award is still unemailed — that is the email waiting, not a fault.
 
-## 8. Not covered
+## 8. The owner's final rulings and the record fixes (follow-up 4)
+
+* **Ruling A — signing waits for the call.** Found every sender of the sign invitation by grepping
+  the send function: only `send_sign_invitation_emails` (the signing reminders nudge the witness and
+  Foundation AFTER the guarantor signed, so they do not apply). It now holds a flagged student and
+  arms no accept clock; the PIN send and `sign_agreement` refuse `parent_call_needed`.
+* **Ruling B — the list.** `?parent_call=needed`, super + org_admin, org-fenced, two queries for the
+  whole set (a test pins that adding rows adds no query).
+* **The record fixes the review confirmed.** A call was recorded against whatever number was on file
+  at SAVE, not the one dialled — now the dialog sends what it displayed and a changed number is
+  refused. An untouched consent box recorded "the parent refused" — now an explicit Yes / No with
+  nothing pre-selected. Both made the evidence untrustworthy, which is the one thing it must not be.
+* **Small fixes:** a corrected number takes the name the parent gave; a confirming call needs a
+  number on file; Save, like Cancel, drops a late postcode answer; the note has `common.note`.
+
+Gates: pytest **7899** passed, 3 skipped; jest **3448 / 227**; check-i18n **5420**; tsc and
+makemigrations clean; next build compiled (warm); bundle-budget **ok** — `/profile` 299.538 →
+**299.592 kB** (budget 301), median 228.081 → **228.133 kB**, routes that may cross **1**. Every new
+guard bite-checked. NOT covered by a test: the profile page's Save calling `edited()` (the page has
+no test harness; the hook's `edited()` itself is tested).
+
+Left as known, per the lead: a student with no parent or guardian at all cannot be expressed; one
+organisation's call clears the flag for another when nothing is frozen; one log line per held
+student per hour.
+
+## 9. Not covered
 
 * Malay and Tamil strings are first drafts and need the owner's review.
 * Nothing was exercised against a real Twilio or a real browser; the signing path is mocked at the

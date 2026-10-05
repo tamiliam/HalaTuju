@@ -38,7 +38,7 @@ class Command(BaseCommand):
         if not app_ids:
             self.stdout.write('SIGN_INVITE_APP_IDS not set — nothing sent.')
             return
-        sent, skipped_no_award, failed = [], [], []
+        sent, skipped_no_award, failed, held = [], [], [], []
         for aid in app_ids:
             app = (ScholarshipApplication.objects.filter(id=aid)
                    .select_related('profile').first())
@@ -55,6 +55,11 @@ class Command(BaseCommand):
             if contract_scope.template_for_application(app) is None:
                 failed.append((aid, contract_scope.NO_TEMPLATE))
                 continue
+            # Request #26, owner ruling A: signing waits for the parent call — no invitation, and
+            # NO accept clock armed (the clock is armed only by a sent invitation, below).
+            from apps.scholarship.parent_call import held_for_parent_call
+            if held_for_parent_call(app, held, what='Sign invitation'):
+                continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
             ok = send_sign_invitation_email(
                 to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
@@ -67,4 +72,5 @@ class Command(BaseCommand):
             else:
                 failed.append((aid, 'send_failed'))
         self.stdout.write(
-            f'Sign-invitation emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed}')
+            f'Sign-invitation emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed} '
+            f'held_for_parent_call={held}')

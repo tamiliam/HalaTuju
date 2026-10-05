@@ -41,7 +41,11 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
 - **Recording a call to the parent ("Record call") is super + `org_admin` only (request #26 consent
   framing, 2026-10-05)** — `POST admin/scholarship/applications/<pk>/guardian-call/`, the same
   gate and cross-organisation rule as the correction. A "Parent's number corrected" call also stores
-  the number. A shared phone with no consenting call holds back the award good-news email. `admin`, `qc`, `reviewer`, `finance` and `partner` are refused.
+  the number. A shared phone with no consenting call holds back the award good-news email, the
+  "ready to sign" invitation, the guarantor PIN and the signature itself (owner ruling A).
+- **The "Shared phone — call the parent" filter on Applications is super + `org_admin` only**
+  (`?parent_call=needed`, owner ruling B) — the same roles that see the flag; inside the list's
+  organisation fence. `admin`, `qc`, `reviewer`, `finance` and `partner` are refused.
   Manual: `role-org-admin` § *Correcting a parent's phone number*; FAQ: org_admin.
 - **Last-org-admin protection:** the sole active `org_admin` of a tenant cannot be revoked.
 - **Gift scoping is super + `org_admin` only (S-ASSIGN, 2026-09-04), and it is NARROWER than

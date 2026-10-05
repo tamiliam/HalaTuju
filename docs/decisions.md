@@ -47,6 +47,25 @@ because Vircle is set up first while the organisation is being registered — a 
 arrangement. In the proper order Vircle comes later, so nothing here reads it. (Hence #25 below: her
 parent phone equals her own Vircle phone, which the contact-phone flag cannot see.)
 
+**7. Signing waits for the call (owner ruling A, the same day).** A check AT THE POINT OF SIGNING,
+not a lock — the number stays free to change. While `needs_parent_call` is true: the "ready to sign"
+invitation is held and reported by id, and the accept clock (`arm_sign_deadline`) is NOT armed; the
+guarantor PIN is not sent (409 `parent_call_needed`); and `sign_agreement` refuses with the same
+code — defence in depth for a PIN verified before the flag arose. The award page shows the existing
+"your agreement is not ready to sign yet" sentence. Signing is OFF in production, so nothing changes
+today.
+
+**8. A "needs a parent call" list (owner ruling B).** `?parent_call=needed` on the existing
+Applications list, super + org_admin only (the roles that see the flag and Record call), inside the
+list's own organisation fence, and computed for the whole set in two queries — never one per row.
+
+**9. The record must be true (second review).** A call is recorded against the number the admin was
+SHOWN and dialled: the dialog sends it, and the server refuses it if the parent phone has changed
+since (`called_number_mismatch`), so a call is never recorded against a number nobody dialled.
+Consent is an explicit Yes / No with nothing pre-selected — an untouched box never reads as "the
+parent refused". A confirming call needs a number on file (`no_parent_number`), and a corrected
+number is stored with the name the parent gave on the call.
+
 **Correcting the record:** the entry below said the guarantor's typed name + NRIC matching the
 parent IC is "the stronger" gate. It is not: the student uploaded that IC, so the match proves
 KNOWLEDGE of the parent's details, not the parent's PRESENCE. Neither check proves presence; the

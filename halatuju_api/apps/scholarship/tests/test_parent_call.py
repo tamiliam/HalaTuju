@@ -46,7 +46,7 @@ class TestTheFlag(TestCase):
         self.profile = _shared_student()
         self.app = make_application('recommended', student=self.profile)
 
-    def _call(self, outcome, consent, number=''):
+    def _call(self, outcome, consent, number=SHARED):
         return parent_call.record_call(self.profile, application=self.app, outcome=outcome,
                                        consent=consent, number=number, by_email='o@x.test')
 
@@ -103,6 +103,7 @@ class TestRecordCallEndpoint(TestCase):
     def _post(self, who, **body):
         body.setdefault('outcome', 'shared_confirmed')
         body.setdefault('consent', True)
+        body.setdefault('number', SHARED)   # the number the dialog displayed
         return authed_client(who).post(_call_url(self.app), body, format='json')
 
     def test_super_and_the_organisations_org_admin_may(self):
@@ -191,7 +192,7 @@ class TestTheAwardEmailWaitsForTheCall(TestCase):
         self.award.refresh_from_db()
         self.assertIsNone(self.award.offer_emailed_at)    # unstamped, so the next run retries
         parent_call.record_call(self.profile, application=self.app, outcome='shared_confirmed',
-                                consent=True)
+                                consent=True, number=SHARED)
         self.assertEqual(sponsorship.release_award_offer_emails(held=[]), 1)
 
     @override_settings(BURSARY_AGREEMENT_ENABLED=True)
@@ -228,7 +229,8 @@ class TestRetentionFollowsTheAgreement(TestCase):
     def test_the_trail_survives_the_students_account_deletion(self):
         profile = _shared_student()
         app = make_application('awarded', student=profile)
-        parent_call.record_call(profile, application=app, outcome='shared_confirmed', consent=True)
+        parent_call.record_call(profile, application=app, outcome='shared_confirmed', consent=True,
+                                number=SHARED)
         profile.delete()
         row = GuardianContactChange.objects.get()
         self.assertIsNone(row.profile_id)

@@ -87,6 +87,21 @@ reviewed) and one sentence in the application-complete email (EN + BM).
   - Gates: pytest 7886 passed, 3 skipped; jest 3437 / 226 suites; i18n 5418 keys; tsc and
     makemigrations clean; bundle-budget ok — `/profile` 299.538 kB (budget 301), median 228.081 kB
     (budget 229), 1 route may cross before the median does.
+- **Follow-up 4 — the owner's two rulings and the review's record fixes:**
+  - **Ruling A — signing waits for the call** (a check at signing, not a lock): the "ready to sign"
+    invitation is held and reported, with NO accept clock armed; the guarantor PIN send and
+    `sign_agreement` refuse `parent_call_needed`. The award page reuses "your agreement is not ready
+    to sign yet". Signing is off in production, so nothing changes today.
+  - **Ruling B — a "needs a parent call" list:** a chip on the Applications list
+    (`?parent_call=needed`), super + org_admin only, org-fenced, two queries for the whole set.
+  - **Record fixes:** the dialog sends the number it displayed (a number changed meanwhile is refused
+    and explained); consent is an explicit Yes / No, nothing pre-selected; a confirming call needs a
+    number on file; a corrected number takes the name the parent gave; Save drops a late postcode
+    answer; the note box has its own `common.note`.
+  - **New copy:** `common.note` and one admin sentence, in en/ms/ta (Malay and Tamil first drafts).
+  - Gates: pytest 7899 passed, 3 skipped; jest 3448 / 227; i18n 5420 keys; tsc and makemigrations
+    clean; bundle-budget ok — `/profile` 299.592 kB (budget 301), median 228.133 kB (budget 229),
+    1 route may cross before the median does.
 - Tests: pytest 7826 → 7852 passed after the first commit, 7857 after the follow-up; jest 3378 →
   3391 (219 → 221 suites), 3392 / 222 after the follow-up.
 

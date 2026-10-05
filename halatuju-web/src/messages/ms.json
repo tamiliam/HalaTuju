@@ -33,7 +33,8 @@
     "dismiss": "Tutup",
     "menu": "Menu",
     "unsavedChanges": "Perubahan belum disimpan",
-    "languageLoadFailed": "Kami tidak dapat memuatkan bahasa itu. Sila muat semula halaman dan cuba lagi."
+    "languageLoadFailed": "Kami tidak dapat memuatkan bahasa itu. Sila muat semula halaman dan cuba lagi.",
+    "note": "Nota"
   },
   "header": {
     "myProfile": "Profil Saya",
@@ -4301,6 +4302,7 @@
       "guardianNeedsCall": "Telefon dikongsi — hubungi ibu bapa",
       "guardianRecordCall": "Rekod panggilan",
       "guardianCallConsent": "Ibu bapa dimaklumkan tentang biasiswa dan bersetuju",
+      "guardianCallStale": "Nombor ibu bapa berubah semasa ini dibuka. Tutupnya, semak nombor itu, dan rekod panggilan sekali lagi.",
       "guardianCallOutcome": {
         "shared_confirmed": "Nombor dikongsi — disahkan ibu bapa",
         "parent_number_confirmed": "Nombor ibu bapa sendiri disahkan",
