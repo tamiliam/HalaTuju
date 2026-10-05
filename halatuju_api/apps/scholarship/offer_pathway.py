@@ -53,7 +53,7 @@ def detect_pathway_type(programme: str, institution: str) -> str:
         return 'stpm'
     if has('matrikulasi', 'matriculation'):
         return 'matric'
-    if has('asasi', 'foundation'):
+    if has('asasi', 'asasipintar', 'foundation'):     # ASASIpintar = UKM's branded foundation (#4)
         return 'asasi'
     if has('pismp', 'perguruan'):
         return 'pismp'
