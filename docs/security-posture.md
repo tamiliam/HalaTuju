@@ -16,7 +16,7 @@
 
 | Area | Finding | How it was verified |
 |------|---------|---------------------|
-| **Data isolation — advisory** | User tables (`api_student_profiles`, `saved_courses`, `admission_outcomes`, `generated_reports`, `email_verifications`) enforce own-row access (`auth.uid() = student_id`) **and** carry an explicit "block anonymous users" policy. | `pg_policies` inspection of `using/with_check` expressions |
+| **Data isolation — advisory** | User tables (`api_student_profiles`, `saved_courses`, `admission_outcomes`, `generated_reports`, `email_verifications`) enforce own-row **read** access (`auth.uid() = student_id`) **and** carry an explicit "block anonymous users" policy. **Since 2026-10-05 they are read-only to students through the public key** — see the write-integrity note below. | `pg_policies` inspection of `using/with_check` expressions |
 | **Data isolation — scholarship** | Sensitive tables (`scholarship_applications`, `applicant_documents`, `consents`, `funding_needs`, `interview_sessions`, `semester_results`, sponsor/*) are **RLS deny-all** to the public key; reachable only via Django, which scopes every query to the caller (`filter(pk=pk, profile_id=request.user_id)`) — no IDOR. | Supabase advisor + `views.py`/`views_admin.py` review |
 | **Document privacy** | All 311 ID/income/STR scans are in the **private** `b40-documents` bucket (`public=false`). | `storage.buckets` query |
 | **Master key safety** | The `service_role` key is **not** in the frontend; all three clients use only `NEXT_PUBLIC_SUPABASE_ANON_KEY`. | Read `lib/supabase.ts`, `admin-supabase.ts`, `sponsor-supabase.ts` |
@@ -42,6 +42,14 @@
 **Also shipped with C:** Cloudflare Turnstile captcha (invisible, Managed mode) now gates **every** Supabase Auth entry point — student anonymous sign-in, sponsor/admin sign-in, sign-up, password reset — enforced via the project-wide captcha toggle. Rollout/rollback: `halatuju_api/docs/security/turnstile-rollout.md`.
 
 **Remaining:** nothing on this backlog — all items closed. (Standing recommendation: an independent pen-test before scaling the user base.)
+
+## Write integrity — correction 2026-10-05
+The 2026-06-11 audit checked that a student could not **read** another student's row. It did not check what a student could **write** to their own row. Eight leftover policies let a signed-in student insert, update or delete their own rows in `api_student_profiles`, `admission_outcomes`, `generated_reports` and `saved_courses` directly through the public key — bypassing every rule Django enforces (NRIC verification, income/benefit flags, verification flags, the parent-phone signing freeze). Found by the request #26 adversarial review.
+
+- **Fixed 2026-10-05** (owner ran the SQL): all eight dropped. Remaining policies: the RESTRICTIVE "block anonymous users", own-row SELECT, and service-role full access (role `service_role` only). RLS stays on for all four tables. Nothing legitimate used them — the web app makes zero direct table calls.
+- **Exposure check:** edge logs (retained from 2026-07-07) show **no** direct `/rest/v1/` write by anyone, ever, in that window. The only direct calls were: our own service-key reads from Malaysia (2026-07-08, 07-09), and two outside probes with the public key that got nothing back (2026-07-31 Google Cloud US: 404 + 0 rows; 2026-09-12 netcup DE: 401).
+- **Undo:** `docs/security/2026-10-05-restore-student-write-policies.sql` recreates the eight exactly. Run it only if something breaks.
+- **Re-audit rule:** the policy check in the appendix must now look at `cmd` (INSERT/UPDATE/DELETE), not only `qual`.
 
 ## ⚠️ Caveats (state these to anyone who asks)
 - This is a **static/config audit, not a penetration test.** Before scaling the user base, commission an **independent pen-test** — for government-adjacent PII (B40/NRIC/STR) it's the right assurance layer and it exercises the *running* system in ways a code review can't.

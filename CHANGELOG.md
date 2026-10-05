@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Request #26 — a student (or an admin) can correct the parent/guardian phone - 2026-10-05
 
-Sprint lane (analysis #69 + owner rulings R1–R7). Built locally, **NOT pushed, NOT deployed**.
+Sprint lane (analysis #69 + owner rulings R1–R7). **LIVE 2026-10-05** — pushed `a3f56a44..073cdad3`,
+both builds SUCCESS (api rev `halatuju-api-01104-vbm`, web rev `halatuju-web-00955-p8n`, 100% traffic).
+
+**Security fix found by this request's review (owner ran the SQL 2026-10-05):** eight leftover RLS
+policies let a signed-in student write their own advisory rows (`api_student_profiles`,
+`admission_outcomes`, `generated_reports`, `saved_courses`) straight through the public key, past
+every Django rule. All eight dropped; own-row reads and service-role access unchanged. Edge logs
+from 2026-07-07 show no direct write ever happened. Undo script:
+`docs/security/2026-10-05-restore-student-write-policies.sql`. `docs/security-posture.md` corrected —
+the June audit checked read isolation only.
 **One migration, MIGRATE-FIRST:** `scholarship 0165_guardian_contact_changes` (one new table, RLS +
 service_role policy; the Postgres DDL is in the migration's docstring). No backfill, no data moved,
 no paid call. **New copy:** three strings in en/ms/ta (Malay and Tamil are first drafts, not
