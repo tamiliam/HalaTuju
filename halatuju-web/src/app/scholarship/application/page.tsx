@@ -8,9 +8,8 @@ import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications, getStudentAward, getBursaryAgreement, type ScholarshipApplication, type StudentAward, type BursaryAgreement } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
-import {
-  showsActionCentre, isFundedStatus, soleLiveApplication, liveApplications,
-} from '@/lib/scholarship'
+import { showsActionCentre, isFundedStatus } from '@/lib/scholarship'
+import { applicationScreen } from '@/lib/applicationScreen'
 import InterviewBookingPanel from '@/components/scholarship/LazyInterviewBookingPanel'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -28,8 +27,10 @@ export default function ScholarshipApplicationPage() {
   const { status, token, profile } = useAuth()
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication | null>(null)
-  // >1 live application: the screen refuses to pick one (M4 adds the chooser).
-  const [liveCount, setLiveCount] = useState(0)
+  // >1 application with no single one to show: the screen refuses to pick (M4 adds the chooser).
+  const [severalCount, setSeveralCount] = useState(0)
+  // No live or submitted application, only finished ones (rejected / withdrawn / closed …).
+  const [finished, setFinished] = useState(false)
   const [award, setAward] = useState<StudentAward | null>(null)
   // Gates the award/onboarding panel. Default false: the accept→onboarding flow
   // isn't exposed yet (students are invited by a later email), so the panel stays
@@ -49,10 +50,13 @@ export default function ScholarshipApplicationPage() {
       .then((res) => {
         if (!active) return
         // Not `applications[0]`: position is not an answer to "which application is this".
-        // `soleLiveApplication` returns null when there is more than one, so this screen shows
-        // nothing rather than silently showing one of them and hiding the other.
-        setApp(soleLiveApplication(res.applications))
-        setLiveCount(liveApplications(res.applications).length)
+        // `applicationScreen` shows nothing rather than one of several, and — the same rule the
+        // apply form sends students here by — never answers "you haven't applied" to a student
+        // the form turned away (a lone `submitted`, or only finished ones).
+        const screen = applicationScreen(res.applications)
+        setApp(screen.kind === 'one' || screen.kind === 'finished' ? screen.app : null)
+        setFinished(screen.kind === 'finished')
+        setSeveralCount(screen.kind === 'several' ? screen.count : 0)
       })
       .catch(() => { if (active) setApp(null) })
       .finally(() => { if (active) setLoading(false) })
@@ -89,7 +93,14 @@ export default function ScholarshipApplicationPage() {
       <div className="flex min-h-screen flex-col">
         <AppHeader />
         <main className={`container mx-auto w-full flex-1 px-6 py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
-          <h1 className="mb-6 text-2xl font-bold text-ground-900">{t('scholarship.application.title')}</h1>
+          <h1 className={`${app?.cohort_name ? 'mb-1' : 'mb-6'} text-2xl font-bold text-ground-900`}>{t('scholarship.application.title')}</h1>
+          {/* Which gift (round) this application is for — served on the application itself. */}
+          {app?.cohort_name && (
+            <p className="mb-6 text-sm text-ground-500" data-testid="application-gift-line">
+              {t('scholarship.application.giftLabel')}{' '}
+              <span className="font-medium text-ground-700">{app.cohort_name}</span>
+            </p>
+          )}
           {awardPanel()}
           {bursaryPanel()}
           {children}
@@ -205,20 +216,35 @@ export default function ScholarshipApplicationPage() {
     return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
   }
 
-  // More than one live application and no way yet to say which this screen is about. Showing
+  // More than one application and no way yet to say which this screen is about. Showing
   // one of them would be the same guess the backend just stopped making, so it says so plainly
   // instead. The chooser is M4 of the multi-programme roadmap; until then this is honest rather
   // than convenient, and it is unreachable while one programme runs.
-  if (!app && liveCount > 1) {
+  if (!app && severalCount > 1) {
     return wrap(
       <div className="rounded-2xl border bg-ground-0 p-6 text-center shadow-sm">
         <p className="mb-2 font-semibold text-ground-900">
           {t('scholarship.application.multiple.title')}
         </p>
         <p className="text-ground-700">
-          {t('scholarship.application.multiple.body', { count: String(liveCount) })}
+          {t('scholarship.application.multiple.body', { count: String(severalCount) })}
         </p>
       </div>
+    )
+  }
+
+  // Only finished applications (rejected / withdrawn / closed …), none live or submitted. Neutral on
+  // purpose: no raw status word, nothing celebratory or harsh — the decision went by email. The
+  // "received" card below would be untrue here ("you'll receive our decision").
+  if (finished) {
+    return wrap(
+      <>
+        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+          <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.finishedTitle')}</h2>
+          <p className="text-ground-700">{t('scholarship.application.finishedBody')}</p>
+        </div>
+        {nav({ email: false })}
+      </>,
     )
   }
 
@@ -274,8 +300,9 @@ export default function ScholarshipApplicationPage() {
   // perceive it), so it renders the Action Centre above, never a celebratory card.
   // Real good news reaches the student only via a concrete award offer (awardPanel).
 
-  // submitted / profile_complete / rejected / withdrawn — keep it neutral (the
-  // decision email is sent separately; we don't expose a raw "rejected" status here).
+  // `submitted` — the only status that reaches here (live ones are handled above; rejected /
+  // withdrawn / closed get the "closed" card). Keep it neutral: the decision email is sent
+  // separately, and a masked rejection still reads as the stage it was declined from.
   // "What happens next" lives HERE (post-submit), where it actually applies.
   return wrap(
     <>

@@ -1088,7 +1088,9 @@
       },
       "chooseTitle": "Program manakah yang anda mohon?",
       "chooseBody": "Lebih daripada satu program dibuka sekarang, jadi sila beritahu kami yang mana satu sebelum anda mula.",
-      "chooseCta": "Teruskan"
+      "chooseCta": "Teruskan",
+      "applyingTo": "Anda sedang memohon untuk:",
+      "changeGift": "Tukar"
     },
     "nextSteps": {
       "title": "Anda telah disenarai pendek!",
@@ -1886,6 +1888,9 @@
       "emailNote": "Kami akan menghantar sebarang kemas kini tentang permohonan anda ke {email}. Sila semak peti masuk itu (termasuk folder spam) dari semasa ke semasa.",
       "browseCta": "Lihat kursus sementara menunggu",
       "homeCta": "Kembali ke utama",
+      "giftLabel": "Program:",
+      "finishedTitle": "Permohonan ini telah ditutup",
+      "finishedBody": "Sebarang makluman tentang permohonan ini telah dihantar ke e-mel anda. Jika anda ada pertanyaan, sila hubungi kami.",
       "interview": {
         "title": "Temu duga anda",
         "pickIntro": "Penemu duga anda telah mencadangkan masa berikut. Pilih yang sesuai untuk anda — ia panggilan video ringkas (kira-kira {minutes} minit).",

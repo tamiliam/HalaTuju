@@ -185,24 +185,23 @@ class ScholarshipIntakeView(APIView):
         try:
             cohort = resolve_open_cohort(programme_code=programme_code)
         except AmbiguousOpenCohort:
-            # Applications ARE open; nothing here can say which round, so name none — and offer
-            # the choice instead of leaving the student to discover the problem at submit.
-            # ⚠ NO COPY HERE ON PURPOSE: nobody has chosen a gift yet, so there is no gift whose
-            # words these would be. The page is showing the chooser; it re-reads once picked.
-            return Response({
-                'open': True,
-                'cohort_name': '',
-                'choices': _open_round_choices(),
-                'apply_copy': {},
-            })
+            # Applications ARE open but nothing says which round: name none, offer the choice.
+            # ⚠ NO COPY/CODE ON PURPOSE — no gift is chosen yet; the page re-reads once picked.
+            return Response({'open': True, 'cohort_name': '', 'programme_code': '',
+                             'choices': _open_round_choices(), 'apply_copy': {}})
 
         # No code + exactly one open round → that round's gift owns the page the student is on.
         if not copy and cohort is not None and cohort.programme_id:
             copy = apply_copy.for_wire(cohort.programme)
 
+        # ⚠ `programme_code` is the CANONICAL code of the round `cohort_name` names (an alias or a
+        # bare visit resolves to it), so the form submits the gift it showed — a round that closes
+        # mid-form is then refused at submit, never silently re-routed. ('' if it could not route.)
+        p = cohort.programme if cohort and cohort.programme_id else None
         return Response({
             'open': cohort is not None,
             'cohort_name': cohort.name if cohort else '',
+            'programme_code': p.code if p and p.is_active else '',
             'choices': [],
             'apply_copy': copy,
         })

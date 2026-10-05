@@ -169,16 +169,18 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
     def test_one_open_round_still_names_it(self):
         resp = self.client.get('/api/v1/scholarship/intake/')
         self.assertEqual(resp.status_code, 200)
+        # (`programme_code` is '' — this fixture's cohort has no programme to route by.)
         self.assertEqual(resp.json(),
-                         {'open': True, 'cohort_name': 'Cohort a-2026', 'choices': [],
-                          'apply_copy': {}})
+                         {'open': True, 'cohort_name': 'Cohort a-2026', 'programme_code': '',
+                          'choices': [], 'apply_copy': {}})
 
     def test_a_closed_intake_still_reads_closed(self):
         self.cohort_a.is_open = False
         self.cohort_a.save(update_fields=['is_open'])
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/').json(),
-            {'open': False, 'cohort_name': '', 'choices': [], 'apply_copy': {}},
+            {'open': False, 'cohort_name': '', 'programme_code': '', 'choices': [],
+             'apply_copy': {}},
         )
 
     def test_two_open_rounds_stay_OPEN_but_name_neither(self):
@@ -342,8 +344,8 @@ class TestApplyLinkEndToEnd(TestCase):
     def test_intake_status_answers_for_the_named_programme_only(self):
         body = self.client.get('/api/v1/scholarship/intake/?programme=tenant-b-bursary').json()
         self.assertEqual(body,
-                         {'open': True, 'cohort_name': 'Cohort b-2026', 'choices': [],
-                          'apply_copy': {}})
+                         {'open': True, 'cohort_name': 'Cohort b-2026',
+                          'programme_code': 'tenant-b-bursary', 'choices': [], 'apply_copy': {}})
 
     def test_intake_status_hides_whether_an_unknown_programme_exists(self):
         """Public and unauthenticated — 'closed' rather than 404, or anyone could enumerate
@@ -355,8 +357,64 @@ class TestApplyLinkEndToEnd(TestCase):
         """
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/?programme=nope').json(),
-            {'open': False, 'cohort_name': '', 'choices': [], 'apply_copy': {}},
+            {'open': False, 'cohort_name': '', 'programme_code': '', 'choices': [],
+             'apply_copy': {}},
         )
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
+class TestIntakeHandsBackTheCodeItResolved(TestCase):
+    """`programme_code` on the intake answer (apply gift clarity, 2026-10-05).
+
+    The apply form names the round from `cohort_name`. On a bare visit with one gift open it used
+    to submit NO code — so if that round closed and another opened while she typed, the server
+    filed her under the other gift, silently. The form now submits the code the shown name was
+    resolved from, and a closed gift is refused at submit instead of re-routed.
+    """
+
+    def setUp(self):
+        from apps.scholarship.models import ProgrammeCodeAlias
+        self.client = APIClient()
+        self.org_a, self.org_b = _org('tenant-a'), _org('tenant-b')
+        self.prog_a = _programme(self.org_a, 'tenant-a-bursary')
+        self.cohort_a = _cohort(self.org_a, 'a-2026')
+        self.cohort_a.programme = self.prog_a
+        self.cohort_a.save(update_fields=['programme'])
+        ProgrammeCodeAlias.objects.create(programme=self.prog_a, code='tenant-a-old')
+
+    def _get(self, qs=''):
+        return self.client.get(f'/api/v1/scholarship/intake/{qs}').json()
+
+    def test_a_bare_visit_with_one_gift_open_gets_that_gifts_code(self):
+        self.assertEqual(self._get()['programme_code'], 'tenant-a-bursary')
+
+    def test_a_coded_visit_gets_the_canonical_code(self):
+        self.assertEqual(self._get('?programme=tenant-a-bursary')['programme_code'],
+                         'tenant-a-bursary')
+
+    def test_a_retired_alias_is_answered_with_the_LIVE_code(self):
+        body = self._get('?programme=tenant-a-old')
+        self.assertTrue(body['open'])
+        self.assertEqual(body['programme_code'], 'tenant-a-bursary')
+
+    def test_ambiguous_names_no_code(self):
+        prog_b = _programme(self.org_b, 'tenant-b-bursary')
+        cohort_b = _cohort(self.org_b, 'b-2026')
+        cohort_b.programme = prog_b
+        cohort_b.save(update_fields=['programme'])
+        body = self._get()
+        self.assertTrue(body['open'])
+        self.assertEqual(body['programme_code'], '')
+        self.assertEqual(len(body['choices']), 2)
+
+    def test_a_closed_gift_names_no_code(self):
+        self.cohort_a.is_open = False
+        self.cohort_a.save(update_fields=['is_open'])
+        self.assertEqual(self._get()['programme_code'], '')
+        self.assertEqual(self._get('?programme=tenant-a-bursary')['programme_code'], '')
+
+    def test_an_unknown_code_names_no_code(self):
+        self.assertEqual(self._get('?programme=nope')['programme_code'], '')
 
 
 class TestARetiredCodeStillReachesItsGift(TestCase):

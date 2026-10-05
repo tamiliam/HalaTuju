@@ -41,6 +41,9 @@ export async function apiRequest<T>(
     // Carry the backend error code (e.g. 'doc_limit_reached') so callers can
     // map it to a localised message.
     ;(err as Error & { code?: string }).code = error.error || error.code || ''
+    // The body's own `code`, unmerged: `code` above prefers `error`, which on e.g. the 409
+    // `programme_required` is the human sentence, not the machine code.
+    ;(err as Error & { bodyCode?: string }).bodyCode = error.code || ''
     // Carry DRF field-level validation errors (400) — e.g.
     // { parents_occupation: ["Ensure this field has no more than 5000 characters."] }
     // so callers can tell the student WHICH answer to fix, not just "save failed".

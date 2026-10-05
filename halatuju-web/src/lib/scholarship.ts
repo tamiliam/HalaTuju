@@ -690,34 +690,20 @@ export function declarationNameMismatch(form: ApplyFormState): boolean {
 // sessionStorage keys are constants (not string literals) to avoid drift.
 export const APPLY_STASH_KEY = 'halatuju_apply_stash'
 // The return marker and the storage seam live in the leaf `./applyReturn` (TD-057).
-export { APPLY_RETURN_KEY, hasApplyReturn, clearApplyReturn } from './applyReturn'
+export { APPLY_RETURN_KEY, hasApplyReturn, clearApplyReturn, APPLY_PROGRAMME_KEY } from './applyReturn'
+
+// The apply form's gift code (`?p=`) helpers live in the leaf `./applyProgramme` (2026-10-05).
 
 /**
- * The programme an organisation's own apply link names (PF-1 P2).
- *
- * `/scholarship/apply?p=<programme-code>` — a PROGRAMME code, never a cohort code: a cohort is
- * year-specific (`b40-2026`), so a link pinned to one would rot every intake, whereas a
- * programme never lapses. The backend refuses to guess when more than one round is open, so
- * this value is what tells it which organisation the student is applying to.
- *
- * Stored in sessionStorage because the apply flow can detour through onboarding to edit
- * results, and the student returns via a bare `/scholarship/apply` with no query string. The
- * form is already stashed across that detour; the programme has to survive it too, or a student
- * who edits their grades silently loses the organisation they came in for.
- */
-
-/**
- * The caller's ONE live application, or null when that question has no single answer.
+ * The LIVE applications — the first thing `applicationScreen` (applicationScreen.ts) looks at to
+ * decide which application the student's screen is about.
  *
  * The application screen used to take `applications[0]` — the same "assume one" shape the
  * backend carried in `_current_application`, and the same shape PF-1 fixed in
  * `resolve_open_cohort`. It is not a tie-break; it is a guess about which programme the student
- * is looking at, and with two live applications it silently shows one and hides the other.
- *
- * Returns `null` for BOTH "none" and "more than one", because a screen that cannot say which
- * application it is showing must not show one. The caller distinguishes the two with
- * `liveApplications().length` and renders an honest state — the chooser itself is M4 of
- * `docs/plans/2026-07-28-multi-programme-applications-roadmap.md`.
+ * is looking at, and with two live applications it silently shows one and hides the other. A
+ * screen that cannot say which application it is showing must not show one — the chooser itself
+ * is M4 of `docs/plans/2026-07-28-multi-programme-applications-roadmap.md`.
  *
  * Live means the editable funnel plus the funded post-award states, mirroring the backend's
  * `POST_SHORTLIST_EDITABLE + _FUNDED_STATES`. ⚠ KEEP-IN-SYNC PAIR — if a status is added there,
@@ -733,67 +719,6 @@ export const LIVE_APPLICATION_STATES = [
 export function liveApplications<T extends { status: string }>(apps: readonly T[]): T[] {
   return apps.filter((a) => (LIVE_APPLICATION_STATES as readonly string[]).includes(a.status))
 }
-
-/** The single live application, or null when there is none — or more than one. */
-export function soleLiveApplication<T extends { status: string }>(apps: readonly T[]): T | null {
-  const live = liveApplications(apps)
-  return live.length === 1 ? live[0] : null
-}
-
-export const APPLY_PROGRAMME_KEY = 'halatuju_apply_programme'
-
-/** Read the code from a URL, remember it, and return the one in force (URL wins over stored). */
-export function rememberApplyProgramme(
-  search: string | null | undefined,
-  storage?: StorageLike,
-): string {
-  const s = storage ?? safeSession()
-  const fromUrl = (new URLSearchParams(search ?? '').get('p') ?? '').trim()
-  if (fromUrl) {
-    s?.setItem(APPLY_PROGRAMME_KEY, fromUrl)
-    return fromUrl
-  }
-  return (s?.getItem(APPLY_PROGRAMME_KEY) ?? '').trim()
-}
-
-/** Remember a code the student CHOSE, through the same seam as one they arrived with.
- *
- *  ⚠ SAME KEY ON PURPOSE. A pick from the chooser and a follow of an organisation's own `?p=`
- *  link must be indistinguishable from here on — submit reads one value and neither the payload
- *  nor the backend has any idea which way it was set, so there is exactly one routing path to be
- *  right about.
- */
-export function setApplyProgramme(code: string, storage?: StorageLike): void {
-  const s = storage ?? safeSession()
-  const clean = (code ?? '').trim()
-  if (clean) s?.setItem(APPLY_PROGRAMME_KEY, clean)
-}
-
-/** Forget it once the application is submitted — a later visit is a fresh decision. */
-export function clearApplyProgramme(storage?: StorageLike): void {
-  const s = storage ?? safeSession()
-  s?.removeItem(APPLY_PROGRAMME_KEY)
-}
-
-/** Must this student be ASKED which programme they mean, before they fill anything in?
- *
- *  ⚠ THE WHOLE POINT IS THE TIMING. `resolve_open_cohort` refuses to guess between two open
- *  rounds — correctly; guessing once filed a student under the wrong foundation, funded from the
- *  wrong money, with no error anywhere. But that refusal used to arrive as a 409 AT SUBMIT, after
- *  the entire form was filled in. This is the same refusal, moved to before the first keystroke.
- *
- *  Yes only when BOTH are true: nothing is remembered (no `?p=`, no earlier pick) AND the server
- *  actually offered a choice. One open round, or a link that named a programme, asks nothing —
- *  which is every visitor today and stays the common case.
- */
-export function needsProgrammeChoice(
-  remembered: string,
-  choices: readonly { code: string }[] | undefined,
-): boolean {
-  return !remembered.trim() && (choices?.length ?? 0) > 1
-}
-
-
 
 /** Stash the in-progress form and mark that onboarding should return to the apply page. */
 export function stashApplyForm(form: ApplyFormState, storage?: StorageLike): void {

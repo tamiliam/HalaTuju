@@ -1,5 +1,6 @@
 /**
- * The apply form's "edit results" RETURN marker, and the sessionStorage seam it rides on.
+ * The apply form's "edit results" RETURN marker, the gift-code key, and the sessionStorage seam
+ * they ride on.
  *
  * A LEAF on purpose (TD-057, 2026-10-01): the dashboard clears this marker on every visit, and
  * importing it through `@/lib/scholarship` cost `/dashboard` ~6 kB of first-load JS for one
@@ -32,3 +33,8 @@ export function clearApplyReturn(storage?: StorageLike): void {
   const s = storage ?? safeSession()
   s?.removeItem(APPLY_RETURN_KEY)
 }
+
+/** The gift (programme code) the apply page is open for — written on arrival from `?p=` or a pick
+ *  in the chooser, cleared on a bare arrival and on submit. See `enterApplyPage` in scholarship.ts. */
+export const APPLY_PROGRAMME_KEY = 'halatuju_apply_programme'
+// (The way back to the form WITH that gift, `applyPagePath`, is its own leaf: ./applyPagePath.)

@@ -102,6 +102,29 @@ count when the email is what was lost?) and both are one edit to
 2026-09-18: of 674 profiles carrying an IC, 70 have a verified contact, so this returns `[]` for
 nine accounts in ten and the honest answer is `channels: []` and a route to a human.
 
+### The apply link, the intake answer and the student's two application pages — 2026-10-05
+
+The current state of PF-1 (the apply link) and M1 (the application screen); the history is in the
+superseded Next Sprint sections below and in `docs/decisions.md` (2026-07-28, 2026-10-05).
+
+* **`GET /api/v1/scholarship/intake/?programme=<code>`** (public, `ScholarshipIntakeView`) answers
+  `{open, cohort_name, programme_code, choices, apply_copy}`. `programme_code` is the CANONICAL code of
+  the round `cohort_name` names (an alias resolves to the live code); `''` when ambiguous, closed,
+  unknown, or the programme is inactive. `choices` is filled only when several rounds are open and
+  nothing named one. Tests: `apps/scholarship/tests/test_open_cohort_scope.py`.
+* **The apply form submits the SERVED code** (`halatuju-web/src/lib/useApplyGift.ts`), so the code
+  sent is the one the shown name came from: a round that closes mid-form is refused at submit, never
+  re-routed. A 409 `programme_required` re-asks which gift.
+* **A bare `/scholarship/apply` asks afresh.** `enterApplyPage` (`src/lib/applyProgramme.ts`) forgets a
+  stored code when the URL has no `?p=`; the My Results detour and the sign-in gate come back through
+  `applyPagePath()` (`src/lib/applyPagePath.ts`), which puts `?p=` back in the URL.
+* **One rule for `/scholarship/apply` and `/scholarship/application`:** `src/lib/applyGate.ts`
+  (`mustLeaveApplyPage` — any application not `expired`, in ANY round) and
+  `src/lib/applicationScreen.ts` (one live → it; several → "more than one"; none live → the single
+  submitted one, or the "closed" card for only rejected / withdrawn / closed). ⚠ The web is
+  deliberately stricter than the server's per-round duplicate check until M2 is approved (TD-337).
+  `studentScreenDrift.test.ts` pins the status list against `views.py`, not the scope.
+
 ## Deployment
 
 | Component | Platform | Region | Service |

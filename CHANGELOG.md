@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## Apply gift clarity — the apply/application loop is gone, and the form says which gift it is for - 2026-10-05
+
+Sprint. Built locally, NOT deployed. WEB, plus ONE api field (`programme_code` on the public intake
+answer — added after the adversarial review; the plan said web only). No migration, no new package,
+no paid call. Two gifts are open in production at once; every item below is reachable today.
+
+**Fixed**
+- **"You haven't applied yet" for a student who had.** Live since the M1 change of 2026-07-28:
+  `/scholarship/apply` sent away anyone with ANY application (`applications[0]`), while
+  `/scholarship/application` showed only a LIVE one (shortlisted and later). A student whose only
+  application was `submitted` — every new applicant — read "You haven't applied yet", pressed "Start
+  your application", and was bounced straight back. The "received" card meant for her could not be
+  reached. Both pages now read one rule (`lib/applyGate.ts` + `lib/applicationScreen.ts`), and a
+  test asserts, over every status and every pair, that the form sends her away EXACTLY when the
+  screen is not "you haven't applied". An `expired` application no longer bounces her: she may
+  start again, as the server allows.
+- **The wrong words after a chooser pick.** Picking a gift on a bare `/scholarship/apply` kept the
+  PLATFORM heading and criteria. The pick now goes into the URL (`?p=<code>`, `router.replace`) and
+  the intake is asked again for that gift — its own copy, and its closed bounce.
+- **A stale remembered gift.** A bare visit silently reused a code an earlier visit in the tab had
+  stored, skipping the question. A bare arrival now forgets it and asks; the two legitimate round
+  trips (the My Results detour and the sign-in gate, `/auth/callback` included) come back carrying
+  `?p=` (`lib/applyPagePath.ts`).
+- **The form never named the gift.** One line: "You are applying to: <round>", from the intake's
+  `cohort_name`, with "Change" (back to the chooser, typed answers kept) only when another gift is
+  open. The application page names the round under its title (`cohort_name`, already served).
+
+**Added**
+- **A neutral "This application is closed" card** for a student whose applications are only
+  rejected / withdrawn / closed — the "received" card ("you'll receive our decision") was untrue for
+  her. No raw status word. Two or more `submitted` keep the "more than one" message.
+- **`programme_code` on `GET /api/v1/scholarship/intake/`** — the canonical code of the round
+  `cohort_name` names (an alias resolves to the live code); `''` when ambiguous, closed, unknown or the
+  programme is inactive. The form SUBMITS that code, so a round that closes while she types is
+  refused at submit instead of being re-routed to the other open gift. An older api (no field) works
+  as before.
+- **A 409 `programme_required` at submit re-asks** which gift (chooser, typed answers kept) instead
+  of a dead-end error. `apiRequest` errors now carry the body's own code as `bodyCode`.
+- **Three lazy boundaries on `/scholarship/apply`** — the gift chooser, the PISMP school-type picker
+  and the matriculation college list load only when reached, each with an in-place failure message.
+  Gift helpers moved out of `lib/scholarship.ts` into leaves (`applyProgramme.ts`, `applyGate.ts`).
+- New strings in en/ms/ta: `scholarship.apply.applyingTo`, `.changeGift`,
+  `scholarship.application.giftLabel`, `.finishedTitle`, `.finishedBody`. **ms/ta are first drafts.**
+
+**Numbers.** jest 220 suites / 3390 → **230 / 3634**; api **7832 passed, 3 skipped** (full suite);
+typecheck clean; lint 0 errors. First-load JS (exact): `/scholarship/apply` **271.372 kB** (budget
+272), `/scholarship/application` **273.595** (274), `/profile` **309.925** (310), median **227.836**
+(229). Files: `apply/page.tsx` 1146 → 1070, `lib/scholarship.ts` 1315 → 1240 (both `oversize_files`
+budget lines lowered), `views.py` 2436 → 2435. Bite-checked: five guards, each red under its fault.
+Debt raised: TD-337 to TD-346 (TD-337 is an owner decision). Retrospective:
+`docs/retrospective-2026-10-05-apply-gift-clarity.md`.
+
 ## Requests: the analysis says what state it is in, and what comes next (owner, off #26/#30) - 2026-10-05
 
 Small-change lane. WEB ONLY — no api change, no migration, no paid call. Owner picks 1A, 2A, 3A-i.

@@ -1,5 +1,54 @@
 # Architectural Decisions — HalaTuju
 
+## Apply gift clarity: one rule for the two student pages, the URL names the gift, the form submits what it showed — 2026-10-05
+
+**1. `/scholarship/apply` and `/scholarship/application` read ONE rule, and the web is deliberately
+STRICTER than the server.** `mustLeaveApplyPage` (`lib/applyGate.ts`) sends a student away from the
+form iff she holds any application not `expired`; `applicationScreen` (`lib/applicationScreen.ts`)
+never answers "you haven't applied" to her. A test asserts the pair over every status and every pair
+of statuses. The STATUS list matches the server's duplicate check (`.exclude(status='expired')`, pinned
+by `studentScreenDrift.test.ts`); the SCOPE does not, on purpose: the server refuses a duplicate PER
+ROUND (`filter(cohort=cohort, profile=profile)`), the web refuses on any standing application in ANY
+round — one application per student until applying to several programmes (M2–M4 of
+`docs/plans/2026-07-28-multi-programme-applications-roadmap.md`) is approved. The cost is real and
+accepted until then: a student rejected, withdrawn or closed in an old round cannot start one in a
+new round or gift from the form (TD-337, owner decision). Round 1 of this sprint called the web rule a
+mirror of the server's; it is not, and the comments and the drift test now say only what is true.
+
+**2. A bare arrival FORGETS the stored gift; the two round trips carry `?p=`.** `enterApplyPage`
+(`lib/applyProgramme.ts`) stores the URL's code or, with none, clears it — so the chooser asks rather
+than reusing a code from an earlier visit in the tab. The My Results detour and the sign-in gate
+(`/auth/callback` after Google included) return through `applyPagePath()`, which puts the code back in
+the URL; a pick in the chooser is `router.replace('/scholarship/apply?p=<code>')`, so a refresh keeps
+it. A query parameter over a persistent flag, the project's standing preference: the address bar is
+the one state everyone can see, and a flag that survives the visit it belonged to is how the stale
+gift arose. The rejected alternative — keep reusing storage and add an exception list — keeps the
+silent reuse and only narrows it.
+
+**3. The intake answer serves `programme_code`, and the form submits the SERVED code.** The canonical
+code of the round `cohort_name` names (an alias resolves to the live code); `''` when ambiguous,
+closed, unknown, or the programme is inactive (a coded submit would then fail where a bare one works).
+`useApplyGift` submits it when present, else the URL's code, so the code sent is always the one the
+shown name was resolved from: a round that closes while she types is REFUSED at submit, never
+re-routed to the other open gift. **The plan said "web only".** The adversarial review's first finding
+(bare visit, one gift open, no code sent → the server re-resolves at submit) could not be closed in
+the web alone — the client cannot learn the code of a round it did not name — so this ONE public
+field was added; nothing else on the server changed. It leaks nothing new: the code is what `?p=`
+already carries and what `choices` already lists.
+
+**4. Rejected / withdrawn / closed get a neutral "This application is closed" card, not the
+"received" card.** "Received … you'll receive our decision by email" is untrue once the decision is
+made. The new card names no status (no raw "rejected"), is neither celebratory nor harsh, says any
+update went by email and to contact us, and keeps the onward links. A masked rejection (the decline
+cool-off) still reads as the stage it was declined from, so it never reaches this card early.
+
+**5. M1 stands — "the application screen shows nothing rather than one of several" (2026-07-28) —
+now counting `submitted` ones when none is live.** One live → it. Two or more live → the "more than
+one" message. None live: exactly one `submitted` → it; two or more `submitted` → the message; none
+submitted → the closed card (naming no gift when there are several). `soleLiveApplication`, which
+the M1 entry names, is folded into `applicationScreen`; the decision itself is unchanged and
+position is still never an answer. The message's "open" wording is now loose (TD-346).
+
 ## Later-tier batch 1: a refused figure is never green, a mixed capture says so, logs carry severity, and malformed genuineness is no signal — 2026-10-03
 
 **1. A figure the income engine refuses is served as refused, and the cockpit's chip reads that (TD-323).**

@@ -9,8 +9,9 @@
  * Newly reachable at all because the owner's per-gift ruling (2026-09-06) lets one organisation
  * run two open rounds; until then two open rounds meant two tenants.
  */
-import { needsProgrammeChoice, setApplyProgramme, rememberApplyProgramme, APPLY_PROGRAMME_KEY }
-  from '@/lib/scholarship'
+import { needsProgrammeChoice, setApplyProgramme, enterApplyPage } from '@/lib/applyProgramme'
+import { APPLY_PROGRAMME_KEY } from '@/lib/scholarship'
+import { applyPagePath } from '@/lib/applyPagePath'
 
 const store = () => {
   const m = new Map<string, string>()
@@ -52,7 +53,8 @@ describe('a chosen programme travels the same road as a linked one', () => {
     const s = store()
     setApplyProgramme('sabah', s)
     expect(s.getItem(APPLY_PROGRAMME_KEY)).toBe('sabah')
-    expect(rememberApplyProgramme('', s)).toBe('sabah')
+    // …and comes back through the same `?p=` a link arrives on, after a detour or a sign-in.
+    expect(applyPagePath(s)).toBe('/scholarship/apply?p=sabah')
   })
 
   it('a URL that names a programme still WINS over an earlier pick', () => {
@@ -60,7 +62,14 @@ describe('a chosen programme travels the same road as a linked one', () => {
     // own address — and a stale pick from an abandoned visit must not override it.
     const s = store()
     setApplyProgramme('sabah', s)
-    expect(rememberApplyProgramme('?p=brightpath-flagship', s)).toBe('brightpath-flagship')
+    expect(enterApplyPage('?p=brightpath-flagship', s)).toBe('brightpath-flagship')
+  })
+
+  it('⚠ a later BARE visit does not reuse an earlier pick — the chooser asks again', () => {
+    const s = store()
+    setApplyProgramme('sabah', s)
+    expect(enterApplyPage('', s)).toBe('')
+    expect(needsProgrammeChoice(enterApplyPage('', s), [{ code: 'sabah' }, { code: 'bp' }])).toBe(true)
   })
 
   it('stores nothing for a blank pick, rather than an empty answer', () => {

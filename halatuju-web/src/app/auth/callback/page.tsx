@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
 import { KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
+import { applyPagePath } from '@/lib/applyPagePath'
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -22,7 +23,9 @@ export default function AuthCallback() {
       const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
       if (pending) {
         const reason = JSON.parse(pending)?.reason
-        if (reason === 'apply') dest = '/scholarship/apply'
+        // The gift's code survives the Google round trip in sessionStorage (same tab); it rides
+        // back in the URL because a bare /scholarship/apply now asks afresh.
+        if (reason === 'apply') dest = applyPagePath()
         else if (reason === 'quiz') dest = '/quiz'
       }
     } catch { /* ignore malformed pending action */ }

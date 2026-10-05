@@ -11,6 +11,7 @@ import ProgressStepper from '@/components/ProgressStepper'
 import SchoolSelect from '@/components/SchoolSelect'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
+import { applyPagePath } from '@/lib/applyPagePath'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -188,10 +189,11 @@ export default function ProfileInputPage() {
     }
 
     // Returning from the apply form's "edit results" detour → back to the apply
-    // page (which restores the stashed edits and shows the updated results).
+    // page (which restores the stashed edits and shows the updated results) —
+    // carrying the gift's `?p=`, since a bare arrival there now asks afresh.
     if (returning) {
       clearApplyReturn()
-      router.push('/scholarship/apply')
+      router.push(applyPagePath())
       return
     }
     router.push('/dashboard')

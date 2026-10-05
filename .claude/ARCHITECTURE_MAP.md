@@ -633,6 +633,18 @@ in `lib/api.ts`. Sprint 5b added `components/Scholarship{Documents,Referee,Conse
 upload + referee + consent flow with guardian fields for minors) as next-steps steps 4–6, plus the
 document/referee/consent client functions in `lib/api.ts`.
 
+**Apply gift clarity (2026-10-05) — which gift, and which application.** `src/lib/useApplyGift.ts`
+(the apply form's gift: reads `?p=`, re-asks `intake/` when it changes, submits the SERVED
+`programme_code`, chooser pick / "Change" via `router.replace`); `src/lib/applyProgramme.ts`
+(`enterApplyPage` — a bare arrival forgets the stored code — `setApplyProgramme`,
+`clearApplyProgramme`, `needsProgrammeChoice`, moved out of `scholarship.ts`);
+`src/lib/applyPagePath.ts` (the way back to the form WITH `?p=`, for the My Results detour, the sign-in
+gate and `/auth/callback`); `src/lib/applyGate.ts` (`mustLeaveApplyPage`, `REAPPLY_ALLOWED_STATUSES`)
+and `src/lib/applicationScreen.ts` (`applicationScreen`: one / finished / several / none) — ONE rule
+for `/scholarship/apply` and `/scholarship/application`. Components in `components/scholarship/`:
+`ApplyingTo` (the gift line), `GiftChooser` behind `LazyGiftChooser`, and the lazy boundaries
+`LazyAliranPicker` and `LazyMatricCollegePicker`.
+
 **Vircle spending (sponsor spending reporting, S1 2026-09-10).**
 `apps/scholarship/spending_import.py` reads a Vircle "Bursary Usage Report" and stores it as
 `BursarySpendTxn` rows joined to a student by `wallet_id → ScholarshipApplication.vircle_id`;

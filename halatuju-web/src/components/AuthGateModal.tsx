@@ -12,6 +12,7 @@ import IcClaimPanel from './IcClaimPanel'
 import type { ClaimChannel } from '@/lib/profileClaim'
 import { validateIc, formatIc } from '@/lib/ic-utils'
 import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
+import { applyPagePath } from '@/lib/applyPagePath'   // a leaf: this modal is on every page
 
 type ModalStep = 'login' | 'otp' | 'ic'
 
@@ -195,7 +196,8 @@ export default function AuthGateModal() {
     if (reason === 'quiz') {
       router.push('/quiz')
     } else if (reason === 'apply') {
-      router.push('/scholarship/apply')
+      // Back to the form for the SAME gift — a bare /scholarship/apply asks afresh.
+      router.push(applyPagePath())
     } else if (reason === 'profile') {
       setPendingProfileRedirect(true)
     }

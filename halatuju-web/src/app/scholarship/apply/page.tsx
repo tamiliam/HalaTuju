@@ -11,13 +11,9 @@ import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
-import AliranPicker from '@/components/AliranPicker'
-import InstitutionPicker from '@/components/InstitutionPicker'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
-  getScholarshipIntake,
-  type IntakeChoice,
   claimNric,
   checkEligibility,
   calculatePathways,
@@ -48,10 +44,6 @@ import {
   formatMoney2dp,
   nricChanged,
   stashApplyForm,
-  rememberApplyProgramme,
-  clearApplyProgramme,
-  setApplyProgramme,
-  needsProgrammeChoice,
   popApplyStash,
   clearApplyReturn,
   REFERRING_ORG_OPTIONS,
@@ -66,9 +58,14 @@ import {
   type ChosenProgramme,
   type TopChoice,
 } from '@/lib/scholarship'
-import { applyCard, type ServedCopy } from '@/lib/applyCopy'
-import { collegesForTrack } from '@/data/matric-colleges'
+import { applyCard } from '@/lib/applyCopy'
+import { mustLeaveApplyPage } from '@/lib/applyGate'   // the leaf, not applicationScreen
+import { useApplyGift, isProgrammeRequired, clearApplyProgramme } from '@/lib/useApplyGift'
 import LazyStpmSchoolPicker from '@/components/scholarship/LazyStpmSchoolPicker'
+import LazyGiftChooser from '@/components/scholarship/LazyGiftChooser'
+import LazyAliranPicker from '@/components/scholarship/LazyAliranPicker'
+import LazyMatricCollegePicker from '@/components/scholarship/LazyMatricCollegePicker'
+import ApplyingTo from '@/components/scholarship/ApplyingTo'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -112,12 +109,9 @@ export default function ScholarshipApplyPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
-  // Populated ONLY when several rounds are open and nothing named one; empty in every other
-  // case, including every visitor today. See the intake effect below.
-  const [choices, setChoices] = useState<IntakeChoice[]>([])
-  /** The chosen gift's own apply-page copy. Undefined/empty ⇒ the platform default. */
-  const [copy, setCopy] = useState<ServedCopy>(undefined)
-  const [chosen, setChosen] = useState('')
+  // Which gift this form is for: its code (sent at submit), its own copy, the chooser's options
+  // when several are open and nothing named one, and its name for the form. See `useApplyGift`.
+  const gift = useApplyGift(router)
   // Income field shows raw digits while focused (easy to edit) and a formatted
   // "3,000.00" when blurred. The stored value (form.householdIncome) stays raw.
   const [incomeFocused, setIncomeFocused] = useState(false)
@@ -150,13 +144,8 @@ export default function ScholarshipApplyPage() {
   // Returning from the My Results → onboarding detour: restore the stashed
   // in-progress edits and land back on the Results tab. Runs once on mount,
   // before the profile prefill below (which then skips, seeing populatedRef).
+  // (The gift's `?p=` is read on arrival by `useApplyGift`; the detour returns carrying it.)
   useEffect(() => {
-    // PF-1: capture the organisation's apply link (`?p=<programme>`) the moment the student
-    // ARRIVES, not at submit. The My Results detour returns them to a bare /scholarship/apply
-    // with no query string, so reading it only at submit would silently lose the organisation
-    // they came in for — and the backend would then have nothing to route on.
-    rememberApplyProgramme(window.location.search)
-
     const stashed = popApplyStash()
     if (stashed) {
       setForm(stashed)
@@ -169,32 +158,6 @@ export default function ScholarshipApplyPage() {
       clearApplyReturn()
     }
   }, [])
-
-  // Intake gate: no NEW applications once the round closes. A bookmarked /apply link
-  // bounces back to the landing (which shows the closed state); existing applicants
-  // continue via /scholarship/application, not here.
-  useEffect(() => {
-    let active = true
-    // ⚠ THE GIFT'S CODE GOES WITH THE QUESTION. Without it this asks "is anything open ANYWHERE?"
-    // — so with Sabah open and BrightPath closed, a student on an old BrightPath poster was shown
-    // the entire form and refused only at submit. Same defect PF-1's choices screen cured for the
-    // ambiguous case; this is the per-gift-closed half of it (2026-09-09).
-    const code = rememberApplyProgramme(window.location.search)
-    getScholarshipIntake(code).then(r => {
-      if (!active) return
-      // The gift's own words, if it wrote any. Set BEFORE the closed-bounce so a future screen
-      // that shows a closed gift's page still has them.
-      setCopy(r.apply_copy)
-      if (!r.open) { router.replace('/scholarship'); return }
-      // ⚠ ASK BEFORE THE FORM, NOT AT SUBMIT. With several rounds open and nothing naming one,
-      // `resolve_open_cohort` refuses to guess — rightly — but that refusal used to arrive as a
-      // 409 after the whole form was filled in. Same refusal, moved to the front door.
-      if (needsProgrammeChoice(code, r.choices)) {
-        setChoices(r.choices ?? [])
-      }
-    }).catch(() => {})
-    return () => { active = false }
-  }, [router])
 
   // Pre-fill from the profile once it carries its NRIC (skipped if we restored a stash).
   // Wait for the NRIC specifically: a brand-new user claims it at the auth gate *after*
@@ -244,6 +207,8 @@ export default function ScholarshipApplyPage() {
   // A returning applicant has nothing to fill in here — send them to their
   // application page (which shows status / the follow-up steps). Keeps the
   // form for first-time applicants only and avoids a 409 on resubmit.
+  // ⚠ Not `applications[0]`: ANY non-expired row in ANY round (stricter than the server's per-round
+  // check — see applyGate); the application page shows exactly those, so the two cannot loop.
   useEffect(() => {
     let active = true
     if (status !== 'ready' || !token) {
@@ -254,7 +219,7 @@ export default function ScholarshipApplyPage() {
     getMyScholarshipApplications({ token })
       .then((res) => {
         if (!active) return
-        if (res.applications[0]) { router.replace('/scholarship/application'); return }
+        if (mustLeaveApplyPage(res.applications)) { router.replace('/scholarship/application'); return }
         setLoadingExisting(false)
       })
       .catch(() => { if (active) setLoadingExisting(false) })
@@ -398,17 +363,15 @@ export default function ScholarshipApplyPage() {
 
     try {
       const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
-      // PF-1: which organisation's programme this application is FOR. Absent is fine while one
-      // programme runs; with two open the backend refuses rather than guessing, so an application
-      // can never be filed under the wrong foundation.
-      const programme = rememberApplyProgramme(
-        typeof window === 'undefined' ? '' : window.location.search,
-      )
-      if (programme) payload.programme_code = programme
+      // PF-1: which programme this is FOR — the code the "You are applying to" line was resolved
+      // from (`useApplyGift`). With two open and none named the server refuses (handled below).
+      if (gift.code) payload.programme_code = gift.code
       await submitScholarshipApplication(payload, locale, { token })
       clearApplyProgramme()
       router.replace('/scholarship/application')
     } catch (err) {
+      // The server could not tell which gift: ask her again (chooser), keeping what she typed.
+      if (isProgrammeRequired(err)) { gift.change(); return }
       // If a field was rejected for length, name the exact question to shorten.
       const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
       const labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null
@@ -426,7 +389,7 @@ export default function ScholarshipApplyPage() {
 
   // ⚠ THE GIFT'S OWN WORDS IF IT WROTE ANY, ELSE THE PLATFORM'S. The platform default is resolved
   // HERE, from the message files — its one home. The server never carries a copy of it.
-  const card = applyCard(copy, locale, {
+  const card = applyCard(gift.copy, locale, {
     title: t('scholarship.apply.title'),
     intro: t('scholarship.apply.intro'),
     criteria: ['criteria1', 'criteria2', 'criteria3', 'criteria4']
@@ -483,52 +446,11 @@ export default function ScholarshipApplyPage() {
   }
 
   // ── Which programme? Asked ONLY when several rounds are open and nothing named one ──
-  //
-  // ⚠ THIS IS PF-1'S REFUSAL, MOVED EARLIER — NOT A RELAXATION OF IT. The server still refuses to
-  // guess between two open rounds, because guessing once filed a student under the wrong
-  // foundation, funded from the wrong money, with no error anywhere. What changed is WHEN the
-  // student meets it: as a question before the first keystroke, instead of a 409 after filling in
-  // the whole form.
-  //
-  // ⚠ IT OFFERS; IT NEVER PRE-SELECTS. Defaulting to the first round would be the same guess in a
-  // friendlier costume — and it would be OUR guess recorded as the student's choice.
-  //
-  // Unreachable for every visitor today (one open round), and it stays unreachable for anyone who
-  // follows an organisation's own `?p=` link.
-  if (choices.length > 1) {
-    return wrap(
-      <div className="bg-ground-0 border rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-ground-900">
-          {t('scholarship.apply.chooseTitle')}
-        </h2>
-        <p className="mt-1 text-sm text-ground-600">{t('scholarship.apply.chooseBody')}</p>
-        <div className="mt-4 space-y-2">
-          {choices.map((c) => (
-            <label key={c.code}
-              className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
-                chosen === c.code
-                  ? 'border-brand-shape bg-primary-50 text-ground-900'
-                  : 'border-ground-300 text-ground-700 hover:bg-ground-50'}`}>
-              <input type="radio" name="apply-programme" value={c.code}
-                checked={chosen === c.code}
-                onChange={() => setChosen(c.code)}
-                className="h-4 w-4 accent-primary-600" />
-              {c.name}
-            </label>
-          ))}
-        </div>
-        <button type="button" disabled={!chosen} data-testid="apply-choose-continue"
-          onClick={() => {
-            // Stored through the SAME seam a `?p=` link writes, so submit cannot tell the two
-            // apart and there is exactly one routing path to be right about.
-            setApplyProgramme(chosen)
-            setChoices([])
-          }}
-          className="mt-5 w-full rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-          {t('scholarship.apply.chooseCta')}
-        </button>
-      </div>
-    )
+  // PF-1's refusal moved to before the first keystroke; it offers and never pre-selects (see
+  // GiftChooser, loaded on demand). A pick goes into the URL and re-reads the intake for THAT
+  // gift's own copy. Never reached by anyone who follows an organisation's own `?p=` link.
+  if (gift.choices.length > 1) {
+    return wrap(<LazyGiftChooser choices={gift.choices} onPick={gift.pick} />)
   }
 
   // ── status === 'ready', no existing application → the tabbed form ──
@@ -840,7 +762,7 @@ export default function ScholarshipApplyPage() {
                 ) : availableAlirans.length === 0 ? (
                   <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noProgrammes')}</p>
                 ) : (
-                  <AliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
+                  <LazyAliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
                 )}
               </div>
               {pismpAliran && (
@@ -892,9 +814,9 @@ export default function ScholarshipApplyPage() {
               {form.preUTrack && (
                 <div>
                   <FieldLabel required tip={t('scholarship.apply.plan.collegeTip')}>{t('scholarship.apply.plan.collegeLabel')}</FieldLabel>
-                  <InstitutionPicker
+                  <LazyMatricCollegePicker
                     key={`m-${form.preUTrack}`}
-                    options={collegesForTrack(form.preUTrack).map((c) => ({ name: c.name, hint: c.state }))}
+                    track={form.preUTrack}
                     value={form.preUInstitution}
                     onChange={setPreUInstitution}
                     placeholder={t('scholarship.apply.plan.collegePlaceholder')}
@@ -1038,6 +960,8 @@ export default function ScholarshipApplyPage() {
 
   return wrap(
     <form onSubmit={handleSubmit}>
+      {/* Which gift this is for; "Change" (back to the chooser, edits kept) only when another is open */}
+      <ApplyingTo name={gift.name} onChange={gift.canChange ? gift.change : undefined} />
       {/* Context bar — profile is the source of truth */}
       <div className="flex items-center gap-3 bg-ground-0 border rounded-2xl px-4 py-3 mb-4 shadow-sm">
         <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">

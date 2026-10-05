@@ -207,6 +207,9 @@ export interface ApplyCopyBlock {
 export async function getScholarshipIntake(programme?: string): Promise<{
   open: boolean
   cohort_name: string
+  /** The canonical programme code of the round `cohort_name` names ('' when none can be named).
+   *  Optional: an older api does not send it. Submit sends THIS, so it files what was shown. */
+  programme_code?: string
   choices?: IntakeChoice[]
   apply_copy?: Partial<Record<Locale, ApplyCopyBlock>>
 }> {

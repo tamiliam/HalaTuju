@@ -55,12 +55,12 @@ import {
   isFundedStatus,
   type ApplyFormState,
   APPLY_PROGRAMME_KEY,
-  rememberApplyProgramme,
-  clearApplyProgramme,
-  soleLiveApplication,
   liveApplications,
   LIVE_APPLICATION_STATES,
 } from '@/lib/scholarship'
+import { applicationScreen } from '@/lib/applicationScreen'
+import { applyPagePath } from '@/lib/applyPagePath'
+import { enterApplyPage, setApplyProgramme, clearApplyProgramme } from '@/lib/applyProgramme'
 // ⚠ `preUTrackMalay` IS GONE — there is no FE lookup left to import. Code health H17 moved it
 // out of this module (so `ms.json` stopped riding into fifteen route bundles); code health H18
 // deleted it, because the api now SERVES the resolved label on the cockpit payload (TD-280).
@@ -1384,10 +1384,11 @@ describe('showsActionCentre / isFundedStatus', () => {
 // ── PF-1 P2: the per-organisation apply link ─────────────────────────────────
 //
 // `?p=<programme-code>` is what tells the backend which organisation an application is for.
-// The failure it prevents is silent (wrong foundation, wrong money), so the thing worth
-// pinning is that the code SURVIVES the My Results → onboarding detour, which returns the
-// student to a bare /scholarship/apply with no query string.
-describe('rememberApplyProgramme', () => {
+// The failure it prevents is silent (wrong foundation, wrong money), so the things worth
+// pinning are that the code SURVIVES the two legitimate round trips out of the form (the My
+// Results → onboarding detour and the sign-in gate) — and that NOTHING ELSE carries it over: a
+// later bare /scholarship/apply must ask again rather than reuse an old code (2026-10-05).
+describe('enterApplyPage / applyPagePath', () => {
   const store = () => {
     const m = new Map<string, string>()
     return {
@@ -1396,42 +1397,78 @@ describe('rememberApplyProgramme', () => {
       removeItem: (k: string) => { m.delete(k) },
     }
   }
+  /** Follow a path back to the apply page: what does the arrival read? */
+  const arriveAt = (path: string, s: ReturnType<typeof store>) =>
+    enterApplyPage(new URL(path, 'https://halatuju.xyz').search, s)
 
   it('reads the code from the URL and remembers it', () => {
     const s = store()
-    expect(rememberApplyProgramme('?p=brightpath-flagship', s)).toBe('brightpath-flagship')
+    expect(enterApplyPage('?p=brightpath-flagship', s)).toBe('brightpath-flagship')
     expect(s.getItem(APPLY_PROGRAMME_KEY)).toBe('brightpath-flagship')
   })
 
-  it('survives the detour — a later bare visit still returns the code', () => {
+  it('link → My Results detour → return keeps the code (the form stash survives too)', () => {
     const s = store()
-    rememberApplyProgramme('?p=brightpath-flagship', s)
-    expect(rememberApplyProgramme('', s)).toBe('brightpath-flagship')
-    expect(rememberApplyProgramme(null, s)).toBe('brightpath-flagship')
+    enterApplyPage('?p=brightpath-flagship', s)
+    stashApplyForm(baseForm(), s)
+    const back = applyPagePath(s)               // what onboarding sends the student back to
+    expect(back).toBe('/scholarship/apply?p=brightpath-flagship')
+    expect(arriveAt(back, s)).toBe('brightpath-flagship')
+    expect(popApplyStash(s)?.name).toBe('Priya')
+  })
+
+  it('link → sign-in round trip → return keeps the code', () => {
+    // The gate (and /auth/callback after Google) returns through the same helper.
+    const s = store()
+    enterApplyPage('?p=sabah', s)
+    expect(arriveAt(applyPagePath(s), s)).toBe('sabah')
+  })
+
+  it('a chooser pick travels the same way back', () => {
+    const s = store()
+    enterApplyPage('', s)
+    setApplyProgramme('sabah', s)
+    expect(applyPagePath(s)).toBe('/scholarship/apply?p=sabah')
+  })
+
+  it('⚠ link, then a later BARE visit → the code is forgotten, so the chooser asks', () => {
+    const s = store()
+    enterApplyPage('?p=brightpath-flagship', s)
+    expect(enterApplyPage('', s)).toBe('')
+    expect(enterApplyPage(null, s)).toBe('')
+    expect(s.getItem(APPLY_PROGRAMME_KEY)).toBeNull()
+    expect(applyPagePath(s)).toBe('/scholarship/apply')
   })
 
   it('lets a fresh link override a remembered one', () => {
     const s = store()
-    rememberApplyProgramme('?p=old-programme', s)
-    expect(rememberApplyProgramme('?p=new-programme', s)).toBe('new-programme')
+    enterApplyPage('?p=old-programme', s)
+    expect(enterApplyPage('?p=new-programme', s)).toBe('new-programme')
   })
 
-  it('returns empty when no link ever named a programme', () => {
-    expect(rememberApplyProgramme('', store())).toBe('')
-    expect(rememberApplyProgramme('?other=1', store())).toBe('')
+  it('returns empty when no link names a programme', () => {
+    expect(enterApplyPage('', store())).toBe('')
+    expect(enterApplyPage('?other=1', store())).toBe('')
   })
 
   it('ignores a blank or whitespace-only code rather than storing it', () => {
     const s = store()
-    expect(rememberApplyProgramme('?p=%20%20', s)).toBe('')
+    expect(enterApplyPage('?p=%20%20', s)).toBe('')
     expect(s.getItem(APPLY_PROGRAMME_KEY)).toBeNull()
+  })
+
+  it('encodes the code it puts back in the URL', () => {
+    const s = store()
+    setApplyProgramme('a b&c', s)
+    expect(applyPagePath(s)).toBe('/scholarship/apply?p=a%20b%26c')
+    expect(arriveAt(applyPagePath(s), s)).toBe('a b&c')
   })
 
   it('forgets it on submit — a later visit is a fresh decision', () => {
     const s = store()
-    rememberApplyProgramme('?p=brightpath-flagship', s)
+    enterApplyPage('?p=brightpath-flagship', s)
     clearApplyProgramme(s)
-    expect(rememberApplyProgramme('', s)).toBe('')
+    expect(applyPagePath(s)).toBe('/scholarship/apply')
   })
 })
 
@@ -1439,31 +1476,36 @@ describe('rememberApplyProgramme', () => {
 //
 // The application screen took `applications[0]`. With two live applications that silently shows
 // one and hides the other — the same "assume one" shape PF-1 fixed in the backend resolver.
-describe('soleLiveApplication', () => {
+// (`soleLiveApplication` was folded into `applicationScreen` on 2026-10-05; its cases live on there.)
+describe('applicationScreen — the live-application cases', () => {
   const app = (id: number, status: string) => ({ id, status })
+  const shown = (apps: { id: number; status: string }[]) => {
+    const s = applicationScreen(apps)
+    return s.kind === 'one' ? s.app.id : s.kind
+  }
 
   it('returns the single live application', () => {
-    expect(soleLiveApplication([app(1, 'profile_complete')])?.id).toBe(1)
+    expect(shown([app(1, 'profile_complete')])).toBe(1)
   })
 
-  it('returns null when there is more than one — never a positional pick', () => {
-    expect(soleLiveApplication([app(1, 'profile_complete'), app(2, 'shortlisted')])).toBeNull()
+  it('returns none of them when there is more than one — never a positional pick', () => {
+    expect(shown([app(1, 'profile_complete'), app(2, 'shortlisted')])).toBe('several')
   })
 
-  it('returns null when there are none', () => {
-    expect(soleLiveApplication([])).toBeNull()
+  it('returns nothing when there are none', () => {
+    expect(shown([])).toBe('none')
   })
 
-  it('ignores finished applications when deciding', () => {
+  it('ignores finished applications when a live one exists', () => {
     // The restart case: an expired row beside a live one must not read as ambiguous, or every
     // student who ever restarted would lose their screen.
-    expect(soleLiveApplication([app(1, 'expired'), app(2, 'shortlisted')])?.id).toBe(2)
-    expect(soleLiveApplication([app(1, 'rejected'), app(2, 'interviewing')])?.id).toBe(2)
+    expect(shown([app(1, 'expired'), app(2, 'shortlisted')])).toBe(2)
+    expect(shown([app(1, 'rejected'), app(2, 'interviewing')])).toBe(2)
   })
 
   it('counts the funded states as live — a funded student still uses the screen', () => {
-    expect(soleLiveApplication([app(1, 'active')])?.id).toBe(1)
-    expect(soleLiveApplication([app(1, 'awarded'), app(2, 'maintenance')])).toBeNull()
+    expect(shown([app(1, 'active')])).toBe(1)
+    expect(shown([app(1, 'awarded'), app(2, 'maintenance')])).toBe('several')
   })
 })
 

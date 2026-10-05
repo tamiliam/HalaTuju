@@ -1088,7 +1088,9 @@
       },
       "chooseTitle": "Which programme are you applying to?",
       "chooseBody": "More than one programme is open right now, so please tell us which one you mean before you start.",
-      "chooseCta": "Continue"
+      "chooseCta": "Continue",
+      "applyingTo": "You are applying to:",
+      "changeGift": "Change"
     },
     "nextSteps": {
       "title": "You've been shortlisted!",
@@ -1886,6 +1888,9 @@
       "emailNote": "We'll send any updates about your application to {email}. Please check that inbox (including the spam folder) from time to time.",
       "browseCta": "Browse courses while you wait",
       "homeCta": "Back to home",
+      "giftLabel": "Programme:",
+      "finishedTitle": "This application is closed",
+      "finishedBody": "Any update about this application was sent to your email. If you have a question, please contact us.",
       "interview": {
         "title": "Your interview",
         "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about {minutes} minutes).",
