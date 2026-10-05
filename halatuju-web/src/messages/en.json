@@ -5484,6 +5484,8 @@
         "filterAll": "All",
         "empty": "No requests yet.",
         "answerNeeded": "Answer needed",
+        "analysed": "Analysed",
+        "analysisDraft": "Analysis to approve",
         "submittedBy": "by {name}"
       },
       "detail": {
@@ -5568,6 +5570,11 @@
         "analysisApprove": "Approve and post to the organisation",
         "analysisApproveConfirm": "Post this analysis to the organisation? They will see the written explanation, but never the hours or the files.",
         "analysisWithdraw": "Withdraw this draft",
+        "analysisWithdrawn": "Withdrawn",
+        "analysisApproveBug": "Approve and post",
+        "analysisApproveConfirmBug": "Approve this analysis and post it to the organisation? This is a bug, so there is no quote: next, you triage it and schedule the fix. They will see the written explanation, but never the hours or the files.",
+        "analysisNextBug": "Bug: no quote. After you approve, triage it, then schedule the fix.",
+        "analysisNextFeature": "Feature: after you approve, triage it and send a quote. The organisation then accepts or declines.",
         "analysisWithdrawConfirm": "Withdraw this draft? It has not reached the organisation, and withdrawing it only means it can no longer be approved. It stays on the record as a superseded draft.",
         "analysisStale": "Something has been said on this request since this analysis was written. Check it still holds."
       },

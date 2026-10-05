@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Requests: the analysis says what state it is in, and what comes next (owner, off #26/#30) - 2026-10-05
+
+Small-change lane. WEB ONLY — no api change, no migration, no paid call. Owner picks 1A, 2A, 3A-i.
+
+- **A withdrawn draft reads "Withdrawn"** (grey), never "Awaiting your approval". It fell through to
+  the draft badge because the badge only asked "approved?" (request #26, drafts 62 and 68).
+- **The list tags a Submitted request that already has an analysis** — "Analysed" (approved) or
+  "Analysis to approve" (draft), so the owner can see where triage is ready. Withdrawn drafts do not
+  count; owner-only (the org payload carries no analyses).
+- **The approve button follows the type.** Bug: "Approve and post" + "no quote: triage, then
+  schedule". Feature: the old wording + "triage, quote, then the organisation accepts". **The
+  engineer's `proposed_kind` decides** (owner ruling), else the triage, else the requester's type —
+  so #30 (filed as a bug, read as a feature) gets the feature wording.
+- One home for all three rules: `lib/requestStatus.ts` (`analysisBadge`, `listAnalysisTag`,
+  `analysisApproveKind`), literal i18n keys. Tests `lib/__tests__/requestAnalysis.test.ts` + two
+  rendered cases in `admin/requests/[id]/page.test.tsx`. **ms/ta are first drafts.**
+
 ## Request #25 follow-up — the sponsor portal's 404 page can now actually be reached - 2026-10-05
 
 Small-change lane. WEB ONLY — two files, no api change, no migration, no new package, no paid call.

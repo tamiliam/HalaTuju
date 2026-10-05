@@ -284,6 +284,24 @@ describe("the engineer's analysis panel (TD-204)", () => {
     expect(screen.getByText('admin.requests.owner.analysisApprove')).toBeTruthy()
   })
 
+  it('a WITHDRAWN draft reads Withdrawn, not "Awaiting your approval", and offers no buttons', async () => {
+    // Request #26: drafts 62 and 68 were withdrawn and still carried the draft badge.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [analysis({ superseded_at: '2026-10-05T00:00:00Z' })] })
+    expect(screen.getByText('admin.requests.owner.analysisWithdrawn')).toBeTruthy()
+    expect(screen.queryByText('admin.requests.owner.analysisDraft')).toBeNull()
+    expect(screen.queryByText('admin.requests.owner.analysisWithdraw')).toBeNull()
+  })
+
+  it("a draft the engineer reads as a BUG gets the bug wording and its next step", async () => {
+    // Owner ruling 2026-10-05: the engineer's reading decides, even against the requester's type.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ kind: 'feature', analyses: [analysis({ proposed_kind: 'bug' })] })
+    expect(screen.getByText('admin.requests.owner.analysisApproveBug')).toBeTruthy()
+    expect(screen.getByText('admin.requests.owner.analysisNextBug')).toBeTruthy()
+    expect(screen.queryByText('admin.requests.owner.analysisApprove')).toBeNull()
+  })
+
   it('offers no Approve on one already approved', async () => {
     viewerRole = { role: 'super', is_super_admin: true }
     await show({ analyses: [approvedAnalysis()] })

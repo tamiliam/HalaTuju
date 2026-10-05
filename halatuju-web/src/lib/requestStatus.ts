@@ -247,3 +247,73 @@ export function hasUnansweredQuestions(
 ): boolean {
   return (comments || []).some((c) => c.awaiting_reply === true)
 }
+
+// ── The engineer's analysis: one badge, one list tag, one approve wording (owner, 2026-10-05) ──
+
+/** The fields of an analysis these helpers read — a subset of OrgRequestAnalysis. */
+export interface AnalysisLike {
+  approved_at: string | null
+  superseded_at: string | null
+  proposed_kind?: string
+}
+
+/** Which badge an analysis card carries. A draft that was WITHDRAWN (superseded, never approved)
+ *  is its own state: before this it fell through to "Awaiting your approval" while its buttons
+ *  were gone (request #26, drafts 62 and 68). */
+export type AnalysisBadge = 'approved' | 'superseded' | 'withdrawn' | 'draft'
+
+export function analysisBadge(a: AnalysisLike): AnalysisBadge {
+  if (a.approved_at) return a.superseded_at ? 'superseded' : 'approved'
+  return a.superseded_at ? 'withdrawn' : 'draft'
+}
+
+// Literal keys, never assembled, so the i18n orphan guard can see every one of them.
+const ANALYSIS_BADGE: Record<AnalysisBadge, { key: string; tone: string }> = {
+  approved: { key: 'admin.requests.owner.analysisApproved', tone: 'bg-positive-100 text-positive-800' },
+  superseded: { key: 'admin.requests.owner.analysisSuperseded', tone: 'bg-ground-200 text-ground-600' },
+  withdrawn: { key: 'admin.requests.owner.analysisWithdrawn', tone: 'bg-ground-200 text-ground-600' },
+  draft: { key: 'admin.requests.owner.analysisDraft', tone: 'bg-caution-100 text-caution-800' },
+}
+
+export function analysisBadgeKey(b: AnalysisBadge): string { return ANALYSIS_BADGE[b].key }
+export function analysisBadgeTone(b: AnalysisBadge): string { return ANALYSIS_BADGE[b].tone }
+
+/** The list tag beside a SUBMITTED request that already has an analysis — "Submitted" alone
+ *  hides that the owner's next step (approve, or triage) is ready. Withdrawn drafts do not count.
+ *  Past submitted, the status itself says where the request is, so no tag. */
+export type ListAnalysisTag = 'analysed' | 'analysisDraft'
+
+export function listAnalysisTag(status: string, analyses?: AnalysisLike[]): ListAnalysisTag | null {
+  if (status !== 'submitted' || !analyses) return null
+  const live = analyses.filter((a) => !a.superseded_at)
+  if (live.some((a) => a.approved_at)) return 'analysed'
+  return live.length ? 'analysisDraft' : null
+}
+
+export function listAnalysisTagKey(tag: ListAnalysisTag): string {
+  return tag === 'analysed' ? 'admin.requests.list.analysed' : 'admin.requests.list.analysisDraft'
+}
+
+/** Which approve wording a draft gets. The ENGINEER'S reading decides (owner ruling 2026-10-05:
+ *  the analysis is what is being approved), falling back to the triage, then the requester's type.
+ *  A bug is free: approving it leads to triage then scheduling, never to a quote. */
+export function analysisApproveKind(
+  a: AnalysisLike, req: { triaged_kind?: string; kind: string },
+): 'bug' | 'feature' {
+  return (a.proposed_kind || req.triaged_kind || req.kind) === 'bug' ? 'bug' : 'feature'
+}
+
+const APPROVE_COPY = {
+  bug: {
+    label: 'admin.requests.owner.analysisApproveBug',
+    confirm: 'admin.requests.owner.analysisApproveConfirmBug',
+    next: 'admin.requests.owner.analysisNextBug',
+  },
+  feature: {
+    label: 'admin.requests.owner.analysisApprove',
+    confirm: 'admin.requests.owner.analysisApproveConfirm',
+    next: 'admin.requests.owner.analysisNextFeature',
+  },
+} as const
+
+export function analysisApproveCopy(kind: 'bug' | 'feature') { return APPROVE_COPY[kind] }

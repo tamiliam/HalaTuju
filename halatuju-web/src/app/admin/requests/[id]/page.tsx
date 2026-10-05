@@ -16,7 +16,8 @@ import {
 } from '@/lib/admin-api'
 import {
   statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor,
-  hasUnansweredQuestions, canAttach, type RequestAction,
+  hasUnansweredQuestions, canAttach, type RequestAction, analysisBadge, analysisBadgeKey,
+  analysisBadgeTone, analysisApproveKind, analysisApproveCopy,
 } from '@/lib/requestStatus'
 import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 
@@ -460,27 +461,17 @@ export default function AdminRequestDetailPage() {
               <p className="text-sm text-ground-400">{t('admin.requests.owner.analysisNone')}</p>
             ) : (
               <ul className="space-y-3">
-                {analyses.map((a) => (
+                {analyses.map((a) => { const badge = analysisBadge(a)
+                  const copy = analysisApproveCopy(analysisApproveKind(a, req))
+                  return (
                   <li key={a.id} className={`rounded-lg border p-3 text-sm ${
                     a.is_current ? 'border-positive-200 bg-positive-50'
                       : a.superseded_at ? 'border-ground-200 bg-ground-50 opacity-70'
                       : 'border-caution-200 bg-caution-50'}`}>
                     <div className="flex items-baseline gap-2 flex-wrap">
-                      {a.approved_at ? (
-                        a.superseded_at ? (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-ground-200 text-ground-600">
-                            {t('admin.requests.owner.analysisSuperseded')}
-                          </span>
-                        ) : (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-positive-100 text-positive-800">
-                            {t('admin.requests.owner.analysisApproved')}
-                          </span>
-                        )
-                      ) : (
-                        <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-caution-100 text-caution-800">
-                          {t('admin.requests.owner.analysisDraft')}
-                        </span>
-                      )}
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${analysisBadgeTone(badge)}`}>
+                        {t(analysisBadgeKey(badge))}
+                      </span>
                       {a.estimated_hours && (
                         <span className="font-semibold text-ground-900">
                           {t('admin.requests.owner.analysisHoursValue', { hours: a.estimated_hours })}
@@ -517,12 +508,12 @@ export default function AdminRequestDetailPage() {
                     {a.is_current && analysisPredatesLastComment && (
                       <p className="text-xs text-caution-700 mt-2">{t('admin.requests.owner.analysisStale')}</p>
                     )}
-                    {!a.approved_at && !a.superseded_at && (
+                    {badge === 'draft' && (<>
                       <div className="mt-3 flex items-center gap-2">
                         <button disabled={busy}
-                          onClick={() => { if (confirm(t('admin.requests.owner.analysisApproveConfirm'))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
+                          onClick={() => { if (confirm(t(copy.confirm))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
                           className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50">
-                          {t('admin.requests.owner.analysisApprove')}
+                          {t(copy.label)}
                         </button>
                         {/* Retire a draft the engineer got wrong. Nothing here has reached the
                             requester, so this is a tidy-up, not an undo — but without it a stale
@@ -533,9 +524,10 @@ export default function AdminRequestDetailPage() {
                           {t('admin.requests.owner.analysisWithdraw')}
                         </button>
                       </div>
-                    )}
+                      <p className="text-xs text-ground-500 mt-2">{t(copy.next)}</p>
+                    </>)}
                   </li>
-                ))}
+                )})}
               </ul>
             )}
           </div>

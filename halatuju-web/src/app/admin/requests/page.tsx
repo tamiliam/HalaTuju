@@ -14,6 +14,7 @@ import { formatFileSize } from '@/lib/scholarship'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
   REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey, requestActionsFor,
+  listAnalysisTag, listAnalysisTagKey,
 } from '@/lib/requestStatus'
 import { imagesFrom } from '@/lib/screenshotInput'
 
@@ -338,6 +339,8 @@ export default function AdminRequestsPage() {
               'org_admin', r.status, r.triaged_kind || '',
               hasUnansweredQuestions(r.comments),
             ).includes('answer')
+            // Owner-only: the org payload carries no analyses, so this is null for them.
+            const analysisTag = listAnalysisTag(r.status, r.analyses)
             return (
               <Link key={r.id} href={`/admin/requests/${r.id}`}
                 className="block bg-ground-0 rounded-xl border hover:border-info-300 hover:bg-info-50/40 transition-colors p-4">
@@ -348,6 +351,11 @@ export default function AdminRequestsPage() {
                       <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(r.kind))}</span>
                       {needsAnswer && (
                         <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-caution-100 text-caution-700">{t('admin.requests.list.answerNeeded')}</span>
+                      )}
+                      {analysisTag && (
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${analysisTag === 'analysed' ? 'bg-positive-100 text-positive-800' : 'bg-caution-100 text-caution-700'}`}>
+                          {t(listAnalysisTagKey(analysisTag))}
+                        </span>
                       )}
                     </div>
                     <div className="text-xs text-ground-500 mt-1">

@@ -5484,6 +5484,8 @@
         "filterAll": "Semua",
         "empty": "Tiada permintaan lagi.",
         "answerNeeded": "Jawapan diperlukan",
+        "analysed": "Telah dianalisis",
+        "analysisDraft": "Analisis perlu diluluskan",
         "submittedBy": "oleh {name}"
       },
       "detail": {
@@ -5568,6 +5570,11 @@
         "analysisApprove": "Luluskan dan hantar kepada organisasi",
         "analysisApproveConfirm": "Hantar analisis ini kepada organisasi? Mereka akan melihat penerangan bertulis, tetapi tidak sekali-kali jumlah jam atau fail.",
         "analysisWithdraw": "Tarik balik draf ini",
+        "analysisWithdrawn": "Ditarik balik",
+        "analysisApproveBug": "Luluskan dan hantar",
+        "analysisApproveConfirmBug": "Luluskan analisis ini dan hantar kepada organisasi? Ini pepijat, jadi tiada sebut harga: seterusnya, nilai permintaan ini dan jadualkan pembaikan. Mereka akan melihat penerangan bertulis, tetapi tidak sekali-kali jumlah jam atau fail.",
+        "analysisNextBug": "Pepijat: tiada sebut harga. Selepas diluluskan, nilai permintaan ini, kemudian jadualkan pembaikan.",
+        "analysisNextFeature": "Ciri: selepas diluluskan, nilai permintaan ini dan hantar sebut harga. Organisasi kemudian menerima atau menolaknya.",
         "analysisWithdrawConfirm": "Tarik balik draf ini? Ia belum sampai kepada organisasi, dan menarik baliknya hanya bermakna ia tidak boleh diluluskan lagi. Ia kekal dalam rekod sebagai draf yang telah digantikan.",
         "analysisStale": "Ada perkara baharu dinyatakan pada permintaan ini selepas analisis ini ditulis. Sila semak sama ada ia masih tepat."
       },
