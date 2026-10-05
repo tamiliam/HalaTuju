@@ -23,7 +23,7 @@ import {
   type ApplicantDocument,
   type ScholarshipApplication,
 } from '@/lib/api'
-import { asksForDocument } from '@/lib/scholarship'
+import { asksForDocument } from '@/lib/nextSteps'
 import {
   incomeRequirements,
   wizardComplete,

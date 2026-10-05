@@ -105,6 +105,13 @@ Debt raised: TD-337 to TD-346 (TD-337 is an owner decision). Retrospective:
   `/profile` **309.930** (310), median **227.836** (229). `apply/page.tsx` 1070 → 1070,
   `application/page.tsx` 338 → 339. Two new guards bite-checked red (chooser after the gate; no
   settled gate).
+- **The gate refused `552cf494`: `/profile` 310.007 kB against 310 (the lead's local build read
+  309.945).** Weight taken off, no behaviour change: the next-steps shell, the Story label map and the
+  document/question requirement readers moved VERBATIM from `lib/scholarship.ts` (which rides whole
+  on `/profile`) to the new leaf `lib/nextSteps.ts`, imported only by the next-steps components.
+  Local, exact: `/profile` **309.517 kB**, `/scholarship/apply` **271.354**,
+  `/scholarship/application` **273.633**, median **227.851**. `lib/scholarship.ts` 1240 → 1084
+  lines (its `oversize_files` line lowered to match). jest **232 suites / 3664 tests**.
 
 ## Requests: the analysis says what state it is in, and what comes next (owner, off #26/#30) - 2026-10-05
 

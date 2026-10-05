@@ -205,3 +205,18 @@ landing "Apply" label, which read as a contradiction on a card that says applica
 First-load JS (exact): `/scholarship/apply` **271.745 kB** (272), `/scholarship/application`
 **273.625** (274), `/profile` **309.930** (310), median **227.836** (229). `apply/page.tsx` 1070 →
 1070; `application/page.tsx` 338 → 339.
+
+**What Went Wrong 9. The follow-up was pushed with 0.055 kB of room on `/profile`, and the gate
+refused it.**
+*Symptom:* the follow-up added one string and one small component; the lead's local budget run read
+`/profile` 309.945 kB against 310, and Cloud Build read 310.007 — 0.062 kB heavier — and refused
+`552cf494`. Main was blocked for every session's web push until weight came off.
+*Root cause:* a local pass inside the gate's own measurement noise was treated as a pass, although
+TD-344 had been raised that very day for exactly this route and exactly this risk. Local and gate
+builds differ by tens of bytes; a margin smaller than that is not a margin.
+*System change:* weight taken off, not the budget raised — the next-steps shell, the Story label map
+and the document/question requirement readers moved verbatim from `lib/scholarship.ts` to the leaf
+`lib/nextSteps.ts` (`/profile` 309.517 locally, 0.483 kB of room). A first attempt that also moved the
+deeper-info form re-split the shared chunks (taking `@/lib/familyRoster` out of `scholarship.ts`'s
+graph) and pushed `/scholarship/application` to 274.333 — over its line — so that block went back.
+Lesson recorded: a route within about 0.1 kB of its line is given room BEFORE pushing.

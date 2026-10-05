@@ -6,10 +6,11 @@ import {
   type ScholarshipApplication, type StudentProfile,
   type ApplicantDocument, type ConsentStatus,
 } from '@/lib/api'
-import { formatNricDisplay, asksForQuestion } from '@/lib/scholarship'
+import { formatNricDisplay } from '@/lib/scholarship'
+import { asksForQuestion } from '@/lib/nextSteps'
 import { docTypeToStudentGroup, STUDENT_DOC_GROUP_ORDER } from '@/lib/docCategory'
 import { SUBJECT_NAMES } from '@/lib/subjects'
-import type { NextStepKey } from '@/lib/scholarship'
+import type { NextStepKey } from '@/lib/nextSteps'
 
 // Documents grouped + ordered like the rest of the pipeline: Identity → Results →
 // Pathway → Income (many) → Other (optional, many). Both the ORDER and the grouping come from

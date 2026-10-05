@@ -28,7 +28,7 @@ import {
   type ApplicantDocument,
   type ScholarshipApplication,
 } from '@/lib/api'
-import { asksForDocument, documentRequirement } from '@/lib/scholarship'
+import { asksForDocument, documentRequirement } from '@/lib/nextSteps'
 import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
 
 import {

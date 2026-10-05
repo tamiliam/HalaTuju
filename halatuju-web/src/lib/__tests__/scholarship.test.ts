@@ -29,13 +29,6 @@ import {
   buildDetailsPayload,
   DOC_TYPES,
   INCOME_PROOF_TYPES,
-  documentRequirement,
-  questionRequirement,
-  asksForQuestion,
-  visibleNextSteps,
-  QUESTION_CODES,
-  STORY_QUESTION_CODES,
-  asksForDocument,
   formatFileSize,
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
@@ -47,9 +40,6 @@ import {
   clearApplyReturn,
   APPLY_STASH_KEY,
   APPLY_RETURN_KEY,
-  NEXT_STEP_ORDER,
-  defaultNextTab,
-  isStepComplete,
   firstTooLongField,
   showsActionCentre,
   isFundedStatus,
@@ -58,6 +48,18 @@ import {
   liveApplications,
   LIVE_APPLICATION_STATES,
 } from '@/lib/scholarship'
+import {
+  documentRequirement,
+  questionRequirement,
+  asksForQuestion,
+  visibleNextSteps,
+  QUESTION_CODES,
+  STORY_QUESTION_CODES,
+  asksForDocument,
+  NEXT_STEP_ORDER,
+  defaultNextTab,
+  isStepComplete,
+} from '@/lib/nextSteps'
 import { applicationScreen } from '@/lib/applicationScreen'
 import { applyPagePath } from '@/lib/applyPagePath'
 import { enterApplyPage, setApplyProgramme, clearApplyProgramme } from '@/lib/applyProgramme'

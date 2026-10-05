@@ -182,7 +182,7 @@
       "src/components/admin/InvoicesSection.tsx": 681,
       "src/lib/navigation.ts": 655,
       "src/lib/officerCockpit.ts": 1637,
-      "src/lib/scholarship.ts": 1240,
+      "src/lib/scholarship.ts": 1084,
       "src/sandbox/surfaces.tsx": 626
     },
     "eslint_disable_without_reason": [

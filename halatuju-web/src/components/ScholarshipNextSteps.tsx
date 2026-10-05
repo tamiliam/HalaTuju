@@ -7,22 +7,20 @@ import { useT } from '@/lib/i18n'
 import { useBranding } from '@/lib/branding-context'
 import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication, type StudentProfile } from '@/lib/api'
 import {
-  applicationToDetailsForm,
-  buildDetailsPayload,
-  firstTooLongField,
+  applicationToDetailsForm, buildDetailsPayload, firstTooLongField, setOnboardingReturn,
+  showsActionCentre, type DetailsFormState,
+} from '@/lib/scholarship'
+import {
   STORY_FIELD_LABEL_KEYS,
   NEXT_STEP_ORDER,
   defaultNextTab,
   isStepComplete,
-  setOnboardingReturn,
-  showsActionCentre,
   asksForQuestion,
   questionRequirement,
   visibleNextSteps,
   STORY_QUESTION_CODES,
   type NextStepKey,
-  type DetailsFormState,
-} from '@/lib/scholarship'
+} from '@/lib/nextSteps'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
 import ScholarshipReview from '@/components/ScholarshipReview'
