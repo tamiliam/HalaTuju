@@ -11,17 +11,25 @@
  *     REPLACES whatever sits in the slot. A per-type exemption list survived in this file until
  *     2026-07-26, seven weeks after the backend rule it mirrored had been retired, and the mother's
  *     STR and salary-slip cards alone kept the wrong layout for those seven weeks.
- *   • **`REAPPLY_ALLOWED_STATUSES`** (applyGate.ts) — the STATUS LIST the apply form treats
- *     as "does not block a fresh application", which must equal the statuses the server's duplicate
- *     check `.exclude()`s (2026-10-05, "apply gift clarity"). ⚠ ONLY THE LIST is guarded. The SCOPE
- *     deliberately differs — the server's check is per round, the web's is across every round — and
- *     nothing here asserts or excuses that; `applyGate.ts` says why.
+ *   • **The apply gate's status lists vs `applicationScreen`** (2026-10-05, TD-337). The web keeps
+ *     NO apply rule any more — the apply page obeys the server's verdict (`services/apply_gate.py`).
+ *     What the web still owns is the APPLICATION screen, and a student the server has just sent there
+ *     as `application_in_progress` must land on THE application the gate named: `kind: 'one'`, same
+ *     id — not "you haven't applied", not the closed card, not "several", not another one. This reads
+ *     the server's `IN_PLAY_STATUSES` / `FINISHED_STATUSES` and asserts it over every list the rule
+ *     can produce: one in-play row (each served in-play status) beside any finished ones, at every
+ *     position. The api half (`test_apply_gate.py`, `TestTheServedListOfABlockedStudent`) builds real
+ *     rows for every in-play status and embargoed shape and proves her served list has exactly that
+ *     shape: the gate's `application_id` carries an in-play status (never 'recommended', which no
+ *     student is shown) and every other row a finished one. ⚠ WHAT IT DOES NOT SEE: legacy data
+ *     holding two in-play rows (the submit refuses the second), and an admin reopening a finished
+ *     application beside a live one.
  *
  * Characterised first (the H8 rule): the state lists compared as sets both ways, and the
  * single-instance rule read from the view that enforces it. They AGREE.
  */
 import { LIVE_APPLICATION_STATES, liveApplications } from '@/lib/scholarship'
-import { applicationScreen, REAPPLY_ALLOWED_STATUSES } from '@/lib/applicationScreen'
+import { applicationScreen } from '@/lib/applicationScreen'
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 import { pySeq, readApi } from '@/test/apiSource'
 
@@ -76,41 +84,46 @@ describe('LIVE_APPLICATION_STATES = POST_SHORTLIST_EDITABLE + _FUNDED_STATES', (
   })
 })
 
-describe('REAPPLY_ALLOWED_STATUSES = the status list the server duplicate check excludes', () => {
-  /**
-   * The rule is a LINE OF CODE in `ApplicationListCreateView.post`, not a constant, so it is read
-   * as one (the `_is_single_instance` pattern below). The regex finds the check by its shape; what
-   * is ASSERTED is only that exactly one exists and that the statuses it `.exclude()`s equal the
-   * web's allow-list.
-   *
-   * ⚠ NOT ASSERTED, AND DIFFERENT ON PURPOSE: the scope. The server refuses a duplicate per round
-   * (`filter(cohort=cohort, profile=profile)`); the web's `mustLeaveApplyPage` refuses on a standing
-   * application in ANY round — one application per student until roadmap M2 is approved.
-   */
-  const post = (() => {
-    const view = viewsSrc.split('\nclass ApplicationListCreateView(')[1]
-    if (!view) throw new Error(`drift test: ApplicationListCreateView is no longer in ${VIEWS}`)
-    const body = view.split('\nclass ')[0].split('\n    def post(')[1]
-    if (!body) throw new Error('drift test: ApplicationListCreateView.post is no longer where it was')
-    return body
-  })()
-  const checks = [...post.matchAll(
-    /ScholarshipApplication\.objects\.filter\(\s*cohort=cohort,\s*profile=profile\s*\)((?:\s*\.exclude\([^)]*\))*)\s*\.exists\(\)/g,
-  )]
+describe('the apply gate (server) vs the application screen (web) — TD-337', () => {
+  const GATE = 'apps/scholarship/services/apply_gate.py'
+  const gateSrc = readApi(GATE)
+  const inPlay = pySeq(gateSrc, 'IN_PLAY_STATUSES')
+  const finished = pySeq(gateSrc, 'FINISHED_STATUSES')
+  // 'recommended' is in play but never reaches a student: `student_facing_status` shows it as
+  // 'interviewed' (proved on the api side, `test_apply_gate.py`). What her LIST can carry is the rest.
+  const servedInPlay = inPlay.filter((s) => s !== 'recommended')
 
-  test('parse sanity — exactly one duplicate check, and it excludes something', () => {
-    expect(checks).toHaveLength(1)
-    expect(checks[0][1]).toMatch(/\.exclude\(/)
+  test('parse sanity — the two lists partition every real status', () => {
+    expect(inPlay.length).toBeGreaterThanOrEqual(9)
+    expect(finished.length).toBeGreaterThanOrEqual(4)
+    expect(inPlay.filter((s) => finished.includes(s))).toEqual([])
+    expect([...inPlay, ...finished].sort()).toEqual([...APPLICATION_STATUSES].sort())
+    expect(inPlay).toContain('recommended')
   })
 
-  test('the server excludes exactly the statuses the web allow-list holds (the list, not the scope)', () => {
-    const excluded = [...checks[0][1].matchAll(/\.exclude\(\s*status\s*=\s*'([a-z_]+)'\s*\)/g)].map((m) => m[1])
-    // Every .exclude() must be a plain `status='…'` — anything else (status__in, Q objects) is a
-    // shape this guard cannot read, and must turn it red rather than pass on a partial reading.
-    expect(excluded).toHaveLength((checks[0][1].match(/\.exclude\(/g) ?? []).length)
-    expect(excluded.sort()).toEqual([...REAPPLY_ALLOWED_STATUSES].sort())
-    expect(excluded.every((s) => APPLICATION_STATUSES.includes(s as never))).toBe(true)
+  test('the gate refuses `submitted` too — the funnel opens at submit, not at shortlist', () => {
+    expect(inPlay).toContain('submitted')
   })
+
+  // Every list the RULE can produce when the gate says `application_in_progress`: exactly ONE row
+  // with an in-play (served) status — the one the gate names, `application_id` — beside any number
+  // of finished / expired rows, at every position. (Two in play cannot be filed: the submit refuses
+  // the second. The api half proves her served list has exactly this shape.)
+  const companionSets: string[][] = [
+    [], ...finished.map((f) => [f]), ...finished.map((f) => [f, f]), finished, [...finished].reverse(),
+  ]
+  const lists = servedInPlay.flatMap((s) => companionSets.flatMap((others) =>
+    Array.from({ length: others.length + 1 }, (_, at) => {
+      const statuses = [...others.slice(0, at), s, ...others.slice(at)]
+      return { statuses, blocked: at }
+    })))
+  test.each(lists.map((l) => [l.statuses.join(' + '), l] as const))(
+    '%s: the application screen shows THE application the gate named — kind one, same id',
+    (_label, { statuses, blocked }) => {
+      const rows = statuses.map((status, i) => ({ id: 100 + i, status }))
+      expect(applicationScreen(rows)).toEqual({ kind: 'one', app: rows[blocked] })
+    },
+  )
 })
 
 describe('every document type is single-instance — no exemption list may come back', () => {

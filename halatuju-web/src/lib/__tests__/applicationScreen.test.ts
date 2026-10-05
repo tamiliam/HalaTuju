@@ -1,67 +1,32 @@
 /**
- * THE APPLY PAGE AND THE APPLICATION PAGE MUST AGREE about whether the student has applied.
+ * What `/scholarship/application` shows, over every status and every pair.
  *
- * They used to ask two different questions. `/scholarship/apply` sent away anyone with ANY row
- * (`applications[0]`); `/scholarship/application` showed only a LIVE one (shortlisted and later).
- * A student whose only application was `submitted` — the first status every application has — was
- * sent from the form to "You haven't applied yet", whose button sent her back to the form, which
- * sent her back again. The "received" card meant for her could not be reached at all.
- *
- * The invariant, over every real status and every pair of them: `mustLeaveApplyPage` is true
- * EXACTLY when `applicationScreen` is not 'none'. Written first, and red against the old pair of
- * rules (51 failures).
+ * Until 2026-10-05 this file also held the web's own "must she leave the apply form?" rule and the
+ * invariant between the two. Since the owner's ruling on TD-337 the apply page asks the SERVER
+ * (`services/apply_gate.py`) and keeps no rule; the invariant that remains — whenever the server says
+ * `application_in_progress`, this screen is neither 'none' nor the closed card — is asserted against
+ * the server's own status lists in `studentScreenDrift.test.ts`.
  */
-import {
-  applicationScreen, mustLeaveApplyPage, REAPPLY_ALLOWED_STATUSES,
-} from '@/lib/applicationScreen'
+import { applicationScreen } from '@/lib/applicationScreen'
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
 
 type Row = { id: number; status: string }
 const rows = (...statuses: string[]): Row[] => statuses.map((status, i) => ({ id: i + 1, status }))
 
-// Every list worth asking about: nothing, each status alone, and every ordered pair (order matters
-// to the old rule, which read position 0).
-const LISTS: Row[][] = [
-  [],
-  ...APPLICATION_STATUSES.map((s) => rows(s)),
-  ...APPLICATION_STATUSES.flatMap((a) => APPLICATION_STATUSES.map((b) => rows(a, b))),
-  rows('expired', 'expired', 'expired'),
-  rows('expired', 'rejected', 'withdrawn'),
-  rows('submitted', 'rejected', 'expired'),
-  rows('submitted', 'submitted', 'closed'),
-]
-
-describe('the invariant — no loop between the two pages', () => {
-  test.each(LISTS.map((l) => [l.map((r) => r.status).join(' + ') || '(none)', l] as const))(
-    '%s: sent away from the form ⇔ the application page is not "you haven\'t applied"',
+describe('every list has an answer, and position never picks one', () => {
+  const lists: Row[][] = [
+    [],
+    ...APPLICATION_STATUSES.map((s) => rows(s)),
+    ...APPLICATION_STATUSES.flatMap((a) => APPLICATION_STATUSES.map((b) => rows(a, b))),
+  ]
+  test.each(lists.map((l) => [l.map((r) => r.status).join(' + ') || '(none)', l] as const))(
+    '%s: the same answer in either order',
     (_label, list) => {
-      expect(mustLeaveApplyPage(list)).toBe(applicationScreen(list).kind !== 'none')
+      const kind = applicationScreen(list).kind
+      expect(['one', 'finished', 'several', 'none']).toContain(kind)
+      expect(applicationScreen([...list].reverse()).kind).toBe(kind)
     },
   )
-})
-
-describe('mustLeaveApplyPage — the status list matches the server; the scope is stricter', () => {
-  test('nothing at all → the form', () => {
-    expect(mustLeaveApplyPage([])).toBe(false)
-  })
-
-  test('only expired rows → the form: an auto-closed application never blocks a fresh start', () => {
-    expect(mustLeaveApplyPage(rows('expired'))).toBe(false)
-    expect(mustLeaveApplyPage(rows('expired', 'expired'))).toBe(false)
-  })
-
-  test('every other status, alone or beside an expired one, sends the student away', () => {
-    // In ANY round — the web is stricter than the server's per-round duplicate check, on purpose
-    // (one application per student until roadmap M2 is approved).
-    for (const s of APPLICATION_STATUSES.filter((x) => x !== 'expired')) {
-      expect(mustLeaveApplyPage(rows(s))).toBe(true)
-      expect(mustLeaveApplyPage(rows('expired', s))).toBe(true)
-    }
-  })
-
-  test('the allow-list is exactly expired (the drift test pins it to the api)', () => {
-    expect([...REAPPLY_ALLOWED_STATUSES]).toEqual(['expired'])
-  })
 })
 
 describe('applicationScreen — what the application screen shows', () => {
@@ -110,5 +75,30 @@ describe('applicationScreen — what the application screen shows', () => {
   test('expired rows are history, not an application on screen', () => {
     expect(shown(rows('expired'))).toBe('none')
     expect(shown([])).toBe('none')
+  })
+})
+
+describe('one application per organisation (TD-337) — the newly reachable combinations', () => {
+  // A finished application in one gift no longer stops her applying to another (or to a later
+  // round of the same organisation), so these lists now happen in production.
+  const gift = (id: number, status: string, cohort_name: string) => ({ id, status, cohort_name })
+
+  test('finished in gift A + newly submitted in gift B → the submitted one, not the closed card', () => {
+    for (const done of ['rejected', 'withdrawn', 'closed']) {
+      const s = applicationScreen([gift(1, done, 'A 2026'), gift(2, 'submitted', 'B 2026')])
+      expect(s).toEqual({ kind: 'one', app: gift(2, 'submitted', 'B 2026') })
+    }
+  })
+
+  test('finished + live → the live one', () => {
+    for (const live of ['shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'awarded', 'active', 'maintenance']) {
+      const s = applicationScreen([gift(1, 'rejected', 'A 2026'), gift(2, live, 'B 2026')])
+      expect(s).toEqual({ kind: 'one', app: gift(2, live, 'B 2026') })
+    }
+  })
+
+  test('finished in an earlier round + submitted in the later round of the SAME gift → the submitted one', () => {
+    const s = applicationScreen([gift(1, 'rejected', 'A 2026'), gift(2, 'submitted', 'A 2027')])
+    expect(s).toEqual({ kind: 'one', app: gift(2, 'submitted', 'A 2027') })
   })
 })

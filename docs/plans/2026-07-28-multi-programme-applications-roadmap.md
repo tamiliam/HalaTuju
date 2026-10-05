@@ -2,6 +2,20 @@
 
 **Drafted 2026-07-28** per `Settings/_workflows/implementation-planning.md`.
 
+> **▶ OWNER RULING 2026-10-05 (TD-337) — ONE APPLICATION PER ORGANISATION.** *"If a student is
+> currently active in a programme -- i.e. awarded, and hasn't been closed -- the student may not apply
+> for another programme under the same organisation."* and *"No. One application in process, or one
+> award, for each organisation."* What it changes here: **M2 for ONE organisation (several
+> applications in play to programmes of the same organisation) is ruled OUT.** A finished application
+> (rejected / withdrawn / closed / expired) no longer blocks a new one in another programme or a later
+> round of that organisation. Applications to programmes of DIFFERENT organisations at once are
+> allowed by the ruling — but **as BUILT they are blocked too** (lead decision after the adversarial
+> review, 2026-10-05): the student side cannot yet carry two live applications (`_current_application`
+> 409s, the linkless "several" card, positional picks, the embargo masking read two ways), and that is
+> exactly what M2–M4 would build. **When M2 is approved, relaxing the gate to per-organisation is part
+> of M2 — never before it** (TD-353). Built the same day: `apps/scholarship/services/apply_gate.py`,
+> served to the apply page by `GET /api/v1/scholarship/apply-gate/` (decisions.md 2026-10-05).
+
 > **▶ OWNER DECISION 2026-07-28: M1 ONLY IS APPROVED.** *"M1 only for now."*
 >
 > **M2–M4 are NOT approved and must not be started.** They are kept below because M1 is only

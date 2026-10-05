@@ -40,6 +40,7 @@ from . import whatsapp
 # `_award_application` lives in signing_window.py (request #26): the guardian-contact freeze reads the SAME rule.
 from .signing_window import award_application as _award_application
 from .serializers_admin import interview_schedule_payload
+from .services import apply_gate
 from .services import (
     CONSENT_VERSION,
     IncompleteProfileError,
@@ -278,16 +279,13 @@ class ApplicationListCreateView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        # One LIVE application per student per cohort — but an auto-closed ('expired')
-        # application never blocks a fresh start (the reminder system promises the
-        # student they may restart). The old expired row stays as history.
-        if ScholarshipApplication.objects.filter(
-            cohort=cohort, profile=profile
-        ).exclude(status='expired').exists():
-            return Response(
-                {'error': 'You have already applied to this round.'},
-                status=status.HTTP_409_CONFLICT,
-            )
+        # One application in play (anywhere, until M2), none twice in one round (owner, TD-337).
+        # The rule, its embargo masking and its order live in `services/apply_gate.py` — the page
+        # asks the same function before the form (`views_apply_gate`), so the two cannot disagree.
+        verdict = apply_gate.apply_verdict(profile, cohort)
+        if not verdict.allowed:
+            return Response({'error': apply_gate.REFUSAL[verdict.reason], 'code': verdict.reason},
+                            status=status.HTTP_409_CONFLICT)
 
         lang = request.data.get('lang') or 'en'
         to_email = profile.contact_email or supabase_user.get('email') or ''
@@ -2423,9 +2421,9 @@ class BursaryAgreementView(APIView):
         from django.conf import settings as _settings
         if not getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False):
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        app = (ScholarshipApplication.objects
-               .filter(profile_id=request.user_id, bursary_agreement__isnull=False)
-               .select_related('bursary_agreement').order_by('-id').first())
+        live = apply_gate.in_play_application(request.user_id)   # her CURRENT one first (TD-337)
+        app = (ScholarshipApplication.objects.filter(profile_id=request.user_id, bursary_agreement__isnull=False)
+               .filter(**({'pk': live.pk} if live else {})).select_related('bursary_agreement').order_by('-id').first())
         if app is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(BursaryAgreementSerializer(app.bursary_agreement).data)

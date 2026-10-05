@@ -36,6 +36,7 @@ jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   getScholarshipIntake: jest.fn(() => Promise.resolve({ open: true, choices: [] })),
   getMyScholarshipApplications: jest.fn(() => Promise.resolve({ applications: [] })),
+  getApplyGate: jest.fn(() => Promise.resolve({ allowed: true, reason: '', application_id: null })),
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
   checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [] })),

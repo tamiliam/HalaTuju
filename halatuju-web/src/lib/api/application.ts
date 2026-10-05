@@ -222,6 +222,22 @@ export async function getScholarshipIntake(programme?: string): Promise<{
   return apiRequest(`/api/v1/scholarship/intake/${qs}`)
 }
 
+/** The server's answer to "may she start an application here?" (TD-337: one application in play
+ *  per organisation, and never the same round twice). The web keeps no copy of the rule. */
+export interface ApplyGateAnswer {
+  allowed: boolean
+  reason: '' | 'application_in_progress' | 'already_applied'
+  /** Her OWN application that blocks, or null. */
+  application_id: number | null
+}
+
+/** SIGNED-IN — asked before the form. `programme` is the code the URL names ('' = a bare visit,
+ *  which the server answers for the one open round, or for every open round when there are several). */
+export async function getApplyGate(programme: string, options?: ApiOptions): Promise<ApplyGateAnswer> {
+  const code = programme.trim()
+  return apiRequest(`/api/v1/scholarship/apply-gate/${code ? `?programme=${encodeURIComponent(code)}` : ''}`, options)
+}
+
 /** Fetch a single application (status + completeness + fields). Used to refresh
  *  page state after a document/consent change without losing in-progress edits. */
 export async function getScholarshipApplication(

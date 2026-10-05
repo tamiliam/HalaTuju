@@ -1,5 +1,102 @@
 # Architectural Decisions — HalaTuju
 
+## One application per organisation; the server decides and the apply page asks — 2026-10-05 (owner's ruling on TD-337)
+
+**The rulings, verbatim (owner, tamiliam, 2026-10-05).**
+Ruling 1: "If a student is currently active in a programme -- i.e. awarded, and hasn't been closed --
+the student may not apply for another programme under the same organisation."
+Ruling 2 (asked whether an application still in progress blocks too; the owner chose option A):
+"No. One application in process, or one award, for each organisation."
+
+**1. The rule as BUILT.** For a student and the round (cohort) she is trying to apply to, in this
+order — `apps/scholarship/services/apply_gate.py` is its one home:
+0. **In play ANYWHERE → refused, `application_in_progress`.** She holds an application, in ANY
+   organisation, whose student-facing status is not FINISHED (the blocking one is that application;
+   the newest, should legacy data hold several). FINISHED = `rejected`, `withdrawn`, `closed`,
+   `expired`. In play = `submitted`, `shortlisted`, `profile_complete`, `interviewing`,
+   `interviewed`, `recommended`, `awarded`, `active`, `maintenance`. Every one of the thirteen
+   statuses is classified; a test fails if the two sets stop partitioning `STATUS_CHOICES`.
+1. **Same round → refused, `already_applied`** (needs a resolved open round). A non-expired
+   application in this very round — the old per-round rule: a declined student cannot re-apply to
+   the round that declined her.
+2. **Otherwise allowed.** A finished application never blocks another programme, a later round, or
+   another organisation.
+The organisation is not read by the rule at all. The submit refuses with 409 `{error, code}`.
+
+**1a. In play blocks everywhere until M2 — stricter than the ruling across organisations, and why
+(lead decision, 2026-10-05, after the adversarial review).** Round 1 built the ruling literally — in
+play in the SAME organisation — and the review showed that "another organisation never blocks" made
+a SECOND LIVE APPLICATION reachable through the normal screens for the first time, which the student
+side cannot carry: `_current_application` answers 409 `application_ambiguous` to 13 student endpoints
+once two are live; the application page shows a "several" card with no links; onboarding and
+`ScholarshipBanner` pick by position; and because `_current_application` reads the RAW status while
+the screen reads the masked one, an embargoed decline in A beside a live application in B behaves
+differently from a real in-process A — which leaks the decision. Carrying two live applications is
+roadmap M2–M4 (not built, not approved). So, until M2: an in-play application blocks in every
+organisation. While one organisation runs rounds this changes nothing. It must be RELAXED TOGETHER
+WITH M2, never before (TD-353 records it for the owner).
+
+**2. The embargo does not leak.** "In play" is judged on the STUDENT-FACING status, the one her own
+screens show. A decline whose email is still embargoed (`pending_rejection_category` set) reads to her
+as the stage she was declined from, so it stays in play; were the gate to read the raw `rejected`, the
+form would suddenly let her in and tell her the outcome before the email does. The masking moved
+from `ApplicationReadSerializer.get_status` to `apps/scholarship/student_status.py`, and both the
+serializer and the gate call it; tested both ways (embargoed → blocked; embargo over → allowed).
+
+**3. The web asks the server and keeps no copy of the rule.** `GET /api/v1/scholarship/apply-gate/`
+answers `{allowed, reason, application_id}` with the same function the submit uses; the apply page
+(`lib/useApplyGate.ts`) obeys it and re-asks whenever the gift in force changes. `mustLeaveApplyPage`
+and `REAPPLY_ALLOWED_STATUSES` are deleted. This supersedes item 1 of "Apply gift clarity" below (the
+web deliberately stricter than the server): there is now one rule, on the server. A separate view
+module, not a field on the application list: `views.py` may not grow, the list read has query
+budgets of its own, and the verdict needs the round, which the list does not know.
+
+**3a. The in-play half needs no open round (lead's round-2 finding).** Closed is the normal state for
+most of the year, and every applicant keeps the link she applied through; before this sprint ANY
+visit by a student with a standing application went to her application. So `verdict_for_visit` answers
+`application_in_progress` for EVERY visit by a student in play — known, unknown or closed code, bare,
+nothing open — before the code is even looked at. (Round 2 judged a known code against its
+programme's organisation, which let an in-play student map her own organisation's codes; item 1a's
+"in play blocks everywhere" closed that too.) With nothing in play, an unknown and a closed code both
+answer `allowed`, so the answer never tells anyone whether a code exists or whose it is.
+`already_applied` still needs an open round. With several rounds open and none named, she is refused only if every
+round would refuse her, and the page asks again once she picks. `already_applied` is a card on the
+apply page, not a bounce: the application page cannot say "you already applied to THIS round", the
+apply page can. If the ask fails, the form shows; the submit still refuses.
+
+**3b. One place decides where the apply page sends her.** `applyPageExit` (`lib/useApplyGate.ts`),
+in a fixed order: `application_in_progress` → her application, taken as soon as the gate answers;
+else, once the intake has settled AND the gate is not pending (auth loading counts as pending), a bare
+visit with nothing open → `/scholarship`; else she stays. `useApplyGift` never redirects by itself.
+Round 1 had two redirects (the intake's "nothing open → /scholarship", the gate's "in progress → her
+application") racing, the last one winning. A signed-out visitor is never asked the gate and keeps
+today's behaviour.
+
+**3c. TD-348 is left open, on purpose.** The in-play check is read-then-write; the window is only the
+gate's read to the INSERT (a few queries — the acknowledgement email goes after the insert), which a
+script could hit and a person realistically cannot. The fix is a short `transaction.atomic()` with
+`select_for_update()` on her profile row around check and insert, the acknowledgement email moved to
+`on_commit` — which splits `create_application`, out of this sprint's bounds.
+
+**4. The organisation is not read by the rule** (item 1a). Round 1's "two NULL organisations count as
+one" rule went with it.
+
+**5. Her CURRENT application answers student-side reads that pick one.** Because a finished
+application no longer blocks, a student can hold an OLD finished application and a NEW in-play one
+in the same organisation. `GET /scholarship/bursary-agreement/` now answers for the in-play one
+(`apply_gate.in_play_application`, the student-facing status), falling back to today's "newest with
+an agreement" only when nothing is in play. The other student-side picks were reviewed (the sprint's
+report lists them); none other picks an old finished application over a new in-play one today.
+
+**6. What this rules in and out.** Several applications in play to programmes of the SAME organisation
+— roadmap M2 for one organisation (`docs/plans/2026-07-28-multi-programme-applications-roadmap.md`) —
+is ruled OUT by the owner. Applications in play to programmes of DIFFERENT organisations at once are
+allowed by the ruling but BLOCKED as built (item 1a) until M2–M4 is approved and built (TD-353); the
+application screen still shows "more than one" rather than picking (M1 stands).
+
+**Revisit if:** M2 is approved (relax item 1a with it, not before), the owner answers TD-352 (a
+stalled in-process application blocking every later round), or a status is added.
+
 ## The parent's consent: reasonable, RECORDED steps — not fraud prevention — owner, request #26, 2026-10-05
 
 **The owner, in their words:** "We are not dealing with a potential fraud. We only want the parent's

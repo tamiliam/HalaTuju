@@ -3,8 +3,8 @@
  *
  * "Apply gift clarity" (2026-10-05) — the apply form, rendered, with two gifts open at once.
  *
- *   D1 — who is sent away from the form: any non-expired application (the server's duplicate rule),
- *        not `applications[0]`. An expired one lets the student start again, as the server does.
+ *   D1 — who is sent away from the form: since TD-337 (2026-10-05) the SERVER's apply gate decides
+ *        (`page.gate.test.tsx`); the page no longer reads her application list at all.
  *   D2 — a pick in the chooser re-reads the intake for THAT gift, so its own heading shows (and a
  *        gift that closed in the meantime bounces, like a closed link).
  *   D3 — a bare visit asks again instead of reusing a code an earlier visit stored.
@@ -17,7 +17,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
-import { getMyScholarshipApplications, getScholarshipIntake, submitScholarshipApplication } from '@/lib/api'
+import { getApplyGate, getMyScholarshipApplications, getScholarshipIntake, submitScholarshipApplication } from '@/lib/api'
 import { APPLY_PROGRAMME_KEY, stashApplyForm, type ApplyFormState } from '@/lib/scholarship'
 import { readWeb } from '@/test/sourceGuard'
 
@@ -37,6 +37,7 @@ jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   getScholarshipIntake: jest.fn(),
   getMyScholarshipApplications: jest.fn(),
+  getApplyGate: jest.fn(),
   submitScholarshipApplication: jest.fn(() => Promise.resolve({})),
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
@@ -49,6 +50,7 @@ jest.mock('next/link', () => ({
 
 const intake = getScholarshipIntake as jest.Mock
 const myApps = getMyScholarshipApplications as jest.Mock
+const gate = getApplyGate as jest.Mock
 const submit = submitScholarshipApplication as jest.Mock
 
 const SABAH = 'BrightPath Bursary, Sabah'
@@ -76,21 +78,18 @@ beforeEach(() => {
   sessionStorage.clear()
   window.history.replaceState({}, '', '/scholarship/apply')
   myApps.mockResolvedValue({ applications: [] })
+  gate.mockResolvedValue({ allowed: true, reason: '', application_id: null })
   serveIntake({ open: true, cohort_name: 'B40 2026', choices: [], apply_copy: {} })
 })
 
-describe('D1 — who the form sends away (the server duplicate rule)', () => {
-  it('a lone EXPIRED application stays on the form — the server lets her start again', async () => {
-    myApps.mockResolvedValue({ applications: [{ id: 1, status: 'expired' }] })
-    mount()
-    await formShown()
-    expect(mockRouter.replace).not.toHaveBeenCalledWith('/scholarship/application')
-  })
-
-  it('a lone REJECTED application is sent to her application page', async () => {
+describe('D1 — the page keeps no rule of its own (TD-337)', () => {
+  it('never reads her application list: whatever it holds, the server gate decides', async () => {
     myApps.mockResolvedValue({ applications: [{ id: 1, status: 'rejected' }] })
     mount()
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/scholarship/application'))
+    await formShown()
+    expect(myApps).not.toHaveBeenCalled()
+    expect(gate).toHaveBeenCalledWith('', { token: 'tkn' })
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/scholarship/application')
   })
 })
 
@@ -283,15 +282,16 @@ describe('submit still names the gift', () => {
     expect(screen.getByTestId('apply-gift-others')).toBeTruthy()
   })
 
-  it('another 409 while the gift is STILL open: asked once more, then nothing changes (control)', async () => {
+  it('another 409 while the gift is STILL open: asked once more, then the error STAYS (TD-340)', async () => {
     submit.mockRejectedValueOnce(Object.assign(new Error('API error: 409'),
-      { status: 409, code: 'You have already applied to this round.', bodyCode: '' }))
+      { status: 409, code: 'Something else.', bodyCode: '' }))
     await submitComplete()
-    // ⚠ Not asserting the generic error text: the page's live-revalidate effect clears ANY error
-    // once the form itself is valid, so a server-side submit error vanishes at once (TD-340, the
-    // part that remains). The claim here: the gift is re-asked, is open, and nothing re-routes.
+    // The gift is re-asked, is open, nothing re-routes — and the refusal stays on screen (it used
+    // to be wiped at once by the live-revalidate effect, TD-340).
     await waitFor(() => expect(intake).toHaveBeenCalledTimes(2))   // the arrival, then the re-ask
+    expect(await screen.findByText('scholarship.apply.error.generic')).toBeTruthy()
     await act(async () => { await Promise.resolve() })
+    expect(screen.getByText('scholarship.apply.error.generic')).toBeTruthy()
     expect(mockRouter.replace).not.toHaveBeenCalledWith('/scholarship/apply')
     expect(screen.queryByTestId('apply-gift-closed')).toBeNull()
     expect(screen.queryByText('scholarship.apply.chooseTitle')).toBeNull()

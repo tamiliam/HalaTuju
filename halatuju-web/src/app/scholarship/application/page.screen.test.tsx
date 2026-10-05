@@ -7,7 +7,8 @@
  * It used to show only a LIVE application (shortlisted and later), so a student whose only
  * application was `submitted` read "You haven't applied yet", pressed "Start your application", and
  * was bounced straight back here by the form. The neutral "received" card meant for her could not be
- * reached. Both pages now read `applicationScreen` / `mustLeaveApplyPage` (applicationScreen.ts).
+ * reached. Since TD-337 (2026-10-05) the apply page asks the server instead of reading a rule of its
+ * own; this page still reads `applicationScreen` (applicationScreen.ts).
  *
  * `t` echoes its key.
  */
@@ -22,7 +23,7 @@ jest.mock('@/lib/auth-context', () => ({
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
 jest.mock('next/link', () => ({
   __esModule: true,
-  default: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
 }))
 jest.mock('@/components/AppHeader', () => () => null)
 jest.mock('@/components/AppFooter', () => () => null)
@@ -93,6 +94,29 @@ it('several finished applications, none submitted → the "closed" card, naming 
   expect(await screen.findByText('scholarship.application.finishedTitle')).toBeTruthy()
   expect(screen.queryByText('scholarship.application.multiple.title')).toBeNull()
   expect(screen.queryByTestId('application-gift-line')).toBeNull()   // no single gift to name
+})
+
+it('the "closed" card offers the open programmes — a finished application no longer blocks (TD-337)', async () => {
+  serve({ id: 1, status: 'rejected', cohort_name: ROUND })
+  render(<ScholarshipApplicationPage />)
+  const link = (await screen.findByText(/scholarship\.apply\.seeOpen/)).closest('a')
+  expect(link?.getAttribute('href')).toBe('/scholarship/apply')
+})
+
+it('a finished application in gift A + a newly submitted one in gift B → the "received" card for B', async () => {
+  serve({ id: 1, status: 'rejected', cohort_name: ROUND }, { id: 2, status: 'submitted', cohort_name: 'Sabah 2026' })
+  render(<ScholarshipApplicationPage />)
+  expect(await screen.findByText('scholarship.application.receivedTitle')).toBeTruthy()
+  expect(screen.getByTestId('application-gift-line').textContent).toContain('Sabah 2026')
+  expect(screen.queryByText('scholarship.application.finishedTitle')).toBeNull()
+})
+
+it('finished + live → the live one, named', async () => {
+  serve({ id: 1, status: 'withdrawn', cohort_name: ROUND }, { id: 2, status: 'interviewing', cohort_name: 'Sabah 2026' })
+  render(<ScholarshipApplicationPage />)
+  expect((await screen.findByTestId('application-gift-line')).textContent).toContain('Sabah 2026')
+  expect(screen.queryByText('scholarship.application.finishedTitle')).toBeNull()
+  expect(screen.queryByText('scholarship.application.none')).toBeNull()
 })
 
 it('two submitted applications → the "more than one" message', async () => {

@@ -31,15 +31,17 @@ const ROUTES: Record<string, Handler> = {
     applications: [sandboxApplication],
   }),
   '/api/v1/scholarship/intake/': () => ({ open: true, cohort_name: sandboxApplication.cohort_name }),
+  // The apply page asks the server whether she may apply before it draws the form (TD-337). The
+  // sandbox apply surfaces show the FORM, so the answer is "allowed".
+  '/api/v1/scholarship/apply-gate/': () => ({ allowed: true, reason: '', application_id: null }),
 }
 
 /**
  * Per-surface answers, layered OVER `ROUTES` for the surface currently mounted.
  *
- * One surface needs a DIFFERENT answer from the same endpoint: the apply form redirects away the
- * moment `/scholarship/applications/` returns one, because a returning applicant has nothing to
- * fill in. The Documents surface needs that same endpoint to return one. Both are correct; they
- * are different screens.
+ * One surface may need a DIFFERENT answer from the same endpoint than another — e.g. "no
+ * applications" for a screen about starting one, while the Documents surface needs the endpoint to
+ * return one. Both are correct; they are different screens.
  *
  * Set during the surface page's RENDER, before its children mount and fetch — the same timing
  * `installStubFetch` itself relies on. Replaced wholesale on every surface change so one screen's

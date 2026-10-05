@@ -2,6 +2,81 @@
 
 All notable changes to this project will be documented in this file.
 
+## One application per organisation — the server decides, the apply page asks - 2026-10-05
+
+Sprint (the owner's ruling on TD-337). Built locally, NOT deployed. Api + web. No migration, no
+model change, no new package, no paid call.
+
+**The rule** (owner, tamiliam, 2026-10-05; decisions.md): "One application in process, or one
+award, for each organisation." **As built** (lead decision after the adversarial review): an
+application in play — not rejected / withdrawn / closed / expired, by the student-facing status — in
+ANY organisation refuses her (`application_in_progress`); a non-expired application in this very
+round refuses her (`already_applied`, the old per-round rule); otherwise she may apply. A finished
+application no longer blocks another programme, a later round, or another organisation. ⚠ Stricter
+than the ruling ACROSS organisations, on purpose, until roadmap M2: the student side cannot yet carry
+two live applications (TD-353). It changes nothing while one organisation runs rounds.
+
+**Added**
+- **`apps/scholarship/services/apply_gate.py`** — the one home of the rule (`apply_verdict`,
+  `verdict_over_rounds`, `IN_PLAY_STATUSES` / `FINISHED_STATUSES`, which a test holds to an exact
+  partition of `STATUS_CHOICES`). `ApplicationListCreateView.post` now refuses with 409
+  `{error, code}`, `code` being `application_in_progress` or `already_applied`.
+- **`GET /api/v1/scholarship/apply-gate/?programme=<code>`** (`views_apply_gate.py`, signed in) —
+  `{allowed, reason, application_id}`, the same verdict BEFORE the form
+  (`apply_gate.verdict_for_visit`). ⚠ The in-play half needs NO open round (closed is the normal
+  state most of the year): a student in play is answered `application_in_progress` on EVERY visit —
+  known, unknown or closed code, bare, nothing open — so the answer never depends on whether a code
+  exists or whose it is. With nothing in play, an unknown and a closed code both answer allowed;
+  `already_applied` needs an open round; a bare ask with several open rounds is refused only if she
+  already applied to every one.
+- **`apps/scholarship/student_status.py`** — the student-facing status masking moved out of
+  `ApplicationReadSerializer.get_status`, so the serializer and the gate read one function and an
+  embargoed decline still counts as in play (the form does not let her in before the email goes).
+- **Web: `lib/useApplyGate.ts`** — the apply page asks the gate (never signed out), re-asks when the
+  gift changes, and obeys: in progress → her application; already applied → a new card on the apply
+  page (`components/scholarship/AlreadyApplied.tsx`, with "See programmes that are open" when another
+  gift is open); a failed ask → the form. A refused submit with either code is adopted the same way.
+  **ONE place decides where the page sends her** (`applyPageExit`): in progress → her application,
+  first; else, once the intake has settled and the gate is not pending, a bare visit with nothing
+  open → `/scholarship`. `useApplyGift` no longer redirects by itself (it exposes `noneOpen`), so the
+  two redirects can no longer race. An applicant on her closed gift's link reaches her application,
+  never the closed card.
+- **The application page's "closed" card links to `/scholarship/apply`** ("See programmes that are
+  open") — she may now apply again. It shows even when nothing is open (a detour to the landing);
+  gating it on the intake cost 28 gz bytes the route lacks (TD-354).
+- One new string in en/ms/ta: `scholarship.apply.alreadyApplied`. **ms/ta are first drafts.**
+
+**Fixed**
+- **TD-340 — a server refusal at submit vanished at once.** It is now kept apart from the field
+  error the live-revalidate effect manages, and stays until she changes something or submits again.
+- **`GET /scholarship/bursary-agreement/` answers for her CURRENT application** (the in-play one,
+  `apply_gate.in_play_application`), not the newest row that has any agreement — a graduate with a
+  signed agreement on a closed application, later awarded on a new one, was shown the OLD agreement
+  ("awaiting countersignature") instead of her offer. With nothing in play, unchanged.
+
+**Removed**
+- `halatuju-web/src/lib/applyGate.ts` (`mustLeaveApplyPage`, `REAPPLY_ALLOWED_STATUSES`,
+  `standingApplications`) — the web keeps no copy of the rule. The apply page no longer reads her
+  application list at all.
+
+**Still open: TD-348** — the in-play check is read-then-write with no lock (the window is the gate's
+read to the INSERT; a script could hit it, a person realistically cannot). Fix: a short locked
+transaction with the acknowledgement email on `on_commit` — not done in this sprint. **Raised by the
+review:** TD-349 to TD-354 (two embargo leaks, the shortlisted-decline 403s, a same-round 500, the
+owner's stalled-application question, cross-organisation applications until M2, the closed card's
+link). (This sprint's debt ids were renumbered TD-347…353 → TD-348…354 on rebasing onto request
+#26, which had raised its own TD-347.)
+
+**Numbers.** jest 232 suites / 3664 → **233 / 3933**; api 7845 passed, 3 skipped → **7885 passed, 3 skipped**;
+`makemigrations --check` no changes;
+typecheck clean; lint 0 errors (17 warnings, none in a touched file). First-load JS (exact):
+`/scholarship/apply` 271.353 → **271.667 kB** (272), `/scholarship/application` 273.632 →
+**273.677** (274), `/profile` 309.517 → **309.542** (310), median 227.85 → **227.875** (229). Files:
+`apply/page.tsx` 1070 → **1062**, `lib/scholarship.ts` 1084 → **1084**, `views.py` 2436 → **2434**,
+`serializers.py` 1215 → **1204**. Bite-checked: nine faults over three rounds, each red against that round's code. Retrospective:
+`docs/retrospective-2026-10-05-one-application-per-organisation.md`. (Figures measured before the
+rebase onto request #26; the lead re-measures after it.)
+
 ## Request #26 — a student (or an admin) can correct the parent/guardian phone - 2026-10-05
 
 Sprint lane (analysis #69 + owner rulings R1–R7). **LIVE 2026-10-05** — pushed `a3f56a44..073cdad3`,

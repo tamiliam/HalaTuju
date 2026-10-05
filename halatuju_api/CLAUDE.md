@@ -118,12 +118,31 @@ superseded Next Sprint sections below and in `docs/decisions.md` (2026-07-28, 20
 * **A bare `/scholarship/apply` asks afresh.** `enterApplyPage` (`src/lib/applyProgramme.ts`) forgets a
   stored code when the URL has no `?p=`; the My Results detour and the sign-in gate come back through
   `applyPagePath()` (`src/lib/applyPagePath.ts`), which puts `?p=` back in the URL.
-* **One rule for `/scholarship/apply` and `/scholarship/application`:** `src/lib/applyGate.ts`
-  (`mustLeaveApplyPage` — any application not `expired`, in ANY round) and
-  `src/lib/applicationScreen.ts` (one live → it; several → "more than one"; none live → the single
-  submitted one, or the "closed" card for only rejected / withdrawn / closed). ⚠ The web is
-  deliberately stricter than the server's per-round duplicate check until M2 is approved (TD-337).
-  `studentScreenDrift.test.ts` pins the status list against `views.py`, not the scope.
+* **One application in play (owner's ruling on TD-337, 2026-10-05: one per organisation; as BUILT,
+  one ANYWHERE until M2) — ONE rule, on the server:** `apps/scholarship/services/apply_gate.py` — an
+  application in play (not rejected / withdrawn / closed / expired) in ANY organisation →
+  `application_in_progress`; a non-expired one in the same round → `already_applied`; otherwise
+  allowed. ⚠ Deliberately stricter than the ruling across organisations: the student side cannot carry
+  two live applications (`_current_application` 409s, positional picks) — relax it WITH M2, never
+  before (TD-353). Judged on the STUDENT-FACING status (`apps/scholarship/student_status.py`, shared
+  with `ApplicationReadSerializer.get_status`), so an embargoed decline still blocks. The submit
+  refuses with 409 `{error, code}` (`apply_verdict`, always with a round);
+  **`GET /api/v1/scholarship/apply-gate/?programme=<code>`** (`views_apply_gate.py`, signed in, →
+  `apply_gate.verdict_for_visit`) serves `{allowed, reason, application_id}` before the form: in play
+  → in progress on EVERY visit (any code, unknown or closed, bare, nothing open); otherwise an unknown
+  and a closed code both → allowed. `apply_gate.in_play_application(user_id)` is her CURRENT
+  application — `BursaryAgreementView` answers for it. Tests: `test_apply_gate.py`.
+* **The web keeps no copy of the rule.** `src/lib/useApplyGate.ts` asks the gate (never signed out),
+  re-asks when the gift changes, and obeys: in progress → `/scholarship/application`; already applied
+  → `components/scholarship/AlreadyApplied.tsx`; a failed ask → the form. ONE function,
+  `applyPageExit`, decides every redirect off the apply page (in progress first; then, once intake
+  and gate have both answered, bare + nothing open → `/scholarship`); `useApplyGift` never redirects. `src/lib/applicationScreen.ts`
+  decides only what the application page shows (one live → it; several → "more than one"; none live →
+  the single submitted one, or the "closed" card, which now links back to the apply page).
+  `studentScreenDrift.test.ts` reads the gate's `IN_PLAY_STATUSES` / `FINISHED_STATUSES` and asserts
+  that, for every list the rule can produce, a student the gate calls in progress lands on THE
+  application it named (`kind: 'one'`, same id). Open: TD-348 (no database lock; fix = a short locked
+  transaction with the acknowledgement email on `on_commit`), TD-349 to TD-354.
 
 ## Deployment
 

@@ -94,11 +94,11 @@ export type { FieldTaxonomyEntry, MeritResult, CgpaResult, PathwayResult } from 
 export {
   submitScholarshipApplication, getMyScholarshipApplications, getScholarshipIntake,
   getScholarshipApplication, updateScholarshipDetails, switchIncomeRoute,
-  confirmScholarshipApplication,
+  confirmScholarshipApplication, getApplyGate,
 } from './api/application'
 export type {
   FundingNeed, ApplicationCompleteness, ApplicationRequirements, ScholarshipApplication,
-  IntakeChoice, ApplyCopyBlock,
+  IntakeChoice, ApplyCopyBlock, ApplyGateAnswer,
 } from './api/application'
 
 // Interview scheduling, from the student's side.

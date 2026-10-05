@@ -13,11 +13,11 @@
  * `t` echoes its key, so the platform default reads as `scholarship.apply.title` /
  * `scholarship.apply.criteria1`; gift copy and names are data.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
-import { getMyScholarshipApplications, getScholarshipIntake } from '@/lib/api'
+import { getApplyGate, getMyScholarshipApplications, getScholarshipIntake } from '@/lib/api'
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() }
 jest.mock('next/navigation', () => ({
@@ -34,6 +34,7 @@ jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   getScholarshipIntake: jest.fn(),
   getMyScholarshipApplications: jest.fn(),
+  getApplyGate: jest.fn(),
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
   checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [] })),
@@ -45,6 +46,8 @@ jest.mock('next/link', () => ({
 
 const intake = getScholarshipIntake as jest.Mock
 const myApps = getMyScholarshipApplications as jest.Mock
+const gate = getApplyGate as jest.Mock
+const IN_PROGRESS = { allowed: false, reason: 'application_in_progress', application_id: 1 }
 
 const SABAH = 'BrightPath Bursary, Sabah'
 const TWO_OPEN = { open: true, cohort_name: '', programme_code: '', apply_copy: {},
@@ -68,6 +71,7 @@ beforeEach(() => {
   sessionStorage.clear()
   window.history.replaceState({}, '', '/scholarship/apply')
   myApps.mockResolvedValue({ applications: [] })
+  gate.mockResolvedValue({ allowed: true, reason: '', application_id: null })
   serveIntake(TWO_OPEN, { sabah: SABAH_OPEN })
 })
 
@@ -83,6 +87,7 @@ describe('signed out, bare link, two gifts open — the ask comes first', () => 
       expect(screen.queryByText('scholarship.apply.signInButton')).toBeNull()
       // never pre-selected
       expect((screen.getByTestId('apply-choose-continue') as HTMLButtonElement).disabled).toBe(true)
+      expect(gate).not.toHaveBeenCalled()       // a signed-out visitor is never asked (TD-337)
     },
   )
 
@@ -108,6 +113,7 @@ describe('signed out, bare link, two gifts open — the ask comes first', () => 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sabah bursary' })).toBeTruthy()
     expect(screen.getByText('scholarship.apply.signInButton')).toBeTruthy()
     expect(screen.queryByText('scholarship.apply.chooseTitle')).toBeNull()
+    expect(gate).not.toHaveBeenCalled()
   })
 })
 
@@ -146,23 +152,30 @@ describe('a NAMED gift that has closed says so (owner, 2026-10-05) — no silent
     expect(screen.queryByTestId('apply-gift-others')).toBeNull()
   })
 
-  it('a signed-in student with a standing application is still sent to her application', async () => {
+  it('a signed-in applicant on her CLOSED gift\'s link is sent to her application, not the closed card', async () => {
+    // The server answers the in-play half with no open round (TD-337 round 2), so this is the real
+    // api's answer on her own link: in progress → her application, before the closed card.
     serveIntake(TWO_OPEN, { sabah: CLOSED })
-    myApps.mockResolvedValue({ applications: [{ id: 1, status: 'submitted' }] })
+    gate.mockResolvedValue(IN_PROGRESS)
     render(
       <AuthContext.Provider value={{ status: 'ready', profile: null, token: 'tkn', showAuthGate: () => {} } as never}>
         <ScholarshipApplyPage />
       </AuthContext.Provider>,
     )
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/scholarship/application'))
+    expect(gate).toHaveBeenCalledWith('sabah', { token: 'tkn' })
+    expect(mockRouter.replace.mock.calls).toEqual([['/scholarship/application']])
     expect(screen.queryByTestId('apply-gift-closed')).toBeNull()
   })
 
-  it('a BARE visit with nothing open anywhere still goes to the landing (unchanged)', async () => {
+  it('a BARE visit with nothing open anywhere still goes to the landing (unchanged), once, unasked', async () => {
     window.history.replaceState({}, '', '/scholarship/apply')
     serveIntake({ open: false, cohort_name: '', programme_code: '', choices: [] })
     mountAs('anonymous')
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/scholarship'))
+    await act(async () => { await Promise.resolve() })
+    expect(mockRouter.replace.mock.calls).toEqual([['/scholarship']])
+    expect(gate).not.toHaveBeenCalled()
   })
 })
 
@@ -193,9 +206,9 @@ describe('no flash of the wrong gift', () => {
     expect(screen.queryByText('scholarship.apply.loading')).toBeNull()
   })
 
-  it('the existing-application bounce is not held back by an unanswered intake', async () => {
+  it('the in-progress bounce is not held back by an unanswered intake', async () => {
     intake.mockImplementation(() => new Promise(() => {}))         // never answers
-    myApps.mockResolvedValue({ applications: [{ id: 1, status: 'submitted' }] })
+    gate.mockResolvedValue(IN_PROGRESS)
     render(
       <AuthContext.Provider value={{ status: 'ready', profile: null, token: 'tkn', showAuthGate: () => {} } as never}>
         <ScholarshipApplyPage />

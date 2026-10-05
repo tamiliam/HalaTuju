@@ -13,7 +13,6 @@ import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
 import {
   submitScholarshipApplication,
-  getMyScholarshipApplications,
   claimNric,
   checkEligibility,
   calculatePathways,
@@ -59,7 +58,7 @@ import {
   type TopChoice,
 } from '@/lib/scholarship'
 import { applyCard } from '@/lib/applyCopy'
-import { mustLeaveApplyPage } from '@/lib/applyGate'   // the leaf, not applicationScreen
+import { useApplyGate, applyPageExit } from '@/lib/useApplyGate'   // the SERVER's verdict; no web rule
 import { useApplyGift, isProgrammeRequired, isOtherConflict, clearApplyProgramme } from '@/lib/useApplyGift'
 import LazyStpmSchoolPicker from '@/components/scholarship/LazyStpmSchoolPicker'
 import LazyGiftChooser from '@/components/scholarship/LazyGiftChooser'
@@ -67,6 +66,7 @@ import LazyAliranPicker from '@/components/scholarship/LazyAliranPicker'
 import LazyMatricCollegePicker from '@/components/scholarship/LazyMatricCollegePicker'
 import ApplyingTo from '@/components/scholarship/ApplyingTo'
 import GiftClosed from '@/components/scholarship/GiftClosed'
+import AlreadyApplied from '@/components/scholarship/AlreadyApplied'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -106,13 +106,20 @@ export default function ScholarshipApplyPage() {
   const router = useRouter()
 
   const [form, setForm] = useState<ApplyFormState>(() => profileToApplyDefaults(null))
-  const [loadingExisting, setLoadingExisting] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // A SERVER refusal at submit, kept apart from the field error the live-revalidate effect below
+  // manages — that effect used to wipe it at once when the form itself was valid (TD-340).
+  const [serverError, setServerError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
   // Which gift this form is for: its code (sent at submit), its own copy, the chooser's options
   // when several are open and nothing named one, and its name for the form. See `useApplyGift`.
   const gift = useApplyGift(router)
+  // May she apply to it? The server's verdict (TD-337), re-asked with the gift; never signed out.
+  const gate = useApplyGate(status === 'ready' ? token : null, gift.named)
+  // Where she goes, decided in ONE place once intake and gate have both answered (no racing redirects).
+  const exit = applyPageExit({ settled: gift.settled, noneOpen: gift.noneOpen, authLoading: status === 'loading', gate: gate.state })
+  useEffect(() => { if (exit) router.replace(exit) }, [exit, router])
   // Income field shows raw digits while focused (easy to edit) and a formatted
   // "3,000.00" when blurred. The stored value (form.householdIncome) stays raw.
   const [incomeFocused, setIncomeFocused] = useState(false)
@@ -204,27 +211,8 @@ export default function ScholarshipApplyPage() {
       .finally(() => setPathwayLoading(false))
   }, [status, token, profile])
 
-  // A returning applicant has nothing to fill in here — send them to their
-  // application page (which shows status / the follow-up steps). Keeps the
-  // form for first-time applicants only and avoids a 409 on resubmit.
-  // ⚠ Not `applications[0]`: ANY non-expired row in ANY round (stricter than the server's per-round
-  // check — see applyGate); the application page shows exactly those, so the two cannot loop.
-  useEffect(() => {
-    let active = true
-    if (status !== 'ready' || !token) {
-      setLoadingExisting(false)
-      return
-    }
-    setLoadingExisting(true)
-    getMyScholarshipApplications({ token })
-      .then((res) => {
-        if (!active) return
-        if (mustLeaveApplyPage(res.applications)) { router.replace('/scholarship/application'); return }
-        setLoadingExisting(false)
-      })
-      .catch(() => { if (active) setLoadingExisting(false) })
-    return () => { active = false }
-  }, [status, token, router])
+  // A server refusal stays on screen until she changes something (or submits again) — TD-340.
+  useEffect(() => { setServerError(null) }, [form])
 
   const update = useCallback(
     <K extends keyof ApplyFormState>(key: K, value: ApplyFormState[K]) => {
@@ -342,7 +330,7 @@ export default function ScholarshipApplyPage() {
     }
     if (!token) return
     setSubmitting(true)
-    setError(null)
+    setError(null); setServerError(null)
 
     // Commit-on-submit. The NRIC commits through the validated claim path (never
     // the application payload); the other About Me + My Family fields are synced
@@ -351,12 +339,12 @@ export default function ScholarshipApplyPage() {
       try {
         const res = await claimNric(form.nric.trim(), false, { token })
         if (res.status === 'exists') {
-          setError(t('scholarship.apply.error.nricTaken'))
+          setServerError(t('scholarship.apply.error.nricTaken'))
           setTab('personal'); setSubmitting(false); return
         }
       } catch {
         // 400 (age/state) or 403 (locked) from the claim endpoint
-        setError(t('scholarship.apply.error.nric'))
+        setServerError(t('scholarship.apply.error.nric'))
         setTab('personal'); setSubmitting(false); return
       }
     }
@@ -369,16 +357,17 @@ export default function ScholarshipApplyPage() {
       clearApplyProgramme()
       router.replace('/scholarship/application')
     } catch (err) {
-      // Which gift? → ask again, typed answers kept. Another 409 → closed mid-form? → the closed card.
+      // Which gift? → ask again, typed answers kept. The gate's own refusals → her application, or
+      // the already-applied card. Another 409 → closed mid-form? → the closed card.
       if (isProgrammeRequired(err)) { gift.change(); return }
-      if (isOtherConflict(err) && await gift.recheck()) return
+      if (gate.adopt(err) || (isOtherConflict(err) && await gift.recheck())) return
       // If a field was rejected for length, name the exact question to shorten.
       const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
       const labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null
       if (labelKey) {
-        setError(t('scholarship.apply.error.tooLong', { field: t(labelKey) }))
+        setServerError(t('scholarship.apply.error.tooLong', { field: t(labelKey) }))
       } else {
-        setError(t('scholarship.apply.error.generic'))
+        setServerError(t('scholarship.apply.error.generic'))
       }
     } finally {
       setSubmitting(false)
@@ -424,7 +413,9 @@ export default function ScholarshipApplyPage() {
     </div>
   )
 
-  if (!gift.settled || status === 'loading' || (status === 'ready' && loadingExisting)) {
+  // Loading also while the gate is unanswered for a signed-in student, and while she is being sent
+  // away (`exit`: her application, or the landing) — never a flash of the closed card on the way.
+  if (!gift.settled || status === 'loading' || gate.state === 'pending' || exit) {
     return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>, gift.settled && !gift.closed && gift.choices.length < 2)
   }
 
@@ -453,8 +444,9 @@ export default function ScholarshipApplyPage() {
     )
   }
 
-  // ── status === 'ready', no existing application → the tabbed form ──
-  // (returning applicants were redirected to /scholarship/application above)
+  // A finished application in THIS round: say so, here (the gate's `already_applied`; never a bounce).
+  if (gate.state === 'already_applied') return wrap(<AlreadyApplied onSeeOpen={gift.canChange ? gift.change : undefined} />)
+  // ── status === 'ready', allowed by the gate (or it could not answer) → the tabbed form ──
   const academic = profileAcademicSummary(profile)
   const tabIndex = TAB_ORDER.indexOf(tab)
   const isLast = tabIndex === TAB_ORDER.length - 1
@@ -1020,9 +1012,9 @@ export default function ScholarshipApplyPage() {
           </div>
 
           {/* Validation / submit error — shown on whichever tab the error sent the user to */}
-          {error && (
+          {(error || serverError) && (
             <div role="alert" aria-live="assertive" className="mb-4 rounded-lg border border-critical-200 bg-critical-50 p-3">
-              <p className="text-sm text-critical-600">{error}</p>
+              <p className="text-sm text-critical-600">{error || serverError}</p>
             </div>
           )}
 

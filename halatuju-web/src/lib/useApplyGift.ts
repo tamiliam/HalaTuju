@@ -14,8 +14,10 @@
  * to `/scholarship`; now `closed` is set and the page shows a closed card on the gift's own page,
  * with `othersOpen` offering the bare apply page BY LINK — never a redirect, never a pre-selection.
  * `recheck` asks again after a refused submit, so a student midway through the form when the round
- * closed is told why. A BARE visit with nothing open anywhere still goes to `/scholarship`, whose
- * landing already says closed.
+ * closed is told why. A BARE visit with nothing open anywhere sets `noneOpen`; the PAGE then sends
+ * her to `/scholarship` (whose landing already says closed) — unless the apply gate says she has an
+ * application in progress, which wins. This hook never redirects by itself (round 2 of TD-337: two
+ * redirects raced, and the last one won).
  *   • D3 — a bare visit reused whatever code an earlier visit in the tab had stored. Arrival now goes
  *     through `enterApplyPage`: the URL is the only thing that names a gift, and the two legitimate
  *     round trips come back carrying `?p=` (`applyPagePath`).
@@ -68,6 +70,11 @@ export interface ApplyGift {
   closed: boolean
   /** Some OTHER round is open (the bare intake says so) — the closed card may link to it. */
   othersOpen: boolean
+  /** A BARE visit and nothing is open anywhere. The page decides where that sends her. */
+  noneOpen: boolean
+  /** The code the URL (or a pick) names — '' on a bare visit, null until the address bar is read.
+   *  What the apply gate asks about; the server resolves it exactly as the intake does. */
+  named: string | null
   pick: (code: string) => void
   change: () => void
   /** Ask the intake again for the code in force; resolves true (and sets `closed`) if it closed. */
@@ -99,6 +106,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
   const [settled, setSettled] = useState(false)
   const [closed, setClosed] = useState(false)
   const [othersOpen, setOthersOpen] = useState(false)
+  const [noneOpen, setNoneOpen] = useState(false)
   // Bumped by `change` so the intake is asked again even when the URL code was already '' (a 409
   // on a bare visit) — setting '' to '' would not re-run the effect.
   const [asked, setAsked] = useState(0)
@@ -106,14 +114,15 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
   // Capture the organisation's link (`?p=`) the moment the student ARRIVES, not at submit.
   useEffect(() => { setUrlCode(enterApplyPage(window.location.search)) }, [])
 
-  // Intake gate: no NEW applications once the gift's round closes — a bookmarked or just-picked
-  // gift that is closed bounces to the landing. Re-asked whenever the URL's code changes.
+  // Intake gate: no NEW applications once the gift's round closes — a named gift that is closed
+  // says so (`closed`); nothing open on a bare visit is `noneOpen`. Re-asked whenever the URL's
+  // code changes.
   useEffect(() => {
     if (urlCode === null) return
     let active = true
     // Never show (or submit) one gift's name or code while another is in force.
     setCopy(undefined); setName(''); setServed(''); setChoices([]); setCanChange(false)
-    setSettled(false); setClosed(false); setOthersOpen(false)
+    setSettled(false); setClosed(false); setOthersOpen(false); setNoneOpen(false)
     // ⚠ THE GIFT'S CODE GOES WITH THE QUESTION. Without it this asks "is anything open ANYWHERE?"
     // — a student on a closed gift's poster was shown the whole form and refused only at submit.
     getScholarshipIntake(urlCode).then((r) => {
@@ -123,7 +132,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
       setSettled(true)
       if (!r.open) {
         if (urlCode) setClosed(true)              // a NAMED gift: say so, on its own page
-        else router.replace('/scholarship')       // nothing open anywhere: the landing says so
+        else setNoneOpen(true)                    // nothing open anywhere: the PAGE decides
         return
       }
       setName(r.cohort_name || '')
@@ -145,7 +154,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
       }).catch(() => {})
     }
     return () => { active = false }
-  }, [urlCode, asked, router])
+  }, [urlCode, asked])
 
   const pick = useCallback((picked: string) => {
     const clean = picked.trim()
@@ -185,6 +194,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
   }, [code])
 
   return {
-    code, copy, choices, name, canChange, settled, closed, othersOpen, pick, change, recheck,
+    code, copy, choices, name, canChange, settled, closed, othersOpen, noneOpen, pick, change, recheck,
+    named: urlCode,
   }
 }

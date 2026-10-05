@@ -1,24 +1,18 @@
 /**
- * ONE RULE FOR TWO PAGES: has this student applied, and what does her application screen show?
+ * What `/scholarship/application` shows: which of her applications, or none, or "several".
  *
- * `/scholarship/apply` and `/scholarship/application` used to answer that separately, and they
- * disagreed. The form sent away anyone with ANY row (`applications[0]`); the application screen
- * showed only a LIVE one (shortlisted and later). A student whose only application was `submitted`
- * — the status every application starts in — was told "You haven't applied yet", pressed "Start
- * your application", and was sent straight back. Both pages now read one rule, and
- * `applicationScreen.test.ts` asserts, over every status and every pair, that the form sends her
- * away EXACTLY when the screen has something other than "you haven't applied" to show.
- *
- * The form's half (`mustLeaveApplyPage`, and the status list with its deliberate scope note) lives
- * in the leaf `./applyGate` so the apply page does not download this screen rule; it is re-exported
- * here so the pair reads as one.
+ * `/scholarship/apply` and `/scholarship/application` used to answer "has she applied?" separately,
+ * and they disagreed (2026-10-05, "apply gift clarity"). Since the owner's ruling on TD-337 the apply
+ * page keeps NO rule of its own: it asks the server (`GET /scholarship/apply-gate/`,
+ * `halatuju_api/apps/scholarship/services/apply_gate.py`) and is sent here only when the server says
+ * `application_in_progress`. The pair still has to agree — whenever the server says that, this
+ * screen must show THE application the gate named (`kind: 'one'`, same id): not "you haven't
+ * applied", not the closed card, not "several", not another one. `studentScreenDrift.test.ts` reads
+ * the server's IN_PLAY / FINISHED lists and asserts it over every list the rule can produce.
  *
  * Pure: no React, no storage.
  */
 import { liveApplications } from './scholarship'
-import { standingApplications } from './applyGate'
-
-export { REAPPLY_ALLOWED_STATUSES, mustLeaveApplyPage } from './applyGate'
 
 export type ApplicationScreen<T> =
   | { kind: 'one'; app: T }
@@ -39,13 +33,17 @@ export type ApplicationScreen<T> =
  *        • no `submitted` (only rejected / withdrawn / closed …) → 'finished': a neutral "this
  *          application is closed" card. It carries the app when there is exactly one, so the page
  *          can name its gift; with several it names none.
- *   4. Only expired rows, or nothing → 'none' ("You haven't applied yet") — and the form lets her in.
+ *   4. Only expired rows, or nothing → 'none' ("You haven't applied yet").
+ *
+ * A finished application in one gift beside a submitted or live one in another (reachable since
+ * TD-337) shows the submitted / live one, by rules 1 and 3.
  */
 export function applicationScreen<T extends { status: string }>(apps: readonly T[]): ApplicationScreen<T> {
   const live = liveApplications(apps)
   if (live.length === 1) return { kind: 'one', app: live[0] }
   if (live.length > 1) return { kind: 'several', count: live.length }
-  const rest = standingApplications(apps)
+  // An auto-closed ('expired') application is history, never something on screen.
+  const rest = apps.filter((a) => a.status !== 'expired')
   if (!rest.length) return { kind: 'none' }
   const submitted = rest.filter((a) => a.status === 'submitted')
   if (submitted.length === 1) return { kind: 'one', app: submitted[0] }

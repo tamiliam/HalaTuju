@@ -1087,7 +1087,8 @@
       "chooseCta": "Continue",
       "applyingTo": "You are applying to:",
       "changeGift": "Change",
-      "seeOpen": "See programmes that are open"
+      "seeOpen": "See programmes that are open",
+      "alreadyApplied": "You have already applied to this programme this year."
     },
     "nextSteps": {
       "title": "You've been shortlisted!",

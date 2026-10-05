@@ -3,6 +3,7 @@ from django.urls import path
 
 from .views_branding import BrandingView
 from .views_guardian_contact import StudentGuardianContactView
+from .views_apply_gate import ApplyGateView
 from .views import (
     ApplicationConfirmView,
     ApplicationOnboardingCompleteView,
@@ -200,6 +201,8 @@ urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
     path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
     path('scholarship/intake/', ScholarshipIntakeView.as_view()),
+    # May the signed-in student start an application here? The submit's own rule (TD-337).
+    path('scholarship/apply-gate/', ApplyGateView.as_view()),
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
     path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),

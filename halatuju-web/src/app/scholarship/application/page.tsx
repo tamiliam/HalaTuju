@@ -236,13 +236,20 @@ export default function ScholarshipApplicationPage() {
 
   // Only finished applications (rejected / withdrawn / closed …), none live or submitted. Neutral on
   // purpose: no raw status word, nothing celebratory or harsh — the decision went by email. The
-  // "received" card below would be untrue here ("you'll receive our decision").
+  // "received" card below would be untrue here ("you'll receive our decision"). A finished
+  // application no longer holds her place (owner, TD-337), so she may apply again: the apply page
+  // asks the server which programmes she may still apply to. ⚠ The link shows even when nothing is
+  // open (the apply page then sends her to the landing, which says closed): asking the intake here
+  // cost 28 gz bytes this route had no room for (TD-354).
   if (finished) {
     return wrap(
       <>
         <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
           <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.finishedTitle')}</h2>
           <p className="text-ground-700">{t('scholarship.application.finishedBody')}</p>
+          <Link href="/scholarship/apply" className="mt-4 inline-block font-medium text-primary-600 hover:underline">
+            {t('scholarship.apply.seeOpen')} →
+          </Link>
         </div>
         {nav({ email: false, waiting: false })}
       </>,

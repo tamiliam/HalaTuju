@@ -639,11 +639,20 @@ document/referee/consent client functions in `lib/api.ts`.
 (`enterApplyPage` — a bare arrival forgets the stored code — `setApplyProgramme`,
 `clearApplyProgramme`, `needsProgrammeChoice`, moved out of `scholarship.ts`);
 `src/lib/applyPagePath.ts` (the way back to the form WITH `?p=`, for the My Results detour, the sign-in
-gate and `/auth/callback`); `src/lib/applyGate.ts` (`mustLeaveApplyPage`, `REAPPLY_ALLOWED_STATUSES`)
-and `src/lib/applicationScreen.ts` (`applicationScreen`: one / finished / several / none) — ONE rule
-for `/scholarship/apply` and `/scholarship/application`. Components in `components/scholarship/`:
+gate and `/auth/callback`); `src/lib/applicationScreen.ts` (`applicationScreen`: one / finished /
+several / none — what `/scholarship/application` shows). Components in `components/scholarship/`:
 `ApplyingTo` (the gift line), `GiftChooser` behind `LazyGiftChooser`, and the lazy boundaries
 `LazyAliranPicker` and `LazyMatricCollegePicker`.
+
+**One application in play (2026-10-05, TD-337; one ANYWHERE until M2) — the server decides.**
+`apps/scholarship/services/apply_gate.py` (the rule: `apply_verdict` for the submit,
+`verdict_for_visit` for the apply page — in play answers in progress on every visit —
+`verdict_over_rounds`, `in_play_application` (her CURRENT application, read by
+`BursaryAgreementView`), `IN_PLAY_STATUSES` / `FINISHED_STATUSES`); `apps/scholarship/student_status.py`
+(`student_facing_status`, the embargo/`recommended` masking, shared by `ApplicationReadSerializer`
+and the gate); `apps/scholarship/views_apply_gate.py` (`ApplyGateView`,
+`GET /api/v1/scholarship/apply-gate/`). Web: `src/lib/useApplyGate.ts` (asks and obeys; `applyPageExit` is the ONE redirect decision; the old
+`src/lib/applyGate.ts` is deleted) and `components/scholarship/AlreadyApplied.tsx`.
 
 **Vircle spending (sponsor spending reporting, S1 2026-09-10).**
 `apps/scholarship/spending_import.py` reads a Vircle "Bursary Usage Report" and stores it as

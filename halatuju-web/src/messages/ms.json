@@ -1087,7 +1087,8 @@
       "chooseCta": "Teruskan",
       "applyingTo": "Anda sedang memohon untuk:",
       "changeGift": "Tukar",
-      "seeOpen": "Lihat program yang masih dibuka"
+      "seeOpen": "Lihat program yang masih dibuka",
+      "alreadyApplied": "Anda sudah memohon untuk program ini pada tahun ini."
     },
     "nextSteps": {
       "title": "Anda telah disenarai pendek!",
