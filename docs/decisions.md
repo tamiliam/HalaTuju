@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## A named closed gift says closed on its own page; other open gifts are offered by link, never by redirect — 2026-10-05 (owner's live test)
+
+**Decision.** `/scholarship/apply?p=<code>` for a gift whose round has closed no longer bounces to
+`/scholarship`. It shows that gift's own title (its `apply_copy` is served for a closed gift) and a
+closed card in the landing's own words — `scholarship.landing.closed.btn`, `.note`, and `.continue`
+linking to the dashboard — with no criteria, no sign-in gate and no form. When some OTHER round is
+open (the bare intake answers `open: true`) the card adds ONE opt-in link to the bare apply page
+(`scholarship.landing.hero.apply`), where the chooser asks; nothing is pre-selected and nothing
+redirects. A student midway through the form when the round closes meets the same card: a submit
+refused with a 409 other than `programme_required` re-asks the intake for the code in force.
+
+**Order.** The existing-application bounce still wins for a signed-in student with a standing
+application (her page is her application); then the closed card; then the chooser; then the sign-in
+gate; then the form. Before any of them, nothing gift-specific is drawn until the intake has answered
+(`useApplyGift.settled`). A BARE visit with nothing open anywhere keeps going to `/scholarship`, whose
+landing already says closed — the smaller change, chosen over a second closed card.
+
+**Why.** This settles the open M4 design question in
+`docs/plans/2026-07-28-multi-programme-applications-roadmap.md` ("a student follows A's link but A has
+closed while B is open — offer B, or stop at 'A is closed'?") in the direction it recommended: stop,
+with an explicit opt-in link, because an automatic redirect nudges a student toward a foundation she
+did not come for. A silent bounce told her nothing at all, which is worse than either.
+
+**Revisit if:** M4's application switcher is approved — the closed card is where it would also list
+the student's own applications.
+
 ## Apply gift clarity: one rule for the two student pages, the URL names the gift, the form submits what it showed — 2026-10-05
 
 **1. `/scholarship/apply` and `/scholarship/application` read ONE rule, and the web is deliberately

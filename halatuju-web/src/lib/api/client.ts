@@ -44,6 +44,7 @@ export async function apiRequest<T>(
     // The body's own `code`, unmerged: `code` above prefers `error`, which on e.g. the 409
     // `programme_required` is the human sentence, not the machine code.
     ;(err as Error & { bodyCode?: string }).bodyCode = error.code || ''
+    ;(err as Error & { status?: number }).status = response.status
     // Carry DRF field-level validation errors (400) — e.g.
     // { parents_occupation: ["Ensure this field has no more than 5000 characters."] }
     // so callers can tell the student WHICH answer to fix, not just "save failed".

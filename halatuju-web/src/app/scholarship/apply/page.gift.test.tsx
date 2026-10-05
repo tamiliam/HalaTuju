@@ -99,7 +99,9 @@ describe('D2 — a pick in the chooser shows the chosen gift', () => {
     serveIntake(TWO_OPEN, { sabah: SABAH_OPEN })
     mount()
     await screen.findByText('scholarship.apply.chooseTitle')
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('scholarship.apply.title')
+    // The chooser IS the page: no platform-default heading (it belongs to no chosen gift).
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    expect(screen.queryByText('scholarship.apply.title')).toBeNull()
     // never pre-selected
     expect((screen.getByTestId('apply-choose-continue') as HTMLButtonElement).disabled).toBe(true)
 
@@ -114,13 +116,16 @@ describe('D2 — a pick in the chooser shows the chosen gift', () => {
     expect((await screen.findByTestId('apply-gift-line')).textContent).toContain(SABAH)
   })
 
-  it('a picked gift that has just closed bounces to the landing, like a closed link', async () => {
+  it('a picked gift that has just closed SAYS SO on its own page, like a closed link', async () => {
+    // (Until 2026-10-05 it bounced silently to /scholarship — the owner's live test.)
     serveIntake(TWO_OPEN, { sabah: { ...SABAH_OPEN, open: false } })
     mount()
     await screen.findByText('scholarship.apply.chooseTitle')
     fireEvent.click(screen.getByLabelText(SABAH))
     fireEvent.click(screen.getByTestId('apply-choose-continue'))
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/scholarship'))
+    expect(await screen.findByTestId('apply-gift-closed')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Sabah bursary' })).toBeTruthy()
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/scholarship')
   })
 })
 
@@ -260,19 +265,46 @@ describe('submit still names the gift', () => {
     expect(screen.getByTestId('apply-gift-line').textContent).toContain(SABAH)
   })
 
-  it('any other submit failure does not re-ask or re-route (control)', async () => {
-    submit.mockRejectedValueOnce(Object.assign(new Error('API error: 409'),
-      { status: 409, code: 'No open application round is currently available.', bodyCode: '' }))
+  it('MIDWAY: a 409 after the gift closed while she typed → the closed card, not a vanishing error', async () => {
+    window.history.replaceState({}, '', '/scholarship/apply?p=sabah')
+    let closedNow = false
+    intake.mockImplementation((code?: string) => Promise.resolve(code
+      ? (closedNow ? { ...SABAH_OPEN, open: false, cohort_name: '', programme_code: '' } : SABAH_OPEN)
+      : TWO_OPEN))
+    submit.mockImplementationOnce(() => {
+      closedNow = true                                   // the round closes as she presses Submit
+      return Promise.reject(Object.assign(new Error('API error: 409'),
+        { status: 409, code: 'No open application round is currently available.', bodyCode: '' }))
+    })
     await submitComplete()
-    const asked = intake.mock.calls.length          // the arrival's own ask
+    expect(await screen.findByTestId('apply-gift-closed')).toBeTruthy()
+    expect(intake).toHaveBeenLastCalledWith()            // re-asked: the gift, then "anything else?"
+    expect(intake).toHaveBeenCalledWith('sabah')
+    expect(screen.getByTestId('apply-gift-others')).toBeTruthy()
+  })
+
+  it('another 409 while the gift is STILL open: asked once more, then nothing changes (control)', async () => {
+    submit.mockRejectedValueOnce(Object.assign(new Error('API error: 409'),
+      { status: 409, code: 'You have already applied to this round.', bodyCode: '' }))
+    await submitComplete()
     // ⚠ Not asserting the generic error text: the page's live-revalidate effect clears ANY error
-    // once the form itself is valid, so a server-side submit error vanishes at once. Pre-existing,
-    // out of this change's scope — the claim here is only that nothing re-asks or re-routes.
+    // once the form itself is valid, so a server-side submit error vanishes at once (TD-340, the
+    // part that remains). The claim here: the gift is re-asked, is open, and nothing re-routes.
+    await waitFor(() => expect(intake).toHaveBeenCalledTimes(2))   // the arrival, then the re-ask
     await act(async () => { await Promise.resolve() })
-    expect(intake.mock.calls.length).toBe(asked)
     expect(mockRouter.replace).not.toHaveBeenCalledWith('/scholarship/apply')
+    expect(screen.queryByTestId('apply-gift-closed')).toBeNull()
     expect(screen.queryByText('scholarship.apply.chooseTitle')).toBeNull()
     expect(screen.getByTestId('apply-gift-line').textContent).toContain('B40 2026')
+  })
+
+  it('a failure that is not a 409 does not re-ask at all (control)', async () => {
+    submit.mockRejectedValueOnce(Object.assign(new Error('API error: 500'), { status: 500, bodyCode: '' }))
+    await submitComplete()
+    const asked = intake.mock.calls.length
+    await act(async () => { await Promise.resolve() })
+    expect(intake.mock.calls.length).toBe(asked)
+    expect(screen.queryByTestId('apply-gift-closed')).toBeNull()
   })
 })
 

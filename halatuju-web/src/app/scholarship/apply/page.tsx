@@ -60,12 +60,13 @@ import {
 } from '@/lib/scholarship'
 import { applyCard } from '@/lib/applyCopy'
 import { mustLeaveApplyPage } from '@/lib/applyGate'   // the leaf, not applicationScreen
-import { useApplyGift, isProgrammeRequired, clearApplyProgramme } from '@/lib/useApplyGift'
+import { useApplyGift, isProgrammeRequired, isOtherConflict, clearApplyProgramme } from '@/lib/useApplyGift'
 import LazyStpmSchoolPicker from '@/components/scholarship/LazyStpmSchoolPicker'
 import LazyGiftChooser from '@/components/scholarship/LazyGiftChooser'
 import LazyAliranPicker from '@/components/scholarship/LazyAliranPicker'
 import LazyMatricCollegePicker from '@/components/scholarship/LazyMatricCollegePicker'
 import ApplyingTo from '@/components/scholarship/ApplyingTo'
+import GiftClosed from '@/components/scholarship/GiftClosed'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -143,8 +144,7 @@ export default function ScholarshipApplyPage() {
 
   // Returning from the My Results → onboarding detour: restore the stashed
   // in-progress edits and land back on the Results tab. Runs once on mount,
-  // before the profile prefill below (which then skips, seeing populatedRef).
-  // (The gift's `?p=` is read on arrival by `useApplyGift`; the detour returns carrying it.)
+  // before the profile prefill below (which then skips, seeing populatedRef). (`?p=`: useApplyGift.)
   useEffect(() => {
     const stashed = popApplyStash()
     if (stashed) {
@@ -363,15 +363,15 @@ export default function ScholarshipApplyPage() {
 
     try {
       const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
-      // PF-1: which programme this is FOR — the code the "You are applying to" line was resolved
-      // from (`useApplyGift`). With two open and none named the server refuses (handled below).
+      // PF-1: the code the "You are applying to" line was resolved from (`useApplyGift`).
       if (gift.code) payload.programme_code = gift.code
       await submitScholarshipApplication(payload, locale, { token })
       clearApplyProgramme()
       router.replace('/scholarship/application')
     } catch (err) {
-      // The server could not tell which gift: ask her again (chooser), keeping what she typed.
+      // Which gift? → ask again, typed answers kept. Another 409 → closed mid-form? → the closed card.
       if (isProgrammeRequired(err)) { gift.change(); return }
+      if (isOtherConflict(err) && await gift.recheck()) return
       // If a field was rejected for length, name the exact question to shorten.
       const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
       const labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null
@@ -386,7 +386,6 @@ export default function ScholarshipApplyPage() {
   }
 
   // ── Render (all hooks are above this line — Rules of Hooks) ──
-
   // ⚠ THE GIFT'S OWN WORDS IF IT WROTE ANY, ELSE THE PLATFORM'S. The platform default is resolved
   // HERE, from the message files — its one home. The server never carries a copy of it.
   const card = applyCard(gift.copy, locale, {
@@ -396,11 +395,12 @@ export default function ScholarshipApplyPage() {
       .map(k => t(`scholarship.apply.${k}`)),
   })
 
-  function wrap(children: React.ReactNode) {
+  // `headed` false: no heading/intro — before the intake answers, and on the chooser (no gift chosen).
+  function wrap(children: React.ReactNode, headed = true) {
     return (
       <main className="container mx-auto px-6 py-10 max-w-2xl lg:max-w-4xl">
-        <h1 className="text-2xl font-bold text-ground-900 mb-2">{card.title}</h1>
-        <p className="text-ground-600 mb-6">{card.intro}</p>
+        {headed && <><h1 className="text-2xl font-bold text-ground-900 mb-2">{card.title}</h1>
+          <p className="text-ground-600 mb-6">{card.intro}</p></>}
         {children}
       </main>
     )
@@ -424,8 +424,16 @@ export default function ScholarshipApplyPage() {
     </div>
   )
 
-  if (status === 'loading' || (status === 'ready' && loadingExisting)) {
-    return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
+  if (!gift.settled || status === 'loading' || (status === 'ready' && loadingExisting)) {
+    return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>, gift.settled && !gift.closed && gift.choices.length < 2)
+  }
+
+  // A NAMED gift that has closed says so on its own page (after the bounce above, before all else).
+  if (gift.closed) return wrap(<GiftClosed onSeeOpen={gift.othersOpen ? gift.change : undefined} />, card.fromGift)
+  // ── Which programme? Several open, none named — asked BEFORE the sign-in gate, for everyone ──
+  // (owner's live test, 2026-10-05: signed out, a bare link showed one gift's criteria unasked).
+  if (gift.choices.length > 1) {
+    return wrap(<LazyGiftChooser choices={gift.choices} onPick={gift.pick} />, false)
   }
 
   // ── Soft sign-in gate (read freely; sign in to apply) ──
@@ -443,14 +451,6 @@ export default function ScholarshipApplyPage() {
         </div>
       </>
     )
-  }
-
-  // ── Which programme? Asked ONLY when several rounds are open and nothing named one ──
-  // PF-1's refusal moved to before the first keystroke; it offers and never pre-selects (see
-  // GiftChooser, loaded on demand). A pick goes into the URL and re-reads the intake for THAT
-  // gift's own copy. Never reached by anyone who follows an organisation's own `?p=` link.
-  if (gift.choices.length > 1) {
-    return wrap(<LazyGiftChooser choices={gift.choices} onPick={gift.pick} />)
   }
 
   // ── status === 'ready', no existing application → the tabbed form ──

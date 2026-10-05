@@ -162,3 +162,46 @@ from a copy in the scratch directory, with a matching SHA-256 hash after the res
 
 None silent. The full `npm test` afterwards: **230 suites / 3634 tests, all passed** — the tree is
 restored.
+
+---
+
+## 8. Follow-up, same day — the owner's live test of `2e72eff9`
+
+**What Went Wrong 7. The chooser was built and tested only for the signed-in path.**
+*Symptom:* signed out, on a bare `/scholarship/apply` with two gifts open — the most common way a
+stranger arrives — the page showed the platform default heading and criteria ("5 A's…") and the
+sign-in gate, and asked nothing. A Sabah student on a bare link read another gift's terms before
+anyone asked which gift she meant. On every visit the default heading also flashed before the gift's
+own words or the chooser replaced it.
+*Root cause:* the brief, the tests and the adversarial review all started from a signed-in student,
+and the sign-in gate returned BEFORE the chooser branch. The lead's local browser check could not get
+past CORS to see the signed-out page with live data (TD-345), so the first person to see the page's
+first state was the owner, live.
+*System change:* the ask now comes before the gate for everyone and is the whole page; nothing names a
+gift until the intake has answered (`settled`); `apply/page.signedOut.test.tsx` renders the signed-out
+bare path (chooser, no default criteria, no sign-in button; pick → that gift's heading, criteria and
+gate; no flash; a failed intake as before). Both new guards were bite-checked red: the chooser gated on
+`status === 'ready'` (4 failed), the `settled` gate removed (1 failed); restored by hash.
+
+**What Went Wrong 8. A named gift that had closed bounced silently to `/scholarship`.**
+*Symptom:* the owner closed one gift and opened its link: the page vanished to the landing with no
+word, and a student midway through the form would have met a submit error that disappears at once
+(TD-340).
+*Root cause:* the closed bounce was inherited from the one-gift era, when "closed" meant "nothing is
+open" and the landing said so. With several gifts, "this gift is closed" is a different fact, and only
+its own page can say it.
+*System change:* a closed card on the gift's own page in the landing's own words, with one opt-in link
+to the bare apply page when another round is open (never a redirect, never a pre-selection); a 409 at
+submit re-asks the intake and shows the same card if the gift has closed. A signed-in student with a
+standing application is still sent to her application first. Decision recorded (decisions.md,
+"a named closed gift says closed on its own page").
+
+**Also:** the closed application card's button no longer says "while you wait" — it reuses the
+header's "Explore Courses" (`search.title`). One new string in the follow-up: the closed card's opt-in
+button, `scholarship.apply.seeOpen` ("See programmes that are open") — the lead replaced the reused
+landing "Apply" label, which read as a contradiction on a card that says applications are closed.
+
+**Numbers.** jest **231 suites / 3648 tests**, all passed; typecheck clean; lint 0 errors.
+First-load JS (exact): `/scholarship/apply` **271.745 kB** (272), `/scholarship/application`
+**273.625** (274), `/profile` **309.930** (310), median **227.836** (229). `apply/page.tsx` 1070 →
+1070; `application/page.tsx` 338 → 339.

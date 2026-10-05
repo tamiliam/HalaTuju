@@ -1090,7 +1090,8 @@
       "chooseBody": "More than one programme is open right now, so please tell us which one you mean before you start.",
       "chooseCta": "Continue",
       "applyingTo": "You are applying to:",
-      "changeGift": "Change"
+      "changeGift": "Change",
+      "seeOpen": "See programmes that are open"
     },
     "nextSteps": {
       "title": "You've been shortlisted!",

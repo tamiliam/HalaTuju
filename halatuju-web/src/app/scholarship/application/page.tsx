@@ -191,8 +191,9 @@ export default function ScholarshipApplicationPage() {
   // Email note + onward navigation, shown under the status card so the page is
   // never a dead end. `email` defaults on; pass false where an email note is
   // already shown nearby (the received screen's "What happens next" box) to
-  // avoid repeating it.
-  function nav({ email = true }: { email?: boolean } = {}) {
+  // avoid repeating it. `waiting` false (a closed application) drops "while you wait" from the
+  // browse button — it reuses the header's "Explore Courses" (`search.title`), no new string.
+  function nav({ email = true, waiting = true }: { email?: boolean; waiting?: boolean } = {}) {
     return (
       <>
         {email && commsEmail && (
@@ -202,7 +203,7 @@ export default function ScholarshipApplicationPage() {
         )}
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/search" className="btn-primary inline-block">
-            {t('scholarship.application.browseCta')}
+            {waiting ? t('scholarship.application.browseCta') : t('search.title')}
           </Link>
           <Link href="/" className="inline-block rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50">
             {t('scholarship.application.homeCta')}
@@ -243,7 +244,7 @@ export default function ScholarshipApplicationPage() {
           <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.finishedTitle')}</h2>
           <p className="text-ground-700">{t('scholarship.application.finishedBody')}</p>
         </div>
-        {nav({ email: false })}
+        {nav({ email: false, waiting: false })}
       </>,
     )
   }

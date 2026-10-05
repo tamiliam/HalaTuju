@@ -79,6 +79,33 @@ budget lines lowered), `views.py` 2436 → 2435. Bite-checked: five guards, each
 Debt raised: TD-337 to TD-346 (TD-337 is an owner decision). Retrospective:
 `docs/retrospective-2026-10-05-apply-gift-clarity.md`.
 
+**Follow-up, same day (the owner's live test of `2e72eff9`).** WEB ONLY, one new string
+(`scholarship.apply.seeOpen`, the closed card's opt-in button; `/profile` now has 0.055 kB of room).
+- **The ask comes first, for everyone.** Signed out, on a bare `/scholarship/apply` with two gifts
+  open, the page showed the PLATFORM default heading and criteria ("5 A's…") and the sign-in gate,
+  and asked nothing — the chooser sat behind the gate. It now comes before the gate for signed-out and
+  `needs-nric` visitors too, and is the whole page (no default heading or criteria). A pick shows that
+  gift's own heading, criteria and gate; signing in returns to its `?p=`.
+- **No flash of the wrong gift.** Until the intake answers (or fails) for the code in force, the page
+  draws its loading state instead of the default heading (`useApplyGift` → `settled`). The
+  existing-application bounce is unchanged.
+- **A named gift that has closed says so.** `?p=<closed gift>` used to bounce silently to
+  `/scholarship`; it now shows that gift's own title and a closed card in the landing's own words
+  (`scholarship.landing.closed.btn` / `.note` / `.continue` → dashboard), with no criteria, gate or
+  form, plus ONE opt-in link to the bare apply page (`scholarship.landing.hero.apply`) only when
+  another round is open — never a redirect, never a pre-selection. A bare visit with nothing open
+  still goes to `/scholarship`. **Midway:** a submit refused with a 409 other than
+  `programme_required` re-asks the intake; if the gift has closed, the closed card replaces the form
+  (`apiRequest` errors carry `status` again). A signed-in student with a standing application is
+  still sent to her application first.
+- **The closed application card's button** reads "Explore Courses" (`search.title`, reused), not
+  "Browse courses while you wait"; the received card keeps its wording.
+- **Numbers.** jest **231 suites / 3648 tests**; typecheck clean; lint 0 errors. First-load JS
+  (exact): `/scholarship/apply` **271.745 kB** (272), `/scholarship/application` **273.625** (274),
+  `/profile` **309.930** (310), median **227.836** (229). `apply/page.tsx` 1070 → 1070,
+  `application/page.tsx` 338 → 339. Two new guards bite-checked red (chooser after the gate; no
+  settled gate).
+
 ## Requests: the analysis says what state it is in, and what comes next (owner, off #26/#30) - 2026-10-05
 
 Small-change lane. WEB ONLY — no api change, no migration, no paid call. Owner picks 1A, 2A, 3A-i.

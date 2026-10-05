@@ -49,6 +49,8 @@ it('a lone SUBMITTED application shows the "received" card — not "you haven\'t
   render(<ScholarshipApplicationPage />)
   expect(await screen.findByText('scholarship.application.receivedTitle')).toBeTruthy()
   expect(screen.queryByText('scholarship.application.none')).toBeNull()
+  // still waiting for a decision, so "Browse courses while you wait" is right here
+  expect(screen.getByText('scholarship.application.browseCta')).toBeTruthy()
 })
 
 it('a lone EXPIRED application reads "you haven\'t applied" — the form will let her start again', async () => {
@@ -74,6 +76,10 @@ it.each(['rejected', 'withdrawn', 'closed'])(
     expect(await screen.findByText('scholarship.application.finishedTitle')).toBeTruthy()
     expect(screen.getByText('scholarship.application.finishedBody')).toBeTruthy()
     expect(screen.getByText('scholarship.application.homeCta')).toBeTruthy()      // onward links
+    // …and the browse button no longer says "while you wait" on a closed application
+    // (owner's live test, 2026-10-05): it reuses the header's "Explore Courses".
+    expect(screen.getByText('search.title')).toBeTruthy()
+    expect(screen.queryByText('scholarship.application.browseCta')).toBeNull()
     expect(screen.queryByText('scholarship.application.receivedTitle')).toBeNull()
     expect(screen.queryByText('scholarship.application.none')).toBeNull()
     expect(screen.queryByText(new RegExp(status))).toBeNull()
