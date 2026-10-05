@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Requests #27-#29 — payment-run skipped count, merchant average, Micro stall - 2026-10-06
+
+- **#27** The payment run's "Skipped this run" heading now carries its count, styled like the Students figure; it is the length of the list on screen (no server change), and the block still appears only when someone was skipped.
+
 ## One application per organisation — the server decides, the apply page asks - 2026-10-05
 
 Sprint (the owner's ruling on TD-337). Built locally, NOT deployed. Api + web. No migration, no

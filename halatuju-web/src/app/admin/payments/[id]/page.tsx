@@ -375,8 +375,11 @@ export default function PaymentRunDetailPage() {
       {/* Skipped this run */}
       {run.skipped.length > 0 && (
         <div className="mt-4 rounded-xl border bg-ground-0 p-4">
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ground-500">🚫 {t('admin.payments.skippedTitle')}</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Request #27: the count beside the heading, styled as the Students figure up top. It
+              is the length of the list below — no server field, so the two cannot disagree. */}
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ground-500">🚫 {t('admin.payments.skippedTitle')}
+            <span data-testid="skipped-count" className="text-xl font-bold text-ground-900 tabular-nums leading-tight">{run.skipped.length}</span></p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-testid="skipped-cards">
             {run.skipped.map((s) => (
               <div key={s.application_id} className="rounded-lg border border-ground-200 bg-ground-50 px-3 py-2 text-sm text-ground-500">
                 <span className="font-medium text-ground-600">{s.name || '—'}</span>

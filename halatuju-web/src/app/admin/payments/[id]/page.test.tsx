@@ -126,6 +126,34 @@ describe('the amount is read-only on a phone — the owner’s ruling', () => {
   })
 })
 
+describe('"Skipped this run" carries its count (request #27)', () => {
+  const SKIPPED = [
+    { application_id: 71, name: 'ANU A/P RAJ', reasons: ['not_activated'] },
+    { application_id: 72, name: 'BALA A/L MUTHU', reasons: ['award_used'] },
+    { application_id: 73, name: 'CHITRA A/P DEVAN', reasons: ['not_activated', 'award_used'] },
+  ]
+
+  it('shows the count beside the heading, and it equals the number of cards drawn', async () => {
+    mockApi.getPaymentRun.mockResolvedValue(run({ skipped: SKIPPED } as Partial<api.PaymentRunDetail>))
+    await mount()
+    const count = screen.getByTestId('skipped-count')
+    // Beside the heading — inside the same line, not somewhere else on the page.
+    expect(count.closest('p')?.textContent).toContain('admin.payments.skippedTitle')
+    const drawn = screen.getByTestId('skipped-cards').children.length
+    expect(drawn).toBe(3)
+    expect(count.textContent).toBe(String(drawn))
+    // The same weight as the Students figure at the top of the page.
+    expect(count.className).toContain('text-xl')
+    expect(count.className).toContain('font-bold')
+  })
+
+  it('the block, and so the count, is absent when nobody was skipped', async () => {
+    await mount()
+    expect(screen.queryByTestId('skipped-count')).toBeNull()
+    expect(screen.queryByText('admin.payments.skippedTitle')).toBeNull()
+  })
+})
+
 describe('the desktop table is untouched', () => {
   it('still renders, and is hidden only below the md breakpoint', async () => {
     await mount()
