@@ -31,9 +31,20 @@ sent to the number at all.
 **2. An administrator may correct it at ANY time, including while frozen (R3) — super and org_admin
 ONLY.** Admin, reviewer, qc, finance and partner are refused (403); another organisation's
 application is 404, never 403 (`_require_app_write`, then narrowed to the two roles, the
-`AdminOrgRejectView` shape). Every REAL change — student or admin — writes a
-`GuardianContactChange` row (`guardian_contact_changes`: old/new name and phone, who, which role,
-which application); a save that changes nothing writes none.
+`AdminOrgRejectView` shape). **While frozen, an org_admin may correct it only if THEIR organisation
+owns the application holding the open offer** (review F1, 2026-10-05): one student may have an
+application in organisation A and an offer in organisation B, the contact is one per student, and A
+must not move the number B's signing PIN goes to. A super always may; unfrozen, the rule above stands.
+Every REAL change made through the product — the profile, the admin correction, a later application
+form — writes a `GuardianContactChange` row (`guardian_contact_changes`: old/new name and phone, who,
+which role, which application); a save that changes nothing writes none. Django's staff-only `/admin/` site is the one exception (it writes no row):
+it is staff-only and a signal was judged not worth it.
+
+**2b. The number must be a Malaysian mobile, and never the student's own (review F3, F5).** The PIN
+is an SMS, so a landline is useless; the server now applies the screen's rule and stores the number
+in one display form. A guardian phone equal to the student's own `contact_phone` is refused on the
+profile and admin paths; on the application form it is not stored (never a refusal of the whole
+application). `whatsapp.normalise_msisdn` stays lenient for its other callers.
 
 **3. Nothing about storage moves (R7).** The contact stays entry 0 of `StudentProfile.guardians`,
 written through `profile_sync.sync_profile_fields` → `merge_guardians` (TD-055); no migration of

@@ -81,3 +81,23 @@ it('a save refused as locked turns into the locked note', async () => {
   expect(await screen.findByText('profile.guardianContactLocked')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'profile.edit' })).toBeNull()
 })
+
+it('a stored +60 number pre-fills in a form that can be saved (review F4)', async () => {
+  mockApi.getGuardianContact.mockResolvedValue(contact({ phone: '+60123456789' }))
+  render(<GuardianContactSection />)
+  fireEvent.click(await screen.findByRole('button', { name: 'profile.edit' }))
+  const phone = screen.getByRole('textbox', { name: 'scholarship.apply.field.parentPhone' }) as HTMLInputElement
+  expect(phone.value).toBe('012-345 6789')
+  expect(screen.queryByText('scholarship.apply.error.phone')).toBeNull()
+  expect((screen.getByRole('button', { name: 'profile.save' }) as HTMLButtonElement).disabled).toBe(false)
+})
+
+it("the student's own number is refused in words (review F3)", async () => {
+  mockApi.getGuardianContact.mockResolvedValue(contact())
+  mockApi.updateGuardianContact.mockRejectedValue(
+    Object.assign(new Error('own'), { code: 'guardian_phone_is_students' }))
+  render(<GuardianContactSection />)
+  fireEvent.click(await screen.findByRole('button', { name: 'profile.edit' }))
+  fireEvent.click(screen.getByRole('button', { name: 'profile.save' }))
+  expect(await screen.findByText('profile.guardianPhoneIsOwn')).toBeTruthy()
+})

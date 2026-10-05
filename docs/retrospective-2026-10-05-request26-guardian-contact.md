@@ -10,8 +10,10 @@ applies `0165` to production migrate-first; the owner gates the push.
 
 * A student who has applied can correct their parent/guardian name and phone on /profile, except
   while bursary signing is possible for them (R1, R2, R4).
-* A super or org_admin can correct it from the applicant summary at any time (R3).
-* Every real change writes a `GuardianContactChange` row; a no-op writes nothing.
+* A super or org_admin can correct it from the applicant summary at any time (R3) — while frozen, an
+  org_admin only through the organisation holding the open offer (review F1).
+* Every real change made through the product writes a `GuardianContactChange` row; a no-op writes
+  nothing. Django's staff-only `/admin/` site is the one exception (review F2).
 * The application-complete email asks the student to check the number (R5).
 * Storage, `guarantor_phone_for` and `merge_guardians` are untouched (R7). No emergency contact (R6).
 
@@ -102,7 +104,40 @@ page showing "verified" with no way to re-send).
 Bite-checked: removing the intake guard fails the flag-on gap-A test; removing the signing check
 fails the gap-B test; removing the award-page mapping fails its jest test.
 
-## 6. Not covered
+## 6. The adversarial review, and the bundle line that broke on rebase
+
+**The bundle.** Rebased onto main, `/profile` read **310.101 kB against 310** — main's 7 new keys
+plus our 3; neither commit alone broke it, together they did, because the whole en catalogue rides
+on `/profile`'s first load. Shaving bytes would not have lasted: every key anywhere costs this route.
+So a real static import moved: `malaysia-postcodes` (~10.9 kB gz, a chunk only `/profile` loaded) is
+now imported on the fifth postcode digit. `/profile` 310.101 → **299.358 kB**. The ratchet then
+REQUIRED the line to come down (a budget more than 2 kB above the build fails), so it was lowered
+310 → **301** — the most headroom the ratchet allows (**1.642 kB**). The "~2 kB" the lead asked for is
+capped by `SHRINK_SLACK_KB = 2` by design; 1.6 kB is the honest maximum. Median 227.888 → 228.000 kB
+(our 3 new keys, on every route); routes that may cross before the median does 3 → 1. The catalogue
+itself was not split (TD-300/TD-304 territory).
+
+**The findings, all fixed and bite-checked** (each guard removed → its test failed):
+* **F1 cross-organisation** — an org_admin of organisation A could move organisation B's signing PIN
+  through A's application for the same student. Now 409 `guardian_contact_locked` while frozen unless
+  their organisation holds the open offer.
+* **F2 "every change is recorded" was false** — the application form wrote unrecorded. It records
+  now; Django's `/admin/` site stays the documented exception.
+* **F3 the student's own number** — refused on the profile and admin paths; dropped on the form.
+* **F4 prefill** — `+60…` pre-filled as `601-…`; fixed in `lib/guardianPhone.ts`.
+* **F5 junk numbers** — the server now validates a Malaysian mobile and stores one display form.
+  `normalise_msisdn` is untouched: its other callers (Vircle confirm, phone-verify send/check, every
+  outbound WhatsApp) read stored numbers of every historical shape.
+* **F6 admin dialog** — real codes map to words; invalid phone reuses `scholarship.apply.error.phone`.
+
+Gates after follow-up 2 (on main `ed7f9c0c`): pytest **7869** passed, 3 skipped; jest **3426 / 224**;
+check-i18n **5413** keys; tsc clean; makemigrations clean; next build compiled (warm `.next` — deleting
+it was denied); bundle-budget **ok**.
+
+Left as known, per the lead: display-vs-PIN entry mismatch (pre-existing), the freeze check before
+the row lock, frozen-without-template, the silent drop on a frozen second application, no rate limit.
+
+## 7. Not covered
 
 * Malay and Tamil strings are first drafts and need the owner's review.
 * Nothing was exercised against a real Twilio or a real browser; the signing path is mocked at the

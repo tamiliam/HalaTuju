@@ -20,11 +20,13 @@ reviewed) and one sentence in the application-complete email (EN + BM).
   award — the exact rule the PIN views use, now one function in `apps/scholarship/signing_window.py`
   (`_award_application` lifted out of `views.py`, unchanged). With the flag off (production) nobody
   is frozen. A frozen student sees a read-only line and a note to contact the team.
-- **Super and org_admin correct it any time, frozen or not (R3):** "Correct" beside the phone on the
-  applicant summary → `POST admin/scholarship/applications/<pk>/guardian-contact/`. Every other role
-  403; another organisation 404. Classified in `test_org_fence.FENCED_OR_EXEMPT`.
-- **Every real change is recorded** in `guardian_contact_changes` (old/new name + phone, who, role,
-  application); a no-op writes nothing. Writes go through `sync_profile_fields` → `merge_guardians`
+- **Super and org_admin correct it any time (R3):** "Correct" beside the phone on the applicant
+  summary → `POST admin/scholarship/applications/<pk>/guardian-contact/`. While frozen, an org_admin
+  only if THEIR organisation holds the open offer (review F1). Every other role 403; another
+  organisation 404. Classified in `test_org_fence.FENCED_OR_EXEMPT`.
+- **Every change made through the product is recorded** in `guardian_contact_changes` (old/new name
+  + phone, who, role, application) — the profile, the admin correction and a later application form;
+  a no-op writes nothing. Django's staff-only `/admin/` site is the one exception (it writes no row). Writes go through `sync_profile_fields` → `merge_guardians`
   (TD-055) — storage, `guarantor_phone_for` and merge semantics unchanged (R7).
 - **The application-complete email** now asks the student to check the parent/guardian phone, next
   to the under-18 sentence (R5). The email golden was regenerated: only `profile_complete_student.*`
@@ -43,6 +45,28 @@ reviewed) and one sentence in the application-complete email (EN + BM).
     catalogue rides on /profile's first load) and puts the PIN step back.
 - **Bundle:** `/profile` 309.805 → 309.953 kB (budget 310; the section is a lazy chunk); median
   227.676 → 227.740 kB.
+- **Follow-up 2 — the adversarial review's findings, and real headroom on `/profile`:**
+  - **Headroom.** Rebased onto main, `/profile` read 310.101 kB against its 310 budget (main's 7
+    new keys + ours; the catalogue rides on its first load). The Malaysian postcode table
+    (`malaysia-postcodes`, ~10.9 kB gz, a chunk only `/profile` loaded) now loads on the fifth postcode
+    digit. `/profile` 310.101 → 299.358 kB; its budget line LOWERED 310 → 301 (the ratchet's own 2 kB
+    slack, TD-309's reasoning). Median 227.888 → 228.000 kB; routes that may cross before the median
+    3 → 1.
+  - **F1 cross-organisation:** while frozen, an org_admin may correct only through the organisation
+    holding the open offer (409 `guardian_contact_locked` otherwise); a super always may.
+  - **F2 recording:** a later application form that changes the contact now writes a row too.
+  - **F3 own number:** the student's own `contact_phone` is refused as the parent's
+    (`guardian_phone_is_students`) on the profile and admin paths; on the application form it is
+    not stored (the stored parent phone stands, or the name is kept with no phone) — never a refusal.
+  - **F4 prefill:** a stored `+60…` number pre-filled as `601-…` and failed the validator; it now
+    pre-fills as `01X-…` (`src/lib/guardianPhone.ts`).
+  - **F5 junk numbers:** the server now accepts what the screen accepts — a Malaysian mobile — and
+    stores it as `01X-XXX XXXX`. `whatsapp.normalise_msisdn` is unchanged (Vircle, phone-verify and
+    every WhatsApp send rely on its leniency).
+  - **F6 admin dialog:** refusals read as words (invalid phone reuses the apply form's sentence).
+  - **New copy:** three strings in en/ms/ta (Malay and Tamil first drafts).
+  - Gates after follow-up 2 (rebased on main): pytest 7869 passed, 3 skipped; jest 3426 / 224
+    suites; i18n 5413 keys; tsc clean; makemigrations clean; bundle-budget ok.
 - Tests: pytest 7826 → 7852 passed after the first commit, 7857 after the follow-up; jest 3378 →
   3391 (219 → 221 suites), 3392 / 222 after the follow-up.
 

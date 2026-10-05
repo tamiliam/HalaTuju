@@ -41,4 +41,17 @@ describe('the Correct action on the parent/guardian phone', () => {
       7, { name: 'Test Guardian 03', phone: '013-999 8888' }, { token: 'test-token' }))
     await waitFor(() => expect(api.getScholarshipApplication.mock.calls.length).toBeGreaterThan(reads))
   })
+
+  it.each([
+    ['guardian_contact_locked', 'admin.scholarship.guardianLocked'],
+    ['guardian_phone_is_students', 'admin.scholarship.guardianPhoneIsStudents'],
+    ['guardian_phone_invalid', 'scholarship.apply.error.phone'],
+  ])('a %s refusal reads as words, not "something went wrong" (review F6)', async (code, words) => {
+    const { api } = renderCockpit({ role: 'super', stage: 'awarded' })
+    await loaded()
+    api.correctGuardianContact.mockRejectedValue(Object.assign(new Error(code), { code }))
+    fireEvent.click(correct()!)
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+    expect((await screen.findByRole('alert')).textContent).toBe(words)
+  })
 })

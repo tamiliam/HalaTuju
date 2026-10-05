@@ -1,10 +1,12 @@
-"""The record of every change to a student's parent/guardian contact (request #26, 2026-10-05).
+"""The record of changes to a student's parent/guardian contact (request #26, 2026-10-05).
 
 The contact itself is NOT here and did not move: it is entry 0 of `StudentProfile.guardians`
 (`{name, phone}`), written by the apply form and now also by `guardian_contact.py`, and its phone
 is the one number the bursary-signing PIN is sent to (`bursary.guarantor_phone_for`). Because a
-change to that number changes who can vouch for the student, every REAL change is written here —
-who made it, in which role, from what to what. A save that changes nothing writes nothing.
+change to that number changes who can vouch for the student, every REAL change made through the
+product — the profile, the admin correction, a later application form — is written here: who made
+it, in which role, from what to what. A save that changes nothing writes nothing. ⚠ Django's
+staff-only `/admin/` site can also edit `guardians` and records NOTHING here; it is the one exception.
 """
 from django.db import models
 

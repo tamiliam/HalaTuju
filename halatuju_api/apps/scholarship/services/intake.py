@@ -138,14 +138,13 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     data.pop('programme_code', None)
 
     # 1. Profile is the single source of truth — sync financial fields to it.
-    # ⚠ Request #26, gap A: while bursary signing is possible for this student their parent
-    # phone is FROZEN (it is where the signing PIN goes). A second application to another open
-    # round must not be a way round that, so the form's guardians are DROPPED here and the stored
-    # one stands; every other field syncs, and the application is still created. Local import:
+    # ⚠ Request #26: the parent phone is where the bursary-signing PIN goes. While it is FROZEN
+    # (gap A), or when the form names the student's OWN number (review F3), the form's guardians
+    # do not reach the profile — `screen_form_guardians` says exactly what is kept. Never a refusal:
+    # the application is still created and every other field syncs. Local import:
     # guardian_contact imports this package.
-    from ..guardian_contact import contact_frozen
-    if 'guardians' in data and contact_frozen(profile):
-        data.pop('guardians')
+    from ..guardian_contact import record_change, screen_form_guardians
+    old_contact = screen_form_guardians(profile, data)
     sync_profile_fields(profile, data)
 
     # 2. Create the application from per-application fields only; academic +
@@ -174,6 +173,10 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
         declared_at=timezone.now() if signed else None,
         **app_fields,
     )
+    # Review F2: a parent contact the form actually changed is recorded like any other change.
+    if profile is not None and 'guardians' in data:
+        record_change(profile, old_contact, application=application, by_email=to_email,
+                      by_role='student')
 
     sent = send_acknowledgement_email(
         to_email=to_email,

@@ -222,7 +222,8 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>Yes. On the applicant&rsquo;s page, in <strong>Family &amp; finances</strong>, press
         <strong> Correct</strong> beside the parent or guardian phone, enter the right name and number, and save.
         You can do this at any time, even while the student is signing their bursary agreement (when they cannot
-        change it themselves). Every change is recorded with who made it. Students can also correct it on their
+        change it themselves) &mdash; unless that agreement is with another organisation, when the platform team
+        does it. Every change made here is recorded with who made it. Students can also correct it on their
         own profile, except while they are signing.</>,
     },
     {

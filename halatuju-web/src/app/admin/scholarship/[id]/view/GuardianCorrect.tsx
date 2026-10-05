@@ -15,8 +15,15 @@
 import { useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { correctGuardianContact } from '@/lib/admin-api'
-import { formatPhone, isValidPhone } from '@/lib/scholarship'
+import { isValidMobile, toLocalPhone } from '@/lib/guardianPhone'
 import type { T } from './shared'
+
+/** Review F6: the server's refusal codes, in words. Reuses the apply form's phone sentence. */
+const REFUSAL: Record<string, string> = {
+  guardian_phone_invalid: 'scholarship.apply.error.phone',
+  guardian_phone_is_students: 'admin.scholarship.guardianPhoneIsStudents',
+  guardian_contact_locked: 'admin.scholarship.guardianLocked',
+}
 
 export function GuardianCorrect({ appId, name, phone, t, onDone }: {
   appId: number
@@ -33,17 +40,17 @@ export function GuardianCorrect({ appId, name, phone, t, onDone }: {
   const [error, setError] = useState('')
 
   const begin = () => {
-    setDraftName(name); setDraftPhone(formatPhone(phone)); setError(''); setOpen(true)
+    setDraftName(name); setDraftPhone(toLocalPhone(phone)); setError(''); setOpen(true)
   }
   const save = async () => {
     if (!token) return
     setBusy(true); setError('')
     try {
-      await correctGuardianContact(appId, { name: draftName.trim(), phone: formatPhone(draftPhone) }, { token })
+      await correctGuardianContact(appId, { name: draftName.trim(), phone: toLocalPhone(draftPhone) }, { token })
       setOpen(false)
       await onDone?.()
-    } catch {
-      setError(t('errors.somethingWentWrong'))
+    } catch (e) {
+      setError(t(REFUSAL[(e as Error & { code?: string }).code || ''] || 'errors.somethingWentWrong'))
     } finally { setBusy(false) }
   }
 
@@ -58,14 +65,14 @@ export function GuardianCorrect({ appId, name, phone, t, onDone }: {
   return (
     <div role="dialog" aria-label={t('admin.scholarship.guardianCorrect')} className="mt-2 space-y-2 rounded-lg border border-ground-200 bg-ground-50 p-3">
       <input aria-label={t('scholarship.apply.field.parentName')} value={draftName} onChange={e => setDraftName(e.target.value)} maxLength={255} className={field} />
-      <input aria-label={t('scholarship.apply.field.parentPhone')} value={draftPhone} onChange={e => setDraftPhone(formatPhone(e.target.value))} inputMode="tel" className={field} />
-      {draftPhone.trim() !== '' && !isValidPhone(draftPhone) && <p className="text-xs text-critical-600">{t('scholarship.apply.error.phone')}</p>}
+      <input aria-label={t('scholarship.apply.field.parentPhone')} value={draftPhone} onChange={e => setDraftPhone(toLocalPhone(e.target.value))} inputMode="tel" className={field} />
+      {draftPhone.trim() !== '' && !isValidMobile(draftPhone) && <p className="text-xs text-critical-600">{t('scholarship.apply.error.phone')}</p>}
       {error && <p role="alert" className="text-xs text-critical-600">{error}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={() => setOpen(false)} className="rounded-md border border-ground-300 px-3 py-1.5 text-xs font-medium text-ground-700">
           {t('common.cancel')}
         </button>
-        <button type="button" onClick={save} disabled={busy || !draftName.trim() || !isValidPhone(draftPhone)} className="rounded-md bg-brand-fill px-3 py-1.5 text-xs font-medium text-brand-fill-ink disabled:opacity-50">
+        <button type="button" onClick={save} disabled={busy || !draftName.trim() || !isValidMobile(draftPhone)} className="rounded-md bg-brand-fill px-3 py-1.5 text-xs font-medium text-brand-fill-ink disabled:opacity-50">
           {busy ? '...' : t('common.save')}
         </button>
       </div>

@@ -33,7 +33,6 @@ import Toggle from '@/components/Toggle'
 import { useToast } from '@/components/ToastContext'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
-import { findPostcode } from 'malaysia-postcodes'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -1021,13 +1020,12 @@ export default function ProfilePage() {
                       onChange={e => {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 5)
                         setPostalCode(val)
-                        if (val.length === 5) {
+                        // The postcode table (~11 kB gz) loads on the 5th digit, not with the page — request #26
+                        // needed /profile first-load headroom. A failed chunk only skips the autofill.
+                        if (val.length === 5) import('malaysia-postcodes').then(({ findPostcode }) => {
                           const result = findPostcode(val)
-                          if (result.found && result.city && result.state) {
-                            setCity(result.city)
-                            setState(result.state)
-                          }
-                        }
+                          if (result.found && result.city && result.state) { setCity(result.city); setState(result.state) }
+                        }).catch(() => {})
                       }}
                       placeholder="08000"
                       maxLength={5}

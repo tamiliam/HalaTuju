@@ -3,8 +3,11 @@
 Request #26 (2026-10-05), owner ruling R3: a **super or org_admin** may correct the contact of the
 student behind an application AT ANY TIME — including while it is frozen for the student because
 bursary signing is possible — and every real change is recorded (`GuardianContactChange`, with
-the admin's email and role 'admin'). Every other role is refused: admin, reviewer, qc, finance and
-partner. The rules are `guardian_contact.py`'s; this view is the gate.
+the admin's email and role 'admin'). While frozen, an org_admin may correct it only if THEIR
+organisation holds the open offer (review F1); a super always may. Every other role is refused:
+admin, reviewer, qc, finance and partner. The rules are `guardian_contact.py`'s; this view is the
+gate. (Every change made through the PRODUCT is recorded; Django's staff-only `/admin/` site is the
+one writer that records nothing.)
 
 Part of the `views_admin` package: re-exported from `views_admin/__init__.py`.
 """
@@ -31,6 +34,12 @@ class AdminGuardianContactView(_AdminBase):
         if app.profile is None:
             return Response({'error': 'no_profile', 'code': 'no_profile'},
                             status=status.HTTP_400_BAD_REQUEST)
+        # Review F1: while frozen, only the organisation holding the OPEN OFFER may move the number
+        # its signing PIN goes to — not another organisation the same student also applied to.
+        if not admin.is_super and guardian_contact.frozen_for_organisation(
+                app.profile, admin.owning_organisation_id):
+            return Response({'error': guardian_contact.LOCKED, 'code': guardian_contact.LOCKED},
+                            status=status.HTTP_409_CONFLICT)
         try:
             change = guardian_contact.update_guardian_contact(
                 app.profile, name=request.data.get('name'), phone=request.data.get('phone'),

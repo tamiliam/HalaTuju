@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { getGuardianContact, updateGuardianContact, type GuardianContact } from '@/lib/api'
-import { formatPhone, isValidPhone } from '@/lib/scholarship'
+import { isValidMobile, toLocalPhone } from '@/lib/guardianPhone'
 
 export default function GuardianContactSection() {
   const { token } = useAuth()
@@ -44,23 +44,24 @@ export default function GuardianContactSection() {
 
   if (!contact?.has_scholarship_application) return null
   const locked = contact.guardian_contact_locked
-  const phoneBad = phone.trim() !== '' && !isValidPhone(phone)
+  const phoneBad = phone.trim() !== '' && !isValidMobile(phone)
 
   const startEditing = () => {
-    setName(contact.name); setPhone(formatPhone(contact.phone)); setError(''); setEditing(true)
+    setName(contact.name); setPhone(toLocalPhone(contact.phone)); setError(''); setEditing(true)
   }
   const save = async () => {
     if (!token) return
     setSaving(true); setError('')
     try {
-      const next = await updateGuardianContact({ name: name.trim(), phone: formatPhone(phone) }, { token })
+      const next = await updateGuardianContact({ name: name.trim(), phone: toLocalPhone(phone) }, { token })
       setContact(next); setEditing(false)
     } catch (e) {
       const code = (e as Error & { code?: string }).code
       if (code === 'guardian_contact_locked') {
         setContact({ ...contact, guardian_contact_locked: true }); setEditing(false)
       } else {
-        setError(code === 'guardian_phone_invalid' ? t('scholarship.apply.error.phone') : t('errors.somethingWentWrong'))
+        setError(code === 'guardian_phone_invalid' ? t('scholarship.apply.error.phone')
+          : code === 'guardian_phone_is_students' ? t('profile.guardianPhoneIsOwn') : t('errors.somethingWentWrong'))
       }
     } finally { setSaving(false) }
   }
@@ -84,14 +85,14 @@ export default function GuardianContactSection() {
           </label>
           <label className="block">
             <span className="block text-sm font-medium text-ground-700 mb-1.5">{t('scholarship.apply.field.parentPhone')}</span>
-            <input value={phone} onChange={e => setPhone(formatPhone(e.target.value))} inputMode="tel" placeholder="012-345 6789" className={input} />
+            <input value={phone} onChange={e => setPhone(toLocalPhone(e.target.value))} inputMode="tel" placeholder="012-345 6789" className={input} />
           </label>
           {(phoneBad || error) && <p role="alert" className="text-xs text-critical-600">{error || t('scholarship.apply.error.phone')}</p>}
           <div className="flex gap-3">
             <button onClick={() => setEditing(false)} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
               {t('profile.cancel')}
             </button>
-            <button onClick={save} disabled={saving || !name.trim() || !isValidPhone(phone)} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+            <button onClick={save} disabled={saving || !name.trim() || !isValidMobile(phone)} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {saving ? '...' : t('profile.save')}
             </button>
           </div>
@@ -104,7 +105,7 @@ export default function GuardianContactSection() {
           </div>
           <div className="flex justify-between gap-3">
             <span className="text-sm text-ground-500 shrink-0">{t('scholarship.apply.field.parentPhone')}</span>
-            <span className="text-sm text-ground-900 text-right">{contact.phone ? formatPhone(contact.phone) : '—'}</span>
+            <span className="text-sm text-ground-900 text-right">{contact.phone ? toLocalPhone(contact.phone) : '—'}</span>
           </div>
           {locked && <p className="text-xs text-caution-700">{t('profile.guardianContactLocked')}</p>}
         </>
