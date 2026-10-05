@@ -74,8 +74,15 @@ typecheck clean; lint 0 errors (17 warnings, none in a touched file). First-load
 **273.677** (274), `/profile` 309.517 → **309.542** (310), median 227.85 → **227.875** (229). Files:
 `apply/page.tsx` 1070 → **1062**, `lib/scholarship.ts` 1084 → **1084**, `views.py` 2436 → **2434**,
 `serializers.py` 1215 → **1204**. Bite-checked: nine faults over three rounds, each red against that round's code. Retrospective:
-`docs/retrospective-2026-10-05-one-application-per-organisation.md`. (Figures measured before the
-rebase onto request #26; the lead re-measures after it.)
+`docs/retrospective-2026-10-05-one-application-per-organisation.md`. **After the rebase onto request
+#26** (lead's build): first-load JS `/scholarship/apply` **271.701 kB** (272), `/scholarship/application`
+**273.711** (274), `/profile` **298.903** (300, #26's line); jest 240 suites / 3991. **Five of request
+#26's api tests** assumed a second application while the first is in play and expected 201; they now
+meet 409. Re-expressed, no assertion weakened and no product code touched: `test_guardian_contact_gaps.py`
+Gap A (both) calls `create_application` directly on a frozen profile — the intake guard that drops
+the form's guardians stays as defence in depth — and pins the submit's 409 `application_in_progress`;
+`test_guardian_contact_review.py` F2 (both) and F3's form test arrive from a FINISHED earlier
+application; one new guard pins that a finished application with no offered award is not frozen.
 
 ## Request #26 — a student (or an admin) can correct the parent/guardian phone - 2026-10-05
 

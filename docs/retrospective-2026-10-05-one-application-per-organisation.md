@@ -100,6 +100,20 @@ asserts the screen shows THE blocking application; item 3's grep of every studen
 `on_commit`, which splits `create_application`; out of bounds. The review's reading is recorded on the
 row: the window is the gate's read to the INSERT; a script could hit it, a person realistically cannot.
 
+**7. A semantic conflict with a parallel session's tests merged cleanly (rebase onto request #26).**
+*Symptom:* after the rebase the web gates and the bundle passed, and only the FULL api suite went red:
+five of request #26's new tests filed a second application for a student whose first was still in
+play (`recommended`, or an offered award) and expected 201; the new rule answers 409.
+*Root cause:* the two sessions changed one rule from opposite sides on the same day — #26 wrote tests
+that ASSUMED "a second application to another round is allowed", this sprint removed that — and no
+file conflicted, so git could not see it. A rebase is a textual merge; only the other side's tests
+know what it assumed.
+*System change:* after any rebase onto another session's work, run the FULL api suite before calling
+the merge done (the lead did; it caught it). The five tests were re-expressed, not weakened: the two
+Gap-A tests drive `create_application` directly on a frozen profile (the intake guard stays, defence
+in depth) and pin the submit's new 409; the three first-application form tests arrive from a FINISHED
+earlier application; and a guard pins that a finished application with no offered award is not frozen.
+
 ## 4. Design Decisions
 
 Recorded in `docs/decisions.md` (2026-10-05, "One application per organisation"):

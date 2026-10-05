@@ -25,6 +25,15 @@ APPLY = '/api/v1/scholarship/applications/'
 OWN = '017-555 4444'
 
 
+def _finished_earlier(profile=None):
+    """A student whose earlier application is FINISHED (`closed`). One application in play per
+    student (`services/apply_gate.py`, TD-337): a second application is filed only once the first
+    is finished, so that is the state a "later application form" now arrives from."""
+    profile = profile if profile is not None else _state('no_application')[0]
+    make_application('closed', student=profile)
+    return profile
+
+
 def _apply(profile, cohort, guardian_phone, **extra):
     return authed_client(profile).post(APPLY, {
         'cohort_code': cohort.code, 'consent_to_contact': True, 'intends_tertiary_2026': True,
@@ -73,7 +82,7 @@ class TestF1_AnotherOrganisationCannotMoveAFrozenContact(TestCase):
 class TestF2_ASecondApplicationRecordsTheChange(TestCase):
 
     def test_an_unfrozen_second_application_that_changes_the_phone_writes_one_row(self):
-        profile, _ = _state('recommended')
+        profile = _finished_earlier()   # was 'recommended' — in play, now refused (apply_gate, TD-337)
         second = make_cohort(is_open=True)
         self.assertEqual(_apply(profile, second, '019-000 1111').status_code, 201)
         new_app = ScholarshipApplication.objects.get(profile=profile, cohort=second)
@@ -82,7 +91,7 @@ class TestF2_ASecondApplicationRecordsTheChange(TestCase):
                          ('student', new_app.pk, PARENT['phone'], '019-000 1111'))
 
     def test_an_application_that_changes_nothing_writes_no_row(self):
-        profile, _ = _state('recommended')
+        profile = _finished_earlier()   # was 'recommended' — in play, now refused (apply_gate, TD-337)
         self.assertEqual(_apply(profile, make_cohort(is_open=True), PARENT['phone']).status_code, 201)
         self.assertFalse(GuardianContactChange.objects.exists())
 
@@ -118,6 +127,9 @@ class TestF3_ASharedNumberIsAcceptedAndFlagged(TestCase):
         self.assertTrue(self._flagged())
 
     def test_the_application_form_stores_it_and_it_is_flagged(self):
+        # The form arrives from a FINISHED earlier application: setUp's 'recommended' one is in
+        # play and the submit would refuse it (`services/apply_gate.py`, TD-337).
+        self.profile = _finished_earlier(make_student(guardians=[dict(PARENT)], contact_phone=OWN))
         resp = _apply(self.profile, make_cohort(is_open=True), OWN, contact_phone=OWN)
         self.assertEqual(resp.status_code, 201)
         self.assertTrue(self._flagged())

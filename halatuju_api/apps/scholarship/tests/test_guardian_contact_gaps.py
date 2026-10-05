@@ -20,6 +20,8 @@ from django.test import TestCase, override_settings
 from apps.scholarship import bursary
 from apps.scholarship.bursary import BursaryError
 from apps.scholarship.models import BursaryAgreement, ScholarshipApplication
+from apps.scholarship.serializers import ApplicationCreateSerializer
+from apps.scholarship.services import create_application
 from apps.scholarship.tests.contract_helpers import flagship
 from apps.scholarship.tests.factories import TEST_JWT_SECRET, authed_client, make_admin, make_cohort
 from apps.scholarship.tests.test_guardian_contact import PARENT, _award, _state
@@ -37,13 +39,22 @@ class TestGapA_ASecondApplicationCannotMoveAFrozenPhone(TestCase):
     def _apply_elsewhere(self):
         profile, offered_app = _state('awarded_offer_open')
         second = make_cohort(is_open=True)
-        resp = authed_client(profile).post(APPLY, {
+        payload = {
             'cohort_code': second.code, 'consent_to_contact': True, 'intends_tertiary_2026': True,
             'guardians': [{'name': 'Me Myself', 'phone': MY_OWN}],
             'school': 'SMK Baru', 'household_income': 1234,
-        }, format='json')
-        self.assertEqual(resp.status_code, 201, resp.data)
-        # The application IS created — a student holding an offer may apply elsewhere.
+        }
+        # One application in play per student (`services/apply_gate.py`, TD-337): the submit now
+        # refuses her before the form reaches the profile — so the screen below is defence in
+        # depth, driven through the service the submit calls, with the same validated inputs.
+        resp = authed_client(profile).post(APPLY, payload, format='json')
+        self.assertEqual((resp.status_code, resp.data['code']), (409, 'application_in_progress'))
+        self.assertFalse(ScholarshipApplication.objects.filter(cohort=second).exists())
+        form = ApplicationCreateSerializer(data=payload)
+        form.is_valid(raise_exception=True)
+        create_application(profile=profile, cohort=second, validated_data=form.validated_data,
+                           to_email='student@example.test', lang='en')
+        # The application IS created — the service files it; only the gate in front refuses now.
         self.assertTrue(ScholarshipApplication.objects.filter(profile=profile, cohort=second).exists())
         profile.refresh_from_db()
         offered_app.refresh_from_db()
@@ -56,6 +67,26 @@ class TestGapA_ASecondApplicationCannotMoveAFrozenPhone(TestCase):
         self.assertEqual(bursary.guarantor_phone_for(offered_app), PARENT['phone'])
         # …and every other field on the form still reached the profile.
         self.assertEqual((profile.school, profile.household_income), ('SMK Baru', 1234))
+
+    @override_settings(BURSARY_AGREEMENT_ENABLED=True)
+    def test_a_finished_application_with_no_offered_award_is_not_frozen(self):
+        # The state a second application now arrives from (`services/apply_gate.py`, TD-337): a
+        # FINISHED first application. Without an OFFERED sponsorship nothing freezes her contact.
+        from apps.scholarship.guardian_contact import contact_frozen
+        from apps.scholarship.tests.factories import make_application, make_student
+        finished = {
+            'closed': dict(stage='closed'),             # a graduate; her sponsorship is 'active'
+            'expired': dict(stage='expired'),
+            'withdrawn': dict(stage='submitted', status='withdrawn'),
+            'rejected': dict(stage='rejected', pending_rejection_category='', decline_due_at=None),
+        }
+        for status, spec in finished.items():
+            with self.subTest(status=status):
+                profile = make_student(guardians=[dict(PARENT)])
+                app = make_application(spec.pop('stage'), student=profile, **spec)
+                if status == 'closed':
+                    _award(app, 'active')
+                self.assertFalse(contact_frozen(profile))
 
     @override_settings(BURSARY_AGREEMENT_ENABLED=False)
     def test_flag_off_nobody_is_frozen_so_the_same_submission_updates_it(self):
