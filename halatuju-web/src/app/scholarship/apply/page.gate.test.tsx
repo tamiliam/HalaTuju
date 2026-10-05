@@ -311,10 +311,15 @@ describe('round 2 — closed is the normal state: ONE redirect, decided once int
 
   it('signed in, nothing in progress, a bare visit with nothing open → the landing, once — AFTER the gate', async () => {
     serveIntake(NOTHING_OPEN)
-    slowGate(ALLOWED)
+    // The gate is HELD until the test releases it — never a timing window. (A 5 ms wait against a
+    // 20 ms gate raced under full-suite load: the gate had already answered. 2026-10-06.)
+    let release: (answer: object) => void = () => {}
+    gate.mockImplementation(() => new Promise((r) => { release = r }))
     mountAs('ready')
-    await act(async () => { await new Promise((r) => setTimeout(r, 5)) })
+    await waitFor(() => expect(gate).toHaveBeenCalled())
+    await act(async () => { await new Promise((r) => setTimeout(r, 40)) })
     expect(mockRouter.replace).not.toHaveBeenCalled()        // intake settled; the gate has not
+    await act(async () => { release(ALLOWED) })
     await leftOnce('/scholarship')
   })
 
