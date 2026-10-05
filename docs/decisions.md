@@ -13134,6 +13134,7 @@ same-type confirm would rewrite the profile's programme for no pathway change).
 **Trade-off accepted:** the profile — the student's own declaration surface — now shows our reading
 of the letter she confirmed. She confirmed it, so that is her answer too. The silent
 `autofill_pathway_from_offer` is NOT a confirmation and still writes the application only.
+**Applied 2026-10-05 on the owner's yes:** 13 profiles refreshed (the five plus eight whose programme line alone differed); flag removed; second dry run 0.
 
 ## 2026-10-05 — Cockpit: "Pathways considered" and "Still-deciding reasons" are apply-stage only
 

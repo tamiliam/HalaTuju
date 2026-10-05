@@ -3308,7 +3308,7 @@ written; and the profile is refreshed only from the application it follows — n
 still OPEN (`profile_follows`, the /profile sync's own target; a later decided one does not count,
 review F1). **The existing rows are not fixed by this:** the read-only count on 2026-10-05 found 14
 confirmed applications and 5 whose profile disagrees (#14 and #32 rejected, #43, #119 and #142
-awarded). They need the one-off backfill — in production the cron job `backfill-confirmed-profiles` with `BACKFILL_CONFIRMED_PROFILES_APPLY=1` set for the run, then unset (`--apply` locally; dry run by
+awarded). They need the one-off backfill — in production the cron job `backfill-confirmed-profiles` with `BACKFILL_CONFIRMED_PROFILES_APPLY=1` set for the run, then unset (`--apply` locally; dry run by **✅ BACKFILL APPLIED 2026-10-05 (owner's yes): the flag set on api-01102, the cron door run once — 14 checked, 13 profiles refreshed (#32/#43/#119 pathway + stream + school + programme; #14/#142 school + programme; #13/#29/#107/#110/#115/#120/#125/#140 programme only — eight more than the five counted, because the first count did not compare chosen_programme) — then the flag REMOVED (api-01103); a second dry run reads 0 to change and a read-only count reads 0 profiles disagreeing. DO NOT RE-RUN.**
 default; prints application ids and field names only; idempotent) — the owner's yes, run after the
 deploy. `repair_confirmed_pathway` calls `confirm_pathway`, so it now refreshes profiles too and
 prints each one it changes. **Why:** the profile is the
