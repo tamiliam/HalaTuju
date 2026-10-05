@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #25 follow-up — the sponsor portal's 404 page can now actually be reached - 2026-10-05
+
+Small-change lane. WEB ONLY — two files, no api change, no migration, no new package, no paid call.
+
+- **The gap.** `app/sponsor/not-found.tsx` shipped with request #25 and **nothing could render it**:
+  a nested `not-found.tsx` answers a `notFound()` thrown inside its own subtree, and nothing under
+  `/sponsor` throws one. So an unmatched sponsor address fell through to the ROOT 404, whose way out
+  is the PUBLIC site — the exact defect request #25 existed to fix. The console got its catch-all in
+  that sprint; the portal did not. **Found by curling the live site after the deploy, not by a test**
+  — an inert page is green in every suite.
+- **The fix.** `app/sponsor/[...notFound]/page.tsx`, the twin of the console's: a server component
+  whose only job is `notFound()`, so the portal's own boundary answers.
+- **⚠ Same status trade as the console's, knowingly.** `/sponsor/<nonsense>` now answers **200**
+  where it answered 404; in Next 14.2 only the ROOT `not-found.tsx` sets the status. Measured on
+  2026-10-05 — see `app/admin/[...notFound]/page.tsx` for the full note and docs/decisions.md.
+- **The test pins the PAIR, not the page.** A render test of the 404 passed throughout the gap, so
+  it cannot be the guard; `src/app/sponsor/[...notFound]/page.test.tsx` asserts the sink throws, the
+  boundary exists, its way out is `/sponsor` and never `/`, and that no real portal route was
+  shadowed.
+
 ## Later-tier batch 5 — four items closed, two built in part (TD-333, TD-334, TD-214, TD-194; TD-076, TD-228) - 2026-10-05
 
 Built locally, NOT deployed. Register open **92 → 88** (`code_health.py` td_open 88). No migration, no
