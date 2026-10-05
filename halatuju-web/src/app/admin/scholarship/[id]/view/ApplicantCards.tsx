@@ -16,6 +16,7 @@ import {
 } from '@/lib/scholarship'
 import { spmExamYear } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
+import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import { Card, Field, Grades, joinOr, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
@@ -98,8 +99,15 @@ export function ApplicantCards({
         const reportingDate = app.reporting_date
           ? formatDate(app.reporting_date)
           : (_offer?.pathway_check?.reporting_date || '')
+        // Apply-stage context only (owner 2026-10-05, #134/#119): from "Awaiting review" onward the
+        // pathways she weighed and why she was still deciding no longer describe the application.
+        // The reasons also hide once the pathway is settled (e.g. a verified offer auto-confirmed
+        // it) — they would contradict the now-shown chosen pathway/programme.
+        const applyStage = isApplyStage(app.status)
+        const showConsidered = applyStage && app.pathways_considered?.length > 0
+        const showReasons = applyStage && app.pathway_certainty !== 'sure' && app.uncertainty_reasons?.length > 0
         const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name || reportingDate
-          || app.top_choices?.length || app.pathways_considered?.length || app.uncertainty_reasons?.length)
+          || app.top_choices?.length || showConsidered || showReasons)
         const addr = formatAddress([
           app.address,
           [app.postal_code, app.city].filter(Boolean).join(' '),
@@ -256,11 +264,8 @@ export function ApplicantCards({
                         </ol>
                       </div>
                     )}
-                    {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
-                    {/* "Still deciding" reasons are hidden once the pathway is settled
-                        (e.g. a verified offer letter auto-confirmed it) — they'd contradict
-                        the now-shown chosen pathway/programme. */}
-                    {app.pathway_certainty !== 'sure' && app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+                    {showConsidered && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
+                    {showReasons && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
                   </div>
                 )}
               </Card>

@@ -245,8 +245,73 @@ def confirm_pathway(application):
             if 'chosen_programme' not in update_fields:
                 update_fields.append('chosen_programme')
 
-    application.save(update_fields=update_fields)
+    _save_and_refresh_profile(application, update_fields)   # TD-210: the profile follows
     return True
+
+
+def _save_and_refresh_profile(application, update_fields):
+    """Save the confirmed application and, in the SAME transaction, refresh the student's PROFILE.
+
+    TD-210 (owner 2026-10-05, "Yes" to option (B) of the 2026-08-01 sync decision). The profile is
+    the durable home of the pathway and the two-way sync (``family.copy_pathway``) lets a populated
+    profile value win on the next /profile edit, so a profile left on the student's ORIGINAL
+    declaration would push the superseded pathway back (#43: application pismp, profile stpm).
+
+    Runs only when this confirm CHANGED the pathway itself — the type or the pre-U stream/school,
+    i.e. one of ``OFFER_WRITTEN_PATHWAY_FIELDS`` is in ``update_fields`` (each is appended only on
+    a change) — and only when the profile follows this application (``profile_follows``). A blank
+    reaches the profile only where THIS confirm cleared the field; any other blank on the
+    application never erases a profile value (``copy_pathway``'s own rule)."""
+    from django.db import transaction
+
+    from ..family import OFFER_WRITTEN_PATHWAY_FIELDS
+    with transaction.atomic():
+        application.save(update_fields=update_fields)
+        if not any(f in update_fields for f in OFFER_WRITTEN_PATHWAY_FIELDS):
+            return
+        if profile_follows(application):
+            sync_profile_pathway(application, may_clear=lambda f: f in update_fields)
+
+
+#: The pathway fields a confirm writes and the profile is refreshed with (TD-210).
+PROFILE_SYNCED_FIELDS = ('chosen_pathway', 'pre_u_track', 'pre_u_institution', 'chosen_programme')
+
+
+def profile_follows(application):
+    """Does the student's profile follow THIS application? The /profile edit syncs into the
+    student's latest application that is still OPEN (``apps/courses/views.py``), so the profile
+    follows this one unless a LATER application is still open. A later decided one does not count:
+    it is not where a /profile edit lands."""
+    from ..family import DECIDED_STATUSES
+    profile = application.profile
+    return profile is not None and not (
+        profile.scholarship_applications.filter(id__gt=application.id)
+        .exclude(status__in=DECIDED_STATUSES).exists())
+
+
+def _blank(v):
+    return not (v.strip() if isinstance(v, str) else v)
+
+
+def sync_profile_pathway(application, *, may_clear, write=True):
+    """Copy ``PROFILE_SYNCED_FIELDS`` from the application onto its profile where they differ, and
+    return the names of the fields written. A blank replaces a populated profile value only when
+    ``may_clear(field)`` says so. Reads the profile ROW first: ``application.profile`` may be a
+    cached instance older than a /profile edit made since it was loaded. ``write=False`` only
+    reports (the backfill's dry run)."""
+    profile = application.profile
+    profile.refresh_from_db(fields=list(PROFILE_SYNCED_FIELDS))
+    changed = []
+    for f in PROFILE_SYNCED_FIELDS:
+        new, old = getattr(application, f), getattr(profile, f)
+        if new == old or (_blank(new) and not _blank(old) and not may_clear(f)):
+            continue
+        changed.append(f)
+    if changed and write:
+        for f in changed:
+            setattr(profile, f, getattr(application, f))
+        profile.save(update_fields=changed)
+    return changed
 
 
 def _settle_stale_course_id(application, offer, prog, offer_type):

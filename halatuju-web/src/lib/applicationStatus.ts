@@ -40,6 +40,17 @@ export const APPLICATION_STATUSES = [
   'rejected',
 ] as const
 
+/** The APPLY stage: the student is still filling in her application. From `profile_complete`
+ *  ("Awaiting review") onward — and in every ended state — it has left that stage. Owner
+ *  2026-10-05 (#134, #119): apply-time context such as "Pathways considered" and the
+ *  "Still deciding" reasons is apply stage only, not once the application is under review. */
+export const APPLY_STAGE_STATUSES: readonly string[] = ['submitted', 'shortlisted']
+
+/** True while the application is still at the apply stage (see `APPLY_STAGE_STATUSES`). */
+export function isApplyStage(status: string | null | undefined): boolean {
+  return APPLY_STAGE_STATUSES.includes(status || '')
+}
+
 /** Synthetic statuses — rendered from application state, not stored as a DB value.
  *  `reopened` is shown when `decision_reopened_at` is set (see `displayStatus`). */
 export const SYNTHETIC_STATUSES = ['reopened'] as const

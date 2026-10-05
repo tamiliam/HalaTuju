@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change — profile pathway follows a confirmed offer; apply-stage fields hidden after submit - 2026-10-05
+
+Small-change lane. Two owner rulings of 2026-10-05. No migration, no new package, no paid call.
+
+- **TD-210 resolved (owner: "Yes").** Confirming an offer now also refreshes the student's PROFILE
+  pathway, in the same transaction as the application (`services/confirmation._save_and_refresh_profile`).
+  When the confirm changed the pathway (type, or pre-U stream / school), `chosen_pathway`,
+  `pre_u_track`, `pre_u_institution` and `chosen_programme` are copied onto the profile where they
+  differ (a blank only where this confirm cleared the field) — #43's shape now leaves the profile on
+  pismp, so a later /profile edit can no longer push the old pathway back. A same-type confirm that
+  changed none of them leaves the profile alone; results, grades, identity and the student's
+  certainty / considered / reasons answers are never written; the profile is refreshed only from
+  the application it follows (no later application still open). `repair_confirmed_pathway` now
+  prints each profile it refreshes. **Closed going forward only:** the five existing rows (#14, #32,
+  #43, #119, #142) need the new one-off backfill (cron job `backfill-confirmed-profiles` + `BACKFILL_CONFIRMED_PROFILES_APPLY=1`, then unset) after the
+  deploy (owner's yes; dry run by default, ids and field names only, idempotent). Tests:
+  `test_confirm_pathway.TestConfirmRefreshesTheProfile` (6), `test_backfill_confirmed_profiles.py`
+  (6), one /profile-edit test in `test_family_profile_link.py`, one assertion in
+  `test_repair_confirmed_pathway.py`.
+- **Cockpit: "Pathways considered" and "Still-deciding reasons" are apply-stage only** (owner, on
+  #134/#119). Shown while the application is `submitted` or `shortlisted`; hidden from "Awaiting
+  review" (`profile_complete`) onward and in every ended state. One rule in
+  `lib/applicationStatus.isApplyStage`; the reasons keep their `pathway_certainty !== 'sure'` guard.
+  Rendered test `admin/scholarship/[id]/view/ApplicantCards.test.tsx` (new) + two cases in
+  `applicationStatus.test.ts`. The reviewer Guide and FAQ do not mention either field — unchanged.
 ## Apply gift clarity — the apply/application loop is gone, and the form says which gift it is for - 2026-10-05
 
 Sprint. Built locally, NOT deployed. WEB, plus ONE api field (`programme_code` on the public intake

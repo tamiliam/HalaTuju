@@ -25,6 +25,8 @@ import {
   statusLabelKey,
   statusTone,
   hasStatusTone,
+  APPLY_STAGE_STATUSES,
+  isApplyStage,
 } from '@/lib/applicationStatus'
 import { QC_ACCEPTED_STATES, isQcAccepted } from '@/lib/officerCockpit'
 
@@ -114,5 +116,19 @@ describe('isQcAccepted', () => {
     const i = (s: string) => QC_ACCEPTED_STATES.indexOf(s)
     expect(i('awarded')).toBeGreaterThan(i('recommended'))
     expect(i('awarded')).toBeLessThan(i('active'))
+  })
+})
+
+describe('isApplyStage (owner 2026-10-05)', () => {
+  it('is the funnel before "Awaiting review" and nothing else', () => {
+    const review = APPLICATION_STATUSES.indexOf('profile_complete')
+    expect([...APPLY_STAGE_STATUSES]).toEqual(APPLICATION_STATUSES.slice(0, review))
+    for (const s of APPLICATION_STATUSES) expect(isApplyStage(s)).toBe(APPLICATION_STATUSES.indexOf(s) < review)
+  })
+
+  it('is false for the synthetic and the missing status', () => {
+    expect(isApplyStage('reopened')).toBe(false)
+    expect(isApplyStage(undefined)).toBe(false)
+    expect(isApplyStage('')).toBe(false)
   })
 })

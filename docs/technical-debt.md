@@ -10,7 +10,7 @@
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
 a running log; as of **2026-10-05** it runs to **TD-346**, with **343 ids carrying a defining entry
-and 100 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
+and 99 of those open** — every one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
 TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, one, TD-321,
@@ -41,7 +41,7 @@ below, which lists all of them in working order and says how the figures were re
 
 ## Open Items Index (curated, regenerated 2026-09-30)
 
-**343 entries carry a defining line; 100 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision; TD-069 and TD-218 closed by Now sprint 4, TD-324 and TD-325 raised by it; TD-324 closed by the owner's ruling the same day, TD-326 raised by it; TD-229 closed by Now sprint 5 part 1 on 2026-10-03, TD-327 and TD-328 raised by it; TD-329 raised by Now sprint 5 part 2, TD-125, which stays open until its key is deleted; TD-164, TD-169, TD-244 and TD-251 closed by Next-tier batch 3, TD-145 moved to Owner-decision with its resolver built; TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231 and TD-055 closed by Later-tier batch 1 on 2026-10-03, TD-290 and TD-294 built and held open for their live proof, TD-330 raised by its review; TD-145 closed by the owner's ruling on 2026-10-04, TD-331 and TD-332 raised by its build and review; TD-329, TD-331, TD-332, TD-308, TD-304, TD-295, TD-279, TD-266, TD-195 and TD-053 closed by Later-tier batch 2 the same day, TD-286 and TD-187 left open with a dated status; TD-277, TD-270, TD-284, TD-273, TD-263, TD-239, TD-236, TD-165, TD-291 and TD-110 closed by Later-tier batch 3 the same day, TD-174 and TD-077 left open with a dated status; TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286 and TD-246 closed by Later-tier batch 4 the same day, TD-333 and TD-334 raised by it and its review, TD-216, TD-228, TD-238 and TD-245 left open with a dated status; TD-333, TD-334, TD-214 and TD-194 closed by Later-tier batch 5 on 2026-10-05, TD-076 and TD-228 built in part and left open, TD-335 and TD-336 raised by its review; TD-337 to TD-346 raised by the apply-gift-clarity sprint the same day). Every one of them was READ on
+**343 entries carry a defining line; 99 of those are open** (152 after the Now-tier sweep; eight closed by Next-tier batch 1 on 2026-10-01, TD-319 raised by its review, twelve closed by Next-tier batch 2 the same day, TD-320 raised by its review, TD-255 closed by Now sprint 1 and proven by its deploy, TD-321 raised by that deploy's image probe, and TD-257 closed by Now sprint 1 — twenty routes tested, the dead twenty-first deleted; TD-253 and TD-207 closed by Now sprint 2, TD-322 raised by its review; TD-322 and TD-151 closed by Now sprint 3, TD-323 raised by it, TD-114 moved to Owner-decision; TD-069 and TD-218 closed by Now sprint 4, TD-324 and TD-325 raised by it; TD-324 closed by the owner's ruling the same day, TD-326 raised by it; TD-229 closed by Now sprint 5 part 1 on 2026-10-03, TD-327 and TD-328 raised by it; TD-329 raised by Now sprint 5 part 2, TD-125, which stays open until its key is deleted; TD-164, TD-169, TD-244 and TD-251 closed by Next-tier batch 3, TD-145 moved to Owner-decision with its resolver built; TD-323, TD-320, TD-287, TD-289, TD-293, TD-162, TD-231 and TD-055 closed by Later-tier batch 1 on 2026-10-03, TD-290 and TD-294 built and held open for their live proof, TD-330 raised by its review; TD-145 closed by the owner's ruling on 2026-10-04, TD-331 and TD-332 raised by its build and review; TD-329, TD-331, TD-332, TD-308, TD-304, TD-295, TD-279, TD-266, TD-195 and TD-053 closed by Later-tier batch 2 the same day, TD-286 and TD-187 left open with a dated status; TD-277, TD-270, TD-284, TD-273, TD-263, TD-239, TD-236, TD-165, TD-291 and TD-110 closed by Later-tier batch 3 the same day, TD-174 and TD-077 left open with a dated status; TD-325, TD-327, TD-079, TD-150, TD-168, TD-256, TD-286 and TD-246 closed by Later-tier batch 4 the same day, TD-333 and TD-334 raised by it and its review, TD-216, TD-228, TD-238 and TD-245 left open with a dated status; TD-333, TD-334, TD-214 and TD-194 closed by Later-tier batch 5 on 2026-10-05, TD-076 and TD-228 built in part and left open, TD-335 and TD-336 raised by its review; TD-337 to TD-346 raised by the apply-gift-clarity sprint the same day). Every one of them was READ on
 2026-09-30 by a reader that did not write it, checked against the code at `0033a2a5`, and the lead opened
 every citation behind a closure. This index lists ALL open entries, in the order to work them.
 
@@ -69,7 +69,7 @@ every citation behind a closure. This index lists ALL open entries, in the order
 > an officer sees it · **D** tooling and hygiene. Effort: **S** half a day, one file · **M** one to three
 > days · **L** longer, or a migration or an outside party. Tiers follow from the two.
 
-### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 25
+### Owner-decision — a ruling, an outside party, or an owner action (not just code) — 24
 Each line is the question. Nothing here can be closed by engineering alone.
 
 - **TD-337** — A student rejected, withdrawn or closed in one round cannot start an application in another round or gift from the form (the web blocks across rounds; the server only per round). Rule on M2–M4 before any new round opens. *(B · M · raised 2026-10-05 by the apply-gift-clarity sprint)*
@@ -80,7 +80,6 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-142** — Payments are real but not tied to the signed agreement. This waits on TD-140. *(A · L · partly done)*
 - **TD-140** — The bursary agreement cannot go live until a lawyer approves the wording and the signing entity is settled. *(A · L)*
 - **TD-075** — Sponsor money is still mock. When do the lawyer's review and the payment account arrive, and may several sponsors fund one student? *(A · L)*
-- **TD-210** — Should a confirmed offer update the student's own profile pathway, so an old one cannot overwrite it? *(B · S)*
 - **TD-179** — Two rules decide this partner's students. One rule everywhere, or two on purpose? *(B · S)*
 - **TD-143** — A birth certificate cropped above its header: treat as suspect, or as not a birth certificate? *(B · S)*
 - **TD-128** — Special-needs teaching courses match only a physical disability. Ask about other needs now? *(B · M)*
@@ -3294,7 +3293,34 @@ with the UTC date, so a profile drafted after 8pm local time carried yesterday's
 called UTC "approximate day is all the model needs", which was true and is no longer a reason to
 keep it wrong.
 
-### [TD-210] A stale profile pathway can still overwrite an offer-confirmed one — low
+### ~~[TD-210] A stale profile pathway can still overwrite an offer-confirmed one — low~~ — RESOLVED 2026-10-05 (owner ruling: "Yes" — closed going forward; the five existing rows need the one-off backfill, owner's yes, run after deploy)
+**Resolved 2026-10-05 — closed going forward (small change; decisions.md 2026-10-05).** The owner
+chose option (B) of the 2026-08-01 sync decision. `services/confirmation.confirm_pathway` now saves
+through `_save_and_refresh_profile`: in ONE transaction it saves the application and, when the
+confirm changed the pathway itself (the type, or the pre-U stream / school — any of
+`family.OFFER_WRITTEN_PATHWAY_FIELDS` written), copies `chosen_pathway`, `pre_u_track`,
+`pre_u_institution` and `chosen_programme` onto the student's profile where they differ
+(`sync_profile_pathway`), so #43's shape (application pismp) leaves the profile reading pismp. A
+blank reaches the profile only where THIS confirm cleared the field (otherwise `copy_pathway`'s
+blank-refusal rule). A same-type confirm that changed none of them never touches the profile;
+results, grades, identity and the student's certainty / considered / reasons answers are never
+written; and the profile is refreshed only from the application it follows — no LATER application
+still OPEN (`profile_follows`, the /profile sync's own target; a later decided one does not count,
+review F1). **The existing rows are not fixed by this:** the read-only count on 2026-10-05 found 14
+confirmed applications and 5 whose profile disagrees (#14 and #32 rejected, #43, #119 and #142
+awarded). They need the one-off backfill — in production the cron job `backfill-confirmed-profiles` with `BACKFILL_CONFIRMED_PROFILES_APPLY=1` set for the run, then unset (`--apply` locally; dry run by
+default; prints application ids and field names only; idempotent) — the owner's yes, run after the
+deploy. `repair_confirmed_pathway` calls `confirm_pathway`, so it now refreshes profiles too and
+prints each one it changes. **Why:** the profile is the
+pathway's durable home and `copy_pathway` lets a populated profile value win on the next /profile
+edit, so refreshing the home removes the asymmetry instead of widening a guard (which would have
+silently dropped a student's own correction). Tests: `test_confirm_pathway.TestConfirmRefreshesTheProfile`
+(6), `test_family_profile_link.test_a_profile_edit_after_a_type_switch_confirm_keeps_the_new_pathway`,
+`test_backfill_confirmed_profiles.py` (6) and one profile assertion in `test_repair_confirmed_pathway.py`.
+Not done: the silent `autofill_pathway_from_offer` still writes only the application (it is not a
+confirmation).
+
+**The original entry:**
 **Found 2026-08-01** while fixing requests #7/#8. `copy_pathway` now refuses a BLANK
 `chosen_pathway` / `pre_u_track` / `pre_u_institution` over a populated value, which closes the
 wipe that blanked #119. A **populated but stale** profile value still wins: #43's application reads

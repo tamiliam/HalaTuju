@@ -231,6 +231,37 @@ class TestPathwayProfileLink(TestCase):
         self.assertEqual(app.pre_u_track, 'sains')
         self.assertEqual(app.pre_u_institution, 'KM Melaka')
 
+    def test_a_profile_edit_after_a_type_switch_confirm_keeps_the_new_pathway(self):
+        """TD-210 (#43). She declared STPM, then confirmed a PISMP offer. The confirm now refreshes
+        the PROFILE too, so the /profile page — which reads the profile and PUTs its pathway back
+        on any save — sends pismp, never the superseded stpm."""
+        from apps.scholarship.services import confirm_pathway
+        self.client.put('/api/v1/profile/', dict(
+            _PATHWAY, chosen_pathway='stpm', pre_u_track='sains_sosial',
+            pre_u_institution='SMK Lama'), format='json')
+        app = make_application('profile_complete', cohort=self.cohort, student=self.profile,
+                               chosen_pathway='stpm', pre_u_track='sains_sosial',
+                               pre_u_institution='SMK Lama')
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/pismp',
+            vision_fields={'fields': {
+                'institution': 'INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN',
+                'programme': 'Program Ijazah Sarjana Muda Perguruan (PISMP)', 'stream': ''},
+                'student_verdict': 'ok', 'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+        self.assertTrue(confirm_pathway(app))
+        page = self.client.get('/api/v1/profile/').data          # what /profile shows her
+        self.assertEqual(page['chosen_pathway'], 'pismp')
+        edit = {f: page[f] for f in PROFILE_PATHWAY_FIELDS}
+        edit['uncertainty_note'] = 'an unrelated edit'
+        r = self.client.put('/api/v1/profile/', edit, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'pismp')
+        self.assertEqual(app.pre_u_track, '')
+        self.assertEqual(app.pre_u_institution, '')
+        self.assertEqual(app.chosen_programme['source'], 'offer_letter_confirmed')
+
     def test_a_blank_profile_still_fills_a_blank_application(self):
         """Nothing to protect → the copy is unchanged (and must not start skipping fields)."""
         prof = make_student(supabase_user_id='pw-blank')

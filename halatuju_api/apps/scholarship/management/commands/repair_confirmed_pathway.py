@@ -18,6 +18,9 @@ Idempotent: the selector stops matching once a record is repaired, and re-runnin
     python manage.py repair_confirmed_pathway               # apply (how cron runs it)
 
 Scope it with ``PATHWAY_REPAIR_APP_IDS=32,119`` to limit a production run to known ids.
+
+Since TD-210 (2026-10-05) ``confirm_pathway`` also refreshes the student's PROFILE pathway, so a run
+can change profiles too; each one it changes is printed (application id + field names only).
 """
 import os
 
@@ -26,6 +29,7 @@ from django.core.management.base import BaseCommand
 from apps.scholarship import offer_pathway as op
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import confirm_pathway
+from apps.scholarship.services.confirmation import PROFILE_SYNCED_FIELDS
 
 #: The fields the repair may change — reported before/after so the run is auditable.
 _WATCHED = ('chosen_pathway', 'pre_u_track', 'pre_u_institution')
@@ -44,6 +48,14 @@ def needs_repair(app):
     if not op.is_pre_u(pathway.lower()):
         return False                    # a tertiary pathway needs neither field
     return not (app.pre_u_track or '').strip() or not (app.pre_u_institution or '').strip()
+
+
+def _profile_pathway(app):
+    """The profile ROW's pathway fields (TD-210), read fresh so the report compares the database."""
+    if app.profile_id is None:
+        return {}
+    from apps.courses.models import StudentProfile
+    return StudentProfile.objects.filter(pk=app.profile_id).values(*PROFILE_SYNCED_FIELDS).first() or {}
 
 
 class Command(BaseCommand):
@@ -73,6 +85,7 @@ class Command(BaseCommand):
                                   f'(now {before})')
                 repaired += 1
                 continue
+            prof_before = _profile_pathway(app)
             if not confirm_pathway(app):
                 self.stdout.write(self.style.WARNING(
                     f'  app {app.id}: SKIPPED — no live offer letter on file'))
@@ -82,6 +95,10 @@ class Command(BaseCommand):
                 app.pathway_confirmed_at = stamp        # she confirmed when she confirmed
                 app.save(update_fields=['pathway_confirmed_at'])
             app.refresh_from_db()
+            prof_after = _profile_pathway(app)
+            if prof_after != prof_before:
+                moved = [f for f in PROFILE_SYNCED_FIELDS if prof_before.get(f) != prof_after.get(f)]
+                self.stdout.write(f'  app {app.id}: profile refreshed: {", ".join(moved)}')
             after = {f: getattr(app, f) for f in _WATCHED}
             after_cp = app.chosen_programme if isinstance(app.chosen_programme, dict) else {}
             if after == before and after_cp == before_cp:

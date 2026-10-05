@@ -13084,3 +13084,37 @@ exists. Both are the obvious improvement to make and both undo the fence, so the
 checked for them by `components/admin/__tests__/RecordState.test.tsx`. Two per-screen sentences
 that named the wrong cause — `admin.reviewers.detail.loadFailed` and
 `admin.sponsors.detail.loadFailed` — were deleted rather than left as copy nothing renders.
+
+## 2026-10-05 — TD-210 ruled: a confirmed offer refreshes the student's PROFILE pathway
+
+**Owner:** *"Yes"* — to TD-210, i.e. option (B) of the 2026-08-01 two-way-sync decision.
+`confirm_pathway` now writes the reconciled pathway onto the profile as well as the application, in
+the same transaction, so the durable home is never left on a superseded declaration and the next
+/profile edit cannot push it back (#43: application pismp, profile stpm). **Closed going forward;
+the five existing rows need the one-off backfill (owner's yes), run after deploy** — the read-only
+count on 2026-10-05: 14 confirmed applications, 5 whose profile disagrees (#14, #32, #43, #119,
+#142); the cron job `backfill-confirmed-profiles` with `BACKFILL_CONFIRMED_PROFILES_APPLY=1` set for the run, then unset; a dry run otherwise.
+**Scope, deliberately narrow:** only when the confirm CHANGED the pathway itself (the type, or the
+pre-U stream / school); then `chosen_pathway`, `pre_u_track`, `pre_u_institution` and
+`chosen_programme` are copied where they differ, a blank only where THIS confirm cleared the field.
+Never results, grades or identity, never the student's own certainty / considered / reasons
+answers, and only from the application the profile follows — no LATER application still open,
+the /profile sync's own rule. A same-type confirm that changed none of those leaves the profile
+alone. `repair_confirmed_pathway` calls `confirm_pathway`, so a run of it now refreshes profiles
+too, and it prints each profile it changes (application id and field names only).
+**Alternatives considered:** a wider guard in `copy_pathway` (rejected on 2026-08-01 and again
+now: it silently drops a student's own correction); mirroring on EVERY confirm (rejected: a
+same-type confirm would rewrite the profile's programme for no pathway change).
+**Trade-off accepted:** the profile — the student's own declaration surface — now shows our reading
+of the letter she confirmed. She confirmed it, so that is her answer too. The silent
+`autofill_pathway_from_offer` is NOT a confirmation and still writes the application only.
+
+## 2026-10-05 — Cockpit: "Pathways considered" and "Still-deciding reasons" are apply-stage only
+
+**Owner** (on #134 and #119): *"They remain there even after the student has been awarded. I don't
+think they are relevant at Awaiting review stage onwards. They might be apply stage, but not during
+application stage."* The two fields now show only while the application is at the apply stage —
+`submitted` or `shortlisted`, before `profile_complete` ("Awaiting review") — via
+`lib/applicationStatus.isApplyStage`; every later and every ended status hides them. The reasons
+keep their older guard too (hidden once `pathway_certainty` is `sure`). The stored answers are
+untouched; only the cockpit stops showing them.

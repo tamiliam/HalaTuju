@@ -58,11 +58,16 @@ class TestRepairConfirmedPathway(TestCase):
                               'source': 'offer_letter_confirmed'})
         self._offer(app, institution='KOLEJ TINGKATAN ENAM SRI ISTANA',
                     programme='Tingkatan Enam Semester 1', stream='SAINS SOSIAL')
-        self.assertIn('1 repaired', self._run())
+        out = self._run()
+        self.assertIn('1 repaired', out)
         app.refresh_from_db()
         self.assertEqual(app.chosen_pathway, 'stpm')
         self.assertEqual(app.pre_u_track, 'sains_sosial')
         self.assertEqual(app.pre_u_institution, 'Kolej Tingkatan Enam Sri Istana')
+        # TD-210: the confirm now refreshes the profile too, and the run says so (ids, no values).
+        self.assertEqual(StudentProfile.objects.get(pk=app.profile_id).chosen_pathway, 'stpm')
+        self.assertIn(f'app {app.id}: profile refreshed: chosen_pathway', out)
+        self.assertNotIn('Sri Istana', out.split('refreshed:')[1].splitlines()[0])
 
     def test_repairs_the_matric_record_and_tidies_its_shouty_programme(self):
         # #32: typed matric, but the letter's raw text was stored and no track was read off it.

@@ -37,6 +37,18 @@ class _Base(TestCase):
             vision_run_at=timezone.now(),
         )
 
+    def _pismp_offer(self, app, *, identity=False):
+        f = {'institution': 'INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN',
+             'programme': 'Program Ijazah Sarjana Muda Perguruan (PISMP)', 'stream': ''}
+        if identity:                       # match the profile so the verdict clears identity
+            f['candidate_name'] = app.profile.name
+            f['candidate_nric'] = app.profile.nric
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/pismp',
+            vision_fields={'fields': f, 'student_verdict': 'ok',
+                           'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+
 
 class TestConfirmPathwayUpdatesPreU(_Base):
     def test_stpm_confirm_updates_institution_and_stream(self):
@@ -71,18 +83,6 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         # chosen_programme standardised: canonical name + the same cleaned institution.
         self.assertEqual(app.chosen_programme['course_name'], 'Program Matrikulasi')
         self.assertEqual(app.chosen_programme['institution'], app.pre_u_institution)
-
-    def _pismp_offer(self, app, *, identity=False):
-        f = {'institution': 'INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN',
-             'programme': 'Program Ijazah Sarjana Muda Perguruan (PISMP)', 'stream': ''}
-        if identity:                       # match the profile so the verdict clears identity
-            f['candidate_name'] = app.profile.name
-            f['candidate_nric'] = app.profile.nric
-        return ApplicantDocument.objects.create(
-            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/pismp',
-            vision_fields={'fields': f, 'student_verdict': 'ok',
-                           'authenticity': {'status': 'genuine', 'reason': 'x'}},
-            vision_run_at=timezone.now())
 
     def test_type_switch_confirm_adopts_offer_type_and_clears_stale_preu(self):
         # TD-161 (#43): declared STPM (Sains Sosial), genuine PISMP offer → confirm switches the TYPE
@@ -193,6 +193,96 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         app.refresh_from_db()
         self.assertEqual(app.pre_u_institution, 'SMK Asal')   # untouched
         self.assertEqual(app.pre_u_track, 'sains_sosial')
+
+
+class TestConfirmRefreshesTheProfile(_Base):
+    """TD-210 (owner 2026-10-05: "Yes"). The profile is the pathway's durable home; a confirm that
+    changes the pathway writes the reconciled values there too, so the next /profile edit cannot
+    push the superseded declaration back onto the application (#43: application pismp, profile
+    stpm). The /profile-edit half lives in ``test_family_profile_link``."""
+
+    def _declared(self, **kw):
+        app = self._app(**kw)
+        p = app.profile
+        p.chosen_pathway, p.pre_u_track, p.pre_u_institution = (
+            kw['pathway'], kw['track'], kw['institution'])
+        p.chosen_programme = {'course_name': 'Tingkatan Enam', 'source': 'student'}
+        p.save()
+        return app
+
+    def test_type_switch_writes_the_profile_and_clears_its_preu(self):
+        app = self._declared(pathway='stpm', track='sains_sosial', institution='SMK X')
+        self._pismp_offer(app)
+        self.assertTrue(confirm_pathway(app))
+        prof = StudentProfile.objects.get(pk=app.profile_id)
+        self.assertEqual(prof.chosen_pathway, 'pismp')
+        self.assertEqual(prof.pre_u_track, '')
+        self.assertEqual(prof.pre_u_institution, '')
+        self.assertEqual(prof.chosen_programme['source'], 'offer_letter_confirmed')
+        self.assertEqual(prof.name, 'NILA A/P RAJU')            # nothing but the pathway moved
+        self.assertEqual(prof.nric, '080101-05-1234')
+        self.assertEqual(prof.household_income, 1800)
+
+    def test_same_school_same_type_confirm_never_touches_the_profile(self):
+        app = self._declared(pathway='stpm', track='sains',
+                             institution='Kolej Tingkatan Enam Gombak')
+        before = StudentProfile.objects.get(pk=app.profile_id)
+        self._offer(app, institution='KOLEJ TINGKATAN ENAM GOMBAK',
+                    programme='Tingkatan Enam Semester 1', stream='SAINS')
+        self.assertTrue(confirm_pathway(app))
+        prof = StudentProfile.objects.get(pk=app.profile_id)
+        for f in ('chosen_pathway', 'pre_u_track', 'pre_u_institution', 'chosen_programme'):
+            self.assertEqual(getattr(prof, f), getattr(before, f), f)
+        self.assertEqual(prof.chosen_programme['source'], 'student')   # not refreshed
+
+    def test_same_type_new_school_follows_onto_the_profile(self):
+        # #117's shape: the stream and school changed, so the profile would otherwise resurrect them.
+        app = self._declared(pathway='stpm', track='sains_sosial',
+                             institution='SMK (P) TEMENGGONG IBRAHIM')
+        self._offer(app, institution='KOLEJ TINGKATAN ENAM GOMBAK',
+                    programme='Tingkatan Enam Semester 1', stream='SAINS')
+        self.assertTrue(confirm_pathway(app))
+        prof = StudentProfile.objects.get(pk=app.profile_id)
+        self.assertEqual(prof.chosen_pathway, 'stpm')
+        self.assertEqual(prof.pre_u_track, 'sains')
+        self.assertEqual(prof.pre_u_institution, 'Kolej Tingkatan Enam Gombak')
+
+    def test_an_older_application_never_rewrites_the_profile(self):
+        app = self._declared(pathway='stpm', track='sains_sosial', institution='SMK X')
+        from apps.scholarship.tests.factories import make_application, make_cohort
+        make_application('submitted', cohort=make_cohort(code='later', name='B40', year=2027),
+                         student=app.profile)
+        self._pismp_offer(app)
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'pismp')            # the application still moves
+        prof = StudentProfile.objects.get(pk=app.profile_id)
+        self.assertEqual(prof.chosen_pathway, 'stpm')            # the profile follows the latest
+
+    def test_a_later_DECIDED_application_does_not_stop_the_refresh(self):
+        # Review F1: /profile syncs into the latest OPEN application, so a later rejected one is
+        # not where an edit lands. Skipping on it left stpm on the profile, and the next edit
+        # pushed stpm back onto this open, PISMP-confirmed application.
+        app = self._declared(pathway='stpm', track='sains_sosial', institution='SMK X')
+        from apps.scholarship.tests.factories import make_application, make_cohort
+        make_application('rejected', cohort=make_cohort(code='later', name='B40', year=2027),
+                         student=app.profile)
+        self._pismp_offer(app)
+        self.assertTrue(confirm_pathway(app))
+        self.assertEqual(StudentProfile.objects.get(pk=app.profile_id).chosen_pathway, 'pismp')
+
+    def test_a_blank_reaches_the_profile_only_where_this_confirm_cleared_it(self):
+        # Review F4: the school is cleared BY this confirm, so the profile follows; the stream was
+        # already blank on the application, so the profile's own value stands (copy_pathway's
+        # blank-refusal rule).
+        app = self._declared(pathway='stpm', track='', institution='SMK X')
+        StudentProfile.objects.filter(pk=app.profile_id).update(pre_u_track='sains')
+        self._pismp_offer(app)
+        self.assertTrue(confirm_pathway(app))
+        prof = StudentProfile.objects.get(pk=app.profile_id)
+        self.assertEqual(prof.chosen_pathway, 'pismp')
+        self.assertEqual(prof.pre_u_institution, '')
+        self.assertEqual(prof.pre_u_track, 'sains')
 
 
 class TestConfirmWithNothingDeclared(_Base):

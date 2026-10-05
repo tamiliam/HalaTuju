@@ -2087,6 +2087,7 @@ class CronRunView(APIView):
         'reprocess-ic-vision': 'reprocess_unread_ic',  # frequent (~15 min): self-heal IC/parent_ic stuck unprocessed (silent upload OCR failures → false 'service unavailable' consent block)
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)
+        'backfill-confirmed-profiles': 'backfill_confirmed_profiles',  # one-off TD-210: confirmed pathway onto the profile (DRY RUN unless BACKFILL_CONFIRMED_PROFILES_APPLY=1)
         # One-off/idempotent. ELEVEN kinds now, not five: 5 partner + `student_assigned` (#3) +
         # 5 reviewer (#10). ⚠ RUN IT AFTER A DEPLOY THAT ADDS A KIND, never before — it seeds what
         # the RUNNING code knows about, so an earlier run silently skips the new rows.
