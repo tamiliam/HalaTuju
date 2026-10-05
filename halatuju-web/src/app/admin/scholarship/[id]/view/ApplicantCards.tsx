@@ -21,6 +21,7 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import { Card, Field, Grades, joinOr, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
 import { GuardianCorrect } from './GuardianCorrect'
+import { GuardianCallRecord } from './GuardianCallRecord'
 
 export function ApplicantCards({
   app, t, vtip, incomeValue, incomeTip, incomeNote,
@@ -161,7 +162,8 @@ export function ApplicantCards({
                   <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={<>
                     {guardian?.phone ? formatPhone(guardian.phone) : '—'}
                     {canCorrectGuardian && <GuardianCorrect appId={app.id} name={guardian?.name || ''} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
-                  </>} />
+                    {canCorrectGuardian && <GuardianCallRecord appId={app.id} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
+                  </>} note={app.guardian_needs_call ? t('admin.scholarship.guardianNeedsCall') : undefined} />
                 </dl>
               </Card>
               </div>

@@ -44,7 +44,6 @@ describe('the Correct action on the parent/guardian phone', () => {
 
   it.each([
     ['guardian_contact_locked', 'admin.scholarship.guardianLocked'],
-    ['guardian_phone_is_students', 'admin.scholarship.guardianPhoneIsStudents'],
     ['guardian_phone_invalid', 'scholarship.apply.error.phone'],
   ])('a %s refusal reads as words, not "something went wrong" (review F6)', async (code, words) => {
     const { api } = renderCockpit({ role: 'super', stage: 'awarded' })

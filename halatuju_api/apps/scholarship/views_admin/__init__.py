@@ -89,7 +89,7 @@ from .credits import (
     _CreditsBase, _credit_dict, AdminWalletCreditCancelView, AdminWalletCreditListCreateView,
     AdminWalletCreditSignView,
 )
-from .guardian_contact import AdminGuardianContactView
+from .guardian_contact import AdminGuardianCallView, AdminGuardianContactView
 from .graduation import (
     _BursaryAdminBase, AdminBursaryCountersignView, AdminBursaryWitnessView,
     AdminGraduationMessageListView, AdminGraduationMessageReviewView,

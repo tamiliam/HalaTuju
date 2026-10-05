@@ -6,8 +6,8 @@ F1  CROSS-ORGANISATION. One student, an application in organisation A and an OFF
 F2  "EVERY CHANGE IS RECORDED" WAS FALSE. A later application form that changes the parent phone
     wrote no row. It does now. (Django's staff-only /admin/ site is the one writer that still
     records nothing — documented, not signalled.)
-F3  THE STUDENT'S OWN NUMBER AS THE PARENT'S — the exact self-verify the PIN gate exists to stop.
-    Refused on the profile and the admin path; on the application form it is simply not stored.
+F3  THE STUDENT'S OWN NUMBER AS THE PARENT'S — first refused; REVERSED by the owner's consent
+    reframe (2026-10-05): accepted on every path and flagged for a call instead.
 F5  JUNK NUMBERS. The server now accepts what the screen accepts — a Malaysian mobile — and stores
     it in one display form, not as typed.
 """
@@ -89,45 +89,39 @@ class TestF2_ASecondApplicationRecordsTheChange(TestCase):
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
                    BURSARY_AGREEMENT_ENABLED=False)
-class TestF3_TheStudentsOwnNumberIsNeverTheParents(TestCase):
+class TestF3_ASharedNumberIsAcceptedAndFlagged(TestCase):
+    """F3 was first fixed as a REFUSAL. The owner's consent reframe (2026-10-05) reversed it: a
+    shared family phone is common and genuine, so it is ACCEPTED on every path and FLAGGED for a
+    call (`parent_call.needs_parent_call`). These are the old refusal tests, inverted."""
 
     def setUp(self):
         self.profile = make_student(guardians=[dict(PARENT)], contact_phone=OWN)
         self.app = make_application('recommended', student=self.profile)
 
-    def test_the_profile_path_refuses_it(self):
+    def _flagged(self):
+        from apps.scholarship.parent_call import needs_parent_call
+        self.profile.refresh_from_db()
+        return needs_parent_call(self.profile)
+
+    def test_the_profile_path_accepts_it_and_it_is_flagged(self):
+        self.assertFalse(self._flagged())
         resp = authed_client(self.profile).put(URL, {'name': 'Ravi', 'phone': '+60175554444'},
                                                format='json')
-        self.assertEqual((resp.status_code, resp.data['code']), (400, 'guardian_phone_is_students'))
-        self.profile.refresh_from_db()
-        self.assertEqual(self.profile.guardians, [PARENT])
+        self.assertEqual(resp.status_code, 200, resp.data)
+        self.assertTrue(self._flagged())
+        self.assertEqual(self.profile.guardians[0]['phone'], OWN)
 
-    def test_the_admin_path_refuses_it(self):
+    def test_the_admin_path_accepts_it_and_it_is_flagged(self):
         resp = authed_client(make_admin('super', super_admin=True)).post(
             _admin_url(self.app), {'name': 'Ravi', 'phone': '0175554444'}, format='json')
-        self.assertEqual((resp.status_code, resp.data['code']), (400, 'guardian_phone_is_students'))
+        self.assertEqual(resp.status_code, 200, resp.data)
+        self.assertTrue(self._flagged())
 
-    def test_the_application_form_keeps_the_stored_parent_phone(self):
+    def test_the_application_form_stores_it_and_it_is_flagged(self):
         resp = _apply(self.profile, make_cohort(is_open=True), OWN, contact_phone=OWN)
-        self.assertEqual(resp.status_code, 201)        # never fails the whole application
-        self.profile.refresh_from_db()
-        self.assertEqual(self.profile.guardians, [PARENT])
-
-    def test_the_application_form_with_no_stored_phone_keeps_the_name_only(self):
-        first_timer = make_student(contact_phone=OWN)
-        self.assertEqual(_apply(first_timer, make_cohort(is_open=True), '+60 17-555 4444')
-                         .status_code, 201)
-        first_timer.refresh_from_db()
-        self.assertEqual(first_timer.guardians, [{'name': 'Ravi a/l Muthu', 'phone': ''}])
-
-    def test_the_forms_own_new_contact_phone_is_the_one_compared(self):
-        # The form syncs the student's contact_phone in the same call, so a NEW own number typed
-        # into both boxes at once is still caught.
-        resp = _apply(self.profile, make_cohort(is_open=True), '012-111 2222',
-                      contact_phone='012-111 2222')
         self.assertEqual(resp.status_code, 201)
-        self.profile.refresh_from_db()
-        self.assertEqual(self.profile.guardians, [PARENT])
+        self.assertTrue(self._flagged())
+        self.assertEqual(self.profile.guardians, [{'name': 'Ravi a/l Muthu', 'phone': OWN}])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,

@@ -29,7 +29,7 @@ class Command(BaseCommand):
         if not app_ids:
             self.stdout.write('AWARD_EMAIL_APP_IDS not set — nothing sent.')
             return
-        sent, skipped_no_award, failed = [], [], []
+        sent, skipped_no_award, failed, held = [], [], [], []
         for aid in app_ids:
             app = (ScholarshipApplication.objects.filter(id=aid)
                    .select_related('profile').first())
@@ -39,6 +39,10 @@ class Command(BaseCommand):
             award = app.sponsorships.filter(status__in=Sponsorship.HOLDING).first()
             if award is None:
                 skipped_no_award.append(aid)
+                continue
+            # Request #26: a shared parent phone with no consenting call — the email waits for it.
+            from apps.scholarship.parent_call import held_for_parent_call
+            if held_for_parent_call(app, held):
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
             from apps.scholarship.vircle import can_register
@@ -67,4 +71,5 @@ class Command(BaseCommand):
             else:
                 failed.append((aid, 'send_failed'))
         self.stdout.write(
-            f'Award-offer emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed}')
+            f'Award-offer emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed} '
+            f'held_for_parent_call={held}')

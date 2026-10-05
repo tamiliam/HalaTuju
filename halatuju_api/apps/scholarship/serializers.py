@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.courses.exam_questions import ResultsHeldField
 from . import pool
-from .family import PROFESSION_CODES
+from .family import PROFESSION_CODES, form_guardians_shape
 from .models import (
     ApplicantDocument, BankAccount, Consent, FundingNeed, GraduationMessage, Referee,
     ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
@@ -469,7 +469,7 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
     contact_phone = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=20)
     preferred_call_language = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=10)
     referral_source = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=50)
-    guardians = serializers.JSONField(required=False, write_only=True)
+    guardians = serializers.JSONField(required=False, write_only=True, validators=[form_guardians_shape])
 
     class Meta:
         model = ScholarshipApplication

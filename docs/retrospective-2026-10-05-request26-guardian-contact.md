@@ -137,7 +137,42 @@ it was denied); bundle-budget **ok**.
 Left as known, per the lead: display-vs-PIN entry mismatch (pre-existing), the freeze check before
 the row lock, frozen-without-template, the silent drop on a frozen second application, no rate limit.
 
-## 7. Not covered
+## 7. The owner's consent reframe (follow-up 3)
+
+"We are not dealing with a potential fraud. We only want the parent's consent to signing a contract,
+so in the event of a dispute we could prove we have taken reasonable steps to ensure the parent is
+onboard." That changed the design rather than a detail:
+
+* **The own-phone refusal (review F3) was removed.** It flagged genuine families (9 production
+  profiles; #62 and #125 share the PARENT's phone) and was dodgeable three ways. A shared number is
+  accepted and FLAGGED; the flag is live, derived, and cleared only by a consenting confirming call
+  recorded against the current number.
+* **Record call** is the admin's tool, with one trail for changes and calls. Migration 0165 was
+  edited in place (not yet in production); its profile link is now SET_NULL so the evidence lives as
+  long as the signed agreement — the retention point the review caught: CASCADE would have deleted
+  the consent evidence exactly when the contract it supports is kept.
+* **The award good-news email waits** for the call on both senders (found by grepping the send
+  functions and the env-gated paths: `release_award_offer_emails` — both its branches — and the
+  owner's `send_award_offer_emails`; `award_and_notify` sends nothing inline).
+* **Second review C, D, E** closed (guardians shape; ANY other-organisation offer refuses; a late
+  postcode answer is dropped once anything moved).
+* **The record corrected:** the parent-IC match proves knowledge, not presence; decisions.md said
+  "stronger" and now says so.
+
+Gates: pytest **7886** passed, 3 skipped; jest **3437 / 226**; check-i18n **5418** keys; tsc and
+makemigrations clean; next build compiled (warm `.next`); bundle-budget **ok** — `/profile`
+299.358 → **299.538 kB** (budget 301, 1.462 kB of room), median 228.000 → **228.081 kB** (0.919 kB of
+room), routes that may cross before the median **1**. Every guard was bite-checked.
+
+### ⚠ GO-LIVE STEPS added by this follow-up
+* After this deploys, an admin should **Record a call** for **#116, #62, #125** (flagged by the
+  shared-phone rule) and also **#25** (Swetha — her parent phone equals her own VIRCLE phone, so the
+  contact-phone flag cannot see her). **Not #20** (Sharvani — under 18, so her parent registered her
+  Vircle; the match is expected).
+* Before the hourly release runs after the deploy, expect it to report `held_for_parent_call=[…]`
+  for any flagged student whose award is still unemailed — that is the email waiting, not a fault.
+
+## 8. Not covered
 
 * Malay and Tamil strings are first drafts and need the owner's review.
 * Nothing was exercised against a real Twilio or a real browser; the signing path is mocked at the

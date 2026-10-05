@@ -91,13 +91,3 @@ it('a stored +60 number pre-fills in a form that can be saved (review F4)', asyn
   expect(screen.queryByText('scholarship.apply.error.phone')).toBeNull()
   expect((screen.getByRole('button', { name: 'profile.save' }) as HTMLButtonElement).disabled).toBe(false)
 })
-
-it("the student's own number is refused in words (review F3)", async () => {
-  mockApi.getGuardianContact.mockResolvedValue(contact())
-  mockApi.updateGuardianContact.mockRejectedValue(
-    Object.assign(new Error('own'), { code: 'guardian_phone_is_students' }))
-  render(<GuardianContactSection />)
-  fireEvent.click(await screen.findByRole('button', { name: 'profile.edit' }))
-  fireEvent.click(screen.getByRole('button', { name: 'profile.save' }))
-  expect(await screen.findByText('profile.guardianPhoneIsOwn')).toBeTruthy()
-})

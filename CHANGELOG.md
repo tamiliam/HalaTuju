@@ -55,9 +55,8 @@ reviewed) and one sentence in the application-complete email (EN + BM).
   - **F1 cross-organisation:** while frozen, an org_admin may correct only through the organisation
     holding the open offer (409 `guardian_contact_locked` otherwise); a super always may.
   - **F2 recording:** a later application form that changes the contact now writes a row too.
-  - **F3 own number:** the student's own `contact_phone` is refused as the parent's
-    (`guardian_phone_is_students`) on the profile and admin paths; on the application form it is
-    not stored (the stored parent phone stands, or the name is kept with no phone) — never a refusal.
+  - **F3 own number:** first refused (`guardian_phone_is_students`); REVERSED in follow-up 3 —
+    accepted and flagged for a call.
   - **F4 prefill:** a stored `+60…` number pre-filled as `601-…` and failed the validator; it now
     pre-fills as `01X-…` (`src/lib/guardianPhone.ts`).
   - **F5 junk numbers:** the server now accepts what the screen accepts — a Malaysian mobile — and
@@ -67,6 +66,27 @@ reviewed) and one sentence in the application-complete email (EN + BM).
   - **New copy:** three strings in en/ms/ta (Malay and Tamil first drafts).
   - Gates after follow-up 2 (rebased on main): pytest 7869 passed, 3 skipped; jest 3426 / 224
     suites; i18n 5413 keys; tsc clean; makemigrations clean; bundle-budget ok.
+- **Follow-up 3 — the owner's consent reframe ("reasonable, recorded steps", not fraud):**
+  - **The own-phone refusal is gone** from the profile, the admin correction and the application
+    form; a shared number is ACCEPTED and FLAGGED. Its two strings were removed.
+  - **The flag** (`parent_call.needs_parent_call`) is live and derived: the parent phone is the
+    student's own and no consenting confirming call is recorded for THAT number. The cockpit shows
+    "Shared phone — call the parent".
+  - **Record call** (super + org_admin, the correction's fence): `POST
+    admin/scholarship/applications/<pk>/guardian-call/` — outcome, consent, number, the parent's
+    name, a note. "Parent's number corrected" also stores the number, in one action.
+  - **One trail:** `guardian_contact_changes` gained `kind` + the call fields; **migration 0165 was
+    edited in place** (not yet in production) and its Postgres DDL regenerated (RLS kept). Its
+    profile link is now **SET_NULL** — the trail lives as long as the signed agreement it evidences.
+  - **The award good-news email waits for the call:** the hourly release and the owner's forced
+    send both skip a flagged student, leave the award unstamped and report it by id.
+  - **Second review C/D/E:** the apply form's `guardians` must be `[]` or one `{name, phone}`; the
+    frozen cross-organisation check refuses when ANY open offer is elsewhere; a late postcode answer
+    is dropped once the postcode, City or State moved (`src/lib/usePostcodeAutofill.ts`).
+  - **New copy:** seven admin strings in en/ms/ta (Malay and Tamil first drafts); two removed.
+  - Gates: pytest 7886 passed, 3 skipped; jest 3437 / 226 suites; i18n 5418 keys; tsc and
+    makemigrations clean; bundle-budget ok — `/profile` 299.538 kB (budget 301), median 228.081 kB
+    (budget 229), 1 route may cross before the median does.
 - Tests: pytest 7826 → 7852 passed after the first commit, 7857 after the follow-up; jest 3378 →
   3391 (219 → 221 suites), 3392 / 222 after the follow-up.
 

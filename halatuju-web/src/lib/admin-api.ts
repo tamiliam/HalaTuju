@@ -73,11 +73,11 @@ export type {
 // The cockpit list, the whole detail payload, and assignment.
 export {
   getScholarshipApplications, assignApplication, requestMoreInfo, getAssignableAdmins,
-  getScholarshipApplication, correctGuardianContact,
+  getScholarshipApplication, correctGuardianContact, recordGuardianCall,
 } from './admin-api/applications'
 export type {
   AdminScholarshipListItem, AdminCompleteness, AdminInterviewSession, AdminSponsorProfile,
-  AdminNudge, AdminScholarshipDetail, AdminScholarshipListData,
+  AdminNudge, AdminScholarshipDetail, AdminScholarshipListData, GuardianCallOutcome,
 } from './admin-api/applications'
 
 // Interview scheduling from the OFFICER's side, and the Check-3 session.

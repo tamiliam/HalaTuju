@@ -62,6 +62,7 @@ from .views_sponsor import (
 )
 from .views_admin import (
     AdminApplicationDetailView,
+    AdminGuardianCallView,
     AdminGuardianContactView,
     AdminVerdictSummaryView,
     AdminApplicationListView,
@@ -466,6 +467,7 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/reporting-date/', AdminReportingDateView.as_view()),
     # Request #26: super / org_admin correct the parent/guardian contact, any time, recorded
     path('admin/scholarship/applications/<int:pk>/guardian-contact/', AdminGuardianContactView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/guardian-call/', AdminGuardianCallView.as_view()),
     path('admin/scholarship/applications/<int:pk>/nudge/', AdminNudgeStudentView.as_view()),
     # Break-glass: release an IC lock so an orphaned claim stops blocking the number's real
     # owner. SUPER ONLY — narrower than the gate that takes the lock, on purpose.

@@ -331,6 +331,9 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     preferred_call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
     referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
     guardians = serializers.JSONField(source='profile.guardians', read_only=True)
+    # Request #26: the parent phone is the student's own, and no consenting call has cleared THIS
+    # number (`parent_call.needs_parent_call` — derived live, never stored). The cockpit asks for a call.
+    guardian_needs_call = serializers.SerializerMethodField()
     # Academic detail (rendered SPM/STPM-aware on the admin page).
     muet_band = serializers.IntegerField(source='profile.muet_band', read_only=True)
     coq_score = serializers.FloatField(source='profile.coq_score', read_only=True)
@@ -447,7 +450,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state',
-            'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians',
+            'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians', 'guardian_needs_call',
             'referred_by_org', 'witness_org',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
@@ -644,6 +647,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
 
     def get_merit_score(self, obj):
         return _application_merit_score(obj)
+
+    def get_guardian_needs_call(self, obj):
+        from .parent_call import needs_parent_call
+        return needs_parent_call(obj.profile)
 
     def get_verified_email(self, obj):
         """The verified email to display on the admin card (see _verified_email)."""

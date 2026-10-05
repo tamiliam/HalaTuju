@@ -14,5 +14,6 @@ class Command(BaseCommand):
     help = 'Send award good-news emails whose cool-off window has elapsed (idempotent).'
 
     def handle(self, *args, **options):
-        sent = svc.release_award_offer_emails()
-        self.stdout.write(f'Award-offer cool-off release: sent={sent}')
+        held = []   # request #26: awards whose parent phone needs a call first — reported by id
+        sent = svc.release_award_offer_emails(held=held)
+        self.stdout.write(f'Award-offer cool-off release: sent={sent} held_for_parent_call={held}')

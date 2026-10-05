@@ -37,7 +37,11 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
   2026-10-05)** — `POST admin/scholarship/applications/<pk>/guardian-contact/`, at ANY time, even
   while the student is frozen out of it during bursary signing — but while frozen, an `org_admin`
   only if their organisation holds the open offer; every change made through the product is recorded
-  (`guardian_contact_changes`; Django's staff-only `/admin/` site is the one exception). `admin`, `qc`, `reviewer`, `finance` and `partner` are refused.
+  (`guardian_contact_changes`; Django's staff-only `/admin/` site is the one exception).
+- **Recording a call to the parent ("Record call") is super + `org_admin` only (request #26 consent
+  framing, 2026-10-05)** — `POST admin/scholarship/applications/<pk>/guardian-call/`, the same
+  gate and cross-organisation rule as the correction. A "Parent's number corrected" call also stores
+  the number. A shared phone with no consenting call holds back the award good-news email. `admin`, `qc`, `reviewer`, `finance` and `partner` are refused.
   Manual: `role-org-admin` § *Correcting a parent's phone number*; FAQ: org_admin.
 - **Last-org-admin protection:** the sole active `org_admin` of a tenant cannot be revoked.
 - **Gift scoping is super + `org_admin` only (S-ASSIGN, 2026-09-04), and it is NARROWER than

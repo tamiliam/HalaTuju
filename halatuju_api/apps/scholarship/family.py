@@ -303,3 +303,18 @@ def clean_other_members(raw):
             entry['occupation_other'] = other
         out.append(entry)
     return out
+
+
+def form_guardians_shape(value):
+    """The apply form's ``guardians``: ``[]`` or exactly ``[{name: str, phone: str}]`` — nothing else
+    (request #26, second review C). A crafted ``[[], {...}]`` used to pass, and every screen reads
+    entry 0 as the parent while `bursary.guarantor_phone_for` reads the first entry WITH a phone,
+    so the PIN target could be hidden from every reader. A validator on the serializer field."""
+    from django.core.exceptions import ValidationError
+    if value == []:
+        return
+    ok = (isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict)
+          and set(value[0]) == {'name', 'phone'}
+          and all(isinstance(value[0][k], str) for k in ('name', 'phone')))
+    if not ok:
+        raise ValidationError('guardians must be [] or [{"name": ..., "phone": ...}].')

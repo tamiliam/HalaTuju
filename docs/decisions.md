@@ -1,5 +1,57 @@
 # Architectural Decisions — HalaTuju
 
+## The parent's consent: reasonable, RECORDED steps — not fraud prevention — owner, request #26, 2026-10-05
+
+**The owner, in their words:** "We are not dealing with a potential fraud. We only want the parent's
+consent to signing a contract, so in the event of a dispute we could prove we have taken reasonable
+steps to ensure the parent is onboard." Every part of the parent-contact work is judged against
+that: is it a reasonable step, and is it on the record? Nothing here tries to defeat a determined
+cheat — a second SIM beats any phone check, so no design can.
+
+**1. No lock follows from a doubt.** The freeze while signing is possible (the entry below) stays;
+nothing NEW locks anything. A doubtful number gets a CALL.
+
+**2. The "own phone" refusal is REMOVED.** It refused a parent phone equal to the student's own
+`contact_phone`. It falsely flagged genuine families — production has 9 such profiles, and two
+(#62, #125) turned out to be the PARENT's phone used by students who have their own — and it was
+dodgeable three ways (a second number, a sibling's phone, or changing the student's own number
+first). A shared number is now ACCEPTED on every path and FLAGGED.
+
+**3. The flag is LIVE and DERIVED, never stored** (`parent_call.needs_parent_call`): the parent
+phone `same_phone`s the student's `contact_phone` AND no CLEARING call exists for the CURRENT
+parent number — outcome `shared_confirmed` or `parent_number_confirmed`, `consent_given` true,
+recorded against that exact number. A changed number is therefore unchecked again automatically.
+It holds back ONE thing: the award good-news email (both senders — the hourly release and the
+owner's forced send — skip and report the student by id, and retry once the call is recorded).
+
+**4. "Record call" is the admin's tool** (super + org_admin; the correction's organisation fence,
+including the frozen cross-organisation rule): number called, outcome (`shared_confirmed`,
+`parent_number_confirmed`, `parent_number_corrected`, `could_not_reach`), consent yes/no ("parent
+told about the bursary and agreed"), the name the parent gave, a note. `parent_number_corrected`
+records the call AND stores the corrected phone in one action, so the number on file is exactly the
+number recorded as called — the evidential point. `could_not_reach` and consent=no never clear the
+flag. The student updates their OWN contact phone through the existing profile flow; nothing new
+was built for them. One table holds both changes and calls (`guardian_contact_changes`, `kind`
+'change' | 'call'), so a dispute reads as one chronological trail.
+
+**5. RETENTION BASIS: the agreement's.** `ScholarshipApplication.profile` is SET_NULL and the
+`BursaryAgreement` hangs off the application, so a SIGNED AGREEMENT deliberately survives the
+student's account deletion. The consent trail is the evidence for that agreement, so its profile
+link is SET_NULL too (it was CASCADE, which would have deleted the evidence exactly when the
+contract it supports is kept). Basis: defence of legal claims, as for the agreement. It keeps
+nothing the agreement does not already hold — the agreement records the parent's name, NRIC and
+phone.
+
+**6. Not built on the Vircle phone.** All 65 awarded students have a Vircle mobile today, but only
+because Vircle is set up first while the organisation is being registered — a TEMPORARY
+arrangement. In the proper order Vircle comes later, so nothing here reads it. (Hence #25 below: her
+parent phone equals her own Vircle phone, which the contact-phone flag cannot see.)
+
+**Correcting the record:** the entry below said the guarantor's typed name + NRIC matching the
+parent IC is "the stronger" gate. It is not: the student uploaded that IC, so the match proves
+KNOWLEDGE of the parent's details, not the parent's PRESENCE. Neither check proves presence; the
+recorded call is the reasonable step that comes closest.
+
 ## Parent/guardian contact: editable by the student EXCEPT while signing is possible; super + org_admin correct it any time — owner rulings, request #26, 2026-10-05
 
 **The request.** A student asked how to change their father's phone number ("it is a typo"). Nobody
@@ -19,8 +71,9 @@ the flag on and off and asserts the two agree.
 65 applications sit at 'awarded' and 0 at 'active'. A status freeze would lock all 65 indefinitely to
 protect a control that cannot run, and completion → award has measured 23 days on average, 83 at
 most — a long time to be unable to fix a typo. And the phone is not the only gate: the guarantor's
-typed name + NRIC must match the OCR'd parent IC (`guarantor_identity_check`), which is the stronger
-check. With the flag OFF nobody is frozen; when it goes ON, students in the window freeze
+typed name + NRIC must match the OCR'd parent IC (`guarantor_identity_check`). ⚠ CORRECTED the same
+day: this said that check is "the stronger" one. It is not — the student uploaded that IC, so it proves
+knowledge of the parent's details, not the parent's presence (see the consent entry above). With the flag OFF nobody is frozen; when it goes ON, students in the window freeze
 automatically. Once the student and guarantor have signed, the offer is no longer 'offered', the
 PIN views answer `no_offer`, and the contact is editable again — the number that WAS verified is
 stamped on the application (`guarantor_phone`), so a later edit cannot rewrite what was checked.
@@ -40,17 +93,17 @@ form — writes a `GuardianContactChange` row (`guardian_contact_changes`: old/n
 which role, which application); a save that changes nothing writes none. Django's staff-only `/admin/` site is the one exception (it writes no row):
 it is staff-only and a signal was judged not worth it.
 
-**2b. The number must be a Malaysian mobile, and never the student's own (review F3, F5).** The PIN
-is an SMS, so a landline is useless; the server now applies the screen's rule and stores the number
-in one display form. A guardian phone equal to the student's own `contact_phone` is refused on the
-profile and admin paths; on the application form it is not stored (never a refusal of the whole
-application). `whatsapp.normalise_msisdn` stays lenient for its other callers.
+**2b. The number must be a Malaysian mobile (review F5).** The PIN is an SMS, so a landline is
+useless; the server applies the screen's rule and stores the number in one display form.
+`whatsapp.normalise_msisdn` stays lenient for its other callers. (Review F3's refusal of the
+student's own number was REMOVED by the consent reframe above — a shared number is flagged for a
+call instead.)
 
 **3. Nothing about storage moves (R7).** The contact stays entry 0 of `StudentProfile.guardians`,
 written through `profile_sync.sync_profile_fields` → `merge_guardians` (TD-055); no migration of
 existing data, no backfill, and `guarantor_phone_for` / `merge_guardians` are untouched. The phone
-must pass `whatsapp.normalise_msisdn` — the function that turns it into E.164 for the PIN — so an
-accepted number can always be texted. It is stored as typed, like the apply form stores it.
+must be a Malaysian mobile (2b), so an accepted number can always be texted, and is stored as
+`01X-XXX XXXX`. (The first build stored it as typed after `normalise_msisdn`; review F5 tightened it.)
 
 **4. Shown only to applicants (R4); no emergency-contact field (R6).** The profile line is its own
 "Parent / guardian contact", never attached to Father or Mother: the guardian's name matches

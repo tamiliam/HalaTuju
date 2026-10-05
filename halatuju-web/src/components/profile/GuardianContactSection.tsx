@@ -60,8 +60,7 @@ export default function GuardianContactSection() {
       if (code === 'guardian_contact_locked') {
         setContact({ ...contact, guardian_contact_locked: true }); setEditing(false)
       } else {
-        setError(code === 'guardian_phone_invalid' ? t('scholarship.apply.error.phone')
-          : code === 'guardian_phone_is_students' ? t('profile.guardianPhoneIsOwn') : t('errors.somethingWentWrong'))
+        setError(code === 'guardian_phone_invalid' ? t('scholarship.apply.error.phone') : t('errors.somethingWentWrong'))
       }
     } finally { setSaving(false) }
   }

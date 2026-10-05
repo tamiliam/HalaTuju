@@ -484,6 +484,8 @@ class TestFenceCoverageCompleteness(TestCase):
         # Request #26: fenced by _require_app_write, then narrowed to super/org_admin (owner R3);
         # corrects the parent/guardian contact at any time, recorded in guardian_contact_changes.
         'AdminGuardianContactView': 'gate',
+        # Request #26 consent reframe: "Record call" — the SAME gate (_guardian_gate) as the correction.
+        'AdminGuardianCallView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

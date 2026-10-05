@@ -33,6 +33,7 @@ import Toggle from '@/components/Toggle'
 import { useToast } from '@/components/ToastContext'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
+import { usePostcodeAutofill } from '@/lib/usePostcodeAutofill'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -107,6 +108,7 @@ export default function ProfilePage() {
   const [address, setAddress] = useState('')
   const [postalCode, setPostalCode] = useState('')
   const [city, setCity] = useState('')
+  const postcode = usePostcodeAutofill((c, st) => { setCity(c); setState(st) })
   const [email, setEmail] = useState('')
   // Single source of truth for the family-finance answers, shared with /apply
   // (form.householdIncome/householdSize → DB column household_income/household_size).
@@ -413,6 +415,7 @@ export default function ProfilePage() {
   }
 
   const cancelEditing = () => {
+    postcode.edited()
     setName(snapshot.name as string || '')
     setGender(snapshot.gender as '' | 'male' | 'female' || '')
     setNationality(snapshot.nationality as 'malaysian' | 'non_malaysian' || 'malaysian')
@@ -1020,12 +1023,7 @@ export default function ProfilePage() {
                       onChange={e => {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 5)
                         setPostalCode(val)
-                        // The postcode table (~11 kB gz) loads on the 5th digit, not with the page — request #26
-                        // needed /profile first-load headroom. A failed chunk only skips the autofill.
-                        if (val.length === 5) import('malaysia-postcodes').then(({ findPostcode }) => {
-                          const result = findPostcode(val)
-                          if (result.found && result.city && result.state) { setCity(result.city); setState(result.state) }
-                        }).catch(() => {})
+                        void postcode.lookup(val)   // the table loads on the 5th digit (request #26)
                       }}
                       placeholder="08000"
                       maxLength={5}
@@ -1037,7 +1035,7 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       value={city}
-                      onChange={e => setCity(e.target.value)}
+                      onChange={e => { postcode.edited(); setCity(e.target.value) }}
                       placeholder="Sungai Petani"
                       className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     />
@@ -1047,7 +1045,7 @@ export default function ProfilePage() {
                   <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('onboarding.state')}</label>
                   <select
                     value={state}
-                    onChange={e => setState(e.target.value)}
+                    onChange={e => { postcode.edited(); setState(e.target.value) }}
                     className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                   >
                     <option value="">{t('onboarding.selectState')}</option>

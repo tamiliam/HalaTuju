@@ -632,12 +632,12 @@ def award_and_notify(sponsor, application):
     return fund_student(sponsor, application)   # atomic; raises SponsorshipError on a bad state
 
 
-def release_award_offer_emails(now=None):
+def release_award_offer_emails(now=None, held=None):
     """Send the award email for every HOLDING award whose cool-off has elapsed and that hasn't been
     emailed yet (``offered_at + AWARD_OFFER_EMAIL_COOLOFF_HOURS <= now`` and ``offer_emailed_at`` is
     NULL). A cancelled/lapsed award (no longer offered/active) is skipped, so reconsidering within
     the window stops the email. Hourly scheduler (job ``release-award-offer-emails``). Returns the
-    count sent.
+    count sent. Request #26: a student whose parent phone needs a call WAITS (ids into ``held``).
 
     ``offer_emailed_at`` is stamped ONLY ON SUCCESS (changed 2026-07-12). It previously stamped
     either way, on the reasoning that a transient failure "never re-floods" — but the query filters
@@ -650,6 +650,7 @@ def release_award_offer_emails(now=None):
     On a successful send it also raises the Vircle setup task, because the email now carries the
     Vircle instructions and the task it points at must exist by the time the student reads it."""
     from django.conf import settings as _settings
+    from .parent_call import held_for_parent_call
     now = now or timezone.now()
     hours = getattr(_settings, 'AWARD_OFFER_EMAIL_COOLOFF_HOURS', 24)
     cutoff = now - timezone.timedelta(hours=hours)
@@ -666,6 +667,8 @@ def release_award_offer_emails(now=None):
     for sp in qs:
         app = sp.application
         name = getattr(app.profile, 'name', '') if app.profile else ''
+        if held_for_parent_call(app, held):
+            continue   # request #26: the award email waits for the parent call; unstamped, so retried
         if bursary_on:
             # Bill the tenant — an unwrapped send meters org-NULL (see emails._meter_email).
             with _usage.usage_context(application=app):
@@ -685,11 +688,7 @@ def release_award_offer_emails(now=None):
                 lang=getattr(app, 'locale', '') or 'en',
                 guardian_note=not can_register(app), branding=_branding.for_application(app))
         if not ok:
-            # Stamp ONLY on success. This query filters offer_emailed_at__isnull=True, so stamping
-            # a FAILED send would permanently suppress that student's award email — they'd simply
-            # never hear they won. Leaving it unstamped means the next hourly run retries.
-            # (The same fix was made in send_award_offer_emails; this path was missed.)
-            continue
+            continue   # stamp ONLY on success (2026-07-12, the docstring): the next hourly run retries
         sp.offer_emailed_at = now
         sp.save(update_fields=['offer_emailed_at', 'updated_at'])
         # The award email now CARRIES the Vircle instructions, so the task it refers to must exist

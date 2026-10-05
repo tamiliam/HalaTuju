@@ -16,6 +16,12 @@ is the ONE place that corrects it after the apply form, under the owner's ruling
       `profile_sync.sync_profile_fields` → `merge_guardians` (TD-055), the one writer. So
       `bursary.guarantor_phone_for` reads a corrected number with no change of its own.
 
+⚠ THE STANDARD IS REASONABLE, RECORDED STEPS — NOT FRAUD PREVENTION (owner, 2026-10-05): "we only
+want the parent's consent to signing a contract, so in the event of a dispute we could prove we have
+taken reasonable steps to ensure the parent is onboard." So a student's own number typed as the
+parent's is ACCEPTED (it is often a genuinely shared family phone) and FLAGGED for a call instead —
+see `parent_call.py`. The earlier refusal falsely flagged genuine families and was dodgeable anyway.
+
 See docs/decisions.md, "Parent/guardian contact: editable except while signing is possible".
 """
 import re
@@ -24,7 +30,7 @@ from django.db import transaction
 
 from .models import GuardianContactChange, ScholarshipApplication
 from .services.profile_sync import sync_profile_fields
-from .signing_window import award_application, in_signing_window, signing_enabled
+from .signing_window import in_signing_window, signing_enabled
 
 #: The apply form's own limits for these two boxes: `name` mirrors `StudentProfile.name`
 #: (`ApplicationCreateSerializer.name`, max_length=255) and the phone mirrors
@@ -33,7 +39,6 @@ NAME_MAX = 255
 PHONE_MAX = 20
 
 LOCKED = 'guardian_contact_locked'
-IS_STUDENTS = 'guardian_phone_is_students'
 
 
 class GuardianContactError(Exception):
@@ -65,15 +70,19 @@ def contact_frozen(profile):
 
 
 def frozen_for_organisation(profile, organisation_id):
-    """Review F1: frozen AND the open offer belongs to ANOTHER organisation than ``organisation_id``.
+    """Review F1: frozen AND an open offer belongs to ANOTHER organisation than ``organisation_id``.
 
     A student may hold an application in organisation A and an offer in organisation B. The
     contact is one per student, so A's org_admin correcting it through A's application would move
-    B's signing PIN. While frozen, only the organisation holding the open offer (or a super) may."""
+    B's signing PIN. While frozen, only an organisation holding EVERY open offer (or a super) may.
+    Second review D: ANY offered application elsewhere refuses — `award_application` returns only
+    the first, so asking it alone let a second offer through. The window itself is the same rule
+    (`signing_window`: the flag + an offered sponsorship), asked of every offer instead of one."""
     if profile is None or not signing_enabled():
         return False
-    offer_app = award_application(profile.pk)
-    return offer_app is not None and offer_app.owning_organisation_id != organisation_id
+    return (ScholarshipApplication.objects
+            .filter(profile_id=profile.pk, sponsorships__status='offered')
+            .exclude(owning_organisation_id=organisation_id).exists())
 
 
 def malaysian_mobile(raw):
@@ -98,14 +107,6 @@ def malaysian_mobile(raw):
     return f'{d[:3]}-{d[3:-4]} {d[-4:]}'
 
 
-def is_students_own(phone, profile):
-    """Review F3: the student's own contact phone typed as the parent's — the self-verify the
-    whole PIN gate exists to stop."""
-    from .bursary import same_phone
-    own = getattr(profile, 'contact_phone', '') or ''
-    return bool(own) and same_phone(phone, own)
-
-
 def record_change(profile, old, *, application, by_email, by_role):
     """Write a `GuardianContactChange` when entry 0's name or phone actually moved from ``old``
     (a ``(name, phone)`` pair); None when it did not. Shared by this module and the apply form."""
@@ -125,25 +126,12 @@ def screen_form_guardians(profile, data):
 
     * Frozen (gap A): the form's guardians are dropped and the stored one stands — a second
       application to another open round must not move the number the signing PIN goes to.
-    * The phone is the student's OWN (review F3; compared with the form's own `contact_phone`,
-      which syncs in the same call, else the stored one): it is not stored as the parent's. The
-      stored parent phone stands if there is one; otherwise the name is kept with no phone.
+    * A number shared with the student is stored like any other (consent reframe, 2026-10-05):
+      it is FLAGGED for a call (`parent_call.needs_parent_call`), never dropped or refused.
     Never refuses: the application is still created and every other field syncs."""
     old = current_contact(profile)
-    if 'guardians' not in data:
-        return old
-    if contact_frozen(profile):
+    if 'guardians' in data and contact_frozen(profile):
         data.pop('guardians')
-        return old
-    form = data['guardians']
-    if isinstance(form, list) and form and isinstance(form[0], dict):
-        from .bursary import same_phone
-        own = data.get('contact_phone') or getattr(profile, 'contact_phone', '') or ''
-        if own and same_phone(str(form[0].get('phone') or ''), own):
-            if old[1]:
-                data.pop('guardians')
-            else:
-                data['guardians'] = [{**form[0], 'phone': ''}] + form[1:]
     return old
 
 
@@ -154,11 +142,12 @@ def current_contact(profile):
     return str(first.get('name') or ''), str(first.get('phone') or '')
 
 
-def clean(name, phone, profile=None):
+def clean(name, phone):
     """Validate and tidy one submission. Returns `(name, phone)` or raises the error code.
 
     The phone must be a Malaysian mobile (`malaysian_mobile`, the same rule as the screen) and
-    is STORED in its local display form, not as typed. It may not be the student's own number."""
+    is STORED in its local display form, not as typed. The student's own number is ACCEPTED (a
+    shared family phone is common) — it is flagged for a call, not refused."""
     name = ' '.join(str(name or '').split())
     if not name:
         raise GuardianContactError('guardian_name_required')
@@ -169,8 +158,6 @@ def clean(name, phone, profile=None):
     phone = malaysian_mobile(phone)
     if not phone:
         raise GuardianContactError('guardian_phone_invalid')
-    if is_students_own(phone, profile):
-        raise GuardianContactError(IS_STUDENTS)
     return name, phone
 
 
@@ -185,7 +172,7 @@ def update_guardian_contact(profile, *, name, phone, by_email, by_role, applicat
     is locked for the read-modify-write so two saves cannot interleave."""
     if by_role not in dict(GuardianContactChange.ROLE_CHOICES):
         raise ValueError(f'unknown by_role {by_role!r}')
-    name, phone = clean(name, phone, profile)
+    name, phone = clean(name, phone)
     if not allow_frozen and contact_frozen(profile):
         raise GuardianContactError(LOCKED)
 

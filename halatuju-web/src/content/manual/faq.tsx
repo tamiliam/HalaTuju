@@ -218,6 +218,15 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
+      q: <>An applicant shows <strong>&ldquo;Shared phone &mdash; call the parent&rdquo;</strong>. What do I do?</>,
+      a: <>The parent phone they gave is also their own number. That is often a genuine family phone, so it is
+        not refused &mdash; but we want a parent to know about the bursary and agree. Call the number, then press
+        <strong> Record call</strong> beside it and choose what happened. If the parent confirmed and agreed, the
+        flag clears. If they gave you a different number, choose <strong>Parent&rsquo;s number corrected</strong>
+        and type it: it is saved as the parent phone in the same step. Until a call clears the flag, the
+        student&rsquo;s award good-news email waits.</>,
+    },
+    {
       q: <>A student says their <strong>parent&rsquo;s phone number</strong> is wrong. Can I fix it?</>,
       a: <>Yes. On the applicant&rsquo;s page, in <strong>Family &amp; finances</strong>, press
         <strong> Correct</strong> beside the parent or guardian phone, enter the right name and number, and save.

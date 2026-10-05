@@ -18,10 +18,10 @@ import { correctGuardianContact } from '@/lib/admin-api'
 import { isValidMobile, toLocalPhone } from '@/lib/guardianPhone'
 import type { T } from './shared'
 
-/** Review F6: the server's refusal codes, in words. Reuses the apply form's phone sentence. */
-const REFUSAL: Record<string, string> = {
+/** Review F6: the server's refusal codes, in words (shared with Record call). Reuses the apply
+ *  form's phone sentence. */
+export const GUARDIAN_REFUSAL: Record<string, string> = {
   guardian_phone_invalid: 'scholarship.apply.error.phone',
-  guardian_phone_is_students: 'admin.scholarship.guardianPhoneIsStudents',
   guardian_contact_locked: 'admin.scholarship.guardianLocked',
 }
 
@@ -50,7 +50,7 @@ export function GuardianCorrect({ appId, name, phone, t, onDone }: {
       setOpen(false)
       await onDone?.()
     } catch (e) {
-      setError(t(REFUSAL[(e as Error & { code?: string }).code || ''] || 'errors.somethingWentWrong'))
+      setError(t(GUARDIAN_REFUSAL[(e as Error & { code?: string }).code || ''] || 'errors.somethingWentWrong'))
     } finally { setBusy(false) }
   }
 

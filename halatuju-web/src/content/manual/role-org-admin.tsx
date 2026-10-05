@@ -220,6 +220,19 @@ export const roleOrgAdmin: ManualChapter = {
       ),
     },
     {
+      anchor: 'org-admin-parent-call',
+      title: 'Calling the parent',
+      body: (
+        <>When a student gives their own phone number as their parent&rsquo;s, the applicant page says
+        <strong> &ldquo;Shared phone &mdash; call the parent&rdquo;</strong>. It is not an accusation &mdash; many
+        families share a phone &mdash; it asks for a reasonable, recorded step: call, then press <strong>Record
+        call</strong> and choose the outcome, whether the parent was told about the bursary and agreed, the name
+        they gave, and a note. A confirmed call with consent clears the flag; until then the award good-news
+        email waits. If the parent gives a different number, &ldquo;Parent&rsquo;s number corrected&rdquo; saves
+        it as the parent phone in the same step.</>
+      ),
+    },
+    {
       anchor: 'org-admin-what-stays-platform',
       title: 'What stays with the platform',
       body: (
