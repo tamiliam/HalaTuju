@@ -3936,7 +3936,7 @@
         "assignedTitle": "Penyemak ditugaskan",
         "lockedHint": "Dikunci — keputusan telah direkodkan. Buka semula keputusan untuk menukar penyemak.",
         "coversOtherGift": "meliputi {gift}",
-        "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau tempoh 5 hari tamat.",
+        "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau masa untuk menjawab telah tamat.",
         "error": {
           "not_ready": "Permohonan ini belum bersedia untuk ditugaskan — pertanyaannya masih terbuka dan tempoh SLA belum tamat.",
           "not_reviewer": "Anda hanya boleh menugaskan kepada seorang penyemak.",
@@ -6436,7 +6436,7 @@
           },
           "reminder_1_days": {
             "label": "Peringatan pertama — hari selepas jemputan",
-            "desc": "Jika pelajar yang disenarai pendek belum melengkapkan permohonan, peringatan pertama dihantar sebanyak hari ini selepas e-mel senarai pendek."
+            "desc": "Dikira dari e-mel senarai pendek. Perubahan juga sampai kepada pelajar yang sedang menunggu."
           },
           "reminder_2_days": {
             "label": "Peringatan kedua — hari selepas jemputan",
@@ -6452,11 +6452,11 @@
           },
           "auto_close_after_final_reminder_days": {
             "label": "Tutup — hari selepas peringatan terakhir",
-            "desc": "Berapa lama selepas peringatan terakhir permohonan yang tidak lengkap ditutup. Peringatan terakhir menyatakan nombor ini."
+            "desc": "Pelajar yang sudah diberi amaran mengekalkan nombor yang dinyatakan dalam peringatan terakhirnya."
           },
           "query_answer_days": {
             "label": "Masa untuk menjawab soalan — hari",
-            "desc": "Berapa hari pelajar ada untuk menjawab soalan yang dibangkitkan selepas mereka menghantar. Ia juga menentukan bila kes yang masih mempunyai soalan terbuka boleh diberikan kepada penilai: setelah sekian hari berlalu sejak penghantaran."
+            "desc": "Berapa hari pelajar ada untuk menjawab soalan yang dibangkitkan selepas mereka menghantar. Ia juga menentukan bila kes yang masih mempunyai soalan terbuka boleh diberikan kepada penilai: setelah sekian hari berlalu sejak penghantaran. Perubahan juga sampai kepada pelajar yang sedang menunggu."
           },
           "query_reminder_lead_days": {
             "label": "Peringatan soalan — hari sebelum tarikh akhir",
@@ -6472,7 +6472,7 @@
           },
           "award_email_delay_hours": {
             "label": "E-mel anugerah — jam ditahan selepas anugerah",
-            "desc": "Berapa lama selepas penaja membiayai pelajar sebelum e-mel berita baik dihantar. Membatalkan anugerah dalam tempoh itu menghentikan e-mel tersebut."
+            "desc": "Berapa lama selepas penaja membiayai pelajar sebelum e-mel berita baik dihantar. Membatalkan anugerah dalam tempoh itu menghentikan e-mel tersebut. Perubahan juga sampai kepada anugerah yang sedang menunggu."
           },
           "award_confirm_hold_days": {
             "label": "Pembiayaan disahkan — hari selepas pelajar menerima",

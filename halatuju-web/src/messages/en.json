@@ -3936,7 +3936,7 @@
         "assignedTitle": "Reviewer assigned",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
         "coversOtherGift": "covers {gift}",
-        "notReadyHint": "Assignment opens once the applicant's queries are answered, or the 5-day window passes.",
+        "notReadyHint": "Assignment opens once the applicant's queries are answered, or their time to answer has passed.",
         "error": {
           "not_ready": "This application isn't ready to assign yet — its queries are still open and the SLA window hasn't passed.",
           "not_reviewer": "You can only assign to a reviewer.",
@@ -6436,7 +6436,7 @@
           },
           "reminder_1_days": {
             "label": "First reminder — days after the invitation",
-            "desc": "Sent if the application is still incomplete, counted from the shortlist email."
+            "desc": "Counted from the shortlist email. A change also reaches students already waiting."
           },
           "reminder_2_days": {
             "label": "Second reminder — days after the invitation",
@@ -6452,11 +6452,11 @@
           },
           "auto_close_after_final_reminder_days": {
             "label": "Close — days after the final reminder",
-            "desc": "An incomplete application closes this long after the final reminder, which states the number."
+            "desc": "A student already warned keeps the number their final reminder stated."
           },
           "query_answer_days": {
             "label": "Time to answer questions — days",
-            "desc": "Days a student has to answer questions raised after submitting. Also when a case with open questions can be given to a reviewer."
+            "desc": "Days to answer questions after submitting, and when a case with open questions can go to a reviewer. A change also reaches students already waiting."
           },
           "query_reminder_lead_days": {
             "label": "Questions reminder — days before the deadline",
@@ -6472,7 +6472,7 @@
           },
           "award_email_delay_hours": {
             "label": "Award email — hours after the award",
-            "desc": "Cancelling the award in this time stops the email."
+            "desc": "Cancelling the award in this time stops the email. A change also reaches awards already waiting."
           },
           "award_confirm_hold_days": {
             "label": "Funding confirmed — days after the student accepts",
@@ -6504,7 +6504,7 @@
           },
           "review_sla_days": {
             "label": "Verdict due — days after assignment",
-            "desc": "How many days a reviewer has to record a verdict after a case is assigned. Drives the due date in the assignment email, the reminder emails and the reviewer's interview reminder."
+            "desc": "Days a reviewer has to record a verdict after assignment. Sets the due date in every reviewer email."
           },
           "review_nudge_soon_days": {
             "label": "Reviewer reminder — days before due",

@@ -189,7 +189,13 @@ export const roleOrgAdmin: ManualChapter = {
           is refused with a note under the box concerned. <strong>The time to answer questions also decides
           when a case can be given to a reviewer:</strong> a case with questions still open can be assigned
           once that many days have passed since the student submitted. A blank box follows the platform
-          default, and a change reaches only what happens from then on.</span></>
+          default.</span>
+          <span className="mt-2 block"><strong>When a change takes effect.</strong> The shortlisting emails,
+          both decline holds and the funding-confirmed wait are fixed for each student at the moment they are
+          set, so a change reaches only later students. The reminder days, the time to answer questions and
+          the award-email wait also apply to students and awards already waiting. The close is never sooner
+          than the student&rsquo;s final reminder promised: lowering it keeps the number already stated to
+          a warned student, and raising it gives them the longer wait.</span></>
       ),
     },
     {
