@@ -1278,3 +1278,11 @@ was written for the states ITS caller could reach; unassign is refused from `int
 it had never met a booking whose interview had already happened, and the close — reachable from
 `interviewed` — would have "cancelled" a past interview. A new caller of a shared path lists the
 states it can reach that the old caller could not, and tests those. (TD-352)
+
+## 2026-10-06 — a local test run is a gate only when it is the gate's own command
+
+The api deploy gate runs `pytest -n auto` (xdist); four full local runs were serial and green,
+and the gate refused the push on a `subTest(marker=<datetime>)` that execnet cannot serialise
+back to the controller — a transport error, not an assertion, so no local run could see it.
+**Rule:** before a push, run the gate's exact line (`python -m pytest -q -n auto -p no:cacheprovider`
+for the api); pass only strings and numbers to `subTest` / `parametrize` ids. (TD-352)

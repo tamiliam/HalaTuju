@@ -238,6 +238,17 @@ the seeded super admin on the first VERIFIED sign-in. Development settings allow
 nothing changes on the live API. The command refuses any database that is not SQLite. It cannot
 show documents (no Storage) — never re-run extraction locally.
 
+### ⚠ The API gate — run the deploy gate's OWN line, not a serial run
+
+```bash
+cd halatuju_api
+python -m pytest -q -n auto -p no:cacheprovider   # ⬅ what cloudbuild.yaml runs (xdist). A serial
+                                                  # run passes things the gate refuses: subTest /
+                                                  # parametrize values travel to the controller and
+                                                  # execnet cannot serialise a datetime (TD-352's
+                                                  # push, 2026-10-06: 1 failed in the gate, 0 here).
+```
+
 ### ⚠ The FRONTEND gate list — all four, before any push that deploys web
 
 ```bash

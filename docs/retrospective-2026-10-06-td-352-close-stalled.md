@@ -78,7 +78,16 @@ recorded before the push (`django_migrations` id 263).
    only a future booking (tested both ways); lessons.md carries the general form — a reused
    teardown path was written for the states its caller could reach, and a new caller must list
    the states IT can reach.
-3. **The review's fixes read as churn in the health reading.** `fix%` 43 → 45 because three
+3. **The api deploy gate refused the push (`9fd4a007`): 1 failed, 8052 passed.** *Symptom:* the
+   gate runs `pytest -n auto`; one new test passed a `datetime` as a `subTest` kwarg, and xdist's
+   execnet cannot serialise a datetime back to the controller — a `DumpError`, not an assertion.
+   Every local run was serial, so it passed four times here. *Root cause:* the local gate and the
+   deploy gate were not the same command; `halatuju_api/cloudbuild.yaml` has said `-n auto` since
+   H2 and nobody ran it that way locally. *System change:* the api `CLAUDE.md` test command and the
+   lead's close checklist now run `python -m pytest -q -n auto -p no:cacheprovider` — the gate's own
+   line (it is also faster); lessons.md. The second deploy of this feature is the fix (`subTest`
+   names the marker, not its value) plus the close docs — at the two-deploy cap.
+4. **The review's fixes read as churn in the health reading.** `fix%` 43 → 45 because three
    review rounds landed as `fix:` commits the same day as the `feat:`. Not a code problem; recorded
    in `docs/code-health.md` and left for the tool proposal already open there (a `review:` prefix
    or the lane's commit-SHA classification would separate review fixes from field fixes).

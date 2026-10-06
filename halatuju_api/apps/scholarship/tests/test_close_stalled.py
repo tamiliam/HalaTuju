@@ -642,7 +642,9 @@ class TestAPendingDeclineRefusesTheClose(TestCase):
         from django.utils import timezone
         for marker in ({'pending_rejection_category': 'interview'},
                        {'decline_due_at': timezone.now() + timedelta(hours=12)}):
-            with self.subTest(marker=marker):
+            # subTest kwargs travel to the xdist controller (the deploy gate runs `-n auto`), and
+            # execnet cannot serialise a datetime — name the marker, do not pass its value.
+            with self.subTest(marker=next(iter(marker))):
                 app = make_application('interviewing', **marker)
                 Disbursement.objects.create(application=app, amount=Decimal('1'), status='released')
                 with self.assertRaises(ClosureError) as ctx:
