@@ -8,6 +8,14 @@ Everything below, down to the link at the foot of this file, shipped between the
 (2026-03-20) and the v3.0.0 release cut. Entries keep their original headings, newest first.
 Release notes: [docs/releases/release-notes-v3.0.0.md](docs/releases/release-notes-v3.0.0.md).
 
+## The v3.0.0 release cut - 2026-10-06
+
+- **Docs, no code behaviour change.** 494 retrospectives moved to `docs/retrospectives/`, release notes to `docs/releases/`, five finished one-offs to `docs/archive/`; every reference fixed. `docs/README.md` says what lives where.
+- The CHANGELOG is split by version: v2.0-rc and earlier is `docs/changelog/CHANGELOG-v2.0-rc-and-earlier.md`, word for word.
+- `halatuju_api/CLAUDE.md` 12,481 -> 924 lines, current state only; its history is `docs/sprint-history.md` and its domain sections `docs/domain-rules.md`, word for word (every old line accounted for).
+- New: `docs/releases/release-notes-v3.0.0.md` (Known Issues = the 116 open register items), `docs/architecture.md`, `docs/releases/v3.0.0-migrations.md`, a dated release review in `docs/security-posture.md`.
+- `halatuju-web` version 0.1.0 -> 3.0.0.
+
 ## Request #30 — an intake year can require a minimum number of SPM grades at C or better - 2026-10-06
 
 - **Added — a third SPM grade rung beside A- and B+: "grades at C or better".** `ScholarshipCohort.min_spm_credit_count` counts the SPM credits — **A+, A, A-, B+, B, C+, C** (SPM has no C-; owner ruling) — as a **TOTAL across every subject**, exactly as the B+ rung counts its total: 8 A's and no C's pass a floor of 6. D, E, G, `TH` and any unknown or blank grade do not count. **The value is the switch**: blank = not applied, a number turns it on, 0 is a requirement everybody passes (as the neighbours' 0). **No default and no backfill** — it is blank on every existing intake year, so nobody's eligibility moves until an admin types a number. Applies to SPM results only; an applicant whose results are STPM is tested on the PNGK alone, as before.

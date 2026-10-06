@@ -51,6 +51,85 @@ The 2026-06-11 audit checked that a student could not **read** another student's
 - **Undo:** `docs/security/2026-10-05-restore-student-write-policies.sql` recreates the eight exactly. Run it only if something breaks.
 - **Re-audit rule:** the policy check in the appendix must now look at `cmd` (INSERT/UPDATE/DELETE), not only `qual`.
 
+## Release review — v3.0.0, 2026-10-06
+The release workflow's security and access review (`Settings/_workflows/release.md` step 3). A
+read of the code, the settings and this repository's records — **no production query was run for
+it**; the dated facts below were measured by the sprints that cite them. Release notes:
+`docs/releases/release-notes-v3.0.0.md`.
+
+**Roles** (`PartnerAdmin.role`, `apps/courses/models.py`; matrix `docs/scholarship/role-matrix.md`):
+- `super` — the platform owner; everything, across organisations; the only role on the platform
+  surfaces (Dashboard, Students directory, Course Data).
+- `org_admin` — one organisation's lead: its B40 reads, the QC gate, staff management for its own
+  organisation only.
+- `admin` (view-only), `reviewer` (only the applicants assigned to them), `qc` (the QC gate only),
+  `finance` (the payment-run checker; no applicant data beyond the payments allowlist), `partner`
+  (a referral organisation's own students — referral, not tenancy).
+- `is_super_admin` is still kept beside `role` (TD-064). Sponsors are a separate `Sponsor` identity
+  with their own Supabase client; a sponsor never sees a student's identity (allowlist serializers).
+
+**Fences:**
+- **Organisation fence** — every admin view inherits `_AdminBase`; `_org_scoped` / `_org_allows`
+  decide. A guard fails the build if a wired route is not driven by a test, and the fence scan
+  covers `views_sponsor.py` (TD-258 was found that way and fixed 2026-09-18).
+- **Gift gate** — `?programme=<code>` narrows inside the fence and never widens it; an unknown or
+  cross-tenant code is 404. An **organisation-less super must name a gift** on the payment-run list,
+  the funding summary and Spending (`400 programme_required`, TD-334, 2026-10-05). Open: the
+  Programme Overview still pools platform-wide money for such a super (TD-336); Sponsors and Sources
+  do not narrow by organisation yet (TD-228).
+- **Referral fields** (`PartnerAdmin.org`, `referred_by_org`) are never used for access control.
+- **Identity** — the IC claim is a link row behind a code to an already-verified contact; the endpoint
+  never names the holder; staff and sponsor identity resolve on the real token subject
+  (`request.auth_sub`), never through an alias (TD-254/TD-259, 2026-09-19).
+
+**RLS state:**
+- RLS is on for every `public` table; since 2026-09-16 the event trigger `rls_auto_enable` switches it
+  on at creation (it adds no policy). Scholarship and sponsor tables are deny-all to the public key
+  with an explicit `service_role` policy.
+- The four advisory tables became **read-only to students** on 2026-10-05 (the write-integrity
+  correction above). **Pending:** nothing is waiting to be applied; the restore script exists only as
+  an undo. The re-audit query in the appendix must read `cmd`, not only `qual`.
+
+**Keyless Google (TD-125, TD-329):**
+- Meet, Drive and Sheets act as `MEET_ORGANISER_EMAIL` through domain-wide delegation. The api's
+  runtime service account signs the delegation assertion as `halatuju-meet@…` through the IAM
+  Credentials API (`GOOGLE_DWD_SERVICE_ACCOUNT`); it holds `roles/iam.serviceAccountTokenCreator` on
+  that account.
+- The user-managed key was **deleted 2026-10-04**; only Google's two system-managed keys remain; the
+  env var `GOOGLE_MEET_SA_JSON` and the code path are gone.
+- **The alert:** policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
+  (`alertPolicies/10163327245873580870`) emails tamiliam@gmail.com, at most once an hour, when a
+  `severity>=WARNING` log line from those paths appears. It works because logs carry a real
+  `severity` since TD-290 (2026-10-03).
+
+**Secrets inventory (names only; values live in Cloud Run env vars or a provider's dashboard):**
+- Cloud Run `halatuju-api`: `SECRET_KEY`, `DB_PASSWORD` (with `DB_HOST`/`DB_USER`), `SUPABASE_JWT_SECRET`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_CLOUD_VISION_API_KEY` (if
+  set), `EMAIL_HOST_PASSWORD` (Brevo SMTP), `CRON_SECRET`, `TWILIO_AUTH_TOKEN` (with
+  `TWILIO_ACCOUNT_SID`), `VIRCLE_AIRTABLE_PUSH_URL`, `VIRCLE_AIRTABLE_SECRET`, `SENTRY_DSN`.
+- Outside Cloud Run: Supabase Auth's own SMTP password (Brevo — rotate it together with
+  `EMAIL_HOST_PASSWORD`), the Turnstile secret (Supabase Auth captcha), the Twilio and Vircle
+  dashboards.
+- Public by design (web build): `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
+- No secret is in a tracked file; local development uses a gitignored `.env`. No service-account
+  key exists anywhere.
+
+**Audit lines:**
+- 41 distinct `AUDIT <event>` log lines (staff and money actions: QC decisions, closures, award amounts,
+  wallet ids, programme and intake-year changes, theme publishes, NRIC-lock releases, invitation
+  cancels, spend-category corrections, …).
+- `AUDIT applicant_detail_read` feeds the `applicant_record_reads` metric and its alert (> 30 reads by
+  one account in 10 minutes).
+- `ProfileClaimEvent` is the append-only record of every IC-claim step; `GuardianContactChange`
+  records every parent-phone change and parent call (request #26).
+- ICs never go into an application log.
+
+**Open security-relevant debt** (all in the register): TD-348 (two submits racing the
+one-application rule), TD-367 (a payment run can pay a closed student), TD-365 (a close and a fund can
+race), TD-336 and TD-228 (organisation scope gaps above), TD-058 (no Django bookkeeping tables in
+production). The standing recommendation stands: an independent penetration test before the user
+base grows.
+
 ## ⚠️ Caveats (state these to anyone who asks)
 - This is a **static/config audit, not a penetration test.** Before scaling the user base, commission an **independent pen-test** — for government-adjacent PII (B40/NRIC/STR) it's the right assurance layer and it exercises the *running* system in ways a code review can't.
 - Security is **ongoing** — patching, monitoring, incident response — not a one-time stamp. Re-run this audit (appendix) after every migration or auth/storage change.

@@ -335,7 +335,7 @@ python manage.py makemigrations --check --dry-run            # "No changes detec
 ```
 
 Golden masters: **SPM 5,319**, **STPM 2,026** — if either moves, you broke eligibility. At v3.0.0:
-see the release notes for the measured counts (7,700-odd pytest, 3,300-odd jest). Measure your own
+8,084 pytest / 3 skipped · 4,146 jest / 252 suites (measured at the cut). Measure your own
 baseline before you start; never quote an inherited number.
 
 ### Pre-deploy checklist
