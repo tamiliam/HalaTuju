@@ -6,7 +6,7 @@
  * dropdown that answers `reason_not_allowed`.
  */
 import {
-  closeErrorKey, closeOffer, POST_AWARD_REASONS, POST_AWARD_STATUSES, PRE_AWARD_REASONS,
+  closeErrorKey, closeOffer, stageStatus, POST_AWARD_REASONS, POST_AWARD_STATUSES, PRE_AWARD_REASONS,
   PRE_AWARD_STATUSES,
 } from '@/lib/closeOffer'
 import { pyChoiceValues, pySeq, readApi } from '@/test/apiSource'
@@ -35,6 +35,24 @@ describe('closeOffer', () => {
   test.each(['rejected', 'withdrawn', 'closed', 'expired', ''])('%s → no Close card', (status) => {
     expect(closeOffer(status, true).show).toBe(false)
     expect(closeOffer(status, true).reasons).toEqual([])
+  })
+})
+
+describe('stageStatus — a closed case reads as post-award only with the milestone stamp', () => {
+  const at = '2026-10-01T00:00:00Z'
+  test('closed without the stamp reads as no stage', () => {
+    expect(stageStatus({ status: 'closed', recommended_at: null }, 'recommended_at')).toBe('')
+    expect(stageStatus({ status: 'closed', recommended_at: at, active_at: null }, 'active_at')).toBe('')
+  })
+  test('closed with it stays closed', () => {
+    expect(stageStatus({ status: 'closed', recommended_at: at }, 'recommended_at')).toBe('closed')
+    expect(stageStatus({ status: 'closed', active_at: at }, 'active_at')).toBe('closed')
+  })
+  test.each(['recommended', 'active', 'interviewed', 'rejected'])('%s is untouched, stamp or not', (status) => {
+    expect(stageStatus({ status }, 'active_at')).toBe(status)
+  })
+  test('no application → no stage', () => {
+    expect(stageStatus(null, 'active_at')).toBe('')
   })
 })
 

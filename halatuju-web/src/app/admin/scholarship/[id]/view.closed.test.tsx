@@ -177,3 +177,31 @@ describe('a closed case — TD-352: closed joined the off-ramps', () => {
     expect(screen.getByText('admin.closure.reason.graduated')).toBeTruthy()
   })
 })
+
+describe('closed before it was funded is not post-award (TD-352 review round 1, item 5)', () => {
+  const RECOMMENDED_BY = /admin\.scholarship\.interviewedRecommendedBy/
+  const WITNESS = 'admin.sources.witness.title'
+  const sourceless = { referred_by_org: null, referral_source: null }
+
+  it('closed at interviewed on a DECLINE verdict: no "recommended by", no post-award chips, no witness card', async () => {
+    renderCockpit({
+      role: 'super', stage: 'awaiting_qc',
+      build: { outcome: 'decline', ...sourceless, status: 'closed', closure_reason: 'stalled',
+               closed_at: '2026-10-06T09:00:00.000Z', closed_by: 'officer@example.test' },
+    })
+    await loaded()
+    expect(screen.getByText(DECISION)).toBeTruthy()            // the recorded decline is the record
+    expect(screen.queryByText(RECOMMENDED_BY)).toBeNull()
+    expect(screen.queryByText('admin.scholarship.statuses.active')).toBeNull()
+    expect(screen.queryByText('admin.scholarship.statuses.maintenance')).toBeNull()
+    expect(screen.queryByText(WITNESS)).toBeNull()
+  })
+
+  it('a FUNDED close keeps all three', async () => {
+    renderCockpit({ role: 'super', stage: 'closed', build: sourceless })
+    await loaded()
+    expect(screen.getByText(RECOMMENDED_BY)).toBeTruthy()
+    expect(screen.getByText('admin.scholarship.statuses.active')).toBeTruthy()
+    expect(screen.getByText(WITNESS)).toBeTruthy()
+  })
+})

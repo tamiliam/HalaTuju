@@ -112,7 +112,7 @@ import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
 import { PostAwardPanels } from './view/PostAwardPanels'
-import { closeErrorKey } from '@/lib/closeOffer'
+import { closeErrorKey, stageStatus } from '@/lib/closeOffer'
 
 
 /**
@@ -228,7 +228,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // Only fetch the organisation list when the witness card can actually render — same three
   // gates as the card itself, so a pre-QC or off-ramp case makes no needless request (most
   // sourceless students today are at 'shortlisted', where the card never appears).
-  const witnessCardVisible = canManageSources && sourceless && showsWitnessCard(app?.status)
+  const witnessCardVisible = canManageSources && sourceless && showsWitnessCard(stageStatus(app, 'active_at'))
   useEffect(() => {
     if (!token || !witnessCardVisible) return
     getSources({ token }).then((d) => setActiveSources(d.sources.filter((s) => s.show_in_apply && s.is_active))).catch(() => {})
@@ -1104,7 +1104,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 </div>
               </div>
             )}
-            {isQcAccepted(app.status) ? (
+            {isQcAccepted(stageStatus(app, 'recommended_at')) ? (
               <>
                 <p className="flex items-start gap-1.5 text-sm text-positive-700">
                   <span aria-hidden>✓</span>
@@ -1196,7 +1196,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         </div>
 
         {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
-        {isQcAccepted(app.status) && !decisionReopened ? (
+        {isQcAccepted(stageStatus(app, 'recommended_at')) && !decisionReopened ? (
           /* Committed acceptance → read-only summary. A post-accept decline goes through
              Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
              decline is reserved for a genuinely post-award (sponsored) case. */

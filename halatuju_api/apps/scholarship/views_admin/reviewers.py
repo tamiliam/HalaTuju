@@ -37,7 +37,8 @@ _REVIEWER_OPEN_STATUSES = ('profile_complete', 'interviewing')
 
 #: A decided case that went FORWARD. `recommended` is the reviewer's own verdict; the rest are the
 #: stages a recommended student passes through afterwards, and a case that reached them was
-#: recommended on the way.
+#: recommended on the way. ⚠ EXCEPT `closed` WITHOUT `recommended_at` (TD-352): an officer may now
+#: close a stalled case before QC ever accepted it, so `closed` counts here only with the stamp.
 _REVIEWER_PROGRESSED_STATUSES = ('recommended', 'awarded', 'active', 'maintenance', 'closed')
 
 
@@ -109,15 +110,21 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
     out = {i: {'open_now': 0, 'completed': 0, 'recommended': 0, 'declined': 0,
                'rejected_after_review': 0, 'awaiting_qc': 0, 'unaccounted': 0, '_days': []}
            for i in ids}
-    for aid, status, assigned_at, decided_at, verdict in rows.values_list(
-            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'officer_verdict'):
+    for aid, status, assigned_at, decided_at, verdict, recommended_at in rows.values_list(
+            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'officer_verdict',
+            'recommended_at'):
         slot = out[aid]
         if decided_at is None:
             if status in _REVIEWER_OPEN_STATUSES:
                 slot['open_now'] += 1
             continue
         slot['completed'] += 1
-        if status in _REVIEWER_PROGRESSED_STATUSES:
+        if status == 'closed' and recommended_at is None:
+            # Closed by an officer before QC accepted it (TD-352): never "recommended". The
+            # reviewer's own decline is still a decline; anything else is left unaccounted.
+            accepted = (verdict or {}).get('overall') == 'accept'
+            slot['unaccounted' if accepted else 'declined'] += 1
+        elif status in _REVIEWER_PROGRESSED_STATUSES:
             slot['recommended'] += 1
         elif status == 'rejected':
             # ⚠ THE SPLIT READS THE RECORDED VERDICT, NOT `rejected_by`. Keying on who stamped the

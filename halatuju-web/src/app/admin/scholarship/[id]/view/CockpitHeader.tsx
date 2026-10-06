@@ -12,6 +12,7 @@ import VerifiedTick from '@/components/VerifiedTick'
 import { formatNric, referralAcronym } from '@/lib/scholarship'
 import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 import { headerTimeline } from '@/lib/officerCockpit'
+import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
@@ -101,7 +102,8 @@ export function CockpitHeader({
             // Post-recommendation, the header shows a lifecycle timeline (Submitted·Recommended·
             // Awarded, then Awarded·Active·Maintenance). Earlier states keep the original
             // Submitted·Applied·Assigned line (Assigned carries the reviewer, not a date).
-            const timeline = headerTimeline(app)
+            // A case closed before it was funded keeps the default line (TD-352).
+            const timeline = headerTimeline({ ...app, status: stageStatus(app, 'active_at') })
             if (timeline) {
               return timeline.map((step) => (
                 <span key={step.labelKey}>

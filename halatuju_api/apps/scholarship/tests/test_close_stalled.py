@@ -491,3 +491,22 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
         self.assertIn(live.notify_email, recipients)
         left.refresh_from_db()
         self.assertIsNone(left.interview_reminded_1d_at)
+
+
+@mock.patch(SENDER, return_value=True)
+class TestClosedBeforeQcIsNotRecommended(TestCase):
+    """Review round 1, item 5 (api): the reviewer figures read `closed` as recommended only when the
+    case carries `recommended_at` — a stalled close before QC accepted it is not a recommendation."""
+
+    def test_the_reviewer_figures(self, _send):
+        from apps.scholarship.views_admin.reviewers import _reviewer_workloads
+        reviewer = make_admin('reviewer')
+        declined = make_application('awaiting_qc', outcome='decline', reviewer=reviewer)
+        closure.close_application(declined, closure_reason='stalled')
+        accepted = make_application('awaiting_qc', outcome='recommend', reviewer=reviewer)
+        closure.close_application(accepted, closure_reason='stalled')
+        make_application('closed', reviewer=reviewer)              # a funded close: recommended_at
+        self.assertIsNone(declined.recommended_at)
+        work = _reviewer_workloads([reviewer])[reviewer.id]
+        self.assertEqual((work['completed'], work['recommended'], work['declined'],
+                          work['unaccounted']), (3, 1, 1, 1))

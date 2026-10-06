@@ -53,6 +53,28 @@ export function closeOffer(status: string, orgSuper: boolean): CloseOffer {
 }
 
 /**
+ * The status a STAGE gate should read for a `closed` case (TD-352 review round 1).
+ *
+ * `closed` used to mean "a funded file, closed": every closed case had been QC-accepted and had
+ * run its course, so the cockpit's stage sets list it beside recommended / active. Since TD-352 an
+ * officer may close a STALLED case from any in-play status, so a closed case is post-award only if
+ * it reached that stage — which its milestone stamp says. For any other status this is the
+ * status unchanged.
+ *   `stageStatus(app, 'recommended_at')` — for "QC accepted" (the "recommended by" line, the
+ *       decision summary): a closed case counts only if QC accepted it.
+ *   `stageStatus(app, 'active_at')` — for "funded" (the Awarded·Active·Maintenance chips, the
+ *       witness card): a closed case counts only if it was funded.
+ * A closed case without the stamp reads as '' — no stage set holds it.
+ */
+export function stageStatus(
+  app: { status: string; recommended_at?: string | null; active_at?: string | null } | null | undefined,
+  stamp: 'recommended_at' | 'active_at',
+): string {
+  if (!app) return ''
+  return app.status === 'closed' && !app[stamp] ? '' : app.status
+}
+
+/**
  * The api's refusal codes and the `admin.closure.error.*` sentence each one shows.
  * `reason_not_allowed` shares "Choose a valid closure reason." — the dropdown never offers a
  * refused reason, so it is reached only by a stale tab, and every en.json key ships on most routes.
