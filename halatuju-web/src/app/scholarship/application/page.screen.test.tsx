@@ -125,3 +125,34 @@ it('two submitted applications → the "more than one" message', async () => {
   expect(await screen.findByText('scholarship.application.multiple.title')).toBeTruthy()
   expect(screen.queryByText('scholarship.application.none')).toBeNull()
 })
+
+describe('TD-352 — one application at a time, said on the page (owner, 2026-10-06)', () => {
+  const LINE = 'application-one-at-a-time'
+
+  it.each(['submitted', 'shortlisted', 'interviewing', 'interviewed', 'awarded', 'active', 'maintenance'])(
+    'a %s application says an application in process stops a new one until it is closed',
+    async (status) => {
+      serve({ id: 1, status, cohort_name: ROUND })
+      render(<ScholarshipApplicationPage />)
+      const line = await screen.findByTestId(LINE)
+      expect(line.textContent).toBe('scholarship.application.oneAtATime')
+      // under the "Programme:" line, which it follows in the page's order
+      const gift = screen.getByTestId('application-gift-line')
+      expect(gift.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    },
+  )
+
+  it.each(['rejected', 'withdrawn', 'closed', 'expired'])('a lone %s application does not say it', async (status) => {
+    serve({ id: 1, status, cohort_name: ROUND })
+    render(<ScholarshipApplicationPage />)
+    await screen.findByText(/scholarship\.application\.(finishedTitle|none)/)
+    expect(screen.queryByTestId(LINE)).toBeNull()
+  })
+
+  it('several applications with no single one to show → not said', async () => {
+    serve({ id: 1, status: 'submitted' }, { id: 2, status: 'submitted' })
+    render(<ScholarshipApplicationPage />)
+    await screen.findByText('scholarship.application.multiple.title')
+    expect(screen.queryByTestId(LINE)).toBeNull()
+  })
+})

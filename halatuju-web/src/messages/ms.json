@@ -1864,6 +1864,7 @@
       "browseCta": "Lihat kursus sementara menunggu",
       "homeCta": "Kembali ke utama",
       "giftLabel": "Program:",
+      "oneAtATime": "Semasa permohonan ini sedang diproses, anda tidak boleh memulakan permohonan lain. Jika ia ditutup, anda boleh memohon semula pada pusingan akan datang.",
       "finishedTitle": "Permohonan ini telah ditutup",
       "finishedBody": "Sebarang makluman tentang permohonan ini telah dihantar ke e-mel anda. Jika anda ada pertanyaan, sila hubungi kami.",
       "interview": {

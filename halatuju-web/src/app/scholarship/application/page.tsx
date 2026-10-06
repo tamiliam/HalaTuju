@@ -102,6 +102,12 @@ export default function ScholarshipApplicationPage() {
               <span className="font-medium text-ground-700">{app.cohort_name}</span>
             </p>
           )}
+          {/* TD-352 (owner): an application in process stops a new one until it is closed. */}
+          {app && !finished && (
+            <p className="-mt-4 mb-6 text-sm text-ground-500" data-testid="application-one-at-a-time">
+              {t('scholarship.application.oneAtATime')}
+            </p>
+          )}
           <AwardPanels award={award} acceptanceEnabled={acceptanceEnabled} bursary={bursary}
             status={app?.status || ''} onboardedAt={app?.onboarded_at} />
           {children}

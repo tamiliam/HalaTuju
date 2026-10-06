@@ -1864,6 +1864,7 @@
       "browseCta": "Browse courses while you wait",
       "homeCta": "Back to home",
       "giftLabel": "Programme:",
+      "oneAtATime": "While this application is in process, you cannot start another. If it is closed, you can apply again in a later round.",
       "finishedTitle": "This application is closed",
       "finishedBody": "Any update about this application was sent to your email. If you have a question, please contact us.",
       "interview": {
