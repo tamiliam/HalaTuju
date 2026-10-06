@@ -140,7 +140,8 @@ class TestOneDoorPerJob(TestCase):
             closure.close_application(app, closure_reason='stalled')
         self.assertEqual(ctx.exception.code, 'sponsorship_open')
         self.assertIn('It cannot be closed here', str(ctx.exception))
-        self.assertIn('TD-366', str(ctx.exception))
+        self.assertIn('Ask the platform owner.', str(ctx.exception))
+        self.assertNotIn('TD-', str(ctx.exception))   # ids stay in the docs
         app.refresh_from_db()
         sp.refresh_from_db()
         self.assertEqual((app.status, sp.status), ('awarded', 'offered'))   # nothing cancelled
@@ -225,6 +226,25 @@ class TestAuditAndEmail(TestCase):
             'x@example.test', 'Priya', 'B40', lang='en'))
         self.assertIn('not completed in time', mail.outbox[0].body)   # expiry keeps its wording
         self.assertNotIn('later round', mail.outbox[0].body)
+
+    def test_a_withdrawn_close_says_at_your_request(self):
+        """Review round 2, item 6a: the student withdrew — "at your request", never "by our team";
+        still the later round, still the application page's link."""
+        from django.core import mail
+        request = {'en': 'at your request', 'ms': 'atas permintaan anda',
+                   'ta': 'உங்கள் கோரிக்கையின்படி'}
+        team = {'en': 'by our team', 'ms': 'oleh pasukan kami', 'ta': 'எங்கள் குழுவால்'}
+        later = {'en': 'later round', 'ms': 'pusingan akan datang', 'ta': 'அடுத்த சுற்றில்'}
+        for lang in ('en', 'ms', 'ta'):
+            with self.subTest(lang=lang):
+                app = make_application('profile_complete', locale=lang)
+                mail.outbox.clear()
+                closure.close_application(app, closure_reason='withdrawn')
+                body = mail.outbox[0].body
+                self.assertIn(request[lang], body)
+                self.assertNotIn(team[lang], body)
+                self.assertIn(later[lang], body)
+                self.assertIn('/scholarship/application', body)
 
     def test_a_failed_email_is_a_warning_naming_the_application(self):
         app = make_application('shortlisted')

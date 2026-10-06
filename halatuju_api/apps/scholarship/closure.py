@@ -63,7 +63,7 @@ POSITIVE_REASONS = ('graduated', 'completed')
 #: The sentence for ``sponsorship_open`` (the web shows its own translated copy of it).
 SPONSORSHIP_OPEN_MESSAGE = (
     "This application holds a sponsor's offer or paid money. It cannot be closed here. "
-    '(Releasing an awarded student is an owner decision — TD-366.)')
+    'Ask the platform owner.')   # releasing an awarded student is an owner decision (TD-366)
 
 
 #: The sentence for ``decline_pending`` (as `reopen.reopen_decision` refuses, TD-349).

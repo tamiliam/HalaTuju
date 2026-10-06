@@ -208,12 +208,42 @@ CLOSED_BY_OFFICER_BODIES = {
 }
 
 
+# The officer close with reason `withdrawn` — the student asked to withdraw (review round 2): "at
+# your request", never "closed by our team". Same later-round invitation, same link.
+CLOSED_AT_REQUEST_BODIES = {
+    'en': ("Dear {name},\n\n"
+           "Your {programme} application has now been closed at your request.\n\n"
+           "Now that it is closed, you are welcome to apply again in a later round of the "
+           "programme. When a round is open, you can apply here:\n{link}\n\n"
+           "{help}\n\n"
+           "Warm regards,\nThe {programme} Team"),
+    'ms': ("Salam {name},\n\n"
+           "Permohonan {programme} anda kini telah ditutup atas permintaan anda.\n\n"
+           "Kini setelah ia ditutup, anda dialu-alukan untuk memohon semula pada pusingan akan "
+           "datang program ini. Apabila pusingan dibuka, anda boleh memohon di sini:\n{link}\n\n"
+           "{help}\n\n"
+           "Salam hormat,\nPasukan {programme}"),
+    'ta': ("அன்புள்ள {name},\n\n"
+           "உங்கள் {programme} விண்ணப்பம் உங்கள் கோரிக்கையின்படி இப்போது மூடப்பட்டுள்ளது.\n\n"
+           "இப்போது அது மூடப்பட்டதால், இந்தத் திட்டத்தின் அடுத்த சுற்றில் மீண்டும் விண்ணப்பிக்க "
+           "உங்களை வரவேற்கிறோம். ஒரு சுற்று திறந்திருக்கும்போது, இங்கே விண்ணப்பிக்கலாம்:\n{link}\n\n"
+           "{help}\n\nஅன்புடன்,\n{programme} குழு"),
+}
+
+
 def send_application_closed_email(to_email, applicant_name, programme_name, lang='en', branding=None,
                                   closure_reason=''):
     """The application-closed notice. Blank ``closure_reason`` (the reminder sweep's auto-expiry):
-    "not completed in time … start a fresh application". Any ``closure_reason`` (an officer's close,
-    TD-352 — `stalled` or `withdrawn`): CLOSED_BY_OFFICER_BODIES, "apply again in a later round"."""
-    bodies = CLOSED_BY_OFFICER_BODIES if closure_reason else CLOSED_BODIES
+    "not completed in time … start a fresh application". An officer's close (TD-352):
+    ``withdrawn`` → CLOSED_AT_REQUEST_BODIES ("closed at your request"); any other reason (in
+    practice ``stalled``) → CLOSED_BY_OFFICER_BODIES ("closed by our team"). Both invite her to
+    apply again in a later round."""
+    if not closure_reason:
+        bodies = CLOSED_BODIES
+    elif closure_reason == 'withdrawn':
+        bodies = CLOSED_AT_REQUEST_BODIES
+    else:
+        bodies = CLOSED_BY_OFFICER_BODIES
     return _send(to_email, CLOSED_SUBJECTS, bodies, applicant_name, programme_name, lang,
                  extra={'help': _help_line(CLOSURE_HELP, normalise_lang(lang), branding)},
                  branding=branding)

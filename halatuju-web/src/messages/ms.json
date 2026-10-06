@@ -3887,7 +3887,7 @@
       "error": {
         "bad_reason": "Pilih sebab penutupan yang sah.",
         "not_closeable": "Permohonan ini telah pun selesai.",
-        "sponsorship_open": "Permohonan ini memegang tawaran penaja atau wang yang telah dibayar. Ia tidak boleh ditutup di sini. (Melepaskan pelajar yang telah dianugerahkan ialah keputusan pemilik — TD-366.)",
+        "sponsorship_open": "Permohonan ini memegang tawaran penaja atau wang yang telah dibayar. Ia tidak boleh ditutup di sini. Tanya pemilik platform.",
         "decline_pending": "Penolakan sedang menunggu. Batalkannya dahulu.",
         "generic": "Tidak dapat menutup fail. Anda mungkin tiada kebenaran."
       }
