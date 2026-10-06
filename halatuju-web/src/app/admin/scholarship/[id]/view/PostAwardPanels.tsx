@@ -28,7 +28,7 @@ import type { BursaryAgreement } from '@/lib/api'
 import type { T } from './shared'
 
 export function PostAwardPanels({
-  app, t, busy, isSuper, canWrite,
+  app, t, busy, isSuper, canWrite, orgSuper,
   bursary, bursaryMsg, doCountersignBursary, doWitnessBursary,
   disbAmount, setDisbAmount, disbLabel, setDisbLabel, disbMsg,
   doScheduleTranche, doDisbursementAction, doSetSubstate,
@@ -39,6 +39,8 @@ export function PostAwardPanels({
   busy: string
   isSuper: boolean
   canWrite: boolean
+  /** super or org_admin — the only roles the api lets close a PRE-award case (TD-352). */
+  orgSuper: boolean
   bursary: BursaryAgreement | null
   bursaryMsg: string
   doCountersignBursary: () => void
@@ -264,7 +266,7 @@ export function PostAwardPanels({
           Terminal. Shows the closed summary once closed (the graduation thank-you relay stays
           open after closure). Before an award: no offboarding checklist, and the note says she
           may apply again in a later round and is emailed. */}
-      {(closeOffer(app.status).show || app.status === 'closed') && (
+      {(closeOffer(app.status, orgSuper).show || app.status === 'closed') && (
         <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.closure.title')}
@@ -286,10 +288,10 @@ export function PostAwardPanels({
           ) : canWrite ? (
             <>
               <p className="text-xs text-ground-500">
-                {t(closeOffer(app.status).preAward ? 'admin.closure.notePreAward' : 'admin.closure.note')}
+                {t(closeOffer(app.status, orgSuper).preAward ? 'admin.closure.notePreAward' : 'admin.closure.note')}
               </p>
               {/* Offboarding checklist — informational guidance before closing a funded file. */}
-              {!closeOffer(app.status).preAward && (
+              {!closeOffer(app.status, orgSuper).preAward && (
                 <ul className="list-disc ml-5 text-xs text-ground-500 space-y-0.5">
                   {(['finalDisbursement', 'thankYou', 'records'] as const).map((k) => (
                     <li key={k}>{t(`admin.closure.checklist.${k}`)}</li>
@@ -303,7 +305,7 @@ export function PostAwardPanels({
                     onChange={(e) => setCloseReason(e.target.value as ClosureReason | '')}
                     className="rounded-lg border px-3 py-1.5 text-sm">
                     <option value="">{t('admin.closure.reasonUnset')}</option>
-                    {closeOffer(app.status).reasons.map((r) => (
+                    {closeOffer(app.status, orgSuper).reasons.map((r) => (
                       <option key={r} value={r}>{t(`admin.closure.reason.${r}`)}</option>
                     ))}
                   </select>

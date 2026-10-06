@@ -138,12 +138,20 @@ class AdminCloseApplicationView(_AdminBase):
     """Post-award S6, widened by TD-352: POST .../applications/<pk>/close/ {closure_reason} —
     manually close an application from ANY in-play status, with a reason that fits the stage
     (``closure.close_application`` holds the reasons-by-stage table and the sponsorship refusal).
-    Reviewer-gated + access-scoped. Terminal. Returns the refreshed detail; a refusal answers 400
-    ``{error: code}`` — not_closeable / bad_reason / reason_not_allowed / sponsorship_open."""
+    Access-scoped. Terminal. Returns the refreshed detail; a refusal answers 400 ``{error: code}``
+    — not_closeable / bad_reason / reason_not_allowed / decline_pending / sponsorship_open.
+
+    WHO (lead decision, TD-352 review): a close from a PRE-award status releases the student from
+    the programme before any decision was made, so it is gated like the org-admin reject
+    (`AdminOrgRejectView`) — `super` or `org_admin` ONLY (403 otherwise). A close from awarded /
+    active / maintenance keeps the S6 gate: anyone `_require_app_write` lets through."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
+        if (app.status in closure_service.PRE_AWARD_STATUSES
+                and not (admin.is_super or admin.role == 'org_admin')):
+            return self._deny_role()
         try:
             closure_service.close_application(
                 app, closure_reason=request.data.get('closure_reason'), by_email=admin.email)

@@ -62,6 +62,26 @@ describe('before an award — stalled and withdrawn only', () => {
   })
 })
 
+describe('who — a pre-award close is super / org_admin only (the api answers 403 to anyone else)', () => {
+  it('an org_admin sees the pre-award Close card', async () => {
+    renderCockpit({ role: 'org_admin', stage: 'recommended' })
+    await loaded()
+    expect(reasons()).toEqual(['stalled', 'withdrawn'])
+  })
+
+  it('a qc (who may write) sees no Close card before an award', async () => {
+    renderCockpit({ role: 'qc', stage: 'recommended' })
+    await loaded()
+    expect(screen.queryByText(TITLE)).toBeNull()
+  })
+
+  it('a qc still sees the funded Close card', async () => {
+    renderCockpit({ role: 'qc', stage: 'active' })
+    await loaded()
+    expect(reasons()).toContain('graduated')
+  })
+})
+
 describe('a funded case — the existing list plus No movement', () => {
   it('an active case keeps the old reasons and the checklist', async () => {
     renderCockpit({ role: 'super', stage: 'active' })

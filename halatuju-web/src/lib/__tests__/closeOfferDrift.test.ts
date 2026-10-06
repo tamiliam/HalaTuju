@@ -15,17 +15,23 @@ const sorted = (xs: readonly string[]) => [...xs].sort()
 
 describe('closeOffer', () => {
   test.each(PRE_AWARD_STATUSES)('%s → shown, pre-award, stalled + withdrawn only', (status) => {
-    expect(closeOffer(status)).toEqual({ show: true, preAward: true, reasons: ['stalled', 'withdrawn'] })
+    expect(closeOffer(status, true)).toEqual({ show: true, preAward: true, reasons: ['stalled', 'withdrawn'] })
   })
   test.each(POST_AWARD_STATUSES)('%s → shown, the post-award list plus stalled', (status) => {
-    expect(closeOffer(status)).toEqual({
+    expect(closeOffer(status, true)).toEqual({
       show: true, preAward: false,
       reasons: ['graduated', 'completed', 'withdrawn', 'lapsed', 'terminated', 'stalled'],
     })
   })
+  test.each(PRE_AWARD_STATUSES)('%s, viewer not super/org_admin → no Close card (the api answers 403)', (status) => {
+    expect(closeOffer(status, false)).toEqual({ show: false, preAward: true, reasons: [] })
+  })
+  test.each(POST_AWARD_STATUSES)('%s, any writer → unchanged by the role', (status) => {
+    expect(closeOffer(status, false)).toEqual(closeOffer(status, true))
+  })
   test.each(['rejected', 'withdrawn', 'closed', 'expired', ''])('%s → no Close card', (status) => {
-    expect(closeOffer(status).show).toBe(false)
-    expect(closeOffer(status).reasons).toEqual([])
+    expect(closeOffer(status, true).show).toBe(false)
+    expect(closeOffer(status, true).reasons).toEqual([])
   })
 })
 

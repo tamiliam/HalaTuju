@@ -1333,7 +1333,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       </div>{/* end cockpit grid */}
 
       <PostAwardPanels
-        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite}
+        app={app} t={t} busy={busy} isSuper={isSuper} canWrite={canWrite} orgSuper={canAssign}
         bursary={bursary} bursaryMsg={bursaryMsg}
         doCountersignBursary={doCountersignBursary} doWitnessBursary={doWitnessBursary}
         disbAmount={disbAmount} setDisbAmount={setDisbAmount}

@@ -252,20 +252,53 @@ class TestTheStudentMayApplyAgain(TestCase):
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 @mock.patch(SENDER, return_value=True)
 class TestTheEndpoint(TestCase):
+    """The view. A PRE-award close is super / org_admin only (lead decision, review round 1 —
+    the `AdminOrgRejectView` gate); a funded close keeps the S6 gate (the assigned reviewer may)."""
+
     def setUp(self):
         self.cohort = make_cohort()
-        self.reviewer = make_admin('reviewer', owning_org=self.cohort.owning_organisation)
-        self.client = authed_client(self.reviewer)
+        org = self.cohort.owning_organisation
+        self.reviewer = make_admin('reviewer', owning_org=org)
+        self.org_admin = make_admin('org_admin', owning_org=org)
+        self.client = authed_client(self.org_admin)
 
-    def _close(self, app, reason):
-        return self.client.post(f'{API}applications/{app.id}/close/',
-                                {'closure_reason': reason}, format='json')
+    def _close(self, app, reason, client=None):
+        return (client or self.client).post(f'{API}applications/{app.id}/close/',
+                                            {'closure_reason': reason}, format='json')
 
     def test_a_stalled_case_closes_and_answers_the_detail(self, _send):
         app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
         r = self._close(app, 'stalled')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual((r.json()['status'], r.json()['closure_reason']), ('closed', 'stalled'))
+
+    def test_a_super_closes_a_pre_award_case(self, _send):
+        app = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)
+        r = self._close(app, 'stalled', client=authed_client(make_admin('super', super_admin=True)))
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def test_the_assigned_reviewer_and_a_qc_are_refused_before_an_award(self, _send):
+        qc = make_admin('qc', owning_org=self.cohort.owning_organisation)
+        for who in (self.reviewer, qc):
+            with self.subTest(role=who.role):
+                app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+                r = self._close(app, 'stalled', client=authed_client(who))
+                self.assertEqual(r.status_code, 403, r.content)
+                app.refresh_from_db()
+                self.assertEqual(app.status, 'interviewing')
+
+    def test_the_assigned_reviewer_may_still_close_a_funded_case(self, _send):
+        app = make_application('active', cohort=self.cohort, reviewer=self.reviewer)
+        r = self._close(app, 'graduated', client=authed_client(self.reviewer))
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def test_another_organisations_org_admin_gets_404(self, _send):
+        stranger = make_admin('org_admin', owning_org=make_cohort().owning_organisation)
+        app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+        r = self._close(app, 'stalled', client=authed_client(stranger))
+        self.assertEqual(r.status_code, 404)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewing')
 
     def test_the_new_refusals_reach_the_client_as_400_codes(self, _send):
         app = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)

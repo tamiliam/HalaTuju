@@ -30,9 +30,16 @@ export interface CloseOffer {
   reasons: readonly ClosureReason[]
 }
 
-export function closeOffer(status: string): CloseOffer {
+/**
+ * `orgSuper` — the viewer is a super or an org_admin. The api closes a PRE-award case for those two
+ * only (`AdminCloseApplicationView`, the org-reject gate), so for anyone else the card is not
+ * offered there at all rather than showing a button that answers 403.
+ */
+export function closeOffer(status: string, orgSuper: boolean): CloseOffer {
   if ((PRE_AWARD_STATUSES as readonly string[]).includes(status)) {
-    return { show: true, preAward: true, reasons: PRE_AWARD_REASONS }
+    return orgSuper
+      ? { show: true, preAward: true, reasons: PRE_AWARD_REASONS }
+      : { show: false, preAward: true, reasons: [] }
   }
   if ((POST_AWARD_STATUSES as readonly string[]).includes(status)) {
     return { show: true, preAward: false, reasons: POST_AWARD_REASONS }
