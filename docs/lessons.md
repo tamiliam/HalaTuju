@@ -1252,3 +1252,14 @@ would first have to UNDO another action's state (a reopen undoing a pending decl
 point at the door that owns the undo. Round 1 composed the two, and the review found four holes —
 the reopened case landed in states (a funded student, reopened) whose controls were never built for
 that pairing. One door per job. (TD-349)
+
+## 2026-10-06 — a test of a correction control must start from the state the user is IN
+
+Request #28 shipped "a person can mark a shop checked, still unknown" by choosing "Not yet sorted"
+in the category dropdown. Every shop the officer needed to mark was ALREADY "Not yet sorted", and a
+native `<select>` fires no change when you re-choose the selected value — so the step did nothing.
+The rendered test began from a shop in another category, exercised the one path that worked, and
+the completion report repeated the test's claim. **Rule:** when a control's job is to record a
+judgement about the CURRENT state ("checked", "confirmed", "still unknown"), the test starts from
+that exact state and asserts the write happens; and a claim in a completion report is checked
+against the user's real case, not against the test that was written for it. (request #28)
