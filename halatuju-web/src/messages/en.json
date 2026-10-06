@@ -6419,9 +6419,65 @@
           "reviewers_staff": "Reviewers & staff",
           "interviews": "Interviews",
           "documents": "Documents",
-          "agreements": "Agreements"
+          "agreements": "Agreements",
+          "decisions": "Decisions & declines",
+          "profile_completion": "Completing the application",
+          "check2": "Questions after submission",
+          "awards": "Awards"
         },
         "setting": {
+          "shortlist_email_delay_minutes": {
+            "label": "Shortlisted email — minutes after submitting",
+            "desc": "When the \"you are shortlisted\" email goes out."
+          },
+          "not_shortlisted_email_delay_hours": {
+            "label": "Not-shortlisted email — hours after submitting",
+            "desc": "When the warm \"not this round\" email goes out. At most the 48 hours the public page promises."
+          },
+          "reminder_1_days": {
+            "label": "First reminder — days after the invitation",
+            "desc": "Sent if the application is still incomplete, counted from the shortlist email."
+          },
+          "reminder_2_days": {
+            "label": "Second reminder — days after the invitation",
+            "desc": "Counted from the shortlist email."
+          },
+          "reminder_3_days": {
+            "label": "Third reminder — days after the invitation",
+            "desc": "Counted from the shortlist email."
+          },
+          "reminder_4_days": {
+            "label": "Final reminder — days after the invitation",
+            "desc": "Warns that the application will be closed."
+          },
+          "auto_close_after_final_reminder_days": {
+            "label": "Close — days after the final reminder",
+            "desc": "An incomplete application closes this long after the final reminder, which states the number."
+          },
+          "query_answer_days": {
+            "label": "Time to answer questions — days",
+            "desc": "Days a student has to answer questions raised after submitting. Also when a case with open questions can be given to a reviewer."
+          },
+          "query_reminder_lead_days": {
+            "label": "Questions reminder — days before the deadline",
+            "desc": "When the one reminder about open questions goes out."
+          },
+          "decline_hold_days": {
+            "label": "Decline held — days before the student is told",
+            "desc": "The decision can still be undone until then."
+          },
+          "qc_decline_hold_hours": {
+            "label": "Decline confirmed by QC — hours held",
+            "desc": "The shorter wait once QC has confirmed a decline."
+          },
+          "award_email_delay_hours": {
+            "label": "Award email — hours after the award",
+            "desc": "Cancelling the award in this time stops the email."
+          },
+          "award_confirm_hold_days": {
+            "label": "Funding confirmed — days after the student accepts",
+            "desc": "Only where agreements are not signed on the platform."
+          },
           "pool_funded_grace_days": {
             "label": "Funded student card — days shown",
             "desc": "How long a newly funded student's card stays on the sponsor browse page after being funded."
@@ -6533,7 +6589,17 @@
         "save": "Save changes",
         "saved": "Saved. The change is live now.",
         "refused": "The server refused the value for “{label}”. Check it and try again.",
-        "refusedWindow": "“{label}” must be after the time the booking window opens. Nothing was saved.",
+        "refusedRule": "“{label}” does not fit another timing. Nothing was saved.",
+        "rule": {
+          "window_inverted": "Must be after the booking window opens.",
+          "decline_before_shortlist": "Must not be sooner than the shortlisted email.",
+          "reminders_too_close": "Must be at least two days after the reminder before it.",
+          "reminder_outside_window": "Must be fewer days than the time to answer.",
+          "questions_after_reminder": "Must reach the student at least a day before the questions reminder.",
+          "cutoff_beyond_lead": "Must be no longer than the earliest booking.",
+          "qc_hold_too_long": "Must be no longer than the decline hold.",
+          "nudge_after_due": "Must be fewer days than the verdict due time."
+        },
         "errorGeneric": "Could not save. Please try again.",
         "invalid": "Fix the highlighted value first."
       },

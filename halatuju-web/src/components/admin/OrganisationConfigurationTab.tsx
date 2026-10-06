@@ -31,15 +31,18 @@ import {
   type OrganisationConfigSetting, type OrganisationConfiguration,
 } from '@/lib/admin-api'
 
-/** Groups render in this order; a group appears only when the registry has a row in it. */
-const GROUP_ORDER = ['sponsor_page', 'student_comms', 'reviewers_staff', 'interviews',
-  'documents', 'agreements']
+/** Groups render in this order; a group appears only when the registry has a row in it. The
+ *  student timings (org-timing Sprint 1) sit in the order a student meets them. */
+const GROUP_ORDER = ['sponsor_page', 'student_comms', 'decisions', 'profile_completion', 'check2',
+  'reviewers_staff', 'interviews', 'documents', 'awards', 'agreements']
 
 type Outcome =
   | { kind: 'idle' }
   | { kind: 'saved' }
   | { kind: 'refused'; key: string }
-  | { kind: 'refusedWindow'; key: string }
+  // A CROSS-FIELD rule the server refused (`rule: true` on the refusal — org-timing Sprint 1).
+  // Its own sentence renders under the box the server named; the browser keeps no rule list.
+  | { kind: 'refusedRule'; key: string; code: string }
   | { kind: 'error' }
 
 /** Minutes past midnight ⇄ the "HH:MM" a clock box shows (Org Config Sprint D). The stored
@@ -140,11 +143,12 @@ export default function OrganisationConfigurationTab() {
       setDraft(draftFrom(cfg))
       setOutcome({ kind: 'saved' })
     } catch (e) {
-      const err = e as Error & { body?: { code?: string; key?: string } }
-      if (err.body?.code === 'window_inverted' && err.body.key) {
-        // The one refusal a person actually hits by typing a sensible-looking pair, so it
-        // says what is wrong rather than "we could not save that row".
-        setOutcome({ kind: 'refusedWindow', key: err.body.key })
+      const err = e as Error & { body?: { code?: string; key?: string; rule?: boolean } }
+      if (err.body?.rule && err.body.code && err.body.key) {
+        // Two timings that do not fit together (the interview window, R1–R7). A person hits
+        // these by typing sensible-looking values, so say WHICH rule rather than "we could
+        // not save that row".
+        setOutcome({ kind: 'refusedRule', key: err.body.key, code: err.body.code })
       } else if (err.body?.code && err.body.key) {
         setOutcome({ kind: 'refused', key: err.body.key })
       } else {
@@ -161,7 +165,7 @@ export default function OrganisationConfigurationTab() {
     switch (outcome.kind) {
       case 'saved': return t('admin.orgSettings.config.saved')
       case 'refused': return t('admin.orgSettings.config.refused', { label: label(outcome.key) })
-      case 'refusedWindow': return t('admin.orgSettings.config.refusedWindow', { label: label(outcome.key) })
+      case 'refusedRule': return t('admin.orgSettings.config.refusedRule', { label: label(outcome.key) })
       case 'error': return t('admin.orgSettings.config.errorGeneric')
       default:
         if (invalid) return t('admin.orgSettings.config.invalid')
@@ -285,6 +289,12 @@ export default function OrganisationConfigurationTab() {
                             : t('admin.orgSettings.config.rowInvalid', {
                               min: String(s.min), max: String(s.max),
                             })}
+                        </p>
+                      )}
+                      {outcome.kind === 'refusedRule' && outcome.key === s.key && (
+                        <p className="mt-1 max-w-xs text-xs text-critical-700"
+                          data-testid={`config-${s.key}-rule`}>
+                          {t(`admin.orgSettings.config.rule.${outcome.code}`)}
                         </p>
                       )}
                     </div>

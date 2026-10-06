@@ -103,13 +103,43 @@ const SPRINT_F: api.OrganisationConfigSetting[] = [
     min: 1, max: 60, value: null, default: 3 },
 ]
 
+// org-timing Sprint 1 — the thirteen student-message timings, in four new groups.
+const TIMINGS: api.OrganisationConfigSetting[] = [
+  { key: 'shortlist_email_delay_minutes', group: 'decisions', unit: 'minutes',
+    min: 30, max: 180, value: null, default: 60 },
+  { key: 'not_shortlisted_email_delay_hours', group: 'decisions', unit: 'hours',
+    min: 24, max: 48, value: null, default: 48 },
+  { key: 'decline_hold_days', group: 'decisions', unit: 'days',
+    min: 3, max: 10, value: null, default: 7 },
+  { key: 'qc_decline_hold_hours', group: 'decisions', unit: 'hours',
+    min: 12, max: 48, value: null, default: 24 },
+  { key: 'reminder_1_days', group: 'profile_completion', unit: 'days',
+    min: 1, max: 3, value: null, default: 2 },
+  { key: 'reminder_2_days', group: 'profile_completion', unit: 'days',
+    min: 7, max: 14, value: null, default: 9 },
+  { key: 'reminder_3_days', group: 'profile_completion', unit: 'days',
+    min: 18, max: 30, value: null, default: 23 },
+  { key: 'reminder_4_days', group: 'profile_completion', unit: 'days',
+    min: 45, max: 60, value: null, default: 53 },
+  { key: 'auto_close_after_final_reminder_days', group: 'profile_completion', unit: 'days',
+    min: 3, max: 7, value: null, default: 5 },
+  { key: 'query_answer_days', group: 'check2', unit: 'days',
+    min: 3, max: 7, value: null, default: 5 },
+  { key: 'query_reminder_lead_days', group: 'check2', unit: 'days',
+    min: 1, max: 2, value: null, default: 2 },
+  { key: 'award_email_delay_hours', group: 'awards', unit: 'hours',
+    min: 12, max: 48, value: null, default: 24 },
+  { key: 'award_confirm_hold_days', group: 'awards', unit: 'days',
+    min: 1, max: 3, value: null, default: 2 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E, ...SPRINT_F],
+    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E, ...SPRINT_F, ...TIMINGS],
   }
 }
 
@@ -373,14 +403,66 @@ describe('a clock row types a time, and stores a number', () => {
   })
 
   it('names the opening time when the server refuses an inverted window', async () => {
+    // ⚠ SUPERSEDED 2026-10-07 (org-timing Sprint 1): this refusal used to be special-cased
+    // (`refusedWindow`). Every cross-field rule now arrives with `rule: true` and renders the
+    // same way — its own sentence under the box the server named — so the window is one case.
     const err = Object.assign(new Error('bad'), {
-      body: { code: 'window_inverted', key: 'interview_window_end_min' },
+      body: { code: 'window_inverted', key: 'interview_window_end_min', rule: true },
     })
     mockApi.saveOrganisationConfiguration.mockRejectedValue(err)
     await mount()
     fireEvent.change(clock(), { target: { value: '09:15' } })
     fireEvent.click(save())
-    await waitFor(() => expect(outcome()).toContain('admin.orgSettings.config.refusedWindow'))
+    await waitFor(() => expect(outcome()).toContain('admin.orgSettings.config.refusedRule'))
+    expect(screen.getByTestId('config-interview_window_end_min-rule').textContent)
+      .toBe('admin.orgSettings.config.rule.window_inverted')
+  })
+})
+
+describe('a refused RULE renders under the box the server named (org-timing Sprint 1)', () => {
+  const refuse = (body: Record<string, unknown>) =>
+    mockApi.saveOrganisationConfiguration.mockRejectedValue(
+      Object.assign(new Error('bad'), { body }))
+
+  it('shows that rule\'s own sentence under the blamed box and nowhere else', async () => {
+    refuse({ code: 'questions_after_reminder', key: 'query_email_delay_hours', rule: true })
+    await mount()
+    // The person edits the ANSWER window; the server blames the questions email it no longer fits.
+    fireEvent.change(screen.getByTestId('config-query_answer_days'), { target: { value: '3' } })
+    fireEvent.click(save())
+    const under = await screen.findByTestId('config-query_email_delay_hours-rule')
+    expect(under.textContent).toBe('admin.orgSettings.config.rule.questions_after_reminder')
+    expect(under.closest('li')).toBe(
+      screen.getByTestId('config-query_email_delay_hours').closest('li'))
+    expect(screen.queryByTestId('config-query_answer_days-rule')).toBeNull()
+    expect(outcome()).toBe(
+      'admin.orgSettings.config.refusedRule|admin.orgSettings.config.setting.query_email_delay_hours.label')
+  })
+
+  it('a per-key refusal is NOT drawn as a rule, and an edit clears the rule line', async () => {
+    refuse({ code: 'out_of_range', key: 'query_answer_days', rule: false })
+    await mount()
+    fireEvent.change(screen.getByTestId('config-query_answer_days'), { target: { value: '4' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(outcome()).toContain('admin.orgSettings.config.refused|'))
+    expect(screen.queryByTestId('config-query_answer_days-rule')).toBeNull()
+
+    refuse({ code: 'cutoff_beyond_lead', key: 'interview_reschedule_cutoff_hours', rule: true })
+    fireEvent.click(save())
+    await screen.findByTestId('config-interview_reschedule_cutoff_hours-rule')
+    fireEvent.change(screen.getByTestId('config-query_answer_days'), { target: { value: '5' } })
+    expect(screen.queryByTestId('config-interview_reschedule_cutoff_hours-rule')).toBeNull()
+  })
+
+  it('draws the four timing groups in the order a student meets them', async () => {
+    await mount()
+    for (const s of TIMINGS) expect(screen.getByTestId(`config-${s.key}`)).toBeTruthy()
+    const text = document.body.textContent || ''
+    const at = (g: string) => text.indexOf(`admin.orgSettings.config.group.${g}`)
+    const order = ['student_comms', 'decisions', 'profile_completion', 'check2',
+      'reviewers_staff', 'documents', 'awards', 'agreements'].map(at)
+    expect(order.every((n) => n >= 0)).toBe(true)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
   })
 })
 

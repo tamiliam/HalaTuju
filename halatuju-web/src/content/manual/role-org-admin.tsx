@@ -164,6 +164,35 @@ export const roleOrgAdmin: ManualChapter = {
       alt: 'The organisation group in the menu (placeholder)',
     },
     {
+      anchor: 'org-admin-timings',
+      title: 'When students hear from us',
+      body: (
+        <>Open <strong>Organisation Settings</strong> and choose <strong>Configuration</strong>. The timing of
+        every message a student receives is set there, for your whole organisation. Each has a smallest and
+        a largest value, so the process keeps working (the usual value is in brackets):
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li><strong>Shortlisted email</strong>: 30–180 minutes after the student submits (60).
+            <strong> Not-shortlisted email</strong>: 24–48 hours (48 — the public page promises 48).</li>
+            <li><strong>Reminders to finish the application</strong>, counted from the shortlist email: first
+            1–3 days (2), second 7–14 (9), third 18–30 (23), final 45–60 (53). The application closes 3–7 days
+            after the final reminder (5), and the final reminder states that number.</li>
+            <li><strong>Questions after submission</strong>: 3–7 days to answer (5), with one reminder 1–2 days
+            before the deadline (2).</li>
+            <li><strong>A decline</strong> is held 3–10 days before the student is told (7), or 12–48 hours once
+            QC has confirmed it (24), so it can still be undone.</li>
+            <li><strong>The award email</strong> waits 12–48 hours after a sponsor funds the student (24).
+            Where agreements are not signed on the platform, funding is confirmed 1–3 days after the student
+            accepts (2).</li>
+          </ul>
+          <span className="mt-2 block">Some timings must fit together — each reminder at least two days after
+          the one before, the questions email well before the questions reminder — and a save that breaks one
+          is refused with a note under the box concerned. <strong>The time to answer questions also decides
+          when a case can be given to a reviewer:</strong> a case with questions still open can be assigned
+          once that many days have passed since the student submitted. A blank box follows the platform
+          default, and a change reaches only what happens from then on.</span></>
+      ),
+    },
+    {
       anchor: 'org-admin-apply-link',
       title: 'The link applicants follow',
       body: (

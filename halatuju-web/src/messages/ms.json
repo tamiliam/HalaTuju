@@ -6419,9 +6419,65 @@
           "reviewers_staff": "Penilai & kakitangan",
           "interviews": "Temu duga",
           "documents": "Dokumen",
-          "agreements": "Perjanjian"
+          "agreements": "Perjanjian",
+          "decisions": "Keputusan & penolakan",
+          "profile_completion": "Melengkapkan permohonan",
+          "check2": "Soalan selepas penghantaran",
+          "awards": "Anugerah"
         },
         "setting": {
+          "shortlist_email_delay_minutes": {
+            "label": "E-mel disenarai pendek — minit selepas penghantaran",
+            "desc": "Berapa lama selepas pelajar menghantar sebelum e-mel \"anda disenarai pendek\" dihantar."
+          },
+          "not_shortlisted_email_delay_hours": {
+            "label": "E-mel tidak disenarai pendek — jam selepas penghantaran",
+            "desc": "Berapa lama selepas pelajar menghantar sebelum e-mel mesra \"bukan pada pusingan ini\" dihantar. Tidak melebihi 48 jam yang dijanjikan di halaman awam."
+          },
+          "reminder_1_days": {
+            "label": "Peringatan pertama — hari selepas jemputan",
+            "desc": "Jika pelajar yang disenarai pendek belum melengkapkan permohonan, peringatan pertama dihantar sebanyak hari ini selepas e-mel senarai pendek."
+          },
+          "reminder_2_days": {
+            "label": "Peringatan kedua — hari selepas jemputan",
+            "desc": "Dikira dari e-mel senarai pendek. Sekurang-kurangnya dua hari selepas peringatan pertama."
+          },
+          "reminder_3_days": {
+            "label": "Peringatan ketiga — hari selepas jemputan",
+            "desc": "Dikira dari e-mel senarai pendek. Sekurang-kurangnya dua hari selepas peringatan kedua."
+          },
+          "reminder_4_days": {
+            "label": "Peringatan terakhir — hari selepas jemputan",
+            "desc": "Peringatan terakhir, yang memberi amaran bahawa permohonan akan ditutup."
+          },
+          "auto_close_after_final_reminder_days": {
+            "label": "Tutup — hari selepas peringatan terakhir",
+            "desc": "Berapa lama selepas peringatan terakhir permohonan yang tidak lengkap ditutup. Peringatan terakhir menyatakan nombor ini."
+          },
+          "query_answer_days": {
+            "label": "Masa untuk menjawab soalan — hari",
+            "desc": "Berapa hari pelajar ada untuk menjawab soalan yang dibangkitkan selepas mereka menghantar. Ia juga menentukan bila kes yang masih mempunyai soalan terbuka boleh diberikan kepada penilai: setelah sekian hari berlalu sejak penghantaran."
+          },
+          "query_reminder_lead_days": {
+            "label": "Peringatan soalan — hari sebelum tarikh akhir",
+            "desc": "Berapa hari sebelum tarikh akhir menjawab satu-satunya peringatan tentang soalan terbuka dihantar."
+          },
+          "decline_hold_days": {
+            "label": "Penolakan ditahan — hari sebelum pelajar dimaklumkan",
+            "desc": "E-mel yang memaklumkan pelajar tentang penolakan menunggu sebanyak hari ini, supaya keputusan masih boleh dibatalkan."
+          },
+          "qc_decline_hold_hours": {
+            "label": "Penolakan disahkan QC — jam ditahan",
+            "desc": "Tempoh menunggu yang lebih singkat apabila QC telah mengesahkan penolakan penilai. Tidak lebih lama daripada tempoh penolakan ditahan di atas."
+          },
+          "award_email_delay_hours": {
+            "label": "E-mel anugerah — jam ditahan selepas anugerah",
+            "desc": "Berapa lama selepas penaja membiayai pelajar sebelum e-mel berita baik dihantar. Membatalkan anugerah dalam tempoh itu menghentikan e-mel tersebut."
+          },
+          "award_confirm_hold_days": {
+            "label": "Pembiayaan disahkan — hari selepas pelajar menerima",
+            "desc": "Apabila perjanjian tidak ditandatangani di platform, berapa lama selepas pelajar menerima sebelum anugerah disahkan dan pelajar dimaklumkan."
+          },
           "pool_funded_grace_days": {
             "label": "Kad pelajar yang dibiayai — bilangan hari dipaparkan",
             "desc": "Berapa lama kad pelajar yang baru dibiayai kekal pada halaman semakan penaja selepas dibiayai."
@@ -6533,7 +6589,17 @@
         "save": "Simpan perubahan",
         "saved": "Disimpan. Perubahan berkuat kuasa sekarang.",
         "refused": "Pelayan menolak nilai untuk “{label}”. Semak dan cuba lagi.",
-        "refusedWindow": "“{label}” mesti selepas waktu tempoh tempahan dibuka. Tiada apa-apa disimpan.",
+        "refusedRule": "“{label}” tidak sepadan dengan masa lain di halaman ini. Tiada apa-apa disimpan.",
+        "rule": {
+          "window_inverted": "Mesti selepas waktu tempoh tempahan dibuka.",
+          "decline_before_shortlist": "Tidak boleh lebih awal daripada e-mel disenarai pendek.",
+          "reminders_too_close": "Mesti sekurang-kurangnya dua hari selepas peringatan sebelumnya.",
+          "reminder_outside_window": "Mesti kurang daripada bilangan hari untuk menjawab soalan.",
+          "questions_after_reminder": "Terlalu lewat: e-mel soalan mesti sampai kepada pelajar sekurang-kurangnya sehari sebelum peringatan soalan. Pendekkan nilai ini, beri lebih banyak hari untuk menjawab, atau hantar peringatan lebih dekat dengan tarikh akhir.",
+          "cutoff_beyond_lead": "Tidak boleh lebih lama daripada tempahan terawal (jam lebih awal).",
+          "qc_hold_too_long": "Tidak boleh lebih lama daripada tempoh penolakan ditahan.",
+          "nudge_after_due": "Mesti kurang daripada bilangan hari keputusan perlu dibuat."
+        },
         "errorGeneric": "Tidak dapat disimpan. Sila cuba lagi.",
         "invalid": "Betulkan nilai yang ditanda dahulu."
       },
