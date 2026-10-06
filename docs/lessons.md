@@ -1263,3 +1263,18 @@ the completion report repeated the test's claim. **Rule:** when a control's job 
 judgement about the CURRENT state ("checked", "confirmed", "still unknown"), the test starts from
 that exact state and asserts the write happens; and a claim in a completion report is checked
 against the user's real case, not against the test that was written for it. (request #28)
+
+## 2026-10-06 — a status reachable from a new stage inherits every reader that assumed the old one
+
+TD-352 let an officer close an application from ANY in-play status; `closed` had only ever been
+written from a funded state, so five readers (three cockpit cards, the in-programme page, the
+reviewer figures) read `closed` as "funded and finished" and a never-funded closed student could
+reach the funded page. The brief asked for every reader of the gate SET, not of the STATUS.
+**Rule:** when a status becomes reachable from a new stage, grep the status literal on both sides
+before building and ask of each reader "did it mean this status, or the stage that used to be the
+only way here?" — gate the second kind on the milestone stamp (`recommended_at`, `active_at`).
+**Second form, same sprint:** a teardown path reused from another caller (`release_for_unassign`)
+was written for the states ITS caller could reach; unassign is refused from `interviewed` on, so
+it had never met a booking whose interview had already happened, and the close — reachable from
+`interviewed` — would have "cancelled" a past interview. A new caller of a shared path lists the
+states it can reach that the old caller could not, and tests those. (TD-352)
