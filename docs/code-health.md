@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-06 | a3aef00 | 90 | 45 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 13 | 116 | 0 | - | - | ok |
 | 2026-10-06 | 48fda4b | 90 | 45 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 13 | 116 | 0 | 0 | ok | ok |
 | 2026-10-06 | 161f11e | 90 | 43 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 13 | 112 | 0 | 0 | ok | ok |
 | 2026-10-06 | 538c82f | 90 | 43 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 12 | 105 | 0 | 0 | ok | ok |
@@ -88,7 +89,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-06, 48fda4b, window 2026-07-08 onward)
+## Latest run (2026-10-06, a3aef00, window 2026-07-08 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -105,7 +106,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/pathway_engine.py` | 10 | 633 | 6.3 |
 
 ### Fix ratio
-- 263 fix / 324 feat commits since 2026-07-08
+- 263 fix / 320 feat commits since 2026-07-08
 
 ### Files over 1000 lines
 - `2429  halatuju_api/apps/scholarship/views.py`
@@ -198,15 +199,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 161f11e
-
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5407
+- budgets no looser than at 48fda4b
 
 ## Reviews
 
