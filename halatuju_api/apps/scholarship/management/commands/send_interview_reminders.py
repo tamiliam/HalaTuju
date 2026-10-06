@@ -16,6 +16,7 @@ from apps.scholarship import emails, usage, whatsapp
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.pool import pool_ref
 from apps.scholarship.scheduling import _student_identity
+from apps.scholarship.services.apply_gate import IN_PLAY_STATUSES
 
 
 def _wa_reminder_body(student_name, start, meeting_url, when, english_only, reviewer_name='your interviewer'):
@@ -97,7 +98,10 @@ class Command(BaseCommand):
             return
         now = timezone.now()
         qs = (ScholarshipApplication.objects
-              .filter(interview_status='booked', interview_start__gt=now)
+              .filter(interview_status='booked', interview_start__gt=now,
+                      # TD-352: a closed (or any finished) case is never reminded, even if a
+                      # booking was somehow left on it — the close releases it; this is the brace.
+                      status__in=IN_PLAY_STATUSES)
               .select_related('profile', 'assigned_to'))
         sent_1d, sent_1h = [], []
         for app in qs:

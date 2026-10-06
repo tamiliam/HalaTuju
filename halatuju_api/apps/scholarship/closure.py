@@ -109,6 +109,18 @@ def _send_closed_email(application):
     return sent
 
 
+def _release_interview(row):
+    """A pre-award close must not leave an interview live: a BOOKED one is voided (the Meet event
+    cancelled, the booking cleared, the reviewer told) and any PROPOSED times are withdrawn, so
+    the student can neither attend nor book one. The existing teardown
+    (`scheduling.release_for_unassign`), WITHOUT its student notice — the close emails her itself."""
+    from . import scheduling
+    if row.interview_status == 'booked' or row.interview_slots.filter(is_active=True).exists():
+        scheduling.release_for_unassign(
+            row, student_notice=False, reason='Application closed by an officer',
+            reviewer_reason='The application was closed by an officer.')
+
+
 def close_application(application, *, closure_reason, by_email=''):
     """Manually close an application. Stamps closed_at / closed_by, flips status to 'closed' and
     returns the application. Checked in this order, each a ``ClosureError`` code:
@@ -138,8 +150,9 @@ def close_application(application, *, closure_reason, by_email=''):
          scheduled tranche simply becomes un-releasable.
 
     The status is re-read under a row lock (``select_for_update``; a no-op on SQLite) so the
-    checks judge the row as it is now, and the in-memory ``application`` is refreshed with what
-    was written.
+    checks judge the row as it is now, and the in-memory ``application`` is refreshed from the
+    database afterwards. A PRE-award close also releases any interview inside the same
+    transaction (``_release_interview``: a booking voided, proposed times withdrawn).
 
     After the write: one AUDIT log line naming the status it was closed FROM (no DB field holds
     it); then, for a close from a PRE-award status only, the student is sent
@@ -169,8 +182,9 @@ def close_application(application, *, closure_reason, by_email=''):
         row.closed_at = timezone.now()
         row.closed_by = (by_email or '')[:254]
         row.save(update_fields=['status', 'closure_reason', 'closed_at', 'closed_by'])
-    for field in ('status', 'closure_reason', 'closed_at', 'closed_by'):
-        setattr(application, field, getattr(row, field))
+        if closed_from in PRE_AWARD_STATUSES:
+            _release_interview(row)
+    application.refresh_from_db()
     logger.info('AUDIT application_closed app_id=%s from=%s reason=%s by=%s',
                 application.id, closed_from, closure_reason, by_email or '?')
     if closed_from in PRE_AWARD_STATUSES:

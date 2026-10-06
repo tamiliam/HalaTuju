@@ -392,3 +392,80 @@ class TestAFundedClosedCaseKeepsItsWrites(TestCase):
         self.assertTrue(review_writes_closed(app))
         msg = submit_graduation_message(app, raw_text='Thank you for believing in me.')
         self.assertEqual(msg.application_id, app.id)
+
+
+@mock.patch(SENDER, return_value=True)
+class TestAPreAwardCloseReleasesTheInterview(TestCase):
+    """Review round 1, item 3: a close must not leave a booked interview live, or proposed times
+    she could still book. The existing teardown (`scheduling.release_for_unassign`) runs inside
+    the close, without its "your application is still active" student notice."""
+
+    def _booked(self, **kw):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.scholarship.models import InterviewSlot
+        reviewer = make_admin('reviewer')
+        start = timezone.now() + timedelta(days=2)
+        app = make_application('interviewing', reviewer=reviewer, interview_status='booked',
+                               interview_start=start, interview_meeting_url='https://meet.test/x',
+                               **kw)
+        slot = InterviewSlot.objects.create(application=app, reviewer=reviewer, start=start)
+        app.interview_slot = slot
+        app.save(update_fields=['interview_slot'])
+        return app, slot
+
+    @mock.patch('apps.scholarship.meeting.cancel_event')
+    @mock.patch('apps.scholarship.scheduling.emails.send_reviewer_interview_cancelled_email')
+    @mock.patch('apps.scholarship.scheduling.emails.send_interview_released_email')
+    def test_a_booked_interview_is_voided_the_reviewer_told_the_student_not(
+            self, released, reviewer_notice, cancel_event, _send):
+        app, slot = self._booked(interview_calendar_event_id='evt-1')
+        closure.close_application(app, closure_reason='stalled', by_email='o@x.my')
+        app.refresh_from_db()
+        slot.refresh_from_db()
+        self.assertEqual((app.status, app.interview_status), ('closed', 'cancelled'))
+        self.assertIsNone(app.interview_start)
+        self.assertEqual((app.interview_meeting_url, app.interview_calendar_event_id), ('', ''))
+        self.assertEqual(app.interview_cancel_reason, 'Application closed by an officer')
+        self.assertFalse(slot.is_active)
+        cancel_event.assert_called_once_with('evt-1')
+        reviewer_notice.assert_called_once()
+        self.assertEqual(reviewer_notice.call_args.kwargs['reason'],
+                         'The application was closed by an officer.')
+        released.assert_not_called()   # her one email is the close's own
+
+    def test_proposed_times_are_withdrawn_so_she_cannot_book_after_the_close(self, _send):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.scholarship import scheduling
+        from apps.scholarship.models import InterviewSlot
+        reviewer = make_admin('reviewer')
+        app = make_application('interviewing', reviewer=reviewer)
+        slot = InterviewSlot.objects.create(application=app, reviewer=reviewer,
+                                            start=timezone.now() + timedelta(days=3))
+        closure.close_application(app, closure_reason='stalled')
+        slot.refresh_from_db()
+        self.assertFalse(slot.is_active)
+        with self.assertRaises(scheduling.SchedulingError):
+            scheduling.book_slot(app, slot_id=slot.id)
+
+    def test_no_reminder_goes_for_a_closed_case_even_if_a_booking_were_left_on_it(self, _send):
+        """The belt and braces: the reminder sweep reads only in-play applications."""
+        from datetime import timedelta
+        from django.core import mail
+        from django.core.management import call_command
+        from django.utils import timezone
+        start = timezone.now() + timedelta(hours=20)
+        left = make_application('submitted', status='closed', closure_reason='stalled',
+                                interview_status='booked', interview_start=start,
+                                notify_email='left@example.test')
+        live = make_application('interviewing', interview_status='booked', interview_start=start,
+                                notify_email='live@example.test')
+        mail.outbox.clear()
+        with override_settings(INTERVIEW_SCHEDULING_ENABLED=True):
+            call_command('send_interview_reminders')
+        recipients = {to for m in mail.outbox for to in m.to}
+        self.assertNotIn(left.notify_email, recipients)
+        self.assertIn(live.notify_email, recipients)
+        left.refresh_from_db()
+        self.assertIsNone(left.interview_reminded_1d_at)

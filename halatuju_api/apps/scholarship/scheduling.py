@@ -576,7 +576,9 @@ def cancel(application, *, by='student', reason='', now=None):
 
 
 @_bills_to_application
-def release_for_unassign(application, *, now=None):
+def release_for_unassign(application, *, now=None, student_notice=True,
+                         reason='Reviewer unassigned — interview released',
+                         reviewer_reason='You were unassigned from this applicant.'):
     """Tear down interview artefacts when the assigned reviewer is REMOVED
     (services.assign_reviewer with reviewer=None). Mirrors cancel()'s teardown but is
     reviewer-initiated: a BOOKED interview is voided (Meet cancelled, booking cleared) and
@@ -584,7 +586,11 @@ def release_for_unassign(application, *, now=None):
     (active slots, nothing booked) they are withdrawn quietly (the student never committed,
     so no notice). Any pending 'ask for other times' request is cleared. Best-effort on the
     Google/email side — never blocks the unassignment. MUST run BEFORE application.assigned_to
-    is cleared so the outgoing reviewer still receives the notice. Returns the application."""
+    is cleared so the outgoing reviewer still receives the notice. Returns the application.
+
+    TD-352: an officer's CLOSE of a pre-award case reuses this teardown with ``student_notice=False``
+    (the close sends her its own email — "your interview has been released, your application is
+    still active" would be false) and its own ``reason`` / ``reviewer_reason``."""
     now = now or timezone.now()
     reviewer = application.assigned_to
     was_booked = application.interview_status == 'booked'
@@ -608,7 +614,7 @@ def release_for_unassign(application, *, now=None):
         application.interview_meeting_provider = ''
         application.interview_reminded_1d_at = None
         application.interview_reminded_1h_at = None
-        application.interview_cancel_reason = 'Reviewer unassigned — interview released'
+        application.interview_cancel_reason = reason
         fields += [
             'interview_status', 'interview_cancelled_at', 'interview_slot', 'interview_start',
             'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
@@ -622,7 +628,7 @@ def release_for_unassign(application, *, now=None):
 
     # Only notify when there was a BOOKED interview the student was expecting to attend.
     if was_booked:
-        if student_email:
+        if student_email and student_notice:
             emails.send_interview_released_email(
                 student_email, student_name=student_name,
                 english_only=emails.english_only_email(application))
@@ -630,7 +636,7 @@ def release_for_unassign(application, *, now=None):
             emails.send_reviewer_interview_cancelled_email(
                 reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
                 applicant_name=student_name, ref=pool.pool_ref(application.id),
-                reason='You were unassigned from this applicant.')
+                reason=reviewer_reason)
     return application
 
 
