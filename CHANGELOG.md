@@ -13,34 +13,39 @@ production needs only the ledger row.** Built locally, NOT deployed.
   closed by an officer"). Reasons by stage: submitted…recommended → `stalled`, `withdrawn`;
   awarded/active/maintenance → graduated, completed, withdrawn, lapsed, terminated, `stalled`; anything
   else answers 400 `reason_not_allowed`. Finished statuses still answer `not_closeable`.
-- **Who.** A PRE-award close is super or org_admin only (the org-reject gate; 403 otherwise); a close
-  from active/maintenance keeps the S6 gate. The org fence (404 cross-org) is unchanged.
+- **Who.** A PRE-award close is super or org_admin only (the org-reject gate; 403 otherwise), judged by
+  the service on the LOCKED status (`pre_award_allowed`); a close from active/maintenance keeps the S6
+  gate. The org fence (404 cross-org) is unchanged.
 - **One door per job.** From any status other than active/maintenance the close REFUSES with
   `sponsorship_open` while a HOLDING sponsorship (`offered`/`active`) or a `released` disbursement
   exists; nothing is cancelled by a close. The refusal says the truth: "This application holds a
-  sponsor's offer or paid money. It cannot be closed here. (Releasing an awarded student is an owner
-  decision — TD-366.)" An `awarded` case always holds its offer and no admin door releases it today, so
-  the cockpit offers no Close card at `awarded`. Active/maintenance close exactly as before (S6).
+  sponsor's offer or paid money. It cannot be closed here. Ask the platform owner." An `awarded` case
+  always holds its offer and no admin door releases it today (TD-366, an owner decision), so the
+  cockpit offers no Close card at `awarded`. Active/maintenance close exactly as before (S6).
 - **A pending decline refuses the close** (`decline_pending`, as reopen does — TD-349), before the
   sponsorship check.
 - The status is re-read under a row lock; an `AUDIT application_closed app_id= from= reason= by=` line
-  (logger `apps.scholarship.closure`) records the status it left. A PRE-award close releases any
-  interview in the same transaction (the reviewer-unassign teardown, without its student notice: a
-  booking voided, the Meet event cancelled, proposed times withdrawn) and the reminder sweep reads only
-  in-play applications. It then emails the student a new officer-close notice
-  (`send_application_closed_email(..., closure_reason=)`: "closed by our team … you are welcome to apply
-  again in a later round"; the auto-expiry keeps "not completed in time"), best-effort, with a WARNING
-  naming the application when it does not go; no email from a post-award close. The sponsor badge reads
+  (logger `apps.scholarship.closure`) records the status it left. A PRE-award close withdraws any
+  proposed interview times in the transaction and, AFTER COMMIT, voids a booking that is still AHEAD
+  (the reviewer-unassign teardown without its student notice: the Meet event cancelled, the reviewer
+  told) — a past booking is the record of an interview that happened and is left alone. The reminder
+  sweep reads only in-play applications. The student then gets an officer-close email
+  (`send_application_closed_email(..., closure_reason=)`: `stalled` "closed by our team", `withdrawn`
+  "closed at your request", both "you are welcome to apply again in a later round"; the auto-expiry
+  keeps "not completed in time"), best-effort, with a WARNING naming the application when it does not
+  go; no email from a post-award close. The sponsor badge reads
   a `stalled` close as discontinued.
 - **Cockpit.** The Close card shows with the stage's reasons (`lib/closeOffer.ts`, drift-tested against
   `closure.py`, the apply gate and the model's choices): before an award to a super or org_admin only,
   saying "Closing is final. The student may apply again in a later round. She is emailed." without the
   funded checklist; never at `awarded`; at active/maintenance as before. The button asks twice ("Are you
-  sure?" / "Go back", the org-reject's strings). `reason_not_allowed` reuses the bad-reason sentence.
+  sure?" / "Go back", the org-reject's strings), and the row stays until the request settles.
+  `reason_not_allowed` reuses the bad-reason sentence.
 - **Closed before funding is not post-award.** `closed` keeps its place in the cockpit's stage sets, but
   the "recommended by" line and decision summary need `recommended_at`, and the Awarded/Active chips and
   the witness card need `active_at` (`closeOffer.stageStatus`). The reviewer figures count a closed case
-  as recommended only with `recommended_at`. The in-programme page and the thank-you relay accept
+  as recommended only with `recommended_at` (an accept closed before QC stays in `awaiting_qc`, so the
+  bands still sum). The in-programme page and the thank-you relay accept
   `closed` only with `active_at` (the student read now carries `active_at`).
 - **`closed` is a closed case for the review track** (`CASE_CLOSED_STATES` in `services/decline.py`
   and `officerCockpit.ts`, drift-tested together). A stalled close at `interviewing` would otherwise
@@ -53,9 +58,9 @@ production needs only the ledger row.** Built locally, NOT deployed.
   `/scholarship/application`; the 2,480-school list behind `SchoolSelect` (~30 kB gz) loads on the
   field's first pointer-over/touch/focus, off `/scholarship/apply`, `/profile` and
   `/onboarding/profile`. Budgets LOWERED: `/profile` 300 → 271, `/scholarship/apply` 272 → 244. Local
-  exact, final: application 273.270 of 274, apply 242.666 of 244, profile 269.870 of 271, median
-  228.246 of 229.
-- Tests: api `test_close_stalled.py` (new, 39), `test_closure.py`, `test_endpoints_disbursements.py`
+  exact, final: application 273.249 of 274, apply 242.645 of 244, profile 269.849 of 271, median
+  228.225 of 229.
+- Tests: api `test_close_stalled.py` (new, 45), `test_closure.py`, `test_endpoints_disbursements.py`
   and `test_closed_case_writes.py` re-pointed ("pre-award cannot close" became "finished cannot
   close"; "closed is not an off-ramp" became "closed is one"); web `closeOfferDrift.test.ts`,
   `view.close.test.tsx`, `view.closed.test.tsx` +4, `cockpitCardStages.test.ts` re-pointed,

@@ -16,15 +16,16 @@ funded list (graduated, completed, withdrawn, lapsed, terminated) plus `stalled`
 refused with `reason_not_allowed`.
 
 **Who (lead decision, review round 1).** A close from a PRE-award status is `super` or `org_admin`
-only — the org-admin reject's gate, because it releases the student before any decision. A close
-from awarded / active / maintenance keeps the S6 gate (the assigned reviewer may). The cockpit offers
-the pre-award card to those two roles only.
+only — the org-admin reject's gate, because it releases the student before any decision. The view
+passes the right as `pre_award_allowed` and the service judges it on the LOCKED status, so a status
+that moves under the view cannot slip past it. A close from awarded / active / maintenance keeps the
+S6 gate (the assigned reviewer may). The cockpit offers the pre-award card to those two roles only.
 
 **One door per job.** A close never cancels, lapses or refunds anything. From any status other
 than active / maintenance it REFUSES with `sponsorship_open` while the application carries a live
 sponsorship — a `Sponsorship` in `HOLDING` (`offered` or `active`) or a `Disbursement` in `PAID`
 (`released`). The refusal says the truth: "This application holds a sponsor's offer or paid money.
-It cannot be closed here. (Releasing an awarded student is an owner decision — TD-366.)" — an
+It cannot be closed here. Ask the platform owner." (the debt id stays in the docs) — an
 `awarded` case always holds its offer, and once the offer email has gone NO admin door releases it
 (the sponsor's `cancel_offer` refuses, the lapse needs an armed deadline, the contractual reject is
 barred from `awarded`). That is TD-366, an owner decision; this sprint adds no money door, and the
@@ -34,11 +35,13 @@ becomes un-releasable. A pending decline refuses the close too (`decline_pending
 
 **The record and the student.** The close re-reads the row under a lock, then writes one
 `AUDIT application_closed app_id= from= reason= by=` line — the status it left lives there, not in a
-field (TD-363). A PRE-award close releases any interview in the same transaction (a booking voided,
-proposed times withdrawn, the reviewer told) and emails the student an officer-close notice — "closed
-by our team … you are welcome to apply again in a later round", never the auto-expiry "not completed
-in time" — best-effort, with a WARNING naming the application when it does not go; a post-award close
-sends nothing new.
+field (TD-363). A PRE-award close withdraws proposed interview times in the transaction and voids a
+booking only if it is still AHEAD, and only AFTER COMMIT (a calendar delete or a reviewer email can
+never follow a rolled-back close; a booking stays 'booked' after the interview, so a past one is the
+record and is left alone). The student is emailed an officer-close notice — `stalled` "closed by our
+team", `withdrawn` "closed at your request", both "you are welcome to apply again in a later round",
+never the auto-expiry "not completed in time" — best-effort, with a WARNING naming the application
+when it does not go; a post-award close sends nothing new.
 The student's page says, for every in-play status: "While this application is in process, you
 cannot start another. If it is closed, you can apply again in a later round."
 
