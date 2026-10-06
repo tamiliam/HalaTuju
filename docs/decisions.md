@@ -1,5 +1,49 @@
 # Architectural Decisions — HalaTuju
 
+## An officer closes a stalled application, from any in-play status; a close never cancels money — 2026-10-06 (owner's ruling on TD-352, option A; lead rulings in the build)
+
+**Decision:** an application in process blocks a new one (2026-10-05), so a case that stops moving
+is released by an OFFICER closing it by hand — no clock, no age limit (revisit if cases pile up).
+`closure.close_application` now closes from EVERY in-play status: `CLOSEABLE_FROM` is
+`apply_gate.IN_PLAY_STATUSES` itself (one definition, imported), and a finished application
+(rejected / withdrawn / closed / expired) still cannot be closed. A new reason, `stalled` ("No
+movement — closed by an officer"), is the one an officer picks for a case that stopped.
+
+**Reasons by stage** (the api's table, mirrored by the cockpit's `lib/closeOffer.ts` under a drift
+test): before an award (submitted, shortlisted, profile_complete, interviewing, interviewed,
+recommended) only `stalled` or `withdrawn` can be true; from awarded / active / maintenance the
+funded list (graduated, completed, withdrawn, lapsed, terminated) plus `stalled`. Anything else is
+refused with `reason_not_allowed`.
+
+**One door per job.** A close never cancels, lapses or refunds anything. From any status other
+than active / maintenance it REFUSES with `sponsorship_open` while the application carries a live
+sponsorship — a `Sponsorship` in `HOLDING` (`offered` or `active`) or a `Disbursement` in `PAID`
+(`released`) — and the officer cancels the offer through its own door first. An `awarded` case
+always holds its offer, so in practice it is closed only after the cancel returns it to
+`recommended`. Active and maintenance carry a live sponsorship by nature and close exactly as they
+did (post-award S6): no money side effect, a leftover tranche simply becomes un-releasable.
+
+**The record and the student.** The close re-reads the row under a lock, then writes one
+`AUDIT application_closed app_id= from= reason= by=` line — the status it left lives there, not in a
+field (TD-363). A PRE-award close emails the student the existing "your application has been
+closed — you may start again" notice, best-effort, with a WARNING naming the application when it
+does not go (its "not completed in time" wording is TD-364); a post-award close sends nothing new.
+The student's page says, for every in-play status: "While this application is in process, you
+cannot start another. If it is closed, you can apply again in a later round."
+
+**"A later round", on purpose (lead ruling).** The same-round rule (`already_applied`) still counts
+a closed application, and is NOT relaxed: the (cohort, profile) uniqueness on non-expired rows would
+refuse a second row in the same round at the database anyway (TD-351), so excluding `closed` there
+would only move the refusal somewhere worse. The ruling is "released for later rounds and other
+gifts", which is what the rule already gives — and what the copy now says.
+
+**`closed` is a closed case for the review track (lead ruling).** Until now `closed` was reachable
+only from a funded state, so `CASE_CLOSED_STATES` (api) and `officerCockpit.isCaseClosed` (web)
+left it out. A stalled close at `interviewing` would otherwise still take a verdict, an award
+amount and an interview, so `closed` joined both. A funded closed case loses nothing legitimate:
+only the five review-track writes go through that gate, and the cockpit keeps every record
+(decision trail, interview, profile, Check 2 items) through its record arms.
+
 ## A person-only spending category, `micro_stall`; and a person may mark a shop "checked, still unknown" — request #28, 2026-10-06 (recorded at the Consolidation Review)
 
 **Decision:** `micro_stall` ("Micro stall – no online info") is a real spending category that ONLY A

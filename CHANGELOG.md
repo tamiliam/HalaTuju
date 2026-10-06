@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-352 — an officer closes a stalled application; the student is told why she cannot apply again - 2026-10-06
+
+Owner ruling, option A: no clock — an officer closes a stalled case by hand. api + web. **Migration
+`scholarship 0167_closure_reason_stalled` — choices-only, NO DDL (`sqlmigrate` prints no-op);
+production needs only the ledger row.** Built locally, NOT deployed.
+
+- **Close from any in-play status** (`closure.close_application`). `CLOSEABLE_FROM` IS
+  `apply_gate.IN_PLAY_STATUSES` (imported, asserted identical). New reason `stalled` ("No movement —
+  closed by an officer"). Reasons by stage: submitted…recommended → `stalled`, `withdrawn`;
+  awarded/active/maintenance → graduated, completed, withdrawn, lapsed, terminated, `stalled`; anything
+  else answers 400 `reason_not_allowed`. Finished statuses still answer `not_closeable`.
+- **One door per job.** From any status other than active/maintenance the close REFUSES with
+  `sponsorship_open` while a HOLDING sponsorship (`offered`/`active`) or a `released` disbursement
+  exists; nothing is cancelled by a close. In practice an `awarded` case always holds its offer, so it
+  is closed only after the offer is cancelled. Active/maintenance close exactly as before (S6).
+- The status is re-read under a row lock; an `AUDIT application_closed app_id= from= reason= by=` line
+  (logger `apps.scholarship.closure`) records the status it left. A PRE-award close then emails the
+  student the existing "your application has been closed — you may start again" notice
+  (`send_application_closed_email`), best-effort, with a WARNING naming the application when it does
+  not go; no email from a post-award close. The sponsor badge reads a `stalled` close as discontinued.
+- **Cockpit.** The Close card shows at every in-play status with the stage's reasons
+  (`lib/closeOffer.ts`, drift-tested against `closure.py`, the apply gate and the model's choices); before
+  an award it says "The student may apply again in a later round. She is emailed." and drops the funded
+  checklist. `reason_not_allowed` reuses the bad-reason sentence (only a stale tab meets it).
+- **`closed` is a closed case for the review track** (`CASE_CLOSED_STATES` in `services/decline.py`
+  and `officerCockpit.ts`, drift-tested together). A stalled close at `interviewing` would otherwise
+  still take a verdict, an award amount and an interview. The five review-track writes answer 400
+  `case_closed`; a funded closed case keeps every record in the cockpit and every post-award door.
+- **Student page.** Under "Programme:", for every in-play status: "While this application is in process,
+  you cannot start another. If it is closed, you can apply again in a later round." (en/ms/ta; ms and ta
+  first drafts). "A later round" is exact: the same round still answers `already_applied`.
+- **First-load weight.** The award/agreement panels and the income-route switch now load on demand on
+  `/scholarship/application`; the 2,480-school list behind `SchoolSelect` (~30 kB gz) loads on the
+  field's first pointer-over/touch/focus, off `/scholarship/apply`, `/profile` and
+  `/onboarding/profile`. Budgets LOWERED: `/profile` 300 → 271, `/scholarship/apply` 272 → 244. Local
+  exact, final: application 273.200 of 274, apply 242.596 of 244, profile 269.800 of 271, median
+  228.176 of 229.
+- Tests: api `test_close_stalled.py` (new, 26), `test_closure.py`, `test_endpoints_disbursements.py`
+  and `test_closed_case_writes.py` re-pointed ("pre-award cannot close" became "finished cannot
+  close"; "closed is not an off-ramp" became "closed is one"); web `closeOfferDrift.test.ts`,
+  `view.close.test.tsx`, `view.closed.test.tsx` +2, `cockpitCardStages.test.ts` re-pointed,
+  `LazyApplicationAwardPanels`, `LazyIncomeRouteSwitch`, `SchoolSelect` (each with a failed-chunk
+  sibling), `page.screen.test.tsx` +12. decisions.md 2026-10-06. Debt: TD-352 closed; TD-363 to
+  TD-365 raised; TD-354's premise (no room) noted gone.
+
 ## Request #28 follow-up — "Checked – still unknown" works; a shop can be flagged for review - 2026-10-06
 
 - **Fixed — a shop the sorter left "Not yet sorted" could never be marked as checked.** The category control is a native select, and choosing the value it already shows fires no change — so every shop on the Unsorted tab ignored "Not yet sorted". The control now offers a UI-only **"Checked – still unknown"** option on unsorted rows (sentinel value `unsorted:checked`, never sent: it is mapped to `unsorted`, which the existing correction stores with `decided_by='owner'`). An untouched unsorted row offers both "Not yet sorted" (selected) and "Checked – still unknown"; a row a person already checked shows "Checked – still unknown" selected and no plain "Not yet sorted"; every other category is unchanged. No backend change. Rendered tests in `admin/spending/page.test.tsx`, bite-checked (removing the mapping turns the send test red; dropping the sentinel selection turns the checked-row test red). New string `admin.spending.checked` in en/ms/ta (**Malay and Tamil are first drafts**).
