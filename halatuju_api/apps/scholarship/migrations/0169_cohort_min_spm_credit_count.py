@@ -12,7 +12,7 @@ DDL to run, verbatim — rendered offline from this migration with the postgresq
 editor (no connection):
 
     ALTER TABLE "scholarship_cohorts" ADD COLUMN "min_spm_credit_count" integer NULL;
-    INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0168_cohort_min_spm_credit_count', now());
+    INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0169_cohort_min_spm_credit_count', now());
 
 No RLS step: a column on an existing table inherits that table's policies.
 
@@ -27,7 +27,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scholarship', '0167_merchant_flags'),
+        ('scholarship', '0168_closure_reason_stalled'),
     ]
 
     operations = [
