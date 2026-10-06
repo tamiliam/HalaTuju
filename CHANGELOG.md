@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #28 follow-up — "Checked – still unknown" works; a shop can be flagged for review - 2026-10-06
+
+- **Fixed — a shop the sorter left "Not yet sorted" could never be marked as checked.** The category control is a native select, and choosing the value it already shows fires no change — so every shop on the Unsorted tab ignored "Not yet sorted". The control now offers a UI-only **"Checked – still unknown"** option on unsorted rows (sentinel value `unsorted:checked`, never sent: it is mapped to `unsorted`, which the existing correction stores with `decided_by='owner'`). An untouched unsorted row offers both "Not yet sorted" (selected) and "Checked – still unknown"; a row a person already checked shows "Checked – still unknown" selected and no plain "Not yet sorted"; every other category is unchanged. No backend change. Rendered tests in `admin/spending/page.test.tsx`, bite-checked (removing the mapping turns the send test red; dropping the sentinel selection turns the checked-row test red). New string `admin.spending.checked` in en/ms/ta (**Malay and Tamil are first drafts**).
+
 ## Consolidation Review — thirteen small changes, 18 Sep → 6 Oct - 2026-10-06
 
 Docs and one build-tooling guard. No app code, no migration, nothing a visitor sees.

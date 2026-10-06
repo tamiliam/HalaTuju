@@ -5740,6 +5740,7 @@
       "searchShops": "Search merchants",
       "searchStudents": "Search students",
       "noMatch": "No records match the current filters.",
+      "checked": "Checked – still unknown",
       "filter": {
         "allCategories": "All categories",
         "anyDecidedBy": "Any determination",

@@ -15,6 +15,13 @@
  * years badge (2026-09-08) and the owner reported it as a panel that opens and cannot be seen. A
  * native select's list is drawn by the browser outside the document, so nothing can clip it.
  *
+ * ⚠ **"CHECKED – STILL UNKNOWN" IS A UI-ONLY OPTION** (request #28 follow-up). A native select
+ * fires no change when you choose the value it already shows, so a shop the sorter left
+ * `unsorted` (every row on the Unsorted tab) could never be marked as checked by choosing
+ * "Not yet sorted". The extra option carries a sentinel value that is NEVER sent: `onChange` maps
+ * it to `unsorted`, which the server stores with `decided_by='owner'`. A shop already checked
+ * shows the sentinel and is not offered plain "Not yet sorted" — the two would mean the same.
+ *
  * ⚠ **THE ROW IS A SHOP, NOT A PAYMENT.** You fix a shop once and every payment at it follows; a
  * per-payment screen would ask the same question forty times for one stall.
  *
@@ -34,6 +41,9 @@ import {
   sortMerchants, type MerchantSortKey,
 } from '@/lib/spendingTable'
 import type { SpendingMerchantRow } from '@/lib/admin-api'
+
+/** The checked-but-unsorted option's value. ⚠ Never reaches the server — see the file header. */
+const CHECKED = 'unsorted:checked'
 
 /** The rungs a shop's category can come from, in the order the filter offers them. `none` is the
  *  blank — a real state (the sorter has not reached this shop), not an absence. */
@@ -91,19 +101,26 @@ export default function SpendingShops({
   const filtered = shown.length !== rows.length
 
   /** The correction control. Drawn twice (card + row), so it is written once. */
-  const categoryBox = (m: SpendingMerchantRow, className: string) => (
-    <select
-      aria-label={`${t('admin.spending.col.countedAs')} — ${m.merchant}`}
-      className={className}
-      value={m.category || 'unsorted'}
-      disabled={saving === m.merchant}
-      onChange={(e) => onCorrect(m.merchant, e.target.value)}
-    >
-      {categories.map((c) => (
-        <option key={c.code} value={c.code}>{c.label}</option>
-      ))}
-    </select>
-  )
+  const categoryBox = (m: SpendingMerchantRow, className: string) => {
+    const unsorted = (m.category || 'unsorted') === 'unsorted'
+    const checked = unsorted && m.decided_by === 'owner'
+    return (
+      <select
+        aria-label={`${t('admin.spending.col.countedAs')} — ${m.merchant}`}
+        className={className}
+        value={checked ? CHECKED : m.category || 'unsorted'}
+        disabled={saving === m.merchant}
+        onChange={(e) => onCorrect(m.merchant, e.target.value === CHECKED ? 'unsorted' : e.target.value)}
+      >
+        {categories.flatMap((c) => (c.code === 'unsorted' && unsorted
+          ? [
+              ...(checked ? [] : [<option key={c.code} value={c.code}>{c.label}</option>]),
+              <option key={CHECKED} value={CHECKED}>{t('admin.spending.checked')}</option>,
+            ]
+          : [<option key={c.code} value={c.code}>{c.label}</option>]))}
+      </select>
+    )
+  }
 
   const heldBack = (m: SpendingMerchantRow, className: string) => (
     m.held_back > 0

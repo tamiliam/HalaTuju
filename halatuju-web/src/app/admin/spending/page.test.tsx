@@ -610,6 +610,57 @@ describe('"checked, still unknown" (request #28)', () => {
   })
 })
 
+describe('"Checked – still unknown" (request #28 follow-up — the dropdown fix)', () => {
+  // ⚠ THE BUG: an untouched shop is ALREADY "Not yet sorted", and a native select fires no change
+  // when you choose the value it already shows — so every shop on the Unsorted tab could never be
+  // marked as checked. jsdom fires `change` regardless, so a test that re-chose "Not yet sorted"
+  // would pass against the bug. What decides the real browser is the STRUCTURAL pair asserted
+  // here: the checked option has a value DIFFERENT from the one selected, and choosing it sends
+  // `unsorted` (the sentinel itself never reaches the server).
+  const TWO = {
+    ...OVERVIEW,
+    merchants: [
+      { ...OVERVIEW.merchants[3], merchant: 'NEVER LOOKED AT', decided_by: '' },
+      { ...OVERVIEW.merchants[3], merchant: 'CHECKED BY A PERSON', decided_by: 'owner' },
+    ],
+  }
+  const boxesOf = (shop: string) => screen.findAllByRole('combobox', { name: new RegExp(shop) })
+  const selected = (box: HTMLElement) => (box as HTMLSelectElement).selectedOptions[0].textContent
+
+  it('from an UNTOUCHED unsorted row, choosing it sends `unsorted` — in both renderings', async () => {
+    for (const index of [0, 1]) {
+      jest.clearAllMocks()
+      mockApi.getSpendingOverview.mockResolvedValue(TWO)
+      const view = render(<SpendingPage />)
+      const box = (await boxesOf('NEVER LOOKED AT'))[index]
+      expect(selected(box)).toBe('Not yet sorted')
+      const option = within(box).getByRole('option', { name: 'admin.spending.checked' }) as HTMLOptionElement
+      expect(option.value).not.toBe((box as HTMLSelectElement).value)   // a REAL change
+      fireEvent.change(box, { target: { value: option.value } })
+      await waitFor(() => expect(mockApi.setSpendingCategory)
+        .toHaveBeenCalledWith('NEVER LOOKED AT', 'unsorted', undefined, { token: 'tok' }))
+      view.unmount()
+    }
+  })
+
+  it('a row a person already checked shows it selected, and no plain "Not yet sorted"', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue(TWO)
+    render(<SpendingPage />)
+    const boxes = await boxesOf('CHECKED BY A PERSON')
+    expect(boxes).toHaveLength(2)
+    for (const box of boxes) {
+      expect(selected(box)).toBe('admin.spending.checked')
+      const labels = within(box).getAllByRole('option').map((o) => o.textContent)
+      expect(labels).not.toContain('Not yet sorted')
+      expect(labels.filter((l) => l === 'admin.spending.checked')).toHaveLength(1)
+    }
+    // …while the untouched row is offered both.
+    const untouched = (await boxesOf('NEVER LOOKED AT'))[0]
+    expect(within(untouched).getAllByRole('option').map((o) => o.textContent))
+      .toEqual(expect.arrayContaining(['Not yet sorted', 'admin.spending.checked']))
+  })
+})
+
 describe('the Unsorted tab', () => {
   it('lists only the shops with money we could not place', async () => {
     render(<SpendingPage />)
