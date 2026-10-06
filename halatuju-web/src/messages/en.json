@@ -3887,7 +3887,7 @@
       "error": {
         "bad_reason": "Choose a valid closure reason.",
         "not_closeable": "This application is already finished.",
-        "sponsorship_open": "Cancel the live sponsorship offer first.",
+        "sponsorship_open": "This application holds a sponsor's offer or paid money. It cannot be closed here. (Releasing an awarded student is an owner decision — TD-366.)",
         "generic": "Could not close the file. You may not have permission."
       }
     },

@@ -17,7 +17,10 @@ describe('closeOffer', () => {
   test.each(PRE_AWARD_STATUSES)('%s → shown, pre-award, stalled + withdrawn only', (status) => {
     expect(closeOffer(status, true)).toEqual({ show: true, preAward: true, reasons: ['stalled', 'withdrawn'] })
   })
-  test.each(POST_AWARD_STATUSES)('%s → shown, the post-award list plus stalled', (status) => {
+  test('awarded → no Close card: the offer is always out and nothing releases it (TD-366)', () => {
+    expect(closeOffer('awarded', true)).toEqual({ show: false, preAward: false, reasons: [] })
+  })
+  test.each(['active', 'maintenance'])('%s → shown, the post-award list plus stalled', (status) => {
     expect(closeOffer(status, true)).toEqual({
       show: true, preAward: false,
       reasons: ['graduated', 'completed', 'withdrawn', 'lapsed', 'terminated', 'stalled'],

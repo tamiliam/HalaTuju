@@ -139,7 +139,8 @@ class TestOneDoorPerJob(TestCase):
         with self.assertRaises(ClosureError) as ctx:
             closure.close_application(app, closure_reason='stalled')
         self.assertEqual(ctx.exception.code, 'sponsorship_open')
-        self.assertIn('Cancel the offer first', str(ctx.exception))
+        self.assertIn('It cannot be closed here', str(ctx.exception))
+        self.assertIn('TD-366', str(ctx.exception))
         app.refresh_from_db()
         sp.refresh_from_db()
         self.assertEqual((app.status, sp.status), ('awarded', 'offered'))   # nothing cancelled

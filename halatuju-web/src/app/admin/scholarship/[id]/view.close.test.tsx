@@ -6,7 +6,8 @@
  * An application in play stops the student starting another. A case that stopped moving would
  * hold her place for ever, so the Close card now shows at EVERY in-play status, with the reasons
  * the api accepts at that stage (`lib/closeOffer`, drift-tested against `closure.py`): before an
- * award only "No movement" and "Withdrawn"; from awarded on, the funded list plus "No movement".
+ * award only "No movement" and "Withdrawn"; at active / maintenance, the funded list plus "No
+ * movement"; at awarded, none (the offer is always out — TD-366).
  * A finished case shows no card. The api's `sponsorship_open` refusal (a live offer or paid money)
  * is answered by the server and shown in the card.
  */
@@ -50,8 +51,8 @@ describe('before an award — stalled and withdrawn only', () => {
     expect(await screen.findByText('admin.closure.reason.stalled')).toBeTruthy()
   })
 
-  it('shows the sponsorship refusal in the card', async () => {
-    const { api } = renderCockpit({ role: 'super', stage: 'awarded' })
+  it('shows the sponsorship refusal in the card (e.g. money paid at recommended)', async () => {
+    const { api } = renderCockpit({ role: 'super', stage: 'recommended' })
     await loaded()
     api.closeApplication.mockRejectedValue(new Error('sponsorship_open'))
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
@@ -79,6 +80,14 @@ describe('who — a pre-award close is super / org_admin only (the api answers 4
     renderCockpit({ role: 'qc', stage: 'active' })
     await loaded()
     expect(reasons()).toContain('graduated')
+  })
+})
+
+describe('an awarded case — no Close card (TD-366: no door releases it; the api always refuses)', () => {
+  it('shows none, even to a super', async () => {
+    renderCockpit({ role: 'super', stage: 'awarded' })
+    await loaded()
+    expect(screen.queryByText(TITLE)).toBeNull()
   })
 })
 

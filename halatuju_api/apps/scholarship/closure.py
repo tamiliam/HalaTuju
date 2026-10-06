@@ -62,8 +62,8 @@ POSITIVE_REASONS = ('graduated', 'completed')
 
 #: The sentence for ``sponsorship_open`` (the web shows its own translated copy of it).
 SPONSORSHIP_OPEN_MESSAGE = (
-    'This application has a live sponsorship offer or money paid against it. Cancel the offer '
-    'first; closing does not cancel it.')
+    "This application holds a sponsor's offer or paid money. It cannot be closed here. "
+    '(Releasing an awarded student is an owner decision — TD-366.)')
 
 
 class ClosureError(Exception):
@@ -125,10 +125,13 @@ def close_application(application, *, closure_reason, by_email=''):
 
       4. ``sponsorship_open`` — ONE DOOR PER JOB. From any status OTHER than active / maintenance,
          the close REFUSES while ``has_live_money`` holds (a HOLDING sponsorship, or a released
-         tranche). Closing never cancels or lapses a sponsorship: the officer cancels the offer
-         through its own door first. In practice an 'awarded' application always carries a
-         HOLDING sponsorship (``sponsorship.fund_student`` writes both), so an awarded case cannot
-         be closed here until its offer is cancelled and it is back at 'recommended'. Active and
+         tranche). Closing never cancels or lapses a sponsorship. In practice an 'awarded'
+         application always carries a HOLDING sponsorship (``sponsorship.fund_student`` writes
+         both), so an awarded case CANNOT be closed here — and there is today no admin door that
+         releases it either once the offer email has gone (TD-366, an owner decision: the sponsor's
+         ``cancel_offer`` refuses after notification, the lapse runs only on an armed deadline, the
+         contractual reject is barred from 'awarded', and released tranches keep the money live).
+         The cockpit therefore does not offer the Close card at 'awarded' at all. Active and
          maintenance carry a live sponsorship by nature and close exactly as before (S6): no
          money side effect — the disbursement ledger is historical, and
          ``disbursement.release_tranche`` refuses to pay a closed student, so a leftover

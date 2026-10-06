@@ -5,7 +5,8 @@
  * The api (`closure.close_application`) closes from EVERY in-play status, with a reason that fits
  * the stage. This is the web's copy of that reasons-by-stage table, so the card never offers a
  * reason the api would refuse with `reason_not_allowed`. The api's other refusal,
- * `sponsorship_open` (a live offer or paid money, before a funded state), is NOT mirrored: the
+ * `sponsorship_open` (a live offer or paid money, before a funded state), is mirrored only where it
+ * is certain: an `awarded` case always holds its offer, so no card is offered there. Elsewhere the
  * admin detail does not carry the sponsorship, so the server answers and the card shows why.
  *
  * drift-test: halatuju-web/src/lib/__tests__/closeOfferDrift.test.ts
@@ -41,6 +42,10 @@ export function closeOffer(status: string, orgSuper: boolean): CloseOffer {
       ? { show: true, preAward: true, reasons: PRE_AWARD_REASONS }
       : { show: false, preAward: true, reasons: [] }
   }
+  // `awarded` always holds the sponsor's offer, so the api refuses every close there
+  // (`sponsorship_open`) and no admin door releases it today (TD-366, an owner decision). The card is
+  // not offered rather than show a button that always refuses (TD-363).
+  if (status === 'awarded') return { show: false, preAward: false, reasons: [] }
   if ((POST_AWARD_STATUSES as readonly string[]).includes(status)) {
     return { show: true, preAward: false, reasons: POST_AWARD_REASONS }
   }
