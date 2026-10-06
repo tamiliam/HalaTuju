@@ -263,8 +263,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     # so the list UI disables the dropdown rather than re-deriving the rule — an action the server
     # will refuse should not look available. See services.ASSIGNABLE_STATUSES.
     assignable = serializers.SerializerMethodField()
-    # First-assignment readiness (mirrors the detail cockpit): all student tasks done OR the 5-day
-    # submit-clock lapsed. The list dropdown disables a FIRST assignment while false, so it never
+    # First-assignment readiness (mirrors the detail cockpit): all student tasks done OR the org's
+    # `query_answer_days` submit-clock lapsed. The list dropdown disables a FIRST assignment while false, so it never
     # offers an assign the server would refuse with 'not_ready' (= services.is_ready_for_assignment,
     # the same value the detail serializer ships inside query_sla).
     ready_for_assignment = serializers.SerializerMethodField()

@@ -169,7 +169,7 @@ STAGE_FIELDS = (
     'decline_due_at', 'pending_rejection_category', 'pending_decline_by',
     'decline_email_sent_at',
     'closed_at', 'closed_by', 'closure_reason',
-    'expired_at', 'reminder_stage', 'last_reminder_at',
+    'expired_at', 'reminder_stage', 'last_reminder_at', 'final_reminder_close_days',
     'award_amount',
     'programme_id', 'owning_organisation_id',
 )
@@ -486,10 +486,13 @@ def make_application(stage='submitted', *, outcome=None, cohort=None, student=No
     # expired — the branch off `shortlisted`: the student never completed, the four reminders
     # all went, the 5-day grace lapsed and the daily sweep auto-closed the case
     # (`services.send_application_reminders`). No verdict, no reviewer, nothing else.
+    # R4 records the close it STATED (org-timing Sprint 1) — the platform 5 for a tenant that
+    # tuned nothing, which is what the walk's sweep stamps.
     if stage == 'expired':
-        from apps.scholarship.services import REMINDER_THRESHOLDS_DAYS
+        from apps.scholarship.services import FINAL_REMINDER_GRACE_DAYS, REMINDER_THRESHOLDS_DAYS
         fields.update(status='expired', expired_at=now,
-                      reminder_stage=len(REMINDER_THRESHOLDS_DAYS), last_reminder_at=now)
+                      reminder_stage=len(REMINDER_THRESHOLDS_DAYS), last_reminder_at=now,
+                      final_reminder_close_days=FINAL_REMINDER_GRACE_DAYS)
     # rejected — the QC confirmed the DECLINE. `_record_reject` snapshots the status it was
     # declined FROM and `admin_reject` embargoes the student email for the 24h QC cool-off.
     if stage == 'rejected':

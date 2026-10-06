@@ -51,16 +51,32 @@ def _org_value(organisation, key):
     return org_config.value(organisation, key)
 
 
+def promised_close_days(app, cache=None):
+    """How long after the final reminder `app` may be closed: the LONGER of what that reminder
+    STATED and the organisation's current setting.
+
+    ⚠ THE PROMISE IS KEPT (adversarial review F1, owner option 1, 2026-10-07). R4 tells the
+    student "within N days"; an organisation that lowers the close afterwards must not close
+    her sooner than N, and one that raises it gives her the longer wait. The stated N is stamped
+    on `final_reminder_close_days` when R4 goes out; a NULL stamp is a final reminder sent before
+    that column existed, whose wording was the literal platform 5."""
+    stated = app.final_reminder_close_days
+    if stated is None:
+        stated = FINAL_REMINDER_GRACE_DAYS
+    return max(stated, close_grace_days(app.owning_organisation, cache))
+
+
 def reminder_due(app, now, cache=None):
     """What the sweep owes `app` today: ('close', None), ('remind', stage) or (None, None).
 
     The close is gated on `last_reminder_at` (when the final reminder actually went out), never
-    on raw elapsed days, so no application is closed without having received the warning."""
+    on raw elapsed days, so no application is closed without having received the warning — and
+    never sooner than that warning said (`promised_close_days`)."""
     org = app.owning_organisation
     ladder = reminder_ladder(org, cache)
     final_stage = len(ladder)                                     # 4
     if (app.reminder_stage >= final_stage and app.last_reminder_at
-            and (now - app.last_reminder_at).days >= close_grace_days(org, cache)):
+            and (now - app.last_reminder_at).days >= promised_close_days(app, cache)):
         return 'close', None
     next_stage = app.reminder_stage + 1                           # 1..4
     if (next_stage <= final_stage
@@ -117,12 +133,17 @@ def send_application_reminders(now=None):
         # Otherwise, send the next stage if its day-threshold is crossed (one per run). R4 states
         # the close in days, so it is handed the SAME number the close above waits for.
         if action == 'remind':
+            close_days = close_grace_days(app.owning_organisation, cache)
             with _usage.usage_context(application=app):
-                send_reminder_email(
-                    stage=next_stage,
-                    close_days=close_grace_days(app.owning_organisation, cache), **common)
+                send_reminder_email(stage=next_stage, close_days=close_days, **common)
             app.reminder_stage = next_stage
             app.last_reminder_at = now
-            app.save(update_fields=['reminder_stage', 'last_reminder_at'])
+            fields = ['reminder_stage', 'last_reminder_at']
+            if next_stage == len(_LADDER_KEYS):
+                # The FINAL reminder states the close; record exactly what it said, in the same
+                # save, so the close can never come sooner (`promised_close_days`).
+                app.final_reminder_close_days = close_days
+                fields.append('final_reminder_close_days')
+            app.save(update_fields=fields)
             reminded += 1
     return {'reminded': reminded, 'closed': closed}

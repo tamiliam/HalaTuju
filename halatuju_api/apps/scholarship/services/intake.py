@@ -270,7 +270,7 @@ def rescore_pending_decisions():
     pending = list(
         ScholarshipApplication.objects
         .filter(status='submitted', decision_released_at__isnull=True)
-        .select_related('cohort', 'profile')
+        .select_related('cohort', 'profile', 'owning_organisation__configuration')
     )
     changed = []
     for application in pending:

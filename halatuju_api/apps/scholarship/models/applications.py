@@ -362,10 +362,11 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True,
         help_text="When the completion-reminder clock starts (usually = shortlisted_at)",
     )
-    # 0 = none sent yet; 1–4 = the last reminder stage sent (R1 +2d, R2 +9d,
-    # R3 +23d, R4/final +53d). Drives idempotency — a stage is never re-sent.
+    # 0 = none sent; 1–4 = the last stage sent (the org's ladder). A stage is never re-sent.
     reminder_stage = models.PositiveSmallIntegerField(default=0)
     last_reminder_at = models.DateTimeField(null=True, blank=True)
+    final_reminder_close_days = models.PositiveSmallIntegerField(null=True, blank=True, help_text=(
+        "Days the FINAL reminder STATED before closing; the close never comes sooner (NULL = 5)"))
     # When the application was auto-closed for non-completion (status → 'expired').
     expired_at = models.DateTimeField(null=True, blank=True)
     # "You haven't submitted yet" nudge for a shortlisted student who gave consent but never

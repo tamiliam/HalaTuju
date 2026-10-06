@@ -314,9 +314,11 @@ class TestTheReminderLadder(TestCase):
         brisk = make_org()
         _configure(brisk, 'auto_close_after_final_reminder_days', 3)
         warned = timezone.now() - timedelta(days=4)
-        ours = self._shortlisted(brisk, anchor_days=57, reminder_stage=4, last_reminder_at=warned)
+        # Each carries the close its final reminder STATED under its organisation (3 and 5).
+        ours = self._shortlisted(brisk, anchor_days=57, reminder_stage=4, last_reminder_at=warned,
+                                 final_reminder_close_days=3)
         theirs = self._shortlisted(make_org(), anchor_days=57, reminder_stage=4,
-                                   last_reminder_at=warned)
+                                   last_reminder_at=warned, final_reminder_close_days=5)
         out = io.StringIO()
         call_command('send_application_reminders', '--dry-run', stdout=out)
         self.assertIn(f'would CLOSE app #{ours.pk}', out.getvalue())
@@ -337,6 +339,69 @@ class TestTheReminderLadder(TestCase):
         bodies = {m.to[0]: m.body for m in mail.outbox}
         self.assertIn('within 3 days', bodies[ours.notify_email])
         self.assertIn('within 5 days', bodies[theirs.notify_email])
+        # …and the number each email STATED is recorded in the same save as R4 itself.
+        ours.refresh_from_db(); theirs.refresh_from_db()
+        self.assertEqual((ours.reminder_stage, ours.final_reminder_close_days), (4, 3))
+        self.assertEqual((theirs.reminder_stage, theirs.final_reminder_close_days), (4, 5))
+
+    def test_an_earlier_reminder_records_no_promise(self):
+        from apps.scholarship.services import send_application_reminders
+        app = self._shortlisted(make_org(), anchor_days=2)
+        send_application_reminders()
+        app.refresh_from_db()
+        self.assertEqual((app.reminder_stage, app.final_reminder_close_days), (1, None))
+
+
+class TestTheFinalReminderPromise(TestCase):
+    """Review F1 (owner option 1): the close never comes sooner than the final reminder said.
+    The wait is max(stated, current setting); a NULL stamp (a reminder sent before the column
+    existed) stated the literal 5. Every case is asked of the live sweep AND its dry run."""
+
+    def _warned(self, org, *, days_ago, stated):
+        return make_application(
+            'shortlisted', cohort=_org_cohort(org),
+            reminder_anchor_at=timezone.now() - timedelta(days=60), reminder_stage=4,
+            last_reminder_at=timezone.now() - timedelta(days=days_ago),
+            final_reminder_close_days=stated)
+
+    def _closed(self, apps_):
+        """{pk: closed?} from the dry run and from the live sweep — which must agree."""
+        from apps.scholarship.services import send_application_reminders
+        out = io.StringIO()
+        call_command('send_application_reminders', '--dry-run', stdout=out)
+        dry = {a.pk: f'would CLOSE app #{a.pk} ' in out.getvalue() for a in apps_}
+        send_application_reminders()
+        live = {a.pk: ScholarshipApplication.objects.get(pk=a.pk).status == 'expired'
+                for a in apps_}
+        self.assertEqual(dry, live)
+        return live
+
+    def test_lowering_the_setting_after_the_warning_never_closes_early(self):
+        org = make_org()
+        _configure(org, 'auto_close_after_final_reminder_days', 3)   # was 7 when she was warned
+        early = self._warned(org, days_ago=4, stated=7)
+        due = self._warned(org, days_ago=7, stated=7)
+        closed = self._closed([early, due])
+        self.assertFalse(closed[early.pk])        # 4 days: past the new 3, inside the stated 7
+        self.assertTrue(closed[due.pk])           # 7 days: the promise is kept, then closed
+
+    def test_raising_the_setting_after_the_warning_extends_the_wait(self):
+        org = make_org()
+        _configure(org, 'auto_close_after_final_reminder_days', 6)   # was 3 when she was warned
+        waiting = self._warned(org, days_ago=4, stated=3)
+        due = self._warned(org, days_ago=6, stated=3)
+        closed = self._closed([waiting, due])
+        self.assertFalse(closed[waiting.pk])
+        self.assertTrue(closed[due.pk])
+
+    def test_a_reminder_sent_before_the_stamp_existed_counts_as_five(self):
+        org = make_org()
+        _configure(org, 'auto_close_after_final_reminder_days', 3)
+        early = self._warned(org, days_ago=4, stated=None)
+        due = self._warned(org, days_ago=5, stated=None)
+        closed = self._closed([early, due])
+        self.assertFalse(closed[early.pk])        # its email said "5", whatever the org says now
+        self.assertTrue(closed[due.pk])
 
 
 class TestTheDeclineHolds(TestCase):

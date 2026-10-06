@@ -42,7 +42,7 @@ class Command(BaseCommand):
             qs = (ScholarshipApplication.objects
                   .filter(status__in=QUERY_SLA_ACTIVE_STATUSES,
                           profile_completed_at__isnull=False, query_reminder_at__isnull=True)
-                  .select_related('cohort', 'profile'))
+                  .select_related('cohort', 'profile', 'owning_organisation__configuration'))
             n = 0
             for app in qs:
                 sla = query_sla(app, now)

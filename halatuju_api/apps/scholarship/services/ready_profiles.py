@@ -47,7 +47,8 @@ def autogenerate_ready_profiles(now=None):
     generated = 0
     qs = (ScholarshipApplication.objects
           .filter(status__in=QUERY_SLA_ACTIVE_STATUSES, profile_completed_at__isnull=False)
-          .select_related('cohort', 'profile'))
+          # The readiness check reads the org's `query_answer_days` — joined, not one query a row.
+          .select_related('cohort', 'profile', 'owning_organisation__configuration'))
     for app in qs:
         sp = getattr(app, 'sponsor_profile', None)
         if sp is not None and sp.generated_at is not None:
