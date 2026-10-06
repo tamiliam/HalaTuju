@@ -14,7 +14,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scholarship', '0166_spend_category_micro_stall'),
+        ('scholarship', '0167_merchant_flags'),
     ]
 
     operations = [

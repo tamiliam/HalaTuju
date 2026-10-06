@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## TD-352 — an officer closes a stalled application; the student is told why she cannot apply again - 2026-10-06
 
 Owner ruling, option A: no clock — an officer closes a stalled case by hand. api + web. **Migration
-`scholarship 0167_closure_reason_stalled` — choices-only, NO DDL (`sqlmigrate` prints no-op);
+`scholarship 0168_closure_reason_stalled` — choices-only, NO DDL (`sqlmigrate` prints no-op);
 production needs only the ledger row.** Built locally, NOT deployed.
 
 - **Close from any in-play status** (`closure.close_application`). `CLOSEABLE_FROM` IS
