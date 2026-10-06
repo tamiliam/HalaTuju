@@ -15,9 +15,11 @@
  * Both halves are asserted below, because a test for only the first half would pass on a page
  * that deleted the evidence.
  *
- * ⚠ `closed` IS NOT A CLOSED CASE. `CASE_CLOSED_STATES` is `rejected` / `withdrawn` / `expired`
- * and deliberately excludes `closed`, which is the SUCCESSFUL end of a funded lifecycle — every
- * closed case carries a recorded verdict and keeps its decision record through that arm instead.
+ * ⚠ `closed` JOINED `CASE_CLOSED_STATES` on 2026-10-06 (TD-352). It used to be only the
+ * successful end of a funded lifecycle; now an officer may close a STALLED case from any in-play
+ * status, so a closed case may never have been decided. The same rule then applies to it: a
+ * stalled close hides the dead controls, and a funded close keeps its records (the decision trail,
+ * the interview) through the record arms — both halves are asserted at the bottom of this file.
  */
 import { screen } from '@testing-library/react'
 
@@ -144,5 +146,34 @@ describe('a rejected case WITH a verdict — the trail is the audit record and s
     renderCockpit({ role: 'super', stage: 'rejected' })
     await loaded()
     expect(screen.getByText(INTERVIEW)).toBeTruthy()
+  })
+})
+
+
+describe('a closed case — TD-352: closed joined the off-ramps', () => {
+  /** An officer closed a stalled case at `interviewing`: no verdict, no interview, no profile. */
+  const stalled = {
+    status: 'closed', closure_reason: 'stalled', closed_at: '2026-10-06T09:00:00.000Z',
+    closed_by: 'officer@example.test', interview_session: null,
+  }
+
+  it('a stalled close at interviewing hides the decision and interview cards', async () => {
+    renderCockpit({ role: 'super', stage: 'interviewing', build: stalled })
+    await loaded()
+    expect(screen.queryByText(DECISION)).toBeNull()
+    expect(screen.queryByText(INTERVIEW)).toBeNull()
+    for (const key of ['recordVerdict.approve', 'recordVerdict.decline', 'recordVerdict.save',
+                       'gaps.suggest', 'interview.submit']) {
+      expect(screen.queryByRole('button', { name: `admin.scholarship.${key}` })).toBeNull()
+    }
+  })
+
+  it('a FUNDED close keeps its decision record and its interview — the audit trail survives', async () => {
+    renderCockpit({ role: 'super', stage: 'closed' })
+    await loaded()
+    expect(screen.getByText(DECISION)).toBeTruthy()
+    expect(screen.getByText(INTERVIEW)).toBeTruthy()
+    // …and the closed summary, as before.
+    expect(screen.getByText('admin.closure.reason.graduated')).toBeTruthy()
   })
 })

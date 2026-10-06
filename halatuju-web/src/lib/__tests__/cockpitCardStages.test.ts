@@ -131,19 +131,19 @@ describe('showsReportingDateBox', () => {
  * agree, or the cockpit offers a control the endpoint refuses.
  */
 describe('the closed-case gates', () => {
-  const LIVE = ALL.filter((s) => !['rejected', 'withdrawn', 'expired'].includes(s))
+  // 'closed' joined 2026-10-06 (TD-352): an officer may close a stalled case from any in-play status.
+  const CLOSED = ['closed', 'rejected', 'withdrawn', 'expired']
+  const LIVE = ALL.filter((s) => !CLOSED.includes(s))
 
   describe('isCaseClosed', () => {
-    it('is true on the three terminal off-ramps', () => {
-      expect(ALL.filter((status) => isCaseClosed({ status }))).toEqual([
-        'rejected', 'withdrawn', 'expired',
-      ])
+    it('is true on the four terminal off-ramps', () => {
+      expect(ALL.filter((status) => isCaseClosed({ status }))).toEqual(CLOSED)
     })
 
     it('is false on a REOPENED case, however terminal the status reads', () => {
       // reopen_decision does not remap 'rejected': a reopened rejected case sits at 'rejected'
       // and is expected to be re-decided from there.
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(isCaseClosed({ status, decisionReopened: true })).toBe(false)
       }
     })
@@ -151,13 +151,13 @@ describe('the closed-case gates', () => {
 
   describe('showsInterviewStage', () => {
     it('is hidden on a closed case that never held an interview', () => {
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsInterviewStage({ status, hasInterviewSession: false })).toBe(false)
       }
     })
 
     it('KEEPS the box on a closed case that does hold one — that is a record, not a control', () => {
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsInterviewStage({ status, hasInterviewSession: true })).toBe(true)
       }
     })
@@ -182,7 +182,7 @@ describe('the closed-case gates', () => {
 
   describe('showsDecisionCards', () => {
     it('is hidden on a closed case with no recorded verdict', () => {
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsDecisionCards({ status, decisionRecorded: false })).toBe(false)
       }
     })
@@ -190,7 +190,7 @@ describe('the closed-case gates', () => {
     it('KEEPS the cards on a closed case WITH a verdict — the frozen decision trail', () => {
       // 21 of the 41 rejected records on 2026-08-18. Hiding these would delete the
       // "Declined by … · date" history from the screen.
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsDecisionCards({ status, decisionRecorded: true })).toBe(true)
       }
     })
@@ -221,13 +221,13 @@ describe('the closed-case gates', () => {
     it('is hidden on a closed case holding no profile', () => {
       // Empty, the card claims a draft that does not exist, promises a final version at a
       // verdict that cannot be recorded, and offers a language selector wired to that call.
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsGeneratedProfileCard({ status, hasProfile: false })).toBe(false)
       }
     })
 
     it('KEEPS a closed case that holds one — the profile is a record', () => {
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsGeneratedProfileCard({ status, hasProfile: true })).toBe(true)
       }
     })
@@ -245,13 +245,13 @@ describe('the closed-case gates', () => {
 
   describe('showsCheck2Box', () => {
     it('is hidden on a closed case with nothing in it', () => {
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsCheck2Box({ status, hasItems: false })).toBe(false)
       }
     })
 
     it('KEEPS a closed case that holds items — that is the record of what was asked', () => {
-      for (const status of ['rejected', 'withdrawn', 'expired']) {
+      for (const status of CLOSED) {
         expect(showsCheck2Box({ status, hasItems: true })).toBe(true)
       }
     })

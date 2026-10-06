@@ -72,7 +72,7 @@ class TestReviewWritesClosed(TestCase):
         return ScholarshipApplication.objects.create(
             cohort=self.cohort, profile=profile, status=status, **kw)
 
-    def test_the_three_terminal_off_ramps_are_closed(self):
+    def test_the_four_terminal_off_ramps_are_closed(self):
         for status in CASE_CLOSED_STATES:
             with self.subTest(status=status):
                 self.assertTrue(review_writes_closed(self._app(status)))
@@ -81,16 +81,17 @@ class TestReviewWritesClosed(TestCase):
         # The negative half. Named individually rather than derived from STATUS_CHOICES minus
         # the closed set, so adding a status to the model surfaces here as a decision.
         for status in ('submitted', 'shortlisted', 'profile_complete', 'interviewing',
-                       'interviewed', 'recommended', 'awarded', 'active', 'maintenance',
-                       'closed'):
+                       'interviewed', 'recommended', 'awarded', 'active', 'maintenance'):
             with self.subTest(status=status):
                 self.assertFalse(review_writes_closed(self._app(status)))
 
-    def test_closed_is_NOT_treated_as_a_terminal_off_ramp(self):
-        """`closed` is the successful end of a FUNDED lifecycle, not a dead review. Its writes
-        (disbursement, closure) belong to other endpoints with their own gates, and a sweep for
-        "statuses that mean the end" would wrongly add it here."""
-        self.assertNotIn('closed', CASE_CLOSED_STATES)
+    def test_closed_IS_a_terminal_off_ramp_since_td352(self):
+        """Until 2026-10-06 `closed` was reachable only from a funded state, and was left out.
+        TD-352 lets an officer close a STALLED case from any in-play status, so a case closed at
+        `interviewing` must not take a verdict or an interview afterwards. A funded closed case
+        loses nothing: its writes (disbursement, closure, the thank-you) go through other
+        endpoints — see test_close_stalled.TestAFundedClosedCaseKeepsItsWrites."""
+        self.assertIn('closed', CASE_CLOSED_STATES)
 
     def test_a_REOPENED_rejected_case_is_open(self):
         """reopen.reopen_decision does not remap 'rejected' — a super who reopens a rejected

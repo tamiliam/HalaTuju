@@ -34,12 +34,16 @@ INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'int
 ORG_REJECT_FROM = ('shortlisted',)
 
 # The terminal off-ramps: the review is over and no further REVIEW write may land on the case.
-# The same three statuses QUERYING_LOCKED_STATUSES already closes querying at.
+# All four are statuses QUERYING_LOCKED_STATUSES already closes querying at.
 #
-# Deliberately NOT 'closed' — that is the successful end of a FUNDED lifecycle, and its writes
-# (disbursement, closure) belong to other endpoints with their own gates. This set governs the
-# review track only: the interview capture and the four-fact verdict.
-CASE_CLOSED_STATES = ('rejected', 'withdrawn', 'expired')
+# 'closed' JOINED 2026-10-06 (TD-352). It used to be reachable only from a FUNDED state, whose
+# review had long ended; since TD-352 an officer may close a STALLED case from any in-play status
+# (`closure.close_application`), so a case closed at `interviewing` would otherwise still take a
+# verdict, an award amount and an interview onto a closed file. A funded closed case loses nothing:
+# its writes (disbursement, closure, the thank-you relay) go through other endpoints with their own
+# gates, never `_require_open_case`. This set governs the review track only: the interview
+# capture, the gap suggestion and the four-fact verdict.
+CASE_CLOSED_STATES = ('closed', 'rejected', 'withdrawn', 'expired')
 
 
 def review_writes_closed(application):

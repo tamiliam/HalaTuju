@@ -1181,12 +1181,12 @@ export function showsPostSubmissionCards(status: string | null | undefined): boo
 /**
  * The terminal off-ramps — the review is over and nothing further can be decided.
  *
- * The SAME three statuses `REVIEWER_CARD_HIDDEN_FROM` and `QUERYING_LOCKED_STATES` already
- * treat as the end of the line. Deliberately NOT `closed`: that is the successful end of a
- * FUNDED lifecycle, and every closed case carries a recorded verdict, so it keeps its
- * decision record through the `decisionRecorded` arm below rather than through this list.
+ * `closed` joined 2026-10-06 (TD-352): an officer may now close a stalled case from ANY in-play
+ * status, so a closed case may never have been decided. A FUNDED closed case keeps its records
+ * through the arms below (a recorded verdict, an interview, a profile, Check 2 items); only dead
+ * controls go. drift-test: halatuju_api/apps/scholarship/tests/test_closed_case_writes.py
  */
-export const CASE_CLOSED_STATES = new Set<string>(['rejected', 'withdrawn', 'expired'])
+export const CASE_CLOSED_STATES = new Set<string>(['closed', 'rejected', 'withdrawn', 'expired'])
 
 /**
  * Is this case off the review track for good?

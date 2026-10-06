@@ -275,3 +275,86 @@ class TestTheEndpoint(TestCase):
         _offer(awarded)
         r = self._close(awarded, 'stalled')
         self.assertEqual((r.status_code, r.json()), (400, {'error': 'sponsorship_open'}))
+
+
+#: The five review-track writes behind `_require_open_case` (test_closed_case_writes.REVIEW_WRITES).
+VERDICT_BODY = {
+    'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'pathway': 'pass',
+                        'income': 'pass', 'overall': 'accept'},
+    'reason': 'A recorded justification.',
+}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+@mock.patch(SENDER, return_value=True)
+class TestAStalledCloseShutsTheReviewTrack(TestCase):
+    """TD-352 opened 'closed' to a case that was never decided, so 'closed' joined
+    CASE_CLOSED_STATES: no verdict, award amount or interview lands on the file afterwards."""
+
+    def setUp(self):
+        self.cohort = make_cohort()
+        self.reviewer = make_admin('reviewer', owning_org=self.cohort.owning_organisation)
+        self.client = authed_client(self.reviewer)
+
+    def _closed(self, stage='interviewing'):
+        app = make_application(stage, cohort=self.cohort, reviewer=self.reviewer)
+        closure.close_application(app, closure_reason='stalled', by_email='o@x.my')
+        return app
+
+    def _post(self, app, suffix, body):
+        return self.client.post(f'{API}applications/{app.id}/{suffix}', body, format='json')
+
+    def test_every_review_write_answers_case_closed_and_writes_nothing(self, _send):
+        for suffix, body in (('record-verdict/', VERDICT_BODY), ('interview/', {'findings': {}}),
+                             ('interview/submit/', {}), ('interview/reopen/', {}),
+                             ('suggest-gaps/', {})):
+            with self.subTest(endpoint=suffix):
+                app = self._closed()
+                r = self._post(app, suffix, body)
+                self.assertEqual((r.status_code, r.json().get('code')), (400, 'case_closed'))
+                app.refresh_from_db()
+                self.assertEqual(app.status, 'closed')
+                self.assertIsNone(app.verdict_decided_at)
+                self.assertFalse(app.interview_sessions.exists())
+
+    def test_the_decline_refuses_a_closed_case(self, _send):
+        from apps.scholarship.services import admin_reject, org_admin_reject
+        for category in ('interview', 'contractual'):
+            with self.subTest(category=category):
+                app = self._closed('profile_complete')
+                with self.assertRaises(ValueError) as ctx:
+                    admin_reject(app, self.reviewer, category)
+                self.assertEqual(str(ctx.exception), 'bad_status')
+        app = self._closed('shortlisted')
+        with self.assertRaises(ValueError):
+            org_admin_reject(app, self.reviewer, 'A reason.')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'closed')
+
+
+class TestAFundedClosedCaseKeepsItsWrites(TestCase):
+    """What a funded closed case loses by joining CASE_CLOSED_STATES: only the review-track
+    writes, which had no business on it. Every other door stays as it was."""
+
+    def test_only_the_five_review_writes_go_through_the_open_case_gate(self):
+        from pathlib import Path
+        views = Path(__file__).resolve().parents[1] / 'views_admin'
+        callers = sorted(
+            f'{path.name}:{line.strip()[:60]}'
+            for path in views.glob('*.py')
+            for line in path.read_text(encoding='utf-8').splitlines()
+            if 'self._require_open_case(' in line)
+        self.assertEqual(len(callers), 5, callers)
+        self.assertEqual(sorted({c.split(':')[0] for c in callers}),
+                         ['interviews.py', 'profiles.py', 'verdict.py'])
+
+    def test_the_graduation_thank_you_still_lands_on_a_closed_funded_case(self):
+        from apps.scholarship.in_programme import submit_graduation_message
+        from apps.scholarship.services import review_writes_closed
+        cohort = make_cohort()
+        app, _sponsor_row, _sp = fund_through_the_product(
+            cohort, reviewer=make_admin('reviewer', owning_org=cohort.owning_organisation))
+        closure.close_application(app, closure_reason='graduated')
+        self.assertTrue(review_writes_closed(app))
+        msg = submit_graduation_message(app, raw_text='Thank you for believing in me.')
+        self.assertEqual(msg.application_id, app.id)
