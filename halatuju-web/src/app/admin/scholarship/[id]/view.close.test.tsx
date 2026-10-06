@@ -26,6 +26,15 @@ const card = () => screen.getByText(TITLE).parentElement as HTMLElement
 const reasons = () => within(card()).getAllByRole('option').slice(1)
   .map((o) => (o as HTMLOptionElement).value)
 
+/** The two clicks: "Close the file", then the same words inside the "Are you sure?" row. */
+async function confirmClose() {
+  fireEvent.click(within(card()).getByRole('button', { name: 'admin.closure.close' }))
+  await act(async () => {
+    fireEvent.click(within(screen.getByTestId('close-confirm'))
+      .getByRole('button', { name: 'admin.closure.close' }))
+  })
+}
+
 describe('before an award — stalled and withdrawn only', () => {
   it.each([
     ['submitted', {}],
@@ -44,9 +53,7 @@ describe('before an award — stalled and withdrawn only', () => {
     await loaded()
     api.closeApplication.mockResolvedValue({ ...app, status: 'closed', closure_reason: 'stalled' })
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
-    await act(async () => {
-      fireEvent.click(within(card()).getByRole('button', { name: 'admin.closure.close' }))
-    })
+    await confirmClose()
     expect(api.closeApplication).toHaveBeenCalledWith(app.id, 'stalled', { token: 'test-token' })
     expect(await screen.findByText('admin.closure.reason.stalled')).toBeTruthy()
   })
@@ -56,10 +63,24 @@ describe('before an award — stalled and withdrawn only', () => {
     await loaded()
     api.closeApplication.mockRejectedValue(new Error('sponsorship_open'))
     fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
-    await act(async () => {
-      fireEvent.click(within(card()).getByRole('button', { name: 'admin.closure.close' }))
-    })
+    await confirmClose()
     expect(within(card()).getByText('admin.closure.error.sponsorship_open')).toBeTruthy()
+  })
+})
+
+describe('closing is final — the button asks twice (review round 1, item 7)', () => {
+  it('the first click only asks; "Go back" asks nothing and closes nothing', async () => {
+    const { api } = renderCockpit({ role: 'super', stage: 'interviewing' })
+    await loaded()
+    expect(within(card()).getByText('admin.closure.notePreAward')).toBeTruthy()
+    fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
+    fireEvent.click(within(card()).getByRole('button', { name: 'admin.closure.close' }))
+    const ask = screen.getByTestId('close-confirm')
+    expect(within(ask).getByText('admin.scholarship.orgReject.confirmTitle')).toBeTruthy()
+    expect(api.closeApplication).not.toHaveBeenCalled()
+    fireEvent.click(within(ask).getByRole('button', { name: 'admin.scholarship.orgReject.back' }))
+    expect(screen.queryByTestId('close-confirm')).toBeNull()
+    expect(api.closeApplication).not.toHaveBeenCalled()
   })
 })
 

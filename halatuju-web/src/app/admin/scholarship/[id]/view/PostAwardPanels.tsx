@@ -7,7 +7,7 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
-import type { Dispatch, SetStateAction } from 'react'
+import { useState, type Dispatch, type SetStateAction } from 'react'
 import {
   isFunded,
   disbursementTone,
@@ -58,6 +58,9 @@ export function PostAwardPanels({
   closeMsg: string
   doClose: () => void
 }) {
+  // TD-352 review round 1: closing is final, so the button asks twice (the org-reject's pattern
+  // and its existing "Are you sure?" / "Go back" strings — no new catalogue weight).
+  const [confirmClose, setConfirmClose] = useState(false)
   return (<>
 
       {/* ── Conditional Bursary Award Agreement (flag-gated; dark by default) ──
@@ -310,12 +313,29 @@ export function PostAwardPanels({
                     ))}
                   </select>
                 </div>
-                <button type="button" onClick={doClose}
-                  disabled={busy === 'close' || !closeReason}
-                  className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50">
-                  {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
-                </button>
+                {!confirmClose && (
+                  <button type="button" onClick={() => setConfirmClose(true)}
+                    disabled={busy === 'close' || !closeReason}
+                    className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50">
+                    {t('admin.closure.close')}
+                  </button>
+                )}
               </div>
+              {confirmClose && (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-critical-300 bg-critical-50 p-3"
+                  data-testid="close-confirm">
+                  <p className="text-sm font-medium text-critical-800">{t('admin.scholarship.orgReject.confirmTitle')}</p>
+                  <button type="button" onClick={() => setConfirmClose(false)} disabled={busy === 'close'}
+                    className="rounded-lg border px-3 py-1.5 text-sm text-ground-600 hover:bg-ground-50">
+                    {t('admin.scholarship.orgReject.back')}
+                  </button>
+                  <button type="button" onClick={() => { setConfirmClose(false); doClose() }}
+                    disabled={busy === 'close' || !closeReason}
+                    className="rounded-lg bg-critical-fill px-3 py-1.5 text-sm font-medium text-critical-fill-ink hover:bg-critical-700 disabled:opacity-50">
+                    {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
+                  </button>
+                </div>
+              )}
               {closeMsg && <p className="text-xs text-caution-700">{closeMsg}</p>}
             </>
           ) : null}

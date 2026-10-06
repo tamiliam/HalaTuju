@@ -3866,7 +3866,7 @@
     "closure": {
       "title": "Close the file",
       "note": "Closing is final. Choose the reason that best fits how the support ended.",
-      "notePreAward": "The student may apply again in a later round. She is emailed.",
+      "notePreAward": "Closing is final. The student may apply again in a later round. She is emailed.",
       "reasonLabel": "Closure reason",
       "reasonUnset": "Choose a reason…",
       "close": "Close the file",
