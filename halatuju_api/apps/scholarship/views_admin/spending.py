@@ -124,10 +124,14 @@ class AdminSpendingView(_SpendingBase):
         admin, org, programme, err = self._spending_admin(request)
         if err:
             return err
-        from .. import spend_report
+        from .. import merchant_flags, spend_report
         from ..models import SPEND_CATEGORY_CHOICES
 
         totals = spend_report.totals(org, programme)
+        # ⚠ THIS ORGANISATION'S open flags only, one query for the page (request #28 follow-up).
+        # A super with no gift has no single organisation, so no flag is shown rather than a guess.
+        flag_org, _code = merchant_flags.flag_organisation(org, programme)
+        flagged = merchant_flags.open_flag_merchants(flag_org)
         return Response({
             'totals': {
                 'spent': str(totals['spent']),
@@ -148,6 +152,9 @@ class AdminSpendingView(_SpendingBase):
                 # when the separate "what the model decided recently" list was deleted: that list
                 # held exactly one fact this table did not, and a fact is a column.
                 'decided_at': r['decided_at'].isoformat() if r['decided_at'] else None,
+                # Flagged for review by THE CALLER'S organisation — never another's. A flag
+                # changes no category and no total; it is a question, not an answer.
+                'flagged': r['merchant'] in flagged,
             } for r in spend_report.merchant_rows(org, programme)],
             'students': [{
                 'application_id': r['application_id'],

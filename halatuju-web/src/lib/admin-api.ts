@@ -196,9 +196,11 @@ export type {
 } from './admin-api/overview'
 
 // The officer's sponsor-spending screen.
-export { getSpendingOverview, setSpendingCategory } from './admin-api/spending'
+export {
+  getSpendingOverview, setSpendingCategory, getMerchantFlag, changeMerchantFlag,
+} from './admin-api/spending'
 export type {
-  SpendingMerchantRow, SpendingStudentRow, SpendingOverview,
+  SpendingMerchantRow, SpendingStudentRow, SpendingOverview, MerchantFlagLog, MerchantFlagNote,
 } from './admin-api/spending'
 
 // Org-owned versioned bursary contract templates.

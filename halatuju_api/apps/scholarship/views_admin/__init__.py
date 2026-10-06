@@ -135,6 +135,7 @@ from .sources import (
 from .spending import (
     _SPENDING_ROLES, _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,
 )
+from .spending_flags import AdminSpendingFlagView
 from .sponsors import (
     _SponsorScope, _chain_organisations, _sponsor_detail_dict, _sponsor_dict,
     AdminReleaseNricLockView, AdminSponsorListView, AdminSponsorPendingCountView,

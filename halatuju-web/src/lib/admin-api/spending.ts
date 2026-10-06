@@ -2,7 +2,7 @@
  * Sponsor spending S4: the officer's screen — by merchant, by student, and the category a
  * transaction is filed under.
  */
-import { API_BASE, adminFetch, giftQuery } from './client'
+import { API_BASE, adminFetch, adminMutate, giftQuery } from './client'
 import type { ApiOptions } from './client'
 
 // ── Sponsor spending S4 — the officer's screen ───────────────────────
@@ -28,6 +28,9 @@ export interface SpendingMerchantRow {
    *  "what the model decided recently" list was deleted: it held exactly one fact this row did
    *  not, so the fact became a column on the row you can actually correct. */
   decided_at: string | null
+  /** Flagged for review by THE CALLER'S organisation (request #28 follow-up). Never another
+   *  organisation's, and it changes no category or total. */
+  flagged: boolean
 }
 
 export interface SpendingStudentRow {
@@ -101,4 +104,41 @@ export async function setSpendingCategory(
   return res.json() as Promise<{
     merchant: string; category: string; decided_by: string; rows_changed: number
   }>
+}
+
+// ── Request #28 follow-up — flag a shop for review, with a notes log ─────────
+//
+// ⚠ A FLAG IS ONE ORGANISATION'S. The server answers a shop with no flag of OURS exactly as one
+// nobody flagged; nothing here can ask about anybody else's.
+export interface MerchantFlagNote {
+  kind: 'open' | 'note' | 'close'
+  body: string
+  author: string
+  at: string
+}
+
+/** One shop's flag and its notes log, OLDEST first. `notes` is empty for a shop never flagged. */
+export interface MerchantFlagLog {
+  merchant: string
+  flagged: boolean
+  notes: MerchantFlagNote[]
+}
+
+const flagPath = (programme?: string) =>
+  `/api/v1/admin/scholarship/spending/flag/${giftQuery(programme)}`
+
+export async function getMerchantFlag(
+  merchant: string, programme: string | undefined, options?: ApiOptions,
+) {
+  const sep = programme ? '&' : '?'
+  return adminFetch<MerchantFlagLog>(
+    `${flagPath(programme)}${sep}merchant=${encodeURIComponent(merchant)}`, options)
+}
+
+/** Open, add a note to, or clear a flag. A note is required for all three. */
+export async function changeMerchantFlag(
+  merchant: string, action: MerchantFlagNote['kind'], note: string,
+  programme: string | undefined, options?: ApiOptions,
+) {
+  return adminMutate<MerchantFlagLog>(flagPath(programme), 'POST', { merchant, action, note }, options)
 }

@@ -129,6 +129,7 @@ from .views_admin import (
     AdminProgrammeOverviewView,
     AdminSpendingView,
     AdminSpendingCategoryView,
+    AdminSpendingFlagView,
     AdminPaymentRunDetailView,
     AdminPaymentRunItemView,
     AdminPaymentRunSignView,
@@ -310,6 +311,8 @@ urlpatterns = [
     # payment-runs because released money and spent money are two halves of one story.
     path('admin/scholarship/spending/', AdminSpendingView.as_view()),
     path('admin/scholarship/spending/category/', AdminSpendingCategoryView.as_view()),
+    # Request #28 follow-up — one organisation's flag on a shop, and its notes log.
+    path('admin/scholarship/spending/flag/', AdminSpendingFlagView.as_view()),
     # Programme Overview (2026-09-15) — the page a person LANDS on inside a gift. Open to every
     # console role and shaped by role server-side, so it sits beside the gift's other Programme
     # routes rather than under a role-specific prefix.

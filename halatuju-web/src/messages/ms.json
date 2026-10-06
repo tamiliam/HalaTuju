@@ -5741,6 +5741,13 @@
       "searchStudents": "Cari pelajar",
       "noMatch": "Tiada rekod sepadan dengan penapis semasa.",
       "checked": "Disemak – masih tidak diketahui",
+      "flag": {
+        "col": "Tanda",
+        "only": "Bertanda sahaja",
+        "clear": "Buang tanda",
+        "opened": "Ditanda",
+        "closed": "Tanda dibuang"
+      },
       "filter": {
         "allCategories": "Semua kategori",
         "anyDecidedBy": "Sebarang penentuan",

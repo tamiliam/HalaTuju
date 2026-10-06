@@ -146,6 +146,8 @@ export interface MerchantFilters {
   category?: string
   /** A `decided_by` value, or '' for any. `'none'` means the sorter has not reached it. */
   decidedBy?: string
+  /** Only the shops THIS organisation has flagged for review (request #28 follow-up). */
+  flaggedOnly?: boolean
 }
 
 /**
@@ -162,6 +164,7 @@ export function filterMerchants(
     if (!matches(r.merchant, f.query || '')) return false
     if (f.category && (r.category || 'unsorted') !== f.category) return false
     if (f.decidedBy && (r.decided_by || 'none') !== f.decidedBy) return false
+    if (f.flaggedOnly && !r.flagged) return false
     return true
   })
 }

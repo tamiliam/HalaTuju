@@ -22,6 +22,11 @@
  * it to `unsorted`, which the server stores with `decided_by='owner'`. A shop already checked
  * shows the sentinel and is not offered plain "Not yet sorted" — the two would mean the same.
  *
+ * ⚠ **THE FLAG (request #28 follow-up) OPENS A MODAL, NEVER A POPOVER IN THE TABLE.** For the same
+ * clipping reason, the flag dialog is drawn ONCE, outside `TableFrame`, `fixed` over the page
+ * (`LazyMerchantFlagDialog`). A flag is THIS organisation's question about a shop — it changes no
+ * category and no total, and the server never sends another organisation's.
+ *
  * ⚠ **THE ROW IS A SHOP, NOT A PAYMENT.** You fix a shop once and every payment at it follows; a
  * per-payment screen would ask the same question forty times for one stall.
  *
@@ -29,6 +34,7 @@
  * ordering the unsorted shops by "last seen" has not asked anything about the full list.
  */
 import TableFrame from '@/components/admin/TableFrame'
+import LazyMerchantFlagDialog from '@/components/admin/LazyMerchantFlagDialog'
 import SortHeader from '@/components/admin/SortHeader'
 import { Pagination } from '@/components/Pagination'
 import { formatDate } from '@/lib/formatDate'
@@ -69,8 +75,17 @@ export function decidedPill(decidedBy: string) {
     : 'bg-ground-100 text-ground-600'
 }
 
+/** A small flag: outlined, or FILLED when this organisation has the shop flagged. */
+const FlagGlyph = ({ on }: { on: boolean }) => (
+  <svg aria-hidden="true" focusable="false" width={16} height={16} viewBox="0 0 24 24"
+    fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75}
+    strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 21V4M5 4h12l-2.5 4L17 12H5" />
+  </svg>
+)
+
 export default function SpendingShops({
-  rows, categories, onCorrect, saving, loading, emptyKey, labelKey, testId,
+  rows, categories, onCorrect, saving, loading, emptyKey, labelKey, testId, flagGift, onFlagChanged,
 }: {
   rows: SpendingMerchantRow[]
   categories: { code: string; label: string }[]
@@ -83,19 +98,26 @@ export default function SpendingShops({
   /** The scrolling region's accessible name. ⚠ Must resolve — `pageWidth.test.ts` checks it. */
   labelKey: string
   testId: string
+  /** The gift the rows on screen belong to — a flag change names it, as a correction does. */
+  flagGift: string | undefined
+  /** A flag was opened, noted or cleared: re-read the list. */
+  onFlagChanged: () => void
 }) {
   const { t } = useT()
   const { sort, setSort } = useSort<MerchantSortKey>(MERCHANT_DEFAULT_SORT)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [decidedBy, setDecidedBy] = useState('')
+  const [flaggedOnly, setFlaggedOnly] = useState(false)
+  /** The shop whose flag dialog is open, or ''. */
+  const [flagFor, setFlagFor] = useState('')
   const labels: Record<string, string> = {}
   categories.forEach((c) => { labels[c.code] = c.label })
 
   // ⚠ FILTER, then SORT, then PAGE. Any other order is a defect with a plausible-looking screen:
   // sorting a page shuffles rows between pages, and paging before filtering shows a first page
   // with holes in it. `page.test.tsx` pins the sort/page half of this.
-  const shown = filterMerchants(rows, { query, category, decidedBy })
+  const shown = filterMerchants(rows, { query, category, decidedBy, flaggedOnly })
   const paged = usePagedRows(sortMerchants(shown, sort.key, sort.dir, labels))
   const onSort = (col: MerchantSortKey) => setSort(nextSort(sort, col, merchantFirstDir(col)))
   const filtered = shown.length !== rows.length
@@ -122,6 +144,19 @@ export default function SpendingShops({
     )
   }
 
+  /** The flag button. Drawn twice (card + row). Its name says the shop, and whether it is flagged. */
+  const flagButton = (m: SpendingMerchantRow) => (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-label={`${t('admin.spending.flag.col')} — ${m.merchant}${m.flagged ? ` (${t('admin.spending.flag.opened')})` : ''}`}
+      onClick={() => setFlagFor(m.merchant)}
+      className={`rounded p-1 ${m.flagged ? 'text-caution-700' : 'text-ground-400 hover:text-ground-700'}`}
+    >
+      <FlagGlyph on={m.flagged} />
+    </button>
+  )
+
   const heldBack = (m: SpendingMerchantRow, className: string) => (
     m.held_back > 0
       ? <p className={className}>{t('admin.spending.heldBack', { count: String(m.held_back) })}</p>
@@ -134,7 +169,7 @@ export default function SpendingShops({
   const empty = !loading && paged.rows.length === 0
   const emptyMessage = empty && filtered ? t('admin.spending.noMatch') : t(emptyKey)
 
-  const clear = () => { setQuery(''); setCategory(''); setDecidedBy('') }
+  const clear = () => { setQuery(''); setCategory(''); setDecidedBy(''); setFlaggedOnly(false) }
 
   const controls = (
     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -166,6 +201,11 @@ export default function SpendingShops({
           <option key={d} value={d}>{t(`admin.spending.by.${d}`)}</option>
         ))}
       </select>
+      <label className="flex items-center gap-1.5 text-sm text-ground-700">
+        <input type="checkbox" checked={flaggedOnly}
+          onChange={(e) => setFlaggedOnly(e.target.checked)} />
+        {t('admin.spending.flag.only')}
+      </label>
       {filtered && (
         <button type="button" onClick={clear}
           className="text-xs font-medium text-primary-600 hover:underline">
@@ -195,8 +235,11 @@ export default function SpendingShops({
           <div key={m.merchant} className="rounded-xl border border-ground-200 bg-ground-0 p-3">
             <div className="flex items-start justify-between gap-3">
               <span className="text-sm font-semibold text-ground-900">{m.merchant}</span>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${decidedPill(m.decided_by)}`}>
-                {t(`admin.spending.by.${m.decided_by || 'none'}`)}
+              <span className="flex shrink-0 items-center gap-1">
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${decidedPill(m.decided_by)}`}>
+                  {t(`admin.spending.by.${m.decided_by || 'none'}`)}
+                </span>
+                {flagButton(m)}
               </span>
             </div>
             <div className="mt-2">
@@ -228,6 +271,7 @@ export default function SpendingShops({
               <SortHeader col="average" label={t(MERCHANT_SORT_LABEL.average)} sort={sort} onSort={onSort} align="right" />
               <SortHeader col="lastSeen" label={t(MERCHANT_SORT_LABEL.lastSeen)} sort={sort} onSort={onSort} />
               <SortHeader col="decidedAt" label={t(MERCHANT_SORT_LABEL.decidedAt)} sort={sort} onSort={onSort} />
+              <th className="w-12 px-2 py-3 font-semibold">{t('admin.spending.flag.col')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-ground-100">
@@ -257,10 +301,11 @@ export default function SpendingShops({
                 <td className="px-4 py-3 text-ground-500">
                   {m.decided_at ? formatDate(m.decided_at.slice(0, 10)) : '—'}
                 </td>
+                <td className="px-2 py-3">{flagButton(m)}</td>
               </tr>
             ))}
             {empty && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-ground-400">
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-ground-400">
                 {emptyMessage}
               </td></tr>
             )}
@@ -279,6 +324,14 @@ export default function SpendingShops({
             pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={paged.setPageSize}
           />
         </div>
+      )}
+
+      {/* ⚠ ONCE, OUTSIDE THE FRAME — `TableFrame` clips; a modal drawn here cannot be. */}
+      {flagFor && (
+        <LazyMerchantFlagDialog
+          merchant={flagFor} programme={flagGift}
+          onClose={() => setFlagFor('')} onChanged={onFlagChanged}
+        />
       )}
     </>
   )

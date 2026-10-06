@@ -15,7 +15,7 @@ import type { SpendingMerchantRow, SpendingStudentRow } from '../admin-api'
 const shop = (over: Partial<SpendingMerchantRow>): SpendingMerchantRow => ({
   merchant: 'A SHOP', category: 'food', decided_by: 'rule', visits: 1,
   total: '10.00', last_seen: '2026-08-01', held_back: 0, decided_at: '2026-08-02T00:00:00Z',
-  ...over,
+  flagged: false, ...over,
 })
 
 const student = (over: Partial<SpendingStudentRow>): SpendingStudentRow => ({
@@ -203,6 +203,13 @@ describe('searching and filtering the shops', () => {
     // Shop names arrive as Vircle wrote them, so the distinctive word is often in the middle.
     expect(filterMerchants(rows, { query: 'balik' }).map((r) => r.merchant))
       .toEqual(['APAM BALIK SELAYANG'])
+  })
+
+  test('"flagged only" keeps the flagged shops and nothing else (request #28 follow-up)', () => {
+    const mixed = [shop({ merchant: 'FLAGGED', flagged: true }), shop({ merchant: 'PLAIN' })]
+    expect(filterMerchants(mixed, { flaggedOnly: true }).map((r) => r.merchant))
+      .toEqual(['FLAGGED'])
+    expect(filterMerchants(mixed, { flaggedOnly: false })).toHaveLength(2)
   })
 
   test('the category filter treats a BLANK category as unsorted, exactly like the screen does', () => {

@@ -5741,6 +5741,13 @@
       "searchStudents": "Search students",
       "noMatch": "No records match the current filters.",
       "checked": "Checked – still unknown",
+      "flag": {
+        "col": "Flag",
+        "only": "Flagged only",
+        "clear": "Clear flag",
+        "opened": "Flagged",
+        "closed": "Cleared"
+      },
       "filter": {
         "allCategories": "All categories",
         "anyDecidedBy": "Any determination",

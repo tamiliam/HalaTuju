@@ -282,6 +282,13 @@ class TestFenceCoverageCompleteness(TestCase):
         '_SpendingBase': 'spending-s4-org-fenced',
         'AdminSpendingView': 'spending-s4-org-fenced',
         'AdminSpendingCategoryView': 'spending-s4-org-fenced',
+        # Request #28 follow-up (2026-10-06) — one organisation's flag on a shop and its notes log.
+        # Same door (`_spending_admin`), then `merchant_flags.flag_organisation` turns the scope into
+        # exactly ONE organisation (a super's is the named gift's; no gift is `programme_required`).
+        # Every flag query filters `organisation_id`; a write needs a shop this organisation's
+        # students used (`_txns`). Unlike a CATEGORY, a flag is never shared between organisations,
+        # and another's reads exactly like none (`test_merchant_flags.py`).
+        'AdminSpendingFlagView': 'spending-flag-org-fenced',
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
         # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only
@@ -613,6 +620,9 @@ class TestOrgFenceStaticGuard(TestCase):
         # Tenant invoices (2026-09-14). An invoice and its receipts are a tenant's bill and its
         # payments; an unfenced manager query is one tenant reading another's money.
         'Invoice.objects', 'InvoiceReceipt.objects',
+        # Request #28 follow-up (2026-10-06). A flag and its notes are one organisation's private
+        # working notes about a shop; an unfenced manager query is one tenant reading another's.
+        'MerchantFlag.objects', 'MerchantFlagNote.objects',
     )
 
     #: ⚠ THE SCAN'S SCOPE IS ITS STRENGTH AND ITS BLIND SPOT AT ONCE. It began as
@@ -629,6 +639,8 @@ class TestOrgFenceStaticGuard(TestCase):
                # ScholarshipApplication and BursarySpendTxn for an admin surface, so it joined
                # this tuple on the day it was written, per the note above.
                'programme_overview.py',
+               # Request #28 follow-up (2026-10-06) — the flag service, on the day it was written.
+               'merchant_flags.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')
@@ -732,7 +744,7 @@ class TestOrgFenceStaticGuard(TestCase):
         candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
                       'spend_report.py', 'spend_category.py', 'spending_import.py',
                       'spend_summary.py', 'spend_sponsor.py', 'invoicing.py', 'invoice_pdf.py',
-                      'programme_overview.py')
+                      'programme_overview.py', 'merchant_flags.py')
         unscanned = []
         for filename in candidates:
             path = os.path.join(_APP_DIR, filename)

@@ -58,22 +58,22 @@ const OVERVIEW: api.SpendingOverview = {
       // ringgit are not. It must appear in BOTH tabs.
       merchant: 'AL HUDHA ENTERPRISE', category: 'food', decided_by: 'inferred',
       visits: 9, total: '259.20', last_seen: '2026-08-30', held_back: 1,
-      decided_at: '2026-09-01T00:00:00Z',
+      decided_at: '2026-09-01T00:00:00Z', flagged: false,
     },
     {
       merchant: '99 SPEEDMART', category: 'groceries', decided_by: 'rule',
       visits: 15, total: '272.25', last_seen: '2026-08-23', held_back: 0,
-      decided_at: '2026-08-20T00:00:00Z',
+      decided_at: '2026-08-20T00:00:00Z', flagged: false,
     },
     {
       merchant: 'GLASSEYE EYEWEAR TRADING', category: 'health', decided_by: 'owner',
       visits: 1, total: '130.00', last_seen: '2026-08-09', held_back: 0,
-      decided_at: '2026-08-10T00:00:00Z',
+      decided_at: '2026-08-10T00:00:00Z', flagged: false,
     },
     {
       merchant: 'SHOPEE MARKETPLACE', category: 'unsorted', decided_by: 'ai',
       visits: 16, total: '401.03', last_seen: '2026-08-29', held_back: 0,
-      decided_at: '2026-09-05T00:00:00Z',
+      decided_at: '2026-09-05T00:00:00Z', flagged: false,
     },
   ],
   students: [
@@ -109,6 +109,10 @@ async function openTab(name: 'shops' | 'students' | 'unsorted') {
   fireEvent.click(await screen.findByRole('tab',
                                           { name: new RegExp(`tab\.${name}`) }))
 }
+
+/** A shop's two category boxes (phone card + desktop row), found by ROLE — since request #28's
+ *  flag, the shop's name also labels a flag button, so a bare label search would find four. */
+const boxes = (shop: RegExp) => screen.findAllByRole('combobox', { name: shop })
 
 /** The DESKTOP table's data rows, in the order they are drawn. Phone cards are `div`s, so they
  *  are not rows and cannot be confused with these. */
@@ -302,8 +306,10 @@ describe('sorting a column', () => {
     // ⚠ `aria-sort` is the only thing announcing the order to somebody who cannot see the arrow.
     render(<SpendingPage />)
     await screen.findAllByText('99 SPEEDMART')
+    // A header with NO `aria-sort` (the Flag column, request #28 follow-up) is not sortable at all,
+    // so it is not "sorted" either — only an explicit direction counts.
     const sorted = screen.getAllByRole('columnheader')
-      .filter((h) => h.getAttribute('aria-sort') !== 'none')
+      .filter((h) => ['ascending', 'descending'].includes(h.getAttribute('aria-sort') || ''))
     expect(sorted).toHaveLength(1)
     expect(sorted[0].textContent).toContain('admin.spending.col.total')
     expect(sorted[0].getAttribute('aria-sort')).toBe('descending')
@@ -322,7 +328,7 @@ describe('paging a long list', () => {
   const shops = (total: (i: number) => number) => Array.from({ length: 30 }, (_, i) => ({
     merchant: `SHOP ${String(i).padStart(2, '0')}`, category: 'food', decided_by: 'rule',
     visits: 1, total: `${total(i)}.00`, last_seen: '2026-08-01', held_back: 0,
-    decided_at: null,
+    decided_at: null, flagged: false,
   }))
 
   /** Money ranks the same way as the name, so the default view reads SHOP 00 … SHOP 29. */
@@ -409,7 +415,7 @@ describe('paging a long list', () => {
     mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: many.slice(0, 26) })
     // ⚠ BY LABEL, not by position. The filters are comboboxes too since S7, and the first one
     // on the page is now the category FILTER — changing that would silently test nothing.
-    fireEvent.change(screen.getAllByLabelText(/SHOP 2[0-9]/)[0], { target: { value: 'study' } })
+    fireEvent.change(screen.getAllByRole('combobox', { name: /SHOP 2[0-9]/ })[0], { target: { value: 'study' } })
     await waitFor(() => expect(bodyRows()).toHaveLength(25))
   })
 })
@@ -602,7 +608,7 @@ describe('"checked, still unknown" (request #28)', () => {
       categories: [...OVERVIEW.categories, { code: 'micro_stall', label: 'Micro stall' }],
     })
     render(<SpendingPage />)
-    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    const controls = await boxes(/AL HUDHA ENTERPRISE/)
     expect(within(controls[0]).getByRole('option', { name: 'Micro stall' })).not.toBeNull()
     fireEvent.change(controls[0], { target: { value: 'unsorted' } })
     await waitFor(() => expect(mockApi.setSpendingCategory)
@@ -676,7 +682,7 @@ describe('the Unsorted tab', () => {
   it('⚠ CORRECTING FROM THIS TAB WORKS — it is the same list, not a read-only copy', async () => {
     render(<SpendingPage />)
     await openTab('unsorted')
-    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    const controls = await boxes(/AL HUDHA ENTERPRISE/)
     expect(controls).toHaveLength(2)
     fireEvent.change(controls[0], { target: { value: 'study' } })
     await waitFor(() => expect(mockApi.setSpendingCategory)
@@ -710,14 +716,14 @@ describe('the correction', () => {
     // ⚠ THE HARM: TableFrame clips. A custom absolute panel inside a cell is sliced off at the
     // table's edge — the Intake years defect, 2026-09-08. Assert the ELEMENT.
     render(<SpendingPage />)
-    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    const controls = await boxes(/AL HUDHA ENTERPRISE/)
     expect(controls).toHaveLength(2)          // the phone card AND the desktop row
     for (const control of controls) expect(control.tagName).toBe('SELECT')
   })
 
   it('offers exactly the categories the server sent, never a hard-coded list', async () => {
     render(<SpendingPage />)
-    const controls = await screen.findAllByLabelText(/99 SPEEDMART/)
+    const controls = await boxes(/99 SPEEDMART/)
     for (const control of controls) {
       expect(Array.from(control.querySelectorAll('option')).map((o) => o.textContent))
         .toEqual(OVERVIEW.categories.map((c) => c.label))
@@ -732,7 +738,7 @@ describe('the correction', () => {
         merchant: 'AL HUDHA ENTERPRISE', category: 'study', decided_by: 'owner', rows_changed: 9,
       })
       const view = render(<SpendingPage />)
-      const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+      const controls = await boxes(/AL HUDHA ENTERPRISE/)
       fireEvent.change(controls[index], { target: { value: 'study' } })
       await waitFor(() => expect(mockApi.setSpendingCategory)
         .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'study', undefined, { token: 'tok' }))
@@ -743,7 +749,7 @@ describe('the correction', () => {
   it('re-reads everything afterwards, so the figures cannot disagree with the table', async () => {
     // ⚠ One change moves the shop, every payment at it, and all four headline figures.
     render(<SpendingPage />)
-    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    const controls = await boxes(/AL HUDHA ENTERPRISE/)
     expect(mockApi.getSpendingOverview).toHaveBeenCalledTimes(1)
     fireEvent.change(controls[0], { target: { value: 'study' } })
     await waitFor(() => expect(mockApi.getSpendingOverview).toHaveBeenCalledTimes(2))
@@ -752,7 +758,7 @@ describe('the correction', () => {
   it('says so when the change did not save', async () => {
     mockApi.setSpendingCategory.mockRejectedValue(new Error('unknown_merchant'))
     render(<SpendingPage />)
-    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    const controls = await boxes(/AL HUDHA ENTERPRISE/)
     fireEvent.change(controls[0], { target: { value: 'study' } })
     expect((await screen.findByRole('alert')).textContent).toContain('admin.spending.error.unknown_merchant')
   })
@@ -760,7 +766,7 @@ describe('the correction', () => {
   it('falls back to a plain failure message for a code it does not know', async () => {
     mockApi.setSpendingCategory.mockRejectedValue(new Error('Admin API error: 500'))
     render(<SpendingPage />)
-    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    const controls = await boxes(/AL HUDHA ENTERPRISE/)
     fireEvent.change(controls[0], { target: { value: 'study' } })
     expect((await screen.findByRole('alert')).textContent).toContain('admin.spending.saveFailed')
   })

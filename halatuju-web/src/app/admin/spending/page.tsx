@@ -254,7 +254,7 @@ export default function SpendingPage() {
             rows={merchants} categories={categories} onCorrect={correct}
             saving={saving} loading={loading}
             emptyKey="admin.spending.empty" labelKey="admin.spending.title"
-            testId="merchant"
+            testId="merchant" flagGift={dataGift} onFlagChanged={() => loadNow.current()}
           />
           <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
         </>
@@ -441,7 +441,7 @@ export default function SpendingPage() {
             saving={saving} loading={loading}
             emptyKey="admin.spending.unplaced.empty"
             labelKey="admin.spending.unplaced.title"
-            testId="unplaced"
+            testId="unplaced" flagGift={dataGift} onFlagChanged={() => loadNow.current()}
           />
           <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
 

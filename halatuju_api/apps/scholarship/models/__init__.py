@@ -81,4 +81,7 @@ from .spending import (
 # Request #26 (2026-10-05) — the 64th model, NEW rather than moved: the change record for the
 # parent/guardian contact. Points at ScholarshipApplication, so it imports after .applications.
 from .guardian import GuardianContactChange
+# Request #28 follow-up (2026-10-06) — models 65 and 66, NEW: one organisation's flag on a shop and
+# its notes log. They point only at `courses.PartnerOrganisation` and at each other.
+from .merchant_flags import NOTE_MAX, MerchantFlag, MerchantFlagNote
 
