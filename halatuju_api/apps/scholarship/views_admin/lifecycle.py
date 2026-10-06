@@ -149,13 +149,14 @@ class AdminCloseApplicationView(_AdminBase):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        if (app.status in closure_service.PRE_AWARD_STATUSES
-                and not (admin.is_super or admin.role == 'org_admin')):
-            return self._deny_role()
         try:
+            # The role gate is judged by the service on the LOCKED status (review round 2).
             closure_service.close_application(
-                app, closure_reason=request.data.get('closure_reason'), by_email=admin.email)
+                app, closure_reason=request.data.get('closure_reason'), by_email=admin.email,
+                pre_award_allowed=bool(admin.is_super or admin.role == 'org_admin'))
         except closure_service.ClosureError as e:
+            if e.code == 'forbidden':
+                return self._deny_role()
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
 

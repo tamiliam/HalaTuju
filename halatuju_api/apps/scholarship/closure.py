@@ -73,7 +73,8 @@ DECLINE_PENDING_MESSAGE = ('A decline is pending on this application. Cancel the
 
 class ClosureError(Exception):
     """Raised by close_application with a machine code for the view: 'not_closeable',
-    'bad_reason', 'reason_not_allowed', 'decline_pending' or 'sponsorship_open'."""
+    'bad_reason', 'reason_not_allowed', 'decline_pending', 'sponsorship_open' or 'forbidden'
+    (the view answers that one 403, never as a code)."""
     def __init__(self, code, message=''):
         self.code = code
         super().__init__(message or code)
@@ -115,24 +116,47 @@ def _send_closed_email(application, closure_reason):
     return sent
 
 
-def _release_interview(row):
-    """A pre-award close must not leave an interview live: a BOOKED one is voided (the Meet event
-    cancelled, the booking cleared, the reviewer told) and any PROPOSED times are withdrawn, so
-    the student can neither attend nor book one. The existing teardown
-    (`scheduling.release_for_unassign`), WITHOUT its student notice — the close emails her itself."""
+def _withdraw_proposed_times(row, now):
+    """Inside the close's transaction (a plain write, so a rollback undoes it): every PROPOSED
+    interview time is withdrawn, so the student cannot book one after the close."""
+    row.interview_slots.filter(is_active=True).update(is_active=False, updated_at=now)
+
+
+def _booking_ahead(row, now):
+    """A booked interview that has NOT YET HAPPENED. ⚠ A booking stays 'booked' after the
+    interview takes place (there is no 'done' status), so a past start is the record of an
+    interview that happened and is never voided (review round 2, the blocker)."""
+    return (row.interview_status == 'booked' and row.interview_start is not None
+            and row.interview_start > now)
+
+
+def _void_booking(pk):
+    """AFTER COMMIT (``transaction.on_commit``): void a future booking — the Meet event cancelled,
+    the booking cleared, the reviewer told — through the existing teardown
+    (`scheduling.release_for_unassign`), WITHOUT its student notice (the close emails her itself).
+    Outside the close's transaction and its row lock, so a rollback can never leave a deleted
+    calendar event or a sent email. Re-reads the row and acts only if it is still closed with the
+    booking still ahead."""
     from . import scheduling
-    if row.interview_status == 'booked' or row.interview_slots.filter(is_active=True).exists():
-        scheduling.release_for_unassign(
-            row, student_notice=False, reason='Application closed by an officer',
-            reviewer_reason='The application was closed by an officer.')
+    app = ScholarshipApplication.objects.filter(pk=pk).first()
+    if app is None or app.status != 'closed' or not _booking_ahead(app, timezone.now()):
+        return
+    scheduling.release_for_unassign(
+        app, student_notice=False, reason='Application closed by an officer',
+        reviewer_reason='The application was closed by an officer.')
 
 
-def close_application(application, *, closure_reason, by_email=''):
+def close_application(application, *, closure_reason, by_email='', pre_award_allowed=True):
     """Manually close an application. Stamps closed_at / closed_by, flips status to 'closed' and
     returns the application. Checked in this order, each a ``ClosureError`` code:
 
       1. ``not_closeable`` — the status is not in CLOSEABLE_FROM (every in-play status). A finished
          application (rejected / withdrawn / closed / expired) cannot be closed again.
+         ``forbidden`` — the LOCKED status is pre-award and ``pre_award_allowed`` is False. The
+         view passes ``admin is super or org_admin`` (lead decision, review round 1) and answers
+         403; judging it here, on the locked row, means a status that moved under the view cannot
+         slip a pre-award close past the role gate. It defaults to True for in-process callers
+         (management code, tests), which carry no role.
       2. ``bad_reason`` — blank, or not one of ``CLOSURE_REASONS``.
       3. ``reason_not_allowed`` — the reason does not fit the stage. The table:
 
@@ -160,8 +184,10 @@ def close_application(application, *, closure_reason, by_email=''):
 
     The status is re-read under a row lock (``select_for_update``; a no-op on SQLite) so the
     checks judge the row as it is now, and the in-memory ``application`` is refreshed from the
-    database afterwards. A PRE-award close also releases any interview inside the same
-    transaction (``_release_interview``: a booking voided, proposed times withdrawn).
+    database afterwards. A PRE-award close also withdraws any proposed interview times inside the
+    transaction, and — only for a booking still AHEAD (a past one is the record of an interview
+    that happened) — voids it AFTER COMMIT (``_void_booking``: the Meet event, the reviewer's
+    notice; never on a rollback).
 
     After the write: one AUDIT log line naming the status it was closed FROM (no DB field holds
     it); then, for a close from a PRE-award status only, the student is sent
@@ -180,6 +206,8 @@ def close_application(application, *, closure_reason, by_email=''):
         if row is None or row.status not in CLOSEABLE_FROM:
             raise ClosureError('not_closeable')
         closed_from = row.status
+        if closed_from in PRE_AWARD_STATUSES and not pre_award_allowed:
+            raise ClosureError('forbidden')
         if closure_reason not in VALID_REASONS:
             raise ClosureError('bad_reason')
         if closure_reason not in reasons_for(closed_from):
@@ -194,7 +222,10 @@ def close_application(application, *, closure_reason, by_email=''):
         row.closed_by = (by_email or '')[:254]
         row.save(update_fields=['status', 'closure_reason', 'closed_at', 'closed_by'])
         if closed_from in PRE_AWARD_STATUSES:
-            _release_interview(row)
+            _withdraw_proposed_times(row, row.closed_at)
+            if _booking_ahead(row, row.closed_at):
+                pk = row.pk
+                transaction.on_commit(lambda: _void_booking(pk))
     application.refresh_from_db()
     logger.info('AUDIT application_closed app_id=%s from=%s reason=%s by=%s',
                 application.id, closed_from, closure_reason, by_email or '?')

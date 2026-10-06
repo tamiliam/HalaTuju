@@ -99,6 +99,10 @@ describe('drift — closure.py holds the same table', () => {
   test('every refusal code the api raises has a sentence of its own kind, never the generic one', () => {
     const raised = [...src.matchAll(/ClosureError\('([a-z_]+)'/g)].map((m) => m[1])
     expect(raised.length).toBeGreaterThanOrEqual(4)
-    for (const code of new Set(raised)) expect(closeErrorKey(code)).not.toBe('admin.closure.error.generic')
+    // 'forbidden' never reaches the client as a code: the view answers it 403 (the role gate).
+    for (const code of new Set(raised)) {
+      if (code !== 'forbidden') expect(closeErrorKey(code)).not.toBe('admin.closure.error.generic')
+    }
+    expect(raised).toContain('forbidden')
   })
 })

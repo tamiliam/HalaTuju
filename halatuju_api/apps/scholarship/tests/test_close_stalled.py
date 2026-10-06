@@ -272,6 +272,35 @@ class TestTheStudentMayApplyAgain(TestCase):
                          apply_gate.ALREADY_APPLIED)
 
 
+@mock.patch(SENDER, return_value=True)
+class TestTheRoleGateIsJudgedOnTheLockedRow(TestCase):
+    """Review round 2, item 3: `pre_award_allowed` is judged by the service against the LOCKED
+    status, not by the view against a read that could be stale."""
+
+    def test_refused_inside_the_service_before_an_award(self, _send):
+        for stage in ('recommended', 'submitted'):
+            with self.subTest(stage=stage):
+                app = make_application(stage)
+                with self.assertRaises(ClosureError) as ctx:
+                    closure.close_application(app, closure_reason='stalled', pre_award_allowed=False)
+                self.assertEqual(ctx.exception.code, 'forbidden')
+                app.refresh_from_db()
+                self.assertEqual(app.status, stage)
+
+    def test_a_stale_object_does_not_slip_past(self, _send):
+        app = make_application('active')
+        stale = type(app).objects.get(pk=app.pk)
+        type(app).objects.filter(pk=app.pk).update(status='recommended')   # moved under the view
+        with self.assertRaises(ClosureError) as ctx:
+            closure.close_application(stale, closure_reason='stalled', pre_award_allowed=False)
+        self.assertEqual(ctx.exception.code, 'forbidden')
+
+    def test_a_funded_close_needs_no_pre_award_right(self, _send):
+        app = make_application('maintenance')
+        closure.close_application(app, closure_reason='graduated', pre_award_allowed=False)
+        self.assertEqual(app.status, 'closed')
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 @mock.patch(SENDER, return_value=True)
 class TestTheEndpoint(TestCase):
@@ -418,17 +447,18 @@ class TestAFundedClosedCaseKeepsItsWrites(TestCase):
 
 @mock.patch(SENDER, return_value=True)
 class TestAPreAwardCloseReleasesTheInterview(TestCase):
-    """Review round 1, item 3: a close must not leave a booked interview live, or proposed times
-    she could still book. The existing teardown (`scheduling.release_for_unassign`) runs inside
-    the close, without its "your application is still active" student notice."""
+    """Review rounds 1 and 2: a close must not leave a FUTURE booked interview live, or proposed
+    times she could still book — but a PAST booking is the record of an interview that happened and
+    is left alone (a booking stays 'booked' afterwards). The void runs AFTER COMMIT through the
+    existing teardown (`scheduling.release_for_unassign`), without its student notice."""
 
-    def _booked(self, **kw):
+    def _booked(self, days=2, stage='interviewing', **kw):
         from datetime import timedelta
         from django.utils import timezone
         from apps.scholarship.models import InterviewSlot
         reviewer = make_admin('reviewer')
-        start = timezone.now() + timedelta(days=2)
-        app = make_application('interviewing', reviewer=reviewer, interview_status='booked',
+        start = timezone.now() + timedelta(days=days)
+        app = make_application(stage, reviewer=reviewer, interview_status='booked',
                                interview_start=start, interview_meeting_url='https://meet.test/x',
                                **kw)
         slot = InterviewSlot.objects.create(application=app, reviewer=reviewer, start=start)
@@ -442,7 +472,14 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
     def test_a_booked_interview_is_voided_the_reviewer_told_the_student_not(
             self, released, reviewer_notice, cancel_event, _send):
         app, slot = self._booked(interview_calendar_event_id='evt-1')
-        closure.close_application(app, closure_reason='stalled', by_email='o@x.my')
+        with self.captureOnCommitCallbacks(execute=False) as pending:
+            closure.close_application(app, closure_reason='stalled', by_email='o@x.my')
+        # Nothing outside the database happened inside the transaction …
+        cancel_event.assert_not_called()
+        reviewer_notice.assert_not_called()
+        self.assertEqual(len(pending), 1)
+        for callback in pending:   # … only after commit
+            callback()
         app.refresh_from_db()
         slot.refresh_from_db()
         self.assertEqual((app.status, app.interview_status), ('closed', 'cancelled'))
@@ -455,6 +492,41 @@ class TestAPreAwardCloseReleasesTheInterview(TestCase):
         self.assertEqual(reviewer_notice.call_args.kwargs['reason'],
                          'The application was closed by an officer.')
         released.assert_not_called()   # her one email is the close's own
+
+    @mock.patch('apps.scholarship.meeting.cancel_event')
+    @mock.patch('apps.scholarship.scheduling.emails.send_reviewer_interview_cancelled_email')
+    def test_a_PAST_booked_interview_is_left_untouched(self, reviewer_notice, cancel_event, _send):
+        """The blocker: closing a stalled `interviewed` case must not delete the calendar event of
+        an interview that already happened, wipe its booking, or tell the reviewer "cancelled"."""
+        app, slot = self._booked(days=-3, stage='awaiting_qc', outcome='recommend',
+                                 interview_calendar_event_id='evt-past')
+        with self.captureOnCommitCallbacks(execute=True) as pending:
+            closure.close_application(app, closure_reason='stalled')
+        self.assertEqual(pending, [])
+        app.refresh_from_db()
+        self.assertEqual((app.status, app.interview_status, app.interview_calendar_event_id,
+                          app.interview_meeting_url), ('closed', 'booked', 'evt-past',
+                                                       'https://meet.test/x'))
+        self.assertIsNotNone(app.interview_start)
+        cancel_event.assert_not_called()
+        reviewer_notice.assert_not_called()
+
+    @mock.patch('apps.scholarship.meeting.cancel_event')
+    def test_a_rolled_back_close_voids_nothing(self, cancel_event, _send):
+        """The void is on_commit: if the close's transaction rolls back, the callback never runs."""
+        from django.db import transaction
+        app, _slot = self._booked(interview_calendar_event_id='evt-2')
+        with self.captureOnCommitCallbacks(execute=True) as pending:
+            try:
+                with transaction.atomic():
+                    closure.close_application(app, closure_reason='stalled')
+                    raise RuntimeError('roll back')
+            except RuntimeError:
+                pass
+        self.assertEqual(pending, [])
+        cancel_event.assert_not_called()
+        app.refresh_from_db()
+        self.assertEqual((app.status, app.interview_status), ('interviewing', 'booked'))
 
     def test_proposed_times_are_withdrawn_so_she_cannot_book_after_the_close(self, _send):
         from datetime import timedelta
