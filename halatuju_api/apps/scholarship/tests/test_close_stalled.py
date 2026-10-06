@@ -201,8 +201,30 @@ class TestAuditAndEmail(TestCase):
             closure.close_application(app, closure_reason='stalled')
         send.assert_called_once()
         kwargs = send.call_args.kwargs
-        self.assertEqual((kwargs['to_email'], kwargs['programme_name'], kwargs['lang']),
-                         (app.notify_email, app.cohort.name, app.locale))
+        self.assertEqual((kwargs['to_email'], kwargs['programme_name'], kwargs['lang'],
+                          kwargs['closure_reason']),
+                         (app.notify_email, app.cohort.name, app.locale, 'stalled'))
+
+    def test_the_officer_close_email_says_a_later_round_not_begin_again(self):
+        """Review round 1, item 4: the real text, every language. The auto-expiry wording ("not
+        completed in time", "begin again here") stays for expiry only."""
+        from django.core import mail
+        from apps.scholarship import emails
+        later = {'en': 'later round', 'ms': 'pusingan akan datang', 'ta': 'அடுத்த சுற்றில்'}
+        for lang, phrase in later.items():
+            with self.subTest(lang=lang):
+                app = make_application('recommended', locale=lang)
+                mail.outbox.clear()
+                closure.close_application(app, closure_reason='stalled')
+                self.assertEqual(len(mail.outbox), 1)
+                body = mail.outbox[0].body
+                self.assertIn(phrase, body)
+                self.assertNotIn(emails.CLOSED_BODIES[lang].split('{programme}')[1][:25], body)
+        mail.outbox.clear()
+        self.assertTrue(emails.send_application_closed_email(
+            'x@example.test', 'Priya', 'B40', lang='en'))
+        self.assertIn('not completed in time', mail.outbox[0].body)   # expiry keeps its wording
+        self.assertNotIn('later round', mail.outbox[0].body)
 
     def test_a_failed_email_is_a_warning_naming_the_application(self):
         app = make_application('shortlisted')

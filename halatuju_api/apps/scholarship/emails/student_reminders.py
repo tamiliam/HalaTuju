@@ -180,8 +180,40 @@ def send_reminder_email(to_email, applicant_name, programme_name, stage, lang='e
                  branding=branding)
 
 
-def send_application_closed_email(to_email, applicant_name, programme_name, lang='en', branding=None):
-    """Confirm an application was auto-closed for non-completion, inviting a fresh start."""
-    return _send(to_email, CLOSED_SUBJECTS, CLOSED_BODIES, applicant_name, programme_name, lang,
+# TD-352 (2026-10-06): an OFFICER closed the application (`closure.close_application`, a stalled or
+# withdrawn case before any award). Not "not completed in time" — the case may have stalled on our
+# side — and not "begin again here": the same round still refuses her, so she may apply again IN A
+# LATER ROUND. Same subject, same {help} line as the auto-expiry notice above.
+CLOSED_BY_OFFICER_BODIES = {
+    'en': ("Dear {name},\n\n"
+           "Your {programme} application has now been closed by our team.\n\n"
+           "While it was in process you could not start another application. Now that it is "
+           "closed, you are welcome to apply again in a later round of the programme. When a "
+           "round is open, you can apply here:\n{link}\n\n"
+           "{help}\n\n"
+           "Warm regards,\nThe {programme} Team"),
+    'ms': ("Salam {name},\n\n"
+           "Permohonan {programme} anda kini telah ditutup oleh pasukan kami.\n\n"
+           "Semasa permohonan itu sedang diproses, anda tidak boleh memulakan permohonan lain. "
+           "Kini setelah ia ditutup, anda dialu-alukan untuk memohon semula pada pusingan akan "
+           "datang program ini. Apabila pusingan dibuka, anda boleh memohon di sini:\n{link}\n\n"
+           "{help}\n\n"
+           "Salam hormat,\nPasukan {programme}"),
+    'ta': ("அன்புள்ள {name},\n\n"
+           "உங்கள் {programme} விண்ணப்பம் இப்போது எங்கள் குழுவால் மூடப்பட்டுள்ளது.\n\n"
+           "அது செயல்பாட்டில் இருந்தபோது நீங்கள் வேறொரு விண்ணப்பத்தைத் தொடங்க முடியவில்லை. "
+           "இப்போது அது மூடப்பட்டதால், இந்தத் திட்டத்தின் அடுத்த சுற்றில் மீண்டும் விண்ணப்பிக்க "
+           "உங்களை வரவேற்கிறோம். ஒரு சுற்று திறந்திருக்கும்போது, இங்கே விண்ணப்பிக்கலாம்:\n{link}\n\n"
+           "{help}\n\nஅன்புடன்,\n{programme} குழு"),
+}
+
+
+def send_application_closed_email(to_email, applicant_name, programme_name, lang='en', branding=None,
+                                  closure_reason=''):
+    """The application-closed notice. Blank ``closure_reason`` (the reminder sweep's auto-expiry):
+    "not completed in time … start a fresh application". Any ``closure_reason`` (an officer's close,
+    TD-352 — `stalled` or `withdrawn`): CLOSED_BY_OFFICER_BODIES, "apply again in a later round"."""
+    bodies = CLOSED_BY_OFFICER_BODIES if closure_reason else CLOSED_BODIES
+    return _send(to_email, CLOSED_SUBJECTS, bodies, applicant_name, programme_name, lang,
                  extra={'help': _help_line(CLOSURE_HELP, normalise_lang(lang), branding)},
                  branding=branding)

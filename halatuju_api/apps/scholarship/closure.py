@@ -94,14 +94,15 @@ def has_live_money(application):
             or application.disbursements.filter(status__in=Disbursement.PAID).exists())
 
 
-def _send_closed_email(application):
+def _send_closed_email(application, closure_reason):
     """Best-effort: tell the student her application is closed and she may start again. The
     sender answers False on failure (or a missing address); that is logged, never raised."""
     name = getattr(application.profile, 'name', '') if application.profile else ''
     with _usage.usage_context(application=application):
         sent = send_application_closed_email(
             to_email=application.notify_email, applicant_name=name,
-            programme_name=application.cohort.name, lang=application.locale)
+            programme_name=application.cohort.name, lang=application.locale,
+            closure_reason=closure_reason)
     if not sent:
         logger.warning('close_application: app %s is closed but the closed email did not go '
                        '(no address, or the send failed) — tell the student by hand.',
@@ -156,9 +157,9 @@ def close_application(application, *, closure_reason, by_email=''):
 
     After the write: one AUDIT log line naming the status it was closed FROM (no DB field holds
     it); then, for a close from a PRE-award status only, the student is sent
-    ``send_application_closed_email`` (the auto-expiry notice: "your application has been closed
-    … you are welcome to start a fresh application"), best-effort, with a WARNING when it answers
-    False. No email from awarded / active / maintenance: that notice invites a fresh application
+    ``send_application_closed_email`` in its OFFICER variant (``closure_reason`` given: "closed by
+    our team … you may apply again in a later round" — never the auto-expiry "not completed in
+    time"), best-effort, with a WARNING when it answers False. No email from awarded / active / maintenance: that notice invites a fresh application
     and does not fit a student who was funded or holds an award — her closure is told through the
     in-programme page as before. The email is sent OUTSIDE the transaction, so it never goes for
     a close that rolled back (the one caller, the admin view, is not inside an outer atomic).
@@ -188,5 +189,5 @@ def close_application(application, *, closure_reason, by_email=''):
     logger.info('AUDIT application_closed app_id=%s from=%s reason=%s by=%s',
                 application.id, closed_from, closure_reason, by_email or '?')
     if closed_from in PRE_AWARD_STATUSES:
-        _send_closed_email(application)
+        _send_closed_email(application, closure_reason)
     return application

@@ -104,7 +104,8 @@ from .student_queries import (
     send_query_reminder_email, send_request_info_email
 )
 from .student_reminders import (
-    CLOSED_BODIES, CLOSED_SUBJECTS, CLOSURE_HELP, HELP_LINE, REMINDER_BODIES, REMINDER_SUBJECTS,
+    CLOSED_BODIES, CLOSED_BY_OFFICER_BODIES, CLOSED_SUBJECTS, CLOSURE_HELP, HELP_LINE,
+    REMINDER_BODIES, REMINDER_SUBJECTS,
     _help_line, send_application_closed_email, send_reminder_email
 )
 from .vircle_install import (
