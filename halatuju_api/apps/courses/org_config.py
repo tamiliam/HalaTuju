@@ -23,7 +23,13 @@ the organisation changed, so tightening a platform default later reaches every o
 chose (the same reasoning that keeps `None` meaning "not applied" on intake-year requirements).
 """
 from .org_config_registry import OrgConfigError, SETTINGS, default  # re-exported: the seam
-from .org_config_rules import _check_pairs
+from .org_config_rules import RULES, check_rules
+
+
+def is_rule_code(code):
+    """True when `code` is a cross-field rule's refusal (`org_config_rules.RULES`), not a
+    single key's (`out_of_range`, `bad_value`, …). Served on the endpoint's refusal."""
+    return any(rule.code == code for rule in RULES)
 
 
 def validate_values(values, *, pairs=True):
@@ -33,7 +39,8 @@ def validate_values(values, *, pairs=True):
     (the `OrganisationTheme.save()` precedent), so every writer passes it.
 
     `pairs=False` checks each key ALONE, for a caller holding only the changed keys (the
-    endpoint's first pass, which wants a per-key refusal code before it merges).
+    endpoint's first pass, which wants a per-key refusal code before it merges). With
+    `pairs=True` the cross-field rules (`org_config_rules.RULES`) run on the whole dict too.
     """
     if not isinstance(values, dict):
         raise OrgConfigError('bad_values')
@@ -50,7 +57,7 @@ def validate_values(values, *, pairs=True):
         if allowed is not None and value not in allowed:
             raise OrgConfigError('not_allowed', key)
     if pairs:
-        _check_pairs(values)
+        check_rules(values)
 
 
 def stored(organisation, key):

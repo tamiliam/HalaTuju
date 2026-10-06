@@ -223,7 +223,7 @@ class AdminSubmitDeclineView(_AdminBase):
     AWAITING QC. A decline has no such gate — an incomplete or failing applicant is exactly who
     gets declined — so this is the decline's lightweight equivalent: with a recorded decline
     verdict on file, move the case to 'interviewed' (AWAITING QC). QC then CONFIRMS the decline
-    (→ rejected + student email, 24h cool-off) or REOPENS it (→ back to the reviewer). The
+    (→ rejected + student email, the org's QC hold) or REOPENS it (→ back to the reviewer). The
     rejection + student email happen only at QC-confirm, never here (owner 2026-07-19)."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
@@ -260,7 +260,7 @@ class AdminQcDecisionView(_AdminBase):
                one-click form of today's manual reopen→decline. Require `comments` (the QC's reason,
                shared with the reviewer). Records the SAME audited trail as the manual path (a
                DecisionReopen row carrying the reason, closed as a correction) then declines as
-               'interview' with the 24h QC cool-off; the reviewer gets the "rejected by QC" email
+               'interview' with the org's QC hold; the reviewer gets the "rejected by QC" email
                (distinct from the "returned for revision" one)."""
     def post(self, request, pk):
         app, admin, err = self._require_qc(request, pk)
@@ -271,13 +271,14 @@ class AdminQcDecisionView(_AdminBase):
             # The QC ACCEPT decision means "uphold the reviewer's recorded verdict". For a DECLINE
             # verdict that is a rejection, not a recommendation — QC is the second pair of eyes on
             # BOTH outcomes (owner 2026-07-19). No gap floor here (a declined case is EXPECTED to
-            # have red facts) and a shorter 24h cool-off (already two-person-vetted). Bucket
+            # have red facts) and the shorter `qc_decline_hold_hours` hold (platform 24h, org-timing
+            # Sprint 1 — already two-person-vetted). Bucket
             # 'interview' (reviewed but not selected); the decline email fires now, embargoed.
             ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
             if ov.get('overall') == 'decline':
                 from datetime import timedelta
-                from django.conf import settings as _settings
-                hours = getattr(_settings, 'DECLINE_QC_COOLOFF_HOURS', 24)
+                from apps.courses import org_config
+                hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
                 try:
                     admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours))
                 except ValueError:
@@ -362,8 +363,9 @@ class AdminQcDecisionView(_AdminBase):
             # and won't bounce it back — it's rejected here. Collapses today's manual two-step
             # (reopen-with-reason → decline) into one action, producing the IDENTICAL audit trail:
             # a DecisionReopen row carrying the QC's reason (rendered as "↩ Reopened by {QC} — …"),
-            # closed as a real correction, then a decline bucketed 'interview' with the 24h QC
-            # cool-off. The reviewer gets the "rejected by QC" email (not "returned for revision").
+            # closed as a real correction, then a decline bucketed 'interview' with the org's QC
+            # hold (`qc_decline_hold_hours`). The reviewer gets the "rejected by QC" email (not
+            # "returned for revision").
             comments = (request.data.get('comments') or '').strip()
             if not comments:
                 return Response(
@@ -375,8 +377,8 @@ class AdminQcDecisionView(_AdminBase):
                 return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
             from datetime import timedelta
-            from django.conf import settings as _settings
-            hours = getattr(_settings, 'DECLINE_QC_COOLOFF_HOURS', 24)
+            from apps.courses import org_config
+            hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
             try:
                 admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours))
             except ValueError:

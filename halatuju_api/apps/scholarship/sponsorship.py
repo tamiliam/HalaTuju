@@ -625,8 +625,8 @@ def fund_student(sponsor, application):
 def award_and_notify(sponsor, application):
     """Award entry point for the sponsor 'Support' button AND the admin batch: fund the student
     (an 'offered' Sponsorship + status 'awarded'). It does NOT email inline — the good-news email
-    is sent later by ``release_award_offer_emails`` once the award is
-    ``AWARD_OFFER_EMAIL_COOLOFF_HOURS`` old, leaving a window to reconsider (cancelling the award
+    is sent later by ``release_award_offer_emails`` once the award is the organisation's
+    ``award_email_delay_hours`` old, leaving a window to reconsider (cancelling the award
     before then stops the email). Kept as the named single entry point so the button and the batch
     behave identically."""
     return fund_student(sponsor, application)   # atomic; raises SponsorshipError on a bad state
@@ -634,7 +634,7 @@ def award_and_notify(sponsor, application):
 
 def release_award_offer_emails(now=None, held=None):
     """Send the award email for every HOLDING award whose cool-off has elapsed and that hasn't been
-    emailed yet (``offered_at + AWARD_OFFER_EMAIL_COOLOFF_HOURS <= now`` and ``offer_emailed_at`` is
+    emailed yet (``offered_at + the org's award_email_delay_hours <= now``; ``offer_emailed_at`` is
     NULL). A cancelled/lapsed award (no longer offered/active) is skipped, so reconsidering within
     the window stops the email. Hourly scheduler (job ``release-award-offer-emails``). Returns the
     count sent. Request #26: a student whose parent phone needs a call WAITS (ids into ``held``).
@@ -650,10 +650,9 @@ def release_award_offer_emails(now=None, held=None):
     On a successful send it also raises the Vircle setup task, because the email now carries the
     Vircle instructions and the task it points at must exist by the time the student reads it."""
     from django.conf import settings as _settings
+    from .award_timing import award_email_release_window
     from .parent_call import held_for_parent_call
     now = now or timezone.now()
-    hours = getattr(_settings, 'AWARD_OFFER_EMAIL_COOLOFF_HOURS', 24)
-    cutoff = now - timezone.timedelta(hours=hours)
     # Contract mode (go-live transition, 2026-07-19): when the bursary agreement flag is ON the
     # good-news email invites the student to REVIEW & SIGN the agreement, carries NO Vircle content,
     # and raises NO Vircle setup task here — the Vircle install email + task now fire automatically
@@ -661,7 +660,8 @@ def release_award_offer_emails(now=None, held=None):
     # below is byte-identical to before (Vircle-flavoured award email + raise_setup_task).
     bursary_on = getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False)
     qs = (Sponsorship.objects
-          .filter(status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True, offered_at__lte=cutoff)
+          .filter(award_email_release_window(now),   # per organisation: award_timing.py
+                  status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True)
           .select_related('application', 'application__profile'))
     sent = 0
     for sp in qs:
@@ -842,12 +842,12 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
         return sponsorship
 
     # Flag-OFF path: no signing step — acceptance + the #14 cool-off confirms the award → 'active'.
-    # The flip + funding-confirmed email + onboarding wait AWARD_COOLOFF_DAYS so we can reconsider /
-    # hold within the window (hold_pending_award reverts it; the student never saw confirmation).
-    days = getattr(_settings, 'AWARD_COOLOFF_DAYS', 2)
-    if days and days > 0:
-        from datetime import timedelta
-        application.award_due_at = timezone.now() + timedelta(days=days)
+    # The flip + funding-confirmed email + onboarding wait the org's award_confirm_hold_days so we
+    # can reconsider / hold (hold_pending_award reverts it; the student never saw confirmation).
+    from .award_timing import award_confirm_hold
+    hold = award_confirm_hold(application)
+    if hold.total_seconds() > 0:
+        application.award_due_at = timezone.now() + hold
         application.save(update_fields=['award_due_at'])
     else:
         _finalise_award(application, locale)

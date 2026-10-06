@@ -7,7 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 from django.utils import timezone
 
 from ..models import ScholarshipApplication
-from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_sla
+from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_reminder_lead_days, query_sla
 
 
 # How long after submission to hold the "we have a few questions" email, so it reads as
@@ -118,7 +118,8 @@ def send_due_query_emails(now=None):
 
 def send_query_reminders(now=None):
     """Daily sweep: nudge submitted students who still have open Check-2 clarify
-    queries, once, ~2 days before the SLA deadline. Reuses the trilingual email
+    queries, once, the organisation's ``query_reminder_lead_days`` (platform 2) before the
+    SLA deadline. Reuses the trilingual email
     infra. Idempotent via ``query_reminder_at`` (one reminder per application).
     Lapsed apps are NOT emailed (they already proceed-as-is). Returns ``{'reminded': n}``."""
     from django.conf import settings as _settings
@@ -130,15 +131,16 @@ def send_query_reminders(now=None):
     qs = (ScholarshipApplication.objects
           .filter(status__in=QUERY_SLA_ACTIVE_STATUSES,
                   profile_completed_at__isnull=False, query_reminder_at__isnull=True)
-          .select_related('cohort', 'profile'))
+          .select_related('cohort', 'profile', 'owning_organisation__configuration'))
     for app in qs:
         sla = query_sla(app, now)
         if not sla['active'] or sla['lapsed']:
             continue
-        # V3 (#8): fire ~2 days before the PER-ITEM deadline (the latest open query's own clock,
-        # from query_sla), not the submit clock — so a query raised late still gets its reminder
-        # instead of being born past a submit-anchored window (the "notified but reminder-less" bug).
-        if sla['days_left'] is None or sla['days_left'] > 2:
+        # V3 (#8): fire the organisation's `query_reminder_lead_days` (platform 2) before the
+        # PER-ITEM deadline (the latest open query's own clock, from query_sla), not the submit
+        # clock — so a query raised late still gets its reminder instead of being born past a
+        # submit-anchored window (the "notified but reminder-less" bug).
+        if sla['days_left'] is None or sla['days_left'] > query_reminder_lead_days(app):
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
         send_query_reminder_email(

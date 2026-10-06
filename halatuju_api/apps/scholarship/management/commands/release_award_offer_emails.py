@@ -1,8 +1,9 @@
 """Cool-off release of the award good-news email.
 
 A sponsor award does not email inline; this command — run hourly by the scheduler (job
-``release-award-offer-emails``) — sends the email once the award has been held for
-``AWARD_OFFER_EMAIL_COOLOFF_HOURS`` (default 24), giving a window to reconsider. Cancelling
+``release-award-offer-emails``) — sends the email once the award has been held for the
+organisation's ``award_email_delay_hours`` (org_config since org-timing Sprint 1; platform
+default ``AWARD_OFFER_EMAIL_COOLOFF_HOURS``, 24), giving a window to reconsider. Cancelling
 the award before then stops it (only offered/active awards are sent). Idempotent via
 ``Sponsorship.offer_emailed_at``. Billable (one email per due award)."""
 from django.core.management.base import BaseCommand

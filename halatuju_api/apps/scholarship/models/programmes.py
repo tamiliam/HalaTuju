@@ -344,6 +344,11 @@ class ScholarshipCohort(models.Model):
         default=3,
         help_text="DEPRECATED (pre-S8); the scheduler now uses success/decline_delay_hours",
     )
+    # ⚠ READ BY NOTHING since org-timing Sprint 1 (2026-10-07): the three timings below became
+    # organisation settings — `shortlist_email_delay_minutes`, `not_shortlisted_email_delay_hours`
+    # and `query_answer_days` (Organisation → Settings → Configuration). The columns stay one
+    # sprint (expand-contract; the seed command still writes them) and the roadmap's Sprint 2
+    # drops them. help_text is left as it was on purpose: changing it would cost a migration.
     success_delay_hours = models.FloatField(
         default=48,
         help_text="Hours after submit before the shortlist (invitation) email + follow-up unlock (S8 delayed "

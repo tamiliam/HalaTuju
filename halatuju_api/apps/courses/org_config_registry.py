@@ -35,12 +35,35 @@ def _default_sponsor_email_max_cards():
     return int(getattr(settings, 'SPONSOR_EMAIL_MAX_CARDS', 5) or 5)
 
 
+def _scholarship_constant(name):
+    # ⚠ THE ONE courses → scholarship import in this registry (org-timing Sprint 1). Every
+    # platform default that is a module constant is read through here, from the LEAF
+    # `apps.scholarship.constants`, which imports nothing (code health H16). Six helpers used to
+    # carry an import each; the app-boundary standard counts STATEMENTS, so one door for all of
+    # them is what let the reminder ladder join without raising that count.
+    from apps.scholarship import constants
+    return getattr(constants, name)
+
+
+def _whole(setting, fallback):
+    """A Django setting the registry must hold as a WHOLE number (the registry is int-only).
+
+    Several hold-window settings are floats in `settings/base.py` (7.0, 2.0, 24.0). A whole float
+    is returned as an int; a FRACTION is refused loudly rather than rounded — a silently rounded
+    undo window is a window nobody chose. Production sets whole values (7, 24, 24, 2)."""
+    from django.core.exceptions import ImproperlyConfigured
+    raw = getattr(settings, setting, fallback)
+    number = float(raw)
+    if not number.is_integer():
+        raise ImproperlyConfigured(
+            f'{setting}={raw!r}: the organisation registry holds whole numbers; set a whole value.')
+    return int(number)
+
+
 def _default_query_email_delay_hours():
-    # The platform value is a module constant, not a Django setting. It lives in
-    # `apps.scholarship.constants`, a LEAF module that imports nothing (code health H16), so
-    # reading it no longer drags the eighteen-module `services` package across the app border.
-    from apps.scholarship.constants import QUERY_EMAIL_DELAY_HOURS
-    return QUERY_EMAIL_DELAY_HOURS
+    # The platform value is a module constant, not a Django setting — from the leaf, so reading
+    # it never drags the eighteen-module `services` package across the app border.
+    return _scholarship_constant('QUERY_EMAIL_DELAY_HOURS')
 
 
 def _default_nudge_auto_delay_minutes():
@@ -53,8 +76,7 @@ def _default_nudge_cooldown_hours():
 
 def _default_max_clarify_open():
     # Module constant (design §4: a long list suppresses student responses) — from the leaf, as above.
-    from apps.scholarship.constants import MAX_CLARIFY
-    return MAX_CLARIFY
+    return _scholarship_constant('MAX_CLARIFY')
 
 
 def _default_review_sla_days():
@@ -95,23 +117,19 @@ def _default_interview_duration_min():
 def _default_interview_window_start_min():
     # The platform home is a module constant, not a Django setting — read from the leaf
     # `apps.scholarship.constants`, as above, rather than from the scheduling engine.
-    from apps.scholarship.constants import SLOT_WINDOW_START_MIN
-    return SLOT_WINDOW_START_MIN
+    return _scholarship_constant('SLOT_WINDOW_START_MIN')
 
 
 def _default_interview_window_end_min():
-    from apps.scholarship.constants import SLOT_WINDOW_END_MIN
-    return SLOT_WINDOW_END_MIN
+    return _scholarship_constant('SLOT_WINDOW_END_MIN')
 
 
 def _default_interview_slot_step_min():
-    from apps.scholarship.constants import SLOT_STEP_MIN
-    return SLOT_STEP_MIN
+    return _scholarship_constant('SLOT_STEP_MIN')
 
 
 def _default_interview_min_lead_hours():
-    from apps.scholarship.constants import SLOT_MIN_LEAD_HOURS
-    return SLOT_MIN_LEAD_HOURS
+    return _scholarship_constant('SLOT_MIN_LEAD_HOURS')
 
 
 def _default_interview_reschedule_cutoff_hours():
@@ -147,11 +165,57 @@ def _default_sign_reminder_days():
     return int(getattr(settings, 'BURSARY_SIGN_REMINDER_DAYS', 3))
 
 
+# ── org-timing Sprint 1 (2026-10-07): the student-message timings ──
+# ⚠ The two shortlisting delays and the two query windows had NO platform home but the intake
+# round's own columns (`success_delay_hours`, `decline_delay_hours`, `query_response_sla_days`),
+# whose model default is not a platform decision (it gave Sabah a 48-hour shortlist nobody
+# chose). The platform default is therefore stated HERE, as the owner set it on 2026-10-07.
+def _default_shortlist_email_delay_minutes():
+    return 60
+
+
+def _default_not_shortlisted_email_delay_hours():
+    return 48
+
+
+def _reminder_default(stage):
+    """The platform default for completion reminder `stage` (1–4): the ladder's own home."""
+    return lambda: _scholarship_constant('REMINDER_THRESHOLDS_DAYS')[stage - 1]
+
+
+def _default_auto_close_after_final_reminder_days():
+    return _scholarship_constant('FINAL_REMINDER_GRACE_DAYS')
+
+
+def _default_query_answer_days():
+    return 5
+
+
+def _default_query_reminder_lead_days():
+    return 2
+
+
+def _default_decline_hold_days():
+    return _whole('DECLINE_COOLOFF_DAYS', 7)
+
+
+def _default_qc_decline_hold_hours():
+    return _whole('DECLINE_QC_COOLOFF_HOURS', 24)
+
+
+def _default_award_email_delay_hours():
+    return _whole('AWARD_OFFER_EMAIL_COOLOFF_HOURS', 24)
+
+
+def _default_award_confirm_hold_days():
+    return _whole('AWARD_COOLOFF_DAYS', 2)
+
+
 # key → {group, unit, min, max, default}, plus two OPTIONAL keys:
 #   * `allowed` — the only values this setting may take (rendered as a menu, not a box). Use it
 #     when the range is not the real constraint: a slot step of 45 leaves `minute % step` no
 #     honest reading across an hour boundary, so the divisors of 60 are the whole vocabulary.
-#   * cross-field rules live in `validate_values`, not here — see `_check_pairs`.
+#   * cross-field rules live in `org_config_rules.RULES`, not here (run by `validate_values`).
 # `default` is a CALLABLE, evaluated per read, because several platform defaults are env vars
 # that can change without a deploy.
 SETTINGS = {
@@ -184,7 +248,7 @@ SETTINGS = {
         'group': 'student_comms',
         'unit': 'hours',
         'min': 1,
-        'max': 168,
+        'max': 6,
         'default': _default_query_email_delay_hours,
     },
     # The one-time automatic "you haven't submitted yet" nudge fires this long after consent
@@ -193,16 +257,16 @@ SETTINGS = {
     'nudge_auto_delay_minutes': {
         'group': 'student_comms',
         'unit': 'minutes',
-        'min': 5,
-        'max': 1440,
+        'min': 15,
+        'max': 60,
         'default': _default_nudge_auto_delay_minutes,
     },
     # How long an org admin's MANUAL re-nudge is rate-limited after any nudge (`nudge._cooldown`).
     'nudge_cooldown_hours': {
         'group': 'student_comms',
         'unit': 'hours',
-        'min': 1,
-        'max': 168,
+        'min': 12,
+        'max': 48,
         'default': _default_nudge_cooldown_hours,
     },
     # How many Check-2 clarify questions may be OPEN at once (`check2_queries`). Doc requests and
@@ -222,8 +286,8 @@ SETTINGS = {
     'review_sla_days': {
         'group': 'reviewers_staff',
         'unit': 'days',
-        'min': 1,
-        'max': 60,
+        'min': 7,
+        'max': 14,
         'default': _default_review_sla_days,
     },
     # The "your verdict is due soon" nudge fires this many days BEFORE the due date.
@@ -231,15 +295,15 @@ SETTINGS = {
         'group': 'reviewers_staff',
         'unit': 'days',
         'min': 1,
-        'max': 30,
+        'max': 3,
         'default': _default_review_nudge_soon_days,
     },
     # Escalation to the org's admins fires this many days AFTER the due date.
     'review_escalate_grace_days': {
         'group': 'reviewers_staff',
         'unit': 'days',
-        'min': 1,
-        'max': 30,
+        'min': 2,
+        'max': 7,
         'default': _default_review_escalate_grace_days,
     },
     # How long an emailed temporary password stays usable. ⚠ ONE clock, FOUR readers that must
@@ -311,8 +375,8 @@ SETTINGS = {
     'interview_min_lead_hours': {
         'group': 'interviews',
         'unit': 'hours',
-        'min': 1,
-        'max': 168,
+        'min': 12,
+        'max': 48,
         'default': _default_interview_min_lead_hours,
     },
     # How close to the start a student may still re-pick or cancel. Read at the two refusals
@@ -321,8 +385,8 @@ SETTINGS = {
     'interview_reschedule_cutoff_hours': {
         'group': 'interviews',
         'unit': 'hours',
-        'min': 1,
-        'max': 168,
+        'min': 6,
+        'max': 24,
         'default': _default_interview_reschedule_cutoff_hours,
     },
     # ── documents (Sprint E) ──
@@ -372,8 +436,8 @@ SETTINGS = {
     'sign_accept_deadline_days': {
         'group': 'agreements',
         'unit': 'days',
-        'min': 1,
-        'max': 180,
+        'min': 14,
+        'max': 45,
         'default': _default_sign_accept_deadline_days,
     },
     # How often the signing-chain cron may re-nudge the party whose signature is still missing
@@ -381,9 +445,84 @@ SETTINGS = {
     'sign_reminder_days': {
         'group': 'agreements',
         'unit': 'days',
-        'min': 1,
-        'max': 60,
+        'min': 2,
+        'max': 7,
         'default': _default_sign_reminder_days,
+    },
+    # ── decisions (org-timing Sprint 1, 2026-10-07) ──
+    # Ranges are the owner's narrow ones: roughly half to double the default, never finer than
+    # the job that acts on it (decisions + nudges tick every 15 min, query emails hourly,
+    # reminders daily), never past a public promise ("Shortlisting — within 48 hours"). The undo
+    # windows (both decline holds, the award-email delay) have a floor ABOVE zero.
+    # Shortlisted: decision_due_at = submitted_at + this (`services.intake.score_application`).
+    'shortlist_email_delay_minutes': {
+        'group': 'decisions', 'unit': 'minutes', 'min': 30, 'max': 180,
+        'default': _default_shortlist_email_delay_minutes,
+    },
+    # Not shortlisted: the warm decline's decision_due_at, same function.
+    'not_shortlisted_email_delay_hours': {
+        'group': 'decisions', 'unit': 'hours', 'min': 24, 'max': 48,
+        'default': _default_not_shortlisted_email_delay_hours,
+    },
+    # A reviewer / org decline is held silently this long before the student is told
+    # (`services.decline.admin_reject`; `cancel_pending_decline` undoes it inside the window).
+    'decline_hold_days': {
+        'group': 'decisions', 'unit': 'days', 'min': 3, 'max': 10,
+        'default': _default_decline_hold_days,
+    },
+    # The shorter hold for a QC-CONFIRMED decline (two people already agreed) — both QC paths
+    # in `views_admin.verdict`.
+    'qc_decline_hold_hours': {
+        'group': 'decisions', 'unit': 'hours', 'min': 12, 'max': 48,
+        'default': _default_qc_decline_hold_hours,
+    },
+    # ── completing the application: the reminder ladder (days from the invitation) and the
+    # auto-close after the final one. ONE reader for both the sweep and its dry run:
+    # `services.reminders.reminder_ladder` / `close_grace_days`. R4's email states the close.
+    'reminder_1_days': {
+        'group': 'profile_completion', 'unit': 'days', 'min': 1, 'max': 3,
+        'default': _reminder_default(1),
+    },
+    'reminder_2_days': {
+        'group': 'profile_completion', 'unit': 'days', 'min': 7, 'max': 14,
+        'default': _reminder_default(2),
+    },
+    'reminder_3_days': {
+        'group': 'profile_completion', 'unit': 'days', 'min': 18, 'max': 30,
+        'default': _reminder_default(3),
+    },
+    'reminder_4_days': {
+        'group': 'profile_completion', 'unit': 'days', 'min': 45, 'max': 60,
+        'default': _reminder_default(4),
+    },
+    'auto_close_after_final_reminder_days': {
+        'group': 'profile_completion', 'unit': 'days', 'min': 3, 'max': 7,
+        'default': _default_auto_close_after_final_reminder_days,
+    },
+    # ── questions after submission ──
+    # ⚠ TWO JOBS: how long a student has to answer (`services.queries_sla.query_sla_days`) AND
+    # the reviewer-assignment floor — `is_ready_for_assignment` lets a case with open tasks be
+    # assigned once submit + this has passed. The tab's hint says so.
+    'query_answer_days': {
+        'group': 'check2', 'unit': 'days', 'min': 3, 'max': 7,
+        'default': _default_query_answer_days,
+    },
+    # The one reminder goes this many days before the answer deadline (`send_query_reminders`).
+    'query_reminder_lead_days': {
+        'group': 'check2', 'unit': 'days', 'min': 1, 'max': 2,
+        'default': _default_query_reminder_lead_days,
+    },
+    # ── awards ──
+    # The award good-news email waits this long after the award (`award_timing`, a per-org SQL
+    # window — cancelling inside it stops the email).
+    'award_email_delay_hours': {
+        'group': 'awards', 'unit': 'hours', 'min': 12, 'max': 48,
+        'default': _default_award_email_delay_hours,
+    },
+    # Flag-OFF acceptance: the 'funding confirmed' flip waits this long (`sponsorship`).
+    'award_confirm_hold_days': {
+        'group': 'awards', 'unit': 'days', 'min': 1, 'max': 3,
+        'default': _default_award_confirm_hold_days,
     },
 }
 

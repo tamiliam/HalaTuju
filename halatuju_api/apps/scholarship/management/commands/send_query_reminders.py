@@ -1,8 +1,9 @@
 """
 Check 2 STEP 2 — nudge submitted B40 students who still have open AI clarify queries.
 
-One reminder per application, sent from ~2 days before the cohort's query SLA deadline
-(``ScholarshipCohort.query_response_sla_days``, default 5) and only while queries are
+One reminder per application, sent the organisation's ``query_reminder_lead_days`` (default 2)
+before its answer deadline (org_config ``query_answer_days``, default 5 — org-timing Sprint 1;
+until then the intake round's ``query_response_sla_days``) and only while queries are
 still open and the window hasn't lapsed. Idempotent via ``query_reminder_at``. Lapsed
 applications are NOT emailed — they already proceed-as-is (flagged for the reviewer).
 
@@ -20,6 +21,7 @@ from apps.scholarship.services import (
     QUERY_SLA_ACTIVE_STATUSES, query_sla, query_sla_days, send_query_reminders,
     _elapsed_days_local,
 )
+from apps.scholarship.services.queries_sla import query_reminder_lead_days
 
 
 class Command(BaseCommand):
@@ -46,7 +48,8 @@ class Command(BaseCommand):
                 sla = query_sla(app, now)
                 if not sla['active'] or sla['lapsed']:
                     continue
-                if _elapsed_days_local(now, app.profile_completed_at) < max(query_sla_days(app) - 2, 0):
+                lead = query_reminder_lead_days(app)
+                if _elapsed_days_local(now, app.profile_completed_at) < max(query_sla_days(app) - lead, 0):
                     continue
                 self.stdout.write(
                     f"  [dry-run] would remind app #{app.pk} "

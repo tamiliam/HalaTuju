@@ -117,6 +117,9 @@ class TestAdminRejectService(TestCase):
         return ScholarshipApplication.objects.create(
             cohort=self.cohort, profile=p, status=status, notify_email='stu@x.com')
 
+    # The decline email must go NOW for the outbox assertion: this test needs no hold, and says so
+    # (the platform default became production's 7 days in org-timing Sprint 1).
+    @override_settings(DECLINE_COOLOFF_DAYS=0)
     def test_interview_reject_from_shortlisted(self):
         app = self._app('shortlisted')
         admin_reject(app, self.admin, 'interview')

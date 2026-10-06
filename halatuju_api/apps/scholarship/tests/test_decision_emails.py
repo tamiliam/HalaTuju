@@ -128,7 +128,11 @@ class TestSilentScoring(TestCase):
     def test_score_sets_verdict_and_due_at_per_verdict(self):
         cohort = ScholarshipCohort.objects.create(
             code='b40-x', name='X', year=2026, success_delay_hours=2, decline_delay_hours=48)
-        # Shortlisted: STR + at-floor grades (4 A + 1 B+) → due in success_delay_hours
+        # Shortlisted: STR + at-floor grades (4 A + 1 B+) → due after the ORGANISATION's
+        # `shortlist_email_delay_minutes`. ⚠ SUPERSEDED 2026-10-07 (org-timing Sprint 1): this
+        # used to assert the cohort's own `success_delay_hours=2`. The delay is an organisation
+        # setting now, so the cohort above still SAYS 2 hours and must be IGNORED — this NULL-org
+        # application follows the platform default of 60 minutes.
         p1 = StudentProfile.objects.create(
             supabase_user_id='s1', receives_str=True,
             grades={'a': 'A', 'b': 'A', 'c': 'A', 'd': 'A', 'e': 'B+'})
@@ -138,9 +142,9 @@ class TestSilentScoring(TestCase):
         a1.refresh_from_db()
         self.assertEqual(a1.verdict, 'shortlisted')
         self.assertEqual(a1.status, 'submitted')          # silent — status not flipped
-        self.assertEqual(round((a1.decision_due_at - a1.submitted_at).total_seconds() / 3600), 2)
+        self.assertEqual(round((a1.decision_due_at - a1.submitted_at).total_seconds() / 60), 60)
 
-        # Declined: no grades → academic fail → due in decline_delay_hours
+        # Declined: no grades → academic fail → due after `not_shortlisted_email_delay_hours`
         p2 = StudentProfile.objects.create(supabase_user_id='s2', receives_str=True, grades={})
         a2 = ScholarshipApplication.objects.create(
             cohort=cohort, profile=p2, consent_to_contact=True, intends_tertiary_2026=True)

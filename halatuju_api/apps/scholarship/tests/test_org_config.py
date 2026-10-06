@@ -485,26 +485,28 @@ class TestPerOrgNudgeDelays(TestCase):
 
     def test_the_cooldown_follows_the_organisation(self):
         from apps.scholarship import nudge as nudge_mod
-        _configure(self.org, 'nudge_cooldown_hours', 1)
+        # 12h is the floor since org-timing Sprint 1 narrowed the range (was 1h here).
+        _configure(self.org, 'nudge_cooldown_hours', 12)
         app = self._consented_app(self.cohort, 'd2', minutes_ago=300)
-        app.nudge_sent_at = timezone.now() - timedelta(hours=2)
+        app.nudge_sent_at = timezone.now() - timedelta(hours=13)
         app.save(update_fields=['nudge_sent_at'])
-        self.assertTrue(nudge_mod.nudge_state(app)['available'])       # 2h > the org's 1h
+        self.assertTrue(nudge_mod.nudge_state(app)['available'])       # 13h > the org's 12h
         other = self._consented_app(self.null_cohort, 'd3', minutes_ago=300)
-        other.nudge_sent_at = timezone.now() - timedelta(hours=2)
+        other.nudge_sent_at = timezone.now() - timedelta(hours=13)
         other.save(update_fields=['nudge_sent_at'])
         self.assertFalse(nudge_mod.nudge_state(other)['available'])    # platform 24h holds
 
     def test_the_auto_sweep_honours_each_organisation_and_the_null_org_trap(self):
-        # Configured org waits 120 min; the platform default (30) sweeps everyone else —
-        # INCLUDING a NULL-org application (the `~Q(in) | Q(isnull)` spelling, pinned).
+        # Configured org waits 60 min (the ceiling since org-timing Sprint 1; was 120); the
+        # platform default (30) sweeps everyone else — INCLUDING a NULL-org application (the
+        # `~Q(in) | Q(isnull)` spelling, pinned).
         from apps.scholarship import nudge as nudge_mod
-        _configure(self.org, 'nudge_auto_delay_minutes', 120)
+        _configure(self.org, 'nudge_auto_delay_minutes', 60)
         waiting = self._consented_app(self.cohort, 's1', minutes_ago=45)
         nullorg = self._consented_app(self.null_cohort, 's2', minutes_ago=45)
         nudge_mod.send_application_nudges()
         waiting.refresh_from_db(); nullorg.refresh_from_db()
-        self.assertIsNone(waiting.nudge_sent_at)       # the org's 120-min delay holds
+        self.assertIsNone(waiting.nudge_sent_at)       # the org's 60-min delay holds
         self.assertIsNotNone(nullorg.nudge_sent_at)    # NULL org = platform default, never dropped
 
 
@@ -535,8 +537,8 @@ class TestPerOrgQueryEmailDelay(TestCase):
 
     def test_the_sweep_honours_each_organisation_and_the_null_org_trap(self):
         from apps.scholarship import services
-        _configure(self.org, 'query_email_delay_hours', 8)
-        held = self._submitted_app(self.cohort, 'q1', hours_ago=3)     # 3h < the org's 8h
+        _configure(self.org, 'query_email_delay_hours', 6)   # the ceiling since org-timing S1 (was 8)
+        held = self._submitted_app(self.cohort, 'q1', hours_ago=3)     # 3h < the org's 6h
         due = self._submitted_app(self.null_cohort, 'q2', hours_ago=3)  # 3h > the platform 2h
         services.send_due_query_emails()
         held.refresh_from_db(); due.refresh_from_db()
@@ -653,12 +655,13 @@ class TestPerOrgReviewClocks(TestCase):
         call_command('send_review_nudges')
 
     def test_the_sweep_uses_the_organisations_sla_and_grace(self):
-        # Org: due at day 5, escalate at day 6 → an app assigned 8 days ago is overdue AND
-        # escalated. NULL org: platform SLA 10 → the same age is not even due yet.
-        _configure(self.org, 'review_sla_days', 5)
-        _configure(self.org, 'review_escalate_grace_days', 1)
-        ours = self._assigned_app(self.cohort, 'a1', days_ago=8)
-        theirs = self._assigned_app(self.null_cohort, 'a2', days_ago=8)
+        # Org: due at day 7, escalate at day 9 → an app assigned 9 days ago is overdue AND
+        # escalated. NULL org: platform SLA 10 → the same age is not even due yet. (Both values
+        # are the floors since org-timing Sprint 1 narrowed the ranges; were 5 and 1, at day 8.)
+        _configure(self.org, 'review_sla_days', 7)
+        _configure(self.org, 'review_escalate_grace_days', 2)
+        ours = self._assigned_app(self.cohort, 'a1', days_ago=9)
+        theirs = self._assigned_app(self.null_cohort, 'a2', days_ago=9)
         self._run()
         ours.refresh_from_db(); theirs.refresh_from_db()
         self.assertIsNotNone(ours.review_nudged_overdue_at)
@@ -667,11 +670,12 @@ class TestPerOrgReviewClocks(TestCase):
         self.assertIsNone(theirs.review_escalated_at)
 
     def test_the_soon_window_follows_the_organisation(self):
-        # Org SLA 5, soon window 2 → an app assigned 4 days ago is due in 1 day → "due soon".
-        # NULL org at the same age: due in 6 days on the platform's 10 → silence.
-        _configure(self.org, 'review_sla_days', 5)
-        soon = self._assigned_app(self.cohort, 'b1', days_ago=4)
-        quiet = self._assigned_app(self.null_cohort, 'b2', days_ago=4)
+        # Org SLA 7, soon window 2 → an app assigned 6 days ago is due in 1 day → "due soon".
+        # NULL org at the same age: due in 4 days on the platform's 10 → silence. (SLA 7 is the
+        # floor since org-timing Sprint 1; was 5 at day 4.)
+        _configure(self.org, 'review_sla_days', 7)
+        soon = self._assigned_app(self.cohort, 'b1', days_ago=6)
+        quiet = self._assigned_app(self.null_cohort, 'b2', days_ago=6)
         self._run()
         soon.refresh_from_db(); quiet.refresh_from_db()
         self.assertIsNotNone(soon.review_nudged_soon_at)
@@ -680,7 +684,7 @@ class TestPerOrgReviewClocks(TestCase):
     def test_the_assignment_email_states_the_organisations_review_by_date(self):
         from unittest import mock
         from apps.scholarship import services
-        _configure(self.org, 'review_sla_days', 5)
+        _configure(self.org, 'review_sla_days', 7)   # the floor since org-timing S1 (was 5)
         app = self._assigned_app(self.cohort, 'c1', days_ago=0)
         other = PartnerAdmin.objects.create(
             supabase_user_id='rc-rev2', role='reviewer', is_active=True,
@@ -690,14 +694,14 @@ class TestPerOrgReviewClocks(TestCase):
             name='Super', email='rc-super@x.com')
         with mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as sent:
             services.assign_reviewer(app, reviewer=other, by_admin=superadmin)
-        expected = (timezone.now() + timedelta(days=5)).date().strftime('%d %b %Y')
+        expected = (timezone.now() + timedelta(days=7)).date().strftime('%d %b %Y')
         self.assertEqual(sent.call_args.kwargs['review_by'], expected)
 
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)
     def test_the_interview_reminder_names_the_same_due_date(self):
         from unittest import mock
         from django.core.management import call_command
-        _configure(self.org, 'review_sla_days', 5)
+        _configure(self.org, 'review_sla_days', 7)   # the floor since org-timing S1 (was 5)
         app = self._assigned_app(self.cohort, 'd1', days_ago=1)
         now = timezone.now()
         ScholarshipApplication.objects.filter(pk=app.pk).update(
@@ -708,7 +712,7 @@ class TestPerOrgReviewClocks(TestCase):
                            '.send_reviewer_interview_reminder_email') as rev:
             call_command('send_interview_reminders')
         app.refresh_from_db()
-        expected = (app.assigned_at + timedelta(days=5)).date().strftime('%d %b %Y')
+        expected = (app.assigned_at + timedelta(days=7)).date().strftime('%d %b %Y')
         self.assertEqual(rev.call_args.kwargs['verdict_due'], expected)
 
 
@@ -928,7 +932,8 @@ class TestPerOrgInterviewRules(TestCase):
         _configure(self.org, 'interview_window_end_min', 16 * 60)
         _configure(self.org, 'interview_slot_step_min', 15)
         _configure(self.org, 'interview_min_lead_hours', 48)
-        _configure(self.org, 'interview_reschedule_cutoff_hours', 3)
+        # 6 = the floor since org-timing Sprint 1 narrowed the range (was 3).
+        _configure(self.org, 'interview_reschedule_cutoff_hours', 6)
         _configure(self.org, 'interview_duration_min', 60)
         payload = interview_schedule_payload(self._app(self.cohort, 'd3'))
         self.assertEqual(
@@ -936,7 +941,7 @@ class TestPerOrgInterviewRules(TestCase):
                                      'slot_step_min', 'slot_min_lead_hours',
                                      'reschedule_cutoff_hours', 'interview_duration_min')},
             {'slot_window_start_min': 600, 'slot_window_end_min': 960, 'slot_step_min': 15,
-             'slot_min_lead_hours': 48, 'reschedule_cutoff_hours': 3,
+             'slot_min_lead_hours': 48, 'reschedule_cutoff_hours': 6,
              'interview_duration_min': 60})
         # The student's payload is the SAME seam — one serve, both screens.
         platform = interview_schedule_payload(self._app(self.null_cohort, 'd4'))
@@ -946,8 +951,10 @@ class TestPerOrgInterviewRules(TestCase):
     def test_the_cutoff_the_email_promises_is_the_cutoff_the_service_enforces(self):
         """One number, two surfaces: `_cutoff_ok` refuses on it and the booked email prints it."""
         from apps.scholarship import emails, scheduling
-        _configure(self.org, 'interview_reschedule_cutoff_hours', 48)
-        start = timezone.now() + timedelta(hours=30)
+        # 23h, inside the range org-timing Sprint 1 set (6–24) and under the 24h earliest-slot
+        # default (rule R5) — was 48h with a start 30h away.
+        _configure(self.org, 'interview_reschedule_cutoff_hours', 23)
+        start = timezone.now() + timedelta(hours=18)
         self.assertFalse(scheduling._cutoff_ok(start, timezone.now(), self.org))
         self.assertTrue(scheduling._cutoff_ok(start, timezone.now(), None))   # platform 12h
         sent = {}
@@ -958,8 +965,8 @@ class TestPerOrgInterviewRules(TestCase):
                                side_effect=lambda *a, **k: sent.update(html=a[2]) or True):
             emails.send_interview_booked_email(
                 'stu@x.com', student_name='Kavi', reviewer_name='Bala', start=start,
-                english_only=True, duration_min=30, reschedule_cutoff_hours=48)
-        self.assertIn('48', sent.get('html', ''))
+                english_only=True, duration_min=30, reschedule_cutoff_hours=23)
+        self.assertIn('23', sent.get('html', ''))
 
     def test_the_propose_endpoint_refuses_outside_the_organisations_window(self):
         from django.test import override_settings as _os
@@ -1180,12 +1187,12 @@ class TestPerOrgAgreementClocks(TestCase):
 
     def test_the_accept_clock_arms_on_the_organisations_window(self):
         from apps.scholarship import sponsorship
-        _configure(self.org, 'sign_accept_deadline_days', 7)
+        _configure(self.org, 'sign_accept_deadline_days', 14)   # the floor since org-timing S1 (was 7)
         app = self._app(self.cohort, 'sf-a1')
         self._offer(app)
         now = timezone.now()
         deadline = sponsorship.arm_sign_deadline(app, now=now)
-        self.assertEqual((deadline - now).days, 7)
+        self.assertEqual((deadline - now).days, 14)
         # A tenant that tuned nothing keeps the platform's 30.
         other = self._app(self.null_cohort, 'sf-a2')
         self._offer(other)
@@ -1195,13 +1202,14 @@ class TestPerOrgAgreementClocks(TestCase):
     def test_the_signing_reminder_interval_is_resolved_per_application(self):
         """⚠ THE INTERVAL USED TO BE HOISTED ABOVE THE LOOP. One sweep spans every tenant, so a
         single interval would apply one organisation's cadence to all of them. Here the tuned
-        org (1 day) is due for a nudge and the platform org (3 days) is not, in the SAME run."""
+        org (2 days — the floor since org-timing Sprint 1; was 1) is due for a nudge and the
+        platform org (3 days) is not, in the SAME run."""
         from unittest import mock
         from datetime import timedelta
         from apps.scholarship import bursary
         from apps.scholarship.models import BursaryAgreement
-        _configure(self.org, 'sign_reminder_days', 1)
-        signed = timezone.now() - timedelta(days=2)
+        _configure(self.org, 'sign_reminder_days', 2)
+        signed = timezone.now() - timedelta(days=2, hours=12)
         for cohort, uid in ((self.cohort, 'sf-r1'), (self.null_cohort, 'sf-r2')):
             app = self._app(cohort, uid)
             ag = BursaryAgreement.objects.create(application=app)
@@ -1214,7 +1222,7 @@ class TestPerOrgAgreementClocks(TestCase):
                 mock.patch.object(bursary, 'foundation_notify_emails',
                                   return_value=['ops@x.com']):
             summary = bursary.send_signing_reminders()
-        # Only the org whose cadence is 1 day has come due at 2 days old.
+        # Only the org whose cadence is 2 days has come due at 2.5 days old.
         self.assertEqual(summary['countersign'], 1)
         nudged = set(BursaryAgreement.objects
                      .filter(countersign_reminded_at__isnull=False)

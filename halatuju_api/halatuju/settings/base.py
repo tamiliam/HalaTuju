@@ -421,9 +421,9 @@ PARTNER_NOTIFY_MAX_PER_RUN = int(os.environ.get('PARTNER_NOTIFY_MAX_PER_RUN', '1
 # DECLINE: a post-shortlist admin decline is held silently this many days before it reveals
 # (status → rejected) + the decline email sends. AWARD: a student-accepted award is held this
 # many days before the 'funding confirmed' email + onboarding (the 'sponsored' flip). An admin
-# can cancel/hold within the window and the student never sees it. **Default 0 = OFF (immediate),
-# like the other comms flags — prod sets the env vars (DECLINE=7, AWARD=2) to switch the cool-off on.**
-DECLINE_COOLOFF_DAYS = float(os.environ.get('DECLINE_COOLOFF_DAYS', '0'))
+# can cancel/hold within the window and the student never sees it. **Defaults 7 and 2 = production's
+# values (org-timing Sprint 1); these are now PLATFORM defaults behind org_config decline_hold_days.**
+DECLINE_COOLOFF_DAYS = float(os.environ.get('DECLINE_COOLOFF_DAYS', '7'))
 # A QC-CONFIRMED decline uses a shorter cool-off than DECLINE_COOLOFF_DAYS: the decision has already
 # passed the two-person QC gate (reviewer verdict + QC confirmation), so the reconsideration window
 # is shorter. Hours (default 24). 0 = email immediately.
@@ -433,7 +433,7 @@ DECLINE_QC_COOLOFF_HOURS = float(os.environ.get('DECLINE_QC_COOLOFF_HOURS', '24'
 # momentum. Display-only (a query-time window); fundability and the public waiting-count stay
 # strict (recommended-only), so a funded card can never be double-funded or inflate the counter.
 POOL_FUNDED_GRACE_HOURS = float(os.environ.get('POOL_FUNDED_GRACE_HOURS', '48'))
-AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
+AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '2'))   # org: award_confirm_hold_days
 # Sponsor "last seen": how long between stamps of Sponsor.last_seen_at. Deliberately a day —
 # the question is "is this sponsor still with us", which is measured in days, and a write on
 # every portal request would be an UPDATE on a read path for no extra information.

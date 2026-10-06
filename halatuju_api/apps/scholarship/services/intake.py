@@ -195,13 +195,20 @@ def score_application(application):
     """
     Score a freshly-submitted application **silently** (S8 delayed reveal): run the
     engine, store verdict + bucket + reason, and set ``decision_due_at`` =
-    submitted_at + the cohort's success/decline delay. Status stays ``submitted`` and
-    NO email is sent — the scheduler reveals the verdict later via ``release_decision``.
-    Returns the ShortlistResult.
+    submitted_at + the ORGANISATION's delay (org-timing Sprint 1: org_config
+    ``shortlist_email_delay_minutes`` / ``not_shortlisted_email_delay_hours``; until then it
+    was the intake round's own columns). Status stays ``submitted`` and NO email is sent —
+    the scheduler reveals the verdict later via ``release_decision``. Also reached by
+    ``rescore_pending_decisions``. Returns the ShortlistResult.
     """
+    from apps.courses import org_config
     cohort = application.cohort
     result = evaluate(application, cohort)
-    delay_h = cohort.success_delay_hours if result.verdict == 'shortlisted' else cohort.decline_delay_hours
+    org = application.owning_organisation
+    if result.verdict == 'shortlisted':
+        delay = timedelta(minutes=org_config.value(org, 'shortlist_email_delay_minutes'))
+    else:
+        delay = timedelta(hours=org_config.value(org, 'not_shortlisted_email_delay_hours'))
     base = application.submitted_at or timezone.now()
     application.verdict = result.verdict
     application.bucket = result.bucket
@@ -209,7 +216,7 @@ def score_application(application):
     # Engine-set rejection bucket (merit/need/ineligible) — drives the decline email
     # at reveal. Blank when shortlisted.
     application.rejection_category = result.category
-    application.decision_due_at = base + timedelta(hours=delay_h)
+    application.decision_due_at = base + delay
     application.save(update_fields=[
         'verdict', 'bucket', 'shortlist_reason', 'rejection_category', 'decision_due_at',
     ])

@@ -164,11 +164,12 @@ def _finalise_reject(application, category, by_email):
 def admin_reject(application, admin, category, cooloff=None):
     """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
 
-    ``cooloff`` (a ``timedelta``) overrides the day-based ``DECLINE_COOLOFF_DAYS`` embargo — used
-    by the QC-confirmed decline, whose window is 24h (the decision already passed two-person QC).
+    ``cooloff`` (a ``timedelta``) overrides the organisation's day-based ``decline_hold_days``
+    embargo — used by the QC-confirmed decline, whose window is the organisation's
+    ``qc_decline_hold_hours`` (the decision already passed two-person QC).
 
     The DECISION is immediate — the application flips to ``rejected`` at once, so the cockpit and
-    records reflect it straight away. With a cool-off (DECLINE_COOLOFF_DAYS > 0, default 7) only
+    records reflect it straight away. With a cool-off (``decline_hold_days``, platform 7) only
     the STUDENT EMAIL is EMBARGOED for the window: it is scheduled (``decline_due_at``) and sent
     by ``release_pending_declines`` when the window passes — softening the news. Until then the
     student does not see the rejection (``ApplicationReadSerializer`` masks an email-embargoed
@@ -201,13 +202,15 @@ def admin_reject(application, admin, category, cooloff=None):
     else:
         raise ValueError('bad_category')
 
-    from django.conf import settings as _settings
-    # Email-embargo window. An explicit `cooloff` timedelta (the QC-confirmed decline's 24h) wins;
-    # otherwise fall back to the day-based DECLINE_COOLOFF_DAYS. total_seconds()<=0 → email now.
+    # Email-embargo window. An explicit `cooloff` timedelta (the QC-confirmed decline's hold) wins;
+    # otherwise the ORGANISATION's `decline_hold_days` (org-timing Sprint 1; platform default
+    # DECLINE_COOLOFF_DAYS). total_seconds()<=0 → email now (reachable only through a platform
+    # env value of 0 — an organisation's own value has a floor of 3).
     if cooloff is not None:
         window = cooloff
     else:
-        days = getattr(_settings, 'DECLINE_COOLOFF_DAYS', 7)
+        from apps.courses import org_config
+        days = org_config.value(application.owning_organisation, 'decline_hold_days')
         window = timedelta(days=days) if (days and days > 0) else timedelta(0)
     by = getattr(admin, 'email', '') or ''
     _record_reject(application, category, by)        # the decision is immediate, either way

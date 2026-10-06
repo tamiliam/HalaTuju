@@ -87,9 +87,9 @@ class ClocksReadTheOrganisationTests(TestCase):
         from apps.courses.models import OrganisationConfiguration
         org = PartnerOrganisation.objects.create(code='sla-org', name='SLA Org')
         OrganisationConfiguration.objects.create(
-            organisation=org, values={'review_sla_days': 4})
+            organisation=org, values={'review_sla_days': 7})   # 7 = the floor since org-timing S1
         org.refresh_from_db()
-        self.assertEqual(review_sla.clocks(org)[0], 4)
+        self.assertEqual(review_sla.clocks(org)[0], 7)
         self.assertEqual(review_sla.clocks(None)[0], 10)
 
 

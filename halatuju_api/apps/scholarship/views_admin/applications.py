@@ -71,9 +71,12 @@ class AdminApplicationListView(_AdminBase):
             if programme is None:
                 return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
 
+        # `owning_organisation__configuration`: a row's readiness reads the organisation's
+        # `query_answer_days` (org-timing Sprint 1) — joined here so it costs no query a row.
         # org-fence: _org_scoped applied immediately below (tenant wall on the list).
         qs = ScholarshipApplication.objects.select_related(
-            'profile', 'cohort', 'assigned_to').order_by('-submitted_at')
+            'profile', 'cohort', 'assigned_to',
+            'owning_organisation__configuration').order_by('-submitted_at')
         qs = self._org_scoped(qs, admin)   # tenant fence (Sprint 3a) — super sees all
         if scope == 'assigned':
             qs = qs.filter(assigned_to=admin)   # reviewer sees only their assigned applicants

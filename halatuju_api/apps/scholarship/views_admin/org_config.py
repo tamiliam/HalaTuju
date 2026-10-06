@@ -154,7 +154,11 @@ class AdminOrganisationConfigurationView(_AdminBase):
         except org_config.OrgConfigError as exc:
             code = exc.code
             http = status.HTTP_404_NOT_FOUND if code == 'unknown_setting' else status.HTTP_400_BAD_REQUEST
-            return Response({'error': code, 'code': code, 'key': exc.key}, status=http)
+            # Every refusal names its key. A CROSS-FIELD rule (org-timing Sprint 1: R1–R7 and the
+            # interview window) also says `rule: true`, so the tab can show that rule's own
+            # sentence under the named box without keeping a copy of the rule list.
+            return Response({'error': code, 'code': code, 'key': exc.key,
+                             'rule': org_config.is_rule_code(code)}, status=http)
 
         row, _created = OrganisationConfiguration.objects.get_or_create(organisation=org)
         values = dict(row.values or {})

@@ -22,7 +22,18 @@ def open_clarify_queries(application):
 
 
 def query_sla_days(application):
-    return getattr(application.cohort, 'query_response_sla_days', 5) or 5
+    """Days the student has to answer — the organisation's ``query_answer_days`` (org-timing
+    Sprint 1; until then the intake round's ``query_response_sla_days``). ⚠ Also the
+    reviewer-assignment floor: ``is_ready_for_assignment`` reads this same number."""
+    from apps.courses import org_config
+    return org_config.value(application.owning_organisation, 'query_answer_days')
+
+
+def query_reminder_lead_days(application):
+    """How many days before the answer deadline the one query reminder goes — the
+    organisation's ``query_reminder_lead_days`` (org-timing Sprint 1; was a literal 2)."""
+    from apps.courses import org_config
+    return org_config.value(application.owning_organisation, 'query_reminder_lead_days')
 
 
 def query_sla(application, now=None):
@@ -91,7 +102,8 @@ def with_open_student_tasks(queryset):
 
 def is_ready_for_assignment(application, now=None):
     """The Check-3 assignment gate: an application is ready when ALL student-assigned tasks
-    are done OR the SLA window (5 days from submit) has lapsed — whichever comes first
+    are done OR the SLA window (the organisation's ``query_answer_days`` from submit,
+    platform default 5) has lapsed — whichever comes first
     (proceed-as-is, flagged for the reviewer). Never ready before submission.
 
     V3 (#8, owner decision 2026-07-03): the FLOOR here is the SUBMIT clock (submit + SLA days),

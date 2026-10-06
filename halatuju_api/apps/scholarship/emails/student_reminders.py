@@ -8,7 +8,9 @@ from .student_decisions import _send, normalise_lang
 
 
 # ── Completion reminders (R1 +2d · R2 +9d · R3 +23d · R4/final +53d) ──────────
-# Escalating from a gentle nudge to a final "5 days or we close" warning. Each links
+# The stage days are the organisation's (org_config `reminder_1_days` …, org-timing Sprint 1);
+# the ones above are the platform defaults.
+# Escalating from a gentle nudge to a final "{close_days} days or we close" warning. Each links
 # to the application page (the {link} kwarg is filled by _send). Keyed by stage 1–4.
 # Shared help line — built-in AI helper (Cikgu Gopal) + a human fallback. Filled into
 # the {help} placeholder of each reminder; the closure email uses CLOSURE_HELP.
@@ -117,21 +119,21 @@ REMINDER_BODIES = {
         'en': ("Dear {name},\n\n"
                "This is the final reminder about your {programme} application. It has been "
                "shortlisted but is not yet complete.\n\n"
-               "If it is not completed within 5 days, we will close it — and you would need "
+               "If it is not completed within {close_days} days, we will close it — and you would need "
                "to start a new application if you still wish to be considered.\n\n"
                "{help}\n\n"
                "Please complete it now:\n{link}\n\nWarm regards,\nThe {programme} Team"),
         'ms': ("Salam {name},\n\n"
                "Ini ialah peringatan terakhir mengenai permohonan {programme} anda. Ia telah "
                "disenarai pendek tetapi belum lengkap.\n\n"
-               "Jika ia tidak dilengkapkan dalam masa 5 hari, kami akan menutupnya — dan anda "
+               "Jika ia tidak dilengkapkan dalam masa {close_days} hari, kami akan menutupnya — dan anda "
                "perlu memulakan permohonan baharu jika anda masih ingin dipertimbangkan.\n\n"
                "{help}\n\n"
                "Sila lengkapkannya sekarang:\n{link}\n\nSalam hormat,\nPasukan {programme}"),
         'ta': ("அன்புள்ள {name},\n\n"
                "உங்கள் {programme} விண்ணப்பம் குறித்த இறுதி நினைவூட்டல் இது. அது "
                "தேர்வுசெய்யப்பட்டுள்ளது, ஆனால் இன்னும் முழுமையடையவில்லை.\n\n"
-               "5 நாட்களுக்குள் நிறைவுசெய்யப்படாவிட்டால், நாங்கள் அதை மூடிவிடுவோம் — மேலும் "
+               "{close_days} நாட்களுக்குள் நிறைவுசெய்யப்படாவிட்டால், நாங்கள் அதை மூடிவிடுவோம் — மேலும் "
                "நீங்கள் இன்னும் பரிசீலிக்கப்பட விரும்பினால், புதிய விண்ணப்பத்தைத் தொடங்க "
                "வேண்டியிருக்கும்.\n\n"
                "{help}\n\n"
@@ -169,14 +171,24 @@ CLOSED_BODIES = {
 }
 
 
-def send_reminder_email(to_email, applicant_name, programme_name, stage, lang='en', branding=None):
+def send_reminder_email(to_email, applicant_name, programme_name, stage, lang='en', branding=None,
+                        close_days=None):
     """Send completion reminder ``stage`` (1–4). Stage 4 is the final 'complete within
-    5 days or we close it' warning. No-op for an unknown stage."""
+    {close_days} days or we close it' warning. No-op for an unknown stage.
+
+    ``close_days`` is the organisation's ``auto_close_after_final_reminder_days`` — the sweep
+    passes the SAME number it waits before closing (org-timing Sprint 1), so the promise and the
+    close cannot disagree. ``None`` (a caller with no organisation in hand) reads the platform
+    default, which renders the R4 wording byte-identically to the fixed "5" it replaced."""
     if stage not in REMINDER_SUBJECTS:
         return False
+    if close_days is None:
+        from apps.courses import org_config
+        close_days = org_config.default('auto_close_after_final_reminder_days')
     return _send(to_email, REMINDER_SUBJECTS[stage], REMINDER_BODIES[stage],
                  applicant_name, programme_name, lang,
-                 extra={'help': _help_line(HELP_LINE, normalise_lang(lang), branding)},
+                 extra={'help': _help_line(HELP_LINE, normalise_lang(lang), branding),
+                        'close_days': close_days},
                  branding=branding)
 
 

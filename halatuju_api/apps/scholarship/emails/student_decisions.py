@@ -44,8 +44,8 @@ ACK_BODIES = {
     ),
 }
 
-# ── Invitation / shortlisted (sent at +success_delay_hours by the scheduler; per-cohort,
-#    currently 55 min for b40-2026 — fast internal release; public criteria still say "within 2 days") ──
+# ── Invitation / shortlisted (sent after the organisation's shortlist_email_delay_minutes by the
+#    scheduler — org-timing Sprint 1; platform 60 min; public criteria still say "within 48 hours") ──
 PASS_SUBJECTS = {
     'en': 'Good news about your {programme} application',
     'ms': 'Berita baik tentang permohonan {programme} anda',
@@ -133,7 +133,7 @@ AWARD_CONFIRMED_BODIES = {
     ),
 }
 
-# ── Decline / not this round (warm; sent at +decline_delay_hours, ~48h, by the scheduler) ──
+# ── Decline / not this round (warm; sent after the org's not_shortlisted_email_delay_hours, ~48h) ──
 FAIL_SUBJECTS = {
     'en': 'Update on your {programme} application',
     'ms': 'Maklumat terkini permohonan {programme} anda',

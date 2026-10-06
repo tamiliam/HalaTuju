@@ -529,7 +529,7 @@ class ScholarshipApplication(models.Model):
     )
     # The award_amount snapshot, taken in the same breath as pre_decline_status and for the
     # same reason. A decline CLEARS award_amount (a rejected student holds no money), but
-    # DECLINE_COOLOFF_DAYS is 7 in production, so every admin_reject is reversible for a week —
+    # the decline hold (org_config decline_hold_days, platform 7) means admin_reject is reversible —
     # and a cancelled CONTRACTUAL decline restores a FUNDED student whose sponsorship is
     # reinstated. Without this snapshot that student would come back with no award amount, and
     # `payments.amount_due` would clamp their pay to zero (cap = award − paid) silently. So the

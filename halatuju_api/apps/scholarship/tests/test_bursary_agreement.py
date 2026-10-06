@@ -286,6 +286,9 @@ class TestBursaryFlagOff(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
+    # Needs the flag-OFF acceptance to confirm AT ONCE (no hold) — said explicitly since the
+    # platform default became production's 2 days (org-timing Sprint 1).
+    @override_settings(AWARD_COOLOFF_DAYS=0)
     def test_accept_without_signature_fields_no_agreement(self):
         app = _fundable_app(self.cohort, suffix='off')
         # No parent_ic, no signature fields — exactly the old call shape.

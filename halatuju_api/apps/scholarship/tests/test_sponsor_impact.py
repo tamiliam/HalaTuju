@@ -71,6 +71,9 @@ class TestSponsorImpactService(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
                                                       programme=_gift())
 
+    # Needs the flag-OFF acceptance to confirm AT ONCE (no hold) — said explicitly since the
+    # platform default became production's 2 days (org-timing Sprint 1).
+    @override_settings(AWARD_COOLOFF_DAYS=0)
     def test_impact_aggregates_committed_completed_and_semesters(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('10000'), programme=_gift())
@@ -110,6 +113,7 @@ class TestSponsorshipSerializerJourney(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
                                                       programme=_gift())
 
+    @override_settings(AWARD_COOLOFF_DAYS=0)   # confirm at once — see the test above
     def test_serializer_carries_onboarded_and_semesters_no_leak(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())

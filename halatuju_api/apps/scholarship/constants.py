@@ -1,7 +1,8 @@
 """The platform numbers `apps.courses` reads — the back-edge's one door (code health H16).
 
-**Why this module exists.** `apps/courses/org_config.py` is the registry of tunable settings, and
-for six of them the platform default is not a Django setting but a module constant that lives in
+**Why this module exists.** `apps/courses/org_config_registry.py` is the registry of tunable
+settings, and for six of them (eight since org-timing Sprint 1) the platform default is not a
+Django setting but a module constant that lives in
 `apps.scholarship`. Reading those six meant `courses` importing `scholarship.services`,
 `scholarship.check2_queries` and `scholarship.scheduling` — three behaviour-bearing modules, one
 of them an eighteen-module package, fetched to read an integer. Every one of those imports had to
@@ -46,3 +47,12 @@ SLOT_STEP_MIN = 30
 # Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
 # has time to see + pick + prepare.
 SLOT_MIN_LEAD_HOURS = 24
+
+# The completion-reminder ladder, in DAYS from `reminder_anchor_at` (R1 +2, R2 +9, R3 +23,
+# R4/final +53), and the grace after R4 before the application auto-closes. MOVED here from
+# `services/reminders.py` (org-timing Sprint 1, 2026-10-07), which imports and re-exports both
+# names unchanged. PLATFORM defaults behind `reminder_1_days` … `reminder_4_days` and
+# `auto_close_after_final_reminder_days`; the sweep reads the organisation's ladder through
+# `services.reminders.reminder_ladder`, never these names directly.
+REMINDER_THRESHOLDS_DAYS = (2, 9, 23, 53)   # index 0 → R1 … index 3 → R4 (final)
+FINAL_REMINDER_GRACE_DAYS = 5               # close this long after R4 was sent

@@ -71,6 +71,9 @@ class TestSponsorActivityService(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026,
                                                       programme=_gift())
 
+    # Needs the flag-OFF acceptance to confirm AT ONCE (no hold) — said explicitly since the
+    # platform default became production's 2 days (org-timing Sprint 1).
+    @override_settings(AWARD_COOLOFF_DAYS=0)
     def test_activity_collects_lifecycle_events_newest_first(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('10000'), programme=_gift())

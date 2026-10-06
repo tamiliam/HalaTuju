@@ -108,6 +108,9 @@ class TestSponsorshipService(TestCase):
             svc.fund_student(s, app)
         self.assertEqual(e.exception.code, 'not_fundable')
 
+    # Needs the flag-OFF acceptance to confirm AT ONCE (no hold) — said explicitly since the
+    # platform default became production's 2 days (org-timing Sprint 1). Same for the four below.
+    @override_settings(AWARD_COOLOFF_DAYS=0)
     def test_accept_adult_activates_and_sponsors(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
@@ -207,6 +210,7 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(sp.status, 'offered')
 
     # ─── F8a: award-confirmed email + onboarding ─────────────────────────────
+    @override_settings(AWARD_COOLOFF_DAYS=0)   # confirm at once (org-timing Sprint 1 default 2)
     def test_accept_emails_award_confirmed_without_sponsor_identity(self):
         from django.core import mail
         s = _sponsor()
@@ -222,6 +226,7 @@ class TestSponsorshipService(TestCase):
         self.assertNotIn('Jane Sponsor', blob)
         self.assertNotIn('jane@sponsor.example', blob)
 
+    @override_settings(AWARD_COOLOFF_DAYS=0)   # confirm at once (org-timing Sprint 1 default 2)
     def test_complete_onboarding_records_consent_and_stamps(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
@@ -331,6 +336,7 @@ class TestSponsorEndpoints(TestCase):
     def _onboard_url(self):
         return f'/api/v1/scholarship/applications/{self.app.id}/onboarding-complete/'
 
+    @override_settings(AWARD_COOLOFF_DAYS=0)   # confirm at once (org-timing Sprint 1 default 2)
     def test_onboarding_complete_endpoint(self):
         s = Sponsor.objects.get(supabase_user_id='spon-ok')
         Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
@@ -395,6 +401,7 @@ class TestStudentAward(TestCase):
                 self.assertEqual(r.status_code, 200, r.content)
                 self.assertIs(r.json()['agreement_enabled'], flag)
 
+    @override_settings(AWARD_COOLOFF_DAYS=0)   # confirm at once (org-timing Sprint 1 default 2)
     def test_accept_activates(self):
         self._auth()
         r = self.client.post('/api/v1/scholarship/award/', {'action': 'accept'}, format='json')

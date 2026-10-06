@@ -1,9 +1,10 @@
 """
 Release due B40 decisions: reveal the verdict (flip status + send the email) for
-applications whose ``decision_due_at`` has passed. Shortlist verdicts reveal at
-+success_delay_hours, declines at +decline_delay_hours — per-cohort (b40-2026: 55 min
-shortlist / 48 h decline; model default 48). Both delays are FloatFields (sub-hour OK)
-baked into ``decision_due_at`` when the application is scored at submit. Idempotent: an
+applications whose ``decision_due_at`` has passed. Shortlist verdicts reveal after the
+organisation's ``shortlist_email_delay_minutes`` (platform 60), declines after its
+``not_shortlisted_email_delay_hours`` (platform 48) — org_config settings since org-timing
+Sprint 1 (2026-10-07; before that, per-cohort columns). Both are baked into
+``decision_due_at`` when the application is scored at submit. Idempotent: an
 already-released application is skipped.
 
 Schedule this (e.g. Cloud Scheduler → Cloud Run Job, every ~15 min) once deployed.
