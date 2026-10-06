@@ -63,6 +63,14 @@ describe('the panels arrive on demand', () => {
       .toBe(SIGNED.pdf_url)
   })
 
+  it('accepted but not yet onboarded → the onboarding panel, linking to onboarding', async () => {
+    render(<LazyApplicationAwardPanels {...base} status="active" award={ACCEPTED} acceptanceEnabled
+      onboardedAt={null} />)
+    expect(await screen.findByText('scholarship.application.awardPanel.onboardingBody')).toBeTruthy()
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/scholarship/onboarding')
+    expect(screen.getByRole('link').textContent).toBe('scholarship.application.awardPanel.onboardingCta')
+  })
+
   it('accepted and onboarded → the award panel goes', async () => {
     render(<LazyApplicationAwardPanels {...base} status="active" award={ACCEPTED} acceptanceEnabled
       onboardedAt="2026-10-01T00:00:00Z" bursary={SIGNED} />)
