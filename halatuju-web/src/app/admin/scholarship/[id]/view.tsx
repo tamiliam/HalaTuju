@@ -109,6 +109,7 @@ import { RateAndEstimate } from './view/RateAndEstimate'
 import { BlockersPanel } from './view/BlockersPanel'
 import { QcPanel } from './view/QcPanel'
 import { OrgRejectPanel } from './view/OrgRejectPanel'
+import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
 import { PostAwardPanels } from './view/PostAwardPanels'
 
@@ -1041,14 +1042,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.decision.title')}</h2>
-          {/* Reopen = REVERSE a recorded decision (super-only). Asks for a reason first;
-              reopening holds the profile from the pool and unlocks the panel. */}
-          {decisionLocked && isSuper && !reopenOpen && (
-            <button onClick={() => { setReopenOpen(true); setReopenReason('') }}
-              className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100">
-              {t('admin.scholarship.recordVerdict.reopen')}
-            </button>
-          )}
+          {/* Reopen = REVERSE a recorded decision (super-only; asks for a reason first). A pending
+              decline offers its cancel instead — the api refuses that reopen (TD-349). */}
+          <ReopenHeaderControl app={app} t={t} busy={busy} decisionLocked={decisionLocked} isSuper={isSuper}
+            hidden={reopenOpen} onReopen={() => { setReopenOpen(true); setReopenReason('') }} onCancelDecline={doCancelDecline} />
         </div>
 
         {/* The "why are you reopening?" prompt — a reopen asserts a reviewer error, so a

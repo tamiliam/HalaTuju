@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-349 — an embargoed decline can no longer reach the student with no email - 2026-10-06
+
+Fix, api + web (cockpit). No migration, no model change. Built locally, NOT deployed. Two rounds:
+round 1's reopen design was replaced after the adversarial review (lead decision).
+
+- **Reopen is refused while a decline is pending.** `reopen.reopen_decision` raises
+  `ReopenError('decline_pending')` before any write when `decline_due_at` or
+  `pending_rejection_category` is set; the reopen view answers 400 `{code: 'decline_pending', error:
+  <a sentence: cancel the pending decline instead>}`. It used to clear the marker and leave the case
+  `rejected` — shown to her at once, with no email ever. "Cancel the pending decline" is the way to
+  re-decide (it restores the stage, award and sponsorship, with no reopen flag).
+- **Cockpit.** The Decision card offers a super "Cancel the decline" in Reopen's place while a decline
+  is pending (`lib/decisionReopenOffer.ts`, drift-tested against `reopen.py`;
+  `view/ReopenHeaderControl.tsx`; existing string, existing handler). `view.tsx` 1354 → 1351 lines.
+- **Release.** `release_pending_declines` claims each due decline in its own transaction
+  (`select_for_update(skip_locked=True)` on PostgreSQL; then re-checks it is still pending, due and
+  `rejected`, else skips silently), sends FIRST and clears the markers only once the email has gone
+  (`_send_decline_for` now returns whether it did; the sender swallows a mail failure). A failure is
+  logged at ERROR with the application id, leaves the decline masked, is not counted, does not stop
+  the batch, and is retried next run. No address → released without an email, WARNING. The legacy
+  "record the decline at send time" arm is removed (such a row is skipped with a WARNING).
+- **One "told" rule** (`_told_of_this_decline`: this decline's stamp, `>= rejected_at`) for the cron and
+  `cancel_pending_decline`; the cancel now re-reads the embargo facts under a row lock first.
+- Tests: `test_td349_embargo_no_email.py` (new, 19); `decisionReopenOffer.test.ts` (new, 13);
+  `view.decision.test.tsx` +2; re-pointed: `test_decision_reopen.test_reopen_refuses_a_pending_decline`
+  (asserted the defect) and `test_contractual_reject_money`'s reopen test. decisions.md 2026-10-06.
+  Debt: TD-349 closed; TD-355 to TD-359 raised (TD-356 pre-existing, API-only since the refusal).
+
 ## Requests #27-#29 — payment-run skipped count, merchant average, Micro stall - 2026-10-06
 
 - **#28** New spending category `micro_stall` ("Micro stall – no online info") that ONLY A PERSON may assign — the model's vocabulary, prompt, schema and `PROMPT_VERSION` (`spend-cat-v1`) are unchanged, and no keyword rule names it; a person can also deliberately mark a shop `unsorted` through the existing correction (stored `decided_by='owner'`), which the merchant list's existing "Determined by" pill shows as Reviewer vs Not determined, and which leaves the "to check" queue while its money stays unplaced; the sorter's owner skip is pinned for both. **Migration `scholarship 0166_spend_category_micro_stall` — choices-only, NO DDL (`sqlmigrate` prints no-op); production needs only the ledger row.** The Overview chart's category list gained the code (it filtered unknown codes out) and is now pinned to the model by `spendCategoryDrift.test.ts`. New labels in en/ms/ta for the Overview chart and the sponsor card (Malay and Tamil are first drafts).

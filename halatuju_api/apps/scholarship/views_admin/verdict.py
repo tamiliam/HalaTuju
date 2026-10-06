@@ -211,8 +211,8 @@ class AdminReopenDecisionView(_AdminBase):
         try:
             reopen_service.reopen_decision(
                 app, by_admin=admin, reason=request.data.get('reason'))
-        except reopen_service.ReopenError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        except reopen_service.ReopenError as e:   # 'decline_pending' carries a sentence (TD-349)
+            return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -343,7 +343,7 @@ class AdminQcDecisionView(_AdminBase):
             try:
                 reopen_service.reopen_decision(app, by_admin=admin, reason=comments)
             except reopen_service.ReopenError as e:
-                return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             reviewer = app.assigned_to
             if reviewer is not None and getattr(reviewer, 'email', ''):
                 from ..emails import send_qc_returned_email
@@ -372,7 +372,7 @@ class AdminQcDecisionView(_AdminBase):
             try:
                 reopen_service.reopen_decision(app, by_admin=admin, reason=comments)
             except reopen_service.ReopenError as e:
-                return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
             from datetime import timedelta
             from django.conf import settings as _settings

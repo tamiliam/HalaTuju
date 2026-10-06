@@ -1,5 +1,55 @@
 # Architectural Decisions — HalaTuju
 
+## Every way out of the decline embargo sends before it unmasks; a reopen refuses an embargoed decline — cancel it instead — 2026-10-06 (TD-349, lead decision after the adversarial review)
+
+**The rule.** While a decline's email is embargoed, the pending markers (`pending_rejection_category`,
+`decline_due_at`) are what hide the decision from the student (`student_status.student_facing_status`)
+and what select it for the release cron. So no code may clear them until the email has gone — or
+until the decline itself is reversed by the cancel. There are exactly two ways out, and a third door
+that is now shut:
+1. **The release cron** (`services/decline.release_pending_declines`) CLAIMS each due decline in its
+   own transaction — `select_for_update(skip_locked=True)` (PostgreSQL; SQLite ignores it), then a
+   re-check that it is still pending, still due and still `rejected`; anything a cancel (or another
+   run) got to first is skipped silently and not counted — then sends FIRST and clears the markers
+   only when `_send_decline_for` answers True (it now returns whether the email went — a mail
+   failure is swallowed by the sender, so an exception handler alone would miss Brevo being down).
+   A failure is logged at ERROR with the application id, leaves the decline masked, is not counted,
+   never stops the batch, and the next run retries. **At-least-once, not at-most-once:** the old
+   order (clear, then send) was chosen so "a re-run can never double-send", and bought silence
+   instead. An email already stamped for THIS decline is not sent again. **Not guarded (TD-359):** a
+   database failure after Brevo accepted the email and before the commit loses the stamp — the next
+   run sends it again, and a cancel in that window reverses a decline she has been emailed. Guarding
+   it needs a marker committed before the send, which only trades a duplicate for silence again.
+   **No address at all** → released without an email and logged at WARNING (kept masked, she would
+   see her old stage for ever; TD-358). The old arm that RECORDED a decline at send time for a
+   pending marker on a live case is gone: such a row is skipped with a WARNING.
+2. **A cancel** (`cancel_pending_decline`) reverses the decline — and now re-reads the embargo facts
+   under a row lock before deciding, so a cancel holding a row loaded before the cron sent cannot
+   reverse an emailed decline.
+3. **A reopen (shut).** `reopen.reopen_decision` of an embargoed decline is REFUSED — `decline_pending`,
+   before any write — and the cockpit offers "cancel the pending decline" in Reopen's place
+   (`lib/decisionReopenOffer.ts`). The cancel restores the snapshot status, the award and the
+   sponsorship, leaves no reopen flag, and her view does not move; a reopen is then possible on the
+   restored case. A decline whose email HAS gone is reopened as before (stays `rejected`, reopened).
+   **Why not reverse the decline inside the reopen (round 1)?** The adversarial review showed it
+   reopens INTO the funnel: (i) a contractual decline of a funded student landed at
+   `active`/`maintenance` WITH the reopen flag, where the cockpit offers Approve/Decline and a
+   Decline + Save clears a sponsored student's `award_amount` (silently unpayable), with a failed
+   sponsorship reinstatement signalled only by a log; (ii) the cancel's `via=cancel` award audit line
+   was written by a reopen; (iii) a decline from `interviewing`, reopened then `cancel_reopen`ed,
+   reached `interviewed` (AWAITING QC) without the verify step (TD-356); and (iv) the cancel and the
+   cron disagreed on "told". The refusal leaves one door per job.
+
+**One "told" rule.** `_told_of_this_decline`: `decline_email_sent_at` set AND `>= rejected_at` — a
+stamp from an EARLIER decline (declined, reopened, re-decided, declined again) is not this decline's
+email. A row with no `rejected_at` cannot be compared, so any stamp counts as told (the rule before
+TD-349, for legacy rows only; every decline that can carry the embargo stamps `rejected_at`). The
+cron and `cancel_pending_decline` both read it.
+
+Immediate declines (`org_admin_reject`, a zero cool-off) and the pre-shortlist reveal
+(`services/intake.release_decision`) have no embargo and are out of this rule; their swallowed send
+failure is TD-355.
+
 ## One application per organisation; the server decides and the apply page asks — 2026-10-05 (owner's ruling on TD-337)
 
 **The rulings, verbatim (owner, tamiliam, 2026-10-05).**

@@ -22,10 +22,19 @@ from django.utils import timezone
 from .models import DecisionReopen, SponsorProfile
 
 
+#: The sentence a view shows for a code; any other code is shown as itself (as before).
+REOPEN_MESSAGES = {
+    'decline_pending': ('This decline has not been sent to the student yet. Cancel the '
+                        'pending decline instead — it returns the case to where it was.'),
+}
+
+
 class ReopenError(Exception):
-    """Raised with a stable .code for the view to surface (e.g. 'not_decided')."""
+    """Raised with a stable .code for the view to surface (e.g. 'not_decided') and a
+    .message for its `error` field."""
     def __init__(self, code):
         self.code = code
+        self.message = REOPEN_MESSAGES.get(code, code)
         super().__init__(code)
 
 
@@ -47,12 +56,29 @@ def reopen_decision(app, *, by_admin, reason):
     Validates a decision exists and isn't already reopened, and that a reason was
     given (a reopen asserts a reviewer error — it must be justified). Returns the
     new DecisionReopen row.
+
+    ⚠ AN EMBARGOED DECLINE IS REFUSED — `decline_pending` (TD-349, lead decision 2026-10-06).
+    While the decline's email has not gone, the way to re-decide is
+    `services.decline.cancel_pending_decline` (the cockpit's "cancel the pending decline"):
+    it restores the snapshot status, the award amount and a lapsed sponsorship, leaves no
+    reopen flag, and what the student sees does not move. Two earlier designs were wrong:
+      - clearing the pending markers here (the original code) left the case 'rejected' with
+        nothing masking it — she saw the decline at once and the email never went;
+      - reversing the decline here (TD-349 round 1) reopened INTO the funnel: a funded
+        student landed at active/maintenance with the reopen flag (where Decline + Save
+        clears the award of a sponsored student), a failed sponsorship reinstatement showed
+        only in a log, the cancel's award audit line was attributed to a reopen, and a
+        decline from 'interviewing' reached AWAITING QC through cancel_reopen (TD-356).
+    The refusal comes before any write. A decline whose email HAS gone is reopened as before:
+    the case stays 'rejected', reopened, for the verdict to be re-recorded.
     """
     reason = (reason or '').strip()
     if app.verdict_decided_at is None:
         raise ReopenError('not_decided')
     if app.decision_reopened_at is not None:
         raise ReopenError('already_reopened')
+    if app.decline_due_at or app.pending_rejection_category:
+        raise ReopenError('decline_pending')
     if not reason:
         raise ReopenError('reason_required')
 
@@ -83,13 +109,6 @@ def reopen_decision(app, *, by_admin, reason):
         elif app.status == 'interviewed':
             app.status = 'interviewing'
             fields.append('status')
-        # A pending (cool-off) decline is part of the decision being reversed — clear it so the
-        # reopened case is a clean slate (the reviewer re-decides from 'interviewed').
-        if app.decline_due_at or app.pending_rejection_category:
-            app.pending_rejection_category = ''
-            app.decline_due_at = None
-            app.pending_decline_by = ''
-            fields += ['pending_rejection_category', 'decline_due_at', 'pending_decline_by']
         app.save(update_fields=fields)
         row = DecisionReopen.objects.create(
             application=app,

@@ -128,18 +128,23 @@ class TestDecisionReopen(TestCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')
 
-    def test_reopen_clears_pending_decline(self):
+    def test_reopen_refuses_a_pending_decline(self):
+        # RE-POINTED by TD-349 (2026-10-06): this asserted the reopen CLEARED the pending markers,
+        # which is the defect — a reopen of a 'rejected' case left it unmasked with no email.
+        # A pending decline is now refused ('decline_pending'); cancel it instead. Nothing moves.
         from datetime import timedelta
         self.app.pending_rejection_category = 'contractual'
         self.app.decline_due_at = timezone.now() + timedelta(days=7)
         self.app.pending_decline_by = 's@x.com'
         self.app.save(update_fields=['pending_rejection_category', 'decline_due_at', 'pending_decline_by'])
         from apps.scholarship import reopen as reopen_service
-        reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='reconsider')
+        with self.assertRaises(reopen_service.ReopenError) as caught:
+            reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='reconsider')
+        self.assertEqual(caught.exception.code, 'decline_pending')
         self.app.refresh_from_db()
-        self.assertEqual(self.app.status, 'interviewed')
-        self.assertEqual(self.app.pending_rejection_category, '')
-        self.assertIsNone(self.app.decline_due_at)
+        self.assertEqual(self.app.status, 'recommended')
+        self.assertEqual(self.app.pending_rejection_category, 'contractual')
+        self.assertIsNone(self.app.decision_reopened_at)
 
     def test_reject_after_reopen_is_interview_not_contractual(self):
         # Reopen an accepted case → 'interviewed'; declining then buckets as 'interview'

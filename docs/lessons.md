@@ -1234,3 +1234,19 @@ guardians) through PostgREST with the public key, past every Django rule. Found 
 Django rule protects, list the policies by `cmd`; any student-role INSERT/UPDATE/DELETE on it is a
 bypass unless the browser genuinely writes that table directly. Own-row is an isolation property,
 not an integrity property. (request #26)
+
+## 2026-10-06 — a marker that hides an outcome is cleared AFTER the thing it waits for
+
+The decline embargo's markers both hid the decision from the student and selected it for the
+release cron. The cron cleared them first "so a re-run can never double-send", then sent through a
+best-effort sender that answers False instead of raising — so a Brevo outage turned every due decline
+into a decision on her screen, no email, and nothing left to select it again. A reopen cleared the
+same markers and left the status alone. **Rule:** when a flag means "not yet — waiting for X", clear
+it only after X has happened (or after the thing it hides is undone), and choose at-least-once
+over at-most-once when the cost of silence is a person learning bad news from a status. When X goes
+through a best-effort helper, read its return value — a `try` alone catches nothing. And sweep every
+writer of the flag, not only the one that was reported. **Round 2 added one more:** when an action
+would first have to UNDO another action's state (a reopen undoing a pending decline), refuse it and
+point at the door that owns the undo. Round 1 composed the two, and the review found four holes —
+the reopened case landed in states (a funded student, reopened) whose controls were never built for
+that pairing. One door per job. (TD-349)

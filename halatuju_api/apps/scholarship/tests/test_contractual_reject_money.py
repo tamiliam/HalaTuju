@@ -84,6 +84,24 @@ class TestContractualRejectLapsesSponsorship(TestCase):
         self.assertTrue(app.sponsorships.filter(status='active').exists())
         self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('0'))     # held again
 
+    def test_a_reopen_of_the_embargoed_decline_is_refused_and_moves_no_money(self):
+        # TD-349 (review finding 1): reversing the decline inside a reopen landed a funded student
+        # at 'active' WITH the reopen flag, where Decline + Save clears a sponsored student's award.
+        # The reopen is refused; the money stays exactly where the decline put it, and the cancel
+        # above is the way back.
+        from apps.scholarship import reopen
+        app, s = self._funded_app()
+        services.admin_reject(app, self.admin, 'contractual')
+        ScholarshipApplication.objects.filter(pk=app.pk).update(verdict_decided_at=timezone.now())
+        app.refresh_from_db()
+        with self.assertRaises(reopen.ReopenError):
+            reopen.reopen_decision(app, by_admin=self.admin, reason='The contract was misread.')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')
+        self.assertIsNone(app.award_amount)
+        self.assertFalse(app.sponsorships.filter(status__in=Sponsorship.HOLDING).exists())
+        self.assertEqual(svc.sponsor_balance(s, _gift()), Decimal('3000'))  # still returned
+
     def test_cancel_without_covering_balance_leaves_lapsed(self):
         app, s = self._funded_app()
         services.admin_reject(app, self.admin, 'contractual')

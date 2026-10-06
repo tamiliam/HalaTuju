@@ -7,6 +7,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 import logging
 from datetime import timedelta
 
+from django.db import transaction
 from django.utils import timezone
 
 from ..emails import send_decline_email
@@ -46,9 +47,11 @@ def review_writes_closed(application):
 
     ⚠ **A REOPENED DECISION IS STILL OPEN, whatever the status says.** `reopen.reopen_decision`
     walks most statuses back toward the reviewer, but `rejected` is NOT in its mapping — a super
-    who reopens a rejected decision leaves the case AT 'rejected' with `decision_reopened_at`
-    set, and is then expected to re-record the verdict. Keying on status alone would refuse the
-    one write that reopen exists to permit. `officerCockpit.isCaseClosed` mirrors this exactly,
+    who reopens a rejected decision whose email has gone leaves the case AT 'rejected' with
+    `decision_reopened_at` set, and is then expected to re-record the verdict. (One whose email
+    is still embargoed cannot be reopened at all — `decline_pending`, TD-349; cancel it instead.)
+    Keying on status alone would refuse the one write that reopen exists to permit.
+    `officerCockpit.isCaseClosed` mirrors this exactly,
     so the cockpit cannot offer a control this refuses (lessons.md 2026-07-16: the offer-set and
     the accept-set are one unit of change).
 
@@ -73,9 +76,10 @@ def _record_reject(application, category, by_email, now=None, comments=''):
     accepted, reopened, then declined through the `interview` bucket kept their amount. Two
     live records did (apps 21 and 71, RM5,000 between them, cleared 2026-07-30). It never
     misdirected a payment — a rejected student is not in any run — but it silently overstated
-    committed funds to anything that sums the column. Clearing it HERE covers all three paths
-    (admin_reject, org_admin_reject, the legacy release_pending_declines arm) because they all
-    pass through this function; that is the whole reason to fix it here and not at each caller.
+    committed funds to anything that sums the column. Clearing it HERE covers every path
+    (admin_reject, org_admin_reject; the legacy release_pending_declines arm went with TD-349)
+    because they all pass through this function; that is the whole reason to fix it here and
+    not at each caller.
     """
     now = now or timezone.now()
     application.pre_decline_status = application.status
@@ -98,17 +102,42 @@ def _record_reject(application, category, by_email, now=None, comments=''):
                     application.id, (by_email or '?'), award_was, '-')
 
 
+def _told_of_this_decline(application):
+    """Has the student been emailed about THIS decline? The one rule for both exits from the
+    embargo — `cancel_pending_decline` (told → it may not reverse) and the release cron (told →
+    it may not send again). TD-349 review finding 3: they used to disagree.
+
+    Told = `decline_email_sent_at` set AND at or after `rejected_at`: a stamp from an EARLIER
+    decline (declined, reopened, re-decided, declined again) is not this decline's email.
+    ⚠ A row with no `rejected_at` cannot be compared; any stamp then counts as told — the rule
+    before TD-349, kept for legacy rows only (`_record_reject` stamps `rejected_at` on every
+    decline that can carry the embargo, so no embargoed row lacks it)."""
+    sent = application.decline_email_sent_at
+    if sent is None:
+        return False
+    return application.rejected_at is None or sent >= application.rejected_at
+
+
+def _decline_address(application):
+    """Where the decline email goes: the application's notify address, else the profile's."""
+    return (application.notify_email
+            or getattr(application.profile, 'contact_email', '') or '')
+
+
 def _send_decline_for(application):
     """Send the bucket decline email for an already-rejected application + stamp when it went.
-    Reads the recorded ``rejection_category`` so the right (HTML) bucket email is chosen."""
+    Reads the recorded ``rejection_category`` so the right (HTML) bucket email is chosen.
+
+    Returns True only when the email went (and was stamped). ⚠ A MAIL FAILURE DOES NOT RAISE:
+    the sender logs it and answers False, so a caller that must not unmask before the email has
+    gone reads this return value — an exception alone would miss Brevo being down (TD-349)."""
     now = timezone.now()
     name = getattr(application.profile, 'name', '') if application.profile else ''
     # Embargoed declines are released by a cron — attribute the send to the owning org.
     from .. import usage as _usage
     with _usage.usage_context(application=application):
         sent_decline = send_decline_email(
-            to_email=(application.notify_email
-                      or getattr(application.profile, 'contact_email', '') or ''),
+            to_email=_decline_address(application),
             applicant_name=name, programme_name=application.cohort.name,
             category=application.rejection_category, lang=application.locale,
         )
@@ -119,6 +148,7 @@ def _send_decline_for(application):
         application.decline_email_sent_at = now
         application.decision_email_sent_at = now
         application.save(update_fields=['decline_email_sent_at', 'decision_email_sent_at'])
+    return bool(sent_decline)
 
 
 def _finalise_reject(application, category, by_email):
@@ -239,7 +269,29 @@ def cancel_pending_decline(application, by_email=''):
     email already stamped for every normally-processed applicant (the restore branch never
     ran, so a "cancelled" decline stayed rejected and student-visible); (b) the restore
     target must be the snapshot — a hardcoded 'interviewed' now means AWAITING QC, so a
-    decline made pre-verdict would land in the QC queue with no recorded verdict."""
+    decline made pre-verdict would land in the QC queue with no recorded verdict.
+
+    (d) TD-349: the release cron may have sent and stamped this decline since the caller
+    loaded the row, so the facts the decision rests on are RE-READ under a row lock first (on
+    PostgreSQL the lock also waits out a release in flight; SQLite ignores it)."""
+    with transaction.atomic():
+        _reread_embargo_facts(application)
+        return _cancel_pending_decline_locked(application, by_email)
+
+
+#: What `cancel_pending_decline` decides on, re-read from the database (TD-349).
+_EMBARGO_FACTS = ('status', 'pending_rejection_category', 'decline_due_at',
+                  'decline_email_sent_at', 'rejected_at')
+
+
+def _reread_embargo_facts(application):
+    fresh = (ScholarshipApplication.objects.select_for_update()
+             .filter(pk=application.pk).values(*_EMBARGO_FACTS).first())
+    for field, value in (fresh or {}).items():
+        setattr(application, field, value)
+
+
+def _cancel_pending_decline_locked(application, by_email):
     if not (application.decline_due_at or application.pending_rejection_category):
         return False
     award_was = application.award_amount   # TD-203; `by_email` is the acting admin, for the log
@@ -247,7 +299,8 @@ def cancel_pending_decline(application, by_email=''):
     application.decline_due_at = None
     application.pending_decline_by = ''
     fields = ['pending_rejection_category', 'decline_due_at', 'pending_decline_by']
-    if application.status == 'rejected' and application.decline_email_sent_at is None:
+    # (c) "told" is THIS decline's email, by the one rule the release cron also reads (TD-349).
+    if application.status == 'rejected' and not _told_of_this_decline(application):
         restore_to = application.pre_decline_status or 'interviewed'
         # A cancelled CONTRACTUAL decline of a funded student: the reject auto-lapsed the
         # sponsorship (#6), so try to reinstate it — best-effort, only when the sponsor's
@@ -286,26 +339,74 @@ def cancel_pending_decline(application, by_email=''):
     return True
 
 
+def _claim_due_decline(pk, now):
+    """Lock and RE-READ one due decline right before its send (TD-349 review findings 2, 4),
+    or None to skip it — silently, not counted, not an error.
+
+    The cron read its list a moment ago; since then a cancel may have reversed the decline (the
+    markers are gone) or re-declined it with a new window, and another run of this cron may be
+    sending it. `skip_locked` leaves a row another run (or a cancel) holds to that holder.
+    ⚠ SQLite — the test database — ignores `select_for_update`, so locally only the re-check is
+    exercised; the lock itself is PostgreSQL's. Call inside `transaction.atomic()`."""
+    app = (ScholarshipApplication.objects.select_for_update(skip_locked=True)
+           .filter(pk=pk).first())
+    if (app is None or not app.pending_rejection_category or app.decline_due_at is None
+            or app.decline_due_at > now):
+        return None
+    if app.status != 'rejected':
+        # The old "legacy row" arm recorded the decline here; every embargo since 2026-06-27 is
+        # recorded first, and the only writer that left markers on a live case (the reopen) now
+        # refuses. Never guess a decline at send time: say so and leave it for an officer.
+        logger.warning('release_pending_declines: app %s carries a pending decline but is %r, '
+                       'not rejected — skipped; cancel the pending decline.', app.pk, app.status)
+        return None
+    return app
+
+
+def _release_one_decline(app):
+    """Send one embargoed decline, THEN lift the embargo. True once released; False (markers
+    left, so the decline stays masked and the next run retries) when the email did not go.
+
+    ⚠ THE ORDER IS THE FIX (TD-349). The markers are what mask the decline from the student
+    (`student_status.student_facing_status`) and what select it for this cron, so clearing them
+    before the send turned a failed send into a decline she could see, with no email and no
+    retry. Send first; clear only after the email has gone.
+    Two edges, decided: an email already sent for THIS decline (`_told_of_this_decline`) is not
+    sent again; a decline with no address at all is released without an email (nothing to retry;
+    kept masked she would see her old stage for ever) and logged for an officer."""
+    if not _told_of_this_decline(app):
+        if not _decline_address(app):
+            logger.warning('release_pending_declines: app %s has no email address — decline '
+                           'released WITHOUT an email; tell the student another way.', app.id)
+        elif not _send_decline_for(app):
+            logger.error('release_pending_declines: app %s — the decline email did not go; the '
+                         'decline stays masked and the next run retries.', app.id)
+            return False
+    app.pending_rejection_category = ''
+    app.decline_due_at = None
+    app.pending_decline_by = ''
+    app.save(update_fields=['pending_rejection_category', 'decline_due_at', 'pending_decline_by'])
+    return True
+
+
 def release_pending_declines(now=None):
     """Send every embargoed decline email whose window has passed, then clear the email markers.
     The application is ALREADY 'rejected' (recorded at decline time) — this only lifts the email
-    embargo. Intended for the scheduler. Returns the count of emails released."""
+    embargo. Intended for the scheduler. Returns the count released (a failed send is not
+    counted: it is logged at ERROR and retried on the next run, and never stops the batch)."""
     now = now or timezone.now()
-    qs = (ScholarshipApplication.objects
-          .filter(decline_due_at__isnull=False, decline_due_at__lte=now)
-          .exclude(pending_rejection_category='')
-          .select_related('cohort', 'profile'))
+    due = list(ScholarshipApplication.objects
+               .filter(decline_due_at__isnull=False, decline_due_at__lte=now)
+               .exclude(pending_rejection_category='')
+               .values_list('pk', flat=True))
     released = 0
-    for app in qs:
-        category, by = app.pending_rejection_category, app.pending_decline_by
-        # Clear the email markers first so a re-run can never double-send.
-        app.pending_rejection_category = ''
-        app.decline_due_at = None
-        app.pending_decline_by = ''
-        app.save(update_fields=['pending_rejection_category', 'decline_due_at', 'pending_decline_by'])
-        # Defensive: a legacy pending row whose status wasn't flipped at decline time.
-        if app.status != 'rejected':
-            _record_reject(app, category, by)
-        _send_decline_for(app)
-        released += 1
+    for pk in due:
+        try:
+            with transaction.atomic():      # one application, claimed, sent, cleared
+                app = _claim_due_decline(pk, now)
+                if app is not None and _release_one_decline(app):
+                    released += 1
+        except Exception:
+            logger.error('release_pending_declines: app %s — the release raised; the decline '
+                         'stays masked and the next run retries.', pk, exc_info=True)
     return released
