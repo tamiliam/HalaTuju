@@ -2,13 +2,21 @@
 
 import { useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
-import { searchSchools } from '@/data/secondary-schools'
+import type { SecondarySchool } from '@/data/secondary-schools'
 
 /**
  * Searchable School field for the B40 apply form. Suggests matches from the MOE
  * secondary-school list as the student types, but the typed text is always the
  * value — so a school that isn't listed (or is spelled differently) is never
  * blocked. Selecting a suggestion fills in its official name.
+ *
+ * ⚠ THE LIST LOADS ON DEMAND (TD-352, 2026-10-06). The 2,480 schools are ~30 kB gzipped and rode
+ * in the first load of `/scholarship/apply`, `/profile` and `/onboarding/profile` — the three
+ * routes that draw this field. It is now an `import()` started the moment the field is likely to
+ * be used: pointer over it, a touch, or focus — so a typist rarely waits. Until it arrives (or if
+ * it never does) there are simply no suggestions; the typed text is the value before, during and
+ * after the load, and nothing submitted changes. The `/profile` postcode table is the precedent
+ * (`lib/usePostcodeAutofill.ts`). The specifier is a LITERAL so the bundler emits a real chunk.
  */
 export default function SchoolSelect({
   value,
@@ -23,9 +31,20 @@ export default function SchoolSelect({
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [search, setSearch] = useState<((q: string) => SecondarySchool[]) | null>(null)
+  const asked = useRef(false)
 
-  const matches = open ? searchSchools(value) : []
-  const showPanel = open && value.trim().length >= 2
+  // Start the list's import once; a failure only means no suggestions (the next focus may retry).
+  const load = () => {
+    if (asked.current) return
+    asked.current = true
+    import('@/data/secondary-schools')
+      .then((m) => setSearch(() => m.searchSchools))
+      .catch(() => { asked.current = false })
+  }
+
+  const matches = open && search ? search(value) : []
+  const showPanel = open && !!search && value.trim().length >= 2
   const exact = matches.some((m) => m.name.toLowerCase() === value.trim().toLowerCase())
 
   const choose = (name: string) => {
@@ -46,7 +65,9 @@ export default function SchoolSelect({
         aria-autocomplete="list"
         placeholder={t('scholarship.apply.schoolSearchPlaceholder')}
         onChange={(e) => { onChange(e.target.value); setOpen(true); setActive(-1) }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { load(); setOpen(true) }}
+        onPointerEnter={load}
+        onTouchStart={load}
         onBlur={() => { blurTimer.current = setTimeout(() => setOpen(false), 120) }}
         onKeyDown={(e) => {
           if (!showPanel || matches.length === 0) return
