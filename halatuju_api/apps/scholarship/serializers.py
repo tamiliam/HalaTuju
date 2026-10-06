@@ -709,6 +709,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # S6: closure bucket — lets the in-programme page show the right "programme
             # complete" (graduated/completed) vs neutral closed copy.
             'closure_reason',
+            # TD-352: a 'closed' case is in-programme (the thank-you relay) only if it was ever
+            # FUNDED — an officer may now close a stalled case before any award.
+            'active_at',
             'acknowledged_at', 'submitted_at', 'updated_at',
             # Phase C: confirm-submit timestamp + the admin's request-more-docs note
             'profile_completed_at', 'info_request_note', 'info_requested_at',

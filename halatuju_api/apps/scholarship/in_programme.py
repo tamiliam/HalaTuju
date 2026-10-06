@@ -44,6 +44,10 @@ _THANK_YOU_STATES = ('active', 'maintenance', 'closed')
 def _require_can_thank(application):
     if application is None or application.status not in _THANK_YOU_STATES:
         raise InProgrammeError('not_in_programme')
+    # TD-352: `closed` counts only for a case that was FUNDED (`active_at` stamped). An officer may
+    # now close a stalled case before any award; that student has no sponsor to thank.
+    if application.status == 'closed' and application.active_at is None:
+        raise InProgrammeError('not_in_programme')
 
 
 # ── Latest-semester results → progress signal ────────────────────────────────

@@ -510,3 +510,28 @@ class TestClosedBeforeQcIsNotRecommended(TestCase):
         work = _reviewer_workloads([reviewer])[reviewer.id]
         self.assertEqual((work['completed'], work['recommended'], work['declined'],
                           work['unaccounted']), (3, 1, 1, 1))
+
+
+@mock.patch(SENDER, return_value=True)
+class TestClosedBeforeFundingIsNotInProgramme(TestCase):
+    """Review round 1, item 6 (api): the thank-you relay accepts `closed` only for a FUNDED case."""
+
+    def test_a_stalled_close_has_no_sponsor_to_thank(self, _send):
+        from apps.scholarship.in_programme import InProgrammeError, submit_graduation_message
+        app = make_application('recommended')
+        closure.close_application(app, closure_reason='stalled')
+        self.assertIsNone(app.active_at)
+        with self.assertRaises(InProgrammeError):
+            submit_graduation_message(app, raw_text='Thank you.')
+
+    def test_a_funded_close_still_may(self, _send):
+        from apps.scholarship.in_programme import submit_graduation_message
+        app = make_application('maintenance')
+        closure.close_application(app, closure_reason='graduated')
+        self.assertIsNotNone(app.active_at)
+        self.assertEqual(submit_graduation_message(app, raw_text='Thank you so much.').application_id,
+                         app.id)
+
+    def test_the_student_read_carries_active_at(self, _send):
+        from apps.scholarship.serializers import ApplicationReadSerializer
+        self.assertIn('active_at', ApplicationReadSerializer.Meta.fields)

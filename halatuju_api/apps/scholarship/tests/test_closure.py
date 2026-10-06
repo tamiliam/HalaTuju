@@ -21,7 +21,12 @@ def _cohort():
 
 def _app(cohort, status='maintenance', suffix='1'):
     p = StudentProfile.objects.create(supabase_user_id=f'c-{suffix}')
-    return ScholarshipApplication.objects.create(cohort=cohort, profile=p, status=status)
+    # A funded status carries the active stamp the product writes (`_finalise_award`); since TD-352
+    # the thank-you relay after a close reads it (a stalled close before any award has none).
+    from django.utils import timezone
+    active_at = timezone.now() if status in ('active', 'maintenance') else None
+    return ScholarshipApplication.objects.create(cohort=cohort, profile=p, status=status,
+                                                 active_at=active_at)
 
 
 class TestCloseGate(TestCase):

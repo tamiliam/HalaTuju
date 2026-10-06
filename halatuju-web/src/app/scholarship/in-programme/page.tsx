@@ -98,8 +98,11 @@ export default function InProgrammePage() {
         if (!active) return
         // S6: a 'closed' student still reaches this page so they can write a graduation
         // thank-you (the relay stays open after closure); the results form is hidden when closed.
+        // TD-352: only a closed case that was FUNDED (`active_at`) — a stalled close before any
+        // award has no programme and no sponsor (in_programme._require_can_thank agrees).
         const sponsored = res.applications.find(
-          (a) => a.status === 'active' || a.status === 'maintenance' || a.status === 'closed') ?? null
+          (a) => a.status === 'active' || a.status === 'maintenance'
+            || (a.status === 'closed' && !!a.active_at)) ?? null
         if (!sponsored) { setNotInProgramme(true); setLoading(false); return }
         setApp(sponsored)
         await loadAll(sponsored.id, token)

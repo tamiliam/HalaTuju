@@ -79,6 +79,8 @@ export interface ScholarshipApplication {
   maintenance_substate: 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
   /** Post-award S6: closure bucket — '' unless status='closed'. */
   closure_reason: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated' | 'stalled'
+  /** When the award became active (funded); null if never. TD-352: a closed case is in-programme only with it. */
+  active_at?: string | null
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string
