@@ -49,7 +49,7 @@ def _stpm_continuing(application):
     bailed out on an unrelated guard), and a Form 6 letter often carries an intake RANGE
     ("6 / 2025 – 12 / 2026") with no reporting date at all — so a continuing student read as a
     fresh entrant and was committed RM3,000 instead of RM1,000. See
-    docs/retrospective-2026-07-23-reporting-date.md.
+    docs/retrospectives/retrospective-2026-07-23-reporting-date.md.
     """
     from .pathway_engine import started_before_cohort
     return started_before_cohort(application)

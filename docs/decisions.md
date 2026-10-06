@@ -3744,7 +3744,7 @@ are things we already do:
    the programme may decide. Directive framing would undercut both.
 2. **AutoSponsor already allocates without asking each time.** That is only coherent if the
    programme is the one making awards; §3 of the terms now says so explicitly, replacing the missing
-   justification in `docs/retrospective-sponsor-redesign-r6.md`.
+   justification in `docs/retrospectives/retrospective-sponsor-redesign-r6.md`.
 3. **Charitable status later.** A conduit that passes earmarked money to a named beneficiary on a
    donor's instruction is a different animal from a charity receiving gifts, and the difference
    matters when the Foundation is established.

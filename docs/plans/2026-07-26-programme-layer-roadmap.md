@@ -96,7 +96,7 @@ it**, **0 drifted** (`programme.organisation` agrees with `owning_organisation` 
 enabled with the sibling-matching single `Backend service role only` policy, both
 `django_migrations` rows present. Supabase security advisor: the new table appears in **neither**
 the `rls_enabled_no_policy` nor the anonymous-access list. Retro:
-`docs/retrospective-2026-07-26-platform-p1a-programme-layer.md`.
+`docs/retrospectives/retrospective-2026-07-26-platform-p1a-programme-layer.md`.
 
 **▶ DEPLOY: not required by this sprint** — nothing reads the new column, and the schema is ahead of
 the code (the safe direction: additive columns the live code ignores). The next functional push
@@ -141,7 +141,7 @@ the cross-programme total — the same class of mechanical check as the org-fenc
 **RM172,000.00**; last migration `0119`, no gap). Post-check confirmed the **no-money-moved
 invariant held exactly**: 6 donations / **RM172,000.00** after, **0 unattributed**, all under
 `brightpath-flagship`, **0** attributed to the wrong organisation, both `django_migrations` rows
-present. Retro: `docs/retrospective-2026-07-26-platform-p2a-funds-per-programme.md`.
+present. Retro: `docs/retrospectives/retrospective-2026-07-26-platform-p2a-funds-per-programme.md`.
 
 **▶ DEPLOY: still not required.** Schema is ahead of code on both P1a and P2a — the safe direction.
 The next functional push carries them together. Owner-gated, as every HalaTuju deploy is.
@@ -159,7 +159,7 @@ programme **column** (owner decision — not a grouping, which owes a design pas
 disambiguate (`_next_reference` appends `-02`), and per-programme rates are already expressible
 through the contract template's `monthly_amount`. Neither needed building.
 
-4696 pytest (+18). Retro `docs/retrospective-2026-07-26-platform-p2b-payment-programme.md`.
+4696 pytest (+18). Retro `docs/retrospectives/retrospective-2026-07-26-platform-p2b-payment-programme.md`.
 
 **▶ AT DEPLOY: apply `0126`+`0127` migrate-first, THEN merge.** Post-check: every run with items
 has a programme; no run disagrees with its own students; `PR-2026-08-01` still holds 30 items.

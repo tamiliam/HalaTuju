@@ -2,7 +2,7 @@
 
 > **DELIVERED (P1+P2+P3, 2026-07-16) — then AMENDED by the owner's live review (2026-07-16/17).**
 > Where this plan and the code differ, the CODE is current. The amendments (see
-> `docs/retrospective-2026-07-17-payments-live-review.md` + CHANGELOG):
+> `docs/retrospectives/retrospective-2026-07-17-payments-live-review.md` + CHANGELOG):
 > D4-3 → HARD pathway floors (STPM/Matric/Asasi Jul · Poly/UA Aug · PISMP Sep, even for
 > continuing students); D4-4 → an emailed-but-unconfirmed setup task DOES gate
 > (`vircle_unconfirmed`; only the 8 no-task legacy students pay on the ID alone); NEW month

@@ -13,7 +13,7 @@ Decomposed via `implementation-planning.md`.
 > them all as "removed". Sprint 3 was therefore **split** (owner-approved): **3a** = the 89 MOHE-coded UA/Asasi courses
 > (BUILT — scraper `--jenprog spm`, `Course.is_active` migration `0054`, `sync_spm_mohe` restricted + guarded, +29 tests);
 > **3b** = a name+institution crosswalk for the synthetic-ID courses; **3c** = the SPM requirement-page parser (to
-> auto-add new courses). See `decisions.md` + `retrospective-course-data-sprint3.md`.
+> auto-add new courses). See `decisions.md` + `docs/retrospectives/retrospective-course-data-sprint3.md`.
 
 ---
 
@@ -115,7 +115,7 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
 
 ## Sprint roadmap
 
-### Sprint 1 — STPM refresh wrapper + dated archive + annual reminder  ·  *complexity: low*  ·  ✅ **SHIPPED & LIVE 2026-06-13** (`main` `b16f7d5`; annual scheduler `halatuju-refresh-reminder` enabled; retro `docs/retrospective-course-data-sprint1.md`)
+### Sprint 1 — STPM refresh wrapper + dated archive + annual reminder  ·  *complexity: low*  ·  ✅ **SHIPPED & LIVE 2026-06-13** (`main` `b16f7d5`; annual scheduler `halatuju-refresh-reminder` enabled; retro `docs/retrospectives/retrospective-course-data-sprint1.md`)
 - **Goal:** Turn the fragile 5-step STPM refresh into one auditable command with rollback history.
 - **Scope:** new `refresh_stpm` management command (scrape → sanity-check → validate-urls →
   sync dry-run → audit, single summary); date-stamped CSV archive (`mohe_<date>.csv`, keep last N);
@@ -124,7 +124,7 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   re-running is idempotent; tests for the wrapper's orchestration + archive naming.
 - **Files:** ~4–6 (1 new command, small archive helper, test, doc).
 
-### Sprint 2 — Catalogue-wide link-checker + freshness audit  ·  *complexity: low*  ·  ✅ **SHIPPED & LIVE 2026-06-13** (`main` `49d2e12`; retro `docs/retrospective-course-data-sprint2.md`) — `validate_course_urls` (HTTP reachability) + `audit_data` LINK HEALTH section. Chose option (A) — **no `last_verified` field/migration**; freshness is audit-run-derived.
+### Sprint 2 — Catalogue-wide link-checker + freshness audit  ·  *complexity: low*  ·  ✅ **SHIPPED & LIVE 2026-06-13** (`main` `49d2e12`; retro `docs/retrospectives/retrospective-course-data-sprint2.md`) — `validate_course_urls` (HTTP reachability) + `audit_data` LINK HEALTH section. Chose option (A) — **no `last_verified` field/migration**; freshness is audit-run-derived.
 - **Goal:** Detect dead links and stale records across the **whole** catalogue (SPM + STPM),
   regardless of source.
 - **Scope:** generalise `validate_stpm_urls` to cover `Course`/`CourseInstitution` hyperlinks;

@@ -122,26 +122,26 @@ engine and the tab already exist — a later sprint is registry entries + wired 
 ## Status
 
 - [x] Sprint A — SHIPPED + DEPLOYED 2026-09-07 (`main` 85d079a6; retro
-      `docs/retrospective-2026-09-07-org-config-sprint-a.md`; BrightPath set 30 days, live)
+      `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-a.md`; BrightPath set 30 days, live)
 - [x] Sprint B — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-b`, branch
       `feat/org-config-sprint-b`; the four student-comms settings + the deferred
       `sponsor_email_max_cards`, threaded through the sponsor email senders; retro
-      `docs/retrospective-2026-09-07-org-config-sprint-b.md`)
+      `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-b.md`)
 - [x] Sprint C — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-c`, branch
       `feat/org-config-sprint-c`; the five reviewers-&-staff clocks; the temp-password TTL and
       dormancy threshold are now SERVED to the FE — the first exercise of the rule Sprint D's
       `interviewSlots.ts` warning states; retro
-      `docs/retrospective-2026-09-07-org-config-sprint-c.md`)
+      `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-c.md`)
 - [x] Sprint D — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-d`, branch
       `feat/org-config-sprint-d`; the six interview settings; the picker's lock-step copy
       deleted in favour of the served payload; retro
-      `docs/retrospective-2026-09-07-org-config-sprint-d.md`)
+      `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-d.md`)
 - [x] Sprint E — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-e`, branch
       `feat/org-config-sprint-e`; the four document limits; retro
-      `docs/retrospective-2026-09-07-org-config-sprint-e.md`)
+      `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-e.md`)
 - [x] Sprint F — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-f`, branch
       `feat/org-config-sprint-f`; the two agreement clocks + three dead settings deleted; retro
-      `docs/retrospective-2026-09-07-org-config-sprint-f.md`)
+      `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-f.md`)
 
 **THE ARC IS COMPLETE.** A ✔ B ✔ C ✔ D ✔ E ✔ F ✔ — 23 settings across six groups on
 Organisation → Settings → Configuration. Anything further starts from the binding rules above:

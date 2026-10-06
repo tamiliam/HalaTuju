@@ -77,7 +77,7 @@ Phase 2 may not modify this file except to ADD the org-2 cases (Phase 4). If a s
 
 1. Full backend suite (`python -m pytest` — currently 4346; expect growth, ZERO failures/skips) + `makemigrations --check` clean (no model changes expected at all).
 2. Confirm `halatuju-web/` has no diffs; no migration files created.
-3. Close-out per `Settings/_workflows/sprint-close.md`: CHANGELOG under "Sprint 5 — Per-org branding & email (backend)"; retrospective `docs/retrospective-2026-07-23-sprint5-branding-email.md`; decisions (D4 alias rule at minimum) + lessons if earned; update `halatuju_api/CLAUDE.md` Next Sprint; run `python Settings/_tools/wat_lint.py`; delete scratch files.
+3. Close-out per `Settings/_workflows/sprint-close.md`: CHANGELOG under "Sprint 5 — Per-org branding & email (backend)"; retrospective `docs/retrospectives/retrospective-2026-07-23-sprint5-branding-email.md`; decisions (D4 alias rule at minimum) + lessons if earned; update `halatuju_api/CLAUDE.md` Next Sprint; run `python Settings/_tools/wat_lint.py`; delete scratch files.
 4. **ONE push.** Verify both Cloud Build triggers by SHORT_SHA; smoke: a gated endpoint 401-not-500, web 200. (API-only change; the web rebuild is incidental.)
 
 ---

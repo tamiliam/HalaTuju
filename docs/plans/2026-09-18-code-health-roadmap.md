@@ -135,7 +135,7 @@ chasing them is how a health arc turns into a rewrite.
 ## Phase 1 — Gates: a broken build cannot ship
 
 ### H1 — One-word gates and reproducible installs ✅ SHIPPED 2026-09-18
-*Retro: `docs/retrospective-2026-09-18-code-health-h1.md`. `unused` 4→0, `skip` 2→0. One deviation: `openpyxl` joined `requirements-dev.txt` (test-only by design). `pytest -n auto` runs in 2 min 59 s — H2's budget figure.*
+*Retro: `docs/retrospectives/retrospective-2026-09-18-code-health-h1.md`. `unused` 4→0, `skip` 2→0. One deviation: `openpyxl` joined `requirements-dev.txt` (test-only by design). `pytest -n auto` runs in 2 min 59 s — H2's budget figure.*
 - **Goal:** anyone (or any agent, or Cloud Build) runs every check with one command, and two builds
   of the same commit install the same code.
 - **Scope:**
@@ -160,7 +160,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** low–medium. **~5h.** Deploys both services (no behaviour change).
 
 ### H2 — Tests run before every deploy ✅ SHIPPED 2026-09-18
-*Retro: `docs/retrospective-2026-09-18-code-health-h2.md`. Both triggers read committed files; 6,714 pytest + 2,354 jest ran before the first gated deploys. Measured: api 8 min 18 s, web 11 min 44 s, ~1,850 of 2,500 free minutes a month. Raised TD-255 (Node 18) and TD-256.*
+*Retro: `docs/retrospectives/retrospective-2026-09-18-code-health-h2.md`. Both triggers read committed files; 6,714 pytest + 2,354 jest ran before the first gated deploys. Measured: api 8 min 18 s, web 11 min 44 s, ~1,850 of 2,500 free minutes a month. Raised TD-255 (Node 18) and TD-256.*
 - **Goal:** a red suite fails the build, and the deploy steps never run.
 - **Scope:**
   - Commit `halatuju_api/cloudbuild.yaml` and `halatuju-web/cloudbuild.yaml` that reproduce the
@@ -185,7 +185,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** medium. **~6h.**
 
 ### H3 — The guards the splits will lean on ✅ SHIPPED 2026-09-18
-*Retro: `docs/retrospective-2026-09-18-code-health-h3.md`. TD-219, TD-240, TD-250 closed; the fence is package-aware for H11. Raised **TD-257** (22 endpoints no test drives — a Phase-2 backfill, after the H5 factory) and **TD-258** (HIGH: the sponsor fund view is outside the fence and a mock donation endpoint is live — reported, not patched — then **fixed the same day on the owner's word** and shipped with H3).*
+*Retro: `docs/retrospectives/retrospective-2026-09-18-code-health-h3.md`. TD-219, TD-240, TD-250 closed; the fence is package-aware for H11. Raised **TD-257** (22 endpoints no test drives — a Phase-2 backfill, after the H5 factory) and **TD-258** (HIGH: the sponsor fund view is outside the fence and a mock donation endpoint is live — reported, not patched — then **fixed the same day on the owner's word** and shipped with H3).*
 - **Goal:** close three holes in the mechanical guards *before* code starts moving between files.
 - **Scope:**
   - **TD-219 (high):** nothing tests the seam between a view and the service it calls — two
@@ -200,7 +200,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** medium. **~6h.** api deploy only if a real gap is found; else tests only.
 
 ### H4 — The standards become tests, inside the gate ✅ SHIPPED 2026-09-19 — **PHASE 1 COMPLETE**
-*Retro: `docs/retrospective-2026-09-19-code-health-h4.md`. 70 tests, two budget files (one per service, inside its trigger's path filter), a ratchet that needs no git, and a `std` reading in `code_health.py` that holds the one loophole git is needed for. Deviation from the text below: TWO files, not one, so an edit to a budget always triggers the build that checks it.*
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h4.md`. 70 tests, two budget files (one per service, inside its trigger's path filter), a ratchet that needs no git, and a `std` reading in `code_health.py` that holds the one loophole git is needed for. Deviation from the text below: TWO files, not one, so an edit to a budget always triggers the build that checks it.*
 - **Goal:** the owner's second ruling, made mechanical. After this sprint a change that breaks a
   standard **cannot deploy**, whoever or whatever wrote it. Built early, on purpose: the rest of
   this arc is then held to the same standards it is installing.
@@ -237,7 +237,7 @@ chasing them is how a health arc turns into a rewrite.
 ## Phase 2 — Tests that can fail
 
 ### H5 — A backend test factory that builds states the product can reach ✅ SHIPPED 2026-09-19
-*Retro: `docs/retrospective-2026-09-19-code-health-h5.md`. 20 files converted, 121 hand-built applications gone, suite 174 s → 123 s, every stage verified against the real code path, and a new gate standard (ledger 154 files → 134, shrink-only). Found one more impossible fixture — the #24 class. The stage list below was the lead's guess; the built one is in `CLAUDE.md` → Test fixtures.*
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h5.md`. 20 files converted, 121 hand-built applications gone, suite 174 s → 123 s, every stage verified against the real code path, and a new gate standard (ledger 154 files → 134, shrink-only). Found one more impossible fixture — the #24 class. The stage list below was the lead's guess; the built one is in `CLAUDE.md` → Test fixtures.*
 - **Goal:** tests stop hand-building applications, so a fixture cannot describe an impossible case.
 - **Scope:** `apps/scholarship/tests/factories.py`: `make_admin(role)`, `make_cohort()`,
   `make_student()`, `auth_token(uid)` (duplicated per file today), and
@@ -253,7 +253,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** medium. **~7h.** No deploy (tests only; H1's `.dockerignore` keeps them out).
 
 ### H6 — A render harness for the cockpit, and the stopgap guards retired ✅ SHIPPED 2026-09-19 — **PHASE 2 COMPLETE**
-*Retro: `docs/retrospective-2026-09-19-code-health-h6.md`. 59 rendered cockpit tests, 16 bite-checks none silent, `guard%` 18 → 10, i18n guard 11 → 35 namespaces, suite 42 s → 21 s. **H14 is unblocked.** Raised **TD-259** (raw i18n keys on the IC-claim screen — to be fixed WITH TD-254, the owner's call).*
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h6.md`. 59 rendered cockpit tests, 16 bite-checks none silent, `guard%` 18 → 10, i18n guard 11 → 35 namespaces, suite 42 s → 21 s. **H14 is unblocked.** Raised **TD-259** (raw i18n keys on the IC-claim screen — to be fixed WITH TD-254, the owner's call).*
 - **Goal:** the 3,587-line reviewer screen is mounted by a real test before anybody moves it.
 - **Scope:**
   - `src/test/adminApplicationDetail.ts`: a typed `AdminApplicationDetail` fixture builder (the
@@ -278,7 +278,7 @@ chasing them is how a health arc turns into a rewrite.
 ## Phase 3 — One rule, one home
 
 ### H7 — Money and text helpers ⚠ touches money ✅ SHIPPED 2026-09-19
-*Retro: `docs/retrospective-2026-09-19-code-health-h7.md`. No behaviour change, proven by 417 characterisation assertions written first. `dup` 10 → 4 (the four are declared exceptions). `money.py`, `text.py`, `gemini.py`. Raised **TD-261**: five defects in money helpers, pinned, not fixed — the owner's call.*
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h7.md`. No behaviour change, proven by 417 characterisation assertions written first. `dup` 10 → 4 (the four are declared exceptions). `money.py`, `text.py`, `gemini.py`. Raised **TD-261**: five defects in money helpers, pinned, not fixed — the owner's call.*
 - **Goal:** no two functions share a name and differ in behaviour.
 - **What the survey found — this is not the merge it looked like:** `_money` is **eight functions
   doing three jobs** (extract a figure from OCR text; parse to `Decimal`; format for display). No
@@ -303,7 +303,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** medium. **~7h.** api deploy.
 
 ### H8 — The income rule gets one served answer (TD-235) ⚠ touches eligibility — ⛔ PHASE A DELIVERED 2026-09-19, PHASE B STOPPED AT ITS GATE
-*Retro: `docs/retrospective-2026-09-19-code-health-h8.md`. The rule has **eleven** homes, not four, and they disagree in sixteen places today (**TD-262**). No production code changed. **The goal as written below is NOT achievable:** "the frozen gate reads the single answer" would un-submit real students — the frozen arm is more permissive on purpose and may only ever widen. What remains is owner-ruled and ordered in TD-262: (1) student screens tell the truth, (2) officer screens follow the gate's rule — needs a production count first, (3) one served answer plus a NAMED frozen arm, then the web reads it, (4) a ruling on whose STR may open the gate. **H9–H10 inherit the rule: characterise first; a mirror is deleted only where the two sides already agree.***
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h8.md`. The rule has **eleven** homes, not four, and they disagree in sixteen places today (**TD-262**). No production code changed. **The goal as written below is NOT achievable:** "the frozen gate reads the single answer" would un-submit real students — the frozen arm is more permissive on purpose and may only ever widen. What remains is owner-ruled and ordered in TD-262: (1) student screens tell the truth, (2) officer screens follow the gate's rule — needs a production count first, (3) one served answer plus a NAMED frozen arm, then the web reads it, (4) a ruling on whose STR may open the gate. **H9–H10 inherit the rule: characterise first; a mirror is deleted only where the two sides already agree.***
 - **Goal:** "is this household's income evidenced?" is answered in one place and *served*.
 - **Scope:** `income_engine.any_member_income_evidenced` becomes the single answer; the frozen
   gate, the cockpit display and the de-dup sweep read it. `src/lib/incomeWizard.ts` — a declared
@@ -316,7 +316,7 @@ chasing them is how a health arc turns into a rewrite.
 - **Complexity:** medium–high. **~9h.** Both services deploy.
 
 ### H9 — De-mirror the front end, wave 1: the decision gates ✅ SHIPPED 2026-09-19
-*Retro: `docs/retrospective-2026-09-19-code-health-h9.md`. **No production code changed.** All six
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h9.md`. **No production code changed.** All six
 named rules characterised side by side first and converted: six drift tests, 153 assertions, 17
 bites (both directions + two no-cry-wolf), every one behaved. Ledger `unguarded_mirrors` **58 → 41**.
 Reading `mirror` added to `code_health.py`, agreeing exactly with the in-repo ledger (41). Raised
@@ -342,7 +342,7 @@ Reading `mirror` added to `code_health.py`, agreeing exactly with the in-repo le
   counts.
 
 ### H10 — De-mirror, wave 2: the rest ✅ SHIPPED 2026-09-19 — **PHASE 3 COMPLETE**
-*Retro: `docs/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** All 41
+*Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** All 41
 remaining ledger entries resolved: 22 gained a drift test, 16 were comments that did not describe a
 copied rule and were reworded to say what the code actually does, and **3 stay on the ledger by
 decision** (the income rule — see below). Reading `mirror` **41 → 3**. Nine drift tests, 36 bites,
@@ -557,7 +557,7 @@ pre-existing test is unchanged and green) · `manage.py check` 0 · `makemigrati
 `xapp` 133 → 133 · `big` 25 → 25 · every other reading delta 0.
 **`hot#1` 273.8 → 107.1**, but read `docs/code-health.md` before quoting it: the tool counts fixes
 by path and does not follow a rename, so the split reads as a hotspot vanishing rather than
-shrinking. **Retro:** `docs/retrospective-2026-09-20-code-health-h11.md`.
+shrinking. **Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h11.md`.
 
 ### H12 — `views_admin` wave 2 ✅ SHIPPED 2026-09-20
 
@@ -604,7 +604,7 @@ to the lines they came from, proved by reading them back off disk against `git s
 **Held:** pytest **7,021 / 3 skipped** (identical — no test added or removed) · `manage.py check`
 0 · `makemigrations --check` clean · `urls.py` byte-identical · code_health **0 FAIL**, `std` ok,
 **`big` 25 → 24**, `hot#1` unchanged. Five bite-checks, all five behaved.
-**Retro:** `docs/retrospective-2026-09-20-code-health-h12.md`. **Cost: ~6h** against the ~9h
+**Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h12.md`. **Cost: ~6h** against the ~9h
 estimate — the ledger was an ordinary tightening this time (no baseline re-pin), and a `symtable`
 pass rather than an AST name walk got every import header right first time.
 
@@ -678,7 +678,7 @@ bite-checks, all six behaved. **Findings raised: TD-269, TD-270, TD-271.**
 ⚠ Read the `hot#1` caveat in the retro before quoting it: the fix COUNT is unchanged at 26; only
 KLOC moved (4.118 → 0.241). The 4,000 lines did not get safer today, they moved to 28 files with no
 fix history yet.
-**Retro:** `docs/retrospective-2026-09-20-code-health-h13.md`. **Cost: ~6h** against the ~6h
+**Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h13.md`. **Cost: ~6h** against the ~6h
 estimate.
 
 ### H14 — The cockpit and the documents component, panel by panel ✅ SHIPPED 2026-09-20
@@ -750,7 +750,7 @@ TD-273.**
 `exhaustive-deps` disables was cut from this sprint's brief: a new shared hook is a design
 change, not a move, and Phase 4 is moves only. It is still worth doing, though it no longer
 unblocks anything: TD-272's fix (2026-09-20) let `IncomeWizard` move with its two disables intact.
-**Retro:** `docs/retrospective-2026-09-20-code-health-h14.md`. **Cost: ~7h** against the ~8h
+**Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h14.md`. **Cost: ~7h** against the ~8h
 estimate.
 
 ### H15 — `models.py` and `services.py` ✅ SHIPPED 2026-09-20
@@ -815,7 +815,7 @@ declared line was blank or header, so no section banner could be lost in a gap.
 `income_engine.py` 95.6, **`xapp` 46 → 46 — it did NOT rise**, because TD-268's edge counting
 landed first. Six bite-checks; five behaved, the sixth was silent and its guard was written.
 **Findings raised: TD-275, TD-276, TD-277. TD-269 discharged for these two files.**
-**Retro:** `docs/retrospective-2026-09-20-code-health-h15.md`. **Cost: ~7h** against the ~8h
+**Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h15.md`. **Cost: ~7h** against the ~8h
 estimate.
 
 <details>
@@ -937,7 +937,7 @@ changed.**
 **`xapp` 46 → 45 — it FELL**, `supp` 139, `skip` 0, `dup` 4, `mirror` 3, `guard%` 20.
 **Seven bite-checks, all seven behaved** — including the logger bite that was SILENT at H15.
 **Findings raised: TD-278, TD-279.**
-**Retro:** `docs/retrospective-2026-09-20-code-health-h16.md`. **Cost: ~7h** against the ~7h
+**Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h16.md`. **Cost: ~7h** against the ~7h
 estimate.
 
 <details>
@@ -1248,7 +1248,7 @@ lift it — it is to write the standing rule and the standards into the workflow
 
 ### H19 — The standards move into how every future sprint is run ✅ SHIPPED 2026-09-20 — **PHASE 6 COMPLETE; THE ARC IS CLOSED**
 
-*Retro: `docs/retrospective-2026-09-20-code-health-h19.md`. Documentation only — no production
+*Retro: `docs/retrospectives/retrospective-2026-09-20-code-health-h19.md`. Documentation only — no production
 code, no test expectation edited, no migration. Gates: pytest 7,053 / 3 skipped and jest 2,958 /
 163 suites, both IDENTICAL to the sprint's own measured baseline; `code_health` 0 FAIL, 6 WARN.*
 

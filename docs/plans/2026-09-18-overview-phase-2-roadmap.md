@@ -9,8 +9,8 @@ sprint close.
 
 | Sprint | Goal | Status |
 |---|---|---|
-| **A** | Intake-year filter + widgets on/off, per organisation | ✅ **SHIPPED 2026-09-18** — live in production, backend migrate-first (`0161_overview_layout`). Retro: `docs/retrospective-2026-09-18-overview-phase-2-sprint-a.md`. (The row said IN PROGRESS until 2026-09-19; it was stale.) |
-| **B** | Widget ORDER | ✅ **SHIPPED 2026-09-19 — up/down arrows only; DRAG-AND-DROP WAS NOT BUILT** (see below). No backend change, no migration: the stored list was already ordered and validated as a permutation in A. Retro: `docs/retrospective-2026-09-19-overview-sprint-b.md`. |
+| **A** | Intake-year filter + widgets on/off, per organisation | ✅ **SHIPPED 2026-09-18** — live in production, backend migrate-first (`0161_overview_layout`). Retro: `docs/retrospectives/retrospective-2026-09-18-overview-phase-2-sprint-a.md`. (The row said IN PROGRESS until 2026-09-19; it was stale.) |
+| **B** | Widget ORDER | ✅ **SHIPPED 2026-09-19 — up/down arrows only; DRAG-AND-DROP WAS NOT BUILT** (see below). No backend change, no migration: the stored list was already ordered and validated as a permutation in A. Retro: `docs/retrospectives/retrospective-2026-09-19-overview-sprint-b.md`. |
 
 ### Sprint B — what was built, and what was not
 

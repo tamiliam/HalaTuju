@@ -96,7 +96,7 @@ python -m pytest apps/courses/tests/test_golden_master.py -v
 
 - `halatuju_api/CLAUDE.md` — detailed architecture, deployment, and testing guide
 - `docs/roadmap.md` — planned features (STPM entrance, admin dashboard)
-- `docs/release-notes-v1.33.0.md` — latest release notes
+- `docs/releases/release-notes-v1.33.0.md` — latest release notes
 - `CHANGELOG.md` — full version history
 
 ## License

@@ -71,7 +71,7 @@ accepts it themselves. You can change it or switch it off whenever you like.
 > all. If this becomes "you decide who gets it and we pass it on", we are a conduit holding someone
 > else's money, which undermines charitable status later and makes §11 unenforceable.
 > The AutoSponsor paragraph is what replaces the missing justification in
-> `docs/retrospective-sponsor-redesign-r6.md`.
+> `docs/retrospectives/retrospective-sponsor-redesign-r6.md`.
 
 ---
 

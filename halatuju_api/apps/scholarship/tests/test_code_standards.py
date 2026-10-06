@@ -194,14 +194,14 @@ COUNT_SLACK = {
 #: untouched at 8547. A path rename is the one case where the frozen record must follow: a key
 #: naming a file that no longer exists describes nothing, and the two tests above would then
 #: demand the line be removed AND refuse the package root with no line left to lower. See the
-#: `_history` note in the JSON and `docs/retrospective-2026-09-20-code-health-h11.md`.
+#: `_history` note in the JSON and `docs/retrospectives/retrospective-2026-09-20-code-health-h11.md`.
 #: ⚠ RE-PINNED AGAIN 2026-09-20 (code health H18), the third deliberate re-pin. A NEW STANDARD was
 #: added — the `query_budgets` ledger — which is H5's case, not H11's: nothing was raised, no
 #: existing ledger gained a member, and no existing number moved. A new standard has to enter the
 #: frozen record or it has no baseline to be measured against, and `budget <= baseline` would be
 #: vacuous for it. The frozen numbers are the honest reading of 2026-09-20 (315 queries to open
 #: one applicant, 385 with three documents) — a debt recorded, not a target met. See the
-#: `_history` note in the JSON, TD-282, and `docs/retrospective-2026-09-20-code-health-h18.md`.
+#: `_history` note in the JSON, TD-282, and `docs/retrospectives/retrospective-2026-09-20-code-health-h18.md`.
 BASELINE_SHA256 = 'c6228b6ae96574c037dc105ea3d6564a49481ff25b2d91952262a52a2396ab6f'
 
 LEDGERS = ('oversize_files', 'long_functions', 'duplicated_names', 'runtime_skips',

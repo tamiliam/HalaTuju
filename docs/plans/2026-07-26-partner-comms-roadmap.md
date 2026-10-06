@@ -2,7 +2,7 @@
 
 **Status: ✅ CLOSED 2026-07-26 — all three sprints shipped and live (DARK).** S1 (controls + wording),
 then S2+S3 together after the owner merged the split. Retro:
-`docs/retrospective-2026-07-26-partner-comms.md` — read that first; this file is kept for the design
+`docs/retrospectives/retrospective-2026-07-26-partner-comms.md` — read that first; this file is kept for the design
 record (the owner corrections, the voice rules, the counts reconciliation) rather than as a plan.
 **Nothing sends** until the owner completes the five steps in `halatuju_api/CLAUDE.md`.
 Owner-approved 2026-07-26, revised the same day after two owner corrections (below).
@@ -285,7 +285,7 @@ caught with nothing live), but it had no further value once the model was settle
 
 Delivered: `partner_comms.render`, `emails.send_partner_email`, `partner_notify.py`, both commands +
 cron slugs, the inline assignment email, +52 tests. Still dark. Retro
-`docs/retrospective-2026-07-26-partner-comms.md`.
+`docs/retrospectives/retrospective-2026-07-26-partner-comms.md`.
 
 ### S2 — The two weekly emails (as scoped)
 

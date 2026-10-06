@@ -197,7 +197,7 @@ Edit `docs/scholarship/role-matrix.md`:
 ### Close-out
 
 - `CHANGELOG.md` under a "Sprint 14 — Finance role (dormant checker) + payments funding summary" heading (incl. the three Phase-0 entries).
-- Retrospective `docs/retrospective-2026-07-23-sprint14-finance-role.md` (flag ms/ta strings for owner's Tamil review; add new screens to the screenshot manifest).
+- Retrospective `docs/retrospectives/retrospective-2026-07-23-sprint14-finance-role.md` (flag ms/ta strings for owner's Tamil review; add new screens to the screenshot manifest).
 - Run `python Settings/_tools/wat_lint.py` at close; follow `Settings/_workflows/sprint-close.md`; update the project CLAUDE.md Next Sprint section.
 - Delete any scratch files.
 

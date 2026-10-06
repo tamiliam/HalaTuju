@@ -31,7 +31,7 @@ engine reads.
 ## 2. What is already built (do NOT rebuild — the module feeds it)
 
 The post-award signing **flow** is complete and deployed DARK (`BURSARY_AGREEMENT_ENABLED=false`),
-migrations `0083`/`0084`/`0085` live; see `docs/retrospective-2026-07-01-post-award-signing.md` +
+migrations `0083`/`0084`/`0085` live; see `docs/retrospectives/retrospective-2026-07-01-post-award-signing.md` +
 `docs/scholarship/bursary-go-live-playbook.md`:
 
 - Follow-up email → Action Centre → **comprehension quiz** ("Understand", 8 checkpoints,

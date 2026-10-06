@@ -4,8 +4,8 @@
 (both screens + the email panel, built on real production figures).
 **Moved here 2026-07-28** from `.claude/plans/snazzy-whistling-biscuit.md` at sprint close, so the
 unbuilt half of the roadmap lives in the repo rather than a scratch file. S1/S1.1/S2 detail is in
-`docs/retrospective-2026-07-28-sponsor-fixes-and-credit-ui.md` and
-`docs/retrospective-2026-07-27-sponsor-detail-s1.md`.
+`docs/retrospectives/retrospective-2026-07-28-sponsor-fixes-and-credit-ui.md` and
+`docs/retrospectives/retrospective-2026-07-27-sponsor-detail-s1.md`.
 
 ## Shipped
 
@@ -15,10 +15,10 @@ unbuilt half of the roadmap lives in the repo rather than a scratch file. S1/S1.
 - **S3 (2026-07-28)** — nine editable sponsor emails, each with its own switch. Migration `0133`
   (`sponsor_email_templates` + `sponsor_email_log`). **Platform flag `SPONSOR_COMMS_ENABLED=1` is
   ON**; three templates seeded on, six off for the owner to review. Retro
-  `docs/retrospective-2026-07-28-sponsor-comms-s3.md`. Section pruned from this file at close.
+  `docs/retrospectives/retrospective-2026-07-28-sponsor-comms-s3.md`. Section pruned from this file at close.
 - **Tables (2026-07-28)** — sorting on every sponsor-list header except Actions, and the paging
   footer on all four sponsor tables above 10 rows. Client-side (TD-190). Retro
-  `docs/retrospective-2026-07-28-sponsor-tables-sort-paginate.md`.
+  `docs/retrospectives/retrospective-2026-07-28-sponsor-tables-sort-paginate.md`.
 
 ## Owner decisions still governing the remainder (2026-07-27)
 

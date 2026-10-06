@@ -79,7 +79,7 @@ recorded against a sponsor; most sponsors have given nothing. Six of the ten hav
 It would have been easy — and wrong — to read "no wallet" as the fault and go looking for why the
 wallet was missing. The owner's own framing settled it and is worth preserving as the rule:
 **seeing students has never depended on holding credit, and must not.** The balance is consulted at
-exactly one point, [sponsorship.py:446](../halatuju_api/apps/scholarship/sponsorship.py#L446), the
+exactly one point, [sponsorship.py:446](../../halatuju_api/apps/scholarship/sponsorship.py#L446), the
 moment a sponsor funds someone. A sponsor with an empty wallet browses the full pool and meets a
 wall only when they click to give.
 

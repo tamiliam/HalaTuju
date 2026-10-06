@@ -20,20 +20,20 @@ replaces the manual ~20-min-per-profile bottleneck.
 ### Sprint 1 — Scholarship app scaffold + application intake API ✅ DONE (2026-05-21)
 Intake API + `ScholarshipCohort`/`ScholarshipApplication` models + trilingual ack email + RLS SQL.
 17 tests; full suite 1023 green. Branch `feature/b40-assistance` (not merged/deployed; Supabase
-migration + RLS not yet applied). See `docs/retrospective-b40-sprint1.md`.
+migration + RLS not yet applied). See `docs/retrospectives/retrospective-b40-sprint1.md`.
 
 ### Sprint 2 — Native application form + single front door (frontend) ✅ DONE (2026-05-21)
 `/scholarship/apply` trilingual form; single front door reusing Google + NRIC auth via a new
 `'apply'` AuthGateReason; pre-fill from profile; `lib/scholarship.ts` helpers + 13 tests; EN/MS/TA
 i18n (793 keys). check-i18n + 30 frontend tests + `next build` green. Not browser-smoke-tested
-against a live backend yet. See `docs/retrospective-b40-sprint2.md`.
+against a live backend yet. See `docs/retrospectives/retrospective-b40-sprint2.md`.
 
 ### Sprint 3 — Shortlisting rules engine + Bucket A/B + pass/fail notifications ✅ DONE (2026-05-21)
 Pure `shortlisting.py` engine (A/B/FAIL, cohort-configured thresholds, STR income anchor + 1.15×
 marginal band); synchronous shortlist on submit (pass email immediate); trilingual pass/fail
 emails; `send_pending_decision_emails` command (delayed fail email); migration 0002 (4 fields).
 25 new tests; backend suite 1048 green. Scheduler not yet wired. See
-`docs/retrospective-b40-sprint3.md`.
+`docs/retrospectives/retrospective-b40-sprint3.md`.
 
 ### Sprint 4 — STEP 1A quiz gate + deeper-info capture (split into 4a + 4b)
 
@@ -41,13 +41,13 @@ emails; `send_pending_decision_emails` command (delayed fail email); migration 0
 deeper-info fields (aspirations/plans/fears/justification) + `PATCH` details endpoint
 (own, shortlisted-only) + `completeness` block (`quiz_done`/`details_done`/`funding_done`/`complete`)
 on the read serializer. Migration 0003. 11 tests; backend suite 1059 green. See
-`docs/retrospective-b40-sprint4a.md`.
+`docs/retrospectives/retrospective-b40-sprint4a.md`.
 
 **Sprint 4b — frontend ✅ DONE (2026-05-21):** `ScholarshipNextSteps` component — 3-step checklist
 (quiz gate → existing `/quiz`, about-you textareas, funding-need form with live RM total) driven by
 the `completeness` block; apply page routes shortlisted apps to it; `updateScholarshipDetails` PATCH;
 EN/MS/TA i18n (819 keys). 5 helper tests (frontend suite 35); check-i18n + `next build` green. Not
-browser-smoke-tested against a live backend yet. See `docs/retrospective-b40-sprint4b.md`.
+browser-smoke-tested against a live backend yet. See `docs/retrospectives/retrospective-b40-sprint4b.md`.
 
 ### Sprint 5 — Document vault + referee + e-consent (PDPA) (split into 5a + 5b)
 
@@ -55,13 +55,13 @@ browser-smoke-tested against a live backend yet. See `docs/retrospective-b40-spr
 (migration 0004, RLS); `storage.py` signed upload/download URLs for a private bucket (stdlib urllib,
 service key); endpoints (documents sign-upload/list/record/delete, referees, consent); consent
 guardian gate (minor <18 from NRIC → guardian required), versioned + superseding. 18 tests; backend
-suite 1077 green. See `docs/retrospective-b40-sprint5a.md`.
+suite 1077 green. See `docs/retrospectives/retrospective-b40-sprint5a.md`.
 
 **Sprint 5b — frontend ✅ DONE (2026-05-22):** `ScholarshipDocuments` (sign → PUT to Storage →
 record + list/delete), `ScholarshipReferee`, `ScholarshipConsent` (guardian fields for minors),
 wired as next-steps steps 4–6; 10 API client functions; EN/MS/TA i18n (856 keys). 2 helper tests
 (frontend suite 37); check-i18n + `next build` green. Upload/consent round-trip not
-browser-smoke-tested (needs the live bucket). See `docs/retrospective-b40-sprint5b.md`.
+browser-smoke-tested (needs the live bucket). See `docs/retrospectives/retrospective-b40-sprint5b.md`.
 
 **Deploy carry-forwards:** create the `b40-documents` private bucket; swap the DRAFT consent text
 (`CONSENT_VERSION`) for the lawyer-reviewed version.
@@ -72,12 +72,12 @@ browser-smoke-tested (needs the live bucket). See `docs/retrospective-b40-sprint
 **Sprint 6a — backend ✅ DONE (2026-05-22):** `SponsorProfile` model (draft/edited/status; migration
 0005, RLS); `profile_engine.py` (Gemini sponsor-profile drafting from application data); MyNadi admin
 API (list/detail/generate/edit/publish) reusing `PartnerAdminMixin`. 9 tests; backend suite 1086.
-See `docs/retrospective-b40-sprint6a.md`.
+See `docs/retrospectives/retrospective-b40-sprint6a.md`.
 
 **Sprint 6b — frontend ✅ DONE (2026-05-22):** MyNadi admin console UI — `/admin/scholarship`
 (list + status/bucket filter) + `/admin/scholarship/[id]` (full detail + AI profile
 generate/edit/publish panel); admin API client functions; admin nav link; EN/MS/TA i18n (894 keys).
-Frontend suite 37; check-i18n + `next build` green. See `docs/retrospective-b40-sprint6b.md`.
+Frontend suite 37; check-i18n + `next build` green. See `docs/retrospectives/retrospective-b40-sprint6b.md`.
 
 ---
 

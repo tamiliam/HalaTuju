@@ -128,7 +128,7 @@ Loaded at sprint-start; the ones that bind this sprint:
 | `halatuju-web/src/lib/api.ts` | modify | `getDocumentHelp(docId)` |
 | `halatuju-web/src/messages/{en,ms,ta}.json` | modify | UI copy + per-verdict fallback copy |
 | `halatuju-web/src/components/__tests__/DocumentHelpCoach.test.tsx` | **create** | render/proactive-trigger tests |
-| `docs/retrospective-document-help-coach.md` | **create** | at sprint close |
+| `docs/retrospectives/retrospective-document-help-coach.md` | **create** | at sprint close |
 | `CHANGELOG.md` | modify | sprint entry |
 
 ---
@@ -312,7 +312,7 @@ coach appears, reads warmly, and **degrades to fallback copy when `GEMINI_API_KE
 verdict columns). If this proves false during build, STOP and add a migrate-first step per the
 project's expand-contract + Supabase-MCP rule.
 
-**Step 5:** Write `docs/retrospective-document-help-coach.md`; append `CHANGELOG.md`.
+**Step 5:** Write `docs/retrospectives/retrospective-document-help-coach.md`; append `CHANGELOG.md`.
 
 **Step 6:** Commit, then **push** (push to `main` triggers the Cloud Run deploy — only push when the
 feature is fully ready; honours the "don't push HalaTuju until ready" feedback). Verify

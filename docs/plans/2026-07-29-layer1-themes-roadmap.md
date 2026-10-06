@@ -81,7 +81,7 @@ half-repainted dark mode.
 
 #### ✅ F1 — SHIPPED 2026-07-29 (`8cf6251c` → `e9d62b8c`) — vocabulary, mechanism, sponsor portal
 
-Retro `docs/retrospective-2026-07-29-layer1-f1-tokens.md`; decisions ×3; lessons ×4. NO migration.
+Retro `docs/retrospectives/retrospective-2026-07-29-layer1-f1-tokens.md`; decisions ×3; lessons ×4. NO migration.
 1153 jest / 77 suites. **Both modes reviewed in a browser on the real page.**
 
 **⚠ THE SWITCH A PERSON CLICKS, AND ITS ACCOUNT STORAGE, ARE SPLIT OUT — call it F1b.** Four
@@ -109,7 +109,7 @@ want an eye; best done once two or three surfaces are converted. And the sandbox
 
 #### ✅ F2a — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f2a`)
 
-Retro `docs/retrospective-2026-08-31-layer1-f2a-shared-components.md`; decisions ×2; lessons ×3.
+Retro `docs/retrospectives/retrospective-2026-08-31-layer1-f2a-shared-components.md`; decisions ×2; lessons ×3.
 NO migration. 34 files, jest **1493**. 27 components converted (386 utilities); two semantic
 corrections by hand (`FundingBar` → brand, `VerifiedTick`'s `#fff` → `stroke-white`).
 
@@ -136,7 +136,7 @@ work). Append F2b's files to `F2A_FILES` in `theme.test.ts` and drop the ceiling
 
 #### ✅ F2c — SHIPPED 2026-08-31 — the category family. **F7 IS NO LONGER BLOCKED.**
 
-Retro `docs/retrospective-2026-08-31-layer1-f2c-category-colours.md`; decision ×1; lessons ×2.
+Retro `docs/retrospectives/retrospective-2026-08-31-layer1-f2c-category-colours.md`; decision ×1; lessons ×2.
 NO migration. 8 files, jest **1509**. The owner chose to build the family (2026-08-31), so F2b's
 open question is closed.
 
@@ -157,7 +157,7 @@ already indistinguishable, before any theming work.
 
 #### ✅ F2b — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f2b`)
 
-Retro `docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`; decision ×1; lessons ×3.
+Retro `docs/retrospectives/retrospective-2026-08-31-layer1-f2b-shared-components.md`; decision ×1; lessons ×3.
 NO migration. 29 files, jest **1507**. 20 components fully converted (273 utilities) + 4 converted
 in their GROUND only (81). Three more brand/tone corrections by hand (sponsor CTAs, step numbers,
 form submit, selected state). **`src/components` is now done except `ScholarshipDocuments.tsx`.**
@@ -189,7 +189,7 @@ trusted — 88% mechanical means 12% wrong. *medium ×2 (~26 files each).*
 
 #### ✅ F3b — SHIPPED 2026-08-31 — the brand ramp aligned to dark. **F3's open question is CLOSED.**
 
-Retro `docs/retrospective-2026-08-31-layer1-f3b-brand-dark.md`; decision ×1; lessons ×3. NO
+Retro `docs/retrospectives/retrospective-2026-08-31-layer1-f3b-brand-dark.md`; decision ×1; lessons ×3. NO
 migration. 4 files, jest **1518**. Owner direction the same day: *"brand colours only work in light
 theme… a proper alignment is needed."*
 
@@ -207,7 +207,7 @@ dark block agreeing with `brandRamp()`, and the dark-page constant unable to dri
 
 #### ✅ F3 — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f3`)
 
-Retro `docs/retrospective-2026-08-31-layer1-f3-student-surfaces.md`; lessons ×2; one OPEN question.
+Retro `docs/retrospectives/retrospective-2026-08-31-layer1-f3-student-surfaces.md`; lessons ×2; one OPEN question.
 NO migration. 24 files, ~1205 utilities, jest **1515**.
 
 **▶ SCOPE WAS BIGGER THAN THE TABLE SAID** — the plan's "16 files" measured 2026-07-29; the real
@@ -239,7 +239,7 @@ them. *medium-high.*
 
 #### ✅ F4 — SHIPPED 2026-09-01
 
-Retro `docs/retrospective-2026-09-01-layer1-f4-admin-console.md`; lessons ×3. NO migration.
+Retro `docs/retrospectives/retrospective-2026-09-01-layer1-f4-admin-console.md`; lessons ×3. NO migration.
 46 files, ~1445 utilities, jest **1531**. **44 files, not the 34 the table said** — third sprint
 running that the plan's file list has aged; re-derive at sprint start.
 
@@ -267,7 +267,7 @@ and passed forever. Found only by bite-checking. **Never generate a regex.**
 
 #### ✅ F5 — SHIPPED 2026-09-01
 
-Retro `docs/retrospective-2026-09-01-layer1-f5-cockpit.md`; lessons x2. NO migration. 2 files,
+Retro `docs/retrospectives/retrospective-2026-09-01-layer1-f5-cockpit.md`; lessons x2. NO migration. 2 files,
 537 utilities in ONE file, jest **1534**. The cockpit's ceiling (544) is RETIRED — it now sits
 inside the console's conversion walk.
 
@@ -296,7 +296,7 @@ the repaint already reaches. Never as Layer-2 groundwork. *high.*
 
 #### ✅ F6 — SHIPPED 2026-09-02. **THE REPAINT IS COMPLETE.**
 
-Retro `docs/retrospective-2026-09-02-layer1-f6-course-guide.md`; decisions ×2; lessons ×7. NO
+Retro `docs/retrospectives/retrospective-2026-09-02-layer1-f6-course-guide.md`; decisions ×2; lessons ×7. NO
 migration. web only. 36 files, ~860 utilities, jest **1595**. Seven guards bite-checked.
 
 **▶ THE COUNT WAS RIGHT AND THE TITLE WAS WRONG.** "Public course guide" was 36 files four weeks
@@ -329,7 +329,7 @@ of them the tenant's. Fifth sprint running for this defect.
 
 #### ✅ F7a — SHIPPED 2026-09-02. **TD-222 IS CLOSED.**
 
-Retro `docs/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`; decisions ×2; lessons ×6. NO
+Retro `docs/retrospectives/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`; decisions ×2; lessons ×6. NO
 migration. web + api. 66 files, 142 fills. jest **1597**, pytest **5765**. Reviewed in both modes.
 
 **▶ F7 SPLIT INTO FOUR (owner approved 2026-09-02), because measuring the blockers made it bigger
@@ -361,7 +361,7 @@ under 3.0). The fix is `--brand-shape` over ~50 files, almost all one repeating 
 
 #### ✅ F7b — SHIPPED 2026-09-02. **THE GATE HAS NO EXEMPTIONS LEFT.**
 
-Retro `docs/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`; decision ×1; lessons ×5. NO
+Retro `docs/retrospectives/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`; decision ×1; lessons ×5. NO
 migration. web + api. 204 utilities. jest **1603**, pytest **5772**. Reviewed in both modes.
 
 **▶ `--brand-shape`** — `brand-500` in light, `brand-600` in dark. Dots, bars, tracks, spinners,
@@ -385,7 +385,7 @@ new guard states the property: no component may read `var(--brand-500)` directly
 
 #### ✅ F7c — SHIPPED 2026-09-02. **EVERY SURFACE CAN NOW BE LOOKED AT.**
 
-Retro `docs/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`; decision ×1; lessons ×5. NO
+Retro `docs/retrospectives/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`; decision ×1; lessons ×5. NO
 migration. web only. jest **1605**. Reviewed in both modes — the first time this screen ever was.
 
 **▶ THE FIRST MOUNT FOUND A SEVERE DEFECT, AND IT WAS NOT IN THE COCKPIT.** Every text box,
@@ -406,7 +406,7 @@ lines. **The body did not change.** `tsc`, `jest` and `next lint` were green thr
 
 #### ✅ F7d — SHIPPED **AND DEPLOYED** 2026-09-02. **DARK MODE IS REACHABLE. AND LIGHT IS THE BROKEN ONE.**
 
-Retro `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`; decisions ×2; lessons ×6. NO
+Retro `docs/retrospectives/retrospective-2026-09-02-layer1-f7d-the-flip.md`; decisions ×2; lessons ×6. NO
 migration. web only. jest **1617**; i18n **4646 × 3**. **All 25 surfaces walked in both modes,
 measured rather than eyeballed** (`docs/contrast-sweep.md`).
 
@@ -443,7 +443,7 @@ of one lesson in three sprints (F7b: one bar hides the other kind; F7c: a folder
 
 #### ✅ F7e — SHIPPED **AND DEPLOYED** 2026-09-04. **TD-224 IS CLOSED. THE PRODUCT PASSES AA.**
 
-Retro `docs/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8. NO migration,
+Retro `docs/retrospectives/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8. NO migration,
 NO backend — web only, 68 files. jest 1692 → **1697**; pytest **5844** (untouched); tsc **24**
 (baseline); lint **0**; i18n **4745 × 3** (no new keys); build clean.
 
@@ -576,7 +576,7 @@ which the owner has now confirmed is in scope.
 
 #### ✅ A1 — SHIPPED 2026-09-01
 
-Retro `docs/retrospective-2026-09-01-layer1-a1-tenant-theme.md`; decisions ×4; lessons ×3.
+Retro `docs/retrospectives/retrospective-2026-09-01-layer1-a1-tenant-theme.md`; decisions ×4; lessons ×3.
 **Migration `courses/0071`, ADDITIVE, migrate-first.** 11 files. pytest **5706**, jest **1548**.
 Acceptance met: two organisations, two colours, no leakage; the org fence untouched (the endpoint
 is public and is not an `_AdminBase` subclass).
@@ -606,7 +606,7 @@ is not, and this colour lands on an exact `.5`.
 
 #### ✅ A2 — SHIPPED 2026-09-01
 
-Retro `docs/retrospective-2026-09-01-layer1-a2-colour-picker.md`; decisions ×3; lessons ×3;
+Retro `docs/retrospectives/retrospective-2026-09-01-layer1-a2-colour-picker.md`; decisions ×3; lessons ×3;
 **TD-222** raised. **NO migration.** api + web. pytest **5738**, jest **1573**.
 Design of record: the working mock approved by the owner (Stitch failed twice and produced nothing;
 same fallback as the sponsored-student page in July).
@@ -677,7 +677,7 @@ is dismissed and a student cannot read the page.
 
 #### ✅ A3 — SHIPPED 2026-09-01. **ARC A IS COMPLETE.**
 
-Retro `docs/retrospective-2026-09-01-layer1-a3-draft-publish.md`; decisions ×3; lessons ×2.
+Retro `docs/retrospectives/retrospective-2026-09-01-layer1-a3-draft-publish.md`; decisions ×3; lessons ×2.
 **Migration `courses/0072`** — additive PLUS one deliberate DROP of A1's `OneToOne` unique, and a
 data step. pytest **5757**, jest **1583**.
 

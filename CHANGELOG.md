@@ -202,7 +202,7 @@ typecheck clean; lint 0 errors (17 warnings, none in a touched file). First-load
 **273.677** (274), `/profile` 309.517 → **309.542** (310), median 227.85 → **227.875** (229). Files:
 `apply/page.tsx` 1070 → **1062**, `lib/scholarship.ts` 1084 → **1084**, `views.py` 2436 → **2434**,
 `serializers.py` 1215 → **1204**. Bite-checked: nine faults over three rounds, each red against that round's code. Retrospective:
-`docs/retrospective-2026-10-05-one-application-per-organisation.md`. **After the rebase onto request
+`docs/retrospectives/retrospective-2026-10-05-one-application-per-organisation.md`. **After the rebase onto request
 #26** (lead's build): first-load JS `/scholarship/apply` **271.701 kB** (272), `/scholarship/application`
 **273.711** (274), `/profile` **298.903** (300, #26's line); jest 240 suites / 3991. **Five of request
 #26's api tests** assumed a second application while the first is in play and expected 201; they now
@@ -421,7 +421,7 @@ typecheck clean; lint 0 errors. First-load JS (exact): `/scholarship/apply` **27
 (229). Files: `apply/page.tsx` 1146 → 1070, `lib/scholarship.ts` 1315 → 1240 (both `oversize_files`
 budget lines lowered), `views.py` 2436 → 2435. Bite-checked: five guards, each red under its fault.
 Debt raised: TD-337 to TD-346 (TD-337 is an owner decision). Retrospective:
-`docs/retrospective-2026-10-05-apply-gift-clarity.md`.
+`docs/retrospectives/retrospective-2026-10-05-apply-gift-clarity.md`.
 
 **Follow-up, same day (the owner's live test of `2e72eff9`).** WEB ONLY, one new string
 (`scholarship.apply.seeOpen`, the closed card's opt-in button; `/profile` now has 0.055 kB of room).
@@ -989,7 +989,7 @@ MIGRATE-FIRST, by hand — DDL + back-fill in its docstring and in halatuju_api/
   `eslint_disable_without_reason`.
 - Docs: decisions.md 2026-10-03, the go-live playbook's template step (per gift), the register,
   halatuju_api/CLAUDE.md (NOW SPRINT 5 PART 1, with the lead's read-only probe),
-  docs/retrospective-2026-10-03-now-sprint-5-td229.md.
+  docs/retrospectives/retrospective-2026-10-03-now-sprint-5-td229.md.
 - Gates: api `pytest -n auto` **7,563 → 7,586** passed, 3 skipped (+22 new file, +1 sign-invitation
   skip case); `manage.py check` clean; `makemigrations --check --dry-run` "No changes detected"; web
   `npm run gates` **3,287 → 3,292** jest / 201 suites, tsc + lint + i18n ALL PASSED; `npm run
@@ -2195,7 +2195,7 @@ ordinary means, so that a sprint six months from now cannot quietly undo them.
   retrospective, or a count taken on the day.
 - **TD-284** - `fix%`, `big` and `guard%` have targets in the roadmap and enforcement nowhere, and
   all three are the readings that were missed or moved the wrong way.
-- `docs/retrospective-2026-09-20-code-health-h19.md`.
+- `docs/retrospectives/retrospective-2026-09-20-code-health-h19.md`.
 
 ### Changed
 
@@ -2458,7 +2458,7 @@ and **no importing file was changed.**
 (5,389 keys x 3) · `next build` exit 0 · code_health **0 FAIL, 6 WARN**, `std` **ok**,
 **`big` 19 -> 17**, **`hot#1` `income_engine.py` 95.6 -> `officerCockpit.ts` 49**,
 **`xapp` 46 -> 45**, `supp` 139, `skip` 0, `dup` 4, `mirror` 3, `guard%` 20 - nothing worse.
-**Retro:** `docs/retrospective-2026-09-20-code-health-h16.md`.
+**Retro:** `docs/retrospectives/retrospective-2026-09-20-code-health-h16.md`.
 
 ## Guard floors - every guard that reads the tree has a floor - TD-276, TD-275, TD-269 - 2026-09-20
 
@@ -3025,7 +3025,7 @@ byte-identical, the relative-import depth aside.
 ## Code health H10 - de-mirror wave 2, and PHASE 3 IS COMPLETE - 2026-09-19
 
 Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H10 of H19. Retro
-`docs/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** The
+`docs/retrospectives/retrospective-2026-09-19-code-health-h10.md`. **No production code changed.** The
 `unguarded_mirrors` ledger goes **41 -> 3**, and the three that remain are a recorded decision, not
 a backlog. **The "stabilised" checkpoint is now the owner's to call** - the roadmap carries a plain
 -language summary of what Phases 1-3 delivered and what H11-H19 would buy.
@@ -3087,7 +3087,7 @@ reading decision is recorded in `docs/code-health.md`), every other reading unch
 ## Code health H9 - the decision gates stop living in two languages - 2026-09-19
 
 Roadmap `docs/plans/2026-09-18-code-health-roadmap.md`, sprint H9 of H19. Retro
-`docs/retrospective-2026-09-19-code-health-h9.md`. **No production code changed** - six front-end
+`docs/retrospectives/retrospective-2026-09-19-code-health-h9.md`. **No production code changed** - six front-end
 rules that said they mirrored a backend rule now have a test that reads the backend's own source
 and fails if either side moves. Every one was characterised side by side first (the H8 rule), on
 the untouched tree, before anything was written.
@@ -3350,7 +3350,7 @@ Sprint H8 of the code-health roadmap. **Phase A delivered, Phase B stopped - by 
 PRODUCTION CODE CHANGED.** Two test files added. Built by an Opus 5 agent under a hard stop gate
 (*"no student's answer may change, and that must be proven before any code moves"*); the lead
 verified the two most visible findings in the source and recorded the rest as **TD-262**.
-Retro: `docs/retrospective-2026-09-19-code-health-h8.md`.
+Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h8.md`.
 
 - **TD-235 said four homes. There are eleven** - six api, five web - and characterising them side
   by side on the untouched tree pinned **sixteen disagreements about the same household**.
@@ -3505,7 +3505,7 @@ per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-check
 Ordered by the owner (*"Fix the two TDs first"*) under the freeze's security exception. Built by
 an Opus 5 agent, tests first and seen red; the lead investigated production, read the
 authentication change line by line, applied the migration, and closed.
-Retro: `docs/retrospective-2026-09-19-td254-profile-claim.md`.
+Retro: `docs/retrospectives/retrospective-2026-09-19-td254-profile-claim.md`.
 
 - **The endpoint never discloses the holder.** An IC that belongs to somebody else answers
   `{"status":"exists","channels":[...]}` - two keys, bare channel types. Until today it returned
@@ -3542,7 +3542,7 @@ Retro: `docs/retrospective-2026-09-19-td254-profile-claim.md`.
 
 Sprint H6 of the code-health roadmap, under the development freeze, on the owner's standing word.
 Built by an Opus 5 agent; findings verified and sprint closed by the lead. App source changed:
-three lines (an `aria-label`). Retro: `docs/retrospective-2026-09-19-code-health-h6.md`.
+three lines (an `aria-label`). Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h6.md`.
 
 - **The reviewer cockpit (`view.tsx`, 3,590 lines) is mounted by a real test for the first time.**
   `src/test/` holds a typed fixture builder - every field of `AdminScholarshipDetail`, no `any`, 15
@@ -3571,7 +3571,7 @@ three lines (an `aria-label`). Retro: `docs/retrospective-2026-09-19-code-health
 
 Sprint H5 of the code-health roadmap, under the development freeze, on the owner's standing word.
 Built by an Opus 5 agent; spot-checked and closed by the lead. **Test code only** - no application
-source, no migration. Retro: `docs/retrospective-2026-09-19-code-health-h5.md`.
+source, no migration. Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h5.md`.
 
 - **`apps/scholarship/tests/factories.py`.** `make_application(stage=..., outcome=...)` builds an
   application at a named stage with every field the product would have set and none it would not.
@@ -3602,7 +3602,7 @@ source, no migration. Retro: `docs/retrospective-2026-09-19-code-health-h5.md`.
 Sprint H4 of the code-health roadmap, under the development freeze; the first run under the
 owner's standing word to proceed without stopping. Built by an Opus 5 agent; verified, extended
 and closed by the lead. App code changed: three comment lines.
-Retro: `docs/retrospective-2026-09-19-code-health-h4.md`.
+Retro: `docs/retrospectives/retrospective-2026-09-19-code-health-h4.md`.
 
 - **A change that breaks a standard can no longer deploy.** 70 new tests read two committed budget
   files - `halatuju_api/code-standards.json`, `halatuju-web/code-standards.json` - and run inside
@@ -3669,7 +3669,7 @@ diff reviewed and production checked by the lead. No migration. Web app untouche
 
 Sprint H3 of the code-health roadmap, under the development freeze. Built by an Opus 5 agent;
 verified, production-checked and closed by the lead. App code changed: three comment lines.
-Retro: `docs/retrospective-2026-09-18-code-health-h3.md`.
+Retro: `docs/retrospectives/retrospective-2026-09-18-code-health-h3.md`.
 
 - **TD-219 closed - every wired endpoint must be driven by a test.** `test_endpoint_exercise.py`
   reads the whole suite with `ast`, rebuilds each request path and resolves it through Django's
@@ -3698,7 +3698,7 @@ Retro: `docs/retrospective-2026-09-18-code-health-h3.md`.
 ## Code health H2 - the tests run before every deploy - 2026-09-18
 
 Sprint H2 of the code-health roadmap, under the development freeze. Config files by an Opus 5
-agent; every production step by the lead. Retro: `docs/retrospective-2026-09-18-code-health-h2.md`.
+agent; every production step by the lead. Retro: `docs/retrospectives/retrospective-2026-09-18-code-health-h2.md`.
 
 - **A red suite can no longer ship.** `halatuju_api/cloudbuild.yaml` and
   `halatuju-web/cloudbuild.yaml` reproduce the live inline trigger steps - argument lists compared
@@ -3725,7 +3725,7 @@ agent; every production step by the lead. Retro: `docs/retrospective-2026-09-18-
 
 Sprint H1 of the code-health roadmap, under the development freeze. Built by an Opus 5 agent to a
 written brief; verified and closed by the lead. **No behaviour change.** Retro:
-`docs/retrospective-2026-09-18-code-health-h1.md`.
+`docs/retrospectives/retrospective-2026-09-18-code-health-h1.md`.
 
 - **`npm run gates`** runs typecheck, lint, i18n parity and jest. `package.json` had no `test`
   script before today; the four web gates existed only as lines in `CLAUDE.md`.
@@ -4931,7 +4931,7 @@ trigger; this takes away the fault itself. api only. **No migration. No data ste
   precisely; the half that failed was the bug.
 
 Gates: pytest **6171** (baseline 6166 + 5) · `makemigrations --check` clean. No web file changed.
-One bite-check, it bit. Retro `docs/retrospective-2026-09-10-matric-offer-jurusan.md` (same
+One bite-check, it bit. Retro `docs/retrospectives/retrospective-2026-09-10-matric-offer-jurusan.md` (same
 investigation); decisions ×1; lessons ×1.
 
 ## Sponsor spending S5 — the sponsor card. THE ARC IS COMPLETE - 2026-09-10
@@ -5296,7 +5296,7 @@ matriculation offer. The letter was fine. **Our own parser was not.** api only. 
 
 Gates: pytest **6166** (baseline 6161 + 5) · `makemigrations --check` clean. No web file changed,
 so the web gates are unchanged by construction. Two bite-checks, both bit.
-Retro `docs/retrospective-2026-09-10-matric-offer-jurusan.md`; decisions ×1; lessons ×3.
+Retro `docs/retrospectives/retrospective-2026-09-10-matric-offer-jurusan.md`; decisions ×1; lessons ×3.
 
 ## 2026-09-10 — The officer screens stop calling every gift a B40 gift
 
@@ -5327,7 +5327,7 @@ B40 line". **No migration.** api + web.
 
 Gates: pytest **6161** · jest **1993** · tsc **24** (TD-221 baseline) · lint **0** ·
 i18n **4975 × 3** · `next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
-Retro `docs/retrospective-2026-09-10-officer-income-vocabulary.md`; decisions ×2; lessons ×3.
+Retro `docs/retrospectives/retrospective-2026-09-10-officer-income-vocabulary.md`; decisions ×2; lessons ×3.
 
 ## 2026-09-10 — "How it's advertised": one instruction block, one clear control, and a warning that stops crying wolf
 
@@ -5356,7 +5356,7 @@ migration.** api + web.
 
 Gates: pytest **6150** · jest **1988** · tsc **24** (baseline) · lint **0** · i18n **4974 × 3** ·
 `next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
-Retro `docs/retrospective-2026-09-10-apply-copy-instructions-and-warning.md`; decisions ×2;
+Retro `docs/retrospectives/retrospective-2026-09-10-apply-copy-instructions-and-warning.md`; decisions ×2;
 lessons ×3.
 
 ## 2026-09-10 — "How it's advertised": a safer clear, and a draft from English
@@ -5378,7 +5378,7 @@ Two owner findings from using the live tab. **No migration.** api + web.
 
 Gates: pytest **6144** · jest **1971** · tsc **24** (baseline) · lint **0** · i18n **4972 × 3** ·
 `next build` exit 0 · `makemigrations --check` clean. Three bite-checks, all bit.
-Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
+Retro `docs/retrospectives/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
 `docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
 ## The Vircle confirm needs an explicit installed-and-registered tick - 2026-09-10
 
@@ -5439,7 +5439,7 @@ and saves (owner ruling). "Bahasa Melayu" is a subject, not an ethnicity, and is
 
 pytest 6106 (+25) · jest 1931 (+12) · tsc 24 (baseline) · lint 0 · i18n 4944x3 · build 0 ·
 `makemigrations --check` clean. Three bite-checks landed. Retro
-`docs/retrospective-2026-09-09-apply-copy-per-gift.md`; decisions x2; lessons x4.
+`docs/retrospectives/retrospective-2026-09-09-apply-copy-per-gift.md`; decisions x2; lessons x4.
 
 ## Vircle Airtable V2a — the student stops typing the wallet id - 2026-09-09
 
@@ -6451,7 +6451,7 @@ docstring names. Both bites landed and bit (env arm disabled → 1 test fails; r
 The LAST sprint of the Org Config arc. Two settings join Organisation > Settings >
 Configuration under a new **Agreements** group - **no migration**. Roadmap
 `docs/plans/2026-09-06-org-configuration-roadmap.md` (A-F all done);
-retro `docs/retrospective-2026-09-07-org-config-sprint-f.md`.
+retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-f.md`.
 
 - **`sign_accept_deadline_days` (30)** - how long a student has to sign once the "ready to
   sign" email actually goes out. The clock arms on the SEND, not at offer time
@@ -6488,7 +6488,7 @@ registry - each failed its owning test, each restored. i18n +5 keys x3 (ms/ta fi
 Four settings join Organisation > Settings > Configuration under a new **Documents** group
 (registry entries + wired read sites + rows - **no migration**). Roadmap
 `docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D + E done);
-retro `docs/retrospective-2026-09-07-org-config-sprint-e.md`.
+retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-e.md`.
 
 - **`max_doc_size_mb` (8, ceiling 25)** - the tab speaks MB (the owner's unit) while the wire
   speaks bytes, and `org_config.max_doc_size_bytes()` is the ONE conversion. Both upload doors
@@ -6518,7 +6518,7 @@ size - each failed its owning test, each restored by writing the original back. 
 ## The gift card says one thing once, and the console stops chatting - 2026-09-07
 
 **NO migration. api + web.** Three owner findings from a live review, all on the same screens.
-Retro `docs/retrospective-2026-09-07-gift-card-and-copy.md`.
+Retro `docs/retrospectives/retrospective-2026-09-07-gift-card-and-copy.md`.
 
 - **⚠ "Switch off" LOOKED LIKE A DUPLICATE OF THE INTAKE YEAR'S OPEN/CLOSE, AND THE OWNER WAS RIGHT
   ABOUT WHAT THEY COULD SEE.** Both guards were checked: a round cannot open on a gift that is off,
@@ -6580,7 +6580,7 @@ two of them.
 Six settings join Organisation > Settings > Configuration under a new **Interviews** group
 (registry entries + wired read sites + rows - **no migration**). Roadmap
 `docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D done);
-retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
+retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-d.md`.
 
 - **The picker's lock-step copy is GONE.** `interviewSlots.ts` carried its own window, step and
   notice under a comment telling the next person to keep them equal to `scheduling.py`. Those
@@ -6619,7 +6619,7 @@ back. i18n +16 keys x3 (ms/ta first drafts).
 
 **NO migration. api + web.** The owner read TD-232 back and said the rule was wrong: *"I don't
 [want] the ability to delete a gift programme that has students, and not merely intake years."*
-Retro `docs/retrospective-2026-09-07-gift-delete-rule.md`. **This CLOSES TD-232.**
+Retro `docs/retrospectives/retrospective-2026-09-07-gift-delete-rule.md`. **This CLOSES TD-232.**
 
 - **An intake year is no longer a delete blocker.** It was checked FIRST, so a gift created by
   mistake and given one stray year could never be removed - and neither could the year, because
@@ -6656,7 +6656,7 @@ ms and ta are first drafts.
 Five settings join Organisation > Settings > Configuration under a new **Reviewers & staff**
 group (registry entries + wired read sites + rows - **no migration**, the roadmap's promised
 shape). Roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C done);
-retro `docs/retrospective-2026-09-07-org-config-sprint-c.md`.
+retro `docs/retrospectives/retrospective-2026-09-07-org-config-sprint-c.md`.
 
 - **The three verdict clocks** (`review_sla_days` 10 / `review_nudge_soon_days` 2 /
   `review_escalate_grace_days` 4) resolve per APPLICATION at all three read sites - the nudge
@@ -6750,7 +6750,7 @@ rounds finding real defects, not re-attempts). `main` at `ac46f7a6`; both Cloud 
 each; serving **halatuju-api-00982-2cx** / **halatuju-web-00833-qq2**. All public routes 200; no
 error logs. **Migration `scholarship/0150` APPLIED MIGRATE-FIRST and verified BEFORE the push**
 (two additive nullable date columns); ledger reconciled at close: **scholarship 150/150, courses
-74/74, no gaps**. Retro `docs/retrospective-2026-09-07-gift-setup-flow.md`; decisions ×5;
+74/74, no gaps**. Retro `docs/retrospectives/retrospective-2026-09-07-gift-setup-flow.md`; decisions ×5;
 lessons ×6; **TD-231** raised.
 pytest 5844 → **5914**; jest 1697 → **1741**; tsc **24** (baseline); lint **0**;
 i18n 4745 → **4804 × 3**; build clean. **Six guards bite-checked**, each injection verified as
@@ -6897,7 +6897,7 @@ wired read sites + rows on the existing tab, exactly the shape the roadmap promi
 (full `apps/` suite; +11 new in `test_org_config.py`, now 35 there); jest **1734**; `next lint`
 0 errors; tsc 24 (baseline); i18n **4803 × 3**; `next build` clean; no migration. Four
 bite-checks landed (cap, both sweep windows, both sponsor render sites); retro
-`docs/retrospective-2026-09-07-org-config-sprint-b.md`.
+`docs/retrospectives/retrospective-2026-09-07-org-config-sprint-b.md`.
 
 ## Fix: a frozen copy of the income bar could not see how income is proved now - 2026-09-07
 
@@ -7081,7 +7081,7 @@ trigger fired (0 Python files changed); Cloud Build SUCCESS on `242b60f`; servin
 **halatuju-web-00824-v55** at 100%, api unchanged at `halatuju-api-00975-nrj`. All eight public
 routes 200; no error logs since the deploy; the served stylesheets were downloaded and read back
 rather than assumed. **NO MIGRATION, NO BACKEND** — 68 files, web only. Retro
-`docs/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8.
+`docs/retrospectives/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8.
 jest 1692 -> **1697**; pytest **5844** (untouched); tsc **24** (baseline); lint **0**;
 i18n **4745 × 3** (no new keys); build clean.
 
@@ -7150,7 +7150,7 @@ and **said so** rather than quietly dropped.
 
 **Sprint. SHIPPED AND DEPLOYED.** `main` at `e07a09bb`; both Cloud Builds SUCCESS on `e07a09b`;
 serving **halatuju-api-00975-nrj** / **halatuju-web-00823-pc5** at 100%. Retro
-`docs/retrospective-2026-09-04-s-assign.md`; decisions x3; lessons x4.
+`docs/retrospectives/retrospective-2026-09-04-s-assign.md`; decisions x3; lessons x4.
 **Migrations `courses/0073` + `scholarship/0149` APPLIED MIGRATE-FIRST and verified BEFORE the
 push** (three additive nullable columns; ledger reconciled scholarship 149/149, courses 73/73,
 no gaps). pytest 5800 -> **5844** (+44); jest 1666 -> **1692** (+26); tsc **24** (baseline);
@@ -7246,7 +7246,7 @@ on yet" is the state an org_admin spends the most time inside.
 
 **Sprint. SHIPPED, NOT DEPLOYED (owner gates the deploy).** Branch `feat/console-shape`.
 **NO MIGRATION.** web + a two-line backend audit. Retro
-`docs/retrospective-2026-09-03-console-shape.md`; decisions x2; lessons x5.
+`docs/retrospectives/retrospective-2026-09-03-console-shape.md`; decisions x2; lessons x5.
 pytest **5792** (full suite across `apps/`, +2); jest 1631 -> **1657** (+26); tsc **24**
 (baseline); lint **0 errors**; i18n 4714 -> **4722 x 3**;
 `next build` clean. **Two guards bite-checked.**
@@ -7307,7 +7307,7 @@ from the database rather than from the menu.
 
 **Sprint. DEPLOYED** — `main` at `ad43786d`, both builds SUCCESS, serving
 **halatuju-web-00820-r2r** / **halatuju-api-00972-jrg**. **Migration `0148` applied migrate-first
-and verified BEFORE the push.** Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`;
+and verified BEFORE the push.** Retro `docs/retrospectives/retrospective-2026-09-03-sabah-s2-programme-screens.md`;
 lessons x3. pytest **5790** (full suite, +26); jest **1631** (+8); tsc **24**; lint **0**;
 i18n 4648 -> **4714 x 3**; build clean. Five guards bite-checked.
 
@@ -7337,7 +7337,7 @@ i18n 4648 -> **4714 x 3**; build clean. Five guards bite-checked.
 **halatuju-web-00819-9zw**; api unchanged at `halatuju-api-00971-ck4`. Verified in the served
 bundle, not only the build log: the picker label and the `programme_required` sentence are both
 present. **NO migration.** web only. Retro
-`docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2.
+`docs/retrospectives/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2.
 jest 1618 → **1623**; tsc **24** (baseline); lint **0**; i18n 4644 → **4648 × 3**; build clean.
 Two guards bite-checked. First sprint of `docs/plans/2026-09-02-sabah-self-serve-roadmap.md`.
 
@@ -7393,7 +7393,7 @@ tab label `"What we ask for"` is still there, which is correct — the tab keeps
 **halatuju-web-00817-754**; api unchanged at `halatuju-api-00971-ck4` (only the web trigger fired —
 a fourth observation that it follows PYTHON). **F7c rode along in the same push.**
 **NO migration.** web only. Retro
-`docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`. jest 1605 → **1617**; tsc **24**; lint **0**;
+`docs/retrospectives/retrospective-2026-09-02-layer1-f7d-the-flip.md`. jest 1605 → **1617**; tsc **24**; lint **0**;
 i18n 4640 → **4646 × 3**; build clean. **All 25 surfaces walked in both modes, measured rather than
 eyeballed.**
 
@@ -7432,7 +7432,7 @@ eyeballed.**
 ## Layer 1 F7c — the cockpit can be mounted, and it was broken - 2026-09-02
 
 **Sprint.** **NO migration.** web only. Retro
-`docs/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`. jest 1603 → **1605**; tsc **24**;
+`docs/retrospectives/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`. jest 1603 → **1605**; tsc **24**;
 lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked.
 **Reviewed in a browser in both modes — the first time this screen ever has been.**
 
@@ -7463,7 +7463,7 @@ lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked.
 ## Layer 1 F7b — the shape role. THE GATE HAS NO EXEMPTIONS LEFT - 2026-09-02
 
 **Sprint.** **NO migration.** web + api. Retro
-`docs/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`. jest 1597 → **1603**;
+`docs/retrospectives/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`. jest 1597 → **1603**;
 pytest 5765 → **5772**; tsc **24**; lint **0**; i18n **4640 × 3**; build clean.
 Four guards bite-checked. Reviewed in a browser in both modes.
 
@@ -7500,7 +7500,7 @@ Four guards bite-checked. Reviewed in a browser in both modes.
 ## Layer 1 F7a — the filled control becomes a ROLE, and dark is gated. TD-222 CLOSED - 2026-09-02
 
 **Sprint.** **NO migration.** web + api. Retro
-`docs/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`. jest 1595 → **1597**;
+`docs/retrospectives/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`. jest 1595 → **1597**;
 pytest 5757 → **5765**; tsc **24** (baseline); lint **0**; i18n **4640 × 3**; build clean.
 Reviewed in a browser in both modes.
 
@@ -7547,7 +7547,7 @@ stop and cannot move, so a dark tenant colour makes a dark shape on a dark card 
 ## Layer 1 F6 — the last unpainted surfaces. THE REPAINT IS COMPLETE - 2026-09-02
 
 **Sprint.** **NO migration.** web only. Retro
-`docs/retrospective-2026-09-02-layer1-f6-course-guide.md`. jest 1583 → **1595**; tsc **24**
+`docs/retrospectives/retrospective-2026-09-02-layer1-f6-course-guide.md`. jest 1583 → **1595**; tsc **24**
 (baseline, TD-221); lint **0**; i18n **4636 × 3**; `next build` clean.
 
 36 files, ~860 utilities. Nothing under `src/` now carries a raw Tailwind colour, a raw hex, or an
@@ -7594,7 +7594,7 @@ of it. Fourth sprint running that the plan's file table had aged.
 ## Layer 1 A3 — draft, publish, revert. ARC A IS COMPLETE - 2026-09-01
 
 **Sprint.** **Migration `courses/0072` — additive PLUS one deliberate DROP and a data step.
-MIGRATE-FIRST.** api + web. Retro `docs/retrospective-2026-09-01-layer1-a3-draft-publish.md`.
+MIGRATE-FIRST.** api + web. Retro `docs/retrospectives/retrospective-2026-09-01-layer1-a3-draft-publish.md`.
 pytest 5738 → **5757**; jest 1573 → **1583**.
 
 Before this, saving a colour changed it for every applicant instantly, with no undo — the previous
@@ -7643,7 +7643,7 @@ no organisation has a theme yet. This branch also carries A2's held palette fix.
 ## Layer 1 A2 — the colour picker, and the contrast gate - 2026-09-01
 
 **Sprint.** **NO migration.** api + web. Retro
-`docs/retrospective-2026-09-01-layer1-a2-colour-picker.md`. Design of record: the working mock
+`docs/retrospectives/retrospective-2026-09-01-layer1-a2-colour-picker.md`. Design of record: the working mock
 approved 2026-09-01 (Stitch failed twice and produced nothing; same fallback as the
 sponsored-student page in July). pytest 5706 → **5738**; jest 1548 → **1573**.
 
@@ -7701,7 +7701,7 @@ and all six checks pass. Change nothing.
 ## Layer 1 A1 — a theme belongs to an organisation - 2026-09-01
 
 **Sprint.** **Migration `courses/0071` — ADDITIVE, one new table, MIGRATE-FIRST.** api + web,
-11 files. Retro `docs/retrospective-2026-09-01-layer1-a1-tenant-theme.md`.
+11 files. Retro `docs/retrospectives/retrospective-2026-09-01-layer1-a1-tenant-theme.md`.
 pytest 5677 → **5706**; jest 1534 → **1548**. **Dark mode stays unreachable. Nothing a visitor
 sees changes** — BrightPath has no theme row, deliberately.
 
@@ -7756,7 +7756,7 @@ Post-check: `GET /api/v1/branding/brightpath/` returns `"theme": null`.
 ## Layer 1 F5 — the officer cockpit repainted - 2026-09-01
 
 **Sprint.** No migration. Web only, 2 files. Retro
-`docs/retrospective-2026-09-01-layer1-f5-cockpit.md`. jest 1531 → **1534**.
+`docs/retrospectives/retrospective-2026-09-01-layer1-f5-cockpit.md`. jest 1531 → **1534**.
 **Dark mode stays unreachable. Nothing a visitor sees changes.**
 
 ### Changed
@@ -7796,7 +7796,7 @@ judgement calls are pinned by tests, so the risk is low, but it is not zero and 
 ## Layer 1 F4 — the admin console repainted - 2026-09-01
 
 **Sprint.** No migration. Web only, 46 files. Retro
-`docs/retrospective-2026-09-01-layer1-f4-admin-console.md`. jest 1518 → **1531**.
+`docs/retrospectives/retrospective-2026-09-01-layer1-f4-admin-console.md`. jest 1518 → **1531**.
 **Dark mode stays unreachable. Nothing a visitor sees changes.**
 
 ### Changed
@@ -7842,7 +7842,7 @@ written by hand with the reason beside them.
 ## Layer 1 F3b — the brand ramp aligned to dark - 2026-08-31
 
 **Small sprint.** No migration. Web only, 4 files. Retro
-`docs/retrospective-2026-08-31-layer1-f3b-brand-dark.md`. jest 1515 → **1518**.
+`docs/retrospectives/retrospective-2026-08-31-layer1-f3b-brand-dark.md`. jest 1515 → **1518**.
 **Owner direction 2026-08-31:** *"brand colours only work in light theme… a proper alignment is
 needed."* This closes the question F3 raised. **Dark mode stays unreachable; light mode is
 byte-identical.**
@@ -7881,7 +7881,7 @@ moved, the ground constant drifted) → all four guards fired.
 ## Layer 1 F3 — every student surface repainted - 2026-08-31
 
 **Sprint.** No migration. Web only, 24 files. Retro
-`docs/retrospective-2026-08-31-layer1-f3-student-surfaces.md`. jest 1509 → **1515**.
+`docs/retrospectives/retrospective-2026-08-31-layer1-f3-student-surfaces.md`. jest 1509 → **1515**.
 **Dark mode stays unreachable.** Nothing a visitor sees changes.
 
 ### Changed
@@ -7928,7 +7928,7 @@ shape as F2b's category question, and **F7 should not flip the switch until it i
 ## Layer 1 F2c — a category colour family, so dark mode is no longer blocked - 2026-08-31
 
 **Small sprint.** No migration. Web only, 8 files. Retro
-`docs/retrospective-2026-08-31-layer1-f2c-category-colours.md`. jest 1507 → **1509**.
+`docs/retrospectives/retrospective-2026-08-31-layer1-f2c-category-colours.md`. jest 1507 → **1509**.
 **Owner decision, 2026-08-31: build the categorical family** (the option F2b raised). This closes
 the gap that would have blocked F7. Nothing a visitor sees changes — dark mode is still off.
 
@@ -7972,7 +7972,7 @@ the gap that would have blocked F7. Nothing a visitor sees changes — dark mode
 ## Layer 1 F2b — the rest of the shared components, and a colour the vocabulary cannot name - 2026-08-31
 
 **Sprint.** No migration. Web only, 29 files. Retro
-`docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`. jest 1493 → **1507**.
+`docs/retrospectives/retrospective-2026-08-31-layer1-f2b-shared-components.md`. jest 1493 → **1507**.
 **Dark mode stays unreachable** in production. No visible change in light mode.
 
 ### Changed
@@ -8022,7 +8022,7 @@ exactly what it looks like. **F7 must not flip the switch while these are litera
 ## Layer 1 F2a — the shared student-journey components go onto the theme tokens - 2026-08-31
 
 **Sprint.** No migration. Web only, 34 files. Retro
-`docs/retrospective-2026-08-31-layer1-f2a-shared-components.md`. jest 1482 → **1493**.
+`docs/retrospectives/retrospective-2026-08-31-layer1-f2a-shared-components.md`. jest 1482 → **1493**.
 **Dark mode stays unreachable** — `NEXT_PUBLIC_THEME_SWITCH` is unset in production and the
 before-paint script is not emitted without it. Nothing a visitor sees changes, except the one
 light-mode change noted below.
@@ -8082,7 +8082,7 @@ light-mode change noted below.
 ## Layer 0 Sprint 5 — "What we ask for": the org_admin configures the programme - 2026-08-30
 
 **Sprint.** No migration. Backend 4 files, web 13 files. **LAYER 0 IS COMPLETE** (Sprints 1–5 +
-both 3a deferrals). Retro `docs/retrospective-2026-08-30-layer0-config-screen.md`.
+both 3a deferrals). Retro `docs/retrospectives/retrospective-2026-08-30-layer0-config-screen.md`.
 
 ### Added
 - **`GET/PUT /api/v1/admin/scholarship/programme/configuration/`**
@@ -8162,7 +8162,7 @@ fails. +9 tests.
 ## Layer 0 Sprint 4 — the catalogue governs the questions - 2026-08-30
 
 **Sprint.** NO migration. api + web. Worktree `.worktrees/layer0-sprint4`.
-Retro `docs/retrospective-2026-08-30-layer0-questions.md`.
+Retro `docs/retrospectives/retrospective-2026-08-30-layer0-questions.md`.
 
 A programme can now switch application QUESTIONS on or off, completing what Sprint 3 did for
 documents. `application_completeness` gates the story / funding / address parts on
@@ -9963,7 +9963,7 @@ evidence, different answer. `backfill_nric_locks` closes that, re-applying the l
 already stored, with no API calls and no re-extraction.
 
 No migration. 5071 pytest · 1176 jest · i18n parity 4321 ×3. Backend deployed; the web half awaits
-a copy review. Retro `docs/retrospective-2026-07-29-ic-lock.md`; five lessons.
+a copy review. Retro `docs/retrospectives/retrospective-2026-07-29-ic-lock.md`; five lessons.
 
 ## A sponsor who joins today belongs to a gift — 2026-07-29
 
@@ -10697,7 +10697,7 @@ live service, so the pre-S3 senders still do the work and nothing a sponsor rece
 ## Nav/IA arc CLOSED (N1 -> N4) — 2026-07-28
 
 No code. The roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md` is closed and marked so; arc
-retrospective in `docs/retrospective-2026-07-28-nav-ia-arc.md`.
+retrospective in `docs/retrospectives/retrospective-2026-07-28-nav-ia-arc.md`.
 
 Four sprints, two days, all live: a 220-line layout became a 60-line guard over a route registry,
 17 copies of one role check became 1, three routes that highlighted nothing were fixed, a 414-line
@@ -11816,7 +11816,7 @@ backend change (both facts were already on the admin payload and simply weren't 
 A live-review UX arc on the student **Documents** tab, plus one QC copy fix. Through-line: a wall of
 upload boxes intimidates B40 applicants — show only what must be acted on, fold what's finished, and
 never demand proof a genuine family can't produce. Retro
-`docs/retrospective-2026-07-25-documents-tab-kinder.md`; decisions ×3.
+`docs/retrospectives/retrospective-2026-07-25-documents-tab-kinder.md`; decisions ×3.
 
 - **Changed — QC decline-route copy** (`311bc956`): an awaiting-QC card with an officer **decline**
   verdict no longer contradicts itself ("Accept to Recommended" under a "Confirm decline" button). The
@@ -12000,7 +12000,7 @@ bug/feature forms → an AI reviewer that classifies + estimates in HOURS + asks
 → a status flow → owner-gated hours quotes. Shipped dark, then verified live and flipped ON the
 same day after the owner reviewed the rate-card copy + UI mock (claude.ai artifact). Brief
 `docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
-`docs/retrospective-2026-07-24-sprint15-requests-space.md`; decisions ×5; TD-172 logged.
+`docs/retrospectives/retrospective-2026-07-24-sprint15-requests-space.md`; decisions ×5; TD-172 logged.
 
 Core (5 commits, `a8bbefc6`..`ed3efeec`) + a same-day owner-approved increment (`d8e34931`):
 
@@ -12125,7 +12125,7 @@ tenant config over the network.
   flagged as a copy-tidy-up candidate (TD-170); (3) the `info@` mailto is built as
   `info@${frontendDomain}` — there is no dedicated seam field for it.
 - Brief: `docs/plans/2026-07-24-sprint6-branding-frontend-brief.md`. Retrospective:
-  `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`.
+  `docs/retrospectives/retrospective-2026-07-24-sprint6-branding-frontend.md`.
 
 ## Payments — the Finance role: a dormant payment-run checker + funding summary — 2026-07-23
 
@@ -13278,7 +13278,7 @@ as defence-in-depth. NO migration.
   NEVER re-OCRs; leaves legit school data alone). **#125 repaired via MCP** → "Asasi Teknologi
   Kejuruteraan (Asasi TVET)" at "Politeknik Sultan Idris Shah"; #102 control byte-identical.
 - Browse card `'—'` fallback removed. 2692 scholarship pytest + 584 jest; `next build` clean.
-  Retro `docs/retrospective-2026-07-17-sponsor-card-data-fix.md`.
+  Retro `docs/retrospectives/retrospective-2026-07-17-sponsor-card-data-fix.md`.
 
 ## Sponsor pool redesign — image-led cards + refined detail — 2026-07-17
 
@@ -13313,7 +13313,7 @@ Benchmarked against Funding Societies / LinkedFinance; anonymity stays inviolate
   the sponsor's name in the greeting (senders + schedulers updated), a full plain-text mirror.
   Allowlist discipline unchanged; who-gets-notified-when untouched.
 - 20 new `sponsorPool.*` i18n keys × en/ms/ta (Tamil first-drafts). 2674 scholarship pytest +
-  583 jest; `next build` clean. Retro `docs/retrospective-2026-07-17-sponsor-pool-redesign.md`.
+  583 jest; `next build` clean. Retro `docs/retrospectives/retrospective-2026-07-17-sponsor-pool-redesign.md`.
 
 ## Payments live-review arc — owner-driven hardening after the P3 cutover — 2026-07-16/17
 
@@ -13352,13 +13352,13 @@ the rules the cutover exposed and finishing the send-to-Vircle chain end to end.
 - **Prod data ops** — test/cancelled runs deleted (the 16/7 backfill removed — that payment was
   never made; Kulaly generates it for real); the three regularisation credits intact.
 - Commits `540f5a8c` · `cb22cf9a` · `b5fcf0d3` · `a765d419` · `1df757cf` · `d3a10f77`.
-  Retro `docs/retrospective-2026-07-17-payments-live-review.md`.
+  Retro `docs/retrospectives/retrospective-2026-07-17-payments-live-review.md`.
 
 ## Officer assignment surfaces — live-review round (cockpit = list = filter) — 2026-07-16/17
 
 An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing as
 `elanjelian@me.com`). Four commits, NO migration. Retro
-`docs/retrospective-2026-07-16-assignment-surfaces.md`.
+`docs/retrospectives/retrospective-2026-07-16-assignment-surfaces.md`.
 
 ### Fixed
 - **Cockpit assign dropdown renders the CURRENT assignee whatever their role** (`ec9279ed`) —
@@ -13600,7 +13600,7 @@ Follow-up to the cockpit verified ticks, off owner review of #137:
 
 Owner (off #127): a genuine offer with NO declared pathway read silently **Certain** and Check-2
 never asked the student to confirm or complete it. Deployed `c01ccc04` (api+web); NO migration;
-retro `docs/retrospective-2026-07-15-undeclared-pathway.md`; decisions ×2.
+retro `docs/retrospectives/retrospective-2026-07-15-undeclared-pathway.md`; decisions ×2.
 
 ### Changed
 - **`verdict_engine._verdict_pathway`** — for a **genuine official** offer + a **true non-declaration**
@@ -13628,7 +13628,7 @@ retro `docs/retrospective-2026-07-15-undeclared-pathway.md`; decisions ×2.
 
 Frontend + content only, one deploy, no backend/migration. The reviewer-only Guide and FAQ
 became one role-aware self-help manual. Brief `docs/plans/2026-07-16-guide-faq-manual-brief.md`;
-retro `docs/retrospective-2026-07-16-guide-faq-manual.md`.
+retro `docs/retrospectives/retrospective-2026-07-16-guide-faq-manual.md`.
 
 - **Content modules** in `halatuju-web/src/content/manual/` — four Basics chapters, four role
   chapters (reviewer/qc/org-admin/general-admin), a help chapter, and an audience-grouped FAQ;
@@ -13651,7 +13651,7 @@ retro `docs/retrospective-2026-07-16-guide-faq-manual.md`.
 One sprint, one deploy, **no migration**. The organisation roles gained the write powers
 `docs/scholarship/role-matrix.md` promises, all org-fenced and guarded. Brief
 `docs/plans/2026-07-15-org-admin-powers-v1-brief.md`; retro
-`docs/retrospective-2026-07-15-org-admin-powers-v1.md`.
+`docs/retrospectives/retrospective-2026-07-15-org-admin-powers-v1.md`.
 
 - **org_admin + qc are org-wide writers** (`_can_review_app`) — act on any own-org application
   (the three cockpit action boxes + the verdict recorder light up); admin/reviewer stay
@@ -13708,7 +13708,7 @@ One sprint, one deploy, **no migration**. The organisation roles gained the writ
 
 Delegation of BrightPath staff management to its programme lead, plus a platform-PII security
 fix. Two sprints, one deploy (`courses/0064` choices-only, migrate-first). Retro
-`docs/retrospective-2026-07-15-admin-panel-org-admin.md`.
+`docs/retrospectives/retrospective-2026-07-15-admin-panel-org-admin.md`.
 
 ### Added
 - **`org_admin` role** — organisation superadmin: org-wide B40 read + QC gate + staff management
@@ -13740,7 +13740,7 @@ fix. Two sprints, one deploy (`courses/0064` choices-only, migrate-first). Retro
 Follow-up to the genuineness model (owner, off app #66's cockpit): read the *Sijil Berhenti
 Sekolah* OCR-first with AI fallback, and surface proper officer chips instead of one "Verified"
 pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; retro
-`docs/retrospective-2026-07-15-school-leaving-cert-fields.md`; decision ×1; lesson ×1.
+`docs/retrospectives/retrospective-2026-07-15-school-leaving-cert-fields.md`; decision ×1; lesson ×1.
 
 ### Added
 - **`doc_parse._parse_school_leaving`** — a deterministic label-anchored parser for the standard
@@ -13796,7 +13796,7 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
 The *Sijil Berhenti Sekolah* had NO genuineness check — the green "Verified" chip only meant the
 fields read. Adds a deterministic signature scorer, extends the extraction variables, and makes the
 keep-better replacement real for this type (owner request). Deployed `af6ef919`; NO migration; retro
-`docs/retrospective-2026-07-15-school-leaving-cert-genuineness.md`.
+`docs/retrospectives/retrospective-2026-07-15-school-leaving-cert-genuineness.md`.
 
 ### Added
 - **`genuineness/school_leaving_doc.py` (`MODEL_VERSION 1.0.0`)** — a leaver-anchor-first signature
@@ -13835,7 +13835,7 @@ The organisation wall on the scholarship system. Behaviourally INVISIBLE while B
 the only organisation — every fenced query returns exactly today's rows, and the full suite
 passed at every sprint with no edits to existing tests. Roadmap
 `docs/plans/2026-07-14-platform-roadmap-draft.md`; retro
-`docs/retrospective-2026-07-15-platform-phase1-fencing.md`.
+`docs/retrospectives/retrospective-2026-07-15-platform-phase1-fencing.md`.
 
 ### Added
 - **S2 — `ScholarshipApplication.owning_organisation`** (migrations `scholarship/0099`+`0100`):
@@ -14617,7 +14617,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
   (owner re-runs offers on the cockpit to re-score). Submission gate unchanged.
 - `_verdict_academic` no longer hard-gaps a slip name mismatch (→ a red chip); `_verdict_pathway`
   counts Name/IC/Pathway independently. Backend only, no migration. 2133 scholarship pytest.
-- See `docs/retrospective-2026-07-07-genuineness-redchip-ladder.md`.
+- See `docs/retrospectives/retrospective-2026-07-07-genuineness-redchip-ladder.md`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -14627,7 +14627,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 2026-07-08/09 — Stuck-students round: gate ↔ verdict alignment (BE + FE; NO migration beyond 0095)
 
 Systematic "why can't each shortlisted student submit?" investigation (see
-`docs/retrospective-2026-07-08-stuck-students-verification-gate.md`). Several places where the
+`docs/retrospectives/retrospective-2026-07-08-stuck-students-verification-gate.md`). Several places where the
 SUBMISSION GATE was stricter than, or contradicted, the verification VERDICT — now aligned:
 - **STR precedence in the gate** (#28): a valid dispositive household STR makes income-doc
   person-mismatches soft (the STR-route twin of "one clean cluster"). New
@@ -15097,7 +15097,7 @@ pytest + 455 jest**; golden masters intact.
     fails if any future read in the pure engine modules omits the filter.
   - 2074 scholarship pytest (new `test_superseded_documents.py` + a student-GET-exclusion API test; 5
     replace tests updated to the soft-supersede contract). 433 jest (+1). i18n `group.superseded`
-    (Tamil first-draft). Retro `docs/retrospective-2026-07-04-docs-box-reorg-p2.md`. Phase 3
+    (Tamil first-draft). Retro `docs/retrospectives/retrospective-2026-07-04-docs-box-reorg-p2.md`. Phase 3
     (shared-IC / STR-overrides verdict — the #63 class) follows, re-banding-gated.
 
 - **Officer Documents box — reorganisation Phase 1 (2026-07-04, FE-only, no migration).** The cockpit
@@ -15565,7 +15565,7 @@ pytest + 455 jest**; golden masters intact.
   (Ditolak) or not-an-STR → red; cropped/unreadable status line → amber. Derived from the already-computed
   `current_status`, FE-only (`officerCockpit.strStatusFactStatus`, `docsDrawer.fact.status` en/ms/ta, +tests).
 - **Post-award contract-signing flow — wiring complete, DARK behind `BURSARY_AGREEMENT_ENABLED`
-  (5 sprints; `docs/retrospective-2026-07-01-post-award-signing.md`; migrations `0083`/`0084`/`0085`
+  (5 sprints; `docs/retrospectives/retrospective-2026-07-01-post-award-signing.md`; migrations `0083`/`0084`/`0085`
   additive, apply migrate-first at go-live).** The award follow-up email now lands a student in the
   Action Centre → an 8-checkpoint **comprehension quiz** ("Understand") → **signing**. The
   parent/guarantor signature is gated on an **SMS PIN to their pre-declared, locked phone** (Twilio
@@ -17086,7 +17086,7 @@ pytest + 455 jest**; golden masters intact.
   redundant for them (and its "Unassigned" option always returned an empty list). The dropdown now renders only for the
   roles that see every application (super + admin). FE-only, no migration.
 - **Tech-debt paydown Sprint 0 — internal cleanup (no behaviour change).** From the 2026-06-14 scholarship audit
-  (`docs/scholarship-tech-debt-audit-2026-06-14.md`): removed dead `emails.send_fail_email` (superseded by
+  (`docs/archive/scholarship-tech-debt-audit-2026-06-14.md`): removed dead `emails.send_fail_email` (superseded by
   `send_decline_email`); trimmed unused imports (`Consent`/`Donation`/`CONSENT_VERSION` in `sponsorship.py`,
   `is_minor` in `anomaly_engine.py`); de-duplicated the income-engine matchers — three inlined name/NRIC blocks now
   reuse the existing `_name_bucket`/`_nric_bucket`, and `mother_relationship`/`father_via_bc` share one `_bc_link`
@@ -17554,7 +17554,7 @@ pytest + 455 jest**; golden masters intact.
   hidden (superseded by the school/tertiary split), shown only as a captioned fallback ("legacy total — split unknown,
   confirm at interview") for the **10/76** old rows that have a positive legacy count and no split; **#7** prev/next
   applicant navigation that follows the list's current filter/sort order (ids stashed in `sessionStorage`). Gates:
-  `next build` clean, 297 jest, i18n parity 2519×3. See `docs/retrospective-cockpit-school-ux.md`.
+  `next build` clean, 297 jest, i18n parity 2519×3. See `docs/retrospectives/retrospective-cockpit-school-ux.md`.
 - **Utility-bill holder/address + payslip-vs-EPF verification soft-signals (live-review backlog #8–#9; backend, no
   migration, never gates submission).** The engine already *detected* these but only displayed them passively — now it
   escalates. **#8 (utility):** new `income_engine.utility_holder_unknown` (bill in a stranger's name — neither student nor
@@ -17565,7 +17565,7 @@ pytest + 455 jest**; golden masters intact.
   `income_engine.slip_epf_divergence` cross-checks a member's payslip gross against their EPF-implied salary
   (contribution ÷ 0.24) when both docs exist, flagging `payslip_epf_divergence` only outside a generous 0.6–1.67 ratio
   band (overtime / late-pay safe). i18n en/ms/ta: anomaly ×3, Check-2 query ×2, admin summary ×2. Gates: 1104 scholarship
-  pytest (+23), actionCentre jest 23, `next build` clean, parity 2512×3. See `docs/retrospective-verification-soft-signals.md`.
+  pytest (+23), actionCentre jest 23, `next build` clean, parity 2512×3. See `docs/retrospectives/retrospective-verification-soft-signals.md`.
 
 ### Changed
 - **Course-data pipeline safety guards — a bad scrape can no longer wipe the STPM catalogue (no migration).** Two P0
@@ -17686,7 +17686,7 @@ pytest + 455 jest**; golden masters intact.
     approvals aren't retro-broken. Gopal/i18n tell the student we need their **STR (Sumbangan Tunai Rahmah)**, not a SARA
     letter. (App #63's existing record is corrected post-deploy — its extraction predates classification.)
   - Gates: **1010 scholarship + 1063 courses/reports pytest, 282 jest, next build clean, i18n parity 2474×3**; golden
-    masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
+    masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospectives/retrospective-verification-accuracy-fixes.md`.
 
 ### Added
 - **Cockpit capture-confidence badge (officer transparency; no migration).** Each document row in the cockpit Documents
@@ -17873,7 +17873,7 @@ pytest + 455 jest**; golden masters intact.
   (daily 03:00, F4 PDPA purge), the last smoke-tested green; (5) live smoke — new endpoints return 401 (clean auth gate,
   not 500), web `/sponsor` 200. Resolved TD-093/095/098/100/102/106/107. **Still open (post-lawyer):** Tamil refine
   (TD-091/094/096/097/105/108), the lawyer consent-text + `CONSENT_VERSION` bump, real toyyibPay money (TD-075). Retro
-  `docs/retrospective-sprint12-go-live.md`.
+  `docs/retrospectives/retrospective-sprint12-go-live.md`.
 
 ### Changed
 - **Partner admin tables — MySkills-style header + search/filter row (Students + B40 Applicants).** Both
@@ -17922,7 +17922,7 @@ pytest + 455 jest**; golden masters intact.
   sign-in round-trip. New api clients `getSponsorReferrals`/`createSponsorReferral` + `ref` on `registerSponsor`.
   Trilingual `sponsorPortal.referrals.*` (i18n parity 2416, +17; Tamil first-draft, TD-108). **+12 scholarship pytest**;
   `next build` clean (`/sponsor` 7.21 kB); 283 jest. **Migration `0054`** (new model → MCP + contenttypes workaround +
-  RLS at deploy, TD-106). Retro `docs/retrospective-sprint11-sponsor-referral.md`.
+  RLS at deploy, TD-106). Retro `docs/retrospectives/retrospective-sprint11-sponsor-referral.md`.
 - **Student in-programme + graduation relay — frontend (B40 Phase E/F Sprint 10, F9b, held local, ships dark; no
   migration).** The student/sponsor UI for F9a's backend. **New student page `/scholarship/in-programme`** ("My
   progress"), Stitch-approved, shown once the award is accepted (`status='sponsored'`), three cards matching the
@@ -17939,7 +17939,7 @@ pytest + 455 jest**; golden masters intact.
   `getGraduationMessages`/`submitGraduationMessage`, `getSponsorGraduationMessages` + types. Trilingual
   `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*` (i18n parity 2399 ×en/ms/ta, +48; Tamil first-draft,
   TD-105). `next build` clean (`/scholarship/in-programme` 2.9 kB); 283 jest (render-only pages). TD-104 (optional
-  results-slip upload control deferred — CGPA is the driver). Retro `docs/retrospective-sprint10-in-programme-frontend.md`.
+  results-slip upload control deferred — CGPA is the driver). Retro `docs/retrospectives/retrospective-sprint10-in-programme-frontend.md`.
 - **Student in-programme results + progress + graduation relay — backend (B40 Phase E/F Sprint 9, F9a, held local, ships
   dark; migration `0053`).** The in-programme student lifecycle, backend-only. New module `apps/scholarship/in_programme.py`
   owns the writes (one-way import `in_programme → pool → models`, no cycle). **(1) Semester results → real progress.** New
@@ -17961,7 +17961,7 @@ pytest + 455 jest**; golden masters intact.
   (behind `SPONSOR_POOL_ENABLED` + approved). **+26 scholarship pytest** (service gates, 18+ enforcement, relay
   leak-block + endpoint smokes; the S8 `TestProgressState` extended with the real bands). **Migration `0053`** (two new
   models → apply via MCP + contenttypes workaround + RLS at deploy, TD-102). No FE this sprint (F9b/Sprint 10). TD-103
-  (results-slip OCR auto-fill deferred — CGPA is student-entered). Retro `docs/retrospective-sprint9-in-programme.md`.
+  (results-slip OCR auto-fill deferred — CGPA is student-entered). Retro `docs/retrospectives/retrospective-sprint9-in-programme.md`.
 - **Sponsor profile + "My students" (B40 Phase E/F Sprint 8, F2, held local, ships dark).** A signed-in, approved
   sponsor's `/sponsor` home now shows the anonymised students their giving supports + a coarse progress signal. New
   **`progress_state`** on the allowlist card (`SponsorPoolCardSerializer`) — `pool.derive_progress_state` is a stub
@@ -18015,7 +18015,7 @@ pytest + 455 jest**; golden masters intact.
   `SponsorPoolDetailSerializer` dicts — allowlist-safe by construction** (no student identity can reach a sponsor); a
   soft `SPONSOR_NOTIFY_MAX_PER_RUN` cap keeps a run inside the Brevo quota. Migration **`0050`** (3 additive fields).
   +9 tests (882 scholarship pytest; 276 jest; `next build` clean). Cloud Scheduler jobs to be created at deploy
-  (TD-095). Retro `docs/retrospective-sprint4-sponsor-notifications.md`.
+  (TD-095). Retro `docs/retrospectives/retrospective-sprint4-sponsor-notifications.md`.
 - **Student award + onboarding — frontend (B40 Phase E/F Sprint 3, F8b, ships dark).** New `/scholarship/award` page
   (accept or decline a funded-studies offer; a guardian modal for minors reusing the consent relationship list +
   `formatNric`) and `/scholarship/onboarding` wizard (welcome acknowledgement cards → a short questionnaire → a
@@ -18025,7 +18025,7 @@ pytest + 455 jest**; golden masters intact.
   only when an offer exists and disappears once onboarded. Trilingual `scholarship.award.*`/`scholarship.onboarding.*`
   (Tamil first-draft, owner to refine). `next build` clean; 276 jest green. Naturally dark — no award offer exists until
   a sponsor funds a student, which requires `SPONSOR_POOL_ENABLED`. Built by a delegated subagent, orchestrator-reviewed
-  + re-built. Retro `docs/retrospective-sprint3-onboarding-frontend.md`.
+  + re-built. Retro `docs/retrospectives/retrospective-sprint3-onboarding-frontend.md`.
 - **Student post-match onboarding — backend (B40 Phase E/F Sprint 2, F8a, ships dark).** When a student/guardian
   accepts an award (`respond_to_award`), they now receive a trilingual **award-confirmed email** that carries **no
   sponsor identity** (B4 two-way anonymity) and points them to onboarding. New `complete_onboarding(...)` service +
@@ -18036,7 +18036,7 @@ pytest + 455 jest**; golden masters intact.
   award is accepted (status `sponsored`, else `400 not_awarded`). `onboarded_at` surfaced in `ApplicationReadSerializer`.
   Migration **`0049`** (additive: `onboarded_at` column + `onboarding_responses` table) — apply migrate-first at deploy;
   the new table needs RLS enabled at deploy (TD-093). +5 tests (873 scholarship pytest). Retro
-  `docs/retrospective-sprint2-onboarding-backend.md`.
+  `docs/retrospectives/retrospective-sprint2-onboarding-backend.md`.
 - **Sponsor landing page + live "students waiting" counter (B40 Phase E/F Sprint 1, F1, ships dark).** A public,
   persuasive marketing page for prospective sponsors at `/sponsor` (shown to signed-out visitors only while the
   programme is live): hero with a live counter, three promise cards (complete anonymity / every ringgit tracked /
@@ -18048,7 +18048,7 @@ pytest + 455 jest**; golden masters intact.
   `getStudentsWaitingCount()` API client; the `/sponsor` page renders the landing for signed-out visitors when enabled,
   otherwise the existing portal/auth flow is unchanged. No migration. +3 sponsor-pool tests (count hidden when flag off,
   count reflects the eligible pool when on, response leaks nothing). Tamil copy pending the owner's refinement pass.
-  Prototyped in Stitch and visually approved before coding. Retro `docs/retrospective-sprint1-sponsor-landing.md`.
+  Prototyped in Stitch and visually approved before coding. Retro `docs/retrospectives/retrospective-sprint1-sponsor-landing.md`.
 - **"About your family" structured roster — backend foundation (branch `feature/family-section-redesign`, NOT
   deployed).** Replaces four overlapping family fields (`first_in_family` toggle + legacy `siblings_studying_count` +
   `siblings_in_school`/`tertiary` steppers split across the Story + Income tabs + free-text `parents_occupation`) with
@@ -18064,7 +18064,7 @@ pytest + 455 jest**; golden masters intact.
   required (name required unless deceased/no-contact), sibling steppers required via a blank-`—` (null) default.
   +9 tests (854 scholarship pytest). **▶ Remaining (S2, not started): the form rebuild + i18n (40×3) + the
   `family_done` completeness gate + income-wizard stepper-removal/earner-prefill + cockpit Family card.** Plan:
-  `docs/scholarship/family-section-redesign-plan.md`; retro `docs/retrospective-family-section-redesign.md`.
+  `docs/scholarship/family-section-redesign-plan.md`; retro `docs/retrospectives/retrospective-family-section-redesign.md`.
 - **Sponsor allowlist widened to a trusted-sponsor boundary (B40 Phase E/F Sprint 0, ships dark).** Per the 2026-06-07
   owner Boundary decision, the anonymised sponsor card (`SponsorPoolCardSerializer`) gains an `institution` field that
   crosses **only** to a **trusted** sponsor (`context['is_trusted']`); absent by default (fail-closed). New
@@ -18216,7 +18216,7 @@ pytest + 455 jest**; golden masters intact.
   from the panel (the `mentoring_candidate` field is retained on the model). FE-only; no backend/migration change
   (`verify_checklist` simply stores empty now — the decision lives in `officer_verdict` + reason). i18n parity 2135.
 - **Officer cockpit consolidated — ~11 action panels → ~7, two clean columns** (`feature/cockpit-consolidation`;
-  spec `docs/scholarship/cockpit-consolidation-plan.md`; retro `docs/retrospective-cockpit-consolidation.md`; Stitch
+  spec `docs/scholarship/cockpit-consolidation-plan.md`; retro `docs/retrospectives/retrospective-cockpit-consolidation.md`; Stitch
   mockup approved). No more overlapping/duplicated questions. **Outstanding** is one panel = Caveats + Pre-interview
   flags, split into "Student to-do" (Resolve/Ask) vs "Ask at interview" (deterministic flags + AI gaps); identity
   `vision_nric_mismatch`/`vision_name_mismatch` are **deduped server-side** (`get_anomalies`) since the verdict tile +
@@ -18938,7 +18938,7 @@ pytest + 455 jest**; golden masters intact.
     + new `sponsor_donations` + `sponsorships` tables + RLS, applied migrate-first via Supabase MCP, prod-verified).
   - +17 tests (`test_sponsorship.py`); 1452 pytest + 183 jest. **Deferred (TD-075):** real toyyibPay donation-in +
     disbursement-out + the tranche schedule (RM ×N with progress-gated release/withhold) + the lapse cron + partial /
-    multi-sponsor funding. See `docs/retrospective-v2.26-sponsorship-e3a.md`.
+    multi-sponsor funding. See `docs/retrospectives/retrospective-v2.26-sponsorship-e3a.md`.
 
 ## [2.25.1] — Anon-profile pre-publish identifier scan (TD-074b) (2026-06-01)
 
@@ -18991,7 +18991,7 @@ pytest + 455 jest**; golden masters intact.
     sponsor → 403); admin reviewer-gated `…/anon-profile/generate/` + `…/anon-profile/publish/`. **Migration `0033`**
     (additive `anon_*` columns on `sponsor_profiles`, applied migrate-first via Supabase MCP, prod-verified).
   - No frontend yet (E2b). 1428 pytest (+17, `test_sponsor_pool.py`) + 183 jest. The lawyer review gates flipping the
-    flag on, not the build. See `docs/retrospective-v2.24-sponsor-pool-e2a.md`.
+    flag on, not the build. See `docs/retrospectives/retrospective-v2.24-sponsor-pool-e2a.md`.
 
 ## [2.23.2] — Logout isolation + student modal no longer overlays admin/sponsor (2026-05-31)
 
@@ -19056,7 +19056,7 @@ pytest + 455 jest**; golden masters intact.
     landing page is unchanged). Pure `lib/sponsorAuth.ts` (`checkPassword`/`SPONSOR_SOURCES`) is node-env unit-tested.
   - **Deferred (TD-071):** Cloudflare Turnstile on signup (shown in the mockup) — email confirmation + admin vetting gate
     fakes for now. **MY-only phone** for now (TD-072). 1411 pytest + 178 jest; i18n parity 1650 (Tamil first-draft);
-    `next build` clean. **Not click-tested** (OAuth + admin flows — TD-070). See `docs/retrospective-v2.23-sponsor-auth.md`.
+    `next build` clean. **Not click-tested** (OAuth + admin flows — TD-070). See `docs/retrospectives/retrospective-v2.23-sponsor-auth.md`.
 
 ## [2.22.0] — Phase E Sprint E1: sponsor accounts + admin vetting (no student data) (2026-05-31)
 

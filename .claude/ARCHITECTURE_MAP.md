@@ -375,7 +375,7 @@ branding columns (line above). Topical aliases (`interview@`/`sponsor@`) stay pl
 AST brand-guard (`tests/test_branding_guard.py`) scans `emails.py`/`help_engine.py` string constants for the
 platform brand literals, allowing only `branding.py` to hold them. Decisions D3/D4/D6:
 `docs/decisions.md` ("Per-org branding seam", 2026-07-24); retrospective:
-`docs/retrospective-2026-07-23-sprint5-branding-email.md`. Backend only — no migration, `halatuju-web/` untouched.
+`docs/retrospectives/retrospective-2026-07-23-sprint5-branding-email.md`. Backend only — no migration, `halatuju-web/` untouched.
 **Sprint 6 (2026-07-24) extended the seam with 3 visual accessors** (`brand_colour`/`logo_url`/
 `org_short_name`, each with a platform default) and a public read endpoint
 `GET /api/v1/branding/<slug:code>/` (`views_branding.py`, AllowAny + throttle, exact key-set
@@ -399,7 +399,7 @@ values + comment-stripped `src/**`, with documented allowlists and self-checking
 `placeholder-parity.test.ts` (every locale's placeholders ⊆ en's ∪ `AUTO_TOKENS`). Byte-identity for
 BrightPath is pinned by a pre-edit consent-snapshot test + a leaf-map diff (en 18 / ms 18 / ta 19 values
 changed, 0 keys added/removed). Decisions: `docs/decisions.md` ("Per-org branding — frontend seam",
-2026-07-24); retrospective: `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`.
+2026-07-24); retrospective: `docs/retrospectives/retrospective-2026-07-24-sprint6-branding-frontend.md`.
 
 **Requests space — org-fenced work-request tracker (Platform Sprint 15, 2026-07-24, LIVE behind
 `REQUESTS_ENABLED=1`).** `models.py` gains **`OrgRequest`** (table `org_requests`, migrations
@@ -419,7 +419,7 @@ statuses/tones/labels + `requestActionsFor`), `app/admin/requests/page.tsx` (rat
 submit form + list) and `app/admin/requests/[id]/page.tsx` (Q&A thread + owner triage/quote
 controls), an Administration hub card + badge (hidden while the count probe 404s), i18n
 `admin.requests.*` en/ms/ta. Decisions: `docs/decisions.md` ("Requests space", Sprint 15,
-2026-07-24); retrospective: `docs/retrospective-2026-07-24-sprint15-requests-space.md`.
+2026-07-24); retrospective: `docs/retrospectives/retrospective-2026-07-24-sprint15-requests-space.md`.
 
 **Requests v1.1 — role-correct components, B40 sub-components, attachments (Sprint 15.1,
 2026-07-24, LIVE, additive to Sprint 15 above; resolves TD-172).** `component` choices now derive
@@ -445,7 +445,7 @@ snapshot widened 19 → 20 keys (`attachments`); `ai_*`/`triage_*` leak tests st
 dependent-select sub-component picker (PathwayPicker pattern) + staged attachment upload on the
 submit form and add/remove on the detail page while non-terminal. Decisions: `docs/decisions.md`
 ("Requests v1.1", Sprint 15.1, 2026-07-24); retrospective:
-`docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
+`docs/retrospectives/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
 
 **Billing & usage v1 — per-tenant usage meter + org-facing usage screen (Sprint 13a, 2026-07-25,
 meter LIVE / screen flag-dark til 1 Aug 2026).** New **`UsageEvent`** (table `usage_events`,
@@ -472,7 +472,7 @@ picker, per-org cards (+ platform section for super), stat tiles + service break
 storage, and a non-metered free-services footnote (Google Workspace + Cloudflare Turnstile).
 Administration hub Billing card goes live for super + org_admin when the flag is on (same probe
 as Requests); Finance stays "Coming soon". Decisions: `docs/decisions.md` ("Billing & usage v1",
-Sprint 13a, 2026-07-25); retrospective: `docs/retrospective-2026-07-25-billing-usage-v1.md`.
+Sprint 13a, 2026-07-25); retrospective: `docs/retrospectives/retrospective-2026-07-25-billing-usage-v1.md`.
 
 **Billing — the COST side (`platform_cost.py`, 2026-07-26/27).** Read this before touching
 anything priced. There are **two ledgers answering different questions**; summing them in one
@@ -499,7 +499,7 @@ place makes every total meaningless:
 - Endpoints: `billing/rates/` (**super-only**, 403 for org_admin — the route's existence is not the
   secret, its contents are) and `billing/hours/<org_id>/` (org-fenced, cross-org 404).
 - Decisions: `docs/decisions.md` 2026-07-26/27; retro
-  `docs/retrospective-2026-07-27-billing-cost-ledger.md`.
+  `docs/retrospectives/retrospective-2026-07-27-billing-cost-ledger.md`.
 
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
@@ -868,10 +868,10 @@ docs/
 ├── decisions.md                   # Architectural decisions log
 ├── lessons.md                     # Cross-cutting engineering lessons
 ├── technical-debt.md              # Living doc: 52 items catalogued, 9 resolved (TD-001/002/007/015/017/018/019/020/050)
-├── release-notes-v1.33.0.md      # Latest stable release notes
+├── releases/                      # Release notes (v1.33.0, v2.0-rc, v3.0.0) + migration lists
 ├── Course Detail Page.pdf         # UI design spec
 │
-├── retrospective-*.md             # 45 retrospectives:
+├── retrospectives/                # every sprint retrospective (494 at v3.0.0), e.g.:
 │   ├── retrospective-sprint{1-20}.md          # SPM flow sprints (18 files)
 │   ├── retrospective-stpm-sprint{1-8}.md      # STPM entrance sprints
 │   ├── retrospective-v1.{25-33}.0.md          # Release retrospectives

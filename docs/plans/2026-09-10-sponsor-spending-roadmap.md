@@ -8,7 +8,7 @@
 > person), **TD-241** (Payments and Spending moved to the Programme scope, together) and the
 > **September blackout** fix on 2026-09-12. Those were owner-driven, one request at a time, and
 > have no roadmap — read `CHANGELOG.md` and
-> `docs/retrospective-2026-09-12-spending-s6-s8-and-the-september-blackout.md` instead.
+> `docs/retrospectives/retrospective-2026-09-12-spending-s6-s8-and-the-september-blackout.md` instead.
 >
 > ⚠ **THE FILE IS KEPT, NOT DELETED, BECAUSE SIX SOURCE FILES CITE IT BY PATH** — `models.py`,
 > `spending_import.py`, `spend_report.py` and three test modules point here for the measurements
@@ -50,7 +50,7 @@ categories with a ranked list, then a note stating our assumptions. Weekly, for 
 
 ## S1 — Read a spending report correctly ✅ SHIPPED 2026-09-10
 
-**Done.** Retro `docs/retrospective-2026-09-10-spending-ingest-s1.md`; the rules a later reader must
+**Done.** Retro `docs/retrospectives/retrospective-2026-09-10-spending-ingest-s1.md`; the rules a later reader must
 not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in the modules' own docstrings.
 `apps/scholarship/spending_import.py` + `BursarySpendTxn` + `MerchantCategory` + migration `0155`
 (**NOT YET APPLIED — migrate-first**) + `manage.py ingest_spending`, report-only by default.
@@ -69,7 +69,7 @@ and `spending_import.ingest(sources, apply=False)` is the whole store-and-report
 
 ## S2 — Fetch the reports from Drive ✅ SHIPPED 2026-09-10
 
-**Done.** Retro `docs/retrospective-2026-09-10-spending-drive-s2.md`; the rules a later reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in the modules' docstrings. **No migration.**
+**Done.** Retro `docs/retrospectives/retrospective-2026-09-10-spending-drive-s2.md`; the rules a later reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in the modules' docstrings. **No migration.**
 
 **⚠ THE ONE THING S2 COULD NOT PROVE, AND S3 MUST NOT ASSUME:** the Drive hop has never run. The service-account key exists nowhere but the live service, so `--drive --report` on production is still owed and is the only real verification.
 
@@ -79,7 +79,7 @@ and `spending_import.ingest(sources, apply=False)` is the whole store-and-report
 
 ## S3 — Sort the spending ✅ SHIPPED 2026-09-10
 
-**Done.** Retro `docs/retrospective-2026-09-10-spending-sorter-s3.md`; the rules a later reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in `spend_category.py`'s own docstring. **No migration.**
+**Done.** Retro `docs/retrospectives/retrospective-2026-09-10-spending-sorter-s3.md`; the rules a later reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in `spend_category.py`'s own docstring. **No migration.**
 
 **Measured over the eight real exports with the SHIPPED rules** (a regression pin, not a target — the plan had estimated ~100 for rung 2):
 
@@ -94,7 +94,7 @@ and `spending_import.ingest(sources, apply=False)` is the whole store-and-report
 ---
 ## S4a — The officer view, and the correction ✅ SHIPPED 2026-09-10
 
-**Done.** Retro `docs/retrospective-2026-09-10-spending-officer-s4a.md`; the rules a later
+**Done.** Retro `docs/retrospectives/retrospective-2026-09-10-spending-officer-s4a.md`; the rules a later
 reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in
 `spend_report.py`'s own docstring. **No migration.** api + web — the first sprint in this arc
 to touch web, so **the deploy push builds BOTH services**.
@@ -114,7 +114,7 @@ merchants and students on purpose. S5 builds its own allowlist and its own anony
 
 ## S4b — The summary written back to Drive ✅ SHIPPED 2026-09-10
 
-**Done.** Retro `docs/retrospective-2026-09-10-spending-summary-s4b.md`; the rules a later
+**Done.** Retro `docs/retrospectives/retrospective-2026-09-10-spending-summary-s4b.md`; the rules a later
 reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in
 `spend_summary.py`'s own docstring. **No migration, no new schedule** — it rides
 `ingest_spending --apply`, which already has a cron door.
@@ -131,7 +131,7 @@ tests.
 ---
 ## S5 — The sponsor card ✅ SHIPPED 2026-09-10 — **THE ARC IS COMPLETE**
 
-**Done.** Retro `docs/retrospective-2026-09-10-spending-sponsor-card-s5.md`; the rules a later
+**Done.** Retro `docs/retrospectives/retrospective-2026-09-10-spending-sponsor-card-s5.md`; the rules a later
 reader must not tidy away are in `halatuju_api/CLAUDE.md` and in `spend_sponsor.py`'s own
 docstring. **No migration.** api + web.
 

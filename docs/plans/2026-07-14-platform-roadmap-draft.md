@@ -34,9 +34,9 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ## Phase 1 — Organisation layer + data fencing (BrightPath sole tenant, invisible)
 
-### Sprint 1 — ✅ SHIPPED 2026-07-15 (commit `a473a171`; retro `docs/retrospective-2026-07-15-platform-s1-organisation.md`)
+### Sprint 1 — ✅ SHIPPED 2026-07-15 (commit `a473a171`; retro `docs/retrospectives/retrospective-2026-07-15-platform-s1-organisation.md`)
 
-### Sprint 2 — ✅ SHIPPED 2026-07-15 (commit `5ffcd493`; retro `docs/retrospective-2026-07-15-platform-phase1-fencing.md`) — Owning-org on the application
+### Sprint 2 — ✅ SHIPPED 2026-07-15 (commit `5ffcd493`; retro `docs/retrospectives/retrospective-2026-07-15-platform-phase1-fencing.md`) — Owning-org on the application
 - **Goal:** Give every `ScholarshipApplication` a durable owning-organisation, so queries can be fenced (audit §3: today there is none).
 - **Scope:** `apps/scholarship/models.py` (denormalised `owning_organisation` FK on the application, populated from its cohort per D-8), the create path (`ApplicationCreateSerializer`/`services`), a data migration backfilling every existing application to org #1, and the **drift guard** (review §2.6): a constraint or test asserting `application.owning_organisation == application.cohort.owning_organisation` at all times.
 - **Migrations expected:** 1 additive FK (`scholarship_applications.organisation_id`) + 1 data migration (backfill all rows → org #1). Additive → migrate-first, zero downtime.
@@ -67,7 +67,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 > **▶ Phase 1 COMPLETE (S1–S4).** The organisation wall is live + CI-guarded; BrightPath is org #1;
 > platform work now PAUSES per the sequencing triggers (Phase 2 gated on rule stability; Phases 3–4 on
-> a credible second tenant). Retro `docs/retrospective-2026-07-15-platform-phase1-fencing.md`.
+> a credible second tenant). Retro `docs/retrospectives/retrospective-2026-07-15-platform-phase1-fencing.md`.
 - **Goal:** Fence uploaded documents per organisation (audit §4: keys are `<app_id>/<doc_type>/<uuid>` with no org element).
 - **AMENDED (review §2.3): NO bulk re-key of existing objects.** Every existing object belongs to BrightPath by definition, so the fence treats a key **without** an org prefix as org #1 legacy. Only **new** uploads get the `<org>/…` prefix. This removes the riskiest single operation of the whole programme (bulk re-keying live PII documents); revisit only if a real off-boarding/erasure demand ever requires re-keying.
 - **Scope:** `apps/scholarship/views.py:666` (add org prefix at the single generation site), `apps/scholarship/storage.py` (list/delete/backup helpers to handle both prefixed and legacy keys), `serializers.py:692-694` (assert the caller's org owns the path — prefixed → must match caller's org; unprefixed → org #1 only — before signing a view URL).
@@ -83,7 +83,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ## Phase 2 — Extract hard-coded rules into per-org settings (branding/email first, eligibility last)
 
-### Sprint 5 — Per-org branding & email sender identity (backend) — ✅ **SHIPPED 2026-07-24** (commit `e188ad42`; retro `docs/retrospective-2026-07-23-sprint5-branding-email.md`)
+### Sprint 5 — Per-org branding & email sender identity (backend) — ✅ **SHIPPED 2026-07-24** (commit `e188ad42`; retro `docs/retrospectives/retrospective-2026-07-23-sprint5-branding-email.md`)
 Delivered as scoped: every rendered brand literal (programme name, sign-off, coach persona, sender
 identity, display domain) now reads through one seam, `apps/scholarship/branding.py`, D3 per-language
 fallback chain + D4 platform-domain-only aliases (decisions in `docs/decisions.md`, "Per-org branding
@@ -100,7 +100,7 @@ attachment filename still derives from the platform seam even on a tenant send (
 - **How we know BrightPath still works:** every BrightPath email (reviewer, student, award, decline) renders identically to today — snapshot the templates before/after.
 - **Complexity:** Medium.
 
-### Sprint 6 — Per-org branding (frontend) — ✅ **SHIPPED 2026-07-24** (commits `d900cbc7`..`7038c37b`, 5 commits; retro `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`)
+### Sprint 6 — Per-org branding (frontend) — ✅ **SHIPPED 2026-07-24** (commits `d900cbc7`..`7038c37b`, 5 commits; retro `docs/retrospectives/retrospective-2026-07-24-sprint6-branding-frontend.md`)
 Delivered as scoped: `src/lib/branding.ts` (`PLATFORM` defaults verbatim + `resolveBranding` +
 `interpolateMessage` + `brandRamp` + `AUTO_TOKENS`) + `BrandingProvider` (dark fetch — platform mode
 never fetches, `NEXT_PUBLIC_ORG_CODE` unset in prod); `t()` auto-injects 5 branding tokens; CSS
@@ -198,7 +198,7 @@ the Phase-2 rule-stability clock.
 Delivered ahead of the Phase-4 sequence once the billing-sources investigation gate was MET
 (2026-07-24) — owner-triggered, not tied to a second-tenant prospect. Brief
 `docs/plans/2026-07-25-billing-usage-v1-brief.md`; retro
-`docs/retrospective-2026-07-25-billing-usage-v1.md`. Shipped BEYOND the original scope below: not
+`docs/retrospectives/retrospective-2026-07-25-billing-usage-v1.md`. Shipped BEYOND the original scope below: not
 just a tagging wrapper, but a full `UsageEvent` model + a super/org_admin-facing usage screen.
 - **The meter (unconditional, no flag):** `UsageEvent` (migration `0116`, table `usage_events`,
   additive + RLS) + `apps/scholarship/usage.py` logs one best-effort row per billable call at the
@@ -244,7 +244,7 @@ just a tagging wrapper, but a full `UsageEvent` model + a super/org_admin-facing
 
 ### Sprint 14 — Finance role — ✅ **SHIPPED + LIVE 2026-07-23**
 Delivered as scoped (brief `2026-07-22-sprint14-finance-role-brief.md`; retro
-`docs/retrospective-2026-07-23-sprint14-finance-role.md`). The `finance` role is a **DORMANT
+`docs/retrospectives/retrospective-2026-07-23-sprint14-finance-role.md`). The `finance` role is a **DORMANT
 checker** inside the existing payments chain — `draft → admin_signed → [finance_checked] →
 completed`, the middle step arming only once the org has an active finance admin
 (`payments.finance_check_required`, evaluated live, never stored) — plus a funding summary
@@ -261,7 +261,7 @@ Delivered as an **AI-reviewer flow, not the static published rate card originall
 (owner decision, locked at brief stage before code — see "Original scope" and
 `docs/decisions.md` "Requests space v1 — hours-only quotes"). Brief
 `docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
-`docs/retrospective-2026-07-24-sprint15-requests-space.md`. An org-section "Requests" area:
+`docs/retrospectives/retrospective-2026-07-24-sprint15-requests-space.md`. An org-section "Requests" area:
 bug/feature forms (with optional Bugzilla-style component/urgency/steps-to-reproduce scoping,
 added same-day as an owner-approved increment) → an AI reviewer
 (`contracts._gemini_generate` seam) classifies + estimates **HOURS** (no RM — no rate exists yet)
@@ -281,7 +281,7 @@ single-source `REQUEST_COMPONENT_TREE`), a two-level B40 sub-component selector 
 `applications_*` values), and org-fenced screenshot attachments (`OrgRequestAttachment`,
 images-only x5, signed-URL Supabase upload). **TD-172 closed.** pytest 4458→4486, jest 712→719.
 Brief `docs/plans/2026-07-24-sprint15-1-requests-v11-brief.md`; retro
-`docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
+`docs/retrospectives/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
 
 **Original scope (superseded — kept for record):** the roadmap originally called for a
 **published rate card** (bugs FREE; features priced in RM off a fixed table — the third revenue

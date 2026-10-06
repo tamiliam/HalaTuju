@@ -67,7 +67,7 @@ steps:
           echo "#   production anyway, because a human asked for it.                            #"
           echo "#                                                                              #"
           echo "#   Whoever triggered this build must record the skip, and why, in the sprint   #"
-          echo "#   retrospective (docs/retrospective-*.md) and re-run the full gates on main   #"
+          echo "#   retrospective (docs/retrospectives/retrospective-*.md) and re-run the full gates on main   #"
           echo "#   as soon as the hotfix is out.                                               #"
           echo "#                                                                              #"
           echo "################################################################################"

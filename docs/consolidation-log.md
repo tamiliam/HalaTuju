@@ -402,7 +402,7 @@ guard; witness-card stage-gating +11 tests; cancelled-runs hide-toggle, which re
 decision that `payments.cancel` deliberately has no delete).
 
 **Cohere.**
-- **PROMOTED: the STR-proof cluster** → `docs/retrospective-2026-07-23-str-proof-cluster.md`,
+- **PROMOTED: the STR-proof cluster** → `docs/retrospectives/retrospective-2026-07-23-str-proof-cluster.md`,
   the consolidated retro the 2026-07-01 entry called for. Honest finding recorded there: the
   1.2.1 means-test refinement rode the small lane but bumped a verification model and touched
   money-adjacent verdicts — by the lane's own boundary that was sprint-grade work. The retro is
@@ -451,7 +451,7 @@ Most were genuine fixes; the profile ones were additive improvements, not sympto
   self-heal without a manual cron call. Logged for a future pass.
 
 **Close out.** Pending cleared (counter reset). Guardrails landed in the same round. Folded into the 2026-06-16
-sprint-close (retrospective `docs/retrospective-2026-06-16-livereview-round.md`).
+sprint-close (retrospective `docs/retrospectives/retrospective-2026-06-16-livereview-round.md`).
 
 ### 2026-06-29 — Consolidation review (15 small changes)
 Covers the 14 `## Pending` entries (2026-06-16 → 2026-06-29) plus one reviewer-FAQ-docs entry that had been

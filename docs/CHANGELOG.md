@@ -566,12 +566,12 @@
 
 ## STPM Sprint 5 — Grade Scale Fix + UX Redesign (2026-03-13)
 
-See `retrospective-stpm-sprint5.md`
+See `docs/retrospectives/retrospective-stpm-sprint5.md`
 
 ## STPM Sprint 4 — Search + Detail Pages (2026-03-13)
 
-See `retrospective-stpm-sprint4.md`
+See `docs/retrospectives/retrospective-stpm-sprint4.md`
 
 ## v1.33.0 — Unified Pre-U Backend & IPGM Integration (2026-03-12)
 
-See `release-notes-v1.33.0.md`
+See `releases/release-notes-v1.33.0.md`

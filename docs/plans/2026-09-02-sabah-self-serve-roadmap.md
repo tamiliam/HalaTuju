@@ -103,7 +103,7 @@ Five, sequenced by **live risk first, then hard dependency, then value.**
 the web trigger fired, a fifth observation that it follows PYTHON. Verified in the served bundle.
 **A Sabah `Programme` row may now be created without breaking the flagship's payouts.**
 
-Retro `docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2. NO migration.
+Retro `docs/retrospectives/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2. NO migration.
 web only. jest 1618 → **1623**; i18n 4644 → **4648 × 3**. Two guards bite-checked.
 
 **▶ IT WAS NOT A SABAH FEATURE.** P2b made the API refuse `programme_required` rather than pick —
@@ -124,7 +124,7 @@ page banner and the dialog) — pre-existing, and asserting one node would have 
 
 ### ✅ S2 — SHIPPED **AND DEPLOYED** 2026-09-03. **The screens exist.**
 
-Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`; lessons x3. **Migration `0148`
+Retro `docs/retrospectives/retrospective-2026-09-03-sabah-s2-programme-screens.md`; lessons x3. **Migration `0148`
 applied migrate-first + verified.** web + api. pytest **5790** (full suite), jest **1631**, i18n **4714 x 3**.
 Five guards bite-checked. LIVE `halatuju-web-00820-r2r` / `halatuju-api-00972-jrg`.
 
@@ -148,7 +148,7 @@ The owner opened the console, read the sidebar and said the parts did not fit: *
 branches that are disconnected."* One question — **what is a subset of what** — answered from the
 database rather than from the menu, and it re-cut three of the four sprints below.
 
-Retro `docs/retrospective-2026-09-03-console-shape.md`; decisions ×2; lessons ×5; **TD-193 resolved
+Retro `docs/retrospectives/retrospective-2026-09-03-console-shape.md`; decisions ×2; lessons ×5; **TD-193 resolved
 (programme half)**; TD-228 + TD-229 raised. NO migration. web + a two-line backend audit.
 pytest **5792** (full suite); jest 1631 → **1657**; tsc **24**; lint **0**;
 i18n 4714 → **4722 × 3**; build clean. Two guards
@@ -184,7 +184,7 @@ lesson, applied before it bit twice).
 ### ~~S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT~~ · ✅ **SHIPPED + DEPLOYED 2026-09-04**
 
 Absorbed S4 and S5 and added sources. Migrations `courses/0073` + `scholarship/0149`.
-Detail in `docs/retrospective-2026-09-04-s-assign.md`; the rules that must not be tidied are in
+Detail in `docs/retrospectives/retrospective-2026-09-04-s-assign.md`; the rules that must not be tidied are in
 `halatuju_api/CLAUDE.md` → Next Sprint, and the map of who is scoped to what is in
 `.claude/ARCHITECTURE_MAP.md`.
 

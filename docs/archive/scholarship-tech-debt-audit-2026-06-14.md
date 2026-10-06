@@ -22,7 +22,7 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
 
 ### 🔴 Do first — real bug, cheap to fix
 1. **Document re-upload can permanently destroy a student's file** *(high, small)* —
-   [views.py:504-514](../halatuju_api/apps/scholarship/views.py#L504-L514). On every re-upload the
+   [views.py:504-514](../../halatuju_api/apps/scholarship/views.py#L504-L514). On every re-upload the
    code deletes the old Supabase blob **and** the DB row *before* creating the replacement, with no
    transaction. If the create fails, the student's income slip / IC / STR proof is gone from both
    storage and DB with no replacement — irrecoverable PII loss on a live B40 programme.
@@ -32,13 +32,13 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
 
 ### 🔴 High value on the hottest admin screen — medium effort
 2. **Applicant-detail GET fires 20–30 duplicate document/consent queries (N+1)** *(high, medium)* —
-   [serializers_admin.py:286-358](../halatuju_api/apps/scholarship/serializers_admin.py#L286-L358),
-   queryset at [views_admin.py:63](../halatuju_api/apps/scholarship/views_admin.py#L63). ~10
+   [serializers_admin.py:286-358](../../halatuju_api/apps/scholarship/serializers_admin.py#L286-L358),
+   queryset at [views_admin.py:63](../../halatuju_api/apps/scholarship/views_admin.py#L63). ~10
    method-fields each re-query the same documents table with no prefetch. Most-opened admin screen,
    1000+ applicants. **Fix:** `prefetch_related('documents','consents','resolution_items',
    'interview_sessions','referees')` + make the engines iterate the prefetched `.all()` in Python.
 3. **The same GET also performs DB *writes* and re-runs the verdict engine 2–3×** *(high, medium)* —
-   [serializers_admin.py:330-347](../halatuju_api/apps/scholarship/serializers_admin.py#L330-L347).
+   [serializers_admin.py:330-347](../../halatuju_api/apps/scholarship/serializers_admin.py#L330-L347).
    `get_resolution_items` calls `sync_resolution_items` + `sync_check2_queries`, which `create()`
    rows and re-run `build_verdict`. A read endpoint that mutates breaks read-replica routing and is
    non-idempotent. **Fix:** move the syncs to the write paths (upload / answer / verdict) or an
@@ -46,7 +46,7 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
 
 ### 🟠 Big structural smell — large effort, plan as its own work
 4. **Cockpit detail page is a 1,775-line single component** *(high/medium, large)* —
-   [admin/scholarship/[id]/page.tsx](../halatuju-web/src/app/admin/scholarship/[id]/page.tsx).
+   [admin/scholarship/[id]/page.tsx](../../halatuju-web/src/app/admin/scholarship/[id]/page.tsx).
    One function: 24 `useState`, ~20 async handlers, ~1,280 lines of inline JSX with business-rule
    IIFEs. All 8 review rounds landed here. **Fix:** extract panels (VerdictTiles, DocumentsDrawer,
    DecisionPanel, InterviewStage, OutstandingPanel) into co-located components; lift the derived
@@ -61,7 +61,7 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
 **Structure**
 - `services.py` is a 1,541-line module spanning 6+ responsibilities (49 top-level functions);
   it's the most-imported module in the app — a churn/merge-conflict magnet.
-  [services.py](../halatuju_api/apps/scholarship/services.py). *Fix:* split into
+  [services.py](../../halatuju_api/apps/scholarship/services.py). *Fix:* split into
   `blockers.py`/`reminders.py`/`assignment.py`/`consent_utils.py`/`decision.py`, keep a thin
   re-export shim. *(large)*
 - Engine modules import each other's underscore-private helpers (6 sites: `income_engine.py:32`,
@@ -77,21 +77,21 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
 - Identical name/NRIC cross-check block inlined 3× in `income_engine.py` (259-264, 356-361,
   445-450) despite `_name_bucket`/`_nric_bucket` helpers existing. *Fix:* call the helpers. *(trivial)*
 - `mother_relationship` and `father_via_bc` are line-for-line identical except the BC field
-  ([income_engine.py:72-107](../halatuju_api/apps/scholarship/income_engine.py#L72-L107)). *Fix:*
+  ([income_engine.py:72-107](../../halatuju_api/apps/scholarship/income_engine.py#L72-L107)). *Fix:*
   one `_bc_link()` helper. *(trivial)*
 
 **Security / PII**
 - Admin/super privilege is granted on an **unverified JWT email claim** — no `email_verified`
-  check ([courses/views_admin.py:56-65](../halatuju_api/apps/courses/views_admin.py#L56-L65) +
+  check ([courses/views_admin.py:56-65](../../halatuju_api/apps/courses/views_admin.py#L56-L65) +
   `middleware/supabase_auth.py`). Supabase's default email-confirmation mitigates it, but there's
   zero backend defence-in-depth. *Fix:* require a verified-email claim before linking an admin row;
   add a regression test. *(small)*
 
 **Tests**
 - Student-side querying-lock (`querying_closed` 400) has no test — only the two officer paths are
-  covered ([views.py:705-707](../halatuju_api/apps/scholarship/views.py#L705-L707)). *(trivial)*
+  covered ([views.py:705-707](../../halatuju_api/apps/scholarship/views.py#L705-L707)). *(trivial)*
 - `_maybe_autofinalise` error/exception-swallow paths untested — the "never break interview submit"
-  guarantee is unverified ([services.py:911-932](../halatuju_api/apps/scholarship/services.py#L911-L932)). *(trivial)*
+  guarantee is unverified ([services.py:911-932](../../halatuju_api/apps/scholarship/services.py#L911-L932)). *(trivial)*
 
 **Web**
 - Single shared `busy`/`error` string couples ~20 unrelated cockpit actions — one in-flight call
@@ -100,7 +100,7 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
 - ~20 near-identical async handlers (`doGenerate`…`doReRunVision`) — ~250 lines of boilerplate with
   an existing error-handling inconsistency. *Fix:* a `runAction()` helper. *(small)*
 - Apply form builds all 5 step-UIs as one eager 446-line `sections` object every render
-  ([apply/page.tsx:427-872](../halatuju-web/src/app/scholarship/apply/page.tsx#L427-L872)). *Fix:*
+  ([apply/page.tsx:427-872](../../halatuju-web/src/app/scholarship/apply/page.tsx#L427-L872)). *Fix:*
   extract per-step components, render only the active tab. *(medium)*
 
 ---
@@ -120,13 +120,13 @@ concentrated where the Check-2/Check-3 cockpit churned through 8 rapid review ro
   `AdminRunVisionView:341` already skips it). *Fix:* a `@require_reviewer` decorator.
 
 **Dead code** *(all trivial deletes)*
-- `send_fail_email` superseded by `send_decline_email` ([emails.py:509](../halatuju_api/apps/scholarship/emails.py#L509)); zero call sites.
+- `send_fail_email` superseded by `send_decline_email` ([emails.py:509](../../halatuju_api/apps/scholarship/emails.py#L509)); zero call sites.
 - Unused imports `Consent`/`Donation`/`CONSENT_VERSION` in `sponsorship.py:19-20`.
 - Unused import `is_minor` in `anomaly_engine.py:28`.
 
 **Error handling** *(both trivial — wrap in `transaction.atomic`)*
 - Verify-&-accept writes `profile.nric_verified` + application status in two unwrapped saves
-  ([views_admin.py:247-254](../halatuju_api/apps/scholarship/views_admin.py#L247-L254)) — partly
+  ([views_admin.py:247-254](../../halatuju_api/apps/scholarship/views_admin.py#L247-L254)) — partly
   protected by an idempotent retry guard + a DB unique constraint.
 - Record-verdict + finalise mutate two models in one request without a transaction (re-runnable).
 

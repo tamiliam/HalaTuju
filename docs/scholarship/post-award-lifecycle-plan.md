@@ -54,7 +54,7 @@ recommended → awarded → active → maintenance ─────────�
 ## Sprints — ALL SHIPPED (S1–S6, 2026-06-28)
 
 The full `recommended → awarded → active → maintenance → closed` arc is live (dark). Per-sprint
-detail lives in the retrospectives (`docs/retrospective-2026-06-28-post-award-s{1..6}-*.md`); the
+detail lives in the retrospectives (`docs/retrospectives/retrospective-2026-06-28-post-award-s{1..6}-*.md`); the
 migrations are `0073`–`0078`. Summary:
 
 - **S1** — rename `accepted → recommended` (+ student masking). Migration `0073`.

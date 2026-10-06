@@ -345,31 +345,31 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
   (own `decline_email_sent_at` stamp + `pre_decline_status` snapshot restore, migration
   `0090` migrate-first), #3 YTD-alone guard, #4 subject-map sync (64 keys, not ~25) +
   `test_subject_drift.py`. 3,185 backend tests green. Retro
-  `docs/retrospective-2026-07-03-code-health-s1.md`.
+  `docs/retrospectives/retrospective-2026-07-03-code-health-s1.md`.
 - **Sprint 2 — Document-pipeline safety: ✅ DONE 2026-07-03.** Clobber guards on all
   three vision writers, reextract 'error' marking + `--retry-errors`, Re-run street
   pass-through, `ocr_document_full` single Vision read (digital-PDF free path kept).
   No migration. 3,196 backend tests. Retro
-  `docs/retrospective-2026-07-03-code-health-s2.md`. → OWNER CHECKPOINT next.
+  `docs/retrospectives/retrospective-2026-07-03-code-health-s2.md`. → OWNER CHECKPOINT next.
 - **Sprint 3 — Money & comms: ✅ DONE 2026-07-03.** #6 auto-lapse + balance-guarded
   reinstate-on-cancel; #7 stamp-on-success; #8 VERIFIED on prod (all 18 stamped — zero
   data change); #9 bank field-error mapping + countDigits inline hint (en/ms/ta); #10
   quiz reconciled to AGREEMENT_CLAUSES + phantom-term guardrail test (⚠ OWNER REVIEW of
   the copy, esp. ta, before the flag flips); #11 dark-chain gate. No migration.
-  3,617 tests. Retro `docs/retrospective-2026-07-03-code-health-s3.md`.
+  3,617 tests. Retro `docs/retrospectives/retrospective-2026-07-03-code-health-s3.md`.
 - **Sprint 4 — Income/STR consistency: ✅ DONE 2026-07-03.** Shared STR_RED_STATES/
   STR_COACH_STATES; I4 via income_headroom (gross ceiling + inclusive boundary; thin-margin
   grading stays fall-through-only); blank-tag→earner-only (#15, legacy tolerant kept);
   effective_working_members in profile (#16); member-tagged earner IC (#17); pending-IC
   no longer blames the rel doc (#18); fall-through counts all evidenced members (#19);
   declared-unproven amber ordering (#20). No migration. 3,215 backend tests. Retro
-  `docs/retrospective-2026-07-03-code-health-s4.md`.
+  `docs/retrospectives/retrospective-2026-07-03-code-health-s4.md`.
 - **Sprint 5 — Infra & guardrails: ✅ DONE 2026-07-03.** #21 prod database cache
   (django_cache table migrate-first + RLS; throttles now shared/persistent); HSTS;
   #23 validator 5xx→retryable-never-dead + --fix mass-change guard (--force override);
   QC queue "Awaiting QC" label; dead 'accepted' banner branch removed; resolution-items
   trailing slash. 3,218 backend + 412 jest. Retro
-  `docs/retrospective-2026-07-03-code-health-s5.md`. **ROADMAP COMPLETE.**
+  `docs/retrospectives/retrospective-2026-07-03-code-health-s5.md`. **ROADMAP COMPLETE.**
 - **Backlog:** remaining P3 → small-change lane. **Open decision (owner):** #12
   WhatsApp opt-in default (currently opt-out-shaped).
 

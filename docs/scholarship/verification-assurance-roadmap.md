@@ -40,13 +40,13 @@ Per-sprint detail now lives in the retrospectives; this file remains the durable
 
 - **Sprint 1 — IC genuineness fingerprint** ✅ SHIPPED (`main` `29d5e7e`; flag `DOC_GENUINENESS_CHECK_ENABLED` ON; no
   migration). `vision.ic_genuineness()` → `vision_fields['authenticity']`; Identity caps at review on a suspect card;
-  officer flags `ic_low_confidence`/`parent_ic_low_confidence`; honest student amber note. Retro `retrospective-ic-genuineness.md`.
+  officer flags `ic_low_confidence`/`parent_ic_low_confidence`; honest student amber note. Retro `docs/retrospectives/retrospective-ic-genuineness.md`.
 - **Sprint 2 — standardised supporting docs + wrong-type** ✅ SHIPPED (`main` `4922003`; no migration).
   `vision.doc_genuineness()` for STR / results slip / BC / EPF; uniform `_apply_genuineness_caps` (Academic/Income,
-  downgrade-only); officer flag `document_not_genuine`; shared `GenuinenessNote`. Retro `retrospective-doc-genuineness-s2.md`.
+  downgrade-only); officer flag `document_not_genuine`; shared `GenuinenessNote`. Retro `docs/retrospectives/retrospective-doc-genuineness-s2.md`.
 - **Sprint 3 — the scorekeeper (measured reliability)** ✅ SHIPPED (no migration, no backend change — TD-083 surfacing).
   `verdictReliability()` + `AiReliabilityCard.tsx` at the top of the B40 list: agreement = 1 − override rate per fact +
-  overall, over the pre-existing `getVerdictMetrics()`. Retro `retrospective-verdict-scorekeeper.md`.
+  overall, over the pre-existing `getVerdictMetrics()`. Retro `docs/retrospectives/retrospective-verdict-scorekeeper.md`.
 
 **Owner-deferred (not built):** the full audit-trail VIEW; verify-before-disbursement (the money-gate); the explicit
 `officer_verdict.overall` accept/decline toggle (the unbuilt half of TD-083). Salary slip + offer letter remain

@@ -33,7 +33,7 @@ income = the FULL household income); and make the final sponsor profile answer t
 ## Sprints
 
 ### Sprint 1 — Full-household-income capture (the #1 + #2 patterns) ✅ SHIPPED 2026-06-29
-Retro `docs/retrospective-2026-06-29-reviewer-query-s1-household-income.md`. (Built below as planned.)
+Retro `docs/retrospectives/retrospective-2026-06-29-reviewer-query-s1-household-income.md`. (Built below as planned.)
 
 Detect & auto-clarify: (a) a parent with a stated occupation but NO income proof attributed → request
 that parent's salary slip / EPF (kind=`doc`, uncapped); (b) a parent with no occupation AND no status
@@ -44,14 +44,14 @@ Tightens B40 correctness (full household income). **Complexity: Medium-high. Hig
 ### Sprint 2 — Stale income doc + sibling-in-tertiary funding ✅ SHIPPED 2026-06-29
 (c) income doc older than ~3 months → ask current (`income_doc_stale`, doc); (d) `siblings_in_tertiary>0`
 → ask institution + funding (`sibling_tertiary_funding`, clarify). Retro
-`docs/retrospective-2026-06-29-reviewer-query-s2-stale-sibling.md`.
+`docs/retrospectives/retrospective-2026-06-29-reviewer-query-s2-stale-sibling.md`.
 **(e) the high-utility probe MOVED to S4** — the codebase treats high utility as an officer-only
 signal, never a student query (`income_engine.utility_reasonable`); aligns with decisions #2/#3.
 
 ### Sprint 3 — Offer reporting-date: capture + persist ✅ SHIPPED 2026-06-29
 Normalised `reporting_date` DateField (migration `0080`) populated by `autofill_pathway_from_offer` +
 `backfill_reporting_dates` cmd; `reporting_date_unknown` clarify when an extracted offer has no date.
-Retro `docs/retrospective-2026-06-29-reviewer-query-s3-reporting-date.md`.
+Retro `docs/retrospectives/retrospective-2026-06-29-reviewer-query-s3-reporting-date.md`.
 **SPM subject-count nudge DROPPED** — not cleanly deterministic (reviewer eyeballs an odd grade count);
 needs a clearer signal before automating.
 
@@ -60,7 +60,7 @@ Seeded `gap_engine.GAP_PROMPT` with the sponsor's 3 buckets (academic_resilience
 pathway_confidence) + canonical probes; each gap returns a `bucket`. Collapsible interviewer-guide
 card in the cockpit (en/ms/ta). High-utility probe already covered by
 `anomaly_engine._detect_utility_high_vs_income` → gap-spotter. Retro
-`docs/retrospective-2026-06-29-reviewer-query-s4-interview.md`.
+`docs/retrospectives/retrospective-2026-06-29-reviewer-query-s4-interview.md`.
 **Structured per-bucket capture fields deliberately NOT built** — the gap-spotter + `InterviewSession`
 already cover it; a clean follow-up if the owner wants per-bucket structured answers.
 
@@ -70,7 +70,7 @@ sponsor's three areas (Financial need / Academic commitment & resilience / Pathw
 `_COVERAGE` instruction — woven into the warm prose, still no headings/lists. `_render_interview` groups interview
 findings by their S4 `bucket`; the new household-income clarify answers already flow in via `_render_qa`.
 `PROMPT_VERSION 2026-06-18.1 → 2026-06-29.1` (stale-draft detection). No migration / FE / i18n. Retro
-`docs/retrospective-2026-06-29-reviewer-query-s5-profile.md`. **THE ROADMAP IS COMPLETE (S1–S5).**
+`docs/retrospectives/retrospective-2026-06-29-reviewer-query-s5-profile.md`. **THE ROADMAP IS COMPLETE (S1–S5).**
 **Deferred (owner's call):** a billable `backfill-assigned-profiles` cron run to regenerate existing drafts onto the new
 version (new generations after deploy already use it). Per-bucket structured interview-capture remains a clean follow-up.
 

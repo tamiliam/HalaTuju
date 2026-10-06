@@ -50,7 +50,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 Shipped: public `/sponsor` marketing landing (`components/SponsorLanding.tsx`) shown to signed-out visitors when the
 programme is live; public `GET /api/v1/sponsor/pool/count/` → `{count, enabled}` (count-only, `AllowAny`, flag-gated);
 `getStudentsWaitingCount()` client; trilingual `sponsorLanding.*` (40 keys × en/ms/ta); +3 tests. No tax claims.
-Stitch-prototyped + owner-approved before coding. Retro `docs/retrospective-sprint1-sponsor-landing.md`; TD-091 (Tamil
+Stitch-prototyped + owner-approved before coding. Retro `docs/retrospectives/retrospective-sprint1-sponsor-landing.md`; TD-091 (Tamil
 refine) + TD-092 (live click-through at go-live).
 
 ### Sprint 2 — F8a Student post-match onboarding (backend) · ✅ DONE on `main` 2026-06-08 (migration `0049`; ships dark)
@@ -59,7 +59,7 @@ new `ScholarshipApplication.onboarded_at` gate (surfaced in `ApplicationReadSeri
 consent via `record_consent` (`CONSENT_VERSION` bumped → `2026-draft-4`); new `OnboardingResponse` model (one per app,
 JSON answers + consent FK); `complete_onboarding(...)` service + `POST .../onboarding-complete/` (refuses unless status
 `sponsored`). Migration `0049` (additive: column + table). +5 tests (873 scholarship pytest). Retro
-`docs/retrospective-sprint2-onboarding-backend.md`; TD-093 (RLS on `onboarding_responses` at deploy). Staged-release
+`docs/retrospectives/retrospective-sprint2-onboarding-backend.md`; TD-093 (RLS on `onboarding_responses` at deploy). Staged-release
 card copy (lawyer-to-vet) lives in the F8b onboarding content (Sprint 3).
 
 ### Sprint 3 — F8b Student post-match onboarding (frontend) · ✅ DONE on `main` 2026-06-09 (no migration; ships dark)
@@ -69,7 +69,7 @@ Shipped: `/scholarship/award` (accept/decline; guardian modal for minors reusing
 panel on `/scholarship/application`. Sponsor identity never shown. Trilingual `scholarship.award.*`/`onboarding.*`/
 `application.awardPanel.*` (Tamil first-draft = TD-094). Stitch-approved (4 screens); built by a delegated subagent,
 orchestrator-reviewed + re-built (next build clean, 276 jest). Naturally dark. Retro
-`docs/retrospective-sprint3-onboarding-frontend.md`.
+`docs/retrospectives/retrospective-sprint3-onboarding-frontend.md`.
 
 ### Sprint 4 — F3 Sponsor notifications · ✅ DONE on `main` 2026-06-09 (migration `0050`; ships dark) ⭐ — LAST must-have
 Shipped: `Sponsor.notify_frequency` (realtime|weekly|off, default weekly) + `last_digest_sent_at` +
@@ -77,32 +77,32 @@ Shipped: `Sponsor.notify_frequency` (realtime|weekly|off, default weekly) + `las
 `send_sponsor_digests` (weekly) commands in `CronRunView.JOBS`; publish hook resets `realtime_notified_at`; emails built
 ONLY from `SponsorPoolDetailSerializer` (allowlist-safe by construction) + soft `SPONSOR_NOTIFY_MAX_PER_RUN` cap;
 `PATCH /api/v1/sponsor/notifications/` + a `/sponsor` toggle (trilingual). +9 tests (882 scholarship pytest, 276 jest).
-Retro `docs/retrospective-sprint4-sponsor-notifications.md`. TD-095 (create 2 Cloud Scheduler jobs at deploy), TD-096
+Retro `docs/retrospectives/retrospective-sprint4-sponsor-notifications.md`. TD-095 (create 2 Cloud Scheduler jobs at deploy), TD-096
 (sponsor email locale). **All four ⭐ must-haves (S1–S4) done.**
 
 ### Sprint 5 — F6 Reviewer profile · BE + FE ✅ DONE (2026-06-09)
 Shipped (held local). `ReviewerProfile` in `apps/scholarship` (OneToOne → `courses.PartnerAdmin`, cross-app FK) +
 self-scoped `GET/PATCH /admin/reviewer-profile/` + role-gated cards on the existing `/admin/profile`. Migration `0051`.
-Retro `docs/retrospective-sprint5-reviewer-profile.md`.
+Retro `docs/retrospectives/retrospective-sprint5-reviewer-profile.md`.
 
 ### Sprint 6 — F5 Reviewer invite role selector · BE + FE ✅ DONE (2026-06-09)
 Shipped (held local). `AdminInviteView` accepts `role` (super|reviewer|viewer; default reviewer) + `is_super_admin`
 lockstep; `AdminListView` returns role; `/admin/invite` role select + admin-list role badge. No migration.
-First-sign-in profile-completion nudge deferred (TD-099). Retro `docs/retrospective-sprint6-reviewer-invite-role.md`.
+First-sign-in profile-completion nudge deferred (TD-099). Retro `docs/retrospectives/retrospective-sprint6-reviewer-invite-role.md`.
 
 ### Sprint 7 — F7 Reviewer assignment / reassignment · BE + FE ✅ DONE (2026-06-09)
 Shipped (held local). Super-only audited `POST .../assign/` via `services.assign_reviewer` (validates reviewer target,
 gates first-assign on `is_ready_for_assignment`, reassign/unassign any time, writes `AssignmentEvent` + `assigned_at`).
 Loose `PATCH assigned_to` removed. Cockpit assign card super-only + reviewers-only + disabled-until-ready. Migration
-`0052` (new model). Retro `docs/retrospective-sprint7-reviewer-assignment.md`.
+`0052` (new model). Retro `docs/retrospectives/retrospective-sprint7-reviewer-assignment.md`.
 
 ### Sprint 8 — F2 Sponsor profile + sponsored-students list · BE + FE ✅ DONE (2026-06-09)
 Shipped (held local, ships dark). Derived `progress_state` on the allowlist card (`pool.derive_progress_state` stub;
 real band F9a) + FE "My students" on `/sponsor` (account+balance header + anon student cards with progress badge +
 awaiting-acceptance offered card). `getSponsorWallet` client. No migration. Leak test green. TD-101 (donate/withdraw not
-wired). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
+wired). Retro `docs/retrospectives/retrospective-sprint8-sponsor-my-students.md`.
 
-### Sprint 9 — F9a Student profile + results + graduation relay (backend) · BE ✅ DONE (2026-06-09; migration `0053`; ships dark; `apps/scholarship/in_programme.py`; +26 pytest; retro `docs/retrospective-sprint9-in-programme.md`)
+### Sprint 9 — F9a Student profile + results + graduation relay (backend) · BE ✅ DONE (2026-06-09; migration `0053`; ships dark; `apps/scholarship/in_programme.py`; +26 pytest; retro `docs/retrospectives/retrospective-sprint9-in-programme.md`)
 **Deliverable:** the student-profile data + the anonymity-preserving thank-you relay.
 - Student-profile endpoints: basic details, institution/field, CGPA, **latest-semester results upload** (reuse `ApplicantDocument` `results_slip` + the OCR path). The slip is **myNADI-only**; the **values** cross per the Boundary decision.
 - **`progress_state` derivation** from the results upload (feeds F2).
@@ -110,14 +110,14 @@ wired). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
 - **Graduation relay:** new `GraduationMessage(application, raw_text, scrubbed_text, scan_result, status, approved_by, ...)`. Pipeline: submit → `scan_anon_for_identifiers` (`pool.py:87`) **blocks on any leak** → myNADI human-approve → surface **linked to the anonymous `ref`** (owner decision) in the sponsor profile. **Never a direct channel.**
 - **Tests:** relay blocks planted identifiers; promotional consent enforces 18+; results slip never appears in sponsor output.
 
-### Sprint 10 — F9b Student profile + relay (frontend) · FE ✅ DONE (2026-06-09; no migration; ships dark; `/scholarship/in-programme` Stitch-approved; +48 i18n; retro `docs/retrospective-sprint10-in-programme-frontend.md`)
+### Sprint 10 — F9b Student profile + relay (frontend) · FE ✅ DONE (2026-06-09; no migration; ships dark; `/scholarship/in-programme` Stitch-approved; +48 i18n; retro `docs/retrospectives/retrospective-sprint10-in-programme-frontend.md`)
 **Deliverable:** the student profile + thank-you compose UI + the sponsor-side surface.
 - Student profile page (details, institution/field, CGPA, results upload, 18+ promotional toggle).
 - Graduation thank-you compose UI (with the same "we'll check for identifying details" UX as the publish gate).
 - Sponsor profile shows the approved note as **"a message from a student you supported"** linked to the anon `ref`.
 - **Stitch-prototype first.**
 
-### Sprint 11 — F4 Sponsor referral / invitation · BE + FE ✅ DONE (2026-06-09; migration `0054`; full SponsorReferral guest-book + 60-day purge; `apps/scholarship/referrals.py`; +12 pytest; retro `docs/retrospective-sprint11-sponsor-referral.md`)
+### Sprint 11 — F4 Sponsor referral / invitation · BE + FE ✅ DONE (2026-06-09; migration `0054`; full SponsorReferral guest-book + 60-day purge; `apps/scholarship/referrals.py`; +12 pytest; retro `docs/retrospectives/retrospective-sprint11-sponsor-referral.md`)
 **Deliverable:** sponsors invite prospective sponsors to the F1 landing page.
 - `SponsorReferral` model (`inviter, invitee_email, invitee_name, note, code, status, registered_sponsor`) — *or* lightweight `referred_by` (decide at sprint start, PRD Q-6).
 - Invite email (sponsor's note + pitch) → `/sponsor?ref=<code>`; attribution on register; **PDPA:** purge unconverted invitee emails after a short window (PRD Q-7).

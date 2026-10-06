@@ -141,7 +141,7 @@ The old `/onboarding/stream` page will be removed — stream selection moves int
 | `halatuju-web/src/components/CourseCard.tsx` | Fixed 2 image matcher misroutes |
 | `CHANGELOG.md` | v1.21.0 entry (Sprint 19) |
 | `halatuju_api/CLAUDE.md` | Next Sprint → Sprint 20 |
-| `docs/retrospective-sprint19.md` | Created (Sprint 19 retro) |
+| `docs/retrospectives/retrospective-sprint19.md` | Created (Sprint 19 retro) |
 | `docs/sprint20-design-decisions.md` | Created (this file) |
 | Memory: `halatuju.md`, `MEMORY.md` | Updated status and sprint info |
 

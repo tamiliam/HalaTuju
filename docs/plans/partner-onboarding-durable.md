@@ -159,7 +159,7 @@ Without it, nothing below can run locally.
 ## Sprint close (repo convention)
 
 Branch `feat/partner-onboarding-durable`, commits in the house style (`feat:` / `fix:`), then the usual close:
-retro in `docs/retrospective-2026-07-XX-partner-onboarding.md`, an entry each in `docs/decisions.md`
+retro in `docs/retrospectives/retrospective-2026-07-XX-partner-onboarding.md`, an entry each in `docs/decisions.md`
 (why a temp password rather than a magic link — the PKCE/cross-device trap) and `docs/lessons.md` (the general
 form: *a provider API that ignores an unknown field will 200 and silently drop your intent — assert the
 side-effect, not the status code*), plus `CHANGELOG.md` and the `## Next Sprint` block in `halatuju_api/CLAUDE.md`.

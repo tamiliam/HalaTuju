@@ -34,8 +34,8 @@
 ## Sprints 4-5: COMPLETED
 
 All tasks 15-22 completed across STPM Sprints 3-4 (project-local numbering). See retrospectives:
-- `docs/retrospective-stpm-sprint3.md` (ranking engine, Supabase migration, dashboard integration)
-- `docs/retrospective-stpm-sprint4.md` (search API, detail API, search page, detail page, i18n)
+- `docs/retrospectives/retrospective-stpm-sprint3.md` (ranking engine, Supabase migration, dashboard integration)
+- `docs/retrospectives/retrospective-stpm-sprint4.md` (search API, detail API, search page, detail page, i18n)
 
 ---
 

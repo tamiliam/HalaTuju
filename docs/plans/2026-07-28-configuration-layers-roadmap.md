@@ -241,7 +241,7 @@ letter off proves: no blocker, no Pathway fact, no ticket, no Check-2 request, n
 
 Gates, blockers, income switch and verdict facts read the seam. 5022 pytest, no existing test edited.
 Production catalogue **seeded** (8 documents / 10 questions, 0 programme overrides). Retro
-`docs/retrospective-2026-07-29-layer0-documents-gate.md`.
+`docs/retrospectives/retrospective-2026-07-29-layer0-documents-gate.md`.
 
 **⚠ FOUR RULES FROM 3a's NEAR-MISS — BINDING ON 3b AND EVERY LATER SPRINT.** An application WITH a
 programme against an EMPTY catalogue resolved to "requires nothing", which would have let all 60
@@ -259,7 +259,7 @@ because no fixture seeds the catalogue, so every test took the fallback branch a
 `requirements.documents.{required,optional}` on the student payload; `documentRequirement()` /
 `asksForDocument()` are the only readers; `COMPULSORY_DOC_TYPES`, `OTHER_OPTIONAL_DOC_TYPES` and
 `documentsComplete()` deleted. **NO migration.** 5077 pytest · 1137 jest · both configurations reviewed
-in a browser before merge. Retro `docs/retrospective-2026-07-29-layer0-documents-frontend.md`;
+in a browser before merge. Retro `docs/retrospectives/retrospective-2026-07-29-layer0-documents-frontend.md`;
 decisions ×3; lessons ×3.
 
 **What scoping found that this section did not predict:** the rule existed in FOUR places, not two, and
@@ -297,7 +297,7 @@ test — adding `questions` is a deliberate edit to `test_the_payload_carries_on
 
 ### ✅ SHIPPED 2026-08-30 (worktree `.worktrees/layer0-sprint4`) — both halves in one sprint
 
-Retro `docs/retrospective-2026-08-30-layer0-questions.md`. **NO migration.** Existing suite
+Retro `docs/retrospectives/retrospective-2026-08-30-layer0-questions.md`. **NO migration.** Existing suite
 passed unmodified bar the one edit Sprint 3b itself pinned for this purpose
 (`test_the_payload_carries_only_the_documents_block_for_now` → asserts both blocks).
 Both empty-catalogue guards bite-checked (disabled → 3 tests fail each way).
@@ -322,13 +322,13 @@ is core). Computed, never stored — the Layer 2 constraint held.
 
 **✅ The submit-time snapshot SHIPPED 2026-08-30** (same day, branch
 `feat/layer0-submit-snapshot`; migration `0147`; retro
-`docs/retrospective-2026-08-30-layer0-submit-snapshot.md`). `confirm_profile` freezes the
+`docs/retrospectives/retrospective-2026-08-30-layer0-submit-snapshot.md`). `confirm_profile` freezes the
 resolved sets onto `requirements_snapshot`; `requirements.resolve` reads the frozen copy first,
 so every consumer inherits it; a revert thaws. **Owner ruled: freeze at Submit, not at start.**
 Rows submitted before the column are frozen by `backfill_requirements_snapshots` on the live
 service (owner step after the deploy — DONE, 92 frozen). **✅ The `check2_queries.py` pass
 SHIPPED 2026-08-30 too** (branch `feat/layer0-check2-pass`; `GOVERNED_BY` per code; retro
-`docs/retrospective-2026-08-30-layer0-check2-pass.md`). **Both 3a deferrals are closed — Sprint 5
+`docs/retrospectives/retrospective-2026-08-30-layer0-check2-pass.md`). **Both 3a deferrals are closed — Sprint 5
 is unblocked.**
 
 **Goal.** A programme configures which questions it asks. One journey for every tenant, different contents.
@@ -358,7 +358,7 @@ them, completes, and the generated sponsor profile doesn't mention them — audi
 
 ### ✅ SHIPPED 2026-08-30 (worktree `.worktrees/layer0-sprint5`) — **LAYER 0 IS COMPLETE**
 
-Retro `docs/retrospective-2026-08-30-layer0-config-screen.md`. No migration. What landed:
+Retro `docs/retrospectives/retrospective-2026-08-30-layer0-config-screen.md`. No migration. What landed:
 `AdminProgrammeConfigurationView` (org-fenced GET/PUT, core floor, all-or-nothing, audited,
 `FENCED_OR_EXEMPT` row), `requirements.programme_states` (the one live rule), `/admin/programme`
 ("What we ask for", documents AND questions as rows — decision 5's "documents only" is superseded

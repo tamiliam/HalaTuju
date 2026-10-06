@@ -60,7 +60,7 @@ file:line evidence and concrete failure scenarios) before coding each sprint.
 ## Sprint V1 — Slot & document integrity (complexity: HIGH; do first)
 
 > **✅ SHIPPED (code) 2026-07-03** — worktree `.worktrees/verify-model`, branch `feat/verify-v1`;
-> NO migration; retro `docs/retrospective-2026-07-03-verify-v1.md`. All four findings closed in
+> NO migration; retro `docs/retrospectives/retrospective-2026-07-03-verify-v1.md`. All four findings closed in
 > code + tested (2025 pytest + 412 jest). **V1.4 backfill DONE** (claude.ai Supabase MCP): 24/29
 > blank-tagged income docs attributed (19→mother, 5→father; request-keyed docs resolved from their
 > officer item); final tags 145 mother / 76 father / 2 brother / 5 blank. **CARRY:** 5 ambiguous
@@ -110,7 +110,7 @@ counts in `_cluster_docs`; prod blank-tag count reduced to the ambiguous remaind
 ## Sprint V2 — Resolution correctness (complexity: MEDIUM)
 
 > **✅ SHIPPED (code) 2026-07-03** — branch `feat/verify-v2`; NO migration; retro
-> `docs/retrospective-2026-07-03-verify-v2.md`. All three findings closed + tested (2040 pytest +
+> `docs/retrospectives/retrospective-2026-07-03-verify-v2.md`. All three findings closed + tested (2040 pytest +
 > 412 jest). Built directly on V1's seam (member-aware resolve uses V1.3's `params.household_member`;
 > the pending/unreadable holds reuse V1's `student_verdict` pattern).
 
@@ -140,7 +140,7 @@ re-upload in the Action Centre shows a Gopal coach.
 ## Sprint V3 — Query lifecycle & the Check-3 handoff (complexity: MEDIUM/HIGH)
 
 > **✅ SHIPPED (code) 2026-07-03** — branch `feat/verify-v3`; NO migration; retro
-> `docs/retrospective-2026-07-03-verify-v3.md`. All four findings closed + tested (2046 pytest +
+> `docs/retrospectives/retrospective-2026-07-03-verify-v3.md`. All four findings closed + tested (2046 pytest +
 > 413 jest). Two design forks were taken to the OWNER mid-sprint: (a) locked apps SHOW pre-existing
 > items but create none; (b) per-item SLA with a submit-window `is_ready` floor. **⚠ OWNER
 > CHECKPOINT is due here** — owner reviews the new reviewer-facing copy (agenda ambers + Motivation
@@ -177,7 +177,7 @@ appear on the interview agenda; motivation section always present; SLA tests on 
 ## Sprint V4 — Check-2 growth: promote the nine human asks (complexity: HIGH; owner-visible)
 
 > **✅ SHIPPED (code) 2026-07-03** — branch `feat/verify-v4`; migration `0091` (choices-only, owner
-> records via MCP at deploy); retro `docs/retrospective-2026-07-03-verify-v4.md`. All nine items +
+> records via MCP at deploy); retro `docs/retrospectives/retrospective-2026-07-03-verify-v4.md`. All nine items +
 > two doc types built + tested (2055 pytest + 413 jest). Raise-conditions taken to the OWNER and set
 > CONSERVATIVE (under-ask, tune post-deploy) since they land on live students. **CARRY:** post-deploy
 > cohort verification + margin tuning (esp. `utility_bill_missing`, `household_roster_undercount`).
@@ -223,7 +223,7 @@ All five items shipped (audit #5, #10–#14; owner decision 1): route-seam truth
 amber, salary thin-headroom green kept as documented exception); QC soft floor (migration 0092
 migrate-first, super-override-with-reason); SOFT_EVIDENCE guard test; wrong-person offer explicit
 amber; doc-rot fixes. Re-banding summary `docs/scholarship/v5-rebanding-summary.md` (nil live
-impact — forward-looking). Retro `docs/retrospective-2026-07-04-verify-v5.md`.
+impact — forward-looking). Retro `docs/retrospectives/retrospective-2026-07-04-verify-v5.md`.
 
 ## Sprint V6 — Gopal in the Action Centre + persona polish — ✅ SHIPPED 2026-07-04 (FINAL)
 
@@ -232,7 +232,7 @@ All five items shipped (audit F1, #15, #17): cluster coach mounted in the Action
 per serve (`AUDIT coach_serve`), lean persona strings + "Cikgu Gopal" Latin in Tamil + member-neutral
 fallbacks, third register documented in `str-proof-spec.md` §4. Pure wiring in `lib/actionCentre.ts`
 (+10 jest); 2066 scholarship pytest + 426 jest; no migration. Retro
-`docs/retrospective-2026-07-04-verify-v6.md`.
+`docs/retrospectives/retrospective-2026-07-04-verify-v6.md`.
 
 **▶ THE VERIFICATION-MODEL HARDENING ROADMAP (V1–V6) IS COMPLETE.** Remaining: the OWNER FINAL
 CHECKPOINT — review all new/changed copy across V4–V6, especially the Tamil first-drafts (the QC-floor

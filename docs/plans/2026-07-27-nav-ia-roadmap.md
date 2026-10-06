@@ -2,11 +2,11 @@
 
 > **This roadmap is closed.** Four sprints shipped and are live: **N1** registry → **N2** shell →
 > **N3b** route split → **N4** the rail. Arc retrospective:
-> `docs/retrospective-2026-07-28-nav-ia-arc.md`.
+> `docs/retrospectives/retrospective-2026-07-28-nav-ia-arc.md`.
 >
 > **Everything this roadmap promised now exists.** N3a was parked and then un-parked by the
 > owner on 2026-07-28 (the trigger never fired — see `decisions.md`); it shipped the same
-> day. Retro `docs/retrospective-2026-07-28-nav-n3a.md`.
+> day. Retro `docs/retrospectives/retrospective-2026-07-28-nav-n3a.md`.
 >
 > **Do not add work to this file.** Theming and PF-1 have their own homes, named at the bottom.
 
@@ -73,7 +73,7 @@ anywhere in the codebase or roadmap.
 ## ✅ N1 — registry + predicate — SHIPPED 2026-07-27
 
 Commit `20d683b4`, build `39732b6` SUCCESS both services. Retrospective
-`docs/retrospective-2026-07-27-nav-registry-n1.md`; decisions ×3; lessons ×4.
+`docs/retrospectives/retrospective-2026-07-27-nav-registry-n1.md`; decisions ×3; lessons ×4.
 
 `src/lib/navigation.ts` + `navigation.test.ts` (61 tests); `effectiveRole()` replaced 17 copies of
 the role normalisation; the ternary and `isActive` deleted; the three unhighlighted routes fixed.
@@ -84,7 +84,7 @@ fields (`chrome`, `hubParent`, `LEGACY_BAR_ORDER`) that N2 deletes.
 
 ## ✅ N2 — the shell — SHIPPED 2026-07-28
 
-Commit `e07f8f2e`. Retrospective `docs/retrospective-2026-07-28-nav-shell-n2.md`; decisions ×2;
+Commit `e07f8f2e`. Retrospective `docs/retrospectives/retrospective-2026-07-28-nav-shell-n2.md`; decisions ×2;
 lessons ×4.
 
 `AppShell` + `Sidebar` + `Topbar` + `Menu` + `CommandPalette` + `useNavProbes` + a single-colour
@@ -99,7 +99,7 @@ exchanged; works in production). Production auth code, so it owes its own commit
 
 ## ✅ N3b — the route split — SHIPPED 2026-07-28
 
-Commit `e38e5eac`. Retro `docs/retrospective-2026-07-28-hub-split-n3b.md`; decisions ×2; lessons ×3.
+Commit `e38e5eac`. Retro `docs/retrospectives/retrospective-2026-07-28-hub-split-n3b.md`; decisions ×2; lessons ×3.
 The 414-line hub became four pages plus a permanent redirect, on a shared `StaffAdmin` module;
 Manual + FAQ updated in the same commit. 905 jest, i18n 4065 ×3.
 
@@ -264,7 +264,7 @@ was chosen versus what was overlooked.
 
 ## ✅ N4 — the icon rail — SHIPPED 2026-07-28
 
-Retro `docs/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5; TD-187 + TD-188.
+Retro `docs/retrospectives/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5; TD-187 + TD-188.
 **968 jest / 63 suites · i18n 4090 ×3 · build clean · 17 files · no backend, no migration.**
 Built to the plan below, with two things worth knowing: the rail **overlays** (a spacer holds the
 48px, so nothing reflows), and **per-group collapse was removed** — it existed to shorten a long

@@ -1,7 +1,7 @@
 # PF-1 — a new application is routed to a cohort chosen platform-wide — ✅ FIXED 2026-07-28
 
 > **DONE.** `4008d362` (the refusal) + `f7f652ef` (the apply link). Retro
-> `docs/retrospective-2026-07-28-pf1-open-cohort.md`; decisions ×4; lessons ×4; **no migration**.
+> `docs/retrospectives/retrospective-2026-07-28-pf1-open-cohort.md`; decisions ×4; lessons ×4; **no migration**.
 > `pytest` 4947 (full scope) · `jest` 997 · `next build` clean.
 >
 > The brief held up under execution, with two corrections worth keeping visible:

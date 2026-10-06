@@ -76,7 +76,7 @@ Two decisions, both **settled by the owner 2026-07-25**:
 ## 4. Sprint roadmap (all closed)
 
 ### ~~Sprint 1 — the institution becomes a filled fact~~ ✅ SHIPPED 2026-07-25
-Retro `docs/retrospective-2026-07-25-institution-must-fill-s1.md`; decisions ×2; lessons ×3.
+Retro `docs/retrospectives/retrospective-2026-07-25-institution-must-fill-s1.md`; decisions ×2; lessons ×3.
 `sync_institution_from_catalogue` (hoisted above every guard) + `sole_catalogue_institution` +
 `offer_contradicts_course_institution` + the `backfill_institution` command. 4559 pytest, no
 migration. **The data pass is owner-gated and NOT run** — 11 fillable rows (live #16 #42 #48 #49 #74
@@ -92,7 +92,7 @@ a human judgement in a process that is not failing. `backfill_institution` (repo
 instead. Reasoning recorded in `docs/decisions.md`.
 
 ### ~~Sprint 3 — sponsor surface parity~~ ✅ SHIPPED 2026-07-26
-Retro `docs/retrospective-2026-07-26-institution-sprint3.md`; lessons ×2. `course_href` on the
+Retro `docs/retrospectives/retrospective-2026-07-26-institution-sprint3.md`; lessons ×2. `course_href` on the
 sponsor card/detail allowlist + the programme linked on the detail page (NOT the browse card — that
 card is already a `<Link>`); one ` · ` specialisation format everywhere (D2). **The "#132/#136
 catalogue rows" item dissolved on investigation** — those ids are `stpm_courses` rows, not missing

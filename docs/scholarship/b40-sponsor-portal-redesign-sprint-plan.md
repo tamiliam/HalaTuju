@@ -34,27 +34,27 @@
 
 ---
 
-### R1 — Portal shell + Students tab · FE (no new backend) — ✅ DONE 2026-06-19 (`4fab9b0`; dark; +7 jest = 349; retro `docs/retrospective-sponsor-redesign-r1.md`)
+### R1 — Portal shell + Students tab · FE (no new backend) — ✅ DONE 2026-06-19 (`4fab9b0`; dark; +7 jest = 349; retro `docs/retrospectives/retrospective-sponsor-redesign-r1.md`)
 **Goal:** replace the flat `/sponsor` scroll with the three-tab shell (My Giving · Students · My Account) and ship the Students marketplace.
 **Scope:** tabbed nav + routing — `/sponsor` → My Giving when signed in; `/sponsor/students`, `/sponsor/students/[id]`, `/sponsor/account`; keep the public `SponsorLanding` (signed-out) untouched; 301 old `/sponsor/pool/[id]` → `/sponsor/students/[id]`. Students tab = filterable pool grid (`getSponsorPool`) + detail + "Support this student" (`fund`).
 **Acceptance:** browse → filter → view → fund works in the new design; leak test green; ships dark; jest green.
 
-### R2 — My Giving dashboard · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/impact/` + `onboarded`/`semesters` serializer signals + pure `sponsorJourney`; +6 pytest, +4 jest = 353; retro `docs/retrospective-sponsor-redesign-r2.md`)
+### R2 — My Giving dashboard · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/impact/` + `onboarded`/`semesters` serializer signals + pure `sponsorJourney`; +6 pytest, +4 jest = 353; retro `docs/retrospectives/retrospective-sponsor-redesign-r2.md`)
 **Goal:** lead with impact, not chores.
 **Scope:** impact-number strip + giving donut + "students you support" cards with the Matched→Onboarded→Sem→Graduated journey tracker.
 **New backend:** `GET /sponsor/impact/` aggregate (total given, supported, active, graduated, semesters completed, balance breakdown committed/completed/available) + a coarse `journey`/`stage` field on `SponsorSponsorshipSerializer` — all derived from existing models, allowlist-safe.
 **Acceptance:** figures reconcile with wallet; journey leaks nothing; aggregate tested.
 
-### R3 — Activity feed + community strip · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; synthesised `GET /sponsor/activity/` + `GET /sponsor/community/` via new `sponsor_feed`; +6 pytest = 95 sponsor; retro `docs/retrospective-sponsor-redesign-r3.md`)
+### R3 — Activity feed + community strip · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; synthesised `GET /sponsor/activity/` + `GET /sponsor/community/` via new `sponsor_feed`; +6 pytest = 95 sponsor; retro `docs/retrospectives/retrospective-sponsor-redesign-r3.md`)
 **Scope:** "Recent activity" feed + "you're 1 of N sponsors, together supporting M students" strip.
 **New backend:** `GET /sponsor/activity/` synthesised from existing events for *this sponsor's* students (offer accepted = `Sponsorship.decided_at`; semester completed = `SemesterResult.created_at`; graduated; new-students-published count), refs only; small community-count endpoint.
 **Decision at sprint start:** synthesise on the fly (no migration — preferred) vs a lightweight event-log table.
 
-### R4 — My Account tab + giving statement · BE(tiny) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/statement/` two ledgers + thank-you wall relocated to Account; +5 pytest = 100 sponsor; retro `docs/retrospective-sponsor-redesign-r4.md`)
+### R4 — My Account tab + giving statement · BE(tiny) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/statement/` two ledgers + thank-you wall relocated to Account; +5 pytest = 100 sponsor; retro `docs/retrospectives/retrospective-sponsor-redesign-r4.md`)
 **Scope:** relocate + restyle existing pieces (profile + approved/trusted badges, notification cadence, thank-you wall, invite-a-friend) into the Account tab. Add the **giving statement as two ledgers**: *Donations to the trust* (in, `Donation`) and *Gifts to students* (out, `Sponsorship`), each amount + date, with a downloadable record. Framed as a *record*, not a tax receipt (Section 44(6) pending).
 **New backend:** `GET /sponsor/statement/` assembling both ledgers (data already exists). Mostly relocation → light.
 
-### R5 — Trust & Transparency hub · BE(small) + FE  🆕 (the load-bearing trust layer) — ✅ DONE 2026-06-20 (migration `scholarship/0065`; new `TrustContent` model + `enrolment_verified` col + `GET /sponsor/trust/`; Trust page + assurance strip + verified badges + public trust bar; +8 pytest = 108 sponsor, +8 jest = 361; retro `docs/retrospective-sponsor-redesign-r5.md`)
+### R5 — Trust & Transparency hub · BE(small) + FE  🆕 (the load-bearing trust layer) — ✅ DONE 2026-06-20 (migration `scholarship/0065`; new `TrustContent` model + `enrolment_verified` col + `GET /sponsor/trust/`; Trust page + assurance strip + verified badges + public trust bar; +8 pytest = 108 sponsor, +8 jest = 361; retro `docs/retrospectives/retrospective-sponsor-redesign-r5.md`)
 **Goal:** because the model runs on trust, surface the full trust story — who we are, where the money flows, and who independently checks it. **Build the scaffold now with honest placeholders; content drops in over time as the organisation formalises (via small changes, not sprints).**
 
 **The four-layer trust stack:**
@@ -74,12 +74,12 @@
 
 **Content backlog (post-R5, small-change lane — arrives piece by piece):** Who-we-are copy + legal entity once registered · trustee names/bios once appointed · first real sources-and-uses figures · first independent auditor's report.
 
-### R6 — Standing gift / AutoSponsor · BE(new model + cron) + FE — ✅ DONE 2026-06-20 (migration `scholarship/0066`; `StandingGift` model + `standing_gift` service + hourly `auto-sponsor` cron + `GET/PUT /sponsor/standing-gift/` + Account card; owner decisions: event-driven · skip-silently · no-consent; +13 pytest = 121 sponsor, jest 361; retro `docs/retrospective-sponsor-redesign-r6.md`)
+### R6 — Standing gift / AutoSponsor · BE(new model + cron) + FE — ✅ DONE 2026-06-20 (migration `scholarship/0066`; `StandingGift` model + `standing_gift` service + hourly `auto-sponsor` cron + `GET/PUT /sponsor/standing-gift/` + Account card; owner decisions: event-driven · skip-silently · no-consent; +13 pytest = 121 sponsor, jest 361; retro `docs/retrospectives/retrospective-sponsor-redesign-r6.md`)
 **Goal:** the AutoInvest-style innovation — a sponsor's balance auto-supports the next matching student.
 **Scope:** new `StandingGift(sponsor, cadence, field_pref, state_pref, max_amount, active, last_allocated_at)` + migration; allocation hook (reuses `fund_student`, still produces an *offered* sponsorship the student must accept — no real money moves) wired into the publish path / existing sponsor-realtime cron; the Account card.
 **Open questions for sprint-start:** cadence semantics; zero-balance behaviour; whether auto-allocating a donation needs a line in the lawyer bundle.
 
-### R7 — Polish + parity + go-live folding · FE + i18n — ✅ DONE 2026-06-20 (no migration; **fixed a shipped bug: 47 `sponsorPortal.{impact,journey,activity,community,statement,students,account}.*` i18n keys were referenced by R1–R4 pages but never added → rendered raw key paths**; authored all 47 in en/ms/ta; new `sponsor-i18n.test.ts` guardrail; Tamil refine TD-132 (சார்பற்ற/பங்களிப்பு/sandhi); a11y nav landmark + aria-current + donut aria-hidden; jest 363; retro `docs/retrospective-sponsor-redesign-r7.md`). **🎉 7-sprint sponsor-portal redesign COMPLETE.**
+### R7 — Polish + parity + go-live folding · FE + i18n — ✅ DONE 2026-06-20 (no migration; **fixed a shipped bug: 47 `sponsorPortal.{impact,journey,activity,community,statement,students,account}.*` i18n keys were referenced by R1–R4 pages but never added → rendered raw key paths**; authored all 47 in en/ms/ta; new `sponsor-i18n.test.ts` guardrail; Tamil refine TD-132 (சார்பற்ற/பங்களிப்பு/sandhi); a11y nav landmark + aria-current + donut aria-hidden; jest 363; retro `docs/retrospectives/retrospective-sponsor-redesign-r7.md`). **🎉 7-sprint sponsor-portal redesign COMPLETE.**
 **Scope:** full en/ms/ta parity (Tamil per style guide), accessibility, empty states, mobile. Hands off to the existing **Sprint 12** flag-flip (lawyer-gated, unchanged).
 
 ---
