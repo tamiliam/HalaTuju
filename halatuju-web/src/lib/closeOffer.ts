@@ -82,6 +82,7 @@ export function stageStatus(
 const ERROR_KEY = new Map([
   ['bad_reason', 'bad_reason'], ['reason_not_allowed', 'bad_reason'],
   ['not_closeable', 'not_closeable'], ['sponsorship_open', 'sponsorship_open'],
+  ['decline_pending', 'decline_pending'],
 ])
 
 /** The message key for a failed close: its sentence when the code is known, else generic. */

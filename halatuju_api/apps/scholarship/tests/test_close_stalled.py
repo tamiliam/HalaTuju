@@ -535,3 +535,24 @@ class TestClosedBeforeFundingIsNotInProgramme(TestCase):
     def test_the_student_read_carries_active_at(self, _send):
         from apps.scholarship.serializers import ApplicationReadSerializer
         self.assertIn('active_at', ApplicationReadSerializer.Meta.fields)
+
+
+@mock.patch(SENDER, return_value=True)
+class TestAPendingDeclineRefusesTheClose(TestCase):
+    """Review round 1, item 8: as `reopen` refuses an embargoed decline (TD-349), so does a close —
+    before the sponsorship check, and nothing is written."""
+
+    def test_either_marker_refuses(self, _send):
+        from datetime import timedelta
+        from django.utils import timezone
+        for marker in ({'pending_rejection_category': 'interview'},
+                       {'decline_due_at': timezone.now() + timedelta(hours=12)}):
+            with self.subTest(marker=marker):
+                app = make_application('interviewing', **marker)
+                Disbursement.objects.create(application=app, amount=Decimal('1'), status='released')
+                with self.assertRaises(ClosureError) as ctx:
+                    closure.close_application(app, closure_reason='stalled')
+                self.assertEqual(ctx.exception.code, 'decline_pending')   # not sponsorship_open
+                app.refresh_from_db()
+                self.assertEqual(app.status, 'interviewing')
+        _send.assert_not_called()

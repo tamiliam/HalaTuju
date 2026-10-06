@@ -66,9 +66,14 @@ SPONSORSHIP_OPEN_MESSAGE = (
     '(Releasing an awarded student is an owner decision — TD-366.)')
 
 
+#: The sentence for ``decline_pending`` (as `reopen.reopen_decision` refuses, TD-349).
+DECLINE_PENDING_MESSAGE = ('A decline is pending on this application. Cancel the pending decline '
+                           'first; a close would otherwise race its email.')
+
+
 class ClosureError(Exception):
     """Raised by close_application with a machine code for the view: 'not_closeable',
-    'bad_reason', 'reason_not_allowed' or 'sponsorship_open'."""
+    'bad_reason', 'reason_not_allowed', 'decline_pending' or 'sponsorship_open'."""
     def __init__(self, code, message=''):
         self.code = code
         super().__init__(message or code)
@@ -136,7 +141,10 @@ def close_application(application, *, closure_reason, by_email=''):
            from awarded / active / maintenance    -> graduated, completed, withdrawn, lapsed,
                                                      terminated, stalled
 
-      4. ``sponsorship_open`` — ONE DOOR PER JOB. From any status OTHER than active / maintenance,
+      4. ``decline_pending`` — a decline marker is set (``pending_rejection_category`` or
+         ``decline_due_at``), the same refusal `reopen.reopen_decision` makes (TD-349): the
+         embargoed decline is cancelled through its own door first, never overtaken by a close.
+      5. ``sponsorship_open`` — ONE DOOR PER JOB. From any status OTHER than active / maintenance,
          the close REFUSES while ``has_live_money`` holds (a HOLDING sponsorship, or a released
          tranche). Closing never cancels or lapses a sponsorship. In practice an 'awarded'
          application always carries a HOLDING sponsorship (``sponsorship.fund_student`` writes
@@ -176,6 +184,8 @@ def close_application(application, *, closure_reason, by_email=''):
             raise ClosureError('bad_reason')
         if closure_reason not in reasons_for(closed_from):
             raise ClosureError('reason_not_allowed')
+        if row.pending_rejection_category or row.decline_due_at:
+            raise ClosureError('decline_pending', DECLINE_PENDING_MESSAGE)
         if closed_from not in FUNDED_STATUSES and has_live_money(row):
             raise ClosureError('sponsorship_open', SPONSORSHIP_OPEN_MESSAGE)
         row.status = 'closed'

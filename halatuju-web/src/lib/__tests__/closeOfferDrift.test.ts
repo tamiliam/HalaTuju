@@ -57,7 +57,7 @@ describe('stageStatus — a closed case reads as post-award only with the milest
 })
 
 describe('closeErrorKey', () => {
-  test.each(['bad_reason', 'not_closeable', 'sponsorship_open'])(
+  test.each(['bad_reason', 'not_closeable', 'sponsorship_open', 'decline_pending'])(
     '%s has its own sentence', (code) => {
       expect(closeErrorKey(code)).toBe(`admin.closure.error.${code}`)
     })
