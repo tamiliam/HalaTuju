@@ -1,5 +1,30 @@
 # Architectural Decisions — HalaTuju
 
+## Student message timing is an ORGANISATION setting, with narrow ranges and rules between timings — 2026-10-07 (owner)
+
+**Decision:** every scheduled student timing (13 new keys + 5 existing) lives in `org_config`, set on
+Organisation → Settings → Configuration. Not per gift, not per intake round. The platform value is
+only the default behind a blank box. Each has a NARROW range near its default, and timings that
+depend on each other are checked together (`org_config_rules.RULES`), refused with the box named.
+
+**Why:** the owner, shown a gift-level option: *"it seems all them could be moved to the organisation
+setting. I do not see why it should be either platform level or gift level."* The one difference
+between gifts that existed (flagship 55 min vs Sabah 48 h) was an accident of the intake-round
+column, not a choice; one organisation value removes the class. Ranges: *"closer to the default but
+the org is given some flexibility"* — a value finer than the job that acts on it does nothing, the
+two shortlisting emails may not pass the public "within 48 hours", and the decline/award holds are
+undo windows with a floor above zero.
+
+**Kept fixed:** the interview reminders (1 day, 1 hour) — their wording ("tomorrow", "in about an
+hour") and the Meta-approved WhatsApp templates state the time. One-time code and PIN lifetimes
+(security, not process timing).
+
+**Rejected:** per-gift timing (a Timing tab on the gift) — more storage and a third level for no
+current need; revisit only if two gifts of one organisation genuinely need different timings.
+
+**Revisit when:** a range is widened — the guard rules R1, R2, R4, R6, R7 cannot be broken inside
+today's ranges and exist for that day.
+
 ## An officer closes a stalled application, from any in-play status; a close never cancels money — 2026-10-06 (owner's ruling on TD-352, option A; lead rulings in the build)
 
 **Decision:** an application in process blocks a new one (2026-10-05), so a case that stops moving
