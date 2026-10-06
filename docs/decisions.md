@@ -179,6 +179,9 @@ application screen still shows "more than one" rather than picking (M1 stands).
 **Revisit if:** M2 is approved (relax item 1a with it, not before), the owner answers TD-352 (a
 stalled in-process application blocking every later round), or a status is added.
 
+**Owner ruling 2026-10-06 on TD-353:** on hold until a second organisation joins the platform. Item
+1a stands as built; the question is re-asked when that organisation is onboarded.
+
 ## The parent's consent: reasonable, RECORDED steps — not fraud prevention — owner, request #26, 2026-10-05
 
 **The owner, in their words:** "We are not dealing with a potential fraud. We only want the parent's
