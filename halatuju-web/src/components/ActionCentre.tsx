@@ -47,7 +47,7 @@ import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
 // demand so they stay out of every applicant's first-load JS. See the note in that file.
 import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
-import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
+import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the

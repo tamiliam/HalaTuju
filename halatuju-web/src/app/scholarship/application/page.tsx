@@ -11,6 +11,7 @@ import ActionCentre from '@/components/ActionCentre'
 import { showsActionCentre, isFundedStatus } from '@/lib/scholarship'
 import { applicationScreen } from '@/lib/applicationScreen'
 import InterviewBookingPanel from '@/components/scholarship/LazyInterviewBookingPanel'
+import AwardPanels from '@/components/scholarship/LazyApplicationAwardPanels'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
@@ -101,89 +102,11 @@ export default function ScholarshipApplicationPage() {
               <span className="font-medium text-ground-700">{app.cohort_name}</span>
             </p>
           )}
-          {awardPanel()}
-          {bursaryPanel()}
+          <AwardPanels award={award} acceptanceEnabled={acceptanceEnabled} bursary={bursary}
+            status={app?.status || ''} onboardedAt={app?.onboarded_at} />
           {children}
         </main>
         <AppFooter />
-      </div>
-    )
-  }
-
-  // "Next: accept your award / complete onboarding" — shown only when the
-  // student has an award offer. An un-accepted offer (status 'offered') points
-  // to the award page; an accepted-but-not-yet-onboarded award points to
-  // onboarding. Once onboarded (onboarded_at set) the panel disappears.
-  function awardPanel() {
-    // Embargoed for now: the accept→onboarding flow isn't tested end-to-end, so we
-    // keep the panel hidden until AWARD_ACCEPTANCE_ENABLED is turned on (no deploy).
-    if (!award || !acceptanceEnabled) return null
-
-    // Bursary flow: once the student has SIGNED (a bursary agreement exists) but the
-    // agreement isn't yet fully executed — the application only reaches a funded state
-    // (active/maintenance) when the Foundation has counter-signed — we do NOT route them
-    // to the portal yet. "We do not land them in the portal until everyone has signed."
-    const signedAgreement = !!bursary
-    const fullyExecuted = isFundedStatus(app?.status || '')
-    if (signedAgreement && !fullyExecuted) {
-      return (
-        <div className="mb-6 rounded-2xl border border-info-200 bg-info-50 p-5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="shrink-0 text-info-600" aria-hidden>✅</span>
-            <div className="flex-1">
-              <h2 className="font-semibold text-ground-900">{t('scholarship.application.awardPanel.awaitingTitle')}</h2>
-              <p className="mt-1 text-sm text-ground-700">{t('scholarship.application.awardPanel.awaitingBody')}</p>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    const accepted = award.status !== 'offered'   // active / sponsored / etc.
-    if (accepted && app?.onboarded_at) return null
-    const href = accepted ? '/scholarship/onboarding' : '/scholarship/award'
-    const cta = accepted
-      ? t('scholarship.application.awardPanel.onboardingCta')
-      : t('scholarship.application.awardPanel.acceptCta')
-    const body = accepted
-      ? t('scholarship.application.awardPanel.onboardingBody')
-      : t('scholarship.application.awardPanel.acceptBody')
-    return (
-      <div className="mb-6 rounded-2xl border border-info-200 bg-info-50 p-5 shadow-sm">
-        <div className="flex items-start gap-3">
-          <span className="shrink-0 text-info-600" aria-hidden>🎉</span>
-          <div className="flex-1">
-            <h2 className="font-semibold text-ground-900">{t('scholarship.application.awardPanel.title')}</h2>
-            <p className="mt-1 text-sm text-ground-700">{body}</p>
-            <Link href={href} className="btn-primary mt-3 inline-block">{cta}</Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // "Your bursary agreement" — a minimal panel with a PDF download, shown only once
-  // the student has signed (getBursaryAgreement returned an agreement). Flag-gated:
-  // null while the feature is off or unsigned. No donor identity anywhere.
-  function bursaryPanel() {
-    if (!bursary || !bursary.pdf_url) return null
-    return (
-      <div className="mb-6 rounded-2xl border border-positive-200 bg-positive-50 p-5 shadow-sm">
-        <div className="flex items-start gap-3">
-          <span className="shrink-0 text-positive-700" aria-hidden>📄</span>
-          <div className="flex-1">
-            <h2 className="font-semibold text-ground-900">{t('scholarship.application.bursaryPanel.title')}</h2>
-            <p className="mt-1 text-sm text-ground-700">{t('scholarship.application.bursaryPanel.body')}</p>
-            <a
-              href={bursary.pdf_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary mt-3 inline-block"
-            >
-              {t('scholarship.application.bursaryPanel.download')}
-            </a>
-          </div>
-        </div>
       </div>
     )
   }
