@@ -5,23 +5,124 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-09-18 review — counter reset; the 11 reviewed entries are listed in that review)_
-
-- 2026-09-18 fix: the type check is a real gate - tsc 24 errors to 0, TD-221 closed. One config hole (no `target`), four stale test fixtures, nine casts that erased checks, and one real app-type drift (`StrCheck.current_status` lacked `wrong_type`/`unreadable`). No suppressions. (7 web files: tsconfig.json, src/lib/api.ts type-only, 5 test files)
-- 2026-09-18 docs: code-health baseline - first `docs/code-health.md` reading from the new workspace tool `code_health.py` (ratchet-only FAIL); the debt register is now counted by script (84 open of 146). No app code touched, nothing deploys. (2 project files: docs/code-health.md, docs/technical-debt.md)
-- 2026-09-18 fix: the stuck banner tells the truth per ROAD (BrightPath #24) - `isStuckAfterVerdict` demanded `verified_at` on both roads to QC, but the DECLINE road (since 19 July) never stamps it, so every declined case awaiting QC read as "not submitted" and was advised to press Approve - which would have overwritten the decline with a recommendation. Now keyed on the recorded outcome, with a decline's own half-completed press still caught. Save's label follows the outcome. ⚠ Introduced by #144's fix on 7 Sep, whose test asserted the pre-July shape (`status: 'rejected'`) and could never reach the branch it named - the same family as the September date blackout. ⚠ And I BUILT IT UNASKED, from "wrap up the request", before the owner had triaged it; it sat uncommitted until he did. 7 files, web only, three bites caught.
-- 2026-09-29 fix(overview): attention card full width; picker hidden for a one-round gift (OverviewSections.tsx, IntakePicker.tsx, page.test.tsx)
-- 2026-09-29 fix(web): self-host the three fonts so a deploy needs nothing from Google, TD-305 (layout.tsx, src/fonts/ x3 woff2 + OFL + README, fontSources.test.ts; found TD-310)
-- 2026-09-29 fix(check2): TD-306 - no student reads "RM {income}"; a no-income wording for the high-utility ask, item copy never shows a raw placeholder (high_utility_variant.py new, check2_queries.py, actionCentre.ts, ActionCentre.tsx, OutstandingPanel.tsx, en/ms/ta.json incl. two dead officer strings deleted, test_income_whose_str_vouches.py, two new test files)
-- 2026-09-30 fix(web): TD-306's route back under budget - the deploy gate refused 4583a83d on /scholarship/application at 276 kB; the post-award cards load on demand, 275,447 -> 272,750 bytes, prints 273 (ActionCentre.tsx, scholarship/PostAwardTasks.tsx + LazyPostAwardTask.tsx new, code-standards.json ledger lowered, payoutAccountDrift + theme guards followed the move, two new test files)
-- 2026-10-05 fix(web): request #25 follow-up - the sponsor portal's 404 page could not be reached. It shipped in the sprint with no catch-all and nothing under /sponsor throws `notFound()`, so unmatched sponsor addresses still fell to the ROOT 404 and its PUBLIC-site button - the defect the sprint existed to fix. ⚠ An INERT page is green in every suite: found by curling the live site after the deploy, not by a test. The new test pins the PAIR (sink throws + boundary exists + way out is /sponsor, never /), because a render test of the 404 passed throughout the gap. (2 web files: src/app/sponsor/[...notFound]/page.tsx + page.test.tsx)
-- 2026-10-05 fix(web): Requests analysis shows Withdrawn, the list tags analysed requests, and approve wording follows bug vs feature (owner, off #26/#30; engineer's proposed_kind decides). (requestStatus.ts, admin/requests/page.tsx + [id]/page.tsx, en/ms/ta.json, requestAnalysis.test.ts new, [id]/page.test.tsx)
-- 2026-10-05 fix: TD-210 - confirming an offer refreshes the student's PROFILE pathway in the same transaction (owner: "Yes"; only when the confirm changed the type or pre-U stream/school; chosen_pathway, pre_u_track, pre_u_institution, chosen_programme), and the cockpit hides "Pathways considered" / "Still-deciding reasons" from Awaiting review onward (owner, #134/#119; lib/applicationStatus.isApplyStage). Closed going forward; 5 existing rows need the new one-off backfill-confirmed-profiles cron run (BACKFILL_CONFIRMED_PROFILES_APPLY=1, then unset) after deploy. (api: services/confirmation.py, management/commands/backfill_confirmed_profiles.py new + repair_confirmed_pathway.py, test_confirm_pathway.py, test_family_profile_link.py, test_backfill_confirmed_profiles.py new, test_repair_confirmed_pathway.py, views.py cron door; web: ApplicantCards.tsx + ApplicantCards.test.tsx new, applicationStatus.ts, applicationStatus.test.ts)
-- 2026-10-06 feat: request #27 - the payment run's "Skipped this run" heading carries its count (length of the list on screen; no server change, no new string). (payments/[id]/page.tsx + page.test.tsx)
-- 2026-10-06 feat: request #29 - merchant spend "Average" column, total / transactions, computed in whole sen, sortable, dash for no visits. (lib/spendingTable.ts, components/admin/SpendingShops.tsx, spendingTable.test.ts, spending/page.test.tsx, en/ms/ta.json)
-- 2026-10-06 feat: request #28 - person-only `micro_stall` spend category (AI vocabulary, prompt and PROMPT_VERSION unchanged); a person can mark a shop checked-but-unsorted through the existing correction (decided_by owner). ⚠ The Overview chart filtered unknown codes and would have DROPPED the new category's money silently - found by the builder, now pinned by spendCategoryDrift.test.ts. Migration 0166 choices-only (ledger row applied by the owner before the push). (spend_category.py, models/spending.py, 0166 migration, test_spend_micro_stall.py new, test_programme_overview.py, OverviewSections.tsx, spendCategoryDrift.test.ts new, namespaces-i18n.test.ts, admin-api/spending.ts, en/ms/ta.json)
+_(cleared at the 2026-10-06 review — counter reset; the 13 reviewed entries are listed in that review)_
 
 ## Reviews
+
+### 2026-10-06 — thirteen changes, 18 Sep → 6 Oct: the lane carried three sprints, and one budget line took five fights
+
+**The thirteen** (commit · files): the type check made a real gate, TD-221 (`a22b1d89` · 12); the
+code-health baseline, docs only (`2e3cd2bb` · 4); the stuck banner per ROAD, BrightPath #24
+(`7cc65ddb` · 7); the Overview attention card and one-round picker (`ba8d423a` · 5); the three fonts
+self-hosted, TD-305 (`7435fa90` · 12, three of them font files); no student reads "RM {income}",
+TD-306 (`4583a83d` · 17); TD-306's route back under budget (`40887efb` · 11); the sponsor 404 made
+reachable, #25 follow-up (`3faa3450` · 4); the Requests analysis wording (`29c47c9a` · 9); a confirmed
+offer refreshes the profile pathway, TD-210 (`a5d12fb2` · 16); and requests #27 (`c56a8546` · 3), #29
+(`43997738` · 8) and #28 (`ccceb5ad` · 14).
+
+**Reflect.** Most were genuine fixes, and three of them carried their own guard and have held: the
+type check (tsc reads 0 at every `--full` reading since, today's included, and it is in `npm run
+gates`); the fonts (a deploy needs nothing from Google; TD-310 followed as its own sprint); and the
+sponsor 404, whose pair test pins the sink, the boundary AND the way out. Three were symptoms. The
+**route rescue** (`40887efb`) existed only because TD-306's copy tipped `/scholarship/application`
+over its line — the first of five weight fights in a week, below. The **stuck banner** existed
+because #144's fix of 7 Sep had a test asserting the pre-July shape, which could never reach the
+branch it named; the same shape as five of request #26's tests after the one-application rebase
+(2026-10-05), which assumed the old rule and went red only in the full suite. And **#28** needed a
+near-miss caught by its builder: the Overview chart held its own list of category codes and dropped
+any it did not know, so the new category's money would have vanished from the chart silently — the
+fourth review running to meet "something that looks armed and does nothing" (2026-08-19, 2026-09-08,
+2026-09-18), this time as a list that discards rather than a button that does nothing. One process
+miss is on the record in its own entry: the stuck-banner fix was built UNASKED, before the owner had
+triaged it.
+
+**Cohere — two clusters, both promoted.**
+
+- **One budget line, five fights (2026-09-30 → 10-06).** TD-306's copy (gate refused `4583a83d`;
+  `40887efb` made the post-award cards lazy); TD-309 (the Form 6 list made lazy, 30 dead keys
+  deleted); apply-gift-clarity (five strings, 86 gz bytes, took `/profile` over — the gate refused
+  `552cf494` at 310.007 with 0.055 kB showing locally); request #26 (cut its own en.json footprint to
+  land); and the one-application sprint (TD-354's 28-byte fix built and backed out). Each was a lazy
+  boundary or a deletion — room borrowed once. The common mode is not any page: it is **one English
+  message file, ~97 kB gzipped, on 74–82 of 89 routes**, so every string anywhere moves every
+  budgeted line. **Promoted to TD-360** (split it by audience). TD-344 is re-scoped to the two routes
+  that are thin today (`/scholarship/apply` 0.189 kB of room, `/scholarship/application` 0.179;
+  `/profile` has 0.988 since request #26).
+- **Mirrors the guard cannot see (#28; the 404 pair, the TD-349 reopen offer in their own changes).**
+  The web mirror guard reads only `src/lib/` and only a comment that says "mirror"; #28's list lived
+  in `components/` and called itself "the codes the server always sends". **Promoted to TD-362**: the
+  structural half (a served choice set listed by hand in the web is imported from one module or
+  drift-tested) is a ledger triage over ~33 files, so a sprint, not a guard for this pass.
+- **Not promoted: the spending/payments requests (#27, #28, #29).** One organisation's three asks on
+  two admin screens in one sitting, with no shared mechanism; a redesign would be inventing a cause.
+- **Decision reconciled.** #28 shipped a new design decision with no entry and moved the arithmetic of
+  two standing ones (the Overview's "eleven" codes, the sorter's "ten"). Recorded in `decisions.md`
+  (2026-10-06, the person-only `micro_stall`); neither rule's substance changed.
+
+**The lane: were #27, #28 and #29 small changes?** `wat_lint` flagged all three. Judged against
+Part A step 1 (≤ ~5 files, no new model, no new feature surface, no money/consent/auth/PII):
+- **#27 — rightly in the lane; the lint is wrong.** Three files, web only: a count beside a heading,
+  equal to the length of the list already drawn, no server change, no new string. The payment run is
+  money's screen, but nothing about who is paid, or how much, can change.
+- **#29 — rightly in the lane, at its edge.** Five source files (one helper, one component, two tests)
+  and the three message files: a computed column on an existing table, read-only, in whole sen. It
+  reports money; it moves none and stores nothing. Its one new string moved every budgeted route
+  (TD-360's mechanism), which is why the check below now reads every line.
+- **#28 — should have been a sprint.** Fourteen files; a migration (choices-only, no DDL, but a
+  migration — the 2026-06-29 rule); a new value in a STORED choice list read by the sorter, the
+  officer screens, the Overview's money charts and the sponsor card; and a new semantics for a
+  person's `unsorted`. Lessons.md's first rule ("a rule that lets the database hold a NEW shape needs
+  every reader checked") is exactly the step a sprint would have made deliberate — here it was the
+  builder's diligence that found the Overview reader. No harm resulted: the ledger row was applied
+  first and the drift test landed with it.
+- **Two the lint MISSED, and both were sprints:** TD-306 (17 files, a new module
+  `high_utility_variant.py`, student-facing copy about income in three languages, and the route it
+  tipped) and TD-210 (16 files, a new backfill command, and a change to how a STORED value — the
+  profile's pathway — is derived, with 13 rows repaired). Both were logged as `fix:`.
+
+So the classifier is wrong in both directions, for one reason: it keys on the WORD the author chose
+(`" feat:"` or `"migration"` anywhere in the log line, `wat_lint.py` `check_consolidation`). An honest
+`feat:` on a three-file label is flagged; a `fix:` on a sixteen-file backfill passes. The window also
+breaks the file-count proxy outright — eight of thirteen entries exceeded five files — which the
+2026-08-19 review said would, on a third time, need the proxy changed. This is the third time. **The
+fix belongs in the workspace repo and is proposed, not landed:** the log line carries the short SHA,
+and `wat_lint` reads the commit (`git show --numstat`) and flags more than five non-test, non-locale,
+non-asset files, any path under `migrations/`, any `models` path, and any new `management/commands/`
+file — whatever the subject says. Step 1 of the lane gains the matching sentence (the exact wording
+is in this review's report to the lead).
+
+**Anticipate — one guardrail landed; three classes given workflow lines.**
+
+- **Landed: the near-line check** (`halatuju-web/scripts/bundle-budget.js`, `NEAR_LINE_KB`). Class:
+  "a route ends up within a few bytes of its line and the gate refuses it" (`/profile` at 310.007,
+  TD-306 at 53 bytes, TD-354 backed out at 28) and its twin "a new string in a shared message file
+  moves every route" — the check reads EVERY budgeted line and the median, so the route a change
+  never touched is the one it names. A dev-box run now FAILS when any line has less than
+  `NEAR_LINE_KB` of room; the deploy gate passes `--gate` and only prints it, because there the line
+  is the budget. The lead asked for 0.25 kB; **on this tree 0.25 fails two routes** (apply 0.189,
+  application 0.179), and a guard that is red on the day it lands is the always-red gate the
+  code-health audit warns about — so it landed at **0.15 kB** (2.4× the 0.062 kB drift seen; a local
+  pass is still a gate pass with room), as a ratchet: raise to 0.25 when TD-344 frees those two
+  routes, never lower. It agrees with the "recorded 2 kB over" convention: a freshly recorded line
+  leaves 1–2 kB, never inside the margin. Five tests (`bundleBudgetReader.test.ts`), bitten by a
+  planted 0.05 margin (2 red), and run against today's build in both modes (local exit 0; at 0.25,
+  local exit 1 naming both routes, gate exit 0 printing them). It converts a rule that lived only in
+  `docs/lessons.md` and in a lead's brief ("the 0.30 kB floor") into a failing command.
+- **Workflow lines, proposed for the workspace repo (not this project):** (1) the lane's step 1 —
+  count source files, and a migration, a new stored choice value, a new module or command, or a
+  changed derivation is a sprint whatever the count; (2) the lane's step 4 — the log line carries the
+  short SHA; (3) `sprint-close.md` step 12 — after a rebase or merge onto another session's work, the
+  FULL api and web suites run on the result before the push (the class "a feature's tests assume the
+  old rule after a parallel session", ×2 in this window).
+- **No new guard for "looks armed, does nothing".** Its instances keep changing shape (a button, a
+  page, a list that discards); each of this window's three carried its own pin. TD-362 is the
+  mechanisable half.
+
+**Close out.** Pending cleared (13 → 0, counter reset). Promoted: TD-360, TD-362 (and TD-344
+re-scoped). Guardrail landed: the near-line check, tested and green. `decisions.md` reconciled for
+#28. Code-health reading taken (`--full`, 161f11e): no reading worse; the third accept of `big` is
+TD-361. The Open Items Index regenerated: **112 open of 359 defined**, the tool's `td_open`, and every
+pointer diffed against the register both ways.
 
 ### 2026-09-30 — the register itself: every entry read, 36 closed on evidence, 159 open and ordered
 

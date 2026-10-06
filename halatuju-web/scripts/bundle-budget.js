@@ -97,6 +97,33 @@ const SHRINK_SLACK_KB = 2
 const MEDIAN_SLACK_KB = 2
 
 /**
+ * THE NEAR-LINE CHECK — Consolidation Review 2026-10-06. A LOCAL run FAILS; the deploy gate PRINTS.
+ *
+ * Three pushes in a week passed this script on a dev box and were refused by the deploy gate,
+ * blocking main for every session: the gate's build reads ~0.06 kB heavier than a local one
+ * (`/profile` 309.945 here, 310.007 there; TD-306 refused at 53 bytes under the boundary), and a
+ * string added to the shared en.json moves every route that loads it, so the route that tips is
+ * often one the change never touched. The rule that would have caught each lived only in a habit —
+ * `docs/lessons.md` ("a local budget pass by a few bytes is not a pass") and a lead's brief ("the
+ * 0.30 kB floor"). So: run locally, a budgeted route — or the median — with less than NEAR_LINE_KB
+ * of room under its line FAILS, and the change that left the room that thin takes weight off
+ * before it is pushed. Run by the deploy gate (`--gate`, passed by `cloudbuild.yaml` and nowhere
+ * else) the same finding is printed and does not fail: there the line itself is the budget, and a
+ * gate that failed a margin early would only move the cliff, not remove it.
+ *
+ * ⚠ THE MARGIN IS A RATCHET: RAISE IT, NEVER LOWER IT. 0.15 kB (2026-10-06) is 2.4 times the
+ * drift seen so far, so a local pass is a gate pass with room to spare. The review wanted 0.25,
+ * and on the day it was written that failed on two routes (`/scholarship/apply` 0.189 kB of room,
+ * `/scholarship/application` 0.179): raise it to 0.25 when TD-344 takes their weight off. It
+ * agrees with SHRINK_SLACK_KB: a line is recorded 2 kB over the build less the fraction, so a
+ * freshly recorded line leaves 1 to 2 kB of room — never inside this margin. ⚠ NEVER RAISE A
+ * BUDGET TO GET OUT OF IT, and never pass `--gate` on a dev box: both turn the check back into
+ * the habit it replaced.
+ */
+const NEAR_LINE_KB = 0.15
+const GATE = process.argv.includes('--gate')
+
+/**
  * A FLOOR on the parse itself. A regex that matched nothing would report no violations and pass
  * for ever while watching an empty room — the failure this arc has met four times (TD-276). The
  * application had 88 routes on 2026-09-20; 50 leaves room to delete a third of them.
@@ -271,6 +298,25 @@ function readManifest() {
 
 const kb3 = (n) => Number(n.toFixed(3))
 
+/**
+ * Every budgeted line with less than `margin` kB of room under it — budgeted routes and the median.
+ * A figure already OVER its line is not listed: that is a failure of its own, above.
+ */
+function nearLine(byRoute, ledger, medianNow, medianKb, margin = NEAR_LINE_KB) {
+  const near = []
+  const thin = (room) => room >= 0 && room < margin
+  for (const [route, limit] of Object.entries(ledger)) {
+    if (!byRoute.has(route) || !thin(limit - byRoute.get(route))) continue
+    near.push(`${route}: ${kb3(byRoute.get(route))} kB against its ${limit} kB line — `
+      + `${(limit - byRoute.get(route)).toFixed(3)} kB of room`)
+  }
+  if (thin(medianKb - medianNow)) {
+    near.push(`the median: ${kb3(medianNow)} kB against its ${medianKb} kB line — `
+      + `${(medianKb - medianNow).toFixed(3)} kB of room`)
+  }
+  return near
+}
+
 function check(output) {
   const parsed = parseRouteTable(output)
   const { shared } = parsed
@@ -339,6 +385,20 @@ function check(output) {
       + `${Math.ceil(now)} (never below the exact figure)`)
   }
 
+  // ── 4. the near-line check: strict here, printed in the gate (see NEAR_LINE_KB) ─────────────
+  const near = nearLine(byRoute, ledger, now, medianKb)
+  if (near.length && GATE) {
+    process.stdout.write(`near the line (the gate prints this and passes; a local run fails): ${near.join('; ')}\n`)
+  } else if (near.length) {
+    failures.push(
+      `less than ${NEAR_LINE_KB} kB of room under a budgeted line. The deploy gate's build reads `
+      + '~0.06 kB heavier than this one, and the next string in en.json moves every route that loads '
+      + 'it — so this passes here and is refused there. Take weight off before pushing (a lazy '
+      + 'boundary for a single-branch import, a leaf for helpers a big module carries to routes that '
+      + 'never call them). ⚠ NEVER RAISE THE BUDGET, and never pass --gate locally.\n  '
+      + near.join('\n  '))
+  }
+
   process.stdout.write(
     `\nfirst-load JS (exact, page entry — the budgeted figure): ${routes.length} routes, median `
     + `${kb3(now)} kB, worst ${kb3(Math.max(...routes.map((r) => r.kb)))} kB, shared `
@@ -382,7 +442,10 @@ function verdict(output) {
   process.stdout.write('first-load-JS budget: ok\n')
 }
 
-module.exports = { routeOfEntry, layoutEntries, manifestReadings, exactRoutes, printTolerance }
+module.exports = {
+  routeOfEntry, layoutEntries, manifestReadings, exactRoutes, printTolerance, nearLine,
+  NEAR_LINE_KB, SHRINK_SLACK_KB,
+}
 
 const fromLog = process.argv.indexOf('--from-log')
 if (require.main !== module) {

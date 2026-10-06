@@ -7,8 +7,11 @@
  * gate. These rows hold the arithmetic the weighing relies on, on a synthetic manifest whose
  * chunk sizes are given rather than gzipped.
  */
+import * as fs from 'fs'
+import * as path from 'path'
 import {
-  exactRoutes, layoutEntries, manifestReadings, printTolerance, routeOfEntry,
+  exactRoutes, layoutEntries, manifestReadings, nearLine, NEAR_LINE_KB, printTolerance,
+  routeOfEntry, SHRINK_SLACK_KB,
 } from '../../../scripts/bundle-budget'
 
 const SIZES: Record<string, number> = {
@@ -85,5 +88,52 @@ describe('the exact figure replaces the printed one only when they agree', () =>
   test('the tolerance is half the last printed digit', () => {
     expect(printTolerance(227)).toBe(0.5)
     expect(printTolerance(87.6)).toBe(0.05)
+  })
+})
+
+/**
+ * Consolidation Review 2026-10-06: three pushes passed here and were refused by the gate, whose
+ * build reads ~0.06 kB heavier. A local run now fails with less than NEAR_LINE_KB of room.
+ */
+describe('the near-line check', () => {
+  const LEDGER = { '/profile': 300, '/scholarship/application': 274 }
+
+  test('a route with less than the margin of room is named; one with more is not', () => {
+    // The shape of /profile 309.945 against 310, the push the gate refused at 310.007 (2026-10-05).
+    const near = nearLine(new Map([['/profile', 299.945], ['/scholarship/application', 273.7]]),
+      LEDGER, 228.0, 229)
+    expect(near).toHaveLength(1)
+    expect(near[0]).toMatch(/^\/profile: 299\.945 kB against its 300 kB line — 0\.055 kB of room$/)
+  })
+
+  test('the median is held to the same margin', () => {
+    expect(nearLine(new Map(), {}, 228.9, 229)).toEqual(
+      ['the median: 228.9 kB against its 229 kB line — 0.100 kB of room'])
+    expect(nearLine(new Map(), {}, 228.0, 229)).toEqual([])
+  })
+
+  test('a route already OVER its line is not listed here — that is the failure above', () => {
+    expect(nearLine(new Map([['/profile', 300.007]]), LEDGER, 228, 229)).toEqual([])
+  })
+
+  test('the margin covers the drift seen, and a freshly recorded line is never inside it', () => {
+    // The gate read 0.062 kB heavier (2026-10-05). 0.15 is the floor recorded 2026-10-06 and a
+    // ratchet: raise it (to 0.25 once TD-344 frees apply and application), never lower it.
+    expect(NEAR_LINE_KB).toBeGreaterThanOrEqual(0.15)
+    expect(NEAR_LINE_KB).toBeGreaterThan(2 * 0.062)
+    // A line is recorded SHRINK_SLACK_KB over the build less the fraction (code-standards.json),
+    // so it leaves at least SHRINK_SLACK_KB - 1 kB of room: the check must not fire on a fresh line.
+    for (const build of [270.001, 272.655, 298.941, 299.999]) {
+      const line = Math.floor(build) + SHRINK_SLACK_KB
+      expect(nearLine(new Map([['/r', build]]), { '/r': line }, 0, 229)).toEqual([])
+    }
+  })
+
+  test('⚠ only the deploy gate passes --gate; the one local command never does', () => {
+    const web = path.resolve(__dirname, '../../..')
+    const pkg = JSON.parse(fs.readFileSync(path.join(web, 'package.json'), 'utf8'))
+    expect(pkg.scripts['bundle-budget']).not.toContain('--gate')
+    expect(fs.readFileSync(path.join(web, 'cloudbuild.yaml'), 'utf8'))
+      .toContain('npm run bundle-budget -- --gate')
   })
 })

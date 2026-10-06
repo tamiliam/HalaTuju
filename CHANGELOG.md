@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Consolidation Review — thirteen small changes, 18 Sep → 6 Oct - 2026-10-06
+
+Docs and one build-tooling guard. No app code, no migration, nothing a visitor sees.
+
+- **Review** (`docs/consolidation-log.md`): the first-load weight cluster promoted to TD-360 (one English message file on almost every route) and TD-344 re-scoped to the two routes thin today; request #28's unseen mirror promoted to TD-362; #27 and #29 judged rightly in the lane, #28 (and TD-306, TD-210, which the lint missed) sprint-grade, with a proposed fix for `wat_lint`'s word-keyed classifier; `decisions.md` records #28's person-only `micro_stall`; code-health reading at 161f11e (`--full`, no reading worse; the third accept of `big` is TD-361); the Open Items Index regenerated — 112 open of 359, every pointer diffed against the register.
+- **Guard: the near-line check** (`halatuju-web/scripts/bundle-budget.js`, `NEAR_LINE_KB` 0.15 kB). A dev-box `npm run bundle-budget` now FAILS when any budgeted route, or the median, has less than 0.15 kB of room under its line, because the deploy gate's build reads ~0.06 kB heavier; the gate passes `--gate` (`cloudbuild.yaml`) and only prints it. A ratchet: raise to 0.25 when TD-344 frees `/scholarship/apply` (0.189 kB of room today) and `/scholarship/application` (0.179). Five tests in `bundleBudgetReader.test.ts`, bitten.
+
 ## TD-349 — an embargoed decline can no longer reach the student with no email - 2026-10-06
 
 Fix, api + web (cockpit). No migration, no model change. Built locally, NOT deployed. Two rounds:

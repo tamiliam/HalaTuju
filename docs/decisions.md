@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## A person-only spending category, `micro_stall`; and a person may mark a shop "checked, still unknown" — request #28, 2026-10-06 (recorded at the Consolidation Review)
+
+**Decision:** `micro_stall` ("Micro stall – no online info") is a real spending category that ONLY A
+PERSON assigns, after looking a shop up and finding nothing online. It is in `CATEGORY_CODES` and
+`SPEND_CATEGORY_CHOICES` but not in `AI_VOCABULARY`, and no keyword rule names it — the second
+person-only code after `transfer` ("`transfer` is unreachable from the model…", Spending S3,
+2026-09-10), for the same kind of reason: a name alone cannot tell the model that a shop has no
+online presence. A person may also store `unsorted` deliberately through the existing correction
+(`decided_by='owner'`): the shop leaves the "to check" queue and its money stays unplaced, shown as
+Not categorised. `PROMPT_VERSION` did not change, because the model's vocabulary did not.
+
+**Alternatives considered:** "Other" and "Flagged for review" — both rejected by the organisation:
+"Other" is the absence of a category (the donut entry, 2026-09-10), and "Flagged" is a step in a
+workflow, not what was bought. Letting the model answer it — refused for the reason above.
+
+**Why it is recorded here, at the review and not at the change:** it shipped in the small-change
+lane on 2026-10-06 with no entry, and it quietly moved the arithmetic of two standing ones. The
+Overview server now sends TWELVE category codes, not the eleven "'Not yet sorted' is hidden at zero"
+(2026-09-18) counts, so its legend reads eleven rows normally and twelve when something is unfiled;
+and the stored codes are eleven, not the ten "a category outside the ten is discarded" (Spending
+S3) counts — but what the model may answer is unchanged, because the eleventh is the person's.
+Neither rule's substance changed: person-marked `unsorted` money is
+still listed, so "money nobody has filed must not be silent" holds.
+
+**Trade-offs:** the web held its own hand-written list of the codes (`OverviewSections.tsx`,
+`CATEGORY_CODES`) and filtered out any code not on it — the new category's money would have vanished
+from the Overview chart without a sound. `spendCategoryDrift.test.ts` pins that list to the model
+now; the general blind spot (a mirror the guard cannot see) is TD-362.
+
+**Revisit if:** `micro_stall` comes to carry a large share of the spend (it is then hiding a category
+worth naming), or the sorter gains a lookup that can see a shop's online presence.
+
 ## Every way out of the decline embargo sends before it unmasks; a reopen refuses an embargoed decline — cancel it instead — 2026-10-06 (TD-349, lead decision after the adversarial review)
 
 **The rule.** While a decline's email is embargoed, the pending markers (`pending_rejection_category`,

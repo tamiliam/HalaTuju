@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-06 | 161f11e | 90 | 43 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 13 | 112 | 0 | 0 | ok | ok |
 | 2026-10-06 | 538c82f | 90 | 43 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 12 | 105 | 0 | 0 | ok | ok |
 | 2026-10-05 | 7ab5d43 | 90 | 44 | officerCockpit.ts 33 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 12 | 100 | 0 | 0 | ok | ok |
 | 2026-10-05 | 5d285ae | 90 | 44 | officerCockpit.ts 33 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 13 | 99 | 0 | - | - | ok |
@@ -86,7 +87,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-06, 538c82f, window 2026-07-08 onward)
+## Latest run (2026-10-06, 161f11e, window 2026-07-08 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -94,7 +95,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/views.py` | 13 | 2429 | 31.6 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 18 | 1650 | 29.7 |
 | `halatuju_api/apps/scholarship/vision.py` | 9 | 2285 | 20.6 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 11 | 1354 | 14.9 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 12 | 1351 | 16.2 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1218 | 13.4 |
 | `halatuju_api/apps/courses/views_admin.py` | 10 | 1223 | 12.2 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 11 | 990 | 10.9 |
@@ -103,7 +104,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/pathway_engine.py` | 10 | 633 | 6.3 |
 
 ### Fix ratio
-- 251 fix / 327 feat commits since 2026-07-08
+- 249 fix / 326 feat commits since 2026-07-08
 
 ### Files over 1000 lines
 - `2429  halatuju_api/apps/scholarship/views.py`
@@ -113,7 +114,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1384  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1370  halatuju-web/src/app/profile/page.tsx`
-- `1354  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
+- `1351  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1223  halatuju_api/apps/courses/views_admin.py`
 - `1218  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1204  halatuju_api/apps/scholarship/serializers.py`
@@ -163,35 +164,36 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Front-end rules mirrored from the backend with no drift test
-- 47 of 50 mirror claims in src/lib name a drift test
+- 48 of 51 mirror claims in src/lib name a drift test
 - halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
 - halatuju-web/src/lib/incomeWizard.ts:98  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 28 of 225 web test files read source text (signals: readFileSync, apiSource); drift 15 (*Drift.test.ts, counted apart)
+- 30 of 226 web test files read source text (signals: readFileSync, apiSource); drift 16 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 351 entries have a defining line; 105 carry no resolution marker on it
+- 359 entries have a defining line; 112 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
-- line 1281: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1303: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1320: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1609: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6094: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6408: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
-- line 6422: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money — RULED 2026-10-04 (owner): the flat RM200 default STAYS until the FIRST
-- line 6430: - **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals
-- line 6443: - **TD-349 (raised 2026-10-05 by the one-application-per-organisation sprint's adversarial review, finding 10) - embargo, student-visible, pre-existin
-- line 6448: - **TD-354 (raised 2026-10-05 by the same review, finding 8) - low, student-visible: the "This application is closed" card offers "See programmes that
+- line 1285: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1307: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1324: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1613: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 6098: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6412: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6426: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money — RULED 2026-10-04 (owner): the flat RM200 default STAYS until the FIRST
+- line 6434: - **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals
+- line 6452: - **TD-354 (raised 2026-10-05 by the same review, finding 8) - low, student-visible: the "This application is closed" card offers "See programmes that
+- line 6454: - **TD-356 (raised 2026-10-06 by the TD-349 fix) - eligibility, pre-existing: `cancel_reopen` cannot tell an unmoved `interviewing` from a QC reopen's
+- line 6459: - **TD-361 (raised 2026-10-06 by the Consolidation Review's code-health reading — the third-consecutive-accept rule) - low, hygiene: `big` has been ac
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 7ab5d43
+- budgets no looser than at 538c82f
 
 ### tsc
 - 0 errors in 0 files
@@ -199,11 +201,39 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 5417
+- Total keys per locale: 5420
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-06 (161f11e, Consolidation Review) — no reading worse; the third accept of `big` is TD-361, not an accept
+
+**0 FAIL, 5 standing WARNs, `tsc` 0, `i18n` ok, `std` ok** (`--full`). It reads across TD-349's close,
+which deferred its own reading, and this review. `td_open` 105 → 112: TD-349 closed (−1), TD-355 to
+TD-359 raised by its fix and review (+5), TD-360 to TD-362 raised by this review (+3). `guard%` 12 → 13
+(28 of 225 → 30 of 226 files read text): `decisionReopenOffer.test.ts` (TD-349; reads `reopen.py`) and
+`bundleBudgetReader.test.ts` (this review's near-line check; reads `package.json` and `cloudbuild.yaml`
+to pin that only the gate passes `--gate`) — both wiring assertions, under the 15% line. **Accepted.**
+`drift` 15 → 16 is request #28's `spendCategoryDrift.test.ts`.
+
+**The third-consecutive-accept rule, WARN by WARN** (each read delta 0 at `7ab5d43`, `538c82f` and now):
+- `big` 17 — **it bites: TD-361.** No live ticket since TD-284 closed on 2026-10-04 ("a Phase 4b when
+  somebody wants one"), and the top two hotspots, `views.py` and `officerCockpit.ts`, are both on it.
+- `long` 15 — not a bare accept: the api `long_functions` ledger holds exactly these fifteen and the
+  deploy gate fails a sixteenth or a longer one. Enforced; no ticket.
+- `dup` 4 — decided permanent (fifth reading, H7; restated by H19), and the api `duplicated_names`
+  ledger holds the four. Enforced; no ticket.
+- `mirror` 3 — parked behind TD-262, which is open (an owner decision); the web `unguarded_mirrors`
+  ledger holds it at three. The ticket exists.
+- `fix%` 43 — a 90-day ratio, WARN-only by design since TD-284 closed; it is dated, not accepted: the
+  arc's question can be read again in December.
+
+**For the tool, not the code (workspace repo, not changed here).** Four of the five WARNs are standing
+decisions backed by a ledger or a ticket, so each review "accepts" them again and the rule then asks
+for a ticket that would duplicate one already closed. Proposed for `code_health.py`: a project
+declares a standing decision per WARN (reading, reason, ledger or TD id) and the tool prints it as
+DECIDED, so the third-accept rule bites only on an undecided WARN — as it did on `big` here.
 
 ### 2026-10-06 (538c82f, one-application-per-organisation close) — no reading worse; `td_open` +5 is seven raised, two closed
 

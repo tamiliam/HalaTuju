@@ -518,6 +518,12 @@ turns the gate red before the image is pushed.
   many routes are within 1 kB of it, and how many routes may each cross the budget before the
   median does. **Watch that last count** — at 0 the next byte on a median route turns the gate red
   for a reason unrelated to the change that added it (that was TD-300).
+- **A dev-box run is STRICTER than the gate** (Consolidation Review 2026-10-06): it FAILS when any
+  budgeted route, or the median, has less than `NEAR_LINE_KB` (0.15 kB) of room under its line,
+  because the gate's build reads ~0.06 kB heavier and the next en.json string moves every route.
+  The gate runs `npm run bundle-budget -- --gate` and only prints that finding. Take weight off;
+  never raise a line, and never pass `--gate` locally. The margin is a ratchet (0.25 when TD-344
+  frees `/scholarship/apply` and `/scholarship/application`).
 - ⛔ **No value import from `@supabase/supabase-js` in `src/`** — the three clients are AUTH-ONLY
   (`src/lib/supabaseAuthClient.ts`); one `createClient` puts 29 kB back on 73 routes.
   `import type` is fine. Enforced by `src/lib/__tests__/supabaseAuthClient.test.ts`.

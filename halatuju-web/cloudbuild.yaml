@@ -95,8 +95,12 @@ steps:
         #
         # ⚠ It is NOT the same build as the image's: this one runs here with the repo's .env
         # defaults, the image's runs inside the Dockerfile. It is read for BYTES, never shipped.
+        #
+        # `--gate` (Consolidation Review 2026-10-06): HERE a route within 0.25 kB of its line is
+        # printed and passes — the line is the budget. A dev-box run, without the flag, FAILS on it,
+        # because this build reads ~0.06 kB heavier than a local one. Never add the flag elsewhere.
         echo "--- npm run bundle-budget ---"
-        npm run bundle-budget
+        npm run bundle-budget -- --gate
 
   # ---------------------------------------------------------------- image (parallel with tests)
   - args:
