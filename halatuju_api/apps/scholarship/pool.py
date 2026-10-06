@@ -96,7 +96,9 @@ def derive_progress_state(application):
 
 
 # Closure reasons that mean the student LEFT before finishing (vs 'graduated'/'completed' = positive).
-_NEGATIVE_CLOSURES = ('withdrawn', 'lapsed', 'terminated')
+# 'stalled' (TD-352): an officer closed a case that stopped moving — for a funded student that is a
+# discontinuation, never 'on track'.
+_NEGATIVE_CLOSURES = ('withdrawn', 'lapsed', 'terminated', 'stalled')
 # The application statuses a portfolio (post-acceptance) badge applies to. A 'recommended' discovery
 # card returns None immediately (no query), so this is safe to compute across the whole pool grid.
 _PORTFOLIO_STATES = ('awarded', 'active', 'maintenance', 'closed', 'withdrawn')

@@ -28,8 +28,10 @@ class TestCloseGate(TestCase):
     def setUp(self):
         self.cohort = _cohort()
 
-    def test_close_requires_funded(self):
-        for i, st in enumerate(['recommended', 'awarded', 'interviewed', 'closed', 'rejected']):
+    def test_close_refused_from_a_finished_status(self):
+        # TD-352 widened the close to every in-play status (test_close_stalled.py); a FINISHED
+        # application still cannot be closed (again).
+        for i, st in enumerate(['closed', 'rejected', 'withdrawn', 'expired']):
             app = _app(self.cohort, status=st, suffix=f'g{i}')
             with self.assertRaises(ClosureError) as ctx:
                 closure.close_application(app, closure_reason='graduated')

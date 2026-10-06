@@ -442,20 +442,19 @@ class ScholarshipApplication(models.Model):
         help_text="The rejecting admin's reason, recorded verbatim (bucket 'incomplete'); internal, never emailed",
     )
 
-    # Closure bucket — WHY a funded application reached status='closed' (post-award lifecycle).
-    # 'graduated'/'completed' are positive (programme finished vs contractual support period fulfilled);
-    # 'withdrawn'/'lapsed'/'terminated' are negative. Set at the MANUAL close (Sprint 6). Blank otherwise.
+    # Closure bucket — WHY an application reached status='closed' (manual close; closure.py has the
+    # table by stage). Positive: 'graduated'/'completed'; negative: 'withdrawn'/'lapsed'/'terminated'/'stalled'.
     CLOSURE_REASONS = [
         ('graduated', 'Graduated — completed the programme'),
         ('completed', 'Completed the contractual support period'),
         ('withdrawn', 'Withdrawn by the student'),
         ('lapsed', 'Lapsed — support stopped (fell away)'),
         ('terminated', 'Terminated for cause'),
+        ('stalled', 'No movement — closed by an officer'),
     ]
     closure_reason = models.CharField(
         max_length=20, choices=CLOSURE_REASONS, blank=True, default='',
-        help_text="Why the application reached status='closed'; blank unless status='closed'",
-    )
+        help_text="Why the application reached status='closed'; blank unless status='closed'")
     # Post-award S6: the manual-close audit stamp (mirrors rejected_at/rejected_by). Set when
     # an admin closes a funded application; null/blank otherwise.
     closed_at = models.DateTimeField(null=True, blank=True)

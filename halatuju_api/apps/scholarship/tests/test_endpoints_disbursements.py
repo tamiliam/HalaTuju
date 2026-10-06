@@ -273,10 +273,12 @@ class TestCloseApplication(_FundedCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'active')
 
-    def test_a_case_that_was_never_funded_cannot_be_closed_here(self):
-        pooled = make_application('recommended', cohort=self.cohort, reviewer=self.reviewer)
-        r = self.client.post(f'{API}applications/{pooled.id}/close/',
+    def test_a_finished_case_cannot_be_closed_here(self):
+        # TD-352: a never-funded case in play CAN now be closed (test_close_stalled.py); a
+        # finished one still cannot.
+        declined = make_application('rejected', cohort=self.cohort, reviewer=self.reviewer)
+        r = self.client.post(f'{API}applications/{declined.id}/close/',
                              {'closure_reason': 'withdrawn'}, format='json')
         self.assertEqual((r.status_code, r.json()['error']), (400, 'not_closeable'))
-        pooled.refresh_from_db()
-        self.assertEqual(pooled.status, 'recommended')
+        declined.refresh_from_db()
+        self.assertEqual(declined.status, 'rejected')

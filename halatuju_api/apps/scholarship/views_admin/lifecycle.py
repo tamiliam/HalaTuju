@@ -135,9 +135,11 @@ class AdminDisbursementActionView(_AdminBase):
 
 
 class AdminCloseApplicationView(_AdminBase):
-    """Post-award S6: POST .../applications/<pk>/close/ {closure_reason} — manually close a
-    funded application (active/maintenance) with a reason (graduated/completed/withdrawn/
-    lapsed/terminated). Reviewer-gated + access-scoped. Terminal. Returns the refreshed detail."""
+    """Post-award S6, widened by TD-352: POST .../applications/<pk>/close/ {closure_reason} —
+    manually close an application from ANY in-play status, with a reason that fits the stage
+    (``closure.close_application`` holds the reasons-by-stage table and the sponsorship refusal).
+    Reviewer-gated + access-scoped. Terminal. Returns the refreshed detail; a refusal answers 400
+    ``{error: code}`` — not_closeable / bad_reason / reason_not_allowed / sponsorship_open."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
