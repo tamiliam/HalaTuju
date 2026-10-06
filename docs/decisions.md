@@ -182,6 +182,14 @@ stalled in-process application blocking every later round), or a status is added
 **Owner ruling 2026-10-06 on TD-353:** on hold until a second organisation joins the platform. Item
 1a stands as built; the question is re-asked when that organisation is onboarded.
 
+**Owner ruling 2026-10-06 on TD-352:** a stalled in-process application is released by an OFFICER
+closing it, not by a clock. The student's application page must say that an application in process
+stops a new one until it is closed. An automatic age limit is not ruled out, only deferred.
+
+**Owner ruling 2026-10-06 on TD-347 (bursary agreement, before `BURSARY_AGREEMENT_ENABLED`):** when
+a parent call that held signing is recorded, the accept clock is RE-ARMED with a fresh full window;
+it is not paused and extended. The email that reopens signing states the new deadline.
+
 ## The parent's consent: reasonable, RECORDED steps — not fraud prevention — owner, request #26, 2026-10-05
 
 **The owner, in their words:** "We are not dealing with a potential fraud. We only want the parent's
