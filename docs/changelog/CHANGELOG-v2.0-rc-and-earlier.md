@@ -1,6 +1,8 @@
 # Changelog — v2.0-rc and earlier
 
-Moved here verbatim from the root `CHANGELOG.md` at the v3.0.0 release cut (2026-10-06).
+Moved here from the root `CHANGELOG.md` at the v3.0.0 release cut (2026-10-06), verbatim except that
+paths to retrospectives and archived documents were rewritten to their new folders
+(`docs/retrospectives/`, `docs/releases/`, `docs/archive/`).
 Newer entries: [../../CHANGELOG.md](../../CHANGELOG.md).
 
 ## [2.0-rc] — 2026-03-20

@@ -1,7 +1,7 @@
 # HalaTuju v3.0.0 — Release Notes
 
 **Date:** 2026-10-06 · **Tag:** `v3.0.0` (cut from `main` at `90812950`) · **Previous release:** `v2.0-rc` (2026-03-20)
-**Live at:** [halatuju.xyz](https://halatuju.xyz) · **Commits since v2.0-rc:** 2,271
+**Live at:** [halatuju.xyz](https://halatuju.xyz) · **Commits since v2.0-rc:** 2,268
 
 Written for the owner and for whoever works on HalaTuju next. Every change is described in full in
 [`CHANGELOG.md`](../../CHANGELOG.md); the reasons behind the choices are in
@@ -128,7 +128,7 @@ the code was put on a diet and a set of standards now refuses any deploy that br
 - Nineteen code-health sprints (H1–H19): the tests run before every deploy; code standards are tests
   inside the gate (file and function size, duplication, skips, suppressions, mirrors, the app
   boundary, the test factory); a first-load JS budget per route and a query budget per page.
-- The four largest files became packages (`views_admin`, `models`, `services`, `emails`,
+- The five largest files became packages (`views_admin`, `models`, `services`, `emails`,
   `income_engine`); a test factory that builds only reachable states; 59 rendered cockpit tests.
 - The debt register was read end to end and is kept in working order (see Known Issues).
 - Production builds on Node 24; the api image installs an exact lock file.
@@ -209,10 +209,17 @@ The next migration numbers are **scholarship 0170** and **courses 0077**.
 - **105 api environment variables were added** since v2.0-rc (19 then, 124 now). The full list, with
   what each means, is in `halatuju_api/CLAUDE.md` → "Environment variables". Every new feature flag
   defaults to OFF.
-- **Added and then removed in this period — must NOT be set:** `GOOGLE_MEET_SA_JSON` (the Google key,
-  deleted 2026-10-04; setting it now does nothing), `VIRCLE_ACTIVATION_ENABLED` / `_EMAIL` / `_BCC` /
-  `_FOLDER` (the 48-hour Vircle chaser, retired 2026-09-11), `FOUNDATION_SIGNATORY_NAME` / `_TITLE` /
-  `_NRIC` (the signatory now lives on the agreement template).
+- **Added and then removed in this period — leave unset:** `GOOGLE_MEET_SA_JSON` (the Google key,
+  deleted 2026-10-04; setting it now does nothing — its keyless replacement is
+  `GOOGLE_DWD_SERVICE_ACCOUNT`, the delegation account's email, not a secret);
+  `VIRCLE_ACTIVATION_ENABLED` / `_EMAIL` / `_BCC` / `_FOLDER` (the 48-hour Vircle chaser, retired
+  2026-09-11 — unset; inert, and the live service still carries `VIRCLE_ACTIVATION_ENABLED=1`
+  harmlessly); `FOUNDATION_SIGNATORY_NAME` / `_TITLE` / `_NRIC` (the signatory now lives on the
+  agreement template); `STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED`.
+- **One-shot flags — set, run the job, unset:** the cron doors take no arguments, so a scoped or
+  writing run is armed by an env var (`*_APP_IDS`, `*_APPLY`, `REEXTRACT_*`, `PARTNER_EMAIL_RESET_KINDS`,
+  `SEED_*`), the job is POSTed once, and the var is removed straight after. Left set, the next run
+  (or, for the seed, every deploy) repeats it. The list is in `halatuju_api/CLAUDE.md`.
 - **Never in production:** `SPONSOR_MOCK_DONATIONS_ENABLED` (it refuses to arm against a real
   database anyway). **Never set before TD-347 ships:** `BURSARY_AGREEMENT_ENABLED`.
 - New Google requirement: the runtime service account needs `roles/iam.serviceAccountTokenCreator` on
@@ -220,7 +227,7 @@ The next migration numbers are **scholarship 0170** and **courses 0077**.
 - Web: `NEXT_PUBLIC_APP_VERSION` is now stamped from the commit at build time.
 
 ### i18n keys
-32 English keys from v2.0-rc are gone (4,695 added; 746 → 5,409 per locale): 26 `dashboard.*` keys of
+32 English keys from v2.0-rc are gone (4,695 added; 746 → 5,409 per locale): 24 `dashboard.*` keys of
 the old dashboard (`allInstitutions`, `allLevels`, `allTypes`, `courses`, `eligibleCourses`,
 `insightsLevels`, `insightsMerit`, `insightsTopFields`, `kolej`, `levelAsasi`, `levelDiploma`,
 `levelIjazah`, `levelSijil`, `levelSijilLanjutan`, `otherEligible`, `polytechnic`, `rankedCourses`,
@@ -459,6 +466,12 @@ Measured on the release branch on 2026-10-06 with the deploy gates' own command 
 ## Upgrade checklist (operator)
 
 1. Production `django_migrations` matches [`v3.0.0-migrations.md`](v3.0.0-migrations.md) — no gap, no row without its schema.
-2. `GOOGLE_MEET_SA_JSON`, `VIRCLE_ACTIVATION_*` and `FOUNDATION_SIGNATORY_*` are not set; `SPONSOR_MOCK_DONATIONS_ENABLED` is not set; `BURSARY_AGREEMENT_ENABLED` is not set.
+2. `GOOGLE_MEET_SA_JSON` and `FOUNDATION_SIGNATORY_*` are not set (`VIRCLE_ACTIVATION_ENABLED=1` is inert; unset it at leisure); no one-shot flag is left set; `SPONSOR_MOCK_DONATIONS_ENABLED` is not set; `BURSARY_AGREEMENT_ENABLED` is not set.
 3. The keyless Google path's IAM grant is in place and the alert policy exists (see the security review).
-4. The tag: `git tag -a v3.0.0 -m "Release v3.0.0 — the bursary platform"` and `git push origin v3.0.0` (the owner's yes; a tag on its own deploys nothing).
+4. **Merging this release branch deploys BOTH services**, with no behaviour change: the api build is
+   triggered by a docstring path in `award.py`, a comment in `test_code_standards.py`, one string in
+   `code-standards.json` and a comment in `cloudbuild.yaml`; the web build by the version in
+   `package.json` / `package-lock.json` and a comment in `cloudbuild.yaml`. It needs the owner's yes, and
+   both builds must be confirmed afterwards (SHA in `gcloud builds list`, status SUCCESS, and
+   `status.latestReadyRevisionName` on each service).
+5. The tag: `git tag -a v3.0.0 -m "Release v3.0.0 — the bursary platform"` and `git push origin v3.0.0` (the owner's yes; a tag on its own deploys nothing).

@@ -53,9 +53,10 @@ The 2026-06-11 audit checked that a student could not **read** another student's
 
 ## Release review — v3.0.0, 2026-10-06
 The release workflow's security and access review (`Settings/_workflows/release.md` step 3). A
-read of the code, the settings and this repository's records — **no production query was run for
-it**; the dated facts below were measured by the sprints that cite them. Release notes:
-`docs/releases/release-notes-v3.0.0.md`.
+read of the code, the settings and this repository's records, plus one dated read-only measurement
+of the database by the lead (below). Everything else here is **what the repository records**, dated
+by the sprint that recorded it — not a fresh reading of production. Check the list at the end of this
+section before relying on any of it. Release notes: `docs/releases/release-notes-v3.0.0.md`.
 
 **Roles** (`PartnerAdmin.role`, `apps/courses/models.py`; matrix `docs/scholarship/role-matrix.md`):
 - `super` — the platform owner; everything, across organisations; the only role on the platform
@@ -83,23 +84,30 @@ it**; the dated facts below were measured by the sprints that cite them. Release
   (`request.auth_sub`), never through an alias (TD-254/TD-259, 2026-09-19).
 
 **RLS state:**
-- RLS is on for every `public` table; since 2026-09-16 the event trigger `rls_auto_enable` switches it
-  on at creation (it adds no policy). Scholarship and sponsor tables are deny-all to the public key
-  with an explicit `service_role` policy.
-- The four advisory tables became **read-only to students** on 2026-10-05 (the write-integrity
-  correction above). **Pending:** nothing is waiting to be applied; the restore script exists only as
-  an undo. The re-audit query in the appendix must read `cmd`, not only `qual`.
+- **Measured 2026-10-06 (the lead, read-only):** 94 tables in `public`, RLS on for all 94; 86 policies
+  on 79 tables; 60 of them `service_role` policies. The ONLY policies for the `authenticated` role are
+  five RESTRICTIVE "Block anonymous users" policies (`admission_outcomes`, `api_student_profiles`,
+  `email_verifications`, `generated_reports`, `saved_courses`; qual
+  `coalesce((auth.jwt()->>'is_anonymous')::boolean, false) is false`). **No permissive write policy for
+  `authenticated` or `anon` remains.**
+- The repository records the event trigger `rls_auto_enable` (since 2026-09-16) switching RLS on for
+  every new table at creation; it adds no policy. Scholarship and sponsor tables are recorded as
+  deny-all to the public key with an explicit `service_role` policy.
+- The four advisory tables' eight student write policies were dropped on 2026-10-05 (the
+  write-integrity correction above); the restore script is only an undo. The re-audit query in the
+  appendix must read `cmd`, not only `qual`.
 
 **Keyless Google (TD-125, TD-329):**
-- Meet, Drive and Sheets act as `MEET_ORGANISER_EMAIL` through domain-wide delegation. The api's
-  runtime service account signs the delegation assertion as `halatuju-meet@…` through the IAM
-  Credentials API (`GOOGLE_DWD_SERVICE_ACCOUNT`); it holds `roles/iam.serviceAccountTokenCreator` on
-  that account.
-- The user-managed key was **deleted 2026-10-04**; only Google's two system-managed keys remain; the
-  env var `GOOGLE_MEET_SA_JSON` and the code path are gone.
-- **The alert:** policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
-  (`alertPolicies/10163327245873580870`) emails tamiliam@gmail.com, at most once an hour, when a
-  `severity>=WARNING` log line from those paths appears. It works because logs carry a real
+- Meet, Drive and Sheets act as `MEET_ORGANISER_EMAIL` through domain-wide delegation. By design
+  (`apps/scholarship/google_dwd.py`) the api's runtime service account signs the delegation assertion
+  as `halatuju-meet@…` through the IAM Credentials API (`GOOGLE_DWD_SERVICE_ACCOUNT`), which needs
+  `roles/iam.serviceAccountTokenCreator` on that account.
+- Recorded 2026-10-04 (TD-329): the user-managed key was deleted, leaving only Google's two
+  system-managed keys; the env var `GOOGLE_MEET_SA_JSON` and the code path are gone (the code half is
+  pinned by `test_google_dwd.test_the_key_path_is_gone`).
+- Recorded 2026-10-04: the alert policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
+  (`alertPolicies/10163327245873580870`) emails tamiliam@gmail.com, at most once an hour, on a
+  `severity>=WARNING` log line from those paths. It can only fire because logs carry a real
   `severity` since TD-290 (2026-10-03).
 
 **Secrets inventory (names only; values live in Cloud Run env vars or a provider's dashboard):**
@@ -129,6 +137,17 @@ one-application rule), TD-367 (a payment run can pay a closed student), TD-365 (
 race), TD-336 and TD-228 (organisation scope gaps above), TD-058 (no Django bookkeeping tables in
 production). The standing recommendation stands: an independent penetration test before the user
 base grows.
+
+**Verify live before relying on this** (all read-only; `--account tamiliam@gmail.com --project
+gen-lang-client-0871147736` on every gcloud call):
+1. `SELECT tablename, policyname, roles, cmd, permissive FROM pg_policies WHERE schemaname='public'
+   ORDER BY cmd, tablename;` — no permissive INSERT/UPDATE/DELETE/ALL policy for `authenticated` or `anon`.
+2. Supabase Security Advisor (`get_advisors(project_id="pbrrlyoyyiftckqvzvvo", type="security")`) — 0 errors.
+3. `SELECT evtenabled FROM pg_event_trigger WHERE evtname = 'rls_auto_enable';` — `'O'`.
+4. `gcloud iam service-accounts keys list --iam-account halatuju-meet@gen-lang-client-0871147736.iam.gserviceaccount.com --managed-by user`
+   — empty.
+5. `gcloud alpha monitoring policies describe projects/gen-lang-client-0871147736/alertPolicies/10163327245873580870`
+   — `enabled: true`, and its notification channel still points at tamiliam@gmail.com.
 
 ## ⚠️ Caveats (state these to anyone who asks)
 - This is a **static/config audit, not a penetration test.** Before scaling the user base, commission an **independent pen-test** — for government-adjacent PII (B40/NRIC/STR) it's the right assurance layer and it exercises the *running* system in ways a code review can't.

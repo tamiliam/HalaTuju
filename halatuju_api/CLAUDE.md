@@ -151,6 +151,15 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    every deploy (`SyncReleaseJob`) but NOT its env: mirror an env change onto the job by hand.
 9. Scheduled work runs as **Cloud Scheduler → `POST /api/v1/internal/cron/<job>/`** with
    `X-Cron-Secret` (`CronRunView.JOBS`); a POST needs a body (`-d '{}'`) or the load balancer answers 411.
+10. **When more than one agent is in the checkout:** declare the files you own in
+   `AGENT-TERRITORY.log` (gitignored); stage explicit paths, never `git add -A`; build in a
+   `git worktree` and push from it with `git push origin HEAD:main` — never check out `main` there.
+   ⚠ A `node_modules` JUNCTION in a worktree must be removed with `[IO.Directory]::Delete('<path>')`
+   BEFORE `git worktree remove`: a recursive delete walks into the real `node_modules` (happened 2026-10-05).
+
+**Where documents go:** a new retrospective in `docs/retrospectives/`, release notes in
+`docs/releases/`, sprint and incident history in `docs/sprint-history.md`, a domain rule in
+`docs/domain-rules.md` — this file keeps current state only.
 
 ### Environment variables (Cloud Run `halatuju-api`)
 
@@ -202,7 +211,7 @@ Defaults live in `halatuju/settings/base.py` and `production.py`; each has a com
 | `PARTNER_TEMP_PASSWORD_TTL_DAYS` | Staff temporary passwords |
 | `REQUESTS_ENABLED`, `REQUESTS_QUOTE_MARGIN_PCT`, `BILLING_USAGE_ENABLED` | Requests space; the usage screen (the meter always runs) |
 | `PARTNER_EMAIL_RESET_KINDS` | Set, run the seed job, UNSET. Several kinds need `--update-env-vars "^@^PARTNER_EMAIL_RESET_KINDS=a,b"` |
-| `PROFILE_REFRESH_APP_IDS`, `AWARD_EMAIL_APP_IDS`, `VIRCLE_EMAIL_APP_IDS`, `SIGN_INVITE_APP_IDS`, `SEED_SPONSOR_ID` / `SEED_AWARD_APP_IDS`, `PATHWAY_REPAIR_APP_IDS`, `INCOME_DOC_TAG_APPLY`, `REQUIREMENTS_SNAPSHOT_APPLY`, `REEXTRACT_DOC_TYPE`, `REEXTRACT_PASS` | One-shot scopes for argless cron jobs — set, run, unset |
+| `PROFILE_REFRESH_APP_IDS`, `AWARD_EMAIL_APP_IDS`, `VIRCLE_EMAIL_APP_IDS`, `SIGN_INVITE_APP_IDS`, `SEED_SPONSOR_ID` / `SEED_AWARD_APP_IDS`, `PATHWAY_REPAIR_APP_IDS`, `INCOME_DOC_TAG_APPLY`, `REQUIREMENTS_SNAPSHOT_APPLY`, `BACKFILL_VERDICT_VERSION_APPLY`, `BACKFILL_CONFIRMED_PROFILES_APPLY`, `REEXTRACT_DOC_TYPE`, `REEXTRACT_PASS` | One-shot scopes for argless cron jobs — set, run, unset |
 
 Local-only (never on Cloud Run): `UPDATE_EMAIL_GOLDEN` (⛔ never set — see Live rules),
 `HALATUJU_API_URL` / `HALATUJU_ADMIN_TOKEN` (`record_request_analysis`).
@@ -228,6 +237,8 @@ Local-only (never on Cloud Run): `UPDATE_EMAIL_GOLDEN` (⛔ never set — see Li
   **The four advisory tables are READ-only to students through the public key since 2026-10-05** (eight
   write policies dropped; undo `docs/security/2026-10-05-restore-student-write-policies.sql`); every write
   goes through Django. Run the Supabase Security Advisor after any migration; 0 errors before deploy.
+  New-table policy templates (written after an earlier RLS incident): `halatuju_api/docs/incident-001-rls-disabled.md`.
+  Check the trigger: `select evtenabled from pg_event_trigger where evtname = 'rls_auto_enable';` — `'O'` = on.
 - **Google Workspace is keyless** (TD-125/TD-329): no service-account key exists. If the path breaks,
   alert policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
   (`alertPolicies/10163327245873580870`) emails tamiliam@gmail.com; recovery = the IAM grant
@@ -297,8 +308,9 @@ npm run gates                # ⬅ ONE WORD, runs all four below in order — `t
                              # warnings below still apply; this only saves you typing them.
 
 # ── or the same four by hand ──
-npx jest --maxWorkers=2      # --maxWorkers=2 is required: a full run OOMs on 8 GB and reports
-                             # worker contention as test FAILURES (exit 253)
+npx jest --maxWorkers=2      # --maxWorkers=2 was required on the old 8 GB box (a full run OOMed and
+                             # reported worker contention as FAILURES, exit 253). The dev box has
+                             # 32 GB since 2026-08-02, so that note is stale; the flag is harmless.
 npx tsc --noEmit --incremental false
                              # types. ⚠ 0 ERRORS REQUIRED since 2026-09-18 (TD-221 closed: the 24
                              # old test-file errors are gone, so ANY error is yours). Keep
@@ -859,8 +871,8 @@ timeout raised to 300 s for it) — the commands, their order and what each may 
 Each was learned the hard way; the story is in `docs/sprint-history.md` and `docs/lessons.md`.
 
 - **Never raise a budget, a floor or a ledger** — split the file first, in its own commit, moves only.
-  ⚠ `serializers.py`, `serializers_admin.py`, `vision.py`, `pathway_engine.py` and `models/applications.py`
-  sit at or near their ceilings: grep both `code-standards.json` files before planning.
+  ⚠ The tight ones: `pathway_engine.py` (0 lines of room) and `models/applications.py` (1); `serializers.py`
+  and `serializers_admin.py` are close. Grep both `code-standards.json` files before planning.
 - **The standing rule (owner, 2026-09-19):** a feature sprint does not grow a file waiting to be split —
   it runs that file's split first. The split table is "Which Phase-4 sprint owns which file" in
   `docs/plans/2026-09-18-code-health-roadmap.md`; the ratchet binds regardless.
