@@ -56,7 +56,7 @@ export function PostAwardPanels({
   closeReason: ClosureReason | ''
   setCloseReason: Dispatch<SetStateAction<ClosureReason | ''>>
   closeMsg: string
-  doClose: () => void
+  doClose: () => void | Promise<void>
 }) {
   // TD-352 review round 1: closing is final, so the button asks twice (the org-reject's pattern
   // and its existing "Are you sure?" / "Go back" strings — no new catalogue weight).
@@ -329,7 +329,8 @@ export function PostAwardPanels({
                     className="rounded-lg border px-3 py-1.5 text-sm text-ground-600 hover:bg-ground-50">
                     {t('admin.scholarship.orgReject.back')}
                   </button>
-                  <button type="button" onClick={() => { setConfirmClose(false); doClose() }}
+                  {/* Open until the request settles, so the loading label shows (review round 2). */}
+                  <button type="button" onClick={async () => { await doClose(); setConfirmClose(false) }}
                     disabled={busy === 'close' || !closeReason}
                     className="rounded-lg bg-critical-fill px-3 py-1.5 text-sm font-medium text-critical-fill-ink hover:bg-critical-700 disabled:opacity-50">
                     {busy === 'close' ? t('common.loading') : t('admin.closure.close')}

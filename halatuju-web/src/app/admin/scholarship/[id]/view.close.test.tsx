@@ -84,6 +84,26 @@ describe('closing is final — the button asks twice (review round 1, item 7)', 
   })
 })
 
+describe('the confirm row stays until the request settles (review round 2)', () => {
+  it('shows the loading label while the close is in flight, then goes', async () => {
+    const { api, app } = renderCockpit({ role: 'super', stage: 'interviewing' })
+    await loaded()
+    let settle: (v: unknown) => void = () => {}
+    api.closeApplication.mockReturnValue(new Promise((r) => { settle = r }) as never)
+    fireEvent.change(within(card()).getByRole('combobox'), { target: { value: 'stalled' } })
+    fireEvent.click(within(card()).getByRole('button', { name: 'admin.closure.close' }))
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId('close-confirm'))
+        .getByRole('button', { name: 'admin.closure.close' }))
+    })
+    const ask = screen.getByTestId('close-confirm')
+    expect(within(ask).getByText('common.loading')).toBeTruthy()
+    await act(async () => { settle({ ...app, status: 'closed', closure_reason: 'stalled' }) })
+    expect(screen.queryByTestId('close-confirm')).toBeNull()
+    expect(screen.getByText('admin.closure.reason.stalled')).toBeTruthy()
+  })
+})
+
 describe('who — a pre-award close is super / org_admin only (the api answers 403 to anyone else)', () => {
   it('an org_admin sees the pre-award Close card', async () => {
     renderCockpit({ role: 'org_admin', stage: 'recommended' })
