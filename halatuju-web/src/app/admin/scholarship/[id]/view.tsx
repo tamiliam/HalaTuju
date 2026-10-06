@@ -112,6 +112,7 @@ import { OrgRejectPanel } from './view/OrgRejectPanel'
 import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
 import { PostAwardPanels } from './view/PostAwardPanels'
+import { closeErrorKey } from '@/lib/closeOffer'
 
 
 /**
@@ -317,7 +318,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     } finally { setBusy('') }
   }
 
-  // Post-award S6: manual closure.
+  // Manual closure (post-award S6; any in-play status since TD-352).
   const [closeReason, setCloseReason] = useState<ClosureReason | ''>('')
   const [closeMsg, setCloseMsg] = useState('')
   const doClose = async () => {
@@ -327,8 +328,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       setApp(await closeApplication(id, closeReason, { token }))
       setCloseReason('')
     } catch (e) {
-      const code = (e as Error)?.message
-      setCloseMsg(t(`admin.closure.error.${code === 'bad_reason' || code === 'not_closeable' ? code : 'generic'}`))
+      setCloseMsg(t(closeErrorKey((e as Error)?.message)))
     } finally { setBusy('') }
   }
 

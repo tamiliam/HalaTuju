@@ -13,7 +13,7 @@ import type { ApiOptions } from './client'
 import type { AdminScholarshipDetail } from './applications'
 
 export type MaintenanceSubstate = 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
-export type ClosureReason = 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
+export type ClosureReason = 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated' | 'stalled'
 
 /** Post-award S4: one disbursement tranche. Admin-facing — funder link by id only,
  *  never a sponsor identity (anonymity holds). */
@@ -109,7 +109,7 @@ export async function setMaintenanceSubstate(
   )
 }
 
-// ── Post-award S6: manual closure ──
+// ── Manual closure (post-award S6; from any in-play status since TD-352, see lib/closeOffer) ──
 export async function closeApplication(
   id: number,
   closureReason: ClosureReason,

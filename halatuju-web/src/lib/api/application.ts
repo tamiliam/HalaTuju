@@ -78,7 +78,7 @@ export interface ScholarshipApplication {
   /** Post-award S5: operational sub-state within status='maintenance' (e.g. 'on_hold'). */
   maintenance_substate: 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
   /** Post-award S6: closure bucket — '' unless status='closed'. */
-  closure_reason: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
+  closure_reason: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated' | 'stalled'
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string

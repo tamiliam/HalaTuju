@@ -3865,6 +3865,7 @@
     "closure": {
       "title": "Tutup fail",
       "note": "Penutupan adalah muktamad. Pilih sebab yang paling sesuai dengan cara sokongan berakhir.",
+      "notePreAward": "Pelajar boleh memohon semula pada pusingan akan datang. Dia akan dimaklumkan melalui e-mel.",
       "reasonLabel": "Sebab penutupan",
       "reasonUnset": "Pilih sebab…",
       "close": "Tutup fail",
@@ -3874,7 +3875,8 @@
         "completed": "Sokongan selesai",
         "withdrawn": "Ditarik balik",
         "lapsed": "Luput",
-        "terminated": "Ditamatkan"
+        "terminated": "Ditamatkan",
+        "stalled": "Tiada pergerakan"
       },
       "checklist": {
         "finalDisbursement": "Pembayaran akhir telah diselesaikan (tiada ansuran tertunggak).",
@@ -3883,7 +3885,8 @@
       },
       "error": {
         "bad_reason": "Pilih sebab penutupan yang sah.",
-        "not_closeable": "Hanya pelajar yang dibiayai (aktif atau penyelenggaraan) boleh ditutup.",
+        "not_closeable": "Permohonan ini telah pun selesai.",
+        "sponsorship_open": "Batalkan dahulu tawaran tajaan yang masih aktif.",
         "generic": "Tidak dapat menutup fail. Anda mungkin tiada kebenaran."
       }
     },

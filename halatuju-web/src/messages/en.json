@@ -3865,6 +3865,7 @@
     "closure": {
       "title": "Close the file",
       "note": "Closing is final. Choose the reason that best fits how the support ended.",
+      "notePreAward": "The student may apply again in a later round. She is emailed.",
       "reasonLabel": "Closure reason",
       "reasonUnset": "Choose a reason…",
       "close": "Close the file",
@@ -3874,7 +3875,8 @@
         "completed": "Support completed",
         "withdrawn": "Withdrawn",
         "lapsed": "Lapsed",
-        "terminated": "Terminated"
+        "terminated": "Terminated",
+        "stalled": "No movement"
       },
       "checklist": {
         "finalDisbursement": "Final disbursement settled (no tranche left pending).",
@@ -3883,7 +3885,8 @@
       },
       "error": {
         "bad_reason": "Choose a valid closure reason.",
-        "not_closeable": "Only a funded student (active or maintenance) can be closed.",
+        "not_closeable": "This application is already finished.",
+        "sponsorship_open": "Cancel the live sponsorship offer first.",
         "generic": "Could not close the file. You may not have permission."
       }
     },
