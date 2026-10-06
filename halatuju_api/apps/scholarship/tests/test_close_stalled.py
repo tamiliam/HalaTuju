@@ -651,3 +651,29 @@ class TestAPendingDeclineRefusesTheClose(TestCase):
                 app.refresh_from_db()
                 self.assertEqual(app.status, 'interviewing')
         _send.assert_not_called()
+
+
+class TestTheNewEmailTemplatesKeepParity(TestCase):
+    """The two TD-352 officer-close templates (stalled: CLOSED_BY_OFFICER_BODIES; withdrawn:
+    CLOSED_AT_REQUEST_BODIES): exactly en/ms/ta, each language carrying exactly the placeholders
+    the auto-expiry notice they sit beside carries, so `_send` fills every one and none is left
+    raw in a student's inbox; and ms/ta are translations, not copies of the English."""
+
+    @staticmethod
+    def _fields(text):
+        import string
+        return {f for _lit, f, _spec, _conv in string.Formatter().parse(text) if f}
+
+    def test_languages_and_placeholders(self):
+        from apps.scholarship import emails
+        expected = self._fields(emails.CLOSED_BODIES['en'])
+        self.assertEqual(expected, {'name', 'programme', 'link', 'help'})
+        for label, bodies in (('stalled', emails.CLOSED_BY_OFFICER_BODIES),
+                              ('withdrawn', emails.CLOSED_AT_REQUEST_BODIES)):
+            self.assertEqual(set(bodies), {'en', 'ms', 'ta'}, label)
+            self.assertEqual(set(bodies), set(emails.CLOSED_SUBJECTS), label)
+            for lang, body in bodies.items():
+                with self.subTest(template=label, lang=lang):
+                    self.assertEqual(self._fields(body), expected)
+                    if lang != 'en':
+                        self.assertNotEqual(body, bodies['en'])
