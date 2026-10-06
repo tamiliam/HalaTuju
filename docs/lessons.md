@@ -1286,3 +1286,21 @@ and the gate refused the push on a `subTest(marker=<datetime>)` that execnet can
 back to the controller — a transport error, not an assertion, so no local run could see it.
 **Rule:** before a push, run the gate's exact line (`python -m pytest -q -n auto -p no:cacheprovider`
 for the api); pass only strings and numbers to `subTest` / `parametrize` ids. (TD-352)
+
+## 2026-10-06 — re-check an approved analysis's premises when the build starts
+
+Request #30's approved analysis said the open intake had ZERO applications (the reason a new
+eligibility rule was "fair to switch on now"), and it accepted the request's "C- or better" — but by
+build time the intake had two applications, and SPM has no C- grade at all (C- is STPM). Both were
+true-looking facts copied forward from the request and a one-off count. **Rule:** at build start,
+re-run every COUNT the analysis relies on and check every domain term against the system's own
+vocabulary (here `GRADE_ORDER` / `SPM_GRADE_OPTIONS`); a term that does not exist in the data goes
+to the owner as a question before any code is written. (request #30)
+
+## 2026-10-06 — two sessions, one migration number: settle it before the ledger row
+
+Twice in one day two branches claimed the same `scholarship` migration number (0167, then 0168).
+Each took "the next free number" from its own base. **Rule:** when another session has an unpushed
+migration, agree by message which branch keeps the number BEFORE the owner is given any
+`django_migrations` insert; the other renumbers on rebase. A ledger row recorded under the wrong
+name is a production repair, a renamed file is not. (requests #28-#30, TD-352)
