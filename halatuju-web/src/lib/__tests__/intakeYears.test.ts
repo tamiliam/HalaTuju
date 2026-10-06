@@ -148,6 +148,37 @@ describe('the SPM C-or-better requirement is a TOTAL both ways', () => {
 })
 
 /**
+ * ⚠ A TYPO MUST NEVER LEAVE AS null (request #30 review). `Number('six')` is NaN, `JSON.stringify`
+ * sends NaN as null, and the API reads null as "untick" — so a typo in any box switched that rule
+ * OFF while the screen said Saved. The text typed is sent instead, and the server refuses it.
+ */
+describe('a box holding something that is not a number', () => {
+  const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
+    ({ ...EMPTY_REQUIREMENTS, ...over })
+  const wire = (over: Parameters<typeof draft>[0]) =>
+    JSON.parse(JSON.stringify(draftToRequirements(draft(over))))
+
+  it('reaches the server as the text typed, never as null', () => {
+    for (const typo of ['six', '6 credits', '6,0']) {
+      expect(wire({ credits: typo }).min_spm_credit_count).toBe(typo)
+    }
+    expect(wire({ pngk: '2,9' }).min_stpm_pngk).toBe('2,9')
+    expect(wire({ income: 'Infinity' }).income_ceiling).toBe('Infinity')
+  })
+
+  it('a typo in EITHER SPM box is forwarded for the B+ total, never summed', () => {
+    expect(wire({ aCount: '4', spmExtra: 'one' }).min_spm_bplus_count).toBe('one')
+    const r = wire({ aCount: 'four', spmExtra: '1' })
+    expect([r.min_spm_a_count, r.min_spm_bplus_count]).toEqual(['four', 'four'])
+  })
+
+  it('still reads padding and a whole-valued decimal as the number', () => {
+    expect(wire({ credits: ' 6 ' }).min_spm_credit_count).toBe(6)
+    expect(wire({ credits: '6.0' }).min_spm_credit_count).toBe(6)
+  })
+})
+
+/**
  * Where TODAY sits against a round's stated window (owner's option A, 2026-09-07).
  *
  * ⚠ THIS DECIDES NOTHING. The 2026-09-06 ruling stands — the window describes, a person presses

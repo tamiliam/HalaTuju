@@ -238,16 +238,59 @@ class TestTheAdminScreens(TestCase):
         c.refresh_from_db()
         self.assertEqual(c.min_spm_credit_count, 6)
 
-    def test_negative_or_non_numeric_is_refused_like_the_neighbours(self):
-        c = self._cohort(code='cr-bad', min_spm_credit_count=6)
-        for bad in (-1, 'six'):
-            with self.subTest(bad=bad):
-                r = self.client.patch(self._year(c), {'min_spm_credit_count': bad}, format='json')
-                self.assertEqual(r.status_code, 400)
-                self.assertEqual((r.data['code'], r.data['field']),
-                                 ('bad_requirement', 'min_spm_credit_count'))
+    def _refused(self, field, bad, kept):
+        c = self._cohort(**{field: kept})   # a fresh code per call (subtests share a transaction)
+        r = self.client.patch(self._year(c), {field: bad, 'name': 'Renamed'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual((r.data['code'], r.data['field']), ('bad_requirement', field))
         c.refresh_from_db()
-        self.assertEqual(c.min_spm_credit_count, 6)
+        self.assertEqual(getattr(c, field), kept)
+        self.assertNotEqual(c.name, 'Renamed')   # refused WHOLE: nothing else in the PATCH lands
+
+    def test_a_typo_the_screen_forwards_is_refused_and_the_rule_stays_on(self):
+        # ⚠ What the browser really sends for a typo since the request #30 review: the TEXT typed
+        # (`intakeYears.num`), not NaN-turned-null — which this endpoint would have read as
+        # "untick" and switched the rule off. The web half is `intakeYears.test.ts`.
+        for bad in ('six', '6 credits', '6,0', -1):
+            with self.subTest(bad=bad):
+                self._refused('min_spm_credit_count', bad, 6)
+
+    def test_a_COUNT_must_be_a_whole_number_and_never_a_boolean(self):
+        # `int(6.9)` is 6 and `int(True)` is 1: a different bar from the one sent, silently.
+        for field in ('min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count'):
+            for bad in (6.9, 0.5, True, False, '6.5'):
+                with self.subTest(field=field, bad=bad):
+                    self._refused(field, bad, 4)
+
+    def test_a_whole_valued_decimal_is_that_count(self):
+        c = self._cohort(code='cr-six-point-oh')
+        r = self.client.patch(self._year(c), {'min_spm_credit_count': 6.0, 'min_spm_a_count': 4.0,
+                                              'min_spm_bplus_count': '5'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        c.refresh_from_db()
+        self.assertEqual((c.min_spm_a_count, c.min_spm_bplus_count, c.min_spm_credit_count),
+                         (4, 5, 6))
+        self.assertIsInstance(c.min_spm_credit_count, int)
+
+    def test_the_FLOAT_requirements_keep_their_decimals_but_must_be_finite(self):
+        c = self._cohort(code='cr-floats')
+        r = self.client.patch(self._year(c), {'min_stpm_pngk': 2.95, 'min_merit_score': '80.5'},
+                              format='json')
+        self.assertEqual(r.status_code, 200)
+        c.refresh_from_db()
+        self.assertEqual((c.min_stpm_pngk, c.min_merit_score), (2.95, 80.5))
+        # Reachable from a box now that a typo travels as text: float('nan') parses, and a NaN
+        # floor compares False against every PNGK.
+        for bad in ('nan', 'Infinity', '-inf', True):
+            with self.subTest(bad=bad):
+                self._refused('min_stpm_pngk', bad, 2.9)
+
+    def test_creating_a_year_refuses_the_same_values(self):
+        for bad in (6.9, True, 'six'):
+            with self.subTest(bad=bad):
+                r = self._create('cr-new-bad', min_spm_credit_count=bad)
+                self.assertEqual((r.status_code, r.data['field']), (400, 'min_spm_credit_count'))
+                self.assertFalse(ScholarshipCohort.objects.filter(code='cr-new-bad').exists())
 
     def test_moving_it_is_audited_from_what_to_what(self):
         c = self._cohort(code='cr-audit')

@@ -26,6 +26,11 @@ export interface ProgrammeRequirements {
   per_capita_ceiling: number | null
 }
 
+/** What the screens SEND for the requirements: a number, null (untick), or — for a box holding a
+ *  typo — the text typed, which the server refuses with `bad_requirement` rather than reading a
+ *  NaN-turned-null as "switch this rule off" (`intakeYears.num`). */
+export type RequirementsPayload = { [K in keyof ProgrammeRequirements]: number | string | null }
+
 /** One language's block of the gift's public apply-page copy. */
 export interface AdminApplyCopyBlock {
   title: string
@@ -244,7 +249,7 @@ export async function getAdminIntakeYears(programmeId: number, options?: ApiOpti
 export async function createAdminIntakeYear(
   programmeId: number,
   body: { code: string; name: string; year: number; opens_on?: string | null; closes_on?: string | null }
-    & Partial<ProgrammeRequirements>,
+    & Partial<RequirementsPayload>,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminIntakeYear>(
@@ -254,7 +259,7 @@ export async function createAdminIntakeYear(
 export async function updateAdminIntakeYear(
   id: number,
   body: Partial<{ name: string; is_open: boolean; opens_on: string | null; closes_on: string | null }>
-    & Partial<ProgrammeRequirements>,
+    & Partial<RequirementsPayload>,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminIntakeYear>(

@@ -5,6 +5,7 @@ Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
 """
 import logging
+import math
 
 from django.utils import timezone
 from rest_framework import status
@@ -30,15 +31,37 @@ def _requirements_from(data):
         if v in (None, ''):
             out[f] = None
             continue
-        try:
-            out[f] = float(v) if f in ('min_stpm_pngk', 'min_merit_score') else int(v)
-        except (TypeError, ValueError):
-            bad = f
-            break
-        if out[f] < 0:
+        out[f] = _requirement_value(f, v)
+        if out[f] is None or out[f] < 0:
             bad = f
             break
     return out, bad
+
+
+#: The requirements that are a FLOAT (a PNGK, a merit point). Every other one is a whole count.
+_FLOAT_REQUIREMENTS = ('min_stpm_pngk', 'min_merit_score')
+
+
+def _requirement_value(field, v):
+    """One requirement value, or None when it must be refused (`bad_requirement`).
+
+    ⚠ A COUNT IS A WHOLE NUMBER OR NOTHING (request #30 review). `int(6.9)` is 6 and `int(True)` is
+    1, so a fractional count was silently floored and a JSON boolean became a requirement — a
+    different bar from the one sent, on a rule that decides who gets money. 6.0 is accepted as 6.
+    ⚠ A FLOAT MUST BE FINITE: `float('nan')` / `float('inf')` parse, and a NaN floor compares False
+    against every PNGK. The browser forwards a typo as the text typed (`intakeYears.num`), so
+    'nan' and 'Infinity' are reachable from a box."""
+    if isinstance(v, bool):
+        return None
+    try:
+        if field in _FLOAT_REQUIREMENTS:
+            n = float(v)
+            return n if math.isfinite(n) else None
+        if isinstance(v, float):
+            return int(v) if v.is_integer() else None
+        return int(v)
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 class AdminIntakeYearListView(_ProgrammeScopedBase):

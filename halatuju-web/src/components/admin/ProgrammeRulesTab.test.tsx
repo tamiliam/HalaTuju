@@ -169,6 +169,8 @@ describe('the C-or-better requirement', () => {
     const { unmount } = render(<ProgrammeRulesTab />)
     await waitFor(() => expect(screen.getByTestId('rules-year')).toBeTruthy())
     expect(box('rules-cr').value).toBe('')
+    // Under a B+ box whose hint says "in addition to those above", it must say it is a total.
+    expect(screen.getByText('admin.years.req.spmCHint')).toBeTruthy()
     unmount()
 
     withCredits(6)
@@ -186,6 +188,20 @@ describe('the C-or-better requirement', () => {
     const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
     expect(body.min_spm_credit_count).toBe(6)
     expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
+  })
+
+  // ⚠ request #30 review: 'six' used to leave as NaN → null → "untick", and the screen said
+  // Saved. It must leave as the text, and the server's refusal must reach the screen.
+  it('a typo is sent as typed and the refusal is SHOWN, never "Saved"', async () => {
+    mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
+      Object.assign(new Error('bad_requirement'), { code: 'bad_requirement' }))
+    withCredits(6)
+    await loaded()
+    fireEvent.change(box('rules-cr'), { target: { value: 'six' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
+    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].min_spm_credit_count).toBe('six')
+    expect(screen.queryByText('admin.rules.saved')).toBeNull()
   })
 
   it('unticking it sends null — not applied, never zero', async () => {

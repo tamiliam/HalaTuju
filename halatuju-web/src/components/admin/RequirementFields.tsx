@@ -56,7 +56,7 @@ export default function RequirementFields(
         value={draft.aCount} onChange={set('aCount')} />
       <Req id={`${idPrefix}-b`} label={t('admin.years.req.spmB')} hint={t('admin.years.req.spmBHint')}
         value={draft.spmExtra} onChange={set('spmExtra')} />
-      <Req id={`${idPrefix}-cr`} label={t('admin.years.req.spmC')}
+      <Req id={`${idPrefix}-cr`} label={t('admin.years.req.spmC')} hint={t('admin.years.req.spmCHint')}
         value={draft.credits} onChange={set('credits')} />
       <Req id={`${idPrefix}-p`} label={t('admin.years.req.pngk')}
         value={draft.pngk} onChange={set('pngk')} />

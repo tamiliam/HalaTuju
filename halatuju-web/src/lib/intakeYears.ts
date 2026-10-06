@@ -84,9 +84,19 @@ export const EMPTY_REQUIREMENTS: RequirementDraft = {
   aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '',
 }
 
-/** `''` → null (the test is not applied); anything else → a number. Zero survives: it is a real
- *  requirement that everybody passes, and the engine distinguishes it from "not applied". */
-const num = (s: string) => (s.trim() === '' ? null : Number(s))
+/** `''` → null (the test is not applied); a finite number → that number. Zero survives: it is a
+ *  real requirement that everybody passes, and the engine distinguishes it from "not applied".
+ *
+ *  ⚠ ANYTHING ELSE IS SENT AS THE TEXT TYPED, so the server refuses it (`bad_requirement`) and the
+ *  screen says the save failed. `Number('six')` is NaN, `JSON.stringify` sends NaN as null, and
+ *  the API reads null as "untick" — a typo used to switch a rule OFF while the screen said Saved
+ *  (request #30 review). Every box goes through here, and the Rules tab sends all of them. */
+const num = (s: string): number | string | null => {
+  const t = s.trim()
+  if (t === '') return null
+  const n = Number(t)
+  return Number.isFinite(n) ? n : t
+}
 
 /**
  * The screen's boxes → the columns the engine reads.
@@ -104,7 +114,11 @@ export function draftToRequirements(d: RequirementDraft) {
     min_spm_a_count: a,
     // With no A- requirement the extra IS the total — not "extra plus zero by luck", which would
     // shift the moment an A- count were added beside it.
-    min_spm_bplus_count: extra === null ? null : (a ?? 0) + extra,
+    // A typo in EITHER box is forwarded as typed, never summed: '4' + 1 is '41', not 5.
+    min_spm_bplus_count: extra === null ? null
+      : typeof extra === 'string' ? extra
+        : typeof a === 'string' ? a
+          : (a ?? 0) + extra,
     // A total typed as a total: no conversion, so none can go wrong on the way back.
     min_spm_credit_count: num(d.credits),
     min_stpm_pngk: num(d.pngk),
