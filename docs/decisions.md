@@ -13585,3 +13585,10 @@ refusal the neighbours do not have would be a new rule, not a mirror.
 total); the C label says "total" for that reason.
 **Revisit if:** an organisation asks for the C rule as "N more beyond the B+", or the rungs gain
 ordering validation as a set.
+
+**Owner ruling 2026-10-06 on TD-366 (money): ON HOLD until bursary signing is finalised.** The
+accept clock is armed only by the sign-invitation email, so with signing off an unanswered offer
+never lapses; the owner's model is a clock from the OFFER email, signing on or off, so the lapse job
+releases the student without a button. It is built with the signing design (alongside TD-347), not
+before. Fact recorded: today a student accepts an offer by installing and activating the Vircle app,
+not through the in-app Accept. The close keeps refusing while money is attached (one door per job).
