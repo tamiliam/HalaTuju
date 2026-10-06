@@ -121,9 +121,10 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
         slot['completed'] += 1
         if status == 'closed' and recommended_at is None:
             # Closed by an officer before QC accepted it (TD-352): never "recommended". The
-            # reviewer's own decline is still a decline; anything else is left unaccounted.
+            # reviewer's own decline is still a decline; an ACCEPT that QC never ruled on stays in
+            # `awaiting_qc` — where it stood — so the four bands still sum to `completed`.
             accepted = (verdict or {}).get('overall') == 'accept'
-            slot['unaccounted' if accepted else 'declined'] += 1
+            slot['awaiting_qc' if accepted else 'declined'] += 1
         elif status in _REVIEWER_PROGRESSED_STATUSES:
             slot['recommended'] += 1
         elif status == 'rejected':
@@ -145,8 +146,9 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
         elif status == 'interviewed':
             slot['awaiting_qc'] += 1
         else:
-            # A decided case in none of the bands above. Counted so the arithmetic still closes and
-            # a test can see it; today this is always 0.
+            # A decided case in none of the bands above. Counted so a test can see it. NOT always
+            # 0: a verdict recorded while the case is still `interviewing` (the reviewer has not yet
+            # sent it to QC) lands here, so the four bands can fall short of `completed` by those.
             slot['unaccounted'] += 1
         if assigned_at:
             slot['_days'].append((decided_at - assigned_at).total_seconds() / 86400.0)

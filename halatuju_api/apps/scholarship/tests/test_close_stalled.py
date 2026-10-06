@@ -581,7 +581,10 @@ class TestClosedBeforeQcIsNotRecommended(TestCase):
         self.assertIsNone(declined.recommended_at)
         work = _reviewer_workloads([reviewer])[reviewer.id]
         self.assertEqual((work['completed'], work['recommended'], work['declined'],
-                          work['unaccounted']), (3, 1, 1, 1))
+                          work['awaiting_qc'], work['unaccounted']), (3, 1, 1, 1, 0))
+        # The four bands still partition the decided cases (review round 2, item 4).
+        self.assertEqual(work['recommended'] + work['declined'] + work['rejected_after_review']
+                         + work['awaiting_qc'], work['completed'])
 
 
 @mock.patch(SENDER, return_value=True)
