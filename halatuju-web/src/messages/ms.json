@@ -6337,6 +6337,7 @@
         "spmA": "SPM - minimum grades at A- or better",
         "spmB": "SPM - further grades at B+ or better",
         "spmBHint": "in addition to those above",
+        "spmC": "SPM - jumlah gred C dan ke atas",
         "pngk": "STPM - minimum PNGK",
         "merit": "Mata merit minimum",
         "meritHint": "UPU score out of 100. SPM applicants only.",

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #30 — an intake year can require a minimum number of SPM grades at C or better - 2026-10-06
+
+- **Added — a third SPM grade rung beside A- and B+: "grades at C or better".** `ScholarshipCohort.min_spm_credit_count` counts the SPM credits — **A+, A, A-, B+, B, C+, C** (SPM has no C-; owner ruling) — as a **TOTAL across every subject**, exactly as the B+ rung counts its total: 8 A's and no C's pass a floor of 6. D, E, G, `TH` and any unknown or blank grade do not count. **The value is the switch**: blank = not applied, a number turns it on, 0 is a requirement everybody passes (as the neighbours' 0). **No default and no backfill** — it is blank on every existing intake year, so nobody's eligibility moves until an admin types a number. Applies to SPM results only; an applicant whose results are STPM is tested on the PNGK alone, as before.
+  - **Engine** (`shortlisting.py`): `CREDIT_GRADES` (drift-tested equal to the course engine's own `CREDIT_GRADES`) and `count_spm_credit_grades`; `_academic_ok` adds the failure `"5 at C or better (need 6)"` after the A- and B+ reasons, in rung order.
+  - **Admin**: the field joins `REQUIREMENT_FIELDS`, so the intake-year create/PATCH/list endpoints read, write, clear (`null`/`""`), refuse (negative/non-numeric → `bad_requirement`) and audit it (`min_spm_credit_count:None->6`) exactly as the B+ rung. **No ordering check against B+** — the neighbours have none, and a C floor at or below the B+ total never bites (decisions.md). The Rules tab and the create form show a new box, **"SPM - total grades at C or better"**, sent and read back as the same number (unlike the B+ box, which is shown as an extra). New string `admin.years.req.spmC` in en/ms/ta (**Malay and Tamil are first drafts**).
+  - **Not changed, deliberately:** the apply page's "Who can apply" copy is the gift's own and is never derived from thresholds (decisions.md 2026-09-09); emails, sponsor cards and the verdict engine's Academic fact read no thresholds. The only place the rule reaches a student is the stored `shortlist_reason`, and only when it is set.
+  - **⚠ Migration `scholarship 0168_cohort_min_spm_credit_count` — one nullable column, migrate-first.** The Postgres DDL and the `django_migrations` row are in the migration's docstring (rendered offline with the postgresql schema editor). Deploying before migrating would 500 every intake-year read.
+  - Tests: `test_credit_floor.py` (27, factories), three rendered Rules-tab tests, three `intakeYears` tests; the shortlisting/exam-question stand-ins gained the field. Exact first-load, before → after: `/scholarship/application` 273.625 → 273.637 kB (line 274), `/scholarship/apply` 271.596 → 271.608 (272), `/profile` 298.818 → 298.830 (300), median 227.818 → 227.829 (229). No budget or baseline touched.
+
 ## TD-352 — an officer closes a stalled application; the student is told why she cannot apply again - 2026-10-06
 
 Owner ruling, option A: no clock — an officer closes a stalled case by hand. api + web. **Migration

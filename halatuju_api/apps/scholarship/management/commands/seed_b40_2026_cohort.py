@@ -62,6 +62,7 @@ class Command(BaseCommand):
         self.stdout.write(
             "Thresholds: "
             f"min_spm_a_count={cohort.min_spm_a_count}, min_spm_bplus_count={cohort.min_spm_bplus_count}, "
+            f"min_spm_credit_count={cohort.min_spm_credit_count}, "
             f"min_stpm_pngk={cohort.min_stpm_pngk}, per_capita_ceiling=RM{cohort.per_capita_ceiling}, "
             f"income_ceiling=RM{cohort.income_ceiling}, "
             f"success_delay_hours={cohort.success_delay_hours}, decline_delay_hours={cohort.decline_delay_hours}"

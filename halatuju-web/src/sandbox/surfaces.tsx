@@ -78,7 +78,7 @@ const sandboxIntakeYears = {
       id: 20, code: 'contoh-2026', name: 'Intake 2026', year: 2026, is_open: true,
       is_active: true, applications: 41,
       requirements: {
-        min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: null,
+        min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: null,
         min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
       },
     },
@@ -86,7 +86,7 @@ const sandboxIntakeYears = {
       id: 19, code: 'contoh-2025', name: 'Intake 2025', year: 2025, is_open: false,
       is_active: true, applications: 88,
       requirements: {
-        min_spm_a_count: 5, min_spm_bplus_count: 5, min_stpm_pngk: 3.0,
+        min_spm_a_count: 5, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: 3.0,
         min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
       },
     },

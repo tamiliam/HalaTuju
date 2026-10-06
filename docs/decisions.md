@@ -13566,3 +13566,22 @@ Edge Function writes `contact_submissions` with the service role.
 must add a narrow policy for exactly that and say why here.
 **Revisit if:** the browser needs a direct write (e.g. offline saves). Undo script:
 `docs/security/2026-10-05-restore-student-write-policies.sql`.
+
+## 2026-10-06 — Request #30: the C-or-better rung is a TOTAL on screen, and is not ordered against B+
+
+**Decision:** `ScholarshipCohort.min_spm_credit_count` counts SPM grades at C or better (A+, A, A-,
+B+, B, C+, C — SPM has no C-; owner) as a TOTAL across every subject, and the Rules screen shows it
+as that same total — no "further grades" conversion like the B+ box. Blank (NULL) = not applied,
+no default, no backfill. Nothing checks it against the B+ or A- rung.
+**Alternatives considered:** (a) show it as an EXTRA beyond the B+ total, as the B+ box is shown
+beyond the A- count; (b) refuse a C floor below the B+ total.
+**Rationale:** (a) the owner states and checks this rule as a total ("8 A's and no C's passes 6 at
+C or better"), and the B+ conversion exists only because that rule is *spoken* as an extra; a
+conversion nobody speaks is a way to store a number nobody typed. (b) the existing rungs have no
+ordering check on the server either, and a C floor at or below the B+ total is harmless — every
+student who clears B+ already holds that many credits, so it simply never bites. Inventing a
+refusal the neighbours do not have would be a new rule, not a mirror.
+**Trade-offs:** the Rules screen now shows two SPM boxes read differently (B+ as an extra, C as a
+total); the C label says "total" for that reason.
+**Revisit if:** an organisation asks for the C rule as "N more beyond the B+", or the rungs gain
+ordering validation as a set.

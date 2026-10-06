@@ -21,7 +21,7 @@
 // The console had grown a Programme group of six rows, four of them reserved slots that each
 // guessed at the shape of unscoped work. Following one rule — what is a subset of what — settled
 // every one of them:
-//   · RULES are the six thresholds stored on the intake year, which the create form already
+//   · RULES are the seven thresholds stored on the intake year, which the create form already
 //     wrote. A Rules page would have been a second view of an existing form, so it is a tab here.
 //   · INTAKE YEAR is a child of the gift, not a sibling of its settings. The owner's own model:
 //     "the intake year is merely a column within the application table, and not a superset."

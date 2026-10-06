@@ -5,7 +5,7 @@
 //
 // ⚠ WHY IT IS NOT A PAGE (owner, 2026-09-03). "The intake year is merely a column within the
 // application table, and not a superset" — an application carries a `cohort` column, only one
-// round may be open at a time, and the year row's other job is holding the six thresholds the
+// round may be open at a time, and the year row's other job is holding the seven thresholds the
 // Rules tab edits. So a year is neither a level above the applications nor a sibling of the gift's
 // settings: it is part of what you configure about the gift, and it sits beside the rules that
 // live on the very same row. `/admin/programme/years` redirects here.

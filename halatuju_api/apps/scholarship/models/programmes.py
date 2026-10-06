@@ -299,6 +299,15 @@ class ScholarshipCohort(models.Model):
         help_text="Minimum SPM grades at B+ or better — the TOTAL strong count, not the extra "
                   "beyond the A's (4 A- plus 1 more B+ is stored as 5). NULL = not applied.",
     )
+    # Request #30 (2026-10-06). ⚠ NO DEFAULT, UNLIKE THE TWO ABOVE: it arrived blank on every
+    # existing intake year, and a new one starts blank too, so nobody's eligibility moves until an
+    # admin types a number.
+    min_spm_credit_count = models.IntegerField(
+        null=True, blank=True,
+        help_text="Minimum SPM grades at C or better (A+ to C; SPM has no C-) — the TOTAL credit "
+                  "count, A's and B's included, so 8 A's and no C's clear a floor of 6. "
+                  "NULL = not applied.",
+    )
     min_stpm_pngk = models.FloatField(
         null=True, blank=True, default=2.9,
         help_text="Minimum STPM PNGK. NULL = not applied.",

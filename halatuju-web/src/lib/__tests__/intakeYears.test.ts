@@ -26,7 +26,7 @@ import {
 
 describe('the SPM B+ requirement is displayed as an EXTRA and stored as a TOTAL', () => {
   const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
-    ({ aCount: '', spmExtra: '', pngk: '', merit: '', income: '', perPerson: '', ...over })
+    ({ aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '', ...over })
 
   it("BrightPath's rule round-trips: 4 A- plus 1 more is stored as 4 and 5", () => {
     const r = draftToRequirements(draft({ aCount: '4', spmExtra: '1' }))
@@ -80,7 +80,7 @@ describe('reading the stored rules back into the boxes', () => {
 
   it('survives a full round trip unchanged — load, touch nothing, save', () => {
     const stored = {
-      min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: 2.9,
+      min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: 6, min_stpm_pngk: 2.9,
       min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
     }
     expect(draftToRequirements(requirementsToDraft(stored))).toEqual(stored)
@@ -90,8 +90,8 @@ describe('reading the stored rules back into the boxes', () => {
     // Null means the test does not run; zero is a test everybody passes. Reading one as the other
     // would tick a requirement nobody set — the S2a defect in the opposite direction.
     const d = requirementsToDraft({
-      min_spm_a_count: null, min_spm_bplus_count: null, min_stpm_pngk: null,
-      min_merit_score: null, income_ceiling: null, per_capita_ceiling: null,
+      min_spm_a_count: null, min_spm_bplus_count: null, min_spm_credit_count: null,
+      min_stpm_pngk: null, min_merit_score: null, income_ceiling: null, per_capita_ceiling: null,
     })
     expect(d).toEqual(EMPTY_REQUIREMENTS)
   })
@@ -115,6 +115,35 @@ describe('reading the stored rules back into the boxes', () => {
   it('treats a missing record as nothing set', () => {
     expect(requirementsToDraft(null)).toEqual(EMPTY_REQUIREMENTS)
     expect(requirementsToDraft(undefined)).toEqual(EMPTY_REQUIREMENTS)
+  })
+})
+
+/**
+ * Request #30 — grades at C or better. ⚠ A TOTAL ON SCREEN AND IN THE COLUMN, unlike the B+ box:
+ * the owner sets it as "6 at C or better", A's and B's included (8 A's and no C's clears 6). So it
+ * passes through untouched — no conversion against the A- or B+ boxes in either direction.
+ */
+describe('the SPM C-or-better requirement is a TOTAL both ways', () => {
+  const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
+    ({ ...EMPTY_REQUIREMENTS, ...over })
+
+  it('sends what is typed, whatever the A- and B+ boxes say', () => {
+    const r = draftToRequirements(draft({ aCount: '4', spmExtra: '1', credits: '6' }))
+    expect(r.min_spm_credit_count).toBe(6)
+    expect(r.min_spm_bplus_count).toBe(5)
+  })
+
+  it('an empty box is null (not applied); a typed zero stays zero', () => {
+    expect(draftToRequirements(draft()).min_spm_credit_count).toBeNull()
+    expect(draftToRequirements(draft({ credits: '0' })).min_spm_credit_count).toBe(0)
+  })
+
+  it('reads back as the same number, and blank as an empty box', () => {
+    expect(requirementsToDraft({ min_spm_a_count: 4, min_spm_credit_count: 6 }).credits).toBe('6')
+    expect(requirementsToDraft({ min_spm_credit_count: 0 }).credits).toBe('0')
+    expect(requirementsToDraft({ min_spm_credit_count: null }).credits).toBe('')
+    // An intake year served before the column existed (a stale payload) reads as not applied.
+    expect(requirementsToDraft({ min_spm_a_count: 4 }).credits).toBe('')
   })
 })
 

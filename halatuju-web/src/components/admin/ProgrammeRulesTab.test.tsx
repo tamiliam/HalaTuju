@@ -53,7 +53,7 @@ const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => (
   state: 'closed', finished_at: null, finished_by: '', unsubmitted: 0,
   // BrightPath's LIVE rule: four at A- plus one more at B+, stored as a strong TOTAL of five.
   requirements: {
-    min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: null,
+    min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: null,
     min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
   },
   ...over,
@@ -153,6 +153,48 @@ describe('what it sends', () => {
 
     await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
     expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].income_ceiling).toBeNull()
+  })
+})
+
+// Request #30. ⚠ THE C BOX IS A TOTAL ON SCREEN, unlike the B+ box beside it: the owner sets
+// "6 at C or better" with the A's and B's included, so it must reach the server as typed, and a
+// blank box (every live round today) must reach it as null — not applied — never as zero.
+describe('the C-or-better requirement', () => {
+  const withCredits = (n: number | null) => withYears([year({
+    requirements: { ...year().requirements, min_spm_credit_count: n },
+  })])
+
+  it('shows a blank round as an empty box and a set one as its TOTAL', async () => {
+    withCredits(null)
+    const { unmount } = render(<ProgrammeRulesTab />)
+    await waitFor(() => expect(screen.getByTestId('rules-year')).toBeTruthy())
+    expect(box('rules-cr').value).toBe('')
+    unmount()
+
+    withCredits(6)
+    await loaded()
+    expect(box('rules-cr').value).toBe('6')
+    expect(box('rules-b').value).toBe('1')   // the B+ box is still shown as its extra
+  })
+
+  it('sends the number typed, and leaves the A- and B+ rules as they were', async () => {
+    withCredits(null)
+    await loaded()
+    fireEvent.change(box('rules-cr'), { target: { value: '6' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+    const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
+    expect(body.min_spm_credit_count).toBe(6)
+    expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
+  })
+
+  it('unticking it sends null — not applied, never zero', async () => {
+    withCredits(6)
+    await loaded()
+    fireEvent.change(box('rules-cr'), { target: { value: '' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].min_spm_credit_count).toBeNull()
   })
 })
 

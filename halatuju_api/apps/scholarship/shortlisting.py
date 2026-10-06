@@ -8,6 +8,7 @@ IPTS from the application. All thresholds come from the cohort.
 The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan.md):
   1. Hard gates  — consent + intends public study + NOT IPTS-only        → else REJECT
   2. Academic    — SPM: >= min_spm_a_count at A- AND >= min_spm_bplus_count at B+
+                        AND >= min_spm_credit_count at C or better
                         AND merit point >= min_merit_score;
                    STPM: PNGK >= min_stpm_pngk                            → else REJECT
   3. Income      — STR recipient → PASS (bucket A);
@@ -44,6 +45,11 @@ from apps.courses.exam_questions import results_held
 A_GRADES = {'A+', 'A', 'A-'}
 # Grades at B+ or better (for the "+1 B+" floor → 5 strong subjects).
 STRONG_GRADES = A_GRADES | {'B+'}
+# Grades at C or better — the SPM credits (kepujian), request #30. SPM HAS NO C- (its grades are
+# A+ A A- B+ B C+ C D E G), so "C or better" is exactly these seven; D, E, G and anything unknown
+# do not count. The same set as `apps.courses.engine.CREDIT_GRADES` (drift-tested in
+# `test_credit_floor.py`), kept here rather than imported so this module stays light at import.
+CREDIT_GRADES = STRONG_GRADES | {'B', 'C+', 'C'}
 
 
 def _count(grades, allowed):
@@ -63,6 +69,12 @@ def count_spm_a_grades(grades):
 def count_spm_strong_grades(grades):
     """Count grades at B+ or better."""
     return _count(grades, STRONG_GRADES)
+
+
+def count_spm_credit_grades(grades):
+    """Count grades at C or better — the TOTAL, A's and B's included, exactly as the B+ count
+    includes the A's. Eight A's and no C's is eight credits, not zero (request #30)."""
+    return _count(grades, CREDIT_GRADES)
 
 
 @dataclass
@@ -140,7 +152,9 @@ def _academic_ok(profile, cohort):
     grades = getattr(profile, 'grades', None) if profile else None
     a = count_spm_a_grades(grades)
     strong = count_spm_strong_grades(grades)
+    credits = count_spm_credit_grades(grades)
     min_a, min_strong = cohort.min_spm_a_count, cohort.min_spm_bplus_count
+    min_credit = cohort.min_spm_credit_count
     min_merit = getattr(cohort, 'min_merit_score', None)
 
     failures = []
@@ -153,6 +167,9 @@ def _academic_ok(profile, cohort):
         need = (f'{min_a} at A- plus {extra} more at B+' if min_a is not None and extra > 0
                 else f'{min_strong} at B+ or better')
         failures.append(f'{strong} at B+ or better (need {need})')
+    if min_credit is not None and credits < min_credit:
+        # A TOTAL, stated as one: the owner sets it as "6 at C or better" and it is read that way.
+        failures.append(f'{credits} at C or better (need {min_credit})')
     if min_merit is not None:
         m = spm_merit(profile)
         if m is None:

@@ -1,6 +1,6 @@
 'use client'
 
-// The six shortlisting requirements, as tick boxes with an open value. Shared by the Rules tab
+// The seven shortlisting requirements, as tick boxes with an open value. Shared by the Rules tab
 // (editing the round you are running) and the Intake-year form (setting them on a new round).
 //
 // ⚠ THE VALUE IS THE SWITCH. There is deliberately no companion on/off state: two columns can
@@ -56,6 +56,8 @@ export default function RequirementFields(
         value={draft.aCount} onChange={set('aCount')} />
       <Req id={`${idPrefix}-b`} label={t('admin.years.req.spmB')} hint={t('admin.years.req.spmBHint')}
         value={draft.spmExtra} onChange={set('spmExtra')} />
+      <Req id={`${idPrefix}-cr`} label={t('admin.years.req.spmC')}
+        value={draft.credits} onChange={set('credits')} />
       <Req id={`${idPrefix}-p`} label={t('admin.years.req.pngk')}
         value={draft.pngk} onChange={set('pngk')} />
       <Req id={`${idPrefix}-m`} label={t('admin.years.req.merit')} hint={t('admin.years.req.meritHint')}

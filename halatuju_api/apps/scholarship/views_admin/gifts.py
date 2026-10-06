@@ -241,8 +241,8 @@ def _programme_row(p, blocker=None):
 # The requirement columns the screens tick and fill. NULL means "not applied" (S2a) — the value IS
 # the switch, so unticking is writing null and there is no companion boolean to disagree with it.
 REQUIREMENT_FIELDS = (
-    'min_spm_a_count', 'min_spm_bplus_count', 'min_stpm_pngk', 'min_merit_score',
-    'income_ceiling', 'per_capita_ceiling',
+    'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_stpm_pngk',
+    'min_merit_score', 'income_ceiling', 'per_capita_ceiling',
 )
 
 

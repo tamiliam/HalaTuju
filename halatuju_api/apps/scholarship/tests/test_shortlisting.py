@@ -7,8 +7,8 @@ from apps.scholarship.shortlisting import evaluate, count_spm_a_grades, count_sp
 
 
 def cohort(**over):
-    base = dict(min_spm_a_count=4, min_spm_bplus_count=5, min_stpm_pngk=2.9,
-                income_ceiling=5860, per_capita_ceiling=1584)
+    base = dict(min_spm_a_count=4, min_spm_bplus_count=5, min_spm_credit_count=None,
+                min_stpm_pngk=2.9, income_ceiling=5860, per_capita_ceiling=1584)
     base.update(over)
     return SimpleNamespace(**base)
 

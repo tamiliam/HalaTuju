@@ -52,7 +52,7 @@ SHAPES = {
 
 #: Floors unreachable on purpose, so `_academic_ok`'s failure reason NAMES the branch that ran.
 _COHORT = SimpleNamespace(min_stpm_pngk=4.1, min_spm_a_count=99, min_spm_bplus_count=None,
-                          min_merit_score=None)
+                          min_spm_credit_count=None, min_merit_score=None)
 
 
 def _profile(shape):
@@ -227,7 +227,7 @@ class TestTheConvertedReadersOnTheExplorer(TestCase):
 
 def _cohort(**floors):
     base = dict(min_stpm_pngk=None, min_spm_a_count=None, min_spm_bplus_count=None,
-                min_merit_score=None)
+                min_spm_credit_count=None, min_merit_score=None)
     base.update(floors)
     return SimpleNamespace(**base)
 

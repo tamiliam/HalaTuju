@@ -282,7 +282,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // SETS about a gift is one screen with tabs — Rules, What we ask for, Intake year — because
       // they are one job: what this gift asks of an applicant and who it says yes to. The rows
       // that went, and why each was not a page:
-      //   · `rules`  — the six thresholds are COLUMNS ON THE INTAKE YEAR the create form already
+      //   · `rules`  — the seven thresholds are COLUMNS ON THE INTAKE YEAR the create form already
       //     writes, so a Rules page was a second view of a form that exists. It is now the first
       //     tab, ahead of "what we ask for", which is the order the owner reads them in.
       //   · `years`  — a year is a child of the gift, not its sibling. `/admin/programme/years`

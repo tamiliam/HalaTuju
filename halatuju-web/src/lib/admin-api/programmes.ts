@@ -18,6 +18,8 @@ export interface ProgrammeRequirements {
   /** The TOTAL strong count, not the extra beyond the A's: "4 A− plus 1 more at B+" is stored 5.
    *  The screen shows the difference, because that is how the rule is set and read. */
   min_spm_bplus_count: number | null
+  /** Request #30. A TOTAL at C or better (A+ to C), shown and stored as the same number. */
+  min_spm_credit_count: number | null
   min_stpm_pngk: number | null
   min_merit_score: number | null
   income_ceiling: number | null

@@ -52,7 +52,7 @@ const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => (
   // server-side (`views_admin.round_state`) — never derived here.
   state: 'closed', finished_at: null, finished_by: '', unsubmitted: 0,
   requirements: {
-    min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: 2.9,
+    min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: 2.9,
     min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
   },
   ...over,

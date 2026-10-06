@@ -216,7 +216,9 @@ IMMEDIATE and irreversible (no cool-off), reason stored verbatim in `rejection_c
 no template of its own so it falls through to the generic `FAIL_*` copy.)
 
 **⚠ EVERY SHORTLISTING THRESHOLD IS OPTIONAL — `NULL` MEANS THE TEST IS NOT APPLIED** (Sabah S2a,
-migration `0148`). `min_spm_a_count`, `min_spm_bplus_count`, `min_stpm_pngk`, `min_merit_score`,
+migration `0148`). `min_spm_a_count`, `min_spm_bplus_count`, `min_spm_credit_count` (request #30,
+migration `0168`: the TOTAL at C or better — A+ to C, SPM has no C- — NULL on every existing year, no
+default), `min_stpm_pngk`, `min_merit_score`,
 `income_ceiling` and `per_capita_ceiling` are all nullable, and **the value IS the switch** — there
 is deliberately no companion `use_x` boolean, because two columns can disagree and one cannot.
 Before this every column was `NOT NULL` with a default, so every test always ran: BrightPath never

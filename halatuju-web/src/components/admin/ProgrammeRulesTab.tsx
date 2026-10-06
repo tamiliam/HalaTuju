@@ -3,7 +3,7 @@
 // Programme → Configuration → Rules. The FIRST tab, ahead of "what we ask for" (owner,
 // 2026-09-03: "I see the rules as a configuration item, and it precedes what we ask for").
 //
-// ⚠ IT EDITS THE ROUND YOU ARE RUNNING, NOT THE GIFT. The six thresholds are columns on the
+// ⚠ IT EDITS THE ROUND YOU ARE RUNNING, NOT THE GIFT. The seven thresholds are columns on the
 // intake year (`ScholarshipCohort`), which is where the decision engine reads them, and they stay
 // there: moving them up to the Programme would be a behaviour-sensitive migration for no gain,
 // and the roadmap already declined it. So the screen speaks the owner's model — "this gift's
@@ -147,7 +147,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
     )
   }
 
-  // A gift with no round yet. Say what is missing and where it is made, rather than drawing six
+  // A gift with no round yet. Say what is missing and where it is made, rather than drawing seven
   // empty boxes that would save nowhere. ⚠ Only once the YEARS have actually been asked for —
   // see `yearsLoading`.
   //

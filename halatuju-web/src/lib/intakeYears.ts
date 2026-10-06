@@ -71,6 +71,9 @@ export interface RequirementDraft {
   aCount: string
   /** Shown as the EXTRA beyond the A- grades, which is how the rule is set and spoken. */
   spmExtra: string
+  /** Request #30: grades at C or better. Unlike `spmExtra` it is a TOTAL on screen as well as in
+   *  the column — the owner sets it as "6 at C or better", A's and B's included. */
+  credits: string
   pngk: string
   merit: string
   income: string
@@ -78,7 +81,7 @@ export interface RequirementDraft {
 }
 
 export const EMPTY_REQUIREMENTS: RequirementDraft = {
-  aCount: '', spmExtra: '', pngk: '', merit: '', income: '', perPerson: '',
+  aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '',
 }
 
 /** `''` → null (the test is not applied); anything else → a number. Zero survives: it is a real
@@ -102,6 +105,8 @@ export function draftToRequirements(d: RequirementDraft) {
     // With no A- requirement the extra IS the total — not "extra plus zero by luck", which would
     // shift the moment an A- count were added beside it.
     min_spm_bplus_count: extra === null ? null : (a ?? 0) + extra,
+    // A total typed as a total: no conversion, so none can go wrong on the way back.
+    min_spm_credit_count: num(d.credits),
     min_stpm_pngk: num(d.pngk),
     min_merit_score: num(d.merit),
     income_ceiling: num(d.income),
@@ -129,6 +134,7 @@ const str = (n: number | null | undefined) => (n === null || n === undefined ? '
 export function requirementsToDraft(r: {
   min_spm_a_count?: number | null
   min_spm_bplus_count?: number | null
+  min_spm_credit_count?: number | null
   min_stpm_pngk?: number | null
   min_merit_score?: number | null
   income_ceiling?: number | null
@@ -142,6 +148,7 @@ export function requirementsToDraft(r: {
     spmExtra: total === null || total === undefined
       ? ''
       : String(Math.max(0, total - (a ?? 0))),
+    credits: str(r.min_spm_credit_count),
     pngk: str(r.min_stpm_pngk),
     merit: str(r.min_merit_score),
     income: str(r.income_ceiling),
