@@ -1447,7 +1447,7 @@ Read it at sprint start, before planning.
 
 ## Next Sprint — ▶ owner's pick (as of 2026-09-30, after the debt-register review)
 
-**TD-352 BUILT (not pushed), 2026-10-06** — an officer closes a stalled application from any in-play status; the student's page says one at a time ("…apply again in a later round"); `closed` joined `CASE_CLOSED_STATES`. **Migration `scholarship 0167_closure_reason_stalled`, choices-only (no DDL): record the ledger row in production migrate-first, then deploy.** Awaiting the adversarial review (eligibility); TD-363 to TD-365 raised. Budgets LOWERED: `/profile` 271, `/scholarship/apply` 244.
+**TD-352 BUILT (not pushed), 2026-10-06, review round 1 fixed** — an officer (pre-award: super/org_admin) closes a stalled application from any in-play status except `awarded` (TD-366); the student's page and email say "…apply again in a later round"; `closed` joined `CASE_CLOSED_STATES`; closed-before-funding never reads as post-award. **Migration `scholarship 0167_closure_reason_stalled`, choices-only (no DDL): record the ledger row in production migrate-first, then deploy.** TD-363, TD-365, TD-366 (owner, money), TD-367 (money) open. Budgets LOWERED: `/profile` 271, `/scholarship/apply` 244.
 
 **REQUEST #26 IS LIVE (2026-10-05)** — parent/guardian phone correction + the parent-call consent
 record. Migration `0165` applied migrate-first (ledger through 0165, no gap). Retro
@@ -11275,12 +11275,15 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   `0078_closure_stamp`: additive `closed_at`/`closed_by`, **migrate-first**). Manual CLOSE via
   `closure.close_application` (gated active/maintenance) → `status='closed'` + `closure_reason` +
   audit stamp; terminal. **⚠ Widened by TD-352 (2026-10-06): closes from EVERY in-play status
-  (`CLOSEABLE_FROM` is `apply_gate.IN_PLAY_STATUSES`); reasons by stage (pre-award `stalled`/`withdrawn`
-  only; awarded/active/maintenance the funded list + `stalled`; else `reason_not_allowed`); refuses
-  `sponsorship_open` outside active/maintenance while a HOLDING sponsorship or a released tranche
-  exists — a close cancels nothing; `AUDIT application_closed … from=` log line; a pre-award close
-  emails `send_application_closed_email`; `closed` is in `CASE_CLOSED_STATES` (no review write lands
-  on a closed file). decisions.md 2026-10-06.** `disbursement.release_tranche` now also requires a funded state (a closed
+  (`CLOSEABLE_FROM` is `apply_gate.IN_PLAY_STATUSES`); pre-award = super/org_admin only (view); reasons
+  by stage (pre-award `stalled`/`withdrawn` only; awarded/active/maintenance the funded list + `stalled`;
+  else `reason_not_allowed`); `decline_pending` while a decline marker is set; `sponsorship_open`
+  outside active/maintenance while a HOLDING sponsorship or a released tranche exists — a close cancels
+  nothing, and an awarded case cannot be released by anyone (TD-366); a pre-award close releases any
+  interview (`scheduling.release_for_unassign(student_notice=False)`) and emails the officer-close
+  variant of `send_application_closed_email`; `AUDIT application_closed … from=` log line; `closed` is in
+  `CASE_CLOSED_STATES`; a closed case counts as QC-accepted only with `recommended_at` and as funded
+  (in-programme, thank-you, witness, chips) only with `active_at`. decisions.md 2026-10-06.** `disbursement.release_tranche` now also requires a funded state (a closed
   file's leftover tranche is un-releasable). Thank-you relay re-gated: `in_programme.submit_graduation_message`
   uses `_require_can_thank` (active/maintenance/**closed**) so a graduated student can still write
   post-closure (results/promo stay funded-only). Surfaces: cockpit closure panel (reason + offboarding

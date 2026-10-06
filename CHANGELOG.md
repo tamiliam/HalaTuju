@@ -13,19 +13,35 @@ production needs only the ledger row.** Built locally, NOT deployed.
   closed by an officer"). Reasons by stage: submitted…recommended → `stalled`, `withdrawn`;
   awarded/active/maintenance → graduated, completed, withdrawn, lapsed, terminated, `stalled`; anything
   else answers 400 `reason_not_allowed`. Finished statuses still answer `not_closeable`.
+- **Who.** A PRE-award close is super or org_admin only (the org-reject gate; 403 otherwise); a close
+  from active/maintenance keeps the S6 gate. The org fence (404 cross-org) is unchanged.
 - **One door per job.** From any status other than active/maintenance the close REFUSES with
   `sponsorship_open` while a HOLDING sponsorship (`offered`/`active`) or a `released` disbursement
-  exists; nothing is cancelled by a close. In practice an `awarded` case always holds its offer, so it
-  is closed only after the offer is cancelled. Active/maintenance close exactly as before (S6).
+  exists; nothing is cancelled by a close. The refusal says the truth: "This application holds a
+  sponsor's offer or paid money. It cannot be closed here. (Releasing an awarded student is an owner
+  decision — TD-366.)" An `awarded` case always holds its offer and no admin door releases it today, so
+  the cockpit offers no Close card at `awarded`. Active/maintenance close exactly as before (S6).
+- **A pending decline refuses the close** (`decline_pending`, as reopen does — TD-349), before the
+  sponsorship check.
 - The status is re-read under a row lock; an `AUDIT application_closed app_id= from= reason= by=` line
-  (logger `apps.scholarship.closure`) records the status it left. A PRE-award close then emails the
-  student the existing "your application has been closed — you may start again" notice
-  (`send_application_closed_email`), best-effort, with a WARNING naming the application when it does
-  not go; no email from a post-award close. The sponsor badge reads a `stalled` close as discontinued.
-- **Cockpit.** The Close card shows at every in-play status with the stage's reasons
-  (`lib/closeOffer.ts`, drift-tested against `closure.py`, the apply gate and the model's choices); before
-  an award it says "The student may apply again in a later round. She is emailed." and drops the funded
-  checklist. `reason_not_allowed` reuses the bad-reason sentence (only a stale tab meets it).
+  (logger `apps.scholarship.closure`) records the status it left. A PRE-award close releases any
+  interview in the same transaction (the reviewer-unassign teardown, without its student notice: a
+  booking voided, the Meet event cancelled, proposed times withdrawn) and the reminder sweep reads only
+  in-play applications. It then emails the student a new officer-close notice
+  (`send_application_closed_email(..., closure_reason=)`: "closed by our team … you are welcome to apply
+  again in a later round"; the auto-expiry keeps "not completed in time"), best-effort, with a WARNING
+  naming the application when it does not go; no email from a post-award close. The sponsor badge reads
+  a `stalled` close as discontinued.
+- **Cockpit.** The Close card shows with the stage's reasons (`lib/closeOffer.ts`, drift-tested against
+  `closure.py`, the apply gate and the model's choices): before an award to a super or org_admin only,
+  saying "Closing is final. The student may apply again in a later round. She is emailed." without the
+  funded checklist; never at `awarded`; at active/maintenance as before. The button asks twice ("Are you
+  sure?" / "Go back", the org-reject's strings). `reason_not_allowed` reuses the bad-reason sentence.
+- **Closed before funding is not post-award.** `closed` keeps its place in the cockpit's stage sets, but
+  the "recommended by" line and decision summary need `recommended_at`, and the Awarded/Active chips and
+  the witness card need `active_at` (`closeOffer.stageStatus`). The reviewer figures count a closed case
+  as recommended only with `recommended_at`. The in-programme page and the thank-you relay accept
+  `closed` only with `active_at` (the student read now carries `active_at`).
 - **`closed` is a closed case for the review track** (`CASE_CLOSED_STATES` in `services/decline.py`
   and `officerCockpit.ts`, drift-tested together). A stalled close at `interviewing` would otherwise
   still take a verdict, an award amount and an interview. The five review-track writes answer 400
@@ -37,15 +53,16 @@ production needs only the ledger row.** Built locally, NOT deployed.
   `/scholarship/application`; the 2,480-school list behind `SchoolSelect` (~30 kB gz) loads on the
   field's first pointer-over/touch/focus, off `/scholarship/apply`, `/profile` and
   `/onboarding/profile`. Budgets LOWERED: `/profile` 300 → 271, `/scholarship/apply` 272 → 244. Local
-  exact, final: application 273.200 of 274, apply 242.596 of 244, profile 269.800 of 271, median
-  228.176 of 229.
-- Tests: api `test_close_stalled.py` (new, 26), `test_closure.py`, `test_endpoints_disbursements.py`
+  exact, final: application 273.270 of 274, apply 242.666 of 244, profile 269.870 of 271, median
+  228.246 of 229.
+- Tests: api `test_close_stalled.py` (new, 39), `test_closure.py`, `test_endpoints_disbursements.py`
   and `test_closed_case_writes.py` re-pointed ("pre-award cannot close" became "finished cannot
   close"; "closed is not an off-ramp" became "closed is one"); web `closeOfferDrift.test.ts`,
-  `view.close.test.tsx`, `view.closed.test.tsx` +2, `cockpitCardStages.test.ts` re-pointed,
+  `view.close.test.tsx`, `view.closed.test.tsx` +4, `cockpitCardStages.test.ts` re-pointed,
   `LazyApplicationAwardPanels`, `LazyIncomeRouteSwitch`, `SchoolSelect` (each with a failed-chunk
-  sibling), `page.screen.test.tsx` +12. decisions.md 2026-10-06. Debt: TD-352 closed; TD-363 to
-  TD-365 raised; TD-354's premise (no room) noted gone.
+  sibling), `page.screen.test.tsx` +12, `in-programme/page.closed.test.tsx` (new). decisions.md
+  2026-10-06. Debt: TD-352 closed; TD-363, TD-365, TD-366 (owner decision, money) and TD-367 (money)
+  raised; TD-364 raised and resolved in the same sprint (review round 1); TD-354's premise noted gone.
 
 ## Request #28 follow-up — "Checked – still unknown" works; a shop can be flagged for review - 2026-10-06
 

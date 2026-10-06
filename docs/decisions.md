@@ -15,19 +15,30 @@ recommended) only `stalled` or `withdrawn` can be true; from awarded / active / 
 funded list (graduated, completed, withdrawn, lapsed, terminated) plus `stalled`. Anything else is
 refused with `reason_not_allowed`.
 
+**Who (lead decision, review round 1).** A close from a PRE-award status is `super` or `org_admin`
+only — the org-admin reject's gate, because it releases the student before any decision. A close
+from awarded / active / maintenance keeps the S6 gate (the assigned reviewer may). The cockpit offers
+the pre-award card to those two roles only.
+
 **One door per job.** A close never cancels, lapses or refunds anything. From any status other
 than active / maintenance it REFUSES with `sponsorship_open` while the application carries a live
 sponsorship — a `Sponsorship` in `HOLDING` (`offered` or `active`) or a `Disbursement` in `PAID`
-(`released`) — and the officer cancels the offer through its own door first. An `awarded` case
-always holds its offer, so in practice it is closed only after the cancel returns it to
-`recommended`. Active and maintenance carry a live sponsorship by nature and close exactly as they
-did (post-award S6): no money side effect, a leftover tranche simply becomes un-releasable.
+(`released`). The refusal says the truth: "This application holds a sponsor's offer or paid money.
+It cannot be closed here. (Releasing an awarded student is an owner decision — TD-366.)" — an
+`awarded` case always holds its offer, and once the offer email has gone NO admin door releases it
+(the sponsor's `cancel_offer` refuses, the lapse needs an armed deadline, the contractual reject is
+barred from `awarded`). That is TD-366, an owner decision; this sprint adds no money door, and the
+cockpit offers no Close card at `awarded`. Active and maintenance carry a live sponsorship by nature
+and close exactly as they did (post-award S6): no money side effect, a leftover tranche simply
+becomes un-releasable. A pending decline refuses the close too (`decline_pending`), as reopen does.
 
 **The record and the student.** The close re-reads the row under a lock, then writes one
 `AUDIT application_closed app_id= from= reason= by=` line — the status it left lives there, not in a
-field (TD-363). A PRE-award close emails the student the existing "your application has been
-closed — you may start again" notice, best-effort, with a WARNING naming the application when it
-does not go (its "not completed in time" wording is TD-364); a post-award close sends nothing new.
+field (TD-363). A PRE-award close releases any interview in the same transaction (a booking voided,
+proposed times withdrawn, the reviewer told) and emails the student an officer-close notice — "closed
+by our team … you are welcome to apply again in a later round", never the auto-expiry "not completed
+in time" — best-effort, with a WARNING naming the application when it does not go; a post-award close
+sends nothing new.
 The student's page says, for every in-play status: "While this application is in process, you
 cannot start another. If it is closed, you can apply again in a later round."
 
@@ -43,6 +54,12 @@ left it out. A stalled close at `interviewing` would otherwise still take a verd
 amount and an interview, so `closed` joined both. A funded closed case loses nothing legitimate:
 only the five review-track writes go through that gate, and the cockpit keeps every record
 (decision trail, interview, profile, Check 2 items) through its record arms.
+
+**A closed case is post-award only if it got there (lead ruling, review round 1).** `closed` used to
+imply QC-accepted and funded. Readers that took it so now ask the milestone stamp: "QC accepted" (the
+"recommended by" line, the reviewer figures) needs `recommended_at`; "funded" (the
+Awarded·Active·Maintenance chips, the witness card, the in-programme page, the thank-you relay) needs
+`active_at`. The stage sets themselves are unchanged.
 
 ## A person-only spending category, `micro_stall`; and a person may mark a shop "checked, still unknown" — request #28, 2026-10-06 (recorded at the Consolidation Review)
 
