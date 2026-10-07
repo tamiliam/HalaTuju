@@ -1,6 +1,7 @@
 # Student message timing becomes an organisation setting — roadmap
 
-**Status:** PROPOSED 2026-10-07, awaiting the owner's approval. No code written.
+**Status:** Sprint 1 SHIPPED and live 2026-10-07 (`b6b90440`…`5fd333e6`; migration 0170; retro
+`docs/retrospectives/retrospective-2026-10-07-org-timing-s1.md`). Sprint 2 waits on its trigger.
 **Owner direction (2026-10-07, verbatim):** *"it seems all them could be moved to the organisation
 setting"* · *"I want the values to have range — min and max — for the proper functioning of the
 process. And if any are dependent on another timing, this should be managed as well."* · approved the

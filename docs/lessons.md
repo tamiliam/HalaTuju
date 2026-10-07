@@ -1304,3 +1304,14 @@ Each took "the next free number" from its own base. **Rule:** when another sessi
 migration, agree by message which branch keeps the number BEFORE the owner is given any
 `django_migrations` insert; the other renumbers on rebase. A ledger row recorded under the wrong
 name is a production repair, a renamed file is not. (requests #28-#30, TD-352)
+
+## 2026-10-07 — a setting read on every sweep reaches people already waiting; stamp what you PROMISED
+
+Moving timings into a settings table, the lead told the owner "a changed value only affects new
+cases". The adversarial review proved it false for four timings: anything a cron sweep RE-READS each
+run (reminder days, the answer window, the award-email delay, the auto-close grace) applies at once to
+cases already in flight. Only values stamped onto the row when the event happens (`decision_due_at`,
+`decline_due_at`, `award_due_at`) are fixed. **Rule:** before telling anyone when a setting takes
+effect, sort each read site into "stamped at the event" or "re-read per sweep". And where a message
+has already PROMISED a number to a person ("within 7 days we will close it"), stamp that number on
+the row at send time and never act sooner than it (`reminders.promised_close_days`). (org-timing S1, F1)

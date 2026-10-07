@@ -54,6 +54,9 @@ apps/courses/
 ├── quiz_engine.py                 # Stateless quiz signal accumulator, 6 questions (176 lines)
 ├── quiz_data.py                   # Quiz questions in 3 languages: BM/EN/TA (331 lines)
 ├── insights_engine.py             # Deterministic insights from eligibility results (121 lines)
+├── org_config.py                  # Per-organisation settings READ SEAM: value(org, key), validate (org-timing S1 split it, 2026-10-07)
+├── org_config_registry.py         # The settings REGISTRY: every key, its unit, default, min/max and group (13 student timings since 2026-10-07)
+├── org_config_rules.py            # RULES between settings (R1-R7 + window_inverted), checked on the MERGED values; refusal = {code, key, rule}
 │
 ├── management/commands/
 │   ├── load_csv_data.py           # CSV → DB migration (11 loaders, one-time)
