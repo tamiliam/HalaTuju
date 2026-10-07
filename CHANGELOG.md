@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-369 — a rescore keeps a waiting decision's send time - 2026-10-07
+
+- **Fixed:** `rescore_pending_decisions` (cron door `rescore-pending`) no longer re-times applications already waiting after an organisation changes its delay. `score_application` gained a keyword-only `rescore` flag, passed only by the rescore: an unchanged verdict keeps its `decision_due_at`; a changed verdict (or one never stamped) is timed from `submitted_at` by the new verdict's current delay, exactly as a fresh scoring. A fresh submission is scored as before.
+- **Data:** 0 stored rows need repair — production has 2 waiting applications (#147, #148), both scored under the current rule, and this change does not touch them.
+- **Tests:** `TestARescoreKeepsTheSendTime` in `test_org_timing.py` (unchanged verdict keeps its time; a flipped verdict follows its new delay; a fresh scoring still stamps the current delay; a released decision is untouched). Bite-checked: without the keep branch the first test goes red.
+
 ## Org-timing Sprint 1 — student message timing becomes an organisation setting - 2026-10-07
 
 - **Why:** the Sabah intake round shortlisted students after 48 hours while the flagship did it after 55 minutes. Nobody chose 48: `success_delay_hours` was a column on the intake round that the create-a-round endpoint never set, and no screen showed it. Thirteen scheduled student messages were timed from four homes (round, organisation, platform setting, code). Roadmap `docs/plans/2026-10-07-org-timing-settings-roadmap.md`.

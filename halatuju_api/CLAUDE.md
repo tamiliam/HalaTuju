@@ -926,7 +926,7 @@ raised). What must not break:
   reaches students already waiting; the decision emails, both decline holds and the acceptance hold are
   stamped when set. The auto-close never comes sooner than reminder 4 PROMISED
   (`reminders.promised_close_days`: max(stamp, setting); NULL stamp = 5).
-- **Do not run `rescore-pending` casually** — it re-times waiting decisions to the current delay (TD-369).
+- **`rescore-pending` no longer re-times waiting decisions** — TD-369 is fixed: a rescore keeps a waiting decision's send time unless its verdict changes (a changed verdict follows its own current delay from submission).
 - **en.json is at the bundle line:** `/scholarship/application` 273.753/274, median 228.729/229 — the next
   string needs weight taken off first (TD-360).
 
