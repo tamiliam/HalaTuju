@@ -358,8 +358,12 @@ baseline before you start; never quote an inherited number.
 4. Eligibility, money or identity? Adversarial review done, findings fixed or answered.
 5. A version bump owed? `VERDICT_ENGINE_VERSION` if a band can move; the genuineness `MODEL_VERSION`
    on any doc-recognition signature change; a `PROMPT_VERSION` when a prompt changes.
-6. New strings in en/ms/ta (Malay and Tamil are first drafts until the owner reads them); a changed
-   reviewer surface updates the reviewer Guide + FAQ in the same change.
+6. New strings in en/ms/ta (Malay and Tamil are first drafts until the owner reads them **in Sol**,
+   never in chat — label them with `python manage.py sol_tag --project halatuju --tag "<sprint>"
+   --new` from `C:\Users\tamil\Python\Development\Sol`; at pre-flight `sol_status --project
+   halatuju` lists message files holding the owner's Sol edits, which are committed on their own
+   as `i18n: owner review via Sol` after `npm run i18n`); a changed reviewer surface updates the
+   reviewer Guide + FAQ in the same change.
 7. The owner's yes to push.
 
 ### Test fixtures
