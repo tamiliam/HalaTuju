@@ -241,6 +241,64 @@ class TestTheDecisionDelay(TestCase):
         _close_to(self, app.decision_due_at - app.submitted_at, timedelta(minutes=60), 5)
 
 
+class TestARescoreKeepsTheSendTime(TestCase):
+    """TD-369: a rescore keeps a waiting decision's send time unless its verdict changes, so an
+    organisation changing its delay never re-times applications already waiting."""
+
+    def _waiting(self, org, student, verdict='shortlisted'):
+        """Scored under the old 60-minute delay, two hours ago; still waiting to be released."""
+        app = make_application('scored', cohort=_org_cohort(org), student=student,
+                               verdict=verdict)
+        submitted = timezone.now() - timedelta(hours=2)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            submitted_at=submitted, decision_due_at=submitted + timedelta(hours=72))
+        app.refresh_from_db()
+        return app
+
+    def test_an_unchanged_verdict_keeps_its_due_time_after_the_delay_changes(self):
+        from apps.scholarship.services import rescore_pending_decisions
+        org = make_org()
+        app = self._waiting(org, make_shortlistable_student())
+        due = app.decision_due_at
+        _configure(org, 'shortlist_email_delay_minutes', 30)   # shorter: would release at once
+        out = rescore_pending_decisions()
+        app.refresh_from_db()
+        self.assertEqual(app.verdict, 'shortlisted')
+        self.assertEqual(app.decision_due_at, due)
+        self.assertEqual(out['changed'], [])
+
+    def test_a_flipped_verdict_follows_the_new_verdicts_current_delay(self):
+        from apps.scholarship.services import rescore_pending_decisions
+        org = make_org()
+        _configure(org, 'not_shortlisted_email_delay_hours', 24)
+        app = self._waiting(org, make_student(receives_str=True, grades={}))
+        rescore_pending_decisions()
+        app.refresh_from_db()
+        self.assertEqual(app.verdict, 'rejected')
+        _close_to(self, app.decision_due_at - app.submitted_at, timedelta(hours=24), 5)
+
+    def test_a_fresh_scoring_still_stamps_the_current_delay(self):
+        from apps.scholarship.services import score_application
+        org = make_org()
+        app = self._waiting(org, make_shortlistable_student())
+        _configure(org, 'shortlist_email_delay_minutes', 30)
+        score_application(app)
+        app.refresh_from_db()
+        _close_to(self, app.decision_due_at - app.submitted_at, timedelta(minutes=30), 5)
+
+    def test_a_released_decision_is_not_touched(self):
+        from apps.scholarship.services import rescore_pending_decisions
+        org = make_org()
+        app = make_application('shortlisted', cohort=_org_cohort(org),
+                               student=make_student(receives_str=True, grades={}))
+        before = (app.verdict, app.decision_due_at, app.decision_released_at)
+        _configure(org, 'shortlist_email_delay_minutes', 30)
+        out = rescore_pending_decisions()
+        app.refresh_from_db()
+        self.assertEqual((app.verdict, app.decision_due_at, app.decision_released_at), before)
+        self.assertEqual(out['rescored'], 0)
+
+
 class TestTheAnswerWindow(TestCase):
     """`query_answer_days` is the answer window AND the reviewer-assignment floor."""
 

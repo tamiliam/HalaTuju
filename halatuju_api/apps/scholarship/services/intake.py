@@ -191,19 +191,25 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     return application
 
 
-def score_application(application):
+def score_application(application, *, rescore=False):
     """
     Score a freshly-submitted application **silently** (S8 delayed reveal): run the
     engine, store verdict + bucket + reason, and set ``decision_due_at`` =
     submitted_at + the ORGANISATION's delay (org-timing Sprint 1: org_config
     ``shortlist_email_delay_minutes`` / ``not_shortlisted_email_delay_hours``; until then it
     was the intake round's own columns). Status stays ``submitted`` and NO email is sent —
-    the scheduler reveals the verdict later via ``release_decision``. Also reached by
-    ``rescore_pending_decisions``. Returns the ShortlistResult.
+    the scheduler reveals the verdict later via ``release_decision``.
+
+    ``rescore=True`` is passed only by ``rescore_pending_decisions`` (TD-369): a waiting
+    decision whose verdict does NOT change keeps the send time it already has, so an
+    organisation changing its delay never re-times it. A changed verdict, or one never
+    stamped, is timed from submitted_at exactly as a fresh scoring. Returns the ShortlistResult.
     """
     from apps.courses import org_config
     cohort = application.cohort
     result = evaluate(application, cohort)
+    keep_time = (rescore and application.decision_due_at is not None
+                 and result.verdict == application.verdict)
     org = application.owning_organisation
     if result.verdict == 'shortlisted':
         delay = timedelta(minutes=org_config.value(org, 'shortlist_email_delay_minutes'))
@@ -216,7 +222,8 @@ def score_application(application):
     # Engine-set rejection bucket (merit/need/ineligible) — drives the decline email
     # at reveal. Blank when shortlisted.
     application.rejection_category = result.category
-    application.decision_due_at = base + delay
+    if not keep_time:
+        application.decision_due_at = base + delay
     application.save(update_fields=[
         'verdict', 'bucket', 'shortlist_reason', 'rejection_category', 'decision_due_at',
     ])
@@ -266,7 +273,9 @@ def rescore_pending_decisions():
     """Re-score every application whose decision has NOT been released yet, applying
     the CURRENT shortlisting engine. Use after a threshold/policy change so pending
     applicants are judged by the new rule before their verdict goes out. Decisions
-    already released (and emailed) are NEVER touched. Returns a summary of any flips."""
+    already released (and emailed) are NEVER touched. A decision whose verdict stays the
+    same keeps its send time; one whose verdict flips is re-timed from submitted_at by the
+    new verdict's current delay (TD-369). Returns a summary of any flips."""
     pending = list(
         ScholarshipApplication.objects
         .filter(status='submitted', decision_released_at__isnull=True)
@@ -275,7 +284,7 @@ def rescore_pending_decisions():
     changed = []
     for application in pending:
         before = application.verdict
-        result = score_application(application)
+        result = score_application(application, rescore=True)
         if result.verdict != before:
             changed.append({
                 'id': application.id, 'from': before or '(unscored)',
