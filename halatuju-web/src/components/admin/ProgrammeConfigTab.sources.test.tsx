@@ -130,15 +130,41 @@ describe('switch → pending → save → saved', () => {
 
   it('a refused save keeps the switch and says so', async () => {
     await loaded()
-    mockApi.saveProgrammeConfiguration.mockRejectedValueOnce(Object.assign(new Error('x'), {
-      body: { code: 'unknown_source', source: 'cumig' },
-    }))
+    mockApi.saveProgrammeConfiguration.mockRejectedValueOnce(new Error('boom'))
     fireEvent.click(toggle('cumig'))
     fireEvent.click(saveButton())
     await waitFor(() => expect(screen.getByTestId('save-outcome').textContent)
       .toBe('admin.programme.config.errorGeneric'))
     expect(toggle('cumig').getAttribute('aria-checked')).toBe('true')
     expect(saveButton().disabled).toBe(false)
+  })
+
+  it('a source switched off in Sources meanwhile: re-reads, names it, keeps the rest, and the retry works', async () => {
+    // Review fix (2026-10-08): the PUT refuses EVERYTHING with `unknown_source`, so re-sending the
+    // same stale switch would fail for ever. The tab re-reads the list and keeps the other drafts.
+    await loaded()
+    mockApi.saveProgrammeConfiguration.mockRejectedValueOnce(Object.assign(new Error('x'), {
+      body: { code: 'unknown_source', source: 'cumig' },
+    }))
+    mockApi.getProgrammeConfiguration.mockResolvedValueOnce({
+      ...CONFIG, sources: [{ code: 'smc', name: 'Sri Murugan Centre', on: true }],
+    })
+    fireEvent.click(toggle('cumig'))                                   // the stale one
+    fireEvent.click(toggle('smc'))                                     // still offered
+    fireEvent.click(screen.getByTestId('row-question:fears').querySelector('button[data-state="off"]') as HTMLButtonElement)
+    fireEvent.click(saveButton())
+
+    await waitFor(() => expect(screen.getByTestId('save-outcome').textContent)
+      .toBe('admin.programme.config.sourceGone|Concerned UM Indian Graduates'))
+    expect(screen.queryByTestId('source-cumig')).toBeNull()            // gone from the list
+    expect(toggle('smc').getAttribute('aria-checked')).toBe('false')   // its draft kept
+    expect(saveButton().disabled).toBe(false)
+
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(mockApi.saveProgrammeConfiguration).toHaveBeenCalledTimes(2))
+    const [items, , , sources] = mockApi.saveProgrammeConfiguration.mock.calls[1]
+    expect(items).toEqual([{ kind: 'question', code: 'fears', state: 'off' }])
+    expect(sources).toEqual({ smc: false })
   })
 })
 

@@ -203,6 +203,21 @@ describe('how many gift forms list each source', () => {
   })
 })
 
+describe('a reserved code on the add form (review, 2026-10-08)', () => {
+  it('shows the refusal on the form — `other` is the form\'s own fixed choice', async () => {
+    mockApi.createSource.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'code_reserved' }))
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getByText(/admin\.sources\.add/))
+    fireEvent.change(screen.getByLabelText(/admin\.sources\.code/), { target: { value: 'other' } })
+    fireEvent.change(screen.getByLabelText(/^admin\.sources\.name$/), { target: { value: 'Other Org' } })
+    fireEvent.click(screen.getByText('admin.sources.create'))
+    await waitFor(() => expect(screen.getByText('admin.sources.codeTaken')).toBeTruthy())
+    expect(mockApi.createSource).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'other' }), { token: 'tok' })
+  })
+})
+
 /**
  * Request #3. The card is titled "Partner emails" and every row but one goes to an organisation.
  * The exception goes to the STUDENT, so the screen has to say so — and it must not let the

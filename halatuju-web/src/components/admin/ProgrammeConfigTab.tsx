@@ -123,6 +123,7 @@ export default function ProgrammeConfigTab() {
   // the #20 bug returning.
   const [outcome, setOutcome] = useState<
     { kind: 'idle' } | { kind: 'saved' } | { kind: 'core'; item: string } | { kind: 'error' }
+    | { kind: 'staleSource'; source: string }
   >({ kind: 'idle' })
 
   // `load` depends on the token ONLY — never on `t`. A translator handle can be a fresh function
@@ -187,11 +188,26 @@ export default function ProgrammeConfigTab() {
       setSourceDraft(sourceDraftFrom(c.sources ?? []))
       setOutcome({ kind: 'saved' })
     } catch (e) {
-      const err = e as Error & { body?: { code?: string; item?: string } }
+      const err = e as Error & { body?: { code?: string; item?: string; source?: string } }
       if (err.body?.code === 'core_item') {
         const [kind, code] = (err.body.item || ':').split(':')
         const row = config.items.find((i) => i.kind === kind && i.code === code)
         setOutcome({ kind: 'core', item: row ? t(row.label_key) : err.body.item || '' })
+      } else if (err.body?.code === 'unknown_source') {
+        // ⚠ A SOURCE WAS SWITCHED OFF IN SOURCES while this tab was open (review, 2026-10-08). The
+        // whole save was refused, and re-sending the same stale switch would fail for ever — so
+        // re-read the list, keep every item draft and every source switch still offered, and name
+        // the source that left. Nothing was saved, so Save stays awake for the rest.
+        const stale = err.body.source || ''
+        const name = config.sources?.find((s) => s.code === stale)?.name || stale
+        try {
+          const c = await getProgrammeConfiguration(programme, { token })
+          setConfig(c)
+          const kept = Object.fromEntries(Object.entries(sourceDraft)
+            .filter(([code]) => (c.sources ?? []).some((s) => s.code === code)))
+          setSourceDraft({ ...sourceDraftFrom(c.sources ?? []), ...kept })
+        } catch { /* the line below still says what happened */ }
+        setOutcome({ kind: 'staleSource', source: name })
       } else {
         setOutcome({ kind: 'error' })
       }
@@ -310,6 +326,10 @@ export default function ProgrammeConfigTab() {
                 ) : outcome.kind === 'core' ? (
                   <p className="text-xs text-critical-600" data-testid="save-outcome">
                     {t('admin.programme.config.errorCore', { item: outcome.item })}
+                  </p>
+                ) : outcome.kind === 'staleSource' ? (
+                  <p className="text-xs text-critical-600" data-testid="save-outcome">
+                    {t('admin.programme.config.sourceGone', { source: outcome.source })}
                   </p>
                 ) : outcome.kind === 'error' ? (
                   <p className="text-xs text-critical-600" data-testid="save-outcome">

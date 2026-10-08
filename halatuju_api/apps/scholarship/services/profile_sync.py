@@ -120,9 +120,11 @@ def sync_profile_fields(profile, data):
     # refused a code its gift does not offer (`gift_sources.is_offered`), and the lookup goes through
     # `active_sources()` — switched on, not suspended, NEVER a tenant — so this can never attribute
     # a student to the organisation that runs the gift.
+    # A FIXED choice (halatuju / social / other) is a chip, never an organisation: no lookup at all,
+    # so a row that somehow carries a reserved code can never collect those students (review fix).
+    from .. import gift_sources
     referral = data.get('referral_source')
-    if referral:
-        from .. import gift_sources
+    if referral and referral not in gift_sources.FIXED_CODES:
         org = gift_sources.active_sources().filter(code=referral).first()
         if org and profile.referred_by_org_id != org.pk:
             profile.referred_by_org = org

@@ -6107,6 +6107,7 @@
         "sourcesNone": "Belum ada yang dihidupkan, jadi borang ini hanya menyenaraikan tiga pilihan di bawah.",
         "sourcesAlways": "Sentiasa ada pada setiap borang:",
         "sourcesLink": "Tambah sumber atau matikan satu dalam Sumber",
+        "sourceGone": "{source} telah dimatikan dalam Sumber, jadi ia tiada lagi dalam senarai ini. Tiada apa-apa disimpan; semak dan simpan semula.",
         "desc": {
           "document": {
             "ic": "Setiap pemohon disemak terhadap IC mereka — program tidak dapat berjalan tanpanya.",

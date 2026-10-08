@@ -285,6 +285,19 @@ class TestTheSourcesPageCounts(TestCase):
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertEqual((resp.json()['gift_count'], resp.json()['gift_total']), (2, 2))
 
+    def test_a_reserved_code_is_refused_and_nothing_created(self):
+        """Review fix: a source named after a fixed form choice would collect every student who
+        picked it (profile links, partner emails on chip == code); the house org's code is the
+        Sources count's residual."""
+        for code in ('other', 'social', 'halatuju', 'brightpath', ' Other '):
+            with self.subTest(code=code):
+                before = PartnerOrganisation.objects.count()
+                resp = authed_client(self.oa).post(
+                    SOURCES, {'code': code, 'name': 'Reserved'}, format='json')
+                self.assertEqual(resp.status_code, 400, resp.content)
+                self.assertEqual(resp.json()['code'], 'code_reserved')
+                self.assertEqual(PartnerOrganisation.objects.count(), before)
+
     def test_a_new_source_joins_no_gift(self):
         resp = authed_client(self.oa).post(
             SOURCES, {'code': 'newsrc', 'name': 'New Source', 'show_in_apply': True},

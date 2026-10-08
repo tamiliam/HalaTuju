@@ -13836,7 +13836,12 @@ dropped), or an organisation wants a source on every gift automatically.
   nothing written); the form re-reads the list and asks the student to choose again in plain words,
   keeping everything else. Blank stays accepted (the form requires a choice; the server does not).
   A saved code the list does not offer is cleared on the form, never silently resubmitted.
-- `referred_by_org` is linked only through `gift_sources.active_sources()` — never a tenant.
+- ON THE APPLY PATH, `referred_by_org` is linked only through `gift_sources.active_sources()` —
+  never a tenant, never a switched-off source, never for a fixed choice. That holds for the apply
+  submit only: the course-selector `ProfileView.put` and `ProfileSyncView.post`
+  (`apps/courses/views.py`, the latter fed by `?ref=` links) still link ANY active organisation,
+  tenants included, and `sync_profile_fields` never clears a stale link when a student now picks a
+  fixed choice — TD-380.
 
 `test_setting_a_gift_does_NOT_narrow_the_student_form_yet` (decisions.md "A source's gift records
 intent…" and the entry above) was replaced by `test_switching_a_source_on_for_a_gift_reaches_its_student_form`

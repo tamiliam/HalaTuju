@@ -838,13 +838,20 @@ describe('apply stash / return marker (My Results onboarding round-trip)', () =>
 describe('option constants', () => {
   // The referring-org list left this file on 2026-10-08 (per-gift referral sources): the form
   // offers the gift's served sources plus the fixed three — `referralSources.test.ts`.
-  it('keeps an acronym for the fixed three, and reads a retired or unknown code as Other', () => {
+  it('keeps an acronym for the fixed three, and reads other and the retired two as Other', () => {
     expect(referralAcronym('halatuju')).toBe('Halatuju')
     expect(referralAcronym('social')).toBe('Social')
     expect(referralAcronym('other')).toBe('Other')
     expect(referralAcronym('pushparani')).toBe('Other')
     expect(referralAcronym('govind')).toBe('Other')
     expect(referralAcronym('')).toBe('')
+    expect(referralAcronym(null)).toBe('')
+  })
+  it('reads a NEW source by its served name, else its code in upper case — never "Other"', () => {
+    // Review fix (2026-10-08): a source added on Sources used to read "Other" on the list and the pill.
+    expect(referralAcronym('newsrc', 'A New Source')).toBe('A New Source')
+    expect(referralAcronym('newsrc')).toBe('NEWSRC')
+    expect(referralAcronym('smc', 'Sri Murugan Centre')).toBe('SMC')   // a known acronym still wins
   })
   it('offers the four call languages and the 16 states', () => {
     expect(CALL_LANGUAGE_OPTIONS).toEqual(['en', 'ms', 'ta', 'mixed'])

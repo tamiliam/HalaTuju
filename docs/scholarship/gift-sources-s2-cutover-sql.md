@@ -57,5 +57,14 @@ reverse is a documented no-op. If the ledger row must be withdrawn before deploy
 `DELETE FROM django_migrations WHERE app = 'courses' AND name = '0077_retire_legacy_referral_codes';`
 (the data stays `other`, which every admin surface already showed it as).
 
-**Deploy order:** safe either way round. The old image still lists both codes and accepts
-`other`; the new one lists neither and refuses both at submit (`referral_source_not_offered`).
+**Deploy order:** this data migration is safe either way round. The old image still lists both
+codes and accepts `other`; the new one lists neither and refuses both at submit
+(`referral_source_not_offered`). The SCHEMA one is not: 0172 must be applied before the push (see
+the S1 doc — the new image's public intake and its submit read the new table).
+
+## Deploy window (accepted)
+
+The api and web deploy separately. While the NEW api is live and the OLD web still serves, the old
+form still offers its hard-coded list, so a student can submit `sathya_sai`, `tara`, `pushparani`
+or `govind`; the new api refuses those (400 `referral_source_not_offered`) and the old form shows
+its generic error. Minutes, on a low-traffic form — accepted.

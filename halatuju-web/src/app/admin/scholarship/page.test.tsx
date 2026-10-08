@@ -135,6 +135,20 @@ describe('the Source filter and tooltips read the registry', () => {
     await waitFor(() => expect(screen.getAllByTitle('Sri Murugan Centre').length).toBeGreaterThan(0))
     expect(screen.getAllByTitle('newsrc').length).toBeGreaterThan(0)
     expect(document.querySelector('[title^="scholarship.apply.org."]')).toBeNull()
+    // The column: a source with no acronym entry reads as its code in capitals — not "Other".
+    expect(screen.getAllByTitle('newsrc').every((el) => el.textContent === 'NEWSRC')).toBe(true)
+  })
+
+  it('names a new source in the column by its served name (review fix)', async () => {
+    mockApi.getSources.mockResolvedValue({ sources: [{ code: 'newsrc', name: 'A New Source' }] } as
+      unknown as Awaited<ReturnType<typeof api.getSources>>)
+    mockApi.getScholarshipApplications.mockResolvedValue({
+      ...EMPTY_LIST, count: 1, total_count: 1, applications: [row('newsrc')],
+    })
+    render(<AdminScholarshipList />)
+    await waitFor(() => expect(screen.getAllByTitle('A New Source').length).toBeGreaterThan(0))
+    expect(screen.getAllByTitle('A New Source').every((el) => el.textContent === 'A New Source')).toBe(true)
+    expect(screen.queryByText('Other')).toBeNull()
   })
 
   it('a role the Sources endpoint refuses still gets the fixed three', async () => {

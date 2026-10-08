@@ -342,14 +342,19 @@ closes TD-230). The PUBLIC intake (`ScholarshipIntakeView`) serves `sources: [{c
 `gift_sources.public_sources(p)` for the gift `programme_code` names, `[]` when none can be named;
 code and name ONLY (a leak test plants contact details). The apply form (`ReferralSelect`, options
 from `lib/referralSources.ts`) lists them, then the three FIXED choices `halatuju` / `social` /
-`other` always (`gift_sources.FIXED_CODES`, drift-tested); a saved code not in the list is cleared.
-The submit REFUSES any other code (400 `referral_source_not_offered`, `gift_sources.is_offered`,
-nothing written) and the form re-reads the list and asks again; `profile_sync` links
-`referred_by_org` only through `active_sources()` — never a tenant. `REFERRING_ORG_OPTIONS` is
-deleted; the legacy `pushparani` / `govind` were moved to `other` (courses 0077). Admin labels come
-from the registry's names (`referralLabel`), never a per-source message key. ⚠ The course-selector
-`ProfileView` / `ProfileSyncView` (`apps/courses/views.py`) still accept and link any active
-`PartnerOrganisation` code — untouched by this work.
+`other` always (`gift_sources.FIXED_CODES`, drift-tested); a saved code not in the list is cleared
+— but ONLY when the list is known (a `sources` list, for a named gift); otherwise it is kept and
+shown by its code. The submit REFUSES any other code (400 `referral_source_not_offered`,
+`gift_sources.is_offered`, nothing written) and the form re-reads the list and asks again; on the
+apply path `profile_sync` links `referred_by_org` only through `active_sources()` (never a tenant,
+never for a fixed choice). The fixed codes and the house org's are RESERVED on Sources
+(`code_reserved`). `REFERRING_ORG_OPTIONS` is deleted; the legacy `pushparani` / `govind` were moved
+to `other` (courses 0077). Admin labels come from the registry's names (`referralLabel`, and
+`referralAcronym(code, name)` — a new source reads as its name or its code, never "Other"), never a
+per-source message key. ⚠ The course-selector `ProfileView` / `ProfileSyncView`
+(`apps/courses/views.py`) still link any active `PartnerOrganisation` code, tenants included, and a
+stale link is never cleared at submit (TD-380). The Sources registry is shared across tenants
+(TD-381).
 
 ⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
 grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /

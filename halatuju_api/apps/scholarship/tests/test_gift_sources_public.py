@@ -172,6 +172,18 @@ class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
         student.refresh_from_db()
         self.assertEqual(student.referred_by_org_id, self.smc.id)
 
+    def test_a_fixed_choice_never_links_even_if_a_row_carries_its_code(self):
+        """Review fix: the Sources POST now refuses a reserved code, but a row from before (or
+        written another way) must still never collect the "Other" students."""
+        from apps.scholarship.services import sync_profile_fields
+        squatter = _source('other', 'A Row Called Other')
+        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=squatter)
+        student = make_student()
+        sync_profile_fields(student, {'referral_source': 'other'})
+        student.refresh_from_db()
+        self.assertIsNone(student.referred_by_org_id)
+        self.assertEqual(student.referral_source, 'other')
+
 
 class TestTheLegacyCodesMigration(TestCase):
     def test_pushparani_and_govind_move_to_other_and_nothing_else_moves(self):

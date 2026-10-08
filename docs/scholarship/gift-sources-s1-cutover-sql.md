@@ -29,6 +29,15 @@ SELECT count(*) AS sources, count(s.programme_id) AS with_gift
                     WHERE tp.organisation_id = s.id AND tp.is_active)
    AND NOT EXISTS (SELECT 1 FROM partner_admins a
                     WHERE a.owning_organisation_id = s.id AND a.role = 'org_admin' AND a.is_active);
+-- Which sources, exactly (expected 2026-10-08, verified by the lead on production that day):
+--   cumig,ewrf,hss,hyo,mhm,pptm,smc
+SELECT string_agg(s.code, ',' ORDER BY s.code)
+  FROM partner_organisations s
+ WHERE s.show_in_apply AND s.is_active
+   AND NOT EXISTS (SELECT 1 FROM scholarship_programmes tp
+                    WHERE tp.organisation_id = s.id AND tp.is_active)
+   AND NOT EXISTS (SELECT 1 FROM partner_admins a
+                    WHERE a.owning_organisation_id = s.id AND a.role = 'org_admin' AND a.is_active);
 COMMIT;
 ```
 
@@ -101,6 +110,21 @@ COMMIT;
 
 After the deploy the new image reads this table on the gift Configuration screen and the Sources
 list; dropping it then would 500 both. Roll the service back first.
+
+## Order — migrate FIRST, then deploy
+
+Deploying before this is applied would 500 the gift Configuration screen and the Sources list —
+and, because Sprint 2 ships in the same push, the PUBLIC intake (every apply-page load reads
+`sources`) and every submit carrying a non-fixed referral code.
+
+## Deploy window (accepted)
+
+The api and web deploy separately. While the NEW api is live and the OLD web still serves, the old
+form still offers its hard-coded list, so a student can submit `sathya_sai`, `tara`, `pushparani`
+or `govind`; the new api refuses those (400 `referral_source_not_offered`) and the old form shows
+its generic error. The window is minutes and the form is low-traffic — accepted, not engineered
+around. Deploying web first is not better: the new form against the old api keeps a saved code it
+cannot verify and the old api accepts any code.
 
 **Not touched:** `partner_organisations.programme_id` stays (deprecated, unread; its drop is a
 later contract migration). No change to any existing table's RLS.

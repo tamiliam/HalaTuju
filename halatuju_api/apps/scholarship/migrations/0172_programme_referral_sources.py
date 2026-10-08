@@ -22,7 +22,9 @@ row, in ONE transaction — is `docs/scholarship/gift-sources-s1-cutover-sql.md`
 
 ⚠ BETWEEN MIGRATE AND DEPLOY the image already serving never reads this table, so the order is
 safe. Deploying BEFORE migrating is not: the gift Configuration screen and the Sources list read
-it on every load and would 500.
+it on every load and would 500 — and so, since Sprint 2 ships in the same push, would the PUBLIC
+intake (`sources` is read on every apply-page load) and every submit carrying a non-fixed referral
+code (`gift_sources.is_offered`).
 """
 
 import django.db.models.deletion

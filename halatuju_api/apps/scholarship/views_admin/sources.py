@@ -147,6 +147,14 @@ class AdminSourcesView(_SourcesBase):
         if not code or not name:
             return Response({'error': 'code_and_name_required', 'code': 'code_and_name_required'},
                             status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ RESERVED CODES (review, 2026-10-08): the three fixed form choices are referral CHIPS on
+        # every student who picked them. A source row named `other` would collect every "Other"
+        # student (profile_sync links, partner_notify / partner_comms email on chip == code), and the
+        # house org's code is the Sources count's residual. Refused before the clash check.
+        from .. import gift_sources
+        if code in gift_sources.FIXED_CODES or code == HOUSE_ORG_CODE:
+            return Response({'error': 'code_reserved', 'code': 'code_reserved'},
+                            status=status.HTTP_400_BAD_REQUEST)
         if PartnerOrganisation.objects.filter(code=code).exists():
             return Response({'error': 'code_taken', 'code': 'code_taken'},
                             status=status.HTTP_400_BAD_REQUEST)

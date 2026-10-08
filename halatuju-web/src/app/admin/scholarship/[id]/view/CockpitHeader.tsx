@@ -33,6 +33,10 @@ export function CockpitHeader({
   doCancelDecline: () => void
   doHoldAward: () => void
 }) {
+  // The referral pill: a source's SERVED name, from the organisation the profile is linked to.
+  const refOrg = app.referred_by_org
+  const refNames = refOrg ? { [refOrg.code]: refOrg.name } : undefined
+  const refTag = referralAcronym(app.referral_source, refNames?.[app.referral_source ?? ''])
   return (<>
 
       {/* Header — applicant identity, status, and key facts at a glance */}
@@ -100,13 +104,12 @@ export function CockpitHeader({
               {app.birth_state.warning}
             </span>
           ) : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
-          {referralAcronym(app.referral_source) && (
+          {refTag && (
             <span
-              title={referralLabel(app.referral_source, t, app.referred_by_org
-                ? { [app.referred_by_org.code]: app.referred_by_org.name } : undefined)}
+              title={referralLabel(app.referral_source, t, refNames)}
               className="rounded-full border border-ground-200 px-2 py-0.5 font-medium text-ground-600"
             >
-              {referralAcronym(app.referral_source)}
+              {refTag}
             </span>
           )}
           {(() => {

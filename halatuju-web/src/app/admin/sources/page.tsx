@@ -74,7 +74,9 @@ export default function SourcesPage() {
 
   const errText = (err: unknown) => {
     const code = (err as { code?: string })?.code
-    if (code === 'code_taken') return t('admin.sources.codeTaken')
+    // A reserved code (`other`, `social`, `halatuju`, the house org) reads as taken — it is, by
+    // the form's fixed choices — so no new string rides on every route (review, 2026-10-08).
+    if (code === 'code_taken' || code === 'code_reserved') return t('admin.sources.codeTaken')
     if (code === 'code_and_name_required') return t('admin.sources.codeAndNameRequired')
     return err instanceof Error ? err.message : t('admin.actionFailed')
   }

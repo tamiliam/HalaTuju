@@ -6107,6 +6107,7 @@
         "sourcesNone": "None is on yet, so this form lists only the three below.",
         "sourcesAlways": "Always on every form:",
         "sourcesLink": "Add a source or switch one off in Sources",
+        "sourceGone": "{source} was switched off in Sources, so it has left this list. Nothing was saved; check and save again.",
         "desc": {
           "document": {
             "ic": "Every applicant is checked against their IC — the programme can't run without it.",

@@ -32,20 +32,21 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
 export type ReferringOrg = string
 
 // Short source tag for admin surfaces (owner-defined, 2026-06-22). Partner orgs keep their
-// official acronym; self/website → "Halatuju"; social → "Social"; the generic "other" → "Other".
-// (The legacy `pushparani` / `govind` were moved to `other` on 2026-10-08 and need no entry: an
-// unknown code already reads "Other".)
+// official acronym; self/website → "Halatuju"; social → "Social"; the generic "other" and the
+// legacy individual coordinators `pushparani` / `govind` (moved to `other` on 2026-10-08) → "Other".
 export const REFERRAL_SOURCE_ACRONYM: Record<string, string> = {
   smc: 'SMC', cumig: 'CUMIG', ewrf: 'EWRF', hyo: 'HYO', mhm: 'MHDM',
   sathya_sai: 'SSBC', tara: 'TARA', hss: 'HSS', pptm: 'PPTM',
-  halatuju: 'Halatuju', social: 'Social', other: 'Other',
+  halatuju: 'Halatuju', social: 'Social', other: 'Other', pushparani: 'Other', govind: 'Other',
 }
 
-// Acronym for a referral_source code. Blank → '' (caller renders a dash); any unknown
-// non-blank code → 'Other' so a stray legacy value never leaks a raw code to the admin.
-export function referralAcronym(code?: string | null): string {
+// Tag for a referral_source code. Blank → '' (caller renders a dash). A code with no entry above is
+// a source added on Sources since (per-gift sources, review 2026-10-08) — it reads as that source's
+// SERVED name when the caller has it, else the code in upper case; never "Other", which would file a
+// real partner's students under the catch-all.
+export function referralAcronym(code?: string | null, name?: string): string {
   if (!code) return ''
-  return REFERRAL_SOURCE_ACRONYM[code] ?? 'Other'
+  return REFERRAL_SOURCE_ACRONYM[code] ?? (name || code.toUpperCase())
 }
 
 // Preferred language for phone calls (B40 outreach). Labels via i18n

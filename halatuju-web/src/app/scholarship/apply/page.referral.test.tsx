@@ -128,6 +128,49 @@ describe('a saved choice', () => {
     await waitFor(() => expect(select().value).toBe(''))
   })
 
+  // ── Review fix (2026-10-08): clear ONLY when the list is really known ──────────────────────
+  it('is KEPT and shown when the intake fails — an intake blip never costs her the attribution', async () => {
+    intake.mockRejectedValue(new Error('down'))
+    mount('smc')
+    await waitFor(() => expect(screen.getByTestId('referral-select')).toBeTruthy())
+    await act(async () => { await Promise.resolve() })
+    expect(select().value).toBe('smc')
+    // Shown as an extra option labelled with its code — never the placeholder over a hidden value.
+    expect(optionCodes()).toEqual(['', 'halatuju', 'social', 'other', 'smc'])
+    expect(optionLabels()[4]).toBe('smc')
+  })
+
+  it('is KEPT when an older api sends no `sources` (the web deployed first)', async () => {
+    intake.mockResolvedValue(OPEN())
+    mount('smc')
+    await screen.findByTestId('apply-gift-line')
+    await act(async () => { await Promise.resolve() })
+    expect(select().value).toBe('smc')
+  })
+
+  it('is KEPT on an ambiguous visit until a gift is picked — then the rule applies', async () => {
+    const TWO = { open: true, cohort_name: '', programme_code: '', apply_copy: {}, sources: [],
+      choices: [{ code: 'bp', name: 'BrightPath 2026' }, { code: 'sabah', name: 'Sabah 2026' }] }
+    const coded = (code: string) => ({ ...OPEN(code === 'bp' ? [CUMIG] : [SMC]), programme_code: code,
+      cohort_name: code === 'bp' ? 'BrightPath 2026' : 'Sabah 2026' })
+    intake.mockImplementation((code?: string) => Promise.resolve(code ? coded(code) : TWO))
+    mount('cumig')
+    await screen.findByText('scholarship.apply.chooseTitle')
+    // A gift that offers it: still there, so nothing cleared it while no gift was named.
+    fireEvent.click(screen.getByLabelText('BrightPath 2026'))
+    fireEvent.click(screen.getByTestId('apply-choose-continue'))
+    await screen.findByTestId('apply-gift-line')
+    await act(async () => { await Promise.resolve() })
+    expect(select().value).toBe('cumig')
+    // Change to a gift that does not: now the list is known, and it is cleared.
+    fireEvent.click(screen.getByTestId('apply-gift-change'))
+    await screen.findByText('scholarship.apply.chooseTitle')
+    fireEvent.click(screen.getByLabelText('Sabah 2026'))
+    fireEvent.click(screen.getByTestId('apply-choose-continue'))
+    await screen.findByTestId('apply-gift-line')
+    await waitFor(() => expect(select().value).toBe(''))
+  })
+
   it('that the list offers is kept', async () => {
     intake.mockResolvedValue(OPEN([SMC]))
     mount('smc')

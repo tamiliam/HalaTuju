@@ -372,7 +372,7 @@ export default function AdminScholarshipList() {
 
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-500">
                   <span title={sourceTitle(a.referral_source)}>
-                    {referralAcronym(a.referral_source) || '—'}
+                    {referralAcronym(a.referral_source, sourceNames[a.referral_source ?? '']) || '—'}
                   </span>
                   <span>{formatDate(a.submitted_at)}</span>
                 </div>
@@ -463,7 +463,7 @@ export default function AdminScholarshipList() {
                       {a.name || '—'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-ground-600" title={sourceTitle(a.referral_source)}>{referralAcronym(a.referral_source) || '—'}</td>
+                  <td className="px-4 py-3 text-ground-600" title={sourceTitle(a.referral_source)}>{referralAcronym(a.referral_source, sourceNames[a.referral_source ?? '']) || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bucketBadge(a.bucket)}`}>{a.bucket || '—'}</span>
                   </td>
