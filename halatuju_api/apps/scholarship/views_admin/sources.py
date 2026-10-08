@@ -19,7 +19,7 @@ from .gift_programmes import AdminProgrammeListView
 # today, so source rows are shared and NOT org-fenced (multi-tenant fencing of shared source
 # rows is deliberately out of scope — see the plan's Out of scope / future).
 
-def _source_dict(org, student_count=None):
+def _source_dict(org, student_count=None, gift_count=0, gift_total=0):
     return {
         'id': org.id,
         'code': org.code,
@@ -28,25 +28,37 @@ def _source_dict(org, student_count=None):
         'contact_email': org.contact_email or '',
         'phone': org.phone or '',
         'show_in_apply': bool(org.show_in_apply),
-        # WHICH GIFT'S apply form lists this source (S-ASSIGN, 2026-09-04). NULL = every gift,
-        # which is what all seven live referral organisations have and what needs no backfill.
+        # HOW MANY GIFTS' apply forms list this source (per-gift referral sources, 2026-10-08):
+        # links on the ACTIVE gifts in the caller's scope, of `gift_total` such gifts. Each gift
+        # chooses its sources in its own Configuration (`gift_sources`); this page only counts.
+        # The old single-gift `PartnerOrganisation.programme` is deprecated and no longer served.
         #
-        # ⚠ IT NARROWS `show_in_apply`, and `show_in_apply` DOES NOT YET REACH THE STUDENT FORM.
-        # The apply form's referring-organisation list is still the hard-coded
-        # `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts`; nothing reads this flag on
-        # the student side yet. So setting a gift here records the organisation's intent and
-        # changes NOTHING a visitor sees — do not read a value in this column as proof that the
-        # form is narrowed. Wiring the form to the registry is its own change, and it is what
-        # makes this field bite.
+        # ⚠ IT DOES NOT YET REACH THE STUDENT FORM. The apply form's list is still the hard-coded
+        # `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts` until Sprint 2 wires it to
+        # these links — so a count here is the organisation's choice, not proof the form follows.
         #
         # ⚠ NOT ACCESS CONTROL. A referral organisation is an ATTRIBUTION relationship, never a
         # scope — the same warning `PartnerAdmin.org` and `referred_by_org` carry.
-        'programme_id': org.programme_id,
-        'programme_name': (org.programme.name_en or org.programme.code)
-                          if org.programme_id else '',
+        'gift_count': gift_count,
+        'gift_total': gift_total,
         'is_active': bool(org.is_active),
         'student_count': student_count,
     }
+
+
+def _gift_scope(admin):
+    """The caller's gifts, for the per-source count — the same scope the gift list uses."""
+    return AdminProgrammeListView()._programmes_for(admin)
+
+
+def _one_source_dict(admin, org):
+    """One row, counted the same way as the list (a PATCH answers with the row it changed)."""
+    from .. import gift_sources
+    scope = _gift_scope(admin)
+    counted = gift_sources.gift_counts(type(org).objects.filter(pk=org.pk), scope).first()
+    return _source_dict(org, _source_application_counts().get(org.id, 0),
+                        counted.gift_count if counted else 0,
+                        scope.filter(is_active=True).count())
 
 
 # The platform's own bursary programme — the "house" organisation. Applicants who did
@@ -116,17 +128,14 @@ class AdminSourcesView(_SourcesBase):
         if err:
             return err
         from apps.courses.models import PartnerOrganisation
+        from .. import gift_sources
         counts = _source_application_counts()
-        orgs = PartnerOrganisation.objects.select_related('programme').order_by('name')
+        scope = _gift_scope(admin)
+        total = scope.filter(is_active=True).count()
+        # ONE annotated query for every row's gift count (never one per row).
+        orgs = gift_sources.gift_counts(PartnerOrganisation.objects.all(), scope).order_by('name')
         return Response({
-            'sources': [_source_dict(o, counts.get(o.id, 0)) for o in orgs],
-            # The gift choices behind the per-source picker. ACTIVE only: this narrows which
-            # apply form lists the source, and a form that is not open lists nothing.
-            'programmes': [
-                {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
-                for p in AdminProgrammeListView()._programmes_for(admin)
-                                                 .filter(is_active=True).order_by('code')
-            ],
+            'sources': [_source_dict(o, counts.get(o.id, 0), o.gift_count, total) for o in orgs],
         })
 
     def post(self, request):
@@ -149,7 +158,8 @@ class AdminSourcesView(_SourcesBase):
             phone=(request.data.get('phone') or '').strip()[:30],
             show_in_apply=bool(request.data.get('show_in_apply', False)),
         )
-        return Response(_source_dict(org, 0), status=status.HTTP_201_CREATED)
+        # A new source joins NO gift (owner, 2026-10-08) — each gift switches it on itself.
+        return Response(_one_source_dict(admin, org), status=status.HTTP_201_CREATED)
 
 
 class AdminSourceDetailView(_SourcesBase):
@@ -164,6 +174,13 @@ class AdminSourceDetailView(_SourcesBase):
         if org is None:
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
+        # ⚠ `programme_id` IS REFUSED, NOT IGNORED (2026-10-08): a gift now chooses its sources in
+        # its own Configuration, and a client still sending one gift would otherwise believe it
+        # had been saved. Refused before anything is written; the deprecated
+        # `PartnerOrganisation.programme` column is never written again.
+        if 'programme_id' in request.data:
+            return Response({'error': 'programme_id_retired', 'code': 'programme_id_retired'},
+                            status=status.HTTP_400_BAD_REQUEST)
         fields = []
         if 'name' in request.data:
             org.name = (request.data.get('name') or '').strip()[:200]
@@ -180,24 +197,9 @@ class AdminSourceDetailView(_SourcesBase):
         if 'show_in_apply' in request.data:
             org.show_in_apply = bool(request.data.get('show_in_apply'))
             fields.append('show_in_apply')
-        if 'programme_id' in request.data:
-            # Blank/null CLEARS it, and clearing means EVERY gift — the permissive default all
-            # seven live sources carry. A gift outside the caller's organisation is refused, so
-            # a tenant cannot list a source on somebody else's form.
-            asked = request.data.get('programme_id')
-            if asked in (None, ''):
-                org.programme = None
-            else:
-                programme = AdminProgrammeListView()._programmes_for(admin).filter(
-                    pk=asked).first()
-                if programme is None:
-                    return Response({'error': 'not_found', 'code': 'not_found'},
-                                    status=status.HTTP_404_NOT_FOUND)
-                org.programme = programme
-            fields.append('programme')
         if 'is_active' in request.data:
             org.is_active = bool(request.data.get('is_active'))
             fields.append('is_active')
         if fields:
             org.save(update_fields=fields)
-        return Response(_source_dict(org, _source_application_counts().get(org.id, 0)))
+        return Response(_one_source_dict(admin, org))

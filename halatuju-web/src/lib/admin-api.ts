@@ -222,7 +222,8 @@ export {
 } from './admin-api/orgConfig'
 export type {
   AdminScopeOrg, AdminScopeProgramme, AdminScopes, ProgrammeItemState, ProgrammeConfigItem,
-  ProgrammeConfiguration, OrganisationConfigSetting, OrganisationConfiguration,
+  ProgrammeConfigSource, ProgrammeConfiguration, OrganisationConfigSetting,
+  OrganisationConfiguration,
 } from './admin-api/orgConfig'
 
 // The organisation's colours: draft, contrast check, publish, revert.

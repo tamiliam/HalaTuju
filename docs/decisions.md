@@ -13775,3 +13775,48 @@ the student's own change at `recommended` stays as a second line for any row tha
 `recommended` unlocked before this stop shipped.
 **Revisit if:** a new route into `recommended` appears, or the lock-release door at `awarded` is
 seen used for anything but a correction.
+
+## 2026-10-08 — A gift chooses its referral sources (a list, not one gift per source)
+
+**Decision (owner's rulings, 2026-10-08; per-gift referral sources Sprint 1):** each gift
+(`Programme`) chooses its own set of referral sources, in that gift's Configuration — a "Who
+referred you?" card under Questions, one site `Toggle` per source (owner: "toggles not tick
+boxes"), saved by the tab's one SaveBar. Stored as `ProgrammeReferralSource` (programme, source)
+rows, migration 0172. The rulings:
+- The card lists every ACTIVE source — `show_in_apply` AND `is_active`, never a tenant row
+  (`PartnerOrganisation.objects.tenants()`). The organisation decides per gift.
+- **A newly switched-on source joins NO gift, and a new gift starts with NO sources.** No row means
+  "not on this form"; the form then shows only the three fixed defaults, and the card says so.
+- The three fixed defaults — Halatuju.xyz (`halatuju`), Facebook / WhatsApp (`social`), Other
+  (`other`) — are on every form and are NOT toggles; the card shows them as a read-only footer.
+- Seeded at migration: every ACTIVE gift gets every active source, except a source whose old
+  `programme` FK was set, which goes on that one gift only (production: 7 sources, none set, 2
+  active gifts → 14 rows; the inactive `testing` gift gets none).
+- The Sources page keeps the Active switch, loses the gift picker, shows "On N of M gifts" (or
+  "On no gift form") counted over the caller's ACTIVE gifts, and after a switch-ON says "Now
+  switch it on in each gift's Configuration."
+- Expand-contract: `PartnerOrganisation.programme` is deprecated — no longer served, accepted
+  (the PATCH refuses `programme_id`, 400 `programme_id_retired`) or read; its drop is a later
+  migration.
+
+**What this supersedes — FOR SOURCES ONLY:** "A gift scope is NULL-means-everything, with no
+backfill" (S-ASSIGN, 2026-09-04) and "One gift per person, not a list" (S-ASSIGN, 2026-09-04) no
+longer govern referral sources. Both still govern `PartnerAdmin.programme` and
+`Invitation.programme` unchanged. For sources the default is now the opposite one — empty means
+NOT listed — because a source is a dropdown's CONTENTS chosen per form, not a narrowing of who is
+offered work; and a list is needed because one source may sit on two of three gifts. "A source's
+gift records intent and reaches no student" still holds in its second half until Sprint 2: the
+apply form reads `REFERRING_ORG_OPTIONS`, and `test_setting_a_gift_does_NOT_narrow_the_student_form_yet`
+(rewritten) pins that the intake reads neither `show_in_apply` nor the links.
+
+**Alternatives considered:** (a) keep one FK per source with NULL = every gift — cannot express a
+source on two of three gifts, and makes "switch on" silently add the source to every form;
+(b) a per-gift list that defaults to every active source — a new gift would inherit whatever
+was switched on that day, and switching a source on would change every live form at once.
+
+**Trade-offs:** a source switched on in Sources appears on no form until somebody switches it on
+per gift — the page says so after the switch. A link whose source is later switched off stays in
+the table and is simply not offered (switching it back on restores it).
+
+**Revisit if:** Sprint 2 (the apply form and intake read the links, TD-230 closes, the old FK is
+dropped), or an organisation wants a source on every gift automatically.

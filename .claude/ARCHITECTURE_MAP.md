@@ -290,8 +290,9 @@ checked server-side.
 - **The applications query reaches through the cohort** — `Q(programme=p) | Q(cohort__programme=p)`.
   `ScholarshipApplication.programme` is set-once, so a cohort moved between gifts leaves its old
   applications pointing at the old gift; the column alone would call the new gift empty.
-- `ProgrammeApplicationItem` is CASCADE (the gift's own configuration); invitations, sources and
-  reviewers are SET_NULL — a narrowing whose gift is gone falls back to "every gift".
+- `ProgrammeApplicationItem` and `ProgrammeReferralSource` are CASCADE (the gift's own
+  configuration); invitations and reviewers are SET_NULL — a narrowing whose gift is gone falls
+  back to "every gift".
 
 ⚠ **THE SHELL'S SCOPE LIST IS FETCHED ONCE PER SESSION AND MUST BE REFRESHED AFTER A CREATE.**
 `ProgrammeScopeProvider` refuses to resolve a code it does not recognise (correctly — accepting one
@@ -305,16 +306,25 @@ switched on, so that is the state an org_admin most often stands inside. Two end
 `AdminProgrammeConfigurationView._programme_for` — and both now return the caller's programmes
 whatever their state. Do not re-add either filter; the FENCE is the organisation.
 
-**Who is scoped to a gift** (S-ASSIGN, 2026-09-04). Three nullable FKs to `Programme`, and on all
-three **NULL MEANS EVERY GIFT** with **no backfill** — the permissive default every live row still
+**Who is scoped to a gift** (S-ASSIGN, 2026-09-04). Nullable FKs to `Programme`, and on each
+**NULL MEANS EVERY GIFT** with **no backfill** — the permissive default every live row still
 carries:
 
 | Column | Narrows | Set from |
 |---|---|---|
 | `SponsorProgrammeMembership` (existing) | which gift's students a benefactor sees, and where their money may be credited | the accept panel on `/admin/sponsors/<id>`, or `signup_programme_for` at registration |
 | `PartnerAdmin.programme` | who is OFFERED a case in the assignment dropdown | `POST admin/reviewers/<pk>/programme/` |
-| `PartnerOrganisation.programme` | which gift's apply form lists a referral source | the Sources screen |
 | `Invitation.programme` | which gift a sponsor invitation was for | the sponsor invite form |
+
+**Referral sources are NOT on this table any more** (per-gift sources, 2026-10-08): each gift
+CHOOSES its sources — `ProgrammeReferralSource` (programme, source) rows, set by the "Who referred
+you?" card on the gift's Configuration (`AdminProgrammeConfigurationView`, rules in
+`apps/scholarship/gift_sources.py`). The card offers only ACTIVE sources (`show_in_apply` AND
+`is_active`, never `tenants()`); **no row = not on that form** (the opposite default to the table
+above): a newly switched-on source joins no gift and a new gift starts with none. The Sources
+page only counts ("On N of M gifts", one annotated query). `PartnerOrganisation.programme` is
+DEPRECATED — read and written by nothing; migration 0172 seeded the links from it; a later
+migration drops it.
 
 ⚠ **A GIFT SCOPE IS A NARROWING, NEVER A FENCE.** The organisation boundary is
 `_org_scoped`/`_org_allows`; these decide who is offered work. A reviewer scoped to one gift who is
@@ -327,10 +337,11 @@ answers from evidence — the invitation they answered, else the platform's sole
 **None is a real answer**: several gifts open and no invitation writes nothing rather than guessing.
 `sync_account_membership(sponsor, programme, …)` takes the programme REQUIRED and POSITIONAL.
 
-⚠ **`PartnerOrganisation.programme` REACHES NO STUDENT YET** (TD-230). The apply form's source list
-is the hard-coded `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts`, and nothing
-student-facing reads `show_in_apply` at all. A test asserts that; a value in that column is intent,
-not proof the form is narrowed.
+⚠ **A GIFT'S SOURCE CHOICES REACH NO STUDENT YET** (TD-230; per-gift sources Sprint 2 wires
+them). The apply form's source list is the hard-coded `REFERRING_ORG_OPTIONS` constant in
+`lib/scholarship.ts`, and nothing student-facing reads `show_in_apply` or `ProgrammeReferralSource`.
+A test asserts that (`test_setting_a_gift_does_NOT_narrow_the_student_form_yet`); a link row is
+the organisation's choice, not proof the form is narrowed.
 
 ⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
 grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /

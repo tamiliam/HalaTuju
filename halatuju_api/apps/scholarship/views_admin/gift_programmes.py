@@ -217,11 +217,14 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         This is what closes TD-232: a gift created by mistake and given one stray year used to be
         stuck for ever, and so was the year (there is still no way to delete a year on its own).
 
-        ⚠ WHAT ELSE GOES WITH IT, deliberately: `ProgrammeApplicationItem` is CASCADE — those rows
-        are the gift's own configuration, meaningless without it. And `Invitation`,
-        `PartnerOrganisation.programme` and `PartnerAdmin.programme` are SET_NULL, which is exactly
-        right: those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift"
-        (the S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer.
+        ⚠ WHAT ELSE GOES WITH IT, deliberately: `ProgrammeApplicationItem` and
+        `ProgrammeReferralSource` are CASCADE — those rows are the gift's own configuration (what it
+        asks for, which sources its form lists), meaningless without it; the sources themselves
+        stay. And `Invitation` and `PartnerAdmin.programme` are SET_NULL, which is exactly right:
+        those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift" (the
+        S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer. (The
+        deprecated `PartnerOrganisation.programme` is SET_NULL too, and read by nothing since
+        2026-10-08.)
 
         ⚠ ITS UNSIGNED AGREEMENT TEMPLATES GO WITH IT TOO — owner ruling, 2026-10-03 (TD-229). A
         template is `PROTECT` from its gift, like a year, and is cleared here explicitly for the same

@@ -687,7 +687,6 @@
     "rankingCourses": "Menyusun kursus anda...",
     "failedToLoad": "Gagal memuatkan cadangan. Sila cuba lagi.",
     "reportTitle": "Laporan Kaunselor AI",
-    "reportDesc": "Dapatkan laporan bimbingan kerjaya peribadi daripada kaunselor AI kami, berdasarkan gred dan kursus layak anda.",
     "generateReport": "Jana Laporan",
     "readReport": "Baca Laporan",
     "generating": "Menjana...",
@@ -2905,9 +2904,6 @@
   },
   "outcomes": {
     "title": "Permohonan Saya",
-    "empty": "Anda belum menjejaki sebarang permohonan.",
-    "emptyHint": "Simpan kursus dan tekan \"Saya Mohon\" untuk mula menjejaki.",
-    "backToDashboard": "Kembali ke Papan Pemuka",
     "iApplied": "Saya Mohon!",
     "iGotOffer": "Saya Dapat Tawaran!",
     "statusApplied": "Dimohon",
@@ -2917,12 +2913,8 @@
     "statusWithdrawn": "Ditarik Balik",
     "updateStatus": "Kemaskini Status",
     "deleteOutcome": "Buang",
-    "confirmDelete": "Adakah anda pasti mahu membuang rekod permohonan ini?",
-    "trackApplications": "Jejaki Permohonan Anda",
-    "trackApplicationsDesc": "Rekodkan tawaran dan penerimaan anda untuk membantu kami menambah baik HalaTuju.",
     "appliedAt": "Tarikh mohon",
-    "offeredAt": "Tarikh keputusan",
-    "noSavedCourses": "Simpan beberapa kursus dahulu, kemudian jejaki permohonan anda di sini."
+    "offeredAt": "Tarikh keputusan"
   },
   "pathways": {
     "title": "Laluan Anda",
@@ -3397,9 +3389,9 @@
       "phone": "Telefon",
       "activeInApply": "Aktif",
       "editOnDesktop": "Butiran ini boleh diubah pada komputer.",
-      "giftLabel": "Disenaraikan pada:",
-      "giftEvery": "Semua pemberian",
-      "activeHelp": "Tunjukkan organisasi ini dalam senarai sumber borang permohonan apabila pengambilan dibuka semula.",
+      "onGifts": "Pada {n} daripada {m} pemberian",
+      "onNoGift": "Tiada pada borang pemberian",
+      "nowPerGift": "Sekarang hidupkannya dalam Konfigurasi setiap pemberian.",
       "empty": "—",
       "noSources": "Tiada sumber lagi.",
       "loadError": "Tidak dapat memuatkan sumber.",
@@ -6120,6 +6112,11 @@
         "loadError": "Konfigurasi program tidak dapat dimuatkan.",
         "programmeRequired": "Pilih program untuk dikonfigurasi.",
         "requestLink": "Untuk menambah dokumen atau soalan yang tidak disenaraikan, kemukakannya dalam Permintaan.",
+        "sourcesHint": "Organisasi yang disenaraikan oleh borang permohonan pemberian ini. Hanya sumber yang dihidupkan dalam Sumber dipaparkan di sini.",
+        "sourcesCount": "{n} daripada {m} pada borang ini",
+        "sourcesNone": "Belum ada yang dihidupkan, jadi borang ini hanya menyenaraikan tiga pilihan di bawah.",
+        "sourcesAlways": "Sentiasa ada pada setiap borang:",
+        "sourcesLink": "Tambah sumber atau matikan satu dalam Sumber",
         "desc": {
           "document": {
             "ic": "Setiap pemohon disemak terhadap IC mereka — program tidak dapat berjalan tanpanya.",
@@ -6285,7 +6282,7 @@
       "deleteTitle": "Padam {name}?",
       "deleteBody": "Ini memadam program hadiah dan tetapan yang disimpan padanya — kriterianya dan apa yang diperlukan daripada pemohon. Tindakan ini tidak boleh dibatalkan.",
       "deleteYears": "Tahun pengambilannya turut dipadam — {count} kesemuanya. Tiada satu pun memegang pelajar, jadi tiada apa-apa yang dihantar oleh pelajar terjejas.",
-      "deleteKeeps": "Jemputan, sumber dan penyemak yang dihadkan kepada hadiah ini akan dikekalkan dan kembali meliputi semua hadiah.",
+      "deleteKeeps": "Pilihan sumbernya turut dipadam. Jemputan dan penyemak yang dihadkan kepadanya dikekalkan dan kembali meliputi semua hadiah.",
       "deleteConfirmLabel": "Taip {phrase} untuk mengesahkan",
       "deleteCta": "Padam program hadiah ini",
       "lifecycle": {

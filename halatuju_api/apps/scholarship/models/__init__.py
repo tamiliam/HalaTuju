@@ -74,6 +74,7 @@ from .comms_templates import (
 )
 from .items import (
     ITEM_STATE_CHOICES, ApplicationItem, Invitation, ProgrammeApplicationItem,
+    ProgrammeReferralSource,
 )
 from .spending import (
     SPEND_CATEGORY_CHOICES, SPEND_DECIDED_BY_CHOICES, BursarySpendTxn, MerchantCategory,

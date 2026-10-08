@@ -55,11 +55,20 @@ export interface ProgrammeConfigItem {
   state: ProgrammeItemState
 }
 
+/**
+ * One referral source this gift's apply form may list (per-gift referral sources, 2026-10-08).
+ * The server sends every ACTIVE source (switched on in Sources, never a tenant), by name; `on` is
+ * this gift's own choice. A new gift has every source off. ⚠ Not access control — a dropdown's
+ * contents. The three fixed choices (Halatuju.xyz, Facebook / WhatsApp, Other) are not here.
+ */
+export interface ProgrammeConfigSource { code: string; name: string; on: boolean }
+
 export interface ProgrammeConfiguration {
   programme: { code: string; name: string; organisation: string }
   /** Applications on this programme still inside the submission gate — COUNTED server-side. */
   live_applicants: number
   items: ProgrammeConfigItem[]
+  sources: ProgrammeConfigSource[]
 }
 
 /** GET the configuration. `programme` is optional for an org_admin (their one programme) and
@@ -72,13 +81,17 @@ export async function getProgrammeConfiguration(
 }
 
 /** PUT only the rows that changed. The server validates all-or-nothing (a core item switched
- *  off refuses the WHOLE save with `core_item`) and returns the re-read configuration. */
+ *  off refuses the WHOLE save with `core_item`; a source it does not offer, `unknown_source`)
+ *  and returns the re-read configuration. `sources` maps a source code to on/off and is sent
+ *  only when a source changed. */
 export async function saveProgrammeConfiguration(
   items: Pick<ProgrammeConfigItem, 'kind' | 'code' | 'state'>[],
   programme?: string, options?: ApiOptions,
+  sources?: Record<string, boolean>,
 ): Promise<ProgrammeConfiguration> {
   const q = programme ? `?programme=${encodeURIComponent(programme)}` : ''
-  return adminMutate(`/api/v1/admin/scholarship/programme/configuration/${q}`, 'PUT', { items }, options)
+  const body = sources && Object.keys(sources).length > 0 ? { items, sources } : { items }
+  return adminMutate(`/api/v1/admin/scholarship/programme/configuration/${q}`, 'PUT', body, options)
 }
 
 // ── Org Config Sprint A: the organisation's tunable values ──────────────────

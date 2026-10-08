@@ -110,7 +110,7 @@ export function primeCockpitApi(app: AdminScholarshipDetail): void {
       programme_id: null, programme_name: '' },
   ] })
   api.getVerdictCaseSummary.mockResolvedValue({ enabled: false })
-  api.getSources.mockResolvedValue({ sources: [], programmes: [] })
+  api.getSources.mockResolvedValue({ sources: [] })
 }
 
 export interface CockpitOptions extends CockpitAuth {

@@ -420,6 +420,10 @@ export const sandboxProgrammeConfiguration: ProgrammeConfiguration = {
   programme: { code: 'contoh', name: 'Biasiswa Contoh', organisation: 'Yayasan Contoh' },
   live_applicants: 41,
   items: CATALOGUE,
+  sources: [
+    { code: 'contoh-a', name: 'Persatuan Contoh A', on: true },
+    { code: 'contoh-b', name: 'Yayasan Contoh B', on: false },
+  ],
 }
 
 /** A leaner programme with nobody in flight: everything not core switched off. */
@@ -427,4 +431,5 @@ export const sandboxProgrammeConfigurationLean: ProgrammeConfiguration = {
   programme: { code: 'ringkas', name: 'Bantuan Ringkas', organisation: 'Yayasan Contoh' },
   live_applicants: 0,
   items: CATALOGUE.map((i) => (i.is_core ? i : { ...i, state: 'off' })),
+  sources: [],
 }

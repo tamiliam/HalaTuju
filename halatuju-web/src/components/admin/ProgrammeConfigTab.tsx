@@ -12,18 +12,19 @@
 // was switched off, or a generic failure. There is no silent branch.
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
 import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
+import ProgrammeSourcesCard from '@/components/admin/ProgrammeSourcesCard'
 import {
   getProgrammeConfiguration, saveProgrammeConfiguration,
   type ProgrammeConfigItem, type ProgrammeConfiguration, type ProgrammeItemState,
 } from '@/lib/admin-api'
 import {
-  ITEM_STATES, allowedStates, changes, documents, draftFrom, isHeavy, itemKey, questions, tally,
-  type Draft,
+  ITEM_STATES, allowedStates, changes, documents, draftFrom, isHeavy, itemKey, questions,
+  sourceChanges, sourceDraftFrom, tally, type Draft, type SourceDraft,
 } from '@/lib/programmeConfig'
 import { useProgrammeScope } from '@/lib/programmeScope'
 
@@ -98,6 +99,9 @@ export default function ProgrammeConfigTab() {
 
   const [config, setConfig] = useState<ProgrammeConfiguration | null>(null)
   const [draft, setDraft] = useState<Draft>({})
+  // The referral-source switches (2026-10-08) are a second draft beside the items, shown by
+  // `ProgrammeSourcesCard` and saved by the SAME bar — one Save, one pending count, one Discard.
+  const [sourceDraft, setSourceDraft] = useState<SourceDraft>({})
   const [loadError, setLoadError] = useState(false)
   const [programmeChoices, setProgrammeChoices] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
@@ -131,6 +135,7 @@ export default function ProgrammeConfigTab() {
       const c = await getProgrammeConfiguration(code, { token })
       setConfig(c)
       setDraft(draftFrom(c.items))
+      setSourceDraft(sourceDraftFrom(c.sources ?? []))
       setProgrammeChoices(null)
     } catch (e) {
       const err = e as Error & { body?: { code?: string; programmes?: string[] } }
@@ -145,6 +150,9 @@ export default function ProgrammeConfigTab() {
   useEffect(() => { void load(programme) }, [load, programme])
 
   const pending = useMemo(() => (config ? changes(config.items, draft) : []), [config, draft])
+  const sources = useMemo(() => config?.sources ?? [], [config])
+  const pendingSources = useMemo(() => sourceChanges(sources, sourceDraft), [sources, sourceDraft])
+  const pendingCount = pending.length + Object.keys(pendingSources).length
   const docs = useMemo(() => (config ? documents(config.items) : []), [config])
   const qs = useMemo(() => (config ? questions(config.items) : []), [config])
 
@@ -153,20 +161,30 @@ export default function ProgrammeConfigTab() {
     setDraft((d) => ({ ...d, [itemKey(item)]: next }))
   }
 
+  const toggleSource = (code: string) => {
+    setOutcome({ kind: 'idle' })
+    const was = sources.find((s) => s.code === code)?.on ?? false
+    setSourceDraft((d) => ({ ...d, [code]: !(d[code] ?? was) }))
+  }
+
   const discard = () => {
-    if (config) setDraft(draftFrom(config.items))
+    if (config) {
+      setDraft(draftFrom(config.items))
+      setSourceDraft(sourceDraftFrom(config.sources ?? []))
+    }
     setOutcome({ kind: 'idle' })
   }
 
   const save = async () => {
-    if (!token || !config || pending.length === 0) return
+    if (!token || !config || pendingCount === 0) return
     setSaving(true)
     // Do NOT clear the outcome here on the way in — a refusal must never be wiped by a loader
     // (the sponsor-terms lesson). It is replaced only by this save's own result.
     try {
-      const c = await saveProgrammeConfiguration(pending, programme, { token })
+      const c = await saveProgrammeConfiguration(pending, programme, { token }, pendingSources)
       setConfig(c)
       setDraft(draftFrom(c.items))
+      setSourceDraft(sourceDraftFrom(c.sources ?? []))
       setOutcome({ kind: 'saved' })
     } catch (e) {
       const err = e as Error & { body?: { code?: string; item?: string } }
@@ -185,7 +203,7 @@ export default function ProgrammeConfigTab() {
   const all = docs.length + qs.length
   const tDocs = tally(docs, draft)
   const tQs = tally(qs, draft)
-  const nothingToSave = pending.length === 0
+  const nothingToSave = pendingCount === 0
 
   return (
     <>
@@ -229,26 +247,34 @@ export default function ProgrammeConfigTab() {
               no rule changes with it; `changes()` computes a diff over the whole draft and does not
               read this array. It follows the student's own journey: they answer before they are
               asked to go and find paperwork. */}
+          {/* "Who referred you?" sits UNDER Questions (owner-approved mock-up, 2026-10-08): it is
+              the form's own first question, and documents still come last. */}
           {[
             { key: 'questions', rows: qs, title: 'sectionQuestions', hint: 'questionsHint' },
             { key: 'documents', rows: docs, title: 'sectionDocuments', hint: 'documentsHint' },
           ].map(({ key, rows, title, hint }) => (
-            <section key={key} className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"
-              aria-labelledby={`section-${key}`}>
-              <div className="border-b border-ground-100 px-5 py-4">
-                <h2 id={`section-${key}`} className="text-lg font-semibold text-ground-900">
-                  {t(`admin.programme.config.${title}`)}
-                </h2>
-                <p className="text-sm text-ground-500">{t(`admin.programme.config.${hint}`)}</p>
-              </div>
-              <ul className="divide-y divide-ground-100">
-                {rows.map((item) => (
-                  <ItemRow key={itemKey(item)} item={item}
-                    value={draft[itemKey(item)] ?? item.state}
-                    onChange={(next) => setState(item, next)} t={t} />
-                ))}
-              </ul>
-            </section>
+            <Fragment key={key}>
+              {key === 'documents' && (
+                <ProgrammeSourcesCard sources={sources} draft={sourceDraft}
+                  onToggle={toggleSource} t={t} />
+              )}
+              <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"
+                aria-labelledby={`section-${key}`}>
+                <div className="border-b border-ground-100 px-5 py-4">
+                  <h2 id={`section-${key}`} className="text-lg font-semibold text-ground-900">
+                    {t(`admin.programme.config.${title}`)}
+                  </h2>
+                  <p className="text-sm text-ground-500">{t(`admin.programme.config.${hint}`)}</p>
+                </div>
+                <ul className="divide-y divide-ground-100">
+                  {rows.map((item) => (
+                    <ItemRow key={itemKey(item)} item={item}
+                      value={draft[itemKey(item)] ?? item.state}
+                      onChange={(next) => setState(item, next)} t={t} />
+                  ))}
+                </ul>
+              </section>
+            </Fragment>
           ))}
 
           <p className="mt-4 text-xs text-ground-500">
@@ -291,7 +317,7 @@ export default function ProgrammeConfigTab() {
                   </p>
                 ) : nothingToSave ? null : (
                   <p className="text-xs text-ground-500" data-testid="save-outcome">
-                    {t('admin.programme.config.changed', { n: String(pending.length) })}
+                    {t('admin.programme.config.changed', { n: String(pendingCount) })}
                   </p>
                 )}
               </>

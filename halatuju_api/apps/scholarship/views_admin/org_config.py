@@ -211,6 +211,11 @@ class AdminProgrammeConfigurationView(_AdminBase):
     `live_applicants` is COUNTED at request time (never typed in): applications on this programme
     still inside the submission gate (`shortlisted`). Those are the students a change reaches —
     a submitted student carries their frozen `requirements_snapshot` and is untouched.
+
+    `sources` (per-gift referral sources, 2026-10-08): GET lists every ACTIVE source with `on`
+    for this gift; PUT takes `sources: {<code>: true|false}` beside `items`. The WHOLE request —
+    items and sources — is validated before anything is written, and each change writes an
+    `AUDIT programme_source_set` line. The rules live in `gift_sources`.
     """
 
     ROLES = ('org_admin',)
@@ -257,7 +262,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
         return programmes[0], None
 
     def _payload(self, programme):
-        from .. import requirements
+        from .. import gift_sources, requirements
         from ..models import ApplicationItem
         states = {
             'document': requirements.programme_states(programme, 'document'),
@@ -281,6 +286,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
                           'organisation': programme.organisation.name},
             'live_applicants': live,
             'items': items,
+            'sources': gift_sources.sources_for(programme),
         }
 
     def get(self, request):
@@ -302,9 +308,14 @@ class AdminProgrammeConfigurationView(_AdminBase):
         if err:
             return err
 
+        from .. import gift_sources
         from ..models import ITEM_STATE_CHOICES, ApplicationItem, ProgrammeApplicationItem
         valid_states = {s for s, _ in ITEM_STATE_CHOICES}
-        changes = request.data.get('items')
+        # `items` may be omitted when only sources change; at least one of the two must be sent.
+        if 'items' not in request.data and 'sources' not in request.data:
+            return Response({'error': 'bad_items', 'code': 'bad_items'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        changes = request.data.get('items', [])
         if not isinstance(changes, list):
             return Response({'error': 'bad_items', 'code': 'bad_items'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -327,19 +338,31 @@ class AdminProgrammeConfigurationView(_AdminBase):
                 return Response({'error': 'core_item', 'code': 'core_item',
                                  'item': f'{kind}:{code}'}, status=status.HTTP_400_BAD_REQUEST)
             resolved.append((item, state))
+        try:
+            source_changes = gift_sources.resolve_changes(request.data.get('sources'))
+        except gift_sources.GiftSourceError as exc:
+            return Response({'error': exc.code, 'code': exc.code, 'source': exc.source},
+                            status=status.HTTP_400_BAD_REQUEST)
 
+        from django.db import transaction
         from .. import requirements
         before = {
             'document': requirements.programme_states(programme, 'document'),
             'question': requirements.programme_states(programme, 'question'),
         }
-        for item, state in resolved:
-            was = before[item.kind].get(item.code, item.default_state)
-            if was == state:
-                continue
-            ProgrammeApplicationItem.objects.update_or_create(
-                programme=programme, item=item,
-                defaults={'state': state, 'updated_by_email': admin.email or ''})
-            logger.info('AUDIT programme_item_set programme=%s item=%s:%s was=%s now=%s by=%s',
-                        programme.code, item.kind, item.code, was, state, admin.email or '')
+        with transaction.atomic():
+            for item, state in resolved:
+                was = before[item.kind].get(item.code, item.default_state)
+                if was == state:
+                    continue
+                ProgrammeApplicationItem.objects.update_or_create(
+                    programme=programme, item=item,
+                    defaults={'state': state, 'updated_by_email': admin.email or ''})
+                logger.info('AUDIT programme_item_set programme=%s item=%s:%s was=%s now=%s by=%s',
+                            programme.code, item.kind, item.code, was, state, admin.email or '')
+            # org-fence: `programme` was fenced to the caller's organisation in _programme_for.
+            for source, was, now in gift_sources.apply_changes(programme, source_changes):
+                logger.info('AUDIT programme_source_set programme=%s source=%s was=%s now=%s by=%s',
+                            programme.code, source.code, 'on' if was else 'off',
+                            'on' if now else 'off', admin.email or '')
         return Response(self._payload(programme))

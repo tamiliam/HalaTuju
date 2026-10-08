@@ -8,7 +8,7 @@
  * The Layer 2 constraint holds here too: the ROW ORDER below is a display convention computed at
  * render from the item's kind and code — never stored, never per-programme.
  */
-import type { ProgrammeConfigItem, ProgrammeItemState } from '@/lib/admin-api'
+import type { ProgrammeConfigItem, ProgrammeConfigSource, ProgrammeItemState } from '@/lib/admin-api'
 
 export const ITEM_STATES: readonly ProgrammeItemState[] = ['off', 'optional', 'required']
 
@@ -84,6 +84,25 @@ export function changes(
  */
 export function allowedStates(item: ProgrammeConfigItem): readonly ProgrammeItemState[] {
   return item.is_core ? ['required'] : ITEM_STATES
+}
+
+/**
+ * Referral sources on this gift's form (2026-10-08) — the draft is `{code: on}`, and the diff is
+ * exactly what the PUT's `sources` map sends: only the codes whose switch differs from the server.
+ */
+export type SourceDraft = Record<string, boolean>
+
+export function sourceDraftFrom(sources: ProgrammeConfigSource[]): SourceDraft {
+  return Object.fromEntries(sources.map((s) => [s.code, s.on]))
+}
+
+export function sourceChanges(sources: ProgrammeConfigSource[], draft: SourceDraft): SourceDraft {
+  const out: SourceDraft = {}
+  for (const s of sources) {
+    const next = draft[s.code]
+    if (next !== undefined && next !== s.on) out[s.code] = next
+  }
+  return out
 }
 
 /** Counts for the footer sentence — "asks for N and offers M" — off one kind's rows. */

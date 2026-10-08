@@ -12,7 +12,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import SourcesPage from './page'
 import * as api from '@/lib/admin-api'
 
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
+jest.mock('@/lib/i18n', () => ({
+  useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
+    vars ? `${k}|${Object.values(vars).join(',')}` : k }),
+}))
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin', is_super_admin: false } }),
 }))
@@ -24,6 +27,7 @@ const SOURCES = [
   {
     id: 1, code: 'smc', name: 'Sekolah Menengah Cheras', contact_person: 'Aina',
     contact_email: '', phone: '', show_in_apply: true, student_count: 4,
+    gift_count: 2, gift_total: 2,
   },
 ] as unknown as api.SourceItem[]
 
@@ -153,6 +157,51 @@ describe('the source Save reflects whether the row was edited', () => {
   })
 })
 
+
+/**
+ * Per-gift referral sources (2026-10-08). The gift picker is gone: each gift chooses its sources in
+ * its own Configuration, and this page says how many have — on the phone card AND the table row,
+ * since which one you see is a breakpoint jsdom does not apply. Switching a source ON puts it on no
+ * form, so the page says where to go next.
+ */
+describe('how many gift forms list each source', () => {
+  const two = [
+    SOURCES[0],
+    { ...SOURCES[0], id: 2, code: 'tara', name: 'Tara Foundation', show_in_apply: false,
+      gift_count: 0, gift_total: 2 },
+  ] as unknown as api.SourceItem[]
+
+  beforeEach(() => {
+    mockApi.getSources.mockResolvedValue({ sources: two })
+  })
+
+  it('shows "On N of M gifts" or "On no gift form" in BOTH renderings, and no gift picker', async () => {
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByTestId('gift-line-row-smc')).toBeTruthy())
+    for (const where of ['card', 'row']) {
+      expect(screen.getByTestId(`gift-line-${where}-smc`).textContent).toBe('admin.sources.onGifts|2,2')
+      expect(screen.getByTestId(`gift-line-${where}-tara`).textContent).toBe('admin.sources.onNoGift')
+    }
+    fireEvent.click(screen.getAllByText('admin.sources.edit')[0])
+    expect(document.querySelector('select')).toBeNull()
+  })
+
+  it('after switching a source ON, says to switch it on in each gift — and not after OFF', async () => {
+    mockApi.updateSource.mockResolvedValueOnce({ ...two[1], show_in_apply: true })
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByTestId('gift-line-row-tara')).toBeTruthy())
+    const tara = screen.getByTestId('gift-line-row-tara').closest('tr') as HTMLElement
+    fireEvent.click(tara.querySelector('[role="switch"]') as HTMLElement)
+    await waitFor(() => expect(screen.getByText('admin.sources.nowPerGift')).toBeTruthy())
+    expect(mockApi.updateSource).toHaveBeenCalledWith(2, { show_in_apply: true }, { token: 'tok' })
+
+    mockApi.updateSource.mockResolvedValueOnce({ ...two[0], show_in_apply: false })
+    const smc = screen.getByTestId('gift-line-row-smc').closest('tr') as HTMLElement
+    fireEvent.click(smc.querySelector('[role="switch"]') as HTMLElement)
+    await waitFor(() => expect(mockApi.updateSource).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByText('admin.sources.nowPerGift')).toBeNull())
+  })
+})
 
 /**
  * Request #3. The card is titled "Partner emails" and every row but one goes to an organisation.

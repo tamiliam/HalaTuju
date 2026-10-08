@@ -128,6 +128,42 @@ class ProgrammeApplicationItem(models.Model):
         return f'programme={self.programme_id} {self.item_id}={self.state}'
 
 
+class ProgrammeReferralSource(models.Model):
+    """One gift lists one referral source on its apply form's "Who referred you?" list.
+
+    Per-gift referral sources, Sprint 1 (owner, 2026-10-08): **each gift chooses its own set**,
+    in that gift's Configuration. It replaces the single `PartnerOrganisation.programme` FK (one
+    gift per source, NULL = every gift), which is deprecated and no longer read or written.
+
+    ⚠ A ROW IS A CHOICE, AND NO ROW MEANS "NOT ON THIS FORM". A source newly switched on in
+    Sources joins NO gift, and a new gift starts with NO sources — the form then lists only the
+    three fixed defaults (Halatuju.xyz, Facebook / WhatsApp, Other), which are not rows here.
+    The configuration screen offers only ACTIVE sources (`show_in_apply` and `is_active`, never a
+    tenant); a row whose source is later switched off stays, and is simply not offered.
+
+    ⚠ NOT ACCESS CONTROL. A referral organisation is an ATTRIBUTION relationship, never a scope
+    (`PartnerAdmin.org` / `referred_by_org` carry the same warning). This is a dropdown's contents.
+    """
+    programme = models.ForeignKey(
+        Programme, on_delete=models.CASCADE, related_name='referral_source_links',
+    )
+    source = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.CASCADE, related_name='gift_links',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'programme_referral_sources'
+        ordering = ['programme_id', 'source_id']
+        constraints = [
+            models.UniqueConstraint(fields=['programme', 'source'],
+                                    name='uniq_programme_referral_source'),
+        ]
+
+    def __str__(self):
+        return f'programme={self.programme_id} source={self.source_id}'
+
+
 class Invitation(models.Model):
     """Somebody was asked to join, and this is the record of the asking.
 

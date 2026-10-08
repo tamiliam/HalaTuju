@@ -16,7 +16,8 @@ import { Toggle } from '@/components/sources/shared'
 // Sources (referral organisations) registry — a card in Administration → ORGANISATION
 // (super/org_admin only). List + inline edit + add. Reuses PartnerOrganisation.phone /
 // contact_person / contact_email (NOT a separate contact_phone column). The active-in-apply
-// toggle governs the future apply-form source list; referral attribution is unaffected.
+// toggle decides which sources a gift's Configuration may OFFER; each gift then switches its own
+// on (2026-10-08), and this page shows "On N of M gifts". Referral attribution is unaffected.
 // The "Students" count = bursary APPLICATIONS attributed to the org by referral chip
 // (backend _source_application_counts); the house org "BrightPath" gets the residual.
 //
@@ -64,11 +65,7 @@ export default function SourcesPage() {
   const [panel, setPanel] = useState<Panel>('orgs')
   const [addForm, setAddForm] = useState({ code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false })
 
-  // The organisation's ACTIVE gifts. Only the count matters to whether the gift control shows:
-  // with one gift, every source is on it and the control could say only one thing.
-  const [gifts, setGifts] = useState<Array<{ id: number; code: string; name: string }>>([])
-
-  const load = () => { if (token) getSources({ token }).then((d) => { setSources(d.sources); setGifts(d.programmes ?? []) }).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
+  const load = () => { if (token) getSources({ token }).then((d) => setSources(d.sources)).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
   useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (role && !canManage) {
@@ -82,33 +79,25 @@ export default function SourcesPage() {
     return err instanceof Error ? err.message : t('admin.actionFailed')
   }
 
+  // ⚠ SWITCHING A SOURCE ON PUTS IT ON NO FORM (owner, 2026-10-08): each gift chooses its own
+  // sources in its Configuration, so the page says where to go next rather than leaving the
+  // admin to believe the form now lists it.
   const toggleActive = async (s: SourceItem) => {
     setBusy(s.id); setMessage(null)
     try {
       const updated = await updateSource(s.id, { show_in_apply: !s.show_in_apply }, { token: token! })
       setSources((rows) => rows.map((r) => (r.id === s.id ? { ...r, show_in_apply: updated.show_in_apply } : r)))
+      if (updated.show_in_apply && !s.show_in_apply) {
+        setMessage({ type: 'success', text: t('admin.sources.nowPerGift') })
+      }
     } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
     setBusy(null)
   }
 
-  /**
-   * Which gift's apply form lists this source (S-ASSIGN). `null` clears it back to every gift.
-   *
-   * ⚠ Saved on CHANGE, not with the row's Save button, and deliberately: Save writes the four
-   * contact fields and is gated on `editDirty`, which compares exactly those four. Folding a
-   * fifth field into it means either widening that comparison or shipping a control whose
-   * change never enables its own Save — the request-#6 defect in a new costume.
-   */
-  const setGift = async (s: SourceItem, programmeId: number | null) => {
-    setBusy(s.id); setMessage(null)
-    try {
-      const updated = await updateSource(s.id, { programme_id: programmeId }, { token: token! })
-      setSources((rows) => rows.map((r) => (r.id === s.id
-        ? { ...r, programme_id: updated.programme_id, programme_name: updated.programme_name }
-        : r)))
-    } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
-    setBusy(null)
-  }
+  /** "On 2 of 2 gifts" / "On no gift form" — the count is the server's, over its ACTIVE gifts. */
+  const giftLine = (s: SourceItem) => (s.gift_count > 0
+    ? t('admin.sources.onGifts', { n: String(s.gift_count), m: String(s.gift_total) })
+    : t('admin.sources.onNoGift'))
 
   // Has this row actually been edited? Compared field by field against the source the form was
   // opened from — the same four fields `updateSource` writes, so the two cannot disagree.
@@ -143,7 +132,9 @@ export default function SourcesPage() {
       await createSource(addForm, { token: token! })
       setAdding(false)
       setAddForm({ code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false })
-      setMessage({ type: 'success', text: t('admin.sources.created') })
+      // Created ACTIVE, it still joins no gift — say so, as a switch-on does.
+      setMessage({ type: 'success', text: addForm.show_in_apply
+        ? `${t('admin.sources.created')} ${t('admin.sources.nowPerGift')}` : t('admin.sources.created') })
       load()
     } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
     setBusy(null)
@@ -209,7 +200,6 @@ export default function SourcesPage() {
               <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
             </div>
           </div>
-          <p className="text-xs text-ground-400">{t('admin.sources.activeHelp')}</p>
           <div className="flex items-center gap-3">
             <button type="submit" disabled={busy === 'new'} className="px-6 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {busy === 'new' ? t('admin.sources.saving') : t('admin.sources.create')}
@@ -239,8 +229,8 @@ export default function SourcesPage() {
             and a phone number in six boxes is desk work. So the card says where to do it rather
             than opening a form nobody wants to fill in on a phone.
 
-            ⚠ A BLANK GIFT MEANS EVERY GIFT, as in the table — and the line only renders above
-            one gift, so a one-gift organisation is not told the same thing on every card. */}
+            ⚠ THE GIFT COUNT (2026-10-08) is the same line as the table's: each gift chooses its
+            sources in its own Configuration, so this page only says how many have. */}
         <div className="space-y-2.5 md:hidden" data-testid="source-cards">
           {sources.map((s) => (
             <div key={s.id} className="rounded-xl border border-ground-200 bg-ground-0 p-3">
@@ -248,11 +238,9 @@ export default function SourcesPage() {
                 <div className="min-w-0">
                   <span className="block text-sm font-semibold text-ground-900">{s.name}</span>
                   <span className="block text-[11px] text-ground-400">{s.code}</span>
-                  {gifts.length > 1 && (
-                    <span className="block text-[11px] text-ground-400">
-                      {s.programme_name || t('admin.sources.giftEvery')}
-                    </span>
-                  )}
+                  <span className="block text-[11px] text-ground-400" data-testid={`gift-line-card-${s.code}`}>
+                    {giftLine(s)}
+                  </span>
                 </div>
                 <Toggle on={s.show_in_apply} disabled={busy === s.id}
                   onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} />
@@ -320,22 +308,6 @@ export default function SourcesPage() {
                       <Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} />
                       <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
                     </div>
-                    {/* ⚠ WHICH GIFT'S form lists it — shown only above one gift, because with one
-                        it could say only one thing. ⚠ BLANK MEANS EVERY GIFT, the live default
-                        for all seven sources; an empty select would read as missing data. */}
-                    {gifts.length > 1 && (
-                      <label className="flex items-center gap-2 text-sm text-ground-700">
-                        <span>{t('admin.sources.giftLabel')}</span>
-                        <select className={inputCls} value={s.programme_id ?? ''}
-                          disabled={busy === s.id}
-                          onChange={(e) => setGift(s, e.target.value ? Number(e.target.value) : null)}>
-                          <option value="">{t('admin.sources.giftEvery')}</option>
-                          {gifts.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
                     <div className="flex items-center gap-3 ml-auto">
                       {/* Request #6: nothing edited, nothing to save. The row IS its own baseline —
                           `startEdit` copies the source into the form — so the comparison is direct.
@@ -356,12 +328,10 @@ export default function SourcesPage() {
                 <td className="px-4 py-3">
                   <span className="font-semibold text-ground-900">{s.name}</span>
                   <span className="block text-xs text-ground-400">{s.code}</span>
-                  {/* The gift, under the name rather than as a column — see the edit row. */}
-                  {gifts.length > 1 && (
-                    <span className="block text-xs text-ground-400">
-                      {s.programme_name || t('admin.sources.giftEvery')}
-                    </span>
-                  )}
+                  {/* How many gifts list it, under the name rather than as a column. */}
+                  <span className="block text-xs text-ground-400" data-testid={`gift-line-row-${s.code}`}>
+                    {giftLine(s)}
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-ground-600">{s.contact_person || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-ground-500">{s.contact_email || t('admin.sources.empty')}</td>

@@ -42,6 +42,8 @@ const CONFIG: api.ProgrammeConfiguration = {
     { kind: 'question', code: 'consent', label_key: 'admin.programme.question.consent', is_core: true, default_state: 'required', state: 'required' },
     { kind: 'question', code: 'fears', label_key: 'admin.programme.question.fears', is_core: false, default_state: 'required', state: 'required' },
   ],
+  // The referral-source card has its own rendered test (ProgrammeConfigTab.sources.test.tsx).
+  sources: [{ code: 'smc', name: 'Sri Murugan Centre', on: true }],
 }
 
 beforeEach(() => {
@@ -330,6 +332,8 @@ describe('what we ask for, in the order a student meets it', () => {
     const headings = Array.from(document.querySelectorAll('[id^=section-]'))
       .map((el) => el.id)
     // Order only — no write and no rule moves with it; the Save diff reads the draft, not this.
-    expect(headings).toEqual(['section-questions', 'section-documents'])
+    // "Who referred you?" sits between them since 2026-10-08 (the owner-approved mock-up puts it
+    // UNDER Questions); questions still lead and documents still close.
+    expect(headings).toEqual(['section-questions', 'section-sources', 'section-documents'])
   })
 })

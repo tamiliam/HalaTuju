@@ -34,26 +34,21 @@ export interface SourceItem {
   phone: string
   show_in_apply: boolean
   /**
-   * Which gift's apply form lists this source. **NULL = every gift** (what all seven live
-   * sources carry).
+   * How many of the caller's ACTIVE gifts list this source, of `gift_total` (per-gift referral
+   * sources, 2026-10-08). Each gift chooses its sources in its own Configuration; a source newly
+   * switched on joins no gift. COUNTED server-side.
    *
-   * ⚠ IT RECORDS INTENT AND CHANGES NOTHING A STUDENT SEES — yet. The apply form's
-   * referring-organisation list is still the hard-coded `REFERRING_ORG_OPTIONS` constant in
-   * `lib/scholarship.ts`; nothing on the student side reads `show_in_apply`, let alone this.
-   * Wiring the form to the registry is its own change.
+   * ⚠ IT CHANGES NOTHING A STUDENT SEES — yet. The apply form's list is still the hard-coded
+   * `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts` until Sprint 2 wires it to these.
    */
-  programme_id: number | null
-  programme_name: string
+  gift_count: number
+  gift_total: number
   is_active: boolean
   student_count: number | null
 }
 
 export async function getSources(options?: ApiOptions) {
-  return adminFetch<{
-    sources: SourceItem[]
-    /** Active gifts, for the per-source picker. */
-    programmes: Array<{ id: number; code: string; name: string }>
-  }>('/api/v1/admin/scholarship/sources/', options)
+  return adminFetch<{ sources: SourceItem[] }>('/api/v1/admin/scholarship/sources/', options)
 }
 
 export async function createSource(
@@ -71,8 +66,6 @@ export async function updateSource(
   data: Partial<{
     name: string; contact_person: string; contact_email: string; phone: string
     show_in_apply: boolean; is_active: boolean
-    /** null clears it, and clearing means EVERY gift. */
-    programme_id: number | null
   }>,
   options?: ApiOptions,
 ) {

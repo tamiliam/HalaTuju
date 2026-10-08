@@ -462,15 +462,11 @@ class PartnerOrganisation(models.Model):
     # orgs are seeded True by migration. Referral attribution still uses `referred_by_org`
     # regardless of this flag — this only governs apply-form visibility.
     show_in_apply = models.BooleanField(default=False)
-    # ⚠ NULL MEANS EVERY GIFT — the same ruling and the same shape as `PartnerAdmin.programme`.
-    # This narrows `show_in_apply`: it says WHICH gifts' apply forms list this school, and it is
-    # only consulted when the flag is on. All seven live referral organisations are NULL, so every
-    # one of them still appears on every form and there is nothing to backfill.
-    #
-    # ⚠ NOT ACCESS CONTROL, and doubly so here. A referral organisation is an ATTRIBUTION
-    # relationship, never a scope (`PartnerAdmin.org` / `referred_by_org` carry that warning too,
-    # and the scopes endpoint refuses to offer a referral org as a tenant for the same reason).
-    # This is a dropdown's contents.
+    # ⛔ DEPRECATED (2026-10-08) — READ AND WRITTEN BY NOTHING. Each gift now chooses its own
+    # sources (`scholarship.ProgrammeReferralSource`, set in the gift's Configuration); migration
+    # 0172 seeded those links from this column, and the Sources API no longer serves or accepts it.
+    # Kept only for expand-contract: a later migration drops it. Do not read it, do not revive it.
+    # (NOT ACCESS CONTROL either: a referral organisation is an ATTRIBUTION relationship.)
     programme = models.ForeignKey(
         'scholarship.Programme', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='referral_sources',

@@ -687,7 +687,6 @@
     "rankingCourses": "Ranking your courses...",
     "failedToLoad": "Failed to load recommendations. Please try again.",
     "reportTitle": "AI Counsellor Report",
-    "reportDesc": "Get a personalised career guidance report from our AI counsellor, based on your grades and eligible courses.",
     "generateReport": "Generate Report",
     "readReport": "Read Report",
     "generating": "Generating...",
@@ -2905,9 +2904,6 @@
   },
   "outcomes": {
     "title": "My Applications",
-    "empty": "You haven't tracked any applications yet.",
-    "emptyHint": "Save a course and tap \"I Applied\" to start tracking.",
-    "backToDashboard": "Back to Dashboard",
     "iApplied": "I Applied!",
     "iGotOffer": "I Got an Offer!",
     "statusApplied": "Applied",
@@ -2917,12 +2913,8 @@
     "statusWithdrawn": "Withdrawn",
     "updateStatus": "Update Status",
     "deleteOutcome": "Remove",
-    "confirmDelete": "Are you sure you want to remove this application record?",
-    "trackApplications": "Track Your Applications",
-    "trackApplicationsDesc": "Record your offers and acceptances to help us improve HalaTuju.",
     "appliedAt": "Applied",
-    "offeredAt": "Outcome date",
-    "noSavedCourses": "Save some courses first, then track your applications here."
+    "offeredAt": "Outcome date"
   },
   "pathways": {
     "title": "Your Pathways",
@@ -3397,9 +3389,9 @@
       "phone": "Phone",
       "activeInApply": "Active",
       "editOnDesktop": "These details can be changed on a computer.",
-      "giftLabel": "Listed on:",
-      "giftEvery": "Every gift",
-      "activeHelp": "Show this organisation in the apply form's source list when the intake reopens.",
+      "onGifts": "On {n} of {m} gifts",
+      "onNoGift": "On no gift form",
+      "nowPerGift": "Now switch it on in each gift's Configuration.",
       "empty": "—",
       "noSources": "No sources yet.",
       "loadError": "Could not load sources.",
@@ -6120,6 +6112,11 @@
         "loadError": "Could not load the programme's configuration.",
         "programmeRequired": "Choose a programme to configure.",
         "requestLink": "To add a document or question that is not listed, raise it in Requests.",
+        "sourcesHint": "The organisations this gift's apply form lists. Only sources switched on in Sources appear here.",
+        "sourcesCount": "{n} of {m} on this form",
+        "sourcesNone": "None is on yet, so this form lists only the three below.",
+        "sourcesAlways": "Always on every form:",
+        "sourcesLink": "Add a source or switch one off in Sources",
         "desc": {
           "document": {
             "ic": "Every applicant is checked against their IC — the programme can't run without it.",
@@ -6285,7 +6282,7 @@
       "deleteTitle": "Delete {name}?",
       "deleteBody": "This removes the gift programme and the settings held against it — its criteria and what it requires from applicants. It cannot be undone.",
       "deleteYears": "Its intake years go with it — {count} in all. None of them holds a student, so nothing a student sent you is affected.",
-      "deleteKeeps": "Invitations, sources and reviewers narrowed to this gift are retained and revert to covering every gift.",
+      "deleteKeeps": "Its source choices go with it. Invitations and reviewers narrowed to it are kept and revert to every gift.",
       "deleteConfirmLabel": "Type {phrase} to confirm",
       "deleteCta": "Delete this gift programme",
       "lifecycle": {
