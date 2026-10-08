@@ -211,6 +211,8 @@ function base(): AdminScholarshipDetail {
     school: 'SMK Test',
     nric: '030303-14-0007',
     nric_verified: false,
+    birth_state: { kind: 'state', state: 'wp_kuala_lumpur', code: '14',
+                   label: 'Born in: W.P. Kuala Lumpur (IC code 14)', meets_rule: null, warning: '' },
     mentoring_candidate: false,
     verified_at: null,
     verified_by: '',

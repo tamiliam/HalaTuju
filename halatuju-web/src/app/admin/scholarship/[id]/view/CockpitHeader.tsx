@@ -90,6 +90,14 @@ export function CockpitHeader({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ground-500">
           <span>NRIC <span className="font-mono text-ground-700">{formatNric(app.nric || '') || '—'}</span>{vtip('nric') && <VerifiedTick label={vtip('nric')!} />}</span>
+          {/* Request #31: the place of birth the IC states, read and worded on the server. When the
+              CURRENT IC fails the intake's CURRENT rule it becomes the served warning instead. */}
+          {app.birth_state?.meets_rule === false ? (
+            <span data-testid="birth-state"
+              className="rounded-full bg-critical-100 px-2 py-0.5 font-semibold text-critical-700">
+              {app.birth_state.warning}
+            </span>
+          ) : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
           {referralAcronym(app.referral_source) && (
             <span
               title={app.referral_source ? t(`scholarship.apply.org.${app.referral_source}`) : ''}

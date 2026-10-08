@@ -6339,6 +6339,8 @@
         "spmBHint": "in addition to those above",
         "spmC": "SPM - total grades at C or better",
         "spmCHint": "including the A and B grades above",
+        "bornIn": "Born in",
+        "bornInHint": "Read from the IC number. Leave all unticked to accept students born anywhere.",
         "pngk": "STPM - minimum PNGK",
         "merit": "Minimum merit point",
         "meritHint": "UPU score out of 100. SPM applicants only.",

@@ -53,7 +53,8 @@ export const roleReviewer: ManualChapter = {
         — not everyone&rsquo;s. Each row shows the name, source, qualification, merit score and status. Click a
         name to open the review screen — everything is on that one page. For an STPM student, the Academic
         card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when
-        she has entered them.</>
+        she has entered them. Beside the NRIC, the header shows where her IC says she was
+        <strong> born</strong>.</>
       ),
       img: '/reviewer-guide/step1-list.png',
       alt: 'The Applications list showing your assigned applicants',

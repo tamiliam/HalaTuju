@@ -74,7 +74,6 @@ export interface ScholarshipApplication {
   consent_to_contact: boolean
   status: string
   bucket: string
-  shortlist_reason: string
   /** Post-award S5: operational sub-state within status='maintenance' (e.g. 'on_hold'). */
   maintenance_substate: 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
   /** Post-award S6: closure bucket — '' unless status='closed'. */

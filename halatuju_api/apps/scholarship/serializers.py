@@ -702,7 +702,11 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
             'declaration_name', 'declared_at',
-            'status', 'bucket', 'shortlist_reason',
+            # ⚠ NO `shortlist_reason` (request #31 review, 2026-10-08). It is the ENGINE'S note for
+            # staff ("born in Selangor (IC code 10); this intake accepts Sabah") and was served here
+            # before the decision was revealed; no student screen ever read it. Staff read it on
+            # the admin serializer.
+            'status', 'bucket',
             # S5: the student's own maintenance sub-state (e.g. on_hold) — only meaningful
             # while status='maintenance'; lets the in-programme page show "support paused".
             'maintenance_substate',

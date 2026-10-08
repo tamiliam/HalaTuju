@@ -24,12 +24,18 @@ export interface ProgrammeRequirements {
   min_merit_score: number | null
   income_ceiling: number | null
   per_capita_ceiling: number | null
+  /** Request #31. The state keys a student must have been BORN in (`lib/birthStates`), read from
+   *  the IC's place-of-birth code. The LIST form of the switch: empty = not applied. */
+  allowed_birth_states: string[]
 }
 
 /** What the screens SEND for the requirements: a number, null (untick), or — for a box holding a
  *  typo — the text typed, which the server refuses with `bad_requirement` rather than reading a
- *  NaN-turned-null as "switch this rule off" (`intakeYears.num`). */
-export type RequirementsPayload = { [K in keyof ProgrammeRequirements]: number | string | null }
+ *  NaN-turned-null as "switch this rule off" (`intakeYears.num`). The birth-state list is sent
+ *  whole, `[]` to clear it; a key the server does not know is refused, never dropped. */
+export type RequirementsPayload = {
+  [K in Exclude<keyof ProgrammeRequirements, 'allowed_birth_states'>]: number | string | null
+} & { allowed_birth_states: string[] }
 
 /** One language's block of the gift's public apply-page copy. */
 export interface AdminApplyCopyBlock {

@@ -6339,6 +6339,8 @@
         "spmBHint": "in addition to those above",
         "spmC": "SPM - C அல்லது அதற்கு மேற்பட்ட தரங்களின் மொத்த எண்ணிக்கை",
         "spmCHint": "மேலே உள்ள A, B தரங்களும் சேர்த்து",
+        "bornIn": "பிறந்த இடம்",
+        "bornInHint": "அடையாள அட்டை எண்ணிலிருந்து படிக்கப்படுகிறது. எங்கு பிறந்த மாணவரையும் ஏற்க, எதையும் தேர்வு செய்யாமல் விடவும்.",
         "pngk": "STPM - minimum PNGK",
         "merit": "குறைந்தபட்ச தகுதிப் புள்ளி",
         "meritHint": "UPU score out of 100. SPM applicants only.",

@@ -54,6 +54,7 @@ const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => (
   requirements: {
     min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: 2.9,
     min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+    allowed_birth_states: [],
   },
   ...over,
 })
@@ -428,5 +429,37 @@ describe('the date boxes', () => {
       expect(box.min).toBe('2000-01-01')
       expect(box.max).toBe('2099-12-31')
     }
+  })
+})
+
+// Request #31: the create form carries the "Born in" group too, and a new round created with
+// nothing ticked is created with the rule OFF — an empty list, sent, never a missing key.
+describe('creating a round with a birth-state rule', () => {
+  const fill = () => {
+    fireEvent.click(screen.getByText('+ admin.years.new'))
+    fireEvent.change(document.getElementById('y-year') as HTMLInputElement, { target: { value: '2027' } })
+    fireEvent.change(document.getElementById('y-code') as HTMLInputElement, { target: { value: 'bp-2027' } })
+    fireEvent.change(document.getElementById('y-name') as HTMLInputElement, { target: { value: 'Intake 2027' } })
+  }
+
+  beforeEach(() => { mockApi.createAdminIntakeYear.mockResolvedValue(year({ id: 11, code: 'bp-2027' })) })
+
+  it('sends the ticked states in the server order', async () => {
+    await loaded()
+    fill()
+    fireEvent.click(document.getElementById('new-born-sarawak') as HTMLInputElement)
+    fireEvent.click(document.getElementById('new-born-sabah') as HTMLInputElement)
+    fireEvent.click(screen.getByText('admin.years.createClosed'))
+    await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalled())
+    expect(mockApi.createAdminIntakeYear.mock.calls[0][1].allowed_birth_states)
+      .toEqual(['sabah', 'sarawak'])
+  })
+
+  it('sends an empty list when nothing is ticked', async () => {
+    await loaded()
+    fill()
+    fireEvent.click(screen.getByText('admin.years.createClosed'))
+    await waitFor(() => expect(mockApi.createAdminIntakeYear).toHaveBeenCalled())
+    expect(mockApi.createAdminIntakeYear.mock.calls[0][1].allowed_birth_states).toEqual([])
   })
 })

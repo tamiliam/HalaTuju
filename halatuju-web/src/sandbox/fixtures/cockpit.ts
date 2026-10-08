@@ -36,6 +36,10 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
   school: 'SMK Bandar Contoh',
   nric: FAKE_NRIC,
   nric_verified: true,
+  // The common case a reviewer sees. (The masked FAKE_NRIC has no real code; the server would
+  // call it unreadable — the sandbox shows the usual line instead.)
+  birth_state: { kind: 'state', state: 'selangor', code: '10', label: 'Born in: Selangor (IC code 10)',
+                 meets_rule: null, warning: '' },
   mentoring_candidate: false,
   verified_at: T(9),
   verified_by: 'reviewer@sandbox.invalid',

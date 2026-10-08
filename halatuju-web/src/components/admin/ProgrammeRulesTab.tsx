@@ -33,7 +33,7 @@ import {
   getAdminIntakeYears, updateAdminIntakeYear, type AdminIntakeYear,
 } from '@/lib/admin-api'
 import {
-  draftToRequirements, requirementsToDraft, EMPTY_REQUIREMENTS, type RequirementDraft,
+  draftToRequirements, requirementsToDraft, sameDraft, EMPTY_REQUIREMENTS, type RequirementDraft,
 } from '@/lib/intakeYears'
 
 type Outcome = { kind: 'idle' } | { kind: 'saved' } | { kind: 'error'; message: string }
@@ -99,10 +99,7 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
   // control that promises something. ⚠ The dangerous direction is the opposite of the bug — a
   // Save wrongly ASLEEP strands real work — so this compares the draft with what was LOADED, and
   // any difference at all wakes it.
-  const dirty = useMemo(
-    () => (Object.keys(draft) as (keyof RequirementDraft)[]).some((k) => draft[k] !== saved[k]),
-    [draft, saved],
-  )
+  const dirty = useMemo(() => !sameDraft(draft, saved), [draft, saved])
 
   /**
    * What the bar says. ⚠ IDLE-AND-CLEAN RETURNS `null` — the greyed button already carries that

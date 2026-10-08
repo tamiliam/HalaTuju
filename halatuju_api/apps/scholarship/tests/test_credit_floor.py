@@ -156,10 +156,11 @@ class TestSTPMApplicantsAreUntouched(_Engine):
 
 
 class TestWhatTheStudentIsTold(TestCase):
-    """The reason is stored on the application at scoring and served to the student
-    (`shortlist_reason`). It is the ONLY place a round's thresholds reach a student or sponsor:
-    the apply page's criteria are the gift's own copy and are deliberately never derived from the
-    thresholds (decisions.md 2026-09-09)."""
+    """The reason is stored on the application at scoring (`shortlist_reason`). Staff read it on
+    the admin payload; since the request #31 review (2026-10-08) it is no longer served to the
+    student, and no round threshold reaches a student or sponsor anywhere: the apply page's
+    criteria are the gift's own copy and are deliberately never derived from the thresholds
+    (decisions.md 2026-09-09)."""
 
     def _scored(self, floor, grades):
         c = make_cohort(**{**ONLY_CREDITS, 'min_spm_a_count': 4, 'min_spm_credit_count': floor})

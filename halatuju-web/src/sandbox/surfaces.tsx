@@ -80,6 +80,7 @@ const sandboxIntakeYears = {
       requirements: {
         min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: null,
         min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+        allowed_birth_states: [],
       },
     },
     {
@@ -88,6 +89,7 @@ const sandboxIntakeYears = {
       requirements: {
         min_spm_a_count: 5, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: 3.0,
         min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+        allowed_birth_states: ['sabah'],
       },
     },
   ],

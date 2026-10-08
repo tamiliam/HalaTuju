@@ -11,6 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
+from .. import birth_state
 from .. import pool
 from .. import reopen as reopen_service
 from ..interview_completeness import decision_gate_applies, decision_refusal
@@ -302,6 +303,12 @@ class AdminQcDecisionView(_AdminBase):
                      'code': 'reporting_date_required'},
                     status=status.HTTP_400_BAD_REQUEST)
             gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
+            # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can be
+            # changed after it (a MyKad matching the new number then locks it). An IC that fails
+            # the intake's CURRENT rule joins the floor, so it is passed only with a recorded reason.
+            if birth_state.meets_rule(getattr(app.profile, 'nric', '') if app.profile else '',
+                                      getattr(app.cohort, 'allowed_birth_states', None)) is False:
+                gap_facts.append(birth_state.FLOOR_FACT)
             update_fields = ['status']
             if gap_facts:
                 override = (request.data.get('override_reason') or '').strip()

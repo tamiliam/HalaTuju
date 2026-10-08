@@ -244,6 +244,10 @@ REQUIREMENT_FIELDS = (
     'min_spm_a_count', 'min_spm_bplus_count', 'min_spm_credit_count', 'min_stpm_pngk',
     'min_merit_score', 'income_ceiling', 'per_capita_ceiling',
 )
+#: Request #31: the LIST requirement, served beside the numbers in `requirements` and validated
+#: on its own (`birth_state.normalise_states`) — the numeric reader would refuse every list.
+#: Empty = not applied: the same switch, in list form.
+BIRTH_STATES_FIELD = 'allowed_birth_states'
 
 
 def _window_from(data, current=(None, None)):
@@ -348,5 +352,6 @@ def _cohort_row(c):
         # org-fence: as above.
         'unsubmitted': ScholarshipApplication.objects.filter(
             cohort=c, status='shortlisted').count(),
-        'requirements': {f: getattr(c, f) for f in REQUIREMENT_FIELDS},
+        'requirements': {**{f: getattr(c, f) for f in REQUIREMENT_FIELDS},
+                         BIRTH_STATES_FIELD: getattr(c, BIRTH_STATES_FIELD) or []},
     }

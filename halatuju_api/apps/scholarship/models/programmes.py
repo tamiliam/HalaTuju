@@ -331,6 +331,17 @@ class ScholarshipCohort(models.Model):
                   "rescuing large households. RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024). "
                   "NULL = this rescue is not offered.",
     )
+    # Request #31 (BrightPath, 2026-10-08). The same "value is the switch" rule as the thresholds
+    # above, in its list form: EMPTY = not applied. Keys are `birth_state.STATE_KEYS`; the gate
+    # reads the place-of-birth code in the student's IC number, and an IC that names no state in
+    # this list — born abroad, code 82 "unknown", or unreadable — fails (`birth_state.check`).
+    # A JSON list because the dev and test database is SQLite (no ArrayField). It arrived EMPTY
+    # on every existing intake year, and a new one starts empty.
+    allowed_birth_states = models.JSONField(
+        default=list, blank=True,
+        help_text="State keys (birth_state.STATE_KEYS) a student must have been BORN in, read "
+                  "from the IC's place-of-birth code. Empty list = not applied.",
+    )
     bucket_b_margin = models.IntegerField(
         default=1,
         help_text="DEPRECATED (pre-S8 marginal-miss logic); unused by the current engine",

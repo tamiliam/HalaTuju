@@ -11,9 +11,10 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
+from ..birth_state import normalise_states
 from ..models import ScholarshipApplication
 from .gift_programmes import CODE_RE, _ProgrammeScopedBase
-from .gifts import REQUIREMENT_FIELDS, _cohort_row, _window_from
+from .gifts import BIRTH_STATES_FIELD, REQUIREMENT_FIELDS, _cohort_row, _window_from
 
 #: The package's logger name, spelled out — see the note in `requests.py`.
 logger = logging.getLogger('apps.scholarship.views_admin')
@@ -35,6 +36,15 @@ def _requirements_from(data):
         if out[f] is None or out[f] < 0:
             bad = f
             break
+    # Request #31: the birth-state list. Absent = left alone; null or [] = not applied; anything
+    # but a list of known state keys is refused WHOLE (`bad_requirement`) — never trimmed to the
+    # keys it does know, which would save a different rule from the one sent.
+    if not bad and BIRTH_STATES_FIELD in data:
+        states, ok = normalise_states(data.get(BIRTH_STATES_FIELD))
+        if ok:
+            out[BIRTH_STATES_FIELD] = states
+        else:
+            bad = BIRTH_STATES_FIELD
     return out, bad
 
 

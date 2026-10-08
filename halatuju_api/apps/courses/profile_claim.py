@@ -94,13 +94,24 @@ _HTTP_FOR = {
     'too_many_attempts': 400,
 }
 
-VALID_STATE_CODES = {
+#: The place-of-birth codes (IC digits 7-8) an NRIC may carry. ⚠ EVERY STATE CODE, old and new:
+#: 01-16 and 21-59 (request #31 review, 2026-10-08). Until then this stopped at 24, so a real IC
+#: born in Sabah under 47/48/49 — or anywhere under 25-59 — was refused here and could never
+#: reach an intake's "Born in" rule. Plus 71/72 (abroad) and 82 (state unknown), as before; no
+#: other foreign code was added. Written out HERE, not imported from `apps.scholarship.birth_state`
+#: (the courses -> scholarship import count is a ratcheted standard); `test_birth_state.py`
+#: holds it equal to that module's table, and the web's `lib/ic-utils.ts` copy is drift-tested
+#: against this literal (`icStateCodesDrift.test.ts`).
+VALID_STATE_CODES = frozenset((
     '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
     '11', '12', '13', '14', '15', '16',
-    '21', '22', '23', '24',
+    '21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
+    '31', '32', '33', '34', '35', '36', '37', '38', '39', '40',
+    '41', '42', '43', '44', '45', '46', '47', '48', '49', '50',
+    '51', '52', '53', '54', '55', '56', '57', '58', '59',
     '71', '72',
     '82',
-}
+))
 
 # ── The trilingual code email ───────────────────────────────────────────────────────────────
 #: ⚠ NO PROGRAMME IDENTITY IN THE LITERALS (tenancy rule 2): the sender, the sign-off and the

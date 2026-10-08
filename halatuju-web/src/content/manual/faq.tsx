@@ -79,6 +79,16 @@ export const FAQ: Record<Audience, QA[]> = {
         shows none.</>,
     },
     {
+      q: <>What is the <strong>place-of-birth</strong> line beside the NRIC?</>,
+      a: <>The state the student was born in, read from the place-of-birth code in her IC number (the two
+        digits in the middle). A gift can accept only students born in certain states; one born elsewhere,
+        born outside Malaysia, with &ldquo;place of birth unknown&rdquo; (code 82), or whose IC number cannot be
+        read does not pass that rule. The line is checked again every time the case opens: if the IC
+        number was changed after she applied and no longer meets the rule, it turns red, and QC can
+        accept the case only with a recorded reason. Where you are in doubt, request her birth
+        certificate.</>,
+    },
+    {
       q: <>Why do I only see some applicants?</>,
       a: <>You see <strong>only the applicants assigned to you</strong>, so you can focus on your own. That&rsquo;s
         normal.</>,

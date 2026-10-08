@@ -20,13 +20,14 @@
  * was always a test of `lib/intakeYears`, never of a page.
  */
 import {
-  draftToRequirements, requirementsToDraft, EMPTY_REQUIREMENTS,
+  draftToRequirements, requirementsToDraft, sameDraft, EMPTY_REQUIREMENTS,
   outsideWindow, todayIso, windowState,
 } from '@/lib/intakeYears'
 
 describe('the SPM B+ requirement is displayed as an EXTRA and stored as a TOTAL', () => {
   const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
-    ({ aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '', ...over })
+    ({ aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '',
+       birthStates: [], ...over })
 
   it("BrightPath's rule round-trips: 4 A- plus 1 more is stored as 4 and 5", () => {
     const r = draftToRequirements(draft({ aCount: '4', spmExtra: '1' }))
@@ -82,6 +83,7 @@ describe('reading the stored rules back into the boxes', () => {
     const stored = {
       min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: 6, min_stpm_pngk: 2.9,
       min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+      allowed_birth_states: ['sabah', 'sarawak'],
     }
     expect(draftToRequirements(requirementsToDraft(stored))).toEqual(stored)
   })
@@ -144,6 +146,46 @@ describe('the SPM C-or-better requirement is a TOTAL both ways', () => {
     expect(requirementsToDraft({ min_spm_credit_count: null }).credits).toBe('')
     // An intake year served before the column existed (a stale payload) reads as not applied.
     expect(requirementsToDraft({ min_spm_a_count: 4 }).credits).toBe('')
+  })
+})
+
+/**
+ * Request #31 — "Born in". ⚠ THE LIST IS THE SWITCH: nothing ticked = the rule is not applied, and
+ * the list is ALWAYS sent, so unticking the last state clears the rule rather than leaving the
+ * stored one in place.
+ */
+describe('the birth-state requirement', () => {
+  const draft = (over: Partial<Parameters<typeof draftToRequirements>[0]> = {}) =>
+    ({ ...EMPTY_REQUIREMENTS, ...over })
+
+  it('sends the ticked states, and an empty list when none are ticked', () => {
+    expect(draftToRequirements(draft({ birthStates: ['sabah'] })).allowed_birth_states)
+      .toEqual(['sabah'])
+    expect(draftToRequirements(draft()).allowed_birth_states).toEqual([])
+  })
+
+  it('reads the stored list back, and a missing or junk one as nothing ticked', () => {
+    expect(requirementsToDraft({ allowed_birth_states: ['sabah', 'sarawak'] }).birthStates)
+      .toEqual(['sabah', 'sarawak'])
+    expect(requirementsToDraft({ allowed_birth_states: [] }).birthStates).toEqual([])
+    // A payload from before the column existed.
+    expect(requirementsToDraft({ min_spm_a_count: 4 }).birthStates).toEqual([])
+    expect(requirementsToDraft({ allowed_birth_states: null }).birthStates).toEqual([])
+  })
+
+  it('never hands the screen the same array it was given', () => {
+    const stored = ['sabah']
+    const d = requirementsToDraft({ allowed_birth_states: stored })
+    expect(d.birthStates).not.toBe(stored)
+    expect(draftToRequirements(d).allowed_birth_states).not.toBe(d.birthStates)
+  })
+
+  it('sameDraft compares the ticked states by VALUE, so putting a tick back is no change', () => {
+    const a = draft({ birthStates: ['sabah'] })
+    expect(sameDraft(a, draft({ birthStates: ['sabah'] }))).toBe(true)
+    expect(sameDraft(a, draft())).toBe(false)
+    expect(sameDraft(a, draft({ birthStates: ['sabah'], aCount: '4' }))).toBe(false)
+    expect(sameDraft(draft(), EMPTY_REQUIREMENTS)).toBe(true)
   })
 })
 

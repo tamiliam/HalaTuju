@@ -103,7 +103,6 @@ export const sandboxApplication: ScholarshipApplication = {
   consent_to_contact: true,
   status: 'submitted',
   bucket: 'shortlist',
-  shortlist_reason: '',
   maintenance_substate: 'on_track',
   closure_reason: '',
   acknowledged_at: '2026-02-02T09:00:00Z',

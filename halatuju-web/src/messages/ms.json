@@ -6339,6 +6339,8 @@
         "spmBHint": "in addition to those above",
         "spmC": "SPM - jumlah gred C dan ke atas",
         "spmCHint": "termasuk gred A dan B di atas",
+        "bornIn": "Lahir di",
+        "bornInHint": "Dibaca daripada nombor IC. Biarkan semua tidak bertanda untuk menerima pelajar yang lahir di mana-mana.",
         "pngk": "STPM - minimum PNGK",
         "merit": "Mata merit minimum",
         "meritHint": "UPU score out of 100. SPM applicants only.",

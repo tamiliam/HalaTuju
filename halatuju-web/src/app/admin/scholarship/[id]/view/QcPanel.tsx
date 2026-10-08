@@ -44,8 +44,14 @@ export function QcPanel({
         && !((role?.role === 'qc' || role?.role === 'org_admin') && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
         // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
-        const qcGapFacts = (app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact)
-        const qcGapLabels = qcGapFacts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)).join(', ')
+        // Request #31: the server adds the birth-state fact to the SAME floor when the current IC
+        // fails the intake's rule (`meets_rule` is its served answer); labelled with the served
+        // English warning, so the floor and its override box appear here and not only as a 400.
+        const birthFails = app.birth_state?.meets_rule === false
+        const qcGapFacts = [...(app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact),
+          ...(birthFails ? ['birth_state'] : [])]
+        const qcGapLabels = qcGapFacts.map((f) => (f === 'birth_state' ? app.birth_state.warning
+          : t(`admin.scholarship.verdict.fact.${f}`))).join(', ')
         // A DECLINE verdict at QC confirms a REJECTION, not a recommendation (owner 2026-07-19).
         // The gap floor does NOT apply — a declined case is EXPECTED to have red facts — and the
         // primary button reads "Confirm decline" (red), not "Accept".

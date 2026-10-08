@@ -3,13 +3,19 @@
  * Format: YYMMDD-SS-NNNN
  */
 
-// Valid Malaysian state/country codes (digits 7-8)
-const VALID_STATE_CODES = new Set([
+// Valid Malaysian place-of-birth codes (digits 7-8). ⚠ EVERY STATE CODE, 01-16 and 21-59
+// (request #31 review, 2026-10-08): this stopped at 24, so a real IC born in Sabah under 47-49 —
+// or anywhere under 25-59 — was refused before it reached the server. Plus 71/72 (abroad) and 82
+// (unknown), as before. drift-test: halatuju-web/src/lib/__tests__/icStateCodesDrift.test.ts
+export const VALID_STATE_CODES = new Set([
   '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
-  '11', '12', '13', '14', '15', '16',  // 16 states
-  '21', '22', '23', '24',              // Sabah/Sarawak regions
-  '71', '72',                           // Foreign born
-  '82',                                 // Unknown
+  '11', '12', '13', '14', '15', '16',
+  '21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
+  '31', '32', '33', '34', '35', '36', '37', '38', '39', '40',
+  '41', '42', '43', '44', '45', '46', '47', '48', '49', '50',
+  '51', '52', '53', '54', '55', '56', '57', '58', '59',
+  '71', '72', // born abroad
+  '82', // unknown
 ])
 
 /** Strip dashes from NRIC string */

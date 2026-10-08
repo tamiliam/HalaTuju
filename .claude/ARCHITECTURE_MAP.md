@@ -222,7 +222,9 @@ no template of its own so it falls through to the generic `FAIL_*` copy.)
 migration `0148`). `min_spm_a_count`, `min_spm_bplus_count`, `min_spm_credit_count` (request #30,
 migration `0168`: the TOTAL at C or better — A+ to C, SPM has no C- — NULL on every existing year, no
 default), `min_stpm_pngk`, `min_merit_score`,
-`income_ceiling` and `per_capita_ceiling` are all nullable, and **the value IS the switch** — there
+`income_ceiling` and `per_capita_ceiling` are all nullable (and `allowed_birth_states`, request #31,
+migration `0171`, is a JSON list of `birth_state.STATE_KEYS` where EMPTY is off — a hard `ineligible`
+gate on the IC's place-of-birth code; abroad, code 82 and an unreadable IC fail closed), and **the value IS the switch** — there
 is deliberately no companion `use_x` boolean, because two columns can disagree and one cannot.
 Before this every column was `NOT NULL` with a default, so every test always ran: BrightPath never
 asked for an STPM requirement and PNGK ≥ 2.90 applied to all nine of its STPM applicants for a whole

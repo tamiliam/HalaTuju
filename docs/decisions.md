@@ -13617,3 +13617,48 @@ never lapses; the owner's model is a clock from the OFFER email, signing on or o
 releases the student without a button. It is built with the signing design (alongside TD-347), not
 before. Fact recorded: today a student accepts an offer by installing and activating the Vircle app,
 not through the in-app Accept. The close keeps refusing while money is attached (one door per job).
+
+## 2026-10-08 — Request #31: "Born in" is the IC's place-of-birth code, fails closed, and the list is the switch
+
+**Decision (owner + BrightPath, settled before the build):** an intake year may accept only students
+BORN in chosen states (`ScholarshipCohort.allowed_birth_states`, a list of `birth_state.STATE_KEYS`).
+The source is the MyKad number's place-of-birth code, digits 7-8 of YYMMDD-PB-###G, on the full JPN
+list (01-16 and 21-59 are the 16 states and federal territories; 82 is "state unknown"; 60-99 other
+than 82 is born abroad; 00, 17-20, fewer or more than 12 digits = not readable). Born abroad, code
+82, or an unreadable IC does NOT pass a state rule. Family roots and current residence do not count
+— the test is "born in", not "Sabahan". A birth certificate is only a manual follow-up where in doubt;
+the reviewer can already request one, so nothing was built for it. A failure is a hard gate with
+category `ineligible`, so the student gets the existing generic decline email.
+**Alternatives considered:** (a) a residence or "Sabahan" test from the address or the parents'
+ICs; (b) pass the doubtful cases (82, abroad, unreadable) and let a reviewer sort them; (c) a nullable
+column where NULL is off and `[]` means "nobody"; (d) a Postgres ArrayField.
+**Rationale:** (a) was ruled out by the organisation — the gift is for those born there. (b) a
+money gate that passes what it cannot read is a hole; the cockpit line shows the reviewer exactly what
+the IC said, so a wrongly-closed case is visible and a birth certificate settles it. (c) "nobody" is
+not a rule anyone wants, and two "off" spellings (NULL and `[]`) is the shape S2a removed — the EMPTY
+list is the switch, the list form of "the value is the switch". (d) the dev and test database is
+SQLite. Keys are slugs, not display names, so a renamed label never touches stored rules; the names
+are the platform's `MALAYSIAN_STATES` spelling, drift-tested in both trees.
+**Trade-offs:** the NRIC is read LIVE from the profile at submit and on every rescore (the
+application keeps no copy), and an unverified NRIC is student-editable. The cockpit line is served
+in English (admin payload only, like the engine's `shortlist_reason`) to keep four strings out of
+`en.json`, which rides on almost every student route (TD-360).
+**Review rulings (coordinator, 2026-10-08, after the adversarial review):** (1) A number changed
+AFTER the gate (`POST /profile/claim-nric/`, then a MyKad matching the new number locks it) is caught
+twice, not by re-running the engine on a released decision: the cockpit re-reads `meets_rule` on every
+load against the CURRENT IC and the intake's CURRENT list and shows a red warning, and the QC ACCEPT
+floor adds the fact `birth_state` to its red facts — passable only with a recorded `override_reason`,
+the trail that already exists for a red verdict fact. The decline-confirm path is not touched: a
+declined case is expected to fail rules. (2) No audit line was added to the claim endpoint's
+"created" branch: `ProfileClaimEvent` is documented as one row per branch that touches SOMEBODY
+ELSE'S profile, so an own-profile write there changes the table's meaning and adds a write to every
+first IC entry; and a log line may not carry the IC (house rule), so it would record nothing that
+answers "what was it changed from". Left for a TD. (3) `shortlist_reason` is the engine's note for
+staff and is no longer served to the student: no student screen read it, and it showed the reason —
+now including the IC's code and the accepted states — before the decision was revealed. (4) The
+profile step's place-of-birth codes (api `profile_claim.VALID_STATE_CODES`, web `ic-utils.ts`) now
+accept every state code, 01-16 and 21-59, plus 71, 72 and 82 as before; other foreign codes were
+deliberately not added (not asked for).
+**Revisit if:** an organisation wants residence or descent rather than birth; a non-MyKad applicant
+(MyKAS, passport) must be admitted under a state rule; or TD-360 splits the message file and the
+cockpit line can be translated without moving student routes.

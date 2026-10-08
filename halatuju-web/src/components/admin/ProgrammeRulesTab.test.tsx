@@ -55,6 +55,7 @@ const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => (
   requirements: {
     min_spm_a_count: 4, min_spm_bplus_count: 5, min_spm_credit_count: null, min_stpm_pngk: null,
     min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+    allowed_birth_states: [],
   },
   ...over,
 })
@@ -211,6 +212,66 @@ describe('the C-or-better requirement', () => {
     fireEvent.click(save())
     await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
     expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].min_spm_credit_count).toBeNull()
+  })
+})
+
+// Request #31. ⚠ NOTHING TICKED IS THE RULE OFF, and the list is sent whole on every save, so
+// unticking the last state must reach the server as [] — clearing the rule — never as "no change".
+describe('the "Born in" requirement', () => {
+  const withStates = (s: string[]) => withYears([year({
+    requirements: { ...year().requirements, allowed_birth_states: s },
+  })])
+  const tick = (key: string) => document.getElementById(`rules-born-${key}`) as HTMLInputElement
+
+  it('offers all sixteen states and shows the stored ones ticked', async () => {
+    withStates(['sabah'])
+    await loaded()
+    expect(document.querySelectorAll('[id^="rules-born-"]')).toHaveLength(16)
+    expect(tick('sabah').checked).toBe(true)
+    expect(tick('sarawak').checked).toBe(false)
+    expect(screen.getByText('admin.years.req.bornInHint')).toBeTruthy()
+  })
+
+  it('sends the ticked states, and leaves every other rule as it was', async () => {
+    withStates([])
+    await loaded()
+    fireEvent.click(tick('sarawak'))
+    fireEvent.click(tick('sabah'))
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+    const body = mockApi.updateAdminIntakeYear.mock.calls[0][1]
+    expect(body.allowed_birth_states).toEqual(['sabah', 'sarawak'])
+    expect([body.min_spm_a_count, body.min_spm_bplus_count]).toEqual([4, 5])
+  })
+
+  it('unticking the last state sends an EMPTY list — the rule off', async () => {
+    withStates(['sabah'])
+    await loaded()
+    fireEvent.click(tick('sabah'))
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+    expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_birth_states).toEqual([])
+  })
+
+  it('wakes Save on a tick and puts it back to sleep when the tick is undone', async () => {
+    withStates(['sabah'])
+    await loaded()
+    expect(save().disabled).toBe(true)
+    fireEvent.click(tick('sarawak'))
+    expect(save().disabled).toBe(false)
+    fireEvent.click(tick('sarawak'))
+    expect(save().disabled).toBe(true)
+  })
+
+  it('a refused save is SHOWN, never "Saved"', async () => {
+    mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
+      Object.assign(new Error('bad_requirement'), { code: 'bad_requirement' }))
+    withStates([])
+    await loaded()
+    fireEvent.click(tick('sabah'))
+    fireEvent.click(save())
+    await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
+    expect(screen.queryByText('admin.rules.saved')).toBeNull()
   })
 })
 

@@ -118,6 +118,18 @@ export interface AdminScholarshipDetail {
   school: string
   nric: string
   nric_verified: boolean
+  /** Request #31: the place of birth the IC's code states, read on the server. `label` and
+   *  `warning` are served in English (to keep `en.json` flat, TD-360) and printed as is — never
+   *  re-derived here. `meets_rule` is re-read on every load against the CURRENT IC and the
+   *  intake's CURRENT rule: null = the intake has no rule; false = the QC accept floor holds it. */
+  birth_state: {
+    kind: 'state' | 'abroad' | 'unknown' | 'unreadable'
+    state: string | null
+    code: string
+    label: string
+    meets_rule: boolean | null
+    warning: string
+  }
   mentoring_candidate: boolean
   verified_at: string | null
   verified_by: string

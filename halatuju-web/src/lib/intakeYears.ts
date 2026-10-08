@@ -78,10 +78,21 @@ export interface RequirementDraft {
   merit: string
   income: string
   perPerson: string
+  /** Request #31: the state keys a student must have been BORN in (`lib/birthStates`). Empty = the
+   *  rule is not applied. Kept in the server's order, so two equal choices compare equal. */
+  birthStates: readonly string[]
 }
 
 export const EMPTY_REQUIREMENTS: RequirementDraft = {
   aCount: '', spmExtra: '', credits: '', pngk: '', merit: '', income: '', perPerson: '',
+  birthStates: [],
+}
+
+/** Has anything on the screen changed? Box by box, and the ticked states by VALUE — two lists
+ *  holding the same states are the same rule, so ticking and unticking one puts Save back to sleep. */
+export function sameDraft(a: RequirementDraft, b: RequirementDraft): boolean {
+  return (Object.keys(a) as (keyof RequirementDraft)[]).every((k) =>
+    k === 'birthStates' ? a.birthStates.join() === b.birthStates.join() : a[k] === b[k])
 }
 
 /** `''` → null (the test is not applied); a finite number → that number. Zero survives: it is a
@@ -125,6 +136,8 @@ export function draftToRequirements(d: RequirementDraft) {
     min_merit_score: num(d.merit),
     income_ceiling: num(d.income),
     per_capita_ceiling: num(d.perPerson),
+    // Always sent, so unticking the last state CLEARS the rule rather than leaving it as it was.
+    allowed_birth_states: [...d.birthStates],
   }
 }
 
@@ -153,6 +166,7 @@ export function requirementsToDraft(r: {
   min_merit_score?: number | null
   income_ceiling?: number | null
   per_capita_ceiling?: number | null
+  allowed_birth_states?: readonly string[] | null
 } | null | undefined): RequirementDraft {
   if (!r) return { ...EMPTY_REQUIREMENTS }
   const a = r.min_spm_a_count
@@ -167,5 +181,7 @@ export function requirementsToDraft(r: {
     merit: str(r.min_merit_score),
     income: str(r.income_ceiling),
     perPerson: str(r.per_capita_ceiling),
+    // A payload from before the column existed has none, which is "not applied".
+    birthStates: Array.isArray(r.allowed_birth_states) ? [...r.allowed_birth_states] : [],
   }
 }

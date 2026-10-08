@@ -95,7 +95,7 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   Referral organisations are a different thing and never grant access.
 - **Gift** (`scholarship_programmes`, code + aliases) owns intake years, the apply copy, the agreement
   template, payment runs and spending. **Intake year** (`scholarship_cohorts`) holds the academic
-  thresholds and has four states, one final.
+  thresholds and the "born in" state rule (`allowed_birth_states`), and has four states, one final.
 - **Roles** (`PartnerAdmin.role`): super, org_admin, admin, reviewer, qc, finance, partner. Sponsors
   are a separate identity. Fences: `_AdminBase` (`_org_scoped` / `_org_allows`), the gift narrowing
   (`?programme=`), assignment for reviewers. Full matrix: `docs/scholarship/role-matrix.md`; review:

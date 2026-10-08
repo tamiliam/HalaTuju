@@ -309,6 +309,9 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.
     nric = serializers.CharField(source='profile.nric', read_only=True)
     nric_verified = serializers.BooleanField(source='profile.nric_verified', read_only=True)
+    # Request #31: the place of birth the IC states, re-checked against the intake's CURRENT rule
+    # on every load (`birth_state.for_cockpit`). Admin-only.
+    birth_state = serializers.SerializerMethodField()
     # Academic + financial data is read live from the canonical profile.
     # The qualification we hold RESULTS for, not the one declared at sign-up — see
     # `held_qualification`. A Form Six student holds SPM results and reads SPM.
@@ -449,7 +452,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             'spm_a_count', 'merit_score', 'stpm_pngk', 'household_income', 'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
-            'address', 'postal_code', 'city', 'preferred_state',
+            'address', 'postal_code', 'city', 'preferred_state', 'birth_state',
             'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians', 'guardian_needs_call',
             'referred_by_org', 'witness_org',
             # Academic detail (FE renders SPM vs STPM by qualification)
@@ -484,7 +487,6 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             'awarded_at', 'active_at', 'maintenance_at',
             # The QC floor override — who accepted a case over a RED fact, when, and why.
             'qc_override_by', 'qc_override_by_name', 'qc_override_at', 'qc_override_reason',
-            # The QC floor override — who accepted a case over a RED fact, when, and why.
             # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
             'maintenance_substate',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +
@@ -627,6 +629,11 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
 
     def get_school(self, obj):
         return getattr(obj.profile, 'school', '') if obj.profile else ''
+
+    def get_birth_state(self, obj):
+        from .birth_state import for_cockpit
+        return for_cockpit(getattr(obj.profile, 'nric', '') if obj.profile else '',
+                           getattr(obj.cohort, 'allowed_birth_states', None))
 
     @staticmethod
     def _org_dict(org):

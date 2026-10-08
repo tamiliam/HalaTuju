@@ -6,7 +6,10 @@ from the linked StudentProfile (the single source of truth); intent / consent /
 IPTS from the application. All thresholds come from the cohort.
 
 The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan.md):
-  1. Hard gates  — consent + intends public study + NOT IPTS-only        → else REJECT
+  1. Hard gates  — consent + intends public study + NOT IPTS-only
+                   + BORN IN one of `allowed_birth_states`, when the intake sets any
+                     (request #31: the IC's place-of-birth code; abroad, code 82 or an
+                     unreadable IC fail — `birth_state.check`)                → else REJECT
   2. Academic    — SPM: >= min_spm_a_count at A- AND >= min_spm_bplus_count at B+
                         AND >= min_spm_credit_count at C or better
                         AND merit point >= min_merit_score;
@@ -36,10 +39,14 @@ Consequences worth stating rather than discovering:
     "passed the income test", and there was no income test.
   * `min_merit_score` applies to SPM applicants only — an STPM applicant's comparable figure is
     the PNGK, which is `min_stpm_pngk`.
+  * `allowed_birth_states` is a LIST, so "off" is the EMPTY list rather than `None` — the same
+    switch in list form. Off means the IC is not read at all, so an unreadable IC passes it.
 """
 from dataclasses import dataclass
 
 from apps.courses.exam_questions import results_held
+
+from .birth_state import check as check_birth_state
 
 # SPM grades that count as an "A" (A+/A/A- all count — A- is the minimum "A").
 A_GRADES = {'A+', 'A', 'A-'}
@@ -242,6 +249,12 @@ def evaluate(application, cohort):
         return ShortlistResult('rejected', '', 'not intending tertiary study this year', 'ineligible')
     if application.upu_status == 'ipts':
         return ShortlistResult('rejected', '', 'IPTS-only — outside programme scope', 'ineligible')
+    # Request #31: born in a state this intake accepts. The NRIC is the PROFILE's — the application
+    # keeps no copy of its own — read live, like every other input here. No profile fails closed.
+    ok, why = check_birth_state(getattr(profile, 'nric', '') if profile else '',
+                                getattr(cohort, 'allowed_birth_states', None))
+    if not ok:
+        return ShortlistResult('rejected', '', why, 'ineligible')
 
     # 2. Academic floor → 'merit'
     ok, why = _academic_ok(profile, cohort)
