@@ -298,17 +298,32 @@ def _reread_embargo_facts(application):
         setattr(application, field, value)
 
 
+def held_decline_restore_target(application):
+    """The status `cancel_pending_decline` would put this application back to, or None when it
+    would restore nothing (no held decline, not rejected, or the student already told).
+
+    ⚠ THE CANCEL'S OWN RULE, read by the cancel itself and by the IC-lock release
+    (`views_admin/sponsors.py`, TD-371): while a held decline would restore `recommended` on an
+    intake with a "Born in" rule, the lock may not be released, so the IC cannot change during
+    the hold and the cancel needs no check of its own."""
+    if not (application.decline_due_at or application.pending_rejection_category):
+        return None
+    # (c) "told" is THIS decline's email, by the one rule the release cron also reads (TD-349).
+    if application.status != 'rejected' or _told_of_this_decline(application):
+        return None
+    return application.pre_decline_status or 'interviewed'
+
+
 def _cancel_pending_decline_locked(application, by_email):
     if not (application.decline_due_at or application.pending_rejection_category):
         return False
+    restore_to = held_decline_restore_target(application)   # read before the markers clear
     award_was = application.award_amount   # TD-203; `by_email` is the acting admin, for the log
     application.pending_rejection_category = ''
     application.decline_due_at = None
     application.pending_decline_by = ''
     fields = ['pending_rejection_category', 'decline_due_at', 'pending_decline_by']
-    # (c) "told" is THIS decline's email, by the one rule the release cron also reads (TD-349).
-    if application.status == 'rejected' and not _told_of_this_decline(application):
-        restore_to = application.pre_decline_status or 'interviewed'
+    if restore_to is not None:
         # A cancelled CONTRACTUAL decline of a funded student: the reject auto-lapsed the
         # sponsorship (#6), so try to reinstate it — best-effort, only when the sponsor's
         # balance still covers the amount (they may have reallocated it in the window).

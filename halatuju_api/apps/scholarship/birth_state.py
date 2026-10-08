@@ -149,19 +149,39 @@ def describe(b):
     return 'IC number not readable'
 
 
+def stored_keys(value):
+    """A STORED `allowed_birth_states` → the list of keys it holds, as strings (TD-373).
+
+    ⚠ THE ONE READER OF THE STORED VALUE. The gate (`check`), the QC floor and the cockpit
+    (`meets_rule`), the IC-lock and reopen-cancel refusals, and the intake-year row the Rules tab
+    loads (`views_admin/gifts._cohort_row`) all read it through here, so what the server enforces
+    and what the screen shows cannot disagree. Before TD-373 the row served a bare string as
+    itself, the screen read a non-list as "nothing ticked", and the next Save cleared a rule the
+    server was still enforcing.
+
+    Only a database edit can store anything but a list of known keys (`normalise_states` refuses
+    the rest on the way in). A list → its items as strings; a bare string → that one entry; empty
+    or None → ``[]`` (the rule off). Anything else is read as ONE entry, so it fails closed rather
+    than matching a substring. A wrong-case key ('Sabah') is KEPT as typed: it matches no IC, and
+    the Rules tab shows it as an extra ticked box so the admin can see it and untick it."""
+    if not value:
+        return []
+    if isinstance(value, (list, tuple)):
+        return [str(v) for v in value]
+    return [str(value)]
+
+
 def _accepted(allowed):
-    """The rule's keys as strings, in the platform order (a hand-stored unknown key last). A
-    non-list (only a hand edit can store one) is read as one entry, so it still fails closed
-    rather than matching a substring."""
-    allowed = [str(a) for a in (allowed if isinstance(allowed, (list, tuple)) else [allowed])]
-    return [k for k in STATE_KEYS if k in allowed] + [k for k in allowed if k not in STATE_NAMES]
+    """The rule's keys in the platform order (a hand-stored unknown key last)."""
+    keys = stored_keys(allowed)
+    return [k for k in STATE_KEYS if k in keys] + [k for k in keys if k not in STATE_NAMES]
 
 
 def meets_rule(nric, allowed):
     """``None`` when the intake has no rule (an EMPTY list — the IC is not read); otherwise
     whether this IC names a state in it. The ONE answer the gate, the cockpit and the QC floor
     share."""
-    if not allowed:
+    if not stored_keys(allowed):
         return None
     b = birth_state_from_nric(nric)
     return b.kind == STATE and b.state in _accepted(allowed)

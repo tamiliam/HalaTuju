@@ -8,6 +8,7 @@ Part of the `views_admin` package. Every name below is re-exported from
 from django.db.models import IntegerField, OuterRef, Q, Subquery
 
 from .. import branding
+from ..birth_state import stored_keys
 from ..models import Donation, ScholarshipApplication
 
 
@@ -352,6 +353,9 @@ def _cohort_row(c):
         # org-fence: as above.
         'unsubmitted': ScholarshipApplication.objects.filter(
             cohort=c, status='shortlisted').count(),
+        # ⚠ THE BIRTH STATES ARE READ AS THE GATE READS THEM (`birth_state.stored_keys`, TD-373):
+        # a hand-edited bare string or wrong-case key is served as a list, so the Rules tab shows
+        # it ticked rather than nothing, and the next Save cannot silently clear a live rule.
         'requirements': {**{f: getattr(c, f) for f in REQUIREMENT_FIELDS},
-                         BIRTH_STATES_FIELD: getattr(c, BIRTH_STATES_FIELD) or []},
+                         BIRTH_STATES_FIELD: stored_keys(getattr(c, BIRTH_STATES_FIELD))},
     }

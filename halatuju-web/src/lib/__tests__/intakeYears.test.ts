@@ -173,6 +173,20 @@ describe('the birth-state requirement', () => {
     expect(requirementsToDraft({ allowed_birth_states: null }).birthStates).toEqual([])
   })
 
+  // TD-373: the gate enforces whatever is stored, so the screen must hold every stored key — a
+  // wrong-case one included — and a bare string (an api older than `stored_keys`) is one key.
+  it('keeps a key the boxes do not offer, and reads a bare string as one key', () => {
+    expect(requirementsToDraft({ allowed_birth_states: ['Sabah'] }).birthStates).toEqual(['Sabah'])
+    expect(requirementsToDraft({ allowed_birth_states: ['sabah', 'Sabah'] }).birthStates)
+      .toEqual(['sabah', 'Sabah'])
+    expect(requirementsToDraft({ allowed_birth_states: 'sabah' }).birthStates).toEqual(['sabah'])
+    expect(requirementsToDraft({ allowed_birth_states: 'Sabah' }).birthStates).toEqual(['Sabah'])
+    expect(requirementsToDraft({ allowed_birth_states: '' }).birthStates).toEqual([])
+    // Sent back as held, so the server refuses it rather than the screen quietly dropping it.
+    expect(draftToRequirements(requirementsToDraft({ allowed_birth_states: 'Sabah' }))
+      .allowed_birth_states).toEqual(['Sabah'])
+  })
+
   it('never hands the screen the same array it was given', () => {
     const stored = ['sabah']
     const d = requirementsToDraft({ allowed_birth_states: stored })

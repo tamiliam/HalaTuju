@@ -10,9 +10,11 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from .. import birth_state
 from .. import pool
 from ..models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from ..serializers_admin import AdminApplicationDetailSerializer
+from ..services.decline import held_decline_restore_target
 from .. import sponsorship as sponsorship_service
 
 from .base import _AdminBase
@@ -117,6 +119,40 @@ class AdminSponsorPendingCountView(_AdminBase):
         return Response({'count': Sponsor.objects.filter(status='pending').count()})
 
 
+#: TD-371: why the IC lock is held, by what holds it — the code is the same for both.
+_HELD_BY_RECOMMENDED = ('This student is recommended on an intake with a "Born in" rule. Reopen '
+                        'the case first, so QC checks the IC again before anyone can fund it, '
+                        'then release the lock.')
+_HELD_BY_HELD_DECLINE = ('This student has a decline on hold that would return them to '
+                         'Recommended on an intake with a "Born in" rule. Let the decline go, or '
+                         'cancel it first, then release the lock.')
+
+
+def _held_by_birth_state_rule(profile):
+    """Why the IC lock may not be released (TD-371), or '' when it may. Read through
+    `birth_state.stored_keys`, the gate's own reader, for every application on the profile:
+
+      * one `recommended` on an intake with a "Born in" rule — QC accept checked the rule
+        against the IC it had then, and nothing re-reads it before funding;
+      * one `rejected` with a HELD decline the student has not been told of, whose restore
+        target is `recommended` on such an intake — read by `held_decline_restore_target`, the
+        cancel's own rule. Held here, the IC cannot change during the hold, so the cancel itself
+        needs no check: a case QC accepted WITH a recorded override can still be restored when a
+        decline was issued by mistake (the review's case; the IC never changed)."""
+    # org-fence: super-only caller, and the profile was reached through an application it owns.
+    candidates = (ScholarshipApplication.objects
+                  .filter(profile=profile, status__in=('recommended', 'rejected'))
+                  .select_related('cohort'))
+    for a in candidates:
+        if not birth_state.stored_keys(getattr(a.cohort, 'allowed_birth_states', None)):
+            continue
+        if a.status == 'recommended':
+            return _HELD_BY_RECOMMENDED
+        if held_decline_restore_target(a) == 'recommended':
+            return _HELD_BY_HELD_DECLINE
+    return ''
+
+
 class AdminReleaseNricLockView(_AdminBase):
     """POST .../applications/<pk>/release-nric-lock/ {reason} — the break-glass. SUPER ONLY.
 
@@ -172,7 +208,9 @@ class AdminReleaseNricLockView(_AdminBase):
         app = ScholarshipApplication.objects.filter(pk=pk).select_related('profile').first()
         if app is None or app.profile is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        reason = (request.data.get('reason') or '').strip()
+        # Only text is a reason; a number or a list is read as none (TD-375's review), not a 500.
+        reason = request.data.get('reason')
+        reason = reason.strip() if isinstance(reason, str) else ''
         if not reason:
             return Response({'error': 'A reason is required to release an identity lock.',
                              'code': 'reason_required'},
@@ -180,6 +218,20 @@ class AdminReleaseNricLockView(_AdminBase):
         profile = app.profile
         if not profile.nric_verified:
             return Response({'error': 'This IC is not locked.', 'code': 'not_locked'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ TD-371: NOT WHILE A "BORN IN" RULE STANDS BETWEEN THIS STUDENT AND A SPONSOR. A
+        # `recommended` case on an intake with a birth-state rule passed that rule at QC accept
+        # against the IC it had then; released here, the IC can change and `fund_student` never
+        # reads it again. Reopening sends the case back through QC, whose floor re-reads the IC.
+        # ⚠ EVERY APPLICATION ON THE PROFILE, not only the one in the URL: the lock is the
+        # PROFILE's, so releasing it through an old rejected application would free the IC of a
+        # recommended one just the same. Only `recommended` (or a held decline that would restore
+        # it) on a ruled intake is refused: from `awarded` on a sponsor has committed the funding
+        # (paid from `active`) and a genuine IC correction must stay possible (decisions.md
+        # 2026-10-08; the `_revert_to_pool` route back from `awarded` is TD-376).
+        held = _held_by_birth_state_rule(profile)
+        if held:
+            return Response({'error': held, 'code': 'birth_state_rule_reopen_first'},
                             status=status.HTTP_400_BAD_REQUEST)
         profile.nric_verified = False
         profile.save(update_fields=['nric_verified'])

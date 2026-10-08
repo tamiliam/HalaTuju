@@ -18,6 +18,8 @@ import { useT } from '@/lib/i18n'
 import { BIRTH_STATES, toggleBirthState } from '@/lib/birthStates'
 import type { RequirementDraft } from '@/lib/intakeYears'
 
+const BIRTH_STATE_KEYS: readonly string[] = BIRTH_STATES.map((s) => s.key)
+
 const MINI = 'w-24 rounded-lg border border-ground-300 px-2.5 py-1.5 text-sm text-right'
   + ' tabular-nums focus:border-brand-shape focus:ring-2 focus:ring-brand-shape outline-none'
 
@@ -88,6 +90,21 @@ export default function RequirementFields(
                 })}
                 className="h-4 w-4 shrink-0 accent-primary-600" />
               {s.name}
+            </label>
+          ))}
+          {/* TD-373: a stored key the sixteen do not offer (only a database edit stores one — a
+              wrong case, a stray word). The server enforces it, so it is SHOWN, ticked and
+              labelled as stored, never hidden: saving it is refused, unticking it removes it.
+              The key is quoted, in red, so a stored 'Sabah' never reads as the Sabah box. */}
+          {draft.birthStates.filter((k) => !BIRTH_STATE_KEYS.includes(k)).map((k, i) => (
+            <label key={`x${i}`} htmlFor={`${idPrefix}-born-x${i}`}
+              className="flex items-center gap-2 text-sm text-critical-700">
+              <input id={`${idPrefix}-born-x${i}`} type="checkbox" checked
+                onChange={() => onChange({
+                  ...draft, birthStates: toggleBirthState(draft.birthStates, k, false),
+                })}
+                className="h-4 w-4 shrink-0 accent-primary-600" />
+              <span className="font-mono">{`"${k}"`}</span>
             </label>
           ))}
         </div>

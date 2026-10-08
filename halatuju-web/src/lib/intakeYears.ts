@@ -166,7 +166,7 @@ export function requirementsToDraft(r: {
   min_merit_score?: number | null
   income_ceiling?: number | null
   per_capita_ceiling?: number | null
-  allowed_birth_states?: readonly string[] | null
+  allowed_birth_states?: readonly string[] | string | null
 } | null | undefined): RequirementDraft {
   if (!r) return { ...EMPTY_REQUIREMENTS }
   const a = r.min_spm_a_count
@@ -181,7 +181,21 @@ export function requirementsToDraft(r: {
     merit: str(r.min_merit_score),
     income: str(r.income_ceiling),
     perPerson: str(r.per_capita_ceiling),
-    // A payload from before the column existed has none, which is "not applied".
-    birthStates: Array.isArray(r.allowed_birth_states) ? [...r.allowed_birth_states] : [],
+    birthStates: storedBirthStates(r.allowed_birth_states),
   }
+}
+
+/**
+ * TD-373: the stored "Born in" value → the keys the screen ticks, EVERY one kept as served.
+ *
+ * The server serves `birth_state.stored_keys`, always a list, and the gate enforces exactly that
+ * list — so a key the sixteen boxes do not offer (a hand-edited 'Sabah') must not vanish here, or
+ * the screen shows nothing ticked while the rule is live. `RequirementFields` shows such a key as
+ * an extra ticked box; saving it is refused (`bad_requirement`), unticking it lets the save through.
+ * A bare string can only come from an api older than TD-373 and is read as that one key; absent
+ * (a payload from before the column existed) or empty is "not applied".
+ */
+export function storedBirthStates(v: readonly string[] | string | null | undefined): string[] {
+  if (Array.isArray(v)) return v.map(String)
+  return typeof v === 'string' && v !== '' ? [v] : []
 }

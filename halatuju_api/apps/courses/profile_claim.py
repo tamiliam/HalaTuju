@@ -226,15 +226,24 @@ def _new_code():
     return f'{secrets.randbelow(10 ** CODE_DIGITS):0{CODE_DIGITS}d}'
 
 
-def _twilio_verify():
-    """The Twilio Verify helpers — the phone door's transport, already built for `/profile`.
+def _scholarship(name):
+    """One of the three scholarship modules this file uses — `whatsapp` (the phone door's Twilio
+    transport), `emails` (the metered send) and `birth_state` (TD-372's audit line).
 
-    ⚠ Imported HERE AND ONLY HERE. The app-boundary standard counts every `courses ->
-    scholarship` import statement, and two copies of one edge is one edge too many; the import
-    stays inside a function so it does not run at app-load (that is the half that takes the
-    service down at start-up)."""
-    from apps.scholarship import whatsapp
-    return whatsapp
+    ⚠ ONE IMPORT STATEMENT, HERE AND ONLY HERE. The app-boundary standard counts every `courses
+    -> scholarship` import statement (`test_code_standards.TestTheAppBoundary`, lazy ones
+    included; the budget may not rise), and two copies of one edge is one edge too many: this
+    file held two, and TD-372 needed a third module, so all three come through this one
+    statement (the `_scholarship_constant` door in `org_config_registry.py` is the precedent). It
+    stays inside a function so it does not run at app-load (the half that takes the service down
+    at start-up)."""
+    from apps.scholarship import birth_state, emails, whatsapp
+    return {'birth_state': birth_state, 'emails': emails, 'whatsapp': whatsapp}[name]
+
+
+def _twilio_verify():
+    """The Twilio Verify helpers — the phone door's transport, already built for `/profile`."""
+    return _scholarship('whatsapp')
 
 
 def _within(key, limit):
@@ -287,12 +296,36 @@ def _caller_blocker(caller_sub):
     return None
 
 
+def _audit_self_change(profile, was, now):
+    """TD-372: one log line when a student who HAS an application changes their own IC.
+
+    `ProfileClaimEvent` is for touches to SOMEBODY ELSE'S profile, so this is a log line, not a
+    row (no new write). ⚠ NO IC AND NO STATE NAME — the house rule keeps identity numbers out of
+    logs, and a place of birth is identity data too. What it carries is enough to find the case
+    and to see whether the change matters to a "Born in" rule: whether the birth-state READING
+    moved (kind + state; a new code for the same state is not a move), and which applications'
+    intakes the NEW IC fails (`birth_state.meets_rule` — the gate's, the QC floor's and the
+    cockpit's one answer). A student with no application is not logged: nothing was decided on
+    the old number."""
+    applications = list(profile.scholarship_applications.select_related('cohort').order_by('id'))
+    if not applications:
+        return
+    bs = _scholarship('birth_state')
+    before, after = bs.birth_state_from_nric(was), bs.birth_state_from_nric(now)
+    fails = [a.id for a in applications
+             if bs.meets_rule(now, getattr(a.cohort, 'allowed_birth_states', None)) is False]
+    logger.info('AUDIT nric_self_change profile_id=%s app_ids=%s birth_state_changed=%s '
+                'rule_fails=%s', profile.pk, ','.join(str(a.id) for a in applications),
+                'no' if before[:2] == after[:2] else 'yes',
+                ','.join(map(str, fails)) or 'none')
+
+
 # ── The metered send ────────────────────────────────────────────────────────────────────────
 def send_claim_code_email(to_email, code, lang='en'):
     """The code, through the existing METERED email seam (tenancy rule 6) — never a bare
     `send_mail`. ⚠ The NAME of this function is what `emails._meter_email` records as the usage
     source, which is why it starts with `send_`."""
-    from apps.scholarship import emails
+    emails = _scholarship('emails')
 
     lang = emails.normalise_lang(lang)
     return emails._send(
@@ -327,8 +360,10 @@ def handle_claim(caller_sub, acting_uid, data):
     holder = _holder_of(nric)
     if holder is None:
         profile, _created = StudentProfile.objects.get_or_create(supabase_user_id=acting_uid)
+        was = profile.nric
         profile.nric = nric
         profile.save(update_fields=['nric'])
+        _audit_self_change(profile, was, nric)
         return {'status': 'created'}, 200
     if holder.supabase_user_id == acting_uid:
         return {'status': 'linked'}, 200

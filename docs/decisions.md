@@ -13662,3 +13662,62 @@ deliberately not added (not asked for).
 **Revisit if:** an organisation wants residence or descent rather than birth; a non-MyKad applicant
 (MyKAS, passport) must be admitted under a state rule; or TD-360 splits the message file and the
 cockpit line can be translated without moving student routes.
+
+## 2026-10-08 — TD-371: the "Born in" floor is guarded at the super doors, and only at `recommended` on a ruled intake
+
+**Decision (lead, owner's "go"; widened by the review the same day):** the birth-state rule is read
+at submit and at QC accept; nothing re-reads it before `fund_student`. The super actions that could
+carry a case to funding past that floor are refused, narrowly: (1) `release-nric-lock/` answers 400
+`birth_state_rule_reopen_first` while ANY application on the profile is `recommended` on an intake
+whose `allowed_birth_states` is non-empty — the super reopens the case first, so QC accept re-reads
+the IC; (2) `cancel-reopen/` answers 400 `birth_state_rule_failed` when the cancel would restore
+`recommended` and `birth_state.meets_rule(current IC, the intake's current list)` is False — the
+case goes back through QC accept, where the floor applies and an override is recorded; (3) the
+held-decline route — a contractual decline of a `recommended` case (held), the lock released at
+`rejected`, the IC changed, then `cancel-decline/` restoring `recommended` from the snapshot — is
+closed at the LOCK RELEASE: (1) also refuses while any application on the profile is `rejected`
+with a held decline the student has not been told of whose restore target is `recommended` on a
+ruled intake ("let the decline go, or cancel it first"). The restore target is read by
+`services.decline.held_decline_restore_target`, the cancel's own rule, so the two cannot drift.
+Every other status, every unruled intake and every cancel behaves as before. `_revert_to_pool`
+(awarded → recommended after a sponsor's offer is withdrawn, declined, held or lapsed) is not
+blocked.
+**Why the held decline is closed at the lock, not at the cancel (review round 2):** a refusal on the
+cancel (current IC fails the current rule) was built first and refused a GENUINE undo — QC accepts a
+failing IC with a recorded override (a birth certificate shows Sabah), a super then issues a
+contractual decline by mistake, the cancel is refused, a held decline cannot be reopened
+(`decline_pending`), so the hold expires and the student is emailed a decline nobody meant. The IC
+never changed. Telling that case apart at the cancel needs a record of the IC QC saw (a field, so a
+migration — refused for this sprint). At the lock it needs nothing: with the lock held for the whole
+hold, the IC cannot change during it, so the cancel is a safe undo as it stands.
+**The reopen-cancel refusal is strict, on purpose, even where QC already accepted the failing IC
+with a recorded override** (a super reopening that case about income, say, cannot cancel the
+reopen). Unlike a held decline, a reopened case HAS a road back: its message names it — accept
+through QC again, recording the override reason again, THEN cancel the reopen straight away
+(`TestTheRouteTheRefusalNames`); straight away, because QC accept re-publishes the sponsor profile
+and resets its alert stamp, and a realtime sweep between the two would alert sponsors twice. An
+earlier override does not carry over: the IC, the list or the reason may all have changed since.
+**Alternatives considered:** (a) re-check `meets_rule` in `sponsorship.is_fundable` / `fund_student`
+(the TD's first suggestion); (b) refuse the lock release at `recommended` or later, on any intake;
+(c) check only the application named in the URL.
+**Rationale:** (a) moves the rule onto the sponsor's side — a case would sit in the pool, visible,
+and fail at the moment a sponsor commits money, with nobody on the case told why; the doors are
+where a person is acting and can be told what to do instead. (b) from `awarded` on, a sponsor has
+COMMITTED the funding — an `offered` Sponsorship holds it, not yet paid — and from `active` it is
+paid; a genuine IC correction (a typo found at the agreement) must stay possible there; on an intake
+with no rule there is nothing to protect. (c) the lock is the PROFILE's, so releasing it through an
+old rejected application of the same student would free the recommended one's IC just the same.
+**Trade-off, read from the code and left open — TD-376 (owner decision):** one route remains. The
+lock released at `awarded` (allowed, above), the IC changed, then the offer is withdrawn, declined,
+held or lapses → `_revert_to_pool` → `recommended` with the changed IC, fundable again. It is not
+blocked, because a sponsor withdrawing must always work; the question for the owner is whether such
+a reverted case, when its IC now fails the rule, should land at `interviewed` (AWAITING QC) instead
+of `recommended`. The cockpit's red badge (re-read on every load) shows it meanwhile.
+**Found in review round 3, logged and not built — TD-377:** these refusals guard the LOCK, and QC
+accept never re-locks an IC (only verify-accept does). A release at AWAITING QC is allowed, so a
+case can reach `recommended` with no lock, and the student can then change the IC through the
+profile with no super step at all. The TD-372 audit line and the red badge show it today; the fix
+(QC accept refusing an unlocked IC on a ruled intake, or the student's IC change refusing while a
+ruled application is `recommended`) is in the register.
+**Revisit if:** a further route to `recommended` appears, or the owner rules on TD-376, or TD-377
+is built.

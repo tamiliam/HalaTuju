@@ -273,6 +273,45 @@ describe('the "Born in" requirement', () => {
     await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
     expect(screen.queryByText('admin.rules.saved')).toBeNull()
   })
+
+  // TD-373. A hand-edited key the sixteen do not offer is ENFORCED by the server (it fails every
+  // IC), so it must be on screen: an extra box, ticked, labelled with the key as stored.
+  describe('a stored key that is not one of the sixteen', () => {
+    // Quoted, so a stored 'Sabah' is never mistaken for the Sabah box beside it.
+    const extra = () => screen.getByLabelText('"Sabah"') as HTMLInputElement
+
+    it('is shown ticked beside the sixteen, under its raw key', async () => {
+      withStates(['Sabah'])
+      await loaded()
+      expect(extra().checked).toBe(true)
+      expect(tick('sabah').checked).toBe(false)
+      expect(document.querySelectorAll('[id^="rules-born-"]')).toHaveLength(17)
+    })
+
+    it('saved with it still ticked, it is sent as stored — and the refusal is shown', async () => {
+      mockApi.updateAdminIntakeYear.mockRejectedValueOnce(
+        Object.assign(new Error('bad_requirement'), { code: 'bad_requirement' }))
+      withStates(['Sabah'])
+      await loaded()
+      fireEvent.click(tick('sabah'))
+      fireEvent.click(save())
+      await waitFor(() => expect(screen.getByText('admin.years.error.generic')).toBeTruthy())
+      expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_birth_states)
+        .toEqual(['sabah', 'Sabah'])
+    })
+
+    it('unticked, it is gone from the save — the rule the admin can see is the rule sent', async () => {
+      withStates(['Sabah'])
+      await loaded()
+      fireEvent.click(extra())
+      expect(screen.queryByLabelText('"Sabah"')).toBeNull()
+      fireEvent.click(tick('sabah'))
+      fireEvent.click(save())
+      await waitFor(() => expect(mockApi.updateAdminIntakeYear).toHaveBeenCalled())
+      expect(mockApi.updateAdminIntakeYear.mock.calls[0][1].allowed_birth_states)
+        .toEqual(['sabah'])
+    })
+  })
 })
 
 describe('the Save rule', () => {

@@ -19,13 +19,30 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
+from . import birth_state
 from .models import DecisionReopen, SponsorProfile
 
+
+#: TD-371: the refusal when a cancel would restore `recommended` with an IC that fails the
+#: intake's "Born in" rule. It names the WHOLE route, because the refusal is strict even for a
+#: case QC already accepted with a recorded override (a super reopening it about income, say):
+#: QC accept again — recording the reason again — then cancel the reopen to clear it, at once:
+#: QC accept publishes the sponsor profile and clears its alert stamp, and the cancel re-publishes
+#: it and clears the stamp again, so a realtime sweep that runs between the two alerts sponsors
+#: about the same student twice.
+BIRTH_STATE_RULE_FAILED = (
+    "The student's IC does not meet this intake's \"Born in\" rule now, so cancelling cannot "
+    'put the case back to Recommended unchecked. Accept it through QC instead, recording the '
+    'override reason again if the student should still be accepted (an earlier override does '
+    'not carry over); then cancel this reopen to clear it STRAIGHT AWAY — the QC accept '
+    'publishes the profile to sponsors again, and if the new-student alert runs before the '
+    'cancel, sponsors are alerted twice.')
 
 #: The sentence a view shows for a code; any other code is shown as itself (as before).
 REOPEN_MESSAGES = {
     'decline_pending': ('This decline has not been sent to the student yet. Cancel the '
                         'pending decline instead — it returns the case to where it was.'),
+    'birth_state_rule_failed': BIRTH_STATE_RULE_FAILED,
 }
 
 
@@ -72,7 +89,9 @@ def reopen_decision(app, *, by_admin, reason):
     The refusal comes before any write. A decline whose email HAS gone is reopened as before:
     the case stays 'rejected', reopened, for the verdict to be re-recorded.
     """
-    reason = (reason or '').strip()
+    # Only text is a reason: a number or a list (a hand-made request) is read as none, so the
+    # `reason_required` refusal answers it rather than a 500 at `.strip()` (TD-375's review).
+    reason = reason.strip() if isinstance(reason, str) else ''
     if app.verdict_decided_at is None:
         raise ReopenError('not_decided')
     if app.decision_reopened_at is not None:
@@ -126,10 +145,21 @@ def cancel_reopen(app):
     The decision is unchanged, so we simply re-publish the profile iff it was
     published before (the same already-vetted text), clear the reopened flag, and
     close the audit row with resulted_in_change=False (no reviewer correction).
+
+    ⚠ TD-371: A CANCEL THAT WOULD RESTORE `recommended` RE-READS THE "BORN IN" RULE. That restore
+    skips QC accept, the one place the rule is re-checked after submit, and the IC may have
+    changed while the case was reopened (a super's lock release). When the CURRENT IC fails the
+    intake's CURRENT rule the cancel is refused before any write (`birth_state_rule_failed`):
+    QC accept is the way back, where the floor applies and an override is recorded. Every other
+    cancel is untouched.
     """
     row = open_reopen(app)
     if row is None:
         raise ReopenError('not_reopened')
+    if app.status == 'interviewed' and birth_state.meets_rule(
+            getattr(app.profile, 'nric', '') if app.profile else '',
+            getattr(app.cohort, 'allowed_birth_states', None)) is False:
+        raise ReopenError('birth_state_rule_failed')
 
     with transaction.atomic():
         if row.was_published:

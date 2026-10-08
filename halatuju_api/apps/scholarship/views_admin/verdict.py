@@ -32,6 +32,14 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 
 # ── S5: verdict audit / override capture ─────────────────────────────────────
 
+def _text(value):
+    """A free-text reason or comment from a request, stripped — or '' when it is not text.
+
+    TD-375 and its review: `(value or '').strip()` raised a 500 on a number or a list (only a
+    hand-made request sends one). Read as MISSING, the endpoint's own "required" 400 answers it."""
+    return value.strip() if isinstance(value, str) else ''
+
+
 _OFFICER_FACT_VALUES = {'pass', 'fail', ''}
 _OFFICER_OVERALL_VALUES = {'accept', 'decline', 'hold', ''}
 
@@ -311,7 +319,8 @@ class AdminQcDecisionView(_AdminBase):
                 gap_facts.append(birth_state.FLOOR_FACT)
             update_fields = ['status']
             if gap_facts:
-                override = (request.data.get('override_reason') or '').strip()
+                # TD-375: only TEXT is a reason (`_text`); the floor's 400 answers anything else.
+                override = _text(request.data.get('override_reason'))
                 # _require_qc already gated this endpoint to a `super` or a `qc`; either may pass
                 # the red-fact floor by RECORDING a reason (owner decision 2026-07-08 — the QC
                 # gains the override, previously super-only). The reason is stored + audited below.
@@ -343,7 +352,7 @@ class AdminQcDecisionView(_AdminBase):
             logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
             return Response(AdminApplicationDetailSerializer(app).data)
         if decision == 'reopen':
-            comments = (request.data.get('comments') or '').strip()
+            comments = _text(request.data.get('comments'))
             if not comments:
                 return Response(
                     {'error': 'Say what was missing so the reviewer can fix it.',
@@ -373,7 +382,7 @@ class AdminQcDecisionView(_AdminBase):
             # closed as a real correction, then a decline bucketed 'interview' with the org's QC
             # hold (`qc_decline_hold_hours`). The reviewer gets the "rejected by QC" email (not
             # "returned for revision").
-            comments = (request.data.get('comments') or '').strip()
+            comments = _text(request.data.get('comments'))
             if not comments:
                 return Response(
                     {'error': 'Say why you are rejecting so the reviewer has your reason.',
@@ -425,7 +434,10 @@ class AdminCancelReopenView(_AdminBase):
         try:
             reopen_service.cancel_reopen(app)
         except reopen_service.ReopenError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            # `message` is the code itself for every code without a sentence, as before; the
+            # TD-371 refusal carries one, and the cockpit prints `error`.
+            return Response({'error': e.message, 'code': e.code},
+                            status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
