@@ -32,7 +32,7 @@ from .serializers import (
     SignUploadSerializer,
     StudentAwardSerializer,
 )
-from . import apply_copy
+from . import apply_copy, gift_sources
 from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
@@ -191,7 +191,7 @@ class ScholarshipIntakeView(APIView):
             # Applications ARE open but nothing says which round: name none, offer the choice.
             # ⚠ NO COPY/CODE ON PURPOSE — no gift is chosen yet; the page re-reads once picked.
             return Response({'open': True, 'cohort_name': '', 'programme_code': '',
-                             'choices': _open_round_choices(), 'apply_copy': {}})
+                             'choices': _open_round_choices(), 'apply_copy': {}, 'sources': []})
 
         # No code + exactly one open round → that round's gift owns the page the student is on.
         if not copy and cohort is not None and cohort.programme_id:
@@ -201,12 +201,15 @@ class ScholarshipIntakeView(APIView):
         # bare visit resolves to it), so the form submits the gift it showed — a round that closes
         # mid-form is then refused at submit, never silently re-routed. ('' if it could not route.)
         p = cohort.programme if cohort and cohort.programme_id else None
+        p = p if p and p.is_active else None
         return Response({
             'open': cohort is not None,
             'cohort_name': cohort.name if cohort else '',
-            'programme_code': p.code if p and p.is_active else '',
+            'programme_code': p.code if p else '',
             'choices': [],
             'apply_copy': copy,
+            # Who-referred-you choices of THAT gift ([] when none can be named) — `gift_sources`.
+            'sources': gift_sources.public_sources(p),
         })
 
 
@@ -286,6 +289,10 @@ class ApplicationListCreateView(APIView):
         if not verdict.allowed:
             return Response({'error': apply_gate.REFUSAL[verdict.reason], 'code': verdict.reason},
                             status=status.HTTP_409_CONFLICT)
+        # Who referred you: blank, a fixed choice, or a source THIS gift offers — else refused, nothing written.
+        if not gift_sources.is_offered(cohort.programme, validated.get('referral_source')):
+            return Response({'error': 'referral_source_not_offered', 'code': 'referral_source_not_offered'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         lang = request.data.get('lang') or 'en'
         to_email = profile.contact_email or supabase_user.get('email') or ''

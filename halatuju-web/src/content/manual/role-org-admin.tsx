@@ -144,7 +144,9 @@ export const roleOrgAdmin: ManualChapter = {
         <br /><br />
         Your programme&rsquo;s own group — <strong>Overview</strong>, <strong>Applications</strong>,
         <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
-        for, and its intake year), <strong>Payments</strong> and <strong>Spending</strong> —
+        for, which organisations its &ldquo;Who referred you?&rdquo; list offers, and its intake year — a source
+        switched on in <strong>Sources</strong> joins no gift until you switch it on there),
+        <strong> Payments</strong> and <strong>Spending</strong> —
         <strong> appears only once you are inside a gift</strong>. Open <strong>Programmes</strong> and choose a
         gift, and the group unfolds beneath your organisation&rsquo;s; step back to an organisation page and it
         folds away again. <strong>Overview is where a gift opens</strong>: click a gift&rsquo;s card and you land

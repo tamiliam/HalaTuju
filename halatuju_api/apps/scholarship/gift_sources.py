@@ -6,8 +6,12 @@ chooses its own set, in that gift's Configuration; the screen offers every ACTIV
 switched on joins NO gift, and a new gift starts with NO sources. The three fixed choices
 (Halatuju.xyz, Facebook / WhatsApp, Other) are on every form and are not rows here.
 
-Sprint 1 landed the table, the Configuration card and the Sources-page count; the student's
-apply form still lists the hard-coded `REFERRING_ORG_OPTIONS` (Sprint 2 wires it to this).
+Sprint 1 (2026-10-08) landed the table, the Configuration card and the Sources-page count.
+Sprint 2 (same day) put it in front of the student: the public intake serves the gift's offered
+sources (`public_sources`), the apply form lists them followed by the three fixed choices, and the
+submit REFUSES a code the gift does not offer (`is_offered`) — owner's ruling. The legacy
+`pushparani` / `govind` codes are gone from every form (courses migration 0077 moved them to
+`other`).
 
 ⚠ NOT ACCESS CONTROL. A referral source is an ATTRIBUTION relationship, never a scope; nothing
 here decides who may see what. The org fence is the caller's (`_AdminBase`).
@@ -18,6 +22,11 @@ so every `AUDIT` line stays on the `views_admin` package logger.
 from django.db.models import Count, Q
 
 from .models import ProgrammeReferralSource
+
+#: The three choices on EVERY apply form, after the gift's own sources (owner, 2026-10-08) — never
+#: rows here, never switches. The web holds the same three for their labels (drift-tested by
+#: `src/lib/__tests__/referralSources.test.ts`).
+FIXED_CODES = ('halatuju', 'social', 'other')
 
 
 class GiftSourceError(Exception):
@@ -44,6 +53,31 @@ def sources_for(programme):
              .values_list('source_id', flat=True))
     return [{'code': s.code, 'name': s.name, 'on': s.id in on}
             for s in active_sources().order_by('name', 'code')]
+
+
+def offered_sources(programme):
+    """The sources THIS gift's apply form lists: its switched-on links whose source is still
+    active (`show_in_apply`, `is_active`, not a tenant). A link whose source was switched off in
+    Sources stays in the table but is not offered. No gift → nothing."""
+    if programme is None:
+        return active_sources().none()
+    return active_sources().filter(gift_links__programme=programme).order_by('name', 'code')
+
+
+def public_sources(programme):
+    """What the PUBLIC intake serves: `[{code, name}]` and NOTHING else — never a contact
+    person, email or phone (`test_gift_sources_public.py` plants them and asserts they stay out)."""
+    return [{'code': s.code, 'name': s.name} for s in offered_sources(programme)]
+
+
+def is_offered(programme, code):
+    """May a student submit `code` as who referred them, on this gift? Blank (not answered) and
+    the three fixed choices always; otherwise only a source this gift offers right now."""
+    # Exact match, no trimming: the code checked is the code the profile will store.
+    code = code or ''
+    if not code or code in FIXED_CODES:
+        return True
+    return offered_sources(programme).filter(code=code).exists()
 
 
 def resolve_changes(raw):

@@ -10,6 +10,8 @@
 import Link from 'next/link'
 import VerifiedTick from '@/components/VerifiedTick'
 import { formatNric, referralAcronym } from '@/lib/scholarship'
+// The pill's tooltip: the fixed three from i18n, a source by the linked org's SERVED name, else its code.
+import { referralLabel } from '@/lib/referralSources'
 import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 import { headerTimeline } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
@@ -100,7 +102,8 @@ export function CockpitHeader({
           ) : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
           {referralAcronym(app.referral_source) && (
             <span
-              title={app.referral_source ? t(`scholarship.apply.org.${app.referral_source}`) : ''}
+              title={referralLabel(app.referral_source, t, app.referred_by_org
+                ? { [app.referred_by_org.code]: app.referred_by_org.name } : undefined)}
               className="rounded-full border border-ground-200 px-2 py-0.5 font-medium text-ground-600"
             >
               {referralAcronym(app.referral_source)}

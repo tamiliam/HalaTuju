@@ -116,10 +116,14 @@ def sync_profile_fields(profile, data):
 
     # Resolve the referring-organisation code to a PartnerOrganisation FK. A
     # generic source (whatsapp/google/other) has no row and leaves the FK unset.
+    # ⚠ ONLY AN OFFERED SOURCE LINKS (per-gift sources S2, 2026-10-08): the apply view has already
+    # refused a code its gift does not offer (`gift_sources.is_offered`), and the lookup goes through
+    # `active_sources()` — switched on, not suspended, NEVER a tenant — so this can never attribute
+    # a student to the organisation that runs the gift.
     referral = data.get('referral_source')
     if referral:
-        from apps.courses.models import PartnerOrganisation
-        org = PartnerOrganisation.objects.filter(code=referral, is_active=True).first()
+        from .. import gift_sources
+        org = gift_sources.active_sources().filter(code=referral).first()
         if org and profile.referred_by_org_id != org.pk:
             profile.referred_by_org = org
             profile.save(update_fields=['referred_by_org'])

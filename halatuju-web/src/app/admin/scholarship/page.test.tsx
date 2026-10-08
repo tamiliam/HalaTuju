@@ -54,6 +54,7 @@ beforeEach(() => {
   scope = { chosen: '', programme: null }
   mockApi.getScholarshipApplications.mockResolvedValue(EMPTY_LIST)
   mockApi.getAssignableAdmins.mockResolvedValue({ admins: [], past_assignees: [] })
+  mockApi.getSources.mockResolvedValue({ sources: [] })   // the Source filter's names (2026-10-08)
 })
 
 const heading = () => screen.getByRole('heading', { level: 1 }).textContent
@@ -94,6 +95,54 @@ describe('the switcher reaches the endpoint', () => {
     const [filters] = mockApi.getScholarshipApplications.mock.calls[0]
     expect(filters).toBeDefined()
     expect(filters?.programme).toBeUndefined()
+  })
+})
+
+/*
+ * Per-gift referral sources, Sprint 2 (2026-10-08): the hard-coded list is gone. The Source filter
+ * is every source row the registry holds (switched-off ones too, so their old applicants stay
+ * findable) by its SERVED name, then the three fixed choices from i18n; a tooltip never renders a
+ * raw message key — a new source the screen cannot name shows its code.
+ */
+describe('the Source filter and tooltips read the registry', () => {
+  const row = (referral_source: string) => ({
+    id: 1, profile_id: 'p', name: 'Asha', status: 'submitted', bucket: '', verdict: '',
+    referral_source, submitted_at: null, assigned_to_id: null, call_language: '',
+  }) as unknown as api.AdminScholarshipListData['applications'][number]
+
+  it('offers every source by name, then the fixed three', async () => {
+    mockApi.getSources.mockResolvedValue({ sources: [
+      { code: 'tara', name: 'Tara Foundation', show_in_apply: false },
+      { code: 'smc', name: 'Sri Murugan Centre', show_in_apply: true },
+    ] } as unknown as Awaited<ReturnType<typeof api.getSources>>)
+    render(<AdminScholarshipList />)
+    const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
+    await waitFor(() => expect(Array.from(filter.options).map((o) => o.value))
+      .toEqual(['', 'smc', 'tara', 'halatuju', 'social', 'other']))
+    expect(Array.from(filter.options).map((o) => o.textContent)).toEqual([
+      'admin.scholarship.allSources', 'Sri Murugan Centre', 'Tara Foundation',
+      'scholarship.apply.org.halatuju', 'scholarship.apply.org.social', 'scholarship.apply.org.other',
+    ])
+  })
+
+  it('names a source in the tooltip, and shows a code it cannot name rather than a key', async () => {
+    mockApi.getSources.mockResolvedValue({ sources: [{ code: 'smc', name: 'Sri Murugan Centre' }] } as
+      unknown as Awaited<ReturnType<typeof api.getSources>>)
+    mockApi.getScholarshipApplications.mockResolvedValue({
+      ...EMPTY_LIST, count: 2, total_count: 2, applications: [row('smc'), { ...row('newsrc'), id: 2 }],
+    })
+    render(<AdminScholarshipList />)
+    await waitFor(() => expect(screen.getAllByTitle('Sri Murugan Centre').length).toBeGreaterThan(0))
+    expect(screen.getAllByTitle('newsrc').length).toBeGreaterThan(0)
+    expect(document.querySelector('[title^="scholarship.apply.org."]')).toBeNull()
+  })
+
+  it('a role the Sources endpoint refuses still gets the fixed three', async () => {
+    mockApi.getSources.mockRejectedValue(new Error('403'))
+    render(<AdminScholarshipList />)
+    const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
+    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalled())
+    expect(Array.from(filter.options).map((o) => o.value)).toEqual(['', 'halatuju', 'social', 'other'])
   })
 })
 

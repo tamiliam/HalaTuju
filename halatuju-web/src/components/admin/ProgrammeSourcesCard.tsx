@@ -4,7 +4,8 @@
 // sources, Sprint 1, 2026-10-08). Design of record: the owner-approved mock-up, with the site's
 // Toggle rather than tick boxes ("toggles not tick boxes"). It sits under the Questions card on
 // Programme → Configuration and shares that tab's SaveBar: the switches only move a DRAFT, and
-// Save / Discard / the pending count in the bar include them.
+// Save / Discard / the pending count in the bar include them. Since Sprint 2 (same day) these
+// switches ARE the student's "Who referred you?" list on this gift's apply form.
 //
 // ⚠ ONLY ACTIVE SOURCES ARE OFFERED — switched on in Sources and never a tenant; the server
 // decides that list. A source newly switched on there joins NO gift, and a new gift starts with
@@ -17,9 +18,8 @@ import Link from 'next/link'
 import { Toggle } from '@/components/sources/shared'
 import type { ProgrammeConfigSource } from '@/lib/admin-api'
 import type { SourceDraft } from '@/lib/programmeConfig'
-
-/** The three choices every form carries, in the apply form's own words (`scholarship.apply.org`). */
-const ALWAYS_ON = ['halatuju', 'social', 'other'] as const
+// The three choices every form carries, in the apply form's own words — the ONE web list.
+import { FIXED_REFERRAL_CODES as ALWAYS_ON } from '@/lib/referralSources'
 
 export default function ProgrammeSourcesCard({ sources, draft, onToggle, t }: {
   sources: ProgrammeConfigSource[]

@@ -13820,3 +13820,39 @@ the table and is simply not offered (switching it back on restores it).
 
 **Revisit if:** Sprint 2 (the apply form and intake read the links, TD-230 closes, the old FK is
 dropped), or an organisation wants a source on every gift automatically.
+
+## 2026-10-08 — The referral codes: three fixed choices always, the legacy two retired, and the server refuses an unoffered code
+
+**Decision (owner's rulings, 2026-10-08; per-gift referral sources Sprint 2):**
+- **A gift's apply form lists its switched-on sources, then three fixed choices ALWAYS** —
+  `halatuju` (Halatuju.xyz), `social` (Facebook / WhatsApp), `other` (Other) — in that order. The
+  sources are the Sprint 1 links whose source is still `show_in_apply` AND `is_active` AND not a
+  tenant, served by the PUBLIC intake as `{code, name}` only, for the gift `programme_code` names
+  (`[]` when none can be named). The server's name is the label; the fixed three keep i18n labels.
+- **`pushparani` and `govind` are legacy and retired:** off every form, and every saved profile
+  carrying either moves to `other` (courses migration 0077; production 1 + 0). Sathya Sai and Tara
+  stay as source rows, switched off, so they simply drop off the form.
+- **A submitted code the gift does not offer is REFUSED** (400 `referral_source_not_offered`,
+  nothing written); the form re-reads the list and asks the student to choose again in plain words,
+  keeping everything else. Blank stays accepted (the form requires a choice; the server does not).
+  A saved code the list does not offer is cleared on the form, never silently resubmitted.
+- `referred_by_org` is linked only through `gift_sources.active_sources()` — never a tenant.
+
+`test_setting_a_gift_does_NOT_narrow_the_student_form_yet` (decisions.md "A source's gift records
+intent…" and the entry above) was replaced by `test_switching_a_source_on_for_a_gift_reaches_its_student_form`
+the day the limit it pinned stopped being true.
+
+**Alternatives considered:** (a) accept any active source code at submit (what the old FK lookup
+did) — a student could be attributed to a source the gift never offered, or to the organisation
+that runs the gift; (b) keep the legacy two as hidden-but-accepted codes — two people would stay
+on a list of organisations, invisible to the admin; (c) serve the fixed three from the server
+instead of holding them on the web — the form must still show them when the intake fails, so the
+web needs its own copy anyway; it is drift-tested against `gift_sources.FIXED_CODES` instead.
+
+**Trade-offs:** partner names on the form are now the registry's single name in every language
+(the old per-source Tamil labels are gone with their keys); the fixed three stay translated. The
+course-selector profile endpoints (`ProfileView.put`, `ProfileSyncView.post`) still accept and link
+any active organisation code — left as they were and reported, not changed.
+
+**Revisit if:** the registry gains per-language names, a gift wants a source that is not an
+organisation, or the course-selector profile writes need the same refusal.

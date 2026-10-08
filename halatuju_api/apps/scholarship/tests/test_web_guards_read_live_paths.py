@@ -57,6 +57,7 @@ GUARD_FILES = (
     'src/lib/__tests__/officerGateDrift.test.ts',
     'src/lib/__tests__/payoutAccountDrift.test.ts',
     'src/lib/__tests__/profileClaimCodes.test.ts',
+    'src/lib/__tests__/referralSources.test.ts',
     'src/lib/__tests__/requestComponentDrift.test.ts',
     'src/lib/__tests__/requestStatusDrift.test.ts',
     'src/lib/__tests__/soft-evidence-drift.test.ts',

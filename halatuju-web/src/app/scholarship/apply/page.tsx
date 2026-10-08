@@ -45,7 +45,6 @@ import {
   stashApplyForm,
   popApplyStash,
   clearApplyReturn,
-  REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
   HELP_OPTIONS,
@@ -65,6 +64,8 @@ import LazyGiftChooser from '@/components/scholarship/LazyGiftChooser'
 import LazyAliranPicker from '@/components/scholarship/LazyAliranPicker'
 import LazyMatricCollegePicker from '@/components/scholarship/LazyMatricCollegePicker'
 import ApplyingTo from '@/components/scholarship/ApplyingTo'
+import ReferralSelect, { useReferralOptions } from '@/components/scholarship/ReferralSelect'
+import { isReferralNotOffered } from '@/lib/referralSources'
 import GiftClosed from '@/components/scholarship/GiftClosed'
 import AlreadyApplied from '@/components/scholarship/AlreadyApplied'
 
@@ -220,6 +221,8 @@ export default function ScholarshipApplyPage() {
     },
     []
   )
+  // "Who referred you?": THIS gift's sources + the fixed three; a value not among them is cleared.
+  const referralOpts = useReferralOptions(gift.settled, gift.sources, form.referringOrg, () => update('referringOrg', ''))
 
   // Live-revalidate ONLY while an error is already showing (i.e. after a Continue/
   // Submit attempt). As the student fixes fields, keep the red box in sync: update
@@ -360,6 +363,8 @@ export default function ScholarshipApplyPage() {
       // Which gift? → ask again, typed answers kept. The gate's own refusals → her application, or
       // the already-applied card. Another 409 → closed mid-form? → the closed card.
       if (isProgrammeRequired(err)) { gift.change(); return }
+      // Who-referred-you code no longer offered → re-read the list, ask again by the field; nothing else lost.
+      if (isReferralNotOffered(err)) { update('referringOrg', ''); setTab('personal'); await gift.refuseReferral(); return }
       if (gate.adopt(err) || (isOtherConflict(err) && await gift.recheck())) return
       // If a field was rejected for length, name the exact question to shorten.
       const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
@@ -518,13 +523,8 @@ export default function ScholarshipApplyPage() {
         </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.org')}>{t('scholarship.apply.field.org')}</FieldLabel>
-          <select className="input" value={form.referringOrg}
-            onChange={(e) => update('referringOrg', e.target.value as ApplyFormState['referringOrg'])}>
-            <option value="">{t('scholarship.apply.orgPlaceholder')}</option>
-            {REFERRING_ORG_OPTIONS.map((code) => (
-              <option key={code} value={code}>{t(`scholarship.apply.org.${code}`)}</option>
-            ))}
-          </select>
+          <ReferralSelect options={referralOpts} value={form.referringOrg} refused={gift.referralRefused}
+            onChange={(code) => update('referringOrg', code)} />
         </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.state')}>{t('scholarship.apply.field.state')}</FieldLabel>

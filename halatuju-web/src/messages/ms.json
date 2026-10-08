@@ -937,6 +937,7 @@
       "alreadyBody": "Kami telah menerima permohonan anda untuk pusingan ini dan akan memaklumkan keputusannya.",
       "statusLabel": "Status",
       "error": {
+        "orgNotOffered": "Organisasi itu tiada lagi dalam borang ini. Sila pilih semula.",
         "consent": "Sila tandakan kotak persetujuan untuk memohon.",
         "declaration": "Sila taipkan nama penuh anda untuk menandatangani perisytiharan.",
         "aCount": "Sila masukkan bilangan A yang anda peroleh dalam SPM.",
@@ -1021,20 +1022,9 @@
       "parentHeading": "Ibu bapa / penjaga",
       "commitNote": "Tiada apa-apa disimpan sehingga anda menghantar permohonan.",
       "org": {
-        "smc": "Sri Murugan Centre (SMC)",
-        "cumig": "Concerned UM Indian Graduates (CUMIG)",
-        "pushparani": "Cik Pushparani (Kapar)",
-        "sathya_sai": "Pusat Sathya Sai Baba",
         "halatuju": "Halatuju.xyz",
-        "tara": "Tara Foundation",
-        "govind": "Encik Govind (Melaka)",
         "social": "Facebook / WhatsApp",
-        "other": "Lain-lain",
-        "ewrf": "Educational, Welfare and Research Foundation (EWRF)",
-        "hyo": "Hindu Youth Organisation (HYO)",
-        "mhm": "Malaysia Hindhudharma Maamandram",
-        "hss": "Hindu Sevai Sangam",
-        "pptm": "Persatuan Pembimbing Tingkatan 6 Malaysia"
+        "other": "Lain-lain"
       },
       "callLang": {
         "en": "Bahasa Inggeris",

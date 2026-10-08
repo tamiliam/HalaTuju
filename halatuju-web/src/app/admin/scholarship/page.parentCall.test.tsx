@@ -29,6 +29,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockApi.getScholarshipApplications.mockResolvedValue(EMPTY)
   mockApi.getAssignableAdmins.mockResolvedValue({ admins: [], past_assignees: [] })
+  mockApi.getSources.mockResolvedValue({ sources: [] })   // the Source filter's names (2026-10-08)
 })
 
 it.each([

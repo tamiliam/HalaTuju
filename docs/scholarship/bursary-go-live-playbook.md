@@ -183,9 +183,9 @@ execution (step 4). The flag-OFF award email (Vircle-flavoured) is unchanged.
   student-only; the parent's touchpoint is the SMS PIN. (An SMS to the parent is a later option.)
 - Real disbursement / toyyibPay is a separate track (TD-075).
 - The optional "pending signatures" filter on the applications list was not built (S5 note).
-- **Apply-form source integration is DEFERRED (build when the intake reopens).** The Sources module
-  carries a `show_in_apply` flag (managed in Administration → ORGANISATION → Sources). When the apply
-  form reopens, its "who referred you?" list MUST be sourced from the active (`show_in_apply=true`)
-  organisations in this module, plus social-media/"other" chips for unaffiliated students — replacing
-  today's hard-coded `scholarship.apply.org.*` list. The form is currently closed, so this is noted,
-  not built. (Contract go-live transition T2, 2026-07-19.)
+- **Apply-form source integration — BUILT (per-gift referral sources, Sprints 1–2, 2026-10-08).**
+  Was deferred here at T2 (2026-07-19). Now: a source switched on in Sources (`show_in_apply`) is
+  OFFERED to each gift's Configuration, and each gift switches on its own; the apply form lists that
+  gift's sources (served by the public intake) followed by Halatuju.xyz, Facebook / WhatsApp and
+  Other, always. The server refuses any other code at submit. The hard-coded list is gone, and the
+  legacy `pushparani` / `govind` codes were moved to `other` (courses migration 0077).

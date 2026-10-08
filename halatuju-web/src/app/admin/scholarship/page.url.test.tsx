@@ -45,6 +45,7 @@ beforeEach(() => {
   openAt('/admin/scholarship')
   mockApi.getScholarshipApplications.mockResolvedValue(list())
   mockApi.getAssignableAdmins.mockResolvedValue({ admins: [], past_assignees: [] })
+  mockApi.getSources.mockResolvedValue({ sources: [] })   // the Source filter's names (2026-10-08)
 })
 
 const page = (choices = TWO_GIFTS, settled = true) =>

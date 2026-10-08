@@ -30,7 +30,7 @@ import {
   DOC_TYPES,
   INCOME_PROOF_TYPES,
   formatFileSize,
-  REFERRING_ORG_OPTIONS,
+  referralAcronym,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
   stashApplyForm,
@@ -836,15 +836,15 @@ describe('apply stash / return marker (My Results onboarding round-trip)', () =>
 })
 
 describe('option constants', () => {
-  it('lists the legacy referring-org codes incl. cumig and other', () => {
-    expect(REFERRING_ORG_OPTIONS).toContain('cumig')
-    expect(REFERRING_ORG_OPTIONS).toContain('other')
-    // 9 partner orgs (smc/cumig/ewrf/hyo/mhm/sathya_sai/tara/hss/pptm)
-    // + 5 individual/self/generic (pushparani/govind/halatuju/social/other) = 14
-    expect(REFERRING_ORG_OPTIONS.length).toBe(14)
-    for (const code of ['ewrf', 'hyo', 'mhm', 'hss', 'pptm']) {
-      expect(REFERRING_ORG_OPTIONS).toContain(code)
-    }
+  // The referring-org list left this file on 2026-10-08 (per-gift referral sources): the form
+  // offers the gift's served sources plus the fixed three — `referralSources.test.ts`.
+  it('keeps an acronym for the fixed three, and reads a retired or unknown code as Other', () => {
+    expect(referralAcronym('halatuju')).toBe('Halatuju')
+    expect(referralAcronym('social')).toBe('Social')
+    expect(referralAcronym('other')).toBe('Other')
+    expect(referralAcronym('pushparani')).toBe('Other')
+    expect(referralAcronym('govind')).toBe('Other')
+    expect(referralAcronym('')).toBe('')
   })
   it('offers the four call languages and the 16 states', () => {
     expect(CALL_LANGUAGE_OPTIONS).toEqual(['en', 'ms', 'ta', 'mixed'])

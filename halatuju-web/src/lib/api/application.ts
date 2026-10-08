@@ -7,6 +7,7 @@
  */
 import type { Locale } from '@/lib/branding'
 import type { IncomeShownMap } from '@/lib/incomeShown'
+import type { ReferralSource } from '@/lib/referralSources'
 
 import { apiRequest } from './client'
 import type { ApiOptions } from './client'
@@ -213,6 +214,9 @@ export async function getScholarshipIntake(programme?: string): Promise<{
   programme_code?: string
   choices?: IntakeChoice[]
   apply_copy?: Partial<Record<Locale, ApplyCopyBlock>>
+  /** "Who referred you?" — THIS gift's sources, `{code, name}` only ([] when no gift can be named;
+   *  absent from an older api). The form adds the three fixed choices (`lib/referralSources`). */
+  sources?: ReferralSource[]
 }> {
   // ⚠ THE PROGRAMME CODE IS NOT OPTIONAL IN PRACTICE — pass it whenever the URL carries one.
   // Without it this asks "is anything open ANYWHERE?", which is a different question: with one

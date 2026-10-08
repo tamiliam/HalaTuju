@@ -12,13 +12,15 @@ import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
   getAssignableAdmins,
+  getSources,
   assignApplication,
   DEFAULT_ADMIN_PAGE_SIZE,
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
 // import AiReliabilityCard from '@/components/AiReliabilityCard' // hidden 2026-06-13 — re-add when placement is decided (component retained)
-import { REFERRING_ORG_OPTIONS, referralAcronym } from '@/lib/scholarship'
+import { referralAcronym } from '@/lib/scholarship'
+import { FIXED_REFERRAL_CODES, referralLabel } from '@/lib/referralSources'
 import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 
 const bucketBadge = (b: string) =>
@@ -96,6 +98,8 @@ export default function AdminScholarshipList() {
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
   const [source, setSource] = useState('')
+  // Every source row's name by code (switched-off ones too, so old applicants stay filterable).
+  const [sourceNames, setSourceNames] = useState<Record<string, string>>({})
   const [assignedF, setAssignedF] = useState('')
   // Request #26 (owner ruling B): only the students whose parent phone needs a call — super/org_admin.
   const [parentCallF, setParentCallF] = useState(false)
@@ -183,6 +187,22 @@ export default function AdminScholarshipList() {
       .catch(() => {})
   }, [token, canAssign])
 
+  // The Source filter and tooltips (per-gift sources, 2026-10-08): the registry's own names, read
+  // once — NOT added to the list endpoint (pinned at 4 queries). Roles the Sources endpoint refuses
+  // (reviewer, qc…) get the fixed three and the bare code; nothing renders a raw message key.
+  useEffect(() => {
+    if (!token) return
+    getSources({ token })
+      .then((d) => setSourceNames(Object.fromEntries(d.sources.map((s) => [s.code, s.name]))))
+      .catch(() => {})
+  }, [token])
+  const sourceFilterCodes = [
+    ...Object.keys(sourceNames).filter((c) => !(FIXED_REFERRAL_CODES as readonly string[]).includes(c))
+      .sort((a, b) => sourceNames[a].localeCompare(sourceNames[b])),
+    ...FIXED_REFERRAL_CODES,
+  ]
+  const sourceTitle = (code?: string | null) => referralLabel(code, t, sourceNames)
+
   // Inline (re)assign — option A: attempt and surface a 'not ready' / error inline. The
   // backend enforces super-only + reviewer-target; first-assign needs the app to be ready.
   const handleAssign = async (appId: number, reviewerId: number | null) => {
@@ -258,7 +278,7 @@ export default function AdminScholarshipList() {
         <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm w-40 truncate" title={t('admin.scholarship.allSources')}>
           <option value="">{t('admin.scholarship.allSources')}</option>
-          {REFERRING_ORG_OPTIONS.map((code) => <option key={code} value={code}>{t(`scholarship.apply.org.${code}`)}</option>)}
+          {sourceFilterCodes.map((code) => <option key={code} value={code}>{sourceTitle(code)}</option>)}
         </select>
         <select value={bucket} onChange={(e) => changeFilter(setBucket)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allBuckets')}</option>
@@ -351,7 +371,7 @@ export default function AdminScholarshipList() {
                 </div>
 
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-500">
-                  <span title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}>
+                  <span title={sourceTitle(a.referral_source)}>
                     {referralAcronym(a.referral_source) || '—'}
                   </span>
                   <span>{formatDate(a.submitted_at)}</span>
@@ -443,7 +463,7 @@ export default function AdminScholarshipList() {
                       {a.name || '—'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-ground-600" title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}>{referralAcronym(a.referral_source) || '—'}</td>
+                  <td className="px-4 py-3 text-ground-600" title={sourceTitle(a.referral_source)}>{referralAcronym(a.referral_source) || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bucketBadge(a.bucket)}`}>{a.bucket || '—'}</span>
                   </td>

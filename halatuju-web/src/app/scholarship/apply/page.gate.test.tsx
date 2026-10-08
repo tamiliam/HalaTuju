@@ -94,7 +94,8 @@ const mountAs = (status: string) => render(
 const formShown = () => screen.findAllByText('scholarship.apply.section.results')
 
 const complete: ApplyFormState = {
-  name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'cumig',
+  // `other`, a fixed choice: a source code these intakes do not serve is cleared (per-gift sources).
+  name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'other',
   homeState: 'Selangor', phone: '012-345 6789',
   householdIncome: '2500', householdSize: '5', receivesStr: true, receivesJkm: false,
   parentName: '', parentPhone: '', callLanguage: '',

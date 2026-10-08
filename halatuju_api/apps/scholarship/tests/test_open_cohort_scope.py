@@ -172,7 +172,7 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         # (`programme_code` is '' — this fixture's cohort has no programme to route by.)
         self.assertEqual(resp.json(),
                          {'open': True, 'cohort_name': 'Cohort a-2026', 'programme_code': '',
-                          'choices': [], 'apply_copy': {}})
+                          'choices': [], 'apply_copy': {}, 'sources': []})
 
     def test_a_closed_intake_still_reads_closed(self):
         self.cohort_a.is_open = False
@@ -180,7 +180,7 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/').json(),
             {'open': False, 'cohort_name': '', 'programme_code': '', 'choices': [],
-             'apply_copy': {}},
+             'apply_copy': {}, 'sources': []},
         )
 
     def test_two_open_rounds_stay_OPEN_but_name_neither(self):
@@ -345,7 +345,8 @@ class TestApplyLinkEndToEnd(TestCase):
         body = self.client.get('/api/v1/scholarship/intake/?programme=tenant-b-bursary').json()
         self.assertEqual(body,
                          {'open': True, 'cohort_name': 'Cohort b-2026',
-                          'programme_code': 'tenant-b-bursary', 'choices': [], 'apply_copy': {}})
+                          'programme_code': 'tenant-b-bursary', 'choices': [], 'apply_copy': {},
+                          'sources': []})
 
     def test_intake_status_hides_whether_an_unknown_programme_exists(self):
         """Public and unauthenticated — 'closed' rather than 404, or anyone could enumerate
@@ -358,7 +359,7 @@ class TestApplyLinkEndToEnd(TestCase):
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/?programme=nope').json(),
             {'open': False, 'cohort_name': '', 'programme_code': '', 'choices': [],
-             'apply_copy': {}},
+             'apply_copy': {}, 'sources': []},
         )
 
 

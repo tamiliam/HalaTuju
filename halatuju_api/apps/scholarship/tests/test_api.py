@@ -229,8 +229,12 @@ class TestApplicationIntake(TestCase):
     def test_referral_source_resolves_to_partner_org(self):
         # A known referring-org code links the profile to the PartnerOrganisation;
         # a generic source (no matching row) leaves the FK unset.
+        # Since per-gift sources S2 (2026-10-08) the code must be one THIS gift offers — a source
+        # switched on in Sources and on the gift's own list — or the submit is refused.
         from apps.courses.models import PartnerOrganisation
-        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        from apps.scholarship.models import ProgrammeReferralSource
+        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG', show_in_apply=True)
+        ProgrammeReferralSource.objects.create(programme=self.cohort.programme, source=org)
         self._auth(_make_token(USER_A))
         resp = self.client.post(
             '/api/v1/scholarship/applications/',

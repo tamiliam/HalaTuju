@@ -337,11 +337,19 @@ answers from evidence — the invitation they answered, else the platform's sole
 **None is a real answer**: several gifts open and no invitation writes nothing rather than guessing.
 `sync_account_membership(sponsor, programme, …)` takes the programme REQUIRED and POSITIONAL.
 
-⚠ **A GIFT'S SOURCE CHOICES REACH NO STUDENT YET** (TD-230; per-gift sources Sprint 2 wires
-them). The apply form's source list is the hard-coded `REFERRING_ORG_OPTIONS` constant in
-`lib/scholarship.ts`, and nothing student-facing reads `show_in_apply` or `ProgrammeReferralSource`.
-A test asserts that (`test_setting_a_gift_does_NOT_narrow_the_student_form_yet`); a link row is
-the organisation's choice, not proof the form is narrowed.
+⚠ **A GIFT'S SOURCE CHOICES ARE THE STUDENT'S LIST** (per-gift sources Sprint 2, 2026-10-08;
+closes TD-230). The PUBLIC intake (`ScholarshipIntakeView`) serves `sources: [{code, name}]` —
+`gift_sources.public_sources(p)` for the gift `programme_code` names, `[]` when none can be named;
+code and name ONLY (a leak test plants contact details). The apply form (`ReferralSelect`, options
+from `lib/referralSources.ts`) lists them, then the three FIXED choices `halatuju` / `social` /
+`other` always (`gift_sources.FIXED_CODES`, drift-tested); a saved code not in the list is cleared.
+The submit REFUSES any other code (400 `referral_source_not_offered`, `gift_sources.is_offered`,
+nothing written) and the form re-reads the list and asks again; `profile_sync` links
+`referred_by_org` only through `active_sources()` — never a tenant. `REFERRING_ORG_OPTIONS` is
+deleted; the legacy `pushparani` / `govind` were moved to `other` (courses 0077). Admin labels come
+from the registry's names (`referralLabel`), never a per-source message key. ⚠ The course-selector
+`ProfileView` / `ProfileSyncView` (`apps/courses/views.py`) still accept and link any active
+`PartnerOrganisation` code — untouched by this work.
 
 ⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
 grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /

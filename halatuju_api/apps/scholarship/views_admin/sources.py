@@ -33,9 +33,8 @@ def _source_dict(org, student_count=None, gift_count=0, gift_total=0):
         # chooses its sources in its own Configuration (`gift_sources`); this page only counts.
         # The old single-gift `PartnerOrganisation.programme` is deprecated and no longer served.
         #
-        # ⚠ IT DOES NOT YET REACH THE STUDENT FORM. The apply form's list is still the hard-coded
-        # `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts` until Sprint 2 wires it to
-        # these links — so a count here is the organisation's choice, not proof the form follows.
+        # The count IS what students see (per-gift sources S2, 2026-10-08): each linked gift's
+        # apply form lists this source while it stays switched on here (`gift_sources.offered_sources`).
         #
         # ⚠ NOT ACCESS CONTROL. A referral organisation is an ATTRIBUTION relationship, never a
         # scope — the same warning `PartnerAdmin.org` and `referred_by_org` carry.

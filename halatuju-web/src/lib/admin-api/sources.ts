@@ -38,8 +38,8 @@ export interface SourceItem {
    * sources, 2026-10-08). Each gift chooses its sources in its own Configuration; a source newly
    * switched on joins no gift. COUNTED server-side.
    *
-   * ⚠ IT CHANGES NOTHING A STUDENT SEES — yet. The apply form's list is still the hard-coded
-   * `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts` until Sprint 2 wires it to these.
+   * The count IS what students see (Sprint 2, 2026-10-08): each linked gift's apply form lists the
+   * source while it stays switched on here.
    */
   gift_count: number
   gift_total: number

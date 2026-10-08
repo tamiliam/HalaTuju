@@ -3,14 +3,14 @@ assignment dropdown sees it (2026-09-04; the source half rewritten 2026-10-08).
 
 Two narrow claims, both about a NARROWING rather than a fence:
 
-1. **Which gifts list a source records the organisation's choice — and today it reaches no
-   student.** Since 2026-10-08 each gift chooses its own sources (``ProgrammeReferralSource``,
-   set in the gift's Configuration; the single ``PartnerOrganisation.programme`` FK is
-   deprecated). The apply form's referring-organisation list is still the hard-coded
-   ``REFERRING_ORG_OPTIONS`` constant in ``lib/scholarship.ts`` until Sprint 2 wires it, so
-   ``test_setting_a_gift_does_NOT_narrow_the_student_form_yet`` pins that honestly rather than
-   letting a later reader assume the form is filtered. The endpoint and seed tests are in
-   ``test_gift_sources.py``.
+1. **Which gifts list a source is what the student's form offers.** Since 2026-10-08 each gift
+   chooses its own sources (``ProgrammeReferralSource``, set in the gift's Configuration; the
+   single ``PartnerOrganisation.programme`` FK is deprecated). Sprint 1 recorded the choice;
+   Sprint 2 (same day) wired the student side: the public intake serves the gift's offered
+   sources and the submit refuses any other code. The test below pins that the intake and the
+   submit both read the SAME rule, per gift. The endpoint, seed and intake tests are in
+   ``test_gift_sources.py`` and
+   ``test_gift_sources_public.py``.
 
 2. **A reviewer's gift travels on the assignment payload the way `paused` does** — flagged,
    never filtered out. Dropping anybody from that list reproduces bug #66, because the cockpit
@@ -84,31 +84,24 @@ class TestWhichGiftsListASource(_Base):
         self.source.refresh_from_db()
         self.assertIsNone(self.source.programme_id)
 
-    def test_setting_a_gift_does_NOT_narrow_the_student_form_yet(self):
-        """⚠ AN HONEST LIMIT, PINNED SO NOBODY ASSUMES OTHERWISE (rewritten 2026-10-08).
+    def test_switching_a_source_on_for_a_gift_reaches_its_student_form(self):
+        """REWRITTEN by per-gift sources Sprint 2 (2026-10-08), which closed TD-230.
 
-        Each gift now chooses its sources (`ProgrammeReferralSource`, the gift's Configuration),
-        but the student's referring-organisation list is still the hard-coded
-        `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts`, and the student intake reads
-        neither the links nor `show_in_apply`. Switching a source on for a gift changes what an
-        ADMIN sees and nothing a visitor sees. Per-gift sources Sprint 2 wires the form to the
-        links; this test is what should fail (and be deleted with TD-230) on that day.
+        It was `test_setting_a_gift_does_NOT_narrow_the_student_form_yet`, an honest limit: the
+        student's list was the hard-coded `REFERRING_ORG_OPTIONS` and the intake read nothing
+        here. Now the gift's switch IS the student's list — served by the public intake for that
+        gift only, and the only codes (with the three fixed choices) its submit accepts.
         """
-        from apps.scholarship import views as student_views
+        from apps.scholarship import gift_sources
         from apps.scholarship.models import ProgrammeReferralSource
-        from apps.scholarship.services import intake
+        self.assertFalse(gift_sources.is_offered(self.sabah, 'smc'))
+        self.assertEqual(gift_sources.public_sources(self.sabah), [])
         ProgrammeReferralSource.objects.create(programme=self.sabah, source=self.source)
-        for module, anchor in ((student_views, 'class ScholarshipIntakeView'),
-                               (intake, 'def create_application')):
-            source = open(module.__file__, encoding='utf-8').read()
-            # The positive half: this IS the file that would read them (a negative assertion goes
-            # green when its subject leaves the file it reads).
-            self.assertIn(anchor, source, module.__file__)
-            for marker in ('show_in_apply', 'ProgrammeReferralSource', 'gift_sources',
-                           'referral_source_links'):
-                self.assertNotIn(marker, source,
-                                 f'{module.__name__} now reads `{marker}` — rewrite this test, '
-                                 'the note on `_source_dict` and TD-230, which say it does not')
+        self.assertEqual(gift_sources.public_sources(self.sabah), [{'code': 'smc', 'name': 'SMC'}])
+        self.assertTrue(gift_sources.is_offered(self.sabah, 'smc'))
+        # …on THAT gift only: the flagship never shows Sabah's choice.
+        self.assertEqual(gift_sources.public_sources(self.flagship), [])
+        self.assertFalse(gift_sources.is_offered(self.flagship, 'smc'))
 
 
 class TestTheAssignmentDropdownSeesTheGift(_Base):

@@ -937,6 +937,7 @@
       "alreadyBody": "We have your application for this round and will let you know the outcome.",
       "statusLabel": "Status",
       "error": {
+        "orgNotOffered": "That organisation is no longer on this form. Please choose again.",
         "consent": "Please tick the consent box to apply.",
         "declaration": "Please type your full name to sign the declaration.",
         "aCount": "Please enter how many A's you scored in SPM.",
@@ -1021,20 +1022,9 @@
       "parentHeading": "Parent / guardian",
       "commitNote": "Nothing is saved until you submit your application.",
       "org": {
-        "smc": "Sri Murugan Centre (SMC)",
-        "cumig": "Concerned UM Indian Graduates (CUMIG)",
-        "pushparani": "Ms. Pushparani (Kapar)",
-        "sathya_sai": "Sathya Sai Baba Centre",
         "halatuju": "Halatuju.xyz",
-        "tara": "Tara Foundation",
-        "govind": "Mr. Govind (Melaka)",
         "social": "Facebook / WhatsApp",
-        "other": "Other",
-        "ewrf": "Educational, Welfare and Research Foundation (EWRF)",
-        "hyo": "Hindu Youth Organisation (HYO)",
-        "mhm": "Malaysia Hindhudharma Maamandram",
-        "hss": "Hindu Sevai Sangam",
-        "pptm": "Persatuan Pembimbing Tingkatan 6 Malaysia"
+        "other": "Other"
       },
       "callLang": {
         "en": "English",

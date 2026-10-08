@@ -26,25 +26,19 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
   'asasi', 'matrik', 'stpm', 'pismp', 'diploma', 'degree', 'other',
 ]
 
-// Referring-organisation codes (fixed list from the legacy Google Form). Labels
-// come from i18n (`scholarship.apply.org.<code>`). A code that matches an active
-// PartnerOrganisation row links the FK server-side; the rest are generic sources.
-export const REFERRING_ORG_OPTIONS = [
-  // Partner organisations (Google-form order)
-  'smc', 'cumig', 'ewrf', 'hyo', 'mhm', 'sathya_sai', 'tara', 'hss', 'pptm',
-  // Individual coordinators + self-referral + generic catch-alls
-  'pushparani', 'govind', 'halatuju', 'social', 'other',
-] as const
-export type ReferringOrg = typeof REFERRING_ORG_OPTIONS[number] | ''
+// A referring-organisation code. Since per-gift referral sources (2026-10-08) the list is not
+// fixed here: the apply form offers the gift's served sources plus three fixed choices
+// (`lib/referralSources`), and the server refuses any other code.
+export type ReferringOrg = string
 
 // Short source tag for admin surfaces (owner-defined, 2026-06-22). Partner orgs keep their
-// official acronym; the two individual coordinators + the generic "other" all collapse to
-// "Other"; self/website → "Halatuju"; social → "Social".
+// official acronym; self/website → "Halatuju"; social → "Social"; the generic "other" → "Other".
+// (The legacy `pushparani` / `govind` were moved to `other` on 2026-10-08 and need no entry: an
+// unknown code already reads "Other".)
 export const REFERRAL_SOURCE_ACRONYM: Record<string, string> = {
   smc: 'SMC', cumig: 'CUMIG', ewrf: 'EWRF', hyo: 'HYO', mhm: 'MHDM',
   sathya_sai: 'SSBC', tara: 'TARA', hss: 'HSS', pptm: 'PPTM',
-  halatuju: 'Halatuju', social: 'Social',
-  pushparani: 'Other', govind: 'Other', other: 'Other',
+  halatuju: 'Halatuju', social: 'Social', other: 'Other',
 }
 
 // Acronym for a referral_source code. Blank → '' (caller renders a dash); any unknown
@@ -435,7 +429,7 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     // Pre-filled values are masked too, so an older unformatted profile value
     // still displays as XXXXXX-XX-XXXX / 0XX-XXX XXXX.
     nric: formatNric(profile?.nric ?? ''),
-    referringOrg: (profile?.referral_source as ReferringOrg) ?? '',
+    referringOrg: profile?.referral_source ?? '',
     homeState: profile?.preferred_state ?? '',
     phone: formatPhone(profile?.contact_phone ?? ''),
     householdIncome: profile?.household_income != null ? String(profile.household_income) : '',
