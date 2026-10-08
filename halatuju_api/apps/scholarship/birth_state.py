@@ -187,6 +187,30 @@ def meets_rule(nric, allowed):
     return b.kind == STATE and b.state in _accepted(allowed)
 
 
+#: The refusal code and its English sentence (staff only, served like `for_cockpit`'s lines) when
+#: a ruled intake's case would reach `recommended` on an UNLOCKED IC — see `ic_unlocked_for_rule`.
+IC_UNLOCKED = 'birth_state_ic_unlocked'
+IC_UNLOCKED_MESSAGE = (
+    'This intake has a "Born in" rule and the student\'s IC is not locked (the lock was '
+    'released), so the case cannot reach Recommended on it — an unlocked IC can still be '
+    'changed before a sponsor funds. Have the reviewer verify-and-accept the IC again: that '
+    're-locks it and checks that no other account holds it verified. In the cockpit the '
+    'reviewer\'s Recommend does it (from Awaiting QC, reopen the case to the reviewer first). '
+    'Then accept it through QC, or cancel the reopen.')
+
+
+def ic_unlocked_for_rule(profile, allowed):
+    """True when the intake has a "Born in" rule and the student's IC is NOT locked.
+
+    ⚠ AN ABSOLUTE STOP, NOT A FACT TO OVERRIDE (the TD-376/377 review, 2026-10-08). Every route
+    into `recommended` — QC accept, and a reopen-cancel that restores it — must carry a LOCKED IC
+    on a ruled intake, because only the lock keeps the student from changing the IC after the
+    rule was read (QC accept never re-locks; a super may release a lock at AWAITING QC). A
+    recorded reason cannot make an unlocked IC safe, and QC accept does not re-lock silently: the
+    fix is verify-accept, which re-locks AND runs the duplicate-verified-IC check."""
+    return bool(stored_keys(allowed)) and not getattr(profile, 'nric_verified', False)
+
+
 def check(nric, allowed):
     """``(ok, reason)`` for the intake's birth-state rule. An EMPTY list is the rule switched off
     and passes without reading the IC at all; otherwise only a STATE reading inside the list

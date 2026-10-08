@@ -19,6 +19,9 @@ from . import branding as _branding
 from . import money
 from . import pool
 from . import usage as _usage
+# An award that falls through lands back in the pool — or, on a failed "Born in" rule, at QC
+# (TD-376). Its own module since `sponsorship.py` sits at its `oversize_files` allowance.
+from .award_revert import revert_to_pool as _revert_to_pool
 
 logger = logging.getLogger(__name__)
 from .emails import (send_award_confirmed_email, send_award_offer_email,
@@ -852,21 +855,6 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     else:
         _finalise_award(application, locale)
     return sponsorship
-
-
-def _revert_to_pool(application):
-    """An offer was declined / held / expired BEFORE it became active → the application returns to
-    'recommended' (re-enters the discovery pool) and any award cool-off marker clears. No-op if the
-    app already moved on (e.g. it was finalised to 'active')."""
-    fields = []
-    if application.status == 'awarded':
-        application.status = 'recommended'
-        fields.append('status')
-    if application.award_due_at is not None:
-        application.award_due_at = None
-        fields.append('award_due_at')
-    if fields:
-        application.save(update_fields=fields)
 
 
 def _finalise_award(application, locale='en'):

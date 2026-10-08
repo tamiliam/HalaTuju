@@ -8,7 +8,8 @@
     intake's CURRENT rule. Nothing else moves. Its review added: the route that refusal names
     (QC accept again, then cancel) works end to end, and the IC lock is also held while a HELD
     decline would restore `recommended` (closed at the lock, so the cancel stays a safe undo).
-    `_revert_to_pool` is TD-376 (owner decision).
+    `_revert_to_pool` was TD-376, and TD-377 holds the student's own IC at `recommended` — both in
+    `test_birth_state_td376_377.py`.
   * TD-372 — a student who has an application and changes their own IC leaves one AUDIT log line,
     with no IC number and no state name in it.
   * TD-373 — the stored rule is read ONE way (`birth_state.stored_keys`) by the gate and by the
@@ -94,7 +95,7 @@ class TestTheLockReleaseWaitsForAReopen(TestCase):
 
     def test_allowed_at_awarded_even_with_the_rule(self):
         # From `awarded` on a sponsor has committed the funding; a genuine IC correction must stay
-        # possible there. (Its road back to `recommended`, `_revert_to_pool`, is TD-376.)
+        # possible there. (Its road back, `_revert_to_pool`, re-reads the rule since TD-376.)
         cohort = make_cohort(**ONLY_BIRTH, allowed_birth_states=['sabah'])
         app = make_application('awarded', cohort=cohort, student=make_student(nric=SABAH_IC))
         self.assertEqual(self._release(app).status_code, 200)
@@ -124,10 +125,24 @@ class TestCancellingAReopenReReadsTheRule(TestCase):
         return self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.pk}/cancel-reopen/', {}, format='json')
 
+    def _reverify(self, app):
+        """The reviewer verify-accepts the (new) IC again, which re-locks it — since the TD-376/377
+        review a ruled case cannot return to `recommended` on an unlocked IC at all. The
+        completeness gate is not what these tests are about, so it is held open."""
+        with mock.patch('apps.scholarship.views_admin.applications.application_completeness',
+                        return_value={'complete': True}):
+            r = self.client.post(
+                f'/api/v1/admin/scholarship/applications/{app.pk}/verify-accept/', {},
+                format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.profile.refresh_from_db()
+        self.assertTrue(app.profile.nric_verified)
+
     def test_refused_when_it_would_restore_recommended_with_a_failing_ic(self):
         app = self._reopened(['sabah'])
         self.assertEqual(app.status, 'interviewed')
         self._swap_ic(app, SELANGOR_IC)
+        self._reverify(app)                                     # locked again — on the NEW IC
         r = self._cancel(app)
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'birth_state_rule_failed')
@@ -142,6 +157,7 @@ class TestCancellingAReopenReReadsTheRule(TestCase):
     def test_allowed_when_the_current_ic_meets_the_rule(self):
         app = self._reopened(['sabah'])
         self._swap_ic(app, SABAH_47_IC)                         # another Sabah code
+        self._reverify(app)
         self.assertEqual(self._cancel(app).status_code, 200)
         app.refresh_from_db()
         self.assertEqual(app.status, 'recommended')

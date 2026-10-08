@@ -228,7 +228,8 @@ class AdminReleaseNricLockView(_AdminBase):
         # recommended one just the same. Only `recommended` (or a held decline that would restore
         # it) on a ruled intake is refused: from `awarded` on a sponsor has committed the funding
         # (paid from `active`) and a genuine IC correction must stay possible (decisions.md
-        # 2026-10-08; the `_revert_to_pool` route back from `awarded` is TD-376).
+        # 2026-10-08; a changed IC there is caught if the offer falls through — `_revert_to_pool`
+        # sends a failing case to QC, TD-376).
         held = _held_by_birth_state_rule(profile)
         if held:
             return Response({'error': held, 'code': 'birth_state_rule_reopen_first'},

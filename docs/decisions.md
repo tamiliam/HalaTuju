@@ -13720,4 +13720,58 @@ profile with no super step at all. The TD-372 audit line and the red badge show 
 (QC accept refusing an unlocked IC on a ruled intake, or the student's IC change refusing while a
 ruled application is `recommended`) is in the register.
 **Revisit if:** a further route to `recommended` appears, or the owner rules on TD-376, or TD-377
-is built.
+is built. (Both built the same day — the next entry.)
+
+## 2026-10-08 — TD-376 and TD-377: a failing reverted case goes to QC, and the student's own IC is held at `recommended`
+
+**Owner ruling (2026-10-08), verbatim from the question put:** "yes" to landing a failing reverted
+case at `interviewed` for QC — and "yes to both", TD-376 and TD-377 (fix (b)).
+**Decision:** (1) TD-376 — when an award falls through before it is active (`_revert_to_pool`:
+the sponsor withdraws, the student declines, the hold, the release cron's fall-through, the lapse)
+and the case's CURRENT IC fails its intake's CURRENT "Born in" rule, it lands at `interviewed`
+(AWAITING QC) instead of `recommended`, with an AUDIT line. It is never a refusal — every caller
+still completes; only the landing differs. Nothing else is written: the pool, both sponsor alert
+sweeps and `is_fundable` read `status='recommended'`, so the case is held back while its sponsor
+profile stays published; QC accept's publish is then a no-op and no second alert goes. (2) TD-377 —
+the student's own IC change (`profile_claim.handle_claim`, "created" branch) is refused while any
+application on the profile is `recommended` on an intake with a rule, with the locked IC's own
+payload (`nric_locked`), and `/profile` serves `nric_locked` true then, so she sees the padlock.
+**Alternatives considered:** for TD-376, refusing the revert (a sponsor withdrawing must always
+work), or unpublishing the sponsor profile on the divert (the status gate already holds it back,
+and unpublishing would make QC accept re-publish and re-alert every sponsor). For TD-377, fix (a):
+QC accept refusing or re-locking an unlocked IC — it closes only the QC route, not the reopen-cancel
+route nor any future unlocked route into `recommended`. And holding her IC at `awarded` too.
+**Rationale for `recommended` only (TD-377):** it is the one stage where the rule has been checked
+(QC accept) and nothing checks it again before a sponsor funds. From `awarded` a sponsor has
+committed on the IC QC saw; if the offer falls through, TD-376 re-reads the rule at the revert; and
+a genuine correction (a typo found at the agreement) must stay possible.
+**Closed at the root (the review of this sprint, same day):** the review confirmed an IC could
+still be UNLOCKED at `recommended` (released at AWAITING QC, or during a reopen that was then
+cancelled) and so carried on to `awarded`, where the student could change it and nothing re-read
+the rule before `active`. Every door INTO `recommended` on a ruled intake now requires a LOCKED IC
+(`profile.nric_verified`, `birth_state.ic_unlocked_for_rule`): QC accept-to-recommend
+(`AdminQcDecisionView`, the decline-confirm path untouched) and a `cancel_reopen` that would
+restore `recommended` refuse with `birth_state_ic_unlocked` and an English sentence (the cockpit
+prints the server's `error` on both). It is an ABSOLUTE stop like `reporting_date_required` — no
+override, because a recorded reason cannot make an unlocked IC safe — and QC accept does not
+re-lock silently: the remedy is verify-accept, which re-locks AND runs the duplicate-verified-IC
+check. Verify-accept was confirmed reachable first: the endpoint accepts `interviewed` (with or
+without an open reopen) and re-locks; in the cockpit the reviewer reaches it through Recommend once
+the decision panel is open again — on a reopened case, or after QC reopens an AWAITING-QC case to
+the reviewer (whose re-recorded verdict then counts as a correction under counting model B).
+**The revert, too (review round 7):** `revert_to_pool` diverts to `interviewed` not only when the
+rule fails but whenever the IC is UNLOCKED on a ruled intake (`reason=ic_unlocked|rule_fails` on its
+AUDIT line), so the revert is not the one door into `recommended` that skips the lock. A locked,
+passing IC reverts to `recommended` as before.
+**Known cost — TD-378:** re-verifying at AWAITING QC has no direct cockpit button. The cockpit
+route (QC reopen → the reviewer's Recommend) emails her "returned for revision" and records a
+false correction against her; the API's verify-accept (super / org_admin / qc) avoids both. Rare —
+it needs a super's lock release on a ruled intake — so logged, not built.
+**What is left, deliberately:** with every route into `recommended` carrying a locked IC, the only
+remaining door is a super's lock release at `awarded` or later — the intended correction door
+(audited `AUDIT nric_lock_released`, reason required). If that offer then falls through, TD-376
+re-reads the rule at the revert; if it proceeds, the correction was the point. The TD-377 hold on
+the student's own change at `recommended` stays as a second line for any row that was already
+`recommended` unlocked before this stop shipped.
+**Revisit if:** a new route into `recommended` appears, or the lock-release door at `awarded` is
+seen used for anything but a correction.

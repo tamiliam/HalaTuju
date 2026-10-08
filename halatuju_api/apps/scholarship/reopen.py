@@ -43,6 +43,7 @@ REOPEN_MESSAGES = {
     'decline_pending': ('This decline has not been sent to the student yet. Cancel the '
                         'pending decline instead — it returns the case to where it was.'),
     'birth_state_rule_failed': BIRTH_STATE_RULE_FAILED,
+    birth_state.IC_UNLOCKED: birth_state.IC_UNLOCKED_MESSAGE,
 }
 
 
@@ -152,10 +153,17 @@ def cancel_reopen(app):
     intake's CURRENT rule the cancel is refused before any write (`birth_state_rule_failed`):
     QC accept is the way back, where the floor applies and an override is recorded. Every other
     cancel is untouched.
+
+    ⚠ And such a cancel needs a LOCKED IC on a ruled intake (`birth_state_ic_unlocked`, checked
+    first, no override — `birth_state.ic_unlocked_for_rule`): a lock released while the case was
+    reopened would otherwise ride back into `recommended`, where the student can still change it.
     """
     row = open_reopen(app)
     if row is None:
         raise ReopenError('not_reopened')
+    if app.status == 'interviewed' and birth_state.ic_unlocked_for_rule(
+            app.profile, getattr(app.cohort, 'allowed_birth_states', None)):
+        raise ReopenError(birth_state.IC_UNLOCKED)
     if app.status == 'interviewed' and birth_state.meets_rule(
             getattr(app.profile, 'nric', '') if app.profile else '',
             getattr(app.cohort, 'allowed_birth_states', None)) is False:

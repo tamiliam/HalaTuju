@@ -1065,7 +1065,10 @@ class ProfileView(APIView):
         # consent refused them. Codes, not sentences — the screen owns the wording, and must
         # not assert which side is wrong (our OCR mangles names too; see #27 and #118).
         identity_verified = bool(profile.nric_verified)
-        nric_locked = bool(profile.nric_verified)
+        # TD-377: an IC held by a "Born in" rule is locked to her too (see `profile_claim`).
+        from . import profile_claim
+        nric_locked = (bool(profile.nric_verified)
+                       or profile_claim.ic_held_by_birth_state_rule(profile))
         ic_flags, ic_card_nric, ic_card_name = [], '', ''
         try:
             from apps.scholarship import identity as identity_rules

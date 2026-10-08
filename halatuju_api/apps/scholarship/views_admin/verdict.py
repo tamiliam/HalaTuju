@@ -253,6 +253,36 @@ class AdminSubmitDeclineView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
+def _accept_absolute_stop(app):
+    """The QC ACCEPT-to-recommend refusals that NO override passes, or None. (Extracted from
+    `AdminQcDecisionView.post` when the second one joined; the decline-confirm path never reaches
+    here.)
+
+    1. Reporting-date stop (owner 2026-07-23): a case cannot be accepted without a settled
+       reporting date. Deliberately an ABSOLUTE stop, unlike the red-fact floor — there is no
+       override, because the honest remedy is to record the date, not to wave the case through.
+       Three things silently default off a missing date: the bursary SIZE (a continuing student is
+       committed RM3,000 instead of RM1,000), payment eligibility, and the semester-result request.
+       QC clears it by reopening the case so the reviewer can enter the date
+       (AdminReportingDateView) — hence the box shows at 'interviewing' / on a reopen, not here.
+    2. TD-376/377 review: on a ruled intake the IC must be LOCKED to reach `recommended`
+       (`birth_state.ic_unlocked_for_rule`). No override can make an unlocked IC safe, and QC
+       accept never re-locks it silently: verify-accept re-locks it and runs the duplicate check.
+    """
+    if app.reporting_date is None:
+        return Response(
+            {'error': 'This student has no reporting date. Reopen the case so the '
+                      'reviewer can record it, then accept.',
+             'code': 'reporting_date_required'},
+            status=status.HTTP_400_BAD_REQUEST)
+    if birth_state.ic_unlocked_for_rule(app.profile,
+                                        getattr(app.cohort, 'allowed_birth_states', None)):
+        return Response({'error': birth_state.IC_UNLOCKED_MESSAGE,
+                         'code': birth_state.IC_UNLOCKED},
+                        status=status.HTTP_400_BAD_REQUEST)
+    return None
+
+
 class AdminQcDecisionView(_AdminBase):
     """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?} —
     the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
@@ -296,20 +326,9 @@ class AdminQcDecisionView(_AdminBase):
                 app.refresh_from_db()
                 logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
                 return Response(AdminApplicationDetailSerializer(app).data)
-            # Reporting-date stop (owner 2026-07-23): a case cannot be accepted without a settled
-            # reporting date. Deliberately an ABSOLUTE stop, unlike the red-fact floor below —
-            # there is no override, because the honest remedy is to record the date, not to wave
-            # the case through. Three things silently default off a missing date: the bursary
-            # SIZE (a continuing student is committed RM3,000 instead of RM1,000), payment
-            # eligibility, and the semester-result request. QC clears it by reopening the case so
-            # the reviewer can enter the date (AdminReportingDateView) — hence the box shows at
-            # 'interviewing' / on a reopen, not here.
-            if app.reporting_date is None:
-                return Response(
-                    {'error': 'This student has no reporting date. Reopen the case so the '
-                              'reviewer can record it, then accept.',
-                     'code': 'reporting_date_required'},
-                    status=status.HTTP_400_BAD_REQUEST)
+            stop = _accept_absolute_stop(app)   # no override passes these (see the helper)
+            if stop is not None:
+                return stop
             gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
             # Request #31 review: the birth-state gate ran at SUBMIT, and an unverified NRIC can be
             # changed after it (a MyKad matching the new number then locks it). An IC that fails

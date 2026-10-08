@@ -296,6 +296,37 @@ def _caller_blocker(caller_sub):
     return None
 
 
+#: The refusal a locked IC gets — and, since TD-377, an IC held by a "Born in" rule. One payload,
+#: so the student-facing words cannot drift between the two.
+NRIC_LOCKED = {'error': 'Your NRIC is verified and locked. Contact support to change it.',
+               'code': 'nric_locked'}
+
+
+def ic_held_by_birth_state_rule(profile):
+    """TD-377: is this student's OWN IC held (as if locked) because an application on the profile
+    is `recommended` on an intake with a "Born in" rule?
+
+    ⚠ `recommended` ONLY. That is the one stage where the rule has been checked (QC accept) and
+    nothing checks it again before a sponsor funds. From `awarded` on a sponsor has committed on
+    the IC QC saw; if the offer falls through, `sponsorship._revert_to_pool` re-reads the rule and
+    sends a failing case back to QC (TD-376) — so holding her own IC at `awarded` would mostly
+    block a genuine correction (a typo found at the agreement). An IC that is still unlocked at
+    `awarded` and changes there is recorded by the TD-372 audit line and shown by the cockpit's
+    red badge. Read through `birth_state.stored_keys`, the gate's own reader.
+
+    ⚠ TWO READERS: `handle_claim` refuses the change with the locked IC's own payload, and
+    `/profile` (`views.ProfileView.get`) serves `nric_locked` true, so the student sees the
+    padlock rather than a box whose save fails. It is a SERVER rule over her applications, not a
+    reading of a document, so it cannot flicker the way the `identity_verified` badge can."""
+    recommended = list(profile.scholarship_applications.select_related('cohort')
+                       .filter(status='recommended'))
+    if not recommended:
+        return False
+    bs = _scholarship('birth_state')
+    return any(bs.stored_keys(getattr(a.cohort, 'allowed_birth_states', None))
+               for a in recommended)
+
+
 def _audit_self_change(profile, was, now):
     """TD-372: one log line when a student who HAS an application changes their own IC.
 
@@ -354,11 +385,17 @@ def handle_claim(caller_sub, acting_uid, data):
 
     acting = StudentProfile.objects.filter(supabase_user_id=acting_uid).first()
     if acting and acting.nric and acting.nric_verified and acting.nric != nric:
-        return {'error': 'Your NRIC is verified and locked. Contact support to change it.',
-                'code': 'nric_locked'}, 403
+        return dict(NRIC_LOCKED), 403
 
     holder = _holder_of(nric)
     if holder is None:
+        # TD-377: while a "Born in" rule stands between this student and a sponsor, her own IC
+        # is as good as locked — QC accept checked the rule against the IC it has now, and
+        # QC accept never re-locks one (a lock released at AWAITING QC stays released). Same
+        # refusal, same words, as a locked IC: the student sees nothing new (and `/profile`
+        # serves `nric_locked` true for the same reason, so the box shows the padlock).
+        if acting and ic_held_by_birth_state_rule(acting):
+            return dict(NRIC_LOCKED), 403
         profile, _created = StudentProfile.objects.get_or_create(supabase_user_id=acting_uid)
         was = profile.nric
         profile.nric = nric
