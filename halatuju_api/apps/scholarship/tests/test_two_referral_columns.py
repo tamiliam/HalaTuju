@@ -321,6 +321,12 @@ class TestTheReferralPartnerMarker(TestCase):
             MIGRATION.mark_referral_partners(live_apps, None)
         self.assertFalse(PartnerOrganisation.objects.filter(is_referral_partner=True).exists())
 
+    def test_the_reserved_codes_copy_still_equals_its_originals(self):
+        # courses keeps a COPY so the courses -> scholarship back-edge does not grow; this pins it.
+        from apps.scholarship import gift_sources, partner_comms
+        self.assertEqual(set(referral_links.RESERVED_CODES),
+                         {*gift_sources.FIXED_CODES, partner_comms.HOUSE_ORG_CODE})
+
 
 class TestTheWitnessReadsTheSameOrganisationAsBefore(_World):
     def test_the_source_wins_then_the_referral_partner_then_nothing(self):

@@ -26,15 +26,20 @@ import re
 #: the existing rows are `cumig`, `smc`, `sathya_sai`, …) and no longer than the chip column (50).
 _CODE_SHAPE = re.compile(r'[a-z0-9_-]{1,50}')
 
+#: Codes a referral partner may never carry: the three fixed form choices
+#: (`scholarship.gift_sources.FIXED_CODES`) and the house organisation (`partner_comms.HOUSE_ORG_CODE`).
+#: A COPY, on purpose — importing them would grow the courses → scholarship back-edge, which may not
+#: grow. `test_two_referral_columns.py` asserts the copy still equals both originals.
+RESERVED_CODES = ('halatuju', 'social', 'other', 'brightpath')
+
 
 def referral_partners():
     """Every ACTIVE platform referral partner — the only rows a `?ref=` link may link. Never a tenant,
     never a row carrying one of the three fixed form codes or the house organisation's code (review
     fix, 2026-10-09): a mis-marked row must not be able to collect those students."""
-    from apps.scholarship import gift_sources, partner_comms
     from .models import PartnerOrganisation
     return (PartnerOrganisation.objects.filter(is_referral_partner=True, is_active=True)
-            .exclude(code__in=(*gift_sources.FIXED_CODES, partner_comms.HOUSE_ORG_CODE))
+            .exclude(code__in=RESERVED_CODES)
             .exclude(pk__in=PartnerOrganisation.objects.tenants().values('pk')))
 
 
