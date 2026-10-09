@@ -1,7 +1,10 @@
 # Per-gift referral sources, Sprint 2 — prod cutover SQL (migrate-first)
 
 **Migration:** `courses/0077_retire_legacy_referral_codes` (courses ledger 0076 → 0077). Data only.
-**Status: NOT APPLIED.** Written 2026-10-08 by the sprint; the lead applies it to production
+**Status: APPLIED 2026-10-09** by the lead via the Supabase MCP, after 0172 and before the push
+of `ffa0983a`: 1 profile `pushparani` → `other` (as expected), ledger row recorded.
+
+Written 2026-10-08 by the sprint; the lead applies it to production
 (Supabase `pbrrlyoyyiftckqvzvvo`) via the Supabase MCP before the push. Sprint 1's
 `scholarship/0172_programme_referral_sources` (`gift-sources-s1-cutover-sql.md`) must already be
 applied: the Sprint 2 image serves the intake's `sources` from that table.

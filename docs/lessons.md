@@ -1315,3 +1315,24 @@ cases already in flight. Only values stamped onto the row when the event happens
 effect, sort each read site into "stamped at the event" or "re-read per sweep". And where a message
 has already PROMISED a number to a person ("within 7 days we will close it"), stamp that number on
 the row at send time and never act sooner than it (`reminders.promised_close_days`). (org-timing S1, F1)
+
+## 2026-10-09 — a data migration's expected result is read at CUTOVER, not at pre-flight
+
+Per-gift sources' seed was planned as 7 + 7 rows from a production read on 2026-10-08. By the
+cutover the next morning somebody had used the old picker on four sources, so the seed — correctly —
+gave 7 + 3, and the owner learnt of the difference after the fact. The request #30 lesson moved the
+re-count from "analysis" to "build start"; a seed whose inputs are live, owner-editable settings ages
+again between build and apply. **Rule:** immediately before applying a migration that seeds or moves
+data, re-run its pre-check against production, write the expected rows FROM THAT READ into the
+cutover note, and if they differ from the plan tell the owner BEFORE applying, not after.
+(per-gift referral sources)
+
+## 2026-10-09 — a code users can mint must never equal a code the system treats as fixed
+
+The apply path looked an organisation up by the submitted referral code, and the Sources page let an
+admin create any code — so a source created as `other` (or `halatuju`, `social`, or the house
+organisation's code) would have been linked to every student who picked that fixed choice — and so
+to the partner emails a referral sends. Only the adversarial review saw it. **Rule:** wherever user-created codes share a lookup
+with fixed or system codes, refuse the reserved codes at CREATION and never look a fixed code up in
+the user registry; add a test that tries to create each reserved one. (per-gift referral sources,
+review should-fix 3)

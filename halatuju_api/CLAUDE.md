@@ -911,47 +911,42 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**Org-timing Sprint 1 is LIVE (2026-10-07, `5fd333e6`, api-01112 / web-00965; retro
-`docs/retrospectives/retrospective-2026-10-07-org-timing-s1.md`).** Every scheduled student timing is an
-ORGANISATION setting (Organisation → Settings → Configuration): 13 new keys + 10 narrowed ranges, with
-rules between timings. Migration **0170** (`final_reminder_close_days`) applied migrate-first; ledger
-ends at 0170, **next is 0171** (scholarship) / 0077 (courses). BrightPath stores
-`shortlist_email_delay_minutes = 55` (flagship and Sabah alike). Register: **118 open** (TD-369, TD-370
-raised). What must not break:
-- **Timings live in `org_config` only** (registry `apps/courses/org_config_registry.py`, rules
-  `org_config_rules.RULES`, read seam `org_config.value(org, key)`). Rules run on the MERGED settings
-  (stored, else default). A guard test holds every platform default inside its range AND passing every
-  rule — change a default (or its env var) and that test is your first stop.
-- **The three intake-round columns `success_delay_hours`, `decline_delay_hours`,
-  `query_response_sla_days` are UNREAD.** Sprint 2 drops them (with the dead `fail_email_delay_days`) —
-  trigger: one week live with no timing incident (≈2026-10-14). Roadmap
-  `docs/plans/2026-10-07-org-timing-settings-roadmap.md`.
-- **Reminder days, the answer time and the award-email delay are read on every sweep**, so a change
-  reaches students already waiting; the decision emails, both decline holds and the acceptance hold are
-  stamped when set. The auto-close never comes sooner than reminder 4 PROMISED
-  (`reminders.promised_close_days`: max(stamp, setting); NULL stamp = 5).
-- **`rescore-pending` no longer re-times waiting decisions** — TD-369 is fixed: a rescore keeps a waiting decision's send time unless its verdict changes (a changed verdict follows its own current delay from submission).
-- **en.json is at the bundle line:** `/scholarship/application` 273.753/274, median 228.729/229 — the next
-  string needs weight taken off first (TD-360).
-
-**State at the v3.0.0 cut (2026-10-06).** Everything below is on `origin/main` and live: TD-352 (an
-officer closes a stalled application; migration 0168) and request #30 (the C-or-better SPM rung;
-migration 0169, applied migrate-first, ledger 0167–0169 contiguous). Register then: 116 open.
-
-- **TD-347 is the next sprint when the owner says go** (ruled B: when the parent call is recorded,
-  re-arm a FRESH full accept window; the email names the new deadline). ⛔ It must ship before anyone
-  sets `BURSARY_AGREEMENT_ENABLED`. Before that flip, also prompt every awarded student to check the
-  parent phone on /profile (request #26 retro §4).
-- **Now tier** (money, identity, eligibility): TD-367 (a payment run can pay a CLOSED student), TD-356,
-  TD-348, TD-252 (the lapse job is written, the Scheduler job and console withdrawal remain).
-- **On hold by owner ruling:** TD-366 (who may release an awarded student who stops answering — until
-  signing is finalised), TD-353 (two organisations at once — until a second organisation joins).
-- **Owner actions open:** record parent calls for #116, #62, #125, #25 (not #20); read the Malay/Tamil
-  first drafts (one sitting: TD-091, 094, 097, 105, 108, 132, 170, 180, 183, 215); the 25 Owner-decision
+**Per-gift referral sources (Sprints 1 + 2) are LIVE (2026-10-09, `ffa0983a`, api-01117-4m6 /
+web-00968-28w; retro `docs/retrospectives/retrospective-2026-10-09-per-gift-sources.md`).** Each gift
+chooses its referral sources on Programme → Configuration ("Who referred you?" toggles; table
+`programme_referral_sources`, rules in `apps/scholarship/gift_sources.py`); the public intake serves that
+gift's `{code, name}` list; the apply form adds Halatuju.xyz / Facebook-WhatsApp / Other always; the
+submit refuses any other code (400 `referral_source_not_offered`). Org-timing Sprint 1 (2026-10-07) and
+request #31 + TD-371..377 (2026-10-08) are live too. Ledgers (applied migrate-first, contiguous):
+scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / courses 0078.** Register:
+**120 open.**
+- **Org-timing Sprint 2 is next (≈2026-10-14 — one week live with no timing incident):** drop the UNREAD
+  intake-round columns `success_delay_hours`, `decline_delay_hours`, `query_response_sla_days` and the dead
+  `fail_email_delay_days` (roadmap `docs/plans/2026-10-07-org-timing-settings-roadmap.md`). Timings live in
+  `org_config` only (registry `apps/courses/org_config_registry.py`, rules `org_config_rules.RULES`, read
+  seam `org_config.value(org, key)`), checked on the MERGED settings; a guard test holds every default in
+  range and passing every rule. Reminder days, the answer time and the award-email delay are re-read on
+  every sweep (a change reaches students already waiting); the auto-close never comes sooner than reminder
+  4 PROMISED (`reminders.promised_close_days`).
+- **Sources — what must not break:** a source switched on in Sources joins NO gift, and a new gift starts
+  with none (someone switches it on per gift). The fixed three are held on both sides
+  (`gift_sources.FIXED_CODES` / web `FIXED_REFERRAL_CODES`, drift-tested); they and the house
+  organisation's code are reserved (Sources POST 400 `code_reserved`). `PartnerOrganisation.programme` is
+  DEPRECATED and read by nothing: **TD-379 drops it in a later contract migration (courses, migrate-first)
+  — trigger: S1 + S2 live (met 2026-10-09) AND a rollback to a pre-S1 image no longer wanted (that image
+  reads the column); suggest after a week with no source incident, ≈2026-10-16.** TD-380 / TD-381 (loose
+  `referred_by_org` links outside the apply path; Sources shared across tenants) are low, not queued.
+- **TD-347 when the owner says go** (ruled B: when the parent call is recorded, re-arm a FRESH full
+  accept window; the email names the new deadline). ⛔ It must ship before anyone sets
+  `BURSARY_AGREEMENT_ENABLED`; before that flip, prompt every awarded student to check the parent phone on
+  /profile. **On hold by owner ruling:** TD-366 (releasing an awarded student who stops answering — until
+  signing is finalised), TD-353 (two organisations at once). **Now tier:** TD-367 (a payment run can pay a
+  CLOSED student), TD-356, TD-348, TD-252.
+- **en.json is at the bundle line:** median 228.568/229, `/scholarship/application` 273.546/274 — the next
+  string needs weight taken off first (TD-360); run `npm run bundle-budget` before any push that adds one.
+  Malay/Tamil first drafts go to Sol (tagged there), never to the owner as a reminder.
+- **Owner actions open:** record parent calls for #116, #62, #125, #25 (not #20); the 24 Owner-decision
   questions in the register.
-- **Weight:** `/scholarship/apply` and `/scholarship/application` are the thin first-load lines (TD-344);
-  the cure is TD-360 (split the English catalogue by audience). Run `npm run bundle-budget` before any
-  push that adds a string.
 
 ## Known Issues & Future Work
 

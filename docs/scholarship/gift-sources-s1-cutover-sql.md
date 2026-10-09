@@ -1,9 +1,18 @@
 # Per-gift referral sources, Sprint 1 — prod cutover SQL (migrate-first)
 
 **Migration:** `scholarship/0172_programme_referral_sources` (ledger 0171 → 0172).
-**Status: NOT APPLIED.** Written 2026-10-08 by the sprint; the lead applies it to production
-(Supabase `pbrrlyoyyiftckqvzvvo`) via the Supabase MCP BEFORE the push, per the migrate-first
-convention (deploys never run `migrate`).
+**Status: APPLIED 2026-10-09 (~07:35 MYT)** by the lead via the Supabase MCP, before the push of
+`ffa0983a`: table, RLS + `service_role` policy, seed and ledger row. **The seed did NOT give the
+14 rows expected below:** between the 2026-10-08 pre-check and the cutover someone set the OLD
+single-gift picker on `cumig`, `hss`, `hyo` and `mhm` (→ `brightpath-flagship`), and the seed
+honoured it by design — result `brightpath-flagship` 7, `bpb-sabah-2026` 3 (`ewrf`, `pptm`,
+`smc`), `testing` 0. The owner was told. Security Advisor afterwards: no ERROR-level finding,
+nothing about the new table. The "expected" figures below are the 2026-10-08 reading, kept as
+written.
+
+Written 2026-10-08 by the sprint; the lead applies it to production (Supabase
+`pbrrlyoyyiftckqvzvvo`) via the Supabase MCP BEFORE the push, per the migrate-first convention
+(deploys never run `migrate`).
 
 The DDL below was rendered OFFLINE from the migration with Django's postgresql schema editor
 (no connection; `sqlmigrate` renders SQLite on a dev box), so the column types, constraint names

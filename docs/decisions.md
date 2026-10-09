@@ -13791,7 +13791,10 @@ rows, migration 0172. The rulings:
   (`other`) — are on every form and are NOT toggles; the card shows them as a read-only footer.
 - Seeded at migration: every ACTIVE gift gets every active source, except a source whose old
   `programme` FK was set, which goes on that one gift only (production: 7 sources, none set, 2
-  active gifts → 14 rows; the inactive `testing` gift gets none).
+  active gifts → 14 rows; the inactive `testing` gift gets none). **At the cutover (2026-10-09)
+  four sources — `cumig`, `hss`, `hyo`, `mhm` — had meanwhile been set to `brightpath-flagship`
+  with the old picker, so the seed gave 10 rows: flagship 7, Sabah 3 (`ewrf`, `pptm`, `smc`).
+  That is this rule working as designed; the owner was told.**
 - The Sources page keeps the Active switch, loses the gift picker, shows "On N of M gifts" (or
   "On no gift form") counted over the caller's ACTIVE gifts, and after a switch-ON says "Now
   switch it on in each gift's Configuration."
@@ -13835,7 +13838,13 @@ dropped), or an organisation wants a source on every gift automatically.
 - **A submitted code the gift does not offer is REFUSED** (400 `referral_source_not_offered`,
   nothing written); the form re-reads the list and asks the student to choose again in plain words,
   keeping everything else. Blank stays accepted (the form requires a choice; the server does not).
-  A saved code the list does not offer is cleared on the form, never silently resubmitted.
+  A saved code the list does not offer is cleared on the form, never silently resubmitted —
+  **but only when the list is KNOWN** (the intake answered with `sources` for a NAMED gift; review
+  fix, 2026-10-09). On a failed intake, an older api with no `sources`, or before an ambiguous
+  visit picks a gift, the saved code is kept and shown by its code; the server refusal is the
+  safety net. A source code may never be one of the fixed three or the house organisation's code
+  (Sources POST 400 `code_reserved`), and the apply path never looks up an organisation for a
+  fixed choice.
 - ON THE APPLY PATH, `referred_by_org` is linked only through `gift_sources.active_sources()` —
   never a tenant, never a switched-off source, never for a fixed choice. That holds for the apply
   submit only: the course-selector `ProfileView.put` and `ProfileSyncView.post`
