@@ -74,7 +74,29 @@ export async function deleteAdmin(adminId: number, options?: ApiOptions) {
     err.code = body.code || body.error || ''
     throw err
   }
-  return res.json() as Promise<{ message: string }>
+  // `login: 'failed'` = the row is gone but their sign-in could not be removed; the message says so.
+  return res.json() as Promise<{ message: string; login?: string }>
+}
+
+/** Switch a person within their pair (Admin ↔ Finance, Reviewer ↔ QC — `lib/staffRole`).
+ *  `dryRun` asks what the switch WOULD do without writing: `consequence` says whether the
+ *  payment finance check switches on or off, so the confirmation can say so before the click.
+ *  A refusal throws with the server's sentence as the message and its `code`. */
+export async function changeAdminRole(adminId: number, role: string, dryRun: boolean,
+                                      options?: ApiOptions) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/admins/${adminId}/role/`, {
+    method: 'PATCH', headers, body: JSON.stringify({ role, dry_run: dryRun }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const err = new Error(body.error || `Action failed: ${res.status}`) as Error & { code?: string }
+    err.code = body.code || ''
+    throw err
+  }
+  return body as { id: number; from: string; to: string; dry_run: boolean
+                   consequence: 'finance_check_on' | 'finance_check_off' | null }
 }
 
 export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore', options?: ApiOptions) {

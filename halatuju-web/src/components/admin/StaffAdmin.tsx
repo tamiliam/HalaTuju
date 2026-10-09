@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import {
-  getAdmins, getOrgs, inviteAdmin, resendAdminInvite, revokeAdmin,
+  changeAdminRole, getAdmins, getOrgs, inviteAdmin, resendAdminInvite, revokeAdmin,
   type AdminItem, type OrgItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { roleBadgeClass } from '@/lib/roleBadge'
+import { switchableTo, workSummary } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 
 /**
@@ -53,7 +54,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, soleOrgAdmin }: {
+                             onDelete, onChangeRole, soleOrgAdmin }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -62,6 +63,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   onToggle?: (a: AdminItem) => void
   /** Delete outright. Only ever called for a row the SERVER marked `deletable`. */
   onDelete?: (a: AdminItem) => void
+  /** Switch within the pair (`lib/staffRole`). Offered only where a switch exists. */
+  onChangeRole?: (a: AdminItem) => void
   /** The sole active org_admin of a tenant cannot be revoked — the backend enforces it; this
    *  just keeps a dead affordance off the screen. */
   soleOrgAdmin?: (a: AdminItem) => boolean
@@ -97,8 +100,9 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             pressing it OVERWRITES THEIR PASSWORD with a temporary one and mails it to them
             (`AdminResendView` rotates the Supabase password and sets must_change_password). One
             click locked a signed-in admin out of their own account. It is a re-send of sign-in
-            details, so it belongs only to somebody whose invitation is still open. */}
-        {a.invitation && a.invitation.status !== 'accepted' && onResend && (
+            details, so it belongs only to somebody whose invitation is still open — and who can
+            still sign in: a revoked or cancelled account is refused by the server (2026-10-09). */}
+        {a.is_active && a.invitation && a.invitation.status !== 'accepted' && onResend && (
           <button disabled={busyId === a.id} onClick={() => onResend(a)}
             className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
             {busyId === a.id ? t('admin.resending') : t('admin.resend')}
@@ -113,13 +117,25 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
           </button>
         )}
         {/* ⚠ DELETE IS THE NARROW ACTION AND THE SERVER DECIDES. `deletable` is true only for an
-            admin-shaped role with NO recorded work — never a reviewer. It is not offered with a
-            reason attached because the reason is absence: somebody who has done anything keeps
-            Revoke instead. See `staff_footprint`. */}
+            admin-shaped role with NO recorded work — never a reviewer. Somebody who has done
+            anything keeps Revoke instead, and the line below says so. See `staff_footprint`. */}
         {a.deletable && onDelete && (
           <button disabled={busyId === a.id} onClick={() => onDelete(a)}
             className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
             {t('admin.delete')}
+          </button>
+        )}
+        {/* WHY THERE IS NO DELETE, said rather than left to be guessed (2026-10-09): the served
+            `work` footprint is what stops it, and its counts are on hover. */}
+        {onDelete && !a.deletable && a.work && Object.keys(a.work).length > 0 && (
+          <span className="text-[11px] text-ground-400" title={workSummary(a.work)}>
+            {t('admin.hasWorkRevoke')}
+          </span>
+        )}
+        {onChangeRole && switchableTo(a) && (
+          <button disabled={busyId === a.id} onClick={() => onChangeRole(a)}
+            className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
+            {t('admin.changeRole')}
           </button>
         )}
       </div>
@@ -261,12 +277,37 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
     catch (err) { onError(err) } finally { setBusyId(null) }
   }, [token, onError])
 
+  // ⚠ CONFIRMED, like the reviewers' Revoke (2026-10-09): it used to fire on the first click. The
+  // reviewers' sentences are reused — they say exactly what happens to an admin too.
   const toggle = useCallback(async (a: AdminItem) => {
     if (!token) return
+    if (!window.confirm(t(a.is_active ? 'admin.reviewers.revokeConfirm'
+      : 'admin.reviewers.restoreConfirm', { name: a.name }))) return
     setBusyId(a.id)
     try { await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token }); load() }
     catch (err) { onError(err) } finally { setBusyId(null) }
-  }, [token, load, onError])
+  }, [token, load, onError, t])
+
+  /** Change role (2026-10-09). A DRY RUN first, so the question can name what the switch does to
+   *  the payment finance check — answered by the server's own rule, never re-derived here. A
+   *  refusal (open cases, a run in progress) arrives as the server's sentence. True on success,
+   *  so a page keeping its own list (the reviewers table) knows to re-read it. */
+  const changeRole = useCallback(async (a: { id: number; name: string; role: string;
+                                             is_active: boolean; is_super_admin?: boolean }) => {
+    const to = switchableTo(a)
+    if (!token || !to) return false
+    setBusyId(a.id); setMessage(null)
+    try {
+      const plan = await changeAdminRole(a.id, to, true, { token })
+      const note = plan.consequence === 'finance_check_on' ? t('admin.financeCheckOn')
+        : plan.consequence === 'finance_check_off' ? t('admin.financeCheckOff') : ''
+      const ask = t('admin.roleChangeConfirm', { name: a.name, role: t(`admin.role.${to}`) })
+      if (!window.confirm(note ? `${ask} ${note}` : ask)) return false
+      await changeAdminRole(a.id, to, false, { token })
+      load()
+      return true
+    } catch (err) { onError(err); return false } finally { setBusyId(null) }
+  }, [token, load, onError, t])
 
   const soleOrgAdmin = useCallback((a: AdminItem) =>
     a.role === 'org_admin' && a.is_active && a.owning_org_id != null
@@ -275,6 +316,6 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
 
   // `reload` is exported so a page that DELETES a row can re-read the list — the hook's own
   // actions all reload themselves, but a delete lives on the page that owns the confirmation.
-  return { admins, orgs, message, setMessage, busy, busyId, invite, resend, toggle,
+  return { admins, orgs, message, setMessage, busy, busyId, invite, resend, toggle, changeRole,
            soleOrgAdmin, reload: load }
 }

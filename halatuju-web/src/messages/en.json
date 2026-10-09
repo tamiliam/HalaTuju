@@ -3001,7 +3001,9 @@
     "noAdminAccess": "This account does not have admin access.",
     "adminVerifyFailed": "Failed to verify admin access.",
     "saveFailed": "Failed to save. Please try again.",
-    "tempPasswordExpired": "Your temporary password has expired. Please ask whoever added you to re-send your sign-in details."
+    "tempPasswordExpired": "Your temporary password has expired. Please ask whoever added you to re-send your sign-in details.",
+    "accessWithdrawn": "Your access has been withdrawn. Please contact the person who invited you.",
+    "invitedHint": "If you were invited and this no longer works, please contact the person who invited you."
   },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",
@@ -5092,27 +5094,11 @@
     "guideNav": "Guide",
     "faqNav": "FAQ",
     "administration": {
-      "nav": "Administration",
-      "title": "Administration",
-      "platform": "Platform",
-      "superOnly": "Super admin only",
-      "invitePartner": "Invite referral partner",
-      "invitePartnerSub": "Add a roadshow / referral organisation representative",
-      "addTenant": "Add tenant",
-      "addTenantSub": "Create an organisation and install its administrator",
       "addTenantHelp": "Creates a new organisation with its own scholarship programme and installs its administrator.",
       "tenantName": "BrightPath Foundation",
       "tenantAdminName": "Administrator name",
       "tenantAdminEmail": "Administrator email",
       "createTenant": "Create organisation",
-      "orgHeading": "Organisation administration",
-      "orgHeadingNamed": "{org} administration",
-      "orgBadge": "Organisation",
-      "inviteStaff": "Invite reviewers & admins",
-      "inviteStaffSub": "Add programme staff to your organisation",
-      "billing": "Usage & Billing",
-      "billingSub": "Costs and usage for your programme",
-      "comingSoon": "Coming soon",
       "viewOnlyNote": "You have view-only access to your organisation's staff. Ask an organisation admin to invite or change staff.",
       "lastOrgAdmin": "This is the organisation's only administrator — assign another before revoking this one.",
       "staffRole": {
@@ -5121,17 +5107,8 @@
         "qc": "QC",
         "finance": "Finance"
       },
-      "payments": "Payments",
-      "paymentsSub": "Create and send monthly Vircle payment runs",
-      "contracts": "Contracts",
-      "contractsSub": "Author and deploy the bursary agreement",
       "sources": "Sources",
-      "sourcesSub": "Referral organisations & apply-form source list",
-      "sponsors": "Sponsors",
-      "sponsorsSub": "Vet and approve sponsor accounts",
-      "requests": "Requests",
-      "requestsSub": "Report a bug or request a feature",
-      "pendingApproval": "{count} pending approval"
+      "sourcesSub": "Referral organisations & apply-form source list"
     },
     "billing": {
       "title": "Usage & Billing",
@@ -6728,6 +6705,11 @@
       "standardHeading": "The platform’s standard wording"
     },
     "delete": "Delete",
-    "deleteConfirm": "Delete {name}? This cannot be undone."
+    "deleteStaffBody": "Their sign-in and invitation history are removed. This cannot be undone.",
+    "hasWorkRevoke": "Has work on record — revoke instead",
+    "changeRole": "Change role",
+    "roleChangeConfirm": "Change {name} to {role}?",
+    "financeCheckOn": "Payment runs will then need a finance check.",
+    "financeCheckOff": "They are the only finance admin, so payment runs will skip the finance check."
   }
 }

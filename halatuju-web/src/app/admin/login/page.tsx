@@ -26,6 +26,10 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // ⚠ ONE EXTRA LINE UNDER A FAILED SIGN-IN, NEVER A SPECIFIC "your invitation was cancelled"
+  // (staff lifecycle, 2026-10-09). Saying that to whoever typed an address would tell a stranger
+  // which addresses were ever invited, so the hint is the same for every failure.
+  const [hint, setHint] = useState(false)
   // Shown when this partner session was ended because the same account signed into the
   // sponsor portal (one active privileged scope per identity, except super admins).
   const [superseded, setSuperseded] = useState(false)
@@ -39,11 +43,13 @@ export default function AdminLoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setHint(false)
 
     const { data, error } = await adminSignInWithPassword(email, password)
 
     if (error) {
       setError(error.message)
+      setHint(true)
       setLoading(false)
       return
     }
@@ -62,7 +68,9 @@ export default function AdminLoginPage() {
         )
         const role = await res.json()
         if (!role.is_admin) {
-          setError(t('errors.noAdminAccess'))
+          // `withdrawn` is about THIS signed-in account only, so it may be said plainly.
+          setError(t(role.withdrawn ? 'errors.accessWithdrawn' : 'errors.noAdminAccess'))
+          setHint(!role.withdrawn)
           const { adminSignOut } = await import('@/lib/admin-supabase')
           await adminSignOut()
           setLoading(false)
@@ -165,6 +173,7 @@ export default function AdminLoginPage() {
               {error && (
                 <div className="bg-critical-50 border border-critical-200 rounded-lg p-4 mb-6">
                   <p className="text-critical-600 text-sm">{error}</p>
+                  {hint && <p className="mt-1 text-ground-600 text-sm">{t('errors.invitedHint')}</p>}
                 </div>
               )}
 

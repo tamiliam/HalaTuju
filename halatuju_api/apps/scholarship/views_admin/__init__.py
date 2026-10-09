@@ -103,6 +103,7 @@ from .interviews import (
     interview_agenda_full,
 )
 from .invitations import AdminInvitationCancelView, AdminInvitationsView
+from .staff import AdminStaffRoleView
 from .lifecycle import (
     AdminApplicationWitnessView, AdminAssignableAdminsView, AdminCloseApplicationView,
     AdminDisbursementActionView, AdminDisbursementScheduleView, AdminMaintenanceSubstateView,

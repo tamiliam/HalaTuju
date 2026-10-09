@@ -24,7 +24,9 @@ import { formatDate } from '@/lib/formatDate'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
+import { switchableTo } from '@/lib/staffRole'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
+import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 
 // Organisation → **People**: the directory of everybody who is already in.
 //
@@ -85,7 +87,10 @@ export default function AdminReviewersList() {
   // the screen because the backend refuses it anyway.
   const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
   const { admins, message: staffMessage, setMessage: setStaffMessage, busyId: staffBusyId,
-          resend, toggle, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
+          resend, toggle, changeRole, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
+  // The admin whose delete is being confirmed (typed confirmation, 2026-10-09). Null = closed.
+  const [deleting, setDeleting] = useState<AdminItem | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   // Which reviewer row is mid-revoke. The staff actions carry their own busy id from the hook;
   // the reviewers table acts on the same endpoint but keeps its own list, so it needs its own.
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -119,20 +124,28 @@ export default function AdminReviewersList() {
   /**
    * Delete an ADMIN outright — offered only where the server said `deletable`.
    *
-   * ⚠ The confirmation NAMES THE PERSON rather than asking "are you sure?", because the row it
-   * was pressed on is the only thing that distinguishes this action from the Revoke beside it.
+   * ⚠ A TYPED CONFIRMATION, NOT `window.confirm` (2026-10-09). The dialog says what goes — their
+   * sign-in, and their invitation history (`Invitation.partner_admin` is CASCADE) — and will not
+   * act until their email address is typed: the address is unique, where two people can share a
+   * name, and it is what a re-invite would be sent to.
    */
   const removeAdmin = async (a: AdminItem) => {
     if (!token) return
-    if (!window.confirm(t('admin.deleteConfirm', { name: a.name }))) return
+    setDeleteBusy(true)
     try {
       const r = await deleteAdmin(a.id, { token })
-      setStaffMessage({ type: 'success', text: r.message })
+      // Deleted, but the sign-in survived: the server's own sentence, shown as a warning.
+      setStaffMessage({ type: r.login === 'failed' ? 'warning' : 'success', text: r.message })
     } catch (e) {
       // 409 `has_work` is the interesting one: somebody did work between the page loading and
       // the click. The server's sentence names them, so it is shown rather than replaced.
       setStaffMessage({ type: 'error', text: e instanceof Error ? e.message : t('admin.actionFailed') })
-    } finally { reloadStaff() }
+    } finally { setDeleteBusy(false); setDeleting(null); reloadStaff() }
+  }
+
+  /** A reviewer row's Change role: the hook asks and acts; this page re-reads its own list. */
+  const changeReviewerRole = async (r: AdminReviewer) => {
+    if (await changeRole(r)) load()
   }
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
   // How many gifts the organisation runs. Only the COUNT is used here: with one, every reviewer
@@ -197,14 +210,23 @@ export default function AdminReviewersList() {
         <StaffTable rows={byCategory(admins).admins} busyId={staffBusyId} canAct={canManage}
           onResend={canManage ? resend : undefined}
           onToggle={canManage ? toggle : undefined}
-          onDelete={canManage ? removeAdmin : undefined}
+          onDelete={canManage ? setDeleting : undefined}
+          onChangeRole={canManage ? changeRole : undefined}
           soleOrgAdmin={soleOrgAdmin} />
+        {deleting && (
+          <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
+            title={t('admin.programmes.deleteTitle', { name: deleting.name })}
+            body={t('admin.deleteStaffBody')} cta={t('admin.delete')}
+            onCancel={() => setDeleting(null)} onConfirm={() => removeAdmin(deleting)} />
+        )}
         {!canManage && (
           <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
         )}
       </>)}
 
       {panel === 'reviewers' && (<>
+      {/* A role change's refusal (open cases…) or failure, from the shared staff actions. */}
+      <MessageBanner message={staffMessage} />
       {error && <div className="text-critical-600 mb-3">{error}</div>}
       {/* ⚠ `error` is tested BEFORE the empty check, and that is not a style choice. A failed
           fetch also leaves the list empty, so the other order prints "No reviewers yet — invite
@@ -388,12 +410,22 @@ export default function AdminReviewersList() {
                     </td>
                     <td className="px-4 py-3">
                       {canManage && (
-                        <button disabled={busyId === r.id} onClick={() => toggleReviewer(r)}
-                          className={`text-xs font-medium disabled:opacity-50 ${
-                            r.is_active ? 'text-critical-600 hover:text-critical-800'
-                                        : 'text-primary-600 hover:text-primary-800'}`}>
-                          {t(r.is_active ? 'admin.revoke' : 'admin.restore')}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button disabled={busyId === r.id} onClick={() => toggleReviewer(r)}
+                            className={`text-xs font-medium disabled:opacity-50 ${
+                              r.is_active ? 'text-critical-600 hover:text-critical-800'
+                                          : 'text-primary-600 hover:text-primary-800'}`}>
+                            {t(r.is_active ? 'admin.revoke' : 'admin.restore')}
+                          </button>
+                          {/* Reviewer ↔ QC (2026-10-09). Their cases stay theirs either way. */}
+                          {switchableTo(r) && (
+                            <button disabled={staffBusyId === r.id}
+                              onClick={() => changeReviewerRole(r)}
+                              className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
+                              {t('admin.changeRole')}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

@@ -446,7 +446,17 @@ class TestDeletingAStaffAccount(_Base):
         return self.client.delete(f'/api/v1/admin/admins/{target.id}/')
 
     def test_an_admin_who_never_started_can_be_deleted(self):
-        self.assertEqual(self._delete(self.fresh).status_code, 200)
+        # Since 2026-10-09 the delete also removes the Supabase login it provisioned (never used),
+        # so the Supabase admin API is mocked exactly as the invite tests mock it.
+        unused = MagicMock(status_code=200, json=lambda: {
+            'id': 'fresh-adm', 'email': 'fresh@x.com', 'last_sign_in_at': None,
+            'identities': [{'provider': 'email'}],
+            'app_metadata': {'must_change_password': True}})
+        with patch('apps.courses.views_admin.http_requests.get', return_value=unused), \
+                patch('apps.courses.views_admin.http_requests.delete',
+                      return_value=MagicMock(status_code=200)) as gone:
+            self.assertEqual(self._delete(self.fresh).status_code, 200)
+        self.assertTrue(gone.call_args[0][0].endswith('/auth/v1/admin/users/fresh-adm'))
         self.assertFalse(PartnerAdmin.objects.filter(id=self.fresh.id).exists())
 
     def test_an_admin_who_MADE_A_PAYMENT_RUN_cannot(self):

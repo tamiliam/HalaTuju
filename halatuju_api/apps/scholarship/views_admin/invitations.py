@@ -217,6 +217,8 @@ class AdminInvitationCancelView(_ReviewersBase):
     invitation provisioned an account with a temporary password up front, so withdrawing it also
     switches that never-used account off (`is_active=False`, exactly People → Revoke): otherwise
     the password in the letter would still open the console. Refused if they have signed in.
+    Since 2026-10-09 the emailed password is also rotated dead at Supabase
+    (`staff_lifecycle.kill_for_cancel`), and the address can be invited again (TD-335).
 
     Fenced like the list: an invitation of another organisation is 404, never 403. Only a super or
     an org_admin acts, and an org_admin only on what this page could have sent
@@ -267,7 +269,13 @@ class AdminInvitationCancelView(_ReviewersBase):
                 transaction.set_rollback(True)
                 return not_open
         inv.revoked_at = now
-        logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s by=%s',
+        # ⚠ AND THE PASSWORD IN THE LETTER STOPS WORKING AT SUPABASE TOO (staff lifecycle,
+        # 2026-10-09). Switching the account off closed the console, but the emailed temporary
+        # password still opened a Supabase session. AFTER the commit, so a cancel that loses the
+        # race above never touches the login of somebody who is signing in right now.
+        from .. import staff_lifecycle
+        login = staff_lifecycle.kill_for_cancel(account, inv) if account is not None else '-'
+        logger.info('AUDIT invitation_cancelled id=%s audience=%s role=%s account=%s login=%s by=%s',
                     inv.id, inv.audience, inv.role or '-', account.id if account else '-',
-                    admin.email or '')
+                    login, admin.email or '')
         return Response({'id': inv.id, 'status': inv_service.status_of(inv)})

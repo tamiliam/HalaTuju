@@ -91,7 +91,9 @@ export default function AdminAuthCallbackPage() {
           // also a signed-in sponsor (same Google identity, other tab) would be kicked
           // out of the sponsor portal just for landing here. Mirror the other signOuts.
           await supabase.auth.signOut({ scope: 'local' })
-          setError(t('errors.noAdminAccess'))
+          // `withdrawn`: this Google account's own staff access was revoked or its invitation
+          // cancelled (staff lifecycle, 2026-10-09) — said to the holder only.
+          setError(t(role.withdrawn ? 'errors.accessWithdrawn' : 'errors.noAdminAccess'))
           return
         }
         // One privileged scope per identity (super exempt): ends an active sponsor session.

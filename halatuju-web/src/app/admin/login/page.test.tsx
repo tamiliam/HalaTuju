@@ -83,5 +83,35 @@ describe('admin sign-in reads the owed-password flag from app_metadata first (TD
     await waitFor(() => expect(screen.getByText('errors.tempPasswordExpired')).toBeTruthy())
     expect(signOut).toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
+    expect(screen.queryByText('errors.invitedHint')).toBeNull()
+  })
+})
+
+describe('a sign-in that fails says who to ask (staff lifecycle, 2026-10-09)', () => {
+  it('adds ONE line under a wrong password — the same line for every address', async () => {
+    // Never "your invitation was cancelled": said to whoever typed an address, that would tell a
+    // stranger which addresses were ever invited.
+    signIn.mockResolvedValue({ data: {}, error: { message: 'Invalid login credentials' } })
+    await submit()
+    await waitFor(() => expect(screen.getByText('Invalid login credentials')).toBeTruthy())
+    expect(screen.getByText('errors.invitedHint')).toBeTruthy()
+  })
+
+  it('adds it under "no admin access" too', async () => {
+    signInAs({ app_metadata: {} })
+    global.fetch = jest.fn().mockResolvedValue({ json: async () => ({ is_admin: false }) }) as unknown as typeof fetch
+    await submit()
+    await waitFor(() => expect(screen.getByText('errors.noAdminAccess')).toBeTruthy())
+    expect(screen.getByText('errors.invitedHint')).toBeTruthy()
+  })
+
+  it('tells the holder of a WITHDRAWN account so, in place of "no admin access"', async () => {
+    signInAs({ app_metadata: {} })
+    global.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({ is_admin: false, withdrawn: true }) }) as unknown as typeof fetch
+    await submit()
+    await waitFor(() => expect(screen.getByText('errors.accessWithdrawn')).toBeTruthy())
+    expect(screen.queryByText('errors.noAdminAccess')).toBeNull()
+    expect(signOut).toHaveBeenCalled()
   })
 })

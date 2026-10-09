@@ -1,9 +1,9 @@
 """Supabase Auth admin calls for the partner-invite flow (moved from `views_admin.py`, TD-160).
 
 `_service_headers` and `_create_supabase_user` moved here verbatim so the invite fix could be
-built without growing `views_admin.py` past its size allowance. `views_admin` imports both back
-under the same names, so every caller (`expire_temp_passwords` included) still resolves them
-there. Tests patch `apps.courses.views_admin.http_requests.post` - that is the `requests`
+built without growing `views_admin.py` past its size allowance. `views_admin` imports
+`_service_headers` back under the same name, so `expire_temp_passwords` still resolves it there;
+`_create_supabase_user` is called from `staff_reinvite.provision` since 2026-10-09. Tests patch `apps.courses.views_admin.http_requests.post` - that is the `requests`
 module itself, the same object this module calls, so those patches still bite here.
 """
 import logging
@@ -114,3 +114,117 @@ def _read_back_user_id(supabase_url, service_role_key, email):
     except Exception:
         logger.warning('Partner invite: read-back of %s failed', email, exc_info=True)
         return None
+
+
+# ── A staff LOGIN's lifecycle: issue, kill, delete (staff lifecycle sprint, 2026-10-09) ─────────
+# Each call answers one of a few plain words, never raises, and is INERT without Supabase config
+# (the same rule `expire_temp_passwords` keeps), so a local run or a bare test cannot reach out.
+GONE = 'gone'          # the auth user does not exist (404) — nothing left to clean up
+FAILED = 'failed'      # Supabase could not be read or written; the caller decides what that stops
+INERT = 'inert'        # no Supabase config at all
+
+
+def supabase_config():
+    """`(url, service_role_key)`, or None when either is missing."""
+    from django.conf import settings
+    url = getattr(settings, 'SUPABASE_URL', '') or ''
+    key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '') or ''
+    return (url, key) if url and key else None
+
+
+def read_auth_user(uid):
+    """The admin-API user object for ``uid``, or one of `GONE` / `FAILED` / `INERT`."""
+    cfg = supabase_config()
+    if cfg is None:
+        return INERT
+    try:
+        r = http_requests.get(f'{cfg[0]}/auth/v1/admin/users/{uid}',
+                              headers=_service_headers(cfg[1]), timeout=15)
+        if r.status_code == 404:
+            return GONE
+        if r.status_code != 200:
+            return FAILED
+        body = r.json()
+        return body if isinstance(body, dict) else FAILED
+    except Exception:  # a lookup failure is an answer, never a 500
+        logger.warning('staff login: could not read auth user %s', uid, exc_info=True)
+        return FAILED
+
+
+def issue_temp_password(uid, name, password):
+    """Set ``password`` as this account's temporary password with a fresh TTL clock. True on 2xx.
+
+    The body is exactly what `AdminResendView` has always sent (TD-322: the flag and its clock go to
+    `app_metadata`; the browser-writable `user_metadata` copies are nulled, `name` kept)."""
+    cfg = supabase_config()
+    if cfg is None:
+        return False
+    try:
+        resp = http_requests.put(
+            f'{cfg[0]}/auth/v1/admin/users/{uid}',
+            json={'password': password,
+                  'app_metadata': password_change_flag.issued_fields(timezone.now()),
+                  'user_metadata': password_change_flag.scrubbed_user_metadata({'name': name})},
+            headers=_service_headers(cfg[1]), timeout=15,
+        )
+    except Exception:
+        logger.error('Supabase password rotation errored for %s', uid, exc_info=True)
+        return False
+    if resp.status_code not in (200, 201):
+        logger.error('Supabase password rotation failed: %s %s', resp.status_code, resp.text)
+        return False
+    return True
+
+
+def kill_temp_password(uid, account=None):
+    """Rotate a STILL-UNCHANGED temporary password to a long random value nobody is ever sent.
+
+    ⚠ ONLY WHILE ONE IS OWED. An account whose owner has chosen their own password is theirs and
+    is never touched — that is the same test the daily expiry job uses (`rotation_state`), and the
+    same write it makes: the clock nulled and `temp_password_expired` set, so the job does not act
+    on it again. Returns 'killed', 'not_pending', `GONE`, `FAILED` or `INERT`."""
+    from apps.courses.views_admin import generate_temp_password
+    if account is None:
+        account = read_auth_user(uid)
+    if not isinstance(account, dict):
+        return account
+    source, meta = password_change_flag.rotation_state(account)
+    if source is None:
+        return 'not_pending'
+    cfg = supabase_config()
+    try:
+        resp = http_requests.put(
+            f'{cfg[0]}/auth/v1/admin/users/{uid}',
+            json={'password': generate_temp_password(groups=8),
+                  source: {**meta, password_change_flag.ISSUED: None,
+                           password_change_flag.EXPIRED: True}},
+            headers=_service_headers(cfg[1]), timeout=15,
+        )
+    except Exception:
+        logger.error('staff login: killing the temp password of %s errored', uid, exc_info=True)
+        return FAILED
+    if resp.status_code not in (200, 201):
+        logger.error('staff login: killing the temp password of %s failed: %s %s',
+                     uid, resp.status_code, resp.text)
+        return FAILED
+    return 'killed'
+
+
+def delete_auth_user(uid):
+    """Delete the Supabase auth user. Returns 'deleted', `GONE`, `FAILED` or `INERT`."""
+    cfg = supabase_config()
+    if cfg is None:
+        return INERT
+    try:
+        resp = http_requests.delete(f'{cfg[0]}/auth/v1/admin/users/{uid}',
+                                    headers=_service_headers(cfg[1]), timeout=15)
+    except Exception:
+        logger.error('staff login: deleting auth user %s errored', uid, exc_info=True)
+        return FAILED
+    if resp.status_code == 404:
+        return GONE
+    if resp.status_code not in (200, 204):
+        logger.error('staff login: deleting auth user %s failed: %s %s',
+                     uid, resp.status_code, resp.text)
+        return FAILED
+    return 'deleted'

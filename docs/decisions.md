@@ -1,5 +1,75 @@
 # Architectural Decisions — HalaTuju
 
+## Staff lifecycle: a role changes only within its pair; cancel and delete reach the LOGIN — 2026-10-09 (owner "go"; lead rulings in the build)
+
+**Owner's rulings.** (1) The switchable roles are **Admin ↔ Finance** and **Reviewer ↔ QC** — never to
+or from `org_admin`, `super` or `partner` (those are appointments, and a switch that could reach one
+would skip the invite). (2) This is a platform fix; no billing work. Kept from 2026-09-09: an admin may
+be deleted only with no recorded work, a reviewer never; everyone else is revoked. "Invitations is the
+asking; People is everybody who is in." An org_admin may appoint a finance admin (2026-07-23).
+
+**Change role** — `PATCH admin/admins/<id>/role/ {role, dry_run?}` (`apps/scholarship/staff_lifecycle.py`
++ `views_admin/staff.py`). Super or org_admin; the target must pass `_staff_target_manageable` (else 404).
+Same-role, cross-pair and appointment roles → 400 `role_not_switchable`; a revoked account → 400
+`not_active` (restore first: a role on a closed account changes nothing and its consequences cannot be
+stated). **Admin → Finance is refused while they hold any in-play case** (409 `has_open_cases`, with the
+count) **or a payment run they made (draft) or signed as maker that is not finished** (409
+`run_in_progress`): finance has no B40 scope and is not a review role, so the cases would be stranded,
+and as the checker they could never sign their own run again. Reviewer ↔ QC strands nothing — both are
+review roles and keep their assigned cases; the QC self-check guard is unchanged. The dry run serves
+`consequence`: `finance_check_on` when the first active finance admin is appointed, `finance_check_off`
+when the last one leaves (`payments.finance_check_required` reads it live). The write locks the row,
+keeps `is_super_admin` false, clears `paused_at` on the way to Finance (pause is meaningless there), and
+moves an OPEN `Invitation.role` with it. AUDIT `staff_role_changed by= target= from= to=`. Nobody can
+switch their own role (an org_admin is never manageable; a super is not switchable), so the web's cached
+`/admin/role/` never goes stale through this door.
+
+**Cancel** now also kills the emailed temporary password at Supabase — **rotated, not deleted**
+(`kill_for_cancel` → `supabase_admin.kill_temp_password`, the expiry job's own write), only when that
+invitation issued a password, the login is not also a student / alias / sponsor, and the password is
+still unchanged. Rotating keeps ONE identity: the re-invite then issues a fresh password onto the same
+login, where deleting would have left a dead UID on the kept row to recreate and relink. After the
+commit and best-effort (the account is already off); `expire_temp_passwords` now sweeps switched-off
+accounts as the backstop. **TD-335** — a re-invite reuses a switched-off account that never signed in
+(`staff_reinvite`): the 409 stays for an active account, one that has signed in, and another
+organisation's. A password the person chose is never overwritten (`first_seen_at` NULL can mean "not
+recorded" for staff predating 2026-08-03, so the login itself is asked).
+
+**Sign-in.** A specific "your invitation was cancelled" would tell anyone who types an address whether
+it was invited, so a failed sign-in gets ONE extra line for everybody (`errors.invitedHint`). An
+account that DOES authenticate and is switched off is told "Your access has been withdrawn" — `/admin/role/`
+serves `withdrawn` about the caller's own account only (by JWT subject, or by VERIFIED email for a
+Google invitee with no UID yet, the two ways `get_admin` links). **Resend** is refused for a switched-off
+account (400 `not_active`) and hidden on revoked rows.
+
+**Delete** (`views_staff.AdminDeleteView`, moved out of the oversize `views_admin.py`) removes the
+Supabase login BEFORE the row — the row is the only record of which login is ours. `retire_login`
+deletes it only when nothing else rides on it (no student profile, alias or sponsor), it has only an
+email identity, its address matches, and it never signed in or never chose its own password; otherwise
+it kills an owed temporary password and leaves the login alone. Supabase unreachable → 502, nothing
+deleted. So a re-invite after a delete is a brand-new person with a fresh password. The web asks for the
+person's **email address typed** (unique, where names are not) in a dialog that says the sign-in and the
+invitation history go (`Invitation.partner_admin` is CASCADE); a row with work says "Has work on record —
+revoke instead", the counts on hover (the server's keys as words — nine translated labels on every route
+were not worth their weight, TD-360). Revoke on the Admins tab now asks first, reusing the reviewers'
+sentences.
+
+**Review fixes (same day).** A re-invite never brings back anybody with a footprint, a login used
+with their own password, or a Google row that already has a login — `first_seen_at` NULL is "not
+recorded", so on its own it proved nothing and resurrected a revoked worker in review. The footprint
+counts all three run signatures. The delete locks and re-checks the row, deletes it, and only then
+removes the login; a failed removal leaves an unused login that the next invite ADOPTS — only one
+carrying our own server-written `app_metadata` flag, so a student's or sponsor's login never is —
+and (round 2) only when nobody has signed in since that temp password was issued and it has not
+been expired (the flag outlives a password chosen through a reset link), and never a login another
+staff row owns. A failed cleanup after the row is gone is said in the response and logged as
+`STAFF_LOGIN_ORPHANED`: with no row left, the log line is the only trace. A
+pause survives Reviewer ↔ QC (both assignable) and is cleared only on the way to Finance.
+
+**Rejected.** A role menu (any role to any role) — the owner's pairs are the rule. Deleting the auth user
+on cancel — see above. Refusing Reviewer → QC while they hold cases — nothing is stranded. **Open:**
+TD-382 (an assignment racing an Admin → Finance switch).
+
 ## Student message timing is an ORGANISATION setting, with narrow ranges and rules between timings — 2026-10-07 (owner)
 
 **Decision:** every scheduled student timing (13 new keys + 5 existing) lives in `org_config`, set on

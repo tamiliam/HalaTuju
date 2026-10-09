@@ -21,6 +21,11 @@ export const FAQ: Record<Audience, QA[]> = {
         payment. Thank you for giving your time to these students.</>,
     },
     {
+      q: <>The sign-in page says my access has been withdrawn.</>,
+      a: <>Your organisation has revoked your access, or cancelled your invitation before you first signed in.
+        Contact the person who invited you &mdash; they can restore you, or invite you again.</>,
+    },
+    {
       q: <>How do I sign in next time?</>,
       a: <>Go to <strong>halatuju.xyz/admin/login</strong> and enter your email and password, or sign in with
         Google.</>,
@@ -318,6 +323,21 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>Yes. <strong>Invitations</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active, the
         finance check becomes part of your payment chain &mdash; including for a run that is already waiting for
         your countersignature.</>,
+    },
+    {
+      q: <>Can I change somebody&rsquo;s role?</>,
+      a: <>Yes, within two pairs: <strong>Admin</strong> and <strong>Finance</strong>, and
+        <strong> Reviewer</strong> and <strong>QC</strong>. Use <strong>Change role</strong> on their row in
+        <strong> People</strong>. Moving the only finance admin to Admin removes the finance check from your
+        payment runs, and appointing the first one adds it &mdash; the question tells you. A reviewer who
+        becomes QC (or back) keeps the cases already assigned to them.</>,
+    },
+    {
+      q: <>I cancelled an invitation, or deleted someone, by mistake. Can I invite them again?</>,
+      a: <>Yes. Invite the same email address again from <strong>Invitations</strong>, with the role you choose
+        this time. They are sent a fresh temporary password &mdash; or, if they already sign in to HalaTuju
+        with a password of their own, told to sign in as usual. The old temporary password stopped working
+        when you cancelled.</>,
     },
     {
       q: <>Why can&rsquo;t I revoke my other organisation admin?</>,

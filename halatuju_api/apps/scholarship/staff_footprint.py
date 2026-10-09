@@ -29,7 +29,8 @@ def footprint(admin):
     Two kinds of trace, and both count:
       * FOREIGN KEYS — assignments, interview slots, org requests. Deleting would cascade or be
         refused outright.
-      * EMAIL STRINGS — payment runs, verdicts, vetting, verify-and-accept. Deleting breaks
+      * EMAIL STRINGS — payment runs (made, and each of the three signatures), verdicts, vetting,
+        verify-and-accept. Deleting breaks
         nothing and erases nobody, which is exactly what makes them dangerous: the row keeps an
         address that no longer resolves to a person.
     """
@@ -50,6 +51,13 @@ def footprint(admin):
             'payment_runs_made': PaymentRun.objects.filter(created_by__iexact=email).count(),
             'payment_runs_signed': PaymentRun.objects.filter(
                 admin_signed_email__iexact=email).count(),
+            # ⚠ The other two signatures (review M1, 2026-10-09). `finance` and `org_admin` are
+            # deletable roles, and the delete now also removes the login — a checker or an approver
+            # who signed run 34 must keep meaning somebody exactly as its maker does.
+            'payment_runs_checked': PaymentRun.objects.filter(
+                finance_signed_email__iexact=email).count(),
+            'payment_runs_countersigned': PaymentRun.objects.filter(
+                org_admin_signed_email__iexact=email).count(),
             'benefactors_vetted': Sponsor.objects.filter(reviewed_by__iexact=email).count(),
             'applications_decided': ScholarshipApplication.objects.filter(
                 Q(verified_by__iexact=email) | Q(rejected_by__iexact=email)

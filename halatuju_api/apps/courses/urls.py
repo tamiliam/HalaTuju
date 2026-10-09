@@ -5,11 +5,12 @@ from django.urls import path
 from . import health, views
 from .views_admin import (
     AdminRoleView, AdminInviteView, AdminOrgsView, AdminSetPasswordView,
-    AdminListView, AdminDeleteView, AdminRevokeView, AdminResendView, AdminProfileView,
+    AdminListView, AdminRevokeView, AdminResendView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
     AdminCourseDataView, AdminCourseDataCheckView,
 )
+from .views_staff import AdminDeleteView
 
 urlpatterns = [
     # TD-047: unauthenticated, no data, no query — is the course data loaded?

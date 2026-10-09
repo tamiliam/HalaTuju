@@ -12,6 +12,8 @@ Endpoints:
 - GET /api/v1/admin/orgs/ - List organisations (for invite dropdown)
 - GET /api/v1/admin/admins/ - List all admins (super admin only)
 - PATCH /api/v1/admin/admins/<id>/revoke/ - Revoke or restore admin access (super admin only)
+  (DELETE /api/v1/admin/admins/<id>/ is `views_staff.AdminDeleteView`; the role switch is
+  `apps.scholarship.views_admin.staff`)
 - POST /api/v1/admin/admins/<id>/resend/ - Re-send sign-in details / rotate the temp password (super admin only)
 - GET/PUT /api/v1/admin/profile/ - View/edit own admin profile
 """
@@ -30,10 +32,10 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from . import password_change_flag
+from . import password_change_flag, staff_reinvite, supabase_admin
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
-from .supabase_admin import _create_supabase_user, _service_headers
+from .supabase_admin import _service_headers
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
@@ -281,7 +283,9 @@ class AdminRoleView(PartnerAdminMixin, APIView):
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
-            return Response({'is_admin': False})
+            # `withdrawn`: about THIS caller's own account only (`staff_reinvite.is_withdrawn`).
+            return Response({'is_admin': False, 'withdrawn': staff_reinvite.is_withdrawn(
+                auth_sub(request), getattr(request, 'supabase_user', None))})
         # ⚠ THE RETURN VALUE IS THE ACCEPTANCE. `_touch_seen` reports True on the FIRST arrival
         # only — a conditional UPDATE whose rowcount is 1 exactly once in the row's life — so an
         # invitation is closed at the one moment it can be, and cannot be re-accepted later.
@@ -566,6 +570,12 @@ PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
 _DELETABLE_ROLES = {'admin', 'finance', 'org_admin'}
 
 
+def scholarship_staff():
+    """`(staff_footprint, staff_lifecycle)`: the ONE courses door to scholarship's staff rules."""
+    from apps.scholarship import staff_footprint, staff_lifecycle
+    return staff_footprint, staff_lifecycle
+
+
 def _deletable_now(caller, target):
     """Whether ``caller`` may DELETE ``target`` outright, rather than only revoke them.
 
@@ -574,7 +584,7 @@ def _deletable_now(caller, target):
       * the role is admin-shaped (`_DELETABLE_ROLES`) — never a reviewer, owner 2026-09-09;
       * they have done NO recorded work (`staff_footprint`).
     """
-    from apps.scholarship import staff_footprint
+    staff_footprint, _ = scholarship_staff()
     if not _staff_target_manageable(caller, target):
         return False
     if target.is_super or target.role not in _DELETABLE_ROLES:
@@ -638,8 +648,11 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if not email or not name:
             return Response({'error': 'email and name are required'}, status=400)
 
-        if PartnerAdmin.objects.filter(email=email).exists():
-            return Response({'error': 'Admin with this email already exists'}, status=409)
+        # TD-335: a switched-off invitee who never signed in is invited AGAIN (`staff_reinvite`).
+        reuse = PartnerAdmin.objects.filter(email=email).first()
+        exists = Response({'error': 'Admin with this email already exists'}, status=409)
+        if reuse is not None and not staff_reinvite.may_reuse(admin, reuse):
+            return exists
 
         # ── Resolve the referral org (`org`, partner only) + the B40 tenant fence
         #    (`owning_organisation`). The two are DISTINCT: referral ≠ ownership. ──
@@ -715,11 +728,10 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # send the no-password "sign in with Google" email. No Supabase account is created here — it
         # materialises when they first sign in with Google.
         if is_google_email(email):
-            created = PartnerAdmin.objects.create(
-                email=email, name=name, org=org, role=role,
-                owning_organisation=owning_org,
-                supabase_user_id=None, is_super_admin=(role == 'super'),
-            )
+            created, _, err = staff_reinvite.provision(
+                reuse, email=email, name=name, role=role, org=org, owning_org=owning_org)
+            if err:
+                return exists
             # ⚠ `credential_issued=False`: a Google invitee is never given a password, so nothing of
             # theirs can EXPIRE. The screen must say "no reply", not "expired", or an org_admin goes
             # hunting for a password that never existed. This is the one moment we know which
@@ -739,27 +751,15 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # Non-Google: create the Supabase account OURSELVES rather than sending a Supabase invite
         # (see `_create_supabase_user` for why). The temp password never leaves this request except
         # in the welcome email, and expires after the 7-day TTL (login gate + expire cron).
+        # The row (new, or the cancelled one brought back — TD-335) is written by `provision`.
         temp_password = generate_temp_password()
-        user_id, already_registered, err = _create_supabase_user(
-            supabase_url, service_role_key, email, name, temp_password,
-        )
+        created, already_registered, err = staff_reinvite.provision(
+            reuse, email=email, name=name, role=role, org=org, owning_org=owning_org,
+            temp_password=temp_password)
+        if err == 'not_reusable':
+            return exists
         if err:
             return Response({'error': 'Failed to create the partner account'}, status=502)
-
-        created = PartnerAdmin.objects.create(
-            email=email,
-            name=name,
-            org=org,
-            role=role,
-            owning_organisation=owning_org,
-            # We know the Supabase UID at creation now, so store it instead of waiting for the
-            # email-match backfill in get_admin. (None on the already-registered path — their
-            # existing account is matched by verified email on next sign-in, as before.)
-            supabase_user_id=user_id,
-            # Keep the legacy flag in lockstep with the role (expand-contract):
-            # several call sites still gate on is_super_admin directly.
-            is_super_admin=(role == 'super'),
-        )
 
         # ⚠ `credential_issued` is FALSE on the already-registered branch — that person keeps the
         # login they already had and is sent no password, so like a Google invitee they can go
@@ -809,29 +809,21 @@ class AdminResendView(PartnerAdminMixin, APIView):
             # Not found OR not manageable by this caller (cross-org / super target) — 404,
             # so an org_admin can't probe for the existence of other orgs' or platform staff.
             return Response({'error': 'Admin not found'}, status=404)
-
-        service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
-        supabase_url = getattr(settings, 'SUPABASE_URL', '')
-        if not service_role_key or not supabase_url:
+        # Switched off = cannot sign in, so a Resend would email a password that lets nobody in.
+        if not target.is_active:
+            return Response({'error': f'{target.name} cannot sign in — restore them first.',
+                             'code': 'not_active'}, status=400)
+        if supabase_admin.supabase_config() is None:
             return Response({'error': 'Supabase service role key not configured'}, status=500)
 
         # No UID = the account pre-existed ours (student/Google sign-up), so we never issued a
         # password and must not reset theirs. Re-send the "sign in as you always do" note.
+        # A Resend gives a fresh temp password AND a fresh TTL clock (`issue_temp_password`).
         temp_password = None
         if target.supabase_user_id:
             temp_password = generate_temp_password()
-            resp = http_requests.put(
-                f'{supabase_url}/auth/v1/admin/users/{target.supabase_user_id}',
-                json={'password': temp_password,
-                      # Reset the 7-day clock — a Resend gives a fresh temp password AND a fresh TTL.
-                      # TD-322: the flag goes to app_metadata; the old browser-writable copy is nulled.
-                      'app_metadata': password_change_flag.issued_fields(timezone.now()),
-                      'user_metadata': password_change_flag.scrubbed_user_metadata(
-                          {'name': target.name})},
-                headers=_service_headers(service_role_key),
-            )
-            if resp.status_code not in (200, 201):
-                logger.error('Supabase password rotation failed: %s %s', resp.status_code, resp.text)
+            if not supabase_admin.issue_temp_password(
+                    target.supabase_user_id, target.name, temp_password):
                 return Response({'error': 'Failed to reset the password'}, status=502)
 
         # ⚠ A RE-SEND REFRESHES THE INVITATION, IT DOES NOT START A NEW ONE. `create_or_refresh`
@@ -970,7 +962,7 @@ class AdminListView(PartnerAdminMixin, APIView):
         # The FE (`invitations.standingOf`) uses the served number; its constant is only the
         # fallback for a payload predating this field. Cached per org id.
         from . import org_config
-        from apps.scholarship import staff_footprint
+        staff_footprint, _ = scholarship_staff()
         _dormant_cache = {}
 
         def _dormant_for(a):
@@ -1068,56 +1060,6 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             return Response({'message': f'{target.name} access restored'})
         else:
             return Response({'error': 'action must be "revoke" or "restore"'}, status=400)
-
-
-class AdminDeleteView(PartnerAdminMixin, APIView):
-    """DELETE /api/v1/admin/admins/<id>/ — remove a staff account that never started.
-
-    ⚠ **REVOKE IS THE NORMAL ANSWER; THIS IS THE NARROW ONE.** Owner, 2026-09-09: an admin *"should
-    only be deleted if they are not doing any work"*. Once somebody has done something, the record
-    of who did it has to keep meaning something — so they are revoked, for ever, and this refuses.
-
-    ⚠ **THE GUARD IS A FOOTPRINT, NOT THE DATABASE'S OWN PROTECTIONS**, and the difference is not
-    academic. A `PaymentRun` stores its author as `created_by`, an EMAIL STRING with no foreign key:
-    on production one admin had made 25 of the 27 runs and signed 8, and a foreign-key rule would
-    have declared her safe to delete and left 25 runs naming an address with nobody behind it. See
-    `apps.scholarship.staff_footprint`.
-
-    ⚠ **REVIEWERS ARE NEVER DELETABLE** (`_DELETABLE_ROLES`), however empty their record looks —
-    the owner scoped this to admins explicitly, and a reviewer is who a student's case passed
-    through.
-
-    Refusals are separated on purpose: 404 for a row this caller may not touch (no existence leak),
-    400 for a role that is never deletable, and **409 with the counts** when there is work — so the
-    screen can say *what* is stopping it rather than greying a button for no visible reason.
-    """
-
-    def delete(self, request, admin_id):
-        from apps.scholarship import staff_footprint
-        admin = self.get_admin(request)
-        if not admin or not (admin.is_super or admin.role == 'org_admin'):
-            return Response({'error': 'Super admin access required'}, status=403)
-
-        target = PartnerAdmin.objects.filter(id=admin_id).first()
-        if target is None or not _staff_target_manageable(admin, target):
-            return Response({'error': 'Admin not found'}, status=404)
-        if target.is_super_admin or target.is_super:
-            return Response({'error': 'Cannot delete a super admin', 'code': 'not_deletable'},
-                            status=400)
-        if target.role not in _DELETABLE_ROLES:
-            return Response({'error': 'Only an admin account can be deleted',
-                             'code': 'not_deletable'}, status=400)
-
-        work = staff_footprint.footprint(target)
-        if work:
-            return Response({'error': f'{target.name} has work on record and can only be revoked.',
-                             'code': 'has_work', 'work': work}, status=409)
-
-        name = target.name
-        target.delete()
-        logger.info('AUDIT staff_deleted by=%s target=%s email=%s',
-                    admin.email, admin_id, target.email)
-        return Response({'message': f'{name} deleted.'})
 
 
 class AdminProfileView(PartnerAdminMixin, APIView):

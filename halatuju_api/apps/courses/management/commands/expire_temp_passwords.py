@@ -26,7 +26,7 @@ from django.utils import timezone
 
 from apps.courses import password_change_flag
 from apps.courses.models import PartnerAdmin
-from apps.courses.views_admin import _service_headers, generate_temp_password
+from apps.courses.views_admin import _service_headers, generate_temp_password, scholarship_staff
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +61,23 @@ class Command(BaseCommand):
         checked = expired = 0
         # Only accounts WE created carry a temp password (a Google / already-registered invitee has
         # supabase_user_id=None and never had one).
+        # ⚠ SWITCHED-OFF ACCOUNTS TOO (staff lifecycle, 2026-10-09). It used to be active ones only,
+        # so the temp password of a revoked or cancelled invitee lived on at Supabase for ever: it
+        # could not open the console, but it still opened a session. A cancel now kills it at once
+        # (`staff_lifecycle.kill_for_cancel`); this is the backstop for a revoke, or a cancel whose
+        # Supabase call failed. Same test as ever — only an UNCHANGED temp password past its TTL.
+        # ⚠ BUT A SWITCHED-OFF ROW WHOSE LOGIN IS ALSO A STUDENT / ALIAS / SPONSOR IS SKIPPED
+        # (review L4): the row no longer opens anything, and the login is somebody's own account.
+        # Active rows are swept exactly as before.
+        _, staff_lifecycle = scholarship_staff()
         for admin in (PartnerAdmin.objects
-                      .filter(supabase_user_id__isnull=False, is_active=True)
+                      .filter(supabase_user_id__isnull=False)
                       .select_related('owning_organisation')):
+            uid = admin.supabase_user_id
+            if not admin.is_active and staff_lifecycle.login_used_elsewhere(uid):
+                continue
             checked += 1
             cutoff = now - datetime.timedelta(days=ttl_for(admin))
-            uid = admin.supabase_user_id
             try:
                 r = http_requests.get(f'{url}/auth/v1/admin/users/{uid}', headers=headers, timeout=15)
                 if r.status_code != 200:

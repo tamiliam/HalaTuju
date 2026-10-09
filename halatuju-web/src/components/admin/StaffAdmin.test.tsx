@@ -114,4 +114,44 @@ describe('the row actions (2026-09-09)', () => {
                          invitation: { status: 'accepted' } as AdminItem['invitation'] })])
     expect(t.getByText('admin.revoke')).toBeTruthy()
   })
+
+  it('⚠ offers no RESEND to a revoked or cancelled account, invitation open or not', () => {
+    // The server refuses it (`not_active`): it would rotate a password and email it to somebody
+    // who cannot sign in (2026-10-09).
+    const t = act([row({ id: 7, name: 'Cancelled', is_active: false,
+                         invitation: { status: 'revoked' } as AdminItem['invitation'] }),
+                   row({ id: 8, name: 'Revoked early', is_active: false,
+                         invitation: { status: 'no_reply' } as AdminItem['invitation'] })])
+    expect(t.queryByText('admin.resend')).toBeNull()
+  })
+
+  it('says WHY there is no Delete, with the counts on hover', () => {
+    const t = act([row({ id: 9, name: 'Kulaly', role: 'admin', deletable: false,
+                         work: { payment_runs_made: 25, assigned_applications: 2 } })])
+    const why = t.getByText('admin.hasWorkRevoke')
+    expect(why.getAttribute('title')).toBe('payment runs made: 25, assigned applications: 2')
+    expect(t.queryByText('admin.delete')).toBeNull()
+  })
+
+  it('says nothing about work on a row that is simply deletable', () => {
+    const t = act([row({ id: 10, name: 'Fresh', role: 'admin', deletable: true, work: {} })])
+    expect(t.queryByText('admin.hasWorkRevoke')).toBeNull()
+  })
+
+  it('offers Change role only where a switch exists', () => {
+    const onChangeRole = jest.fn()
+    const t = act([row({ id: 11, name: 'Admin A', role: 'admin' }),
+                   row({ id: 12, name: 'Lead', role: 'org_admin' }),
+                   row({ id: 13, name: 'Gone', role: 'finance', is_active: false })],
+                  { onChangeRole })
+    const buttons = t.getAllByText('admin.changeRole')
+    expect(buttons.length).toBe(1)                     // the admin only — never the org_admin
+    buttons[0].click()
+    expect(onChangeRole).toHaveBeenCalledWith(expect.objectContaining({ id: 11 }))
+  })
+
+  it('offers no Change role when the page passes no handler (a viewer who cannot act)', () => {
+    const t = act([row({ id: 14, name: 'Admin B', role: 'admin' })])
+    expect(t.queryByText('admin.changeRole')).toBeNull()
+  })
 })

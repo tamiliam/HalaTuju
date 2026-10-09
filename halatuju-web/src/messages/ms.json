@@ -3001,7 +3001,9 @@
     "noAdminAccess": "Akaun ini tiada akses pentadbir.",
     "adminVerifyFailed": "Gagal mengesahkan akses pentadbir.",
     "saveFailed": "Gagal menyimpan. Sila cuba lagi.",
-    "tempPasswordExpired": "Kata laluan sementara anda telah tamat tempoh. Sila minta orang yang menambah anda untuk menghantar semula butiran log masuk anda."
+    "tempPasswordExpired": "Kata laluan sementara anda telah tamat tempoh. Sila minta orang yang menambah anda untuk menghantar semula butiran log masuk anda.",
+    "accessWithdrawn": "Akses anda telah ditarik balik. Sila hubungi orang yang menjemput anda.",
+    "invitedHint": "Jika anda dijemput dan ini tidak lagi berfungsi, sila hubungi orang yang menjemput anda."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",
@@ -5092,27 +5094,11 @@
     "guideNav": "Panduan",
     "faqNav": "Soalan Lazim",
     "administration": {
-      "nav": "Pentadbiran",
-      "title": "Pentadbiran",
-      "platform": "Platform",
-      "superOnly": "Pentadbir utama sahaja",
-      "invitePartner": "Jemput rakan rujukan",
-      "invitePartnerSub": "Tambah wakil organisasi rujukan / jerayawara",
-      "addTenant": "Tambah penyewa",
-      "addTenantSub": "Cipta organisasi dan lantik pentadbirnya",
       "addTenantHelp": "Mencipta organisasi baharu dengan program biasiswanya sendiri dan melantik pentadbirnya.",
       "tenantName": "BrightPath Foundation",
       "tenantAdminName": "Nama pentadbir",
       "tenantAdminEmail": "E-mel pentadbir",
       "createTenant": "Cipta organisasi",
-      "orgHeading": "Pentadbiran organisasi",
-      "orgHeadingNamed": "Pentadbiran {org}",
-      "orgBadge": "Organisasi",
-      "inviteStaff": "Jemput penilai & pentadbir",
-      "inviteStaffSub": "Tambah kakitangan program ke organisasi anda",
-      "billing": "Penggunaan & Pengebilan",
-      "billingSub": "Kos dan penggunaan untuk program anda",
-      "comingSoon": "Akan datang",
       "viewOnlyNote": "Anda mempunyai akses lihat sahaja kepada kakitangan organisasi anda. Minta pentadbir organisasi untuk menjemput atau menukar kakitangan.",
       "lastOrgAdmin": "Ini satu-satunya pentadbir organisasi — lantik seorang lagi sebelum menarik balik yang ini.",
       "staffRole": {
@@ -5121,17 +5107,8 @@
         "qc": "Kawalan mutu",
         "finance": "Kewangan"
       },
-      "payments": "Pembayaran",
-      "paymentsSub": "Cipta dan hantar larian pembayaran Vircle bulanan",
-      "contracts": "Kontrak",
-      "contractsSub": "Karang dan lancarkan perjanjian biasiswa",
       "sources": "Sumber",
-      "sourcesSub": "Organisasi rujukan & senarai sumber borang permohonan",
-      "sponsors": "Penaja",
-      "sponsorsSub": "Semak dan luluskan akaun penaja",
-      "requests": "Permintaan",
-      "requestsSub": "Laporkan pepijat atau minta ciri baharu",
-      "pendingApproval": "{count} menunggu kelulusan"
+      "sourcesSub": "Organisasi rujukan & senarai sumber borang permohonan"
     },
     "billing": {
       "title": "Penggunaan & Pengebilan",
@@ -6728,6 +6705,11 @@
       "standardHeading": "Teks piawai platform"
     },
     "delete": "Padam",
-    "deleteConfirm": "Padam {name}? Ini tidak boleh dibatalkan."
+    "deleteStaffBody": "Log masuk dan sejarah jemputan mereka akan dipadam. Ini tidak boleh dibatalkan.",
+    "hasWorkRevoke": "Ada kerja yang direkodkan — tarik balik akses sahaja",
+    "changeRole": "Tukar peranan",
+    "roleChangeConfirm": "Tukar {name} kepada {role}?",
+    "financeCheckOn": "Larian pembayaran selepas itu memerlukan semakan kewangan.",
+    "financeCheckOff": "Mereka satu-satunya pentadbir kewangan, jadi larian pembayaran tidak lagi melalui semakan kewangan."
   }
 }

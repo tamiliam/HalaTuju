@@ -422,6 +422,10 @@ class TestFenceCoverageCompleteness(TestCase):
         # fencing through the invitee would silently drop that whole kind.
         'AdminInvitationsView': 'invitation-org-fenced',
         'AdminInvitationCancelView': 'invitation-org-fenced',   # TD-214: 404 on another org's
+        # People → Change role (staff lifecycle, 2026-10-09). Fenced through
+        # `_staff_target_manageable`, the courses staff fence Revoke / Resend / Delete use: an
+        # org_admin reaches only their OWN organisation's non-org_admin staff; anything else 404s.
+        'AdminStaffRoleView': 'staff-target-fenced (_staff_target_manageable)+org_admin-or-super',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

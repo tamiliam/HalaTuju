@@ -159,6 +159,7 @@ from .views_admin import (
     AdminReviewerProgrammeView,
     AdminReviewerSystemEmailsView,
     AdminInvitationCancelView, AdminInvitationsView,
+    AdminStaffRoleView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -363,6 +364,9 @@ urlpatterns = [
     # Organisation -> Invitations: who has been asked to join, in four kinds.
     path('admin/invitations/', AdminInvitationsView.as_view()),
     path('admin/invitations/<int:pk>/cancel/', AdminInvitationCancelView.as_view()),  # TD-214
+    # People → Change role (staff lifecycle, 2026-10-09). Beside the courses app's own
+    # `admin/admins/<id>/revoke|resend/`; no pattern there can match `role/`.
+    path('admin/admins/<int:admin_id>/role/', AdminStaffRoleView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

@@ -349,3 +349,104 @@ describe('what the reviewers table gained (2026-09-09)', () => {
     expect(ui().queryByText('admin.revoke')).toBeNull()
   })
 })
+
+describe('the staff lifecycle (2026-10-09)', () => {
+  const ASHA = { id: 21, name: 'Asha Devi', email: 'asha@example.org', role: 'admin',
+    is_active: true, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z',
+    manageable: true, deletable: true, work: {} } as unknown as api.AdminItem
+
+  const openAdmins = async (admins: api.AdminItem[]) => {
+    mockApi.getAdmins.mockResolvedValue({ admins })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText(admins[0].name).length).toBeGreaterThan(0))
+  }
+  const adminsTable = () => within(document.querySelector('[data-testid="table-scroller"]') as HTMLElement)
+
+  afterEach(() => jest.restoreAllMocks())
+
+  it('⚠ Delete asks for the person\'s email to be TYPED before anything happens', async () => {
+    mockApi.deleteAdmin.mockResolvedValue({ message: 'Asha Devi deleted.' })
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.delete'))
+    expect(screen.getByText('admin.deleteStaffBody')).toBeTruthy()      // says what goes
+    const go = screen.getByTestId('typed-confirm-go') as HTMLButtonElement
+    expect(go.disabled).toBe(true)
+    fireEvent.click(go)
+    expect(mockApi.deleteAdmin).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('admin.programmes.deleteConfirmLabel'),
+      { target: { value: 'asha@example.org' } })
+    fireEvent.click(go)
+    await waitFor(() => expect(mockApi.deleteAdmin).toHaveBeenCalledWith(21, { token: 'tok' }))
+  })
+
+  it('says so, as a warning, when the row went but the sign-in could not be removed', async () => {
+    mockApi.deleteAdmin.mockResolvedValue(
+      { message: 'Asha Devi deleted, but their sign-in could not be removed — tell support.',
+        login: 'failed' })
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.delete'))
+    fireEvent.change(screen.getByLabelText('admin.programmes.deleteConfirmLabel'),
+      { target: { value: 'asha@example.org' } })
+    fireEvent.click(screen.getByTestId('typed-confirm-go'))
+    const banner = await screen.findByText(
+      'Asha Devi deleted, but their sign-in could not be removed — tell support.')
+    expect(banner.className).toContain('bg-caution-50')
+  })
+
+  it('⚠ Revoke on the Admins tab now asks first', async () => {
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(false)
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.revoke'))
+    expect(confirm).toHaveBeenCalledWith('admin.reviewers.revokeConfirm')
+    expect(mockApi.revokeAdmin).not.toHaveBeenCalled()
+  })
+
+  it('Change role offers the pair partner and names the finance-check consequence', async () => {
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.changeAdminRole.mockResolvedValue(
+      { id: 21, from: 'admin', to: 'finance', dry_run: true, consequence: 'finance_check_on' })
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.changeRole'))
+    await waitFor(() => expect(mockApi.changeAdminRole).toHaveBeenCalledTimes(2))
+    expect(mockApi.changeAdminRole).toHaveBeenNthCalledWith(1, 21, 'finance', true, { token: 'tok' })
+    expect(mockApi.changeAdminRole).toHaveBeenNthCalledWith(2, 21, 'finance', false, { token: 'tok' })
+    expect(confirm).toHaveBeenCalledWith('admin.roleChangeConfirm admin.financeCheckOn')
+  })
+
+  it('a NO at the question changes nothing', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(false)
+    mockApi.changeAdminRole.mockResolvedValue(
+      { id: 21, from: 'admin', to: 'finance', dry_run: true, consequence: null })
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.changeRole'))
+    await waitFor(() => expect(mockApi.changeAdminRole).toHaveBeenCalledTimes(1))
+    expect(mockApi.changeAdminRole).toHaveBeenCalledWith(21, 'finance', true, { token: 'tok' })
+  })
+
+  it('shows the server\'s refusal, e.g. open cases', async () => {
+    mockApi.changeAdminRole.mockRejectedValue(new Error('Asha Devi has 2 open case(s) assigned.'))
+    await openAdmins([ASHA])
+    fireEvent.click(adminsTable().getByText('admin.changeRole'))
+    await waitFor(() =>
+      expect(screen.getByText('Asha Devi has 2 open case(s) assigned.')).toBeTruthy())
+  })
+
+  it('a reviewer row switches to QC and the reviewers list is re-read', async () => {
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+    mockApi.changeAdminRole.mockResolvedValue(
+      { id: 5, from: 'reviewer', to: 'qc', dry_run: false, consequence: null })
+    await loaded()
+    const kavithaRow = ui().getByText('Kavitha Raman').closest('tr') as HTMLElement
+    fireEvent.click(within(kavithaRow).getByText('admin.changeRole'))
+    await waitFor(() => expect(mockApi.changeAdminRole).toHaveBeenCalledWith(
+      5, 'qc', false, { token: 'tok' }))
+    await waitFor(() => expect(mockApi.listReviewers).toHaveBeenCalledTimes(2))
+  })
+
+  it('offers finance no Change role', async () => {
+    viewerRole = { role: 'finance' }
+    await loaded()
+    expect(ui().queryByText('admin.changeRole')).toBeNull()
+  })
+})

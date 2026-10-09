@@ -29,10 +29,20 @@ export const roleOrgAdmin: ManualChapter = {
             <li><strong>View-only admin</strong> — sees everything in your organisation, read-only.</li>
             <li><strong>QC</strong> — the second pair of eyes (and an overflow reviewer).</li>
           </ul>
-          <span className="mt-2 block">You can <strong>Resend</strong> a sign-in invite or <strong>Revoke</strong>
-          (and later restore) access from the staff table. One safeguard: you can&rsquo;t revoke the
-          <strong> last</strong> organisation admin — the Revoke option simply isn&rsquo;t offered on the sole
-          admin, so your organisation is never left without one.</span></>
+          <span className="mt-2 block">On <strong>People</strong> you can <strong>Resend</strong> a sign-in
+          invite or <strong>Revoke</strong> (and later restore) access — each asks you first. One safeguard: you
+          can&rsquo;t revoke the <strong>last</strong> organisation admin — the Revoke option simply isn&rsquo;t
+          offered on the sole admin, so your organisation is never left without one.</span>
+          <span className="mt-2 block"><strong>Change role</strong> switches somebody between
+          <strong> Admin</strong> and <strong>Finance</strong>, or between <strong>Reviewer</strong> and
+          <strong> QC</strong> — nothing else. If the switch turns your payment run&rsquo;s finance check on or
+          off, the question says so before you answer. An admin who still has cases assigned, or a payment run
+          they made or signed that isn&rsquo;t finished, can&rsquo;t become Finance until that is handed on.</span>
+          <span className="mt-2 block"><strong>Delete</strong> is offered only for an admin who has done no work
+          yet; you type their email address to confirm, and it removes their sign-in and their invitation
+          history. Anybody with work on record is revoked instead, and the row says so. Cancelling an
+          invitation on <strong>Invitations</strong> stops its emailed password working, and you can invite the
+          same address again afterwards — they get a fresh password.</span></>
       ),
       img: '/manual/org-admin-team.png',
       alt: 'The Invitations page with invite and revoke controls (placeholder)',
