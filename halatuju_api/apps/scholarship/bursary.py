@@ -662,14 +662,14 @@ def _applicant_name(application):
 def _resolve_witness_org(application):
     """Witness-organisation resolution (go-live transition, 2026-07-19): the admin OVERRIDE on the
     application (``witness_org``) wins, else the student's referring organisation
-    (``profile.referred_by_org``), else None — straight to the Foundation countersignature, no
+    (``referral_links.referring_org``: her source, else her referral partner), else None — straight to the Foundation countersignature, no
     witness step. Lets an org_admin assign a witness to a SOURCELESS student without inventing a
     referral, and lets one be overridden when the private arrangement differs from the referrer."""
     override = getattr(application, 'witness_org', None)
     if override is not None:
         return override
-    profile = getattr(application, 'profile', None)
-    return getattr(profile, 'referred_by_org', None)
+    from apps.courses.referral_links import referring_org      # two columns, 2026-10-09
+    return referring_org(getattr(application, 'profile', None))
 
 
 def notify_after_guarantor_signed(application):

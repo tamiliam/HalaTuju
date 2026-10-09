@@ -13940,3 +13940,76 @@ any active organisation code — left as they were and reported, not changed.
 
 **Revisit if:** the registry gains per-language names, a gift wants a source that is not an
 organisation, or the course-selector profile writes need the same refusal.
+
+## 2026-10-09 — The student record has two independent columns: source and referral partner
+
+**Decision (owner, 2026-10-09; sources and referral partners Sprint A):** three categories, kept
+apart — **organisations** (tenants, e.g. BrightPath) > **sources** (belong to the organisation that
+added them), and **referral partners** (platform level, owned by no organisation; today only CUMIG:
+two `partner`-role logins on the course-selector side, the `?ref=cumig` link, and the students it sees
+through `StudentProfile.referred_by_org`). *"Referral partners and sources and orgs are different.
+Referral partners are a category of their own. Orgs > sources."* The `cumig` row is both CUMIG
+(source) and CUMIG (referral partner).
+- **The student record has TWO INDEPENDENT columns, SOURCE and REFERRAL PARTNER.** Either can be
+  empty, both can be filled, they can name the same organisation or different ones, and **neither
+  ever writes the other.** SOURCE (`StudentProfile.source`, new) = what the student picked on the
+  bursary "Who referred you?" form, empty for a fixed choice (halatuju / social / other). REFERRAL
+  PARTNER (`StudentProfile.referred_by_org`, kept) = set by a `?ref=` link, first touch, and only to a
+  referral-partner row (`PartnerOrganisation.is_referral_partner`, new; marked from the `partner`
+  logins). `ProfileView.put` sets neither (it ignores the code).
+- Each application already keeps the answer given at submit in
+  `intake_snapshot['profile']['referral_source']`; that is the per-application answer Sprint C moves
+  the counts, partner emails and the Applications filter onto.
+- **Backfill rulings:** SOURCE = the source named in each profile's MOST RECENT application's
+  snapshot when that code is a source row, else empty; no application → empty. REFERRAL PARTNER: keep
+  every link to CUMIG — **including the 13 bursary applicants who picked CUMIG on the form: owner
+  ruled "Filled", i.e. both columns = CUMIG for them**; clear links to a row that is not a referral
+  partner (a source-only row or a tenant) — the bursary form wrote those, and their information now
+  lives in the source column. Every cleared pair is copied to a dated backup table first.
+- **The owner made the "Filled" ruling with its consequence stated:** CUMIG's two `partner` logins
+  KEEP seeing those 13 bursary applicants' course-selector details (NRIC, phone, address, household
+  income), as they do today. The fix stops NEW form picks reaching the list; it does not withdraw
+  the 13.
+- **A new referral partner is marked BY HAND** (`is_referral_partner`, a reviewed SQL update) until
+  Sprint B adds a screen. Inviting a `partner` login onto a row that is not marked is not guarded
+  yet — Sprint B decides: refuse, or mark.
+
+**Why:** the bursary submit linked `referred_by_org` whenever a student picked a source, so picking
+CUMIG (source) put a bursary applicant on CUMIG (referral partner)'s course-selector list, where the
+two partner logins see NRIC, phone, address and household income — a disclosure to an audience
+attached for a different product (decisions.md 2026-07-26, "a `partner`-role login is NOT a bursary
+contact"). And the sign-in sync re-wrote the chip and the link from localStorage on every sign-in, so
+the `?ref` and the bursary answer overwrote each other.
+
+**Lead rulings in the build (Sprint A):**
+- The marker is a boolean `is_referral_partner`, not a `kind`: one row is a source AND a referral
+  partner, and tenancy is already derived (`tenants()`). `db_default=False`, so the image already
+  serving can still insert a source. `referral_links.referral_partners()` also never returns a
+  tenant, a fixed form code or the house organisation's code, even if one were marked (review fix);
+  a `?ref=` code must be ASCII `[a-z0-9_-]{1,50}` after lower-casing, or it links nothing.
+- `ProfileView.put` IGNORES a client `referral_source` (dropped from `ProfileUpdateSerializer`) rather
+  than refusing it: no web caller sends it, and a 400 would cost a stale bundle its whole save.
+- The legacy chip `referral_source` keeps two writers until Sprint C: the bursary submit, and the
+  `?ref` sync — first touch and only while the student has no application — so a `?ref` can never
+  overwrite the bursary answer or move what the bursary counts and partner emails see, and the
+  course-selector readers still get the first `?ref` code. The web is unchanged: the server makes
+  the per-sign-in resend harmless, as it must for bundles already in browsers.
+- The witness request, the witness authority check and the cockpit's `referred_by_org` read
+  `referral_links.referring_org` = source, else referral partner — the organisation the one column
+  named before, for every student whose bursary answer named a source. Source-only, super-only
+  witnessing is Sprint C (owner).
+
+**Alternatives considered:** (a) keep one column and stop only the bursary write — loses who the
+student said referred her; (b) a `kind` enum — cannot say "source and referral partner" for `cumig`;
+(c) clear the 13 CUMIG pickers' link too — the owner ruled "Filled"; (d) stop the `?ref` sync writing
+the chip at all — the course-selector partner dashboard's Source column and the apply pre-fill would
+change before Sprint C moves them.
+
+**Trade-offs:** until Sprint C the chip is still a shared field for course-selector-only students;
+a student linked to a source or a tenant by an old course-selector write loses that link (backed up),
+and the cockpit offers her the witness dropdown. Stale links (an earlier answer, a later fixed choice)
+lose their witness organisation — signing is off, so nothing is sent.
+
+**Revisit if:** Sprints B–D (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`), a second
+referral partner is added (mark it by hand until Sprint B's screen exists), or a source wants a `?ref`
+link of its own.

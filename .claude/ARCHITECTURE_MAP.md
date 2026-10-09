@@ -126,7 +126,7 @@ apps/courses/
 | `StudentProfile` | `student_profiles` | User eligibility data | SPM grades, gender, nationality, exam_type, muet_band, STPM fields, income, siblings |
 | `SavedCourse` | `saved_courses` | User bookmarks | course, student, interest_status |
 | `AdmissionOutcome` | `admission_outcomes` | Track application results | course, student, status (applied/offered/accepted/rejected/withdrawn) |
-| `PartnerOrganisation` | `partner_organisations` | Dual role: partner-referral org AND (since platform Sprint 1, 2026-07-15) the tenant Organisation record | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags. NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
+| `PartnerOrganisation` | `partner_organisations` | THREE categories in one table (owner, 2026-10-09; TD-381): tenant Organisation (`tenants()`), SOURCE (a gift's "Who referred you?" choice), and platform REFERRAL PARTNER (`is_referral_partner`, today `cumig` alone — also a source) | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags, `is_referral_partner` (`db_default` false). NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
 | `MascoOccupation` | `masco_occupations` | Career occupation codes (274 entries) | code, title_en, title_bm |
 | `StpmCourse` | `stpm_courses` | STPM degree programmes (1,113 rows) | name, university, stream, merit_score, field, category |
 | `StpmRequirement` | `stpm_requirements` | STPM eligibility rules | min_cgpa, min_muet_band, stpm_min_subjects, stpm_min_grade, subject requirements |
@@ -346,15 +346,27 @@ from `lib/referralSources.ts`) lists them, then the three FIXED choices `halatuj
 — but ONLY when the list is known (a `sources` list, for a named gift); otherwise it is kept and
 shown by its code. The submit REFUSES any other code (400 `referral_source_not_offered`,
 `gift_sources.is_offered`, nothing written) and the form re-reads the list and asks again; on the
-apply path `profile_sync` links `referred_by_org` only through `active_sources()` (never a tenant,
+apply path `profile_sync` fills the SOURCE column only through `active_sources()` (never a tenant,
 never for a fixed choice). The fixed codes and the house org's are RESERVED on Sources
 (`code_reserved`). `REFERRING_ORG_OPTIONS` is deleted; the legacy `pushparani` / `govind` were moved
 to `other` (courses 0077). Admin labels come from the registry's names (`referralLabel`, and
 `referralAcronym(code, name)` — a new source reads as its name or its code, never "Other"), never a
-per-source message key. ⚠ The course-selector `ProfileView` / `ProfileSyncView`
-(`apps/courses/views.py`) still link any active `PartnerOrganisation` code, tenants included, and a
-stale link is never cleared at submit (TD-380). The Sources registry is shared across tenants
-(TD-381).
+per-source message key. The Sources registry is shared across tenants (TD-381).
+
+⚠ **THE STUDENT RECORD HAS TWO INDEPENDENT REFERRAL COLUMNS** (sources and referral partners Sprint A,
+2026-10-09; rules in `apps/courses/referral_links.py`; roadmap
+`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`). `StudentProfile.source` = what the BURSARY
+form named — written ONLY by the submit (`profile_sync`), NULL for a fixed choice.
+`StudentProfile.referred_by_org` = the platform REFERRAL PARTNER whose `?ref=` link brought her —
+written ONLY by `ProfileSyncView` → `referral_links.apply_ref_code`: an ACTIVE `is_referral_partner`
+row, FIRST TOUCH. Neither writer touches the other; `ProfileView.put` ignores `referral_source`. The
+`partner`-role logins' course-selector list (NRIC, phone, address, income) is scoped by
+`referred_by_org`, so a bursary answer can never put a student there. The legacy chip
+`referral_source` is still written by the submit and, first touch and only while she has no
+application, by the `?ref` sync; its readers (partner emails, Sources counts, the Applications
+filter, the apply pre-fill, the partner dashboard) move to the per-application answer in Sprint C.
+The witness request, the witness authority check and the cockpit's `referred_by_org` read
+`referral_links.referring_org` (source, else referral partner) until Sprint C makes it source-only.
 
 ⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
 grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /

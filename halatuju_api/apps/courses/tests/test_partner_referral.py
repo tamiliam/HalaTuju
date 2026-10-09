@@ -45,61 +45,44 @@ class StudentProfileReferralTest(TestCase):
 
 
 class ReferralResolutionTest(TestCase):
-    """Test that referral_source resolves to partner org."""
+    """A `?ref=` code resolves to a REFERRAL PARTNER only (two columns, decisions.md 2026-10-09).
+
+    Rewritten from the old rule — "link ANY active row with that code" — which the
+    sources-and-referrals Sprint A replaced: a source or any other organisation row is no longer
+    linked by a `?ref=` code, and the bursary answer lives in `StudentProfile.source`. The full
+    matrix is `apps/scholarship/tests/test_two_referral_columns.py`."""
 
     def setUp(self):
-        self.partner = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        self.partner = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG', is_referral_partner=True)
+
+    def _ref(self, uid, code):
+        from apps.courses.referral_links import apply_ref_code
+        profile = StudentProfile.objects.create(supabase_user_id=uid)
+        apply_ref_code(profile, code)
+        profile.refresh_from_db()
+        return profile
 
     def test_referral_resolves_to_partner(self):
-        """When referral_source matches a partner code, referred_by_org is set."""
-        profile = StudentProfile.objects.create(
-            supabase_user_id='resolve-1',
-            referral_source='cumig',
-        )
-        # Simulate what the view should do
-        from apps.courses.models import PartnerOrganisation as PO
-        try:
-            org = PO.objects.get(code=profile.referral_source, is_active=True)
-            profile.referred_by_org = org
-            profile.save(update_fields=['referred_by_org'])
-        except PO.DoesNotExist:
-            pass
-        profile.refresh_from_db()
+        """A referral partner's code sets referred_by_org (and never the source)."""
+        profile = self._ref('resolve-1', 'cumig')
         self.assertEqual(profile.referred_by_org, self.partner)
+        self.assertIsNone(profile.source)
 
     def test_referral_generic_no_partner(self):
-        """When referral_source doesn't match any partner, referred_by_org stays null."""
-        profile = StudentProfile.objects.create(
-            supabase_user_id='resolve-2',
-            referral_source='whatsapp',
-        )
-        from apps.courses.models import PartnerOrganisation as PO
-        try:
-            org = PO.objects.get(code=profile.referral_source, is_active=True)
-            profile.referred_by_org = org
-            profile.save(update_fields=['referred_by_org'])
-        except PO.DoesNotExist:
-            pass
-        profile.refresh_from_db()
-        self.assertIsNone(profile.referred_by_org)
+        """A code with no row leaves referred_by_org null."""
+        self.assertIsNone(self._ref('resolve-2', 'whatsapp').referred_by_org)
+
+    def test_an_organisation_that_is_not_a_referral_partner_is_not_linked(self):
+        """The old rule linked any active row; a source is no longer linked by a `?ref=` code."""
+        PartnerOrganisation.objects.create(code='smc', name='SMC')
+        self.assertIsNone(self._ref('resolve-4', 'smc').referred_by_org)
 
     def test_referral_inactive_partner_ignored(self):
         """Inactive partners are not resolved."""
         self.partner.is_active = False
         self.partner.save()
-        profile = StudentProfile.objects.create(
-            supabase_user_id='resolve-3',
-            referral_source='cumig',
-        )
-        from apps.courses.models import PartnerOrganisation as PO
-        try:
-            org = PO.objects.get(code=profile.referral_source, is_active=True)
-            profile.referred_by_org = org
-            profile.save(update_fields=['referred_by_org'])
-        except PO.DoesNotExist:
-            pass
-        profile.refresh_from_db()
-        self.assertIsNone(profile.referred_by_org)
+        self.assertIsNone(self._ref('resolve-3', 'cumig').referred_by_org)
 
 
 class PartnerAdminModelTest(TestCase):

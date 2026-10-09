@@ -934,8 +934,14 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
   organisation's code are reserved (Sources POST 400 `code_reserved`). `PartnerOrganisation.programme` is
   DEPRECATED and read by nothing: **TD-379 drops it in a later contract migration (courses, migrate-first)
   — trigger: S1 + S2 live (met 2026-10-09) AND a rollback to a pre-S1 image no longer wanted (that image
-  reads the column); suggest after a week with no source incident, ≈2026-10-16.** TD-380 / TD-381 (loose
-  `referred_by_org` links outside the apply path; Sources shared across tenants) are low, not queued.
+  reads the column); suggest after a week with no source incident, ≈2026-10-16.** TD-380 is mostly
+  closed by sources-and-referrals Sprint A once live (the witness half waits for Sprint C); TD-381
+  (Sources shared across tenants) is Sprints B–C (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
+- **Two referral columns (Sprint A, BUILT, NOT LIVE):** `StudentProfile.source` is written ONLY by the
+  bursary submit; `referred_by_org` ONLY by a `?ref=` link to an `is_referral_partner` row, first touch
+  (`apps/courses/referral_links.py`). Neither writes the other; never let a bursary answer reach the
+  `partner` logins' list. ⚠ **`courses/0078` is MIGRATE-FIRST and pending** —
+  `docs/scholarship/two-columns-cutover-sql.md` (its pre-check 9 must read 0) before the push.
 - **TD-347 when the owner says go** (ruled B: when the parent call is recorded, re-arm a FRESH full
   accept window; the email names the new deadline). ⛔ It must ship before anyone sets
   `BURSARY_AGREEMENT_ENABLED`; before that flip, prompt every awarded student to check the parent phone on

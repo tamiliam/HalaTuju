@@ -86,8 +86,8 @@ def sync_profile_fields(profile, data):
     profile (commit-on-submit, S9). Only keys that are present and non-None
     overwrite (the form may legitimately omit a field that is already on the
     profile). Parent/guardian details land in the ``guardians`` JSON list, and
-    the referring-organisation code resolves to the ``referred_by_org`` FK
-    (mirrors ProfileView). NRIC is never written here — claim path only.
+    the referring-organisation code resolves to the ``source`` FK — never to
+    ``referred_by_org`` (two columns, 2026-10-09). NRIC is never written here — claim path only.
     Returns the fields actually changed.
     """
     if profile is None:
@@ -111,25 +111,26 @@ def sync_profile_fields(profile, data):
         profile.contact_phone_verified = False
         updated.append('contact_phone_verified')
 
-    if updated:
-        profile.save(update_fields=list(dict.fromkeys(updated)) + ['updated_at'])
-
-    # Resolve the referring-organisation code to a PartnerOrganisation FK. A
-    # generic source (whatsapp/google/other) has no row and leaves the FK unset.
-    # ⚠ ONLY AN OFFERED SOURCE LINKS (per-gift sources S2, 2026-10-08): the apply view has already
-    # refused a code its gift does not offer (`gift_sources.is_offered`), and the lookup goes through
-    # `active_sources()` — switched on, not suspended, NEVER a tenant — so this can never attribute
-    # a student to the organisation that runs the gift.
-    # A FIXED choice (halatuju / social / other) is a chip, never an organisation: no lookup at all,
-    # so a row that somehow carries a reserved code can never collect those students (review fix).
+    # The SOURCE column (two columns, 2026-10-09): the bursary answer names an offered source, or
+    # nothing. ⚠ IT NEVER TOUCHES `referred_by_org` — that is the REFERRAL PARTNER's column, written
+    # only by a `?ref=` link (`apps.courses.referral_links`); writing it here put every student who
+    # picked CUMIG on CUMIG's course-selector list. A key the write does not carry leaves it alone.
+    # ⚠ ONLY AN OFFERED SOURCE (per-gift sources S2): the apply view has already refused a code its
+    # gift does not offer (`gift_sources.is_offered`), and the lookup goes through `active_sources()`
+    # — switched on, not suspended, NEVER a tenant. A FIXED choice (halatuju / social / other) is a
+    # chip, never an organisation: no lookup at all, so a row carrying a reserved code collects no one.
     from .. import gift_sources
     referral = data.get('referral_source')
-    if referral and referral not in gift_sources.FIXED_CODES:
-        org = gift_sources.active_sources().filter(code=referral).first()
-        if org and profile.referred_by_org_id != org.pk:
-            profile.referred_by_org = org
-            profile.save(update_fields=['referred_by_org'])
-            updated.append('referred_by_org')
+    if referral is not None:
+        source = None
+        if referral and referral not in gift_sources.FIXED_CODES:
+            source = gift_sources.active_sources().filter(code=referral).first()
+        if profile.source_id != getattr(source, 'pk', None):
+            profile.source = source
+            updated.append('source')
+
+    if updated:
+        profile.save(update_fields=list(dict.fromkeys(updated)) + ['updated_at'])
 
     return updated
 

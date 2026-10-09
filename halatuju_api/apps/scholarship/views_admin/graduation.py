@@ -132,7 +132,10 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
         # (the org that referred the student attests), which is orthogonal to the
         # ownership fence. This is the ONE place `admin.org`/`referred_by_org` is
         # intentionally used for authorisation. A non-blocking record only.
-        org = getattr(profile, 'referred_by_org', None) if profile else None
+        # Two columns (2026-10-09): her source, else her referral partner — the organisation the one
+        # `referred_by_org` column named before; Sprint C makes it the source only, super only.
+        from apps.courses.referral_links import referring_org
+        org = referring_org(profile)
         is_super = bool(admin.is_super_admin or self.has_role(admin, 'super'))
         is_referring_partner = bool(
             org is not None and admin.org_id is not None and admin.org_id == org.id)

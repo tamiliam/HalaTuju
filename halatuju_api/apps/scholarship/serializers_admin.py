@@ -640,7 +640,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
         return {'id': org.id, 'code': org.code, 'name': org.name} if org else None
 
     def get_referred_by_org(self, obj):
-        return self._org_dict(getattr(getattr(obj, 'profile', None), 'referred_by_org', None))
+        # Same key and shape; since the two columns (2026-10-09) it is her source, else her
+        # referral partner — the organisation this one column named before (`referring_org`).
+        from apps.courses.referral_links import referring_org
+        return self._org_dict(referring_org(getattr(obj, 'profile', None)))
 
     def get_witness_org(self, obj):
         return self._org_dict(obj.witness_org)

@@ -1186,16 +1186,9 @@ class ProfileView(APIView):
             profile.contact_phone_verified = False
             profile.save(update_fields=['contact_phone_verified'])
 
-        # Resolve referral source to partner organisation
-        referral = serializer.validated_data.get('referral_source')
-        if referral:
-            try:
-                from .models import PartnerOrganisation
-                org = PartnerOrganisation.objects.get(code=referral, is_active=True)
-                profile.referred_by_org = org
-                profile.save(update_fields=['referred_by_org'])
-            except PartnerOrganisation.DoesNotExist:
-                pass  # Generic source (whatsapp, google) — no partner FK
+        # A client-supplied `referral_source` is IGNORED here (two columns, 2026-10-09): it is not on
+        # the serializer, so it sets neither the chip, `source` nor `referred_by_org`. No web caller
+        # sends it, and a 400 would cost a stale bundle its whole save.
 
         # The family roster + pathway are two-way linked to an OPEN application: a /profile
         # edit flows into the student's latest undecided application so the two stay
@@ -1264,16 +1257,10 @@ class ProfileSyncView(APIView):
 
         profile = serializer.save()
 
-        # Resolve referral source to partner organisation
-        referral = serializer.validated_data.get('referral_source')
-        if referral:
-            try:
-                from .models import PartnerOrganisation
-                org = PartnerOrganisation.objects.get(code=referral, is_active=True)
-                profile.referred_by_org = org
-                profile.save(update_fields=['referred_by_org'])
-            except PartnerOrganisation.DoesNotExist:
-                pass  # Generic source (whatsapp, google) — no partner FK
+        # A `?ref=` code the browser resends on EVERY sign-in: the REFERRAL PARTNER column only,
+        # first touch, partner rows only — never the bursary's source (two columns, 2026-10-09).
+        from . import referral_links
+        referral_links.apply_ref_code(profile, request.data.get('referral_source'))
 
         return Response({
             'message': 'Profile synced',

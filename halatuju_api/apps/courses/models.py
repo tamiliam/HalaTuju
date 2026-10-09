@@ -405,7 +405,7 @@ class PartnerOrganisationQuerySet(models.QuerySet):
 
         ⚠ THIS EXISTS BECAUSE THE PLAIN QUERYSET IS A TRAP. This table is dual-role (see the
         model docstring): it holds tenant organisations AND referral organisations — schools and
-        NGOs that send us students — with **no flag distinguishing them**. Production has ten
+        NGOs that send us students — with **no flag telling a tenant apart**. Production has ten
         rows and exactly one tenant. So `PartnerOrganisation.objects.filter(is_active=True)`
         reads like "the organisations" and returns nine things that are not.
 
@@ -434,7 +434,7 @@ class PartnerOrganisationQuerySet(models.QuerySet):
 
 
 class PartnerOrganisation(models.Model):
-    """Referral partner AND the platform's tenant Organisation record (dual role).
+    """Tenant organisation, source AND platform referral partner — three categories (TD-381).
 
     - Referral registry (original role): `StudentProfile.referred_by_org` /
       `PartnerAdmin.org` point here to mean "the organisation that REFERRED a
@@ -462,6 +462,9 @@ class PartnerOrganisation(models.Model):
     # orgs are seeded True by migration. Referral attribution still uses `referred_by_org`
     # regardless of this flag — this only governs apply-form visibility.
     show_in_apply = models.BooleanField(default=False)
+    # A PLATFORM REFERRAL PARTNER (2026-10-09; today `cumig` alone) — the only rows a `?ref=` link
+    # writes into `StudentProfile.referred_by_org` (`referral_links`). A row may also be a source.
+    is_referral_partner = models.BooleanField(default=False, db_default=False, help_text='A PLATFORM referral partner: its ?ref= link fills a student\'s referred_by_org (owned by no organisation).')
     # ⛔ DEPRECATED (2026-10-08) — READ AND WRITTEN BY NOTHING. Each gift now chooses its own
     # sources (`scholarship.ProgrammeReferralSource`, set in the gift's Configuration); migration
     # 0172 seeded those links from this column, and the Sources API no longer serves or accepts it.
@@ -1024,10 +1027,13 @@ class StudentProfile(models.Model):
         max_length=50, blank=True, null=True,
         help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',
     )
+    # TWO INDEPENDENT COLUMNS (2026-10-09, `apps/courses/referral_links.py`): `referred_by_org` is
+    # the REFERRAL PARTNER (a `?ref=` link, first touch); `source` is what the BURSARY form named.
     referred_by_org = models.ForeignKey(
         'PartnerOrganisation', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='referred_students',
     )
+    source = models.ForeignKey('PartnerOrganisation', on_delete=models.SET_NULL, null=True, blank=True, related_name='sourced_students', help_text='The SOURCE the student named on the bursary form (NULL for a fixed choice). Independent of referred_by_org.')
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

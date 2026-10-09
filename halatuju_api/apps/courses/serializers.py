@@ -377,7 +377,9 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'household_income', 'household_size',
             'exam_type', 'results_exam_type',
             'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
-            'spm_prereq_grades', 'stream_subjects', 'elective_subjects', 'referral_source',
+            # `referral_source` is NOT here (two columns, 2026-10-09): PUT ignores it, and the sync
+            # hands it to `referral_links.apply_ref_code` (first touch) — never a plain overwrite.
+            'spm_prereq_grades', 'stream_subjects', 'elective_subjects',
             # TD-069: the STPM path's SPM elective picks + stream, so its form rebuilds on login.
             'spm_elective_subjects', 'spm_stream',
             'contact_email', 'contact_phone', 'whatsapp_opt_in',

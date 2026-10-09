@@ -115,11 +115,13 @@ class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
         }, format='json')
 
     def test_an_offered_source_is_accepted_and_links_the_org(self):
+        # Since the two columns (decisions.md 2026-10-09) the link is the SOURCE column; the
+        # referral partner's `referred_by_org` is never written by the bursary form.
         resp = self._apply('smc')
         self.assertEqual(resp.status_code, 201, resp.content)
         self.student.refresh_from_db()
-        self.assertEqual((self.student.referral_source, self.student.referred_by_org_id),
-                         ('smc', self.smc.id))
+        self.assertEqual((self.student.referral_source, self.student.source_id,
+                          self.student.referred_by_org_id), ('smc', self.smc.id, None))
 
     def test_blank_and_the_three_fixed_choices_are_always_accepted(self):
         for code in ('', 'halatuju', 'social', 'other'):
@@ -139,6 +141,7 @@ class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
                 self.assertFalse(ScholarshipApplication.objects.filter(profile=self.student).exists())
                 self.student.refresh_from_db()
                 self.assertNotEqual(self.student.referral_source, code)
+                self.assertIsNone(self.student.source_id)
                 self.assertIsNone(self.student.referred_by_org_id)
 
     def test_a_tenant_code_is_never_linked(self):
@@ -149,13 +152,15 @@ class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
         ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.org)
         self.assertEqual(self._apply('gp-org').status_code, 400)
         self.student.refresh_from_db()
+        self.assertIsNone(self.student.source_id)
         self.assertIsNone(self.student.referred_by_org_id)
 
 
 class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
     """`sync_profile_fields` on its own — the second line behind the view's refusal. A bite-check
     found the submit tests could not see this half: the view refuses a tenant code before the sync
-    runs. So the sync is asked directly."""
+    runs. So the sync is asked directly. Since the two columns (decisions.md 2026-10-09) the link
+    it makes is the SOURCE column; `referred_by_org` is asserted untouched throughout."""
 
     def test_only_an_active_non_tenant_source_is_linked(self):
         from apps.scholarship.services import sync_profile_fields
@@ -166,11 +171,12 @@ class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
                 student = make_student()
                 sync_profile_fields(student, {'referral_source': code})
                 student.refresh_from_db()
+                self.assertIsNone(student.source_id)
                 self.assertIsNone(student.referred_by_org_id)
         student = make_student()
         sync_profile_fields(student, {'referral_source': 'smc'})
         student.refresh_from_db()
-        self.assertEqual(student.referred_by_org_id, self.smc.id)
+        self.assertEqual((student.source_id, student.referred_by_org_id), (self.smc.id, None))
 
     def test_a_fixed_choice_never_links_even_if_a_row_carries_its_code(self):
         """Review fix: the Sources POST now refuses a reserved code, but a row from before (or
@@ -181,6 +187,7 @@ class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
         student = make_student()
         sync_profile_fields(student, {'referral_source': 'other'})
         student.refresh_from_db()
+        self.assertIsNone(student.source_id)
         self.assertIsNone(student.referred_by_org_id)
         self.assertEqual(student.referral_source, 'other')
 

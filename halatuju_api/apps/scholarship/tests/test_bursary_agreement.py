@@ -73,14 +73,15 @@ def _ensure_active_template(cohort):
     return active
 
 
-def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'), org=None):
+def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'), org=None,
+                  source=None):
     template = _ensure_active_template(cohort)   # sets cohort org + deploys a template
     profile = StudentProfile.objects.create(
         supabase_user_id=f'stu-{suffix}', name='Zxq Student', nric=nric,
         preferred_state='Kedah', exam_type='spm', grades={'bm': 'A'},
         contact_email='student@secret.example', contact_phone='012-7776666',
         guardians=[{'name': GUARANTOR_NAME, 'phone': GUARANTOR_PHONE}],
-        referred_by_org=org,
+        referred_by_org=org, source=source,
     )
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='recommended', award_amount=award,
@@ -318,8 +319,8 @@ class TestBursaryEndpoints(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
-    def _signed_app(self, *, suffix, org=None):
-        app = _fundable_app(self.cohort, suffix=suffix, org=org)
+    def _signed_app(self, *, suffix, org=None, source=None):
+        app = _fundable_app(self.cohort, suffix=suffix, org=org, source=source)
         _add_parent_ic(app)
         _fund(app)
         _verify_guarantor_phone(app)
@@ -373,6 +374,39 @@ class TestBursaryEndpoints(TestCase):
         resp = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/bursary-agreement/witness/')
         self.assertEqual(resp.status_code, 403)
+
+    def _witness_as(self, uid, app):
+        self._auth(uid)
+        return self.client.post(
+            f'/api/v1/admin/scholarship/applications/{app.id}/bursary-agreement/witness/')
+
+    def test_two_columns_the_source_decides_who_may_witness(self):
+        """Two columns (2026-10-09): a student who named SMC on the bursary form and came by
+        `?ref=cumig` is witnessed for SMC. CUMIG's partner login is refused; a super records it,
+        against SMC."""
+        cumig = PartnerOrganisation.objects.create(code='cumig', name='CUMIG',
+                                                   is_referral_partner=True)
+        smc = PartnerOrganisation.objects.create(code='smc', name='SMC')
+        app = self._signed_app(suffix='w2c', org=cumig, source=smc)
+        PartnerAdmin.objects.create(
+            supabase_user_id='partner-2c', name='Cik Partner', email='p2c@cumig.org',
+            org=cumig, role='partner', is_active=True)
+        PartnerAdmin.objects.create(
+            supabase_user_id='super-2c', name='Boss', email='boss2c@h.org',
+            is_super_admin=True, role='super', is_active=True)
+        self.assertEqual(self._witness_as('partner-2c', app).status_code, 403)
+        self.assertEqual(self._witness_as('super-2c', app).status_code, 200)
+        self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, smc.id)
+
+    def test_two_columns_no_source_leaves_the_referral_partner_as_before(self):
+        cumig = PartnerOrganisation.objects.create(code='cumig', name='CUMIG',
+                                                   is_referral_partner=True)
+        app = self._signed_app(suffix='w2p', org=cumig)
+        PartnerAdmin.objects.create(
+            supabase_user_id='partner-2p', name='Cik Partner', email='p2p@cumig.org',
+            org=cumig, role='partner', is_active=True)
+        self.assertEqual(self._witness_as('partner-2p', app).status_code, 200)
+        self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, cumig.id)
 
     def test_missing_witness_does_not_block_activation(self):
         # The witness is non-blocking: student + guarantor + Foundation is enough to execute the

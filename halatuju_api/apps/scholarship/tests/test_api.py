@@ -231,6 +231,8 @@ class TestApplicationIntake(TestCase):
         # a generic source (no matching row) leaves the FK unset.
         # Since per-gift sources S2 (2026-10-08) the code must be one THIS gift offers — a source
         # switched on in Sources and on the gift's own list — or the submit is refused.
+        # SUPERSEDED IN PART by the two columns (decisions.md 2026-10-09): the answer fills the
+        # SOURCE column and never `referred_by_org`, which only a `?ref=` link writes.
         from apps.courses.models import PartnerOrganisation
         from apps.scholarship.models import ProgrammeReferralSource
         org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG', show_in_apply=True)
@@ -243,7 +245,8 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(resp.status_code, 201)
         self.profile_a.refresh_from_db()
         self.assertEqual(self.profile_a.referral_source, 'cumig')
-        self.assertEqual(self.profile_a.referred_by_org_id, org.pk)
+        self.assertEqual(self.profile_a.source_id, org.pk)
+        self.assertIsNone(self.profile_a.referred_by_org_id)
 
     def test_consent_required(self):
         self._auth(_make_token(USER_A))
