@@ -222,9 +222,9 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         asks for, which sources its form lists), meaningless without it; the sources themselves
         stay. And `Invitation` and `PartnerAdmin.programme` are SET_NULL, which is exactly right:
         those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift" (the
-        S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer. (The
-        deprecated `PartnerOrganisation.programme` is SET_NULL too, and read by nothing since
-        2026-10-08.)
+        S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer. (The old
+        `partner_organisations.programme_id` left the model in sources Sprint B; until courses 0080
+        drops it, a gift some row still names cannot be deleted — 500 — see that cutover note.)
 
         ⚠ ITS UNSIGNED AGREEMENT TEMPLATES GO WITH IT TOO — owner ruling, 2026-10-03 (TD-229). A
         template is `PROTECT` from its gift, like a year, and is cleared here explicitly for the same

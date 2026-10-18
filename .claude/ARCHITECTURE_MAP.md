@@ -369,7 +369,8 @@ courses, no import — both `witness_org`, `PartnerEmailLog.organisation`, now P
 `referral_links.referring_org` answers the source, else the referral partner's source TWIN (same id
 AND code, `source_twin`); `is_same_organisation` is the witness-authority comparison. A `partner`
 login may be invited only onto an active referral partner (`partner_invite_org`; a NEW organisation
-created by that invite is marked), and an `org_admin` never onto one.
+created by that invite is marked), and an `org_admin` never onto one nor onto a source's old row
+(`tenant_invite_refusal`). TD-386 lists the seams still crossing organisations (Sprint C).
 
 ⚠ **THE STUDENT RECORD HAS TWO INDEPENDENT REFERRAL COLUMNS** (sources and referral partners Sprint A,
 2026-10-09; rules in `apps/courses/referral_links.py`; roadmap

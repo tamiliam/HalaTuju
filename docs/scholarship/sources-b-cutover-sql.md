@@ -32,7 +32,8 @@ partners, a platform category owned by no organisation.
    its two `partner` logins, its `?ref=cumig` link, the 254 students `referred_by_org` names — and its
    SOURCE row is the copy (same id, same code), owned by BrightPath. Nothing here touches
    `referred_by_org`, `is_referral_partner`, `partner_admins` or any chip.
-5. The new id sequence starts past the highest id of EITHER table, so a source created after the
+5. The NEW table's id sequence starts past the highest id of EITHER table (the `partner_organisations`
+   sequence is not moved — harmless: nothing pairs the tables by id alone), so a source created after the
    cutover never takes an id that some `partner_organisations` row already has.
 
 `invitations.organisation_id` does NOT move: it names the TENANT for every staff invitation, and no
@@ -132,12 +133,27 @@ SELECT o.code, o.is_referral_partner,
 
 -- 11. The ids the sequence must pass.
 SELECT max(id) AS max_partner_org_id FROM partner_organisations;
+
+-- 12. ⚠ ASSERTED — EVERY partner_organisations row, by category. The total MUST be 1 tenant + C
+--     copied rows (pre-check 4), and there must be NO fixed-code row. A row that is neither a
+--     tenant nor copied stays live on the OLD image during the window and can make its partner-
+--     email cron write a `partner_email_log` row naming it — which the new constraint refuses.
+--     Any surprise here: STOP and ask the owner.
+SELECT o.id, o.code, o.is_active, o.is_referral_partner,
+       CASE WHEN EXISTS (SELECT 1 FROM scholarship_programmes p WHERE p.organisation_id = o.id AND p.is_active)
+              OR EXISTS (SELECT 1 FROM partner_admins a WHERE a.owning_organisation_id = o.id
+                          AND a.role = 'org_admin' AND a.is_active) THEN 'tenant'
+            WHEN o.code IN ('halatuju', 'social', 'other') THEN 'FIXED CODE - STOP'
+            ELSE 'copied' END AS category
+  FROM partner_organisations o ORDER BY category, o.code;
+-- expect (2026-10-18 reading): 'tenant' brightpath (1) + 'copied' C (13) = 14 rows; no 'FIXED CODE'.
 COMMIT;
 ```
 
 ## The cutover — ONE transaction (migrate-first, BEFORE the push)
 
-Edit the ONE literal marked `<<C>>` to the row count of pre-check 4 before running.
+The placeholder `<<C>>` appears TWICE (in step D's `IF` and in its error message): replace BOTH with
+the row count of pre-check 4 before running.
 
 ```sql
 BEGIN;
@@ -181,7 +197,7 @@ SELECT s.id, t.id, s.code, s.name, s.contact_person, s.contact_email, s.phone,
 -- Settle the seed's deferred FK checks NOW: the constraint swaps below add triggers on this table.
 SET CONSTRAINTS ALL IMMEDIATE;
 
--- The sequence: past the highest id of EITHER table.
+-- The NEW table's sequence: past the highest id of EITHER table (partner_organisations' is untouched).
 SELECT setval(pg_get_serial_sequence('referral_sources', 'id'),
               GREATEST((SELECT max(id) FROM referral_sources), (SELECT max(id) FROM partner_organisations)));
 
@@ -276,7 +292,8 @@ SELECT conrelid::regclass AS tbl, conname, confrelid::regclass AS target FROM pg
 SELECT r.code, lower(trim(r.contact_email)) AS recipient FROM referral_sources r
  WHERE r.is_active AND r.code <> 'brightpath' AND r.contact_email <> '' ORDER BY r.name;
 -- 5. The referral partner untouched (pre-check 10): cumig | t | 2 | 254.
--- 6. The sequence is past both tables.                    expect: last_value >= max_partner_org_id
+-- 6. The NEW table's sequence is past both tables (the partner_organisations one is not moved).
+--                                                         expect: last_value >= max_partner_org_id
 SELECT last_value FROM pg_sequences WHERE schemaname = 'public'
    AND sequencename = split_part(pg_get_serial_sequence('referral_sources', 'id'), '.', 2);
 -- 7. RLS on and one service_role policy.                                  expect: t | referral_sources_service_role
@@ -301,11 +318,31 @@ migration files: the ONE expected gap is `courses/0080`, applied after the deplo
 
 ## Deploy window (accepted — with a freeze)
 
+**The freeze, from BEFORE the cutover until courses 0080 has run (not only until the deploy).**
+Tell the owner and the BrightPath admins before the cutover; the lead runs the scheduler steps.
+1. **No Sources add or edit, and no gift Configuration source switches** — from the cutover until
+   `status.latestReadyRevisionName` is the new revision (reasons below).
+2. **Pause the two partner-email cron jobs** — the Cloud Scheduler jobs that POST to
+   `/api/v1/internal/cron/partner-milestones/` (hourly) and `/api/v1/internal/cron/partner-digests/`
+   (Mon 08:00 MYT) (`CronRunView.JOBS`; their job NAMES are not recorded in the repo). Find them by
+   target, then pause each by name, BEFORE the cutover:
+   `gcloud scheduler jobs list --location asia-southeast1 --account tamiliam@gmail.com --project gen-lang-client-0871147736 --format="table(name,httpTarget.uri,state)"`
+   → `gcloud scheduler jobs pause <name> --location asia-southeast1 --account tamiliam@gmail.com --project gen-lang-client-0871147736`.
+   Resume both (`… jobs resume <name> …`) once the new revision serves. Why: the OLD image's sweep
+   logs a skip against ANY active `partner_organisations` row a chip names; a row that is not copied
+   (pre-check 12 says there should be none, but one created in the window would be) would make it
+   write a log row the new constraint refuses, failing that run.
+3. **No gift deleted** until courses 0080 has run. The new image's `PartnerOrganisation` no longer
+   has `programme`, so Django no longer clears `partner_organisations.programme_id` when a gift is
+   deleted; while the column and its foreign key exist, deleting a gift that some row's
+   `programme_id` still names fails at commit (500). Which gifts those are:
+   `SELECT o.code, o.programme_id FROM partner_organisations o WHERE o.programme_id IS NOT NULL;`
+   — apply 0080 promptly after the deploy (below), which ends this item.
+
 Between COMMIT and the new revision serving, the OLD image keeps writing to `partner_organisations`:
 - **Sources POST** would create a source the new table never hears of; a **Sources PATCH** would edit
-  a row the new image no longer reads. **Freeze both** (and gift Configuration's source switches,
-  which would fail for a row created in the window) until `status.latestReadyRevisionName` is the
-  new revision. Tell the owner and the BrightPath admins before the cutover.
+  a row the new image no longer reads; gift Configuration's source switches would fail for a row
+  created in the window — hence freeze item 1.
 - **Witness assignment** on the old image to a tenant (the house row is in the old Sources list) now
   fails the new FK and answers 500 — refused, as the new image refuses it with a 400. Nothing written.
 - **The bursary submit** writes `source_id` = an offered source's id: every offered source is copied,
@@ -330,7 +367,11 @@ COMMIT;
 ```
 
 Any row in A or B goes to the owner: copying it into `referral_sources` (A) or carrying the edit
-across (B) is a reviewed `INSERT`/`UPDATE`, never automatic. ⚠ Read B soon after the deploy: from
+across (B) is a reviewed `INSERT`/`UPDATE`, never automatic. ⚠ **A row from A is copied with a
+FRESH id, never its own:** omit `id` in the `INSERT` so `referral_sources`' own sequence issues one —
+the new image may already have given that same id to a source created since the deploy. Nothing can
+name the window row by id (every column that could — a gift link, a witness, a log row, a student's
+source — has refused it since the cutover), so a fresh id loses nothing. ⚠ Read B soon after the deploy: from
 then on a `cumig` difference is EXPECTED and correct — its two `partner` logins edit their own
 contact person and phone (`/admin/profile/`) on the referral-partner row, while the partner emails
 read the source row. The two CUMIGs' contact details are separate from this sprint on (roadmap
@@ -365,14 +406,18 @@ service back to the previous revision FIRST. ⚠ A source created by the new ima
 refuse any link, profile, witness or log row naming it. List them first —
 `SELECT id, code FROM referral_sources WHERE id NOT IN (SELECT id FROM partner_organisations);` —
 and copy each into `partner_organisations` with the same id (a reviewed `INSERT`, then
-`setval` that table's sequence past it) before the rollback above. Once courses 0080 has run, a
+`setval` that table's sequence past it) before the rollback above. ⚠ The `partner_organisations`
+sequence was NOT moved by the cutover, so a row created there since (a referral partner made by an
+invite) may already hold one of those ids: if so, stop and ask — never overwrite it. Once courses 0080 has run, a
 pre-Sprint-B image cannot serve at all (it selects `programme_id`): there is no rollback past it.
 
 ## After the deploy — the TD-379 drop (`courses/0080`, IMAGE-FIRST)
 
 Run ONLY when `status.latestReadyRevisionName` is the Sprint B revision and no older revision
 carries traffic (a pre-Sprint-B image selects `programme_id` on every organisation read; dropping it
-under one 500s the site). Its own transaction, its own ledger row.
+under one 500s the site). Its own transaction, its own ledger row. **Apply it PROMPTLY after the
+deploy** — until it runs, deleting a gift that some row's `programme_id` still names 500s (freeze
+item 3).
 
 ```sql
 BEGIN READ ONLY;
@@ -404,7 +449,9 @@ BEGIN
   END IF;
   EXECUTE format('ALTER TABLE public.partner_organisations DROP CONSTRAINT %I', names[1]);
 END $$;
-ALTER TABLE "partner_organisations" DROP COLUMN "programme_id" CASCADE;
+-- Plain DROP COLUMN, deliberately not Django's rendered `CASCADE`: if anything else depends on
+-- the column (a view, a policy), the drop must REFUSE and be looked at, not take it silently.
+ALTER TABLE "partner_organisations" DROP COLUMN "programme_id";
 
 INSERT INTO django_migrations (app, name, applied)
   VALUES ('courses', '0080_drop_partner_organisation_programme', now());

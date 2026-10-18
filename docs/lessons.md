@@ -1355,6 +1355,8 @@ Copying the rows WITH THEIR IDS turned every repoint into a constraint swap — 
 backfill to get wrong, and the image still serving keeps reading the old table, whose rows are all
 still there under the same ids. Two things the swap needs that are easy to miss: the seed's pending
 deferred-FK events must be settled (`SET CONSTRAINTS ALL IMMEDIATE`) before any `ADD CONSTRAINT …
-REFERENCES` the new table; and the new id sequence must start past BOTH tables, or a later row can take
-an id that already means another organisation in the old one. Where two tables share ids by design,
+REFERENCES` the new table; and the NEW table's id sequence must start past both tables, or a later row
+can take an id that already means another organisation in the old one (the old table's sequence is
+left alone, so later rows there may reuse new-table ids — which is why the pairing below never uses an
+id alone). Where two tables share ids by design,
 pair rows by id AND a natural key (here the code), never by id alone. (sources-and-referrals Sprint B)

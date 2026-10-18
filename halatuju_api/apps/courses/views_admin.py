@@ -696,9 +696,12 @@ class AdminInviteView(PartnerAdminMixin, APIView):
                     return Response({'error': 'Organisation not found'}, status=404)
             if owning_org is None:
                 return Response({'error': 'A tenant organisation is required.', 'code': 'tenant_required'}, status=400)
-            if owning_org.is_referral_partner:   # sources Sprint B: never turns a referral partner into a tenant
-                return Response({'error': referral_links.INVITE_REFUSALS['org_is_referral_partner'],
-                                 'code': 'org_is_referral_partner'}, status=400)
+            # Sources Sprint B: never turns a referral partner or a source's old row into a tenant.
+            refusal = referral_links.tenant_invite_refusal(
+                owning_org, new=bool(new_org_name and new_org_code))
+            if refusal:
+                return Response({'error': referral_links.INVITE_REFUSALS[refusal], 'code': refusal},
+                                status=400)
             if not owning_org.module_scholarship:
                 owning_org.module_scholarship = True
                 owning_org.save(update_fields=['module_scholarship'])

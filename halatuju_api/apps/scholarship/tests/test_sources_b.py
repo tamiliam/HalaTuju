@@ -299,6 +299,42 @@ class TestTheSourcesFence(_TwoOrganisations):
                          (0, 1))
 
 
+class TestThePartnerEmailsScreenIsFenced(_TwoOrganisations):
+    """`GET /partner-emails/`: organisation B's admin never sees A's sources, A's counts or A's
+    send log — and A's admin sees exactly A's (review fix: the fence had no test)."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        call_command('seed_partner_email_templates', verbosity=0)
+        # Two of A's students named `smc`; B's `smc` has none of its own.
+        for _ in range(2):
+            make_application('submitted', cohort=make_cohort(programme=self.gift_a),
+                             student=make_student(referral_source='smc'))
+        PartnerEmailLog.objects.create(organisation=self.smc_a, kind='weekly_summary', ok=True,
+                                       recipients=['a@smc.test'], students=2)
+
+    def _screen(self, admin):
+        resp = authed_client(admin).get(EMAILS)
+        self.assertEqual(resp.status_code, 200, resp.content)
+        body = resp.json()
+        weekly = next(t for t in body['templates'] if t['kind'] == 'weekly_summary')
+        return ({o['code']: (o['id'], o['students']) for o in body['organisations']},
+                body['qualifying_count'], weekly['last_sent_at'], weekly['last_sent_orgs'])
+
+    def test_b_sees_none_of_as_sources_counts_or_sends(self):
+        orgs, qualifying, last_sent, last_orgs = self._screen(self.oa_b)
+        self.assertEqual(orgs, {'smc': (self.smc_b.pk, 0), 'only-b': (self.only_b.pk, 0)})
+        self.assertEqual(qualifying, 1)                    # B's smc has an address; only-b not
+        self.assertEqual((last_sent, last_orgs), (None, 0))
+
+    def test_a_sees_its_own(self):
+        orgs, qualifying, last_sent, last_orgs = self._screen(self.oa_a)
+        self.assertEqual(orgs, {'smc': (self.smc_a.pk, 2), 'only-a': (self.only_a.pk, 0)})
+        self.assertEqual(qualifying, 2)
+        self.assertIsNotNone(last_sent)
+        self.assertEqual(last_orgs, 1)
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestASuperOnAOneTenantPlatform(TestCase):
     """Production today: one tenant. An organisation-less super adding a source from the Sources
@@ -382,12 +418,16 @@ class TestInvitesNeverBlurTheCategories(TestCase):
         cls.old_source_row = PartnerOrganisation.objects.create(code='smc', name='SMC')
         cls.tenant = make_org('sb-tenant')
         make_admin('org_admin', owning_org=cls.tenant)
+        # As production after the copy: the old row's SOURCE twin (same id and code), owned by
+        # the tenant.
+        make_source(cls.tenant, 'smc', pk=cls.old_source_row.pk)
 
     def _invite(self, **payload):
         payload = {'email': f'{payload.get("role", "x")}{len(PartnerAdmin.objects.all())}@i.test',
                    'name': 'Invitee', **payload}
         with patch('apps.courses.views_admin.http_requests.post') as mp:
-            mp.return_value = MagicMock(status_code=200, text='ok', json=lambda: {'id': 'new-uid'})
+            uid = f'uid-{payload["email"]}'             # one login per invitee
+            mp.return_value = MagicMock(status_code=200, text='ok', json=lambda: {'id': uid})
             return authed_client(self.super).post(INVITE, payload, format='json')
 
     def test_a_partner_login_onto_the_referral_partner_is_accepted(self):
@@ -437,6 +477,31 @@ class TestInvitesNeverBlurTheCategories(TestCase):
         self.assertFalse(self.cumig.module_scholarship)
         self.assertNotIn(self.cumig.pk, set(PartnerOrganisation.objects.tenants()
                                             .values_list('pk', flat=True)))
+
+    def test_an_org_admin_never_turns_a_sources_old_row_into_a_tenant(self):
+        """Review fix: `get_or_create(code='smc')` used to REUSE the old source row, switch its
+        scholarship module on and bind the org_admin — a second tenant, in every tenant picker and
+        on the monthly invoices, and the end of the sole-tenant fallback."""
+        for payload, code in (({'new_org_name': 'SMC', 'new_org_code': 'smc'}, 'code_taken'),
+                              ({'org_id': self.old_source_row.pk}, 'not_a_tenant')):
+            with self.subTest(code=code):
+                before = PartnerAdmin.objects.count()
+                resp = self._invite(role='org_admin', **payload)
+                self.assertEqual((resp.status_code, resp.json()['code']), (400, code))
+                self.assertTrue(resp.json()['error'])
+                self.assertEqual(PartnerAdmin.objects.count(), before)
+        self.old_source_row.refresh_from_db()
+        self.assertFalse(self.old_source_row.module_scholarship)
+        self.assertNotIn(self.old_source_row.pk, set(PartnerOrganisation.objects.tenants()
+                                                     .values_list('pk', flat=True)))
+
+    def test_an_org_admin_onto_an_existing_tenant_or_a_new_organisation_still_works(self):
+        for payload in ({'org_id': self.tenant.pk},
+                        {'new_org_name': 'Inspire', 'new_org_code': 'inspire'}):
+            with self.subTest(payload=sorted(payload)):
+                resp = self._invite(role='org_admin', **payload)
+                self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertTrue(PartnerOrganisation.objects.get(code='inspire').module_scholarship)
 
     def test_the_invite_dropdown_lists_referral_partners_only(self):
         resp = authed_client(self.super).get(ORGS)

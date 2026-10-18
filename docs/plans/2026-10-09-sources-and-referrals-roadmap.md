@@ -107,7 +107,7 @@ split owed now — it has no Phase-4 sprint; Sprint B must split it first); `cou
   FK (PROTECT, `related_name='owned_sources'`), code (unique per organisation), name, contact
   person / email / phone, `show_in_apply`, `is_active`, `created_at`; `owned_by(org_id)` (None → none).
 - **scholarship 0173** copies every non-tenant, non-fixed-code `partner_organisations` row KEEPING ITS
-  ID, owned by THE tenant (refuses unless exactly one), sets the sequence past BOTH tables, refuses any
+  ID, owned by THE tenant (refuses unless exactly one), starts the new table's sequence past both tables (the old table's is untouched), refuses any
   dangling reference, and swaps four FKs; **courses 0079** swaps `StudentProfile.source`. Constraint
   swaps only — no value rewritten. `PartnerEmailLog.organisation` is now PROTECT (was CASCADE).
 - **`Invitation.organisation` did NOT move** (it is the TENANT for every staff invitation, and nothing
@@ -184,6 +184,14 @@ a moves-only split first if the submit needs more than a line.
    row. What remains is retiring the `referring_org` twin bridge (item 3) so nothing pairs them by id.
 6. The course-selector partner dashboard's Source dropdown/CSV: show the referral partner and drop
    the chip, or read it from the per-application answer — owner question at sprint start.
+7. **Cross-organisation seams the Sprint B review found (TD-386):**
+   (a) `referring_org` reads the PER-STUDENT `StudentProfile.source`, so a student who applies to
+   organisation A and then names organisation B's source on B's form would have A's witness request
+   routed to B's source — item 1's per-application source (and item 3's source-only witness) fixes it;
+   (b) the CUMIG witness pairing (`source_twin`) always lands on BrightPath's CUMIG source, whatever
+   organisation the application belongs to — retired with the bridge in item 3;
+   (c) the partner-email templates are ONE platform-wide set any organisation's admin can rewrite —
+   decide the fencing (per-organisation overrides of a platform default, or super-only editing).
 
 **Size and splits:** `scholarship/views.py` (cap 2441, 2436 at Sprint A) and `courses/views_admin.py`
 (cap 1264) are near their caps; `serializers_admin.py` (cap 1234) too. Each that must grow gets a

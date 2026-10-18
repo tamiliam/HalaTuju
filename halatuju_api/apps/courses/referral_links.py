@@ -56,7 +56,27 @@ INVITE_REFUSALS = {
                               'partner login. A referral partner is marked by the platform first.',
     'org_is_referral_partner': 'That organisation is a platform referral partner, so it cannot '
                                'become an organisation that runs gifts.',
+    'code_taken': 'That code already belongs to a referral source, so it cannot be used for a new '
+                  'organisation. Choose another code.',
+    'not_a_tenant': 'That organisation is a referral source, not an organisation that runs gifts.',
 }
+
+
+def tenant_invite_refusal(org, *, new):
+    """Why an `org_admin` invitation may NOT install a tenant on this `partner_organisations` row,
+    or None (sources Sprint B review, 2026-10-18). The invite reuses an existing row by code
+    (`get_or_create`) or by id, and installing an org_admin makes the row a tenant
+    (`tenants()`), switches its scholarship module on and bills it. So it is refused for:
+    - a platform REFERRAL PARTNER (`org_is_referral_partner`) — owned by no organisation;
+    - a source's OLD row — one with a source twin in `referral_sources` (same id AND code), i.e.
+      every non-tenant row the Sprint B copy found. On the new-organisation path that reads as
+      `code_taken` (the form asked for a NEW organisation); by id as `not_a_tenant`.
+    A tenant row (including one whose admins have lapsed) passes, as before."""
+    if org.is_referral_partner:
+        return 'org_is_referral_partner'
+    if source_twin(org.pk) is not None:
+        return 'code_taken' if new else 'not_a_tenant'
+    return None
 
 
 def partner_invite_org(org_id=None, new_code='', new_name='', contact_person='', phone=''):

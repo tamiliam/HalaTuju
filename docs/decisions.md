@@ -14025,9 +14025,14 @@ is; its source row is a copy owned by BrightPath.
 - **Same ids, constraint swaps.** Every source row is copied keeping its id, so the five foreign keys
   that named a source (`ProgrammeReferralSource.source`, `StudentProfile.source`, both `witness_org`,
   `PartnerEmailLog.organisation`) move by swapping their constraint — no value rewritten — and the
-  image still serving keeps reading `partner_organisations`, whose rows all remain. The new sequence
-  starts past both tables. The owner of the copies is DERIVED (the one tenant) — the migration and the
-  cutover refuse if there is not exactly one.
+  image still serving keeps reading `partner_organisations`, whose rows all remain. Only the NEW
+  table's sequence moves: `referral_sources` starts past the highest id of both tables, so a source
+  made after the cutover never takes an id an old row already has. The `partner_organisations`
+  sequence is NOT moved, so a row created there later (a referral partner made by an invite) can
+  reuse an id some newer source holds — harmless, because nothing pairs the two tables by id alone:
+  the witness bridge pairs a referral partner with its source twin by id AND code (`source_twin`).
+  The owner of the copies is DERIVED (the one tenant) — the migration and the cutover refuse if there
+  is not exactly one.
 - **Nothing dangles silently.** A witness or email-log value naming a non-source (a tenant, the house)
   makes the migration and the cutover refuse; the owner decides what it should name.
 - **`PartnerEmailLog.organisation` is PROTECT** (was CASCADE): deleting a source must never take the
@@ -14059,7 +14064,10 @@ is; its source row is a copy owned by BrightPath.
   reviewed SQL update until the referral-partner screen (now Sprint D): marking changes which students
   a `?ref=` collects, so it is a platform decision of its own, never a side effect of asking someone to
   sign in. An `org_admin` invite onto a referral partner is refused, so an invite can never turn a
-  referral partner into a tenant. `GET /admin/orgs/` (the partner invite dropdown) lists referral
+  referral partner into a tenant — nor onto a source's OLD `partner_organisations` row (review fix:
+  `get_or_create` used to reuse e.g. `smc` and make it a second tenant, which would end the
+  sole-tenant fallback, put SMC in the tenant pickers and invoice it): 400 `code_taken` on the
+  new-organisation path, `not_a_tenant` by id (`referral_links.tenant_invite_refusal`). `GET /admin/orgs/` (the partner invite dropdown) lists referral
   partners only.
 - **The witness bridge until Sprint C:** `referring_org` now always answers a SOURCE row — her source,
   else her referral partner's source TWIN, paired by id AND code (ids alone could pair strangers once
