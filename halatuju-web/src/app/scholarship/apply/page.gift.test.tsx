@@ -176,6 +176,21 @@ describe('D4 — the form names the gift', () => {
   })
 })
 
+describe("D5 — the gift's opening paragraph keeps its line breaks (request #34)", () => {
+  it('a two-paragraph intro shows as two paragraphs, as text', async () => {
+    window.history.replaceState({}, '', '/scholarship/apply?p=sabah')
+    const intro = 'For students in Sabah.\n\nApply before 30 November.'
+    serveIntake(TWO_OPEN, { sabah: { ...SABAH_OPEN,
+      apply_copy: { en: { ...SABAH_OPEN.apply_copy.en, intro } } } })
+    mount()
+    await screen.findByRole('heading', { level: 1, name: 'Sabah bursary' })
+    const shown = screen.getByTestId('apply-intro')
+    expect(shown.textContent).toBe(intro)                       // the blank line is kept
+    expect(shown.className).toContain('whitespace-pre-line')    // ...and the browser shows it
+    expect(shown.querySelector('br')).toBeNull()                // text, never HTML
+  })
+})
+
 describe('submit still names the gift', () => {
   const complete: ApplyFormState = {
     // `other`, a fixed choice: since per-gift sources (2026-10-08) a source code these intakes do

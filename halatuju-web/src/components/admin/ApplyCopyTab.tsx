@@ -110,7 +110,7 @@ export function englishUnsaved(draft: Draft, saved: Draft): boolean {
  * blank to use the platform's standard wording" asks somebody to choose between their own words
  * and words they cannot read. Collapsed by default — it is reference, not the task.
  */
-function StandardWording({ locale, t }: {
+export function StandardWording({ locale, t }: {
   locale: Loc
   t: (k: string, p?: Record<string, string>) => string
 }) {
@@ -137,7 +137,7 @@ function StandardWording({ locale, t }: {
       </summary>
       <div className="mt-3 space-y-2 text-sm text-ground-700">
         <p className="font-semibold">{card.title}</p>
-        <p>{card.intro}</p>
+        <p className="whitespace-pre-line" data-testid="standard-intro">{card.intro}</p>
         <ul className="list-disc pl-5 space-y-1">
           {card.criteria.map((line, i) => <li key={i}>{line}</li>)}
         </ul>

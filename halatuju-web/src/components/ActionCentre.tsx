@@ -262,7 +262,7 @@ function ActionCard({
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-semibold text-ground-500 line-through decoration-caution-300">{title}</h3>
+              <h3 className="font-semibold text-ground-500 line-through decoration-caution-300 whitespace-pre-line">{title}</h3>
               <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
                 {t('scholarship.actionCentre.setAside')}
               </span>
@@ -288,7 +288,7 @@ function ActionCard({
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-semibold text-ground-500 line-through decoration-positive-300">{title}</h3>
+              <h3 className="font-semibold text-ground-500 line-through decoration-positive-300 whitespace-pre-line">{title}</h3>
               <span className="shrink-0 rounded-full bg-positive-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-positive-800">
                 {t('scholarship.actionCentre.done')}
               </span>
@@ -335,7 +335,7 @@ function ActionCard({
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
           <div className="flex items-start justify-between gap-3">
-            <h3 className="font-semibold text-ground-900">{title}</h3>
+            <h3 className="font-semibold text-ground-900 whitespace-pre-line">{title}</h3>
             <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
               {t('scholarship.actionCentre.toDo')}
             </span>

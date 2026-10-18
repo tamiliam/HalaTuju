@@ -63,6 +63,19 @@ class TestThePromptCarriesWhatMustNotDrift(TestCase):
         for line in ENGLISH['en']['criteria']:
             self.assertIn(line.replace("'", "'"), prompt)
 
+    def test_it_tells_the_model_to_keep_the_intros_paragraph_breaks(self):
+        """Request #34: an org's two-paragraph opening came back as one. The break is content."""
+        two_paras = dict(ENGLISH['en'], intro='First paragraph.\n\nSecond paragraph.')
+        for locale in ('ms', 'ta'):
+            prompt = acd.build_prompt(two_paras, locale)
+            self.assertIn('Keep the paragraph breaks exactly', prompt)
+            # The JSON payload carries the break as an escape the model can see and copy.
+            self.assertIn('First paragraph.\\n\\nSecond paragraph.', prompt)
+
+    def test_a_reply_keeps_the_intros_paragraph_break(self):
+        reply = json.dumps(dict(json.loads(MALAY_REPLY), intro='Perenggan satu.\n\nPerenggan dua.'))
+        self.assertEqual(acd.parse_reply(reply, 3)['intro'], 'Perenggan satu.\n\nPerenggan dua.')
+
 
 # ── Parsing the reply (pure) ─────────────────────────────────────────────────────────────────
 

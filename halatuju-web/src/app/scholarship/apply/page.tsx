@@ -394,7 +394,8 @@ export default function ScholarshipApplyPage() {
     return (
       <main className="container mx-auto px-6 py-10 max-w-2xl lg:max-w-4xl">
         {headed && <><h1 className="text-2xl font-bold text-ground-900 mb-2">{card.title}</h1>
-          <p className="text-ground-600 mb-6">{card.intro}</p></>}
+          {/* pre-line: the gift's own line breaks and blank lines show (request #34). Text, never HTML. */}
+          <p className="text-ground-600 mb-6 whitespace-pre-line" data-testid="apply-intro">{card.intro}</p></>}
         {children}
       </main>
     )

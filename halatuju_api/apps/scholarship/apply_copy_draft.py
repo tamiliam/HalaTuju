@@ -120,6 +120,9 @@ Hard requirements:
   never add one. The array must have exactly {len(bullets)} entries.
 - Do not soften or strengthen any requirement. A number, a grade or a threshold must carry over
   exactly. If the English says five A's, the translation says five A's.
+- Keep the paragraph breaks exactly. Where the English "intro" has a line break (\\n) or a blank
+  line between paragraphs (\\n\\n), the translation has the same break in the same place. Never
+  join paragraphs into one, never add a break the English does not have.
 - Keep these terms exactly as written, in Latin script: {', '.join(_KEEP_VERBATIM)}.
 - Keep it about the same length as the English. "title" must be under {ac.MAX_TITLE} characters,
   "intro" under {ac.MAX_INTRO}, and each criterion under {ac.MAX_BULLET}.
