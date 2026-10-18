@@ -242,7 +242,15 @@ export default function OrganisationInvitationsPage() {
           </div>
 
           {kind === 'source' ? (
-            <p className="mt-4 text-sm text-ground-500">{t('admin.invitations.sourceComingSoon')}</p>
+            // Org request #33: a source is ADDED on the Sources page, not invited here, so the note
+            // says where to go. The link shows only to roles that may open that page (not finance).
+            <p className="mt-4 text-sm text-ground-500">
+              {t('admin.invitations.sourceComingSoon')}
+              {canAccess('/admin/sources', r) && (
+                <>{' '}<Link href="/admin/sources" className="font-medium text-primary-700 hover:underline">
+                  {t('admin.sources.nav')} →</Link></>
+              )}
+            </p>
           ) : canInviteHere ? (
             <form onSubmit={submit} className="mt-4 space-y-4">
               {invitable.length > 1 && (

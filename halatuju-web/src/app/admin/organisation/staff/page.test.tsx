@@ -169,12 +169,25 @@ describe('what each kind can do', () => {
     expect(screen.queryByText('admin.revoke')).toBeNull()
   })
 
-  it('says Source is coming soon and offers no way to invite one', async () => {
+  it('says Source is coming soon, offers no way to invite one, and points to Sources', async () => {
+    // Org request #33: an admin who picked Source was told "coming soon" and nothing else. A
+    // source is ADDED on the Sources page, so the note now links there.
     await loaded()
     await pick('source')
     await waitFor(() =>
       expect(screen.getAllByText('admin.invitations.sourceComingSoon').length).toBeGreaterThan(0))
     expect(screen.queryByText('admin.sendInvite')).toBeNull()
+    const link = screen.getByRole('link', { name: /admin\.sources\.nav/ })
+    expect(link.getAttribute('href')).toBe('/admin/sources')
+  })
+
+  it('⚠ does not link Finance to the Sources page it cannot open', async () => {
+    viewerRole = { role: 'finance' }
+    await loaded()
+    await pick('source')
+    await waitFor(() =>
+      expect(screen.getAllByText('admin.invitations.sourceComingSoon').length).toBeGreaterThan(0))
+    expect(screen.queryByRole('link', { name: /admin\.sources\.nav/ })).toBeNull()
   })
 })
 
