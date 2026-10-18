@@ -434,7 +434,10 @@ class PartnerOrganisationQuerySet(models.QuerySet):
 
 
 class PartnerOrganisation(models.Model):
-    """Tenant organisation, source AND platform referral partner — three categories (TD-381).
+    """Tenant organisation AND platform referral partner (TD-381). Since sources-and-referrals Sprint
+    B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource`, owned by an organisation;
+    the rows here that used to be sources were copied there with their ids and are kept, unread by
+    the source surfaces, until Sprint D switches them off.
 
     - Referral registry (original role): `StudentProfile.referred_by_org` /
       `PartnerAdmin.org` point here to mean "the organisation that REFERRED a
@@ -465,17 +468,8 @@ class PartnerOrganisation(models.Model):
     # A PLATFORM REFERRAL PARTNER (2026-10-09; today `cumig` alone) — the only rows a `?ref=` link
     # writes into `StudentProfile.referred_by_org` (`referral_links`). A row may also be a source.
     is_referral_partner = models.BooleanField(default=False, db_default=False, help_text='A PLATFORM referral partner: its ?ref= link fills a student\'s referred_by_org (owned by no organisation).')
-    # ⛔ DEPRECATED (2026-10-08) — READ AND WRITTEN BY NOTHING. Each gift now chooses its own
-    # sources (`scholarship.ProgrammeReferralSource`, set in the gift's Configuration); migration
-    # 0172 seeded those links from this column, and the Sources API no longer serves or accepts it.
-    # Kept only for expand-contract: a later migration drops it. Do not read it, do not revive it.
-    # (NOT ACCESS CONTROL either: a referral organisation is an ATTRIBUTION relationship.)
-    programme = models.ForeignKey(
-        'scholarship.Programme', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='referral_sources',
-        help_text="Gift programme whose apply form lists this source. NULL = every gift, which "
-                  "is the default and what every existing source has.",
-    )
+    # The old single-gift `programme` column left the MODEL in sources Sprint B (TD-379, 2026-10-18);
+    # courses 0080 drops the column AFTER the image without it is live (contract, image-first).
     created_at = models.DateTimeField(auto_now_add=True)
 
     # ── Tenant identity & branding (platform Sprint 1; '' = use platform default) ──
@@ -1029,11 +1023,13 @@ class StudentProfile(models.Model):
     )
     # TWO INDEPENDENT COLUMNS (2026-10-09, `apps/courses/referral_links.py`): `referred_by_org` is
     # the REFERRAL PARTNER (a `?ref=` link, first touch); `source` is what the BURSARY form named.
+    # Since sources Sprint B (2026-10-18) `source` names the scholarship `referral_sources` table (a
+    # source belongs to an organisation) — a STRING reference, so courses imports nothing for it.
     referred_by_org = models.ForeignKey(
         'PartnerOrganisation', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='referred_students',
     )
-    source = models.ForeignKey('PartnerOrganisation', on_delete=models.SET_NULL, null=True, blank=True, related_name='sourced_students', help_text='The SOURCE the student named on the bursary form (NULL for a fixed choice). Independent of referred_by_org.')
+    source = models.ForeignKey('scholarship.ReferralSource', on_delete=models.SET_NULL, null=True, blank=True, related_name='sourced_students', help_text='The SOURCE the student named on the bursary form (NULL for a fixed choice). Independent of referred_by_org.')
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

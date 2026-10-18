@@ -126,7 +126,7 @@ apps/courses/
 | `StudentProfile` | `student_profiles` | User eligibility data | SPM grades, gender, nationality, exam_type, muet_band, STPM fields, income, siblings |
 | `SavedCourse` | `saved_courses` | User bookmarks | course, student, interest_status |
 | `AdmissionOutcome` | `admission_outcomes` | Track application results | course, student, status (applied/offered/accepted/rejected/withdrawn) |
-| `PartnerOrganisation` | `partner_organisations` | THREE categories in one table (owner, 2026-10-09; TD-381): tenant Organisation (`tenants()`), SOURCE (a gift's "Who referred you?" choice), and platform REFERRAL PARTNER (`is_referral_partner`, today `cumig` alone — also a source) | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags, `is_referral_partner` (`db_default` false). NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
+| `PartnerOrganisation` | `partner_organisations` | Tenant Organisation (`tenants()`) and platform REFERRAL PARTNER (`is_referral_partner`, today `cumig` alone). Since sources Sprint B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource` (`referral_sources`, owned by an organisation, SAME ids as the rows copied from here); the old source rows stay here, read by no source surface, until Sprint D | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags, `is_referral_partner` (`db_default` false); `programme` left the model (TD-379, courses 0080 drops the column after the deploy). NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
 | `MascoOccupation` | `masco_occupations` | Career occupation codes (274 entries) | code, title_en, title_bm |
 | `StpmCourse` | `stpm_courses` | STPM degree programmes (1,113 rows) | name, university, stream, merit_score, field, category |
 | `StpmRequirement` | `stpm_requirements` | STPM eligibility rules | min_cgpa, min_muet_band, stpm_min_subjects, stpm_min_grade, subject requirements |
@@ -322,9 +322,8 @@ you?" card on the gift's Configuration (`AdminProgrammeConfigurationView`, rules
 `apps/scholarship/gift_sources.py`). The card offers only ACTIVE sources (`show_in_apply` AND
 `is_active`, never `tenants()`); **no row = not on that form** (the opposite default to the table
 above): a newly switched-on source joins no gift and a new gift starts with none. The Sources
-page only counts ("On N of M gifts", one annotated query). `PartnerOrganisation.programme` is
-DEPRECATED — read and written by nothing; migration 0172 seeded the links from it; a later
-migration drops it.
+page only counts ("On N of M gifts", one annotated query). `PartnerOrganisation.programme` left the
+model in sources Sprint B (TD-379); courses 0080 drops the column after that image is live.
 
 ⚠ **A GIFT SCOPE IS A NARROWING, NEVER A FENCE.** The organisation boundary is
 `_org_scoped`/`_org_allows`; these decide who is offered work. A reviewer scoped to one gift who is
@@ -346,12 +345,31 @@ from `lib/referralSources.ts`) lists them, then the three FIXED choices `halatuj
 — but ONLY when the list is known (a `sources` list, for a named gift); otherwise it is kept and
 shown by its code. The submit REFUSES any other code (400 `referral_source_not_offered`,
 `gift_sources.is_offered`, nothing written) and the form re-reads the list and asks again; on the
-apply path `profile_sync` fills the SOURCE column only through `active_sources()` (never a tenant,
-never for a fixed choice). The fixed codes and the house org's are RESERVED on Sources
+apply path `profile_sync` fills the SOURCE column only from the gift's offered sources (never a
+tenant, never another organisation's, never for a fixed choice). The fixed codes and the house org's are RESERVED on Sources
 (`code_reserved`). `REFERRING_ORG_OPTIONS` is deleted; the legacy `pushparani` / `govind` were moved
 to `other` (courses 0077). Admin labels come from the registry's names (`referralLabel`, and
 `referralAcronym(code, name)` — a new source reads as its name or its code, never "Other"), never a
-per-source message key. The Sources registry is shared across tenants (TD-381).
+per-source message key.
+
+⚠ **A SOURCE BELONGS TO ITS ORGANISATION** (sources and referral partners Sprint B, 2026-10-18;
+`apps/scholarship/models/sources.py`). `ReferralSource` rows are owned (`organisation`, PROTECT) and a
+code is unique PER organisation — so a source is never looked up by its code alone. The fence
+(`views_admin/sources.py` `_sources_in_scope`): an organisation's staff see / add / edit only their
+own (another's is a 404; organisation-less → none); a super is global and narrows with `?org=`; a new
+source's owner is `?org=`, else the super's own organisation, else the SOLE tenant if there is exactly
+one — always a tenant, else 400 `organisation_required`. `gift_sources` reads everything inside
+the GIFT's organisation; `partner_comms.chip_tally` is keyed (owning organisation, chip) and
+`partner_applications(source)` counts only its organisation's applications; milestones match
+(organisation, chip); the email screen and its log show the caller's sources only; the witness is one
+of the APPLICATION's organisation's sources. The five FKs that named a source moved here by a
+constraint swap (`ProgrammeReferralSource.source`, `StudentProfile.source` — a STRING reference from
+courses, no import — both `witness_org`, `PartnerEmailLog.organisation`, now PROTECT);
+`Invitation.organisation` stays the tenant. The house row is not a source. Until Sprint C,
+`referral_links.referring_org` answers the source, else the referral partner's source TWIN (same id
+AND code, `source_twin`); `is_same_organisation` is the witness-authority comparison. A `partner`
+login may be invited only onto an active referral partner (`partner_invite_org`; a NEW organisation
+created by that invite is marked), and an `org_admin` never onto one.
 
 ⚠ **THE STUDENT RECORD HAS TWO INDEPENDENT REFERRAL COLUMNS** (sources and referral partners Sprint A,
 2026-10-09; rules in `apps/courses/referral_links.py`; roadmap

@@ -118,8 +118,11 @@ class PartnerEmailLog(models.Model):
     A row is written even when the send FAILS (`ok=False`) and when it is skipped for
     having no recipient — silence must be visible, not indistinguishable from success.
     """
+    # The SOURCE written to (sources-and-referrals Sprint B, 2026-10-18 — same ids as the
+    # `partner_organisations` rows it named before). The field keeps its name and column.
+    # PROTECT, not CASCADE: this is the audit trail, and deleting a source must never take it.
     organisation = models.ForeignKey(
-        'courses.PartnerOrganisation', on_delete=models.CASCADE,
+        'ReferralSource', on_delete=models.PROTECT,
         related_name='partner_email_log',
     )
     kind = models.CharField(max_length=32, choices=PartnerEmailTemplate.KIND_CHOICES)

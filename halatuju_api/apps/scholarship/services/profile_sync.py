@@ -80,7 +80,7 @@ def merge_guardians(existing, incoming):
     return ([kept] if kept else []) + rest
 
 
-def sync_profile_fields(profile, data):
+def sync_profile_fields(profile, data, programme=None):
     """
     Write the form's financial + About Me/My Family fields back to the canonical
     profile (commit-on-submit, S9). Only keys that are present and non-None
@@ -88,6 +88,8 @@ def sync_profile_fields(profile, data):
     profile). Parent/guardian details land in the ``guardians`` JSON list, and
     the referring-organisation code resolves to the ``source`` FK — never to
     ``referred_by_org`` (two columns, 2026-10-09). NRIC is never written here — claim path only.
+    ``programme`` is the gift applied to: a source is resolved among ITS offered sources only, so
+    without one (the guardian-contact writers, which never carry the answer) no source is found.
     Returns the fields actually changed.
     """
     if profile is None:
@@ -116,15 +118,15 @@ def sync_profile_fields(profile, data):
     # only by a `?ref=` link (`apps.courses.referral_links`); writing it here put every student who
     # picked CUMIG on CUMIG's course-selector list. A key the write does not carry leaves it alone.
     # ⚠ ONLY AN OFFERED SOURCE (per-gift sources S2): the apply view has already refused a code its
-    # gift does not offer (`gift_sources.is_offered`), and the lookup goes through `active_sources()`
-    # — switched on, not suspended, NEVER a tenant. A FIXED choice (halatuju / social / other) is a
-    # chip, never an organisation: no lookup at all, so a row carrying a reserved code collects no one.
+    # gift does not offer (`gift_sources.is_offered`), and the lookup is the gift's OWN offered list
+    # (sources Sprint B: a code is unique per organisation, so never by code alone). A FIXED choice
+    # (halatuju / social / other) is a chip, never an organisation: no lookup, so it collects no one.
     from .. import gift_sources
     referral = data.get('referral_source')
     if referral is not None:
         source = None
         if referral and referral not in gift_sources.FIXED_CODES:
-            source = gift_sources.active_sources().filter(code=referral).first()
+            source = gift_sources.offered_sources(programme).filter(code=referral).first()
         if profile.source_id != getattr(source, 'pk', None):
             profile.source = source
             updated.append('source')

@@ -203,20 +203,13 @@ def banned_phrases(*parts):
 # ── who qualifies ─────────────────────────────────────────────────────────────
 
 def qualifying_partners():
-    """The organisations a partner email can actually reach, ordered by name.
-
-    Active, has a contact email, and is not the house org. Today this is EMPTY on prod — nine
-    referral partners, none with an address on file — which the admin screen states plainly
-    rather than looking as though it is working.
+    """The SOURCES a partner email can actually reach, ordered by name: active, with a contact
+    email, never the house org. Since sources Sprint B (2026-10-18) these are `ReferralSource`
+    rows, each owned by an organisation — never a tenant and never a platform referral partner.
     """
-    from apps.courses.models import PartnerOrganisation
-    return list(
-        PartnerOrganisation.objects
-        .filter(is_active=True)
-        .exclude(code=HOUSE_ORG_CODE)
-        .exclude(contact_email='')
-        .order_by('name')
-    )
+    from .models import ReferralSource
+    return list(ReferralSource.objects.filter(is_active=True).exclude(code=HOUSE_ORG_CODE)
+                .exclude(contact_email='').order_by('name'))
 
 
 def recipient_for(org):
@@ -268,26 +261,26 @@ CHIP_FIELD = 'profile__referral_source'
 
 
 def partner_applications(org):
-    """Every bursary application attributed to this organisation, by referral CHIP.
+    """Every bursary application attributed to this SOURCE: its chip AND its owning organisation's
+    applications only (sources Sprint B — a code is unique per organisation, so another
+    organisation's `smc` students are never this `smc`'s).
 
     THE single definition of "this partner's students". `views_admin._source_application_counts`
-    derives from `chip_tally()` below, and a test asserts the two agree for every organisation,
+    derives from `chip_tally()` below, and a test asserts the two agree for every source,
     so the weekly digest and the Sources screen can never report different numbers.
     """
-    return ScholarshipApplication.objects.filter(**{CHIP_FIELD: org.code})
+    return ScholarshipApplication.objects.filter(
+        **{CHIP_FIELD: org.code, 'owning_organisation_id': org.organisation_id})
 
 
 def chip_tally():
-    """`{chip: n}` across every application — one query. NULL/'' collapse to ''.
-
-    Org-fence: intentionally GLOBAL. The Sources registry lists every organisation and the house
-    org's count is the residual (total − claimed), so this tally must span all tenants. Single
-    tenant today; revisit the residual split if that changes.
-    """
+    """`{(owning organisation id, chip): n}` across every application — one query. NULL/'' chips
+    collapse to ''. Global ON PURPOSE: the caller picks each source's own (organisation, code)."""
     return {
-        (row[CHIP_FIELD] or ''): row['n']
-        # org-fence: GLOBAL by design (the house-org residual spans all tenants; see above)
-        for row in ScholarshipApplication.objects.values(CHIP_FIELD).annotate(n=Count('pk'))
+        (row['owning_organisation_id'], row[CHIP_FIELD] or ''): row['n']
+        # org-fence: GLOBAL by design — keyed by organisation, read one source at a time.
+        for row in (ScholarshipApplication.objects.values('owning_organisation_id', CHIP_FIELD)
+                    .annotate(n=Count('pk')))
     }
 
 

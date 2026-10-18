@@ -303,9 +303,9 @@ class ScholarshipApplication(models.Model):
     # resolution reads override -> profile.referred_by_org -> none. This lets an org_admin
     # assign a witness for a SOURCELESS student (a private arrangement made outside the
     # portal) without inventing a referral. NULL = derive from referred_by_org as before.
-    # SET_NULL so retiring an organisation never deletes the application.
+    # A SOURCE row since sources Sprint B (2026-10-18, same ids). SET_NULL: never deletes the app.
     witness_org = models.ForeignKey(
-        'courses.PartnerOrganisation', null=True, blank=True,
+        'ReferralSource', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='+',
     )
     # Post-award signing — the parent/guardian SURETY's phone-PIN verification, captured

@@ -47,11 +47,12 @@ class _Base(TestCase):
         cls.foreign_gift = Programme.objects.create(
             organisation=cls.other, code='gs-x', name_en='Another Tenant Gift')
 
-        # The referral source. ⚠ A referral organisation is an ATTRIBUTION relationship and is
-        # NOT the tenant that runs a gift — the two live in the same table, which is exactly why
-        # the model docstrings say so twice.
-        cls.source = PartnerOrganisation.objects.create(
-            code='smc', name='SMC', show_in_apply=True)
+        # The referral source. ⚠ A referral source is an ATTRIBUTION relationship and is NOT the
+        # tenant that runs a gift — since sources Sprint B (2026-10-18) it is its own row, OWNED by
+        # that tenant.
+        from apps.scholarship.models import ReferralSource
+        cls.source = ReferralSource.objects.create(
+            organisation=cls.org, code='smc', name='SMC', show_in_apply=True)
 
         cls.oa = PartnerAdmin.objects.create(
             supabase_user_id='gs-oa', role='org_admin', is_active=True,
@@ -81,8 +82,7 @@ class TestWhichGiftsListASource(_Base):
         r = self.client.patch(f'{SOURCES}{self.source.id}/', {'programme_id': self.sabah.id},
                               format='json')
         self.assertEqual(r.status_code, 400, r.content)
-        self.source.refresh_from_db()
-        self.assertIsNone(self.source.programme_id)
+        self.assertEqual(r.json()['code'], 'programme_id_retired')
 
     def test_switching_a_source_on_for_a_gift_reaches_its_student_form(self):
         """REWRITTEN by per-gift sources Sprint 2 (2026-10-08), which closed TD-230.

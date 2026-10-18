@@ -11,7 +11,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.courses.models import PartnerOrganisation, StudentProfile
+from apps.courses.models import StudentProfile
 from apps.scholarship import bursary
 from apps.scholarship.models import BursaryAgreement, ScholarshipApplication, ScholarshipCohort
 
@@ -24,11 +24,14 @@ def _executed_agreement(*, suffix='1', with_org=False, **overrides):
         code=f'di-{suffix}', name='B40', year=2026, owning_organisation=org)
     referring = None
     if with_org:
-        referring = PartnerOrganisation.objects.create(
-            code=f'di-ref-{suffix}', name='Ref Org', contact_email='partner@example.test')
+        # The witness is a SOURCE of the organisation (sources Sprint B), and the student named it.
+        from apps.scholarship.models import ReferralSource
+        referring = ReferralSource.objects.create(
+            organisation=org, code=f'di-ref-{suffix}', name='Ref Org',
+            contact_email='partner@example.test')
     profile = StudentProfile.objects.create(
         supabase_user_id=f'di-{suffix}', name='Stu', contact_email='stu@e.test',
-        referred_by_org=referring)
+        source=referring)
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='active', notify_email='stu@e.test',
         chosen_programme={'course_name': 'Diploma in Nursing'})

@@ -145,7 +145,7 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     # guardian_contact imports this package.
     from ..guardian_contact import record_change, screen_form_guardians
     old_contact = screen_form_guardians(profile, data)
-    sync_profile_fields(profile, data)
+    sync_profile_fields(profile, data, programme=getattr(cohort, 'programme', None))
 
     # 2. Create the application from per-application fields only; academic +
     #    financial data is read live from the profile by the shortlist engine.

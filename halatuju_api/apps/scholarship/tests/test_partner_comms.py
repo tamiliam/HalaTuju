@@ -23,7 +23,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import partner_comms
 from apps.scholarship.models import (
-    ApplicantDocument, PartnerEmailLog, PartnerEmailTemplate,
+    ApplicantDocument, PartnerEmailLog, PartnerEmailTemplate, ReferralSource,
     ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.views_admin import _source_application_counts
@@ -36,14 +36,26 @@ def _token(uid):
                       TEST_JWT_SECRET, algorithm='HS256')
 
 
-def _org(code, name=None, email=''):
-    """update_or_create, not create: a migration seeds the house organisation (BrightPath as
-    org #1, platform Sprint 1), so a test that needs it must adopt the existing row."""
-    org, _ = PartnerOrganisation.objects.update_or_create(
-        code=code,
+def _tenant():
+    """The house organisation a migration seeds (BrightPath, org #1, with its flagship gift) — the
+    tenant that owns every source and every application below unless a test says otherwise."""
+    return PartnerOrganisation.objects.get(code=partner_comms.HOUSE_ORG_CODE)
+
+
+def _org(code, name=None, email='', owner=None):
+    """A SOURCE (sources Sprint B: its own table, owned by an organisation — the house tenant
+    unless told otherwise). update_or_create so a class's fixture can adopt an existing row."""
+    org, _ = ReferralSource.objects.update_or_create(
+        organisation=owner or _tenant(), code=code,
         defaults={'name': name or code.upper(), 'contact_email': email, 'is_active': True},
     )
     return org
+
+
+def _cohort(code, owner=None):
+    """A round OWNED by the tenant: a source's students are its own organisation's applications."""
+    return ScholarshipCohort.objects.create(code=code, name='PC', year=2026,
+                                            owning_organisation=owner or _tenant())
 
 
 def _app(cohort, chip, status, n, *, submitted=None):
@@ -66,25 +78,30 @@ class TestQualifyingPartners(TestCase):
         self.assertEqual([o.id for o in partner_comms.qualifying_partners()], [with_email.id])
 
     def test_house_org_never_qualifies_even_with_an_address(self):
-        """BrightPath is US — the residual bucket in the Sources count. Sending ourselves a
-        partner digest when we have the officer cockpit is noise, so the exclusion is by RULE,
-        not by whether someone happens to have filled the field in."""
+        """BrightPath is US. Sending ourselves a partner digest when we have the officer cockpit is
+        noise, so the exclusion is by RULE: the house organisation is not a source (sources Sprint
+        B), and even a source row carrying its code with an address never qualifies."""
+        PartnerOrganisation.objects.filter(code=partner_comms.HOUSE_ORG_CODE).update(
+            contact_email='staff@example.org')
         _org(partner_comms.HOUSE_ORG_CODE, name='BrightPath', email='staff@example.org')
         self.assertEqual(partner_comms.qualifying_partners(), [])
 
     def test_inactive_org_never_qualifies(self):
         org = _org('dormant', email='x@example.org')
-        PartnerOrganisation.objects.filter(pk=org.pk).update(is_active=False)
+        ReferralSource.objects.filter(pk=org.pk).update(is_active=False)
         self.assertEqual(partner_comms.qualifying_partners(), [])
 
     def test_partner_logins_are_NOT_recipients(self):
         """THE correction of 2026-07-26. Two active `partner`-role logins exist on prod (both at
         CUMIG, created 2026-03-17, `owning_organisation` NULL — no B40 scope at all): they belong
         to the HalaTuju course-selector relationship. Emailing them bursary progress would send
-        applicant data to an audience attached for a different product."""
+        applicant data to an audience attached for a different product. Since sources Sprint B the
+        logins sit on the REFERRAL PARTNER row and the email reads the SOURCE row: two rows."""
+        partner = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG', is_referral_partner=True, contact_email='rp@example.org')
         org = _org('cumig')
         PartnerAdmin.objects.create(
-            supabase_user_id='pc-partner-1', role='partner', is_active=True, org=org,
+            supabase_user_id='pc-partner-1', role='partner', is_active=True, org=partner,
             name='Course-selector rep', email='rep@example.org')
         self.assertEqual(partner_comms.recipient_for(org), [])
         self.assertEqual(partner_comms.qualifying_partners(), [])
@@ -98,7 +115,7 @@ class TestStageCounts(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.org = _org('smc', email='smc@example.org')
-        cls.cohort = ScholarshipCohort.objects.create(code='pc-2026', name='PC', year=2026)
+        cls.cohort = _cohort('pc-2026')
 
     def test_every_status_lands_in_exactly_one_line(self):
         """If a new status is added and nobody classifies it, the partner's figures stop adding
@@ -148,29 +165,35 @@ class TestOnePredicate(TestCase):
     """The digest and the Sources screen must never report different numbers."""
 
     def test_agrees_with_source_application_counts(self):
-        cohort = ScholarshipCohort.objects.create(code='pc-agree', name='PC', year=2026)
+        cohort = _cohort('pc-agree')
         smc = _org('smc', email='smc@example.org')
         pptm = _org('pptm')
-        house = _org(partner_comms.HOUSE_ORG_CODE, name='BrightPath')
+        # A SECOND organisation with its own `smc` (sources Sprint B: a code is unique per
+        # organisation) and two students of its own — never counted as the first one's.
+        other = PartnerOrganisation.objects.create(code='pc-other', name='Other Tenant')
+        other_smc = _org('smc', owner=other)
+        other_cohort = _cohort('pc-agree-other', owner=other)
         for i in range(3):
             _app(cohort, 'smc', 'shortlisted', i)
         _app(cohort, 'pptm', 'awarded', 10)
-        _app(cohort, 'halatuju', 'shortlisted', 20)   # self-referral → house residual
-        _app(cohort, '', 'shortlisted', 21)           # blank chip → house residual
+        _app(cohort, 'halatuju', 'shortlisted', 20)   # self-referral → nobody's source
+        _app(cohort, '', 'shortlisted', 21)           # blank chip → nobody's source
+        _app(other_cohort, 'smc', 'shortlisted', 30)
+        _app(other_cohort, 'smc', 'awarded', 31)
 
         counts = _source_application_counts()
-        for org in (smc, pptm):
+        for org in (smc, pptm, other_smc):
             self.assertEqual(
                 counts[org.id], partner_comms.partner_applications(org).count(),
                 f'{org.code}: the Sources screen and the digest disagree')
-        self.assertEqual(counts[house.id], 2, 'the house org takes the unclaimed residual')
+        self.assertEqual((counts[smc.id], counts[pptm.id], counts[other_smc.id]), (3, 1, 2))
 
 
 class TestChaseRows(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.org = _org('smc', email='smc@example.org')
-        cls.cohort = ScholarshipCohort.objects.create(code='pc-chase', name='PC', year=2026)
+        cls.cohort = _cohort('pc-chase')
 
     def test_only_shortlisted_students_appear(self):
         _app(self.cohort, 'smc', 'shortlisted', 1)
@@ -226,7 +249,7 @@ class TestChaseRows(TestCase):
 class TestMilestoneQueryset(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='pc-ms', name='PC', year=2026)
+        cls.cohort = _cohort('pc-ms')
         _org('smc', email='smc@example.org')
 
     def test_awaiting_review_picks_unstamped_profile_complete(self):
@@ -399,17 +422,19 @@ class TestPartnerEmailEndpoints(TestCase):
         from django.core.management import call_command
         cls.org = _org('smc', email='smc@example.org')
         call_command('seed_partner_email_templates', verbosity=0)
+        tenant = _tenant()
         cls.org_admin = PartnerAdmin.objects.create(
             supabase_user_id='pc-oa', role='org_admin', is_active=True,
-            owning_organisation=cls.org, name='OrgAdmin', email='oa@example.org')
+            owning_organisation=tenant, name='OrgAdmin', email='oa@example.org')
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='pc-rev', role='reviewer', is_active=True,
-            owning_organisation=cls.org, name='Reviewer', email='rev@example.org')
+            owning_organisation=tenant, name='Reviewer', email='rev@example.org')
         cls.qc = PartnerAdmin.objects.create(
             supabase_user_id='pc-qc', role='qc', is_active=True,
-            owning_organisation=cls.org, name='QC', email='qc@example.org')
+            owning_organisation=tenant, name='QC', email='qc@example.org')
         cls.partner = PartnerAdmin.objects.create(
-            supabase_user_id='pc-par', role='partner', is_active=True, org=cls.org,
+            supabase_user_id='pc-par', role='partner', is_active=True,
+            org=PartnerOrganisation.objects.create(code='pc-rp', name='RP', is_referral_partner=True),
             name='Course rep', email='rep@example.org')
 
     def setUp(self):
@@ -483,14 +508,30 @@ class TestPartnerEmailEndpoints(TestCase):
         self.assertFalse(by_code['noaddress']['qualifies'])
         self.assertFalse(by_code['noaddress']['has_email'])
 
-    def test_house_org_is_marked_and_never_qualifies(self):
-        _org(partner_comms.HOUSE_ORG_CODE, name='BrightPath', email='staff@example.org')
+    def test_the_house_org_is_not_a_source_so_it_is_not_listed(self):
+        """Sources Sprint B: the house organisation left the Sources list — it is a tenant, not a
+        source — so the email screen neither lists nor counts it, address or not."""
+        PartnerOrganisation.objects.filter(code=partner_comms.HOUSE_ORG_CODE).update(
+            contact_email='staff@example.org')
         self._auth('pc-oa')
         body = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()
-        house = next(o for o in body['organisations'] if o['code'] == partner_comms.HOUSE_ORG_CODE)
-        self.assertTrue(house['is_house_org'])
-        self.assertFalse(house['qualifies'])
+        self.assertEqual([o['code'] for o in body['organisations']], ['smc'])
+        self.assertFalse(any(o['is_house_org'] for o in body['organisations']))
         self.assertEqual(body['partner_count'], 1, 'the house org is not counted as a partner')
+
+    def test_another_organisations_sources_and_sends_are_not_shown(self):
+        """The fence (sources Sprint B): an organisation's staff see their own sources, their
+        counts and their send log — never a second organisation's."""
+        other = PartnerOrganisation.objects.create(code='pc-other', name='Other Tenant')
+        theirs = _org('theirs', email='t@example.org', owner=other)
+        PartnerEmailLog.objects.create(organisation=theirs, kind='weekly_summary', ok=True,
+                                       recipients=['t@example.org'], fingerprint='x')
+        self._auth('pc-oa')
+        body = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()
+        self.assertEqual([o['code'] for o in body['organisations']], ['smc'])
+        self.assertEqual(body['qualifying_count'], 1)
+        weekly = next(t for t in body['templates'] if t['kind'] == 'weekly_summary')
+        self.assertIsNone(weekly['last_sent_at'], "another organisation's send is not ours")
 
     def test_reviewer_qc_and_partner_are_refused(self):
         for uid in ('pc-rev', 'pc-qc', 'pc-par'):

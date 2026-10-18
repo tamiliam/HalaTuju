@@ -14013,3 +14013,75 @@ lose their witness organisation — signing is off, so nothing is sent.
 **Revisit if:** Sprints B–D (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`), a second
 referral partner is added (mark it by hand until Sprint B's screen exists), or a source wants a `?ref`
 link of its own.
+
+## 2026-10-18 — Sources become their own table, owned by an organisation
+
+**Decision (sources and referral partners Sprint B; the owner's model of 2026-10-09, not re-opened):**
+a SOURCE is its own record, `ReferralSource` (table `referral_sources`), owned by the organisation
+that added it; only that organisation sees, adds, edits or switches it off, and it is never shared.
+Platform REFERRAL PARTNERS stay on `partner_organisations`, owned by no organisation, with their
+logins, `?ref=` links and students untouched. CUMIG is both: its referral-partner row stays where it
+is; its source row is a copy owned by BrightPath.
+- **Same ids, constraint swaps.** Every source row is copied keeping its id, so the five foreign keys
+  that named a source (`ProgrammeReferralSource.source`, `StudentProfile.source`, both `witness_org`,
+  `PartnerEmailLog.organisation`) move by swapping their constraint — no value rewritten — and the
+  image still serving keeps reading `partner_organisations`, whose rows all remain. The new sequence
+  starts past both tables. The owner of the copies is DERIVED (the one tenant) — the migration and the
+  cutover refuse if there is not exactly one.
+- **Nothing dangles silently.** A witness or email-log value naming a non-source (a tenant, the house)
+  makes the migration and the cutover refuse; the owner decides what it should name.
+- **`PartnerEmailLog.organisation` is PROTECT** (was CASCADE): deleting a source must never take the
+  audit trail.
+- **`Invitation.organisation` stays on `partner_organisations`.** It is the tenant for every staff
+  invitation; no `source_partner` invitation has ever been written (cutover pre-check asserts 0).
+  The source-invitation feature picks its column when it is built.
+
+**Lead rulings in the build:**
+- **Super conventions (`views_admin/base.py`):** a super is GLOBAL on Sources and the email screen and
+  narrows with the organisation crumb `?org=<code>` (`_org_narrowing`: 404 for an unknown code). A
+  NEW source's owner is `?org=`, else the super's own organisation, else — for an organisation-less
+  super — the platform's SOLE tenant when there is exactly one (evidence, not a guess: the
+  `signup_programme_for` rule; the Sources page sends no `?org=`, so production today keeps working);
+  it must be a tenant; otherwise 400 `organisation_required` and never a pick between several (the
+  TD-334 "say which" rule). Everybody else
+  is fenced to their own organisation; an organisation-less caller sees none (never everybody's).
+  Another organisation's source is a 404, and its code is never "taken" for you (that would confirm it).
+- **The witness choice is one of the APPLICATION's organisation's sources** — for a super too — and
+  the witness view now 404s another organisation's application (it had no row fence).
+- **Codes are unique per organisation**, so a source is never looked up by its code alone: the
+  submit's profile lookup reads the GIFT's offered sources (`sync_profile_fields(…, programme=)`), the
+  partner counts and emails key on (organisation, code), and milestones match an application to the
+  source of ITS organisation.
+- **Invites — REFUSE, not mark.** A `partner` login may be invited only onto an active referral partner
+  (`referral_links.partner_invite_org`): a tenant, a source's old row, a switched-off row or a reserved
+  code is refused with a sentence the screen shows. A NEW organisation created by that invite IS marked
+  (it exists only for this login, which is what a referral partner is). Marking an EXISTING row stays a
+  reviewed SQL update until the referral-partner screen (now Sprint D): marking changes which students
+  a `?ref=` collects, so it is a platform decision of its own, never a side effect of asking someone to
+  sign in. An `org_admin` invite onto a referral partner is refused, so an invite can never turn a
+  referral partner into a tenant. `GET /admin/orgs/` (the partner invite dropdown) lists referral
+  partners only.
+- **The witness bridge until Sprint C:** `referring_org` now always answers a SOURCE row — her source,
+  else her referral partner's source TWIN, paired by id AND code (ids alone could pair strangers once
+  the two sequences move on). The authority check compares a partner login's organisation with that
+  twin the same way. Sprint C removes the bridge (owner: the witness is never the referral partner).
+- **The house row left the Sources list**, and with it the "residual" count it carried; a
+  self-referral or blank is nobody's source.
+- **TD-379:** the field left the model now; the column drop (`courses/0080`) runs AFTER the deploy.
+- **Web unchanged:** every changed answer keeps its shape (`organisation` is an added key), the email
+  screen's `is_house_org` stays (always false), and the invite refusals arrive as the server's sentence.
+
+**Alternatives considered:** (a) an owner column on `partner_organisations` — would make BrightPath own
+platform data (CUMIG's referral-partner row) — the owner ruled it out; (b) new FK columns beside the old
+ones with a backfill — more DDL, a dual-write window and a data rewrite, for no benefit once the ids are
+kept; (c) mark a row on invite — a side effect that changes whose students a `?ref` collects; (d) move
+`Invitation.organisation` — it would break every staff invitation, and nothing writes the audience it
+was meant for.
+
+**Trade-offs:** between the cutover and the deploy the old image still writes sources to
+`partner_organisations` — Sources and gift Configuration are FROZEN for that window, and two
+post-deploy checks list anything written there. A rollback after the deploy must first copy any source
+created since into `partner_organisations`. The twin bridge pairs CUMIG's two rows by id until Sprint C.
+
+**Revisit if:** a second organisation joins (the fence is now real), the source-invitation feature is
+built (its column), or Sprint C retires the twin bridge.

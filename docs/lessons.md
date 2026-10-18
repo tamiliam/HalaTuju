@@ -1336,3 +1336,25 @@ to the partner emails a referral sends. Only the adversarial review saw it. **Ru
 with fixed or system codes, refuse the reserved codes at CREATION and never look a fixed code up in
 the user registry; add a test that tries to create each reserved one. (per-gift referral sources,
 review should-fix 3)
+
+## 2026-10-18 — a budget another session can tighten is measured on the MERGED tree
+
+Sources Sprint A was green on its own branch with one new lazy `courses → scholarship` import (18 of
+a budget of 20). The staff-lifecycle sprint, merged first, tightened that budget to 17 by folding its
+own imports into one door. Rebased together, the code-standards test read 18 > 17 and the full suite
+went red — each change was fine alone. **Rule:** after a rebase onto another session's work, re-run
+BOTH full suites with the deploy gate's own command line on the merged tree before the push; a
+ratchet number from before the rebase is a reading of a tree that no longer exists. And when a
+boundary is at its budget, pin a COPY of the constant with a drift test rather than adding an import.
+(sources-and-referrals Sprint A, `4570eb8f`)
+
+## 2026-10-18 — a foreign key that moves tables moves by its constraint, and the ids make it possible
+
+Sources Sprint B moved five foreign keys from `partner_organisations` to the new `referral_sources`.
+Copying the rows WITH THEIR IDS turned every repoint into a constraint swap — no value rewritten, no
+backfill to get wrong, and the image still serving keeps reading the old table, whose rows are all
+still there under the same ids. Two things the swap needs that are easy to miss: the seed's pending
+deferred-FK events must be settled (`SET CONSTRAINTS ALL IMMEDIATE`) before any `ADD CONSTRAINT …
+REFERENCES` the new table; and the new id sequence must start past BOTH tables, or a later row can take
+an id that already means another organisation in the old one. Where two tables share ids by design,
+pair rows by id AND a natural key (here the code), never by id alone. (sources-and-referrals Sprint B)

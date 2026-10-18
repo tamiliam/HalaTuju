@@ -134,11 +134,12 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
         # intentionally used for authorisation. A non-blocking record only.
         # Two columns (2026-10-09): her source, else her referral partner — the organisation the one
         # `referred_by_org` column named before; Sprint C makes it the source only, super only.
-        from apps.courses.referral_links import referring_org
+        # Since sources Sprint B `org` is a SOURCE row and `admin.org` a `partner_organisations` row:
+        # they are the same organisation only as seeded twins (same id AND code).
+        from apps.courses.referral_links import is_same_organisation, referring_org
         org = referring_org(profile)
         is_super = bool(admin.is_super_admin or self.has_role(admin, 'super'))
-        is_referring_partner = bool(
-            org is not None and admin.org_id is not None and admin.org_id == org.id)
+        is_referring_partner = is_same_organisation(admin.org_id, org)
         if not (is_super or is_referring_partner):
             return self._deny_role()
         from .. import bursary

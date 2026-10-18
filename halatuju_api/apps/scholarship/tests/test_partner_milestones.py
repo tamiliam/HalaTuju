@@ -12,7 +12,8 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import partner_comms, partner_notify
 from apps.scholarship.models import (
-    PartnerEmailLog, PartnerEmailTemplate, ScholarshipApplication, ScholarshipCohort,
+    PartnerEmailLog, PartnerEmailTemplate, ReferralSource, ScholarshipApplication,
+    ScholarshipCohort,
 )
 
 TEST_JWT_SECRET = 'test-secret-partner-milestones'
@@ -25,9 +26,20 @@ def _token(uid):
                       TEST_JWT_SECRET, algorithm='HS256')
 
 
-def _org(code, name=None, email='partner@example.org'):
-    org, _ = PartnerOrganisation.objects.update_or_create(
-        code=code,
+def _tenant():
+    """The seeded house organisation, which owns every source and round here (sources Sprint B)."""
+    return PartnerOrganisation.objects.get(code=partner_comms.HOUSE_ORG_CODE)
+
+
+def _cohort(code):
+    return ScholarshipCohort.objects.create(code=code, name='PM', year=2026,
+                                            owning_organisation=_tenant())
+
+
+def _org(code, name=None, email='partner@example.org', owner=None):
+    """A SOURCE owned by the house tenant unless told otherwise (sources Sprint B)."""
+    org, _ = ReferralSource.objects.update_or_create(
+        organisation=owner or _tenant(), code=code,
         defaults={'name': name or code.upper(), 'contact_email': email,
                   'contact_person': 'Sivamani', 'is_active': True},
     )
@@ -51,7 +63,7 @@ class TestMilestones(TestCase):
     @classmethod
     def setUpTestData(cls):
         _seed()
-        cls.cohort = ScholarshipCohort.objects.create(code='pm-2026', name='PM', year=2026)
+        cls.cohort = _cohort('pm-2026')
 
     def setUp(self):
         mail.outbox = []
@@ -124,7 +136,7 @@ class TestMilestones(TestCase):
         app = _app(self.cohort, 'noaddr', 'profile_complete', 1)
         partner_notify.send_partner_milestones()
         self.assertEqual(mail.outbox, [])
-        PartnerOrganisation.objects.filter(pk=org.pk).update(contact_email='now@example.org')
+        ReferralSource.objects.filter(pk=org.pk).update(contact_email='now@example.org')
         partner_notify.send_partner_milestones()
         self.assertEqual(len([m for m in mail.outbox if 'completed' in m.subject]), 1)
         app.refresh_from_db()
@@ -225,12 +237,12 @@ class TestAssignmentEmail(TestCase):
     @classmethod
     def setUpTestData(cls):
         _seed()
-        cls.cohort = ScholarshipCohort.objects.create(code='pm-as', name='PM', year=2026)
+        cls.cohort = _cohort('pm-as')
         cls.org = _org('smc')
         cls.other = _org('pptm', email='pptm@example.org')
         cls.org_admin = PartnerAdmin.objects.create(
             supabase_user_id='pm-oa', role='org_admin', is_active=True,
-            owning_organisation=cls.org, name='OrgAdmin', email='oa@example.org')
+            owning_organisation=_tenant(), name='OrgAdmin', email='oa@example.org')
 
     def setUp(self):
         self.client = APIClient()
@@ -281,7 +293,7 @@ class TestAssignmentEmail(TestCase):
         self.assertEqual(mail.outbox, [])
 
     def test_an_unreachable_organisation_is_assigned_and_logged_not_emailed(self):
-        PartnerOrganisation.objects.filter(pk=self.org.pk).update(contact_email='')
+        ReferralSource.objects.filter(pk=self.org.pk).update(contact_email='')
         r = self._assign('smc')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(mail.outbox, [])
@@ -305,12 +317,12 @@ class TestTheStudentIsToldToo(TestCase):
     @classmethod
     def setUpTestData(cls):
         _seed()
-        cls.cohort = ScholarshipCohort.objects.create(code='pm-st', name='PM', year=2026)
+        cls.cohort = _cohort('pm-st')
         cls.org = _org('smc', name='Kandaswamy Foundation')
         cls.other = _org('pptm', name='Persatuan Pendidikan Tamil', email='pptm@example.org')
         PartnerAdmin.objects.create(
             supabase_user_id='pm-st-oa', role='org_admin', is_active=True,
-            owning_organisation=cls.org, name='OrgAdmin', email='oa@example.org')
+            owning_organisation=_tenant(), name='OrgAdmin', email='oa@example.org')
 
     def setUp(self):
         self.client = APIClient()

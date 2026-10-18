@@ -361,10 +361,17 @@ class TestSignInvitationArmsDeadline(TestCase):
 class TestWitnessResolution(TestCase):
     @classmethod
     def setUpTestData(cls):
+        from apps.scholarship.models import ReferralSource
         cls.org = brightpath_org()
         cls.cohort = _cohort(cls.org)
-        cls.referral = PartnerOrganisation.objects.create(code='wr-ref', name='Referral Org')
-        cls.override = PartnerOrganisation.objects.create(code='wr-ovr', name='Override Org')
+        # Sources Sprint B: the referral partner row and its SOURCE twin (same id and code); the
+        # override is a source of the organisation.
+        cls.referral = PartnerOrganisation.objects.create(code='wr-ref', name='Referral Org',
+                                                          is_referral_partner=True)
+        cls.referral_source = ReferralSource.objects.create(
+            pk=cls.referral.pk, organisation=cls.org, code='wr-ref', name='Referral Org')
+        cls.override = ReferralSource.objects.create(organisation=cls.org, code='wr-ovr',
+                                                     name='Override Org')
 
     def _app(self, suffix, *, referred=None, override=None):
         app = _fundable_app(self.cohort, suffix=suffix, referred=referred)
@@ -379,7 +386,7 @@ class TestWitnessResolution(TestCase):
 
     def test_referral_when_no_override(self):
         app = self._app('ref', referred=self.referral)
-        self.assertEqual(bursary._resolve_witness_org(app), self.referral)
+        self.assertEqual(bursary._resolve_witness_org(app), self.referral_source)
 
     def test_none_when_neither(self):
         app = self._app('none')
@@ -400,11 +407,13 @@ class TestSourcesAdminAPI(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        from apps.scholarship.models import ReferralSource
         cls.org = brightpath_org()
         cls.cohort = _cohort(cls.org)
-        cls.src = PartnerOrganisation.objects.create(
-            code='src-a', name='Source A', contact_person='P', contact_email='p@e.test',
-            phone='0111', show_in_apply=True)
+        # A SOURCE owned by the organisation (sources Sprint B).
+        cls.src = ReferralSource.objects.create(
+            organisation=cls.org, code='src-a', name='Source A', contact_person='P',
+            contact_email='p@e.test', phone='0111', show_in_apply=True)
         cls.superadmin = PartnerAdmin.objects.create(
             supabase_user_id='gl-super', is_super_admin=True, is_active=True,
             name='Super', email='s@x.com')
@@ -424,7 +433,8 @@ class TestSourcesAdminAPI(TestCase):
         # Counts come from bursary APPLICATIONS attributed by referral CHIP
         # (profile.referral_source) — NOT the referred_by_org FK. One applicant via
         # src-a → src-a's count is 1; two self-referred applicants (chips that name no
-        # partner) fall to the house org (brightpath) as its residual → count 2.
+        # source) are nobody's source — since sources Sprint B the house org is not a source
+        # and no longer carries them as a residual.
         for suffix, chip in (('srca', 'src-a'), ('house1', 'halatuju'), ('house2', 'social')):
             a = _fundable_app(cls.cohort, suffix=suffix)
             a.profile.referral_source = chip
@@ -447,28 +457,33 @@ class TestSourcesAdminAPI(TestCase):
             # External partner: application count by its own chip.
             self.assertEqual(rows['src-a']['student_count'], 1, uid)
             self.assertEqual(rows['src-a']['phone'], '0111', uid)
-            # House org: residual of every application not claimed by a partner
-            # (the two self-referred applicants above).
-            self.assertEqual(rows['brightpath']['student_count'], 2, uid)
+            # The house org is not a source (sources Sprint B): it is not listed at all.
+            self.assertNotIn('brightpath', rows, uid)
 
-    def test_house_org_is_residual_not_fk(self):
-        # A drifted FK must NOT leak into a partner's count: an applicant whose chip is
-        # a self-referral ('other') but whose stale referred_by_org still points at
-        # src-a counts for the HOUSE org, never src-a. Guards the CUMIG-inflation bug.
+    def test_a_drifted_partner_link_never_reaches_a_source_count(self):
+        # A drifted FK must NOT leak into a source's count: an applicant whose chip is a
+        # self-referral ('other') but whose referred_by_org names a referral partner counts for
+        # nobody's source. Guards the CUMIG-inflation bug.
+        partner = PartnerOrganisation.objects.create(code='gl-rp', name='RP',
+                                                     is_referral_partner=True)
         drift = _fundable_app(self.cohort, suffix='drift')
         drift.profile.referral_source = 'other'
-        drift.profile.referred_by_org = self.src
+        drift.profile.referred_by_org = partner
         drift.profile.save(update_fields=['referral_source', 'referred_by_org'])
         self._auth('gl-super')
         rows = {s['code']: s for s in self.client.get(self.SOURCES).json()['sources']}
         self.assertEqual(rows['src-a']['student_count'], 1)       # unchanged by the drift
-        self.assertEqual(rows['brightpath']['student_count'], 3)  # 2 residual + this one
+        self.assertEqual(set(rows), {'src-a'})                    # no partner, no house row
 
     def test_admin_role_can_create(self):
+        from apps.scholarship.models import ReferralSource
         self._auth('gl-adm')
         r = self.client.post(self.SOURCES, {'code': 'admincreated', 'name': 'By Admin'}, format='json')
         self.assertEqual(r.status_code, 201)
-        self.assertTrue(PartnerOrganisation.objects.filter(code='admincreated').exists())
+        # Owned by the caller's organisation (sources Sprint B); no partner_organisations row.
+        self.assertTrue(ReferralSource.objects.filter(code='admincreated',
+                                                      organisation=self.org).exists())
+        self.assertFalse(PartnerOrganisation.objects.filter(code='admincreated').exists())
 
     def test_reviewer_and_qc_forbidden(self):
         for uid in ('gl-rev', 'gl-qc'):
@@ -477,14 +492,16 @@ class TestSourcesAdminAPI(TestCase):
             self.assertEqual(self.client.post(self.SOURCES, {'code': 'x', 'name': 'X'}).status_code, 403, uid)
 
     def test_create_source(self):
+        # A super with no organisation of its own names the owner with the crumb (`?org=`).
+        from apps.scholarship.models import ReferralSource
         self._auth('gl-super')
-        r = self.client.post(self.SOURCES, {'code': 'NewOrg', 'name': 'New Org', 'phone': '0999'},
-                             format='json')
+        r = self.client.post(self.SOURCES + '?org=brightpath',
+                             {'code': 'NewOrg', 'name': 'New Org', 'phone': '0999'}, format='json')
         self.assertEqual(r.status_code, 201)
-        self.assertTrue(PartnerOrganisation.objects.filter(code='neworg').exists())
+        self.assertTrue(ReferralSource.objects.filter(code='neworg', organisation=self.org).exists())
 
     def test_create_duplicate_code_rejected(self):
-        self._auth('gl-super')
+        self._auth('gl-oa')
         r = self.client.post(self.SOURCES, {'code': 'src-a', 'name': 'Dup'}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'code_taken')

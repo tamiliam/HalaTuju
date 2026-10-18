@@ -54,7 +54,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import requirements
 from apps.scholarship.models import (
-    Consent, Programme, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
+    Consent, Programme, ReferralSource, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
 )
 
 # ── The test JWT, in one place ──────────────────────────────────────────────────────────────
@@ -225,6 +225,17 @@ def make_org(code=None, **kw):
     """A tenant ``PartnerOrganisation``. Unique code per call unless one is given."""
     kw.setdefault('name', f'Test Organisation {code or ""}'.strip())
     return PartnerOrganisation.objects.create(code=code or unique_suffix('org-'), **kw)
+
+
+def make_source(organisation=None, code=None, **kw):
+    """A referral SOURCE owned by ``organisation`` (one is made when omitted) — sources Sprint B.
+    Switched on (``show_in_apply``) and active unless told otherwise; name = the code in capitals.
+    ``pk=`` gives it the id of the ``partner_organisations`` row it is the twin of (CUMIG)."""
+    code = code or unique_suffix('src-')
+    kw.setdefault('name', code.upper())
+    kw.setdefault('show_in_apply', True)
+    return ReferralSource.objects.create(
+        organisation=organisation if organisation is not None else make_org(), code=code, **kw)
 
 
 def make_programme(organisation=None, code=None, **kw):

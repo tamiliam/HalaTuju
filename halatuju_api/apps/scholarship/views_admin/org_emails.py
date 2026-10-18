@@ -55,13 +55,18 @@ class AdminPartnerEmailsView(_SourcesBase):
         if err:
             return err
         from django.conf import settings as _settings
-        from apps.courses.models import PartnerOrganisation
         from .. import partner_comms
         from ..models import PartnerEmailLog, PartnerEmailTemplate
+        # Sources Sprint B (2026-10-18): the sources, their counts and the send log are the
+        # CALLER'S ORGANISATION'S only (a super: every organisation's, or `?org=`'s). The
+        # templates themselves are still one platform-wide set — their wording is not fenced.
+        sources, err = self._sources_in_scope(request, admin)
+        if err:
+            return err
 
         by_kind = {t.kind: t for t in PartnerEmailTemplate.objects.all()}
         last = {}
-        for row in (PartnerEmailLog.objects.filter(ok=True)
+        for row in (PartnerEmailLog.objects.filter(ok=True, organisation__in=sources)
                     .values('kind').annotate(sent_at=Max('sent_at'), orgs=Count('organisation',
                                                                                 distinct=True))):
             last[row['kind']] = row
@@ -86,11 +91,12 @@ class AdminPartnerEmailsView(_SourcesBase):
             for k in partner_comms.KINDS
             if k in by_kind and (k in wanted if wanted is not None else k not in named)
         ]
-        qualifying = {o.id for o in partner_comms.qualifying_partners()}
+        visible = list(sources.order_by('name', 'pk'))
+        qualifying = {o.id for o in partner_comms.qualifying_partners()} & {o.id for o in visible}
         counts = _source_application_counts()
-        # Every organisation, each with WHY it does or doesn't qualify — the house org is excluded
-        # by rule (it is us), the rest simply need an address.
-        # org-fence: GLOBAL by design — this mirrors the Sources registry, which lists every org.
+        # Every source in the fence, each with WHY it does or doesn't qualify (it needs an address).
+        # The house org is not a source since Sprint B, so `is_house_org` is false on every row;
+        # the key stays for the screen already deployed.
         orgs = [
             {
                 'id': o.id, 'code': o.code, 'name': o.name,
@@ -99,7 +105,7 @@ class AdminPartnerEmailsView(_SourcesBase):
                 'is_house_org': o.code == partner_comms.HOUSE_ORG_CODE,
                 'qualifies': o.id in qualifying,
             }
-            for o in PartnerOrganisation.objects.order_by('name')
+            for o in visible
         ]
         return Response({
             'templates': templates,

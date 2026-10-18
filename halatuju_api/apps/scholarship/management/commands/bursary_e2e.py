@@ -149,9 +149,11 @@ class Command(BaseCommand):
 
         org = None
         if not no_org:
-            org = PartnerOrganisation.objects.create(
-                code='e2e-org', name='E2E Partner', contact_email='partner@example.test',
-                contact_person='Cik Partner')
+            # A SOURCE of the owner organisation (sources Sprint B: its own table, owned).
+            from apps.scholarship.models import ReferralSource
+            org = ReferralSource.objects.create(
+                organisation=owner_org, code='e2e-org', name='E2E Partner',
+                contact_email='partner@example.test', contact_person='Cik Partner')
         # The Foundation officer who can countersign (super).
         PartnerAdmin.objects.create(
             supabase_user_id='e2e-super', name='Foundation Officer',

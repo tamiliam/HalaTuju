@@ -147,8 +147,10 @@ class ProgrammeReferralSource(models.Model):
     programme = models.ForeignKey(
         Programme, on_delete=models.CASCADE, related_name='referral_source_links',
     )
+    # Sources-and-referrals Sprint B (2026-10-18): a source is its own row, owned by an organisation
+    # (`ReferralSource`, same ids as the `partner_organisations` rows it was copied from).
     source = models.ForeignKey(
-        'courses.PartnerOrganisation', on_delete=models.CASCADE, related_name='gift_links',
+        'ReferralSource', on_delete=models.CASCADE, related_name='gift_links',
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

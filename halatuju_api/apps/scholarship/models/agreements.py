@@ -74,8 +74,9 @@ class BursaryAgreement(models.Model):
     foundation_signed_at = models.DateTimeField(null=True, blank=True)
 
     # ── Witness (partner/referring organisation; non-blocking) ────────────────
+    # A SOURCE row since sources-and-referrals Sprint B (2026-10-18; same ids as before).
     witness_org = models.ForeignKey(
-        'courses.PartnerOrganisation', null=True, blank=True,
+        'ReferralSource', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='+',
     )
     witness_signed_by = models.CharField(max_length=200, blank=True, default='')

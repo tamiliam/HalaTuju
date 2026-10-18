@@ -18,8 +18,10 @@ import { Toggle } from '@/components/sources/shared'
 // contact_person / contact_email (NOT a separate contact_phone column). The active-in-apply
 // toggle decides which sources a gift's Configuration may OFFER; each gift then switches its own
 // on (2026-10-08), and this page shows "On N of M gifts". Referral attribution is unaffected.
-// The "Students" count = bursary APPLICATIONS attributed to the org by referral chip
-// (backend _source_application_counts); the house org "BrightPath" gets the residual.
+// The "Students" count = bursary APPLICATIONS attributed to the source by referral chip, among
+// its own organisation's applications (backend _source_application_counts). Since sources Sprint
+// B (2026-10-18) every row is a source OWNED by the caller's organisation — the house org is not a
+// source, so it is not listed and carries no residual.
 //
 // TWO PANELS, one badge each (owner ruling, 2026-07-26): Organisations is the default and the
 // registry is the thing you land on; Partner emails is a deliberate second click. They were

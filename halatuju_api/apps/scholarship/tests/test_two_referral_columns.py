@@ -11,22 +11,32 @@ NEITHER WRITER EVER TOUCHES THE OTHER. The `partner`-role logins see `referred_b
 2. A `?ref=` sign-in sync writes the REFERRAL PARTNER only — first touch, partner rows only — and
    no longer overwrites the bursary answer on the chip.
 3. `PUT /profile/` can set neither.
-4. The partner logins' list, on a production-shaped fixture, before and after the backfill.
-5. The migration (courses 0078): the marker, the backfill, idempotence.
+4. The partner logins' list, on a production-shaped fixture, as the writers keep it.
+5. The migration (courses 0078): the marker.
 6. What the image already serving needs: payload keys, and an INSERT that does not name the column.
-"""
-from importlib import import_module
 
+Sources-and-referrals Sprint B (2026-10-18) moved SOURCES into their own table, owned by the
+organisation: this world now has CUMIG as a REFERRAL PARTNER row (`partner_organisations`, its
+login, `referred_by_org`) AND a SOURCE twin (`referral_sources`, same id and code, owned by the
+tenant), and SMC as a source only — production's shape after the Sprint B cutover. The three tests
+of 0078's BACKFILL left with it: they ran that data step against the live models, and once the
+source column names the new table a backfill writing `partner_organisations` ids cannot run. It ran
+on production on 2026-10-18 with the counts in `docs/scholarship/two-columns-cutover-sql.md`; what
+it protected — the partner list unchanged — is pinned here against the writers and in
+`test_sources_b.py` against the Sprint B copy.
+"""
 from django.apps import apps as live_apps
 from django.db import connection
 from django.test import TestCase, override_settings
+
+from importlib import import_module
 
 from apps.courses import referral_links
 from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship.models import ProgrammeReferralSource, ScholarshipApplication
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
-    make_programme, make_shortlistable_student, make_student,
+    make_programme, make_shortlistable_student, make_source, make_student,
 )
 
 MIGRATION = import_module('apps.courses.migrations.0078_two_referral_columns')
@@ -37,6 +47,8 @@ PARTNER_LIST = '/api/v1/admin/students/'
 
 
 def _org(code, *, partner=False, show=True, active=True):
+    """A `partner_organisations` row — since Sprint B, a REFERRAL PARTNER (or a tenant), never a
+    source."""
     return PartnerOrganisation.objects.create(
         code=code, name=code.upper(), show_in_apply=show, is_active=active,
         is_referral_partner=partner)
@@ -49,7 +61,7 @@ def _snapshot(code):
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class _World(TestCase):
     """One tenant running one gift that offers SMC and CUMIG; CUMIG is ALSO the referral partner,
-    with a `partner`-role login, exactly as production is shaped on 2026-10-09."""
+    with a `partner`-role login, exactly as production is shaped after the Sprint B cutover."""
 
     @classmethod
     def setUpTestData(cls):
@@ -58,9 +70,10 @@ class _World(TestCase):
         cls.gift = make_programme(organisation=cls.tenant, code='tc-gift', is_active=True)
         cls.round = make_cohort(programme=cls.gift, code='tc-gift-2026', is_open=True,
                                 is_active=True)
-        cls.cumig = _org('cumig', partner=True)
-        cls.smc = _org('smc')
-        for source in (cls.cumig, cls.smc):
+        cls.cumig = _org('cumig', partner=True)                           # the referral partner
+        cls.cumig_source = make_source(cls.tenant, 'cumig', pk=cls.cumig.pk)   # its source twin
+        cls.smc = make_source(cls.tenant, 'smc')
+        for source in (cls.cumig_source, cls.smc):
             ProgrammeReferralSource.objects.create(programme=cls.gift, source=source)
         cls.partner_login = make_admin('partner', org=cls.cumig)
 
@@ -80,7 +93,7 @@ class _World(TestCase):
 
 class TestTheBursarySubmitWritesTheSourceOnly(_World):
     def test_picking_a_source_fills_the_source_and_never_the_referral_partner(self):
-        for code, org in (('smc', self.smc), ('cumig', self.cumig)):
+        for code, org in (('smc', self.smc), ('cumig', self.cumig_source)):
             with self.subTest(code=code):
                 student = make_shortlistable_student()
                 self.assertEqual(self._apply(student, code).status_code, 201)
@@ -108,7 +121,7 @@ class TestTheBursarySubmitWritesTheSourceOnly(_World):
         self.assertEqual(self._columns(student), ('smc', self.smc.pk, None))
 
     def test_the_refusal_still_holds_and_writes_nothing(self):
-        tara = _org('tara', show=False)                       # switched off in Sources
+        tara = make_source(self.tenant, 'tara', show_in_apply=False)   # switched off in Sources
         ProgrammeReferralSource.objects.create(programme=self.gift, source=tara)
         student = make_shortlistable_student()
         resp = self._apply(student, 'tara')
@@ -123,7 +136,7 @@ class TestTheBursarySubmitWritesTheSourceOnly(_World):
         for code in ('tc-tenant', 'nope'):
             with self.subTest(code=code):
                 student = make_student()
-                sync_profile_fields(student, {'referral_source': code})
+                sync_profile_fields(student, {'referral_source': code}, programme=self.gift)
                 self.assertEqual(self._columns(student)[1:], (None, None))
 
 
@@ -222,8 +235,9 @@ class TestThePutCannotSetEither(_World):
 
 
 class TestThePartnerListOnAProductionShapedFixture(_World):
-    """241 course-selector-only students and 13 applicants who picked CUMIG, all linked to CUMIG, as
-    the old code left them; plus the shapes the old writers produced that the backfill must sort."""
+    """241 course-selector-only students and the 13 applicants who picked CUMIG (owner: "Filled" —
+    both columns CUMIG), plus the two shapes the Sprint A backfill left: an SMC picker with no
+    partner, and a `?ref=cumig` student who picked SMC. Production after the Sprint A cutover."""
 
     def setUp(self):
         StudentProfile.objects.bulk_create([
@@ -231,22 +245,16 @@ class TestThePartnerListOnAProductionShapedFixture(_World):
                            referred_by_org=self.cumig) for i in range(241)])
         self.cumig_applicants = []
         for _ in range(13):
-            s = make_student(referral_source='cumig', referred_by_org=self.cumig)
+            s = make_student(referral_source='cumig', referred_by_org=self.cumig,
+                             source=self.cumig_source)
             make_application(cohort=self.round, student=s, intake_snapshot=_snapshot('cumig'))
             self.cumig_applicants.append(s)
-        # Picked SMC, no ?ref: the old bursary sync linked her to SMC.
-        self.smc_only = make_student(referral_source='smc', referred_by_org=self.smc)
+        self.smc_only = make_student(referral_source='smc', source=self.smc)
         make_application(cohort=self.round, student=self.smc_only, intake_snapshot=_snapshot('smc'))
-        # Came by ?ref=cumig and picked SMC: the last sign-in sync re-linked her to CUMIG.
-        self.ref_then_smc = make_student(referral_source='cumig', referred_by_org=self.cumig)
+        self.ref_then_smc = make_student(referral_source='smc', referred_by_org=self.cumig,
+                                         source=self.smc)
         make_application(cohort=self.round, student=self.ref_then_smc,
                          intake_snapshot=_snapshot('smc'))
-        # Linked to the TENANT by the old course-selector PUT; no application.
-        self.tenant_linked = make_student(referral_source='tc-tenant', referred_by_org=self.tenant)
-        # Picked SMC once, then "Other" on a later gift: a stale SMC link (TD-380).
-        self.stale = make_student(referral_source='other', referred_by_org=self.smc)
-        make_application(cohort=make_cohort(), student=self.stale, intake_snapshot=_snapshot('smc'))
-        make_application(cohort=self.round, student=self.stale, intake_snapshot=_snapshot('other'))
 
     def _visible(self):
         """What the partner login's own list endpoint counts, and the ids behind its scope."""
@@ -255,40 +263,14 @@ class TestThePartnerListOnAProductionShapedFixture(_World):
         return resp.json()['count'], set(StudentProfile.objects.filter(referred_by_org=self.cumig)
                                          .values_list('pk', flat=True))
 
-    def test_the_backfill_keeps_exactly_the_cumig_students_visible(self):
-        before, _ = self._visible()
-        self.assertEqual(before, 241 + 13 + 1)
-        MIGRATION.backfill_two_columns(live_apps, None)
-        after, visible = self._visible()
-        self.assertEqual(after, 241 + 13 + 1)
+    def test_exactly_the_cumig_students_are_visible(self):
+        count, visible = self._visible()
+        self.assertEqual(count, 241 + 13 + 1)
         self.assertIn(self.ref_then_smc.pk, visible)
         self.assertTrue({s.pk for s in self.cumig_applicants} <= visible)
         self.assertNotIn(self.smc_only.pk, visible)
 
-    def test_the_backfill_fills_the_source_and_clears_only_non_partner_links(self):
-        MIGRATION.backfill_two_columns(live_apps, None)
-        cols = {p.pk: (p.source_id, p.referred_by_org_id) for p in StudentProfile.objects.all()}
-        for s in self.cumig_applicants:                       # owner: "Filled" — both CUMIG
-            self.assertEqual(cols[s.pk], (self.cumig.pk, self.cumig.pk))
-        self.assertEqual(cols[self.smc_only.pk], (self.smc.pk, None))           # link cleared
-        self.assertEqual(cols[self.ref_then_smc.pk], (self.smc.pk, self.cumig.pk))
-        self.assertEqual(cols[self.tenant_linked.pk], (None, None))             # tenant: cleared
-        self.assertEqual(cols[self.stale.pk], (None, None))                     # latest = other
-        self.assertEqual(cols['tc-cs-0'], (None, self.cumig.pk))                # no application
-        self.assertEqual(sum(1 for c in cols.values() if c[1] == self.cumig.pk), 241 + 13 + 1)
-        self.assertEqual(sum(1 for c in cols.values() if c[1] not in (None, self.cumig.pk)), 0)
-
-    def test_the_backfill_is_idempotent(self):
-        MIGRATION.backfill_two_columns(live_apps, None)
-        once = list(StudentProfile.objects.order_by('pk')
-                    .values_list('pk', 'source_id', 'referred_by_org_id', 'referral_source'))
-        MIGRATION.backfill_two_columns(live_apps, None)
-        twice = list(StudentProfile.objects.order_by('pk')
-                     .values_list('pk', 'source_id', 'referred_by_org_id', 'referral_source'))
-        self.assertEqual(once, twice)
-
-    def test_after_the_backfill_the_new_writers_keep_the_list_exact(self):
-        MIGRATION.backfill_two_columns(live_apps, None)
+    def test_the_new_writers_keep_the_list_exact(self):
         newcomer = make_shortlistable_student()
         self._sync(newcomer, 'cumig')                         # ?ref=cumig → visible
         self.assertEqual(self._apply(newcomer, 'smc').status_code, 201)
@@ -330,17 +312,43 @@ class TestTheReferralPartnerMarker(TestCase):
 
 class TestTheWitnessReadsTheSameOrganisationAsBefore(_World):
     def test_the_source_wins_then_the_referral_partner_then_nothing(self):
+        """Since sources Sprint B the answer is always a SOURCE row: the referral partner's is its
+        twin — the same organisation, the same id and code the witness columns named before."""
         from apps.scholarship.bursary import _resolve_witness_org
         both = make_student(source=self.smc, referred_by_org=self.cumig)
         partner_only = make_student(referred_by_org=self.cumig)
         neither = make_student()
-        for student, want in ((both, self.smc), (partner_only, self.cumig), (neither, None)):
+        for student, want in ((both, self.smc), (partner_only, self.cumig_source), (neither, None)):
             with self.subTest(want=getattr(want, 'code', None)):
                 app = make_application(cohort=make_cohort(), student=student)
                 self.assertEqual(referral_links.referring_org(student), want)
                 self.assertEqual(_resolve_witness_org(app), want)
-        override = make_application(cohort=make_cohort(), student=both, witness_org=self.tenant)
-        self.assertEqual(_resolve_witness_org(override), self.tenant)
+        self.assertEqual(self.cumig_source.pk, self.cumig.pk)
+        override_source = make_source(self.tenant, 'wit')
+        override = make_application(cohort=make_cohort(), student=both,
+                                    witness_org=override_source)
+        self.assertEqual(_resolve_witness_org(override), override_source)
+
+    def test_a_referral_partner_without_a_source_twin_witnesses_nothing(self):
+        """A referral partner that was never a source (none today) has no twin, so it is no
+        witness — Sprint C makes that the rule for every student (owner: never the partner)."""
+        lone = _org('lone', partner=True)
+        self.assertIsNone(referral_links.referring_org(make_student(referred_by_org=lone)))
+
+    def test_an_id_alone_never_pairs_two_organisations(self):
+        """Ids after the copy come from two sequences, so a source and a partner row may share
+        one by chance: only the same id AND code is a twin."""
+        from django.db.models import Max
+        from apps.scholarship.models import ReferralSource
+        shared = 1000 + max(PartnerOrganisation.objects.aggregate(m=Max('pk'))['m'] or 0,
+                            ReferralSource.objects.aggregate(m=Max('pk'))['m'] or 0)
+        partner = PartnerOrganisation.objects.create(pk=shared, code='pair-p', name='P',
+                                                     is_referral_partner=True)
+        stranger = make_source(self.tenant, 'stranger', pk=shared)     # same id, another code
+        self.assertIsNone(referral_links.source_twin(partner.pk))
+        self.assertFalse(referral_links.is_same_organisation(partner.pk, stranger))
+        student = make_student(referred_by_org=partner)
+        self.assertIsNone(referral_links.referring_org(student))
 
 
 class TestWhatTheImageAlreadyServingNeeds(_World):

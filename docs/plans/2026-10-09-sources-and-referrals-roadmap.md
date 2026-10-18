@@ -1,7 +1,10 @@
 # Sources and referral partners — roadmap (four sprints)
 
-**Status:** Sprint A BUILT 2026-10-09 (uncommitted at writing; migration `courses/0078_two_referral_columns`,
-cutover `docs/scholarship/two-columns-cutover-sql.md`). Sprints B–D not started.
+**Status:** Sprint A BUILT 2026-10-09, LIVE 2026-10-18 (`bfa547d9` + `4570eb8f`, api-01119-l65; migration
+`courses/0078_two_referral_columns`, cutover `docs/scholarship/two-columns-cutover-sql.md`; retro
+`docs/retrospectives/retrospective-2026-10-18-sources-a.md`). Sprint B BUILT 2026-10-18 (not committed,
+not live; migrations `scholarship/0173` + `courses/0079` migrate-first, `courses/0080` after the deploy;
+cutover `docs/scholarship/sources-b-cutover-sql.md`). Sprints C–D not started.
 **Owner's model (settled 2026-10-09 — do not re-litigate):** *"Referral partners and sources and orgs
 are different. Referral partners are a category of their own. Orgs > sources."* Three categories:
 
@@ -95,7 +98,40 @@ split owed now — it has no Phase-4 sprint; Sprint B must split it first); `cou
 
 ---
 
-## Sprint B — sources become their own table, owned by an organisation
+## Sprint B — sources become their own table, owned by an organisation ✅ BUILT 2026-10-18
+
+**As built (2026-10-18; decisions.md "Sources become their own table, owned by an organisation"):**
+- **Split first:** `StpmCourse` / `StpmRequirement` moved verbatim to `apps/courses/models_stpm.py`
+  (`courses/models.py` 1386 → 1244, budget lowered); its own patch, no behaviour change.
+- **`ReferralSource`** (`apps/scholarship/models/sources.py`, table `referral_sources`): organisation
+  FK (PROTECT, `related_name='owned_sources'`), code (unique per organisation), name, contact
+  person / email / phone, `show_in_apply`, `is_active`, `created_at`; `owned_by(org_id)` (None → none).
+- **scholarship 0173** copies every non-tenant, non-fixed-code `partner_organisations` row KEEPING ITS
+  ID, owned by THE tenant (refuses unless exactly one), sets the sequence past BOTH tables, refuses any
+  dangling reference, and swaps four FKs; **courses 0079** swaps `StudentProfile.source`. Constraint
+  swaps only — no value rewritten. `PartnerEmailLog.organisation` is now PROTECT (was CASCADE).
+- **`Invitation.organisation` did NOT move** (it is the TENANT for every staff invitation, and nothing
+  has ever written a `source_partner` invitation — cutover pre-check 8 asserts 0). The source
+  invitation feature, when built, decides its own column.
+- **The fence** (`views_admin/sources.py` `_sources_in_scope` / `_new_source_owner`): organisation staff
+  see, add and edit only their organisation's sources (another's is a 404; an org-less caller sees none);
+  a super is global and narrows with `?org=`; a new source's owner is `?org=`, else the super's own
+  organisation, else the sole tenant when there is exactly one — else 400 `organisation_required`. `gift_sources` reads everything inside the
+  gift's organisation (Configuration list, PUT, public intake, the submit refusal, the profile lookup).
+  Partner emails count a source's students among ITS organisation's applications (`chip_tally` is keyed
+  by organisation); milestones match (organisation, chip); the email screen lists and logs the caller's
+  sources only. The witness choice is one of the APPLICATION's organisation's sources, and the view now
+  404s another organisation's application. The house row is gone from Sources (with its residual count).
+- **The witness bridge until Sprint C:** `referring_org` answers a SOURCE row — the source, else the
+  referral partner's source TWIN (same id AND code; `referral_links.source_twin`) — and the witness
+  authority compares a partner login's organisation with that twin (`is_same_organisation`).
+- **Invites — REFUSE, not mark** (`referral_links.partner_invite_org`): a `partner` login only onto an
+  active referral partner; a NEW organisation created by the invite is marked a referral partner; a
+  tenant / source row / reserved code is refused (400 `org_is_tenant`, `not_a_referral_partner`,
+  `code_reserved`). An `org_admin` invite onto a referral partner is refused (`org_is_referral_partner`).
+  `GET /admin/orgs/` lists referral partners only. Marking an existing row stays a reviewed SQL update.
+- **TD-379:** the field left the model; **courses 0080** drops the column AFTER the deploy.
+- Not built: the referral-partner screen (mark / unmark) — moved to Sprint D below.
 
 **Goal:** a source is its own record with an owning-organisation FK (TD-381 part 1–2). Platform
 referral partners stay on `partner_organisations`, unowned, with their logins, links and students
@@ -143,8 +179,9 @@ a moves-only split first if the submit needs more than a line.
    witness**): `referring_org` and the `AdminBursaryWitnessView` authority check go; the cockpit's
    `referred_by_org` key is replaced by a `source` key (web and api in step, old key kept one release).
 4. **`?ref` never pre-fills the bursary form** — the apply pre-fill stops reading the chip.
-5. **CUMIG (source) and CUMIG (referral partner) contact details kept separate** — the source row's
-   contact (partner emails) and the referral partner's (its logins) stop sharing one row's fields.
+5. **CUMIG (source) and CUMIG (referral partner) contact details kept separate** — DONE BY SPRINT B's
+   copy: the partner emails read the `referral_sources` row, the logins sit on the `partner_organisations`
+   row. What remains is retiring the `referring_org` twin bridge (item 3) so nothing pairs them by id.
 6. The course-selector partner dashboard's Source dropdown/CSV: show the referral partner and drop
    the chip, or read it from the per-application answer — owner question at sprint start.
 
@@ -157,8 +194,13 @@ string (TD-360, en.json is at its line).
 ## Sprint D — retire the old shared fields and rows; close the debt
 
 1. Retire, never delete: the chip `StudentProfile.referral_source` (stop writing; keep the column one
-   release, then a contract migration), the sources' copies on `partner_organisations` (switched off,
-   kept — `PartnerEmailLog` and old snapshots point at them; a delete CASCADEs the email log).
+   release, then a contract migration), the sources' old rows on `partner_organisations` (switched
+   off, kept — old snapshots name their codes; since Sprint B no foreign key names them). ⚠ CUMIG's row
+   there is the REFERRAL PARTNER and stays live: retire only rows that are not referral partners.
+   Then `PartnerOrganisation.show_in_apply` (read by no source surface since Sprint B) can go in a
+   contract migration, image-first.
+1b. **Referral partners get a screen** (moved here from Sprint B, item 5): super only, mark / unmark
+   `is_referral_partner` — until then a reviewed SQL update. Never on a tenant or a reserved code.
 2. Close TD-380 and TD-381 with evidence; update `docs/architecture.md`, `ARCHITECTURE_MAP.md`,
    `role-matrix.md`, the Sources and Configuration help text, and the reviewer Guide/FAQ if a
    reviewer surface changed.

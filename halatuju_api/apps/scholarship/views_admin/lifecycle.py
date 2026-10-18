@@ -29,7 +29,8 @@ class AdminApplicationWitnessView(_SourcesBase):
         if err:
             return err
         app = self._get_application(pk)
-        if app is None:
+        # Sources Sprint B: another organisation's application is a 404, like every app surface.
+        if app is None or not self._org_allows(admin, app):
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
         if 'witness_org' not in request.data:
@@ -40,11 +41,15 @@ class AdminApplicationWitnessView(_SourcesBase):
         if raw in (None, '', 'none'):
             app.witness_org = None
         else:
-            from apps.courses.models import PartnerOrganisation
+            # The witness is one of THE APPLICATION'S OWN ORGANISATION'S sources (sources Sprint B,
+            # 2026-10-18) — for a super too. A tenant, the house, a platform referral partner or
+            # another organisation's source is `unknown_organisation`, as an unknown code is.
+            from ..models import ReferralSource
+            own = ReferralSource.objects.owned_by(app.owning_organisation_id)
             key = str(raw).strip()
-            org = PartnerOrganisation.objects.filter(code=key).first()
+            org = own.filter(code=key).first()
             if org is None and key.isdigit():
-                org = PartnerOrganisation.objects.filter(pk=int(key)).first()
+                org = own.filter(pk=int(key)).first()
             if org is None:
                 return Response({'error': 'unknown_organisation', 'code': 'unknown_organisation'},
                                 status=status.HTTP_400_BAD_REQUEST)

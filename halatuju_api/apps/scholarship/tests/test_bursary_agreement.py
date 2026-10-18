@@ -73,6 +73,26 @@ def _ensure_active_template(cohort):
     return active
 
 
+def _cumig(**kw):
+    """CUMIG as production has it since sources Sprint B (2026-10-18): the REFERRAL PARTNER row on
+    `partner_organisations` (what `referred_by_org` and a partner login name) AND its SOURCE twin
+    in `referral_sources` — the same id and code, contact details copied, owned by the house
+    tenant. The witness columns name the source; `referring_org` finds it through the twin."""
+    from apps.scholarship.models import ReferralSource
+    kw.setdefault('is_referral_partner', True)
+    partner = PartnerOrganisation.objects.create(code='cumig', name='CUMIG', **kw)
+    ReferralSource.objects.create(
+        pk=partner.pk, organisation=PartnerOrganisation.objects.get(code='brightpath'),
+        code=partner.code, name=partner.name, contact_email=partner.contact_email,
+        contact_person=partner.contact_person)
+    return partner
+
+
+def _twin(partner):
+    from apps.scholarship.models import ReferralSource
+    return ReferralSource.objects.get(pk=partner.pk)
+
+
 def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'), org=None,
                   source=None):
     template = _ensure_active_template(cohort)   # sets cohort org + deploys a template
@@ -240,7 +260,7 @@ class TestBursaryService(TestCase):
         self.assertFalse(BursaryAgreement.objects.filter(application=app).exists())
 
     def test_countersign_and_witness(self):
-        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        org = _cumig()
         app = _fundable_app(self.cohort, suffix='cw', org=org)
         _add_parent_ic(app)
         _fund(app)
@@ -254,7 +274,7 @@ class TestBursaryService(TestCase):
         ag.refresh_from_db()
         self.assertEqual(ag.foundation_signed_by, 'The Super')
         self.assertEqual(ag.status, 'countersigned')
-        bursary.record_witness(ag, org=org, by_name='Partner Admin', witness_name='CUMIG')
+        bursary.record_witness(ag, org=_twin(org), by_name='Partner Admin', witness_name='CUMIG')
         ag.refresh_from_db()
         self.assertEqual(ag.status, 'executed')
         self.assertTrue(ag.is_executed)
@@ -352,7 +372,7 @@ class TestBursaryEndpoints(TestCase):
         self.assertEqual(app.bursary_agreement.foundation_signed_by, 'Boss')
 
     def test_referring_partner_can_witness(self):
-        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        org = _cumig()
         app = self._signed_app(suffix='wok', org=org)
         PartnerAdmin.objects.create(
             supabase_user_id='partner-1', name='Cik Partner', email='p@cumig.org',
@@ -364,7 +384,7 @@ class TestBursaryEndpoints(TestCase):
         self.assertIsNotNone(app.bursary_agreement.__class__.objects.get(id=app.bursary_agreement.id).witness_signed_at)
 
     def test_non_referring_partner_cannot_witness(self):
-        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        org = _cumig()
         other = PartnerOrganisation.objects.create(code='other', name='OTHER')
         app = self._signed_app(suffix='w403', org=org)
         PartnerAdmin.objects.create(
@@ -384,9 +404,10 @@ class TestBursaryEndpoints(TestCase):
         """Two columns (2026-10-09): a student who named SMC on the bursary form and came by
         `?ref=cumig` is witnessed for SMC. CUMIG's partner login is refused; a super records it,
         against SMC."""
-        cumig = PartnerOrganisation.objects.create(code='cumig', name='CUMIG',
-                                                   is_referral_partner=True)
-        smc = PartnerOrganisation.objects.create(code='smc', name='SMC')
+        cumig = _cumig()
+        from apps.scholarship.models import ReferralSource
+        smc = ReferralSource.objects.create(
+            organisation=PartnerOrganisation.objects.get(code='brightpath'), code='smc', name='SMC')
         app = self._signed_app(suffix='w2c', org=cumig, source=smc)
         PartnerAdmin.objects.create(
             supabase_user_id='partner-2c', name='Cik Partner', email='p2c@cumig.org',
@@ -399,8 +420,7 @@ class TestBursaryEndpoints(TestCase):
         self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, smc.id)
 
     def test_two_columns_no_source_leaves_the_referral_partner_as_before(self):
-        cumig = PartnerOrganisation.objects.create(code='cumig', name='CUMIG',
-                                                   is_referral_partner=True)
+        cumig = _cumig()
         app = self._signed_app(suffix='w2p', org=cumig)
         PartnerAdmin.objects.create(
             supabase_user_id='partner-2p', name='Cik Partner', email='p2p@cumig.org',
@@ -597,9 +617,7 @@ class TestSigningChainNotifications(TestCase):
         self.assertTrue(any('countersignature' in m.subject.lower() for m in self.mail.outbox))
 
     def test_org_guarantor_signed_emails_partner_witness(self):
-        org = PartnerOrganisation.objects.create(
-            code='cumig', name='CUMIG', contact_email='partner@cumig.org',
-            contact_person='Cik Partner')
+        org = _cumig(contact_email='partner@cumig.org', contact_person='Cik Partner')
         self._super('foundation@h.org')
         app = _fundable_app(self.cohort, suffix='o1', org=org)
         _add_parent_ic(app)
@@ -613,8 +631,7 @@ class TestSigningChainNotifications(TestCase):
         self.assertTrue(any('witness' in m.subject.lower() for m in self.mail.outbox))
 
     def test_witness_then_foundation_then_executed_chain(self):
-        org = PartnerOrganisation.objects.create(
-            code='cumig', name='CUMIG', contact_email='partner@cumig.org')
+        org = _cumig(contact_email='partner@cumig.org')
         self._super('foundation@h.org')
         app = _fundable_app(self.cohort, suffix='ch', org=org)
         _add_parent_ic(app)
@@ -625,7 +642,7 @@ class TestSigningChainNotifications(TestCase):
 
         # Partner witnesses → Foundation is nudged to countersign.
         self.mail.outbox = []
-        bursary.record_witness(ag, org=org, by_name='Partner Admin', witness_name='CUMIG')
+        bursary.record_witness(ag, org=_twin(org), by_name='Partner Admin', witness_name='CUMIG')
         self.assertIn('foundation@h.org', [m.to[0] for m in self.mail.outbox])
 
         # Foundation countersigns → executes → student emailed; app 'active'.
@@ -764,8 +781,7 @@ class TestSigningReminders(TestCase):
         self.assertEqual(bursary.send_signing_reminders()['countersign'], 0)
 
     def test_witness_reminder_after_interval_with_org(self):
-        org = PartnerOrganisation.objects.create(
-            code='cumig', name='CUMIG', contact_email='partner@cumig.org')
+        org = _cumig(contact_email='partner@cumig.org')
         app = self._signed(suffix='r3', org=org)
         ag = app.bursary_agreement
         ag.guarantor_signed_at = timezone.now() - timedelta(days=5)

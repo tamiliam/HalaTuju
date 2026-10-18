@@ -2,19 +2,19 @@
 
 What is pinned here:
 
-1. **The seed** (`0172.seed_programme_sources`) on a PRODUCTION-SHAPED fixture: two active gifts
-   and one inactive, seven active sources (one carrying the old single-gift FK), two switched-off
-   sources, and two TENANT rows — one with `show_in_apply` off and one with it ON, to prove a
-   tenant is never seeded as a source even when its flag says so.
-2. **The gift's Configuration endpoint** lists only ACTIVE non-tenant sources with `on`, and its
-   PUT validates the whole request (items AND sources) before writing anything, writes only what
-   changed, and audits each change. Cross-org is 404. A new gift lists every source OFF.
-3. **The Sources list** counts each source's gifts in ONE query, and the PATCH refuses the
+1. **The gift's Configuration endpoint** lists only its organisation's ACTIVE sources with `on`,
+   and its PUT validates the whole request (items AND sources) before writing anything, writes
+   only what changed, and audits each change. Cross-org is 404. A new gift lists every source OFF.
+2. **The Sources list** counts each source's gifts in ONE query, and the PATCH refuses the
    retired `programme_id`.
-"""
-from importlib import import_module
 
-from django.apps import apps as live_apps
+The 0172 seed's own tests left this file with sources-and-referrals Sprint B (2026-10-18): they ran
+that migration's data step against the live models, and the column it read
+(`partner_organisations.programme_id`) is dropped by courses 0080 (TD-379), so the step can no
+longer run against this schema at all. It ran on production at per-gift sources Sprint 1
+(`docs/scholarship/gift-sources-s1-cutover-sql.md`). The Sprint B copy has its own tests in
+`test_sources_b.py`.
+"""
 from django.db import connection
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
@@ -22,79 +22,26 @@ from django.test.utils import CaptureQueriesContext
 from apps.courses.models import PartnerOrganisation
 from apps.scholarship import gift_sources
 from apps.scholarship.models import (
-    ApplicationItem, Programme, ProgrammeApplicationItem, ProgrammeReferralSource,
+    ApplicationItem, ProgrammeApplicationItem, ProgrammeReferralSource, ReferralSource,
 )
-from apps.scholarship.tests.contract_helpers import brightpath_org, flagship
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_org, make_programme,
+    TEST_JWT_SECRET, authed_client, make_admin, make_org, make_programme, make_source,
 )
 
 CONFIG = '/api/v1/admin/scholarship/programme/configuration/'
 SOURCES = '/api/v1/admin/scholarship/sources/'
 AUDIT_LOGGER = 'apps.scholarship.views_admin'
 
-SEED = import_module('apps.scholarship.migrations.0172_programme_referral_sources')
 
-
-def _source(code, name=None, show=True, active=True, **kw):
-    return PartnerOrganisation.objects.create(
-        code=code, name=name or code.upper(), show_in_apply=show, is_active=active, **kw)
+def _source(owner, code, name=None, show=True, active=True, **kw):
+    """A source OWNED BY `owner` (sources Sprint B)."""
+    return make_source(owner, code, name=name or code.upper(), show_in_apply=show,
+                       is_active=active, **kw)
 
 
 def _links(programme):
     return set(ProgrammeReferralSource.objects.filter(programme=programme)
                .values_list('source__code', flat=True))
-
-
-class TestTheSeed(TestCase):
-    """The migration's data step, run against the live models on production's shape."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.bp = brightpath_org()                       # the tenant (owns the active gifts)
-        cls.flag = flagship()                           # active, seeded by 0119
-        cls.sabah = make_programme(organisation=cls.bp, code='bpb-sabah-2026', is_active=True)
-        cls.testing = make_programme(organisation=cls.bp, code='testing', is_active=False)
-        cls.active_codes = ['cumig', 'ewrf', 'hss', 'hyo', 'mhm', 'pptm']
-        for code in cls.active_codes:
-            _source(code)
-        # The one source whose old single-gift FK is set: it goes on THAT gift only.
-        _source('smc', programme=cls.sabah)
-        _source('sathya_sai', show=False)                # switched off in Sources
-        _source('tara', show=False)
-        _source('suspended', show=True, active=False)    # flag on, but the org is suspended
-        # A SECOND tenant with show_in_apply ON — still never a source. Tenant by its active
-        # org_admin (no gift of its own), the other half of `tenants()`.
-        cls.t2 = _source('tenant-two', show=True)
-        make_admin('org_admin', owning_org=cls.t2)
-
-    def test_the_fixture_is_productions_shape(self):
-        # Preconditions, so a later migration that seeds another gift reads as a red here, not as
-        # a mysteriously different count below.
-        self.assertEqual(set(Programme.objects.filter(is_active=True).values_list('code', flat=True)),
-                         {'brightpath-flagship', 'bpb-sabah-2026'})
-        self.assertFalse(self.bp.show_in_apply)
-        self.assertFalse(ProgrammeReferralSource.objects.exists())
-
-    def test_every_active_gift_gets_every_active_source_and_the_set_gift_keeps_its_one(self):
-        SEED.seed_programme_sources(live_apps, None)
-        self.assertEqual(_links(self.flag), set(self.active_codes))
-        self.assertEqual(_links(self.sabah), set(self.active_codes) | {'smc'})
-        self.assertEqual(_links(self.testing), set())     # an inactive gift gets nothing
-        self.assertEqual(ProgrammeReferralSource.objects.count(), 13)
-
-    def test_no_tenant_switched_off_or_suspended_source_is_seeded(self):
-        SEED.seed_programme_sources(live_apps, None)
-        seeded = set(ProgrammeReferralSource.objects.values_list('source__code', flat=True))
-        for code in ('brightpath', 'tenant-two', 'sathya_sai', 'tara', 'suspended'):
-            self.assertNotIn(code, seeded)
-
-    def test_it_is_idempotent_and_the_reverse_clears_it(self):
-        SEED.seed_programme_sources(live_apps, None)
-        SEED.seed_programme_sources(live_apps, None)
-        self.assertEqual(ProgrammeReferralSource.objects.count(), 13)
-        SEED.unseed_programme_sources(live_apps, None)
-        self.assertFalse(ProgrammeReferralSource.objects.exists())
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -108,10 +55,12 @@ class _ConfigBase(TestCase):
         cls.other_org = make_org('gs-other')
         cls.foreign = make_programme(organisation=cls.other_org, code='gs-foreign', is_active=True)
         cls.oa = make_admin('org_admin', owning_org=cls.org)
-        cls.smc = _source('smc', 'Sri Murugan Centre')
-        cls.cumig = _source('cumig', 'Concerned UM Indian Graduates')
-        cls.off = _source('tara', 'Tara Foundation', show=False)
-        cls.suspended = _source('gone', 'Gone Org', active=False)
+        cls.smc = _source(cls.org, 'smc', 'Sri Murugan Centre')
+        cls.cumig = _source(cls.org, 'cumig', 'Concerned UM Indian Graduates')
+        cls.off = _source(cls.org, 'tara', 'Tara Foundation', show=False)
+        cls.suspended = _source(cls.org, 'gone', 'Gone Org', active=False)
+        # ANOTHER organisation's active source — never offered to, or switchable on, this gift.
+        cls.theirs = _source(cls.other_org, 'theirs', 'Their Source')
         ProgrammeReferralSource.objects.create(programme=cls.gift, source=cls.smc)
 
     def _get(self, query=''):
@@ -185,7 +134,8 @@ class TestTheConfigurationSaves(_ConfigBase):
         for bad, code in (('nope', 'unknown_source'),        # no such code
                           ('tara', 'unknown_source'),        # switched off in Sources
                           ('gone', 'unknown_source'),        # suspended
-                          ('gs-org', 'unknown_source')):     # a tenant
+                          ('gs-org', 'unknown_source'),      # a tenant
+                          ('theirs', 'unknown_source')):     # another organisation's source
             with self.subTest(source=bad):
                 resp = self._put({
                     'items': [{'kind': 'document', 'code': 'water_bill', 'state': 'required'}],
@@ -235,8 +185,8 @@ class TestTheSourcesPageCounts(TestCase):
         cls.draft = make_programme(organisation=cls.org, code='sc-draft', is_active=False)
         cls.foreign = make_programme(code='sc-foreign', is_active=True)
         cls.oa = make_admin('org_admin', owning_org=cls.org)
-        cls.smc = _source('smc', 'Sri Murugan Centre')
-        cls.cumig = _source('cumig', 'Concerned UM Indian Graduates')
+        cls.smc = _source(cls.org, 'smc', 'Sri Murugan Centre')
+        cls.cumig = _source(cls.org, 'cumig', 'Concerned UM Indian Graduates')
         for gift in (cls.a, cls.b, cls.draft, cls.foreign):
             ProgrammeReferralSource.objects.create(programme=gift, source=cls.smc)
 
@@ -265,7 +215,7 @@ class TestTheSourcesPageCounts(TestCase):
             return len(ctx.captured_queries)
         few = queries()
         for i in range(4):
-            src = _source(f'extra{i}')
+            src = _source(self.org, f'extra{i}')
             ProgrammeReferralSource.objects.create(programme=self.a, source=src)
         self.assertEqual(queries(), few)
 
@@ -276,8 +226,7 @@ class TestTheSourcesPageCounts(TestCase):
         self.assertEqual(resp.status_code, 400, resp.content)
         self.assertEqual(resp.json()['code'], 'programme_id_retired')
         self.cumig.refresh_from_db()
-        self.assertIsNone(self.cumig.programme_id)
-        self.assertEqual(self.cumig.phone, '')
+        self.assertEqual(self.cumig.phone, '')          # refused WHOLE: nothing else was written
 
     def test_a_patch_answers_with_the_counted_row(self):
         resp = authed_client(self.oa).patch(
@@ -291,12 +240,13 @@ class TestTheSourcesPageCounts(TestCase):
         Sources count's residual."""
         for code in ('other', 'social', 'halatuju', 'brightpath', ' Other '):
             with self.subTest(code=code):
-                before = PartnerOrganisation.objects.count()
+                before = (ReferralSource.objects.count(), PartnerOrganisation.objects.count())
                 resp = authed_client(self.oa).post(
                     SOURCES, {'code': code, 'name': 'Reserved'}, format='json')
                 self.assertEqual(resp.status_code, 400, resp.content)
                 self.assertEqual(resp.json()['code'], 'code_reserved')
-                self.assertEqual(PartnerOrganisation.objects.count(), before)
+                self.assertEqual((ReferralSource.objects.count(),
+                                  PartnerOrganisation.objects.count()), before)
 
     def test_a_new_source_joins_no_gift(self):
         resp = authed_client(self.oa).post(
@@ -310,11 +260,11 @@ class TestTheSourcesPageCounts(TestCase):
 class TestTheHelpers(TestCase):
     def test_deleting_a_gift_takes_its_choices_and_keeps_the_sources(self):
         gift = make_programme(code='hp-gift')
-        src = _source('hp-src')
+        src = _source(gift.organisation, 'hp-src')
         ProgrammeReferralSource.objects.create(programme=gift, source=src)
         gift.delete()
         self.assertFalse(ProgrammeReferralSource.objects.filter(source=src).exists())
-        self.assertTrue(PartnerOrganisation.objects.filter(pk=src.pk).exists())
+        self.assertTrue(ReferralSource.objects.filter(pk=src.pk).exists())
 
     def test_resolve_with_no_map_is_no_change(self):
-        self.assertEqual(gift_sources.resolve_changes(None), {})
+        self.assertEqual(gift_sources.resolve_changes(None, make_programme(code='hp-none')), {})

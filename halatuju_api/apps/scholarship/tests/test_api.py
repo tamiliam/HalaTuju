@@ -233,9 +233,12 @@ class TestApplicationIntake(TestCase):
         # switched on in Sources and on the gift's own list — or the submit is refused.
         # SUPERSEDED IN PART by the two columns (decisions.md 2026-10-09): the answer fills the
         # SOURCE column and never `referred_by_org`, which only a `?ref=` link writes.
-        from apps.courses.models import PartnerOrganisation
-        from apps.scholarship.models import ProgrammeReferralSource
-        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG', show_in_apply=True)
+        # Since sources Sprint B (2026-10-18) the source is a `ReferralSource` owned by the gift's
+        # organisation.
+        from apps.scholarship.models import ProgrammeReferralSource, ReferralSource
+        org = ReferralSource.objects.create(
+            organisation=self.cohort.programme.organisation, code='cumig', name='CUMIG',
+            show_in_apply=True)
         ProgrammeReferralSource.objects.create(programme=self.cohort.programme, source=org)
         self._auth(_make_token(USER_A))
         resp = self.client.post(

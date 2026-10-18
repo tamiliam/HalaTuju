@@ -32,7 +32,7 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from . import password_change_flag, staff_reinvite, supabase_admin
+from . import password_change_flag, referral_links, staff_reinvite, supabase_admin
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import _service_headers
@@ -668,28 +668,19 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         elif role == 'partner':
             # A REFERRAL partner (a platform concept — roadshow orgs of the course selector),
             # scoped to their referral org's students. No B40 tenant access (owning_org stays None).
-            if new_org_name and new_org_code:
-                org, _ = PartnerOrganisation.objects.get_or_create(
-                    code=new_org_code,
-                    defaults={
-                        'name': new_org_name,
-                        'contact_person': request.data.get('contact_person', ''),
-                        'phone': request.data.get('org_phone', ''),
-                    },
-                )
-            elif org_id:
-                try:
-                    org = PartnerOrganisation.objects.get(id=org_id)
-                except PartnerOrganisation.DoesNotExist:
-                    return Response({'error': 'Organisation not found'}, status=404)
-            if org is None:
-                return Response({'error': 'A partner must belong to an organisation', 'code': 'org_required'}, status=400)
+            # Sources Sprint B: only onto a REFERRAL-PARTNER row, never a tenant or a source.
+            org, refusal = referral_links.partner_invite_org(
+                org_id, new_org_code, new_org_name,
+                request.data.get('contact_person', ''), request.data.get('org_phone', ''))
+            if refusal:
+                return Response({'error': referral_links.INVITE_REFUSALS[refusal], 'code': refusal},
+                                status=404 if refusal == 'org_not_found' else 400)
         elif role == 'org_admin':
             # A5 — a super installs a new organisation's ADMIN, creating/selecting its TENANT
             # (the owning_organisation, NOT the referral `org`) and switching the scholarship
             # module on. This is the thin add-tenant slice of the superadmin portal.
             if new_org_name and new_org_code:
-                owning_org, created = PartnerOrganisation.objects.get_or_create(
+                owning_org, _ = PartnerOrganisation.objects.get_or_create(
                     code=new_org_code,
                     defaults={
                         'name': new_org_name,
@@ -698,19 +689,19 @@ class AdminInviteView(PartnerAdminMixin, APIView):
                         'module_scholarship': True,
                     },
                 )
-                if not created and not owning_org.module_scholarship:
-                    owning_org.module_scholarship = True
-                    owning_org.save(update_fields=['module_scholarship'])
             elif org_id:
                 try:
                     owning_org = PartnerOrganisation.objects.get(id=org_id)
                 except PartnerOrganisation.DoesNotExist:
                     return Response({'error': 'Organisation not found'}, status=404)
-                if not owning_org.module_scholarship:
-                    owning_org.module_scholarship = True
-                    owning_org.save(update_fields=['module_scholarship'])
             if owning_org is None:
                 return Response({'error': 'A tenant organisation is required.', 'code': 'tenant_required'}, status=400)
+            if owning_org.is_referral_partner:   # sources Sprint B: never turns a referral partner into a tenant
+                return Response({'error': referral_links.INVITE_REFUSALS['org_is_referral_partner'],
+                                 'code': 'org_is_referral_partner'}, status=400)
+            if not owning_org.module_scholarship:
+                owning_org.module_scholarship = True
+                owning_org.save(update_fields=['module_scholarship'])
         else:
             # A super inviting a B40 staff role (admin/reviewer/qc) → bind to org #1 (BrightPath)
             # for the access fence. super stays global (NULL). (Per-org staff picker is future.)
@@ -917,14 +908,16 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
 
 
 class AdminOrgsView(PartnerAdminMixin, APIView):
-    """GET /api/v1/admin/orgs/ - List organisations for invite dropdown."""
+    """GET /api/v1/admin/orgs/ - the REFERRAL PARTNERS a partner login may be invited onto (the
+    Referral partners page's dropdown, its only reader). Sources Sprint B: the invite refuses any
+    other row, so offering tenants and sources here would only offer refusals."""
 
     def get(self, request):
         admin = self.get_admin(request)
         if not admin or not admin.is_super_admin:
             return Response({'error': 'Super admin access required'}, status=403)
 
-        orgs = PartnerOrganisation.objects.filter(is_active=True).values(
+        orgs = referral_links.referral_partners().order_by('name').values(
             'id', 'code', 'name', 'contact_person', 'phone',
         )
         return Response({'orgs': list(orgs)})

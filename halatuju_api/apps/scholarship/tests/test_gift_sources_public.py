@@ -7,8 +7,8 @@
    but code and name leaves: a contact person, email and phone are planted and must stay out.
 2. **The submit** refuses a `referral_source` the gift does not offer (400
    `referral_source_not_offered`) and writes nothing; blank, the three fixed choices and an
-   offered source are accepted, and only an offered source ever links `referred_by_org` (never a
-   tenant).
+   offered source are accepted, and only an offered source ever fills the SOURCE column (never a
+   tenant, and since sources Sprint B never another organisation's source, even one linked).
 3. **The legacy codes migration** (courses 0077): `pushparani` / `govind` → `other`.
 """
 from importlib import import_module
@@ -17,11 +17,11 @@ from django.apps import apps as live_apps
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerOrganisation, StudentProfile
+from apps.courses.models import StudentProfile
 from apps.scholarship.models import ProgrammeReferralSource, ScholarshipApplication
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_cohort, make_org, make_programme,
-    make_shortlistable_student, make_student,
+    TEST_JWT_SECRET, authed_client, make_cohort, make_org, make_programme,
+    make_shortlistable_student, make_source, make_student,
 )
 
 INTAKE = '/api/v1/scholarship/intake/'
@@ -29,10 +29,11 @@ APPLY = '/api/v1/scholarship/applications/'
 SENTINELS = ('ZZ-contact-person-9431', 'zz-sentinel-9431@example.test', '0199431943')
 
 
-def _source(code, name, show=True, active=True):
-    return PartnerOrganisation.objects.create(
-        code=code, name=name, show_in_apply=show, is_active=active,
-        contact_person=SENTINELS[0], contact_email=SENTINELS[1], phone=SENTINELS[2])
+def _source(owner, code, name, show=True, active=True):
+    """A source OWNED BY `owner` (sources Sprint B), carrying the contact sentinels."""
+    return make_source(owner, code, name=name, show_in_apply=show, is_active=active,
+                       contact_person=SENTINELS[0], contact_email=SENTINELS[1],
+                       phone=SENTINELS[2])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -44,9 +45,13 @@ class _TwoGifts(TestCase):
         cls.gift_b = make_programme(organisation=cls.org, code='gp-b', is_active=True)
         cls.round_a = make_cohort(programme=cls.gift_a, code='gp-a-2026', is_open=True, is_active=True)
         cls.round_b = make_cohort(programme=cls.gift_b, code='gp-b-2026', is_open=True, is_active=True)
-        cls.smc = _source('smc', 'Sri Murugan Centre')
-        cls.cumig = _source('cumig', 'Concerned UM Indian Graduates')
-        cls.tara = _source('tara', 'Tara Foundation', show=False)       # switched off in Sources
+        cls.smc = _source(cls.org, 'smc', 'Sri Murugan Centre')
+        cls.cumig = _source(cls.org, 'cumig', 'Concerned UM Indian Graduates')
+        cls.tara = _source(cls.org, 'tara', 'Tara Foundation', show=False)   # switched off in Sources
+        # ANOTHER organisation's active source, with the SAME code as one of ours.
+        cls.other_org = make_org('gp-other')
+        cls.their_smc = _source(cls.other_org, 'smc', 'Their SMC')
+        cls.their_only = _source(cls.other_org, 'theirs', 'Their Only Source')
         ProgrammeReferralSource.objects.create(programme=cls.gift_a, source=cls.smc)
         ProgrammeReferralSource.objects.create(programme=cls.gift_a, source=cls.cumig)
         ProgrammeReferralSource.objects.create(programme=cls.gift_a, source=cls.tara)
@@ -96,12 +101,15 @@ class TestTheIntakeServesTheGiftsSources(_TwoGifts):
         body = self._intake('?programme=gp-b')
         self.assertEqual((body['programme_code'], body['sources']), ('', []))
 
-    def test_a_tenant_is_never_served_even_when_linked(self):
-        tenant = _source('gp-tenant', 'A Tenant Org')
-        make_admin('org_admin', owning_org=tenant)
-        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=tenant)
-        codes = [s['code'] for s in self._intake('?programme=gp-a')['sources']]
-        self.assertNotIn('gp-tenant', codes)
+    def test_another_organisations_source_is_never_served_even_when_linked(self):
+        """Sources Sprint B: a tenant cannot be linked at all now (the link names the sources
+        table). The fence's twin case: a link to ANOTHER organisation's source — which no screen
+        can make — is not offered either."""
+        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_only)
+        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_smc)
+        body = self._intake('?programme=gp-a')
+        self.assertEqual([s['name'] for s in body['sources']],
+                         ['Concerned UM Indian Graduates', 'Sri Murugan Centre'])
 
 
 class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
@@ -145,15 +153,25 @@ class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
                 self.assertIsNone(self.student.referred_by_org_id)
 
     def test_a_tenant_code_is_never_linked(self):
-        """Even if a tenant row were somehow linked to the gift, the submit refuses it and the
-        profile never points at the organisation that runs the gift."""
-        make_admin('org_admin', owning_org=self.org)
-        PartnerOrganisation.objects.filter(pk=self.org.pk).update(show_in_apply=True)
-        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.org)
+        """The tenant that runs the gift is not a source (sources Sprint B: it cannot even be
+        linked), so its code is refused and the profile never points at it."""
         self.assertEqual(self._apply('gp-org').status_code, 400)
         self.student.refresh_from_db()
         self.assertIsNone(self.student.source_id)
         self.assertIsNone(self.student.referred_by_org_id)
+
+    def test_another_organisations_source_is_refused_even_when_linked(self):
+        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_only)
+        self.assertEqual(self._apply('theirs').status_code, 400)
+        self.student.refresh_from_db()
+        self.assertIsNone(self.student.source_id)
+
+    def test_a_shared_code_fills_the_source_of_the_gifts_own_organisation(self):
+        """`smc` exists in both organisations; gift A's student gets gift A's organisation's."""
+        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_smc)
+        self.assertEqual(self._apply('smc').status_code, 201)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.source_id, self.smc.id)
 
 
 class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
@@ -162,30 +180,39 @@ class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
     runs. So the sync is asked directly. Since the two columns (decisions.md 2026-10-09) the link
     it makes is the SOURCE column; `referred_by_org` is asserted untouched throughout."""
 
-    def test_only_an_active_non_tenant_source_is_linked(self):
+    def test_only_an_active_source_the_gift_offers_is_linked(self):
         from apps.scholarship.services import sync_profile_fields
-        make_admin('org_admin', owning_org=self.org)                    # gp-org is a tenant
-        PartnerOrganisation.objects.filter(pk=self.org.pk).update(show_in_apply=True)
-        for code in ('gp-org', 'tara'):                                 # a tenant; a switched-off source
+        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_only)
+        # a tenant; a switched-off source; another organisation's source (even linked)
+        for code in ('gp-org', 'tara', 'theirs'):
             with self.subTest(code=code):
                 student = make_student()
-                sync_profile_fields(student, {'referral_source': code})
+                sync_profile_fields(student, {'referral_source': code}, programme=self.gift_a)
                 student.refresh_from_db()
                 self.assertIsNone(student.source_id)
                 self.assertIsNone(student.referred_by_org_id)
         student = make_student()
-        sync_profile_fields(student, {'referral_source': 'smc'})
+        sync_profile_fields(student, {'referral_source': 'smc'}, programme=self.gift_a)
         student.refresh_from_db()
         self.assertEqual((student.source_id, student.referred_by_org_id), (self.smc.id, None))
+
+    def test_without_a_gift_no_source_is_found(self):
+        """The guardian-contact writers call the sync with no gift (and no answer); a code with
+        no gift to look it up in fills nothing rather than guessing between organisations."""
+        from apps.scholarship.services import sync_profile_fields
+        student = make_student()
+        sync_profile_fields(student, {'referral_source': 'smc'})
+        student.refresh_from_db()
+        self.assertEqual((student.referral_source, student.source_id), ('smc', None))
 
     def test_a_fixed_choice_never_links_even_if_a_row_carries_its_code(self):
         """Review fix: the Sources POST now refuses a reserved code, but a row from before (or
         written another way) must still never collect the "Other" students."""
         from apps.scholarship.services import sync_profile_fields
-        squatter = _source('other', 'A Row Called Other')
+        squatter = _source(self.org, 'other', 'A Row Called Other')
         ProgrammeReferralSource.objects.create(programme=self.gift_a, source=squatter)
         student = make_student()
-        sync_profile_fields(student, {'referral_source': 'other'})
+        sync_profile_fields(student, {'referral_source': 'other'}, programme=self.gift_a)
         student.refresh_from_db()
         self.assertIsNone(student.source_id)
         self.assertIsNone(student.referred_by_org_id)

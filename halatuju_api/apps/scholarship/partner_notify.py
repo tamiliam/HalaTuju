@@ -204,14 +204,16 @@ def send_partner_digests(dry_run=False, out=None):
 # ── the two milestone emails ──────────────────────────────────────────────────
 
 def _partner_by_chip():
-    """`{referral chip: organisation}` for every ACTIVE partner (never the house org).
+    """`{(owning organisation id, referral chip): source}` for every ACTIVE source (never the house
+    org). Keyed by organisation too since sources Sprint B (2026-10-18): a code is unique only
+    within its organisation, so an application reaches the source of ITS OWN organisation.
 
     Used to fetch only students who belong to a real partner: a self-referred or unattributed
     application is the house org's residual and is never the subject of a partner email.
     """
-    from apps.courses.models import PartnerOrganisation
+    from .models import ReferralSource
     return {
-        o.code: o for o in PartnerOrganisation.objects
+        (o.organisation_id, o.code): o for o in ReferralSource.objects
         .filter(is_active=True).exclude(code=partner_comms.HOUSE_ORG_CODE)
     }
 
@@ -241,13 +243,14 @@ def send_partner_milestones(dry_run=False, out=None):
 
         pending = {}
         for app in (partner_comms.milestone_queryset(kind)
-                    .filter(profile__referral_source__in=list(by_chip))
+                    .filter(profile__referral_source__in={code for _, code in by_chip})
                     .select_related('profile').order_by('pk')):
-            chip = (getattr(app.profile, 'referral_source', '') or '')
-            pending.setdefault(chip, []).append(app)
+            key = (app.owning_organisation_id, getattr(app.profile, 'referral_source', '') or '')
+            if key in by_chip:              # the chip names a source of HER organisation only
+                pending.setdefault(key, []).append(app)
 
-        for chip, apps in sorted(pending.items()):
-            org = by_chip[chip]
+        for key, apps in sorted(pending.items(), key=lambda kv: (kv[0][1], kv[0][0] or 0)):
+            org = by_chip[key]
             if org.id not in qualifying:
                 _skip(org, kind, 'no_recipient')
                 continue

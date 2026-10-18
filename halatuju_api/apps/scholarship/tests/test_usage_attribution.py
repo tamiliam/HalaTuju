@@ -27,7 +27,7 @@ from apps.courses.models import PartnerOrganisation
 from apps.scholarship import emails, scheduling, usage
 from apps.scholarship.models import UsageEvent
 from apps.scholarship.tests.factories import (
-    make_admin, make_application, make_cohort, make_org, make_student,
+    make_admin, make_application, make_cohort, make_org, make_source, make_student,
 )
 
 
@@ -257,8 +257,10 @@ class TestPartnerAndSponsorMailBillsTheTenant(TestCase):
     def setUpTestData(cls):
         from apps.scholarship.models import Programme
         cls.owner_org = make_org(code='bp2', name='BrightPath')
-        cls.referrer = make_org(code='cumig', name='CUMIG', is_active=True,
-                                contact_email='ref@example.com')
+        # Since sources Sprint B (2026-10-18) the recipient is a SOURCE row, owned by the
+        # organisation — not an organisation of its own.
+        cls.referrer = make_source(cls.owner_org, 'cumig', name='CUMIG',
+                                   contact_email='ref@example.com')
         cls.programme = Programme.objects.create(
             organisation=cls.owner_org, code='bp2-flagship', name_en='BrightPath Bursary')
         cohort = make_cohort(programme=cls.programme, code='cbp2', name='B40', year=2026,
@@ -275,7 +277,9 @@ class TestPartnerAndSponsorMailBillsTheTenant(TestCase):
         from apps.scholarship import partner_notify
         org_id = partner_notify._owning_org_id(self.referrer)
         self.assertEqual(org_id, self.owner_org.id)
-        self.assertNotEqual(org_id, self.referrer.id)   # the half that was the danger
+        # The half that was the danger — billing the RECIPIENT — cannot recur in that form since
+        # sources Sprint B: the recipient is a `referral_sources` row, not an organisation, so its
+        # id is not an organisation id at all (comparing the two would compare two tables' ids).
 
     def test_a_milestone_bills_the_named_applications_owner(self):
         from apps.scholarship import partner_notify
@@ -284,7 +288,7 @@ class TestPartnerAndSponsorMailBillsTheTenant(TestCase):
 
     def test_a_partner_with_no_students_attributes_to_nobody(self):
         from apps.scholarship import partner_notify
-        stranger = PartnerOrganisation.objects.create(code='none', name='No Students')
+        stranger = make_source(self.owner_org, 'none', name='No Students')
         self.assertIsNone(partner_notify._owning_org_id(stranger))
 
     def test_a_sponsor_bills_the_organisation_running_the_gift_they_joined(self):

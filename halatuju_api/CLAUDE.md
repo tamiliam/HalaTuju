@@ -934,17 +934,21 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
 - **Sources — what must not break:** a source switched on in Sources joins NO gift, and a new gift starts
   with none (someone switches it on per gift). The fixed three are held on both sides
   (`gift_sources.FIXED_CODES` / web `FIXED_REFERRAL_CODES`, drift-tested); they and the house
-  organisation's code are reserved (Sources POST 400 `code_reserved`). `PartnerOrganisation.programme` is
-  DEPRECATED and read by nothing: **TD-379 drops it in a later contract migration (courses, migrate-first)
-  — trigger: S1 + S2 live (met 2026-10-09) AND a rollback to a pre-S1 image no longer wanted (that image
-  reads the column); suggest after a week with no source incident, ≈2026-10-16.** TD-380 is mostly
-  closed by sources-and-referrals Sprint A once live (the witness half waits for Sprint C); TD-381
-  (Sources shared across tenants) is Sprints B–C (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
-- **Two referral columns (Sprint A, BUILT, NOT LIVE):** `StudentProfile.source` is written ONLY by the
+  organisation's code are reserved (Sources POST 400 `code_reserved`). `PartnerOrganisation.programme`
+  left the model in sources Sprint B; **TD-379's drop is `courses/0080`, IMAGE-FIRST** (after that image
+  serves). TD-380's witness half and TD-381's part (4) wait for Sprint C
+  (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
+- **Two referral columns (Sprint A, LIVE 2026-10-18):** `StudentProfile.source` is written ONLY by the
   bursary submit; `referred_by_org` ONLY by a `?ref=` link to an `is_referral_partner` row, first touch
   (`apps/courses/referral_links.py`). Neither writes the other; never let a bursary answer reach the
-  `partner` logins' list. ⚠ **`courses/0078` is MIGRATE-FIRST and pending** —
-  `docs/scholarship/two-columns-cutover-sql.md` (its pre-check 9 must read 0) before the push.
+  `partner` logins' list.
+- **Sources become their own table (Sprint B, BUILT, NOT LIVE):** `scholarship.ReferralSource`
+  (`referral_sources`), OWNED by an organisation, same ids as the `partner_organisations` rows it was
+  copied from; every source surface is fenced to the owning organisation; referral partners stay on
+  `partner_organisations`. ⚠ **`scholarship/0173` + `courses/0079` are MIGRATE-FIRST and pending, and
+  `courses/0080` (TD-379, the column drop) is IMAGE-FIRST — only after the new revision serves**:
+  `docs/scholarship/sources-b-cutover-sql.md` (freeze Sources and gift Configuration between the
+  cutover and the deploy). Next free after it: scholarship 0174 / courses 0081.
 - **TD-347 when the owner says go** (ruled B: when the parent call is recorded, re-arm a FRESH full
   accept window; the email names the new deadline). ⛔ It must ship before anyone sets
   `BURSARY_AGREEMENT_ENABLED`; before that flip, prompt every awarded student to check the parent phone on

@@ -13,6 +13,11 @@ submit REFUSES a code the gift does not offer (`is_offered`) — owner's ruling.
 `pushparani` / `govind` codes are gone from every form (courses migration 0077 moved them to
 `other`).
 
+Sources-and-referrals Sprint B (2026-10-18): a source is its own row (`ReferralSource`) OWNED BY AN
+ORGANISATION, and every list here is read INSIDE the gift's own organisation — a gift can only ever
+offer, list or be switched to its own organisation's sources. A code is unique per organisation, so
+a source is never looked up by its code alone.
+
 ⚠ NOT ACCESS CONTROL. A referral source is an ATTRIBUTION relationship, never a scope; nothing
 here decides who may see what. The org fence is the caller's (`_AdminBase`).
 
@@ -21,7 +26,7 @@ so every `AUDIT` line stays on the `views_admin` package logger.
 """
 from django.db.models import Count, Q
 
-from .models import ProgrammeReferralSource
+from .models import ProgrammeReferralSource, ReferralSource
 
 #: The three choices on EVERY apply form, after the gift's own sources (owner, 2026-10-08) — never
 #: rows here, never switches. The web holds the same three for their labels (drift-tested by
@@ -38,30 +43,31 @@ class GiftSourceError(Exception):
         self.source = source
 
 
-def active_sources():
-    """Every source a gift's Configuration may offer: switched on in Sources, not suspended, and
-    never a tenant organisation (the table is dual-role — see `PartnerOrganisationQuerySet`)."""
-    from apps.courses.models import PartnerOrganisation
-    return (PartnerOrganisation.objects
-            .filter(show_in_apply=True, is_active=True)
-            .exclude(pk__in=PartnerOrganisation.objects.tenants().values('pk')))
+def active_sources(organisation_id):
+    """Every source a gift of THIS organisation may offer: owned by it, switched on in Sources, and
+    not suspended. Since Sprint B a tenant can never be one (sources are their own table), and an
+    organisation-less caller (`None`) gets none, never everybody's."""
+    return ReferralSource.objects.owned_by(organisation_id).filter(show_in_apply=True,
+                                                                   is_active=True)
 
 
 def sources_for(programme):
-    """`[{code, name, on}]` for the gift's Configuration — active sources only, by name."""
+    """`[{code, name, on}]` for the gift's Configuration — its organisation's active sources only,
+    by name."""
     on = set(ProgrammeReferralSource.objects.filter(programme=programme)
              .values_list('source_id', flat=True))
     return [{'code': s.code, 'name': s.name, 'on': s.id in on}
-            for s in active_sources().order_by('name', 'code')]
+            for s in active_sources(programme.organisation_id).order_by('name', 'code')]
 
 
 def offered_sources(programme):
     """The sources THIS gift's apply form lists: its switched-on links whose source is still
-    active (`show_in_apply`, `is_active`, not a tenant). A link whose source was switched off in
-    Sources stays in the table but is not offered. No gift → nothing."""
+    active (`show_in_apply`, `is_active`) and belongs to the gift's own organisation. A link whose
+    source was switched off in Sources stays in the table but is not offered. No gift → nothing."""
     if programme is None:
-        return active_sources().none()
-    return active_sources().filter(gift_links__programme=programme).order_by('name', 'code')
+        return ReferralSource.objects.none()
+    return (active_sources(programme.organisation_id)
+            .filter(gift_links__programme=programme).order_by('name', 'code'))
 
 
 def public_sources(programme):
@@ -80,18 +86,20 @@ def is_offered(programme, code):
     return offered_sources(programme).filter(code=code).exists()
 
 
-def resolve_changes(raw):
+def resolve_changes(raw, programme):
     """Validate a PUT's `sources` map — `{<code>: true|false}` — BEFORE anything is written.
 
-    Returns `{PartnerOrganisation: bool}`. Refuses the WHOLE map on the first bad entry:
+    Returns `{ReferralSource: bool}`. Refuses the WHOLE map on the first bad entry:
     `bad_sources` (not a map), `bad_source_value` (not a boolean), `unknown_source` (no such
-    code, switched off, suspended, or a tenant — the screen never offers any of those).
+    code IN THIS GIFT'S ORGANISATION, switched off, or suspended — the screen never offers any of
+    those; another organisation's source reads exactly like one that does not exist).
     """
     if raw is None:
         return {}
     if not isinstance(raw, dict):
         raise GiftSourceError('bad_sources')
-    by_code = {s.code: s for s in active_sources().filter(code__in=[str(k) for k in raw])}
+    by_code = {s.code: s for s in active_sources(programme.organisation_id)
+               .filter(code__in=[str(k) for k in raw])}
     resolved = {}
     for code, value in raw.items():
         if not isinstance(value, bool):

@@ -13,7 +13,7 @@ from django.utils import timezone
 from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import partner_comms, partner_notify
 from apps.scholarship.models import (
-    ApplicantDocument, PartnerEmailLog, PartnerEmailTemplate,
+    ApplicantDocument, PartnerEmailLog, PartnerEmailTemplate, ReferralSource,
     ScholarshipApplication, ScholarshipCohort,
 )
 
@@ -21,9 +21,15 @@ LIVE = dict(PARTNER_COMMS_ENABLED=True,
             EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 
 
+def _tenant():
+    """The seeded house organisation, which owns every source and round here (sources Sprint B)."""
+    return PartnerOrganisation.objects.get(code=partner_comms.HOUSE_ORG_CODE)
+
+
 def _org(code, name=None, email='partner@example.org'):
-    org, _ = PartnerOrganisation.objects.update_or_create(
-        code=code,
+    """A SOURCE owned by the house tenant (sources Sprint B)."""
+    org, _ = ReferralSource.objects.update_or_create(
+        organisation=_tenant(), code=code,
         defaults={'name': name or code.upper(), 'contact_email': email,
                   'contact_person': 'Sivamani', 'is_active': True},
     )
@@ -144,7 +150,8 @@ class TestWeeklyDigests(TestCase):
     @classmethod
     def setUpTestData(cls):
         _seed()
-        cls.cohort = ScholarshipCohort.objects.create(code='pd-2026', name='PD', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(code='pd-2026', name='PD', year=2026,
+                                                      owning_organisation=_tenant())
 
     def setUp(self):
         mail.outbox = []

@@ -85,4 +85,8 @@ from .guardian import GuardianContactChange
 # Request #28 follow-up (2026-10-06) — models 65 and 66, NEW: one organisation's flag on a shop and
 # its notes log. They point only at `courses.PartnerOrganisation` and at each other.
 from .merchant_flags import NOTE_MAX, MerchantFlag, MerchantFlagNote
+# Sources-and-referrals Sprint B (2026-10-18) — model 67, NEW: a referral source, owned by the
+# organisation that added it. Points only at `courses.PartnerOrganisation`; every FK to it names it
+# as a string, so its place in this order does not matter.
+from .sources import ReferralSource
 

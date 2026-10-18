@@ -12,7 +12,8 @@ EVER TOUCHES THE OTHER:
 - `StudentProfile.referred_by_org` — the REFERRAL PARTNER whose `?ref=` link brought them. Written
   ONLY here (`apply_ref_code`, fed by `ProfileSyncView`): first touch, referral-partner rows only.
 
-Sources-and-referrals Sprint A built this; Sprint B moves sources into their own table, Sprint C
+Sources-and-referrals Sprint A built this; Sprint B (2026-10-18) moved sources into their own table
+(`scholarship.ReferralSource`, owned by an organisation — `StudentProfile.source` names it); Sprint C
 moves every reader of the legacy chip (`referral_source`) onto the per-application answer
 (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
 
@@ -41,6 +42,61 @@ def referral_partners():
     return (PartnerOrganisation.objects.filter(is_referral_partner=True, is_active=True)
             .exclude(code__in=RESERVED_CODES)
             .exclude(pk__in=PartnerOrganisation.objects.tenants().values('pk')))
+
+
+#: Why an invitation was refused, keyed by the `code` the invite view answers with. The sentence is
+#: what the staff screens show (they print the server's `error`), so it is written for a person.
+INVITE_REFUSALS = {
+    'org_required': 'A partner must belong to an organisation',
+    'org_not_found': 'Organisation not found',
+    'bad_code': 'The organisation code may use only lower-case letters, digits, - and _.',
+    'code_reserved': 'That code is reserved and cannot be a referral partner.',
+    'org_is_tenant': 'That organisation runs gifts on HalaTuju, so it cannot have a partner login.',
+    'not_a_referral_partner': 'That organisation is not a referral partner, so it cannot have a '
+                              'partner login. A referral partner is marked by the platform first.',
+    'org_is_referral_partner': 'That organisation is a platform referral partner, so it cannot '
+                               'become an organisation that runs gifts.',
+}
+
+
+def partner_invite_org(org_id=None, new_code='', new_name='', contact_person='', phone=''):
+    """The `partner_organisations` row a `partner`-role invitation may bind its login to, or why not.
+
+    Returns `(row, None)` or `(None, refusal code)` (`INVITE_REFUSALS`). Sources Sprint B
+    (2026-10-18), owner's choice "refuse, or mark" decided as REFUSE:
+    - an EXISTING row must already be an active REFERRAL PARTNER (`referral_partners()`). An
+      invitation never marks one — marking changes which students a `?ref=` link collects, so it is
+      a platform decision taken on its own, not a side effect of asking someone to sign in. A
+      tenant, a source's old row, a switched-off row or a reserved code is refused.
+    - a NEW organisation (code + name) is created AS a referral partner: it exists only for this
+      login, which is what a referral partner is. A code that already exists is the rule above.
+    A partner login never binds to a SOURCE (sources live in their own table since Sprint B)."""
+    from .models import PartnerOrganisation
+    if new_code and new_name:
+        code = _clean_code(new_code)
+        if not code:
+            return None, 'bad_code'
+        if code in RESERVED_CODES:
+            return None, 'code_reserved'
+        org, created = PartnerOrganisation.objects.get_or_create(code=code, defaults={
+            'name': new_name, 'contact_person': contact_person or '', 'phone': phone or '',
+            'is_referral_partner': True})
+        if created:
+            return org, None
+    elif org_id:
+        try:
+            org = PartnerOrganisation.objects.filter(pk=int(org_id)).first()
+        except (TypeError, ValueError):
+            org = None
+        if org is None:
+            return None, 'org_not_found'
+    else:
+        return None, 'org_required'
+    if PartnerOrganisation.objects.tenants().filter(pk=org.pk).exists():
+        return None, 'org_is_tenant'
+    if not referral_partners().filter(pk=org.pk).exists():
+        return None, 'not_a_referral_partner'
+    return org, None
 
 
 def _clean_code(code):
@@ -81,9 +137,43 @@ def apply_ref_code(profile, code):
     return changed
 
 
+def _source_model():
+    """`scholarship.ReferralSource`, reached through the `StudentProfile.source` field rather than
+    imported — the courses → scholarship back-edge may not grow (`test_code_standards.py`)."""
+    from .models import StudentProfile
+    return StudentProfile._meta.get_field('source').related_model
+
+
+def source_twin(partner_id):
+    """The SOURCE row that is the same organisation as this `partner_organisations` row, or None.
+
+    Sources Sprint B (2026-10-18) copied every source out of `partner_organisations` KEEPING ITS ID,
+    so a row that was both (CUMIG) has a twin with the same id AND the same code. Both must match:
+    ids allotted after the copy come from two separate sequences, so an id alone could pair two
+    unrelated organisations. A BRIDGE for the witness readers below until Sprint C reads the source
+    only (owner: the witness is never the referral partner)."""
+    from .models import PartnerOrganisation
+    if partner_id is None:
+        return None
+    return _source_model().objects.filter(
+        pk=partner_id,
+        code__in=PartnerOrganisation.objects.filter(pk=partner_id).values('code')).first()
+
+
+def is_same_organisation(partner_id, source):
+    """Is the `partner_organisations` row `partner_id` the same organisation as `source`? Only its
+    seeded twin is (`source_twin`): same id and same code."""
+    from .models import PartnerOrganisation
+    if partner_id is None or source is None or partner_id != source.pk:
+        return False
+    return PartnerOrganisation.objects.filter(pk=partner_id, code=source.code).exists()
+
+
 def referring_org(profile):
-    """The ONE organisation the witness chain and the cockpit read as "who referred this student",
-    until Sprint C splits them: the SOURCE she named on the bursary form, else her REFERRAL PARTNER.
+    """The ONE SOURCE the witness chain and the cockpit read as "who referred this student", until
+    Sprint C splits them: the SOURCE she named on the bursary form, else her REFERRAL PARTNER's
+    source twin (`source_twin`) — always a `ReferralSource` or None since Sprint B, because the
+    witness columns name the sources table.
 
     Before the two columns existed, `referred_by_org` held whichever of the two was written last,
     and three readers used it: the witness request (`bursary._resolve_witness_org`), the witness
@@ -93,4 +183,5 @@ def referring_org(profile):
     (owner: never the referral partner)."""
     if profile is None:
         return None
-    return getattr(profile, 'source', None) or getattr(profile, 'referred_by_org', None)
+    return (getattr(profile, 'source', None)
+            or source_twin(getattr(profile, 'referred_by_org_id', None)))

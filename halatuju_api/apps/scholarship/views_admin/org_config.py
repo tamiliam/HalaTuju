@@ -339,7 +339,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
                                  'item': f'{kind}:{code}'}, status=status.HTTP_400_BAD_REQUEST)
             resolved.append((item, state))
         try:
-            source_changes = gift_sources.resolve_changes(request.data.get('sources'))
+            source_changes = gift_sources.resolve_changes(request.data.get('sources'), programme)
         except gift_sources.GiftSourceError as exc:
             return Response({'error': exc.code, 'code': exc.code, 'source': exc.source},
                             status=status.HTTP_400_BAD_REQUEST)
