@@ -55,6 +55,12 @@ CACHES = {
 
 # Database - Supabase PostgreSQL
 # Supports DATABASE_URL or individual DB_* env vars (avoids URL-encoding issues)
+#
+# ⚠ CONN_HEALTH_CHECKS IS ON BOTH BRANCHES, AND IT IS NOT OPTIONAL (org request #32, 2026-10-08).
+# A persistent connection (CONN_MAX_AGE) outlives a network reset between Cloud Run and Supabase:
+# Django kept the dead one and the next three requests 500'd with `connection already closed` /
+# `SSL SYSCALL error: EOF`. With health checks on, the first query of each request pings a reused
+# connection and quietly replaces a dead one. Pinned by apps/scholarship/tests/test_db_health_checks.py.
 DATABASE_URL = os.environ.get('DATABASE_URL')
 DB_HOST = os.environ.get('DB_HOST')
 
@@ -68,11 +74,12 @@ if DB_HOST:
             'USER': os.environ.get('DB_USER', 'postgres'),
             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
             'CONN_MAX_AGE': 600,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 elif DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, conn_health_checks=True)
     }
 else:
     raise ValueError("DATABASE_URL or DB_HOST environment variable is required in production")

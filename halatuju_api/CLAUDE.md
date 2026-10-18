@@ -263,6 +263,9 @@ Local-only (never on Cloud Run): `UPDATE_EMAIL_GOLDEN` (⛔ never set — see Li
 - **Production reads are read-only probes, counts only:** `BEGIN READ ONLY` per transaction; ⛔ never
   `set_session(readonly=True)` through the Supabase pooler (it leaks onto the shared backend). A
   probe's script lives in the scratchpad, never in the repo.
+- **DB connections persist (`CONN_MAX_AGE` 600) WITH `CONN_HEALTH_CHECKS` on, on both branches of
+  `settings/production.py`** (request #32): a network reset once left a dead connection that 500'd the
+  next requests. Never drop the flag; `test_db_health_checks.py` pins it.
 - **Paid jobs run only on the owner's word:** `refresh_sponsor_profiles`, `sort_spending --reask-version`
   (and ⚠ its REPORT mode also calls the model and pays), `reextract_documents`, `eval_doc_recognition`,
   a cohort-wide EPF re-read. `rescore_pending_decisions` re-scores EVERY unreleased submitted application
