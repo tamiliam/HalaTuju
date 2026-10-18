@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Consolidation Review — forty commits, 6 Oct → 18 Oct - 2026-10-18
+
+Docs only. No app code, no migration, nothing a visitor sees.
+
+- **Logged late** (`docs/consolidation-log.md`): the 40 code commits since the 2026-10-06 review, none logged when it landed — 37 were eleven sprints' work (TD-352 and its reviews, request #28's follow-up, #30, #31 and its TD-371..377 follow-ups, TD-369, org-timing Sprint 1, per-gift sources S1/S2, staff lifecycle, sources Sprint A), 3 genuine small changes (`4570eb8f`, #32, #33). Then reviewed and Pending cleared; a new `## Sprints since the last review` section takes each sprint's SHAs at its close so sprint work is never reported as unlogged again.
+- **Register** (`docs/technical-debt.md`): **TD-383** raised (Now) — six open entries (TD-367, TD-365, TD-368, TD-382, TD-348, TD-351) are one shape, a write that trusts a status read earlier; one choke-point sprint. **TD-360**'s trigger was reached on 2026-10-07; promoted to the next hygiene sprint. **TD-384** (a private name imported across apps) and **TD-385** (`fix%` counts review rounds) raised by the code-health reading. Open Items Index regenerated: 123 open of 382 defined. Register test 4/4.
+- **Code health** (`docs/code-health.md`, plain run at `65af261`): `xapp` 44 → 50 FAIL accepted with reasons (five edges in the sanctioned direction from the staff lifecycle and Sprint A, which closed with no reading; the sixth is TD-384); `fix%` 45 → 46 is TD-385.
+- **Workflow lines (workspace repo):** `sprint-close.md` step 10 records the sprint in the consolidation log and runs `wat_lint --project`; `small-change-lane.md` step 4 and Part B match; `sprint-start.md` step 3b — a money / identity / eligibility sprint writes its door list before building, and the adversarial reviewer is asked for the door not on it.
+
 ## Requests #32 and #33 — a dead database connection is replaced; the Source invite points to Sources - 2026-10-18
 
 - **Fixed — #32 (no charge): a dead persistent DB connection no longer 500s the next requests.** On 2026-10-08 the link between Cloud Run and Supabase reset idle connections; with `CONN_MAX_AGE = 600` Django reused the dead one and three requests failed (`connection already closed` / `SSL SYSCALL error: EOF`) — one per worker that held one. `settings/production.py` now sets `CONN_HEALTH_CHECKS: True` on BOTH branches (`DB_HOST` dict and `dj_database_url.parse(..., conn_health_checks=True)`): the first query of each request pings a reused connection and reconnects if it is dead. `resolve_login_alias` (`middleware/supabase_auth.py`) is unchanged — its first query of the request is now the health-checked one, so the reset is absorbed before its fail-to-yourself fallback can fire. No migration. `halatuju_api/CLAUDE.md` gotcha added.

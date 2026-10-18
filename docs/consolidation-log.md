@@ -5,53 +5,101 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_Logged late on 2026-10-18: none of the 40 code commits below was logged when it landed. `wat_lint`
-could not see the ones after 11:24 on 2026-10-06 until workspace `e055e3d` (2026-10-15), and no sprint
-close ran `wat_lint --project`. 37 were sprint work whose commits do not say "sprint"; each is marked
-"— sprint: <name>". File counts are `git show --numstat` (tests, message files and docs included)._
+_(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits are listed in that review, and line by line in git at `65af2612`)_
 
-- 2026-10-06 b65bf0ec fix: a not-yet-sorted shop can be marked "Checked - still unknown" (request #28 follow-up) (web admin spending; 6 files, 1 source) — sprint: request #28 follow-up
-- 2026-10-06 3858c040 feat: flag a shop for review with a notes log, per organisation (request #28 follow-up) (api new `merchant_flags.py` + model + migration 0167_merchant_flags; web admin spending; 26 files) — sprint: request #28 follow-up
-- 2026-10-06 9e849b9a fix: room under the near-line gate for /scholarship/application and /scholarship/apply (request #28 follow-up) (en/ms/ta message files, CHANGELOG; 4 files) — sprint: request #28 follow-up
-- 2026-10-06 0c286177 feat(api): TD-352 an officer closes a stalled application from any in-play status (api closure.py, pool.py, views_admin, models + migration 0168_closure_reason_stalled; 8 files) — sprint: TD-352
-- 2026-10-06 3a31458c feat(web): TD-352 the cockpit Close card for stalled cases (web admin cockpit, closeOffer.ts, api clients; 10 files) — sprint: TD-352
-- 2026-10-06 cb44ee7e perf(web): TD-352 weight off /scholarship/application - two minority panels load on demand (web scholarship application, ActionCentre, lazy income switch; 9 files) — sprint: TD-352
-- 2026-10-06 15077a9b perf(web): TD-352 the secondary-school list loads on demand; two budgets lowered (web SchoolSelect, code-standards.json; 4 files) — sprint: TD-352
-- 2026-10-06 1be4c08f feat(web): TD-352 the student is told one application at a time (web scholarship application copy; 5 files) — sprint: TD-352
-- 2026-10-06 c4ab0ed5 fix: TD-352 a closed case takes no more review writes ('closed' joins CASE_CLOSED_STATES) (api services, web officerCockpit.ts; 6 files) — sprint: TD-352
-- 2026-10-06 074c702d fix: TD-352 review 1 - a pre-award close is super or org_admin only (api views_admin, web cockpit + closeOffer.ts; 7 files) — sprint: TD-352 review 1
-- 2026-10-06 34bb3a24 fix: TD-352 review 1 - an awarded case says the truth; no Close card at awarded (api closure.py, web closeOffer.ts, messages; 8 files) — sprint: TD-352 review 1
-- 2026-10-06 dfad0417 fix: TD-352 review 1 - a pre-award close releases the interview; no reminders for a closed case (api closure.py, scheduling.py, send_interview_reminders; 4 files) — sprint: TD-352 review 1
-- 2026-10-06 be54a304 fix: TD-352 review 1 - the officer-close email says "a later round" (api closure.py, emails; 4 files) — sprint: TD-352 review 1
-- 2026-10-06 52c1465d fix: TD-352 review 1 - a case closed before it was funded does not read as post-award (api views_admin, web cockpit + closeOffer.ts; 7 files) — sprint: TD-352 review 1
-- 2026-10-06 f30f82f7 fix: TD-352 review 1 - the in-programme page and thank-you count a closed case only if it was funded (api in_programme.py, serializers.py, web scholarship; 7 files) — sprint: TD-352 review 1
-- 2026-10-06 becd7d53 fix: TD-352 review 1 - closing asks twice; the pre-award note says it is final (web admin cockpit, messages; 5 files) — sprint: TD-352 review 1
-- 2026-10-06 8f43aab7 fix: TD-352 review 1 - a close refuses while a decline is pending (api closure.py, web closeOffer.ts, messages; 7 files) — sprint: TD-352 review 1
-- 2026-10-06 331fe38f fix: TD-352 review 2 - a past interview is never voided; the void runs after commit; the role is judged on the locked row (api closure.py, views_admin; 4 files) — sprint: TD-352 review 2
-- 2026-10-06 446470d1 fix: TD-352 review 2 - an accept closed before QC stays in awaiting_qc (api views_admin; 2 files) — sprint: TD-352 review 2
-- 2026-10-06 2217df71 fix: TD-352 review 2 - the close confirm stays open until the request settles (web admin cockpit; 2 files) — sprint: TD-352 review 2
-- 2026-10-06 7c97b423 fix: TD-352 review 2 - a withdrawn close says "at your request"; no TD id in officer copy (api closure.py, emails, messages; 7 files) — sprint: TD-352 review 2
-- 2026-10-06 c301220c fix: TD-352 test passes a datetime to subTest (xdist cannot serialise it; the api gate refused 48fda4bd); api gate line documented; retro + lessons (api test, docs; 4 files) — sprint: TD-352 (post-gate fix)
-- 2026-10-06 802b6c95 feat: an intake year can require a minimum number of SPM grades at C or better (request #30) (api cohort model + migration 0169_cohort_min_spm_credit_count, seed_b40_2026_cohort, web admin intake years; 25 files) — sprint: request #30
-- 2026-10-06 fa150e29 fix: requirement typos are refused, not read as untick; counts must be whole (request #30 review) (api views_admin, web intakeYears.ts + admin; 11 files) — sprint: request #30 review
-- 2026-10-07 b6b90440 refactor(org-config): split the registry and the rules out of org_config.py (moves only) (api courses org_config split; 3 files) — sprint: org-timing Sprint 1
-- 2026-10-07 a8d7bf36 feat(org-config): student message timings become organisation settings (api) (api courses org_config*, new award_timing.py, four commands, emails, models; 33 files) — sprint: org-timing Sprint 1
-- 2026-10-07 1a77ba84 feat(org-config): the Configuration tab shows any timing rule under its box (web) (web admin configuration, manual; 6 files) — sprint: org-timing Sprint 1
-- 2026-10-07 c1da7f4d fix(reminders): the close keeps the promise the final reminder made (review F1) (api services, models + migration 0170, send_query_reminders; 9 files) — sprint: org-timing Sprint 1 review
-- 2026-10-07 21f16322 fix(rescore): a rescore keeps a waiting decision's send time — TD-369 (micro-sprint) (api services; 2 files) — sprint: TD-369 micro-sprint
-- 2026-10-08 eac97911 feat(intake): "Born in" state rule on an intake year - request #31 (api new birth_state.py, shortlisting, cohort model + migration 0171, profile_claim; web admin rules, ic-utils.ts; 42 files) — sprint: request #31
-- 2026-10-08 de158391 fix(intake): close TD-371..375 from the request #31 review (api profile_claim, birth_state, reopen, services, views_admin; web intakeYears; 15 files) — sprint: request #31 follow-ups (TD-371..375)
-- 2026-10-08 b991fbf4 fix(intake): close TD-376 and TD-377 - every route into recommended carries a locked, passing IC (api new award_revert.py, profile_claim, courses views, reopen, sponsorship, views_admin; 13 files) — sprint: TD-376/377
-- 2026-10-08 38495b34 feat(sources): each gift chooses its referral sources (per-gift sources S1) (api new gift_sources.py, ProgrammeReferralSource + migration 0172; web admin configuration + sources; 29 files) — sprint: per-gift sources S1
-- 2026-10-08 9ae08a66 feat(apply): the apply form lists the gift's own referral sources (per-gift sources S2) (api courses migration 0077, intake + submit; web apply form, referralSources.ts, admin; 38 files) — sprint: per-gift sources S2
-- 2026-10-09 ffa0983a fix(sources): review fixes for per-gift referral sources (api 0172, services, views_admin; web admin + apply; 27 files) — sprint: per-gift sources review
-- 2026-10-09 beeba2ec feat(staff): staff lifecycle - change role, cancel and delete properly (api new staff_lifecycle.py, staff_reinvite.py, views_staff.py, expire_temp_passwords; web admin people, login, TypedConfirmDialog; 38 files) — sprint: staff lifecycle (review rounds 1-2 in the same commit)
-- 2026-10-09 bfa547d9 feat(referrals): two independent student columns - source and referral partner (Sprint A) (api new referral_links.py, courses models + migration 0078, bursary, serializers, bursary_e2e; 22 files) — sprint: sources & referrals Sprint A
-- 2026-10-09 4570eb8f fix(referrals): keep the reserved codes as a pinned copy so the courses-to-scholarship back-edge does not grow (api courses referral_links.py + test; 2 files) — small change (Sprint A follow-up)
-- 2026-10-18 1ff02e83 fix(db): check a pooled database connection before each request (request #32) (api settings/production.py, new test_db_health_checks.py, CHANGELOG; 3 files) — small change
-- 2026-10-18 e09a6532 fix(invitations): the Source note points to Sources > Add source (request #33) (web admin organisation staff page, en/ms/ta, page test, CHANGELOG; 6 files) — small change
+## Sprints since the last review
+
+_One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review._
 
 ## Reviews
+
+### 2026-10-18 — forty commits, 6 Oct → 18 Oct: eleven sprints nobody logged, three small changes, and the review kept finding the door the builder missed
+
+**The forty** (commit · files; 37 sprint, 3 small). Nothing was logged when it landed; `wat_lint` could
+not see anything after 11:24 on 6 Oct until workspace `e055e3d` (15 Oct), and no sprint close ran it
+with `--project`. **Sprints:** request #28 follow-up (`b65bf0ec` · 6, `3858c040` · 26 with migration
+0167 and the new `merchant_flags.py`, `9e849b9a` · 4); TD-352 (`0c286177` · 8 with migration 0168,
+`3a31458c` · 10, `cb44ee7e` · 9, `15077a9b` · 4, `1be4c08f` · 5, `c4ab0ed5` · 6), its review 1
+(`074c702d`, `34bb3a24`, `dfad0417`, `be54a304`, `52c1465d`, `f30f82f7`, `becd7d53`, `8f43aab7` — 2 to 8
+files each), review 2 (`331fe38f`, `446470d1`, `2217df71`, `7c97b423`) and its post-gate fix
+(`c301220c`); request #30 (`802b6c95` · 25 with migration 0169, `fa150e29` · 11); org-timing Sprint 1
+(`b6b90440` · 3, `a8d7bf36` · 33, `1a77ba84` · 6, `c1da7f4d` · 9 with migration 0170); TD-369
+(`21f16322` · 2); request #31 (`eac97911` · 42 with migration 0171 and the new `birth_state.py`), its
+follow-ups TD-371..375 (`de158391` · 15) and TD-376/377 (`b991fbf4` · 13); per-gift sources S1
+(`38495b34` · 29, migration 0172), S2 (`9ae08a66` · 38, courses 0077) and review (`ffa0983a` · 27); staff
+lifecycle (`beeba2ec` · 38, three new modules); sources Sprint A (`bfa547d9` · 22, courses 0078).
+**Small changes:** `4570eb8f` (2 — Sprint A's reserved codes kept as a pinned copy), request #32
+`1ff02e83` (3 — `CONN_HEALTH_CHECKS` on both production branches) and request #33 `e09a6532` (6, one
+source file — the Source invite points to Sources).
+
+**Reflect.** The three small changes were genuine and each carries its own test; #32 is the only one
+an outsider saw (three 500s on 8 Oct). Everything else was sprint work that went through its own
+ceremony — retrospectives exist for #28's follow-up, TD-352, #30, org-timing, #31 and per-gift sources
+— **except two: the staff lifecycle and sources Sprint A closed with no retrospective and no
+code-health reading** (Sprint A's retro is still owed, per the project notes). The window's real story
+is in the sprints' review rounds: **TD-352 took three rounds and twelve fixes**, **request #31 seven
+rounds and two follow-up sprints** (TD-371 to TD-377), the staff lifecycle two rounds (H1: a re-invite
+could resurrect a revoked worker; N1–N3), per-gift sources one (an admin could mint a code equal to a
+fixed one), org-timing one (F1: a lowered setting broke a promise already emailed). Every one was found
+by the adversarial reviewer after the builder's tests were green, and every one was a DOOR the build had
+not listed: another path into `recommended`, another reader of `closed`, another way back onto the
+staff list. And two migration numbers were claimed twice by two sessions on one day (0167, 0168;
+renumbered on rebase, lessons.md 2026-10-06).
+
+**Cohere — two clusters promoted, one re-triggered, one already roadmapped.**
+
+- **Writers that trust a status read earlier — promoted to TD-383 (Now, A · M).** TD-367 (a payment run
+  pays a closed student), TD-365 (fund and close interleave), TD-368 (a finished case can be booked),
+  TD-382 (assign races a role switch), TD-348 and TD-351 (the submit's read-then-write). Six entries,
+  raised by three different reviews, one shape: the write re-reads nothing under a lock. One
+  choke-point plus a static test over the writers is a sprint; six patches would leave the seventh.
+- **First-load weight — TD-360's trigger was reached on 7 Oct; promoted to the next hygiene sprint.**
+  Org-timing's first build failed the near-line margin and shortened its labels; TD-352 spent two
+  `perf(web)` commits, #28's follow-up one, per-gift S1 deleted eight keys to pay; #31 landed at 0.203 kB.
+  The near-line check (2026-10-06) did its job — it caught each one locally — but a guard that catches
+  is not a cure. Status written on TD-360.
+- **Not promoted: the sources-and-referrals arc** (per-gift S1/S2, Sprint A, `4570eb8f`, #33; TD-379,
+  TD-380, TD-381). It already has a roadmap (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`,
+  Sprints B–D); a cluster line now points there.
+- **Not promoted: the "Born in" chain** (#31 → TD-371..377). Closed by its own follow-ups; TD-378 is the
+  one leftover and is listed.
+- **Decisions:** no small change contradicted one. #32 is recorded in `halatuju_api/CLAUDE.md`'s
+  gotchas; #33 is copy only.
+
+**Anticipate — three guardrails landed (workflow lines, in the workspace repo), one tool change re-proposed.**
+
+- **"Sprint commits reach the review as unlogged small changes"** (here 37; SJK(T) Connect 10 at
+  2026-09-21 and 6 at 2026-10-06). Cause: the sprint close runs bare `wat_lint.py`, which never runs the
+  project checks, and sprint commits seldom say "sprint". **Landed:** `sprint-close.md` step 10 — a
+  project with a consolidation log records each sprint under `## Sprints since the last review` (one
+  line, every code commit's SHA) and runs `wat_lint --project`; `small-change-lane.md` step 4 and Part B
+  say so, and Part B clears that section. The section is added above. `wat_lint` already matches a SHA
+  anywhere in the log, so no tool change is needed for this.
+- **"The adversarial review finds the door the builder did not list"** (×5 this window, every one
+  identity or eligibility or money). **Landed:** `sprint-start.md` step 3b — a sprint that adds or
+  changes who may be paid, funded, recommended, invited or signed in writes the DOOR LIST into its plan
+  (every path into or out of the guarded state, every reader of a status made reachable from somewhere
+  new); the builder tests each door; the reviewer's brief carries the list and is asked for the door not
+  on it. The review stays; the list moves what it finds earlier.
+- **The 2026-10-06 classifier proposal is re-proposed, with today's evidence.** `wat_lint`'s
+  misclassification check keys on `" feat:"`/`migration` in the log line: at this review it flagged 8 of
+  the 37 sprint lines, mostly because the area notes written here happen to say "migration" — a
+  `feat(scope):` subject never matches `" feat:"`. Reading `git show --numstat` by the logged SHA
+  (source files > 5, any `migrations/` path, a `models` path, a new `management/commands/` file) flags
+  13 commits covering 10 of the 11 sprints (only TD-369's two-file micro-sprint passes) and none of the
+  three small changes — measured on the lines above. Not landed: it is a workspace tool change and
+  needs the owner's approval.
+- **No new guard for the migration-number collision** — `makemigrations --check` refuses two leaves, and
+  the lesson (agree the number by message before any ledger row) covers the only costly half.
+
+**Close out.** Pending cleared (40 → 0, counter reset). Promoted: TD-383 (new), TD-360 (trigger reached).
+Raised by the code-health reading: TD-384 (a private name imported across apps) and TD-385 (`fix%`
+counts review rounds — the third explanation became a ticket). Code-health reading taken (plain,
+`65af261`): `xapp` 44 → 50 FAIL accepted with reasons in `docs/code-health.md` (five edges in the
+sanctioned direction from the staff lifecycle and Sprint A, one is TD-384). Open Items Index
+regenerated: **123 open of 382 defined**, the tool's `td_open`, every pointer diffed against the
+register both ways and every tier counted. Owed outside this review: the staff lifecycle and Sprint A
+retrospectives.
 
 ### 2026-10-06 — thirteen changes, 18 Sep → 6 Oct: the lane carried three sprints, and one budget line took five fights
 

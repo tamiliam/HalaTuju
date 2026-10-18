@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-18 | 65af261 | 90 | 46 | officerCockpit.ts 28.1 | 17 | 15 | 4 | 50 | 135 | 0 | 3 | 13 | 123 | 0 | - | - | ok |
 | 2026-10-09 | ffa0983 | 90 | 45 | views.py 31.7 | 17 | 15 | 4 | 44 | 135 | 0 | 3 | 13 | 120 | 0 | 0 | ok | ok |
 | 2026-10-07 | 5fd333e | 90 | 45 | views.py 31.6 | 17 | 15 | 4 | 43 | 135 | 0 | 3 | 13 | 118 | 0 | 0 | ok | ok |
 | 2026-10-06 | a3aef00 | 90 | 45 | views.py 31.6 | 17 | 15 | 4 | 48 | 135 | 0 | 3 | 13 | 116 | 0 | - | - | ok |
@@ -91,37 +92,37 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-09, ffa0983, window 2026-07-11 onward)
+## Latest run (2026-10-18, 65af261, window 2026-07-20 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/views.py` | 13 | 2436 | 31.7 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1650 | 28.1 |
+| `halatuju_api/apps/scholarship/views.py` | 11 | 2436 | 26.8 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 14 | 1351 | 18.9 |
-| `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1225 | 14.7 |
-| `halatuju_api/apps/courses/views_admin.py` | 10 | 1223 | 12.2 |
+| `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1228 | 13.5 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 10 | 990 | 9.9 |
-| `halatuju_api/apps/scholarship/vision.py` | 4 | 2285 | 9.1 |
-| `halatuju_api/apps/scholarship/serializers.py` | 6 | 1211 | 7.3 |
-| `halatuju_api/apps/courses/views.py` | 3 | 2319 | 7 |
-| `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1006 | 7 |
+| `halatuju_api/apps/courses/views_admin.py` | 7 | 1165 | 8.2 |
+| `halatuju_api/apps/courses/views.py` | 3 | 2306 | 6.9 |
+| `halatuju_api/apps/scholarship/vision.py` | 3 | 2285 | 6.9 |
+| `halatuju-web/src/lib/scholarship.ts` | 6 | 1079 | 6.5 |
+| `halatuju_api/apps/scholarship/org_requests.py` | 6 | 1075 | 6.5 |
 
 ### Fix ratio
-- 253 fix / 307 feat commits since 2026-07-11
+- 205 fix / 242 feat commits since 2026-07-20
 
 ### Files over 1000 lines
 - `2436  halatuju_api/apps/scholarship/views.py`
-- `2319  halatuju_api/apps/courses/views.py`
+- `2306  halatuju_api/apps/courses/views.py`
 - `2285  halatuju_api/apps/scholarship/vision.py`
 - `1650  halatuju-web/src/lib/officerCockpit.ts`
-- `1380  halatuju_api/apps/courses/models.py`
+- `1386  halatuju_api/apps/courses/models.py`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1370  halatuju-web/src/app/profile/page.tsx`
 - `1351  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1225  halatuju_api/apps/scholarship/serializers_admin.py`
-- `1223  halatuju_api/apps/courses/views_admin.py`
+- `1228  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1211  halatuju_api/apps/scholarship/serializers.py`
+- `1165  halatuju_api/apps/courses/views_admin.py`
 - `1138  halatuju_api/apps/scholarship/contracts.py`
 - `1079  halatuju-web/src/lib/scholarship.ts`
 - `1075  halatuju_api/apps/scholarship/org_requests.py`
@@ -139,8 +140,8 @@ drift tests are counted as the habit they cure). See TD-284.
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `210  halatuju_api/apps/scholarship/verdict_engine.py:491 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:168 autofill_pathway_from_offer`
-- `183  halatuju_api/apps/courses/views_admin.py:607 post`
 - `177  halatuju_api/apps/scholarship/resolution.py:263 doc_match_verdict`
+- `173  halatuju_api/apps/courses/views_admin.py:617 post`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `164  halatuju_api/apps/courses/views.py:1001 get`
 - `152  halatuju_api/apps/scholarship/help_engine.py:334 verdict_for_document`
@@ -153,10 +154,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - unknown_placeholders x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 
 ### Cross-app imports
-- courses -> scholarship: 16 edges (25 import statements)
+- courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 2 edges (2 import statements)
 - reports -> scholarship: 1 edges (2 import statements)
-- scholarship -> courses: 25 edges (145 import statements)
+- scholarship -> courses: 30 edges (161 import statements)
 
 ### Suppressions
 - # noqa: 80
@@ -168,16 +169,16 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Front-end rules mirrored from the backend with no drift test
-- 50 of 53 mirror claims in src/lib name a drift test
+- 51 of 54 mirror claims in src/lib name a drift test
 - halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
 - halatuju-web/src/lib/incomeWizard.ts:98  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 31 of 240 web test files read source text (signals: readFileSync, apiSource); drift 19 (*Drift.test.ts, counted apart)
+- 31 of 241 web test files read source text (signals: readFileSync, apiSource); drift 20 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 378 entries have a defining line; 120 carry no resolution marker on it
+- 382 entries have a defining line; 123 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -197,25 +198,44 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 6512: - **TD-367 (raised 2026-10-06 by the TD-352 adversarial review) - money, pre-existing: a payment run can pay a closed student.** `payments.complete` (
 - line 6513: - **TD-368 (raised 2026-10-06 by the TD-352 review, round 3) - low, pre-existing, shared with rejected/expired: interview times can be proposed and bo
 - line 6525: - **TD-380 (raised 2026-10-09 by the per-gift referral sources adversarial review) - low: `referred_by_org` is still linked loosely outside the apply 
-- line 6526: - **TD-381 (raised 2026-10-09 by the per-gift referral sources adversarial review) - low, multi-tenant: the Sources registry is shared across tenants,
+- line 6526: - **TD-381 (raised 2026-10-09 by the per-gift referral sources adversarial review; reworded the same day on the owner's ruling) - low, multi-tenant: a
+- line 6528: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 5fd333e
-
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5437
+- budgets no looser than at ffa0983
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-18 (65af261, Consolidation Review) — `xapp` +6 FAIL accepted with reasons and one TD; `fix%` is TD-385
+
+**1 FAIL, 5 standing WARNs** (plain run, as the review asks; `std` ok). It reads across the staff
+lifecycle, sources Sprint A, request #32 and #33 — the first two closed with no reading of their own,
+which is why six edges arrived at once.
+- **`xapp` 44 → 50 (FAIL) — accepted, with TD-384.** The six new edges, diffed by name against
+  `ffa0983`: `scholarship -> courses` +5 (`staff_lifecycle.py` reads `models_claim.ProfileLoginAlias`,
+  `password_change_flag`, `supabase_admin`; `views_admin/staff.py` reads `views_admin._staff_target_manageable`;
+  three Sprint A readers share the one door `referral_links.referring_org`) and `courses -> scholarship`
+  +1 (`views_admin` reaching `staff_lifecycle`, inside the existing `scholarship_staff()` door — the
+  back-edge statement budget held at 17, `std` ok). Five are the sanctioned direction: the staff rows
+  are courses', the work footprint is scholarship's, and the lifecycle must see both. The one that is
+  not fine is a private, underscore name of another app's VIEW module imported across the border:
+  **TD-384** (move the fence check to a public module, moves only).
+- **`fix%` 45 → 46 (WARN, moved) — TD-385, not a third explanation.** At least 18 of the window's
+  205 `fix:` commits are sprints' own review rounds (TD-352 ×12, request #30, org-timing F1, TD-371..377,
+  per-gift sources); without them it reads ~44. Explained the same way at `48fda4b`; the third time
+  is a ticket. The fix is in the workspace tool (read the sprint SHAs the new sprint-close line records).
+- **`hot#1` `views.py` 31.7 → `officerCockpit.ts` 28.1 (ok).** The 90-day window slid nine days and
+  dropped two of `views.py`'s fixes (13 → 11, 26.8 now); neither file grew. No decision needed.
+- **`td_open` 120 → 123 (info):** TD-383, TD-384, TD-385 raised by this review; nothing closed since
+  `ffa0983` but TD-335 (closed and TD-382 raised by the staff lifecycle, net 0).
+- **Standing WARNs, delta 0, not re-accepted:** `big` 17 = TD-361; `long` 15 and `dup` 4 held by
+  ledger; `mirror` 3 = TD-262. Near-misses: the new TD-383 is counted open, correctly; the rest are
+  unchanged from 2026-10-09.
 
 ### 2026-10-09 (ffa0983, per-gift referral sources S1 + S2 close) — no reading worse; `xapp` +1 is TD-372's audit import
 
