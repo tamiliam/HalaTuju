@@ -5,7 +5,51 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-10-06 review — counter reset; the 13 reviewed entries are listed in that review)_
+_Logged late on 2026-10-18: none of the 40 code commits below was logged when it landed. `wat_lint`
+could not see the ones after 11:24 on 2026-10-06 until workspace `e055e3d` (2026-10-15), and no sprint
+close ran `wat_lint --project`. 37 were sprint work whose commits do not say "sprint"; each is marked
+"— sprint: <name>". File counts are `git show --numstat` (tests, message files and docs included)._
+
+- 2026-10-06 b65bf0ec fix: a not-yet-sorted shop can be marked "Checked - still unknown" (request #28 follow-up) (web admin spending; 6 files, 1 source) — sprint: request #28 follow-up
+- 2026-10-06 3858c040 feat: flag a shop for review with a notes log, per organisation (request #28 follow-up) (api new `merchant_flags.py` + model + migration 0167_merchant_flags; web admin spending; 26 files) — sprint: request #28 follow-up
+- 2026-10-06 9e849b9a fix: room under the near-line gate for /scholarship/application and /scholarship/apply (request #28 follow-up) (en/ms/ta message files, CHANGELOG; 4 files) — sprint: request #28 follow-up
+- 2026-10-06 0c286177 feat(api): TD-352 an officer closes a stalled application from any in-play status (api closure.py, pool.py, views_admin, models + migration 0168_closure_reason_stalled; 8 files) — sprint: TD-352
+- 2026-10-06 3a31458c feat(web): TD-352 the cockpit Close card for stalled cases (web admin cockpit, closeOffer.ts, api clients; 10 files) — sprint: TD-352
+- 2026-10-06 cb44ee7e perf(web): TD-352 weight off /scholarship/application - two minority panels load on demand (web scholarship application, ActionCentre, lazy income switch; 9 files) — sprint: TD-352
+- 2026-10-06 15077a9b perf(web): TD-352 the secondary-school list loads on demand; two budgets lowered (web SchoolSelect, code-standards.json; 4 files) — sprint: TD-352
+- 2026-10-06 1be4c08f feat(web): TD-352 the student is told one application at a time (web scholarship application copy; 5 files) — sprint: TD-352
+- 2026-10-06 c4ab0ed5 fix: TD-352 a closed case takes no more review writes ('closed' joins CASE_CLOSED_STATES) (api services, web officerCockpit.ts; 6 files) — sprint: TD-352
+- 2026-10-06 074c702d fix: TD-352 review 1 - a pre-award close is super or org_admin only (api views_admin, web cockpit + closeOffer.ts; 7 files) — sprint: TD-352 review 1
+- 2026-10-06 34bb3a24 fix: TD-352 review 1 - an awarded case says the truth; no Close card at awarded (api closure.py, web closeOffer.ts, messages; 8 files) — sprint: TD-352 review 1
+- 2026-10-06 dfad0417 fix: TD-352 review 1 - a pre-award close releases the interview; no reminders for a closed case (api closure.py, scheduling.py, send_interview_reminders; 4 files) — sprint: TD-352 review 1
+- 2026-10-06 be54a304 fix: TD-352 review 1 - the officer-close email says "a later round" (api closure.py, emails; 4 files) — sprint: TD-352 review 1
+- 2026-10-06 52c1465d fix: TD-352 review 1 - a case closed before it was funded does not read as post-award (api views_admin, web cockpit + closeOffer.ts; 7 files) — sprint: TD-352 review 1
+- 2026-10-06 f30f82f7 fix: TD-352 review 1 - the in-programme page and thank-you count a closed case only if it was funded (api in_programme.py, serializers.py, web scholarship; 7 files) — sprint: TD-352 review 1
+- 2026-10-06 becd7d53 fix: TD-352 review 1 - closing asks twice; the pre-award note says it is final (web admin cockpit, messages; 5 files) — sprint: TD-352 review 1
+- 2026-10-06 8f43aab7 fix: TD-352 review 1 - a close refuses while a decline is pending (api closure.py, web closeOffer.ts, messages; 7 files) — sprint: TD-352 review 1
+- 2026-10-06 331fe38f fix: TD-352 review 2 - a past interview is never voided; the void runs after commit; the role is judged on the locked row (api closure.py, views_admin; 4 files) — sprint: TD-352 review 2
+- 2026-10-06 446470d1 fix: TD-352 review 2 - an accept closed before QC stays in awaiting_qc (api views_admin; 2 files) — sprint: TD-352 review 2
+- 2026-10-06 2217df71 fix: TD-352 review 2 - the close confirm stays open until the request settles (web admin cockpit; 2 files) — sprint: TD-352 review 2
+- 2026-10-06 7c97b423 fix: TD-352 review 2 - a withdrawn close says "at your request"; no TD id in officer copy (api closure.py, emails, messages; 7 files) — sprint: TD-352 review 2
+- 2026-10-06 c301220c fix: TD-352 test passes a datetime to subTest (xdist cannot serialise it; the api gate refused 48fda4bd); api gate line documented; retro + lessons (api test, docs; 4 files) — sprint: TD-352 (post-gate fix)
+- 2026-10-06 802b6c95 feat: an intake year can require a minimum number of SPM grades at C or better (request #30) (api cohort model + migration 0169_cohort_min_spm_credit_count, seed_b40_2026_cohort, web admin intake years; 25 files) — sprint: request #30
+- 2026-10-06 fa150e29 fix: requirement typos are refused, not read as untick; counts must be whole (request #30 review) (api views_admin, web intakeYears.ts + admin; 11 files) — sprint: request #30 review
+- 2026-10-07 b6b90440 refactor(org-config): split the registry and the rules out of org_config.py (moves only) (api courses org_config split; 3 files) — sprint: org-timing Sprint 1
+- 2026-10-07 a8d7bf36 feat(org-config): student message timings become organisation settings (api) (api courses org_config*, new award_timing.py, four commands, emails, models; 33 files) — sprint: org-timing Sprint 1
+- 2026-10-07 1a77ba84 feat(org-config): the Configuration tab shows any timing rule under its box (web) (web admin configuration, manual; 6 files) — sprint: org-timing Sprint 1
+- 2026-10-07 c1da7f4d fix(reminders): the close keeps the promise the final reminder made (review F1) (api services, models + migration 0170, send_query_reminders; 9 files) — sprint: org-timing Sprint 1 review
+- 2026-10-07 21f16322 fix(rescore): a rescore keeps a waiting decision's send time — TD-369 (micro-sprint) (api services; 2 files) — sprint: TD-369 micro-sprint
+- 2026-10-08 eac97911 feat(intake): "Born in" state rule on an intake year - request #31 (api new birth_state.py, shortlisting, cohort model + migration 0171, profile_claim; web admin rules, ic-utils.ts; 42 files) — sprint: request #31
+- 2026-10-08 de158391 fix(intake): close TD-371..375 from the request #31 review (api profile_claim, birth_state, reopen, services, views_admin; web intakeYears; 15 files) — sprint: request #31 follow-ups (TD-371..375)
+- 2026-10-08 b991fbf4 fix(intake): close TD-376 and TD-377 - every route into recommended carries a locked, passing IC (api new award_revert.py, profile_claim, courses views, reopen, sponsorship, views_admin; 13 files) — sprint: TD-376/377
+- 2026-10-08 38495b34 feat(sources): each gift chooses its referral sources (per-gift sources S1) (api new gift_sources.py, ProgrammeReferralSource + migration 0172; web admin configuration + sources; 29 files) — sprint: per-gift sources S1
+- 2026-10-08 9ae08a66 feat(apply): the apply form lists the gift's own referral sources (per-gift sources S2) (api courses migration 0077, intake + submit; web apply form, referralSources.ts, admin; 38 files) — sprint: per-gift sources S2
+- 2026-10-09 ffa0983a fix(sources): review fixes for per-gift referral sources (api 0172, services, views_admin; web admin + apply; 27 files) — sprint: per-gift sources review
+- 2026-10-09 beeba2ec feat(staff): staff lifecycle - change role, cancel and delete properly (api new staff_lifecycle.py, staff_reinvite.py, views_staff.py, expire_temp_passwords; web admin people, login, TypedConfirmDialog; 38 files) — sprint: staff lifecycle (review rounds 1-2 in the same commit)
+- 2026-10-09 bfa547d9 feat(referrals): two independent student columns - source and referral partner (Sprint A) (api new referral_links.py, courses models + migration 0078, bursary, serializers, bursary_e2e; 22 files) — sprint: sources & referrals Sprint A
+- 2026-10-09 4570eb8f fix(referrals): keep the reserved codes as a pinned copy so the courses-to-scholarship back-edge does not grow (api courses referral_links.py + test; 2 files) — small change (Sprint A follow-up)
+- 2026-10-18 1ff02e83 fix(db): check a pooled database connection before each request (request #32) (api settings/production.py, new test_db_health_checks.py, CHANGELOG; 3 files) — small change
+- 2026-10-18 e09a6532 fix(invitations): the Source note points to Sources > Add source (request #33) (web admin organisation staff page, en/ms/ta, page test, CHANGELOG; 6 files) — small change
 
 ## Reviews
 
