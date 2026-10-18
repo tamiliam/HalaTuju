@@ -38,10 +38,16 @@ export default function ProfileInputPage() {
   // A non-apply caller (e.g. /profile editing grades) set a return path — the final
   // step then says "Save & return" and goes back there, not to recommendations.
   const [returnPath, setReturnPath] = useState<string | null>(null)
+  // Request #35 "we ask for school twice": a school already known from the apply form's
+  // stash or the profile. On the way back to the application the School box is then hidden —
+  // the student just answered it on "About Me". Set only from those sources, never from typing,
+  // so the box cannot vanish under a student who is filling it in.
+  const [schoolKnown, setSchoolKnown] = useState<boolean>(false)
 
   useEffect(() => { setReturning(hasApplyReturn()); setReturnPath(peekOnboardingReturn()) }, [])
 
   useEffect(() => {
+    const stashSchool = (peekApplyStash()?.school ?? '').trim()
     const savedProfile = localStorage.getItem(KEY_PROFILE)
     if (savedProfile) {
       const parsed = JSON.parse(savedProfile)
@@ -53,10 +59,13 @@ export default function ProfileInputPage() {
       if (parsed.disability !== undefined) setDisability(parsed.disability)
     }
 
+    // The school typed on "About Me" (in the apply stash) shows at once; the profile's own wins below.
+    if (stashSchool) { setSchool(stashSchool); setSchoolKnown(true) }
+
     if (token && !isAnonymous) {
       getProfile({ token }).then(p => {
         if (p.preferred_state) setState(p.preferred_state)
-        if (p.school) setSchool(p.school)
+        if (p.school) { setSchool(p.school); setSchoolKnown(true) }
         if (p.gender) setGender(p.gender)
         if (p.nationality) setNationality(p.nationality)
         if (p.colorblind !== undefined) setColorblind(!!p.colorblind)
@@ -284,13 +293,17 @@ export default function ProfileInputPage() {
             </div>
           </div>
 
-          {/* Row 1b: School (optional, guided from the MOE secondary-school list) */}
-          <div className="mb-6">
+          {/* Row 1b: School (optional, guided from the MOE secondary-school list). Hidden only on
+              the way back to the application when a school is already known (request #35): it is
+              still kept, saved, and editable on "About Me" and the Profile page. */}
+          {!(returning && !returnPath && schoolKnown) && (
+          <div className="mb-6" data-testid="onboarding-school">
             <label className="block text-sm font-medium text-ground-700 mb-2">
               {t('onboarding.school')} <span className="text-ground-400 font-normal">({t('onboarding.optional')})</span>
             </label>
             <SchoolSelect value={school} onChange={setSchool} />
           </div>
+          )}
 
           {/* Row 2: Jantina */}
           <div className="mb-6">
