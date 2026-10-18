@@ -7,6 +7,9 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits are listed in that review, and line by line in git at `65af2612`)_
 
+- 2026-10-19 25a551b6 fix(onboarding): the school is not asked twice on the results detour (request #35) (web onboarding/profile page + test · 2)
+- 2026-10-19 20c6fe14 fix(apply-copy): an organisation's paragraph breaks show to students (request #34) (web apply page, ApplyCopyTab, ActionCentre + 3 tests; api apply_copy_draft prompt + test; CHANGELOG · 10)
+
 ## Sprints since the last review
 
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review._
