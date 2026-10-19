@@ -15,7 +15,7 @@ _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits ar
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review._
 
 - 2026-10-19 request #39 Sprint 1 (staff permissions foundation + invite message) — 89537722 ffef65d2 2a5fba2b a67c905b 9b3ed340 69a71cd3
-- 2026-10-19 request #39 Sprint 2 (Finance approves payment runs; org admin fallback) — 5cd18b03 170957c0 6a178ddd
+- 2026-10-19 request #39 Sprint 2 (Finance approves payment runs; org admin fallback) — 5cd18b03 170957c0 6a178ddd 5378dabe
 
 ## Reviews
 
