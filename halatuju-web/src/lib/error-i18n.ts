@@ -33,7 +33,6 @@ export const ERROR_MAP: Record<string, string> = {
   'Super admin access required': 'apiErrors.superAdminRequired',
   'Student not found': 'apiErrors.studentNotFound',
   'Student deleted': 'apiErrors.studentDeleted',
-  'Admin with this email already exists': 'apiErrors.adminExists',
   'Organisation not found': 'apiErrors.orgNotFound',
   'Failed to send invite email': 'apiErrors.inviteEmailFailed',
   'Admin not found': 'apiErrors.adminNotFound',

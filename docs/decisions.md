@@ -14156,3 +14156,67 @@ default and are filled by the post-deploy sweep.
 
 **Revisit if:** sources get logins (who may witness), a second organisation joins (TD-386 c), or
 Sprint D retires the chip, `StudentProfile.source` and the cockpit's `referred_by_org` key.
+
+## 2026-10-19 — Request #39: staff become a set of permissions; today's roles are presets; Finance approves payment runs
+
+**Owner rulings, 2026-10-19 (verbatim from the roadmap `docs/plans/2026-10-19-staff-permissions-roadmap.md`):**
+
+> "Can we change all to admin and control only access permission? So, a reviewer is someone with
+> review permission. A QC likewise is an admin with QC permission. In that way, we can have different
+> combinations."
+
+> Payments (option A): "Finance role currently doesn't have clear action items. I would like the role
+> to be able to approve payment — the work that Suresh does today."
+
+> **Owner decision, 2026-10-19 ("a"):** hours option A — the quote stays at **34 h**; the 2 extra
+> hours found by this plan (the payment-chain details the quote missed) are absorbed, not billed. The
+> plan's recommendations on the six open questions stand unless the owner overrules them.
+
+The six recommendations that therefore stand (the plan's "Open questions"):
+1. A Finance person who is also given Review sees the files of the students ASSIGNED to them only;
+   the Finance preset alone still sees no file (reverses the 2026-07-23 ruling narrowly).
+2. Permissions are per organisation, not per gift (`PartnerAdmin.programme` stays as it is).
+3. Only the organisation admin and the platform super change permissions; never on their own row,
+   an org admin's, a super's or a partner's; "Manage team" is not switchable in #39.
+4. One person may hold Prepare and Approve and use them on DIFFERENT runs; never both on one run.
+5. The live fallback: when nobody eligible holds Approve for a run, the org admin approves, as today;
+   deploy Sprint 2 on a day the cutover query shows no run mid-chain.
+6. Wallet credits keep today's chain in #39 (a deliberate divergence from the 2026-07-26 "one chain").
+
+**Lead rulings in Sprint 1 (built 2026-10-19):**
+- **Data:** `PartnerAdmin.permissions`, nullable JSON, **NULL = the preset of `role`**, no backfill
+  (courses 0081, additive, migrate-first). Reads go through ONE door, `permission_set` / `has_perm`
+  → `apps/courses/staff_permissions.py`; an unknown key raises; a stored list is read fail-closed
+  (unknown and lead-tier-only keys dropped, `qc` without `see_all` dropped — never a key added).
+  `org_admin` is a fixed lead tier (stored lists ignored); a super holds every key; a partner none.
+  `holders(org, key)` is evaluated in Python (JSONField `__contains` is unsupported on SQLite, which
+  the tests run on) and **never counts a super**, even one bound to the organisation — otherwise a
+  super would arm the payment check wherever they sat.
+- **Sprint 1's presets are TODAY's powers**, including the payment chain (`finance` = the CHECK,
+  `org_admin` = the APPROVAL), because no gate converts in S1 and the golden table must prove the
+  presets reproduce today. Sprint 2 applies the owner's payment ruling by changing exactly those two
+  presets and the three golden rows marked `s2`.
+- **The golden table** (`apps/courses/tests/test_permission_presets.py`): 19 gates × 7 roles, each
+  probe calling the real gate, green on the unconverted code. Two declared divergences: **R1** on four
+  rows (a super may assign reviewer/admin/qc/org_admin, the permission `review` reproduces only the
+  org_admin side; kept as a super override — production 2026-10-19: in-play cases with reviewers 68,
+  with an org_admin 1 (awarded), with admin/qc/finance 0); and a **Sprint 3 finding** — the lead tier
+  holds `qc` but an org_admin is not on the Reviewers tab, so S3 must exclude the lead tier there.
+- **The invite's "already exists" answer** says only what the caller's own People page shows: an
+  address on the caller's team (same organisation, `PROGRAMME_STAFF_ROLES`, not a super) → 409
+  `already_on_team` with name and preset ("Rohini is already on your team as Reviewer. To change what
+  they can do, open People → Rohini."; a switched-off one is pointed to Restore); a platform super,
+  who lists every account on People, is told whose account it is and its organisation; **anyone
+  else** (another organisation's staff, a super, a referral partner) → 409 `not_invitable` with one
+  byte-identical sentence: "This email address can't be invited. Ask HalaTuju support." The text is
+  served; the web adds no string and removed the dead `apiErrors.adminExists` key. "they", not
+  "she": the record holds no gender.
+- **`/admin/role/`** serves `permissions` (always resolved), `preset` and `custom`; `role` stays.
+
+**Alternatives considered:** a join table of (person, permission) rows (six writer doors to keep in
+step, and a forgotten one leaves a person with nothing); a boolean column per permission (a
+migration per key); rows only for deviations (two sources of truth); converting gates in S1 (the
+golden table would then prove nothing).
+
+**Revisit if:** the owner removes the R1 super override, rules on the Reviewers-tab finding, or makes
+"Manage team" switchable (+2 h, needs "you cannot grant what you do not hold").

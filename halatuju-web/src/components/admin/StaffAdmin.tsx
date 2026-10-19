@@ -253,7 +253,8 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
 
   const onError = useCallback((err: unknown) => {
     const code = (err as { code?: string })?.code
-    setMessage({ type: 'error', text: code === 'last_org_admin'
+    // `already_on_team` (#39) is a pointer to People, not a failure: shown as a warning.
+    setMessage({ type: code === 'already_on_team' ? 'warning' : 'error', text: code === 'last_org_admin'
       ? t('admin.administration.lastOrgAdmin')
       : err instanceof Error ? err.message : t('admin.actionFailed') })
   }, [t])

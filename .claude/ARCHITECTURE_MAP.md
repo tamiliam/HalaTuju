@@ -57,6 +57,10 @@ apps/courses/
 ├── org_config.py                  # Per-organisation settings READ SEAM: value(org, key), validate (org-timing S1 split it, 2026-10-07)
 ├── org_config_registry.py         # The settings REGISTRY: every key, its unit, default, min/max and group (13 student timings since 2026-10-07)
 ├── org_config_rules.py            # RULES between settings (R1-R7 + window_inverted), checked on the MERGED values; refusal = {code, key, rule}
+├── models_staff.py                # PartnerAdmin (moved out of models.py, request #39 S1; re-exported there) + `permissions`
+├── staff_permissions.py           # #39 LEAF: permission catalogue, presets, lead tier, resolve/holds/holders (no scholarship import)
+├── views_admin.py                 # /admin/role/ (serves permissions/preset/custom), dashboard, students, set-password, profile
+├── views_staff.py                 # staff accounts: invite (+ `already_exists_answer`: own team named / everyone else one neutral 409), resend, list, revoke, delete
 │
 ├── management/commands/
 │   ├── load_csv_data.py           # CSV → DB migration (11 loaders, one-time)
@@ -127,6 +131,7 @@ apps/courses/
 | `SavedCourse` | `saved_courses` | User bookmarks | course, student, interest_status |
 | `AdmissionOutcome` | `admission_outcomes` | Track application results | course, student, status (applied/offered/accepted/rejected/withdrawn) |
 | `PartnerOrganisation` | `partner_organisations` | Tenant Organisation (`tenants()`) and platform REFERRAL PARTNER (`is_referral_partner`, today `cumig` alone). Since sources Sprint B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource` (`referral_sources`, owned by an organisation, SAME ids as the rows copied from here); the old source rows stay here, read by no source surface, until Sprint D | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags, `is_referral_partner` (`db_default` false); `programme` left the model (TD-379, courses 0080 drops the column after the deploy). NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
+| `PartnerAdmin` | `partner_admins` | A staff account (super / org_admin / admin / finance / qc / reviewer / referral partner). In `models_staff.py` since request #39 S1 (2026-10-19, moves-only; re-exported from `models.py`) | role (= the PRESET label), is_super_admin, owning_organisation (the tenant fence), org (referral), programme (gift narrowing, NULL = every gift), paused_at, is_active, **`permissions`** (nullable JSON, NULL = the preset of `role`, no backfill; courses 0081) — read ONLY via `permission_set` / `has_perm(key)` → `staff_permissions.py` (catalogue of 8 keys, presets = today's powers, org_admin fixed lead tier, super = every key, partner = none, stored list read fail-closed, `holders(org, key)` in Python, never a super). Served on `GET /admin/role/` as `permissions` (resolved) / `preset` / `custom`; web `lib/staffPermissions.ts` (`hasPerm`, drift-tested both ways). No gate reads it yet (S2: payments, S3: the rest); `tests/test_permission_presets.py` is the golden table proving the presets reproduce today |
 | `MascoOccupation` | `masco_occupations` | Career occupation codes (274 entries) | code, title_en, title_bm |
 | `StpmCourse` | `stpm_courses` | STPM degree programmes (1,113 rows) | name, university, stream, merit_score, field, category |
 | `StpmRequirement` | `stpm_requirements` | STPM eligibility rules | min_cgpa, min_muet_band, stpm_min_subjects, stpm_min_grade, subject requirements |
@@ -868,6 +873,7 @@ src/lib/
 ├── supabase.ts                    # Supabase client init (auth, Google OAuth, OTP)
 ├── auth-context.tsx               # Auth React Context (session, token, profile hydration, localStorage)
 ├── i18n.tsx                       # Custom i18n context: t() function, locale switcher, localStorage
+├── staffPermissions.ts            # #39: the 8 permission keys + hasPerm(role, key) over the SERVED list (no presets mirrored; drift test both ways)
 └── subjects.ts                    # Subject code → name mapping (60+ SPM + STPM codes)
 ```
 

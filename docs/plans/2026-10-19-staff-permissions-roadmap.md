@@ -1,6 +1,8 @@
 # Staff permissions and Finance approval of payment runs: roadmap (org request #39)
 
-**Status:** PLAN, written 2026-10-19 on `perm-plan` (base `d15c0f14`). Nothing is built. Request #39
+**Status (2026-10-19):** Sprint 1 BUILT on `perm-plan`, not pushed or deployed (migration not applied);
+adversarial review pending. Sprints 2-4 not started. **Original status:** PLAN, written 2026-10-19 on
+`perm-plan` (base `d15c0f14`). Request #39
 was quoted at **34 h (30 permissions + 4 payments, indicative)** and is waiting for the organisation
 to accept it. This plan **re-estimates it at 36 h** (see "Hours"), offers a way to hold it at 34 h, and
 lists six questions for the owner. Sprint 1 must not start until the roadmap and the answers are in.
@@ -93,6 +95,16 @@ Two rules that keep the presets exact, found in the code (lead rulings; the owne
   override, and any case already assigned to an admin keeps working, because "assignment grants
   write" (`_can_review_app`) is unchanged. Sprint 1 runs one read-only query: how many in-play cases
   sit with a non-reviewer today. If none, the override is offered to the owner for removal.
+  **Result (read-only, production, measured by the lead 2026-10-19):** in-play applications (status
+  not rejected / withdrawn / expired / closed) by the assignee's role — **reviewer**: awarded 64,
+  interviewed 1, interviewing 1, profile_complete 2; **org_admin**: awarded 1. **No in-play case is
+  assigned to an admin, a qc or a finance person.** So the super's wider choice is in use exactly
+  once, by an org_admin, on an awarded case (past assignment; an awarded case can no longer change
+  hands). The override is therefore not needed for any case an admin or qc holds; it is kept for S3
+  (the org_admin's awarded case keeps working through "assignment grants write" whatever is decided),
+  and its removal is offered to the owner as a question, not done. The golden table
+  (`apps/courses/tests/test_permission_presets.py`) declares the four R1 rows where `review` alone
+  differs from today (assignment target, interview times, pause target, the super's assignable list).
 - **R2, preset-bound surfaces.** Some gates cannot be stated as permissions without changing
   somebody's access. Example: the Programme Overview gives `qc` (which holds `see_all`) no funnel,
   while `admin` gets one. Gates like this **keep reading `role`** in #39 and are listed as
@@ -280,7 +292,20 @@ except the invite message.
    (`organisation/staff/page.tsx` invite dialog) shows the served message and makes **no new string
    for the cross-org case** (the text is served).
 6. R1's read-only production query (in-play cases assigned to non-reviewers), with the result written
-   into this plan.
+   into this plan. **Done 2026-10-19 — see R1 above: 68 with reviewers, 1 with an org_admin (awarded),
+   none with admin / qc / finance.**
+
+**As built (2026-10-19, branch `perm-plan`):** commits 1-2 are the moves-only splits; commit 3 adds the
+catalogue, the field, migration `courses/0081_partneradmin_permissions` and the golden table — green
+on the unconverted code, before anything else changed; the last commit serves `/admin/role/`, the web
+lib + drift test and the invite message. Two build notes for S2/S3:
+- **The S1 presets are TODAY's powers**, not the go-live table above: `finance` holds
+  `payments_check` and `org_admin`'s lead tier holds `payments_approve`, because S1 must reproduce
+  today and no payment gate converts until S2. S2 changes exactly those two presets and the three
+  golden rows marked `s2` (check, approval, check-armed), quoting the owner's ruling.
+- **S3 finding:** the lead tier holds `qc`, so "people who hold `review` or `qc` appear on Reviewers"
+  would ADD org_admins to the Reviewers tab, where they are not today. Declared as a divergence in
+  the golden table; S3 must exclude the lead tier there (or ask the owner).
 
 **Acceptance:** the golden table is green on the unconverted code and after the split; migrate-first
 is applied with no ledger gap; both suites and `bundle-budget` are green; the invite fix has tests for

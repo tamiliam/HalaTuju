@@ -176,9 +176,14 @@ export async function inviteAdmin(
     body: JSON.stringify(data),
   })
 
+  // A refusal throws with the SERVER'S sentence and its `code`. Request #39: an address already on
+  // the caller's team is `already_on_team` (named, with where to go); any other existing account is
+  // `not_invitable`, one sentence that says nothing about it. Both are served — no string here.
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Invite failed: ${res.status}`)
+    const err = new Error(body.error || `Invite failed: ${res.status}`) as Error & { code?: string }
+    err.code = body.code || ''
+    throw err
   }
 
   // `emailed` matters: the welcome email is the ONLY carrier of the temporary password, so a

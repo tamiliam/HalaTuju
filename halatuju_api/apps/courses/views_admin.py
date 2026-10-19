@@ -29,7 +29,7 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from . import password_change_flag, referral_links, staff_reinvite
+from . import password_change_flag, referral_links, staff_permissions, staff_reinvite
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import _service_headers
@@ -314,6 +314,11 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             'owning_org_name': admin.owning_organisation.name if admin.owning_organisation_id else None,
             'admin_name': admin.name,
             'reviewer_profile_complete': reviewer_profile_complete(admin),
+            # Request #39: the RESOLVED staff permissions (never null), the preset they came from
+            # and whether they were customised. The server stays the fence; the menu only shows.
+            'permissions': list(admin.permission_set),
+            'preset': 'super' if admin.is_super else admin.role,
+            'custom': staff_permissions.is_custom(admin),
         })
 
 

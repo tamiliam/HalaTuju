@@ -3121,7 +3121,6 @@
     "superAdminRequired": "Super admin access required",
     "studentNotFound": "Student not found",
     "studentDeleted": "Student deleted",
-    "adminExists": "Admin with this email already exists",
     "orgNotFound": "Organisation not found",
     "inviteEmailFailed": "Failed to send invite email",
     "adminNotFound": "Admin not found",

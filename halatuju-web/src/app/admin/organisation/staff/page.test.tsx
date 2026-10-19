@@ -481,3 +481,40 @@ describe('the page shell', () => {
     expect(screen.getByText('admin.administration.viewOnlyNote')).toBeTruthy()
   })
 })
+
+/**
+ * Request #39 S1: an address that already has an account. The SERVER words both answers — the
+ * page adds no string for either, it shows what it was sent (the cross-organisation one confirms
+ * nothing about the other account, and only the server knows which case it is).
+ */
+describe('inviting an address that already has an account', () => {
+  const refuse = (text: string, code: string) => {
+    const err = new Error(text) as Error & { code?: string }
+    err.code = code
+    mockApi.inviteAdmin.mockRejectedValue(err)
+  }
+  const send = async (email: string) => {
+    await loaded()
+    fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Rohini' } })
+    fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'), { target: { value: email } })
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+  }
+
+  it('shows the served sentence naming a colleague, as a warning not an error', async () => {
+    const said = 'Rohini is already on your team as Reviewer. To change what they can do, open People → Rohini.'
+    refuse(said, 'already_on_team')
+    await send('rohini@example.org')
+    const banner = await screen.findByText(said)
+    expect(banner.className).toContain('bg-caution-50')
+    expect(mockApi.inviteAdmin).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'rohini@example.org' }), expect.anything())
+  })
+
+  it('shows the neutral sentence for anyone else exactly as served, as an error', async () => {
+    const said = "This email address can't be invited. Ask HalaTuju support."
+    refuse(said, 'not_invitable')
+    await send('someone@elsewhere.org')
+    const banner = await screen.findByText(said)
+    expect(banner.className).toContain('bg-critical-50')
+  })
+})

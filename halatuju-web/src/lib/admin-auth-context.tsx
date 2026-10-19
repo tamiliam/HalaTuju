@@ -28,6 +28,12 @@ interface AdminRole {
   /** The caller's org-resolved temp-password TTL (Org Config Sprint C). The login gate reads
    *  THIS — never a hard-coded mirror of the platform's 7. */
   temp_password_ttl_days?: number
+  /** Request #39: the staff permissions the server RESOLVED for this person (never null when
+   *  served), the preset they came from, and whether they were customised. Read with
+   *  `staffPermissions.hasPerm`; the server stays the fence. */
+  permissions?: string[]
+  preset?: string
+  custom?: boolean
 }
 
 interface AdminAuthContextValue {

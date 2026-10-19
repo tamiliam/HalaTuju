@@ -10,7 +10,8 @@ commit: `views_admin.py` is in the oversize ledger and a hotspot, sat at 1161 of
 and Sprint 1 changes the invite's "already exists" answer. Not a line of the four bodies was
 reworded. Their helpers (`_staff_target_manageable`, `_record_invitation`, the role sets, the
 welcome-email seam, ...) stay in `views_admin.py` — other callers read them there — and are imported
-here under the same names. `urls.py` imports all five views from here.
+here under the same names. `urls.py` imports all five views from here. (The one line changed since
+the move, in the next commit: the invite's 409 is built by `already_exists_answer`.)
 
 ⚠ The logger keeps the OLD module's name, so the `AUDIT staff_deleted` line reads exactly as it did.
 ⚠ A test that patches the welcome email for an INVITE patches `apps.courses.views_staff.
@@ -33,6 +34,56 @@ from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES, _ORG_ADMIN_MA
                           send_partner_welcome_email)
 
 logger = logging.getLogger('apps.courses.views_admin')
+
+#: The ONE answer for an address that belongs to somebody this caller cannot see on People: another
+#: organisation's staff, a platform account (super, referral partner). It confirms nothing about
+#: the other account — not its organisation, its role, its name or whether it is switched off.
+NOT_INVITABLE = "This email address can't be invited. Ask HalaTuju support."
+
+
+def _listed_on_people(caller, target):
+    """Whether ``caller`` already sees ``target`` on People — `AdminListView`'s own filter: a super
+    lists every staff account; anyone else only their organisation's programme staff."""
+    if caller.is_super:
+        return True
+    return (caller.owning_organisation_id is not None
+            and target.owning_organisation_id == caller.owning_organisation_id
+            and target.role in PROGRAMME_STAFF_ROLES
+            and not target.is_super_admin and not target.is_super)
+
+
+def already_exists_answer(caller, existing):
+    """The 409 an invite answers when the address already has a staff account (request #39 S1).
+
+    It used to say "Admin with this email already exists" to everybody, which told an org_admin
+    that an address was in use SOMEWHERE and nothing they could act on. Now:
+
+    - **the caller can already see them on People** (same organisation; or any account, for a
+      super) → `already_on_team`, with their name and preset, and where to go. It names nothing
+      the caller's own People page does not already show.
+    - **anyone else** → `not_invitable` with ONE fixed sentence (`NOT_INVITABLE`). Another
+      organisation's colleague, a super, a referral partner: all the same answer, so it cannot be
+      used to learn which organisation an address belongs to (the S1 door list's question).
+
+    A student's own login is not a staff account and never reaches here: it is still invited, on
+    the already-registered path (unchanged). The sentences are served, so the web adds no string.
+    """
+    if existing is None or not _listed_on_people(caller, existing):
+        return Response({'error': NOT_INVITABLE, 'code': 'not_invitable'}, status=409)
+    role = 'super' if existing.is_super else existing.role
+    label = dict(PartnerAdmin.ROLE_CHOICES).get(role, role)
+    name = existing.name
+    if caller.is_super:
+        org = existing.owning_organisation.name if existing.owning_organisation_id else 'no organisation'
+        where = f'{name} already has a staff account ({label}, {org}).'
+    elif existing.is_active:
+        where = f'{name} is already on your team as {label}.'
+    else:
+        where = f'{name} is on your team as {label}, but switched off.'
+    then = (f'To change what they can do, open People → {name}.' if existing.is_active
+            else f'To bring them back, open People → {name}.')
+    return Response({'error': f'{where} {then}', 'code': 'already_on_team', 'name': name,
+                     'preset': role, 'is_active': existing.is_active}, status=409)
 
 
 class AdminDeleteView(PartnerAdminMixin, APIView):
@@ -157,7 +208,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
 
         # TD-335: a switched-off invitee who never signed in is invited AGAIN (`staff_reinvite`).
         reuse = PartnerAdmin.objects.filter(email=email).first()
-        exists = Response({'error': 'Admin with this email already exists'}, status=409)
+        exists = already_exists_answer(admin, reuse)   # request #39: says only what People shows
         if reuse is not None and not staff_reinvite.may_reuse(admin, reuse):
             return exists
 

@@ -17,6 +17,20 @@ what is worth showing, never what is permitted; the fence stays `_AdminBase._org
 `navigation.ts`, then the page guard, in one commit.** `navigation.test.ts` holds a per-role
 visibility snapshot, so a drift shows up as a failing test rather than a quietly wrong menu.
 
+**⚠ Moving to permissions (org request #39, owner 2026-10-19 — roadmap
+`docs/plans/2026-10-19-staff-permissions-roadmap.md`).** *"A reviewer is someone with review
+permission. A QC likewise is an admin with QC permission."* Team members (`admin`, `finance`, `qc`,
+`reviewer`) are becoming a set of permissions (`review`, `see_all`, `qc`, `spending`,
+`payments_prepare`, `payments_check`, `payments_approve`; `manage_team` stays a lead-tier power), with
+today's roles kept as **presets**; `org_admin` is a fixed lead tier; `super` / `partner` are unchanged.
+**This table is still the law today:** Sprint 1 (built 2026-10-19) only ADDS the catalogue
+(`apps/courses/staff_permissions.py`, `PartnerAdmin.permissions`, NULL = the preset) and serves it on
+`/admin/role/`; no gate reads it yet, and `apps/courses/tests/test_permission_presets.py` (the golden
+table) proves each preset reproduces this table, gate by gate. The one other S1 change is the invite's
+"already exists" answer (an address already on your team is named; any other account gets one neutral
+sentence). Sprint 2 changes the Payments row (Finance APPROVES runs; the organisation admin stops
+countersigning) and Sprint 4 restructures this file as catalogue + presets + lead tier.
+
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
 | **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
