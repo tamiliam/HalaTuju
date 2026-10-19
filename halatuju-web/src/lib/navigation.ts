@@ -566,62 +566,8 @@ export function canAccess(href: string, role: AdminRoleName): boolean {
 /** An item paired with its already-translated label, which is all the palette needs. */
 export interface LabelledNavItem { item: NavItem; label: string }
 
-/**
- * Rank navigable items for the ⌘K palette.
- *
- * Deliberately not a fuzzy-search dependency: there are ~20 reachable routes, and the ranking
- * that matters is "the word I typed starts this label" over "it appears somewhere in it".
- * Order: label starts with the query, then a word inside it starts with the query, then any
- * substring. Ties keep registry order, so a blank query lists the menu as the sidebar shows it.
- *
- * Reserved slots are excluded — offering to navigate somewhere that does not exist is worse
- * than not offering it.
- */
-export function searchNav(query: string, items: readonly LabelledNavItem[]): NavItem[] {
-  const q = query.trim().toLowerCase()
-  const live = items.filter(({ item }) => !item.placeholder)
-  if (!q) return live.map(({ item }) => item)
-
-  const rank = ({ label }: LabelledNavItem): number => {
-    const l = label.toLowerCase()
-    if (l.startsWith(q)) return 0
-    if (l.split(/\s+/).some((w) => w.startsWith(q))) return 1
-    return l.includes(q) ? 2 : -1
-  }
-
-  return live
-    .map((entry, i) => ({ entry, r: rank(entry), i }))
-    .filter((x) => x.r >= 0)
-    .sort((a, b) => (a.r - b.r) || (a.i - b.i))
-    .map((x) => x.entry.item)
-}
-
-/** The first key of the jump. Held here so the listener, the hint chip and the tests agree. */
-export const CHORD_PREFIX = 'g'
-
-/**
- * The route a `G`-then-X jump should open, or undefined if that letter goes nowhere.
- *
- * Resolved against the VISIBLE groups rather than the whole registry, so a chord can never
- * carry someone to a page their sidebar does not offer. That is a courtesy, not a fence — the
- * page's own guard and the endpoint still refuse them (see the module docstring) — but a
- * shortcut that lands on a 403 is a worse experience than one that does nothing.
- *
- * A reserved slot is skipped for the same reason `searchNav` skips it: there is no page there.
- */
-export function chordTarget(
-  letter: string,
-  groups: readonly VisibleNavGroup[],
-): VisibleNavItem | undefined {
-  const want = letter.toUpperCase()
-  for (const group of groups) {
-    for (const item of group.items) {
-      if (item.placeholder || item.state !== 'show') continue
-      if (item.chord === want) return item
-    }
-  }
-  return undefined
-}
+// The palette ranking and the chord jump live in a leaf beside this file (#39 S3, moves only).
+export { searchNav, chordTarget, CHORD_PREFIX } from './navigationJump'
 
 /**
  * Where an authenticated admin lands after sign-in. THE one home for the rule — `adminLanding()`
