@@ -70,11 +70,48 @@ class TestTheOldSourceRowsAreSwitchedOff(TestCase):
             self.assertEqual(after[code], before[code], code)
         self.assertEqual(PartnerOrganisation.objects.count(), len(before))   # nothing deleted
 
+    def test_a_tenant_with_only_an_active_gift_is_never_switched_off(self):
+        """Review fix: both halves of the tenant rule — an active programme alone makes a tenant."""
+        gift_only = _row('sd-gift-only')
+        make_programme(organisation=gift_only, code='sd-gift-only-g', is_active=True)
+        make_source(self.tenant, 'sd-gift-only', pk=gift_only.pk)       # even with a twin
+        self.assertNotIn(gift_only.pk, EXPAND.retire_old_source_rows(live_apps, None))
+        gift_only.refresh_from_db()
+        self.assertTrue(gift_only.is_active)
+
     def test_it_is_idempotent_and_the_referral_partner_still_links(self):
         EXPAND.retire_old_source_rows(live_apps, None)
         self.assertEqual(EXPAND.retire_old_source_rows(live_apps, None), [])
         self.assertEqual(set(referral_links.referral_partners().values_list('code', flat=True)),
                          {'cumig', 'ptwo'})
+
+
+class TestAReferralPartnersStudentsShowItsCode(TestCase):
+    """Review fix (courses 0081 `align_partner_chips`): before Sprint D the bursary wrote its
+    answer onto the chip, so a CUMIG-link student who answered the bursary form showed that answer
+    on CUMIG's Source column (production: 253 `cumig`, 1 `social`). Every referral partner's
+    student now shows the partner's code; nobody else's chip moves."""
+
+    def test_only_a_referral_partners_students_are_aligned_and_it_is_idempotent(self):
+        cumig = _row('cumig', is_referral_partner=True)
+        other = _row('sd-other-p', is_referral_partner=True)
+        not_partner = _row('sd-not-p')
+        ok = make_student(referral_source='cumig', referred_by_org=cumig)
+        social = make_student(referral_source='social', referred_by_org=cumig)
+        blank = make_student(referral_source=None, referred_by_org=other)
+        unlinked = make_student(referral_source='smc')
+        loose = make_student(referral_source='social', referred_by_org=not_partner)
+        changed = EXPAND.align_partner_chips(live_apps, None)
+        self.assertEqual(sorted(changed), sorted([social.pk, blank.pk]))
+        chips = {s.pk: StudentProfile.objects.get(pk=s.pk).referral_source
+                 for s in (ok, social, blank, unlinked, loose)}
+        self.assertEqual(chips, {ok.pk: 'cumig', social.pk: 'cumig', blank.pk: 'sd-other-p',
+                                 unlinked.pk: 'smc', loose.pk: 'social'})
+        self.assertEqual(EXPAND.align_partner_chips(live_apps, None), [])
+
+    def test_the_expand_runs_the_alignment(self):
+        self.assertIn(EXPAND.align_partner_chips,
+                      [getattr(op, 'code', None) for op in EXPAND.Migration.operations])
 
 
 class TestTheExpandContractOrder(TestCase):
@@ -180,6 +217,45 @@ class TestReferralPartnersAreMarkedBySuperOnly(_World):
         self.assertEqual(self._patch(self.super, off, 'yes').status_code, 400)
         self.assertEqual(authed_client(self.super).patch(
             f'{LIST}999999/', {'is_referral_partner': True}, format='json').status_code, 404)
+
+    def test_a_super_by_role_alone_may_list_mark_and_unmark(self):
+        """Review: `is_super` counts the role, not only the legacy flag."""
+        role_super = make_admin('super')
+        self.assertFalse(role_super.is_super_admin)
+        self.assertEqual(authed_client(role_super).get(LIST).status_code, 200)
+        loose = _row('sd-role')
+        self.assertEqual(self._patch(role_super, loose, True).status_code, 200)
+        self.assertEqual(self._patch(role_super, loose, False).status_code, 200)
+
+    def test_a_sources_old_row_or_an_unlinkable_code_is_never_marked(self):
+        """Review backstops: a row with a source twin (a source's old row) is refused unless it is
+        already a referral partner; a code `?ref=` could never carry is refused."""
+        old_row = _row('sd-oldsrc')
+        make_source(self.tenant, 'sd-oldsrc', pk=old_row.pk)
+        bad = _row('Bad Code')
+        for org, code in ((old_row, 'org_is_source'), (bad, 'bad_code')):
+            with self.subTest(code=code):
+                resp = self._patch(self.super, org, True)
+                self.assertEqual((resp.status_code, resp.json()['code']), (400, code))
+                self.assertEqual(resp.json()['error'], referral_links.MARK_REFUSALS[code])
+        make_source(self.tenant, 'cumig', pk=self.cumig.pk)       # CUMIG's own source twin
+        self.assertIsNone(referral_links.mark_refusal(self.cumig, True))   # already marked: fine
+
+    def test_a_partner_login_is_restored_only_onto_an_active_referral_partner(self):
+        """Review fix: revoke → unmark → restore must not bring a partner login back onto a row
+        that is no longer a referral partner (it would see students the unmark meant to stop)."""
+        restore = f'/api/v1/admin/admins/{self.login.pk}/revoke/'
+        client = authed_client(self.super)
+        self.assertEqual(client.patch(restore, {'action': 'revoke'}, format='json').status_code, 200)
+        self.assertEqual(self._patch(self.super, self.cumig, False).status_code, 200)
+        resp = client.patch(restore, {'action': 'restore'}, format='json')
+        self.assertEqual((resp.status_code, resp.json()['code']), (400, 'not_a_referral_partner'))
+        self.login.refresh_from_db()
+        self.assertFalse(self.login.is_active)
+        self.assertEqual(self._patch(self.super, self.cumig, True).status_code, 200)
+        self.assertEqual(client.patch(restore, {'action': 'restore'}, format='json').status_code, 200)
+        self.login.refresh_from_db()
+        self.assertTrue(self.login.is_active)
 
     def test_unmarking_once_its_logins_are_revoked_stops_new_links_and_keeps_old_ones(self):
         linked = make_student(referred_by_org=self.cumig)

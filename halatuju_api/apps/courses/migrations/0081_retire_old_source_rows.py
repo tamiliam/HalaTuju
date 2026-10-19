@@ -12,6 +12,9 @@
    partner (CUMIG's row is the referral partner and stays live) and NOT a tenant. Nothing reads
    these rows since Sprint B; switching them off makes the category plain (`is_active` false) and
    keeps them out of anything that ever lists active rows.
+3. (Review fix.) A student linked to a REFERRAL PARTNER gets that partner's code on the chip
+   (`align_partner_chips`): the bursary used to write its answer there, and the chip is the
+   partner dashboard's Source column — so no bursary answer stays visible to the partner's logins.
 
 SQL (rendered offline; the hand-applied copy with its asserting DO block and ledger row is in
 `docs/scholarship/sources-d-cutover-sql.md`):
@@ -20,12 +23,16 @@ SQL (rendered offline; the hand-applied copy with its asserting DO block and led
      WHERE o.is_active AND NOT o.is_referral_partner
        AND EXISTS (SELECT 1 FROM referral_sources s WHERE s.id = o.id AND s.code = o.code)
        AND NOT <tenant>;
+    -- 3. (review fix) a referral partner's students show that partner's code on the chip:
+    UPDATE api_student_profiles p SET referral_source = o.code FROM partner_organisations o
+     WHERE p.referred_by_org_id = o.id AND o.is_referral_partner
+       AND p.referral_source IS DISTINCT FROM o.code;      -- after a dated backup table
     INSERT INTO django_migrations (app, name, applied)
       VALUES ('courses', '0081_retire_old_source_rows', now());
 
-Reverse: the default is dropped by Django's reverse of the AlterField; the retirement is NOT undone
-automatically (a no-op) — the cutover note records the retired ids, and the rollback there
-switches exactly those back on.
+Reverse: the default is dropped by Django's reverse of the AlterField; the retirement and the chip
+alignment are NOT undone automatically (no-ops) — the cutover note records the retired ids and backs
+the old chips up (`referral_chip_backup_20261019`), and the rollback there restores exactly those.
 """
 from django.db import migrations, models
 
@@ -49,6 +56,25 @@ def retire_old_source_rows(apps, schema_editor):
     return retire
 
 
+def align_partner_chips(apps, schema_editor):
+    """Sprint D review fix: the chip of a student linked to a REFERRAL PARTNER becomes that partner's
+    code. Before Sprint D the bursary submit wrote its answer onto the chip, so a few such students
+    show a bursary answer on the partner's Source column (production 2026-10-19: 1 of 254, `social`).
+    From now on only the `?ref=` link writes the chip, and for a linked student the link's code IS
+    the partner's code. The cutover backs the old values up first. Idempotent; returns the profile
+    ids changed (for the test)."""
+    StudentProfile = apps.get_model('courses', 'StudentProfile')
+    PartnerOrganisation = apps.get_model('courses', 'PartnerOrganisation')
+    changed = []
+    for partner in PartnerOrganisation.objects.filter(is_referral_partner=True):
+        stale = (StudentProfile.objects.filter(referred_by_org_id=partner.pk)
+                 .exclude(referral_source=partner.code))
+        ids = list(stale.values_list('pk', flat=True))
+        StudentProfile.objects.filter(pk__in=ids).update(referral_source=partner.code)
+        changed += ids
+    return changed
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -63,4 +89,5 @@ class Migration(migrations.Migration):
             field=models.BooleanField(default=False, db_default=False),
         ),
         migrations.RunPython(retire_old_source_rows, migrations.RunPython.noop),
+        migrations.RunPython(align_partner_chips, migrations.RunPython.noop),
     ]

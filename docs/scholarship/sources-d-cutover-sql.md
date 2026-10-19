@@ -3,7 +3,8 @@
 **Migrations:** two, in OPPOSITE orders.
 - `courses/0081_retire_old_source_rows` — **MIGRATE-FIRST** (before the push, ONE transaction, the
   lead applies it): a database default for `partner_organisations.show_in_apply`, the sources' old
-  rows switched off (never deleted), one ledger row. Additive / data-update only.
+  rows switched off (never deleted), a referral partner's students' chips aligned to its code (after
+  a dated backup), one ledger row. Additive / data-update only.
 - `courses/0082_drop_retired_source_columns` — **IMAGE-FIRST** (after the Sprint D revision serves,
   and no older revision carries traffic): drops `api_student_profiles.source_id` and
   `partner_organisations.show_in_apply`, after backing both up. **⚠ OWNER RUNS IT IN THE SUPABASE
@@ -32,7 +33,13 @@ count that differs from the expected one BEFORE applying (lessons.md 2026-10-09)
    AND the same code. Retired: such a row that is active, NOT a referral partner (CUMIG's row is the
    referral partner and stays live) and NOT a tenant. Since Sprint B nothing reads these rows for a
    source; the public branding endpoint already treats an inactive code as the platform's.
-3. **After the deploy, the drop** (owner): `api_student_profiles.source_id` (the profile's bursary
+3. **(Review fix) a referral partner's students show that partner's code on the chip.** Before
+   Sprint D the bursary submit wrote its answer onto the chip, so a student who came by CUMIG's link
+   and later answered the bursary form can show that answer on CUMIG's Source column (lead's read:
+   253 `cumig`, 1 `social`). The old values go to a dated backup table first, then the chip is set
+   to the partner's code — for every referral partner, not only CUMIG. Only after this is the claim
+   "a bursary answer no longer reaches a referral partner's logins" true for existing students.
+4. **After the deploy, the drop** (owner): `api_student_profiles.source_id` (the profile's bursary
    source — written by nothing and read by nothing in the Sprint D image; the application carries
    its own since Sprint C) and `partner_organisations.show_in_apply`, each backed up first.
 
@@ -112,6 +119,14 @@ SELECT count(*) FROM api_student_profiles WHERE referred_by_org_id =
        (SELECT id FROM partner_organisations WHERE code = 'cumig');
 -- expect: C (write it down; Sprint B read 254 — it may have GROWN since through `?ref=cumig`).
 
+-- 6b. THE CHIP ON EACH REFERRAL PARTNER'S STUDENTS (review fix). One row per (partner, chip).
+SELECT o.code AS partner, p.referral_source AS chip, count(*)
+  FROM api_student_profiles p JOIN partner_organisations o ON o.id = p.referred_by_org_id
+ WHERE o.is_referral_partner
+ GROUP BY o.code, p.referral_source ORDER BY o.code, count(*) DESC;
+-- expect: cumig / cumig 253, cumig / social 1 (lead's read 2026-10-19). The rows whose chip is not
+-- the partner's code are A (expect 1) — ASK THE OWNER if A differs before applying.
+
 -- 7. For the after-deploy drop: what the two columns hold now (both get a backup table).
 SELECT count(*) FILTER (WHERE source_id IS NOT NULL) AS profiles_with_source FROM api_student_profiles;
 SELECT count(*) FILTER (WHERE show_in_apply) AS rows_shown FROM partner_organisations;
@@ -122,7 +137,8 @@ ROLLBACK;
 
 ## The cutover — ONE transaction (migrate-first, BEFORE the push; the lead applies it)
 
-Replace `<<R>>` (check 4) — it appears twice in the asserting `DO` block.
+Replace `<<R>>` (check 4) and `<<A>>` (check 6b, expect 1) — each appears twice in the asserting
+`DO` block.
 
 ```sql
 BEGIN;
@@ -142,9 +158,22 @@ SELECT o.id, o.code FROM partner_organisations o
 SELECT id, code FROM sources_d_retired ORDER BY id;
 UPDATE partner_organisations SET is_active = false WHERE id IN (SELECT id FROM sources_d_retired);
 
+-- 2b. (= `align_partner_chips`) Back up, then align the chip of every referral partner's student.
+CREATE TABLE public.referral_chip_backup_20261019 AS
+SELECT p.supabase_user_id, p.referral_source AS old_chip, o.code AS new_chip, now() AS backed_up_at
+  FROM api_student_profiles p JOIN partner_organisations o ON o.id = p.referred_by_org_id
+ WHERE o.is_referral_partner AND p.referral_source IS DISTINCT FROM o.code;
+ALTER TABLE public.referral_chip_backup_20261019 ENABLE ROW LEVEL SECURITY;
+CREATE POLICY referral_chip_backup_20261019_service_role ON public.referral_chip_backup_20261019
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+UPDATE api_student_profiles p SET referral_source = o.code
+  FROM partner_organisations o
+ WHERE p.referred_by_org_id = o.id AND o.is_referral_partner
+   AND p.referral_source IS DISTINCT FROM o.code;
+
 -- 3. Assert before committing.
 DO $$
-DECLARE r int; still_on int; cumig_ok int; tenants_off int; dflt text;
+DECLARE r int; still_on int; cumig_ok int; tenants_off int; dflt text; backed int; stale int;
 BEGIN
   SELECT count(*) INTO r FROM sources_d_retired;
   SELECT count(*) INTO still_on FROM partner_organisations o
@@ -155,8 +184,15 @@ BEGIN
                                                      AND a.role = 'org_admin' AND a.is_active);
   SELECT count(*) INTO cumig_ok FROM partner_organisations
    WHERE code = 'cumig' AND is_active AND is_referral_partner;
+  -- Both halves of the tenant rule (review fix): an active programme OR an active org_admin.
   SELECT count(*) INTO tenants_off FROM sources_d_retired x
-   WHERE EXISTS (SELECT 1 FROM scholarship_programmes p WHERE p.organisation_id = x.id AND p.is_active);
+   WHERE EXISTS (SELECT 1 FROM scholarship_programmes p WHERE p.organisation_id = x.id AND p.is_active)
+      OR EXISTS (SELECT 1 FROM partner_admins a WHERE a.owning_organisation_id = x.id
+                                                  AND a.role = 'org_admin' AND a.is_active);
+  SELECT count(*) INTO backed FROM public.referral_chip_backup_20261019;
+  SELECT count(*) INTO stale FROM api_student_profiles p JOIN partner_organisations o
+      ON o.id = p.referred_by_org_id
+   WHERE o.is_referral_partner AND p.referral_source IS DISTINCT FROM o.code;
   SELECT column_default INTO dflt FROM information_schema.columns
    WHERE table_name = 'partner_organisations' AND column_name = 'show_in_apply';
   IF r <> <<R>> THEN RAISE EXCEPTION 'retired: % (expected <<R>>)', r; END IF;
@@ -164,6 +200,8 @@ BEGIN
   IF cumig_ok <> 1 THEN RAISE EXCEPTION 'the referral partner cumig is not active and marked'; END IF;
   IF tenants_off <> 0 THEN RAISE EXCEPTION 'a tenant was switched off'; END IF;
   IF dflt IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'show_in_apply default is %', dflt; END IF;
+  IF backed <> <<A>> THEN RAISE EXCEPTION 'chips backed up: % (expected <<A>>)', backed; END IF;
+  IF stale <> 0 THEN RAISE EXCEPTION '% referral-partner student(s) still show another chip', stale; END IF;
 END $$;
 
 INSERT INTO django_migrations (app, name, applied)
@@ -186,6 +224,10 @@ SELECT count(*) FROM partner_organisations;                                     
 SELECT count(*) FROM api_student_profiles WHERE referred_by_org_id =
        (SELECT id FROM partner_organisations WHERE code = 'cumig');                -- = check 6's C
 SELECT code FROM partner_organisations WHERE is_referral_partner AND is_active;    -- cumig
+SELECT o.code, p.referral_source, count(*) FROM api_student_profiles p
+  JOIN partner_organisations o ON o.id = p.referred_by_org_id WHERE o.is_referral_partner
+ GROUP BY 1, 2;                                                                    -- cumig / cumig 254
+SELECT old_chip, new_chip, count(*) FROM public.referral_chip_backup_20261019 GROUP BY 1, 2;  -- social → cumig 1
 ROLLBACK;
 ```
 
@@ -193,7 +235,22 @@ ROLLBACK;
 
 The image still serving reads `is_active` only for tenants, referral partners and the public branding
 lookup; none of them is one of the retired rows, so nothing changes for a visitor. It still writes the
-profile's `source_id` and chip on a bursary submit (both columns exist); that is the last such write.
+profile's `source_id` and chip on a bursary submit (both columns exist); that is the last such write —
+and it can re-stale the chip of a referral partner's student who applies in the window. So, once the
+new revision serves, the lead re-runs the alignment (idempotent; expect 0 or a handful):
+
+```sql
+BEGIN;
+INSERT INTO public.referral_chip_backup_20261019 (supabase_user_id, old_chip, new_chip, backed_up_at)
+SELECT p.supabase_user_id, p.referral_source, o.code, now()
+  FROM api_student_profiles p JOIN partner_organisations o ON o.id = p.referred_by_org_id
+ WHERE o.is_referral_partner AND p.referral_source IS DISTINCT FROM o.code;
+UPDATE api_student_profiles p SET referral_source = o.code
+  FROM partner_organisations o
+ WHERE p.referred_by_org_id = o.id AND o.is_referral_partner
+   AND p.referral_source IS DISTINCT FROM o.code;
+COMMIT;
+```
 No freeze needed.
 
 ## The deploy — web and api in either order
@@ -282,6 +339,8 @@ ledger row is a DELETE, so the block is the owner's:
 -- OWNER RUNS IN SUPABASE SQL EDITOR (it deletes a ledger row).
 BEGIN;
 UPDATE partner_organisations SET is_active = true WHERE id IN (<<the ids printed by the cutover>>);
+UPDATE api_student_profiles p SET referral_source = b.old_chip
+  FROM public.referral_chip_backup_20261019 b WHERE b.supabase_user_id = p.supabase_user_id;
 ALTER TABLE "partner_organisations" ALTER COLUMN "show_in_apply" DROP DEFAULT;
 DELETE FROM django_migrations WHERE app = 'courses' AND name = '0081_retire_old_source_rows';
 COMMIT;

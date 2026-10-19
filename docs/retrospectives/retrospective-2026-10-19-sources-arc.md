@@ -69,8 +69,10 @@ referral-partner list / mark / unmark API; the screen is TD-387.
    CUMIG. Root cause: Sprint A's rule was "a bursary answer never puts a student ON the partner's
    list" — the list's membership (`referred_by_org`), not the list's columns. The chip was left with
    two writers "for the course-selector readers", and nobody asked what the partner's own screen
-   showed from it. Fix (Sprint D): the bursary no longer writes the chip; a test pins that the
-   partner login sees the `?ref` code and never the bursary answer. System change: when a rule says
+   showed from it. Fix (Sprint D): the bursary no longer writes the chip, and — after the review
+   found the existing case (production: 1 of CUMIG's 254 showed `social`) — courses 0081 aligns every
+   referral partner's student's chip to the partner's code after a dated backup; tests pin that the
+   partner login sees the `?ref` code and never the bursary answer, for new and existing students. System change: when a rule says
    "X must never reach role R", the test is written against R's SCREEN PAYLOAD (every column it
    serves), not against the query that selects its rows. (lessons.md 2026-10-19.)
 2. **A column dropped from the model had no database default — caught by reading the DDL, not by a

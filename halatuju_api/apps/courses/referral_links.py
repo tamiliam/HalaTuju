@@ -191,6 +191,10 @@ MARK_REFUSALS = {
     'code_reserved': 'That code is reserved and cannot be a referral partner.',
     'org_inactive': 'That organisation is switched off (a retired source row, or suspended), so '
                     'it cannot be marked a referral partner.',
+    'org_is_source': 'That row is a referral source\'s old row, so it cannot be marked a referral '
+                     'partner. Invite the partner as a new organisation instead.',
+    'bad_code': 'That organisation\'s code is not one a ?ref= link can carry (only lower-case '
+                'letters, digits, - and _), so it cannot be a referral partner.',
     'has_partner_logins': 'That referral partner still has partner logins. Revoke them on '
                           'Referral partners first, then unmark it.',
 }
@@ -214,6 +218,13 @@ def mark_refusal(org, mark):
             return 'code_reserved'
         if not org.is_active:
             return 'org_inactive'
+        # Review backstops: a source's old row (a twin in `referral_sources`) is a SOURCE's, so it
+        # is never newly marked (CUMIG, already marked, may stay); and a code a `?ref=` link could
+        # never carry (`_clean_code` would change it) could never link anyone.
+        if not org.is_referral_partner and source_twin(org.pk) is not None:
+            return 'org_is_source'
+        if _clean_code(org.code) != org.code:
+            return 'bad_code'
         return None
     if PartnerAdmin.objects.filter(org=org, role='partner', is_active=True).exists():
         return 'has_partner_logins'

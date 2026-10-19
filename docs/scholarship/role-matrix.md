@@ -333,7 +333,9 @@ switching this feature on dark would have silently stopped them.
 Every other role (org_admin, admin, qc, reviewer, finance, referral `partner`) gets 403. A super marks
 or unmarks a `partner_organisations` row as a platform referral partner: never a tenant, a reserved
 code or a switched-off row, and an unmark waits until the row's `partner` logins are revoked
-(`referral_links.mark_refusal`). Not org-fenced, by construction: a referral partner belongs to no
+(`referral_links.mark_refusal`; also never a source's old row or a code `?ref=` cannot carry), and a
+revoked `partner` login is restored only onto an active referral partner (`AdminRevokeView`, 400
+`not_a_referral_partner`). Not org-fenced, by construction: a referral partner belongs to no
 organisation. Marking decides whose students a `?ref=` link puts on a partner login's list (NRIC,
 phone, address, income), so it is a platform decision. No screen yet (TD-387).
 

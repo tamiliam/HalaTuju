@@ -533,6 +533,12 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             target.save(update_fields=['is_active'])
             return Response({'message': f'{target.name} access revoked'})
         elif action == 'restore':
+            # Sources Sprint D review: a `partner` login comes back only onto an ACTIVE referral
+            # partner — else revoke → unmark → restore would bypass the unmark's login refusal.
+            if target.role == 'partner' and not referral_links.referral_partners().filter(
+                    pk=target.org_id).exists():
+                return Response({'error': referral_links.INVITE_REFUSALS['not_a_referral_partner'],
+                                 'code': 'not_a_referral_partner'}, status=400)
             target.is_active = True
             target.save(update_fields=['is_active'])
             return Response({'message': f'{target.name} access restored'})

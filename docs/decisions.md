@@ -14249,8 +14249,11 @@ golden table would then prove nothing).
    dashboard filter also shows `?ref=` codes that never were referral partners (a source's own
    link), which `referred_by_org` cannot say; and it needs no web change. **What it fixes:** a
    bursary answer (e.g. SMC) sat on the referral partner's Source column, visible to its `partner`
-   logins — the owner's rule is that a bursary answer never reaches them. Values the bursary wrote
-   before Sprint D stay (history); nothing rewrites them.
+   logins — the owner's rule is that a bursary answer never reaches them. **And for the students it
+   already happened to** (review fix): courses 0081 sets the chip of every referral partner's student
+   to that partner's code, after a dated backup (production 2026-10-19: 254 CUMIG students, 253 already
+   `cumig`, 1 `social` → `cumig`). Other students' chips (no referral partner — seen by a super only)
+   are left as written.
 3. **The cockpit's old `referred_by_org` key is removed** (api and web together; either deploy order is
    safe — the Sprint C api serves both keys, and the Sprint C web reads `source` first).
 4. **The sources' old `partner_organisations` rows are switched off, never deleted** (courses 0081,
@@ -14261,8 +14264,11 @@ golden table would then prove nothing).
 5. **A super marks and unmarks referral partners** (`GET` / `PATCH /api/v1/admin/referral-partners/`):
    never a tenant, a reserved code or a switched-off row; an unmark is refused while the row has
    active `partner` logins (they would keep seeing students from a row that is no longer a referral
-   partner — the state the invite already refuses); existing `referred_by_org` links are never
-   touched; every change is an `AUDIT` line. **The screen is NOT built** (TD-387): a new component is
+   partner — the state the invite already refuses), and — review fixes — restoring a revoked `partner`
+   login onto a row that is not an active referral partner is refused (`not_a_referral_partner`,
+   closing revoke → unmark → restore), a source's old row (a `referral_sources` twin) is never newly
+   marked (`org_is_source`), and a code a `?ref=` link could not carry is refused (`bad_code`);
+   existing `referred_by_org` links are never touched; every change is an `AUDIT` line. **The screen is NOT built** (TD-387): a new component is
    prototyped in Stitch and approved first, and its strings need en.json weight taken off (TD-360).
 
 **Lead rulings in the build:**
@@ -14283,8 +14289,8 @@ the leak onto the partner's Source column; (c) leave `StudentProfile.source` in 
 FK nobody owns; (d) delete the old source rows — old snapshots name their codes, and nothing is
 gained; (e) build the referral-partner screen now — no Stitch approval, and en.json is at its line.
 
-**Trade-offs:** a profile's chip may still hold a bursary answer written before Sprint D; the partner
-dashboard shows it as it did. A `?ref` arriving after she applied now fills an EMPTY chip (first
+**Trade-offs:** a student with NO referral partner may still hold a bursary answer written before
+Sprint D on her chip; only a super's directory shows it. A `?ref` arriving after she applied now fills an EMPTY chip (first
 touch) where before it did not. The roadmap's "retire the chip" is not done and will not be unless
 the dashboard's Source column changes.
 

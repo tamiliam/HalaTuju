@@ -404,8 +404,11 @@ referral partner's logins. The sources' old `partner_organisations` rows are swi
 `show_in_apply` is dropped (0081 gives it `DEFAULT false` first). **Referral partners are marked /
 unmarked by a SUPER** through `GET` / `PATCH /api/v1/admin/referral-partners/[<id>/]`
 (`apps/courses/views_referral_partners.py`; rules `referral_links.mark_refusal`: never a tenant, a
-reserved code or a switched-off row; an unmark waits until its partner logins are revoked; `AUDIT
-referral_partner_marked|unmarked`). No screen yet (TD-387).
+reserved code, a switched-off row, a source's old row or a code `?ref=` cannot carry; an unmark
+waits until its partner logins are revoked, and `AdminRevokeView` never restores a `partner` login
+onto a row that is not an active referral partner; `AUDIT referral_partner_marked|unmarked`). courses
+0081 also set every referral partner's students' chip to the partner's code (review fix: an old
+bursary answer showed on the partner's Source column). No screen yet (TD-387).
 
 ⚠ **THE STUDENT RECORD HAS TWO INDEPENDENT REFERRAL COLUMNS** (sources and referral partners Sprint A,
 2026-10-09; rules in `apps/courses/referral_links.py`; roadmap
