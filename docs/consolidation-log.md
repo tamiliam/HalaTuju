@@ -9,6 +9,8 @@ _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits ar
 
 - 2026-10-19 25a551b6 fix(onboarding): the school is not asked twice on the results detour (request #35) (web onboarding/profile page + test · 2)
 - 2026-10-19 20c6fe14 fix(apply-copy): an organisation's paragraph breaks show to students (request #34) (web apply page, ApplyCopyTab, ActionCentre + 3 tests; api apply_copy_draft prompt + test; CHANGELOG · 10)
+- 2026-10-19 0ca7eefb refactor(scholarship): move FundingNeed into models/funding_need.py (moves only) (scholarship models · 3; logged by the #39 session for the Sources session)
+- 2026-10-19 3bd909c9 refactor(courses): move StpmCourse and StpmRequirement into models_stpm.py (moves only) (courses models · 3; logged by the #39 session for the Sources session)
 
 ## Sprints since the last review
 
