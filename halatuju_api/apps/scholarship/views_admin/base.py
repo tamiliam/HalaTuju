@@ -61,24 +61,26 @@ class _AdminBase(PartnerAdminMixin, APIView):
             'profile', 'cohort', 'programme', 'source').filter(pk=pk).first()
 
     def _b40_scope(self, admin):
-        """B40 Applications access by role:
-          'all'      — super + admin + qc + org_admin (see every application in scope, read)
-          'assigned' — reviewer (only the applicants assigned to them)
-          'none'     — partner / finance / anyone else (B40 is not their page)
+        """B40 Applications access by PERMISSION (request #39 Sprint 3; the presets give exactly
+        what the roles gave before — `apps/courses/tests/test_permission_presets.py`):
+          'all'      — `see_all` (super, admin, qc, org_admin): every application in scope, read
+          'assigned' — `review` without `see_all` (reviewer): only the applicants assigned to them
+          'none'     — neither (partner, finance): B40 is not their page
         'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
-        see only their own org). qc + org_admin are org-wide WRITERS via _can_review_app
-        (review-all within their org); a plain 'admin' stays assigned-only for writes.
+        see only their own org). `qc` holders are org-wide WRITERS via _can_review_app
+        (review-all within their org); a plain `see_all` stays assigned-only for writes.
 
-        `finance` is 'none' BY DECISION (role matrix 2026-07-23), not by omission: it never
-        sees an applicant file, document, income figure or verdict. Its only student data is
-        the award/paid/remaining/eWallet allowlist served by the Payments funding summary,
-        which is a Payments endpoint and does not read this scope.
+        The `finance` PRESET is 'none' BY DECISION (role matrix 2026-07-23): it never sees an
+        applicant file, document, income figure or verdict; its only student data is the
+        Payments funding-summary allowlist, which does not read this scope. ⚠ A Finance person
+        GIVEN `review` reads the files of the students ASSIGNED to them, and nothing else (owner,
+        2026-10-19, open question 1 — reachable only once a permission set is saved).
         """
-        if admin is None or admin.role in ('partner', 'finance'):
+        if admin is None:
             return 'none'
-        if self.has_role(admin, 'admin') or admin.role in ('qc', 'org_admin'):  # super + admin + qc + org_admin
+        if admin.has_perm('see_all'):
             return 'all'
-        if admin.role == 'reviewer':
+        if admin.has_perm('review'):
             return 'assigned'
         return 'none'
 
@@ -252,9 +254,9 @@ class _AdminBase(PartnerAdminMixin, APIView):
     def _can_review_app(self, admin, app):
         """True if this admin may WRITE (review-act) on this application:
           super              — acts on any application;
-          org_admin / qc     — act on ANY application in their OWN org (org_admin = the
+          `qc` holders       — act on ANY application in their OWN org (org_admin = the
                                organisation superadmin; qc = the hybrid review-all role);
-          admin / reviewer   — act ONLY on applications ASSIGNED to them;
+          anyone else in scope — act ONLY on applications ASSIGNED to them (#39 S3: by permission);
           partner            — never.
         (Assignment-based review permission, 2026-07 — a plain 'admin' has full READ scope
         via _b40_scope='all' but assigned-only WRITE, so a view-all admin can be given a
@@ -269,7 +271,7 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return True
         if not self._org_allows(admin, app):          # cross-org (Sprint 3a)
             return False
-        if admin.role in ('org_admin', 'qc'):         # org-wide write (same-org guaranteed above)
+        if admin.has_perm('qc'):                      # org-wide write (same-org guaranteed above)
             return True
         return app.assigned_to_id == admin.id
 
@@ -334,7 +336,7 @@ class _AdminBase(PartnerAdminMixin, APIView):
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role in ('qc', 'org_admin')):
+        if not admin.has_perm('qc'):                  # #39 S3: qc / org_admin / super, as before
             return None, None, self._deny_role()
         app = self._get_application(pk)
         if app is None:

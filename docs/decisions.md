@@ -14307,6 +14307,52 @@ for credits too (silently removes Finance's credit check — the plan's warning)
 **Revisit if:** the owner wants credits to follow (≈3 h), wants a per-run check fallback, or removes
 the org admin's fallback once every tenant has a Finance person.
 
+## 2026-10-19 — Request #39 Sprint 3: the student-file, QC, assignment and Spending gates read permissions
+
+**Owner ruling, 2026-10-19 ("yes"):** org admins STAY OFF the Reviewers list/tab, so it stays exactly
+as today, even though the org admin's fixed bundle includes `qc`. Earlier rulings stand (the six
+open-question recommendations; Finance alone sees no student file; Finance + Review sees only the
+files of students assigned to them — reachable only once a permission set is saved, S4 or a reviewed
+SQL update).
+
+**Decision (roadmap Sprint 3, Appendix A groups A-D):**
+1. **The B40 scope is permissions:** `see_all` → every application in the organisation (read),
+   `review` → only those assigned, neither → none. `qc` → the QC gate and org-wide writes. Every
+   reader of `_scoped_application` / `_require_app_write` / `_require_qc` follows without change.
+2. **Who may hold a case is ONE predicate, `services.is_review_target`:** `review`, plus the R1 super
+   override `R1_SUPER_TARGET_ROLES` (admin, qc, org_admin), which replaces `REVIEW_ROLES`. Assignment,
+   pause and interview scheduling all read it (pause still blocks only NEW assignment).
+3. **Who may hand a case to whom is ONE predicate, `services.may_assign_to(caller, target)`:** a super →
+   any review target; an org_admin → an own-organisation team member holding `review`, never a super;
+   anyone else → nobody. The assign endpoint calls it and the assignable list SERVES it per row as
+   `assignable`, so the pickers no longer re-derive the rule (each falls back to the old role rule for
+   a payload without the flag). The list itself = the old five roles PLUS any `review` holder, so
+   nobody already holding a case vanishes from it (bug #66).
+4. **Spending is the `spending` key** (`_SPENDING_ROLES` deleted). The Finance preset does not hold it.
+5. **The Reviewers tab lists TEAM MEMBERS holding `review` or `qc`** (+ a super, as before), through
+   `staff_permissions.team_holding` — never the lead tier, per the ruling above.
+6. **The menu:** Applications / Payments / Spending rows carry `perms`; a TEAM member's served
+   permissions answer them (`staffPermissions.admitsRow`); the org admin, a super, a partner and a
+   payload without `permissions` are answered by `roles`. The page guards pass the same list.
+
+**Left on role on purpose (R2 / lead tier):** `_require_reviewer` (graduation review, reviewer
+profile), the Overview's sections (a Finance + Review person gets no "my cases" tile — Applications is
+their door; a Reviewer + Spending gets no money on the Overview), `reviewer_profile_complete` (a
+non-reviewer preset holding `review` is not held on the profile page; the picker shows their languages
+as unknown), the reviewer-detail `mayPause` (mirrors the pause / gift endpoints, lead-tier group G),
+the picker's role suffix (a label), wallet credits (F), everything in H/I.
+
+**Alternatives considered:** a caller-aware `_can_review` (the service is caller-agnostic; the
+endpoint narrows); dropping the R1 override now (the owner's question, not decided); a JSON
+`__contains` lookup for list membership (does not run on SQLite).
+
+**Trade-offs:** the list query gains one small query (the custom rows). The R1 override keys on the
+ROLE, so a super may still assign an `admin` / `qc` whose custom set lacks `review` — exactly today's
+super power, kept by R1.
+
+**Revisit if:** the owner removes the R1 override, or a mixed set needs the Overview / profile hold to
+follow permissions rather than the preset.
+
 ## 2026-10-19 — Sprint D: the bursary writes nothing on the profile; the chip is the course selector's
 
 **Decision (sources and referral partners Sprint D, the arc's clean-up; the owner's model of

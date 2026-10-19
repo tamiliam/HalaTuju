@@ -40,7 +40,7 @@ export default function PaymentsLandingPage() {
   const { t, locale } = useT()
   const router = useRouter()
   const r = effectiveRole(role)
-  const allowed = canAccess('/admin/payments', r)
+  const allowed = canAccess('/admin/payments', r, role?.permissions)
   const [runs, setRuns] = useState<PaymentRunSummary[]>([])
   // Finer than the route: who may create a run is the SERVER's answer (`can_prepare`: Prepare, or
   // the organisation admin). Before it arrives, or from a server older than #39 S2, the old

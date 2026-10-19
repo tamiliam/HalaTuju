@@ -209,8 +209,8 @@ class TestFinanceHasNoB40Scope(OrgFenceMixin, TestCase):
     Finance signs payment runs and reads the funding summary. Everything below is what it must
     NOT be able to reach, and each is proven by an actual refusal rather than by the absence of
     a nav link: `_b40_scope` returns 'none', so the applicant list, the cockpit, the QC gate and
-    every per-application write are closed, and it is deliberately absent from
-    `services.REVIEW_ROLES` so it can never be handed a case to review.
+    every per-application write are closed, and it is deliberately not a review target
+    (`services.is_review_target`, #39 S3) so its PRESET can never be handed a case to review.
     """
     @classmethod
     def setUpTestData(cls):
@@ -229,9 +229,12 @@ class TestFinanceHasNoB40Scope(OrgFenceMixin, TestCase):
         from apps.scholarship.services import _can_review
         self.assertFalse(_can_review(self.finance_a))
 
-    def test_finance_is_absent_from_review_roles(self):
-        from apps.scholarship.services import REVIEW_ROLES
-        self.assertNotIn('finance', REVIEW_ROLES)
+    def test_the_finance_preset_is_neither_a_review_holder_nor_an_r1_role(self):
+        # #39 S3: REVIEW_ROLES became `review` + the R1 super override; the preset still has neither.
+        from apps.scholarship.services import R1_SUPER_TARGET_ROLES, is_review_target
+        self.assertNotIn('finance', R1_SUPER_TARGET_ROLES)
+        self.assertFalse(self.finance_a.has_perm('review'))
+        self.assertFalse(is_review_target(self.finance_a))
 
     def test_applications_list_denied(self):
         self._auth('fin-a')

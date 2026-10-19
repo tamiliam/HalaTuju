@@ -33,7 +33,7 @@ class AdminProgrammeOverviewView(_AdminBase):
     already withholds Payments and Spending from reviewer/qc; an Overview that served their
     figures anyway would have made that withholding decorative.
 
-    ⚠ **FINANCE IS ADMITTED HERE THOUGH `_SPENDING_ROLES` EXCLUDES IT FROM THE SPENDING PAGE.**
+    ⚠ **FINANCE IS ADMITTED HERE THOUGH ITS PRESET LACKS `spending`, THE SPENDING PAGE'S GATE.**
     Deliberate widening, owner 2026-09-15, recorded in `docs/decisions.md` and the role matrix:
     finance gets TOTALS — committed, paid, remaining, spent, by month, by category — and never a
     name, a file or a verdict, because none of those is in a section it is given.

@@ -19,7 +19,7 @@ from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication, SponsorProfile
 from ..profile_engine import generate_anon_blurb, refine_sponsor_profile
 from ..serializers_admin import AdminApplicationDetailSerializer
-from ..services import AssignmentError, admin_reject, assign_reviewer
+from ..services import AssignmentError, admin_reject, assign_reviewer, may_assign_to
 
 from .base import _AdminBase
 
@@ -468,12 +468,13 @@ class AdminVerdictMetricsView(_AdminBase):
     Role gate (TD-153 b, 2026-09-30): its one caller, `AiReliabilityCard`, belongs on the
     Applications page (`/admin/scholarship`, hidden there since 2026-06-13), whose roles are
     super / org_admin / admin / qc / reviewer — so reviewers and QC keep it; partner and finance
-    are refused. The card swallows an error silently, so a narrower gate would hide it unseen."""
+    are refused. Since #39 Sprint 3 it reads the Applications page's own permissions (`see_all`
+    or `review`), which the presets give to exactly those five. The card swallows an error silently, so a narrower gate would hide it unseen."""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'qc', 'reviewer')):
+        if not (admin.has_perm('see_all') or admin.has_perm('review')):   # #39 S3: the B40 scope
             return self._deny_role()
         from ..audit import override_metrics
         # org-fence: _org_scoped applied below (fences the metrics roll-up).
@@ -517,11 +518,10 @@ class AdminAssignReviewerView(_AdminBase):
             if reviewer is None:
                 return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            if not self.has_role(admin, 'super') and (
-                    reviewer.role != 'reviewer'
-                    or reviewer.owning_organisation_id != admin.owning_organisation_id):
-                # An org_admin assigns only their OWN org's reviewers — never a super, a
-                # cross-org target, or a senior role. Same shape as an unknown assignee.
+            if not self.has_role(admin, 'super') and not may_assign_to(admin, reviewer):
+                # An org_admin assigns only their OWN org's `review` holders (#39 S3; before, the
+                # `reviewer` role) — never a super, a cross-org target, or someone without
+                # `review`. Same shape as an unknown assignee. A super's target is the service's.
                 return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
                                 status=status.HTTP_400_BAD_REQUEST)
         try:

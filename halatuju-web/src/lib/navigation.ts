@@ -26,6 +26,8 @@
  * drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts
  */
 
+import { admitsRow, type StaffPermission } from './staffPermissions'
+
 /** The scope a page belongs to. Platform → Organisation → Programme is the platform hierarchy
  *  (`apps/scholarship/models.py` Programme docstring); `utility` is "yours, not any scope's". */
 export type NavScope = 'platform' | 'organisation' | 'programme' | 'utility'
@@ -76,6 +78,8 @@ export interface NavItem {
   scope: NavScope
   /** UX visibility only — see the module docstring. */
   roles: readonly AdminRoleName[]
+  /** #39 S3: a TEAM MEMBER opens this row by holding any of these keys (`admitsRow`), not by role. */
+  perms?: readonly StaffPermission[]
   gate: NavGate
   /** Extra path prefixes that make this item the active one (sub-pages with no entry). */
   match?: readonly string[]
@@ -332,7 +336,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         gate: { mode: 'always' } },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
-        gate: { mode: 'always' } },
+        perms: ['see_all', 'review'], gate: { mode: 'always' } },
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },
@@ -351,15 +355,16 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // ⚠ `needsProgramme` on BOTH (2026-09-28) — you enter a gift first. See that field's note.
       { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'finance'],
+        perms: ['payments_prepare', 'payments_check', 'payments_approve'],
         gate: { mode: 'always' }, needsProgramme: true, badge: 'paymentsWaiting' },
       // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
       // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
       // the Payments allowlist, and this screen carries names beside purchases. This row and
-      // `_SPENDING_ROLES` in views_admin.py must agree; the page's own test pins the pair.
+      // `_SpendingBase` (the `spending` key since #39 S3) must agree; the page's test pins the pair.
       // ⚠ NOT 'G' — that is CHORD_PREFIX, the key that ARMS a chord, so it can never be one.
       // 'X' for expenses; 'S' is Students and 'P' is Sponsors.
       { id: 'spending', href: '/admin/spending', labelKey: 'admin.spending.nav', chord: 'X',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin'],
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'], perms: ['spending'],
         gate: { mode: 'always' }, needsProgramme: true },
       // ⚠ MOVED HERE FROM ORGANISATION (TD-229, 2026-10-03): the agreement is PER GIFT (owner,
       // 2026-09-04). Same roles. No `needsProgramme` — with no gift chosen it lists every gift's.
@@ -397,6 +402,8 @@ export const CHROMELESS: readonly string[] = [
 export interface NavContext {
   role: AdminRoleName
   probes: Record<ProbeKey, ProbeState>
+  /** The served `/admin/role/` `permissions` (#39 S3). Absent = the rows' `roles` answer. */
+  permissions?: readonly string[] | null
   /**
    * Is the gift the person is looking at KNOWN? Read by `needsProgramme` rows only.
    *
@@ -456,7 +463,7 @@ export function effectiveRole(
  * loaded". Treating 'unknown' as live would flash a dark feature in during the round trip.
  */
 export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide' {
-  if (!item.roles.includes(ctx.role)) return 'hide'
+  if (!admitsRow(item, ctx.role, ctx.permissions)) return 'hide'
   // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
   // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
   if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.role)) return 'hide'
@@ -558,9 +565,10 @@ export function activeItem(pathname: string): NavItem | undefined {
  *
  * An unknown route returns true: absence from the registry must never invent a new block.
  */
-export function canAccess(href: string, role: AdminRoleName): boolean {
+export function canAccess(href: string, role: AdminRoleName,
+                          permissions?: readonly string[] | null): boolean {
   const item = activeItem(href)
-  return item ? item.roles.includes(role) : true
+  return item ? admitsRow(item, role, permissions) : true
 }
 
 /** An item paired with its already-translated label, which is all the palette needs. */

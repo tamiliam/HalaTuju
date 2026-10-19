@@ -19,8 +19,8 @@ hide; a finance admin's has no `funnel`. A page that fetched everything and rend
 would be a side door into Applications/Payments/Spending for roles the menu already withholds
 those pages from.
 
-⚠ **FINANCE SEES AGGREGATE MONEY HERE THOUGH NOT ON THE SPENDING PAGE** (`_SPENDING_ROLES`
-excludes it). That is a deliberate widening, recorded in `docs/decisions.md` and the role matrix:
+⚠ **FINANCE SEES AGGREGATE MONEY HERE THOUGH NOT ON THE SPENDING PAGE** (the finance
+preset does not hold `spending`). That is a deliberate widening, recorded in `docs/decisions.md` and the role matrix:
 what finance gains is TOTALS — committed, paid, remaining, spent, per category, per month. It
 never gains a name, a file or a verdict, because none of those is in a section it is given.
 

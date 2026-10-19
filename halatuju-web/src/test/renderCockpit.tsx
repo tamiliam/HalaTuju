@@ -32,6 +32,7 @@ import type { AdminRoleName } from '@/lib/navigation'
 import * as adminApi from '@/lib/admin-api'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { buildApplicationDetail, type BuildOptions, type Stage } from '@/test/adminApplicationDetail'
+import { servedPermissions } from '@/test/staffPresets'
 
 jest.mock('@/lib/admin-api')
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
@@ -66,13 +67,16 @@ export interface CockpitAuth {
    *  control is not self-tripped). */
   adminId?: number | null
   token?: string | null
+  /** The served permission list (#39). Defaults to the role's PRESET, as `/admin/role/` serves it;
+   *  pass a list to mount a person with a saved CUSTOM set. */
+  permissions?: string[]
 }
 
 /** The id a QC or org_admin signs in as by default — deliberately NOT the assignee's, because a
  *  `qc` who reviewed the case may not QC it (the cockpit hides the panel; the backend refuses). */
 export const OTHER_ADMIN_ID = 43
 
-function authFor({ role, adminId, token = 'test-token' }: CockpitAuth) {
+function authFor({ role, adminId, token = 'test-token', permissions }: CockpitAuth) {
   const own = adminId !== undefined
     ? adminId
     : (role === 'reviewer' || role === 'admin' ? ASSIGNED_ADMIN_ID : OTHER_ADMIN_ID)
@@ -82,6 +86,7 @@ function authFor({ role, adminId, token = 'test-token' }: CockpitAuth) {
       is_admin: true,
       is_super_admin: role === 'super',
       role,
+      permissions: permissions ?? servedPermissions(role),
       admin_id: own,
       admin_name: 'Test Officer 04',
       org_name: 'Test Organisation',

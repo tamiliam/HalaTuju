@@ -65,9 +65,9 @@ export function AssignAndWitness({
           >
             <option value="">{t('admin.scholarship.unassigned')}</option>
             {/* Assignable options. The backend already returns the org-fenced, review-capable set
-                (services.REVIEW_ROLES; AdminAssignableAdminsView). A super may pick any of them; a
-                non-super (org_admin) delegates only to their own org's reviewers (the assign endpoint
-                rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
+                (AdminAssignableAdminsView) and SERVES `assignable` per row (#39 S3: may_assign_to —
+                a super any review target, an org_admin their own org's `review` holders; the assign
+                endpoint rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
                 role change never hides them (#66: assigned as qc → promoted to org_admin → was
                 showing "Unassigned"). Role suffixed so a senior assignee is distinguishable.
                 ⚠ A PAUSED reviewer is DISABLED here, not removed — for the same #66 reason, and

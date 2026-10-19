@@ -11,9 +11,17 @@ WHAT THIS FILE PROVES, in two halves, for every row of `GOLDEN`:
    must keep this half green, which is what makes the conversion a refactor and not a change.
 2. **`test_the_presets_reproduce_today`** — the permission rule each gate WILL read (`rule`), asked of
    the same people through `has_perm` only, gives the same answers. Where it does not, the difference
-   is written down in `diverges` with its reason — never silently absorbed. Today there are exactly
-   two kinds: R1 (the super's wider choice of assignee, kept as a super override, roadmap R1) and one
-   Sprint 3 finding on the Reviewers tab.
+   is written down in `diverges` with its reason — never silently absorbed. Today there is exactly
+   one kind: R1 (the super's wider choice of assignee, kept as a super override, roadmap R1 —
+   `services.R1_SUPER_TARGET_ROLES` since Sprint 3). Sprint 1's other finding (the lead tier holds
+   `qc` but an org_admin is not on the Reviewers tab) was ruled by the owner on 2026-10-19 ("yes":
+   org admins stay off it) and Sprint 3 built exactly that, so its rule now says so.
+
+⚠ SPRINT 3 CONVERTED GROUPS A-D (review, see_all, qc, spending): every probe below already called
+the live gate, so after the conversion each one now reads `has_perm`, and the `today` columns did not
+move. Sprint 3 ADDED the rows marked `# S3` (the file reads through `_scoped_application`, the
+Spending flags and category doors, and the served `assignable` flag) — each written against the
+behaviour before the conversion and green on it.
 
 ⚠ SPRINT 2 CHANGED ONLY THE ROWS MARKED `s2`, and each names the owner's ruling of 2026-10-19
 ("Finance role ... I would like the role to be able to approve payment — the work that Suresh does
@@ -50,7 +58,8 @@ S2_RULING = ('owner 2026-10-19 (#39 payments, option A): Admin prepares, Finance
 
 R1 = ('R1 (roadmap): today a SUPER may assign any of reviewer/admin/qc/org_admin, while an org_admin '
       'may assign only a reviewer. The permission rule reproduces the org_admin side; the super\'s '
-      'wider choice is kept as a super override, and "assignment grants write" is unchanged. '
+      'wider choice is kept as a super override (services.R1_SUPER_TARGET_ROLES, Sprint 3), and '
+      '"assignment grants write" is unchanged. '
       'Production 2026-10-19: one in-play case sits with an org_admin (awarded), none with admin/qc.')
 
 
@@ -110,53 +119,79 @@ GOLDEN = {
     },
     # ── A. who may be given a case ──────────────────────────────────────────────────────────────
     'assignment_target': {
-        'where': 'services/assignment.py _can_review (REVIEW_ROLES)',
+        'where': 'services/assignment.py _can_review (is_review_target: review + R1 override)',
         'keys': ('review',),
         'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
         'rule': lambda a, c: a.has_perm('review'),
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     'propose_interview_times': {
-        'where': 'scheduling.py _can_review (REVIEW_ROLES)',
+        'where': 'scheduling.py _can_review (services.is_review_target)',
         'keys': ('review',),
         'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
         'rule': lambda a, c: a.has_perm('review'),
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     'pause_target': {
-        'where': 'services/assignment.py set_paused (REVIEW_ROLES)',
+        'where': 'services/assignment.py set_paused (is_review_target)',
         'keys': ('review',),
         'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
         'rule': lambda a, c: a.has_perm('review'),
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     'assignable_list_for_super': {
-        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView (role__in), read by a super',
+        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView (listed), read by a super',
         'keys': ('review',),
         'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
         'rule': lambda a, c: a.has_perm('review'),
         'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     'org_admin_may_assign_to': {
-        'where': 'views_admin/verdict.py:520 AdminAssignReviewerView (an org_admin assigns only a reviewer)',
+        'where': 'views_admin/verdict.py AdminAssignReviewerView (an org_admin assigns only a review '
+                 'holder: services.may_assign_to)',
         'keys': ('review',),
         'today': _t('reviewer'),
         'rule': lambda a, c: (a.has_perm('review')
                               and a.owning_organisation_id == c.org.id),
     },
     'reviewers_tab_lists': {
-        'where': 'views_admin/reviewers.py _reviewers (role__in reviewer, qc; + is_super_admin)',
+        'where': 'views_admin/reviewers.py _reviewers (team members holding review or qc; + '
+                 'is_super_admin)',
         'keys': ('review', 'qc'),
         'today': _t('super', 'qc', 'reviewer'),
-        'rule': lambda a, c: a.has_perm('review') or a.has_perm('qc'),
-        'diverges': {'org_admin': (
-            'SPRINT 3 FINDING: the roadmap says "people who hold review or qc appear on Reviewers", '
-            'but the lead tier holds qc and an org_admin is NOT on the Reviewers tab today. S3 must '
-            'exclude the lead tier (or the owner must accept org_admins appearing there).')},
+        # Owner 2026-10-19 ("yes"): org admins stay OFF the Reviewers list/tab, so it stays exactly
+        # as today, even though the lead tier holds qc. The rule leaves the lead tier out.
+        'rule': lambda a, c: (not sp.is_lead_tier(a)
+                              and (a.has_perm('review') or a.has_perm('qc'))),
+    },
+    'read_assigned_file': {                                                   # S3
+        'where': 'base.py _scoped_application (a case assigned to X: the cockpit, documents, '
+                 'interviews, lifecycle, profiles and verdict all open through it)',
+        'keys': ('see_all', 'review'),
+        'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
+        'rule': lambda a, c: _scope_rule(a) != 'none',
+    },
+    'read_unassigned_file': {                                                 # S3
+        'where': 'base.py _scoped_application (a same-organisation case assigned to nobody)',
+        'keys': ('see_all',),
+        'today': _t('super', 'org_admin', 'admin', 'qc'),
+        'rule': lambda a, c: _scope_rule(a) == 'all',
     },
     # ── D. spending ─────────────────────────────────────────────────────────────────────────────
     'spending_page': {
-        'where': 'views_admin/spending.py _SPENDING_ROLES',
+        'where': 'views_admin/spending.py _SpendingBase (spending)',
+        'keys': ('spending',),
+        'today': _t('super', 'org_admin', 'admin'),
+        'rule': lambda a, c: a.has_perm('spending'),
+    },
+    'spending_flags': {                                                       # S3
+        'where': 'views_admin/spending_flags.py AdminSpendingFlagView GET (through _SpendingBase)',
+        'keys': ('spending',),
+        'today': _t('super', 'org_admin', 'admin'),
+        'rule': lambda a, c: a.has_perm('spending'),
+    },
+    'spending_category_write': {                                              # S3
+        'where': 'views_admin/spending.py AdminSpendingCategoryView POST (through _SpendingBase)',
         'keys': ('spending',),
         'today': _t('super', 'org_admin', 'admin'),
         'rule': lambda a, c: a.has_perm('spending'),
@@ -263,7 +298,7 @@ GOLDEN = {
         'rule': lambda a, c: c.pair_preset_lacks(a, ('review', 'see_all')),
     },
     'assignable_list_for_org_admin': {
-        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView (role__in), read by an org_admin',
+        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView (listed), read by an org_admin',
         'keys': ('review',),
         'today': _t('org_admin', 'admin', 'qc', 'reviewer'),
         'rule': lambda a, c: a.has_perm('review') and a.owning_organisation_id == c.org.id,
@@ -271,6 +306,22 @@ GOLDEN = {
                          'assignee in from it, bug #66) while its assign endpoint and the web '
                          'picker take reviewers only; S3 keeps the list and serves `assignable`.'
                      for r in ('org_admin', 'admin', 'qc')},
+    },
+    'assignable_flag_for_org_admin': {                                        # S3
+        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView served `assignable` (an '
+                 'org_admin reads it; before S3 the web picker computed role == reviewer)',
+        'keys': ('review',),
+        'today': _t('reviewer'),
+        'rule': lambda a, c: (a.has_perm('review')
+                              and a.owning_organisation_id == c.org.id),
+    },
+    'assignable_flag_for_super': {                                            # S3
+        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView served `assignable` (a super '
+                 'reads it; before S3 the web picker offered a super every listed row)',
+        'keys': ('review',),
+        'today': _t('super', 'org_admin', 'admin', 'qc', 'reviewer'),
+        'rule': lambda a, c: a.has_perm('review'),
+        'diverges': {'org_admin': R1, 'admin': R1, 'qc': R1},
     },
     # ── G. the team (lead tier: stays on role in #39, so the key maps but never converts) ────────
     'may_invite_staff': {
@@ -335,6 +386,21 @@ class GoldenTable(TestCase):
     def probe_ai_reliability_card(self, a):
         return self._http(a, 'get', '/api/v1/admin/scholarship/verdict-metrics/').status_code != 403
 
+    def _scoped(self, a, case):
+        from apps.scholarship.views_admin import _AdminBase
+        view = _AdminBase()
+        with mock.patch.object(view, 'get_admin', return_value=a), \
+                mock.patch.object(view, '_get_application', return_value=case):
+            app, err = view._scoped_application(None, 1)
+        return err is None and app is case
+
+    def probe_read_assigned_file(self, a):
+        return self._scoped(a, self._case(assigned_to_id=a.id,
+                                          owning_organisation_id=a.owning_organisation_id))
+
+    def probe_read_unassigned_file(self, a):
+        return self._scoped(a, self._case(owning_organisation_id=a.owning_organisation_id))
+
     def probe_qc_gate(self, a):
         from apps.scholarship.views_admin import _AdminBase
         view = _AdminBase()
@@ -385,6 +451,14 @@ class GoldenTable(TestCase):
 
     def probe_spending_page(self, a):
         return self._http(a, 'get', '/api/v1/admin/scholarship/spending/').status_code != 403
+
+    def probe_spending_flags(self, a):
+        return self._http(a, 'get', '/api/v1/admin/scholarship/spending/flag/').status_code != 403
+
+    def probe_spending_category_write(self, a):
+        # No body: an admitted caller gets a 400, a refused one a 403.
+        r = self._http(a, 'post', '/api/v1/admin/scholarship/spending/category/', {})
+        return r.status_code != 403
 
     def probe_payments_read(self, a):
         return self._http(a, 'get', '/api/v1/admin/scholarship/payment-runs/').status_code != 403
@@ -525,6 +599,17 @@ class GoldenTable(TestCase):
     def pair_preset_lacks(self, a, keys):
         preset = self._pair_preset(a)
         return preset is not None and not (preset & set(keys))
+
+    def _assignable_as_read_by(self, caller, a):
+        r = self._http(caller, 'get', '/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        return any(row['id'] == a.id and row['assignable'] for row in r.json()['admins'])
+
+    def probe_assignable_flag_for_org_admin(self, a):
+        return self._assignable_as_read_by(self.people['org_admin'], a)
+
+    def probe_assignable_flag_for_super(self, a):
+        return self._assignable_as_read_by(make_admin('super', super_admin=True), a)
 
     def probe_may_invite_staff(self, a):
         # Name and email missing: an admitted caller gets 400, a refused one 403.

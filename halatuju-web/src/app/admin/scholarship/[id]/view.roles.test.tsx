@@ -45,6 +45,27 @@ describe('the QC decision panel at AWAITING QC', () => {
     expect(qcPanel()).toBeNull()
   })
 
+  // #39 Sprint 3: the panel reads the SERVED `qc` permission, not the role — so a saved custom set
+  // moves it (the server's `_require_qc` reads the same key).
+  it('an admin GIVEN qc may act; a qc whose set lost it may not', async () => {
+    const admin = renderCockpit({ role: 'admin', adminId: 43, permissions: ['see_all', 'qc'],
+      stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    await loaded()
+    expect(qcPanel()).toBeTruthy()
+    admin.unmount()
+    renderCockpit({ role: 'qc', permissions: ['see_all'],
+      stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    await loaded()
+    expect(qcPanel()).toBeNull()
+  })
+
+  it('an admin GIVEN qc still never QCs the case they hold', async () => {
+    renderCockpit({ role: 'admin', adminId: ASSIGNED_ADMIN_ID, permissions: ['see_all', 'qc'],
+      stage: 'awaiting_qc', build: { outcome: 'recommend' } })
+    await loaded()
+    expect(qcPanel()).toBeNull()
+  })
+
   it('⚠ HIDES IT FROM THE QC WHO REVIEWED THE CASE — a gate of one is no gate', async () => {
     // Two-person control. Signed in as a `qc` whose own admin id IS the assignee's.
     renderCockpit({

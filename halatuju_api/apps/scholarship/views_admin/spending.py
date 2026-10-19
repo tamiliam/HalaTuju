@@ -20,13 +20,13 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 
 # ── the officer's spending screen (sponsor spending S4) ──────────────────────
 #
-# ⚠ READ AND WRITE ARE BOTH admin / org_admin, AND `finance` IS DELIBERATELY ABSENT.
-# `_b40_scope` states that a finance admin never sees an applicant file, document, income
-# figure or verdict, and that its ONLY student data is the Payments funding summary allowlist.
-# This screen carries student names beside what they bought, which is welfare oversight rather
-# than disbursement — adding finance here would quietly widen a boundary another docstring
-# promises is closed.
-_SPENDING_ROLES = ('admin', 'org_admin')
+# ⚠ READ AND WRITE ARE BOTH THE `spending` PERMISSION (request #39 Sprint 3; was the roles
+# admin / org_admin, which are exactly the presets holding it — plus a super, who holds every key),
+# AND THE `finance` PRESET IS DELIBERATELY WITHOUT IT. `_b40_scope` states that a finance admin
+# never sees an applicant file, document, income figure or verdict, and that its ONLY student data
+# is the Payments funding summary allowlist. This screen carries student names beside what they
+# bought, which is welfare oversight rather than disbursement — giving finance `spending` would
+# widen a boundary another docstring promises is closed, so it is a person-by-person grant only.
 
 
 class _SpendingBase(_AdminBase):
@@ -65,7 +65,7 @@ class _SpendingBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, None, None, self._deny()
-        if not (admin.is_super or admin.role in _SPENDING_ROLES):
+        if not admin.has_perm('spending'):
             return None, None, None, self._deny_role()
         programme, err = self._gift_narrowing(request, admin)
         err = err or self._gift_required_for_orgless_super(admin, programme)  # TD-334

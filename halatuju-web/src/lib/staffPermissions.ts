@@ -13,7 +13,8 @@
  * server adds that the screen lacks could never be shown.
  * drift-test: halatuju-web/src/lib/__tests__/staffPermissionsDrift.test.ts
  *
- * Sprint 1 serves and types them; no menu or page reads them yet (Sprints 3 and 4).
+ * Sprint 1 serves and types them. Sprint 3: the Applications, Payments and Spending menu rows and
+ * page guards (`admitsRow`, read by `navigation.ts`), and the cockpit's QC / write switches, read them.
  */
 
 export const STAFF_PERMISSIONS = [
@@ -36,4 +37,26 @@ export function hasPerm(
   key: StaffPermission,
 ): boolean {
   return !!role?.permissions?.includes(key)
+}
+
+/** The roles whose access is a permission SET — the server's `TEAM_ROLES`, held by the drift test.
+ *  The organisation admin (a fixed lead tier), a super and a referral partner are not in it. */
+export const TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer'] as const
+
+/**
+ * May this person open a registry row (request #39 Sprint 3)? A row naming `perms` admits a TEAM
+ * MEMBER who holds any of them; everyone else — and a team member whose payload carries no
+ * `permissions` (an old payload, or a caller that passes none) — is answered by the row's `roles`,
+ * exactly as before. So a missing field never invents a block, and for every preset the two
+ * answers are the same (the rows' `perms` are the keys those roles' presets hold).
+ */
+export function admitsRow(
+  row: { roles: readonly string[]; perms?: readonly StaffPermission[] },
+  role: string,
+  permissions?: readonly string[] | null,
+): boolean {
+  if (row.perms && permissions && (TEAM_ROLES as readonly string[]).includes(role)) {
+    return row.perms.some((k) => permissions.includes(k))
+  }
+  return row.roles.includes(role)
 }

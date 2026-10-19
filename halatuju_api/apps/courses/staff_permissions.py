@@ -21,7 +21,8 @@ THE MODEL
 exactly two rows here:** `finance` now holds `payments_approve`, and the lead tier no longer does —
 the organisation admin approves a run only under the per-run FALLBACK, when nobody else can
 (`apps/scholarship/payments_chain.py`). No preset holds `payments_check`: the middle check is dormant
-until somebody is given it. The payment gates read these keys since Sprint 2.
+until somebody is given it. The payment gates read these keys since Sprint 2; the student-file,
+quality-check, assignment and Spending gates (Appendix A groups A-D) since Sprint 3.
 
 ⚠ THIS IS A LEAF. It imports nothing from `apps.scholarship` (the `courses → scholarship` ratchet is
 at 17), and nothing from `models*` at import time — `PartnerAdmin.has_perm` lives on the model and
@@ -159,3 +160,30 @@ def holders(organisation, key):
                                          is_super_admin=False)
              .exclude(role='super').order_by('id'))
     return [a for a in staff if key in resolve(a)]
+
+
+def team_holding(keys):
+    """A `Q` for the TEAM MEMBERS who hold ANY of `keys`, to narrow a `PartnerAdmin` queryset
+    (Sprint 3: the Reviewers tab and the assignable list).
+
+    ⚠ TEAM MEMBERS ONLY — never the lead tier, never a super, never a partner. The callers add a
+    super themselves where today's list had one. The organisation admin is left out ON PURPOSE
+    (owner, 2026-10-19: org admins stay off the Reviewers list even though the lead tier holds
+    `qc`).
+
+    Two halves, for the reason `holders` gives: a NULL row is its role's preset, which SQL can
+    filter by role; a saved custom set is read in Python (one query over the custom rows, which
+    are few) and joined back by id, because JSONField `__contains` does not run on SQLite.
+    """
+    from django.db.models import Q
+    from .models_staff import PartnerAdmin
+    wanted = set(keys)
+    for key in wanted:
+        holds(None, key)                   # validates the key, so a typo raises here too
+    preset_roles = [r for r in TEAM_ROLES if wanted & set(preset_for(r))]
+    custom = (PartnerAdmin.objects.filter(role__in=TEAM_ROLES, is_super_admin=False,
+                                          permissions__isnull=False)
+              .only('id', 'role', 'is_super_admin', 'permissions'))
+    custom_ids = [a.pk for a in custom if wanted & set(resolve(a))]
+    return (Q(permissions__isnull=True, role__in=preset_roles, is_super_admin=False)
+            | Q(pk__in=custom_ids))

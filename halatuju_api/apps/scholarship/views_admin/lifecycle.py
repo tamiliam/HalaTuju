@@ -281,11 +281,18 @@ class AdminAssignableAdminsView(_AdminBase):
         if not admin:
             return self._deny()
         from django.db.models import Q
+        from apps.courses import staff_permissions
+        from ..services import R1_SUPER_TARGET_ROLES, may_assign_to
         # tenancy: list-fenced (2026-07-15). Super sees every assignable staff member; a
         # non-super (org_admin) sees only their OWN org's assignable staff — so a delegated
         # assignment can't reach across tenants. (A PartnerAdmin list, not applicant data.)
+        # ⚠ #39 Sprint 3: LISTED = everyone who could hold a case before #39 (the five roles, so
+        # nobody already holding one vanishes — bug #66) PLUS anyone given `review`; WHO MAY BE
+        # PICKED is the served `assignable` flag (`may_assign_to`, the assign endpoint's own rule).
         admins = (PartnerAdmin.objects.filter(is_active=True)
-                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc', 'org_admin']))
+                  .filter(Q(is_super_admin=True)
+                          | Q(role__in=['reviewer', 'super', *R1_SUPER_TARGET_ROLES])
+                          | staff_permissions.team_holding(('review',)))
                   .select_related('reviewer_profile', 'programme').order_by('name'))
         if not self.has_role(admin, 'super'):
             admins = admins.filter(owning_organisation_id=admin.owning_organisation_id,
@@ -335,6 +342,7 @@ class AdminAssignableAdminsView(_AdminBase):
             {'id': a.id, 'name': a.name, 'email': a.email,
              'role': 'super' if a.is_super else a.role, 'languages': langs(a),
              'paused': a.paused_at is not None,
+             'assignable': may_assign_to(admin, a),
              'programme_id': a.programme_id,
              'programme_name': (a.programme.name_en or a.programme.code) if a.programme_id else '',
              'corrections': corrections.get(a.id, 0)}

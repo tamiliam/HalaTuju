@@ -14,6 +14,12 @@
  * paused × gift for the picker — on the untouched tree. They AGREE on every row, with ONE
  * documented asymmetry that is deliberate and is pinned rather than removed: the CURRENT assignee
  * is always offered, whatever their role (bug #66).
+ *
+ * ⚠ REQUEST #39 SPRINT 3: the picker's narrowing is SERVED. `AdminAssignableAdminsView` sends
+ * `assignable` per row from `services.may_assign_to`, which the assign endpoint calls too, so the
+ * picker no longer re-derives the rule — it reads the flag, and falls back to the old role rule only
+ * for a payload without it. `REVIEW_ROLES` became `review` + `R1_SUPER_TARGET_ROLES` (the super's
+ * override, roadmap R1); this file reads both from the api, as before.
  */
 import { ORG_REJECT_FROM, canOrgReject, assignOptions } from '@/lib/officerCockpit'
 import { APPLICATION_STATUSES } from '@/lib/applicationStatus'
@@ -27,7 +33,7 @@ import { pySeq, readApi } from '@/test/apiSource'
  */
 const SERVICES = [
   'apps/scholarship/services/decline.py',      // ORG_REJECT_FROM
-  'apps/scholarship/services/assignment.py',   // REVIEW_ROLES
+  'apps/scholarship/services/assignment.py',   // R1_SUPER_TARGET_ROLES, may_assign_to
 ]
 /**
  * ⚠ `views_admin.py` became the PACKAGE `views_admin/` at code health H11/H12, and the two gates
@@ -43,7 +49,16 @@ const servicesSrc = SERVICES.map(readApi).join('\n')
 const viewsSrc = VIEWS.map(readApi).join('\n')
 
 const backendRejectFrom = pySeq(servicesSrc, 'ORG_REJECT_FROM')
-const reviewRoles = pySeq(servicesSrc, 'REVIEW_ROLES')
+/** Who could be given a case before #39: the `reviewer` preset (which holds `review`), a super, and
+ *  the R1 override's roles — the list a super was offered, read from the api. */
+const reviewRoles = ['reviewer', 'super', ...pySeq(servicesSrc, 'R1_SUPER_TARGET_ROLES')]
+
+/** The body of a top-level api function, for reading a rule that lives in code. */
+function pyFunc(src: string, name: string): string {
+  const parts = src.split(`\ndef ${name}(`)
+  if (parts.length !== 2) throw new Error(`drift test: no single def ${name} in ${SERVICES.join(', ')}`)
+  return parts[1].split('\ndef ')[0]
+}
 
 /** The body of a view class, for reading a gate that lives in code rather than in a constant. */
 function viewBody(name: string): string {
@@ -58,7 +73,7 @@ describe('parse sanity — the api rules were really found', () => {
     expect(backendRejectFrom.every((s) => APPLICATION_STATUSES.includes(s as never))).toBe(true)
   })
 
-  test('REVIEW_ROLES read as real admin roles', () => {
+  test('the review targets read as real admin roles', () => {
     expect(reviewRoles.length).toBeGreaterThanOrEqual(4)
     expect(reviewRoles.filter((r) => !ROLE_NAMES.includes(r as never))).toEqual([])
   })
@@ -104,11 +119,31 @@ describe('the org-admin reject gate — the ROLE half', () => {
 describe('the assignment picker vs the api\'s bad_assignee rule', () => {
   const body = viewBody('AdminAssignReviewerView')
 
-  test('a non-super may still assign only an own-org `reviewer` (the api side, read as written)', () => {
-    expect(body).toMatch(/reviewer\.role != 'reviewer'/)
-    expect(body).toMatch(/reviewer\.owning_organisation_id != admin\.owning_organisation_id/)
+  test('a non-super may still assign only an own-org `review` holder (the api side, read as written)', () => {
+    expect(body).toMatch(/not may_assign_to\(admin, reviewer\)/)
     expect(body).toMatch(/is_active=True/)
     expect(body).toMatch(/bad_assignee/)
+    const rule = pyFunc(servicesSrc, 'may_assign_to')
+    expect(rule).toMatch(/caller\.role != 'org_admin'/)
+    expect(rule).toMatch(/target\.has_perm\('review'\)/)
+    expect(rule).toMatch(/target\.owning_organisation_id == caller\.owning_organisation_id/)
+    expect(rule).toMatch(/not target\.is_super/)
+  })
+
+  test('the list serves the same rule as `assignable`, so the picker reads it, not a role', () => {
+    const list = readApi('apps/scholarship/views_admin/lifecycle.py')
+    expect(list).toMatch(/'assignable': may_assign_to\(admin, a\)/)
+    // A served flag wins over the role fallback in both directions.
+    const served = [
+      { id: 1, name: 'Fin + Review', role: 'finance', assignable: true },
+      { id: 2, name: 'Reviewer without review', role: 'reviewer', assignable: false },
+    ]
+    for (const isSuper of [false, true]) {
+      expect(assignOptions(served, { isSuper, currentAssigneeId: null }).map((o) => o.id)).toEqual([1])
+    }
+    // …and the current assignee is still unioned in (bug #66), whatever the flag says.
+    expect(assignOptions(served, { isSuper: false, currentAssigneeId: 2 }).map((o) => o.id))
+      .toEqual([1, 2])
   })
 
   /**

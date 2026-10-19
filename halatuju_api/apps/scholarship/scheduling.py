@@ -104,9 +104,10 @@ def scheduling_enabled() -> bool:
 
 
 def _can_review(admin):
-    """Mirror services._can_review: an active review target (reviewer/admin/qc/super) may propose
-    slots. Uses the SHARED services.REVIEW_ROLES so this can't drift from the assignment/write gate
-    again — the per-application assignment check below is what actually scopes WHO can propose.
+    """Mirror services._can_review: an active review target (`review`, or the R1 super override)
+    may propose slots. Uses the SHARED services.is_review_target (request #39 Sprint 3) so this
+    can't drift from the assignment/write gate again — the per-application assignment check below
+    is what actually scopes WHO can propose.
 
     ⚠ **ONE DELIBERATE DIFFERENCE: this does NOT refuse a PAUSED reviewer** (request #10,
     2026-08-02). Pause stops NEW assignment; it does not confiscate the cases somebody is already
@@ -115,7 +116,7 @@ def _can_review(admin):
     what pause is for. `test_reviewer_pause.py` asserts this stays permissive."""
     if admin is None or not getattr(admin, 'is_active', False):
         return False
-    return bool(getattr(admin, 'is_super_admin', False)) or getattr(admin, 'role', '') in services.REVIEW_ROLES
+    return services.is_review_target(admin)
 
 
 def _student_identity(application):

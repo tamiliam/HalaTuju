@@ -472,6 +472,7 @@ export async function getAssignableAdmins(options?: ApiOptions) {
     admins: Array<{
       id: number; name: string; email: string; role: string
       languages: string[]; corrections: number; paused: boolean
+      assignable?: boolean   // #39 S3: may THIS caller hand them a case (`may_assign_to`)
       /** Which gift they cover. **NULL = every gift** — the permissive default all 17
        *  org-scoped staff still carry, so a blank must never grey anybody out. Flagged the
        *  same way `paused` is: greyed with the gift named, never filtered out. */

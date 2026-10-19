@@ -34,7 +34,7 @@ const bucketBadge = (b: string) =>
 // reads "Prefers Tamil", never a bare code; the dropdown options show ✓/⚠ + the reviewer's name
 // only — the language-code suffix was dropped (owner 2026-07-16).
 const SPECIFIC_CALL_LANGS = new Set(['en', 'ms', 'ta'])
-type Reviewer = { id: number; name: string; role: string; languages: string[] }
+type Reviewer = { id: number; name: string; role: string; languages: string[]; assignable?: boolean }
 /** Order reviewers for a student's preferred call language: when it's a specific language
  *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
  *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
@@ -65,7 +65,7 @@ export default function AdminScholarshipList() {
    *
    * ⚠ NOT A FENCE — see `navigation.ts`. The endpoint refuses on its own and is unchanged.
    */
-  const mayView = canAccess('/admin/scholarship', effRole)
+  const mayView = canAccess('/admin/scholarship', effRole, role?.permissions)
   // Assignment (the "Assigned" column + inline dropdown) is a super or org_admin power —
   // an org_admin assigns their own org's reviewers (backend fences the target + application).
   const canAssign = isSuper || role?.role === 'org_admin'
@@ -181,7 +181,7 @@ export default function AdminScholarshipList() {
     if (!token || !canAssign) return
     getAssignableAdmins({ token })
       .then((r) => {
-        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [] })))
+        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [], assignable: a.assignable })))
         setPastAssignees(r.past_assignees ?? [])
       })
       .catch(() => {})
@@ -401,7 +401,7 @@ export default function AdminScholarshipList() {
                         <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
                       )}
                       {orderReviewersFor(
-                        reviewers.filter((rv) => rv.id === a.assigned_to_id || isSuper || rv.role === 'reviewer'),
+                        reviewers.filter((rv) => rv.id === a.assigned_to_id || (rv.assignable ?? (isSuper || rv.role === 'reviewer'))),
                         a.call_language,
                       ).map(({ rv, match, specific }) => (
                         <option key={rv.id} value={rv.id}>
@@ -509,11 +509,11 @@ export default function AdminScholarshipList() {
                           <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
                         )}
                         {/* Mirror the cockpit's offer rule (= the server's bad_assignee rule):
-                            a super may assign any review-capable staff; a non-super (org_admin)
-                            delegates only to reviewers. The row's CURRENT assignee always
+                            the served `assignable` (#39 S3), else a super any review-capable
+                            staff and a non-super (org_admin) only reviewers. The row's CURRENT assignee always
                             renders even when not offerable (owner 2026-07-16). */}
                         {orderReviewersFor(
-                          reviewers.filter((rv) => rv.id === a.assigned_to_id || isSuper || rv.role === 'reviewer'),
+                          reviewers.filter((rv) => rv.id === a.assigned_to_id || (rv.assignable ?? (isSuper || rv.role === 'reviewer'))),
                           a.call_language,
                         ).map(({ rv, match, specific }) => (
                           <option key={rv.id} value={rv.id}>

@@ -229,9 +229,13 @@ class _ReviewersBase(_AdminBase):
         (`AdminAssignableView`), so a revoked reviewer can still never be handed a case.
         """
         from django.db.models import Q
+        from apps.courses import staff_permissions
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
+        # ⚠ #39 Sprint 3: the TEAM MEMBERS who hold `review` or `qc` (was the roles reviewer, qc —
+        # exactly the presets holding either). The organisation admin's lead tier holds `qc` but
+        # stays OFF this tab (owner, 2026-10-19: "yes"), which `team_holding` guarantees.
         qs = (PartnerAdmin.objects
-              .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'qc']))
+              .filter(Q(is_super_admin=True) | staff_permissions.team_holding(('review', 'qc')))
               .select_related('reviewer_profile', 'programme').order_by('name'))
         if not include_revoked:
             qs = qs.filter(is_active=True)

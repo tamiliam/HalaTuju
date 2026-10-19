@@ -9,6 +9,7 @@
  */
 import type { Dispatch, SetStateAction } from 'react'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
+import { hasPerm } from '@/lib/staffPermissions'
 
 import type { T, AdminRole } from './shared'
 
@@ -41,7 +42,7 @@ export function QcPanel({
             super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed).
             Self-QC guard: a `qc` who reviewed this case cannot QC it (hidden here; backend blocks it too). ── */}
       {app.status === 'interviewed' && canQc
-        && !((role?.role === 'qc' || role?.role === 'org_admin') && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
+        && !(hasPerm(role, 'qc') && !role?.is_super_admin && role?.role !== 'super' && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
         // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
         // Request #31: the server adds the birth-state fact to the SAME floor when the current IC

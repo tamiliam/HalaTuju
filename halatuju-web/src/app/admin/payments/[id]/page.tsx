@@ -68,7 +68,7 @@ export default function PaymentRunDetailPage() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = canAccess('/admin/payments', effectiveRole(role))
+  const allowed = canAccess('/admin/payments', effectiveRole(role), role?.permissions)
   // Finance reads and APPROVES (#39 S2); editing and cancelling follow the served `can_prepare`
   // (the backend refuses them with 403 regardless). Finance also has no B40 route, so applicant
   // links must not render for it — a preset-bound read until Sprint 3 converts the B40 scope.

@@ -7,12 +7,14 @@
  * the server's, in the same order. Also pinned from the server: every preset and the lead tier name
  * only catalogue keys, so a key renamed on one side cannot leave a preset pointing at nothing.
  */
-import { STAFF_PERMISSIONS, hasPerm } from '@/lib/staffPermissions'
+import { STAFF_PERMISSIONS, TEAM_ROLES, admitsRow, hasPerm } from '@/lib/staffPermissions'
+import { NAV_ITEMS, ROLE_NAMES, canAccess } from '@/lib/navigation'
 import { pySeq, readApi } from '@/test/apiSource'
 
 const SRC = readApi('apps/courses/staff_permissions.py')
 const apiKeys = pySeq(SRC, 'CATALOGUE')
 const leadTier = pySeq(SRC, 'LEAD_TIER')
+const teamRoles = pySeq(SRC, 'TEAM_ROLES')
 
 /** The `PRESETS = { 'role': (...), ... }` dict, as role -> keys. */
 const presets = (() => {
@@ -66,5 +68,53 @@ describe('hasPerm reads only what the server served', () => {
     expect(hasPerm({ permissions: null }, 'review')).toBe(false)
     expect(hasPerm(null, 'review')).toBe(false)
     expect(hasPerm(undefined, 'review')).toBe(false)
+  })
+})
+
+describe('TEAM_ROLES vs staff_permissions.TEAM_ROLES (#39 S3)', () => {
+  test('the same roles, both directions, and exactly the preset roles', () => {
+    expect([...TEAM_ROLES].sort()).toEqual([...teamRoles].sort())
+    expect([...TEAM_ROLES].sort()).toEqual(Object.keys(presets).sort())
+  })
+})
+
+describe('admitsRow — the registry rows that read permissions (#39 S3)', () => {
+  const permRows = NAV_ITEMS.filter((i) => i.perms)
+
+  test('exactly Applications, Payments and Spending carry perms', () => {
+    expect(permRows.map((i) => i.id).sort()).toEqual(['applications', 'payments', 'spending'])
+  })
+
+  /** THE PRESET GUARANTEE ON THE WEB: for every team role, a row's `perms` asked of the role's
+   *  preset (read from the api) gives the row's `roles` answer. The org admin, super and partner
+   *  are answered by `roles` whatever they hold. */
+  test('every preset is admitted exactly as its role was', () => {
+    for (const row of permRows) {
+      for (const role of ROLE_NAMES) {
+        const held = presets[role] ?? (role === 'org_admin' ? leadTier : role === 'super' ? apiKeys : [])
+        expect({ row: row.id, role, admitted: admitsRow(row, role, held) })
+          .toEqual({ row: row.id, role, admitted: row.roles.includes(role) })
+      }
+    }
+  })
+
+  test('a custom set moves a team member, and only by the served keys', () => {
+    // Rohini: Reviewer + Spending opens Spending, keeps Applications, gets no Payments.
+    const rohini = ['review', 'spending']
+    expect(canAccess('/admin/spending', 'reviewer', rohini)).toBe(true)
+    expect(canAccess('/admin/scholarship', 'reviewer', rohini)).toBe(true)
+    expect(canAccess('/admin/payments', 'reviewer', rohini)).toBe(false)
+    // Admin minus Spending; Finance + Review; Finance without Approve.
+    expect(canAccess('/admin/spending', 'admin', ['see_all', 'payments_prepare'])).toBe(false)
+    expect(canAccess('/admin/scholarship', 'finance', ['payments_approve', 'review'])).toBe(true)
+    expect(canAccess('/admin/payments', 'finance', [])).toBe(false)
+  })
+
+  test('the lead tier and the platform are answered by role, and no payload means role', () => {
+    expect(canAccess('/admin/payments', 'org_admin', leadTier)).toBe(true)   // no payments key: lead tier
+    expect(canAccess('/admin/spending', 'partner', apiKeys)).toBe(false)
+    expect(canAccess('/admin/spending', 'reviewer')).toBe(false)
+    expect(canAccess('/admin/spending', 'reviewer', null)).toBe(false)
+    expect(canAccess('/admin/spending', 'admin', undefined)).toBe(true)
   })
 })

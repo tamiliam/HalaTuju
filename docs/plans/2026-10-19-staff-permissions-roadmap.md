@@ -1,7 +1,7 @@
 # Staff permissions and Finance approval of payment runs: roadmap (org request #39)
 
-**Status (2026-10-19):** Sprint 1 LIVE. Sprint 2 BUILT on `perm-s2` (no migration), not pushed or
-deployed; adversarial review pending. Sprints 3-4 not started. **Original status:** PLAN, written 2026-10-19 on
+**Status (2026-10-19):** Sprints 1 and 2 LIVE. Sprint 3 BUILT on `perm-s3` (no migration), not pushed
+or deployed; adversarial review pending. Sprint 4 not started. **Original status:** PLAN, written 2026-10-19 on
 `perm-plan` (base `d15c0f14`). Request #39
 was quoted at **34 h (30 permissions + 4 payments, indicative)** and is waiting for the organisation
 to accept it. This plan **re-estimates it at 36 h** (see "Hours"), offers a way to hold it at 34 h, and
@@ -508,6 +508,31 @@ perms), `navigation.test.ts` snapshot, 3 web tests; docs.
 | Adversarial review + fixes | 1.25 |
 | Docs (role-matrix rows A–D, decisions, ARCHITECTURE_MAP) | 1.0 |
 | **Total** | **10.0** |
+
+**As built (2026-10-19, branch `perm-s3`, base `09b8766e`):** a moves-only commit first (`navigation.ts`
+675 → 621: `searchNav` / `chordTarget` / `CHORD_PREFIX` to `navigationJump.ts`, re-exported), then the
+change. No migration, no new strings. Notes for the reviewer and S4:
+- **Owner ruling (2026-10-19, "yes"):** org admins stay OFF the Reviewers tab. Built: the tab lists TEAM
+  members holding `review` or `qc` (`staff_permissions.team_holding`), never the lead tier; the golden
+  row's divergence is gone and its rule says so.
+- **R1 as built:** `services.REVIEW_ROLES` is gone. `is_review_target` = `review` OR the role is in
+  `R1_SUPER_TARGET_ROLES` (admin, qc, org_admin) — the super's wider choice, keyed on ROLE because the
+  service is caller-agnostic. `may_assign_to(caller, target)` is the endpoint's rule (org_admin → own
+  org `review` holders, never a super) and is SERVED as `assignable` on the list.
+- **The assignable LIST is the old five roles PLUS `review` holders** (not "review holders only"), so a
+  reviewer whose set loses `review` while holding a case still renders (bug #66); `assignable` narrows.
+- **Web fallback rule:** a registry row's `perms` answer only a TEAM member whose payload carries
+  `permissions`; everyone else (org admin, super, partner, an old payload) is answered by `roles`. The
+  preset-parity sweep (`staffPermissionsDrift.test.ts`) asks every `perms` row × role with the api's
+  presets. The cockpit switches have no fallback: the cockpit test harness now serves each role's
+  preset list, read from the api (`src/test/staffPresets.ts`).
+- **Deliberately left on role** (reason in decisions.md): `_require_reviewer`, the Overview sections,
+  `reviewer_profile_complete`, `canFilterByAssignee`, the reviewer-detail `mayPause` (it mirrors the
+  group-G pause / gift endpoints), the picker's role suffix, wallet credits, H/I.
+- **For S4's editor:** removing `review` from someone holding in-play cases must stay refused (their
+  cases would leave `_b40_scope` 'assigned'); `team_holding` and `may_assign_to` are the readers to
+  re-check; a `qc` without `see_all` is already read fail-closed.
+- **Bundle:** no i18n key added; median 228.640 → 228.813 kB (code only; 0.2 kB headroom left — S4 must pay for its editor, TD-360).
 
 ### Sprint 4 — the permission editor on People (medium) · 9.0 h · Stage 3b
 

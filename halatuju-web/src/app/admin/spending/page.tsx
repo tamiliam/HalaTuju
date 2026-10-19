@@ -79,7 +79,7 @@ type Tab = (typeof TABS)[number]['key']
 export default function SpendingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = canAccess('/admin/spending', effectiveRole(role))
+  const allowed = canAccess('/admin/spending', effectiveRole(role), role?.permissions)
   // ⚠ WHICH GIFT — from the breadcrumb, sent as an EXPLICIT value the server re-fences on the
   // caller's own organisation (TD-241). It is not an auth context and never becomes one; a
   // client that sent nothing would reach exactly the rows the organisation fence allows.

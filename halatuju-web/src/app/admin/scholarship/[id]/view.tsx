@@ -21,6 +21,7 @@ import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
+import { hasPerm } from '@/lib/staffPermissions'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import RecordState from '@/components/admin/RecordState'
@@ -144,18 +145,18 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // Sources / witness-org management: super + admin + org_admin (owner 2026-07-19). Distinct from
   // canAssign (reviewer assignment stays super/org_admin) — the Admin role manages sources/witness.
   const canManageSources = isSuper || role?.role === 'org_admin' || role?.role === 'admin'
-  // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — super, a `qc`, or
-  // an `org_admin` (the organisation superadmin). The backend recorder guard stops anyone QC-ing
+  // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — the `qc` permission
+  // (#39 S3: super, a `qc`, an `org_admin`). The backend recorder guard stops anyone QC-ing
   // a verdict they themselves recorded (two-person control).
-  const canQc = isSuper || role?.role === 'qc' || role?.role === 'org_admin'
+  const canQc = hasPerm(role, 'qc')
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
   // ⚠ The crumb names THIS case's gift, from the payload — `app.programme` (the gift), never
   // `chosen_programme` (the course). A fresh tab opened from a run pins it too (2026-09-28).
   usePinProgramme(app?.programme)
   // Execute (verify/verdict/interview/etc.): super acts on any application; org_admin + qc (the
-  // org-wide roles) act on any OWN-ORG application (the detail GET already 404s cross-org);
-  // admin/reviewer act ONLY on applications assigned to them (mirrors backend _can_review_app).
-  const canWrite = isSuper || role?.role === 'org_admin' || role?.role === 'qc'
+  // `qc` holders, #39 S3) act on any OWN-ORG application (the detail GET already 404s cross-org);
+  // everyone else acts ONLY on applications assigned to them (mirrors backend _can_review_app).
+  const canWrite = hasPerm(role, 'qc')
     || (app?.assigned_to_id != null && app.assigned_to_id === (role?.admin_id ?? null))
   const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)

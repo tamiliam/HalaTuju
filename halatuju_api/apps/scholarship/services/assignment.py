@@ -20,16 +20,44 @@ logger = logging.getLogger('apps.scholarship.services')
 
 
 
-# The roles that may be assigned to review an application (and therefore act on it — record a
-# verdict, propose interview times, etc.). SINGLE SOURCE OF TRUTH: scheduling._can_review imports
-# this so the interview surface can never drift out of step with the rest of the review surface
-# again (a stale copy here silently blocked a 'qc' reviewer from proposing interview times —
-# 2026-07-10). A 'partner' (org rep) is never a review target — and neither is a 'finance' admin
-# (Sprint 14, 2026-07-23): finance has NO B40 scope at all, so assigning it a case would hand a
-# write on an application it cannot even read. Its absence here is a decision, not an oversight;
-# tests in test_org_gates.py assert finance is refused review and never appears in the
-# assignable-admins dropdown.
-REVIEW_ROLES = ('reviewer', 'super', 'admin', 'qc', 'org_admin')
+# WHO MAY BE GIVEN A CASE (and therefore act on it — record a verdict, propose interview times,
+# etc.). Request #39 Sprint 3: whoever holds the `review` permission (a super holds every key), PLUS
+# the R1 override below. ONE predicate, `is_review_target`: scheduling._can_review reads it too, so
+# the interview surface can never drift out of step with the rest of the review surface again (a
+# stale copy silently blocked a 'qc' reviewer from proposing interview times — 2026-07-10).
+#
+# ⚠ R1 (roadmap #39, lead ruling): before #39 a SUPER could assign any of reviewer / admin / qc /
+# org_admin, while an org_admin could assign only a reviewer. `review` reproduces the org_admin side
+# exactly; the super's wider choice is KEPT as this override (`views_admin/verdict.py` narrows an
+# org_admin to `review` holders through `may_assign_to`). Production 2026-10-19: no in-play case sat
+# with an admin / qc, one (awarded) with an org_admin. Its removal is the owner's question, not done.
+# A 'partner' is never a target; neither is the `finance` PRESET (it has no B40 scope, 2026-07-23) —
+# but a Finance person GIVEN `review` is one (owner, 2026-10-19: their assigned students only).
+R1_SUPER_TARGET_ROLES = ('admin', 'qc', 'org_admin')
+
+
+def is_review_target(admin):
+    """May ``admin`` hold a case at all: `review`, or a role the R1 super override keeps. No
+    active / pause check here — `_can_review` and `scheduling._can_review` add what each needs."""
+    return admin.has_perm('review') or getattr(admin, 'role', '') in R1_SUPER_TARGET_ROLES
+
+
+def may_assign_to(caller, target):
+    """Whether ``caller`` may hand a case to ``target`` — the assign endpoint's target rule, and the
+    `assignable` flag `AdminAssignableAdminsView` serves per row, so the picker and the endpoint
+    cannot disagree.
+
+      super      → any review target (the service then refuses a revoked or paused one);
+      org_admin  → an own-organisation team member who holds `review` — never a super, never
+                   another organisation's;
+      anyone else → nobody (assigning is a lead-tier power; the endpoint refuses them first).
+    """
+    if caller.is_super:
+        return is_review_target(target)
+    if caller.role != 'org_admin':
+        return False
+    return (not target.is_super and target.has_perm('review')
+            and target.owning_organisation_id == caller.owning_organisation_id)
 
 
 def _can_review(admin):
@@ -49,7 +77,7 @@ def _can_review(admin):
         return False
     if getattr(admin, 'paused_at', None) is not None:
         return False
-    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in REVIEW_ROLES
+    return is_review_target(admin)
 
 
 
@@ -75,9 +103,7 @@ def set_paused(admin, paused, *, now=None):
     if not getattr(admin, 'is_active', False):
         # A revoked account has no work coming either way; pausing it would imply it might.
         raise PauseError('not_active')
-    is_target = (bool(getattr(admin, 'is_super_admin', False))
-                 or getattr(admin, 'role', '') in REVIEW_ROLES)
-    if not is_target:
+    if not is_review_target(admin):
         raise PauseError('not_reviewable')
 
     want = bool(paused)

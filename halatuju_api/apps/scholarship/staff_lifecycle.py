@@ -8,7 +8,7 @@ could reach one would be a privilege path that skips the invite. Same-role and c
 are refused with the same code, because both are "not a switch this screen makes".
 
 ⚠ **A SWITCH MAY NOT STRAND WORK.** `finance` has no B40 scope at all (`_b40_scope` → 'none') and is
-not a review role (`services.REVIEW_ROLES`), so an admin with cases assigned to them would leave
+not a review target (`services.is_review_target`), so an admin with cases assigned to them would leave
 those cases with an owner who cannot open them. Refused while they hold any in-play case
 (`apply_gate.IN_PLAY_STATUSES` — the assigned reviewer still acts after an award, S6) and while a
 payment run they made or signed is still waiting (as finance they would be its APPROVER and could

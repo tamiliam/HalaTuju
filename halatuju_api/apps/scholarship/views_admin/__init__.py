@@ -134,7 +134,7 @@ from .sources import (
     AdminSourceNamesView, AdminSourcesView, HOUSE_ORG_CODE,
 )
 from .spending import (
-    _SPENDING_ROLES, _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,
+    _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,
 )
 from .spending_flags import AdminSpendingFlagView
 from .sponsors import (

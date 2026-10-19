@@ -1610,15 +1610,15 @@ export interface AssignOption {
  * evaluate must fall open, because the server is the authority and does not refuse on this at
  * all — this is an offer, not a fence.
  *
- * Who is offered at all mirrors the server's `bad_assignee` rule: a super may pick any review-
- * capable person, a non-super delegates only to their own organisation's reviewers. The org fence
+ * Who is offered at all is the server's `bad_assignee` rule, SERVED per row as `assignable` (#39
+ * S3: `may_assign_to`); a payload without it falls back to super = any, else `reviewer`. The org fence
  * and `is_active` are the LIST endpoint's job (`AdminAssignableAdminsView` filters both), so what
  * this function must get right is the ROLE narrowing — the list is deliberately wider.
  *
  * drift-test: halatuju-web/src/lib/__tests__/officerGateDrift.test.ts
  */
 export function assignOptions<T extends {
-  id: number; name: string; role: string; paused?: boolean
+  id: number; name: string; role: string; paused?: boolean; assignable?: boolean
   programme_id?: number | null; programme_name?: string
 }>(
   admins: T[],
@@ -1629,7 +1629,7 @@ export function assignOptions<T extends {
   },
 ): AssignOption[] {
   return admins
-    .filter((a) => a.id === currentAssigneeId || isSuper || a.role === 'reviewer')
+    .filter((a) => a.id === currentAssigneeId || (a.assignable ?? (isSuper || a.role === 'reviewer')))
     .map((a) => {
       const isCurrent = a.id === currentAssigneeId
       const coversOther = !!a.programme_id && !!applicationProgrammeId

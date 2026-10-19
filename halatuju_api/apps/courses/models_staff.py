@@ -186,7 +186,8 @@ class PartnerAdmin(models.Model):
 
     def has_perm(self, key):
         """Whether this person holds staff permission ``key``. A super passes every key; an
-        unknown key raises. Sprint 1 serves this; no gate reads it yet (the golden table in
+        unknown key raises. The payment gates read it since Sprint 2 and the student-file, QC,
+        assignment and Spending gates since Sprint 3 (the golden table in
         `apps/courses/tests/test_permission_presets.py` proves the presets reproduce today)."""
         return staff_permissions.holds(self, key)
 

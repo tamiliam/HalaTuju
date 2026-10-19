@@ -30,8 +30,18 @@ table) proves each preset reproduces this table, gate by gate. The one other S1 
 "already exists" answer (an address already on your team is named; any other account gets one neutral
 sentence). **Sprint 2 (built 2026-10-19) changed the Payments cells below:** the payment gates read
 permissions, Finance APPROVES runs, and the organisation admin stops countersigning (approving only
-under the per-run fallback). Wallet credits are unchanged. Sprint 4 restructures this file as
-catalogue + presets + lead tier.
+under the per-run fallback). Wallet credits are unchanged. **Sprint 3 (built 2026-10-19) changed NO
+cell:** the B40 Applications, file, QC, assignment and Spending gates (roadmap Appendix A, groups A-D)
+now read permissions — `see_all` (read every application), `review` (be assigned; read and work the
+assigned ones), `qc` (the QC gate and org-wide writes; needs `see_all`), `spending` (the Spending page)
+— and every preset gets exactly the cells below (the golden table). What a permission SET adds only
+matters once one is saved (Sprint 4, or a reviewed SQL update): e.g. a Finance person given Review
+reads ONLY the files of students assigned to them (owner, 2026-10-19); a Reviewer given Spending opens
+the Spending page. Two R1/R2 rulings hold: a super may still assign an admin / qc / org_admin
+(`services.R1_SUPER_TARGET_ROLES`), and the Overview sections, reviewer profile hold, graduation
+review, sponsors, sources, wallet credits and team screens stay on the ROLE (preset-bound). Org
+admins stay OFF the Reviewers tab although their lead tier holds `qc` (owner, 2026-10-19). Sprint 4
+restructures this file as catalogue + presets + lead tier.
 
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
@@ -130,7 +140,8 @@ gift when one was named; unknown / another tenant's / another gift's / non-integ
 byte-equality with the Payments footer is a claim about the UNFILTERED page only.
 
 **⚠ FINANCE IS DELIBERATELY WIDENED HERE, AND THIS POINTS THE OPPOSITE WAY TO THE SPENDING PAGE.**
-`/admin/spending` refuses `finance` (`_SPENDING_ROLES`) and continues to. On the Overview, finance
+`/admin/spending` refuses `finance` (since #39 S3: the finance preset does not hold `spending`) and
+continues to. On the Overview, finance
 sees the money strip (committed / paid / remaining / spent) and every money chart — released
 versus spent with the running gap, average spend per transaction per week, transactions per student per
 week, and spending by category. Owner ruling, 2026-09-15, recorded in `docs/decisions.md`
