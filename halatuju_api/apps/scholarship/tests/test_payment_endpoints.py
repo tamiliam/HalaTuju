@@ -15,7 +15,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import payments
 from apps.scholarship.models import (
-    Programme, ScholarshipApplication, ScholarshipCohort,
+    PaymentRun, Programme, ScholarshipApplication, ScholarshipCohort,
 )
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -247,7 +247,7 @@ class TestAdvanceWindowEndpoint(_Base):
 # ── Sprint 14: finance over the wire ───────────────────────────────────────────
 
 class _FinanceBase(_Base):
-    """_Base plus an ACTIVE finance admin in org A, so the three-step chain is armed."""
+    """_Base plus an ACTIVE finance admin in org A — since #39 Sprint 2 the run's APPROVER."""
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -308,37 +308,74 @@ class TestFinanceAccessControl(_FinanceBase):
 
 
 class TestFinanceSignEndpoint(_FinanceBase):
-    def test_detail_payload_carries_the_finance_fields(self):
+    """#39 Sprint 2 over the wire (owner, 2026-10-19, option A): Admin prepares, Finance APPROVES and
+    that completes the run; the organisation admin does not countersign while Finance can."""
+
+    def _detail(self, uid, run_id):
+        self._auth(uid)
+        return self.client.get(f'/api/v1/admin/scholarship/payment-runs/{run_id}/').json()
+
+    def test_detail_payload_carries_the_chain_fields(self):
         body = self._create_run('pe-mk').json()
         self.assertIsNone(body['finance_signed'])
-        self.assertTrue(body['finance_check_required'])
+        # No preset holds the check any more: the chain is two steps, under both key names.
+        self.assertFalse(body['finance_check_required'])
+        self.assertFalse(body['check_step_required'])
+        self.assertEqual((body['your_step'], body['can_prepare']), ('sign', True))
+        self.assertFalse(body['approver_fallback'])          # Finance holds the approval
 
         self._sign('pe-mk', 'Maker One', body['id'])
-        signed = self._sign('pe-fi', 'Fin One', body['id']).json()
-        self.assertEqual(signed['status'], 'finance_checked')
-        self.assertEqual(signed['finance_signed']['name'], 'Fin One')
-        self.assertEqual(signed['finance_signed']['email'], 'fin@x.com')
-        self.assertIsNotNone(signed['finance_signed']['at'])
+        fin = self._detail('pe-fi', body['id'])
+        self.assertEqual((fin['your_step'], fin['can_prepare']), ('approve', False))
+        org_admin = self._detail('pe-ap', body['id'])
+        self.assertEqual((org_admin['your_step'], org_admin['can_prepare']), (None, True))
 
-    def test_finance_check_required_is_false_when_dormant(self):
-        PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=False)
-        body = self._create_run('pe-mk').json()
-        self.assertFalse(body['finance_check_required'])
+        done = self._sign('pe-fi', 'Fin One', body['id']).json()
+        self.assertEqual(done['status'], 'completed')
+        self.assertEqual(done['org_admin_signed']['email'], 'fin@x.com')   # the APPROVER slot
+        self.assertIsNone(done['finance_signed'])
+        self.assertIsNone(done['your_step'])
+        self.assertFalse(done['approver_fallback'])          # only asked of a run in flight
 
-    def test_org_admin_countersign_surfaces_the_error_code(self):
+    def test_the_org_admin_cannot_approve_while_finance_can(self):
         run_id = self._create_run('pe-mk').json()['id']
         self._sign('pe-mk', 'Maker One', run_id)
         resp = self._sign('pe-ap', 'Approver One', run_id)
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.json()['code'], 'finance_check_required')
+        self.assertEqual((resp.status_code, resp.json()['code']), (400, 'wrong_role'))
+        self.assertEqual(PaymentRun.objects.get(pk=run_id).status, 'admin_signed')
 
-    def test_full_three_step_chain_over_the_wire(self):
+    def test_without_finance_the_org_admin_approves_under_the_fallback(self):
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=False)
         run_id = self._create_run('pe-mk').json()['id']
-        self.assertEqual(self._sign('pe-mk', 'Maker One', run_id).json()['status'], 'admin_signed')
-        self.assertEqual(self._sign('pe-fi', 'Fin One', run_id).json()['status'], 'finance_checked')
+        self._sign('pe-mk', 'Maker One', run_id)
+        body = self._detail('pe-ap', run_id)
+        self.assertEqual((body['your_step'], body['approver_fallback']), ('approve', True))
         with mock.patch('apps.scholarship.sheets.write_payment_csv', return_value=''):
             done = self._sign('pe-ap', 'Approver One', run_id)
         self.assertEqual(done.json()['status'], 'completed')
+
+    def test_a_granted_check_arms_the_three_step_chain_and_surfaces_the_code(self):
+        PartnerAdmin.objects.filter(pk=self.qc.pk).update(role='admin', permissions=['payments_check'])
+        run_id = self._create_run('pe-mk').json()['id']
+        self._sign('pe-mk', 'Maker One', run_id)
+        self.assertTrue(self._detail('pe-fi', run_id)['check_step_required'])
+        resp = self._sign('pe-fi', 'Fin One', run_id)
+        self.assertEqual(resp.json()['code'], 'finance_check_required')
+        self.assertEqual(self._detail('pe-qc', run_id)['your_step'], 'check')
+        self.assertEqual(self._sign('pe-qc', 'QC', run_id).json()['status'], 'finance_checked')
+        with mock.patch('apps.scholarship.sheets.write_payment_csv', return_value=''):
+            done = self._sign('pe-fi', 'Fin One', run_id)
+        self.assertEqual(done.json()['status'], 'completed')
+
+    def test_the_list_serves_your_step_and_can_prepare(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self._sign('pe-mk', 'Maker One', run_id)
+        for uid, step, prepare in (('pe-fi', 'approve', False), ('pe-mk', None, True),
+                                   ('pe-ap', None, True)):
+            self._auth(uid)
+            body = self.client.get('/api/v1/admin/scholarship/payment-runs/').json()
+            row = next(r for r in body['runs'] if r['id'] == run_id)
+            self.assertEqual((row['your_step'], body['can_prepare']), (step, prepare), uid)
 
     def test_reviewer_still_refused_on_sign(self):
         run_id = self._create_run('pe-mk').json()['id']

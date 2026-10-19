@@ -53,7 +53,7 @@ export type ProbeKey = 'requests' | 'billing'
  * the render site, so a second badge meant a fourth place to remember. The shell now passes one
  * `Partial<Record<BadgeKey, number>>` and the row looks its own key up.
  */
-export type BadgeKey = 'pendingSponsors' | 'requestsWaiting'
+export type BadgeKey = 'pendingSponsors' | 'requestsWaiting' | 'paymentsWaiting'  // last: #39 S2
 /** 'unknown' = not yet loaded, 'dark' = the endpoint 404d (flag off), 'live' = it answered. */
 export type ProbeState = 'unknown' | 'live' | 'dark'
 
@@ -351,7 +351,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // ⚠ `needsProgramme` on BOTH (2026-09-28) — you enter a gift first. See that field's note.
       { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, needsProgramme: true },
+        gate: { mode: 'always' }, needsProgramme: true, badge: 'paymentsWaiting' },
       // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
       // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
       // the Payments allowlist, and this screen carries names beside purchases. This row and

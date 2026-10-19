@@ -1,7 +1,7 @@
 # Staff permissions and Finance approval of payment runs: roadmap (org request #39)
 
-**Status (2026-10-19):** Sprint 1 BUILT on `perm-plan`, not pushed or deployed (migration not applied);
-adversarial review pending. Sprints 2-4 not started. **Original status:** PLAN, written 2026-10-19 on
+**Status (2026-10-19):** Sprint 1 LIVE. Sprint 2 BUILT on `perm-s2` (no migration), not pushed or
+deployed; adversarial review pending. Sprints 3-4 not started. **Original status:** PLAN, written 2026-10-19 on
 `perm-plan` (base `d15c0f14`). Request #39
 was quoted at **34 h (30 permissions + 4 payments, indicative)** and is waiting for the organisation
 to accept it. This plan **re-estimates it at 36 h** (see "Hours"), offers a way to hold it at 34 h, and
@@ -403,6 +403,36 @@ new state):**
 | Guide/FAQ (3 chapters + FAQ), role-matrix, decision, cutover note, Sol tag | 1.25 |
 | Adversarial review + fixes | 1.25 |
 | **Total** | **8.0** |
+
+**As built (2026-10-19, branch `perm-s2`, base `378c7601`):** a moves-only commit first
+(`payments.py` 748 → 632: the chain to new `payments_chain.py`, re-exported), then the change. Notes for
+the reviewer and for S3/S4:
+- **Exactly the plan's chain**, in `payments_chain.py`: `next_step_for` (the one predicate behind `sign`
+  and `your_step`), `may_read` / `may_prepare` (the view gates), the per-run `approver_fallback`,
+  `finance_check_required` re-keyed to `payments_check` holders (+ `check_step_required`), and
+  `credit_check_required` (the old role rule) for wallet credits. Presets: `finance` = `payments_approve`;
+  `LEAD_TIER` minus `payments_approve`. No migration.
+- **Two hardenings beyond the plan (lead may overrule):** `sign()` re-reads the run under
+  `select_for_update` (two approvers could otherwise both complete — and pay — a run; a test proves a
+  stale copy now gets `bad_state`); and the service refuses a signer from another organisation
+  (`wrong_role`), not only the view's 404.
+- **Golden table:** the 8 `s2` rows now hold the new truth with the old answer kept in `was`
+  (`sign_the_check` is armed by a custom holder, since no preset holds the check);
+  `other_active_finance` and `switch_refused_for_unfinished_run` keep their answers (their rules now
+  read `payments_approve`); `payments_read`'s RULE gained "or the lead tier" — its answers did not move.
+- **Role-change consequences** keep the codes `finance_check_on` / `_off` (keyed on the finance ROLE,
+  which is what both the approver preset and the credit check turn on); only the words changed. S4's
+  `approver_fallback_on` / `_off` consequences for custom sets are still S4's.
+- **⚠ Deferred to S3 (not a contradiction, a mechanism):** the Payments MENU row's `roles` → "any
+  `payments_*`" predicate. `navigation.ts` sits at its line limit and S3 builds the perms predicate for
+  Applications / Spending / Payments together; for every preset the row's visibility is identical
+  either way. S2 added only the row's `badge`.
+- **⚠ For S4's editor (door list):** the CHECK is armed per ORGANISATION, as planned. A person given
+  Prepare + Check who prepares a run while being the only checker would hold it at `admin_signed` until
+  someone else holds Check (or the run is edited / cancelled). No preset can produce this; the editor
+  should warn, or the owner may ask for a per-run check fallback.
+- **Bundle:** en.json gained 3 keys and lost 7 proven-dead ones; median 228.513 → 228.641 kB (0.4 kB
+  headroom left).
 
 ### Sprint 3 — the gates read permissions (medium-high: who sees files) · 10.0 h · Stage 3a
 

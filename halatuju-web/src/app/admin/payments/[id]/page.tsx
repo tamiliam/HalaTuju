@@ -1,11 +1,11 @@
 'use client'
 // Payment run detail (P2) — eligibility table (editable in draft), greyed skipped list, the
-// maker→[finance]→approver sign-off, and the completed state (Drive link + CSV download).
+// prepare→[check]→approve sign-off, and the completed state (Drive link + CSV download).
 // Access: admin / org_admin / finance / super. Entered from the Payments landing.
 //
-// The middle FINANCE CHECK is conditional. Every branch below reads it from the PAYLOAD
-// (`finance_check_required`, `finance_signed`, `status`) and never re-derives it — the
-// activation rule lives once, in payments.finance_check_required on the server.
+// Since #39 Sprint 2 Finance APPROVES runs. Every branch below reads the PAYLOAD and never
+// re-derives a rule: whether the check is armed, `your_step` (a name box is drawn ONLY for the
+// step the server says this viewer may take now), the approver fallback and `can_prepare`.
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -69,9 +69,9 @@ export default function PaymentRunDetailPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/payments', effectiveRole(role))
-  // Finance reads and signs the check; it never creates, edits or cancels a run (the backend
-  // refuses those with 403 regardless — hiding the controls just keeps dead affordances off
-  // the screen). It also has no B40 route, so applicant links must not render for it.
+  // Finance reads and APPROVES (#39 S2); editing and cancelling follow the served `can_prepare`
+  // (the backend refuses them with 403 regardless). Finance also has no B40 route, so applicant
+  // links must not render for it — a preset-bound read until Sprint 3 converts the B40 scope.
   const isFinanceViewer = effectiveRole(role) === 'finance'
 
   const [run, setRun] = useState<PaymentRunDetail | null>(null)
@@ -105,7 +105,7 @@ export default function PaymentRunDetailPage() {
   const isCompleted = run.status === 'completed'
   // One pure decision for the whole conditional chain (lib/paymentStatus.signOffView), so the
   // in-progress block and the completed block can't disagree and the rules are unit-tested.
-  const view = signOffView(run, role?.role)
+  const view = signOffView(run)
   const { needsFinance, awaitingFinance } = view
   const isDraft = view.canEditItems
 
@@ -404,6 +404,8 @@ export default function PaymentRunDetailPage() {
               <p className="text-sm font-semibold text-ground-900">1 · {t('admin.payments.makerStep')}</p>
               {run.admin_signed ? (
                 <p className="mt-1 text-sm text-positive-700">✓ {run.admin_signed.name}</p>
+              ) : view.yourStep !== 'sign' ? (
+                <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
               ) : (<>
                 <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
@@ -421,6 +423,8 @@ export default function PaymentRunDetailPage() {
                   <p className="mt-1 text-sm text-positive-700">✓ {run.finance_signed.name}</p>
                 ) : run.status === 'draft' ? (
                   <p className="mt-1 text-xs text-ground-400">{t('admin.payments.afterMaker')}</p>
+                ) : view.yourStep !== 'check' ? (
+                  <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
                 ) : (<>
                   <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                   <div className="mt-2 flex gap-2">
@@ -438,7 +442,11 @@ export default function PaymentRunDetailPage() {
                 // The server refuses a countersignature here (finance_check_required), so say
                 // so plainly rather than offering a control that can only fail.
                 <p className="mt-1 text-xs text-caution-700">{t('admin.payments.awaitingFinanceCheck')}</p>
+              ) : view.yourStep !== 'approve' ? (
+                <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
               ) : (<>
+                {/* Nobody else may approve this run, so the organisation admin does (#39 S2). */}
+                {view.fallback && <p className="mt-1 text-xs text-caution-700" data-testid="approver-fallback">{t('admin.payments.approverFallback')}</p>}
                 <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
                   <input value={approverName} onChange={(e) => setApproverName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />

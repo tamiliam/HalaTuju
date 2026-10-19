@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { getPendingSponsorCount, getAdminScopes, type AdminScopes } from '@/lib/admin-api'
+import { getPendingSponsorCount, getAdminScopes, getPaymentRuns, type AdminScopes } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
@@ -129,6 +129,7 @@ function Chrome(
   const router = useRouter()
 
   const [pendingSponsors, setPendingSponsors] = useState(0)
+  const [paymentsWaiting, setPaymentsWaiting] = useState(0)
   const [mobileNav, setMobileNav] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState('')
@@ -258,6 +259,17 @@ function Chrome(
       .catch(() => { /* a badge is a hint; never block the shell on it */ })
   }, [token, wantsSponsorCount, pathname])
 
+  // #39 S2: the runs whose next step is THIS person's (served `your_step`, the predicate the sign
+  // endpoint asks). Same manners as the sponsor badge: only while the row is on the sidebar, and a
+  // refusal is swallowed. A badge is a number, so it costs no message string.
+  const wantsPaymentsCount = groups.some((g) => g.items.some((i) => i.badge === 'paymentsWaiting'))
+  useEffect(() => {
+    if (!token || !wantsPaymentsCount) { setPaymentsWaiting(0); return }
+    getPaymentRuns(undefined, { token })
+      .then((d) => setPaymentsWaiting(d.runs.filter((run) => run.your_step).length))
+      .catch(() => { /* a badge is a hint; never block the shell on it */ })
+  }, [token, wantsPaymentsCount, pathname])
+
   // What the bell shows: counts the console already fetches, gathered in one place. Nothing
   // here is a new endpoint, and nothing here has read state — see the note in the menu.
   const attention: Attention[] = useMemo(() => {
@@ -283,8 +295,8 @@ function Chrome(
   }, [pendingSponsors, requestsWaiting, t])
 
   const badgeCounts = useMemo(
-    () => ({ pendingSponsors, requestsWaiting }),
-    [pendingSponsors, requestsWaiting],
+    () => ({ pendingSponsors, requestsWaiting, paymentsWaiting }),
+    [pendingSponsors, requestsWaiting, paymentsWaiting],
   )
 
   // Only a genuine super sees "Super admin"; an org member shows their organisation; everyone

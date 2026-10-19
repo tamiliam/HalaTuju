@@ -15,10 +15,10 @@ completed`` (+ ``cancelled``). Every signature collected on a run must be a DIFF
 slots); the typed name must match the signer's ``PartnerAdmin.name`` (trimmed, case-insensitive),
 mirroring the bursary agreement.
 
-The middle FINANCE CHECK (Sprint 14, 2026-07-23) is **conditional and dormant by default**:
-required iff the organisation has ≥1 active ``finance`` PartnerAdmin, per
-``finance_check_required`` below. With none — which is every organisation on prod the day this
-ships — ``sign`` follows exactly the original two-step path.
+The chain itself lives in ``payments_chain.py`` (request #39 Sprint 2, 2026-10-19: it reads
+PERMISSIONS — Admin prepares, Finance APPROVES, the organisation admin approves only when nobody
+else can, and the optional middle CHECK is armed while somebody holds ``payments_check``).
+Its names are re-exported at the bottom of this file.
 
 
 Deliberately WIDER than ``disbursement.release_tranche`` (D3): ``complete`` writes ``released``
@@ -628,5 +628,7 @@ def vircle_id_error(value):
 # every caller keeps writing `payments.sign` / `payments.cancel` / `payments.finance_check_required`.
 # A BOTTOM import on purpose: payments_chain imports this module lazily, inside its functions.
 from .payments_chain import (
-    _collected_signer_emails, cancel, finance_check_required, sign,
+    STEP_APPROVE, STEP_CHECK, STEP_SIGN, _collected_signer_emails, approver_fallback, cancel,
+    check_step_required, credit_check_required, eligible_approvers, eligible_checkers,
+    fallback_approvers, finance_check_required, may_prepare, may_read, next_step_for, sign,
 )

@@ -1,0 +1,62 @@
+# Finance approves payment runs (request #39, Sprint 2) — cutover note
+
+**Migrations: NONE.** The three signature triples on `payment_runs` are reused (maker →
+`admin_signed_*`, check → `finance_signed_*`, approver → `org_admin_signed_*`). No column, no
+ledger row, no backfill. The change is code only: the presets in `apps/courses/staff_permissions.py`
+(`finance` now holds `payments_approve`; the organisation admin's lead tier no longer does) and the
+chain in `apps/scholarship/payments_chain.py`.
+
+**Status:** written 2026-10-19 by the sprint; the lead runs the query below READ-ONLY before the
+deploy and tells the owner if it returns anything (roadmap question 5: deploy on a day it returns
+none).
+
+## Before the deploy — the read-only check (lead)
+
+Run on production (Supabase `pbrrlyoyyiftckqvzvvo`), read-only. Expected on 2026-10-19 (measured by the
+lead): **no run mid-chain**; BrightPath (organisation 11) has 1 active `finance`, 2 `org_admin`,
+2 `admin`.
+
+```sql
+-- 1. Runs still on their way (anything short of completed / cancelled), with who has signed.
+--    Expected: 0 rows. If any, see "What each in-flight run does" — nothing strands, but tell the owner.
+SELECT r.id, r.reference, r.organisation_id, r.status,
+       r.admin_signed_email, r.finance_signed_email, r.org_admin_signed_email, r.created_by
+FROM payment_runs r
+WHERE r.status IN ('draft', 'admin_signed', 'finance_checked')
+ORDER BY r.organisation_id, r.id;
+
+-- 2. Who will approve, per organisation, the day this ships: active finance people (the new
+--    approvers) and active organisation admins (the fallback). A NULL `permissions` is the preset.
+--    Expected for BrightPath (11): finance 1, org_admin 2. Any row with a NON-NULL permissions list
+--    is a custom set (none exist until Sprint 4) — tell the owner before deploying.
+SELECT owning_organisation_id, role, count(*) AS active,
+       count(*) FILTER (WHERE permissions IS NOT NULL) AS custom_sets
+FROM partner_admins
+WHERE is_active AND NOT is_super_admin AND role IN ('finance', 'org_admin', 'admin')
+GROUP BY owning_organisation_id, role
+ORDER BY owning_organisation_id, role;
+
+-- 3. Wallet credits mid-chain (they keep TODAY's chain; listed only so nobody is surprised).
+SELECT d.id, d.status, d.programme_id, d.recorded_by_email, d.finance_checked_by_email
+FROM sponsor_donations d
+WHERE d.status IN ('draft', 'admin_signed', 'finance_checked')
+ORDER BY d.id;
+```
+
+## What each in-flight run does (no data change; tests in `test_finance_approves.py`)
+
+| Run status when the change lands | What happens |
+|---|---|
+| `draft` | Unchanged. The maker signs and the "ready" email goes to Finance ("awaits your approval"). |
+| `admin_signed`, organisation has no Finance person | Nobody holds `payments_approve`, so the org admin approves under the fallback, exactly as before. |
+| `admin_signed`, BrightPath with a Finance person (was waiting for Finance's CHECK) | Finance now APPROVES directly and the run completes on that signature; Suresh's countersignature is skipped — the change the owner asked for. |
+| `finance_checked` (Finance already checked it) | Distinctness bars Finance from approving too; nobody else is eligible, so the fallback lets the org admin approve, as today. Nothing strands. |
+
+## After the deploy — what to look at
+
+- The Payments page shows Finance a **Waiting for you** block and a count on the Payments menu row
+  when a run is waiting for them; the org admin sees no approve box on a run Finance can approve.
+- Wallet credits: Finance still CHECKS, the org admin still COUNTERSIGNS (unchanged; question 6).
+- Rollback: redeploy the previous image. No data was written by the change, so nothing to undo; a
+  run completed under the new chain carries Finance's email in `org_admin_signed_email`, which the
+  old image reads as "the approver" and renders correctly.

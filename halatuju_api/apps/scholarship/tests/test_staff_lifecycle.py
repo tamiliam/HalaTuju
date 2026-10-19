@@ -16,6 +16,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
+from apps.courses import staff_permissions as sp
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import invitations, payments
 from apps.scholarship.models import Invitation, PaymentRun
@@ -57,7 +58,7 @@ class TestChangeRole(TestCase):
 
     def test_admin_becomes_finance_and_the_finance_check_switches_on(self):
         target = make_admin('admin', owning_org=self.org)
-        self.assertFalse(payments.finance_check_required(self.org))
+        self.assertFalse(payments.credit_check_required(self.org))
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
             r = _role(self.org_admin, target, 'finance')
         self.assertEqual(r.status_code, 200, r.content[:300])
@@ -66,7 +67,10 @@ class TestChangeRole(TestCase):
         target.refresh_from_db()
         self.assertEqual(target.role, 'finance')
         self.assertFalse(target.is_super_admin)
-        self.assertTrue(payments.finance_check_required(self.org))
+        self.assertTrue(payments.credit_check_required(self.org))
+        # #39 S2: the same switch makes them the payment-run APPROVER (the org admin's fallback
+        # goes off) and arms the wallet-credit check (finance-role rule) — both named by one code.
+        self.assertEqual([a.pk for a in sp.holders(self.org, 'payments_approve')], [target.pk])
         line = ' '.join(logs.output)
         self.assertIn('AUDIT staff_role_changed', line)
         self.assertIn(f'by={self.org_admin.email} target={target.pk} from=admin to=finance', line)
@@ -83,13 +87,13 @@ class TestChangeRole(TestCase):
         target = make_admin('finance', owning_org=self.org)
         r = _role(self.org_admin, target, 'admin')
         self.assertEqual(r.json()['consequence'], 'finance_check_off')
-        self.assertFalse(payments.finance_check_required(self.org))
+        self.assertFalse(payments.credit_check_required(self.org))
 
     def test_with_another_finance_admin_there_is_no_consequence(self):
         make_admin('finance', owning_org=self.org)
         target = make_admin('finance', owning_org=self.org)
         self.assertIsNone(_role(self.org_admin, target, 'admin').json()['consequence'])
-        self.assertTrue(payments.finance_check_required(self.org))
+        self.assertTrue(payments.credit_check_required(self.org))
 
     def test_reviewer_and_qc_switch_both_ways_and_keep_their_cases(self):
         target = make_admin('reviewer', owning_org=self.org)

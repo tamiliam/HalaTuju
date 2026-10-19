@@ -14231,6 +14231,60 @@ golden table would then prove nothing).
 **Revisit if:** the owner removes the R1 super override, rules on the Reviewers-tab finding, or makes
 "Manage team" switchable (+2 h, needs "you cannot grant what you do not hold").
 
+## 2026-10-19 — Request #39 Sprint 2: Finance APPROVES payment runs; the org admin approves only under a per-run fallback; credits keep today's chain
+
+**Supersedes** the role-matrix Money bullet "the `finance` role holds the payment-run CHECK, not the
+decision" (2026-07-23) and the 2026-07-26 "one chain" decision **for payment runs only**. Owner ruling,
+2026-10-19 (option A): *"Finance role currently doesn't have clear action items. I would like the role
+to be able to approve payment — the work that Suresh does today."* Admin PREPARES → Finance APPROVES
+(that signature completes the run and releases Vircle → students); Suresh (org_admin) no longer
+countersigns; "Suresh still controls the issuing of payments to Vircle" (manual, outside HalaTuju, not
+modelled); maker ≠ approver; a third signer stays possible later by permission.
+
+**Decision:**
+1. **The payment gates read permissions** (`apps/scholarship/payments_chain.py`, moved out of
+   `payments.py` in a moves-only commit): read = any `payments_*` key or the lead tier; create / edit /
+   cancel = `payments_prepare` or the lead tier; signing = `next_step_for(run, admin)`, ONE pure
+   predicate that `sign()` and the served `your_step` (list, detail, "Waiting for you", the menu badge)
+   all ask. Presets: `finance` = `payments_approve` (was `payments_check`); the lead tier loses
+   `payments_approve`; no preset holds `payments_check`.
+2. **The per-run approver fallback.** Approvers = active `payments_approve` holders of the run's
+   organisation who have not signed it; if none, the organisation admin approves. Live, never stored.
+   Served as `approver_fallback`.
+3. **The check stays live and computed** (2026-07-23 kept): `finance_check_required(org)` = an active
+   member holds `payments_check` (supers never count). Dormant everywhere on deploy. The payload keeps
+   `finance_check_required` one release and adds `check_step_required`.
+4. **Wallet credits keep today's chain** (question 6): the old predicate is now
+   `payments.credit_check_required` (an active `finance` ROLE), read by `sign_admin_credit` and the
+   sponsor detail. Credits are role-gated and byte-identical (tests).
+5. **Signature triples reused, no migration:** the approver writes `org_admin_signed_*` (kept misnomer);
+   `complete()` records the approver's email as `actioned_by`; the Vircle email says "prepared by … and
+   approved by …" and CCs the approver. The "ready" email: checkers when armed, else approvers, else
+   the org admins under the fallback.
+6. **Two hardenings found while building (lead may overrule):** `sign()` re-reads the run's status and
+   signatures under `select_for_update` (two approvers could otherwise both complete — and pay — one
+   run), and refuses a signer from another organisation (`wrong_role`) in the service as well as the
+   view's 404 fence.
+7. **Refusal codes kept** (`wrong_role`, `same_signer`, `finance_check_required`) so the screen learns
+   no new vocabulary; an org admin trying to approve while Finance can is `wrong_role`.
+8. **Role-change consequence codes kept** (`finance_check_on` / `_off`, keyed on the finance ROLE): the
+   words now say "approves runs; credits gain the check" / "the org admin approves runs again; credits
+   lose the check".
+
+**Alternatives considered:** keeping Finance as checker and adding approval as a fourth step (more
+signatures, not what was asked); org-level fallback ("org has no Finance person") instead of per-run
+(strands the sole-approver-who-prepared and the already-checked run); re-keying the shared predicate
+for credits too (silently removes Finance's credit check — the plan's warning); renaming the
+`org_admin_signed_*` columns (a cutover on a live money table, no behaviour gained).
+
+**Trade-offs:** the check is armed per ORGANISATION, not per run: a person given both Prepare and
+Check who prepares a run and is the only checker would strand it at `admin_signed` until someone else
+holds Check or the run is edited/cancelled (no preset can produce this; it is a Sprint 4 editor door).
+The org admin keeps create/edit/cancel and the fallback, so they still see Payments in full.
+
+**Revisit if:** the owner wants credits to follow (≈3 h), wants a per-run check fallback, or removes
+the org admin's fallback once every tenant has a Finance person.
+
 ## 2026-10-19 — Sprint D: the bursary writes nothing on the profile; the chip is the course selector's
 
 **Decision (sources and referral partners Sprint D, the arc's clean-up; the owner's model of

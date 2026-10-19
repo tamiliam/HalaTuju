@@ -1451,7 +1451,6 @@
       "requiredPill": "Required",
       "optionalPill": "Optional",
       "requiredNote": "We need these documents to process your application.",
-      "optionalNote": "These help us understand your situation better. Add what you have.",
       "pill": {
         "compulsory": "Compulsory",
         "important": "Important",
@@ -3167,7 +3166,6 @@
     "orgPage": {
       "nav": "Programmes",
       "sub": "Your organisation — its people, its sponsors and its money.",
-      "staffSub": "Who can act inside this organisation, and what each of them may do.",
       "invitesPending": "Awaiting reply",
       "awaitingVetting": "awaiting vetting",
       "needsAttention": "Needs your attention"
@@ -5563,8 +5561,6 @@
       "hideCancelled": "Hide cancelled runs",
       "noOrg": "Your account is not tied to an organisation, so it cannot create a payment run.",
       "otherOrgGift": "This gift belongs to another organisation, so you cannot start a payment run for it here.",
-      "studentsLabel": "students",
-      "totalLabel": "Total",
       "studentsHeading": "Students",
       "totalAmountHeading": "Total amount",
       "creditApplied": "RM{amount} credit applied",
@@ -5577,21 +5573,24 @@
       "totalToPay": "Total to pay in this run",
       "skippedTitle": "Skipped this run",
       "signOff": "Sign-off",
-      "makerStep": "Admin signature (maker)",
-      "approverStep": "Organisation admin countersignature (approver)",
+      "makerStep": "Prepared",
+      "approverStep": "Approved",
       "typedNameHint": "Type your full name exactly as it appears in your profile.",
       "fullName": "Full name",
       "sign": "Sign",
-      "countersign": "Countersign & send to Vircle",
-      "afterMaker": "Available after the admin has signed.",
+      "countersign": "Approve & send to Vircle",
+      "afterMaker": "Available once the run is prepared.",
+      "waitingForYou": "Waiting for you",
+      "awaitingStep": "Waiting for the next signer.",
+      "approverFallback": "Nobody else can approve this run, so the organisation admin does.",
       "signNote": "Every signer must be a different person. Editing the list after signing returns the run to draft and clears the signatures collected so far.",
       "declaration": "I confirm that the students listed above are those qualified to receive the bursary payment for {month}, and that this payment instruction will be sent to {email}.",
       "cancelRun": "Cancel this run",
       "completedOn": "Completed on {date}",
       "sentToVircle": "Sent to Vircle",
       "referenceCopy": "Reference copy only",
-      "authorisedBy": "Authorised by (maker)",
-      "approvedBy": "Approved by (approver)",
+      "authorisedBy": "Prepared by",
+      "approvedBy": "Approved by",
       "exportedForVircle": "Exported for Vircle batch processing",
       "openInDrive": "Open CSV in Drive",
       "downloadCsv": "Download CSV",
@@ -5612,10 +5611,10 @@
       },
       "status": {
         "draft": "Draft",
-        "admin_signed": "Admin signed",
+        "admin_signed": "Prepared",
         "completed": "Completed",
         "cancelled": "Cancelled",
-        "finance_checked": "Finance checked"
+        "finance_checked": "Checked"
       },
       "reason": {
         "no_vircle_id": "No eWallet ID",
@@ -5627,7 +5626,7 @@
       },
       "error": {
         "name_mismatch": "That name does not match your profile name.",
-        "same_signer": "The countersignature must be a different person.",
+        "same_signer": "Each signature must be a different person.",
         "wrong_role": "Your role cannot sign at this step.",
         "past_date": "That date has passed.",
         "amount_over_cap": "The amount cannot exceed the remaining award.",
@@ -5636,12 +5635,12 @@
         "not_editable": "This run can no longer be edited.",
         "bad_state": "That action isn't allowed in this run's current state.",
         "not_ready": "The CSV is available once the run is signed.",
-        "finance_check_required": "This run needs the finance check before it can be countersigned."
+        "finance_check_required": "This run needs its check before it can be approved."
       },
-      "financeStep": "Finance check",
+      "financeStep": "Checked",
       "financeSign": "Check",
-      "checkedBy": "Checked by (finance)",
-      "awaitingFinanceCheck": "Waiting for the finance check before you can countersign.",
+      "checkedBy": "Checked by",
+      "awaitingFinanceCheck": "Waiting for the check before the run can be approved.",
       "funding": {
         "title": "Funding summary",
         "subtitle": "What each student was awarded, what has been paid, and what remains.",
@@ -5663,8 +5662,6 @@
         }
       },
       "programme": "Which gift is this paid from?",
-      "programmeChoose": "Choose a gift…",
-      "programmeHint": "A run pays from one gift only. Students of another gift are never included.",
       "programmeRequired": "Your organisation runs more than one gift, so please say which this run pays from.",
       "paysFrom": "Pays from: {name}"
     },
@@ -5827,7 +5824,6 @@
       "saveClauses": "Save clauses",
       "noClauses": "No clauses yet. Add one, or import from Word.",
       "importDocx": "Import from Word (.docx)",
-      "importHint": "Read clauses from an author’s .docx — you review them before they replace the draft.",
       "importReviewTitle": "Review imported clauses",
       "importReviewHint": "These were read from your document. Accept to replace the draft’s clauses, or discard and edit by hand.",
       "importAccept": "Accept and replace clauses",
@@ -6708,7 +6704,7 @@
     "hasWorkRevoke": "Has work on record — revoke instead",
     "changeRole": "Change role",
     "roleChangeConfirm": "Change {name} to {role}?",
-    "financeCheckOn": "Payment runs will then need a finance check.",
-    "financeCheckOff": "They are the only finance admin, so payment runs will skip the finance check."
+    "financeCheckOn": "They will approve payment runs, and wallet credits will need a finance check.",
+    "financeCheckOff": "They are the only finance admin: the organisation admin will approve payment runs again, and wallet credits will skip the finance check."
   }
 }

@@ -2,8 +2,9 @@
 // Payments landing (P2) — the run list, a "New payment run" date dialog, and the funding
 // summary. A Programme-scope row since TD-241, offered by the rail only INSIDE a gift since
 // 2026-09-28; reached by URL with several gifts and none chosen, it sends you to the gifts.
-// Access: admin / org_admin / finance / super. Finance may READ everything here but creates
-// nothing — the "New payment run" control is hidden for it (the backend 403s it anyway).
+// Access: admin / org_admin / finance / super. Finance may READ everything here and APPROVES runs
+// (#39 S2) but creates nothing — "New payment run" follows the served `can_prepare` (the backend
+// 403s it anyway). "Waiting for you" lists the runs whose served `your_step` is this person's.
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -40,11 +41,12 @@ export default function PaymentsLandingPage() {
   const router = useRouter()
   const r = effectiveRole(role)
   const allowed = canAccess('/admin/payments', r)
-  // Finer than the route: finance may READ a run and sign the finance check, but may never
-  // create, edit, cancel or price one (role matrix). That stays a local capability check.
-  const canCreate = allowed && r !== 'finance'
-
   const [runs, setRuns] = useState<PaymentRunSummary[]>([])
+  // Finer than the route: who may create a run is the SERVER's answer (`can_prepare`: Prepare, or
+  // the organisation admin). Before it arrives, or from a server older than #39 S2, the old
+  // reading stands (everyone but finance) — the endpoint refuses regardless.
+  const [canPrepare, setCanPrepare] = useState<boolean | undefined>(undefined)
+  const canCreate = allowed && (canPrepare ?? r !== 'finance')
   const [funding, setFunding] = useState<FundingSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -111,7 +113,7 @@ export default function PaymentsLandingPage() {
     let current = true
     setLoading(true)
     getPaymentRuns(programme, { token })
-      .then((d) => { if (current) setRuns(d.runs) })
+      .then((d) => { if (current) { setRuns(d.runs); setCanPrepare(d.can_prepare) } })
       .catch(() => { if (current) setError(t('admin.payments.loadFailed')) })
       .finally(() => { if (current) setLoading(false) })
     // Best-effort: the funding summary is a supplementary section, so a failure here hides it
@@ -139,6 +141,7 @@ export default function PaymentsLandingPage() {
   }
 
   const cancelledCount = runs.filter((r) => r.status === 'cancelled').length
+  const waiting = runs.filter((r) => r.your_step)
   const visibleRuns = showCancelled ? runs : runs.filter((r) => r.status !== 'cancelled')
 
   const create = async () => {
@@ -194,6 +197,24 @@ export default function PaymentsLandingPage() {
       </div>
 
       {error && <div className="mt-4 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{error}</div>}
+
+      {/* "Waiting for you" (#39 S2): the runs whose next step is THIS person's, from the served
+          `your_step` — the predicate the sign endpoint asks — so the list cannot offer a run the
+          server would refuse. Nothing renders when nothing waits. */}
+      {waiting.length > 0 && (
+        <div className="mt-6 rounded-xl border border-caution-200 bg-caution-50 p-4" data-testid="waiting-for-you">
+          <h2 className="text-sm font-semibold text-ground-900">{t('admin.payments.waitingForYou')}</h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {waiting.map((w) => (
+              <Link key={w.id} href={`/admin/payments/${w.id}`}
+                className="rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 text-sm hover:border-info-300">
+                <span className="font-medium text-primary-600">{w.reference}</span>
+                <span className="ml-2 tabular-nums text-ground-700">RM {rm(w.total)}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── PHONE: one card per run (owner, 2026-09-08). The reference and the STATUS lead — this
           list is scanned for what still needs signing — with the TOTAL as the figure. The whole

@@ -431,10 +431,19 @@ class TestTheTwoChainsStayOneDesign(TestCase):
 
     def test_the_credit_chain_reuses_the_payments_primitives(self):
         source = inspect.getsource(svc.sign_admin_credit)
-        for primitive in ('payments._name_matches', 'payments.finance_check_required'):
+        for primitive in ('payments._name_matches', 'payments.credit_check_required'):
             self.assertIn(primitive, source,
                           f'{primitive} must be REUSED, not reimplemented — see the '
                           f'currency rule in docs/decisions.md')
+
+    def test_credits_do_not_read_the_run_chain_s_re_keyed_check(self):
+        """#39 Sprint 2 (owner question 6): payment RUNS read permissions and Finance APPROVES them;
+        wallet CREDITS keep the finance-ROLE rule. The one shared predicate was SPLIT so re-keying it
+        could not silently switch off Finance's check on sponsor credits."""
+        from apps.scholarship.views_admin import sponsors
+        self.assertNotIn('finance_check_required(', inspect.getsource(svc.sign_admin_credit)
+                         .replace("'finance_check_required'", ''))
+        self.assertIn('credit_check_required(', inspect.getsource(sponsors))
 
     def test_the_credit_chain_uses_the_same_guard_codes(self):
         """Same failures, same names — an operator reading two screens must not have to

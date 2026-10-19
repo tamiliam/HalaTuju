@@ -405,3 +405,39 @@ describe('the wallet-not-live line', () => {
     expect(screen.queryByText(/admin.payments.funding.walletNotLive/)).toBeNull()
   })
 })
+
+/**
+ * Request #39 Sprint 2 (owner, 2026-10-19): Finance APPROVES runs. The page lists "Waiting for you"
+ * from the served `your_step` — the predicate the sign endpoint asks — and offers New run on the
+ * served `can_prepare`, never on a role it reads itself.
+ */
+describe('#39 S2: waiting for you, and who may create', () => {
+  const RUNS = [
+    { id: 7, reference: 'PR-2026-11-01', payment_date: '2026-11-01', period_month: '2026-11-01',
+      status: 'admin_signed', students: 58, total: '11600', created_at: '', your_step: 'approve' },
+    { id: 6, reference: 'PR-2026-10-01', payment_date: '2026-10-01', period_month: '2026-10-01',
+      status: 'completed', students: 58, total: '11600', created_at: '', your_step: null },
+  ]
+
+  it('lists only the runs whose next step is yours, linked to the run', async () => {
+    asRole('finance')
+    mockApi.getPaymentRuns.mockResolvedValue(
+      { runs: RUNS, can_prepare: false } as unknown as Awaited<ReturnType<typeof api.getPaymentRuns>>)
+    render(<PaymentsLandingPage />)
+    const block = await screen.findByTestId('waiting-for-you')
+    const links = block.querySelectorAll('a')
+    expect(links.length).toBe(1)
+    expect(links[0].getAttribute('href')).toBe('/admin/payments/7')
+    expect(links[0].textContent).toContain('PR-2026-11-01')
+    expect(screen.queryByText(/admin.payments.newRun/)).toBeNull()      // can_prepare: false
+  })
+
+  it('draws nothing when nothing waits, and follows can_prepare for New run', async () => {
+    asRole('org_admin')
+    mockApi.getPaymentRuns.mockResolvedValue(
+      { runs: [RUNS[1]], can_prepare: true } as unknown as Awaited<ReturnType<typeof api.getPaymentRuns>>)
+    render(<PaymentsLandingPage />)
+    await screen.findByText(/admin.payments.newRun/)
+    expect(screen.queryByTestId('waiting-for-you')).toBeNull()
+  })
+})

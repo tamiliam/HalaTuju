@@ -50,6 +50,8 @@ const run = (over: Partial<api.PaymentRunDetail> = {}): api.PaymentRunDetail => 
     { ...ITEM, id: 4, application_id: 94, name: 'THERESA ARUL MARY', credit_applied: '150' },
   ],
   skipped: [], signatures: [],
+  // #39 S2: who may edit and cancel is the SERVER's answer now (Prepare, or the org admin).
+  can_prepare: true,
   ...over,
 } as unknown as api.PaymentRunDetail)
 

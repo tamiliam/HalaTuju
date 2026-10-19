@@ -35,8 +35,9 @@ export const roleOrgAdmin: ManualChapter = {
           offered on the sole admin, so your organisation is never left without one.</span>
           <span className="mt-2 block"><strong>Change role</strong> switches somebody between
           <strong> Admin</strong> and <strong>Finance</strong>, or between <strong>Reviewer</strong> and
-          <strong> QC</strong> — nothing else. If the switch turns your payment run&rsquo;s finance check on or
-          off, the question says so before you answer. An admin who still has cases assigned, or a payment run
+          <strong> QC</strong> — nothing else. If the switch gives your organisation its first finance admin
+          (who then approves payment runs, and checks wallet credits) or removes the last one (run approval comes
+          back to you), the question says so before you answer. An admin who still has cases assigned, or a payment run
           they made or signed that isn&rsquo;t finished, can&rsquo;t become Finance until that is handed on.</span>
           <span className="mt-2 block"><strong>Delete</strong> is offered only for an admin who has done no work
           yet; you type their email address to confirm, and it removes their sign-in and their invitation
@@ -98,8 +99,8 @@ export const roleOrgAdmin: ManualChapter = {
         recorder. <strong>You countersign</strong> — and only then is that money spendable on a student. Every
         signature must be a different person and each typed name must match that account&rsquo;s name exactly. If
         your organisation has a <strong>finance admin</strong> there is a middle step, and until they have checked
-        it you will see &ldquo;waiting for the finance check&rdquo; instead of a countersign button — the same
-        chain as a payment run.
+        it you will see &ldquo;waiting for the finance check&rdquo; instead of a countersign button. (Credits
+        keep this chain; payment runs changed in October 2026 &mdash; see Payment runs.)
         <br /><br />
         You cannot record a credit yourself, deliberately: the person who opens a chain cannot also close it. An
         unconfirmed credit can be <strong>voided</strong> if it was mis-keyed; a confirmed one never can, and is
@@ -233,24 +234,26 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>Each month a payment run is built in <strong>Payments</strong>. It lists the students
         who qualify for that month, with the amount each is due, and greys out the rest with the reason (no
-        eWallet confirmed yet, already paid this month, no balance left, and so on). Somebody prepares and signs
-        it, then <strong>you countersign</strong>. Only at your countersignature is the payment instruction
-        emailed to Vircle with the file attached — nothing moves before that.</>
+        eWallet confirmed yet, already paid this month, no balance left, and so on). A general admin prepares
+        and signs it, then your <strong>finance admin approves</strong> it. Only at that approval is the payment
+        instruction emailed to Vircle with the file attached — nothing moves before that. You still create, edit
+        and cancel runs, and you still put the organisation&rsquo;s money into Vircle (outside HalaTuju); what
+        changed in October 2026 is that you <strong>no longer countersign</strong> each run.</>
       ),
       img: '/manual/org-admin-payments.png',
-      alt: 'A payment run awaiting countersignature (placeholder)',
+      alt: 'A payment run awaiting approval (placeholder)',
     },
     {
       anchor: 'org-admin-payments-signing',
-      title: 'Who signs, and what breaks a signature',
+      title: 'Who approves, and what breaks a signature',
       body: (
         <>Every signature on a run must belong to a <strong>different person</strong>, and each typed name must
-        match that account&rsquo;s name exactly. If your organisation has a <strong>finance admin</strong>, there
-        is a middle step: the run must be <em>checked</em> by finance before you can countersign, and until then
-        you&rsquo;ll see &ldquo;waiting for the finance check&rdquo;. You can appoint one yourself from
-        <strong> Invitations</strong>, inviting them as <strong>Finance</strong>; the moment their account is active the step applies, including
-        to a run already sitting in front of you. If you have no finance admin, the chain is just the two
-        signatures. <strong>Editing a run after any signature returns it to draft and clears every signature
+        match that account&rsquo;s name exactly. The approver is your <strong>finance admin</strong>; you can
+        appoint one yourself from <strong>Invitations</strong>, inviting them as <strong>Finance</strong>, and the
+        moment their account is active they approve &mdash; including a run already waiting. <strong>You approve a
+        run only when nobody else can</strong>: you have no active finance admin, or the only one has already
+        signed that run. The run then tells you so above the approve box, and the &ldquo;ready&rdquo; email comes
+        to you. <strong>Editing a run after any signature returns it to draft and clears every signature
         collected so far</strong> — deliberately, so nobody signs one list and a different one goes out.</>
       ),
     },
@@ -290,7 +293,7 @@ export const roleOrgAdmin: ManualChapter = {
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li><strong>Reopening a recorded decision</strong> (and cancelling a reopen).</li>
             <li><strong>Setting the award amount</strong> — a reviewer recommends; the amount is fixed by
-            pathway. (The <strong>Finance</strong> role, which you can appoint yourself, checks payment runs —
+            pathway. (The <strong>Finance</strong> role, which you can appoint yourself, approves payment runs —
             it does not set award amounts.)</li>
             <li><strong>Countersigning the bursary agreement.</strong></li>
             <li><strong>Appointing another organisation admin, or adding an organisation</strong> — ask the

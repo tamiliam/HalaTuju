@@ -14,13 +14,14 @@ THE MODEL
 - **Platform roles** sit outside: a `super` passes every key (as `has_role` passes every role); a
   referral `partner` holds nothing.
 
-⚠ SPRINT 1 CONVERTS NO GATE. Every gate still reads `role`. What this module must do in Sprint 1 is
-reproduce TODAY exactly, and `apps/courses/tests/test_permission_presets.py` (the golden table)
-proves it gate by gate. So the presets below are TODAY's powers — including the payment chain as it
-stands: `finance` holds the CHECK and `org_admin` the APPROVAL. Sprint 2 applies the owner's ruling of
-2026-10-19 (Finance APPROVES runs; the organisation admin stops countersigning and becomes the
-fallback approver) by changing those two rows here and the named payment rows of the golden table,
-in the same change.
+⚠ THE PRESETS REPRODUCE TODAY, EXCEPT THE PAYMENT CHAIN. `apps/courses/tests/test_permission_presets.py`
+(the golden table) proves it gate by gate. Sprint 1 converted no gate and kept the old payment chain
+(`finance` = the CHECK, `org_admin` = the APPROVAL). **Sprint 2 (owner ruling, 2026-10-19, option A:
+"I would like the role to be able to approve payment — the work that Suresh does today") changed
+exactly two rows here:** `finance` now holds `payments_approve`, and the lead tier no longer does —
+the organisation admin approves a run only under the per-run FALLBACK, when nobody else can
+(`apps/scholarship/payments_chain.py`). No preset holds `payments_check`: the middle check is dormant
+until somebody is given it. The payment gates read these keys since Sprint 2.
 
 ⚠ THIS IS A LEAF. It imports nothing from `apps.scholarship` (the `courses → scholarship` ratchet is
 at 17), and nothing from `models*` at import time — `PartnerAdmin.has_perm` lives on the model and
@@ -55,15 +56,16 @@ PRESETS = {
     'reviewer': ('review',),
     'qc': ('see_all', 'qc'),
     'admin': ('see_all', 'spending', 'payments_prepare'),
-    'finance': ('payments_check',),      # Sprint 2 (owner, 2026-10-19): becomes payments_approve
+    'finance': ('payments_approve',),    # Sprint 2 (owner, 2026-10-19): was payments_check
 }
 
-#: The organisation lead's fixed bundle, as TODAY. Never stored, never edited. Its other lead powers
+#: The organisation lead's fixed bundle. Never stored, never edited. Its other lead powers
 #: (configuration, gifts, contracts, sponsors' acceptance, assigning cases, billing, requests, the
-#: parent's contact, and creating / editing / cancelling runs without signing as maker) are not
-#: catalogue keys: they stay on `role == 'org_admin'` (`is_lead_tier`).
+#: parent's contact, creating / editing / cancelling runs without signing as maker, and approving a
+#: run under the FALLBACK when nobody else can) are not catalogue keys: they stay on
+#: `role == 'org_admin'` (`is_lead_tier`).
 LEAD_ROLE = 'org_admin'
-LEAD_TIER = ('see_all', 'qc', 'spending', 'payments_approve', 'manage_team')   # S2: minus approve
+LEAD_TIER = ('see_all', 'qc', 'spending', 'manage_team')   # Sprint 2: payments_approve removed
 
 
 def _ordered(keys):
@@ -145,9 +147,9 @@ def holders(organisation, key):
     fail on the other. An organisation has tens of staff and this runs on rare operations.
 
     ⚠ A SUPER IS NEVER A HOLDER, even one bound to the organisation. "An active member holds
-    `payments_check`" arms the payment check; counting a super (who passes every key) would arm it
-    for every organisation a super happened to sit in — which is not today's rule
-    (`payments.finance_check_required` counts active `finance` rows only).
+    `payments_check`" arms the payment check (`payments.finance_check_required`), and "an active
+    member holds `payments_approve`" turns the organisation admin's fallback off; counting a super
+    (who passes every key) would do either for every organisation a super happened to sit in.
     """
     if organisation is None:
         return []

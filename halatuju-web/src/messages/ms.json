@@ -1451,7 +1451,6 @@
       "requiredPill": "Wajib",
       "optionalPill": "Pilihan",
       "requiredNote": "Kami memerlukan dokumen ini untuk memproses permohonan anda.",
-      "optionalNote": "Dokumen ini membantu kami memahami situasi anda dengan lebih baik. Tambah apa yang anda ada.",
       "pill": {
         "compulsory": "Wajib",
         "important": "Penting",
@@ -3167,7 +3166,6 @@
     "orgPage": {
       "nav": "Program",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
-      "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
       "invitesPending": "Menunggu jawapan",
       "awaitingVetting": "menunggu semakan",
       "needsAttention": "Perlu perhatian anda"
@@ -5563,8 +5561,6 @@
       "hideCancelled": "Sembunyikan larian dibatalkan",
       "noOrg": "Akaun anda tidak terikat dengan sesebuah organisasi, jadi ia tidak boleh mencipta larian pembayaran.",
       "otherOrgGift": "Hadiah ini milik organisasi lain, jadi anda tidak boleh memulakan larian pembayaran untuknya di sini.",
-      "studentsLabel": "pelajar",
-      "totalLabel": "Jumlah",
       "studentsHeading": "Pelajar",
       "totalAmountHeading": "Jumlah keseluruhan",
       "creditApplied": "Kredit RM{amount} digunakan",
@@ -5577,21 +5573,24 @@
       "totalToPay": "Jumlah untuk dibayar dalam larian ini",
       "skippedTitle": "Dilangkau larian ini",
       "signOff": "Pengesahan",
-      "makerStep": "Tandatangan pentadbir (pembuat)",
-      "approverStep": "Tandatangan balas pentadbir organisasi (pelulus)",
+      "makerStep": "Disediakan",
+      "approverStep": "Diluluskan",
       "typedNameHint": "Taip nama penuh anda tepat seperti dalam profil anda.",
       "fullName": "Nama penuh",
       "sign": "Tandatangan",
-      "countersign": "Tandatangan balas & hantar ke Vircle",
-      "afterMaker": "Tersedia selepas pentadbir menandatangani.",
+      "countersign": "Luluskan & hantar ke Vircle",
+      "afterMaker": "Tersedia sebaik sahaja larian disediakan.",
+      "waitingForYou": "Menunggu anda",
+      "awaitingStep": "Menunggu penandatangan seterusnya.",
+      "approverFallback": "Tiada orang lain boleh meluluskan larian ini, jadi pentadbir organisasi yang meluluskannya.",
       "signNote": "Setiap penandatangan mestilah orang yang berbeza. Mengubah senarai selepas tandatangan akan mengembalikan larian ini kepada draf dan memadam tandatangan yang telah dikumpul.",
       "declaration": "Saya mengesahkan bahawa pelajar yang tersenarai di atas ialah mereka yang layak menerima bayaran biasiswa bagi {month}, dan arahan pembayaran ini akan dihantar ke {email}.",
       "cancelRun": "Batalkan larian ini",
       "completedOn": "Selesai pada {date}",
       "sentToVircle": "Dihantar ke Vircle",
       "referenceCopy": "Salinan rujukan sahaja",
-      "authorisedBy": "Disahkan oleh (pembuat)",
-      "approvedBy": "Diluluskan oleh (pelulus)",
+      "authorisedBy": "Disediakan oleh",
+      "approvedBy": "Diluluskan oleh",
       "exportedForVircle": "Dieksport untuk pemprosesan kelompok Vircle",
       "openInDrive": "Buka CSV dalam Drive",
       "downloadCsv": "Muat turun CSV",
@@ -5612,10 +5611,10 @@
       },
       "status": {
         "draft": "Draf",
-        "admin_signed": "Ditandatangani pentadbir",
+        "admin_signed": "Disediakan",
         "completed": "Selesai",
         "cancelled": "Dibatalkan",
-        "finance_checked": "Disemak kewangan"
+        "finance_checked": "Disemak"
       },
       "reason": {
         "no_vircle_id": "Tiada ID eWallet",
@@ -5627,7 +5626,7 @@
       },
       "error": {
         "name_mismatch": "Nama itu tidak sepadan dengan nama profil anda.",
-        "same_signer": "Tandatangan balas mesti orang yang berbeza.",
+        "same_signer": "Setiap tandatangan mesti daripada orang yang berbeza.",
         "wrong_role": "Peranan anda tidak boleh menandatangani pada langkah ini.",
         "past_date": "Tarikh itu telah berlalu.",
         "amount_over_cap": "Jumlah tidak boleh melebihi baki anugerah.",
@@ -5636,12 +5635,12 @@
         "not_editable": "Larian ini tidak boleh disunting lagi.",
         "bad_state": "Tindakan itu tidak dibenarkan dalam keadaan larian semasa.",
         "not_ready": "CSV tersedia setelah larian ditandatangani.",
-        "finance_check_required": "Larian ini memerlukan semakan kewangan sebelum boleh ditandatangani bersama."
+        "finance_check_required": "Larian ini perlu disemak sebelum boleh diluluskan."
       },
-      "financeStep": "Semakan kewangan",
+      "financeStep": "Disemak",
       "financeSign": "Semak",
-      "checkedBy": "Disemak oleh (kewangan)",
-      "awaitingFinanceCheck": "Menunggu semakan kewangan sebelum anda boleh menandatangani.",
+      "checkedBy": "Disemak oleh",
+      "awaitingFinanceCheck": "Menunggu semakan sebelum larian boleh diluluskan.",
       "funding": {
         "title": "Ringkasan pembiayaan",
         "subtitle": "Jumlah yang dianugerahkan kepada setiap pelajar, yang telah dibayar, dan bakinya.",
@@ -5663,8 +5662,6 @@
         }
       },
       "programme": "Hadiah mana yang membayar ini?",
-      "programmeChoose": "Pilih hadiah…",
-      "programmeHint": "Satu larian membayar daripada satu hadiah sahaja. Pelajar hadiah lain tidak pernah disertakan.",
       "programmeRequired": "Organisasi anda menjalankan lebih daripada satu hadiah, jadi sila nyatakan yang mana membayar larian ini.",
       "paysFrom": "Dibayar daripada: {name}"
     },
@@ -5827,7 +5824,6 @@
       "saveClauses": "Simpan klausa",
       "noClauses": "Belum ada klausa. Tambah satu, atau import daripada Word.",
       "importDocx": "Import daripada Word (.docx)",
-      "importHint": "Baca klausa daripada .docx penulis — anda menyemaknya sebelum ia menggantikan draf.",
       "importReviewTitle": "Semak klausa yang diimport",
       "importReviewHint": "Ini dibaca daripada dokumen anda. Terima untuk menggantikan klausa draf, atau buang dan sunting sendiri.",
       "importAccept": "Terima dan gantikan klausa",
@@ -6708,7 +6704,7 @@
     "hasWorkRevoke": "Ada kerja yang direkodkan — tarik balik akses sahaja",
     "changeRole": "Tukar peranan",
     "roleChangeConfirm": "Tukar {name} kepada {role}?",
-    "financeCheckOn": "Larian pembayaran selepas itu memerlukan semakan kewangan.",
-    "financeCheckOff": "Mereka satu-satunya pentadbir kewangan, jadi larian pembayaran tidak lagi melalui semakan kewangan."
+    "financeCheckOn": "Mereka akan meluluskan larian pembayaran, dan kredit dompet akan memerlukan semakan kewangan.",
+    "financeCheckOff": "Mereka satu-satunya pentadbir kewangan: pentadbir organisasi akan meluluskan larian pembayaran semula, dan kredit dompet tidak lagi melalui semakan kewangan."
   }
 }

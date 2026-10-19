@@ -53,7 +53,7 @@ from .invoices import (
     AdminInvoiceSettingsView, AdminInvoicesView, AdminOrgBuildHoursView,
 )
 from .payments import (
-    _PAYMENTS_READ_ROLES, _PAYMENTS_WRITE_ROLES, _PaymentsBase, _payment_item_dict,
+    _PAYMENTS_READ, _PAYMENTS_WRITE, _PaymentsBase, _payment_item_dict,
     _payment_run_detail, _payment_run_summary, _run_programme, _sig,
     AdminPaymentFundingSummaryView, AdminPaymentRunCancelView, AdminPaymentRunCsvView,
     AdminPaymentRunDetailView, AdminPaymentRunItemView, AdminPaymentRunListView,

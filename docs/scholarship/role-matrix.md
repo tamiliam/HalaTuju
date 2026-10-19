@@ -28,14 +28,16 @@ today's roles kept as **presets**; `org_admin` is a fixed lead tier; `super` / `
 `/admin/role/`; no gate reads it yet, and `apps/courses/tests/test_permission_presets.py` (the golden
 table) proves each preset reproduces this table, gate by gate. The one other S1 change is the invite's
 "already exists" answer (an address already on your team is named; any other account gets one neutral
-sentence). Sprint 2 changes the Payments row (Finance APPROVES runs; the organisation admin stops
-countersigning) and Sprint 4 restructures this file as catalogue + presets + lead tier.
+sentence). **Sprint 2 (built 2026-10-19) changed the Payments cells below:** the payment gates read
+permissions, Finance APPROVES runs, and the organisation admin stops countersigning (approving only
+under the per-run fallback). Wallet credits are unchanged. Sprint 4 restructures this file as
+catalogue + presets + lead tier.
 
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
+| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
 | **Admin — General** (`admin`) | **Everything** — as org_admin (a read; the page has no controls) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
-| **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per transaction per week, transactions per active student per week, spending by category. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
+| **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per transaction per week, transactions per active student per week, spending by category. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + APPROVAL — the final signature that releases the money; #39 S2, 2026-10-19)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | **Own work only** — the cases awaiting QC (oldest wait first) + own pace. **No money, no programme-wide funnel** | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
 | **Reviewer** (`reviewer`) | **Own work only** — own open cases with the verdict-due date per case (open / due soon / overdue) + own pace. **No money, no programme-wide funnel** | View assigned · review assigned | ✗ *(vetting REMOVED — was reviewer-gated pre-2026-07-15)* | ✗ | edit | view |
 
@@ -75,8 +77,11 @@ countersigning) and Sprint 4 restructures this file as catalogue + presets + lea
   when a second organisation exists, account-level approval may move platform-side while
   pool membership stays org-level. Revisit this cell at tenant #2.
 - **Money:** award-amount setting and bursary countersigning still wait on payout rails
-  (payer ≠ decider). The `finance` role holds the payment-run CHECK, not the decision — it can
-  refuse a run by not signing, but it can never create, edit, cancel or price one.
+  (payer ≠ decider). ~~The `finance` role holds the payment-run CHECK, not the decision~~ —
+  **SUPERSEDED 2026-10-19 (#39 Sprint 2, owner option A):** the `finance` role APPROVES payment runs
+  (the final signature, which completes the run and releases Vircle → students); the organisation
+  admin funds Vircle outside HalaTuju and approves a run only when nobody else can. Finance still
+  can never create, edit, cancel or price a run. On wallet credits Finance still holds the CHECK.
 
 ## Programme Overview (`/admin/programme/overview`) — access
 
@@ -151,30 +156,46 @@ The Payments module (`/admin/payments`, entered via the Administration ORGANISAT
 no top-level nav entry). It lives *inside* the Administration surface, so it inherits the org
 fence.
 
-**Access.** READ (list, run detail, CSV) and the finance-check SIGNATURE: `admin` + `org_admin` +
-`finance` (super passes as always). CREATE / EDIT an item / CANCEL: `admin` + `org_admin` **only**
-— `finance` is refused. `reviewer` / `qc` / referral `partner` are refused everywhere — 403 on
-every endpoint, cross-org 404.
+**⚠ REWRITTEN 2026-10-19 — request #39 Sprint 2, owner ruling (option A):** *"Finance role currently
+doesn't have clear action items. I would like the role to be able to approve payment — the work that
+Suresh does today."* The gates read **permissions** (`apps/scholarship/payments_chain.py`); the
+presets give exactly the access below. The earlier wording (Finance CHECKS, the org admin
+countersigns) is superseded; see `docs/decisions.md` 2026-10-19.
 
-**The chain** is `draft → admin_signed → [finance_checked] → completed`. The middle step is
-**required if and only if the organisation has ≥1 ACTIVE `finance` admin**, evaluated LIVE at each
-sign attempt and **never stored on the run**. With no finance admin the chain runs exactly as it
-did before this role existed — two steps, byte-identical.
+**Access.** READ (list, run detail, CSV, funding summary) and SIGN (the step is the service's):
+any `payments_*` holder or the organisation admin — presets `admin` + `finance` + `org_admin` (super
+passes as always). CREATE / EDIT an item / CANCEL: `payments_prepare` or the organisation admin —
+presets `admin` + `org_admin` **only**; `finance` is refused. `reviewer` / `qc` / referral `partner`
+are refused everywhere — 403 on every endpoint, cross-org 404.
 
-- **maker** signs the draft (role `admin`) → `admin_signed`.
-- **finance check** (role `finance`) → `finance_checked`. While finance is active, an org_admin
-  attempting to countersign at `admin_signed` is refused with `finance_check_required`.
-- **approver** countersigns (role `org_admin`) → `completed`.
+**The chain** is `draft → admin_signed → [finance_checked] → completed` (the stored names are kept;
+the screen labels the steps Prepared / Checked / Approved):
 
-**Live evaluation, both directions.** A run sitting at `admin_signed` when a finance admin is
-first activated DOES need the check before it can be countersigned (deliberate — the FAQ explains
-the "awaiting finance check" notice). If the sole finance admin is revoked mid-run, the chain
-degrades to two steps by policy; an already-collected finance signature is never a blocker and is
-never erased by the degrade.
+- **maker** (`payments_prepare` — preset `admin`) signs the draft → `admin_signed`.
+- **check** (`payments_check`) → `finance_checked` — ONLY while an active member holds that key,
+  evaluated LIVE and never stored. **No preset holds it**, so on every organisation today the chain
+  is two steps; granting it to somebody (Sprint 4's editor) arms a third signer, including for a run
+  already at `admin_signed`. While armed, an approver at `admin_signed` is refused with
+  `finance_check_required`.
+- **approver** (`payments_approve` — preset `finance`) → `completed`, which releases the money and
+  emails Vircle (approver CC'd). Stored in the `org_admin_signed_*` triple (a kept misnomer).
+- **the fallback:** when NO active `payments_approve` holder who has not already signed the run
+  exists, the **organisation admin** approves (the pre-change path). Live, per run: an organisation
+  with no Finance person works exactly as before; the sole approver who prepared the run, the last
+  approver revoked or switched, or a run Finance CHECKED before the change, all fall back. The run
+  serves `approver_fallback` so the page says why the org admin sees the button. While a Finance
+  person can approve, an org admin trying to is refused with `wrong_role`.
 
-**Three distinct signers.** Every signature collected on a run must be a different person
-(email, case-insensitive). `super` may fill any ONE slot per run and never two — enforced by that
-same pairwise-distinctness rule, not a special case.
+**"Waiting for you".** Each run carries `your_step` (`sign` / `check` / `approve` / null) from
+`payments.next_step_for`, the SAME predicate `payments.sign` asks — the landing page lists those runs
+and the Payments menu row shows their count. The "ready" email follows the same rule: after the
+maker, the checkers when armed, else the approvers, else the org admins under the fallback.
+
+**Distinct signers.** Every signature collected on a run must be a different person (email,
+case-insensitive). One person may hold Prepare AND Approve and use them on DIFFERENT runs, never on
+one. `super` may fill any ONE slot per run and never two — enforced by that same pairwise rule. The
+service also refuses a signer from another organisation, and re-reads the run under a row lock so
+two approvers can never both complete it.
 
 Editing an amount or exclusion after ANY signature reverts the run to draft and clears ALL
 collected signatures ("nobody signs one list and sends another").
@@ -195,10 +216,12 @@ organisation (`AdminSponsorDetailView`, `_CreditsBase`).
 close it, and on production the person doing this work is a plain `admin`. VOID an unconfirmed
 credit: `admin` + `org_admin`. `reviewer` / `qc` / referral `partner` are refused everywhere.
 
-**The chain is the payments chain**, deliberately — one design, one implementation
-(`sponsorship.sign_admin_credit` mirrors `payments.sign`):
+**The chain has the payments chain's SHAPE but, since #39 Sprint 2, NOT its rules** (owner question
+6, 2026-10-19: credits keep today's chain; accepting money is the organisation's act):
 `draft → admin_signed → [finance_checked] → confirmed`, with the middle step required iff the
-organisation has ≥1 ACTIVE `finance` admin, evaluated live at every attempt.
+organisation has ≥1 ACTIVE `finance` admin (`payments.credit_check_required`, the old predicate,
+split out so re-keying the run check could not switch this one off), evaluated live at every
+attempt. Roles, not permissions, gate every step here.
 
 - **maker** signs the draft (role `admin`) → `admin_signed`.
 - **finance check** (role `finance`) → `finance_checked`. An `org_admin` countersigning at

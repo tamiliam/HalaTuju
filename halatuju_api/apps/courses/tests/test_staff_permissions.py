@@ -107,7 +107,8 @@ class Holders(TestCase):
         fin = make_admin('finance', owning_org=self.org)
         make_admin('finance', owning_org=self.org, is_active=False)
         make_admin('finance', owning_org=self.other)
-        self.assertEqual(sp.holders(self.org, 'payments_check'), [fin])
+        self.assertEqual(sp.holders(self.org, 'payments_approve'), [fin])   # Sprint 2: approves
+        self.assertEqual(sp.holders(self.org, 'payments_check'), [])         # ...and checks nothing
 
     def test_a_super_is_never_a_holder_even_when_bound_to_the_organisation(self):
         make_admin('super', super_admin=True, owning_org=self.org)
@@ -120,7 +121,10 @@ class Holders(TestCase):
 
     def test_the_lead_tier_holds_its_bundle(self):
         oa = make_admin('org_admin', owning_org=self.org)
-        self.assertEqual(sp.holders(self.org, 'payments_approve'), [oa])
+        self.assertEqual(sp.holders(self.org, 'qc'), [oa])
+        # Sprint 2 (owner, 2026-10-19): the organisation admin no longer holds the approval; they
+        # approve only under the per-run fallback (`payments_chain`), never as a holder.
+        self.assertEqual(sp.holders(self.org, 'payments_approve'), [])
         self.assertEqual(sp.holders(self.org, 'payments_check'), [])
 
     def test_no_organisation_and_unknown_key(self):

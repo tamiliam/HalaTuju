@@ -52,8 +52,10 @@ export const roleAdminGeneral: ManualChapter = {
         first. Nothing you prepare pays out or becomes spendable on your signature alone.
         <br /><br />
         <strong>A payment run</strong> (<strong>Payments</strong> in the menu): you build the month&rsquo;s run and sign it,
-        then your <strong>organisation admin countersigns</strong> — and only at their countersignature is the
-        instruction emailed out.
+        then your <strong>finance admin approves</strong> it — and only at that approval is the instruction
+        emailed to Vircle. (If your organisation has no finance admin, or the only one has already signed that
+        run, your organisation admin approves instead.) Runs waiting for your signature are listed at the top of
+        Payments under <strong>Waiting for you</strong>.
         <br /><br />
         <strong>A wallet credit</strong> (Sponsors → open a sponsor → <em>Record a credit</em>): when a sponsor
         transfers money to us off the platform, you record it against the gift it was given to, with the
@@ -75,7 +77,7 @@ export const roleAdminGeneral: ManualChapter = {
         you — no invite, resend or revoke on the staff table, no approve/reject on sponsors, no verdict controls on
         a case. If you need something done, ask your <strong>organisation admin</strong> (or the HalaTuju team).
         This keeps a clean line between who <em>sees</em> and who <em>acts</em>, and it is also why you cannot
-        countersign your own work: every step of a money chain needs a different person.</>
+        approve or countersign your own work: every step of a money chain needs a different person.</>
       ),
     },
   ],

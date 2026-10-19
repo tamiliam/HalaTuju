@@ -11,6 +11,7 @@
  */
 import { API_BASE, adminFetch, adminMutate, giftQuery } from './client'
 import type { ApiOptions } from './client'
+import type { PaymentStep } from '../paymentStatus'
 
 // ── Payments module (P2): monthly Vircle payment runs ─────────────────────────
 export interface PaymentRunSummary {
@@ -23,6 +24,9 @@ export interface PaymentRunSummary {
   students: number
   total: string
   created_at: string
+  /** #39 S2: the step the CALLER may take now — served by `payments.next_step_for`, the predicate
+   *  `payments.sign` asks, so the "Waiting for you" list and the gate cannot disagree. */
+  your_step?: PaymentStep | null
 }
 export interface PaymentRunItem {
   id: number
@@ -73,6 +77,15 @@ export interface PaymentRunDetail {
    *  (payments.finance_check_required) and read verbatim — NEVER re-derive it here from the
    *  staff list, or the activation rule becomes a keep-in-sync pair that drifts. */
   finance_check_required: boolean
+  /** #39 S2: the same server verdict under its lasting name (the key above stays one release). */
+  check_step_required?: boolean
+  /** #39 S2: the step the caller may take now, or null — the ONLY thing that draws a name box. */
+  your_step?: PaymentStep | null
+  /** #39 S2: nobody else may approve this run, so the organisation admin does (the page says so). */
+  approver_fallback?: boolean
+  /** #39 S2: may the caller edit items and cancel (Prepare, or the organisation admin)? */
+  can_prepare?: boolean
+  /** The APPROVER's signature (Finance since #39 S2); the field name is a kept misnomer. */
   org_admin_signed: PaymentSignature | null
   items: PaymentRunItem[]
   skipped: PaymentRunSkipped[]
@@ -115,7 +128,7 @@ export async function getFundingSummary(programme?: string, options?: ApiOptions
 }
 
 export async function getPaymentRuns(programme?: string, options?: ApiOptions) {
-  return adminFetch<{ runs: PaymentRunSummary[] }>(
+  return adminFetch<{ runs: PaymentRunSummary[]; can_prepare?: boolean }>(
     `/api/v1/admin/scholarship/payment-runs/${giftQuery(programme)}`, options)
 }
 

@@ -27,51 +27,65 @@ export const monthLabelFull = (iso: string | null | undefined) => {
 }
 
 
-// ── Sign-off view model (Sprint 14) ───────────────────────────────────────────
+// ── Sign-off view model (Sprint 14; request #39 Sprint 2) ────────────────────
 // The run-detail page's conditional sign-off chain, as ONE pure decision so it can be tested
-// without mounting the page (and so the three-state layout can't drift between the in-progress
-// block and the completed block).
+// without mounting the page (and so the in-progress block and the completed block can't drift).
 //
-// IMPORTANT: `financeCheckRequired` is the SERVER's verdict for this organisation
-// (payments.finance_check_required), read verbatim off the run payload. Nothing here re-derives
-// it from the staff list — that would recreate the keep-in-sync pair docs/lessons.md warns about.
+// IMPORTANT: every input is the SERVER's verdict, read verbatim off the run payload — whether the
+// check step is armed (`check_step_required`, with the old `finance_check_required` key as the
+// fallback for one release), the step THIS viewer may take now (`your_step`, from the same
+// `payments.next_step_for` that `payments.sign` asks), whether the organisation admin approves
+// under the fallback, and whether this viewer may edit or cancel (`can_prepare`). Nothing here
+// re-derives a rule from a role or a staff list (docs/lessons.md: carry the computed value across
+// the language boundary, never mirror the rule). Since #39 Sprint 2 Finance APPROVES runs.
+
+export type PaymentStep = 'sign' | 'check' | 'approve'
 
 export interface SignOffRun {
   status: string
   finance_check_required: boolean
+  check_step_required?: boolean
   finance_signed: unknown | null
   admin_signed: unknown | null
+  your_step?: PaymentStep | null
+  approver_fallback?: boolean
+  can_prepare?: boolean
 }
 
 export interface SignOffView {
-  /** Does this org's chain include the finance check? Drives the 3- vs 2-column layout. */
+  /** Is the check step armed for this run? Drives the 3- vs 2-column layout. */
   needsFinance: boolean
-  /** Render the finance column at all. False for a dormant org — no empty placeholder. */
+  /** Render the check column at all. False when unarmed — no empty placeholder. */
   showFinanceColumn: boolean
-  /** The approver must wait: maker signed, chain has a finance step, nobody has checked yet. */
+  /** The approver must wait: prepared, the check is armed, nobody has checked yet. */
   awaitingFinance: boolean
-  /** Step number shown against the approver column (2 when dormant, 3 when armed). */
+  /** Step number shown against the approver column (2 when unarmed, 3 when armed). */
   approverStepNumber: 2 | 3
-  /** Item editing + Cancel are admin/org_admin powers; finance reads and signs only. */
+  /** Item editing + Cancel: Prepare holders and the organisation admin (served `can_prepare`). */
   canEditItems: boolean
   canCancel: boolean
-  /** The COMPLETED block shows a third seal only when a finance signature was collected. */
+  /** The COMPLETED block shows a third seal only when a check signature was collected. */
   completedColumns: 2 | 3
+  /** The step this viewer may take now, if any — the ONLY thing that draws a name box. */
+  yourStep: PaymentStep | null
+  /** Approving under the fallback: nobody else can, so the page says why the button is there. */
+  fallback: boolean
 }
 
-export function signOffView(run: SignOffRun, viewerRole?: string): SignOffView {
-  const isFinanceViewer = viewerRole === 'finance'
-  const needsFinance = !!run.finance_check_required
+export function signOffView(run: SignOffRun): SignOffView {
+  const needsFinance = !!(run.check_step_required ?? run.finance_check_required)
+  const yourStep = run.your_step ?? null
   return {
     needsFinance,
     showFinanceColumn: needsFinance,
     awaitingFinance: needsFinance && run.status === 'admin_signed' && !run.finance_signed,
     approverStepNumber: needsFinance ? 3 : 2,
-    canEditItems: run.status === 'draft' && !isFinanceViewer,
-    canCancel: !isFinanceViewer,
-    // Keyed on the SIGNATURE, never on finance_check_required: a historical run completed
-    // before the role existed must render the original 2-card layout and imply no skipped step,
-    // even if the org has since appointed a finance admin.
+    canEditItems: run.status === 'draft' && !!run.can_prepare,
+    canCancel: !!run.can_prepare,
+    // Keyed on the SIGNATURE, never on the check flag: a historical run completed before the
+    // step existed must render the original 2-card layout and imply no skipped step.
     completedColumns: run.finance_signed ? 3 : 2,
+    yourStep,
+    fallback: yourStep === 'approve' && !!run.approver_fallback,
   }
 }

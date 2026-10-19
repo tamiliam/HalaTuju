@@ -456,11 +456,13 @@ class TestSignOff(TestCase):
             return _run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
 
     def test_maker_sign_notifies_org_admin(self):
+        # No Finance person here, so the organisation admin approves under the FALLBACK (#39 S2)
+        # and is the one told — the original two-step path, unchanged.
         from django.core import mail
         mail.outbox = []
         run = self._run()
         payments.sign(run, self.maker, 'Poongulali Veeran')
-        notes = [m for m in mail.outbox if 'countersignature' in m.subject]
+        notes = [m for m in mail.outbox if 'awaits your approval' in m.subject]
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes[0].to, ['approver@x.com'])
         self.assertIn(run.reference, notes[0].subject)
@@ -869,6 +871,11 @@ class TestBackAndAdvancePay(TestCase):
 
 @override_settings(BURSARY_AGREEMENT_ENABLED=False)
 class TestFinanceCheck(TestCase):
+    """The optional middle CHECK. Since #39 Sprint 2 no preset holds `payments_check` (Finance
+    APPROVES), so the checker here is a person given a CUSTOM set holding only the check — the
+    "third signer one permission away" the owner asked to keep possible. Nobody else here holds
+    `payments_approve`, so the organisation admin approves under the fallback, and every case below
+    behaves exactly as the Sprint 14 three-step chain did."""
     @classmethod
     def setUpTestData(cls):
         cls.org = _make_org(code='fin-bp')
@@ -878,7 +885,7 @@ class TestFinanceCheck(TestCase):
             name='Maker One', email='maker@x.com')
         cls.finance = PartnerAdmin.objects.create(
             supabase_user_id='fin-fi', role='finance', is_active=True, owning_organisation=cls.org,
-            name='Finance One', email='finance@x.com')
+            name='Finance One', email='finance@x.com', permissions=['payments_check'])
         cls.approver = PartnerAdmin.objects.create(
             supabase_user_id='fin-ap', role='org_admin', is_active=True, owning_organisation=cls.org,
             name='Approver One', email='approver@x.com')
@@ -914,7 +921,8 @@ class TestFinanceCheck(TestCase):
         other = _make_org(code='fin-other', name='Other Org')
         PartnerAdmin.objects.create(
             supabase_user_id='fin-other-fi', role='finance', is_active=True,
-            owning_organisation=other, name='Other Fin', email='otherfin@x.com')
+            owning_organisation=other, name='Other Fin', email='otherfin@x.com',
+            permissions=['payments_check'])
         self._deactivate_finance()
         self.assertFalse(payments.finance_check_required(self.org))
         self.assertTrue(payments.finance_check_required(other))
@@ -958,7 +966,7 @@ class TestFinanceCheck(TestCase):
         payments.sign(run, self.maker, 'Maker One')
         mail.outbox = []
         payments.sign(run, self.finance, 'Finance One')
-        notes = [m for m in mail.outbox if 'countersignature' in m.subject]
+        notes = [m for m in mail.outbox if 'awaits your approval' in m.subject]
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes[0].to, ['approver@x.com'])
 
@@ -1050,7 +1058,8 @@ class TestFinanceCheck(TestCase):
     def test_maker_may_not_also_be_the_finance_checker(self):
         maker_fin = PartnerAdmin.objects.create(
             supabase_user_id='fin-mf', role='finance', is_active=True,
-            owning_organisation=self.org, name='Maker One', email='MAKER@X.COM')
+            owning_organisation=self.org, name='Maker One', email='MAKER@X.COM',
+            permissions=['payments_check'])
         run = self._run()
         payments.sign(run, self.maker, 'Maker One')
         with self.assertRaises(payments.PaymentsError) as cm:

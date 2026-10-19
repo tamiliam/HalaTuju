@@ -435,7 +435,7 @@ def _sponsor_detail_dict(sponsor, admin, base):
         # offer an org_admin a countersign the service then refuses with
         # `finance_check_required`, which is exactly the mismatch this flag exists to prevent.
         'finance_check_required': any(
-            payments_service.finance_check_required(org)
+            payments_service.credit_check_required(org)   # credits keep the finance-ROLE rule (#39 S2)
             for org in _chain_organisations(programmes, credit_rows, membership_rows)
         ),
         # True when this caller sees only their own organisation's share of the account, so

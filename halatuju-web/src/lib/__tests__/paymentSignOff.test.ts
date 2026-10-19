@@ -70,24 +70,38 @@ describe('signOffView — the completed seal cards', () => {
   })
 })
 
-describe('signOffView — what a finance viewer may do', () => {
-  it('lets admin and org_admin edit a draft and cancel', () => {
-    for (const role of ['admin', 'org_admin', 'super', undefined]) {
-      const v = signOffView(run({ status: 'draft' }), role)
-      expect(v.canEditItems).toBe(true)
-      expect(v.canCancel).toBe(true)
-    }
-  })
-
-  it('refuses item editing and cancelling to finance, even on a draft', () => {
-    const v = signOffView(run({ status: 'draft' }), 'finance')
-    expect(v.canEditItems).toBe(false)
-    expect(v.canCancel).toBe(false)
+describe('signOffView — what the served fields allow (#39 Sprint 2)', () => {
+  it('edits a draft and cancels only when the server says can_prepare', () => {
+    const yes = signOffView(run({ status: 'draft', can_prepare: true }))
+    expect([yes.canEditItems, yes.canCancel]).toEqual([true, true])
+    // Finance APPROVES runs and is served can_prepare: false — no edit, no cancel.
+    const no = signOffView(run({ status: 'draft', can_prepare: false }))
+    expect([no.canEditItems, no.canCancel]).toEqual([false, false])
+    // A payload from before the change carries no can_prepare: nothing is offered.
+    expect(signOffView(run({ status: 'draft' })).canEditItems).toBe(false)
   })
 
   it('does not allow editing once signatures exist, for anyone', () => {
-    expect(signOffView(run({ status: 'admin_signed' }), 'admin').canEditItems).toBe(false)
-    expect(signOffView(run({ status: 'finance_checked' }), 'org_admin').canEditItems).toBe(false)
+    expect(signOffView(run({ status: 'admin_signed', can_prepare: true })).canEditItems).toBe(false)
+    expect(signOffView(run({ status: 'finance_checked', can_prepare: true })).canEditItems).toBe(false)
+  })
+
+  it('carries your_step verbatim, and null when absent', () => {
+    expect(signOffView(run({ status: 'admin_signed', your_step: 'approve' })).yourStep).toBe('approve')
+    expect(signOffView(run({ status: 'admin_signed' })).yourStep).toBeNull()
+  })
+
+  it('names the fallback only to the person whose step is the approval', () => {
+    expect(signOffView(run({ status: 'admin_signed', your_step: 'approve', approver_fallback: true })).fallback)
+      .toBe(true)
+    expect(signOffView(run({ status: 'admin_signed', your_step: null, approver_fallback: true })).fallback)
+      .toBe(false)
+  })
+
+  it('reads check_step_required first and the old key only when it is absent', () => {
+    expect(signOffView(run({ finance_check_required: true, check_step_required: false })).needsFinance)
+      .toBe(false)
+    expect(signOffView(run({ finance_check_required: true })).needsFinance).toBe(true)
   })
 })
 

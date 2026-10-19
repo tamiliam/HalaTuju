@@ -1,6 +1,6 @@
 import type { ManualChapter } from './types'
 
-/** Finance chapter — the payment-run checker. Every statement traces to
+/** Finance chapter — the payment-run APPROVER since #39 Sprint 2 (owner, 2026-10-19). Every statement traces to
  *  docs/scholarship/role-matrix.md (the authority) and the live gates in
  *  apps/scholarship/payments.py + views_admin.py. */
 export const roleFinance: ManualChapter = {
@@ -8,17 +8,20 @@ export const roleFinance: ManualChapter = {
   title: 'Finance admin',
   group: 'role',
   role: 'finance',
-  blurb: 'You check the money before it goes out.',
+  blurb: 'You approve the money before it goes out.',
   sections: [
     {
       anchor: 'finance-remit',
       title: 'What you do',
       body: (
-        <>You are the <strong>check</strong> between the person who prepares a payment run and the person who
-        approves it. Somebody builds the month&rsquo;s list of students and signs it; you check it; only then can
-        your organisation admin countersign and release the money. Nothing is paid until all three signatures are
-        in. Your job is the money, not the students &mdash; you don&rsquo;t review applications, and you
-        can&rsquo;t see applicant files.</>
+        <>You <strong>approve payment runs</strong>. Somebody (a general admin) builds the month&rsquo;s list of
+        students and signs it as the preparer; you check it and approve it, and <strong>your approval releases the
+        money</strong> &mdash; the payment instruction is emailed to Vircle, which pays the students.
+        Your organisation admin no longer countersigns runs; they still put the organisation&rsquo;s money into
+        Vircle, which happens outside HalaTuju. Nothing is paid until you approve. For <strong>wallet
+        credits</strong> (sponsor money coming in) you are still the <strong>check</strong>: an admin records the
+        credit, you check it, and your organisation admin countersigns. Your job is the money, not the students
+        &mdash; you don&rsquo;t review applications, and you can&rsquo;t see applicant files.</>
       ),
     },
     {
@@ -26,43 +29,47 @@ export const roleFinance: ManualChapter = {
       title: 'Where to find Payments',
       body: (
         <>Point at the strip of icons on the left to open the menu, and choose <strong>Payments</strong> under
-        your organisation. You&rsquo;ll see the list of payment runs, newest first. (Payments used to be reached
-        through an Administration page; it now has its own place in the menu.)</>
+        your organisation. You&rsquo;ll see the list of payment runs, newest first. A run waiting for your
+        approval is listed above them under <strong>Waiting for you</strong>, and the Payments row in the menu
+        carries a number when one is waiting.</>
       ),
       img: '/manual/finance-payments.png',
       alt: 'The Payments page, reached from the organisation section of the menu',
     },
     {
       anchor: 'finance-checking',
-      title: 'Checking a run',
+      title: 'Approving a run',
       body: (
         <>Open a run to see every student on it, the amount each is due, and the total. Download the
-        <strong> CSV</strong> &mdash; that is the exact file the bank instruction is built from, so check it, not
-        just the screen. When you are satisfied, type your <strong>full name</strong> in the finance box and
-        click <strong>Check</strong>. Your name must match the name on your account exactly, and it is recorded
-        against the run permanently.</>
+        <strong> CSV</strong> &mdash; that is the exact file the payment instruction is built from, so check it,
+        not just the screen. When you are satisfied, type your <strong>full name</strong> in the
+        <strong> Approved</strong> box and click <strong>Approve &amp; send to Vircle</strong>. Your name must
+        match the name on your account exactly, and it is recorded against the run permanently. The instruction
+        is emailed to Vircle at once, with you copied, so you hold your own record of what was sent.</>
       ),
       img: '/manual/finance-signature.png',
-      alt: 'The three signature steps on a payment run',
+      alt: 'The signature steps on a payment run',
     },
     {
       anchor: 'finance-not-right',
       title: 'If something isn’t right',
       body: (
-        <>Then <strong>don&rsquo;t sign</strong>. That is the whole point of the step &mdash; the run cannot go
-        anywhere without you. Ask whoever prepared it to correct it. Note that editing a run sends it back to
+        <>Then <strong>don&rsquo;t approve</strong>. That is the whole point of the step &mdash; the run cannot
+        go anywhere without you. Ask whoever prepared it to correct it. Note that editing a run sends it back to
         <strong> draft</strong> and clears every signature collected so far, <em>including yours</em>, so
-        you&rsquo;ll be asked to check the corrected list afresh. That is deliberate: nobody should sign one list
-        and have a different one go out.</>
+        you&rsquo;ll be asked to approve the corrected list afresh. That is deliberate: nobody should sign one
+        list and have a different one go out.</>
       ),
     },
     {
       anchor: 'finance-three-signers',
-      title: 'Three different people',
+      title: 'Different people sign',
       body: (
-        <>Every signature on a run must belong to a <strong>different person</strong>. You cannot check a run you
-        prepared, and you cannot also countersign one you have checked. If you find yourself unable to sign, it is
-        usually this rule &mdash; someone else has to take one of the steps.</>
+        <>Every signature on a run must belong to a <strong>different person</strong>, so you cannot approve a
+        run you signed in another step. When no one else can approve a run &mdash; for instance a run you checked
+        before Finance became the approver &mdash; your <strong>organisation admin</strong> approves it instead,
+        and the run says so. Your organisation may also give somebody a separate <strong>check</strong> step
+        before yours; a run then shows three steps and waits for that check before you can approve.</>
       ),
     },
     {
@@ -104,7 +111,7 @@ export const roleFinance: ManualChapter = {
         These are <strong>totals only</strong>. No names, no files, no verdicts &mdash; the Overview follows
         the same line your role does everywhere else. And it does not replace <strong>Payments</strong>, which
         remains the ledger: the runs, the CSV, the signatures and the funding summary student by student. Read
-        the Overview to see how the gift is going; open Payments to check and sign.</>
+        the Overview to see how the gift is going; open Payments to check and approve.</>
       ),
     },
     {
@@ -114,7 +121,7 @@ export const roleFinance: ManualChapter = {
         <>You <strong>cannot open applicant files</strong> &mdash; no applications list, no documents, no income
         details, no interview notes, no verdicts. That is by design: checking a payment doesn&rsquo;t require
         knowing a family&rsquo;s circumstances, so you aren&rsquo;t given them. You also cannot
-        <strong> create</strong>, <strong>edit</strong> or <strong>cancel</strong> a run &mdash; you check what
+        <strong> create</strong>, <strong>edit</strong> or <strong>cancel</strong> a run &mdash; you approve what
         others prepare. You can view the Sponsors list, but not approve or reject a sponsor. Billing &amp; usage,
         including the invoices the platform sends your organisation, is for your organisation admin.</>
       ),

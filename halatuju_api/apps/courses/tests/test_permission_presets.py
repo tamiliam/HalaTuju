@@ -15,10 +15,13 @@ WHAT THIS FILE PROVES, in two halves, for every row of `GOLDEN`:
    two kinds: R1 (the super's wider choice of assignee, kept as a super override, roadmap R1) and one
    Sprint 3 finding on the Reviewers tab.
 
-⚠ SPRINT 2 CHANGES ONLY THE ROWS MARKED `s2`, and each names the owner's ruling of 2026-10-19
+⚠ SPRINT 2 CHANGED ONLY THE ROWS MARKED `s2`, and each names the owner's ruling of 2026-10-19
 ("Finance role ... I would like the role to be able to approve payment — the work that Suresh does
 today"): Finance APPROVES runs, the organisation admin stops countersigning and becomes the fallback
-approver, and no preset holds the CHECK any more. Every other row must stay exactly as it is.
+approver, and no preset holds the CHECK any more. Each `s2` row's `today` is the NEW truth and its
+`was` keeps the Sprint 1 answer, so the flip stays readable. Every other row's `today` is unchanged;
+`payments_read`'s RULE gained "or the lead tier" (its truth did not move), because the lead tier no
+longer holds `payments_approve` and still opens Payments.
 
 The reverse sweep (`ReverseSweep`) holds the vocabulary: every catalogue key reaches at least one row,
 every stored role resolves, and no row names a key the catalogue does not have.
@@ -160,13 +163,14 @@ GOLDEN = {
     },
     # ── E. payments ─────────────────────────────────────────────────────────────────────────────
     'payments_read': {
-        'where': 'views_admin/payments.py _PAYMENTS_READ_ROLES',
+        'where': 'views_admin/payments.py _payments_admin READ (payments.may_read)',
         'keys': ('payments_prepare', 'payments_check', 'payments_approve'),
         'today': _t('super', 'org_admin', 'admin', 'finance'),
-        'rule': lambda a, c: _any_payments(a),
+        'rule': lambda a, c: _any_payments(a) or sp.is_lead_tier(a),
     },
     'payments_write': {
-        'where': 'views_admin/payments.py _PAYMENTS_WRITE_ROLES (create / edit item / cancel)',
+        'where': 'views_admin/payments.py _payments_admin WRITE (payments.may_prepare: create / edit '
+                 'item / cancel)',
         'keys': ('payments_prepare',),
         'today': _t('super', 'org_admin', 'admin'),
         'rule': lambda a, c: a.has_perm('payments_prepare') or sp.is_lead_tier(a),
@@ -178,23 +182,27 @@ GOLDEN = {
         'rule': lambda a, c: a.has_perm('payments_prepare'),
     },
     'sign_the_check': {
-        'where': 'payments.py sign at admin_signed with the check armed',
+        'where': 'payments_chain.py sign at admin_signed with the check armed (by a custom holder)',
         'keys': ('payments_check',),
-        'today': _t('super', 'finance'),
+        'today': _t('super'),
+        'was': _t('super', 'finance'),
         'rule': lambda a, c: a.has_perm('payments_check'),
         's2': S2_RULING + ' — after S2 no preset holds payments_check (dormant until granted).',
     },
     'sign_the_approval': {
-        'where': 'payments.py sign at finance_checked (the countersignature that completes the run)',
+        'where': 'payments_chain.py sign at finance_checked (the approval that completes the run)',
         'keys': ('payments_approve',),
-        'today': _t('super', 'org_admin'),
+        'today': _t('super', 'finance'),
+        'was': _t('super', 'org_admin'),
         'rule': lambda a, c: a.has_perm('payments_approve'),
         's2': S2_RULING + ' — after S2 finance approves; org_admin only under the fallback.',
     },
     'check_step_armed_by': {
-        'where': 'payments.py finance_check_required (an organisation whose only active member is X)',
+        'where': 'payments_chain.py finance_check_required (an organisation whose only active member '
+                 'is X)',
         'keys': ('payments_check',),
-        'today': _t('finance'),
+        'today': _t(),
+        'was': _t('finance'),
         'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_check'))),
         's2': S2_RULING + ' — re-keyed to "an active member holds payments_check"; wallet credits '
                           'keep the finance-role rule (credit_check_required).',
@@ -203,40 +211,47 @@ GOLDEN = {
         'where': 'views_admin/payments.py _payment_run_detail finance_check_required (a run of an '
                  'organisation whose only active member is X)',
         'keys': ('payments_check',),
-        'today': _t('finance'),
+        'today': _t(),
+        'was': _t('finance'),
         'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_check'))),
         's2': S2_RULING + ' — served as check_step_required beside it; same predicate.',
     },
     'countersign_email_goes_to': {
-        'where': 'emails/payment_mail.py send_payment_countersign_email (role org_admin)',
+        'where': 'emails/payment_mail.py send_payment_countersign_email (the approvers, else the '
+                 'org admins under the fallback)',
         'keys': ('payments_approve',),
-        'today': _t('org_admin'),
+        'today': _t('finance'),
+        'was': _t('org_admin'),
         'rule': lambda a, c: a in sp.holders(c.org, 'payments_approve'),
         's2': S2_RULING + ' — the "ready" email goes to the approvers (Finance), else the '
                           'checkers when armed, else the org admins under the fallback.',
     },
     'check_email_goes_to': {
-        'where': 'emails/payment_mail.py send_payment_finance_check_email (role finance)',
+        'where': 'emails/payment_mail.py send_payment_finance_check_email (payments_check holders)',
         'keys': ('payments_check',),
-        'today': _t('finance'),
+        'today': _t(),
+        'was': _t('finance'),
         'rule': lambda a, c: a in sp.holders(c.org, 'payments_check'),
         's2': S2_RULING + ' — goes to payments_check holders, when anybody holds it.',
     },
     'other_active_finance': {
         'where': 'staff_lifecycle._other_active_finance (the role-change consequence: is X another '
                  'active finance member of the target\'s organisation?)',
-        'keys': ('payments_check',),
+        'keys': ('payments_approve',),
         'today': _t('finance'),
-        'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_check'))),
-        's2': S2_RULING + ' — the consequence words follow the re-keyed check; credits keep the '
-                          'finance-role rule.',
+        'was': _t('finance'),
+        'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_approve'))),
+        's2': S2_RULING + ' — the answer does not move: the finance ROLE is what both consequences '
+                          'turn on (the preset that now APPROVES runs, and the credit check, which '
+                          'keeps the finance-role rule); the rule now reads payments_approve.',
     },
     'switch_refused_for_unfinished_run': {
         'where': 'staff_lifecycle.plan_role_change run_in_progress (X made / signed an unfinished '
                  'run and is switched to its role pair)',
-        'keys': ('payments_check',),
+        'keys': ('payments_approve',),
         'today': _t('admin'),
-        'rule': lambda a, c: c.pair_preset_holds(a, ('payments_check',)),
+        'was': _t('admin'),
+        'rule': lambda a, c: c.pair_preset_holds(a, ('payments_approve',)),
         's2': S2_RULING + ' — "cannot check their own run" becomes "cannot approve their own run" '
                           '(the pair preset then holds payments_approve).',
     },
@@ -393,8 +408,14 @@ class GoldenTable(TestCase):
         return self._sign(a, 'draft')
 
     def probe_sign_the_check(self, a):
-        # Armed: this organisation has an active finance member (the table's own finance person).
-        return self._sign(a, 'admin_signed', admin_signed_email='maker@elsewhere.test')
+        # Armed since Sprint 2 by a CUSTOM holder (no preset holds payments_check any more), who is
+        # removed again so the other rows never see them.
+        checker = make_admin('admin', owning_org=self.org)
+        PartnerAdmin.objects.filter(pk=checker.pk).update(permissions=['payments_check'])
+        try:
+            return self._sign(a, 'admin_signed', admin_signed_email='maker@elsewhere.test')
+        finally:
+            checker.delete()
 
     def probe_sign_the_approval(self, a):
         return self._sign(a, 'finance_checked', admin_signed_email='maker@elsewhere.test',
@@ -433,7 +454,9 @@ class GoldenTable(TestCase):
     def _recipients(self, send):
         from django.core import mail
         run = SimpleNamespace(id=1, reference='PR-GOLD', organisation=self.org,
-                              admin_signed_name='Maker', payment_date=datetime.date(2026, 11, 1))
+                              admin_signed_name='Maker', payment_date=datetime.date(2026, 11, 1),
+                              admin_signed_email='maker@elsewhere.test', finance_signed_email='',
+                              org_admin_signed_email='')
         mail.outbox.clear()
         with mock.patch('apps.scholarship.emails.payment_mail._run_totals', return_value=(1, 100)), \
                 mock.patch('apps.scholarship.emails.payment_mail._run_month_label',
@@ -518,8 +541,9 @@ class GoldenTable(TestCase):
                                  f'declared: {sorted(row.get("diverges", {}))}')
 
     def test_the_lone_member_probe_restores_the_organisation(self):
-        # The `check_step_armed_by` row moves a person; the other rows must not see it.
-        self.assertTrue(self.probe_check_step_armed_by(self.people['finance']))
+        # The lone-member rows move a person; the other rows must not see it. (Sprint 2: finance no
+        # longer arms the check, so the probe that still answers True for them is asked instead.)
+        self.assertTrue(self.probe_other_active_finance(self.people['finance']))
         self.people['finance'].refresh_from_db()
         self.assertEqual(self.people['finance'].owning_organisation_id, self.org.id)
         self.people['partner'].refresh_from_db()
@@ -556,6 +580,15 @@ class ReverseSweep(TestCase):
         self.assertEqual(sorted(sp.PRESETS), sorted(sp.TEAM_ROLES))
         self.assertEqual(sorted(set(sp.TEAM_ROLES) | {'org_admin', 'super', 'partner'}),
                          sorted(roles))
+
+    def test_every_s2_row_names_the_ruling_and_keeps_what_it_was(self):
+        for gate, row in GOLDEN.items():
+            if 's2' not in row:
+                self.assertNotIn('was', row, gate)
+                continue
+            with self.subTest(gate=gate):
+                self.assertTrue(row['s2'].startswith(S2_RULING))
+                self.assertEqual(set(row['was']), set(ROLES))
 
     def test_the_s2_rows_are_exactly_the_payment_chain(self):
         s2 = sorted(g for g, row in GOLDEN.items() if 's2' in row)

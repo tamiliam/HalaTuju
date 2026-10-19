@@ -335,8 +335,8 @@ def sign_admin_credit(credit, admin, typed_name):
 
     ``finance_check_required`` is evaluated LIVE at every attempt and never stored, so
     appointing a finance admin ARMS the check for a credit already mid-chain, and revoking
-    the last one degrades it back to two steps. Both are inherited from the payments chain
-    rather than reimplemented. Returns the credit.
+    the last one degrades it back to two steps. ⚠ The finance-ROLE rule is
+    ``payments.credit_check_required`` since #39 S2 (runs moved to permissions). Returns the credit.
     """
     from . import payments
     if credit.status not in (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED,
@@ -347,7 +347,7 @@ def sign_admin_credit(credit, admin, typed_name):
     is_super = bool(getattr(admin, 'is_super', False))
     email = (admin.email or '').strip().casefold()
     now = timezone.now()
-    needs_finance = payments.finance_check_required(_credit_org(credit))
+    needs_finance = payments.credit_check_required(_credit_org(credit))   # #39 S2: today's role rule
 
     if credit.status == Donation.STATUS_DRAFT:
         if not (is_super or admin.role == 'admin'):

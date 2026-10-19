@@ -57,10 +57,11 @@ class Donation(models.Model):
 
     # Sign-off chain — DELIBERATELY the same shape as PaymentRun's
     # (`draft → admin_signed → [finance_checked] → confirmed`), and the finance step is
-    # likewise CONDITIONAL and never stored: payments.finance_check_required(organisation)
+    # likewise CONDITIONAL and never stored: payments.credit_check_required(organisation)
     # is evaluated live, so appointing a finance admin arms the check even for a credit
-    # already mid-chain. ⚠ A change to the payment-run chain must update this one in the
-    # same commit — they are one design (decisions.md).
+    # already mid-chain. ⚠ SINCE #39 SPRINT 2 THE TWO CHAINS DIVERGE ON PURPOSE (owner question
+    # 6): runs read permissions (Finance APPROVES), credits keep this finance-ROLE rule. A change
+    # to either must say which chain it means (decisions.md).
     STATUS_DRAFT = 'draft'
     STATUS_ADMIN_SIGNED = 'admin_signed'
     STATUS_FINANCE_CHECKED = 'finance_checked'
@@ -284,9 +285,10 @@ class PaymentRun(models.Model):
     (name/email/at) — not a boolean pair — is what let the finance 'checker' step land
     additively (Sprint 14, 2026-07-23) exactly where this docstring parked it.
 
-    **The finance step is CONDITIONAL and its requirement is never stored here.**
+    **The check step is CONDITIONAL and its requirement is never stored here.**
     ``payments.finance_check_required(organisation)`` is evaluated LIVE at each sign attempt
-    (the org has ≥1 active ``finance`` PartnerAdmin). With none, the chain runs as the
+    (since #39 Sprint 2: an active member holds ``payments_check`` — Finance itself now APPROVES,
+    in the ``org_admin_signed_*`` triple, a kept misnomer). With none, the chain runs as the
     original two steps, byte-identical. Deliberately not a column: storing it would freeze a
     run's shape at creation, and the owner's rule is that activating finance DOES arm the
     check for a run already sitting at ``admin_signed``. A historical ``completed`` run

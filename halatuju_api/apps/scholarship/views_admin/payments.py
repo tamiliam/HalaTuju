@@ -11,10 +11,11 @@ from ..serializers_admin_gift import gift_ref
 from .base import _AdminBase
 
 
-# ── Payments module (Vircle payment runs) — admin + org_admin, org-fenced (P2) ────
-# Access: an `admin` or `org_admin` (super passes), and the run is org-fenced (a
-# cross-org run is 404, never 403). Reviewer/qc/partner -> 403. The service
-# (apps.scholarship.payments) owns the state machine; these views are thin.
+# ── Payments module (Vircle payment runs) — org-fenced (P2), gated on PERMISSIONS (#39 S2) ────
+# Access: `payments.may_read` (any payments_* key, or the organisation admin; super passes) to read,
+# `payments.may_prepare` to create / edit / cancel; the run is org-fenced (a cross-org run is 404,
+# never 403). Reviewer/qc/partner -> 403. The service (apps.scholarship.payments_chain) owns the
+# state machine and `your_step`; these views are thin.
 from decimal import Decimal as _Decimal
 
 
@@ -54,7 +55,8 @@ def _run_programme(run):
     return gift_ref(getattr(run, 'programme', None))
 
 
-def _payment_run_summary(run):
+def _payment_run_summary(run, admin=None, cache=None):
+    from .. import payments
     included = [i for i in run.items.all() if i.included]
     total = sum((i.amount for i in included), _Decimal('0'))
     return {
@@ -62,10 +64,13 @@ def _payment_run_summary(run):
         'period_month': run.period_month, 'programme': _run_programme(run),
         'status': run.status, 'students': len(included), 'total': str(total),
         'created_at': run.created_at,
+        # The step THIS caller may take now ('sign' / 'check' / 'approve') or None — the "Waiting
+        # for you" block and the menu badge read it; `payments.sign` asks the same predicate.
+        'your_step': payments.next_step_for(run, admin, cache),
     }
 
 
-def _payment_run_detail(run):
+def _payment_run_detail(run, admin=None):
     items = list(run.items.select_related('application', 'application__profile').all())
     included = [i for i in items if i.included]
     total = sum((i.amount for i in included), _Decimal('0'))
@@ -101,6 +106,13 @@ def _payment_run_detail(run):
         # (payments.finance_check_required); mirroring it in TypeScript would make it the sixth
         # keep-in-sync pair this codebase has had to un-drift (see docs/lessons.md).
         'finance_check_required': payments.finance_check_required(run.organisation),
+        # #39 S2: the same predicate under its lasting name (the key above stays one release for
+        # old bundles); the step THIS caller may take; whether the organisation admin approves
+        # because nobody else can (the page says why); and whether this caller may edit / cancel.
+        'check_step_required': payments.check_step_required(run.organisation),
+        'your_step': payments.next_step_for(run, admin),
+        'approver_fallback': run.status in payments.EDITABLE_STATUSES and payments.approver_fallback(run),
+        'can_prepare': payments.may_prepare(admin),
         'org_admin_signed': _sig(run.org_admin_signed_name, run.org_admin_signed_email, run.org_admin_signed_at),
         'items': [_payment_item_dict(i) for i in items],
         'skipped': skipped,
@@ -108,22 +120,27 @@ def _payment_run_detail(run):
     }
 
 
-_PAYMENTS_READ_ROLES = ('admin', 'org_admin', 'finance')
-_PAYMENTS_WRITE_ROLES = ('admin', 'org_admin')
+#: The two gates, by name. Since #39 Sprint 2 they read PERMISSIONS (`payments.may_read` /
+#: `payments.may_prepare`), not roles; for today's presets they admit exactly the old role sets
+#: (read: super / admin / org_admin / finance; write: super / admin / org_admin — the golden table).
+_PAYMENTS_READ = 'read'
+_PAYMENTS_WRITE = 'write'
 
 
 class _PaymentsBase(_AdminBase):
     """Shared gate + org-fenced run lookup for the Payments endpoints."""
-    def _payments_admin(self, request, roles=_PAYMENTS_READ_ROLES):
-        """Gate a Payments endpoint. The default admits `finance` — correct for the READ
-        endpoints (list, detail, CSV) and for Sign, whose per-step role logic lives in
-        `payments.sign`. The MUTATING endpoints (create a run, edit an item, cancel) pass
-        ``roles=_PAYMENTS_WRITE_ROLES`` explicitly: finance checks a run, it never authors one.
-        `payments.sign`'s `wrong_role` remains the backstop on the signing step."""
+    def _payments_admin(self, request, gate=_PAYMENTS_READ):
+        """Gate a Payments endpoint. READ (the default: list, detail, CSV, funding summary, and
+        Sign, whose per-step logic lives in `payments.sign`) admits any `payments_*` holder or the
+        organisation admin. The MUTATING endpoints (create a run, edit an item, cancel) pass
+        ``gate=_PAYMENTS_WRITE``: Prepare, or the organisation admin — Finance approves a run, it
+        never authors or withdraws one. `payments.sign`'s refusal remains the backstop on signing."""
+        from .. import payments
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (admin.is_super or admin.role in roles):
+        allowed = payments.may_prepare if gate == _PAYMENTS_WRITE else payments.may_read
+        if not allowed(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -162,10 +179,13 @@ class AdminPaymentRunListView(_PaymentsBase):
             qs = qs.filter(organisation_id=admin.owning_organisation_id)
         if programme is not None:
             qs = qs.filter(programme=programme)
-        return Response({'runs': [_payment_run_summary(r) for r in qs]})
+        from .. import payments
+        cache = {}     # one holders() read per organisation for the whole list
+        return Response({'runs': [_payment_run_summary(r, admin, cache) for r in qs],
+                         'can_prepare': payments.may_prepare(admin)})
 
     def post(self, request):
-        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
+        admin, err = self._payments_admin(request, gate=_PAYMENTS_WRITE)
         if err:
             return err
         org = admin.owning_organisation
@@ -218,7 +238,7 @@ class AdminPaymentRunListView(_PaymentsBase):
                 # in the frontend, which would make it a keep-in-sync pair that drifts.
                 body['earliest'] = payments.earliest_payment_date(pm).isoformat()
             return Response(body, status=status.HTTP_400_BAD_REQUEST)
-        return Response(_payment_run_detail(run), status=status.HTTP_201_CREATED)
+        return Response(_payment_run_detail(run, admin), status=status.HTTP_201_CREATED)
 
 
 class AdminPaymentRunDetailView(_PaymentsBase):
@@ -230,13 +250,13 @@ class AdminPaymentRunDetailView(_PaymentsBase):
         run = self._run_for(admin, pk)
         if run is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response(_payment_run_detail(run))
+        return Response(_payment_run_detail(run, admin))
 
 
 class AdminPaymentRunItemView(_PaymentsBase):
     """PATCH a run item -- toggle include/exclude(+reason), edit amount (draft only)."""
     def patch(self, request, pk, item_id):
-        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
+        admin, err = self._payments_admin(request, gate=_PAYMENTS_WRITE)
         if err:
             return err
         run = self._run_for(admin, pk)
@@ -260,7 +280,7 @@ class AdminPaymentRunItemView(_PaymentsBase):
         except payments.PaymentsError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         run.refresh_from_db()
-        return Response(_payment_run_detail(run))
+        return Response(_payment_run_detail(run, admin))
 
 
 class AdminPaymentRunSignView(_PaymentsBase):
@@ -281,13 +301,13 @@ class AdminPaymentRunSignView(_PaymentsBase):
         except payments.PaymentsError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         run.refresh_from_db()
-        return Response(_payment_run_detail(run))
+        return Response(_payment_run_detail(run, admin))
 
 
 class AdminPaymentRunCancelView(_PaymentsBase):
-    """POST -- cancel a run at any pre-completion status. admin/org_admin only."""
+    """POST -- cancel a run at any pre-completion status. Prepare holders / org_admin only."""
     def post(self, request, pk):
-        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
+        admin, err = self._payments_admin(request, gate=_PAYMENTS_WRITE)
         if err:
             return err
         run = self._run_for(admin, pk)
@@ -299,7 +319,7 @@ class AdminPaymentRunCancelView(_PaymentsBase):
         except payments.PaymentsError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         run.refresh_from_db()
-        return Response(_payment_run_detail(run))
+        return Response(_payment_run_detail(run, admin))
 
 
 class AdminPaymentRunCsvView(_PaymentsBase):

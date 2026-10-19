@@ -11,7 +11,7 @@ first"*). Foreign keys answer "would this delete break a row?"; they do not answ
 doing a job?", and for staff that is the only question worth asking.
 
 ⚠ **WHAT THE SYSTEM CANNOT KNOW, and must not pretend to.** Nobody is *assigned* to payments: the
-right to author a run is granted by ROLE (`_PAYMENTS_WRITE_ROLES`), never to a named person. So
+right to author a run is granted by PERMISSION (`payments.may_prepare`), never to a named person. So
 there is no assignment to hand over and no handover this module could verify. The rule is therefore
 the stricter and honest one — **once you have done work you are revoked, never deleted** — because
 run 34 has to keep saying who made it.

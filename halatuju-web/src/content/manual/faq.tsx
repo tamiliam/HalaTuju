@@ -303,34 +303,36 @@ export const FAQ: Record<Audience, QA[]> = {
         the <strong>Sponsors</strong> list to see the credits and their signatures.</>,
     },
     {
-      q: <>Why can&rsquo;t I countersign this payment run yet?</>,
-      a: <>Because your organisation has a <strong>finance admin</strong>, and the run hasn&rsquo;t been checked
-        yet. The chain is: someone prepares and signs it, finance checks it, then you countersign and the money
-        goes. You&rsquo;ll see &ldquo;waiting for the finance check&rdquo; until that middle step is done. If you
-        have no finance admin, this step doesn&rsquo;t exist and you countersign straight after the first
-        signature.</>,
+      q: <>Who approves a payment run?</>,
+      a: <>Your <strong>finance admin</strong>. A general admin prepares the run and signs it; finance approves
+        it, and that approval sends the instruction to Vircle. You no longer countersign runs. You approve one
+        only when <strong>nobody else can</strong> &mdash; your organisation has no active finance admin, or the
+        only one already signed that run &mdash; and the run then says so above the approve box. Moving your
+        organisation&rsquo;s money into Vircle stays with you, outside HalaTuju.</>,
     },
     {
       q: <>How does a payment run work?</>,
       a: <>Open the menu (point at the icons on the left), choose <strong>Payments</strong> and create a run for the month. The system lists the
-        students who qualify and skips the rest with a reason. Someone signs it as the preparer, and you
-        countersign &mdash; and only then is the instruction emailed to Vircle with the payment file. Every
+        students who qualify and skips the rest with a reason. Someone signs it as the preparer, and your finance
+        admin approves it &mdash; and only then is the instruction emailed to Vircle with the payment file. Every
         signature must be a different person, and editing the list after any signature returns the run to
-        <strong> draft</strong> and clears the signatures collected so far.</>,
+        <strong> draft</strong> and clears the signatures collected so far. You can still create, edit and
+        cancel a run.</>,
     },
     {
       q: <>Can I appoint a finance admin myself?</>,
-      a: <>Yes. <strong>Invitations</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active, the
-        finance check becomes part of your payment chain &mdash; including for a run that is already waiting for
-        your countersignature.</>,
+      a: <>Yes. <strong>Invitations</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active,
+        they approve your payment runs instead of you &mdash; including a run already waiting for approval &mdash;
+        and wallet credits gain their finance check.</>,
     },
     {
       q: <>Can I change somebody&rsquo;s role?</>,
       a: <>Yes, within two pairs: <strong>Admin</strong> and <strong>Finance</strong>, and
         <strong> Reviewer</strong> and <strong>QC</strong>. Use <strong>Change role</strong> on their row in
-        <strong> People</strong>. Moving the only finance admin to Admin removes the finance check from your
-        payment runs, and appointing the first one adds it &mdash; the question tells you. A reviewer who
-        becomes QC (or back) keeps the cases already assigned to them.</>,
+        <strong> People</strong>. Appointing the first finance admin makes them your payment-run approver and adds
+        the finance check to wallet credits; moving the only one to Admin hands run approval back to you and
+        removes that check &mdash; the question tells you. A reviewer who becomes QC (or back) keeps the cases
+        already assigned to them.</>,
     },
     {
       q: <>I cancelled an invitation, or deleted someone, by mistake. Can I invite them again?</>,
@@ -367,8 +369,8 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Can I set the award amount?</>,
-      a: <>No — the amount is fixed by pathway, and setting/overriding it stays with the platform (a dedicated
-        Finance role will take money powers when payouts go live). You recommend; the platform confirms.</>,
+      a: <>No — the amount is fixed by pathway, and setting/overriding it stays with the platform (the
+        Finance role approves payment runs; it does not set amounts either). You recommend; the platform confirms.</>,
     },
   ],
   admin: [
@@ -387,7 +389,8 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>On cases and staff your role is <strong>read-only</strong>: you see everything in your organisation
         (applications, the Sponsors list, the Invitations page) but the buttons that change those
         aren&rsquo;t shown to you. Ask your organisation admin. <strong>Money is the exception</strong> — you
-        prepare payment runs and record wallet credits, and someone else countersigns them.</>,
+        prepare payment runs (your finance admin approves them) and record wallet credits (your organisation
+        admin countersigns them).</>,
     },
     {
       q: <>A sponsor has transferred us money. How do I put it in their wallet?</>,
@@ -429,10 +432,19 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>What can I do as a finance admin?</>,
-      a: <>You <strong>check</strong> payment runs. Somebody prepares the month&rsquo;s list and signs it, you
-        check it, then your organisation admin countersigns and the money is released. You can also read the
-        <strong> funding summary</strong> &mdash; what each student was awarded, paid and still has left. You
-        cannot create, edit or cancel a run.</>,
+      a: <>You <strong>approve</strong> payment runs. Somebody prepares the month&rsquo;s list and signs it; you
+        check it and approve it, and your approval releases the money &mdash; the instruction goes to Vircle with
+        the payment file, and you are copied. Runs waiting for you are listed at the top of
+        <strong> Payments</strong>, and the menu shows how many. You also <strong>check</strong> wallet credits
+        before your organisation admin countersigns them. You can read the <strong>funding summary</strong>
+        &mdash; what each student was awarded, paid and still has left. You cannot create, edit or cancel a run.</>,
+    },
+    {
+      q: <>Why can&rsquo;t I approve this run?</>,
+      a: <>Usually because you already signed it &mdash; every signature on a run must be a different person, so
+        if you prepared it (or checked it, before the change) your organisation admin approves it instead. Or
+        your organisation has given someone the separate <strong>check</strong> step, and the run is waiting for
+        that first.</>,
     },
     {
       q: <>Why can&rsquo;t I open a student&rsquo;s application?</>,

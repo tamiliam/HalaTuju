@@ -11,14 +11,16 @@ are refused with the same code, because both are "not a switch this screen makes
 not a review role (`services.REVIEW_ROLES`), so an admin with cases assigned to them would leave
 those cases with an owner who cannot open them. Refused while they hold any in-play case
 (`apply_gate.IN_PLAY_STATUSES` — the assigned reviewer still acts after an award, S6) and while a
-payment run they made or signed is still waiting (as finance they could not sign it again: the
-three-distinct-signers rule). Reviewer ↔ QC strands nothing — both are review roles and keep their
+payment run they made or signed is still waiting (as finance they would be its APPROVER and could
+not sign it again: the three-distinct-signers rule). Reviewer ↔ QC strands nothing — both are review roles and keep their
 assigned cases; the QC self-check guard still stops anybody QC-ing a verdict they recorded.
 
-⚠ **THE FINANCE STEP FOLLOWS THE ROLE, LIVE.** `payments.finance_check_required` reads "an active
-finance admin exists" at every sign attempt, so appointing the first one switches the payment
-check ON and moving the last one switches it OFF. The plan names that consequence so the screen
-can say it BEFORE the click.
+⚠ **THE FINANCE PERSON CHANGES TWO CHAINS, LIVE** (#39 Sprint 2). Finance APPROVES payment runs
+(the preset holds `payments_approve`), so appointing the first one makes them the approver and the
+organisation admin stops approving (`payments.approver_fallback` goes off); and wallet credits keep
+the finance-ROLE rule (`payments.credit_check_required`), so the same appointment arms the credit
+check. Moving the last one reverses both. The plan names that consequence (`finance_check_on` /
+`finance_check_off`, codes kept for the screen) so it is said BEFORE the click.
 
 ⚠ **A LOGIN IS ONLY EVER REMOVED WHEN IT IS OURS AND UNUSED.** `retire_login` deletes the Supabase
 user only when nothing else rides on it (no student profile, profile alias or sponsor account),
@@ -68,6 +70,8 @@ def runs_in_progress(admin):
 
 
 def _other_active_finance(target):
+    """Another ACTIVE `finance` person in the target's organisation? The finance ROLE is what both
+    consequences turn on today: the preset that approves runs, and the credit check's own rule."""
     from apps.courses.models import PartnerAdmin
     return (PartnerAdmin.objects.filter(owning_organisation_id=target.owning_organisation_id,
                                         role='finance', is_active=True)
@@ -101,7 +105,7 @@ def plan_role_change(target, new_role):
             raise RoleChangeRefused(
                 'run_in_progress', 409,
                 f'{target.name} made or signed a payment run that is not finished. A finance '
-                'admin cannot check their own run, so finish it first.')
+                'admin approves runs and cannot approve their own, so finish it first.')
     consequence = None
     if target.owning_organisation_id is not None:
         if new_role == 'finance' and not _other_active_finance(target):

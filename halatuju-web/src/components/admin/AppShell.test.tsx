@@ -42,6 +42,8 @@ jest.mock('@/lib/admin-api', () => ({
   getBillingUsage: jest.fn(() => Promise.reject(new Error('404'))),
   // Only reached once a test supplies a token; the shell treats a failure as furniture.
   getAdminScopes: jest.fn(() => Promise.resolve({ organisations: [], programmes: [] })),
+  // #39 S2: the Payments badge counts the runs whose served `your_step` is this person's.
+  getPaymentRuns: jest.fn(() => Promise.resolve({ runs: [] })),
 }))
 
 const asRole = (role: AdminRoleName, extra: Record<string, unknown> = {}) => {
@@ -320,6 +322,26 @@ describe('the rail waits for a gift before offering Configuration', () => {
     // finding it proved nothing and this assertion was a race. It passed on a fast machine and
     // failed in the deploy gate on Node 18 after H13 made the import graph wider (2026-09-20).
     await waitFor(() => expect(screen.queryByText('admin.programme.config.nav')).toBeNull())
+  })
+
+  it('#39 S2: badges Payments with the runs whose next step is yours, and nothing at zero', async () => {
+    withGifts([G('bp-flagship', 'BrightPath Bursary')])
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getPaymentRuns.mockResolvedValue({ runs: [
+      { id: 1, your_step: 'approve' }, { id: 2, your_step: null }, { id: 3, your_step: 'approve' },
+    ] })
+    asRole('finance')
+    const { unmount } = render(<AppShell>content</AppShell>)
+    const link = (await screen.findByText('admin.payments.title')).closest('a') as HTMLElement
+    await waitFor(() => expect(within(link).getByText('2')).toBeTruthy())
+    unmount()
+    api.getPaymentRuns.mockClear()
+    api.getPaymentRuns.mockResolvedValue({ runs: [{ id: 2, your_step: null }] })
+    render(<AppShell>content</AppShell>)
+    const again = (await screen.findByText('admin.payments.title')).closest('a') as HTMLElement
+    await waitFor(() => expect(api.getPaymentRuns).toHaveBeenCalled())
+    expect(within(again).queryByText('0')).toBeNull()
+    api.getPaymentRuns.mockResolvedValue({ runs: [] })
   })
 
   it('shows Configuration when the tenant has exactly one gift — nothing to choose', async () => {
