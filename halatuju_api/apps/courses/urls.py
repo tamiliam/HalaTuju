@@ -11,6 +11,7 @@ from .views_admin import (
 )
 from .views_staff import (AdminDeleteView, AdminInviteView, AdminListView, AdminResendView,
                           AdminRevokeView)
+from .views_referral_partners import AdminReferralPartnerDetailView, AdminReferralPartnerListView
 
 urlpatterns = [
     # TD-047: unauthenticated, no data, no query — is the course data loaded?
@@ -25,6 +26,10 @@ urlpatterns = [
     path('admin/invite/', AdminInviteView.as_view(), name='admin-invite'),
     path('admin/set-password/', AdminSetPasswordView.as_view(), name='admin-set-password'),
     path('admin/orgs/', AdminOrgsView.as_view(), name='admin-orgs'),
+    path('admin/referral-partners/', AdminReferralPartnerListView.as_view(),
+         name='admin-referral-partners'),
+    path('admin/referral-partners/<int:org_id>/', AdminReferralPartnerDetailView.as_view(),
+         name='admin-referral-partner-detail'),
     path('admin/admins/', AdminListView.as_view(), name='admin-list'),
     path('admin/admins/<int:admin_id>/', AdminDeleteView.as_view(), name='admin-delete'),
     path('admin/admins/<int:admin_id>/revoke/', AdminRevokeView.as_view(), name='admin-revoke'),

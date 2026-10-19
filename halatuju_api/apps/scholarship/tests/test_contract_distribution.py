@@ -29,11 +29,13 @@ def _executed_agreement(*, suffix='1', with_org=False, **overrides):
         referring = ReferralSource.objects.create(
             organisation=org, code=f'di-ref-{suffix}', name='Ref Org',
             contact_email='partner@example.test')
+    # Sources Sprint D: the student's naming lives on the APPLICATION (the profile's `source`
+    # column left the model).
     profile = StudentProfile.objects.create(
-        supabase_user_id=f'di-{suffix}', name='Stu', contact_email='stu@e.test',
-        source=referring)
+        supabase_user_id=f'di-{suffix}', name='Stu', contact_email='stu@e.test')
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='active', notify_email='stu@e.test',
+        source=referring, referral_code=referring.code if referring else '',
         chosen_programme={'course_name': 'Diploma in Nursing'})
     ag = BursaryAgreement.objects.create(
         application=app, version='2026-v1', pdf_storage_path=f'{app.id}/agreement.pdf',

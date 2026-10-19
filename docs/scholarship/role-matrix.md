@@ -326,3 +326,18 @@ nothing goes out; the panel states the platform gate rather than implying the sw
 **Three of the nine are already live** through their pre-S3 hardcoded senders (`new_students`,
 `weekly_digest`, `referral_invite`) and keep sending while their template is dark — otherwise
 switching this feature on dark would have silently stopped them.
+
+## Referral partners and the witness (sources and referral partners arc, 2026-10-19) — access
+
+**Referral partners — `GET` / `PATCH /api/v1/admin/referral-partners/[<id>/]` — `super` ONLY.**
+Every other role (org_admin, admin, qc, reviewer, finance, referral `partner`) gets 403. A super marks
+or unmarks a `partner_organisations` row as a platform referral partner: never a tenant, a reserved
+code or a switched-off row, and an unmark waits until the row's `partner` logins are revoked
+(`referral_links.mark_refusal`). Not org-fenced, by construction: a referral partner belongs to no
+organisation. Marking decides whose students a `?ref=` link puts on a partner login's list (NRIC,
+phone, address, income), so it is a platform decision. No screen yet (TD-387).
+
+**The bursary witness (`AdminBursaryWitnessView`) — `super` ONLY** since sources Sprint C; the witness
+is the override, else the APPLICATION's own source, never the referral partner. Choosing the override
+stays super / admin / org_admin. The cockpit serves the application's source as `source` (the old
+`referred_by_org` key left in Sprint D).

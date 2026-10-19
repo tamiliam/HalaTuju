@@ -163,8 +163,7 @@ class Command(BaseCommand):
             supabase_user_id='e2e-stu', name='E2E Student', nric='000101-10-1233',
             preferred_state='Kedah', exam_type='spm', grades={'bm': 'A'},
             contact_email='e2e.student@example.test', contact_phone='012-7776666',
-            # The witness organisation is the SOURCE she named (two columns, 2026-10-09).
-            guardians=[{'name': guar_name, 'phone': guar_phone}], source=org)
+            guardians=[{'name': guar_name, 'phone': guar_phone}])
         # Sources Sprint C: the witness is the source THIS APPLICATION named at submit.
         app = ScholarshipApplication.objects.create(
             cohort=cohort, profile=profile, status='recommended', award_amount=Decimal('3000'),

@@ -21,9 +21,13 @@ _PROFILE_WRITEBACK_FIELDS = (
 # on submit (S9). Same write-back-to-profile rule as the financial fields. NRIC
 # is intentionally excluded — it changes only via the validated claim path,
 # never an unchecked write (see docs/decisions.md, soft-NRIC).
+# ⚠ NOT `referral_source` (sources Sprint D, 2026-10-19): the "Who referred you?" answer belongs to
+# the APPLICATION (`referral_code` / `source`, written at submit by `services/intake.py`); the
+# profile's chip is the course-selector's `?ref=` code (`apps.courses.referral_links`), and writing
+# the bursary answer there showed it to a referral partner's logins on their Source column.
 _PROFILE_ABOUTME_FIELDS = (
     'name', 'school', 'preferred_state', 'contact_phone',
-    'preferred_call_language', 'referral_source',
+    'preferred_call_language',
 )
 
 # Per-application fields that genuinely belong on the ScholarshipApplication row.
@@ -80,16 +84,15 @@ def merge_guardians(existing, incoming):
     return ([kept] if kept else []) + rest
 
 
-def sync_profile_fields(profile, data, programme=None):
+def sync_profile_fields(profile, data):
     """
     Write the form's financial + About Me/My Family fields back to the canonical
     profile (commit-on-submit, S9). Only keys that are present and non-None
     overwrite (the form may legitimately omit a field that is already on the
-    profile). Parent/guardian details land in the ``guardians`` JSON list, and
-    the referring-organisation code resolves to the ``source`` FK — never to
-    ``referred_by_org`` (two columns, 2026-10-09). NRIC is never written here — claim path only.
-    ``programme`` is the gift applied to: a source is resolved among ITS offered sources only, so
-    without one (the guardian-contact writers, which never carry the answer) no source is found.
+    profile). Parent/guardian details land in the ``guardians`` JSON list. The
+    "Who referred you?" answer is NOT written to the profile at all (sources Sprint D,
+    2026-10-19 — neither the chip nor the retired ``source`` column, and never
+    ``referred_by_org``): it is the application's own. NRIC is never written here — claim path only.
     Returns the fields actually changed.
     """
     if profile is None:
@@ -113,24 +116,6 @@ def sync_profile_fields(profile, data, programme=None):
         profile.contact_phone_verified = False
         updated.append('contact_phone_verified')
 
-    # The SOURCE column (two columns, 2026-10-09): the bursary answer names an offered source, or
-    # nothing. ⚠ IT NEVER TOUCHES `referred_by_org` — that is the REFERRAL PARTNER's column, written
-    # only by a `?ref=` link (`apps.courses.referral_links`); writing it here put every student who
-    # picked CUMIG on CUMIG's course-selector list. A key the write does not carry leaves it alone.
-    # ⚠ ONLY AN OFFERED SOURCE (per-gift sources S2): the apply view has already refused a code its
-    # gift does not offer (`gift_sources.is_offered`), and the lookup is the gift's OWN offered list
-    # (sources Sprint B: a code is unique per organisation, so never by code alone). A FIXED choice
-    # (halatuju / social / other) is a chip, never an organisation: no lookup, so it collects no one.
-    from .. import gift_sources
-    referral = data.get('referral_source')
-    if referral is not None:
-        source = None
-        if referral and referral not in gift_sources.FIXED_CODES:
-            source = gift_sources.offered_sources(programme).filter(code=referral).first()
-        if profile.source_id != getattr(source, 'pk', None):
-            profile.source = source
-            updated.append('source')
-
     if updated:
         profile.save(update_fields=list(dict.fromkeys(updated)) + ['updated_at'])
 
@@ -153,7 +138,9 @@ def build_intake_snapshot(profile, app_data):
             'contact_phone': getattr(p, 'contact_phone', '') if p else '',
             'preferred_call_language': getattr(p, 'preferred_call_language', '') if p else '',
             'guardians': getattr(p, 'guardians', []) if p else [],
-            'referral_source': getattr(p, 'referral_source', '') if p else '',
+            # THIS submit's answer (sources Sprint C/D) — the request's, never the profile's chip,
+            # where a `?ref=` code sits; `services/intake.py` stores the same value on the row.
+            'referral_source': (app_data.get('referral_source') or '')[:50],
             'exam_type': getattr(p, 'exam_type', '') if p else '',
             'grades': getattr(p, 'grades', {}) if p else {},
             'stpm_cgpa': getattr(p, 'stpm_cgpa', None) if p else None,

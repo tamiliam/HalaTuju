@@ -145,7 +145,7 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     # guardian_contact imports this package.
     from ..guardian_contact import record_change, screen_form_guardians
     old_contact = screen_form_guardians(profile, data)
-    sync_profile_fields(profile, data, programme=getattr(cohort, 'programme', None))
+    sync_profile_fields(profile, data)
 
     # 2. Create the application from per-application fields only; academic +
     #    financial data is read live from the profile by the shortlist engine.
@@ -167,12 +167,12 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
 
     # Sources Sprint C: THIS application's "Who referred you?" is the answer THIS REQUEST gave
     # (absent → '', which the view's `is_offered` check passed as blank) — never the profile's
-    # chip, where a `?ref=` code may sit (review fix). The snapshot freezes that same answer, and
-    # its source is resolved inside the application's OWN organisation (as scholarship 0174).
+    # chip, where a `?ref=` code may sit (review fix). The snapshot freezes that same answer
+    # (`build_intake_snapshot` reads it from the same request since Sprint D), and its source is
+    # resolved inside the application's OWN organisation (as scholarship 0174).
     from .. import gift_sources
     answer = (data.get('referral_source') or '')[:50]
     snapshot = build_intake_snapshot(profile, data)
-    snapshot['profile']['referral_source'] = answer
     application = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile,
         locale=lang if lang in ('en', 'ms', 'ta') else 'en',

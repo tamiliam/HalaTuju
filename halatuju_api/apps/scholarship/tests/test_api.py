@@ -234,8 +234,10 @@ class TestApplicationIntake(TestCase):
         # SUPERSEDED IN PART by the two columns (decisions.md 2026-10-09): the answer fills the
         # SOURCE column and never `referred_by_org`, which only a `?ref=` link writes.
         # Since sources Sprint B (2026-10-18) the source is a `ReferralSource` owned by the gift's
-        # organisation.
-        from apps.scholarship.models import ProgrammeReferralSource, ReferralSource
+        # organisation. SUPERSEDED AGAIN by sources Sprint D (2026-10-19): the answer is the
+        # APPLICATION's (`referral_code` / `source`) and the profile is not written at all — its
+        # chip is the course-selector's `?ref=` code and its `source` column left the model.
+        from apps.scholarship.models import ProgrammeReferralSource, ReferralSource, ScholarshipApplication
         org = ReferralSource.objects.create(
             organisation=self.cohort.programme.organisation, code='cumig', name='CUMIG',
             show_in_apply=True)
@@ -246,9 +248,11 @@ class TestApplicationIntake(TestCase):
             self._payload(referral_source='cumig'), format='json',
         )
         self.assertEqual(resp.status_code, 201)
+        app = ScholarshipApplication.objects.get(pk=resp.json()['id'])
+        self.assertEqual((app.referral_code, app.source_id), ('cumig', org.pk))
+        chip_before = self.profile_a.referral_source
         self.profile_a.refresh_from_db()
-        self.assertEqual(self.profile_a.referral_source, 'cumig')
-        self.assertEqual(self.profile_a.source_id, org.pk)
+        self.assertEqual(self.profile_a.referral_source, chip_before)   # the profile is untouched
         self.assertIsNone(self.profile_a.referred_by_org_id)
 
     def test_consent_required(self):

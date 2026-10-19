@@ -92,7 +92,12 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
 ## Tenancy and access
 
 - **Organisation** (`partner_organisations`) owns gifts, staff, templates, themes and billing.
-  Referral organisations are a different thing and never grant access.
+  Referral organisations are a different thing and never grant access. Since the sources-and-referrals
+  arc (2026-10-19) there are three categories: organisations (`tenants()`); SOURCES
+  (`referral_sources`, owned by an organisation; each application keeps its own answer,
+  `referral_code` / `source`); and platform REFERRAL PARTNERS (`partner_organisations` rows marked
+  `is_referral_partner`, marked by a super; a `?ref=` link fills `referred_by_org` and the
+  course-selector chip). The bursary never writes the profile's referral columns.
 - **Gift** (`scholarship_programmes`, code + aliases) owns intake years, the apply copy, the agreement
   template, payment runs and spending. **Intake year** (`scholarship_cohorts`) holds the academic
   thresholds and the "born in" state rule (`allowed_birth_states`), and has four states, one final.

@@ -49,8 +49,9 @@ class ReferralResolutionTest(TestCase):
 
     Rewritten from the old rule — "link ANY active row with that code" — which the
     sources-and-referrals Sprint A replaced: a source or any other organisation row is no longer
-    linked by a `?ref=` code, and the bursary answer lives in `StudentProfile.source`. The full
-    matrix is `apps/scholarship/tests/test_two_referral_columns.py`."""
+    linked by a `?ref=` code, and the bursary answer lives on each application (sources Sprint C;
+    Sprint D removed the profile's `source` column). The full matrix is
+    `apps/scholarship/tests/test_two_referral_columns.py`."""
 
     def setUp(self):
         self.partner = PartnerOrganisation.objects.create(
@@ -64,10 +65,10 @@ class ReferralResolutionTest(TestCase):
         return profile
 
     def test_referral_resolves_to_partner(self):
-        """A referral partner's code sets referred_by_org (and never the source)."""
+        """A referral partner's code sets referred_by_org and the chip (the code itself)."""
         profile = self._ref('resolve-1', 'cumig')
         self.assertEqual(profile.referred_by_org, self.partner)
-        self.assertIsNone(profile.source)
+        self.assertEqual(profile.referral_source, 'cumig')
 
     def test_referral_generic_no_partner(self):
         """A code with no row leaves referred_by_org null."""

@@ -122,7 +122,7 @@ export function PostAwardPanels({
                   there is a witness organisation — the application's source or an assigned
                   override; with neither the server refuses (`no_witness_organisation`), so the
                   button is not offered (assign one on the witness card first). */}
-              {isSuper && !!(app.witness_org || (app.source ?? app.referred_by_org)) && (
+              {isSuper && !!(app.witness_org || app.source) && (
                 <button
                   type="button"
                   onClick={doWitnessBursary}

@@ -95,7 +95,7 @@ class TestTheSubmitKeepsTheAnswerOnTheApplication(_TwoOrganisations):
     def test_the_source_is_the_applications_own_organisations(self):
         """TD-386 (a): B's `smc` answered on B's gift is B's source — never A's, though A has one
         with the same code, and whatever her profile said before."""
-        student = make_shortlistable_student(source=self.smc_a, referral_source='smc')
+        student = make_shortlistable_student(referral_source='smc')
         self.assertEqual(self._apply(student, 'smc', gift='sc-gift-b').status_code, 201)
         app = ScholarshipApplication.objects.get(profile=student)
         self.assertEqual((app.owning_organisation_id, app.source_id), (self.b.pk, self.smc_b.pk))
@@ -116,7 +116,9 @@ class TestALaterAnswerNeverMovesAnEarlierApplication(_TwoOrganisations):
     def test_each_application_keeps_its_own_source(self):
         self.first.refresh_from_db()
         self.student.refresh_from_db()
-        self.assertEqual(self.student.referral_source, 'pptm')          # her LATEST answer
+        # Sources Sprint D: her latest answer no longer reaches the profile's chip at all (was
+        # 'pptm' — the chip followed the bursary until Sprint D); each application holds its own.
+        self.assertEqual(self.student.referral_source, 'smc')
         self.assertEqual((self.first.referral_code, self.first.source_id), ('smc', self.smc_a.pk))
         self.assertEqual((self.second.referral_code, self.second.source_id),
                          ('pptm', self.pptm.pk))
@@ -147,25 +149,28 @@ class TestTheWitnessIsTheApplicationsSource(_TwoOrganisations):
         self.assertIsNone(app.source_id)
         self.assertIsNone(_resolve_witness_org(app))
 
-    def test_the_profiles_later_source_is_not_the_witness(self):
-        """TD-386 (a): she applied to A naming SMC A, then her profile's source moved (another
-        organisation's form). A's witness is still A's SMC."""
+    def test_the_profiles_later_answer_is_not_the_witness(self):
+        """TD-386 (a): she applied to A naming SMC A, then answered B's form. A's witness is
+        still A's SMC. (Sprint D: the profile's `source` column this test used to move left the
+        model; her later answer is B's application's, and her chip is a `?ref=` code.)"""
         student = make_student(referral_source='smc')
         app = make_application('awarded', cohort=self.round_a, student=student)
-        student.source = self.smc_b
-        student.save(update_fields=['source'])
+        make_application('submitted', cohort=self.round_b, student=student,
+                         referral_code='smc', source=self.smc_b)
         app.refresh_from_db()
         self.assertEqual(_resolve_witness_org(app), self.smc_a)
 
-    def test_the_cockpit_serves_the_source_under_both_keys(self):
+    def test_the_cockpit_serves_the_source_under_the_source_key_only(self):
+        """Was "under both keys": the old `referred_by_org` key was served one release (Sprint C)
+        and removed in Sprint D — the web reads `source` since Sprint C."""
         app = make_application('profile_complete', cohort=self.round_a,
                                student=make_student(referral_source='smc',
                                                     referred_by_org=self.cumig))
         body = authed_client(make_admin('super', super_admin=True)).get(
             f'/api/v1/admin/scholarship/applications/{app.pk}/').json()
         want = {'id': self.smc_a.pk, 'code': 'smc', 'name': 'SMC A'}
-        self.assertEqual((body['source'], body['referred_by_org'], body['referral_source']),
-                         (want, want, 'smc'))
+        self.assertEqual((body['source'], body['referral_source']), (want, 'smc'))
+        self.assertNotIn('referred_by_org', body)
 
 
 class TestSourceNames(_TwoOrganisations):

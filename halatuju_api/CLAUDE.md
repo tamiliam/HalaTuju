@@ -938,10 +938,12 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
   left the model in sources Sprint B; **TD-379's drop is `courses/0080`, IMAGE-FIRST** (after that image
   serves). TD-380's witness half and TD-381's part (4) wait for Sprint C
   (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
-- **Two referral columns (Sprint A, LIVE 2026-10-18):** `StudentProfile.source` is written ONLY by the
-  bursary submit; `referred_by_org` ONLY by a `?ref=` link to an `is_referral_partner` row, first touch
-  (`apps/courses/referral_links.py`). Neither writes the other; never let a bursary answer reach the
-  `partner` logins' list.
+- **Referral columns (Sprint A LIVE 2026-10-18; Sprint D BUILT 2026-10-19):** the bursary submit writes
+  NOTHING on the profile (its answer is the application's); `referred_by_org` and the chip
+  `referral_source` are written ONLY by a `?ref=` link, first touch — `referred_by_org` only to an
+  `is_referral_partner` row (`apps/courses/referral_links.py`). Never let a bursary answer reach the
+  `partner` logins' list or its Source column. A super marks / unmarks a referral partner through
+  `PATCH /api/v1/admin/referral-partners/<id>/` (no screen yet, TD-387).
 - **Sources become their own table (Sprint B, BUILT, NOT LIVE):** `scholarship.ReferralSource`
   (`referral_sources`), OWNED by an organisation, same ids as the `partner_organisations` rows it was
   copied from; every source surface is fenced to the owning organisation; referral partners stay on
@@ -949,13 +951,17 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
   `courses/0080` (TD-379, the column drop) is IMAGE-FIRST — only after the new revision serves**:
   `docs/scholarship/sources-b-cutover-sql.md` (freeze Sources and gift Configuration between the
   cutover and the deploy). Next free after it: scholarship 0174 / courses 0081.
-- **Each application keeps its own "Who referred you?" (sources Sprint C, BUILT 2026-10-19, NOT LIVE):**
+- **Sources Sprint D — the arc's clean-up (BUILT 2026-10-19, NOT LIVE):** ⚠ `courses/0081` is
+  MIGRATE-FIRST (gives `partner_organisations.show_in_apply` `DEFAULT false`; switches the sources' old
+  rows off) and `courses/0082` is IMAGE-FIRST and OWNER-RUN in the SQL Editor (drops
+  `api_student_profiles.source_id` and `partner_organisations.show_in_apply`, after backups) —
+  `docs/scholarship/sources-d-cutover-sql.md`. The cockpit's `referred_by_org` key is gone (web and api
+  in either order). Next free after it: scholarship 0175 / courses 0083.
+- **Each application keeps its own "Who referred you?" (sources Sprint C, LIVE 2026-10-19):**
   `ScholarshipApplication.referral_code` + `.source` (written once at submit from the snapshot,
   resolved inside the application's own organisation) feed partner emails, Sources counts, the
   Applications filter and the witness; the witness is never the referral partner and only a super
-  records it; `?ref=` never pre-fills the bursary form. ⚠ `scholarship/0174` is MIGRATE-FIRST:
-  `docs/scholarship/sources-c-cutover-sql.md` (additive; a post-deploy sweep fills the window's rows).
-  Next free after it: scholarship 0175 / courses 0081.
+  records it; `?ref=` never pre-fills the bursary form. (`scholarship/0174` applied 2026-10-19.)
 - **TD-347 when the owner says go** (ruled B: when the parent call is recorded, re-arm a FRESH full
   accept window; the email names the new deadline). ⛔ It must ship before anyone sets
   `BURSARY_AGREEMENT_ENABLED`; before that flip, prompt every awarded student to check the parent phone on

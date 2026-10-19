@@ -17,28 +17,31 @@ installCockpitConsoleGuard()
 
 type Org = { id: number; code: string; name: string } | null
 
-/** Mount with this referral, and return the pill that reads `text`. Since sources Sprint C the api
- *  serves the application's source under `source` AND the old `referred_by_org` key (one release). */
-const pill = async (referral_source: string, referred_by_org: Org, text: string,
-  served: { source: Org } | 'no source key' = { source: referred_by_org }) => {
+/** Mount with this referral, and return the pill that reads `text`. The api serves the
+ *  application's source under `source` (sources Sprint C); the old `referred_by_org` key for the
+ *  same value was served one release and left in Sprint D. */
+const pill = async (referral_source: string, source: Org, text: string) => {
   renderCockpit({ role: 'super', app: buildApplicationDetail('interviewing', {
-    referral_source, referred_by_org, ...(served === 'no source key' ? {} : served),
+    referral_source, source,
   }) })
   await screen.findByText('Test Student 07')
   return screen.getByText(text)
 }
 
-describe('the referral pill reads THIS application\'s source (sources Sprint C)', () => {
-  it('reads the new `source` key ahead of the old one', async () => {
-    const el = await pill('newsrc', { id: 9, code: 'newsrc', name: 'Stale Name' }, 'A New Source',
-      { source: { id: 3, code: 'newsrc', name: 'A New Source' } })
+describe("the referral pill reads THIS application's source (sources Sprint C)", () => {
+  it('reads the `source` key', async () => {
+    const el = await pill('newsrc', { id: 3, code: 'newsrc', name: 'A New Source' }, 'A New Source')
     expect(el.getAttribute('title')).toBe('A New Source')
   })
 
-  it('still names it from `referred_by_org` when an older api sends no `source`', async () => {
-    const el = await pill('newsrc', { id: 3, code: 'newsrc', name: 'A New Source' },
-      'A New Source', 'no source key')
-    expect(el.getAttribute('title')).toBe('A New Source')
+  it('no longer reads the retired `referred_by_org` key (sources Sprint D)', async () => {
+    renderCockpit({ role: 'super', app: buildApplicationDetail('interviewing', {
+      referral_source: 'newsrc', source: null,
+      ...({ referred_by_org: { id: 3, code: 'newsrc', name: 'A New Source' } } as object),
+    }) })
+    await screen.findByText('Test Student 07')
+    expect(screen.queryByText('A New Source')).toBeNull()
+    expect(screen.getByText('NEWSRC').getAttribute('title')).toBe('newsrc')
   })
 })
 

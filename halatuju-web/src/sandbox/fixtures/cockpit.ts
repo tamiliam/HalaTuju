@@ -73,7 +73,7 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
   verified_email: 'aina@sandbox.invalid',
   preferred_call_language: 'ms',
   referral_source: 'school',
-  referred_by_org: { id: 4, code: 'smk-contoh', name: 'SMK Bandar Contoh' },
+  source: { id: 4, code: 'smk-contoh', name: 'SMK Bandar Contoh' },
   witness_org: null,
   guardians: [
     { name: 'Encik Contoh bin Sandbox', phone: '0198887777', relationship: 'father' },

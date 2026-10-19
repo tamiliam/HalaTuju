@@ -224,7 +224,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // copy would otherwise keep asking for something already done (owner 2026-07-25). Reassigning
   // is still one click away: "Change" flips this back to the picker.
   const [witnessEditing, setWitnessEditing] = useState(false)
-  const sourceless = !!app && !(app.source ?? app.referred_by_org)
+  const sourceless = !!app && !app.source
   // Only fetch the organisation list when the witness card can actually render — same three
   // gates as the card itself, so a pre-QC or off-ramp case makes no needless request (most
   // sourceless students today are at 'shortlisted', where the card never appears).

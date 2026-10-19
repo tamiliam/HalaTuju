@@ -24,6 +24,12 @@ source column names the new table a backfill writing `partner_organisations` ids
 on production on 2026-10-18 with the counts in `docs/scholarship/two-columns-cutover-sql.md`; what
 it protected — the partner list unchanged — is pinned here against the writers and in
 `test_sources_b.py` against the Sprint B copy.
+
+Sources-and-referrals Sprint D (2026-10-19) finished the split: the bursary submit writes NOTHING on
+the profile (the "Who referred you?" answer is the APPLICATION's, `referral_code` / `source`, since
+Sprint C); `StudentProfile.source` left the model (courses 0082); the chip `referral_source` is the
+course-selector's `?ref=` code alone (first touch, no longer "only before she applied"). Each test
+below that changed says what superseded it. `_columns` reads the two profile columns that remain.
 """
 from django.apps import apps as live_apps
 from django.db import connection
@@ -46,12 +52,11 @@ PROFILE = '/api/v1/profile/'
 PARTNER_LIST = '/api/v1/admin/students/'
 
 
-def _org(code, *, partner=False, show=True, active=True):
+def _org(code, *, partner=False, active=True):
     """A `partner_organisations` row — since Sprint B, a REFERRAL PARTNER (or a tenant), never a
     source."""
     return PartnerOrganisation.objects.create(
-        code=code, name=code.upper(), show_in_apply=show, is_active=active,
-        is_referral_partner=partner)
+        code=code, name=code.upper(), is_active=active, is_referral_partner=partner)
 
 
 def _snapshot(code):
@@ -87,38 +92,49 @@ class _World(TestCase):
         return authed_client(uid).post(SYNC, {'referral_source': code}, format='json')
 
     def _columns(self, profile):
+        """The profile's two referral columns: the `?ref=` chip and the referral partner. (Until
+        Sprint D a third, the bursary `source`, sat between them.)"""
         profile.refresh_from_db()
-        return profile.referral_source, profile.source_id, profile.referred_by_org_id
+        return profile.referral_source, profile.referred_by_org_id
+
+    def _answer(self, profile):
+        """Her latest application's answer — where the bursary writes, since Sprint C."""
+        app = ScholarshipApplication.objects.filter(profile=profile).latest('pk')
+        return app.referral_code, app.source_id
 
 
-class TestTheBursarySubmitWritesTheSourceOnly(_World):
-    def test_picking_a_source_fills_the_source_and_never_the_referral_partner(self):
+class TestTheBursarySubmitWritesTheApplicationOnly(_World):
+    """Was "…writes the SOURCE only" (the profile's `source` column). Sprint D: the submit writes
+    the APPLICATION's answer and nothing on the profile — not the chip, never the partner."""
+
+    def test_picking_a_source_fills_the_application_and_never_the_profile(self):
         for code, org in (('smc', self.smc), ('cumig', self.cumig_source)):
             with self.subTest(code=code):
                 student = make_shortlistable_student()
                 self.assertEqual(self._apply(student, code).status_code, 201)
-                # Picking CUMIG on the form no longer puts her on CUMIG's course-selector list.
-                self.assertEqual(self._columns(student), (code, org.pk, None))
+                self.assertEqual(self._answer(student), (code, org.pk))
+                # Picking CUMIG on the form never puts her on CUMIG's course-selector list, and
+                # never shows her answer on that list's Source column.
+                self.assertEqual(self._columns(student), (None, None))
 
     def test_a_referral_partner_link_already_there_is_left_alone(self):
         student = make_shortlistable_student(referred_by_org=self.cumig, referral_source='cumig')
         self.assertEqual(self._apply(student, 'smc').status_code, 201)
-        self.assertEqual(self._columns(student), ('smc', self.smc.pk, self.cumig.pk))
+        self.assertEqual(self._answer(student), ('smc', self.smc.pk))
+        self.assertEqual(self._columns(student), ('cumig', self.cumig.pk))
 
-    def test_a_fixed_choice_or_blank_empties_the_source_and_leaves_the_partner(self):
+    def test_the_sync_never_writes_any_part_of_the_answer(self):
+        """Was "a fixed choice or blank empties the source" and "a write that does not carry the
+        answer leaves the source alone": the sync no longer carries the answer at all."""
         from apps.scholarship.services import sync_profile_fields
-        for code in ('halatuju', 'social', 'other', ''):
-            with self.subTest(code=code):
-                student = make_student(source=self.smc, referred_by_org=self.cumig)
-                sync_profile_fields(student, {'referral_source': code})
-                self.assertEqual(self._columns(student), (code, None, self.cumig.pk))
-
-    def test_a_write_that_does_not_carry_the_answer_leaves_the_source_alone(self):
-        """The guardian-contact writers call the same sync with `guardians` only."""
-        from apps.scholarship.services import sync_profile_fields
-        student = make_student(source=self.smc, referral_source='smc')
+        for data in ({'referral_source': c} for c in ('halatuju', 'social', 'other', '', 'smc')):
+            with self.subTest(data=data):
+                student = make_student(referral_source='cumig', referred_by_org=self.cumig)
+                sync_profile_fields(student, data)
+                self.assertEqual(self._columns(student), ('cumig', self.cumig.pk))
+        student = make_student(referral_source='smc')
         sync_profile_fields(student, {'guardians': [{'name': 'A Parent', 'phone': '0123456789'}]})
-        self.assertEqual(self._columns(student), ('smc', self.smc.pk, None))
+        self.assertEqual(self._columns(student), ('smc', None))
 
     def test_the_refusal_still_holds_and_writes_nothing(self):
         tara = make_source(self.tenant, 'tara', show_in_apply=False)   # switched off in Sources
@@ -127,30 +143,21 @@ class TestTheBursarySubmitWritesTheSourceOnly(_World):
         resp = self._apply(student, 'tara')
         self.assertEqual(resp.status_code, 400, resp.content)
         self.assertEqual(resp.json()['code'], 'referral_source_not_offered')
-        self.assertEqual(self._columns(student)[1:], (None, None))
-
-    def test_a_source_that_is_not_active_or_is_a_tenant_never_fills_the_column(self):
-        """The second line behind the view's refusal: the sync on its own."""
-        from apps.scholarship.services import sync_profile_fields
-        PartnerOrganisation.objects.filter(pk=self.tenant.pk).update(show_in_apply=True)
-        for code in ('tc-tenant', 'nope'):
-            with self.subTest(code=code):
-                student = make_student()
-                sync_profile_fields(student, {'referral_source': code}, programme=self.gift)
-                self.assertEqual(self._columns(student)[1:], (None, None))
+        self.assertFalse(ScholarshipApplication.objects.filter(profile=student).exists())
+        self.assertEqual(self._columns(student), (None, None))
 
 
 class TestTheRefLinkWritesTheReferralPartnerOnly(_World):
     def test_a_partner_code_links_a_new_student_and_fills_nothing_else(self):
         student = make_student()          # the NRIC gate lets only a claimed profile sync
         self.assertEqual(self._sync(student, 'cumig').status_code, 200)
-        self.assertEqual(self._columns(student), ('cumig', None, self.cumig.pk))
+        self.assertEqual(self._columns(student), ('cumig', self.cumig.pk))
 
     def test_first_touch_never_moves_an_existing_link(self):
         other_partner = _org('ptwo', partner=True)
         student = make_student(referred_by_org=other_partner)
         self._sync(student, 'cumig')
-        self.assertEqual(self._columns(student)[2], other_partner.pk)
+        self.assertEqual(self._columns(student)[1], other_partner.pk)
 
     def test_only_an_active_referral_partner_is_ever_linked(self):
         _org('sleepy', partner=True, active=False)
@@ -158,25 +165,28 @@ class TestTheRefLinkWritesTheReferralPartnerOnly(_World):
             with self.subTest(code=code):
                 student = make_student()
                 self.assertEqual(self._sync(student, code).status_code, 200)
-                self.assertEqual(self._columns(student)[1:], (None, None))
+                self.assertIsNone(self._columns(student)[1])
 
-    def test_a_sign_in_sync_no_longer_overwrites_the_bursary_answer(self):
+    def test_a_sign_in_sync_never_moves_the_applications_answer(self):
         """The live bug: every sign-in re-sent the browser's saved `?ref` and overwrote the chip,
-        moving the student between partners' counts and emails."""
+        moving the student between partners' counts and emails. Since Sprint C the counts read
+        the APPLICATION, and since Sprint D the chip is the `?ref` code's own column."""
         student = make_shortlistable_student()
         self.assertEqual(self._apply(student, 'smc').status_code, 201)
         for _ in range(2):                                    # every sign-in resends it
             self.assertEqual(self._sync(student, 'cumig').status_code, 200)
-        # The chip and the source keep the bursary answer; the ?ref fills only its own column.
-        self.assertEqual(self._columns(student), ('smc', self.smc.pk, self.cumig.pk))
+        self.assertEqual(self._answer(student), ('smc', self.smc.pk))
+        self.assertEqual(self._columns(student), ('cumig', self.cumig.pk))
 
-    def test_a_ref_never_writes_the_chip_of_a_student_who_has_applied(self):
-        """Even a blank bursary answer: the chip is what the bursary counts and partner emails
-        read, so a `?ref` after she has applied may not move her into a partner's figures."""
+    def test_a_ref_after_she_applied_fills_an_empty_chip(self):
+        """Superseded "a `?ref` never writes the chip of a student who has applied": that guarded
+        the BURSARY answer, which lived on the chip until Sprint D. The chip is now the `?ref` code
+        alone, so first touch is the only rule; her application's answer does not move."""
         student = make_student(referral_source='')
         make_application(cohort=self.round, student=student, intake_snapshot=_snapshot(''))
         self._sync(student, 'cumig')
-        self.assertEqual(self._columns(student), ('', None, self.cumig.pk))
+        self.assertEqual(self._columns(student), ('cumig', self.cumig.pk))
+        self.assertEqual(self._answer(student), ('', None))
 
     def test_the_chip_is_first_touch_too(self):
         student = make_student(referral_source='social')
@@ -190,13 +200,13 @@ class TestTheRefLinkWritesTheReferralPartnerOnly(_World):
                      'cumig;drop', 'cümig', 'Kumig'):
             with self.subTest(code=repr(code)[:20]):
                 self.assertEqual(referral_links.apply_ref_code(student, code), [])
-        self.assertEqual(self._columns(student), (None, None, None))
+        self.assertEqual(self._columns(student), (None, None))
 
     def test_a_code_in_capitals_or_with_spaces_round_it_is_the_same_code(self):
         student = make_student()
         self.assertEqual(referral_links.apply_ref_code(student, '  CUMIG '),
                          ['referred_by_org', 'referral_source'])
-        self.assertEqual(self._columns(student), ('cumig', None, self.cumig.pk))
+        self.assertEqual(self._columns(student), ('cumig', self.cumig.pk))
 
     def test_a_marked_tenant_fixed_or_house_row_is_never_a_referral_partner(self):
         """Review fix: even a row wrongly marked `is_referral_partner` never collects students when
@@ -221,16 +231,16 @@ class TestTheRefLinkWritesTheReferralPartnerOnly(_World):
             with self.subTest(code=code):
                 student = make_student()
                 self._sync(student, code)
-                self.assertEqual(self._columns(student)[2], None)
+                self.assertEqual(self._columns(student)[1], None)
 
 
 class TestThePutCannotSetEither(_World):
     def test_a_client_supplied_code_is_ignored_by_put(self):
-        student = make_student(referral_source='smc', source=self.smc)
+        student = make_student(referral_source='smc')
         resp = authed_client(student).put(PROFILE, {'referral_source': 'cumig', 'school': 'SMK X'},
                                           format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertEqual(self._columns(student), ('smc', self.smc.pk, None))
+        self.assertEqual(self._columns(student), ('smc', None))
         self.assertEqual(StudentProfile.objects.get(pk=student.pk).school, 'SMK X')   # the rest saved
 
 
@@ -245,14 +255,12 @@ class TestThePartnerListOnAProductionShapedFixture(_World):
                            referred_by_org=self.cumig) for i in range(241)])
         self.cumig_applicants = []
         for _ in range(13):
-            s = make_student(referral_source='cumig', referred_by_org=self.cumig,
-                             source=self.cumig_source)
+            s = make_student(referral_source='cumig', referred_by_org=self.cumig)
             make_application(cohort=self.round, student=s, intake_snapshot=_snapshot('cumig'))
             self.cumig_applicants.append(s)
-        self.smc_only = make_student(referral_source='smc', source=self.smc)
+        self.smc_only = make_student(referral_source='smc')
         make_application(cohort=self.round, student=self.smc_only, intake_snapshot=_snapshot('smc'))
-        self.ref_then_smc = make_student(referral_source='smc', referred_by_org=self.cumig,
-                                         source=self.smc)
+        self.ref_then_smc = make_student(referral_source='smc', referred_by_org=self.cumig)
         make_application(cohort=self.round, student=self.ref_then_smc,
                          intake_snapshot=_snapshot('smc'))
 
@@ -318,7 +326,7 @@ class TestTheWitnessIsTheApplicationsSourceOnly(_World):
 
     def test_the_source_wins_and_the_referral_partner_is_never_the_witness(self):
         from apps.scholarship.bursary import _resolve_witness_org
-        both = make_student(referral_source='smc', source=self.smc, referred_by_org=self.cumig)
+        both = make_student(referral_source='smc', referred_by_org=self.cumig)
         partner_only = make_student(referral_source='', referred_by_org=self.cumig)
         neither = make_student()
         for student, want in ((both, self.smc), (partner_only, None), (neither, None)):
@@ -373,11 +381,11 @@ class TestWhatTheImageAlreadyServingNeeds(_World):
             'household_income', 'household_size', 'receives_str', 'receives_jkm'})
         self.assertEqual(app.intake_snapshot['profile']['referral_source'], 'smc')
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
-        data = AdminApplicationDetailSerializer().get_referred_by_org(app)
-        # Same key, same shape; the value is the SOURCE this application named (sources Sprint C:
-        # the new `source` key carries it too, and the old key stays one release).
-        self.assertEqual(data, {'id': self.smc.id, 'code': 'smc', 'name': 'SMC'})
-        self.assertEqual(AdminApplicationDetailSerializer().get_source(app), data)
+        # The value is the SOURCE this application named, under `source` (Sprint C). The old
+        # `referred_by_org` key carried it one release and left in Sprint D.
+        self.assertEqual(AdminApplicationDetailSerializer().get_source(app),
+                         {'id': self.smc.id, 'code': 'smc', 'name': 'SMC'})
+        self.assertFalse(hasattr(AdminApplicationDetailSerializer, 'get_referred_by_org'))
 
     def test_the_profile_payload_still_serves_the_chip(self):
         student = make_student(referral_source='cumig', referred_by_org=self.cumig)

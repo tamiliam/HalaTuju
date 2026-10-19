@@ -181,7 +181,7 @@ describe('a closed case — TD-352: closed joined the off-ramps', () => {
 describe('closed before it was funded is not post-award (TD-352 review round 1, item 5)', () => {
   const RECOMMENDED_BY = /admin\.scholarship\.interviewedRecommendedBy/
   const WITNESS = 'admin.sources.witness.title'
-  const sourceless = { referred_by_org: null, referral_source: null }
+  const sourceless = { source: null, referral_source: null }
 
   it('closed at interviewed on a DECLINE verdict: no "recommended by", no post-award chips, no witness card', async () => {
     renderCockpit({

@@ -13,7 +13,7 @@ import { buildApplicationDetail } from '@/test/adminApplicationDetail'
 installCockpitConsoleGuard()
 
 const SRC = { id: 3, code: 'test-source', name: 'Test Referring Organisation' }
-const awarded = (extra: object = { source: SRC, referred_by_org: SRC }) =>
+const awarded = (extra: object = { source: SRC }) =>
   buildApplicationDetail('awarded', { bursary_agreement_enabled: true, ...extra })
 const button = () => screen.queryByRole('button', { name: 'admin.scholarship.bursary.witnessAction' })
 
@@ -25,13 +25,13 @@ describe('the bursary card\'s witness button', () => {
   })
 
   it('is offered to a super when an override is assigned and there is no source', async () => {
-    renderCockpit({ role: 'super', app: awarded({ source: null, referred_by_org: null, witness_org: SRC }) })
+    renderCockpit({ role: 'super', app: awarded({ source: null, witness_org: SRC }) })
     await screen.findByText('admin.scholarship.bursary.title')
     expect(button()).toBeTruthy()
   })
 
   it('is not offered with neither a source nor an override (the server refuses: no_witness_organisation)', async () => {
-    renderCockpit({ role: 'super', app: awarded({ source: null, referred_by_org: null, witness_org: null }) })
+    renderCockpit({ role: 'super', app: awarded({ source: null, witness_org: null }) })
     await screen.findByText('admin.scholarship.bursary.title')
     expect(screen.getByText('admin.scholarship.bursary.witness')).toBeTruthy()
     expect(button()).toBeNull()

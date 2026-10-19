@@ -7,8 +7,9 @@
    but code and name leaves: a contact person, email and phone are planted and must stay out.
 2. **The submit** refuses a `referral_source` the gift does not offer (400
    `referral_source_not_offered`) and writes nothing; blank, the three fixed choices and an
-   offered source are accepted, and only an offered source ever fills the SOURCE column (never a
-   tenant, and since sources Sprint B never another organisation's source, even one linked).
+   offered source are accepted, and only an offered source ever becomes the APPLICATION's source
+   (never a tenant, and since sources Sprint B never another organisation's source, even one
+   linked). Since Sprint D the submit writes no part of the answer to the profile.
 3. **The legacy codes migration** (courses 0077): `pushparani` / `govind` → `other`.
 """
 from importlib import import_module
@@ -122,14 +123,23 @@ class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
             'programme_code': programme, 'referral_source': code,
         }, format='json')
 
+    def _application(self):
+        """THIS student's application's answer — where the "Who referred you?" lives since
+        sources Sprint C; Sprint D stopped the submit writing the profile (its chip and its
+        `source` column, which left the model), so these tests read the application."""
+        app = ScholarshipApplication.objects.get(profile=self.student)
+        return app.referral_code, app.source_id
+
     def test_an_offered_source_is_accepted_and_links_the_org(self):
-        # Since the two columns (decisions.md 2026-10-09) the link is the SOURCE column; the
-        # referral partner's `referred_by_org` is never written by the bursary form.
+        # Since the two columns (decisions.md 2026-10-09) the referral partner's `referred_by_org`
+        # is never written by the bursary form; since Sprint D neither is the profile's chip.
+        chip = self.student.referral_source
         resp = self._apply('smc')
         self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertEqual(self._application(), ('smc', self.smc.id))
         self.student.refresh_from_db()
-        self.assertEqual((self.student.referral_source, self.student.source_id,
-                          self.student.referred_by_org_id), ('smc', self.smc.id, None))
+        self.assertEqual((self.student.referral_source, self.student.referred_by_org_id),
+                         (chip, None))
 
     def test_blank_and_the_three_fixed_choices_are_always_accepted(self):
         for code in ('', 'halatuju', 'social', 'other'):
@@ -149,74 +159,47 @@ class TestTheSubmitRefusesAnUnofferedCode(_TwoGifts):
                 self.assertFalse(ScholarshipApplication.objects.filter(profile=self.student).exists())
                 self.student.refresh_from_db()
                 self.assertNotEqual(self.student.referral_source, code)
-                self.assertIsNone(self.student.source_id)
                 self.assertIsNone(self.student.referred_by_org_id)
 
     def test_a_tenant_code_is_never_linked(self):
         """The tenant that runs the gift is not a source (sources Sprint B: it cannot even be
-        linked), so its code is refused and the profile never points at it."""
+        linked), so its code is refused and nothing is written."""
         self.assertEqual(self._apply('gp-org').status_code, 400)
+        self.assertFalse(ScholarshipApplication.objects.filter(profile=self.student).exists())
         self.student.refresh_from_db()
-        self.assertIsNone(self.student.source_id)
         self.assertIsNone(self.student.referred_by_org_id)
 
     def test_another_organisations_source_is_refused_even_when_linked(self):
         ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_only)
         self.assertEqual(self._apply('theirs').status_code, 400)
-        self.student.refresh_from_db()
-        self.assertIsNone(self.student.source_id)
+        self.assertFalse(ScholarshipApplication.objects.filter(profile=self.student).exists())
 
     def test_a_shared_code_fills_the_source_of_the_gifts_own_organisation(self):
         """`smc` exists in both organisations; gift A's student gets gift A's organisation's."""
         ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_smc)
         self.assertEqual(self._apply('smc').status_code, 201)
-        self.student.refresh_from_db()
-        self.assertEqual(self.student.source_id, self.smc.id)
+        self.assertEqual(self._application(), ('smc', self.smc.id))
 
 
-class TestTheProfileLinkIsOnlyEverAnActiveSource(_TwoGifts):
-    """`sync_profile_fields` on its own — the second line behind the view's refusal. A bite-check
-    found the submit tests could not see this half: the view refuses a tenant code before the sync
-    runs. So the sync is asked directly. Since the two columns (decisions.md 2026-10-09) the link
-    it makes is the SOURCE column; `referred_by_org` is asserted untouched throughout."""
+class TestTheProfileSyncNoLongerCarriesTheAnswer(_TwoGifts):
+    """Superseded "the profile link is only ever an active source" (`sync_profile_fields` on its
+    own, the second line behind the view's refusal). Sources Sprint D (2026-10-19): the sync writes
+    no part of the "Who referred you?" answer — not the chip, not a source (the column left the
+    model), never `referred_by_org`. The second line is now `gift_sources.submitted_source` on the
+    APPLICATION, tested in `test_sources_c.py` (own organisation only, fixed codes never a source)."""
 
-    def test_only_an_active_source_the_gift_offers_is_linked(self):
-        from apps.scholarship.services import sync_profile_fields
-        ProgrammeReferralSource.objects.create(programme=self.gift_a, source=self.their_only)
-        # a tenant; a switched-off source; another organisation's source (even linked)
-        for code in ('gp-org', 'tara', 'theirs'):
-            with self.subTest(code=code):
-                student = make_student()
-                sync_profile_fields(student, {'referral_source': code}, programme=self.gift_a)
-                student.refresh_from_db()
-                self.assertIsNone(student.source_id)
-                self.assertIsNone(student.referred_by_org_id)
-        student = make_student()
-        sync_profile_fields(student, {'referral_source': 'smc'}, programme=self.gift_a)
-        student.refresh_from_db()
-        self.assertEqual((student.source_id, student.referred_by_org_id), (self.smc.id, None))
-
-    def test_without_a_gift_no_source_is_found(self):
-        """The guardian-contact writers call the sync with no gift (and no answer); a code with
-        no gift to look it up in fills nothing rather than guessing between organisations."""
-        from apps.scholarship.services import sync_profile_fields
-        student = make_student()
-        sync_profile_fields(student, {'referral_source': 'smc'})
-        student.refresh_from_db()
-        self.assertEqual((student.referral_source, student.source_id), ('smc', None))
-
-    def test_a_fixed_choice_never_links_even_if_a_row_carries_its_code(self):
-        """Review fix: the Sources POST now refuses a reserved code, but a row from before (or
-        written another way) must still never collect the "Other" students."""
+    def test_the_answer_reaches_no_profile_column(self):
         from apps.scholarship.services import sync_profile_fields
         squatter = _source(self.org, 'other', 'A Row Called Other')
         ProgrammeReferralSource.objects.create(programme=self.gift_a, source=squatter)
-        student = make_student()
-        sync_profile_fields(student, {'referral_source': 'other'}, programme=self.gift_a)
-        student.refresh_from_db()
-        self.assertIsNone(student.source_id)
-        self.assertIsNone(student.referred_by_org_id)
-        self.assertEqual(student.referral_source, 'other')
+        for code in ('smc', 'other', 'gp-org', ''):
+            with self.subTest(code=code):
+                student = make_student(referral_source='cumig')       # a `?ref=` chip
+                self.assertEqual(sync_profile_fields(student, {'referral_source': code}), [])
+                student.refresh_from_db()
+                self.assertEqual((student.referral_source, student.referred_by_org_id),
+                                 ('cumig', None))
+        self.assertFalse(any(f.name == 'source' for f in StudentProfile._meta.get_fields()))
 
 
 class TestTheLegacyCodesMigration(TestCase):

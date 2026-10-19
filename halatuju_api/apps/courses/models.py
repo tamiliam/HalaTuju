@@ -437,7 +437,8 @@ class PartnerOrganisation(models.Model):
     """Tenant organisation AND platform referral partner (TD-381). Since sources-and-referrals Sprint
     B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource`, owned by an organisation;
     the rows here that used to be sources were copied there with their ids and are kept, unread by
-    the source surfaces, until Sprint D switches them off.
+    the source surfaces; Sprint D (courses 0081) switched them off (`is_active` false), never
+    deleting one — old snapshots name their codes.
 
     - Referral registry (original role): `StudentProfile.referred_by_org` /
       `PartnerAdmin.org` point here to mean "the organisation that REFERRED a
@@ -459,12 +460,9 @@ class PartnerOrganisation(models.Model):
     # second `contact_phone` column, which would drift against the existing editor).
     phone = models.CharField(max_length=30, blank=True, default='')
     is_active = models.BooleanField(default=True)
-    # Active-source flag (go-live transition, 2026-07-19): when a future apply form reopens
-    # it will draw its "who referred you" list from the organisations flagged here (plus
-    # social-media/other chips for unaffiliated students). Default False; the 6 live referral
-    # orgs are seeded True by migration. Referral attribution still uses `referred_by_org`
-    # regardless of this flag — this only governs apply-form visibility.
-    show_in_apply = models.BooleanField(default=False)
+    # `show_in_apply` (the old "offered on the apply form" flag) left the MODEL in sources Sprint D
+    # (2026-10-19): sources carry their own since Sprint B. courses 0081 gives the column a database
+    # default (migrate-first) and 0082 drops it AFTER the image without the field is live.
     # A PLATFORM REFERRAL PARTNER (2026-10-09; today `cumig` alone) — the only rows a `?ref=` link
     # writes into `StudentProfile.referred_by_org` (`referral_links`). A row may also be a source.
     is_referral_partner = models.BooleanField(default=False, db_default=False, help_text='A PLATFORM referral partner: its ?ref= link fills a student\'s referred_by_org (owned by no organisation).')
@@ -859,19 +857,21 @@ class StudentProfile(models.Model):
     spm_stream = models.CharField(
         max_length=20, blank=True, default='',
         help_text="STPM path: the SPM stream picked for the prerequisites (science/arts/technical).")
+    # The COURSE-SELECTOR's chip (sources Sprint D, 2026-10-19): the first `?ref=` code that brought
+    # her (`referral_links.apply_ref_code`, first touch) — read by the partner dashboard's Source
+    # column, filter and CSV. The bursary no longer writes it (each application keeps its own answer,
+    # `ScholarshipApplication.referral_code`); values written by the bursary before then remain.
     referral_source = models.CharField(
         max_length=50, blank=True, null=True,
         help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',
     )
-    # TWO INDEPENDENT COLUMNS (2026-10-09, `apps/courses/referral_links.py`): `referred_by_org` is
-    # the REFERRAL PARTNER (a `?ref=` link, first touch); `source` is what the BURSARY form named.
-    # Since sources Sprint B (2026-10-18) `source` names the scholarship `referral_sources` table (a
-    # source belongs to an organisation) — a STRING reference, so courses imports nothing for it.
+    # `referred_by_org` is the REFERRAL PARTNER (a `?ref=` link, first touch; `referral_links`). The
+    # profile's bursary `source` column left the model in sources Sprint D (courses 0082 drops it
+    # after the deploy): no reader since Sprint C — the application carries its own source.
     referred_by_org = models.ForeignKey(
         'PartnerOrganisation', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='referred_students',
     )
-    source = models.ForeignKey('scholarship.ReferralSource', on_delete=models.SET_NULL, null=True, blank=True, related_name='sourced_students', help_text='The SOURCE the student named on the bursary form (NULL for a fixed choice). Independent of referred_by_org.')
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

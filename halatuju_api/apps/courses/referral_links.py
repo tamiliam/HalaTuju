@@ -1,22 +1,23 @@
-"""The student record's two referral columns: SOURCE and REFERRAL PARTNER (2026-10-09).
+"""Referral partners and the course-selector's `?ref=` columns (2026-10-09; Sprint D 2026-10-19).
 
 Owner's model (decisions.md, "The student record has two independent columns: source and referral
-partner"). Three categories share `partner_organisations` today: ORGANISATIONS (tenants —
-`PartnerOrganisation.objects.tenants()`), SOURCES (owned by the organisation that added them) and
-REFERRAL PARTNERS (platform level, owned by no organisation, marked `is_referral_partner`; today only
-CUMIG, whose row is also a source). A student carries two INDEPENDENT columns, and NEITHER WRITER
-EVER TOUCHES THE OTHER:
+partner"). Three categories: ORGANISATIONS (tenants — `PartnerOrganisation.objects.tenants()`),
+SOURCES (`scholarship.ReferralSource`, owned by the organisation that added them) and REFERRAL
+PARTNERS (platform level, owned by no organisation, `partner_organisations` rows marked
+`is_referral_partner`; today only CUMIG). The bursary and the course selector never write each
+other's columns:
 
-- `StudentProfile.source` — the source the student named on the bursary "Who referred you?" form.
-  Written ONLY by the bursary submit (`scholarship.services.profile_sync`); NULL for a fixed choice.
-- `StudentProfile.referred_by_org` — the REFERRAL PARTNER whose `?ref=` link brought them. Written
-  ONLY here (`apply_ref_code`, fed by `ProfileSyncView`): first touch, referral-partner rows only.
+- the bursary's "Who referred you?" answer lives on each APPLICATION (`ScholarshipApplication
+  .referral_code` / `.source`, written once at submit) — never on the profile;
+- `StudentProfile.referred_by_org` — the REFERRAL PARTNER whose `?ref=` link brought them, and the
+  chip `StudentProfile.referral_source` — the `?ref=` code itself (the partner dashboard's Source
+  column). Both written ONLY here (`apply_ref_code`, fed by `ProfileSyncView`), first touch.
 
-Sources-and-referrals Sprint A built this; Sprint B (2026-10-18) moved sources into their own table
-(`scholarship.ReferralSource`, owned by an organisation — `StudentProfile.source` names it); Sprint C
-(2026-10-19) moved every bursary reader of the legacy chip (`referral_source`) onto the APPLICATION's
-own answer (`ScholarshipApplication.referral_code` / `.source`) and made the witness the
-application's source only (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
+Sources-and-referrals Sprint A built the split; Sprint B (2026-10-18) moved sources into their own
+table; Sprint C (2026-10-19) moved every bursary reader onto the application's own answer; Sprint D
+(2026-10-19) stopped the bursary writing the profile at all (the chip and `StudentProfile.source`,
+which left the model) and added the super-only mark / unmark (`mark_refusal`)
+(`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
 
 ⚠ NOT ACCESS CONTROL. The partner role's course-selector list is scoped by `referred_by_org` — that
 is the `partner` role's purpose — and nothing else may use either column as a fence.
@@ -136,11 +137,11 @@ def apply_ref_code(profile, code):
     FIRST TOUCH on both things it may write, so a resend can never move either:
     - `referred_by_org` — only when it is still empty, and only to an active REFERRAL PARTNER. An
       unknown code, a source, a tenant or a switched-off row links nothing.
-    - the legacy `referral_source` chip (kept for the course-selector partner dashboard until
-      Sprint D; since Sprint C no bursary surface reads it — each application keeps its own
-      answer) — only when it is still empty AND the student has no bursary application. The
-      bursary answer owns the chip once she has applied, so a `?ref` can never overwrite it.
-    It NEVER touches `source`. Returns the fields changed."""
+    - the `referral_source` chip (the course-selector partner dashboard's Source column) — only
+      when it is still empty. Sprint D (2026-10-19): the bursary no longer writes the chip, so
+      the old "only while she has no application" condition, which protected the bursary answer
+      on it, went with it; first touch still means a resend can never move it.
+    Returns the fields changed."""
     code = _clean_code(code)
     if not code:
         return []
@@ -150,7 +151,7 @@ def apply_ref_code(profile, code):
         if partner is not None:
             profile.referred_by_org = partner
             changed.append('referred_by_org')
-    if not profile.referral_source and not profile.scholarship_applications.exists():
+    if not profile.referral_source:
         profile.referral_source = code
         changed.append('referral_source')
     if changed:
@@ -159,10 +160,11 @@ def apply_ref_code(profile, code):
 
 
 def _source_model():
-    """`scholarship.ReferralSource`, reached through the `StudentProfile.source` field rather than
-    imported — the courses → scholarship back-edge may not grow (`test_code_standards.py`)."""
-    from .models import StudentProfile
-    return StudentProfile._meta.get_field('source').related_model
+    """`scholarship.ReferralSource`, looked up in the app registry rather than imported — the
+    courses → scholarship back-edge may not grow (`test_code_standards.py`). Until Sprint D it was
+    reached through `StudentProfile.source`, which left the model then."""
+    from django.apps import apps
+    return apps.get_model('scholarship', 'ReferralSource')
 
 
 def source_twin(partner_id):
@@ -180,3 +182,39 @@ def source_twin(partner_id):
     return _source_model().objects.filter(
         pk=partner_id,
         code__in=PartnerOrganisation.objects.filter(pk=partner_id).values('code')).first()
+
+
+#: Why a super's mark / unmark was refused (sources Sprint D, roadmap item 1b). Sentences, like
+#: `INVITE_REFUSALS`, because a screen prints the server's `error`.
+MARK_REFUSALS = {
+    'org_is_tenant': 'That organisation runs gifts on HalaTuju, so it cannot be a referral partner.',
+    'code_reserved': 'That code is reserved and cannot be a referral partner.',
+    'org_inactive': 'That organisation is switched off (a retired source row, or suspended), so '
+                    'it cannot be marked a referral partner.',
+    'has_partner_logins': 'That referral partner still has partner logins. Revoke them on '
+                          'Referral partners first, then unmark it.',
+}
+
+
+def mark_refusal(org, mark):
+    """Why `org` may NOT be marked (`mark` true) or unmarked (false) a referral partner, or None.
+
+    Marking decides which students a `?ref=` link collects for the partner logins (who see NRIC,
+    phone, address and income), so it is a platform decision a SUPER takes on its own — the view
+    is super-only. Never a tenant, a reserved code, or a switched-off row (Sprint D retired the
+    sources' old rows by switching them off; marking one would quietly revive its `?ref`). An
+    unmark is refused while the row still has active `partner` logins: they would go on seeing
+    their students from a row that is no longer a referral partner — the one state the invite
+    refuses to create. Existing `referred_by_org` links are never touched by either."""
+    from .models import PartnerAdmin, PartnerOrganisation
+    if mark:
+        if PartnerOrganisation.objects.tenants().filter(pk=org.pk).exists():
+            return 'org_is_tenant'
+        if org.code in RESERVED_CODES:
+            return 'code_reserved'
+        if not org.is_active:
+            return 'org_inactive'
+        return None
+    if PartnerAdmin.objects.filter(org=org, role='partner', is_active=True).exists():
+        return 'has_partner_logins'
+    return None

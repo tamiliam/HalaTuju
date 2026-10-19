@@ -4,9 +4,13 @@
 `courses/0078_two_referral_columns`, cutover `docs/scholarship/two-columns-cutover-sql.md`; retro
 `docs/retrospectives/retrospective-2026-10-18-sources-a.md`). Sprint B BUILT 2026-10-18, LIVE 2026-10-19
 (`bbe6fac6`, api-01122-nw4; `scholarship/0173` + `courses/0079` migrate-first, `courses/0080` after the
-deploy; cutover `docs/scholarship/sources-b-cutover-sql.md`). Sprint C BUILT 2026-10-19 (not committed,
-not live; `scholarship/0174` migrate-first; cutover `docs/scholarship/sources-c-cutover-sql.md`).
-Sprint D not started.
+deploy; cutover `docs/scholarship/sources-b-cutover-sql.md`). Sprint C BUILT and LIVE 2026-10-19
+(`e90179c6`, api-01123-nbw / web-00973-rdj; `scholarship/0174` migrate-first; cutover
+`docs/scholarship/sources-c-cutover-sql.md`). Sprint D BUILT 2026-10-19 (not committed, not live;
+`courses/0081` migrate-first, `courses/0082` image-first and OWNER-run; cutover
+`docs/scholarship/sources-d-cutover-sql.md`; retro `docs/retrospectives/retrospective-2026-10-19-sources-arc.md`).
+**THE ARC IS COMPLETE** once Sprint D is live and 0082 has run. Left open on purpose: TD-386 (c)/(d)
+(owner question) and TD-387 (the referral-partner screen).
 **Owner's model (settled 2026-10-09 — do not re-litigate):** *"Referral partners and sources and orgs
 are different. Referral partners are a category of their own. Orgs > sources."* Three categories:
 
@@ -232,7 +236,37 @@ moves-only split in its own commit first. Web: `admin/scholarship/page.tsx`, `Co
 `lib/scholarship.ts` (in the oversize ledger) — run `npm run bundle-budget` before adding any
 string (TD-360, en.json is at its line).
 
-## Sprint D — retire the old shared fields and rows; close the debt
+## Sprint D — retire the old shared fields and rows; close the debt ✅ BUILT 2026-10-19
+
+**As built (2026-10-19; decisions.md "Sprint D: the bursary writes nothing on the profile; the chip is
+the course-selector's"):**
+- **Item 0 / item 6 — the chip is RE-SCOPED, not retired (a departure from item 1, flagged).** The
+  course-selector partner dashboard (`/admin/students`, its Source column, filter and CSV — CUMIG's
+  list) is the chip's only reader, so the chip stays and gets ONE meaning: the first `?ref=` code that
+  brought her (`referral_links.apply_ref_code`, first touch; the old "only before she applied"
+  condition went, since it protected the bursary answer). The bursary submit STOPS writing it
+  (`profile_sync._PROFILE_ABOUTME_FIELDS`): its answer had been showing on the referral partner's
+  Source column — the owner's rule is that a bursary answer never reaches the partner logins. No
+  column dropped for it; CUMIG's list (scoped by `referred_by_org`) is untouched.
+- **`StudentProfile.source` retired:** no writer (the submit's block is gone) and no reader; it left
+  the model; **courses 0082 drops the column IMAGE-FIRST, OWNER-RUN** after a backup table.
+  `build_intake_snapshot` reads the answer from the request (one rule with the row's `referral_code`).
+- **The cockpit's `referred_by_org` key removed** (api serializer + web type, pill, witness card and
+  button read `source` only). Either deploy order is safe (cutover doc, "The deploy").
+- **The sources' old rows switched off, never deleted** (courses 0081, migrate-first): a row with a
+  `referral_sources` twin (same id AND code), not the referral partner, not a tenant. CUMIG stays live.
+- **`PartnerOrganisation.show_in_apply` retired:** 0081 gives the column `DEFAULT false` first (it was
+  `NOT NULL` with no database default, so the new image's inserts would fail before the drop); 0082
+  drops it. The sources' own `show_in_apply` (`referral_sources`) is untouched.
+- **`source_twin` KEPT** — it is the Sprint B invite refusal's question ("is this a source's old row?"),
+  which still guards an `org_admin` invite from turning an old row into a tenant. It now reaches the
+  source model through the app registry (`apps.get_model`), since the field it used went.
+- **Item 1b — the PATH, not the screen:** `GET` / `PATCH /api/v1/admin/referral-partners/` (super only;
+  never a tenant, a reserved code or a switched-off row; an unmark waits for the partner logins to be
+  revoked; audited). The screen is **TD-387** (Stitch first; en.json is at its bundle line, TD-360).
+- **Item 2:** TD-379/380/381 were closed by B and C going live; TD-386 (a)(b) recorded done, (c)(d)
+  open. No reviewer surface changed (no Guide/FAQ change); the Sources and Configuration help text
+  never described the profile's source (no change).
 
 0. **Added by Sprint C:** remove the cockpit's old `referred_by_org` key (the web reads `source` since
    Sprint C); retire `StudentProfile.source` with the chip (no bursary reader since Sprint C); decide the
@@ -251,3 +285,12 @@ string (TD-360, en.json is at its line).
    reviewer surface changed.
 3. Contract migrations ordered image-first (a dropped column the serving image selects 500s every
    read).
+
+## The arc, closed (2026-10-19)
+
+Four sprints took one overloaded table with three moods to three categories that never write each
+other: ORGANISATIONS (`tenants()`), SOURCES (`referral_sources`, owned, per-application answer on the
+application), REFERRAL PARTNERS (`partner_organisations` marked, a `?ref=` link writing
+`referred_by_org` and the course-selector chip). Read the retrospective
+`docs/retrospectives/retrospective-2026-10-19-sources-arc.md` before opening this again. Next work
+here, if any: TD-387 (the screen), TD-386 (c)/(d) when a second organisation joins or the owner rules.

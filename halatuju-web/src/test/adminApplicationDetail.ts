@@ -246,7 +246,7 @@ function base(): AdminScholarshipDetail {
     verified_email: 'student07@example.test',
     preferred_call_language: 'en',
     referral_source: null,
-    referred_by_org: { id: 3, code: 'test-source', name: 'Test Referring Organisation' },
+    source: { id: 3, code: 'test-source', name: 'Test Referring Organisation' },
     witness_org: null,
     guardians: [{ name: 'Test Guardian 03', phone: '0123456788', relationship: 'father' }],
     muet_band: null,

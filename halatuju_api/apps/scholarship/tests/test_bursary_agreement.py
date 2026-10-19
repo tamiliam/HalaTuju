@@ -101,10 +101,11 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'),
         preferred_state='Kedah', exam_type='spm', grades={'bm': 'A'},
         contact_email='student@secret.example', contact_phone='012-7776666',
         guardians=[{'name': GUARANTOR_NAME, 'phone': GUARANTOR_PHONE}],
-        referred_by_org=org, source=source,
+        referred_by_org=org,
     )
     # Sources Sprint C: the witness reads the APPLICATION's source (kept at submit), so the named
-    # source goes on the application too, with its code — as the submit writes them.
+    # source goes on the application, with its code — as the submit writes them. (Sprint D: the
+    # profile's own `source` column left the model, so it is no longer set here.)
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='recommended', award_amount=award,
         notify_email='student@secret.example', source=source,

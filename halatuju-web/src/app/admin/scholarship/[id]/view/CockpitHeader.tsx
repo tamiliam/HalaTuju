@@ -33,9 +33,8 @@ export function CockpitHeader({
   doCancelDecline: () => void
   doHoldAward: () => void
 }) {
-  // The referral pill: THIS application's source and its SERVED name (sources Sprint C). The old
-  // `referred_by_org` key carries the same value for one release, for an api not yet redeployed.
-  const refOrg = app.source ?? app.referred_by_org
+  // The referral pill: THIS application's source and its SERVED name (sources Sprint C).
+  const refOrg = app.source
   const refNames = refOrg ? { [refOrg.code]: refOrg.name } : undefined
   const refTag = referralAcronym(app.referral_source, refNames?.[app.referral_source ?? ''])
   return (<>

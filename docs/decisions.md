@@ -14230,3 +14230,63 @@ golden table would then prove nothing).
 
 **Revisit if:** the owner removes the R1 super override, rules on the Reviewers-tab finding, or makes
 "Manage team" switchable (+2 h, needs "you cannot grant what you do not hold").
+
+## 2026-10-19 — Sprint D: the bursary writes nothing on the profile; the chip is the course selector's
+
+**Decision (sources and referral partners Sprint D, the arc's clean-up; the owner's model of
+2026-10-09, not re-opened):**
+1. **The bursary submit writes NO referral column on the profile.** Its answer belongs to the
+   application (`referral_code` / `source`, Sprint C). `sync_profile_fields` no longer carries
+   `referral_source`, and `StudentProfile.source` left the model (courses 0082 drops the column after
+   the deploy, OWNER-run, with a backup table).
+2. **The chip `StudentProfile.referral_source` is RE-SCOPED, not retired** — a departure from the
+   roadmap's item 1 ("stop writing; then a contract migration"), taken because the brief says do not
+   break CUMIG's list and keep what the partner dashboard needs. The course-selector partner dashboard
+   (`/admin/students`: Source column, filter, CSV) is its only reader, so it keeps ONE meaning: the
+   first `?ref=` code that brought her, written only by `referral_links.apply_ref_code`, first touch.
+   The "only while she has no application" condition went with the bursary's write (it protected the
+   bursary answer on the chip). **Why this and not "show `referred_by_org` instead":** a super's
+   dashboard filter also shows `?ref=` codes that never were referral partners (a source's own
+   link), which `referred_by_org` cannot say; and it needs no web change. **What it fixes:** a
+   bursary answer (e.g. SMC) sat on the referral partner's Source column, visible to its `partner`
+   logins — the owner's rule is that a bursary answer never reaches them. Values the bursary wrote
+   before Sprint D stay (history); nothing rewrites them.
+3. **The cockpit's old `referred_by_org` key is removed** (api and web together; either deploy order is
+   safe — the Sprint C api serves both keys, and the Sprint C web reads `source` first).
+4. **The sources' old `partner_organisations` rows are switched off, never deleted** (courses 0081,
+   migrate-first): a row with a `referral_sources` twin (same id AND code) that is not the referral
+   partner and not a tenant. `PartnerOrganisation.show_in_apply` is dropped (0081 first gives the
+   column `DEFAULT false` — it was `NOT NULL` with no database default, so the new image's inserts
+   would otherwise fail between the deploy and the drop).
+5. **A super marks and unmarks referral partners** (`GET` / `PATCH /api/v1/admin/referral-partners/`):
+   never a tenant, a reserved code or a switched-off row; an unmark is refused while the row has
+   active `partner` logins (they would keep seeing students from a row that is no longer a referral
+   partner — the state the invite already refuses); existing `referred_by_org` links are never
+   touched; every change is an `AUDIT` line. **The screen is NOT built** (TD-387): a new component is
+   prototyped in Stitch and approved first, and its strings need en.json weight taken off (TD-360).
+
+**Lead rulings in the build:**
+- **`source_twin` stays** — it is the Sprint B `org_admin`-invite refusal's question ("is this a
+  source's old row?"), still needed after the rows are switched off (an inactive old row must still
+  never become a tenant). With `StudentProfile.source` gone it reaches `ReferralSource` through the
+  app registry (`apps.get_model`) — no new `courses → scholarship` import.
+- **Drop, don't leave, `StudentProfile.source`:** nullable, nothing reads or writes it, and the same
+  image-first pattern as courses 0080 (TD-379) ran cleanly two days ago. Leaving it would keep a
+  database FK to `referral_sources` that Django no longer knows about.
+- **Retired 0173's production-shaped copy tests** (six, `test_sources_b.py`): they ran the copy's data
+  step against the live models, which no longer have `show_in_apply`. The copy ran on production
+  2026-10-19; what it protected is pinned by the repointed-key test, the fence and the invites.
+
+**Alternatives considered:** (a) retire the chip and show the referral partner on the dashboard —
+loses the non-partner `?ref` codes and changes the web; (b) keep the bursary writing the chip — keeps
+the leak onto the partner's Source column; (c) leave `StudentProfile.source` in place unused — a live
+FK nobody owns; (d) delete the old source rows — old snapshots name their codes, and nothing is
+gained; (e) build the referral-partner screen now — no Stitch approval, and en.json is at its line.
+
+**Trade-offs:** a profile's chip may still hold a bursary answer written before Sprint D; the partner
+dashboard shows it as it did. A `?ref` arriving after she applied now fills an EMPTY chip (first
+touch) where before it did not. The roadmap's "retire the chip" is not done and will not be unless
+the dashboard's Source column changes.
+
+**Revisit if:** the partner dashboard is redesigned (the chip's one reader), a second organisation
+joins (TD-386 c/d), or the referral-partner screen is prototyped (TD-387).

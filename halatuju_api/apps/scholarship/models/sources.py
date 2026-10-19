@@ -14,8 +14,9 @@ Until this sprint all three were rows of `partner_organisations`. The rows that 
 COPIED here keeping their ids (scholarship migration 0173), so every foreign key that named a
 source — `ProgrammeReferralSource.source`, `StudentProfile.source`, both `witness_org`s and
 `PartnerEmailLog.organisation` — moved by swapping its constraint, not by rewriting a value. The
-`partner_organisations` copies are kept, switched off later (roadmap Sprint D): the image serving
-before this one reads them, and old intake snapshots name their codes. CUMIG is BOTH: its referral
+`partner_organisations` copies are kept: the image serving before this one read them, and old
+intake snapshots name their codes; Sprint D (2026-10-19, courses 0081) switched them off, and
+dropped `StudentProfile.source` (courses 0082) — the application carries its own source since C. CUMIG is BOTH: its referral
 partner row stays on `partner_organisations` with its logins and its students, and its source row
 lives here, owned by BrightPath, with the same id.
 

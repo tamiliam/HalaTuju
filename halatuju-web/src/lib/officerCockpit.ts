@@ -1420,7 +1420,7 @@ export function showsReviewerAssignedCard(status: string | null | undefined): bo
  * `rejected`/`withdrawn`/`expired`: those students never sign, so the control is noise there.
  *
  * This is the STAGE gate only — the card is additionally limited to SOURCELESS students (no
- * `referred_by_org`, who would otherwise witness the agreement themselves) and to
+ * `source`, which would otherwise witness the agreement itself) and to
  * super/admin/org_admin, both of which the cockpit already applies.
  */
 const WITNESS_CARD_FROM = new Set<string>([

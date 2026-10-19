@@ -79,8 +79,9 @@ class TestTheConfigurationLists(_ConfigBase):
             {'code': 'smc', 'name': 'Sri Murugan Centre', 'on': True},
         ])
 
-    def test_a_tenant_is_never_offered_even_with_its_flag_on(self):
-        PartnerOrganisation.objects.filter(pk=self.org.pk).update(show_in_apply=True)
+    def test_a_tenant_is_never_offered(self):
+        # Was "…even with its flag on": the tenant row's `show_in_apply` flag left the model in
+        # sources Sprint D (courses 0082), so a tenant has no flag to switch on any more.
         codes = [s['code'] for s in self._get().json()['sources']]
         self.assertNotIn('gs-org', codes)
         self.assertNotIn('gs-other', codes)

@@ -1360,3 +1360,22 @@ can take an id that already means another organisation in the old one (the old t
 left alone, so later rows there may reuse new-table ids — which is why the pairing below never uses an
 id alone). Where two tables share ids by design,
 pair rows by id AND a natural key (here the code), never by id alone. (sources-and-referrals Sprint B)
+
+## 2026-10-19 — "never reaches role R" is tested on R's screen payload, not on R's row query
+
+Sources Sprint A's rule was "a bursary answer never puts a student on the referral partner's list",
+and its tests pinned the list's MEMBERSHIP (`referred_by_org`). The partner's own list also serves a
+Source column — the profile chip — which the bursary submit kept writing, so a `?ref=cumig` student
+who named SMC on the bursary form showed "smc" to CUMIG's logins for three sprints. **Rule:** when a
+rule says some fact must never reach a role, write the test against every column that role's screen
+and export SERVE, not only against the query that picks its rows. (sources-and-referrals Sprint D)
+
+## 2026-10-19 — a field leaving the model before its drop needs a DATABASE default if NOT NULL
+
+"Remove the field from the model, deploy, then drop the column" is safe only if the image without the
+field can still INSERT. TD-379's column was nullable, so the pattern worked; `show_in_apply` is
+`NOT NULL` with only a Python default, so the new image would have failed every insert into the table
+between the deploy and the drop — and no test can see it, because the test database runs the drop
+too. **Rule:** before removing a field ahead of its drop, read the live column's nullability and
+default (rendered DDL, `information_schema`); a `NOT NULL` column without a database default gets one
+in a migrate-first expand, pinned by a test on the migration. (sources-and-referrals Sprint D)

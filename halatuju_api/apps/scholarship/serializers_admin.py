@@ -441,10 +441,8 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     # Go-live transition (T2): THIS application's source (sources Sprint C — never the referral
     # partner) and the witness-org OVERRIDE. The cockpit shows the witness dropdown for a
     # SOURCELESS application so an org_admin can assign one. Each is {id, code, name} or null.
-    # `referred_by_org` is the OLD key for the same value, kept one release for the web already
-    # serving (remove in sources Sprint D).
+    # (The old `referred_by_org` key for the same value was served one release; Sprint D removed it.)
     source = serializers.SerializerMethodField()
-    referred_by_org = serializers.SerializerMethodField()
     witness_org = serializers.SerializerMethodField()
 
     class Meta:
@@ -456,7 +454,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state', 'birth_state',
             'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians', 'guardian_needs_call',
-            'source', 'referred_by_org', 'witness_org',
+            'source', 'witness_org',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
@@ -643,9 +641,6 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
 
     def get_source(self, obj):
         return self._org_dict(obj.source)
-
-    def get_referred_by_org(self, obj):
-        return self._org_dict(obj.source)   # the old key, one release (see the field)
 
     def get_witness_org(self, obj):
         return self._org_dict(obj.witness_org)

@@ -1,7 +1,7 @@
 """Sources and referral partners, Sprint B (2026-10-18) — a source is its own record, owned by an
 organisation (decisions.md "Sources become their own table, owned by an organisation").
 
-1. **The copy** (scholarship 0173) on a production-shaped fixture: every non-tenant, non-fixed-code
+1. **The copy** (scholarship 0173) on a production-shaped fixture (RETIRED by Sprint D — see below): every non-tenant, non-fixed-code
    `partner_organisations` row is copied KEEPING ITS ID, owned by THE tenant; nothing else moves —
    CUMIG's referral-partner row, its logins and its students are untouched, and the partner-email
    recipients are the same before and after. It refuses two tenants, and any reference that would
@@ -14,13 +14,9 @@ organisation (decisions.md "Sources become their own table, owned by an organisa
    creates is marked; never onto a tenant or a source's old row; an `org_admin` never onto a
    referral partner. `GET /admin/orgs/` lists referral partners only.
 """
-from importlib import import_module
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from django.apps import apps as live_apps
 from django.core import mail
-from django.db import connection
 from django.test import TestCase, override_settings
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
@@ -34,15 +30,12 @@ from apps.scholarship.tests.factories import (
     make_programme, make_source, make_student,
 )
 
-COPY = import_module('apps.scholarship.migrations.0173_referral_sources')
 SOURCES = '/api/v1/admin/scholarship/sources/'
 EMAILS = '/api/v1/admin/scholarship/partner-emails/'
 INVITE = '/api/v1/admin/invite/'
 ORGS = '/api/v1/admin/orgs/'
 PARTNER_LIST = '/api/v1/admin/students/'
 
-#: What `copy_sources` reads from its `schema_editor`: only the connection's vendor.
-EDITOR = SimpleNamespace(connection=connection)
 
 
 def _house():
@@ -50,139 +43,20 @@ def _house():
     return PartnerOrganisation.objects.get(code=partner_comms.HOUSE_ORG_CODE)
 
 
-def _row(code, **kw):
-    """A `partner_organisations` row as production has them BEFORE the copy."""
-    kw.setdefault('name', code.upper())
-    kw.setdefault('show_in_apply', True)
-    return PartnerOrganisation.objects.create(code=code, **kw)
-
-
-@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
-class TestTheCopyOnAProductionShapedFixture(TestCase):
-    """Production on 2026-10-18, shrunk: one tenant (BrightPath); sources cumig (also THE referral
-    partner, two `partner` logins, its course-selector students), smc, ewrf, and the switched-off
-    sathya_sai and tara; a row carrying a fixed code; students with a source, a witness on an
-    application, a partner-email log row."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.house = _house()
-        cls.cumig = _row('cumig', is_referral_partner=True, contact_email='CUMIG@Example.org ',
-                         contact_person='Cik Partner', phone='011')
-        cls.smc = _row('smc', contact_email='smc@example.org')
-        cls.ewrf = _row('ewrf')
-        cls.sathya = _row('sathya_sai', show_in_apply=False)
-        cls.tara = _row('tara', show_in_apply=False, contact_email='tara@example.org')
-        cls.fixed = _row('other', show_in_apply=False)          # a fixed form code: never a source
-        cls.logins = [make_admin('partner', org=cls.cumig) for _ in range(2)]
-        StudentProfile.objects.bulk_create([
-            StudentProfile(supabase_user_id=f'sb-cs-{i}', referral_source='cumig',
-                           referred_by_org=cls.cumig) for i in range(25)])
-        cls.cohort = make_cohort(owning_organisation=cls.house)
-        cls.picker = make_student(referral_source='smc')
-        cls.app = make_application(cohort=cls.cohort, student=cls.picker)
-        cls.copied = (cls.cumig, cls.smc, cls.ewrf, cls.sathya, cls.tara)
-
-    def setUp(self):
-        # Production's state before the copy: these columns name `partner_organisations` ids. The
-        # FKs now name the new table, so the values go in as raw ids and the copy makes them valid
-        # (the test transaction checks every constraint at its end).
-        StudentProfile.objects.filter(pk=self.picker.pk).update(source_id=self.smc.pk)
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(witness_org_id=self.ewrf.pk)
-        PartnerEmailLog.objects.create(organisation_id=self.cumig.pk, kind='weekly_summary',
-                                       ok=True, recipients=['cumig@example.org'])
-
-    def _recipients_before(self):
-        """`partner_comms.qualifying_partners` as it was BEFORE Sprint B, on this table."""
-        rows = (PartnerOrganisation.objects.filter(is_active=True)
-                .exclude(code=partner_comms.HOUSE_ORG_CODE).exclude(contact_email='')
-                .order_by('name'))
-        return [(o.code, partner_comms.recipient_for(o)) for o in rows]
-
-    def _partner_list_count(self):
-        resp = authed_client(self.logins[0]).get(PARTNER_LIST)
-        self.assertEqual(resp.status_code, 200, resp.content)
-        return resp.json()['count']
-
-    def test_every_source_is_copied_with_its_id_owned_by_the_tenant(self):
-        COPY.copy_sources(live_apps, EDITOR)
-        for row in self.copied:
-            with self.subTest(code=row.code):
-                src = ReferralSource.objects.get(pk=row.pk)
-                self.assertEqual(
-                    (src.code, src.name, src.contact_person, src.contact_email, src.phone,
-                     src.show_in_apply, src.is_active, src.created_at, src.organisation_id),
-                    (row.code, row.name, row.contact_person, row.contact_email, row.phone,
-                     row.show_in_apply, row.is_active, row.created_at, self.house.pk))
-        for row in (self.house, self.fixed):
-            self.assertFalse(ReferralSource.objects.filter(pk=row.pk, code=row.code).exists())
-
-    def test_nothing_else_moves_and_the_referral_partner_is_untouched(self):
-        before = (self._partner_list_count(),
-                  list(PartnerOrganisation.objects.order_by('pk').values_list(
-                      'pk', 'code', 'is_referral_partner', 'is_active', 'contact_email')),
-                  list(PartnerAdmin.objects.order_by('pk').values_list('pk', 'org_id', 'role')),
-                  StudentProfile.objects.filter(referred_by_org=self.cumig).count())
-        COPY.copy_sources(live_apps, EDITOR)
-        COPY.refuse_dangling_references(live_apps, EDITOR)        # nothing dangles: no raise
-        after = (self._partner_list_count(),
-                 list(PartnerOrganisation.objects.order_by('pk').values_list(
-                     'pk', 'code', 'is_referral_partner', 'is_active', 'contact_email')),
-                 list(PartnerAdmin.objects.order_by('pk').values_list('pk', 'org_id', 'role')),
-                 StudentProfile.objects.filter(referred_by_org=self.cumig).count())
-        self.assertEqual(before, after)
-        self.assertEqual(after[0], 25)
-        # The three swapped values now name the copies — the same organisations, by the same ids.
-        self.picker.refresh_from_db()
-        self.assertEqual(self.picker.source.code, 'smc')
-        self.assertEqual(ScholarshipApplication.objects.get(pk=self.app.pk).witness_org.code, 'ewrf')
-        self.assertEqual(PartnerEmailLog.objects.get().organisation.code, 'cumig')
-
-    def test_the_partner_email_recipients_are_identical_before_and_after(self):
-        before = self._recipients_before()
-        # The fixture's own floor: three rows have an address (a switched-off source still
-        # qualifies — the email follows `is_active`, not `show_in_apply`).
-        self.assertEqual([code for code, _ in before], ['cumig', 'smc', 'tara'])
-        COPY.copy_sources(live_apps, EDITOR)
-        after = [(s.code, partner_comms.recipient_for(s)) for s in partner_comms.qualifying_partners()]
-        self.assertEqual(after, before)
-
-    def test_the_copy_is_idempotent(self):
-        COPY.copy_sources(live_apps, EDITOR)
-        once = list(ReferralSource.objects.order_by('pk').values())
-        COPY.copy_sources(live_apps, EDITOR)
-        self.assertEqual(list(ReferralSource.objects.order_by('pk').values()), once)
-
-    def test_two_tenants_copy_nothing(self):
-        second = make_org('sb-second')
-        make_admin('org_admin', owning_org=second)
-        with self.assertRaises(RuntimeError):
-            COPY.copy_sources(live_apps, EDITOR)
-        self.assertFalse(ReferralSource.objects.filter(pk=self.smc.pk, code='smc').exists())
-        # Put the raw ids back to NULL: no copy was made for them to name.
-        self._unset_raw_ids()
-
-    def test_a_witness_on_the_house_row_refuses_the_migration(self):
-        """The house is a tenant, so it is never copied: a witness naming it would dangle."""
-        COPY.copy_sources(live_apps, EDITOR)
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(witness_org_id=self.house.pk)
-        try:
-            with self.assertRaisesRegex(RuntimeError, 'scholarship_applications.witness_org_id'):
-                COPY.refuse_dangling_references(live_apps, EDITOR)
-        finally:
-            ScholarshipApplication.objects.filter(pk=self.app.pk).update(witness_org_id=None)
-
-    def _unset_raw_ids(self):
-        StudentProfile.objects.filter(pk=self.picker.pk).update(source_id=None)
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(witness_org_id=None)
-        PartnerEmailLog.objects.all().delete()
+# The copy's production-shaped tests (`TestTheCopyOnAProductionShapedFixture`, six tests) were RETIRED
+# by sources Sprint D (2026-10-19): they ran scholarship 0173's data step (`copy_sources`) against
+# the LIVE models, and 0173 reads `partner_organisations.show_in_apply`, which left the model in
+# Sprint D (courses 0082). The copy ran on production on 2026-10-19 (15 sources, ids kept, links,
+# witness, email log and recipients identical — CHANGELOG, Sprint B "Shipped"). What it protected
+# is still pinned: every repointed key below, the fence and the invites in this file, and the
+# referral partner's list in `test_two_referral_columns.py`. Sprint B retired 0078's backfill
+# tests for the same reason.
 
 
 class TestEveryRepointedKey(TestCase):
     def test_the_five_source_columns_name_the_sources_table_and_the_rest_do_not(self):
         cases = (
             (ProgrammeReferralSource, 'source', ReferralSource),
-            (StudentProfile, 'source', ReferralSource),
             (ScholarshipApplication, 'witness_org', ReferralSource),
             (BursaryAgreement, 'witness_org', ReferralSource),
             (PartnerEmailLog, 'organisation', ReferralSource),
@@ -199,6 +73,10 @@ class TestEveryRepointedKey(TestCase):
         self.assertIs(PartnerEmailLog._meta.get_field('organisation').remote_field.on_delete,
                       PROTECT)
         self.assertNotIn('programme', {f.name for f in PartnerOrganisation._meta.fields})
+        # Sprint D: the profile's `source` (the fifth key moved here) and the old row's
+        # `show_in_apply` left the models (courses 0082) — the application carries the source.
+        self.assertNotIn('source', {f.name for f in StudentProfile._meta.fields})
+        self.assertNotIn('show_in_apply', {f.name for f in PartnerOrganisation._meta.fields})
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

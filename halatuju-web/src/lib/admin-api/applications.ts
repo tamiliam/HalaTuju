@@ -172,10 +172,9 @@ export interface AdminScholarshipDetail {
   preferred_call_language: string
   referral_source: string | null   // THIS application's answer, kept at submit (sources Sprint C)
   // THIS application's source (sources Sprint C) + the witness-org override; source null =
-  // sourceless (the cockpit then offers the witness dropdown). Optional: an api not yet redeployed
-  // sends only `referred_by_org`, the old key for the same value (kept one release).
-  source?: { id: number; code: string; name: string } | null
-  referred_by_org: { id: number; code: string; name: string } | null
+  // sourceless (the cockpit then offers the witness dropdown). The old `referred_by_org` key for
+  // the same value was served one release and left in sources Sprint D.
+  source: { id: number; code: string; name: string } | null
   witness_org: { id: number; code: string; name: string } | null
   guardians: Array<{ name?: string; phone?: string; relationship?: string }>
   /** Request #26: the parent phone is the student's own and no consenting call cleared this number. */

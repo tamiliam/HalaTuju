@@ -440,7 +440,9 @@ def make_application(stage='submitted', *, outcome=None, cohort=None, student=No
         'declared_at': now,
     }
     # Sources Sprint C: the submit keeps her "Who referred you?" answer ON THE APPLICATION, and its
-    # source inside the round's own organisation (`services/intake.create_application`).
+    # source inside the round's own organisation (`services/intake.create_application`). The answer
+    # is taken from the student's chip as a fixture CONVENIENCE only (since Sprint D the real submit
+    # never reads or writes the chip); pass `referral_code=` / `source=` to say otherwise.
     from apps.scholarship.gift_sources import submitted_source
     answer = (student.referral_source or '')[:50]
     fields.update(referral_code=answer,
