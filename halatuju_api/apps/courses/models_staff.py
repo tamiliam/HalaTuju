@@ -11,6 +11,8 @@ Django's registry — because a module imported from the foot of `models.py` mus
 """
 from django.db import models
 
+from . import staff_permissions
+
 
 class PartnerAdmin(models.Model):
     """Admin user for a partner organisation. Separate from StudentProfile."""
@@ -151,6 +153,18 @@ class PartnerAdmin(models.Model):
         help_text='Most recent console session, throttled to about once a day. Answers "are they '
                   'still with us?". NULL means not recorded.',
     )
+    # ⚠ NULL MEANS "THE PRESET OF `role`", AND THERE IS NO BACKFILL (request #39, 2026-10-19).
+    # Every person alive today and every future invitee holds their role's preset without anyone
+    # writing a value — the invite, re-invite and factory doors never touch this column. A saved
+    # edit (Sprint 4) stores the FULL explicit list, and a list equal to the preset is stored as
+    # NULL, so "custom" is just `permissions IS NOT NULL`. NEVER READ THIS FIELD DIRECTLY: go
+    # through `permission_set` / `has_perm`, which resolve NULL, the lead tier, a super and a
+    # partner, and read a hand-written list fail-closed (`apps/courses/staff_permissions.py`).
+    permissions = models.JSONField(
+        null=True, blank=True,
+        help_text='Staff permission keys (staff_permissions.CATALOGUE). NULL = the preset of role, '
+                  'which is the default. Read through has_perm, never directly.',
+    )
 
     class Meta:
         db_table = 'partner_admins'
@@ -164,6 +178,17 @@ class PartnerAdmin(models.Model):
     def is_paused(self):
         """True when this person has stepped back from NEW work. Never means revoked."""
         return self.paused_at is not None
+
+    @property
+    def permission_set(self):
+        """The permission keys this person holds, a tuple in catalogue order (request #39)."""
+        return staff_permissions.resolve(self)
+
+    def has_perm(self, key):
+        """Whether this person holds staff permission ``key``. A super passes every key; an
+        unknown key raises. Sprint 1 serves this; no gate reads it yet (the golden table in
+        `apps/courses/tests/test_permission_presets.py` proves the presets reproduce today)."""
+        return staff_permissions.holds(self, key)
 
     def __str__(self):
         org_name = self.org.name if self.org else 'Super Admin'
