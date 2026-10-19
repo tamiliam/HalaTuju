@@ -19,7 +19,8 @@
 import { NAV_ITEMS, ROLE_NAMES, type AdminRoleName } from '@/lib/navigation'
 import { pyChoiceValues, readApi } from '@/test/apiSource'
 
-const MODELS = 'apps/courses/models.py'
+// `PartnerAdmin` moved verbatim to `models_staff.py` (request #39 Sprint 1, a moves-only split).
+const MODELS = 'apps/courses/models_staff.py'
 const backendRoles = pyChoiceValues(readApi(MODELS), 'ROLE_CHOICES')
 
 describe('ROLE_NAMES vs PartnerAdmin.ROLE_CHOICES', () => {
