@@ -113,7 +113,7 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None):
     """
     if reuse is not None:
         return bring_back(reuse, name=name, role=role, org=org, owning_org=owning_org,
-                          temp_password=temp_password)
+                          temp_password=temp_password, email=email)
     uid, already = None, False
     if temp_password is not None:
         uid, already, err = _new_login(email, name, temp_password)
@@ -125,18 +125,26 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None):
     return created, already, None
 
 
-def bring_back(existing, *, name, role, org, owning_org, temp_password=None):
+def bring_back(existing, *, name, role, org, owning_org, temp_password=None, email=None):
     """Reactivate ``existing`` for a re-invite. Returns ``(account, already_registered, error)``.
 
     ``temp_password`` None = a Google address: no password is ever issued (owner 2026-07-14), so
     the login is not touched. The row is LOCKED and re-checked, so a Restore or a second re-invite
     landing in between wins and this answers ``'not_reusable'`` (the caller's 409). A Supabase
     failure writes nothing (``'create_failed'``, the caller's 502).
+
+    ``email`` (the invite's lowercased address) is written onto the row (request #39 review): the
+    invite finds a row case-insensitively, but `get_admin` links a first sign-in by EXACT email, so
+    a row stored as ``Gita@Gmail.com`` would never link. If another row already holds the exact
+    address (a case twin), this refuses ``'not_reusable'`` rather than break the unique constraint.
     """
     with transaction.atomic():
         row = (PartnerAdmin.objects.select_for_update()
                .filter(pk=existing.pk, is_active=False, first_seen_at__isnull=True).first())
         if row is None:
+            return None, False, 'not_reusable'
+        email = email or row.email
+        if PartnerAdmin.objects.filter(email=email).exclude(pk=row.pk).exists():
             return None, False, 'not_reusable'
         if temp_password is None and row.supabase_user_id:
             # A Google row gets its UID on its first Google sign-in — so one carrying a UID has
@@ -148,6 +156,7 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None):
             if err:
                 return None, False, err
         row.name, row.role, row.org, row.owning_organisation = name, role, org, owning_org
+        row.email = email
         row.is_super_admin = (role == 'super')
         row.is_active, row.paused_at, row.programme = True, None, None
         # ⚠ BACK TO THE PRESET (request #39): the inviter chose a role, and an old custom set of
@@ -157,7 +166,7 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None):
         # re-created (the address now belongs to another account) must not leave a dead UID on the
         # row, or `get_admin`'s email backfill — which links only a row with NO UID — never fires.
         row.supabase_user_id = uid
-        row.save(update_fields=['name', 'role', 'org', 'owning_organisation', 'is_super_admin',
-                                'is_active', 'paused_at', 'programme', 'permissions',
+        row.save(update_fields=['name', 'email', 'role', 'org', 'owning_organisation',
+                                'is_super_admin', 'is_active', 'paused_at', 'programme', 'permissions',
                                 'supabase_user_id'])
     return row, already, None

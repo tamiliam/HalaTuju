@@ -217,7 +217,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             return Response({'error': 'email and name are required'}, status=400)
 
         # TD-335: a switched-off invitee who never signed in is invited AGAIN (`staff_reinvite`).
-        reuse = PartnerAdmin.objects.filter(email__iexact=email).first()  # rows predate lowering
+        reuse = PartnerAdmin.objects.filter(email__iexact=email).order_by('id').first()  # any case
         exists = already_exists_answer(admin, reuse)   # request #39: says only what People shows
         if reuse is not None and not staff_reinvite.may_reuse(admin, reuse):
             return exists

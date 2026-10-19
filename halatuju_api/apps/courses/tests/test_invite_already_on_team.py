@@ -76,6 +76,37 @@ class AlreadyOnTheTeam(TestCase):
         self.assertEqual(r.json(), {'error': NEUTRAL, 'code': 'not_invitable'})
         self.assertEqual(PartnerAdmin.objects.filter(email__iexact='bala@example.org').count(), 1)
 
+    def test_a_reinvite_stores_the_lowercased_address_so_google_sign_in_can_link(self):
+        # Review round 2 (a): the invite finds the row case-insensitively, but `get_admin` links a
+        # first sign-in by EXACT email — so the re-invite writes the address it was given.
+        row = make_admin('reviewer', owning_org=self.org_a, name='Gita', email='Gita@Gmail.com',
+                         is_active=False)
+        PartnerAdmin.objects.filter(pk=row.pk).update(supabase_user_id=None)
+        r = self._invite(self.lead_a, 'gita@gmail.com', name='Gita')
+        self.assertEqual(r.status_code, 201, r.content)
+        row.refresh_from_db()
+        self.assertEqual((row.email, row.is_active), ('gita@gmail.com', True))
+        self.assertEqual(PartnerAdmin.objects.filter(email__iexact='gita@gmail.com').count(), 1)
+        # …and the first Google sign-in with that verified address now links the row.
+        from apps.courses.views_admin import PartnerAdminMixin
+        req = type('R', (), {'supabase_user': {'email': 'gita@gmail.com', 'email_verified': True},
+                             'user_id': 'google-uid'})()
+        with patch('apps.courses.views_admin.auth_sub', return_value='google-uid'):
+            self.assertEqual(PartnerAdminMixin().get_admin(req), row)
+
+    def test_a_reinvite_refuses_rather_than_collide_with_a_case_twin(self):
+        # Two rows differing only in case: the older one is found (order_by id, stable); writing
+        # the exact address onto it would break the unique constraint, so the invite refuses.
+        older = make_admin('reviewer', owning_org=self.org_a, name='Twin', email='Twin@example.org',
+                           is_active=False)
+        make_admin('reviewer', owning_org=self.org_a, name='Twin2', email='twin@example.org')
+        with patch('apps.courses.supabase_admin.read_auth_user', return_value=None):
+            r = self._invite(self.lead_a, 'twin@example.org', name='Twin')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.json()['name'], 'Twin')          # the older row, every time
+        older.refresh_from_db()
+        self.assertEqual((older.email, older.is_active), ('Twin@example.org', False))
+
     def test_a_reinvite_resets_a_custom_set_to_the_new_role_s_preset(self):
         # Review fix 1: a switched-off, never-seen row brought back by a re-invite gets the role
         # the inviter chose — its old custom permissions never come back with it.
