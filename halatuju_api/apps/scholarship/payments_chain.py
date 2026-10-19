@@ -46,17 +46,35 @@ STEP_SIGN, STEP_CHECK, STEP_APPROVE = 'sign', 'check', 'approve'
 _IN_FLIGHT = ('draft', 'admin_signed', 'finance_checked')
 
 
-def _holders(organisation, key, cache=None):
+def _org_id(run):
+    """The run's organisation id WITHOUT loading the organisation (a list asks this once per run).
+    Falls back to `run.organisation.id` for a duck-typed run that only carries the object."""
+    org_id = getattr(run, 'organisation_id', None)
+    if org_id is None:
+        org_id = getattr(getattr(run, 'organisation', None), 'id', None)
+    return org_id
+
+
+def _holders(organisation_id, key, cache=None):
     """`staff_permissions.holders`, memoised per call site (a list page asks once per organisation)."""
-    if organisation is None:
+    if organisation_id is None:
         return []
     from apps.courses import staff_permissions
     if cache is None:
-        return staff_permissions.holders(organisation, key)
-    slot = (getattr(organisation, 'id', None), key)
+        return staff_permissions.holders(organisation_id, key)
+    slot = (organisation_id, key)
     if slot not in cache:
-        cache[slot] = staff_permissions.holders(organisation, key)
+        cache[slot] = staff_permissions.holders(organisation_id, key)
     return cache[slot]
+
+
+def _signed_in(admin):
+    """Has this person EVER opened the console (`first_seen_at`, stamped by `get_admin` on their first
+    request)? Review fix 4 (2026-10-19): a holder who has never signed in cannot sign a run, so they
+    must not take the step away from somebody who can. Production that day: BrightPath's only Finance
+    person had never signed in — counting them would have left every run waiting for nobody. The
+    moment they sign in, they become eligible. A super never needs this (supers are never holders)."""
+    return getattr(admin, 'first_seen_at', None) is not None
 
 
 def _is_lead_tier(admin):
@@ -65,23 +83,21 @@ def _is_lead_tier(admin):
 
 
 def finance_check_required(organisation, cache=None):
-    """Does this organisation's payment-RUN chain include the CHECK step?
+    """Could this ORGANISATION's run chain include the CHECK step at all? True iff an ACTIVE member who
+    has signed in holds `payments_check` (`staff_permissions.holders`, never a super). Live, never
+    stored (decision 2026-07-23, kept).
 
-    True iff an ACTIVE member holds `payments_check` (`staff_permissions.holders`, which never counts
-    a super). Evaluated LIVE at every sign attempt and **never persisted on the run** (decision
-    2026-07-23, kept), so it runs in both directions: granting the check while a run sits at
-    `admin_signed` arms it for that run; removing the last holder degrades the run back to two
-    steps, and a check already collected is never a blocker.
-
-    ⚠ Until #39 Sprint 2 this read "an active `finance` person exists". Finance now APPROVES, and no
-    preset holds the check, so on deploy this is False for every organisation. ⚠ Wallet credits do
-    NOT read this — see `credit_check_required`. The payload key `finance_check_required` keeps its
-    name for one release (old bundles read it); `check_step_required` is served beside it.
+    ⚠ Whether a given RUN needs the check is `check_required_for(run)` (review fix 2: per run, like the
+    approval) — `sign`, `next_step_for` and the payload all ask that. This organisation-level reading is
+    kept for the golden table and for callers that have no run. ⚠ Until #39 Sprint 2 this read "an
+    active `finance` person exists"; Finance now APPROVES and no preset holds the check, so on deploy
+    it is False everywhere. ⚠ Wallet credits do NOT read this — see `credit_check_required`.
     """
-    return bool(_holders(organisation, 'payments_check', cache))
+    org_id = getattr(organisation, 'id', organisation)
+    return any(_signed_in(a) for a in _holders(org_id, 'payments_check', cache))
 
 
-#: The same predicate under the name the screen will keep once old bundles are gone.
+#: The same organisation-level predicate under the name the screen will keep.
 check_step_required = finance_check_required
 
 
@@ -116,15 +132,26 @@ def _email(admin):
 
 
 def eligible_checkers(run, cache=None):
-    """Active `payments_check` holders of the run's organisation who have not signed it."""
+    """Active `payments_check` holders of the run's organisation who have signed in and have NOT
+    signed this run."""
     signed = _collected_signer_emails(run)
-    return [a for a in _holders(run.organisation, 'payments_check', cache) if _email(a) not in signed]
+    return [a for a in _holders(_org_id(run), 'payments_check', cache)
+            if _signed_in(a) and _email(a) not in signed]
+
+
+def check_required_for(run, cache=None):
+    """Does THIS run need the check? Review fix 2 (2026-10-19): per run, like the approval — only if
+    somebody ELIGIBLE for this run could take it. So a person holding Prepare + Check who prepared a
+    run can never strand it: with nobody else to check, it goes straight to approval."""
+    return bool(eligible_checkers(run, cache))
 
 
 def eligible_approvers(run, cache=None):
-    """Active `payments_approve` holders of the run's organisation who have not signed it."""
+    """Active `payments_approve` holders of the run's organisation who have signed in and have NOT
+    signed this run."""
     signed = _collected_signer_emails(run)
-    return [a for a in _holders(run.organisation, 'payments_approve', cache) if _email(a) not in signed]
+    return [a for a in _holders(_org_id(run), 'payments_approve', cache)
+            if _signed_in(a) and _email(a) not in signed]
 
 
 def approver_fallback(run, cache=None):
@@ -138,7 +165,7 @@ def fallback_approvers(run):
     from apps.courses.models import PartnerAdmin
     signed = _collected_signer_emails(run)
     return [a for a in PartnerAdmin.objects.filter(
-                owning_organisation=run.organisation, role='org_admin', is_active=True,
+                owning_organisation_id=_org_id(run), role='org_admin', is_active=True,
                 is_super_admin=False).order_by('id')
             if _email(a) not in signed]
 
@@ -148,12 +175,17 @@ def _in_organisation(run, admin):
     The view's fence already answers a cross-organisation run with 404; this is the service's own."""
     if getattr(admin, 'is_super', False):
         return True
-    org_id = getattr(getattr(run, 'organisation', None), 'id', None)
+    org_id = _org_id(run)
     return org_id is not None and getattr(admin, 'owning_organisation_id', None) == org_id
 
 
+def _holds_eligibly(admin, key):
+    """Holds `key` and could use it: a super always; anybody else once they have signed in."""
+    return admin.has_perm(key) and (getattr(admin, 'is_super', False) or _signed_in(admin))
+
+
 def _may_approve(run, admin, cache=None):
-    if admin.has_perm('payments_approve'):
+    if _holds_eligibly(admin, 'payments_approve'):
         return True
     return _is_lead_tier(admin) and approver_fallback(run, cache)
 
@@ -184,30 +216,33 @@ def next_step_for(run, admin, cache=None):
         return None
     if run.status == 'draft':
         return STEP_SIGN if admin.has_perm('payments_prepare') else None
-    if run.status == 'admin_signed' and finance_check_required(run.organisation, cache):
-        return STEP_CHECK if admin.has_perm('payments_check') else None
+    if run.status == 'admin_signed' and check_required_for(run, cache):
+        return STEP_CHECK if _holds_eligibly(admin, 'payments_check') else None
     return STEP_APPROVE if _may_approve(run, admin, cache) else None
 
 
 def _refusal(run, admin):
     """WHY `next_step_for` said no — the codes the screen already knows (`wrong_role`, `same_signer`,
-    `finance_check_required`), so an operator learns no new vocabulary."""
+    `finance_check_required`), so an operator learns no new vocabulary.
+
+    `finance_check_required` is said ONLY to somebody who would be the approver once the check is in
+    (review nit, 2026-10-19): an organisation admin while a Finance person can approve is not waiting
+    for the check, he is simply not the approver — `wrong_role`."""
     if not _in_organisation(run, admin) or run.status == 'draft':
         return 'wrong_role'
-    could_approve = admin.has_perm('payments_approve') or _is_lead_tier(admin)
-    if run.status == 'admin_signed' and finance_check_required(run.organisation):
-        if admin.has_perm('payments_check'):
-            return 'same_signer'
-        # Told WHY rather than a bare wrong_role: from an approver's seat nothing looks amiss.
-        return 'finance_check_required' if could_approve else 'wrong_role'
-    if admin.has_perm('payments_approve') or (_is_lead_tier(admin) and approver_fallback(run)):
+    if _email(admin) in _collected_signer_emails(run):
         return 'same_signer'
+    if run.status == 'admin_signed' and check_required_for(run):
+        if _may_approve(run, admin):
+            return 'finance_check_required'      # told WHY: from his seat nothing looks amiss
+        return 'wrong_role'
     return 'wrong_role'
 
 
 def _lock(run):
-    """Re-read the run's state UNDER A ROW LOCK, so two people signing the same step at once cannot
-    both pass (two approvers would otherwise complete — and pay — the run twice)."""
+    """Re-read the run's state UNDER A ROW LOCK, so two people acting on one run at once cannot both
+    pass on what they last saw. `sign`, `set_item` and `cancel` all start here (review fix 1: an edit
+    or a cancel racing the approval could otherwise reopen — and re-pay — a completed run)."""
     from .models import PaymentRun
     if not isinstance(run, PaymentRun) or run.pk is None:
         return
@@ -247,7 +282,7 @@ def sign(run, admin, typed_name):
         run.status = 'admin_signed'
         run.save(update_fields=[
             'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'status', 'updated_at'])
-        if finance_check_required(run.organisation):
+        if check_required_for(run):
             emails.send_payment_finance_check_email(run)
         else:
             emails.send_payment_countersign_email(run)
@@ -276,11 +311,13 @@ def sign(run, admin, typed_name):
     return run
 
 
+@transaction.atomic
 def cancel(run, by=''):
     """Cancel a run at any pre-completion status (never a completed one). Who may is the view's
     gate (`may_prepare`: Prepare, or the organisation admin) — Finance approves a run, it does not
     withdraw one."""
     from .payments import EDITABLE_STATUSES, PaymentsError
+    _lock(run)        # review fix 1: a stale copy must never cancel a run completed since it was read
     if run.status not in EDITABLE_STATUSES:
         raise PaymentsError('bad_state')
     run.status = 'cancelled'

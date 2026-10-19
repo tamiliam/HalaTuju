@@ -885,7 +885,8 @@ class TestFinanceCheck(TestCase):
             name='Maker One', email='maker@x.com')
         cls.finance = PartnerAdmin.objects.create(
             supabase_user_id='fin-fi', role='finance', is_active=True, owning_organisation=cls.org,
-            name='Finance One', email='finance@x.com', permissions=['payments_check'])
+            name='Finance One', email='finance@x.com', permissions=['payments_check'],
+            first_seen_at=timezone.now())
         cls.approver = PartnerAdmin.objects.create(
             supabase_user_id='fin-ap', role='org_admin', is_active=True, owning_organisation=cls.org,
             name='Approver One', email='approver@x.com')
@@ -922,7 +923,7 @@ class TestFinanceCheck(TestCase):
         PartnerAdmin.objects.create(
             supabase_user_id='fin-other-fi', role='finance', is_active=True,
             owning_organisation=other, name='Other Fin', email='otherfin@x.com',
-            permissions=['payments_check'])
+            permissions=['payments_check'], first_seen_at=timezone.now())
         self._deactivate_finance()
         self.assertFalse(payments.finance_check_required(self.org))
         self.assertTrue(payments.finance_check_required(other))
@@ -1002,7 +1003,9 @@ class TestFinanceCheck(TestCase):
         payments.sign(run, self.finance, 'Finance One')
         with self.assertRaises(payments.PaymentsError) as cm:
             payments.sign(run, self.finance, 'Finance One')
-        self.assertEqual(cm.exception.code, 'wrong_role')     # finance_checked → approver's step
+        # #39 S2 review: somebody who already signed this run is told so (`same_signer`) before
+        # anything about roles — it is the true reason, whatever step comes next.
+        self.assertEqual(cm.exception.code, 'same_signer')
 
     def test_name_mismatch_on_the_finance_slot(self):
         run = self._run()
@@ -1059,7 +1062,7 @@ class TestFinanceCheck(TestCase):
         maker_fin = PartnerAdmin.objects.create(
             supabase_user_id='fin-mf', role='finance', is_active=True,
             owning_organisation=self.org, name='Maker One', email='MAKER@X.COM',
-            permissions=['payments_check'])
+            permissions=['payments_check'], first_seen_at=timezone.now())
         run = self._run()
         payments.sign(run, self.maker, 'Maker One')
         with self.assertRaises(payments.PaymentsError) as cm:

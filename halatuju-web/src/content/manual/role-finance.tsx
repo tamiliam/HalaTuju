@@ -56,8 +56,8 @@ export const roleFinance: ManualChapter = {
       body: (
         <>Then <strong>don&rsquo;t approve</strong>. That is the whole point of the step &mdash; the run cannot
         go anywhere without you. Ask whoever prepared it to correct it. Note that editing a run sends it back to
-        <strong> draft</strong> and clears every signature collected so far, <em>including yours</em>, so
-        you&rsquo;ll be asked to approve the corrected list afresh. That is deliberate: nobody should sign one
+        <strong> draft</strong> and clears every signature collected so far, so the corrected list is signed
+        again and comes back to you to approve. That is deliberate: nobody should sign one
         list and have a different one go out.</>
       ),
     },

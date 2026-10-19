@@ -251,8 +251,8 @@ export const roleOrgAdmin: ManualChapter = {
         match that account&rsquo;s name exactly. The approver is your <strong>finance admin</strong>; you can
         appoint one yourself from <strong>Invitations</strong>, inviting them as <strong>Finance</strong>, and the
         moment their account is active they approve &mdash; including a run already waiting. <strong>You approve a
-        run only when nobody else can</strong>: you have no active finance admin, or the only one has already
-        signed that run. The run then tells you so above the approve box, and the &ldquo;ready&rdquo; email comes
+        run only when nobody else can</strong>: you have no active finance admin, the only one has not yet
+        signed in to HalaTuju, or the only one has already signed that run. The run then tells you so above the approve box, and the &ldquo;ready&rdquo; email comes
         to you. <strong>Editing a run after any signature returns it to draft and clears every signature
         collected so far</strong> — deliberately, so nobody signs one list and a different one goes out.</>
       ),

@@ -298,6 +298,13 @@ class GoldenTable(TestCase):
             else:
                 a = make_admin(role, owning_org=self.org)
             self.people[role] = a
+        # Everybody here USES the console (#39 S2 review fix 4: a payment signer who has never
+        # signed in is not counted as eligible). The table asks about people who come to work.
+        from django.utils import timezone
+        PartnerAdmin.objects.filter(pk__in=[a.pk for a in self.people.values()]).update(
+            first_seen_at=timezone.now())
+        for a in self.people.values():
+            a.refresh_from_db()
         self.client = APIClient()
 
     # ── probes: each calls the real code and answers like `today` ──────────────────────────────
@@ -411,7 +418,8 @@ class GoldenTable(TestCase):
         # Armed since Sprint 2 by a CUSTOM holder (no preset holds payments_check any more), who is
         # removed again so the other rows never see them.
         checker = make_admin('admin', owning_org=self.org)
-        PartnerAdmin.objects.filter(pk=checker.pk).update(permissions=['payments_check'])
+        PartnerAdmin.objects.filter(pk=checker.pk).update(permissions=['payments_check'],
+                                                          first_seen_at=self.people['admin'].first_seen_at)
         try:
             return self._sign(a, 'admin_signed', admin_signed_email='maker@elsewhere.test')
         finally:

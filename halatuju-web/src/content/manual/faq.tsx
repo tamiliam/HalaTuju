@@ -306,8 +306,8 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>Who approves a payment run?</>,
       a: <>Your <strong>finance admin</strong>. A general admin prepares the run and signs it; finance approves
         it, and that approval sends the instruction to Vircle. You no longer countersign runs. You approve one
-        only when <strong>nobody else can</strong> &mdash; your organisation has no active finance admin, or the
-        only one already signed that run &mdash; and the run then says so above the approve box. Moving your
+        only when <strong>nobody else can</strong> &mdash; your organisation has no active finance admin, the
+        only one has not yet signed in, or the only one already signed that run &mdash; and the run then says so above the approve box. Moving your
         organisation&rsquo;s money into Vircle stays with you, outside HalaTuju.</>,
     },
     {
@@ -454,9 +454,9 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>I found a mistake on a run. What do I do?</>,
-      a: <>Don&rsquo;t sign it. Tell whoever prepared it. When they correct it the run goes back to
-        <strong> draft</strong> and every signature so far is cleared &mdash; including yours &mdash; so
-        you&rsquo;ll check the corrected list again before it can move on.</>,
+      a: <>Don&rsquo;t approve it. Tell whoever prepared it. When they correct it the run goes back to
+        <strong> draft</strong> and every signature so far is cleared, so it is prepared and signed again
+        and comes back to you to approve the corrected list.</>,
     },
     {
       q: <>It won&rsquo;t accept my signature. Why?</>,

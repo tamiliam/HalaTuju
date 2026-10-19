@@ -53,7 +53,7 @@ export const roleAdminGeneral: ManualChapter = {
         <br /><br />
         <strong>A payment run</strong> (<strong>Payments</strong> in the menu): you build the month&rsquo;s run and sign it,
         then your <strong>finance admin approves</strong> it — and only at that approval is the instruction
-        emailed to Vircle. (If your organisation has no finance admin, or the only one has already signed that
+        emailed to Vircle. (If your organisation has no finance admin, the only one has not yet signed in, or the only one has already signed that
         run, your organisation admin approves instead.) Runs waiting for your signature are listed at the top of
         Payments under <strong>Waiting for you</strong>.
         <br /><br />

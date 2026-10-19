@@ -433,6 +433,28 @@ the reviewer and for S3/S4:
   should warn, or the owner may ask for a per-run check fallback.
 - **Bundle:** en.json gained 3 keys and lost 7 proven-dead ones; median 228.513 → 228.641 kB (0.4 kB
   headroom left).
+- **⚠ SUPERSEDED by review fix 2:** the "check armed per ORGANISATION" door above — the check is now
+  armed PER RUN (`check_required_for`), so it cannot strand. **Review fixes (adversarial review, 2026-10-19 — SHIP AFTER FIXES):**
+  1. **HIGH — an edit or cancel racing the approval could pay a run twice** (old bug, on the door
+     list): `set_item` and `cancel` are now atomic and re-read the run under `select_for_update`,
+     refusing a completed / cancelled run (`not_editable` / `bad_state`); `_revert_to_draft` clears ALL
+     THREE triples; `set_item` writes only the item's three fields (the disbursement link can no longer
+     be overwritten); `complete()` refuses a run already paid (`already_paid`, belt and braces).
+  2. **The CHECK is armed PER RUN** (`check_required_for(run)` = somebody eligible for THAT run holds
+     `payments_check`), like the approval — a Prepare+Check maker can never strand their own run. The
+     payload's `check_step_required` / `finance_check_required` are this per-run answer (true also once
+     a check is collected, for the layout); the email routing follows it.
+  3. (Owner decision pending: the org admin's notice of a released run — not changed.)
+  4. **A holder who has never signed in is not eligible** (`first_seen_at IS NULL`): production —
+     BrightPath's only Finance person (id 24) had never signed in. Until they do, the org admin approves
+     under the fallback **and receives the "awaits your approval" email; Finance is not emailed** (they
+     cannot act on it yet); the moment they first sign in they are the approver for every run in flight.
+  5. `_in_organisation` / the holder reads use `organisation_id` (no per-run organisation query); the
+     detail payload shares one holders cache.
+  6. `_refusal` says `finance_check_required` only to someone who would approve after the check (an org
+     admin while Finance can approve gets `wrong_role`); somebody who already signed is told
+     `same_signer` first. The Guide's "including yours" line (Finance's approval can never be cleared)
+     is reworded. Deploy order: **API first, then web.**
 
 ### Sprint 3 — the gates read permissions (medium-high: who sees files) · 10.0 h · Stage 3a
 

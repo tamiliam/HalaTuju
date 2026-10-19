@@ -14271,16 +14271,36 @@ modelled); maker ≠ approver; a third signer stays possible later by permission
    words now say "approves runs; credits gain the check" / "the org admin approves runs again; credits
    lose the check".
 
+**Review fixes (adversarial review, 2026-10-19 — SHIP AFTER FIXES):**
+1. **HIGH — an edit or cancel racing the approval could pay a run twice** (old bug, on the door
+   list): `set_item` and `cancel` are now atomic and re-read the run under `select_for_update`,
+   refusing a completed / cancelled run (`not_editable` / `bad_state`); `_revert_to_draft` clears ALL
+   THREE triples; `set_item` writes only the item's three fields (the disbursement link can no longer
+   be overwritten); `complete()` refuses a run already paid (`already_paid`, belt and braces).
+2. **The CHECK is armed PER RUN** (`check_required_for(run)` = somebody eligible for THAT run holds
+   `payments_check`), like the approval — a Prepare+Check maker can never strand their own run. The
+   payload's `check_step_required` / `finance_check_required` are this per-run answer (true also once
+   a check is collected, for the layout); the email routing follows it.
+3. (Owner decision pending: the org admin's notice of a released run — not changed.)
+4. **A holder who has never signed in is not eligible** (`first_seen_at IS NULL`): production —
+   BrightPath's only Finance person (id 24) had never signed in. Until they do, the org admin approves
+   under the fallback **and receives the "awaits your approval" email; Finance is not emailed** (they
+   cannot act on it yet); the moment they first sign in they are the approver for every run in flight.
+5. `_in_organisation` / the holder reads use `organisation_id` (no per-run organisation query); the
+   detail payload shares one holders cache.
+6. `_refusal` says `finance_check_required` only to someone who would approve after the check (an org
+   admin while Finance can approve gets `wrong_role`); somebody who already signed is told
+   `same_signer` first. The Guide's "including yours" line (Finance's approval can never be cleared)
+   is reworded. Deploy order: **API first, then web.**
+
 **Alternatives considered:** keeping Finance as checker and adding approval as a fourth step (more
 signatures, not what was asked); org-level fallback ("org has no Finance person") instead of per-run
 (strands the sole-approver-who-prepared and the already-checked run); re-keying the shared predicate
 for credits too (silently removes Finance's credit check — the plan's warning); renaming the
 `org_admin_signed_*` columns (a cutover on a live money table, no behaviour gained).
 
-**Trade-offs:** the check is armed per ORGANISATION, not per run: a person given both Prepare and
-Check who prepares a run and is the only checker would strand it at `admin_signed` until someone else
-holds Check or the run is edited/cancelled (no preset can produce this; it is a Sprint 4 editor door).
-The org admin keeps create/edit/cancel and the fallback, so they still see Payments in full.
+**Trade-offs:** (the per-organisation check that could strand a run was made per run by review fix
+2.) A Finance person must sign in once before the approval moves to them (fix 4). The org admin keeps create/edit/cancel and the fallback, so they still see Payments in full.
 
 **Revisit if:** the owner wants credits to follow (≈3 h), wants a per-run check fallback, or removes
 the org admin's fallback once every tenant has a Finance person.

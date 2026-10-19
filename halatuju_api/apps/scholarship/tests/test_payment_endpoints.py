@@ -253,7 +253,8 @@ class _FinanceBase(_Base):
         super().setUpTestData()
         cls.finance = PartnerAdmin.objects.create(
             supabase_user_id='pe-fi', role='finance', is_active=True,
-            owning_organisation=cls.org_a, name='Fin One', email='fin@x.com')
+            owning_organisation=cls.org_a, name='Fin One', email='fin@x.com',
+            first_seen_at=date(2026, 7, 1))     # has signed in: an eligible approver (fix 4)
         cls.finance_b = PartnerAdmin.objects.create(
             supabase_user_id='pe-fib', role='finance', is_active=True,
             owning_organisation=cls.org_b, name='Fin B', email='finb@x.com')
@@ -355,7 +356,8 @@ class TestFinanceSignEndpoint(_FinanceBase):
         self.assertEqual(done.json()['status'], 'completed')
 
     def test_a_granted_check_arms_the_three_step_chain_and_surfaces_the_code(self):
-        PartnerAdmin.objects.filter(pk=self.qc.pk).update(role='admin', permissions=['payments_check'])
+        PartnerAdmin.objects.filter(pk=self.qc.pk).update(role='admin', permissions=['payments_check'],
+                                                          first_seen_at=date(2026, 7, 1))
         run_id = self._create_run('pe-mk').json()['id']
         self._sign('pe-mk', 'Maker One', run_id)
         self.assertTrue(self._detail('pe-fi', run_id)['check_step_required'])

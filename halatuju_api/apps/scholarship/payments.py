@@ -439,26 +439,30 @@ def create_run(organisation, programme, payment_date, period_month, by_email='')
 
 
 def _revert_to_draft(run):
-    """Editing a signed run reverts it to draft and clears EVERY collected signature (D2 —
-    'nobody signs one list and sends another'). Both the maker and the finance triple go: a
-    finance check attests to the list it was shown, so an edited list needs checking again."""
+    """Editing a signed run reverts it to draft and clears EVERY collected signature, all three
+    triples (D2 — 'nobody signs one list and sends another'; review fix 1, 2026-10-19: the approver
+    triple too, so no stale signature can count a person as "already signed")."""
     run.status = 'draft'
-    run.admin_signed_name = ''
-    run.admin_signed_email = ''
-    run.admin_signed_at = None
-    run.finance_signed_name = ''
-    run.finance_signed_email = ''
-    run.finance_signed_at = None
-    run.save(update_fields=[
-        'status', 'admin_signed_name', 'admin_signed_email', 'admin_signed_at',
-        'finance_signed_name', 'finance_signed_email', 'finance_signed_at', 'updated_at'])
+    for slot in ('admin', 'finance', 'org_admin'):
+        setattr(run, f'{slot}_signed_name', '')
+        setattr(run, f'{slot}_signed_email', '')
+        setattr(run, f'{slot}_signed_at', None)
+    run.save(update_fields=['status', 'updated_at'] + [
+        f'{slot}_signed_{f}' for slot in ('admin', 'finance', 'org_admin') for f in ('name', 'email', 'at')])
 
 
+@transaction.atomic
 def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
     """Edit a run item (draft only, or admin_signed / finance_checked → reverts to draft).
     Enforces: an excluded item needs a reason (``reason_required``); the amount is floored at 0
-    and capped at the snapshotted remaining award (``amount_over_cap``). Returns the item."""
+    and capped at the snapshotted remaining award (``amount_over_cap``). Returns the item.
+
+    ⚠ The run is re-read UNDER A ROW LOCK first (review fix 1, 2026-10-19): an edit from a stale
+    page that lands after the approval would otherwise reopen a COMPLETED, PAID run as a draft, which
+    a second approval then pays again. Only the item's own three fields are written."""
     run = run_item.run
+    from .payments_chain import _lock
+    _lock(run)
     if run.status not in EDITABLE_STATUSES:
         raise PaymentsError('not_editable')
     if run.status != 'draft':
@@ -481,7 +485,7 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
         if val > cap:
             raise PaymentsError('amount_over_cap')
         run_item.amount = val
-    run_item.save()
+    run_item.save(update_fields=['included', 'exclude_reason', 'amount', 'updated_at'])
     return run_item
 
 
@@ -510,6 +514,11 @@ def complete(run):
     from .disbursement import _flip_to_maintenance
     now = timezone.now()
     actioned_by = (run.org_admin_signed_email or run.created_by or '')[:254]
+    # Belt and braces (review fix 1): a run is paid ONCE. If any item already carries a disbursement,
+    # or this run's reference was already released, refuse — the sign rolls back with it.
+    if (run.items.filter(disbursement__isnull=False).exists() or Disbursement.objects.filter(
+            status='released', reference=f'vircle:{run.reference}'[:100]).exists()):
+        raise PaymentsError('already_paid')
 
     for item in run.items.select_related('application'):
         if not item.included:
@@ -629,6 +638,6 @@ def vircle_id_error(value):
 # A BOTTOM import on purpose: payments_chain imports this module lazily, inside its functions.
 from .payments_chain import (
     STEP_APPROVE, STEP_CHECK, STEP_SIGN, _collected_signer_emails, approver_fallback, cancel,
-    check_step_required, credit_check_required, eligible_approvers, eligible_checkers,
+    check_required_for, check_step_required, credit_check_required, eligible_approvers, eligible_checkers,
     fallback_approvers, finance_check_required, may_prepare, may_read, next_step_for, sign,
 )

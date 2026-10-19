@@ -20,6 +20,33 @@ Built on branch `perm-s2` (base `378c7601`, Sprint 1 live). **Not pushed, not de
 - **Golden table:** the 8 `s2` rows flip to the new truth, each keeping its old answer in `was` and naming the ruling; `payments_read`'s rule gained "or the lead tier" (its answers unchanged); every other row unchanged.
 - Docs: decisions.md; role-matrix (Payments rewritten, Finance + Org Admin cells, Money bullet superseded, credits section); `.claude/ARCHITECTURE_MAP.md`; the roadmap's as-built note; the cutover note.
 - Tests: new `test_finance_approves.py` (18: the four in-flight rows, every strand, the check one permission away, `next_step_for`, the row lock, the service's org fence, credits byte-identical, the Overview's paid figure); rewritten `TestFinanceSignEndpoint`, `TestFinanceCheck` (a custom checker), two S1 holders tests, the two-chains test; web `page.signOff.test.tsx` (5), Waiting-for-you + `can_prepare` (2), the badge (1), `paymentSignOff.test.ts` on served fields. Bite-checked (10): lead tier holding approve; no row lock; no fallback; credits off their predicate; no service org fence; the ready email to org admins only; `yourStep` forced; Waiting showing every run; cancel ignoring `can_prepare`; the badge counting every run — each turned its tests red, bytes restored by digest.
+- **Review fixes (adversarial review, 2026-10-19 — SHIP AFTER FIXES):**
+  1. **HIGH — an edit or cancel racing the approval could pay a run twice** (old bug, on the door
+     list): `set_item` and `cancel` are now atomic and re-read the run under `select_for_update`,
+     refusing a completed / cancelled run (`not_editable` / `bad_state`); `_revert_to_draft` clears ALL
+     THREE triples; `set_item` writes only the item's three fields (the disbursement link can no longer
+     be overwritten); `complete()` refuses a run already paid (`already_paid`, belt and braces).
+  2. **The CHECK is armed PER RUN** (`check_required_for(run)` = somebody eligible for THAT run holds
+     `payments_check`), like the approval — a Prepare+Check maker can never strand their own run. The
+     payload's `check_step_required` / `finance_check_required` are this per-run answer (true also once
+     a check is collected, for the layout); the email routing follows it.
+  3. (Owner decision pending: the org admin's notice of a released run — not changed.)
+  4. **A holder who has never signed in is not eligible** (`first_seen_at IS NULL`): production —
+     BrightPath's only Finance person (id 24) had never signed in. Until they do, the org admin approves
+     under the fallback **and receives the "awaits your approval" email; Finance is not emailed** (they
+     cannot act on it yet); the moment they first sign in they are the approver for every run in flight.
+  5. `_in_organisation` / the holder reads use `organisation_id` (no per-run organisation query); the
+     detail payload shares one holders cache.
+  6. `_refusal` says `finance_check_required` only to someone who would approve after the check (an org
+     admin while Finance can approve gets `wrong_role`); somebody who already signed is told
+     `same_signer` first. The Guide's "including yours" line (Finance's approval can never be cleared)
+     is reworded. Deploy order: **API first, then web.**
+  Not changed, flagged: the Guide screenshot `/manual/finance-signature.png` may still show the old
+  three-step "Check" layout.
+  Tests: fixes 1, 2, 4 each with regression tests (`test_finance_approves.py` +9); the golden table's
+  people and the Finance fixtures are marked as having signed in.
+  Bite-checked (6): no lock in `set_item`; no lock in `cancel`; revert leaving the approver triple; no `already_paid` guard; the check armed per organisation; never-signed-in holders counted — each turned its tests red, bytes restored by digest.
+  Gates after the fixes: pytest 8488 passed / 3 skipped, 3845 subtests (`-n auto`) · `manage.py check` clean · `makemigrations --check` no changes · `npm run gates` ALL PASSED (jest 4285 / 267 suites, i18n 5414, lint 17 warnings unchanged) · bundle ok, median 228.641 kB (0.4 kB headroom), worst 273.43 kB — the fixes add no string.
 - Gates (base `378c7601` → this change): pytest 8458 → 8479 passed / 3 skipped, subtests 3837 → 3845 (`-n auto`) · `manage.py check` clean · `makemigrations --check` no changes · `npm run gates` ALL PASSED: tsc 0, lint 0 errors (17 warnings, unchanged), i18n 5418 → 5414, jest 4275 → 4285 / 266 → 267 suites · bundle ok — median 228.513 → 228.641 kB (0.5 → 0.4 kB headroom; 1 route may cross before the median, as before), worst 273.48 → 273.43 kB, `/admin/payments` 229 kB, `/admin/payments/[id]` 229 kB.
 
 ## Sources and referral partners, Sprint D of 4 — the clean-up: the bursary writes nothing on the profile; the arc is complete - 2026-10-19

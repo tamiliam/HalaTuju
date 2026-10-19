@@ -56,6 +56,8 @@ def footprint(admin):
             # who signed run 34 must keep meaning somebody exactly as its maker does.
             'payment_runs_checked': PaymentRun.objects.filter(
                 finance_signed_email__iexact=email).count(),
+            # Key name kept (the People tooltip reads it): since #39 S2 this slot is the APPROVER's,
+            # i.e. Finance's approvals as well as an organisation admin's countersignatures.
             'payment_runs_countersigned': PaymentRun.objects.filter(
                 org_admin_signed_email__iexact=email).count(),
             'benefactors_vetted': Sponsor.objects.filter(reviewed_by__iexact=email).count(),

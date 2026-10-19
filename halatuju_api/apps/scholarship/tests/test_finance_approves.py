@@ -17,6 +17,7 @@ from unittest import mock
 
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import payments
@@ -30,6 +31,7 @@ _APPROVAL = 'awaits your approval'
 
 
 def _person(org, role, name, email, **kw):
+    kw.setdefault('first_seen_at', timezone.now())     # has signed in (fix 4); override with None
     return PartnerAdmin.objects.create(
         supabase_user_id=f'fa-{email}', role=role, is_active=True, owning_organisation=org,
         name=name, email=email, **kw)
@@ -185,7 +187,9 @@ class TestTheCheckStaysOnePermissionAway(_Chain):
                           permissions=['payments_check'])
         self.assertTrue(payments.finance_check_required(self.org))
         self.assertEqual(self._refused(run, self.finance), 'finance_check_required')
-        self.assertEqual(self._refused(run, self.suresh), 'finance_check_required')
+        # Suresh is NOT waiting for the check — Finance approves after it, so he is told plainly
+        # that the step is not his (review nit, 2026-10-19).
+        self.assertEqual(self._refused(run, self.suresh), 'wrong_role')
         self.assertEqual(payments.next_step_for(run, checker), 'check')
         mail.outbox = []
         self._sign(run, checker)
@@ -314,3 +318,126 @@ class TestWalletCreditsKeepToday(TestCase):
         self.assertTrue(payments.credit_check_required(self.org))
         PartnerAdmin.objects.filter(pk=fin.pk).update(is_active=False)
         self.assertFalse(payments.credit_check_required(self.org))
+
+
+class TestEditAndCancelCannotReopenAPaidRun(_Chain):
+    """Review fix 1 (2026-10-19, HIGH): an edit or a cancel from a STALE copy, landing after the
+    approval, reopened a completed, paid run — and a second approval paid it again. `set_item` and
+    `cancel` now re-read the run under the row lock and refuse; `_revert_to_draft` clears all three
+    triples; `complete` refuses a run already paid."""
+
+    def _paid_run_and_stale_copies(self):
+        run = self._run()
+        self._sign(run, self.maker)
+        stale_run = PaymentRun.objects.get(pk=run.pk)                  # read while admin_signed
+        stale_item = stale_run.items.select_related('run').first()
+        self._sign(run, self.finance)                                  # completes and pays
+        return run, stale_run, stale_item
+
+    def test_a_stale_edit_after_the_approval_is_refused_and_pays_nothing_more(self):
+        run, _, stale_item = self._paid_run_and_stale_copies()
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.set_item(stale_item, amount='150')
+        self.assertEqual(cm.exception.code, 'not_editable')
+        run.refresh_from_db()
+        self.assertEqual((run.status, run.org_admin_signed_email), ('completed', 'fina@x.com'))
+        self.assertIsNotNone(run.items.first().disbursement_id)        # the link survives
+        # The reviewer's sequence can no longer even start: nothing to re-sign, nothing to re-pay.
+        self.assertEqual(self._refused(run, self.maker), 'bad_state')
+        self.assertEqual(Disbursement.objects.filter(status='released').count(), 1)
+
+    def test_a_stale_cancel_after_the_approval_is_refused(self):
+        run, stale_run, _ = self._paid_run_and_stale_copies()
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.cancel(stale_run)
+        self.assertEqual(cm.exception.code, 'bad_state')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+
+    def test_an_edit_reverting_a_signed_run_clears_all_three_signatures(self):
+        run = self._run()
+        self._sign(run, self.maker)
+        PaymentRun.objects.filter(pk=run.pk).update(
+            status='finance_checked', finance_signed_email='third@x.com',
+            org_admin_signed_name='Ghost', org_admin_signed_email='ghost@x.com')
+        payments.set_item(PaymentRun.objects.get(pk=run.pk).items.select_related('run').first(),
+                          amount='150')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'draft')
+        self.assertEqual((run.admin_signed_email, run.finance_signed_email,
+                          run.org_admin_signed_email, run.org_admin_signed_name), ('', '', '', ''))
+        self.assertIsNone(run.org_admin_signed_at)
+
+    def test_an_edit_landing_after_the_maker_signed_reverts_rather_than_changing_a_signed_list(self):
+        run = self._run()
+        stale_item = PaymentRun.objects.get(pk=run.pk).items.select_related('run').first()  # 'draft'
+        self._sign(run, self.maker)
+        payments.set_item(stale_item, amount='150')     # sees admin_signed under the lock
+        run.refresh_from_db()
+        self.assertEqual((run.status, run.admin_signed_email), ('draft', ''))
+
+    def test_complete_refuses_a_run_already_paid(self):
+        run, _, _ = self._paid_run_and_stale_copies()
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.complete(run)
+        self.assertEqual(cm.exception.code, 'already_paid')
+        self.assertEqual(Disbursement.objects.filter(status='released').count(), 1)
+
+
+class TestTheCheckIsArmedPerRun(_Chain):
+    """Review fix 2: the check is required for a run only if somebody ELIGIBLE for THAT run holds it."""
+
+    def test_a_maker_who_is_the_only_checker_goes_straight_to_approval(self):
+        both = _person(self.org, 'admin', 'Both Hats', 'both@x.com',
+                       permissions=['payments_prepare', 'payments_check'])
+        run = self._run()
+        mail.outbox = []
+        self._sign(run, both)
+        self.assertFalse(payments.check_required_for(run))
+        self.assertEqual(self._approval_to(), ['fina@x.com'])          # no check email at all
+        self.assertEqual(payments.next_step_for(run, self.finance), 'approve')
+        self._sign(run, self.finance)
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+
+    def test_another_checker_still_arms_it(self):
+        both = _person(self.org, 'admin', 'Both Hats', 'both@x.com',
+                       permissions=['payments_prepare', 'payments_check'])
+        other = _person(self.org, 'admin', 'Other Checker', 'oc@x.com', permissions=['payments_check'])
+        run = self._run()
+        self._sign(run, both)
+        self.assertTrue(payments.check_required_for(run))
+        self.assertEqual(payments.next_step_for(run, self.finance), None)
+        self.assertEqual(payments.next_step_for(run, other), 'check')
+
+
+class TestAnApproverWhoHasNeverSignedIn(_Chain):
+    """Review fix 4: production — BrightPath's only Finance person had never signed in. A holder who
+    has never signed in is not eligible, so the fallback applies; the moment they sign in, they are."""
+
+    def test_the_org_admin_approves_until_finance_first_signs_in(self):
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(first_seen_at=None)
+        self.finance.refresh_from_db()
+        run = self._run()
+        mail.outbox = []
+        self._sign(run, self.maker)
+        # The "please approve" email goes to whoever CAN approve: the org admin, not Finance.
+        self.assertEqual(self._approval_to(), ['suresh@x.com'])
+        self.assertTrue(payments.approver_fallback(run))
+        self.assertEqual(payments.next_step_for(run, self.suresh), 'approve')
+        self.assertIsNone(payments.next_step_for(run, self.finance))
+        # Finance signs in (get_admin stamps first_seen_at): the approval is theirs again.
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(first_seen_at=timezone.now())
+        self.finance.refresh_from_db()
+        self.assertFalse(payments.approver_fallback(run))
+        self.assertIsNone(payments.next_step_for(run, self.suresh))
+        self.assertEqual(payments.next_step_for(run, self.finance), 'approve')
+
+    def test_a_checker_who_has_never_signed_in_does_not_arm_the_check(self):
+        _person(self.org, 'admin', 'Silent Checker', 'sc@x.com', permissions=['payments_check'],
+                first_seen_at=None)
+        run = self._run()
+        self._sign(run, self.maker)
+        self.assertFalse(payments.check_required_for(run))
+        self.assertFalse(payments.finance_check_required(self.org))
+        self.assertEqual(payments.next_step_for(run, self.finance), 'approve')

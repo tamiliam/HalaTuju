@@ -172,15 +172,16 @@ are refused everywhere — 403 on every endpoint, cross-org 404.
 the screen labels the steps Prepared / Checked / Approved):
 
 - **maker** (`payments_prepare` — preset `admin`) signs the draft → `admin_signed`.
-- **check** (`payments_check`) → `finance_checked` — ONLY while an active member holds that key,
-  evaluated LIVE and never stored. **No preset holds it**, so on every organisation today the chain
+- **check** (`payments_check`) → `finance_checked` — ONLY while somebody ELIGIBLE for this run
+  holds that key (active, has signed in, has not signed the run: review fixes 2 and 4), evaluated
+  LIVE and never stored. **No preset holds it**, so on every organisation today the chain
   is two steps; granting it to somebody (Sprint 4's editor) arms a third signer, including for a run
   already at `admin_signed`. While armed, an approver at `admin_signed` is refused with
   `finance_check_required`.
 - **approver** (`payments_approve` — preset `finance`) → `completed`, which releases the money and
   emails Vircle (approver CC'd). Stored in the `org_admin_signed_*` triple (a kept misnomer).
-- **the fallback:** when NO active `payments_approve` holder who has not already signed the run
-  exists, the **organisation admin** approves (the pre-change path). Live, per run: an organisation
+- **the fallback:** when NO active `payments_approve` holder who has SIGNED IN (`first_seen_at`)
+  and has not already signed the run exists, the **organisation admin** approves (the pre-change path). Live, per run: an organisation
   with no Finance person works exactly as before; the sole approver who prepared the run, the last
   approver revoked or switched, or a run Finance CHECKED before the change, all fall back. The run
   serves `approver_fallback` so the page says why the org admin sees the button. While a Finance
@@ -195,7 +196,8 @@ maker, the checkers when armed, else the approvers, else the org admins under th
 case-insensitive). One person may hold Prepare AND Approve and use them on DIFFERENT runs, never on
 one. `super` may fill any ONE slot per run and never two — enforced by that same pairwise rule. The
 service also refuses a signer from another organisation, and re-reads the run under a row lock so
-two approvers can never both complete it.
+two approvers can never both complete it; an edit or cancel is re-checked under the same lock,
+so a stale page can never reopen (and re-pay) a completed run.
 
 Editing an amount or exclusion after ANY signature reverts the run to draft and clears ALL
 collected signatures ("nobody signs one list and sends another").

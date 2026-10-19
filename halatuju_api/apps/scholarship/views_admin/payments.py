@@ -93,6 +93,10 @@ def _payment_run_detail(run, admin=None):
             skipped.append({'application_id': a.id, 'name': getattr(p, 'name', '') or '',
                             'nric': getattr(p, 'nric', '') or '', 'reasons': row['reasons']})
     from django.conf import settings as _settings
+    cache = {}     # one holders() read per key for the whole payload
+    in_flight = run.status in payments.EDITABLE_STATUSES
+    # A check already collected keeps its column; otherwise: would somebody eligible check THIS run?
+    check_now = bool(run.finance_signed_at) or (in_flight and payments.check_required_for(run, cache))
     return {
         'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
         'period_month': run.period_month, 'programme': _run_programme(run),
@@ -101,17 +105,17 @@ def _payment_run_detail(run, admin=None):
         'created_by': run.created_by, 'created_at': run.created_at,
         'admin_signed': _sig(run.admin_signed_name, run.admin_signed_email, run.admin_signed_at),
         'finance_signed': _sig(run.finance_signed_name, run.finance_signed_email, run.finance_signed_at),
-        # Whether THIS org's chain includes the finance check, computed server-side and read
-        # verbatim by the frontend. The activation rule lives in exactly one place
-        # (payments.finance_check_required); mirroring it in TypeScript would make it the sixth
-        # keep-in-sync pair this codebase has had to un-drift (see docs/lessons.md).
-        'finance_check_required': payments.finance_check_required(run.organisation),
-        # #39 S2: the same predicate under its lasting name (the key above stays one release for
-        # old bundles); the step THIS caller may take; whether the organisation admin approves
-        # because nobody else can (the page says why); and whether this caller may edit / cancel.
-        'check_step_required': payments.check_step_required(run.organisation),
-        'your_step': payments.next_step_for(run, admin),
-        'approver_fallback': run.status in payments.EDITABLE_STATUSES and payments.approver_fallback(run),
+        # Whether THIS RUN's chain includes the check, computed server-side and read verbatim by the
+        # frontend (review fix 2: per run — somebody eligible for this run could take it). The rule
+        # lives in exactly one place (payments.check_required_for); mirroring it in TypeScript would
+        # make it a keep-in-sync pair (see docs/lessons.md). The old key stays one release for old
+        # bundles; `check_step_required` is its lasting name. Then: the step THIS caller may take;
+        # whether the organisation admin approves because nobody else can (the page says why); and
+        # whether this caller may edit / cancel.
+        'finance_check_required': check_now,
+        'check_step_required': check_now,
+        'your_step': payments.next_step_for(run, admin, cache),
+        'approver_fallback': in_flight and payments.approver_fallback(run, cache),
         'can_prepare': payments.may_prepare(admin),
         'org_admin_signed': _sig(run.org_admin_signed_name, run.org_admin_signed_email, run.org_admin_signed_at),
         'items': [_payment_item_dict(i) for i in items],
