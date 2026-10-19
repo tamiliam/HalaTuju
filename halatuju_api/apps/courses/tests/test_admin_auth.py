@@ -161,7 +161,7 @@ class PartnerAdminMixinTest(TestCase):
         self.assertTrue(hasattr(AdminRoleView, 'get'))
 
     def test_invite_view_exists(self):
-        from apps.courses.views_admin import AdminInviteView
+        from apps.courses.views_staff import AdminInviteView   # moved there, request #39 S1
         self.assertTrue(hasattr(AdminInviteView, 'post'))
 
     def test_orgs_view_exists(self):
@@ -409,7 +409,7 @@ class PartnerAccountCreationTest(TestCase):
     def test_a_failed_send_is_reported_not_swallowed(self):
         # A silent failure would strand the invitee with a password they never received.
         with patch('apps.courses.views_admin.http_requests.post') as mock_post, \
-                patch('apps.courses.views_admin.send_partner_welcome_email', return_value=False):
+                patch('apps.courses.views_staff.send_partner_welcome_email', return_value=False):
             mock_post.return_value = MagicMock(
                 status_code=200, text='ok', json=lambda: {'id': 'created-uid'})
             r = self.client.post(
