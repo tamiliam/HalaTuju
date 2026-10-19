@@ -154,8 +154,10 @@ describe('a saved choice', () => {
     intake.mockRejectedValue(new Error('down'))
     mount('smc')
     await waitFor(() => expect(screen.getByTestId('referral-select')).toBeTruthy())
-    await act(async () => { await Promise.resolve() })
-    expect(select().value).toBe('smc')
+    // Wait for the saved value, not one microtask: on a slow CI runner the select renders before the
+    // saved choice lands (the web build of 456b9a1d failed here on '' vs 'smc'). A real clear still
+    // fails, because the value never arrives and waitFor times out.
+    await waitFor(() => expect(select().value).toBe('smc'))
     // Shown as an extra option labelled with its code — never the placeholder over a hidden value.
     expect(optionCodes()).toEqual(['', 'halatuju', 'social', 'other', 'smc'])
     expect(optionLabels()[4]).toBe('smc')
@@ -165,8 +167,7 @@ describe('a saved choice', () => {
     intake.mockResolvedValue(OPEN())
     mount('smc')
     await screen.findByTestId('apply-gift-line')
-    await act(async () => { await Promise.resolve() })
-    expect(select().value).toBe('smc')
+    await waitFor(() => expect(select().value).toBe('smc'))
   })
 
   it('is KEPT on an ambiguous visit until a gift is picked — then the rule applies', async () => {
@@ -196,8 +197,7 @@ describe('a saved choice', () => {
     intake.mockResolvedValue(OPEN([SMC]))
     mount('smc')
     await screen.findByTestId('apply-gift-line')
-    await act(async () => { await Promise.resolve() })
-    expect(select().value).toBe('smc')
+    await waitFor(() => expect(select().value).toBe('smc'))
   })
 })
 
