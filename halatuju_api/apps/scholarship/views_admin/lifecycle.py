@@ -22,8 +22,8 @@ from .sources import _SourcesBase
 class AdminApplicationWitnessView(_SourcesBase):
     """PATCH .../admin/scholarship/applications/<pk>/witness/ {witness_org: <code|id|null>} —
     assign (or clear) the witness-organisation OVERRIDE for a (typically sourceless) application.
-    NULL/'' clears the override (bursary witness resolution then falls back to the referring org,
-    else straight to the Foundation countersignature)."""
+    NULL/'' clears the override (bursary witness resolution then falls back to the source THIS
+    application named, else straight to the Foundation countersignature — sources Sprint C)."""
     def patch(self, request, pk):
         admin, err = self._sources_admin(request)
         if err:

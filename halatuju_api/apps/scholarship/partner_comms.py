@@ -14,12 +14,12 @@ it cheap to test.
 
 Three things that are easy to get wrong and are therefore fixed here:
 
-1. **Attribution is the referral CHIP, never the FK.** `partner_applications` filters on
-   `profile__referral_source == org.code`, the same signal the Sources student count and the
-   Applications-list Source filter use. The stored `referred_by_org` FK drifts (a self-referral
-   chip left pointing at an old partner), which is what previously inflated CUMIG.
-   `views_admin._source_application_counts` calls this function, so the digest and the admin
-   screen cannot disagree.
+1. **Attribution is the APPLICATION's own answer, never the student's.** `partner_applications`
+   filters on `ScholarshipApplication.source` — the source named on THAT application, kept at
+   submit (sources Sprint C, owner's ruling 2026-10-09; until then the profile's latest chip, so a
+   later answer re-attributed old applications). The referral partner's `referred_by_org` is
+   never read. `views_admin._source_application_counts` reads the same field, so the digest and
+   the admin screen cannot disagree.
 
 2. **Recipients are the organisation's own contact email and nothing else.** NOT
    `PartnerAdmin` rows: the only `partner`-role logins that exist belong to the HalaTuju
@@ -255,32 +255,34 @@ def template_state(kind):
 
 # ── attribution + counts ──────────────────────────────────────────────────────
 
-# The ONE field that attributes an application to an organisation. Named here so the digest and
-# the Sources screen cannot drift onto different signals — see the module docstring.
-CHIP_FIELD = 'profile__referral_source'
+# The ONE field that attributes an application to a source: the APPLICATION's own answer, kept at
+# submit (sources Sprint C, owner's ruling 2026-10-09 — never the student's later answer). Named
+# here so the digest and the Sources screen cannot drift onto different signals.
+SOURCE_FIELD = 'source_id'
 
 
 def partner_applications(org):
-    """Every bursary application attributed to this SOURCE: its chip AND its owning organisation's
-    applications only (sources Sprint B — a code is unique per organisation, so another
-    organisation's `smc` students are never this `smc`'s).
+    """Every bursary application attributed to this SOURCE: the applications whose OWN answer named
+    it (`ScholarshipApplication.source`, resolved inside the application's organisation at submit),
+    and only its owning organisation's applications (belt and braces — the source is already one
+    organisation's).
 
     THE single definition of "this partner's students". `views_admin._source_application_counts`
-    derives from `chip_tally()` below, and a test asserts the two agree for every source,
+    derives from `source_tally()` below, and a test asserts the two agree for every source,
     so the weekly digest and the Sources screen can never report different numbers.
     """
     return ScholarshipApplication.objects.filter(
-        **{CHIP_FIELD: org.code, 'owning_organisation_id': org.organisation_id})
+        **{SOURCE_FIELD: org.pk, 'owning_organisation_id': org.organisation_id})
 
 
-def chip_tally():
-    """`{(owning organisation id, chip): n}` across every application — one query. NULL/'' chips
-    collapse to ''. Global ON PURPOSE: the caller picks each source's own (organisation, code)."""
+def source_tally():
+    """`{source id: n}` across every application that named a source — one query. Global ON
+    PURPOSE: the caller reads each source's own id, and a source is one organisation's."""
     return {
-        (row['owning_organisation_id'], row[CHIP_FIELD] or ''): row['n']
-        # org-fence: GLOBAL by design — keyed by organisation, read one source at a time.
-        for row in (ScholarshipApplication.objects.values('owning_organisation_id', CHIP_FIELD)
-                    .annotate(n=Count('pk')))
+        row[SOURCE_FIELD]: row['n']
+        # org-fence: GLOBAL by design — keyed by source, read one source at a time.
+        for row in (ScholarshipApplication.objects.filter(source__isnull=False)
+                    .values(SOURCE_FIELD).annotate(n=Count('pk')))
     }
 
 

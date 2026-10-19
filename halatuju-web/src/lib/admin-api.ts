@@ -47,7 +47,7 @@ export {
 export type { AdminProfile, ReviewerProfile, LangFluency } from './admin-api/profiles'
 
 // The referral organisations a student arrives through, and witness assignment.
-export { getOrgs, getSources, createSource, updateSource, assignWitness } from './admin-api/sources'
+export { getOrgs, getSources, getSourceNames, createSource, updateSource, assignWitness } from './admin-api/sources'
 export type { OrgItem, SourceItem } from './admin-api/sources'
 
 // The partner, reviewer, invitation and sponsor e-mail templates an officer authors.

@@ -213,8 +213,8 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const [bursary, setBursary] = useState<BursaryAgreement | null>(null)
   const [bursaryMsg, setBursaryMsg] = useState('')
 
-  // Witness-organisation assignment (go-live transition, T2). Shown for a SOURCELESS student
-  // (no referred_by_org) so a super/org_admin can assign a witness org — usable BEFORE the flag
+  // Witness-organisation assignment (go-live transition, T2). Shown for a SOURCELESS application
+  // (no source; sources Sprint C) so a super/org_admin can assign a witness org — usable BEFORE the flag
   // flips (runbook step 2 precedes the flip), so it is NOT gated behind bursary_agreement_enabled.
   const [activeSources, setActiveSources] = useState<SourceItem[]>([])
   const [witnessSel, setWitnessSel] = useState<string>('')
@@ -224,7 +224,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   // copy would otherwise keep asking for something already done (owner 2026-07-25). Reassigning
   // is still one click away: "Change" flips this back to the picker.
   const [witnessEditing, setWitnessEditing] = useState(false)
-  const sourceless = !!app && !app.referred_by_org
+  const sourceless = !!app && !(app.source ?? app.referred_by_org)
   // Only fetch the organisation list when the witness card can actually render — same three
   // gates as the card itself, so a pre-QC or off-ramp case makes no needless request (most
   // sourceless students today are at 'shortlisted', where the card never appears).

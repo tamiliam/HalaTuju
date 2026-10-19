@@ -359,18 +359,30 @@ code is unique PER organisation — so a source is never looked up by its code a
 own (another's is a 404; organisation-less → none); a super is global and narrows with `?org=`; a new
 source's owner is `?org=`, else the super's own organisation, else the SOLE tenant if there is exactly
 one — always a tenant, else 400 `organisation_required`. `gift_sources` reads everything inside
-the GIFT's organisation; `partner_comms.chip_tally` is keyed (owning organisation, chip) and
-`partner_applications(source)` counts only its organisation's applications; milestones match
-(organisation, chip); the email screen and its log show the caller's sources only; the witness is one
-of the APPLICATION's organisation's sources. The five FKs that named a source moved here by a
+the GIFT's organisation; the email screen and its log show the caller's sources only; the witness
+override is one of the APPLICATION's organisation's sources. The five FKs that named a source moved here by a
 constraint swap (`ProgrammeReferralSource.source`, `StudentProfile.source` — a STRING reference from
 courses, no import — both `witness_org`, `PartnerEmailLog.organisation`, now PROTECT);
-`Invitation.organisation` stays the tenant. The house row is not a source. Until Sprint C,
-`referral_links.referring_org` answers the source, else the referral partner's source TWIN (same id
-AND code, `source_twin`); `is_same_organisation` is the witness-authority comparison. A `partner`
+`Invitation.organisation` stays the tenant. The house row is not a source. A `partner`
 login may be invited only onto an active referral partner (`partner_invite_org`; a NEW organisation
 created by that invite is marked), and an `org_admin` never onto one nor onto a source's old row
-(`tenant_invite_refusal`). TD-386 lists the seams still crossing organisations (Sprint C).
+(`tenant_invite_refusal`, which reads `source_twin` — same id AND code). TD-386 (c), the platform-wide
+partner-email templates, is the one seam still crossing organisations.
+
+⚠ **EACH APPLICATION KEEPS ITS OWN "WHO REFERRED YOU?"** (sources Sprint C, 2026-10-19; owner's rulings
+2026-10-09). `ScholarshipApplication.referral_code` (the answer as given, fixed choices included, `''`
+for none — `db_default ''`) and `ScholarshipApplication.source` (that code's source IN THE
+APPLICATION'S OWN ORGANISATION, `gift_sources.submitted_source`; PROTECT) are written ONCE at submit
+(`services/intake.create_application`, from the frozen `intake_snapshot`) and backfilled by scholarship
+0174. Every bursary reader uses them, never the profile's chip: partner emails
+(`partner_comms.partner_applications` / `source_tally`, `partner_notify` milestones), the Sources
+counts, the Applications Source filter / column / sort (`referral_code`), the cockpit's `source` key
+(and the old `referred_by_org` key, same value, one release). The witness is the override, else the
+application's source (`bursary._resolve_witness_org`) — never the referral partner — and only a super
+records it (`AdminBursaryWitnessView`). Source NAMES for every list role (reviewer and QC included):
+`GET /admin/scholarship/source-names/` (`AdminSourceNamesView`, fenced like Sources). The apply form's
+"Who referred you?" pre-fill is the apply gate's `referral` (`apply_gate.earlier_referral`: her own
+latest answer to THIS round's organisation) — never the profile chip, where a `?ref=` code lands.
 
 ⚠ **THE STUDENT RECORD HAS TWO INDEPENDENT REFERRAL COLUMNS** (sources and referral partners Sprint A,
 2026-10-09; rules in `apps/courses/referral_links.py`; roadmap
@@ -382,10 +394,10 @@ row, FIRST TOUCH. Neither writer touches the other; `ProfileView.put` ignores `r
 `partner`-role logins' course-selector list (NRIC, phone, address, income) is scoped by
 `referred_by_org`, so a bursary answer can never put a student there. The legacy chip
 `referral_source` is still written by the submit and, first touch and only while she has no
-application, by the `?ref` sync; its readers (partner emails, Sources counts, the Applications
-filter, the apply pre-fill, the partner dashboard) move to the per-application answer in Sprint C.
-The witness request, the witness authority check and the cockpit's `referred_by_org` read
-`referral_links.referring_org` (source, else referral partner) until Sprint C makes it source-only.
+application, by the `?ref` sync; since Sprint C no bursary surface reads it — only the course-selector
+partner dashboard (`/admin/students`, its list, Source filter and CSV) and the student's own
+`GET /profile/` do, until Sprint D retires it. `StudentProfile.source` is still written and read by
+no bursary surface either (each application keeps its own).
 
 ⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
 grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /

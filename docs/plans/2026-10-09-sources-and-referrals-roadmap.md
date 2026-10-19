@@ -2,9 +2,11 @@
 
 **Status:** Sprint A BUILT 2026-10-09, LIVE 2026-10-18 (`bfa547d9` + `4570eb8f`, api-01119-l65; migration
 `courses/0078_two_referral_columns`, cutover `docs/scholarship/two-columns-cutover-sql.md`; retro
-`docs/retrospectives/retrospective-2026-10-18-sources-a.md`). Sprint B BUILT 2026-10-18 (not committed,
-not live; migrations `scholarship/0173` + `courses/0079` migrate-first, `courses/0080` after the deploy;
-cutover `docs/scholarship/sources-b-cutover-sql.md`). Sprints C–D not started.
+`docs/retrospectives/retrospective-2026-10-18-sources-a.md`). Sprint B BUILT 2026-10-18, LIVE 2026-10-19
+(`bbe6fac6`, api-01122-nw4; `scholarship/0173` + `courses/0079` migrate-first, `courses/0080` after the
+deploy; cutover `docs/scholarship/sources-b-cutover-sql.md`). Sprint C BUILT 2026-10-19 (not committed,
+not live; `scholarship/0174` migrate-first; cutover `docs/scholarship/sources-c-cutover-sql.md`).
+Sprint D not started.
 **Owner's model (settled 2026-10-09 — do not re-litigate):** *"Referral partners and sources and orgs
 are different. Referral partners are a category of their own. Orgs > sources."* Three categories:
 
@@ -165,7 +167,38 @@ commit, no behaviour change, ledger keys moved through `_moved`) before any fiel
 new model goes in `apps/scholarship/models/` (its own module; register it in the re-export shell). `scholarship/views.py` (5 lines of room at Sprint A) — touch it only through
 a moves-only split first if the submit needs more than a line.
 
-## Sprint C — readers move to the per-application answer; the categories stop leaking into each other
+## Sprint C — readers move to the per-application answer; the categories stop leaking into each other ✅ BUILT 2026-10-19
+
+**As built (2026-10-19; decisions.md "Each application keeps its own 'Who referred you?'"):**
+- **Split first:** `FundingNeed` moved verbatim from `models/applications.py` (919, at its cap) to
+  `models/funding_need.py`; its own patch, no behaviour change, `makemigrations --check` clean.
+- **Item 1 — an FK AND the raw code** (decided at sprint start): `ScholarshipApplication.referral_code`
+  (the answer as given, fixed choices included, `db_default ''`, indexed) and `.source` (→
+  `referral_sources`, PROTECT), written once at submit from the frozen snapshot, resolved IN THE
+  APPLICATION'S OWN ORGANISATION (`gift_sources.submitted_source`); scholarship 0174 backfills both
+  from `intake_snapshot` by the same rule. Readers moved: `partner_comms.partner_applications` /
+  `source_tally` (was `chip_tally` / `CHIP_FIELD`), `partner_notify` milestones, the Sources counts and
+  the email screen's counts, the Applications filter / sort / list and detail `referral_source`, the
+  cockpit pill (`source` key, `referred_by_org` kept one release with the same value). The snapshot
+  builder is unchanged (it IS the answer).
+- **Item 2 — `GET /admin/scholarship/source-names/`** (`AdminSourceNamesView`): every Applications-list
+  role, `{code, name}` only, fenced like Sources (super global, `?org=` narrows). The list page reads it
+  (`getSourceNames`), so reviewer and QC see the sources in their filter.
+- **Item 3 — the witness:** override, else the application's source; `referring_org`,
+  `is_same_organisation` and the twin pairing for the witness are deleted (`source_twin` stays, read
+  only by `tenant_invite_refusal`). `AdminBursaryWitnessView` is SUPER-ONLY and records the resolved
+  witness (it used to record `referring_org(profile)`, ignoring the override). The web offers the
+  witness button to a super only.
+- **Item 4 — the pre-fill:** `profileToApplyDefaults` no longer reads the chip; the apply gate serves
+  `referral` (her own latest answer to THIS round's organisation) and the page seeds the field once.
+- **Item 6 — owner question answered by the brief:** the course-selector partner dashboard is
+  UNCHANGED (it reads the chip, still written by the submit and the first-touch `?ref` sync). So are the
+  staff student pages (`/admin/students`, `/admin/students/[id]` — they ARE that dashboard).
+- **Item 7:** (a) and (b) fixed; **(c) NOT built** — left in TD-386 with a proposal (super-only
+  editing), because it takes editing away from the only tenant's own org_admins and touches three
+  screens; owner's call.
+- Not moved, on purpose: `StudentProfile.source` is still written by the submit (read by no bursary
+  surface now) — Sprint D retires it with the chip.
 
 1. **Counts, partner emails and the Applications filter read the per-application answer**
    (`intake_snapshot.profile.referral_source`, or a new indexed `ScholarshipApplication.source` FK
@@ -201,6 +234,10 @@ string (TD-360, en.json is at its line).
 
 ## Sprint D — retire the old shared fields and rows; close the debt
 
+0. **Added by Sprint C:** remove the cockpit's old `referred_by_org` key (the web reads `source` since
+   Sprint C); retire `StudentProfile.source` with the chip (no bursary reader since Sprint C); decide the
+   course-selector partner dashboard's Source column (it still reads the chip — roadmap item 6) BEFORE
+   the chip stops being written; TD-386 (c) if the owner chooses super-only editing.
 1. Retire, never delete: the chip `StudentProfile.referral_source` (stop writing; keep the column one
    release, then a contract migration), the sources' old rows on `partner_organisations` (switched
    off, kept — old snapshots name their codes; since Sprint B no foreign key names them). ⚠ CUMIG's row

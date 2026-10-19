@@ -131,7 +131,7 @@ from .reviewers import (
 )
 from .sources import (
     _SourcesBase, _source_application_counts, _source_dict, AdminSourceDetailView,
-    AdminSourcesView, HOUSE_ORG_CODE,
+    AdminSourceNamesView, AdminSourcesView, HOUSE_ORG_CODE,
 )
 from .spending import (
     _SPENDING_ROLES, _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,

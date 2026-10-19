@@ -118,14 +118,18 @@ export function PostAwardPanels({
                   {t('admin.scholarship.bursary.countersign')}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={doWitnessBursary}
-                disabled={busy === 'bursary' || !hasAgreement || witnessDone}
-                className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50"
-              >
-                {t('admin.scholarship.bursary.witnessAction')}
-              </button>
+              {/* Only a super records a witness (sources Sprint C, owner's ruling) — the server
+                  refuses everyone else, so the button is not offered to them. */}
+              {isSuper && (
+                <button
+                  type="button"
+                  onClick={doWitnessBursary}
+                  disabled={busy === 'bursary' || !hasAgreement || witnessDone}
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50"
+                >
+                  {t('admin.scholarship.bursary.witnessAction')}
+                </button>
+              )}
               {bursary?.pdf_url && (
                 <a
                   href={bursary.pdf_url}

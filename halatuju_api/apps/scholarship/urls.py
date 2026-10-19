@@ -187,6 +187,7 @@ from .views_admin import (
     AdminContractQuizPreviewView,
     AdminContractImportDocxView,
     AdminSourcesView,
+    AdminSourceNamesView,
     AdminSourceDetailView,
     AdminPartnerEmailsView,
     AdminPartnerEmailDetailView,
@@ -415,6 +416,8 @@ urlpatterns = [
     # Sources (referral organisations) + per-application witness assignment (go-live transition)
     path('admin/scholarship/sources/', AdminSourcesView.as_view()),
     path('admin/scholarship/sources/<int:pk>/', AdminSourceDetailView.as_view()),
+    # Source NAMES for the Applications filter — every list role, fenced (sources Sprint C).
+    path('admin/scholarship/source-names/', AdminSourceNamesView.as_view()),
     # Partner comms: the five programme-wide partner emails (switch + wording). Same gate as Sources.
     path('admin/scholarship/partner-emails/', AdminPartnerEmailsView.as_view()),
     path('admin/scholarship/partner-emails/<str:kind>/', AdminPartnerEmailDetailView.as_view()),

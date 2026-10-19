@@ -445,6 +445,9 @@ class TestFenceCoverageCompleteness(TestCase):
         # The witness endpoint reaches an application via _get_application (not a raw query).
         '_SourcesBase': 'base — super/org_admin gate for sources + witness assignment',
         'AdminSourcesView': 'shared-registry-single-tenant', 'AdminSourceDetailView': 'shared-registry-single-tenant',
+        # Sources Sprint C: names only, for every Applications-list role; fenced to the caller's
+        # organisation's sources (super global, `?org=` narrows) — `test_sources_c.py`.
+        'AdminSourceNamesView': 'source-names-org-fenced',
         # Partner comms (2026-07-26) — same _SourcesBase role gate. Deliberately NOT org-fenced,
         # for the same reason as the Sources registry above: a partner-email TEMPLATE is
         # programme-wide (one wording for every partner, owner ruling — there is no per-org row to

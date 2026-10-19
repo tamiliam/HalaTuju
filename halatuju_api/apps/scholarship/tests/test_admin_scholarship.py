@@ -400,10 +400,12 @@ class TestAdminScholarship(TestCase):
         """The list table's Source (referring org) + Merit columns. Merit is computed live
         per row via the same helper the detail card uses (no stored column)."""
         StudentProfile.objects.filter(pk=self.profile.pk).update(
-            referral_source='smc', coq_score=7, stream_subjects=[],
+            coq_score=7, stream_subjects=[],
             grades={'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'A',
                     'phy': 'A', 'chem': 'A', 'bio': 'A', 'addmath': 'A'},
         )
+        # Sources Sprint C: the Source column is THIS application's answer, not the profile's.
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(referral_code='smc')
         self._auth(ADMIN)
         item = self.client.get('/api/v1/admin/scholarship/applications/').json()['applications'][0]
         self.assertEqual(item['referral_source'], 'smc')
@@ -415,7 +417,10 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(r.json()['total_count'], 0)
 
     def test_admin_list_filter_source(self):
-        StudentProfile.objects.filter(pk=self.profile.pk).update(referral_source='smc')
+        # Sources Sprint C: the filter reads THIS application's answer; a later profile answer
+        # ('pptm') does not move it.
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(referral_code='smc')
+        StudentProfile.objects.filter(pk=self.profile.pk).update(referral_source='pptm')
         self._auth(ADMIN)
         self.assertEqual(
             self.client.get('/api/v1/admin/scholarship/applications/?source=smc').json()['total_count'], 1)

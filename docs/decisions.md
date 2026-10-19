@@ -14093,3 +14093,66 @@ created since into `partner_organisations`. The twin bridge pairs CUMIG's two ro
 
 **Revisit if:** a second organisation joins (the fence is now real), the source-invitation feature is
 built (its column), or Sprint C retires the twin bridge.
+
+## 2026-10-19 — Each application keeps its own "Who referred you?"; the witness is that application's source
+
+**Decision (sources and referral partners Sprint C; the owner's rulings of 2026-10-09, recommendations
+accepted, not re-opened):**
+1. **Counts and partner emails count the answer given ON THAT APPLICATION**, not the student's latest
+   answer. Two new columns on `scholarship_applications`, written ONCE at submit from the frozen
+   `intake_snapshot` and backfilled from it (scholarship 0174): `referral_code` (the answer as given,
+   fixed choices included, `''` for none) and `source` (that code's source IN THE APPLICATION'S OWN
+   ORGANISATION — `gift_sources.submitted_source`, the one rule the submit and the backfill share).
+   Partner digests, milestones, the Sources "Students" count, the Applications Source filter / column /
+   sort and the cockpit pill read them; none reads the profile's chip.
+2. **The witness comes from the source only, never the referral partner**: the admin override, else
+   the application's source (`bursary._resolve_witness_org`). `referral_links.referring_org`,
+   `is_same_organisation` and the CUMIG twin pairing for the witness are gone (TD-386 a, b).
+3. **Only a super records a witness** (`AdminBursaryWitnessView`) until sources have logins. The
+   grandfathered "the referring partner's login may witness" door — the one place a referral field was
+   used for authorisation — is closed. The witness ASSIGNMENT (choosing the override) is unchanged:
+   super, admin, org_admin.
+4. **A `?ref=` link never pre-fills the bursary form.** The form no longer reads the profile's chip;
+   the apply gate serves `referral` = her own latest application's answer to THIS round's
+   organisation (`apply_gate.earlier_referral`), and the page seeds the field once from it, never over
+   a choice already made.
+5. CUMIG (source) and CUMIG (referral partner) contact details stay separate (Sprint B's copy).
+
+**Lead rulings in the build:**
+- **An FK plus the raw code, not the snapshot alone.** The Applications filter must find the three
+  fixed choices too (they have no source row), and the list endpoint's query budget is pinned — a
+  column filters, sorts and serves at no cost per row; a JSON key would be unindexed and spelt
+  differently per database. `source` is PROTECT (attribution must not vanish with a source; nothing
+  deletes sources).
+- **Resolved in the application's OWN organisation, switched on or not.** The column records what was
+  answered; the submit has already refused a code the gift does not offer.
+- **A source-names endpoint, not a wider Sources gate** (`GET /admin/scholarship/source-names/`):
+  every role that may open the Applications list (reviewer and QC included) gets `{code, name}` only,
+  fenced like Sources (an organisation's staff: its own, switched-off ones included; a super: all,
+  `?org=` narrows). TD-381 part 4.
+- **The cockpit's `source` key replaces `referred_by_org`**; the old key carries the same value for one
+  release (the web reads `source ?? referred_by_org`). Remove it in Sprint D.
+- **The course-selector partner dashboard (`/admin/students`, its Source filter and CSV) is unchanged**
+  (roadmap item 6, the lead's brief: do not break CUMIG's list or CSV). It still reads the chip, which
+  the submit and the first-touch `?ref` sync still write; Sprint D decides its column when the chip
+  retires.
+- **TD-386 (c) is NOT built**, and stays open: making partner-email templates super-only would take
+  the editing away from BrightPath's own org_admins today (the only tenant, where nothing crosses a
+  line) and touches three screens (Sources → Partner emails, Organisation → Reviewers, → Invitations).
+  The proposed safest step for the owner: super-only PATCH on `partner-emails/<kind>/`, the edit
+  controls hidden for other roles, reading unchanged — or per-organisation overrides later.
+
+**Alternatives considered:** (a) read `intake_snapshot` in every reader — unindexed JSON on the list
+endpoint, and a second spelling of the same rule in every reader; (b) keep counting the chip — the
+owner ruled it out (a later answer re-attributed earlier applications); (c) keep the referral partner
+as a witness fallback — ruled out by the owner; (d) a widened `getSources` for reviewers — it serves
+contacts and counts they should not see.
+
+**Trade-offs:** counts change on purpose for students whose latest answer differs from an earlier
+application's (cutover pre-check 6 lists every source before and after); a `?ref=cumig` student who
+named no source now has NO witness organisation (pre-check 8 lists them) — an org_admin can still
+assign one. Applications submitted between the cutover and the deploy get `''`/NULL from the database
+default and are filled by the post-deploy sweep.
+
+**Revisit if:** sources get logins (who may witness), a second organisation joins (TD-386 c), or
+Sprint D retires the chip, `StudentProfile.source` and the cockpit's `referred_by_org` key.

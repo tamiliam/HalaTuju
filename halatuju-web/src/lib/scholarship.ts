@@ -430,7 +430,10 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     // Pre-filled values are masked too, so an older unformatted profile value
     // still displays as XXXXXX-XX-XXXX / 0XX-XXX XXXX.
     nric: formatNric(profile?.nric ?? ''),
-    referringOrg: profile?.referral_source ?? '',
+    // NEVER the profile's chip (sources Sprint C, owner's ruling): a `?ref=` code lands there, and a
+    // `?ref=` never pre-fills this form. The page seeds it from the apply gate's `referral` — her
+    // own earlier answer to THIS organisation — once that has answered.
+    referringOrg: '',
     homeState: profile?.preferred_state ?? '',
     phone: formatPhone(profile?.contact_phone ?? ''),
     householdIncome: profile?.household_income != null ? String(profile.household_income) : '',

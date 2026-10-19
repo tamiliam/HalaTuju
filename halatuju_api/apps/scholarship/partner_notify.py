@@ -203,17 +203,17 @@ def send_partner_digests(dry_run=False, out=None):
 
 # ── the two milestone emails ──────────────────────────────────────────────────
 
-def _partner_by_chip():
-    """`{(owning organisation id, referral chip): source}` for every ACTIVE source (never the house
-    org). Keyed by organisation too since sources Sprint B (2026-10-18): a code is unique only
-    within its organisation, so an application reaches the source of ITS OWN organisation.
+def _partner_by_source():
+    """`{source id: source}` for every ACTIVE source (never the house org). An application reaches
+    the source ITS OWN answer named at submit (`ScholarshipApplication.source`, sources Sprint C —
+    resolved inside the application's organisation), never the student's later answer.
 
     Used to fetch only students who belong to a real partner: a self-referred or unattributed
     application is the house org's residual and is never the subject of a partner email.
     """
     from .models import ReferralSource
     return {
-        (o.organisation_id, o.code): o for o in ReferralSource.objects
+        o.pk: o for o in ReferralSource.objects
         .filter(is_active=True).exclude(code=partner_comms.HOUSE_ORG_CODE)
     }
 
@@ -229,7 +229,7 @@ def send_partner_milestones(dry_run=False, out=None):
     unstamped, so they are told once an address exists.
     """
     summary = {}
-    by_chip = _partner_by_chip()
+    by_source = _partner_by_source()
     qualifying = {o.id for o in partner_comms.qualifying_partners()}
 
     for kind in ('awaiting_review', 'awarded'):
@@ -243,14 +243,15 @@ def send_partner_milestones(dry_run=False, out=None):
 
         pending = {}
         for app in (partner_comms.milestone_queryset(kind)
-                    .filter(profile__referral_source__in={code for _, code in by_chip})
+                    .filter(source_id__in=list(by_source))
                     .select_related('profile').order_by('pk')):
-            key = (app.owning_organisation_id, getattr(app.profile, 'referral_source', '') or '')
-            if key in by_chip:              # the chip names a source of HER organisation only
-                pending.setdefault(key, []).append(app)
+            # The source the APPLICATION named; also one of ITS organisation's (belt and braces).
+            if by_source[app.source_id].organisation_id == app.owning_organisation_id:
+                pending.setdefault(app.source_id, []).append(app)
 
-        for key, apps in sorted(pending.items(), key=lambda kv: (kv[0][1], kv[0][0] or 0)):
-            org = by_chip[key]
+        for key, apps in sorted(pending.items(),
+                                key=lambda kv: (by_source[kv[0]].code, by_source[kv[0]].organisation_id)):
+            org = by_source[key]
             if org.id not in qualifying:
                 _skip(org, kind, 'no_recipient')
                 continue

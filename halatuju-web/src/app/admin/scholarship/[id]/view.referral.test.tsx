@@ -17,14 +17,30 @@ installCockpitConsoleGuard()
 
 type Org = { id: number; code: string; name: string } | null
 
-/** Mount with this referral, and return the pill that reads `text`. */
-const pill = async (referral_source: string, referred_by_org: Org, text: string) => {
+/** Mount with this referral, and return the pill that reads `text`. Since sources Sprint C the api
+ *  serves the application's source under `source` AND the old `referred_by_org` key (one release). */
+const pill = async (referral_source: string, referred_by_org: Org, text: string,
+  served: { source: Org } | 'no source key' = { source: referred_by_org }) => {
   renderCockpit({ role: 'super', app: buildApplicationDetail('interviewing', {
-    referral_source, referred_by_org,
+    referral_source, referred_by_org, ...(served === 'no source key' ? {} : served),
   }) })
   await screen.findByText('Test Student 07')
   return screen.getByText(text)
 }
+
+describe('the referral pill reads THIS application\'s source (sources Sprint C)', () => {
+  it('reads the new `source` key ahead of the old one', async () => {
+    const el = await pill('newsrc', { id: 9, code: 'newsrc', name: 'Stale Name' }, 'A New Source',
+      { source: { id: 3, code: 'newsrc', name: 'A New Source' } })
+    expect(el.getAttribute('title')).toBe('A New Source')
+  })
+
+  it('still names it from `referred_by_org` when an older api sends no `source`', async () => {
+    const el = await pill('newsrc', { id: 3, code: 'newsrc', name: 'A New Source' },
+      'A New Source', 'no source key')
+    expect(el.getAttribute('title')).toBe('A New Source')
+  })
+})
 
 describe('the referral pill', () => {
   it("names a new source by the linked organisation's served name — pill and tooltip", async () => {

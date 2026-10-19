@@ -51,6 +51,16 @@ export async function getSources(options?: ApiOptions) {
   return adminFetch<{ sources: SourceItem[] }>('/api/v1/admin/scholarship/sources/', options)
 }
 
+/**
+ * Source NAMES for the Applications list's Source filter, column and tooltips (sources Sprint C):
+ * every list role may call it — reviewer and QC too, who get 403 on `getSources` — and it serves
+ * `{code, name}` only, fenced to the caller's organisation (a super: every organisation's).
+ */
+export async function getSourceNames(options?: ApiOptions) {
+  return adminFetch<{ sources: { code: string; name: string }[] }>(
+    '/api/v1/admin/scholarship/source-names/', options)
+}
+
 export async function createSource(
   data: {
     code: string; name: string; contact_person?: string; contact_email?: string

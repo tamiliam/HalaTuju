@@ -58,15 +58,36 @@ const OPEN = (sources?: object[]) => ({
   ...(sources ? { sources } : {}),
 })
 
-const mount = (referral_source = '') => render(
-  <AuthContext.Provider value={{
-    status: 'ready', token: 'tkn', showAuthGate: () => {},
-    profile: { ...sandboxProfileSpm, results_held: 'spm', nric: '080101-14-1234', nric_verified: true,
-      referral_source },
-  } as never}>
-    <ScholarshipApplyPage />
-  </AuthContext.Provider>,
-)
+/** `saved` is her earlier answer to this organisation, which the apply gate serves as `referral`
+ *  (sources Sprint C — it used to be read off the profile's chip). `chip` is the profile's chip,
+ *  where a `?ref=` code lands; it must never reach the form. */
+const mount = (saved: string | null = '', chip = '') => {
+  if (saved !== null) gate.mockResolvedValue({ allowed: true, reason: '', application_id: null, referral: saved })
+  return render(
+    <AuthContext.Provider value={{
+      status: 'ready', token: 'tkn', showAuthGate: () => {},
+      profile: { ...sandboxProfileSpm, results_held: 'spm', nric: '080101-14-1234', nric_verified: true,
+        referral_source: chip },
+    } as never}>
+      <ScholarshipApplyPage />
+    </AuthContext.Provider>,
+  )
+}
+
+/** A complete form, as the results detour stashes it. */
+const STASHED: ApplyFormState = {
+  name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'smc',
+  homeState: 'Selangor', phone: '012-345 6789',
+  householdIncome: '2500', householdSize: '5', receivesStr: true, receivesJkm: false,
+  parentName: '', parentPhone: '', callLanguage: '',
+  pathwayCertainty: 'sure', chosenPathway: 'poly',
+  chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
+  preUTrack: '', preUInstitution: '', uncertaintyReasons: [], uncertaintyNote: '',
+  pathwaysConsidered: [], topChoices: [], upuStatus: '', fieldOfStudy: '',
+  otherScholarships: [], otherScholarshipsText: '', intendsTertiary2026: true,
+  helpUniversity: '', helpScholarship: '', anythingElse: '', consentToContact: true,
+  declarationName: 'Priya',
+}
 
 const select = () => screen.getByTestId('referral-select') as HTMLSelectElement
 const optionCodes = () => Array.from(select().options).map((o) => o.value)
@@ -180,20 +201,35 @@ describe('a saved choice', () => {
   })
 })
 
+describe('a `?ref=` code never pre-fills (sources Sprint C, owner\'s ruling)', () => {
+  it('leaves the field empty although the profile\'s chip names an offered source', async () => {
+    intake.mockResolvedValue(OPEN([SMC, CUMIG]))
+    mount('', 'cumig')
+    await screen.findByTestId('apply-gift-line')
+    await act(async () => { await Promise.resolve() })
+    expect(select().value).toBe('')
+  })
+
+  it('takes her own earlier answer from the gate, never the chip', async () => {
+    intake.mockResolvedValue(OPEN([SMC, CUMIG]))
+    mount('smc', 'cumig')
+    await screen.findByTestId('apply-gift-line')
+    await waitFor(() => expect(select().value).toBe('smc'))
+  })
+
+  it('never overwrites a choice she has already made (restored from the results detour)', async () => {
+    intake.mockResolvedValue(OPEN([SMC, CUMIG]))
+    stashApplyForm({ ...STASHED, referringOrg: 'cumig' })
+    mount('smc')
+    await screen.findByTestId('apply-gift-line')
+    fireEvent.click(screen.getByText('scholarship.apply.tab.personal').closest('button') as HTMLButtonElement)
+    await act(async () => { await Promise.resolve() })
+    expect(select().value).toBe('cumig')
+  })
+})
+
 describe('the server refuses the code at submit', () => {
-  const complete: ApplyFormState = {
-    name: 'Priya', school: 'SMK Taman Desa', nric: '080101-14-1234', referringOrg: 'smc',
-    homeState: 'Selangor', phone: '012-345 6789',
-    householdIncome: '2500', householdSize: '5', receivesStr: true, receivesJkm: false,
-    parentName: '', parentPhone: '', callLanguage: '',
-    pathwayCertainty: 'sure', chosenPathway: 'poly',
-    chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
-    preUTrack: '', preUInstitution: '', uncertaintyReasons: [], uncertaintyNote: '',
-    pathwaysConsidered: [], topChoices: [], upuStatus: '', fieldOfStudy: '',
-    otherScholarships: [], otherScholarshipsText: '', intendsTertiary2026: true,
-    helpUniversity: '', helpScholarship: '', anythingElse: '', consentToContact: true,
-    declarationName: 'Priya',
-  }
+  const complete = STASHED
 
   it('sends an offered source as referral_source', async () => {
     intake.mockResolvedValue(OPEN([SMC]))

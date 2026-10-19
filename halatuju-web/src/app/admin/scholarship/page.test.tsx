@@ -54,7 +54,7 @@ beforeEach(() => {
   scope = { chosen: '', programme: null }
   mockApi.getScholarshipApplications.mockResolvedValue(EMPTY_LIST)
   mockApi.getAssignableAdmins.mockResolvedValue({ admins: [], past_assignees: [] })
-  mockApi.getSources.mockResolvedValue({ sources: [] })   // the Source filter's names (2026-10-08)
+  mockApi.getSourceNames.mockResolvedValue({ sources: [] })   // the Source filter's names (Sprint C)
 })
 
 const heading = () => screen.getByRole('heading', { level: 1 }).textContent
@@ -111,10 +111,10 @@ describe('the Source filter and tooltips read the registry', () => {
   }) as unknown as api.AdminScholarshipListData['applications'][number]
 
   it('offers every source by name, then the fixed three', async () => {
-    mockApi.getSources.mockResolvedValue({ sources: [
+    mockApi.getSourceNames.mockResolvedValue({ sources: [
       { code: 'tara', name: 'Tara Foundation', show_in_apply: false },
       { code: 'smc', name: 'Sri Murugan Centre', show_in_apply: true },
-    ] } as unknown as Awaited<ReturnType<typeof api.getSources>>)
+    ] } as unknown as Awaited<ReturnType<typeof api.getSourceNames>>)
     render(<AdminScholarshipList />)
     const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
     await waitFor(() => expect(Array.from(filter.options).map((o) => o.value))
@@ -126,8 +126,8 @@ describe('the Source filter and tooltips read the registry', () => {
   })
 
   it('names a source in the tooltip, and shows a code it cannot name rather than a key', async () => {
-    mockApi.getSources.mockResolvedValue({ sources: [{ code: 'smc', name: 'Sri Murugan Centre' }] } as
-      unknown as Awaited<ReturnType<typeof api.getSources>>)
+    mockApi.getSourceNames.mockResolvedValue({ sources: [{ code: 'smc', name: 'Sri Murugan Centre' }] } as
+      unknown as Awaited<ReturnType<typeof api.getSourceNames>>)
     mockApi.getScholarshipApplications.mockResolvedValue({
       ...EMPTY_LIST, count: 2, total_count: 2, applications: [row('smc'), { ...row('newsrc'), id: 2 }],
     })
@@ -140,8 +140,8 @@ describe('the Source filter and tooltips read the registry', () => {
   })
 
   it('names a new source in the column by its served name (review fix)', async () => {
-    mockApi.getSources.mockResolvedValue({ sources: [{ code: 'newsrc', name: 'A New Source' }] } as
-      unknown as Awaited<ReturnType<typeof api.getSources>>)
+    mockApi.getSourceNames.mockResolvedValue({ sources: [{ code: 'newsrc', name: 'A New Source' }] } as
+      unknown as Awaited<ReturnType<typeof api.getSourceNames>>)
     mockApi.getScholarshipApplications.mockResolvedValue({
       ...EMPTY_LIST, count: 1, total_count: 1, applications: [row('newsrc')],
     })
@@ -151,12 +151,27 @@ describe('the Source filter and tooltips read the registry', () => {
     expect(screen.queryByText('Other')).toBeNull()
   })
 
-  it('a role the Sources endpoint refuses still gets the fixed three', async () => {
-    mockApi.getSources.mockRejectedValue(new Error('403'))
+  it('a failed names read still gets the fixed three', async () => {
+    mockApi.getSourceNames.mockRejectedValue(new Error('500'))
     render(<AdminScholarshipList />)
     const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
-    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalled())
+    await waitFor(() => expect(mockApi.getSourceNames).toHaveBeenCalled())
     expect(Array.from(filter.options).map((o) => o.value)).toEqual(['', 'halatuju', 'social', 'other'])
+  })
+
+  it('a reviewer and QC get the source names too (sources Sprint C — they read source-names)', async () => {
+    // Superseded "a role the Sources endpoint refuses gets only the fixed three": the names now
+    // come from an endpoint every list role may call, so their filter names the sources too.
+    mockApi.getSourceNames.mockResolvedValue({ sources: [{ code: 'smc', name: 'Sri Murugan Centre' }] })
+    for (const role of ['reviewer', 'qc']) {
+      authRole = { role }
+      const { unmount } = render(<AdminScholarshipList />)
+      const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
+      await waitFor(() => expect(Array.from(filter.options).map((o) => o.value))
+        .toEqual(['', 'smc', 'halatuju', 'social', 'other']))
+      unmount()
+    }
+    expect(mockApi.getSources).not.toHaveBeenCalled()
   })
 })
 

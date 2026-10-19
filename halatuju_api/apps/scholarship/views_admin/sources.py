@@ -84,20 +84,16 @@ def _source_application_counts():
     """{source id: bursary-APPLICATION count attributed to that source}.
 
     Counts scholarship *applications* (not the legacy course-selector referral registry, which
-    holds hundreds of non-applicant profiles) by the applicant's raw referral chip
-    (`profile.referral_source`) — the SAME signal the Applications-list Source filter uses —
-    and, since sources Sprint B, only among the applications OF THE SOURCE'S OWN ORGANISATION
-    (a code is unique per organisation). The stored `referred_by_org` FK is deliberately NOT
-    used: it is the referral partner's column, not the bursary answer.
+    holds hundreds of non-applicant profiles) by the source EACH APPLICATION named at submit
+    (`ScholarshipApplication.source`, sources Sprint C — owner's ruling: the answer given on that
+    application, not the student's latest), which is always one of the application's own
+    organisation's sources. The referral partner's `referred_by_org` is never used.
     """
-    from ..models import ReferralSource
     from .. import partner_comms
-    # The tally comes from `partner_comms.chip_tally()`, the SAME definition
+    # The tally comes from `partner_comms.source_tally()`, the SAME field
     # `partner_comms.partner_applications(source)` filters on, so this screen and the partner
     # weekly digest cannot report different numbers (docs/lessons.md: ONE named predicate).
-    tally = partner_comms.chip_tally()
-    return {pk: tally.get((owner, code), 0) for pk, owner, code in
-            ReferralSource.objects.values_list('pk', 'organisation_id', 'code')}
+    return partner_comms.source_tally()
 
 
 class _SourcesBase(_AdminBase):
@@ -210,6 +206,33 @@ class AdminSourcesView(_SourcesBase):
         )
         # A new source joins NO gift (owner, 2026-10-08) — each gift switches it on itself.
         return Response(_one_source_dict(admin, org), status=status.HTTP_201_CREATED)
+
+
+class AdminSourceNamesView(_AdminBase):
+    """GET .../admin/scholarship/source-names/ — `{sources: [{code, name}]}` for the Applications
+    list's Source filter, column and tooltips (sources Sprint C, TD-381 part 4). EVERY role that may
+    open that list may call it — reviewer and QC too, who get 403 on Sources — and it serves names
+    only (never a contact, a count or an id). Fenced like Sources: an organisation's staff get
+    their own organisation's sources (switched-off ones too, so old applicants stay filterable;
+    an organisation-less caller gets none); a super gets every organisation's, narrowed by `?org=`."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if self._b40_scope(admin) == 'none':
+            return self._deny_role()
+        from ..models import ReferralSource
+        if self.has_role(admin, 'super'):
+            org, err = self._org_narrowing(request, admin)
+            if err:
+                return err
+            qs = ReferralSource.objects.all()
+            qs = qs.filter(organisation=org) if org is not None else qs
+        else:
+            qs = ReferralSource.objects.owned_by(admin.owning_organisation_id)
+        return Response({'sources': [{'code': c, 'name': n} for c, n in
+                                     qs.order_by('name', 'pk').values_list('code', 'name')]})
 
 
 class AdminSourceDetailView(_SourcesBase):

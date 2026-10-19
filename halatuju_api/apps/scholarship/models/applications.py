@@ -302,14 +302,23 @@ class ScholarshipApplication(models.Model):
         on_delete=models.SET_NULL, related_name='+',
     )
     # Witness-organisation OVERRIDE (go-live transition, 2026-07-19). The bursary witness
-    # resolution reads override -> profile.referred_by_org -> none. This lets an org_admin
-    # assign a witness for a SOURCELESS student (a private arrangement made outside the
-    # portal) without inventing a referral. NULL = derive from referred_by_org as before.
+    # resolution reads override -> this application's `source` -> none (sources Sprint C; never
+    # the referral partner). This lets an org_admin assign a witness for a SOURCELESS student (a
+    # private arrangement made outside the portal) without inventing a referral.
     # A SOURCE row since sources Sprint B (2026-10-18, same ids). SET_NULL: never deletes the app.
     witness_org = models.ForeignKey(
         'ReferralSource', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='+',
     )
+    # Sources Sprint C (2026-10-19): "Who referred you?" ON THIS APPLICATION, as given at submit
+    # (= `intake_snapshot.profile.referral_source`): a source's code or a fixed choice, '' for none;
+    # `source` is that code's source IN THIS APPLICATION'S ORGANISATION (NULL for a fixed choice).
+    # Written once at submit (`services/intake.py`). Partner emails, Sources counts, the Applications
+    # Source filter and the witness read these. NOT access control. `db_default`: old image inserts.
+    referral_code = models.CharField(max_length=50, blank=True, default='', db_default='',
+                                     db_index=True)
+    source = models.ForeignKey('ReferralSource', null=True, blank=True,
+                               on_delete=models.PROTECT, related_name='applications')
     # Post-award signing — the parent/guardian SURETY's phone-PIN verification, captured
     # in-session just before the bursary signature. ``guarantor_phone`` is the locked
     # number (read from profile.guardians at apply) the PIN was sent to; the stamp marks a

@@ -165,9 +165,11 @@ class Command(BaseCommand):
             contact_email='e2e.student@example.test', contact_phone='012-7776666',
             # The witness organisation is the SOURCE she named (two columns, 2026-10-09).
             guardians=[{'name': guar_name, 'phone': guar_phone}], source=org)
+        # Sources Sprint C: the witness is the source THIS APPLICATION named at submit.
         app = ScholarshipApplication.objects.create(
             cohort=cohort, profile=profile, status='recommended', award_amount=Decimal('3000'),
-            notify_email='e2e.student@example.test',
+            notify_email='e2e.student@example.test', source=org,
+            referral_code=org.code if org is not None else '',
             chosen_programme={'course_name': 'Diploma in Nursing', 'institution': 'Politeknik KL'})
         SponsorProfile.objects.create(application=app, anon_markdown='Determined.', anon_published=True)
         Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)
@@ -222,7 +224,7 @@ class Command(BaseCommand):
                         'Foundation emailed directly (no partner — graceful)')
 
         if org:
-            self._step(5, 'Partner records the witness attestation -> Foundation notified')
+            self._step(5, "A super records the source's witness attestation -> Foundation notified")
             mark = len(mail.outbox)
             bursary.record_witness(ag, org=org, by_name='Partner Admin', witness_name=org.name)
             ag.refresh_from_db()

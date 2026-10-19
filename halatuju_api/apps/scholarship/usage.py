@@ -205,7 +205,7 @@ def sole_organisation_id(org_ids):
     "attribute it to BrightPath" — but it is written as a refusal, not a lookup, for the case
     that is coming:
 
-    ⚠ **A PARTNER DIGEST'S FENCE IS DELIBERATELY GLOBAL** (`partner_comms.chip_tally` —
+    ⚠ **A PARTNER DIGEST'S FENCE IS DELIBERATELY GLOBAL** (`partner_comms.source_tally` —
     the Sources registry spans tenants and the house org's count is the residual). So the
     moment a second organisation exists, one digest can legitimately cover applications from
     two of them, and there is no honest single answer. Guessing would put one tenant's cost on

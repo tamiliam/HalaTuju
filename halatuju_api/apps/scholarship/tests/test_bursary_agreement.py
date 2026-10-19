@@ -103,9 +103,12 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'),
         guardians=[{'name': GUARANTOR_NAME, 'phone': GUARANTOR_PHONE}],
         referred_by_org=org, source=source,
     )
+    # Sources Sprint C: the witness reads the APPLICATION's source (kept at submit), so the named
+    # source goes on the application too, with its code — as the submit writes them.
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='recommended', award_amount=award,
-        notify_email='student@secret.example',
+        notify_email='student@secret.example', source=source,
+        referral_code=source.code if source is not None else '',
         chosen_programme={'course_name': 'Diploma in Nursing', 'institution': 'Politeknik KL'})
     # The student passed the comprehension quiz on THIS version (the runtime lockstep
     # sign_agreement enforces); without it signing would raise comprehension_stale.
@@ -371,17 +374,26 @@ class TestBursaryEndpoints(TestCase):
         app.bursary_agreement.refresh_from_db()
         self.assertEqual(app.bursary_agreement.foundation_signed_by, 'Boss')
 
-    def test_referring_partner_can_witness(self):
+    def test_a_referral_partner_login_can_no_longer_witness(self):
+        # Superseded "referring partner can witness" (sources Sprint C, owner's ruling 2026-10-09:
+        # only a super records a witness, and the witness is never the referral partner).
         org = _cumig()
-        app = self._signed_app(suffix='wok', org=org)
+        app = self._signed_app(suffix='wok', org=org, source=_twin(org))
         PartnerAdmin.objects.create(
             supabase_user_id='partner-1', name='Cik Partner', email='p@cumig.org',
             org=org, role='partner', is_active=True)
         self._auth('partner-1')
         resp = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/bursary-agreement/witness/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertIsNotNone(app.bursary_agreement.__class__.objects.get(id=app.bursary_agreement.id).witness_signed_at)
+        self.assertEqual(resp.status_code, 403)
+        self.assertIsNone(BursaryAgreement.objects.get(id=app.bursary_agreement.id).witness_signed_at)
+
+    def test_an_org_admin_cannot_witness_either(self):
+        app = self._signed_app(suffix='woa')
+        PartnerAdmin.objects.create(
+            supabase_user_id='oa-w', name='OA', email='oa-w@h.org', role='org_admin',
+            owning_organisation=app.owning_organisation, is_active=True)
+        self.assertEqual(self._witness_as('oa-w', app).status_code, 403)
 
     def test_non_referring_partner_cannot_witness(self):
         org = _cumig()
@@ -419,14 +431,21 @@ class TestBursaryEndpoints(TestCase):
         self.assertEqual(self._witness_as('super-2c', app).status_code, 200)
         self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, smc.id)
 
-    def test_two_columns_no_source_leaves_the_referral_partner_as_before(self):
+    def test_no_source_means_no_witness_organisation_even_with_a_referral_partner(self):
+        # Superseded "no source leaves the referral partner as before" (sources Sprint C): a
+        # `?ref=cumig` student who named no source has NO witness organisation — CUMIG's login
+        # is refused, and a super's record names no organisation (never CUMIG's twin).
         cumig = _cumig()
         app = self._signed_app(suffix='w2p', org=cumig)
         PartnerAdmin.objects.create(
             supabase_user_id='partner-2p', name='Cik Partner', email='p2p@cumig.org',
             org=cumig, role='partner', is_active=True)
-        self.assertEqual(self._witness_as('partner-2p', app).status_code, 200)
-        self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, cumig.id)
+        PartnerAdmin.objects.create(
+            supabase_user_id='super-2p', name='Boss', email='boss2p@h.org',
+            is_super_admin=True, role='super', is_active=True)
+        self.assertEqual(self._witness_as('partner-2p', app).status_code, 403)
+        self.assertEqual(self._witness_as('super-2p', app).status_code, 200)
+        self.assertIsNone(BursaryAgreement.objects.get(application=app).witness_org_id)
 
     def test_missing_witness_does_not_block_activation(self):
         # The witness is non-blocking: student + guarantor + Foundation is enough to execute the
@@ -619,7 +638,8 @@ class TestSigningChainNotifications(TestCase):
     def test_org_guarantor_signed_emails_partner_witness(self):
         org = _cumig(contact_email='partner@cumig.org', contact_person='Cik Partner')
         self._super('foundation@h.org')
-        app = _fundable_app(self.cohort, suffix='o1', org=org)
+        # Sources Sprint C: the witness is the source THIS APPLICATION named (CUMIG as a source).
+        app = _fundable_app(self.cohort, suffix='o1', source=_twin(org))
         _add_parent_ic(app)
         _fund(app)
         self.mail.outbox = []
@@ -747,8 +767,8 @@ class TestSigningReminders(TestCase):
         self.addCleanup(self.upload.stop)
         self.addCleanup(self.dl.stop)
 
-    def _signed(self, *, suffix, org=None):
-        app = _fundable_app(self.cohort, suffix=suffix, org=org)
+    def _signed(self, *, suffix, org=None, source=None):
+        app = _fundable_app(self.cohort, suffix=suffix, org=org, source=source)
         _add_parent_ic(app)
         _fund(app)
         _verify_guarantor_phone(app)
@@ -782,7 +802,7 @@ class TestSigningReminders(TestCase):
 
     def test_witness_reminder_after_interval_with_org(self):
         org = _cumig(contact_email='partner@cumig.org')
-        app = self._signed(suffix='r3', org=org)
+        app = self._signed(suffix='r3', source=_twin(org))   # the application's source (Sprint C)
         ag = app.bursary_agreement
         ag.guarantor_signed_at = timezone.now() - timedelta(days=5)
         ag.save(update_fields=['guarantor_signed_at'])

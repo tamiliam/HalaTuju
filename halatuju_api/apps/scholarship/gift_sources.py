@@ -86,6 +86,17 @@ def is_offered(programme, code):
     return offered_sources(programme).filter(code=code).exists()
 
 
+def submitted_source(organisation_id, code):
+    """The SOURCE an application's answer names (sources Sprint C, 2026-10-19): the source with
+    that code owned by the APPLICATION'S organisation — switched on or not, because this records
+    what was answered — or None for blank, a fixed choice, or a code that organisation has no source
+    for. The submit (`services/intake.create_application`) and scholarship 0174's backfill use this
+    one rule, so an application can never be attributed to another organisation's source."""
+    if not code or code in FIXED_CODES:
+        return None
+    return ReferralSource.objects.owned_by(organisation_id).filter(code=code).first()
+
+
 def resolve_changes(raw, programme):
     """Validate a PUT's `sources` map — `{<code>: true|false}` — BEFORE anything is written.
 

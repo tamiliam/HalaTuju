@@ -252,8 +252,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     qualification = serializers.SerializerMethodField()
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
-    # Source (the referring org, chosen at apply) + the course-guide merit, for the list table.
-    referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
+    # Source (THIS application's answer, kept at submit — sources Sprint C) + the merit, for the list.
+    referral_source = serializers.CharField(source='referral_code', read_only=True)
     merit_score = serializers.SerializerMethodField()
     # The student's preferred call language (en/ms/ta/mixed) — drives reviewer language matching.
     call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
@@ -332,7 +332,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     contact_phone = serializers.CharField(source='profile.contact_phone', read_only=True, allow_blank=True)
     contact_email = serializers.CharField(source='profile.contact_email', read_only=True, allow_blank=True)
     preferred_call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
-    referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
+    referral_source = serializers.CharField(source='referral_code', read_only=True)   # this application's
     guardians = serializers.JSONField(source='profile.guardians', read_only=True)
     # Request #26: the parent phone is the student's own, and no consenting call has cleared THIS
     # number (`parent_call.needs_parent_call` — derived live, never stored). The cockpit asks for a call.
@@ -438,10 +438,12 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     documents = AdminApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
-    # Go-live transition (T2): the student's referring organisation (the source) and the
-    # witness-org OVERRIDE. The cockpit shows the witness dropdown for a SOURCELESS student
-    # (referred_by_org is null) so an org_admin can assign one; witness_org is the current
-    # override. Each is {id, code, name} or null.
+    # Go-live transition (T2): THIS application's source (sources Sprint C — never the referral
+    # partner) and the witness-org OVERRIDE. The cockpit shows the witness dropdown for a
+    # SOURCELESS application so an org_admin can assign one. Each is {id, code, name} or null.
+    # `referred_by_org` is the OLD key for the same value, kept one release for the web already
+    # serving (remove in sources Sprint D).
+    source = serializers.SerializerMethodField()
     referred_by_org = serializers.SerializerMethodField()
     witness_org = serializers.SerializerMethodField()
 
@@ -454,7 +456,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state', 'birth_state',
             'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians', 'guardian_needs_call',
-            'referred_by_org', 'witness_org',
+            'source', 'referred_by_org', 'witness_org',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
@@ -639,11 +641,11 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     def _org_dict(org):
         return {'id': org.id, 'code': org.code, 'name': org.name} if org else None
 
+    def get_source(self, obj):
+        return self._org_dict(obj.source)
+
     def get_referred_by_org(self, obj):
-        # Same key and shape; since the two columns (2026-10-09) it is her source, else her
-        # referral partner — the organisation this one column named before (`referring_org`).
-        from apps.courses.referral_links import referring_org
-        return self._org_dict(referring_org(getattr(obj, 'profile', None)))
+        return self._org_dict(obj.source)   # the old key, one release (see the field)
 
     def get_witness_org(self, obj):
         return self._org_dict(obj.witness_org)

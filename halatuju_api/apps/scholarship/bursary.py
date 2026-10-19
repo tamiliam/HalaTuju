@@ -661,15 +661,13 @@ def _applicant_name(application):
 
 def _resolve_witness_org(application):
     """Witness-organisation resolution (go-live transition, 2026-07-19): the admin OVERRIDE on the
-    application (``witness_org``) wins, else the student's referring organisation
-    (``referral_links.referring_org``: her source, else her referral partner), else None — straight to the Foundation countersignature, no
-    witness step. Lets an org_admin assign a witness to a SOURCELESS student without inventing a
+    application (``witness_org``) wins, else the SOURCE this application named at submit
+    (``application.source`` — sources Sprint C: never the referral partner, never the student's
+    later answer or another organisation's source), else None — straight to the Foundation
+    countersignature. Lets an org_admin assign a witness to a SOURCELESS student without inventing a
     referral, and lets one be overridden when the private arrangement differs from the referrer."""
     override = getattr(application, 'witness_org', None)
-    if override is not None:
-        return override
-    from apps.courses.referral_links import referring_org      # two columns, 2026-10-09
-    return referring_org(getattr(application, 'profile', None))
+    return override if override is not None else getattr(application, 'source', None)
 
 
 def notify_after_guarantor_signed(application):
@@ -782,7 +780,7 @@ def distribute_executed_agreement(agreement):
                 student_to, name, programme, lang=lang,
                 link=_student_app_link(application), pdf=pdf_bytes)
             # Witnessing partner contact: the recorded witness org (who actually attested), else
-            # the resolved witness (override -> referral -> none) for the copy.
+            # the resolved witness (override -> the application's source -> none) for the copy.
             org = agreement.witness_org or _resolve_witness_org(application)
             witness_email = getattr(org, 'contact_email', '') if org else ''
             cockpit = _cockpit_link(application)
@@ -851,7 +849,7 @@ def send_signing_reminders(now=None):
     qs = (BursaryAgreement.objects
           .filter(guarantor_signed_at__isnull=False, foundation_signed_at__isnull=True)
           .select_related('application', 'application__profile', 'application__witness_org',
-                          'application__owning_organisation', 'witness_org'))
+                          'application__source', 'application__owning_organisation', 'witness_org'))
     for ag in qs:
         app = ag.application
         if getattr(app, 'status', '') != 'awarded':

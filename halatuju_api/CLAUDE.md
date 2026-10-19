@@ -949,6 +949,13 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
   `courses/0080` (TD-379, the column drop) is IMAGE-FIRST — only after the new revision serves**:
   `docs/scholarship/sources-b-cutover-sql.md` (freeze Sources and gift Configuration between the
   cutover and the deploy). Next free after it: scholarship 0174 / courses 0081.
+- **Each application keeps its own "Who referred you?" (sources Sprint C, BUILT 2026-10-19, NOT LIVE):**
+  `ScholarshipApplication.referral_code` + `.source` (written once at submit from the snapshot,
+  resolved inside the application's own organisation) feed partner emails, Sources counts, the
+  Applications filter and the witness; the witness is never the referral partner and only a super
+  records it; `?ref=` never pre-fills the bursary form. ⚠ `scholarship/0174` is MIGRATE-FIRST:
+  `docs/scholarship/sources-c-cutover-sql.md` (additive; a post-deploy sweep fills the window's rows).
+  Next free after it: scholarship 0175 / courses 0081.
 - **TD-347 when the owner says go** (ruled B: when the parent call is recorded, re-arm a FRESH full
   accept window; the email names the new deadline). ⛔ It must ship before anyone sets
   `BURSARY_AGREEMENT_ENABLED`; before that flip, prompt every awarded student to check the parent phone on

@@ -40,6 +40,9 @@ const refusal = (code?: string) =>
 
 export interface ApplyGate {
   state: ApplyGateState
+  /** "Who referred you?" pre-fill for THIS gift: her own earlier answer to its organisation, never a
+   *  `?ref=` code (sources Sprint C). '' until the gate has answered for the gift in force. */
+  referral: string
   /** A refused SUBMIT carrying one of the gate's own codes: adopt it (true), else false. */
   adopt: (err: unknown) => boolean
 }
@@ -64,13 +67,15 @@ export function applyPageExit(s: {
 
 export function useApplyGate(token: string | null, named: string | null): ApplyGate {
   // The answer, and the code it answers for — so a stale answer is never read for a new gift.
-  const [answer, setAnswer] = useState<{ code: string; state: ApplyGateState } | null>(null)
+  const [answer, setAnswer] = useState<{ code: string; state: ApplyGateState; referral?: string } | null>(null)
 
   useEffect(() => {
     if (!token || named === null) return
     let active = true
     getApplyGate(named, { token })
-      .then((r) => { if (active) setAnswer({ code: named, state: (!r.allowed && refusal(r.reason)) || 'allowed' }) })
+      .then((r) => {
+        if (active) setAnswer({ code: named, state: (!r.allowed && refusal(r.reason)) || 'allowed', referral: r.referral })
+      })
       .catch(() => { if (active) setAnswer({ code: named, state: 'allowed' }) })   // the submit still refuses
     return () => { active = false }
   }, [token, named])
@@ -81,7 +86,7 @@ export function useApplyGate(token: string | null, named: string | null): ApplyG
     return !!hit
   }, [named])
 
-  const state: ApplyGateState = !token ? 'idle'
-    : answer && answer.code === named ? answer.state : 'pending'
-  return { state, adopt }
+  const current = token && answer && answer.code === named ? answer : null
+  const state: ApplyGateState = !token ? 'idle' : current ? current.state : 'pending'
+  return { state, adopt, referral: current?.referral || '' }
 }

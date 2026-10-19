@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import partner_comms, partner_notify
+from apps.scholarship.gift_sources import submitted_source
 from apps.scholarship.models import (
     ApplicantDocument, PartnerEmailLog, PartnerEmailTemplate, ReferralSource,
     ScholarshipApplication, ScholarshipCohort,
@@ -39,7 +40,10 @@ def _org(code, name=None, email='partner@example.org'):
 def _app(cohort, chip, status, n, *, submitted=None):
     prof = StudentProfile.objects.create(
         supabase_user_id=f'pd-{chip}-{status}-{n}', name=f'Student {n}', referral_source=chip)
-    app = ScholarshipApplication.objects.create(cohort=cohort, profile=prof, status=status)
+    # Sources Sprint C: the APPLICATION's own answer attributes it (the submit's rule).
+    app = ScholarshipApplication.objects.create(
+        cohort=cohort, profile=prof, status=status, referral_code=chip,
+        source=submitted_source(cohort.owning_organisation_id, chip))
     if submitted is not None:
         ScholarshipApplication.objects.filter(pk=app.pk).update(submitted_at=submitted)
         app.refresh_from_db()

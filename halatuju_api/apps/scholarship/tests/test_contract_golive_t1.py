@@ -384,9 +384,20 @@ class TestWitnessResolution(TestCase):
         app = self._app('ovr', referred=self.referral, override=self.override)
         self.assertEqual(bursary._resolve_witness_org(app), self.override)
 
-    def test_referral_when_no_override(self):
-        app = self._app('ref', referred=self.referral)
+    def test_the_applications_source_when_no_override(self):
+        # Sources Sprint C: the source THIS APPLICATION named at submit (was: the profile's source,
+        # else the referral partner's twin).
+        app = self._app('src')
+        app.source = self.referral_source
+        app.save(update_fields=['source'])
         self.assertEqual(bursary._resolve_witness_org(app), self.referral_source)
+
+    def test_a_referral_partner_alone_is_never_the_witness(self):
+        # Superseded the Sprint A/B "referral when no override" (owner ruling 2026-10-09, Sprint C):
+        # the witness comes from the source only — a `?ref=` partner, even with a source twin,
+        # witnesses nothing.
+        app = self._app('ref', referred=self.referral)
+        self.assertIsNone(bursary._resolve_witness_org(app))
 
     def test_none_when_neither(self):
         app = self._app('none')
@@ -430,15 +441,18 @@ class TestSourcesAdminAPI(TestCase):
         cls.qc = PartnerAdmin.objects.create(
             supabase_user_id='gl-qc', role='qc', is_active=True,
             owning_organisation=cls.org, name='Qc', email='qc@x.com')
-        # Counts come from bursary APPLICATIONS attributed by referral CHIP
-        # (profile.referral_source) — NOT the referred_by_org FK. One applicant via
-        # src-a → src-a's count is 1; two self-referred applicants (chips that name no
-        # source) are nobody's source — since sources Sprint B the house org is not a source
-        # and no longer carries them as a residual.
+        # Counts come from bursary APPLICATIONS attributed by THEIR OWN answer (sources Sprint C:
+        # `ScholarshipApplication.source`, kept at submit; until then the profile's chip) — NOT
+        # the referred_by_org FK. One applicant via src-a → src-a's count is 1; two self-referred
+        # applicants (fixed choices) are nobody's source — since sources Sprint B the house org
+        # is not a source and no longer carries them as a residual.
+        from apps.scholarship.gift_sources import submitted_source
         for suffix, chip in (('srca', 'src-a'), ('house1', 'halatuju'), ('house2', 'social')):
             a = _fundable_app(cls.cohort, suffix=suffix)
             a.profile.referral_source = chip
             a.profile.save(update_fields=['referral_source'])
+            a.referral_code, a.source = chip, submitted_source(cls.org.id, chip)
+            a.save(update_fields=['referral_code', 'source'])
 
     def setUp(self):
         from rest_framework.test import APIClient

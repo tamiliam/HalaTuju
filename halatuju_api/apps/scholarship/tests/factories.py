@@ -439,6 +439,12 @@ def make_application(stage='submitted', *, outcome=None, cohort=None, student=No
         'declaration_name': student.name,
         'declared_at': now,
     }
+    # Sources Sprint C: the submit keeps her "Who referred you?" answer ON THE APPLICATION, and its
+    # source inside the round's own organisation (`services/intake.create_application`).
+    from apps.scholarship.gift_sources import submitted_source
+    answer = (student.referral_source or '')[:50]
+    fields.update(referral_code=answer,
+                  source=submitted_source(cohort.owning_organisation_id, answer))
 
     # scored — the engine ran silently; status is STILL 'submitted' (S8 delayed reveal).
     if reached('scored'):

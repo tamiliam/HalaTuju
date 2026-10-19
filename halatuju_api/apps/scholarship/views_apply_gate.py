@@ -5,7 +5,8 @@ The apply page asks this BEFORE drawing the form, and the answer is the one the 
 2026-10-05 the web kept its own, stricter copy of the rule (``mustLeaveApplyPage``), which the
 server did not share; the web now keeps none and obeys this.
 
-Answers ``{allowed, reason, application_id}``; ``reason`` is '' / ``application_in_progress`` /
+Answers ``{allowed, reason, application_id, referral}`` (``referral``: the form's "Who referred
+you?" pre-fill, ``apply_gate.earlier_referral`` — sources Sprint C); ``reason`` is '' / ``application_in_progress`` /
 ``already_applied`` and ``application_id`` is the caller's OWN blocking application (or null).
 What each kind of visit is answered is ``apply_gate.verdict_for_visit``'s docstring; this view is
 only the door. In short: a student with an application in play (in ANY organisation, until roadmap
@@ -34,9 +35,13 @@ class ApplyGateView(APIView):
 
     def get(self, request):
         profile = StudentProfile.objects.filter(supabase_user_id=request.user_id).first()
-        verdict = apply_gate.verdict_for_visit(profile, request.query_params.get('programme') or '')
+        code = request.query_params.get('programme') or ''
+        verdict = apply_gate.verdict_for_visit(profile, code)
         return Response({
             'allowed': verdict.allowed,
             'reason': verdict.reason,
             'application_id': verdict.application.id if verdict.application is not None else None,
+            # Sources Sprint C: "Who referred you?" pre-fill — her own earlier answer to THIS
+            # organisation only, never a `?ref=` code ('' when none). Only asked when allowed.
+            'referral': apply_gate.earlier_referral(profile, code) if verdict.allowed else '',
         })

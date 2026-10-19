@@ -89,7 +89,7 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(Q(programme=programme) | Q(cohort__programme=programme))
         status_f = request.GET.get('status')
         bucket_f = request.GET.get('bucket')
-        source_f = request.GET.get('source')   # referring org chosen at apply
+        source_f = request.GET.get('source')   # "Who referred you?" as answered on the application
         assigned_f = request.GET.get('assigned')
         # Free-text search across name / NRIC / phone / email — digits-only for phone+NRIC,
         # and email covers notify_email too (most applicants have no contact_email). Shared
@@ -105,7 +105,8 @@ class AdminApplicationListView(_AdminBase):
         if bucket_f:
             qs = qs.filter(bucket=bucket_f)
         if source_f:
-            qs = qs.filter(profile__referral_source=source_f)
+            # The APPLICATION's own answer, kept at submit (sources Sprint C) — not the profile's.
+            qs = qs.filter(referral_code=source_f)
         # Phase C: ?assigned=me|none|<admin_id>
         if assigned_f == 'me':
             qs = qs.filter(assigned_to=admin)
@@ -135,8 +136,8 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.order_by('-profile__name' if desc else 'profile__name')
             page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'source':
-            # The referring organisation (Source column) lives on the profile.
-            qs = qs.order_by('-profile__referral_source' if desc else 'profile__referral_source')
+            # The Source column: the application's own answer (sources Sprint C).
+            qs = qs.order_by('-referral_code' if desc else 'referral_code')
             page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'status':
             qs = qs.order_by('-status' if desc else 'status')

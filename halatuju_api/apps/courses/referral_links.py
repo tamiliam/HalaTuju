@@ -14,8 +14,9 @@ EVER TOUCHES THE OTHER:
 
 Sources-and-referrals Sprint A built this; Sprint B (2026-10-18) moved sources into their own table
 (`scholarship.ReferralSource`, owned by an organisation — `StudentProfile.source` names it); Sprint C
-moves every reader of the legacy chip (`referral_source`) onto the per-application answer
-(`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
+(2026-10-19) moved every bursary reader of the legacy chip (`referral_source`) onto the APPLICATION's
+own answer (`ScholarshipApplication.referral_code` / `.source`) and made the witness the
+application's source only (`docs/plans/2026-10-09-sources-and-referrals-roadmap.md`).
 
 ⚠ NOT ACCESS CONTROL. The partner role's course-selector list is scoped by `referred_by_org` — that
 is the `partner` role's purpose — and nothing else may use either column as a fence.
@@ -135,10 +136,10 @@ def apply_ref_code(profile, code):
     FIRST TOUCH on both things it may write, so a resend can never move either:
     - `referred_by_org` — only when it is still empty, and only to an active REFERRAL PARTNER. An
       unknown code, a source, a tenant or a switched-off row links nothing.
-    - the legacy `referral_source` chip (kept so its course-selector readers behave as before until
-      Sprint C) — only when it is still empty AND the student has no bursary application. The
-      bursary answer owns the chip once she has applied, so a `?ref` can never overwrite it or move
-      what the bursary counts and partner emails see.
+    - the legacy `referral_source` chip (kept for the course-selector partner dashboard until
+      Sprint D; since Sprint C no bursary surface reads it — each application keeps its own
+      answer) — only when it is still empty AND the student has no bursary application. The
+      bursary answer owns the chip once she has applied, so a `?ref` can never overwrite it.
     It NEVER touches `source`. Returns the fields changed."""
     code = _clean_code(code)
     if not code:
@@ -165,43 +166,17 @@ def _source_model():
 
 
 def source_twin(partner_id):
-    """The SOURCE row that is the same organisation as this `partner_organisations` row, or None.
+    """The SOURCE row copied from this `partner_organisations` row, or None.
 
     Sources Sprint B (2026-10-18) copied every source out of `partner_organisations` KEEPING ITS ID,
-    so a row that was both (CUMIG) has a twin with the same id AND the same code. Both must match:
-    ids allotted after the copy come from two separate sequences, so an id alone could pair two
-    unrelated organisations. A BRIDGE for the witness readers below until Sprint C reads the source
-    only (owner: the witness is never the referral partner)."""
+    so a source's old row has a twin with the same id AND the same code. Both must match: ids
+    allotted after the copy come from two separate sequences, so an id alone could pair two
+    unrelated organisations. Read ONLY by `tenant_invite_refusal` above (is this a source's old
+    row?). Sprint C (2026-10-19) retired the witness bridge that also read it: the witness is the
+    application's source, never the referral partner, so nothing pairs CUMIG's two rows any more."""
     from .models import PartnerOrganisation
     if partner_id is None:
         return None
     return _source_model().objects.filter(
         pk=partner_id,
         code__in=PartnerOrganisation.objects.filter(pk=partner_id).values('code')).first()
-
-
-def is_same_organisation(partner_id, source):
-    """Is the `partner_organisations` row `partner_id` the same organisation as `source`? Only its
-    seeded twin is (`source_twin`): same id and same code."""
-    from .models import PartnerOrganisation
-    if partner_id is None or source is None or partner_id != source.pk:
-        return False
-    return PartnerOrganisation.objects.filter(pk=partner_id, code=source.code).exists()
-
-
-def referring_org(profile):
-    """The ONE SOURCE the witness chain and the cockpit read as "who referred this student", until
-    Sprint C splits them: the SOURCE she named on the bursary form, else her REFERRAL PARTNER's
-    source twin (`source_twin`) — always a `ReferralSource` or None since Sprint B, because the
-    witness columns name the sources table.
-
-    Before the two columns existed, `referred_by_org` held whichever of the two was written last,
-    and three readers used it: the witness request (`bursary._resolve_witness_org`), the witness
-    authority check (`views_admin/graduation.py`) and the cockpit's `referred_by_org` (its referral
-    pill and the "sourceless" witness dropdown). This answer keeps each of them where it was for every
-    student whose bursary answer named a source. Sprint C makes the witness read the source only
-    (owner: never the referral partner)."""
-    if profile is None:
-        return None
-    return (getattr(profile, 'source', None)
-            or source_twin(getattr(profile, 'referred_by_org_id', None)))

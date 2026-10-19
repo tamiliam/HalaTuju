@@ -165,11 +165,19 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
         profile.name = signed
         profile.save(update_fields=['name', 'updated_at'])
 
+    # Sources Sprint C: THIS application's "Who referred you?" is the answer the snapshot freezes,
+    # and its source is resolved inside the application's OWN organisation — never the profile's
+    # later answer, never another organisation's source (the same rule as scholarship 0174).
+    from .. import gift_sources
+    snapshot = build_intake_snapshot(profile, data)
+    answer = (snapshot['profile'].get('referral_source') or '')[:50]
     application = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile,
         locale=lang if lang in ('en', 'ms', 'ta') else 'en',
         notify_email=to_email or '',
-        intake_snapshot=build_intake_snapshot(profile, data),
+        intake_snapshot=snapshot,
+        referral_code=answer,
+        source=gift_sources.submitted_source(getattr(cohort, 'owning_organisation_id', None), answer),
         declared_at=timezone.now() if signed else None,
         **app_fields,
     )

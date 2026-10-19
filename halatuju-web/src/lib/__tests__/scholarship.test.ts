@@ -167,7 +167,9 @@ describe('profileToApplyDefaults', () => {
     expect(d.name).toBe('Priya Devi')
     expect(d.school).toBe('SMK Taman Desa')
     expect(d.nric).toBe('080101-14-1234')
-    expect(d.referringOrg).toBe('cumig')
+    // Sources Sprint C (owner's ruling): the profile's chip — where a `?ref=` code lands — never
+    // pre-fills "Who referred you?" (was 'cumig'); the page seeds it from the apply gate instead.
+    expect(d.referringOrg).toBe('')
     expect(d.homeState).toBe('Selangor')
     expect(d.phone).toBe('012-345 6789')
     // My Family

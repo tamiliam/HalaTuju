@@ -234,6 +234,9 @@ export interface ApplyGateAnswer {
   reason: '' | 'application_in_progress' | 'already_applied'
   /** Her OWN application that blocks, or null. */
   application_id: number | null
+  /** "Who referred you?" pre-fill: her own earlier answer to THIS organisation, never a `?ref=`
+   *  code (sources Sprint C). '' when none; absent from an api not yet redeployed. */
+  referral?: string
 }
 
 /** SIGNED-IN — asked before the form. `programme` is the code the URL names ('' = a bare visit,

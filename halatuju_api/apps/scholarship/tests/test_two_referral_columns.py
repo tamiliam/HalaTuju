@@ -310,45 +310,43 @@ class TestTheReferralPartnerMarker(TestCase):
                          {*gift_sources.FIXED_CODES, partner_comms.HOUSE_ORG_CODE})
 
 
-class TestTheWitnessReadsTheSameOrganisationAsBefore(_World):
-    def test_the_source_wins_then_the_referral_partner_then_nothing(self):
-        """Since sources Sprint B the answer is always a SOURCE row: the referral partner's is its
-        twin — the same organisation, the same id and code the witness columns named before."""
+class TestTheWitnessIsTheApplicationsSourceOnly(_World):
+    """Superseded "the witness reads the same organisation as before" (Sprint A: source, else the
+    referral partner; Sprint B: the partner's source twin). Sources Sprint C, owner's ruling
+    2026-10-09: the witness comes from the SOURCE the application named, never the referral partner
+    — so `referring_org` and the twin pairing are gone."""
+
+    def test_the_source_wins_and_the_referral_partner_is_never_the_witness(self):
         from apps.scholarship.bursary import _resolve_witness_org
-        both = make_student(source=self.smc, referred_by_org=self.cumig)
-        partner_only = make_student(referred_by_org=self.cumig)
+        both = make_student(referral_source='smc', source=self.smc, referred_by_org=self.cumig)
+        partner_only = make_student(referral_source='', referred_by_org=self.cumig)
         neither = make_student()
-        for student, want in ((both, self.smc), (partner_only, self.cumig_source), (neither, None)):
+        for student, want in ((both, self.smc), (partner_only, None), (neither, None)):
             with self.subTest(want=getattr(want, 'code', None)):
-                app = make_application(cohort=make_cohort(), student=student)
-                self.assertEqual(referral_links.referring_org(student), want)
+                app = make_application(cohort=make_cohort(programme=self.gift), student=student)
                 self.assertEqual(_resolve_witness_org(app), want)
-        self.assertEqual(self.cumig_source.pk, self.cumig.pk)
+        self.assertEqual(self.cumig_source.pk, self.cumig.pk)    # the twin exists, and is unused
         override_source = make_source(self.tenant, 'wit')
-        override = make_application(cohort=make_cohort(), student=both,
+        override = make_application(cohort=make_cohort(programme=self.gift), student=both,
                                     witness_org=override_source)
         self.assertEqual(_resolve_witness_org(override), override_source)
 
-    def test_a_referral_partner_without_a_source_twin_witnesses_nothing(self):
-        """A referral partner that was never a source (none today) has no twin, so it is no
-        witness — Sprint C makes that the rule for every student (owner: never the partner)."""
-        lone = _org('lone', partner=True)
-        self.assertIsNone(referral_links.referring_org(make_student(referred_by_org=lone)))
+    def test_the_bridge_is_gone(self):
+        self.assertFalse(hasattr(referral_links, 'referring_org'))
+        self.assertFalse(hasattr(referral_links, 'is_same_organisation'))
 
     def test_an_id_alone_never_pairs_two_organisations(self):
         """Ids after the copy come from two sequences, so a source and a partner row may share
-        one by chance: only the same id AND code is a twin."""
+        one by chance: only the same id AND code is a twin (`source_twin` is still read by the
+        invite refusal)."""
         from django.db.models import Max
         from apps.scholarship.models import ReferralSource
         shared = 1000 + max(PartnerOrganisation.objects.aggregate(m=Max('pk'))['m'] or 0,
                             ReferralSource.objects.aggregate(m=Max('pk'))['m'] or 0)
         partner = PartnerOrganisation.objects.create(pk=shared, code='pair-p', name='P',
                                                      is_referral_partner=True)
-        stranger = make_source(self.tenant, 'stranger', pk=shared)     # same id, another code
+        make_source(self.tenant, 'stranger', pk=shared)     # same id, another code
         self.assertIsNone(referral_links.source_twin(partner.pk))
-        self.assertFalse(referral_links.is_same_organisation(partner.pk, stranger))
-        student = make_student(referred_by_org=partner)
-        self.assertIsNone(referral_links.referring_org(student))
 
 
 class TestWhatTheImageAlreadyServingNeeds(_World):
@@ -376,8 +374,10 @@ class TestWhatTheImageAlreadyServingNeeds(_World):
         self.assertEqual(app.intake_snapshot['profile']['referral_source'], 'smc')
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
         data = AdminApplicationDetailSerializer().get_referred_by_org(app)
-        # Same key, same shape; the value is the SOURCE she named (her referring organisation).
+        # Same key, same shape; the value is the SOURCE this application named (sources Sprint C:
+        # the new `source` key carries it too, and the old key stays one release).
         self.assertEqual(data, {'id': self.smc.id, 'code': 'smc', 'name': 'SMC'})
+        self.assertEqual(AdminApplicationDetailSerializer().get_source(app), data)
 
     def test_the_profile_payload_still_serves_the_chip(self):
         student = make_student(referral_source='cumig', referred_by_org=self.cumig)

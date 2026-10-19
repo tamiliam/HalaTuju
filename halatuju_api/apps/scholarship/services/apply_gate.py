@@ -151,3 +151,26 @@ def verdict_for_visit(profile, programme_code=''):
     except AmbiguousOpenCohort as exc:
         return _over_rounds(apps, ScholarshipCohort.objects.filter(code__in=exc.codes))
     return verdict_in(apps, cohort) if cohort is not None else ApplyVerdict()
+
+
+def earlier_referral(profile, programme_code=''):
+    """The apply form's "Who referred you?" PRE-FILL (sources Sprint C, owner's ruling 2026-10-09):
+    the answer HER OWN latest application to THIS round's organisation gave, or ''.
+
+    Never the profile's chip — a `?ref=` code lands there on first touch, and a `?ref=` never
+    pre-fills the bursary form — and never an answer she gave another organisation. Only for the
+    open round this visit names (or a bare visit's one open round); several open, none, or no
+    profile → ''. The form still clears a code the gift no longer offers."""
+    from .errors import AmbiguousOpenCohort
+    from .intake import resolve_open_cohort
+    if profile is None:
+        return ''
+    try:
+        cohort = resolve_open_cohort(programme_code=(programme_code or '').strip())
+    except AmbiguousOpenCohort:
+        return ''
+    org_id = getattr(cohort, 'owning_organisation_id', None)
+    if org_id is None:
+        return ''
+    return (ScholarshipApplication.objects.filter(profile=profile, owning_organisation_id=org_id)
+            .order_by('-submitted_at', '-id').values_list('referral_code', flat=True).first()) or ''

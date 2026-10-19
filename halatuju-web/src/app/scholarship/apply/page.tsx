@@ -179,6 +179,14 @@ export default function ScholarshipApplyPage() {
       populatedRef.current = true
     }
   }, [profile])
+  // "Who referred you?" is pre-filled ONCE, only from her own earlier answer to THIS organisation
+  // (the gate's `referral`) — never a `?ref=` code (sources Sprint C) — and never over a choice made.
+  const referralSeeded = useRef(false)
+  useEffect(() => {
+    if (referralSeeded.current || !gate.referral || !populatedRef.current) return
+    referralSeeded.current = true
+    setForm((p) => (p.referringOrg ? p : { ...p, referringOrg: gate.referral }))
+  }, [gate.referral, profile])
 
   // Plans step. SPM leavers: one eligibility call feeds the pathway dropdown + course
   // picker (pathway_stats + eligible_courses), and /calculate/pathways/ feeds the eligible

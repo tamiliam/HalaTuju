@@ -316,18 +316,20 @@ class TestThePageCanAsk(TestCase):
 
     def test_nothing_held_is_allowed(self):
         self.assertEqual(self._ask(self.gift.code),
-                         {'allowed': True, 'reason': '', 'application_id': None})
+                         {'allowed': True, 'reason': '', 'application_id': None, 'referral': ''})
 
     def test_in_play_names_her_own_application(self):
         app = _build('profile_complete', self.old, self.student)
         self.assertEqual(self._ask(self.gift.code),
-                         {'allowed': False, 'reason': IN_PROGRESS, 'application_id': app.id})
+                         {'allowed': False, 'reason': IN_PROGRESS, 'application_id': app.id,
+                          'referral': ''})
         self.assertEqual(self._ask()['reason'], IN_PROGRESS)     # the one open round, bare
 
     def test_same_round_finished_is_already_applied(self):
         app = _build('rejected', self.new, self.student)
         self.assertEqual(self._ask(self.gift.code),
-                         {'allowed': False, 'reason': ALREADY_APPLIED, 'application_id': app.id})
+                         {'allowed': False, 'reason': ALREADY_APPLIED, 'application_id': app.id,
+                          'referral': ''})
 
     def test_another_students_applications_are_not_hers(self):
         _build('active', self.old, make_student())
@@ -388,7 +390,8 @@ class TestEveryVisitOfAnInPlayStudent(TestCase):
         for code in self._codes():
             with self.subTest(code=code):
                 self.assertEqual(self._ask(code), {
-                    'allowed': False, 'reason': IN_PROGRESS, 'application_id': app.id})
+                    'allowed': False, 'reason': IN_PROGRESS, 'application_id': app.id,
+                    'referral': ''})    # sources Sprint C: no pre-fill when refused
 
     def test_every_in_play_status_on_her_closed_gift(self):
         for status in sorted(IN_PLAY_STATUSES):

@@ -170,9 +170,11 @@ export interface AdminScholarshipDetail {
   notify_email: string
   verified_email: string
   preferred_call_language: string
-  referral_source: string | null
-  // Go-live transition (T2): the referring organisation (source) + the witness-org override.
-  // referred_by_org null = sourceless (the cockpit then offers the witness dropdown).
+  referral_source: string | null   // THIS application's answer, kept at submit (sources Sprint C)
+  // THIS application's source (sources Sprint C) + the witness-org override; source null =
+  // sourceless (the cockpit then offers the witness dropdown). Optional: an api not yet redeployed
+  // sends only `referred_by_org`, the old key for the same value (kept one release).
+  source?: { id: number; code: string; name: string } | null
   referred_by_org: { id: number; code: string; name: string } | null
   witness_org: { id: number; code: string; name: string } | null
   guardians: Array<{ name?: string; phone?: string; relationship?: string }>

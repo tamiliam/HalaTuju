@@ -92,7 +92,8 @@ class _BursaryAdminBase(_AdminBase):
     def _agreement(self, pk):
         from ..models import BursaryAgreement
         return BursaryAgreement.objects.select_related(
-            'application', 'application__profile', 'witness_org').filter(application_id=pk).first()
+            'application', 'application__profile', 'application__witness_org',
+            'application__source', 'witness_org').filter(application_id=pk).first()
 
 
 class AdminBursaryCountersignView(_BursaryAdminBase):
@@ -116,34 +117,26 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
 
 
 class AdminBursaryWitnessView(_BursaryAdminBase):
-    """POST — the partner organisation's (non-blocking) witness attestation. Allowed for
-    a PartnerAdmin whose org == the application's referring org (else 403); a super may
-    also witness. This NEVER blocks the award lifecycle — it is a record only."""
+    """POST — record the source's (non-blocking) witness attestation. SUPER-ONLY (sources Sprint
+    C, owner's ruling 2026-10-09: "only a super records a witness" until sources have logins). The
+    witness is the APPLICATION's witness organisation — the override, else the source that
+    application named (`bursary._resolve_witness_org`) — never the referral partner. This NEVER
+    blocks the award lifecycle — it is a record only."""
 
     def post(self, request, pk):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        # The grandfathered "referring partner may witness" door is CLOSED: a `partner` login is a
+        # REFERRAL PARTNER's, which is never the witness, and a source has no login yet.
+        if not (admin.is_super_admin or self.has_role(admin, 'super')):
+            return self._deny_role()
         agreement = self._agreement(pk)
         if agreement is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        profile = agreement.application.profile
-        # tenancy: GRANDFATHERED exception — witness authority is REFERRAL semantics
-        # (the org that referred the student attests), which is orthogonal to the
-        # ownership fence. This is the ONE place `admin.org`/`referred_by_org` is
-        # intentionally used for authorisation. A non-blocking record only.
-        # Two columns (2026-10-09): her source, else her referral partner — the organisation the one
-        # `referred_by_org` column named before; Sprint C makes it the source only, super only.
-        # Since sources Sprint B `org` is a SOURCE row and `admin.org` a `partner_organisations` row:
-        # they are the same organisation only as seeded twins (same id AND code).
-        from apps.courses.referral_links import is_same_organisation, referring_org
-        org = referring_org(profile)
-        is_super = bool(admin.is_super_admin or self.has_role(admin, 'super'))
-        is_referring_partner = is_same_organisation(admin.org_id, org)
-        if not (is_super or is_referring_partner):
-            return self._deny_role()
         from .. import bursary
         from ..serializers import BursaryAgreementSerializer
+        org = bursary._resolve_witness_org(agreement.application)
         bursary.record_witness(
             agreement, org=org,
             by_name=getattr(admin, 'name', '') or '',

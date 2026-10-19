@@ -12,7 +12,7 @@ import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
   getAssignableAdmins,
-  getSources,
+  getSourceNames,
   assignApplication,
   DEFAULT_ADMIN_PAGE_SIZE,
   type AdminScholarshipListData,
@@ -187,12 +187,12 @@ export default function AdminScholarshipList() {
       .catch(() => {})
   }, [token, canAssign])
 
-  // The Source filter and tooltips (per-gift sources, 2026-10-08): the registry's own names, read
-  // once — NOT added to the list endpoint (pinned at 4 queries). Roles the Sources endpoint refuses
-  // (reviewer, qc…) get the fixed three and the bare code; nothing renders a raw message key.
+  // The Source filter and tooltips: the caller's organisation's source names, read once — NOT added
+  // to the list endpoint (pinned at 4 queries). Since sources Sprint C every list role may read
+  // them (reviewer and QC included); on a failure the fixed three and the bare code still render.
   useEffect(() => {
     if (!token) return
-    getSources({ token })
+    getSourceNames({ token })
       .then((d) => setSourceNames(Object.fromEntries(d.sources.map((s) => [s.code, s.name]))))
       .catch(() => {})
   }, [token])

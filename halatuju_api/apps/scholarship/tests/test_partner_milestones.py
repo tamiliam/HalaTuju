@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import partner_comms, partner_notify
+from apps.scholarship.gift_sources import submitted_source
 from apps.scholarship.models import (
     PartnerEmailLog, PartnerEmailTemplate, ReferralSource, ScholarshipApplication,
     ScholarshipCohort,
@@ -49,7 +50,10 @@ def _org(code, name=None, email='partner@example.org', owner=None):
 def _app(cohort, chip, status, n):
     prof = StudentProfile.objects.create(
         supabase_user_id=f'pm-{chip}-{status}-{n}', name=f'Student {n}', referral_source=chip)
-    return ScholarshipApplication.objects.create(cohort=cohort, profile=prof, status=status)
+    # Sources Sprint C: the APPLICATION's own answer attributes it (the submit's rule).
+    return ScholarshipApplication.objects.create(
+        cohort=cohort, profile=prof, status=status, referral_code=chip,
+        source=submitted_source(cohort.owning_organisation_id, chip))
 
 
 def _seed():

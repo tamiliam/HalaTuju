@@ -265,13 +265,14 @@ class TestPartnerAndSponsorMailBillsTheTenant(TestCase):
             organisation=cls.owner_org, code='bp2-flagship', name_en='BrightPath Bursary')
         cohort = make_cohort(programme=cls.programme, code='cbp2', name='B40', year=2026,
                              owning_organisation=cls.owner_org)
-        # The referral CHIP lives on the PROFILE (partner_comms.CHIP_FIELD =
-        # 'profile__referral_source'), which is what makes these the referrer's students
-        # while the APPLICATION still belongs to the organisation running the programme.
+        # The APPLICATION's own answer (sources Sprint C: `partner_comms.SOURCE_FIELD`) is what
+        # makes these the referrer's students, while the APPLICATION still belongs to the
+        # organisation running the programme. (Until Sprint C it was the profile's chip.)
         prof = make_student(supabase_user_id='pa-1', name='Priya',
                             referral_source=cls.referrer.code)
         cls.app = make_application('shortlisted', cohort=cohort, student=prof,
-                                   notify_email='stu@example.com')
+                                   notify_email='stu@example.com',
+                                   referral_code=cls.referrer.code, source=cls.referrer)
 
     def test_a_partner_digest_bills_the_STUDENTS_owner_not_the_recipient(self):
         from apps.scholarship import partner_notify
