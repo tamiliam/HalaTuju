@@ -18,6 +18,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 
 - 2026-10-19 request #39 Sprint 1 (staff permissions foundation + invite message) — 89537722 ffef65d2 2a5fba2b a67c905b 9b3ed340 69a71cd3
 - 2026-10-19 request #39 Sprint 2 (Finance approves payment runs; org admin fallback) — 96237436 25b2785f e9bf071d 3622cb9c 9234690d
+- 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a
 
 ## Reviews
 
