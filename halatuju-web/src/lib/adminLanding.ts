@@ -15,6 +15,8 @@ export interface AdminRoleLike {
   role?: string
   is_super_admin?: boolean
   reviewer_profile_complete?: boolean
+  /** #39 S3 review fix 3: the served permissions, so the landing matches the menu. */
+  permissions?: readonly string[] | null
 }
 
 /**

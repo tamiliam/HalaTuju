@@ -8,13 +8,15 @@
  * only catalogue keys, so a key renamed on one side cannot leave a preset pointing at nothing.
  */
 import { STAFF_PERMISSIONS, TEAM_ROLES, admitsRow, hasPerm } from '@/lib/staffPermissions'
-import { NAV_ITEMS, ROLE_NAMES, canAccess } from '@/lib/navigation'
+import { NAV_ITEMS, ROLE_NAMES, canAccess, defaultRoute } from '@/lib/navigation'
 import { pySeq, readApi } from '@/test/apiSource'
 
 const SRC = readApi('apps/courses/staff_permissions.py')
 const apiKeys = pySeq(SRC, 'CATALOGUE')
 const leadTier = pySeq(SRC, 'LEAD_TIER')
 const teamRoles = pySeq(SRC, 'TEAM_ROLES')
+const STAFF_PRESETS_FOR = (role: string): string[] =>
+  presets[role] ?? (role === 'org_admin' ? leadTier : role === 'super' ? apiKeys : [])
 
 /** The `PRESETS = { 'role': (...), ... }` dict, as role -> keys. */
 const presets = (() => {
@@ -118,3 +120,21 @@ describe('admitsRow — the registry rows that read permissions (#39 S3)', () =>
     expect(canAccess('/admin/spending', 'admin', undefined)).toBe(true)
   })
 })
+
+describe('the landing follows the served permissions, like the menu (#39 S3 review fix 3)', () => {
+  const sets: Array<[string, string[]]> = [
+    ['reviewer', ['review', 'spending']], ['reviewer', []], ['finance', ['payments_approve', 'review']],
+    ['finance', []], ['admin', ['see_all', 'payments_prepare']], ['qc', ['see_all']],
+  ]
+  test.each(sets)('a %s holding %j lands somewhere that set may open', (role, permissions) => {
+    const href = defaultRoute({ role, permissions })
+    expect(canAccess(href, role as never, permissions)).toBe(true)
+  })
+
+  test('every preset, given the list the server serves it, lands where it always did', () => {
+    for (const role of ROLE_NAMES) {
+      expect(defaultRoute({ role, permissions: STAFF_PRESETS_FOR(role) })).toBe(defaultRoute({ role }))
+    }
+  })
+})
+

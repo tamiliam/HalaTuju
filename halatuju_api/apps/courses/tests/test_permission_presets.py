@@ -333,6 +333,17 @@ GOLDEN = {
 }
 
 
+#: Sprint 3 review fix 2 — the answers a LEGACY super (`is_super_admin=True`, role 'reviewer') gave
+#: before Sprint 3 that differ now: gate -> (before, why). Production has no such row (2026-10-19).
+LEGACY_FLAG_MOVED = {
+    'org_admin_may_assign_to': (True, 'before S3 the org_admin target rule read role == reviewer, '
+                                      'so a same-organisation legacy super with role reviewer could '
+                                      'be assigned; may_assign_to says "never a super", which is what '
+                                      'its docstring always promised (the assignable list already '
+                                      'left every flagged super out).'),
+}
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class GoldenTable(TestCase):
     """One person per role in one organisation; each row's probe asks the REAL gate."""
@@ -632,6 +643,23 @@ class GoldenTable(TestCase):
                 self.assertEqual(differs, set(row.get('diverges', {})),
                                  f'{gate}: the permission rule and today disagree for {sorted(differs)}; '
                                  f'declared: {sorted(row.get("diverges", {}))}')
+
+    def test_a_legacy_super_flag_on_a_team_role_answers_as_a_super(self):
+        """Sprint 3 review fix 2. `is_super_admin=True` with a role other than 'super' (the legacy
+        shape) is a SUPER to every gate here, exactly as `has_role` treated it before #39 — with ONE
+        answer that moved, declared in `LEGACY_FLAG_MOVED`. Production (read by the lead,
+        2026-10-19): NO row has the flag with another role, so nobody is affected; this row exists
+        so the shape can never drift silently."""
+        from django.utils import timezone
+        legacy = make_admin('reviewer', owning_org=self.org, super_admin=True)
+        PartnerAdmin.objects.filter(pk=legacy.pk).update(first_seen_at=timezone.now())
+        legacy.refresh_from_db()
+        for gate, row in GOLDEN.items():
+            with self.subTest(gate=gate):
+                got = getattr(self, f'probe_{gate}')(legacy)
+                self.assertEqual(got, row['today']['super'], f'{gate}: a legacy-flag reviewer')
+                if gate in LEGACY_FLAG_MOVED:
+                    self.assertNotEqual(got, LEGACY_FLAG_MOVED[gate][0])
 
     def test_the_lone_member_probe_restores_the_organisation(self):
         # The lone-member rows move a person; the other rows must not see it. (Sprint 2: finance no

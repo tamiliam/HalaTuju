@@ -209,6 +209,38 @@
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/requests/::GET::super-narrowed-6-rows",
       "value": 7
+    },
+    {
+      "on": "2026-10-19",
+      "by": "request #39 Sprint 3 review fix 5",
+      "why": "Request #39 Sprint 3 review (nit 5): the staff lists whose membership reads permissions, as an org_admin at 2 vs 5 staff with half on a saved custom set. staff_permissions.team_holding reads the custom rows in ONE query whatever their number, so the two readings EQUAL: a person costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/assignable-admins/::GET::2-staff",
+      "value": 6
+    },
+    {
+      "on": "2026-10-19",
+      "by": "request #39 Sprint 3 review fix 5",
+      "why": "Request #39 Sprint 3 review (nit 5): the staff lists whose membership reads permissions, as an org_admin at 2 vs 5 staff with half on a saved custom set. staff_permissions.team_holding reads the custom rows in ONE query whatever their number, so the two readings EQUAL: a person costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/assignable-admins/::GET::5-staff",
+      "value": 6
+    },
+    {
+      "on": "2026-10-19",
+      "by": "request #39 Sprint 3 review fix 5",
+      "why": "Request #39 Sprint 3 review (nit 5): the staff lists whose membership reads permissions, as an org_admin at 2 vs 5 staff with half on a saved custom set. staff_permissions.team_holding reads the custom rows in ONE query whatever their number, so the two readings EQUAL: a person costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/reviewers/::GET::2-staff",
+      "value": 6
+    },
+    {
+      "on": "2026-10-19",
+      "by": "request #39 Sprint 3 review fix 5",
+      "why": "Request #39 Sprint 3 review (nit 5): the staff lists whose membership reads permissions, as an org_admin at 2 vs 5 staff with half on a saved custom set. staff_permissions.team_holding reads the custom rows in ONE query whatever their number, so the two readings EQUAL: a person costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/reviewers/::GET::5-staff",
+      "value": 6
     }
   ],
   "_history": [

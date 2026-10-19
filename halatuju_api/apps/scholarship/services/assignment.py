@@ -37,9 +37,17 @@ R1_SUPER_TARGET_ROLES = ('admin', 'qc', 'org_admin')
 
 
 def is_review_target(admin):
-    """May ``admin`` hold a case at all: `review`, or a role the R1 super override keeps. No
-    active / pause check here — `_can_review` and `scheduling._can_review` add what each needs."""
-    return admin.has_perm('review') or getattr(admin, 'role', '') in R1_SUPER_TARGET_ROLES
+    """May ``admin`` hold a case at all: `review`, or a role the R1 super override keeps WHO CAN
+    STILL OPEN THE CASE (`see_all`). No active / pause check here — `_can_review` and
+    `scheduling._can_review` add what each needs.
+
+    ⚠ `see_all` ON THE OVERRIDE (Sprint 3 review fix 1): a custom-set admin / qc WITHOUT `see_all`
+    and without `review` has `_b40_scope` 'none', so a case handed to them would be STRANDED — they
+    could not open it while the nudges and emails still named the student to them. Every preset in
+    the R1 roles holds `see_all`, so the presets answer exactly as before (the golden table)."""
+    if admin.has_perm('review'):
+        return True
+    return getattr(admin, 'role', '') in R1_SUPER_TARGET_ROLES and admin.has_perm('see_all')
 
 
 def may_assign_to(caller, target):

@@ -14,6 +14,23 @@ Built on branch `perm-s3` (base `09b8766e`, Sprints 1-2 live). **Not pushed, not
 - **Tests:** golden table +6 rows (`read_assigned_file`, `read_unassigned_file`, `spending_flags`, `spending_category_write`, `assignable_flag_for_org_admin`, `assignable_flag_for_super`; the four that existed before S3 were run green on the unconverted tree), the Reviewers-tab row's divergence resolved by the owner's ruling. New `test_permission_combinations.py` (22): Reviewer + Spending, Finance + Review (assigned file 200, unassigned 403, list assigned-only, funding-summary key set unchanged, on the Reviewers tab, pausable, assignable), Admin minus Spending, QC without `see_all`, Finance without Approve (the fallback takes it), and the safety rules for custom sets (no self-QC, maker ≠ approver, assignment only to `review` holders). Web: `staffPermissionsDrift` gains `TEAM_ROLES` both ways and a preset-parity sweep of every `perms` row × role; `officerGateDrift` reads `may_assign_to` and the served flag; the cockpit harness serves each role's preset `permissions` (read from the api, `src/test/staffPresets.ts`) and two custom-set QC cases.
 - **Strings:** none added. Bundle median 228.640 → 228.813 kB (code only, the menu predicate on the admin routes; 0.2 kB under the 229 kB line, and the tool warns the next heavier route takes the median with it).
 - Docs: decisions.md; role-matrix (header: S3 changed no cell); `.claude/ARCHITECTURE_MAP.md`; the roadmap's as-built note. Guide/FAQ unchanged (nothing visible changed).
+- **Review fixes (adversarial review, 2026-10-19 — SHIP AFTER FIXES):**
+  1. (medium) **The R1 super override now needs `see_all`:** `is_review_target` = `review`, or an R1
+     role (admin / qc / org_admin) that still holds `see_all`. A custom-set admin / qc with neither
+     could otherwise be handed a case their scope cannot open (stranded, while nudges named the
+     student). The served `assignable` follows (a super's flag is `is_review_target`). Presets
+     unchanged (every R1 preset holds `see_all`).
+  2. (low) **Golden row for the legacy super flag:** `is_super_admin=True` with role `reviewer`
+     answers every gate as a super; the one moved answer (an org_admin could assign a same-org
+     legacy super with role reviewer before S3; `may_assign_to` says never a super) is declared in
+     `LEGACY_FLAG_MOVED`. Production has no such row (lead, 2026-10-19).
+  3. (low) **`defaultRoute` passes the served permissions to `canSee`**, so the landing matches the
+     menu for a custom set (line-neutral; `AdminRoleLike` gains `permissions`).
+  4. (low) The reviewer-detail `mayPause` stays on role; S4 must align it with the server.
+  5. (nit) Org-fence tests for custom-set holders (org A vs org B: `_scoped_application`,
+     `_can_review_app` / `_require_qc` with `qc`, the assignable list, the Reviewers tab); the two
+     staff lists joined `test_query_budgets.py` (4 admitted records, 6 queries flat at 2 and 5 staff).
+  After the fixes: api 8524 passed / 3 skipped; web 4300 tests; bundle median 228.833 kB (0.2 kB under 229).
 
 ## Request #39, Sprint 2 of 4 — Finance approves payment runs - 2026-10-19
 

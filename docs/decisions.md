@@ -14320,7 +14320,8 @@ SQL update).
    `review` → only those assigned, neither → none. `qc` → the QC gate and org-wide writes. Every
    reader of `_scoped_application` / `_require_app_write` / `_require_qc` follows without change.
 2. **Who may hold a case is ONE predicate, `services.is_review_target`:** `review`, plus the R1 super
-   override `R1_SUPER_TARGET_ROLES` (admin, qc, org_admin), which replaces `REVIEW_ROLES`. Assignment,
+   override `R1_SUPER_TARGET_ROLES` (admin, qc, org_admin) **for someone who still holds `see_all`**
+   (review fix 1: never hand a case to someone who cannot open it), which replaces `REVIEW_ROLES`. Assignment,
    pause and interview scheduling all read it (pause still blocks only NEW assignment).
 3. **Who may hand a case to whom is ONE predicate, `services.may_assign_to(caller, target)`:** a super →
    any review target; an org_admin → an own-organisation team member holding `review`, never a super;
@@ -14346,9 +14347,11 @@ the picker's role suffix (a label), wallet credits (F), everything in H/I.
 endpoint narrows); dropping the R1 override now (the owner's question, not decided); a JSON
 `__contains` lookup for list membership (does not run on SQLite).
 
-**Trade-offs:** the list query gains one small query (the custom rows). The R1 override keys on the
-ROLE, so a super may still assign an `admin` / `qc` whose custom set lacks `review` — exactly today's
-super power, kept by R1.
+**Trade-offs:** the list query gains one small query (the custom rows; budgeted, flat). The R1
+override keys on the ROLE plus `see_all`, so a super may still assign an `admin` / `qc` whose custom
+set lacks `review` but can open the case — today's super power, kept by R1. A legacy super flag on a
+team role answers as a super everywhere; the one moved answer (an org_admin can no longer assign one)
+is declared in the golden table, and production has no such row.
 
 **Revisit if:** the owner removes the R1 override, or a mixed set needs the Overview / profile hold to
 follow permissions rather than the preset.

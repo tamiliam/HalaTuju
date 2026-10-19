@@ -530,8 +530,30 @@ change. No migration, no new strings. Notes for the reviewer and S4:
   `reviewer_profile_complete`, `canFilterByAssignee`, the reviewer-detail `mayPause` (it mirrors the
   group-G pause / gift endpoints), the picker's role suffix, wallet credits, H/I.
 - **For S4's editor:** removing `review` from someone holding in-play cases must stay refused (their
-  cases would leave `_b40_scope` 'assigned'); `team_holding` and `may_assign_to` are the readers to
-  re-check; a `qc` without `see_all` is already read fail-closed.
+  cases would leave `_b40_scope` 'assigned'); **and so must removing `see_all` from an admin / qc
+  holding in-play cases** (review fix 1: without `see_all` or `review` they cannot open a case they
+  hold); `team_holding` and `may_assign_to` are the readers to re-check; a `qc` without `see_all` is
+  already read fail-closed.
+- **For S4 (review fix 4):** the reviewer-detail page's `mayPause` is still on ROLE (super /
+  org_admin), which matches the pause / gift endpoints' gate; but the server now lets a Finance +
+  Review person be PAUSED (`is_review_target`) and lists them on the Reviewers tab. S4 must align the
+  page with the server (the target side), so their row offers what the endpoint accepts.
+- **Review fixes (adversarial review, 2026-10-19 — SHIP AFTER FIXES):**
+  1. (medium) **The R1 super override now needs `see_all`:** `is_review_target` = `review`, or an R1
+     role (admin / qc / org_admin) that still holds `see_all`. A custom-set admin / qc with neither
+     could otherwise be handed a case their scope cannot open (stranded, while nudges named the
+     student). The served `assignable` follows (a super's flag is `is_review_target`). Presets
+     unchanged (every R1 preset holds `see_all`).
+  2. (low) **Golden row for the legacy super flag:** `is_super_admin=True` with role `reviewer`
+     answers every gate as a super; the one moved answer (an org_admin could assign a same-org
+     legacy super with role reviewer before S3; `may_assign_to` says never a super) is declared in
+     `LEGACY_FLAG_MOVED`. Production has no such row (lead, 2026-10-19).
+  3. (low) **`defaultRoute` passes the served permissions to `canSee`**, so the landing matches the
+     menu for a custom set (line-neutral; `AdminRoleLike` gains `permissions`).
+  4. (low) The reviewer-detail `mayPause` stays on role; S4 must align it with the server.
+  5. (nit) Org-fence tests for custom-set holders (org A vs org B: `_scoped_application`,
+     `_can_review_app` / `_require_qc` with `qc`, the assignable list, the Reviewers tab); the two
+     staff lists joined `test_query_budgets.py` (4 admitted records, 6 queries flat at 2 and 5 staff).
 - **Bundle:** no i18n key added; median 228.640 → 228.813 kB (code only; 0.2 kB headroom left — S4 must pay for its editor, TD-360).
 
 ### Sprint 4 — the permission editor on People (medium) · 9.0 h · Stage 3b

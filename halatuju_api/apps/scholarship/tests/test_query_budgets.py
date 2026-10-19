@@ -690,6 +690,72 @@ class TestTheRequestsListQueryBudget(TestCase):
         self.assertEqual(resolve('/' + REQUESTS_ROUTE).route, REQUESTS_ROUTE)
 
 
+#: Request #39 Sprint 3 (review nit 5, 2026-10-19): the two STAFF lists whose membership now reads
+#: permissions — the assignable list (`AdminAssignableAdminsView`, the old five roles plus any
+#: `review` holder, with the served `assignable` flag) and the Reviewers tab (`_reviewers`, team
+#: members holding `review` or `qc`). Read as an org_admin at 2 vs 5 staff, HALF of them on a saved
+#: custom set, because `staff_permissions.team_holding` reads the custom rows in Python — one query,
+#: whatever their number. Admitted records since TD-286 (see STUDENT_READ_BUDGETS).
+STAFF_ROUTE_ASSIGNABLE = 'api/v1/admin/scholarship/assignable-admins/'
+STAFF_ROUTE_REVIEWERS = 'api/v1/admin/reviewers/'
+STAFF_LIST_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{STAFF_ROUTE_ASSIGNABLE}::GET::2-staff', f'{STAFF_ROUTE_ASSIGNABLE}::GET::5-staff',
+    f'{STAFF_ROUTE_REVIEWERS}::GET::2-staff', f'{STAFF_ROUTE_REVIEWERS}::GET::5-staff')}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheStaffListsQueryBudget(TestCase):
+    """A per-person permission read that comes back fails the LARGER reading while the smaller holds."""
+
+    def _reading(self, key):
+        from apps.courses.models import PartnerAdmin
+        route, _get, size = key.split('::')
+        n = int(size.split('-')[0])
+        org = make_org()
+        for i in range(n):
+            staff = make_admin('reviewer' if i % 2 else 'finance', owning_org=org)
+            if not i % 2:                    # a finance person GIVEN review: a custom set
+                PartnerAdmin.objects.filter(pk=staff.pk).update(
+                    permissions=['payments_approve', 'review'])
+        client = authed_client(make_admin('org_admin', owning_org=org))
+        url = f'/{route}'
+        self.assertEqual(client.get(url).status_code, 200)            # warm-up, as above
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        body = response.json()
+        listed = body.get('admins', body.get('reviewers'))
+        # The assignable list also names the org_admin reading it (an R1 target, never assignable).
+        expected = n + (1 if route == STAFF_ROUTE_ASSIGNABLE else 0)
+        self.assertEqual(len(listed), expected, 'the fixture stopped listing what it is named for')
+        return len(captured.captured_queries)
+
+    def test_each_list_stays_inside_its_budget(self):
+        for key, limit in STAFF_LIST_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(
+                    now, limit,
+                    f'{key} now costs {now} queries; the budget is {limit}. ⚠ DO NOT RAISE IT. '
+                    f'If the 5-staff reading moved and the 2-staff did not, a per-row read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'STAFF_LIST_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in STAFF_LIST_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], 'A staff-list budget sits above what it now costs. '
+                         + LOWER_IT + '\n' + '\n'.join(loose))
+
+    def test_a_person_costs_nothing_extra(self):
+        for route in (STAFF_ROUTE_ASSIGNABLE, STAFF_ROUTE_REVIEWERS):
+            self.assertEqual(STAFF_LIST_BUDGETS[f'{route}::GET::2-staff'],
+                             STAFF_LIST_BUDGETS[f'{route}::GET::5-staff'], route)
+
+    def test_the_budgeted_routes_still_resolve(self):
+        for route in (STAFF_ROUTE_ASSIGNABLE, STAFF_ROUTE_REVIEWERS):
+            self.assertEqual(resolve('/' + route).route, route)
+
+
 class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
     """TD-286 (2026-10-04): the numbers live in `code-standards.json` and nowhere here. A key this
     file measures that the record lacks reads None above; this names it. And the reverse: an
@@ -705,6 +771,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
         **{f'apps.scholarship.check2_queries.sync_check2_queries::{k}': v
            for k, v in SYNC_CHECK2_BUDGETS.items()},
         **REQUESTS_BUDGETS,
+        **STAFF_LIST_BUDGETS,
     }
 
     def test_every_measured_key_has_a_budget(self):

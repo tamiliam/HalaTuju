@@ -612,7 +612,7 @@ export { searchNav, chordTarget, CHORD_PREFIX } from './navigationJump'
  * The Utility group is last and holds Profile, which every role may open, so this always returns
  * something. `/admin/profile` is the honest floor for an account that can reach nothing else.
  */
-export function defaultRoute(role: { role?: string; is_super_admin?: boolean } | null | undefined,
+export function defaultRoute(role: { role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null } | null | undefined,
                              reviewerProfileComplete?: boolean): string {
   // A newly-invited reviewer is held on their profile until the compulsory fields are filled.
   // Checked as `=== false` so an OLD payload that omits the field never traps anyone.
@@ -622,7 +622,7 @@ export function defaultRoute(role: { role?: string; is_super_admin?: boolean } |
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
       if (item.placeholder) continue
-      if (canSee(item, { role: r, probes: NO_PROBES }) === 'show') return item.href
+      if (canSee(item, { role: r, probes: NO_PROBES, permissions: role?.permissions }) === 'show') return item.href
     }
   }
   return '/admin/profile'

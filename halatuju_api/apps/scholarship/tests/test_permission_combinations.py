@@ -261,3 +261,60 @@ class TestSafetyRulesHoldForCustomSets(pe._FinanceBase):
         ScholarshipApplication.objects.filter(pk=self.app_a.pk).update(assigned_to=self.reviewer)
         self.app_a.refresh_from_db()
         self.assertFalse(_AdminBase()._can_review_app(self.reviewer, self.app_a))
+
+
+class TestTheR1OverrideNeedsSeeAll(pe._FinanceBase):
+    """Sprint 3 review fix 1: the super's R1 override (admin / qc / org_admin) admits only someone who
+    can still OPEN the case. A custom-set admin with neither `review` nor `see_all` would be handed a
+    case their `_b40_scope` ('none') cannot read — stranded, while nudges still name the student."""
+
+    def test_an_admin_without_see_all_or_review_is_no_target(self):
+        _grant(self.maker, ['payments_prepare'])
+        self.assertEqual(_AdminBase()._b40_scope(self.maker), 'none')
+        self.assertFalse(is_review_target(self.maker))
+        self.assertFalse(may_assign_to(self.super, self.maker))
+        from apps.scholarship.services import AssignmentError, assign_reviewer
+        app = make_application('profile_complete', cohort=self.cohort_a)
+        with self.assertRaises(AssignmentError) as caught:
+            assign_reviewer(app, reviewer=self.maker, by_admin=self.super)
+        self.assertEqual(caught.exception.code, 'not_reviewer')
+        self._auth('pe-su')
+        row = next(r for r in self.client.get(ASSIGNABLE).json()['admins'] if r['id'] == self.maker.id)
+        self.assertFalse(row['assignable'])          # listed (bug #66), never offered
+
+    def test_an_admin_keeping_see_all_stays_a_super_s_target(self):
+        _grant(self.maker, ['see_all', 'payments_prepare'])
+        self.assertTrue(is_review_target(self.maker))
+        self.assertTrue(may_assign_to(self.super, self.maker))
+        self.assertFalse(may_assign_to(self.approver, self.maker))   # an org_admin: review only
+
+
+class TestCustomSetsStayInsideTheirOrganisation(pe._FinanceBase):
+    """Sprint 3 review nit 5: a custom set widens what a person may do, never WHERE. Holders in
+    organisation A against organisation B's case and staff."""
+
+    def test_a_review_holder_cannot_open_another_organisation_s_case_even_if_assigned(self):
+        _grant(self.finance, ['payments_approve', 'review'])
+        ScholarshipApplication.objects.filter(pk=self.app_b.pk).update(assigned_to=self.finance)
+        self._auth('pe-fi')
+        self.assertEqual(self.client.get(f'{APPS}{self.app_b.id}/').status_code, 404)
+        ids = {a['id'] for a in self.client.get(APPS).json()['applications']}
+        self.assertNotIn(self.app_b.id, ids)
+
+    def test_a_qc_holder_cannot_write_or_qc_across_the_fence(self):
+        _grant(self.maker, ['see_all', 'qc', 'payments_prepare'])
+        self.assertFalse(_AdminBase()._can_review_app(self.maker, self.app_b))
+        view = _AdminBase()
+        with mock.patch.object(view, 'get_admin', return_value=self.maker):
+            _, err = view._scoped_application(None, self.app_b.id)
+            _, _, qc_err = view._require_qc(None, self.app_b.id)
+        self.assertEqual((err.status_code, qc_err.status_code), (404, 404))
+
+    def test_another_organisation_s_holder_is_never_listed_or_assignable(self):
+        _grant(self.finance_b, ['payments_approve', 'review'])
+        self.assertFalse(may_assign_to(self.approver, self.finance_b))
+        self._auth('pe-ap')
+        listed = {r['id'] for r in self.client.get(ASSIGNABLE).json()['admins']}
+        tab = {r['id'] for r in self.client.get(REVIEWERS).json()['reviewers']}
+        self.assertNotIn(self.finance_b.id, listed)
+        self.assertNotIn(self.finance_b.id, tab)
