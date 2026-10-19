@@ -1,11 +1,11 @@
 """Sources and referral partners, Sprint D (2026-10-19) — the clean-up.
 
-1. **The sources' old rows are switched off, never deleted** (courses 0081): a `partner_organisations`
+1. **The sources' old rows are switched off, never deleted** (courses 0082): a `partner_organisations`
    row with a twin in `referral_sources` (same id AND code) that is neither the referral partner
    nor a tenant. CUMIG's row, the tenant, a partner without a twin, a row whose id is shared by a
    source of ANOTHER code — untouched. Idempotent.
-2. **The expand / contract order**: 0081 gives `show_in_apply` a database default (the new image
-   inserts without naming it) and 0082, after the deploy, drops it and `StudentProfile.source`.
+2. **The expand / contract order**: 0082 gives `show_in_apply` a database default (the new image
+   inserts without naming it) and 0083, after the deploy, drops it and `StudentProfile.source`.
 3. **The bursary answer never reaches the partner logins' Source column**: a `?ref=cumig` student
    who then names SMC on the bursary form shows `cumig` to CUMIG's login, never `smc`.
 4. **Referral partners — list, mark, unmark — super only**, with the refusals.
@@ -23,8 +23,8 @@ from apps.scholarship.tests.factories import (
     make_shortlistable_student, make_source, make_student,
 )
 
-EXPAND = import_module('apps.courses.migrations.0081_retire_old_source_rows')
-CONTRACT = import_module('apps.courses.migrations.0082_drop_retired_source_columns')
+EXPAND = import_module('apps.courses.migrations.0082_retire_old_source_rows')
+CONTRACT = import_module('apps.courses.migrations.0083_drop_retired_source_columns')
 LIST = '/api/v1/admin/referral-partners/'
 PARTNER_LIST = '/api/v1/admin/students/'
 
@@ -87,7 +87,7 @@ class TestTheOldSourceRowsAreSwitchedOff(TestCase):
 
 
 class TestAReferralPartnersStudentsShowItsCode(TestCase):
-    """Review fix (courses 0081 `align_partner_chips`): before Sprint D the bursary wrote its
+    """Review fix (courses 0082 `align_partner_chips`): before Sprint D the bursary wrote its
     answer onto the chip, so a CUMIG-link student who answered the bursary form showed that answer
     on CUMIG's Source column (production: 253 `cumig`, 1 `social`). Every referral partner's
     student now shows the partner's code; nobody else's chip moves."""
@@ -117,14 +117,14 @@ class TestAReferralPartnersStudentsShowItsCode(TestCase):
 class TestTheExpandContractOrder(TestCase):
     def test_the_expand_gives_show_in_apply_a_database_default(self):
         """The image without the field inserts `partner_organisations` rows without naming the
-        column; until 0082 drops it, the database default must answer (it had none)."""
+        column; until 0083 drops it, the database default must answer (it had none)."""
         alter = [op for op in EXPAND.Migration.operations
                  if getattr(op, 'name', None) == 'show_in_apply']
         self.assertEqual(len(alter), 1)
         self.assertIs(alter[0].field.db_default, False)
 
     def test_the_contract_follows_the_expand_and_drops_both_columns(self):
-        self.assertIn(('courses', '0081_retire_old_source_rows'), CONTRACT.Migration.dependencies)
+        self.assertIn(('courses', '0082_retire_old_source_rows'), CONTRACT.Migration.dependencies)
         self.assertEqual({(op.model_name, op.name) for op in CONTRACT.Migration.operations},
                          {('partnerorganisation', 'show_in_apply'), ('studentprofile', 'source')})
         self.assertNotIn('source', {f.name for f in StudentProfile._meta.fields})

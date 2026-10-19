@@ -37,10 +37,10 @@ source-names endpoint for every list role; the witness is the application's sour
 records it; `?ref` never pre-fills the bursary form.
 
 **Sprint D** — (1) the bursary submit writes NO referral column on the profile; (2)
-`StudentProfile.source` left the model (courses 0082, image-first, owner-run, with a backup); (3) the
+`StudentProfile.source` left the model (courses 0083, image-first, owner-run, with a backup); (3) the
 chip is re-scoped to the course selector's `?ref=` code — no bursary answer reaches a referral
 partner's Source column any more; (4) the cockpit's old `referred_by_org` key removed, api and web;
-(5) the sources' old rows switched off, never deleted (courses 0081, migrate-first), and
+(5) the sources' old rows switched off, never deleted (courses 0082, migrate-first), and
 `partner_organisations.show_in_apply` given a database default and then dropped; (6) the super-only
 referral-partner list / mark / unmark API; the screen is TD-387.
 
@@ -70,7 +70,7 @@ referral-partner list / mark / unmark API; the screen is TD-387.
    list" — the list's membership (`referred_by_org`), not the list's columns. The chip was left with
    two writers "for the course-selector readers", and nobody asked what the partner's own screen
    showed from it. Fix (Sprint D): the bursary no longer writes the chip, and — after the review
-   found the existing case (production: 1 of CUMIG's 254 showed `social`) — courses 0081 aligns every
+   found the existing case (production: 1 of CUMIG's 254 showed `social`) — courses 0082 aligns every
    referral partner's student's chip to the partner's code after a dated backup; tests pin that the
    partner login sees the `?ref` code and never the bursary answer, for new and existing students. System change: when a rule says
    "X must never reach role R", the test is written against R's SCREEN PAYLOAD (every column it
@@ -81,7 +81,7 @@ referral-partner list / mark / unmark API; the screen is TD-387.
    `partner_organisations` — a partner invite creating a referral partner, the organisation form
    creating a tenant — between the deploy and the drop. Root cause: TD-379's drop (B) was a NULLABLE
    column, so "remove from the model, deploy, drop" was safe there and was copied as the pattern. No
-   test can see it: the test database runs 0082 too, so the column is already gone. Fix: courses 0081
+   test can see it: the test database runs 0083 too, so the column is already gone. Fix: courses 0082
    adds `DEFAULT false` migrate-first; a structural test pins that the expand carries the default and
    the contract follows it. System change: before removing a field from a model ahead of its drop,
    read the LIVE column's nullability and default; a `NOT NULL` column without a database default
@@ -114,7 +114,7 @@ reaches `ReferralSource` through the app registry; `StudentProfile.source` is dr
 |---|---|---|---|---|
 | B | 8347 → 8374 | 4245 | 18 | scholarship 0173 + courses 0079 migrate-first; courses 0080 image-first (owner) |
 | C | 8384 → 8410 | 4255 → 4266 | 17 | scholarship 0174 migrate-first |
-| D | 8410 → 8410 (+10 new, 6 retired, 4 merged); subtests 3567 → 3569 | 4266 → 4266 | 12 | courses 0081 migrate-first; courses 0082 image-first (owner) |
+| D | 8410 → 8410 (+10 new, 6 retired, 4 merged); subtests 3567 → 3569 | 4266 → 4266 | 12 | courses 0082 migrate-first; courses 0083 image-first (owner) |
 
 Sprint D bundle: median 228.527 → 228.528 kB, worst 273.495 → 273.496 kB (no strings added). Sprint D
 api sizes: `profile_sync.py` 189 → 176, `serializers_admin.py` 1230 → 1225, `referral_links.py` 182 →

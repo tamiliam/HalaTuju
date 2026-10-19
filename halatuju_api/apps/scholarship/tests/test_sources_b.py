@@ -46,7 +46,7 @@ def _house():
 # The copy's production-shaped tests (`TestTheCopyOnAProductionShapedFixture`, six tests) were RETIRED
 # by sources Sprint D (2026-10-19): they ran scholarship 0173's data step (`copy_sources`) against
 # the LIVE models, and 0173 reads `partner_organisations.show_in_apply`, which left the model in
-# Sprint D (courses 0082). The copy ran on production on 2026-10-19 (15 sources, ids kept, links,
+# Sprint D (courses 0083). The copy ran on production on 2026-10-19 (15 sources, ids kept, links,
 # witness, email log and recipients identical — CHANGELOG, Sprint B "Shipped"). What it protected
 # is still pinned: every repointed key below, the fence and the invites in this file, and the
 # referral partner's list in `test_two_referral_columns.py`. Sprint B retired 0078's backfill
@@ -74,7 +74,7 @@ class TestEveryRepointedKey(TestCase):
                       PROTECT)
         self.assertNotIn('programme', {f.name for f in PartnerOrganisation._meta.fields})
         # Sprint D: the profile's `source` (the fifth key moved here) and the old row's
-        # `show_in_apply` left the models (courses 0082) — the application carries the source.
+        # `show_in_apply` left the models (courses 0083) — the application carries the source.
         self.assertNotIn('source', {f.name for f in StudentProfile._meta.fields})
         self.assertNotIn('show_in_apply', {f.name for f in PartnerOrganisation._meta.fields})
 

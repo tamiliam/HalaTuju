@@ -951,12 +951,12 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
   `courses/0080` (TD-379, the column drop) is IMAGE-FIRST — only after the new revision serves**:
   `docs/scholarship/sources-b-cutover-sql.md` (freeze Sources and gift Configuration between the
   cutover and the deploy). Next free after it: scholarship 0174 / courses 0081.
-- **Sources Sprint D — the arc's clean-up (BUILT 2026-10-19, NOT LIVE):** ⚠ `courses/0081` is
+- **Sources Sprint D — the arc's clean-up (BUILT 2026-10-19, NOT LIVE):** ⚠ `courses/0082` is
   MIGRATE-FIRST (gives `partner_organisations.show_in_apply` `DEFAULT false`; switches the sources' old
-  rows off) and `courses/0082` is IMAGE-FIRST and OWNER-RUN in the SQL Editor (drops
+  rows off) and `courses/0083` is IMAGE-FIRST and OWNER-RUN in the SQL Editor (drops
   `api_student_profiles.source_id` and `partner_organisations.show_in_apply`, after backups) —
   `docs/scholarship/sources-d-cutover-sql.md`. The cockpit's `referred_by_org` key is gone (web and api
-  in either order). Next free after it: scholarship 0175 / courses 0083.
+  in either order). Next free after it: scholarship 0175 / courses 0084 (request #39 S1 holds courses 0081).
 - **Each application keeps its own "Who referred you?" (sources Sprint C, LIVE 2026-10-19):**
   `ScholarshipApplication.referral_code` + `.source` (written once at submit from the snapshot,
   resolved inside the application's own organisation) feed partner emails, Sources counts, the

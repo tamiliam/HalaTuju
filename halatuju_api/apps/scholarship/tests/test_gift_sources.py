@@ -81,7 +81,7 @@ class TestTheConfigurationLists(_ConfigBase):
 
     def test_a_tenant_is_never_offered(self):
         # Was "…even with its flag on": the tenant row's `show_in_apply` flag left the model in
-        # sources Sprint D (courses 0082), so a tenant has no flag to switch on any more.
+        # sources Sprint D (courses 0083), so a tenant has no flag to switch on any more.
         codes = [s['code'] for s in self._get().json()['sources']]
         self.assertNotIn('gs-org', codes)
         self.assertNotIn('gs-other', codes)

@@ -27,7 +27,7 @@ it protected — the partner list unchanged — is pinned here against the write
 
 Sources-and-referrals Sprint D (2026-10-19) finished the split: the bursary submit writes NOTHING on
 the profile (the "Who referred you?" answer is the APPLICATION's, `referral_code` / `source`, since
-Sprint C); `StudentProfile.source` left the model (courses 0082); the chip `referral_source` is the
+Sprint C); `StudentProfile.source` left the model (courses 0083); the chip `referral_source` is the
 course-selector's `?ref=` code alone (first touch, no longer "only before she applied"). Each test
 below that changed says what superseded it. `_columns` reads the two profile columns that remain.
 """

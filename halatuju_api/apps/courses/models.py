@@ -437,7 +437,7 @@ class PartnerOrganisation(models.Model):
     """Tenant organisation AND platform referral partner (TD-381). Since sources-and-referrals Sprint
     B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource`, owned by an organisation;
     the rows here that used to be sources were copied there with their ids and are kept, unread by
-    the source surfaces; Sprint D (courses 0081) switched them off (`is_active` false), never
+    the source surfaces; Sprint D (courses 0082) switched them off (`is_active` false), never
     deleting one — old snapshots name their codes.
 
     - Referral registry (original role): `StudentProfile.referred_by_org` /
@@ -461,8 +461,8 @@ class PartnerOrganisation(models.Model):
     phone = models.CharField(max_length=30, blank=True, default='')
     is_active = models.BooleanField(default=True)
     # `show_in_apply` (the old "offered on the apply form" flag) left the MODEL in sources Sprint D
-    # (2026-10-19): sources carry their own since Sprint B. courses 0081 gives the column a database
-    # default (migrate-first) and 0082 drops it AFTER the image without the field is live.
+    # (2026-10-19): sources carry their own since Sprint B. courses 0082 gives the column a database
+    # default (migrate-first) and 0083 drops it AFTER the image without the field is live.
     # A PLATFORM REFERRAL PARTNER (2026-10-09; today `cumig` alone) — the only rows a `?ref=` link
     # writes into `StudentProfile.referred_by_org` (`referral_links`). A row may also be a source.
     is_referral_partner = models.BooleanField(default=False, db_default=False, help_text='A PLATFORM referral partner: its ?ref= link fills a student\'s referred_by_org (owned by no organisation).')
@@ -866,7 +866,7 @@ class StudentProfile(models.Model):
         help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',
     )
     # `referred_by_org` is the REFERRAL PARTNER (a `?ref=` link, first touch; `referral_links`). The
-    # profile's bursary `source` column left the model in sources Sprint D (courses 0082 drops it
+    # profile's bursary `source` column left the model in sources Sprint D (courses 0083 drops it
     # after the deploy): no reader since Sprint C — the application carries its own source.
     referred_by_org = models.ForeignKey(
         'PartnerOrganisation', on_delete=models.SET_NULL,

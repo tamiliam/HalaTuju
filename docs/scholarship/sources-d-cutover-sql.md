@@ -1,17 +1,19 @@
 # Retire the old shared fields and rows (sources and referral partners, Sprint D) — prod cutover SQL
 
 **Migrations:** two, in OPPOSITE orders.
-- `courses/0081_retire_old_source_rows` — **MIGRATE-FIRST** (before the push, ONE transaction, the
+- `courses/0082_retire_old_source_rows` — **MIGRATE-FIRST** (before the push, ONE transaction, the
   lead applies it): a database default for `partner_organisations.show_in_apply`, the sources' old
   rows switched off (never deleted), a referral partner's students' chips aligned to its code (after
   a dated backup), one ledger row. Additive / data-update only.
-- `courses/0082_drop_retired_source_columns` — **IMAGE-FIRST** (after the Sprint D revision serves,
+- `courses/0083_drop_retired_source_columns` — **IMAGE-FIRST** (after the Sprint D revision serves,
   and no older revision carries traffic): drops `api_student_profiles.source_id` and
   `partner_organisations.show_in_apply`, after backing both up. **⚠ OWNER RUNS IT IN THE SUPABASE
   SQL EDITOR** (the lead's MCP tool is blocked from destructive SQL).
 
-Ledger before: courses ends at `0080`, scholarship at `0174` (main `ad98107a`, Sprints A–C live). No
-scholarship migration this sprint. If another session has taken courses 0081 on `main` by the time
+Ledger before: courses ends at `0081_partneradmin_permissions` (request #39 Sprint 1, live), scholarship
+at `0174` (main `241cb76f`). Sprint D's migrations were RENUMBERED 0081/0082 → 0082/0083 on the rebase
+onto request #39 S1, which took 0081. No scholarship migration this sprint. If another session has
+taken courses 0082 on `main` by the time
 this is applied, the sprint renumbers on rebase and this file's ledger rows change with it — never
 apply a number that is not settled.
 
@@ -50,9 +52,9 @@ course-selector partner dashboard's Source column / filter / CSV, and from this 
 longer reach the referral partner's logins on that column.
 
 The DDL was rendered OFFLINE from the migrations with Django's postgresql schema editor (no
-connection; a dev box's `sqlmigrate` renders SQLite): 0081 →
+connection; a dev box's `sqlmigrate` renders SQLite): 0082 →
 `ALTER TABLE "partner_organisations" ALTER COLUMN "show_in_apply" SET DEFAULT false` (+ the
-RunPython); 0082 → `ALTER TABLE "partner_organisations" DROP COLUMN "show_in_apply" CASCADE`, then
+RunPython); 0083 → `ALTER TABLE "partner_organisations" DROP COLUMN "show_in_apply" CASCADE`, then
 `SET CONSTRAINTS "<fk>" IMMEDIATE; ALTER TABLE "api_student_profiles" DROP CONSTRAINT "<fk>"` and
 `ALTER TABLE "api_student_profiles" DROP COLUMN "source_id" CASCADE`. The hand-applied copies below
 find the FK by `pg_constraint` lookup and drop WITHOUT `CASCADE` on purpose.
@@ -62,9 +64,9 @@ find the FK by `pg_constraint` lookup and drop WITHOUT `CASCADE` on purpose.
 ```sql
 BEGIN READ ONLY;
 
--- 1. Ledger: courses ends at 0080; 0081/0082 are not recorded.
+-- 1. Ledger: courses ends at 0081_partneradmin_permissions; 0082/0083 are not recorded.
 SELECT app, name FROM django_migrations WHERE app = 'courses' ORDER BY name DESC LIMIT 3;
--- expect: 0080_drop_partner_organisation_programme first; no 0081_* / 0082_* row.
+-- expect: 0081_partneradmin_permissions first; no 0082_* / 0083_* row.
 
 -- 2. show_in_apply has no database default yet; both columns still exist.
 SELECT table_name, column_name, column_default, is_nullable FROM information_schema.columns
@@ -84,7 +86,7 @@ SELECT o.id, o.code, o.is_active, o.is_referral_partner,
 -- expect: exactly ONE tenant (brightpath), never with has_twin; cumig is_referral_partner AND
 -- has_twin AND active; every other has_twin row is a source's old row. Write the table down.
 
--- 4. THE ROWS THIS CUTOVER SWITCHES OFF (= courses 0081's `retire_old_source_rows`).
+-- 4. THE ROWS THIS CUTOVER SWITCHES OFF (= courses 0082's `retire_old_source_rows`).
 SELECT o.id, o.code, o.name FROM partner_organisations o
  WHERE o.is_active AND NOT o.is_referral_partner
    AND EXISTS (SELECT 1 FROM referral_sources s WHERE s.id = o.id AND s.code = o.code)
@@ -143,7 +145,7 @@ Replace `<<R>>` (check 4) and `<<A>>` (check 6b, expect 1) — each appears twic
 ```sql
 BEGIN;
 
--- 1. DDL, rendered offline from courses 0081 (the AlterField adding `db_default=False`).
+-- 1. DDL, rendered offline from courses 0082 (the AlterField adding `db_default=False`).
 ALTER TABLE "partner_organisations" ALTER COLUMN "show_in_apply" SET DEFAULT false;
 
 -- 2. The data step (= `retire_old_source_rows`). The SELECT prints the ids: copy them into the
@@ -205,7 +207,7 @@ BEGIN
 END $$;
 
 INSERT INTO django_migrations (app, name, applied)
-VALUES ('courses', '0081_retire_old_source_rows', now());
+VALUES ('courses', '0082_retire_old_source_rows', now());
 
 COMMIT;
 ```
@@ -214,7 +216,7 @@ COMMIT;
 
 ```sql
 BEGIN READ ONLY;
-SELECT name FROM django_migrations WHERE app = 'courses' ORDER BY name DESC LIMIT 1;  -- 0081_…
+SELECT name FROM django_migrations WHERE app = 'courses' ORDER BY name DESC LIMIT 1;  -- 0082_…
 SELECT column_default FROM information_schema.columns
  WHERE table_name = 'partner_organisations' AND column_name = 'show_in_apply';     -- 'false'
 SELECT count(*) FROM partner_organisations o WHERE NOT o.is_active
@@ -264,7 +266,7 @@ Confirm `status.latestReadyRevisionName` is the new api revision **and that no o
 any traffic** (this service carries a tagged revision at index zero — read every `status.traffic[]`
 entry) before the drop below.
 
-## After the deploy — the drop (`courses/0082`, IMAGE-FIRST)
+## After the deploy — the drop (`courses/0083`, IMAGE-FIRST)
 
 **⚠ OWNER RUNS IN SUPABASE SQL EDITOR — after the deploy.** Only when the Sprint D revision serves
 100% of traffic: every older image SELECTs both columns on every profile / organisation read, and a
@@ -313,7 +315,7 @@ ALTER TABLE "api_student_profiles" DROP COLUMN "source_id";
 ALTER TABLE "partner_organisations" DROP COLUMN "show_in_apply";
 
 INSERT INTO django_migrations (app, name, applied)
-  VALUES ('courses', '0082_drop_retired_source_columns', now());
+  VALUES ('courses', '0083_drop_retired_source_columns', now());
 COMMIT;
 
 -- Post-checks (read-only).
@@ -323,7 +325,7 @@ SELECT table_name, column_name FROM information_schema.columns
     OR (table_name = 'partner_organisations' AND column_name = 'show_in_apply');   -- expect: 0 rows
 SELECT count(*) FROM public.student_profile_source_backup_sources_d;              -- = check 7's P
 SELECT count(*) FILTER (WHERE show_in_apply) FROM public.partner_org_show_in_apply_backup_sources_d; -- = Q
-SELECT name FROM django_migrations WHERE app = 'courses' ORDER BY name DESC LIMIT 1;  -- 0082_…
+SELECT name FROM django_migrations WHERE app = 'courses' ORDER BY name DESC LIMIT 1;  -- 0083_…
 COMMIT;
 ```
 
@@ -332,7 +334,7 @@ its policy) and watch for 5xx for an hour.
 
 ## Rollback
 
-**Before the deploy** (only 0081 applied; the old image serving). The UPDATE is a data restore; the
+**Before the deploy** (only 0082 applied; the old image serving). The UPDATE is a data restore; the
 ledger row is a DELETE, so the block is the owner's:
 
 ```sql
@@ -342,10 +344,10 @@ UPDATE partner_organisations SET is_active = true WHERE id IN (<<the ids printed
 UPDATE api_student_profiles p SET referral_source = b.old_chip
   FROM public.referral_chip_backup_20261019 b WHERE b.supabase_user_id = p.supabase_user_id;
 ALTER TABLE "partner_organisations" ALTER COLUMN "show_in_apply" DROP DEFAULT;
-DELETE FROM django_migrations WHERE app = 'courses' AND name = '0081_retire_old_source_rows';
+DELETE FROM django_migrations WHERE app = 'courses' AND name = '0082_retire_old_source_rows';
 COMMIT;
 ```
-(Leaving 0081 in place under the old image is harmless — it never reads the retired rows, and the
+(Leaving 0082 in place under the old image is harmless — it never reads the retired rows, and the
 default changes nothing for it — so usually no rollback is needed at all.)
 
 **After the deploy, before the drop:** shift Cloud Run traffic back to the previous revision (no
@@ -362,7 +364,7 @@ UPDATE api_student_profiles p SET source_id = b.source_id
 ALTER TABLE partner_organisations ADD COLUMN show_in_apply boolean NOT NULL DEFAULT false;
 UPDATE partner_organisations o SET show_in_apply = b.show_in_apply
   FROM public.partner_org_show_in_apply_backup_sources_d b WHERE b.partner_organisation_id = o.id;
-DELETE FROM django_migrations WHERE app = 'courses' AND name = '0082_drop_retired_source_columns';
+DELETE FROM django_migrations WHERE app = 'courses' AND name = '0083_drop_retired_source_columns';
 COMMIT;
 ```
 then shift traffic. (Profiles that submitted a bursary application between the deploy and the drop

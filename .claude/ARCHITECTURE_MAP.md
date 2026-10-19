@@ -130,7 +130,7 @@ apps/courses/
 | `StudentProfile` | `student_profiles` | User eligibility data | SPM grades, gender, nationality, exam_type, muet_band, STPM fields, income, siblings |
 | `SavedCourse` | `saved_courses` | User bookmarks | course, student, interest_status |
 | `AdmissionOutcome` | `admission_outcomes` | Track application results | course, student, status (applied/offered/accepted/rejected/withdrawn) |
-| `PartnerOrganisation` | `partner_organisations` | Tenant Organisation (`tenants()`) and platform REFERRAL PARTNER (`is_referral_partner`, today `cumig` alone). Since sources Sprint B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource` (`referral_sources`, owned by an organisation, SAME ids as the rows copied from here); the old source rows stay here, switched off by Sprint D (courses 0081), never deleted | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags, `is_referral_partner` (`db_default` false; a super marks / unmarks it, `/admin/referral-partners/`); `programme` left the model (TD-379, courses 0080) and `show_in_apply` too (Sprint D, courses 0082 drops it after the deploy). NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
+| `PartnerOrganisation` | `partner_organisations` | Tenant Organisation (`tenants()`) and platform REFERRAL PARTNER (`is_referral_partner`, today `cumig` alone). Since sources Sprint B (2026-10-18) a SOURCE is its own row, `scholarship.ReferralSource` (`referral_sources`, owned by an organisation, SAME ids as the rows copied from here); the old source rows stay here, switched off by Sprint D (courses 0082), never deleted | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags, `is_referral_partner` (`db_default` false; a super marks / unmarks it, `/admin/referral-partners/`); `programme` left the model (TD-379, courses 0080) and `show_in_apply` too (Sprint D, courses 0083 drops it after the deploy). NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
 | `PartnerAdmin` | `partner_admins` | A staff account (super / org_admin / admin / finance / qc / reviewer / referral partner). In `models_staff.py` since request #39 S1 (2026-10-19, moves-only; re-exported from `models.py`) | role (= the PRESET label), is_super_admin, owning_organisation (the tenant fence), org (referral), programme (gift narrowing, NULL = every gift), paused_at, is_active, **`permissions`** (nullable JSON, NULL = the preset of `role`, no backfill; courses 0081) — read ONLY via `permission_set` / `has_perm(key)` → `staff_permissions.py` (catalogue of 8 keys, presets = today's powers, org_admin fixed lead tier, super = every key, partner = none, stored list read fail-closed, `holders(org, key)` in Python, never a super). Served on `GET /admin/role/` as `permissions` (resolved) / `preset` / `custom`; web `lib/staffPermissions.ts` (`hasPerm`, drift-tested both ways). No gate reads it yet (S2: payments, S3: the rest); `tests/test_permission_presets.py` is the golden table proving the presets reproduce today |
 | `MascoOccupation` | `masco_occupations` | Career occupation codes (274 entries) | code, title_en, title_bm |
 | `StpmCourse` | `stpm_courses` | STPM degree programmes (1,113 rows) | name, university, stream, merit_score, field, category |
@@ -394,20 +394,20 @@ latest answer to THIS round's organisation) — never the profile chip, where a 
 
 ⚠ **THE BURSARY WRITES NOTHING ON THE PROFILE'S REFERRAL COLUMNS** (sources Sprint D, 2026-10-19 —
 the arc is complete). The submit's `sync_profile_fields` no longer carries `referral_source`; the
-profile's `source` column left the model (courses 0082 drops it, image-first, owner-run) and the
+profile's `source` column left the model (courses 0083 drops it, image-first, owner-run) and the
 cockpit's old `referred_by_org` key is gone (the web reads `source`). The chip
 `StudentProfile.referral_source` is now the COURSE SELECTOR's: the first `?ref=` code that brought her
 (`referral_links.apply_ref_code`, first touch, together with `referred_by_org` for a referral partner),
 read by the partner dashboard's Source column / filter / CSV — so a bursary answer never reaches a
 referral partner's logins. The sources' old `partner_organisations` rows are switched off (courses
-0081: twin by id AND code, not the referral partner, not a tenant; never deleted) and that table's
-`show_in_apply` is dropped (0081 gives it `DEFAULT false` first). **Referral partners are marked /
+0082: twin by id AND code, not the referral partner, not a tenant; never deleted) and that table's
+`show_in_apply` is dropped (0082 gives it `DEFAULT false` first). **Referral partners are marked /
 unmarked by a SUPER** through `GET` / `PATCH /api/v1/admin/referral-partners/[<id>/]`
 (`apps/courses/views_referral_partners.py`; rules `referral_links.mark_refusal`: never a tenant, a
 reserved code, a switched-off row, a source's old row or a code `?ref=` cannot carry; an unmark
 waits until its partner logins are revoked, and `AdminRevokeView` never restores a `partner` login
 onto a row that is not an active referral partner; `AUDIT referral_partner_marked|unmarked`). courses
-0081 also set every referral partner's students' chip to the partner's code (review fix: an old
+0082 also set every referral partner's students' chip to the partner's code (review fix: an old
 bursary answer showed on the partner's Source column). No screen yet (TD-387).
 
 ⚠ **THE STUDENT RECORD HAS TWO INDEPENDENT REFERRAL COLUMNS** (sources and referral partners Sprint A,

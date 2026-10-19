@@ -14237,7 +14237,7 @@ golden table would then prove nothing).
 2026-10-09, not re-opened):**
 1. **The bursary submit writes NO referral column on the profile.** Its answer belongs to the
    application (`referral_code` / `source`, Sprint C). `sync_profile_fields` no longer carries
-   `referral_source`, and `StudentProfile.source` left the model (courses 0082 drops the column after
+   `referral_source`, and `StudentProfile.source` left the model (courses 0083 drops the column after
    the deploy, OWNER-run, with a backup table).
 2. **The chip `StudentProfile.referral_source` is RE-SCOPED, not retired** — a departure from the
    roadmap's item 1 ("stop writing; then a contract migration"), taken because the brief says do not
@@ -14250,15 +14250,15 @@ golden table would then prove nothing).
    link), which `referred_by_org` cannot say; and it needs no web change. **What it fixes:** a
    bursary answer (e.g. SMC) sat on the referral partner's Source column, visible to its `partner`
    logins — the owner's rule is that a bursary answer never reaches them. **And for the students it
-   already happened to** (review fix): courses 0081 sets the chip of every referral partner's student
+   already happened to** (review fix): courses 0082 sets the chip of every referral partner's student
    to that partner's code, after a dated backup (production 2026-10-19: 254 CUMIG students, 253 already
    `cumig`, 1 `social` → `cumig`). Other students' chips (no referral partner — seen by a super only)
    are left as written.
 3. **The cockpit's old `referred_by_org` key is removed** (api and web together; either deploy order is
    safe — the Sprint C api serves both keys, and the Sprint C web reads `source` first).
-4. **The sources' old `partner_organisations` rows are switched off, never deleted** (courses 0081,
+4. **The sources' old `partner_organisations` rows are switched off, never deleted** (courses 0082,
    migrate-first): a row with a `referral_sources` twin (same id AND code) that is not the referral
-   partner and not a tenant. `PartnerOrganisation.show_in_apply` is dropped (0081 first gives the
+   partner and not a tenant. `PartnerOrganisation.show_in_apply` is dropped (0082 first gives the
    column `DEFAULT false` — it was `NOT NULL` with no database default, so the new image's inserts
    would otherwise fail between the deploy and the drop).
 5. **A super marks and unmarks referral partners** (`GET` / `PATCH /api/v1/admin/referral-partners/`):

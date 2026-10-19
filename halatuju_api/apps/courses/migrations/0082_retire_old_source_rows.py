@@ -4,7 +4,7 @@
    longer has the field in its model, so it inserts a `partner_organisations` row (a referral
    partner made by an invite, a tenant made by the organisation form) WITHOUT naming the column;
    the column is NOT NULL with no default today (0065 added it with a Python default only), so
-   without this every such insert would fail between the deploy and courses 0082's drop. The old
+   without this every such insert would fail between the deploy and courses 0083's drop. The old
    image names the column on every insert, so the default changes nothing for it.
 2. The SOURCES' OLD ROWS are switched off, never deleted (roadmap item 1; old snapshots name their
    codes). A source's old row is one Sprint B copied into `referral_sources` KEEPING ITS ID, so it
@@ -28,7 +28,7 @@ SQL (rendered offline; the hand-applied copy with its asserting DO block and led
      WHERE p.referred_by_org_id = o.id AND o.is_referral_partner
        AND p.referral_source IS DISTINCT FROM o.code;      -- after a dated backup table
     INSERT INTO django_migrations (app, name, applied)
-      VALUES ('courses', '0081_retire_old_source_rows', now());
+      VALUES ('courses', '0082_retire_old_source_rows', now());
 
 Reverse: the default is dropped by Django's reverse of the AlterField; the retirement and the chip
 alignment are NOT undone automatically (no-ops) — the cutover note records the retired ids and backs
@@ -78,7 +78,7 @@ def align_partner_chips(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('courses', '0080_drop_partner_organisation_programme'),
+        ('courses', '0081_partneradmin_permissions'),
         ('scholarship', '0174_application_source'),
     ]
 

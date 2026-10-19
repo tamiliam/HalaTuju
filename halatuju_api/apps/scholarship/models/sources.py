@@ -15,8 +15,8 @@ COPIED here keeping their ids (scholarship migration 0173), so every foreign key
 source — `ProgrammeReferralSource.source`, `StudentProfile.source`, both `witness_org`s and
 `PartnerEmailLog.organisation` — moved by swapping its constraint, not by rewriting a value. The
 `partner_organisations` copies are kept: the image serving before this one read them, and old
-intake snapshots name their codes; Sprint D (2026-10-19, courses 0081) switched them off, and
-dropped `StudentProfile.source` (courses 0082) — the application carries its own source since C. CUMIG is BOTH: its referral
+intake snapshots name their codes; Sprint D (2026-10-19, courses 0082) switched them off, and
+dropped `StudentProfile.source` (courses 0083) — the application carries its own source since C. CUMIG is BOTH: its referral
 partner row stays on `partner_organisations` with its logins and its students, and its source row
 lives here, owned by BrightPath, with the same id.
 

@@ -7,9 +7,9 @@
 deploy; cutover `docs/scholarship/sources-b-cutover-sql.md`). Sprint C BUILT and LIVE 2026-10-19
 (`e90179c6`, api-01123-nbw / web-00973-rdj; `scholarship/0174` migrate-first; cutover
 `docs/scholarship/sources-c-cutover-sql.md`). Sprint D BUILT 2026-10-19 (not committed, not live;
-`courses/0081` migrate-first, `courses/0082` image-first and OWNER-run; cutover
+`courses/0082` migrate-first, `courses/0083` image-first and OWNER-run; cutover
 `docs/scholarship/sources-d-cutover-sql.md`; retro `docs/retrospectives/retrospective-2026-10-19-sources-arc.md`).
-**THE ARC IS COMPLETE** once Sprint D is live and 0082 has run. Left open on purpose: TD-386 (c)/(d)
+**THE ARC IS COMPLETE** once Sprint D is live and 0083 has run. Left open on purpose: TD-386 (c)/(d)
 (owner question) and TD-387 (the referral-partner screen).
 **Owner's model (settled 2026-10-09 — do not re-litigate):** *"Referral partners and sources and orgs
 are different. Referral partners are a category of their own. Orgs > sources."* Three categories:
@@ -249,14 +249,14 @@ the course-selector's"):**
   Source column — the owner's rule is that a bursary answer never reaches the partner logins. No
   column dropped for it; CUMIG's list (scoped by `referred_by_org`) is untouched.
 - **`StudentProfile.source` retired:** no writer (the submit's block is gone) and no reader; it left
-  the model; **courses 0082 drops the column IMAGE-FIRST, OWNER-RUN** after a backup table.
+  the model; **courses 0083 drops the column IMAGE-FIRST, OWNER-RUN** after a backup table.
   `build_intake_snapshot` reads the answer from the request (one rule with the row's `referral_code`).
 - **The cockpit's `referred_by_org` key removed** (api serializer + web type, pill, witness card and
   button read `source` only). Either deploy order is safe (cutover doc, "The deploy").
-- **The sources' old rows switched off, never deleted** (courses 0081, migrate-first): a row with a
+- **The sources' old rows switched off, never deleted** (courses 0082, migrate-first): a row with a
   `referral_sources` twin (same id AND code), not the referral partner, not a tenant. CUMIG stays live.
-- **`PartnerOrganisation.show_in_apply` retired:** 0081 gives the column `DEFAULT false` first (it was
-  `NOT NULL` with no database default, so the new image's inserts would fail before the drop); 0082
+- **`PartnerOrganisation.show_in_apply` retired:** 0082 gives the column `DEFAULT false` first (it was
+  `NOT NULL` with no database default, so the new image's inserts would fail before the drop); 0083
   drops it. The sources' own `show_in_apply` (`referral_sources`) is untouched.
 - **`source_twin` KEPT** — it is the Sprint B invite refusal's question ("is this a source's old row?"),
   which still guards an `org_admin` invite from turning an old row into a tenant. It now reaches the
