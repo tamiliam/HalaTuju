@@ -12,19 +12,35 @@ import { buildApplicationDetail } from '@/test/adminApplicationDetail'
 
 installCockpitConsoleGuard()
 
-const awarded = () => buildApplicationDetail('awarded', { bursary_agreement_enabled: true })
+const SRC = { id: 3, code: 'test-source', name: 'Test Referring Organisation' }
+const awarded = (extra: object = { source: SRC, referred_by_org: SRC }) =>
+  buildApplicationDetail('awarded', { bursary_agreement_enabled: true, ...extra })
+const button = () => screen.queryByRole('button', { name: 'admin.scholarship.bursary.witnessAction' })
 
 describe('the bursary card\'s witness button', () => {
-  it('is offered to a super', async () => {
+  it('is offered to a super when the application has a source', async () => {
     renderCockpit({ role: 'super', app: awarded() })
     await screen.findByText('admin.scholarship.bursary.title')
-    expect(screen.getByRole('button', { name: 'admin.scholarship.bursary.witnessAction' })).toBeTruthy()
+    expect(button()).toBeTruthy()
+  })
+
+  it('is offered to a super when an override is assigned and there is no source', async () => {
+    renderCockpit({ role: 'super', app: awarded({ source: null, referred_by_org: null, witness_org: SRC }) })
+    await screen.findByText('admin.scholarship.bursary.title')
+    expect(button()).toBeTruthy()
+  })
+
+  it('is not offered with neither a source nor an override (the server refuses: no_witness_organisation)', async () => {
+    renderCockpit({ role: 'super', app: awarded({ source: null, referred_by_org: null, witness_org: null }) })
+    await screen.findByText('admin.scholarship.bursary.title')
+    expect(screen.getByText('admin.scholarship.bursary.witness')).toBeTruthy()
+    expect(button()).toBeNull()
   })
 
   it('is not offered to an org_admin, who still sees the witness state', async () => {
     renderCockpit({ role: 'org_admin', app: awarded() })
     await screen.findByText('admin.scholarship.bursary.title')
     expect(screen.getByText('admin.scholarship.bursary.witness')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'admin.scholarship.bursary.witnessAction' })).toBeNull()
+    expect(button()).toBeNull()
   })
 })

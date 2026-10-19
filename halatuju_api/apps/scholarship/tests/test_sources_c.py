@@ -80,6 +80,18 @@ class TestTheSubmitKeepsTheAnswerOnTheApplication(_TwoOrganisations):
                 # The column and the frozen snapshot say the same thing.
                 self.assertEqual(app.intake_snapshot['profile']['referral_source'], code)
 
+    def test_a_submit_without_the_answer_never_takes_a_ref_code(self):
+        """Review fix: a `?ref=cumig` chip on the profile must not become the application's
+        source when the request carries no `referral_source` — the answer is the REQUEST's."""
+        student = make_shortlistable_student(referral_source='cumig', referred_by_org=self.cumig)
+        resp = authed_client(student).post(APPLY, {
+            'household_income': 2500, 'receives_str': True, 'consent_to_contact': True,
+            'programme_code': 'sc-gift-a'}, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        app = ScholarshipApplication.objects.get(profile=student)
+        self.assertEqual((app.referral_code, app.source_id,
+                          app.intake_snapshot['profile']['referral_source']), ('', None, ''))
+
     def test_the_source_is_the_applications_own_organisations(self):
         """TD-386 (a): B's `smc` answered on B's gift is B's source — never A's, though A has one
         with the same code, and whatever her profile said before."""
@@ -256,6 +268,38 @@ class TestTheBackfill(TestCase):
         for app, (_, code, source_id) in zip(apps, cases):
             app.refresh_from_db()
             self.assertEqual((app.referral_code, app.source_id), (code, source_id))
+
+    @override_settings(PARTNER_COMMS_ENABLED=True,
+                       EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_a_milestone_run_right_after_the_cutover_tells_no_one_about_the_past(self):
+        """Review fix (owner 2026-07-26, "only moving forward"): an old, unstamped awarded
+        application that the chip rule never reached (her chip moved on) would become due under
+        the per-application rule. The cutover stamps it; a run straight after sends nothing.
+        One the chip rule DID reach (chip = answer) is left to send as it always would."""
+        from django.core import mail
+        from django.core.management import call_command
+        from apps.scholarship import partner_notify
+        from apps.scholarship.models import PartnerEmailTemplate
+        call_command('seed_partner_email_templates', verbosity=0)
+        PartnerEmailTemplate.objects.update(enabled=True)
+        org = make_org('bk-a')
+        make_source(org, 'smc', contact_email='smc@bk.test')
+        round_ = make_cohort(programme=make_programme(organisation=org))
+        snap = {'profile': {'referral_source': 'smc'}}
+        backlog = make_application('awarded', cohort=round_, intake_snapshot=snap,
+                                   student=make_student(referral_source='other'))
+        reached = make_application('awarded', cohort=round_, intake_snapshot=snap,
+                                   student=make_student(referral_source='smc'))
+        FILL.fill_from_snapshot(live_apps, connection.schema_editor())
+        FILL.stamp_the_backlog(live_apps, connection.schema_editor())
+        backlog.refresh_from_db()
+        reached.refresh_from_db()
+        self.assertIsNotNone(backlog.partner_awarded_notified_at)
+        self.assertIsNone(reached.partner_awarded_notified_at)
+        mail.outbox = []
+        partner_notify.send_partner_milestones()
+        self.assertEqual(len(mail.outbox), 1)                     # the reached one only
+        self.assertNotIn(backlog.profile.name.upper(), mail.outbox[0].body.upper())
 
     def test_the_old_image_can_still_insert(self):
         """Between the hand-applied migration and the deploy, the serving image inserts

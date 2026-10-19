@@ -379,7 +379,10 @@ APPLICATION'S OWN ORGANISATION, `gift_sources.submitted_source`; PROTECT) are wr
 counts, the Applications Source filter / column / sort (`referral_code`), the cockpit's `source` key
 (and the old `referred_by_org` key, same value, one release). The witness is the override, else the
 application's source (`bursary._resolve_witness_org`) — never the referral partner — and only a super
-records it (`AdminBursaryWitnessView`). Source NAMES for every list role (reviewer and QC included):
+records it (`AdminBursaryWitnessView`; with neither a source nor an override, 400
+`no_witness_organisation`). The application's answer is the submit REQUEST's `referral_source`
+(absent → `''`), never the profile chip; scholarship 0174 also stamps the milestone backlog the old
+chip rule never reached, so no source is emailed about a past event. Source NAMES for every list role (reviewer and QC included):
 `GET /admin/scholarship/source-names/` (`AdminSourceNamesView`, fenced like Sources). The apply form's
 "Who referred you?" pre-fill is the apply gate's `referral` (`apply_gate.earlier_referral`: her own
 latest answer to THIS round's organisation) — never the profile chip, where a `?ref=` code lands.

@@ -434,7 +434,8 @@ class TestBursaryEndpoints(TestCase):
     def test_no_source_means_no_witness_organisation_even_with_a_referral_partner(self):
         # Superseded "no source leaves the referral partner as before" (sources Sprint C): a
         # `?ref=cumig` student who named no source has NO witness organisation — CUMIG's login
-        # is refused, and a super's record names no organisation (never CUMIG's twin).
+        # is refused, and so is a super (review fix: 400 `no_witness_organisation`, nothing
+        # recorded — never CUMIG's twin, never a witness naming nobody).
         cumig = _cumig()
         app = self._signed_app(suffix='w2p', org=cumig)
         PartnerAdmin.objects.create(
@@ -444,8 +445,25 @@ class TestBursaryEndpoints(TestCase):
             supabase_user_id='super-2p', name='Boss', email='boss2p@h.org',
             is_super_admin=True, role='super', is_active=True)
         self.assertEqual(self._witness_as('partner-2p', app).status_code, 403)
-        self.assertEqual(self._witness_as('super-2p', app).status_code, 200)
-        self.assertIsNone(BursaryAgreement.objects.get(application=app).witness_org_id)
+        resp = self._witness_as('super-2p', app)
+        self.assertEqual((resp.status_code, resp.data['code']), (400, 'no_witness_organisation'))
+        ag = BursaryAgreement.objects.get(application=app)
+        self.assertEqual((ag.witness_org_id, ag.witness_signed_at), (None, None))
+
+    def test_the_witness_post_records_the_override_over_the_source(self):
+        """Review: the override wins over the application's own source in the RECORD too."""
+        from apps.scholarship.models import ReferralSource
+        house = PartnerOrganisation.objects.get(code='brightpath')
+        smc = ReferralSource.objects.create(organisation=house, code='smc-o', name='SMC')
+        override = ReferralSource.objects.create(organisation=house, code='ovr-o', name='OVR')
+        app = self._signed_app(suffix='wov', source=smc)
+        app.witness_org = override
+        app.save(update_fields=['witness_org'])
+        PartnerAdmin.objects.create(
+            supabase_user_id='super-ov', name='Boss', email='bossov@h.org',
+            is_super_admin=True, role='super', is_active=True)
+        self.assertEqual(self._witness_as('super-ov', app).status_code, 200)
+        self.assertEqual(BursaryAgreement.objects.get(application=app).witness_org_id, override.pk)
 
     def test_missing_witness_does_not_block_activation(self):
         # The witness is non-blocking: student + guarantor + Foundation is enough to execute the

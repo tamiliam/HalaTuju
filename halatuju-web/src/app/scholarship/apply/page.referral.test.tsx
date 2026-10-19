@@ -217,6 +217,14 @@ describe('a `?ref=` code never pre-fills (sources Sprint C, owner\'s ruling)', (
     await waitFor(() => expect(select().value).toBe('smc'))
   })
 
+  it('clears her earlier answer when the gift no longer offers that source (review)', async () => {
+    intake.mockResolvedValue(OPEN([SMC]))
+    mount('pptm')
+    await screen.findByTestId('apply-gift-line')
+    await waitFor(() => expect(select().value).toBe(''))
+    expect(optionCodes()).not.toContain('pptm')
+  })
+
   it('never overwrites a choice she has already made (restored from the results detour)', async () => {
     intake.mockResolvedValue(OPEN([SMC, CUMIG]))
     stashApplyForm({ ...STASHED, referringOrg: 'cumig' })

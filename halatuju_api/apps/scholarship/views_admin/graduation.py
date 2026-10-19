@@ -137,6 +137,10 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
         from .. import bursary
         from ..serializers import BursaryAgreementSerializer
         org = bursary._resolve_witness_org(agreement.application)
+        if org is None:
+            # No source and no override: nobody to witness (review fix) — assign one first.
+            return Response({'error': 'no_witness_organisation', 'code': 'no_witness_organisation'},
+                            status=status.HTTP_400_BAD_REQUEST)
         bursary.record_witness(
             agreement, org=org,
             by_name=getattr(admin, 'name', '') or '',

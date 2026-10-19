@@ -119,8 +119,9 @@ WITH answer AS (
     FROM scholarship_applications a)
 SELECT s.id, s.code, s.name, s.is_active, (s.contact_email <> '') AS has_email,
        (SELECT count(*) FROM scholarship_applications a
-          JOIN api_student_profiles p ON p.supabase_user_id = a.profile_id
+          LEFT JOIN api_student_profiles p ON p.supabase_user_id = a.profile_id
          WHERE p.referral_source = s.code AND a.owning_organisation_id = s.organisation_id) AS before,
+       -- (a profile-deleted application has no chip: never in "before", but in "after" if it named s)
        (SELECT count(*) FROM answer x
          WHERE x.code = s.code AND x.owning_organisation_id = s.organisation_id) AS after
   FROM referral_sources s
@@ -136,9 +137,11 @@ WITH answer AS (
                    THEN a.intake_snapshot -> 'profile' ->> 'referral_source' ELSE '' END, 50) AS code
     FROM scholarship_applications a)
 SELECT count(*) AS differs
-  FROM answer x JOIN api_student_profiles p ON p.supabase_user_id = x.profile_id
+  FROM answer x LEFT JOIN api_student_profiles p ON p.supabase_user_id = x.profile_id
  WHERE COALESCE(p.referral_source, '') <> x.code;
--- expect: D (write it down). D = 0 means before = after on every row of check 6.
+-- expect: D (write it down). D = 0 means before = after on every row of check 6. LEFT JOIN on
+-- purpose (review): an application whose profile was deleted has no chip, so it counts as
+-- differing whenever it named something.
 
 -- 8. WITNESS CHANGES (owner rulings 2 and 3) — applications that could be asked to witness
 --    (awarded / active / maintenance) whose witness organisation changes:
@@ -170,12 +173,41 @@ SELECT x.id, x.status,
 SELECT count(*) FROM bursary_agreements WHERE witness_signed_at IS NOT NULL;
 -- expect: the same number at post-check E.
 
+-- 10. THE MILESTONE BACKLOG (review fix; owner 2026-07-26: partner milestone emails are "only
+--     moving forward"). Applications in a milestone state, NOT stamped, whose own answer names a
+--     source of their organisation, but which the old chip rule never reached (the chip differs,
+--     or the profile is gone). Under the new rule each would become due at the next hourly run and
+--     email a source about a months-old event. The cutover STAMPS them (below) so they never send.
+WITH answer AS (
+  SELECT a.id, a.status, a.owning_organisation_id, a.profile_id,
+         a.partner_awaiting_notified_at, a.partner_awarded_notified_at,
+         LEFT(CASE WHEN jsonb_typeof(a.intake_snapshot -> 'profile' -> 'referral_source') = 'string'
+                   THEN a.intake_snapshot -> 'profile' ->> 'referral_source' ELSE '' END, 50) AS code
+    FROM scholarship_applications a)
+SELECT x.id, x.status, x.code, s.is_active, (s.contact_email <> '') AS has_email
+  FROM answer x
+  JOIN referral_sources s ON s.organisation_id = x.owning_organisation_id AND s.code = x.code
+  LEFT JOIN api_student_profiles p ON p.supabase_user_id = x.profile_id
+ WHERE x.code NOT IN ('', 'halatuju', 'social', 'other')
+   AND ((x.status = 'profile_complete' AND x.partner_awaiting_notified_at IS NULL)
+     OR (x.status IN ('awarded', 'active', 'maintenance') AND x.partner_awarded_notified_at IS NULL))
+   AND (p.supabase_user_id IS NULL OR p.referral_source IS DISTINCT FROM x.code)
+ ORDER BY x.id;
+-- expect: 0 rows (lead's production read, 2026-10-19 — counted only rows naming an ACTIVE source
+-- with an email; this check lists every one). ASK THE OWNER IF > 0 before applying: the cutover
+-- stamps them as told (never emailed).
+
 ROLLBACK;
 ```
 
 ## The cutover (ONE transaction)
 
-Replace `<<N>>` (check 3) and `<<S>>` (check 5) — each appears ONCE, in the asserting `DO` block.
+⚠ **Run it in a quiet hour** (late evening MYT): `ALTER TABLE … ADD COLUMN … REFERENCES` and the
+indexes hold a lock on `scholarship_applications` for the whole transaction, so every application
+read and write waits until the commit. **Write down the time you start it** (`SELECT now();`) — the
+post-deploy sweep needs it as `<<CUTOVER_AT>>`.
+
+Replace `<<N>>` (check 3) and `<<S>>` (check 5) — each appears in the asserting `DO` block.
 
 ```sql
 BEGIN;
@@ -196,7 +228,22 @@ UPDATE scholarship_applications a
    AND s.code = a.referral_code
    AND a.referral_code NOT IN ('', 'halatuju', 'social', 'other');
 
--- The UPDATE queued deferred-FK events; settle them before any CREATE INDEX (the 0163 rule).
+-- Stamp the milestone backlog (= scholarship 0174's `stamp_the_backlog`; pre-check 10). The SELECT
+-- prints the ids — copy them into the cutover note. Expected: the rows pre-check 10 listed.
+CREATE TEMP TABLE sources_c_backlog ON COMMIT DROP AS
+SELECT a.id, a.status FROM scholarship_applications a
+  LEFT JOIN api_student_profiles p ON p.supabase_user_id = a.profile_id
+ WHERE a.source_id IS NOT NULL
+   AND ((a.status = 'profile_complete' AND a.partner_awaiting_notified_at IS NULL)
+     OR (a.status IN ('awarded', 'active', 'maintenance') AND a.partner_awarded_notified_at IS NULL))
+   AND (p.supabase_user_id IS NULL OR p.referral_source IS DISTINCT FROM a.referral_code);
+SELECT id, status FROM sources_c_backlog ORDER BY id;
+UPDATE scholarship_applications SET partner_awaiting_notified_at = now()
+ WHERE id IN (SELECT id FROM sources_c_backlog WHERE status = 'profile_complete');
+UPDATE scholarship_applications SET partner_awarded_notified_at = now()
+ WHERE id IN (SELECT id FROM sources_c_backlog WHERE status IN ('awarded', 'active', 'maintenance'));
+
+-- The UPDATEs queued deferred-FK events; settle them before any CREATE INDEX (the 0163 rule).
 SET CONSTRAINTS ALL IMMEDIATE;
 
 CREATE INDEX "scholarship_applications_referral_code_0a2365a5" ON "scholarship_applications" ("referral_code");
@@ -285,26 +332,32 @@ the sweep below. No freeze is needed (Sources and gift Configuration are untouch
 
 ## After the deploy (once `status.latestReadyRevisionName` is the new revision)
 
-Re-run the backfill for the applications submitted in the window — idempotent, it writes the same
-values to every other row:
+Re-run the backfill for the applications submitted in the window — ONLY those submitted at or after
+the cutover's start (`<<CUTOVER_AT>>`, the time you wrote down). **Run it twice, a few minutes
+apart**: a submit still in flight on an old-image instance at the first run lands after it. It is
+idempotent; the new image writes both columns itself, so its rows are never touched.
 
 ```sql
 BEGIN;
 UPDATE scholarship_applications a
    SET referral_code = LEFT(CASE WHEN jsonb_typeof(a.intake_snapshot -> 'profile' -> 'referral_source') = 'string'
                                  THEN a.intake_snapshot -> 'profile' ->> 'referral_source' ELSE '' END, 50)
- WHERE a.referral_code = '' AND a.source_id IS NULL;
+ WHERE a.submitted_at >= '<<CUTOVER_AT>>'
+   AND a.referral_code = '' AND a.source_id IS NULL;
 UPDATE scholarship_applications a
    SET source_id = s.id
   FROM referral_sources s
- WHERE a.source_id IS NULL
+ WHERE a.submitted_at >= '<<CUTOVER_AT>>'
+   AND a.source_id IS NULL
    AND s.organisation_id = a.owning_organisation_id
    AND s.code = a.referral_code
    AND a.referral_code NOT IN ('', 'halatuju', 'social', 'other');
 COMMIT;
 ```
 
-Then re-run post-check B (expect 0, 0) and tell the owner how many rows the sweep filled.
+Then re-run post-check B (expect 0, 0) and tell the owner how many rows each sweep filled. (A window
+row cannot be a milestone backlog: it was submitted after the cutover, so any milestone it reaches
+happens later and is told normally.)
 
 ## Rollback
 

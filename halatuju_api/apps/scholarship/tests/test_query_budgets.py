@@ -61,7 +61,7 @@ from django.urls import resolve
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
-    make_org, make_programme, make_shortlistable_student,
+    make_org, make_programme, make_shortlistable_student, make_source,
 )
 from apps.scholarship.tests.test_income_whose_str_vouches import WhoseStrBase
 
@@ -130,14 +130,19 @@ class TestTheOfficerApplicantViewQueryBudget(TestCase):
     def setUpTestData(cls):
         cls.budgets = _budgets()
 
-    def _case(self, documents=()):
+    def _case(self, documents=(), with_source=False):
         """An applicant an officer would actually be reading: an org, its gift, a cohort under it,
         a student the real engine shortlists, and the case at `interviewing` — the stage the
-        cockpit is open on. The officer is an `org_admin` fenced to that organisation."""
+        cockpit is open on. The officer is an `org_admin` fenced to that organisation.
+        `with_source`: her application named one of the organisation's sources (sources Sprint C)."""
         org = make_org()
         cohort = make_cohort(programme=make_programme(organisation=org), owning_organisation=org)
+        if with_source:
+            make_source(org, 'qb-src')
         app = make_application('interviewing', cohort=cohort,
-                               student=make_shortlistable_student())
+                               student=make_shortlistable_student(
+                                   referral_source='qb-src' if with_source else None))
+        assert (app.source_id is not None) == with_source
         for i, doc_type in enumerate(documents):
             ApplicantDocument.objects.create(
                 application=app, doc_type=doc_type,
@@ -146,8 +151,8 @@ class TestTheOfficerApplicantViewQueryBudget(TestCase):
         client = authed_client(make_admin('org_admin', owning_org=org))
         return client, f'/api/v1/admin/scholarship/applications/{app.id}/'
 
-    def _queries_to_open(self, documents=()):
-        client, url = self._case(documents)
+    def _queries_to_open(self, documents=(), with_source=False):
+        client, url = self._case(documents, with_source)
         # One warm-up request first. Django's test client and the auth layer each read a row the
         # FIRST time they are used in a test, and counting those would make the budget depend on
         # what ran before it rather than on what this endpoint does.
@@ -167,6 +172,12 @@ class TestTheOfficerApplicantViewQueryBudget(TestCase):
             f'THE BUDGET — it may only go down (and `test_code_standards.py` refuses to let it go '
             f'up). Find the extra read: the usual cause is a helper that builds a fresh queryset '
             f'inside a loop or inside a function the serializer calls once per field.')
+
+    def test_an_applicant_with_a_source_costs_what_a_bare_one_does(self):
+        """Sources Sprint C: the cockpit serves the application's `source` (and the old
+        `referred_by_org` key) — a join in `_get_application`, never a query of its own. Held to
+        the BARE budget, not a new one."""
+        self.assertEqual(self._queries_to_open(with_source=True), self._queries_to_open())
 
     def test_three_documents_stay_inside_their_budget(self):
         now, limit = self._queries_to_open(THREE_DOCUMENTS), self.budgets[WITH_DOCS]

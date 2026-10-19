@@ -118,9 +118,11 @@ export function PostAwardPanels({
                   {t('admin.scholarship.bursary.countersign')}
                 </button>
               )}
-              {/* Only a super records a witness (sources Sprint C, owner's ruling) — the server
-                  refuses everyone else, so the button is not offered to them. */}
-              {isSuper && (
+              {/* Only a super records a witness (sources Sprint C, owner's ruling), and only when
+                  there is a witness organisation — the application's source or an assigned
+                  override; with neither the server refuses (`no_witness_organisation`), so the
+                  button is not offered (assign one on the witness card first). */}
+              {isSuper && !!(app.witness_org || (app.source ?? app.referred_by_org)) && (
                 <button
                   type="button"
                   onClick={doWitnessBursary}
