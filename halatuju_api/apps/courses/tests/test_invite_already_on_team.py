@@ -57,12 +57,36 @@ class AlreadyOnTheTeam(TestCase):
         r = self._invite(self.lead_a, ' Rohini@Example.ORG ')
         self.assertEqual(r.json()['code'], 'already_on_team')
 
-    def test_a_fellow_org_admin_is_named_too_they_are_on_people(self):
+    def test_a_fellow_org_admin_is_named_but_not_sent_to_people(self):
+        # Listed on People, but not manageable (`_staff_target_manageable`): People has nothing
+        # for the caller to do, so the sentence points to support instead (review fix 6).
         make_admin('org_admin', owning_org=self.org_a, name='Kulaly', email='kulaly@example.org')
         r = self._invite(self.lead_a, 'kulaly@example.org')
         self.assertEqual(r.status_code, 409)
         self.assertEqual(r.json()['error'], 'Kulaly is already on your team as Organisation admin. '
-                                            'To change what they can do, open People → Kulaly.')
+                                            'Ask HalaTuju support to change this.')
+        self.assertEqual(r.json()['code'], 'already_on_team')
+
+    def test_a_mixed_case_stored_address_in_another_organisation_is_still_refused(self):
+        # Review fix 5: a row stored before addresses were lowered must still be found, or the
+        # invite would create a second account for the same person.
+        make_admin('reviewer', owning_org=self.org_b, name='Bala', email='Bala@Example.org')
+        r = self._invite(self.lead_a, 'bala@example.org')
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.json(), {'error': NEUTRAL, 'code': 'not_invitable'})
+        self.assertEqual(PartnerAdmin.objects.filter(email__iexact='bala@example.org').count(), 1)
+
+    def test_a_reinvite_resets_a_custom_set_to_the_new_role_s_preset(self):
+        # Review fix 1: a switched-off, never-seen row brought back by a re-invite gets the role
+        # the inviter chose — its old custom permissions never come back with it.
+        row = make_admin('reviewer', owning_org=self.org_a, name='Old', email='old@gmail.com',
+                         is_active=False, permissions=['review', 'spending'])
+        PartnerAdmin.objects.filter(pk=row.pk).update(supabase_user_id=None)
+        r = self._invite(self.lead_a, 'old@gmail.com', role='qc', name='Old Again')
+        self.assertEqual(r.status_code, 201, r.content)
+        row.refresh_from_db()
+        self.assertEqual((row.role, row.is_active, row.permissions), ('qc', True, None))
+        self.assertEqual(row.permission_set, ('see_all', 'qc'))
 
     def test_a_switched_off_colleague_who_has_signed_in_is_sent_to_restore(self):
         # Not reusable (TD-335 re-invites only a never-seen, work-free row), so the 409 stands.

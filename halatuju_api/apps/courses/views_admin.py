@@ -47,9 +47,11 @@ def send_partner_welcome_email(*args, **kwargs):
     a cross-app edge that can take the service down at start-up rather than merely tangle it. The
     other two dozen were already lazy, each inside the function that needs it.
 
-    This is a seam, not an indirection: the name, the three call sites below and the patch target
-    `apps.courses.views_admin.send_partner_welcome_email` are all exactly what they were. Doing it
-    as three lazy imports instead would have been three import statements where there was one, and
+    This is a seam, not an indirection. Its three callers (invite twice, resend) moved to
+    `views_staff.py` with request #39 Sprint 1 and import this function by name, so a test patches
+    `apps.courses.views_staff.send_partner_welcome_email` (the name they call), or
+    `apps.scholarship.emails.send_partner_welcome_email`, which bites through this seam from either
+    module. Three lazy imports instead would have been three statements where there is one, and
     the app-boundary standard counts statements.
     """
     from apps.scholarship import emails

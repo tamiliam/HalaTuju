@@ -65,8 +65,14 @@ def already_exists_answer(caller, existing):
       organisation's colleague, a super, a referral partner: all the same answer, so it cannot be
       used to learn which organisation an address belongs to (the S1 door list's question).
 
-    A student's own login is not a staff account and never reaches here: it is still invited, on
-    the already-registered path (unchanged). The sentences are served, so the web adds no string.
+    Somebody listed but NOT manageable by the caller (`_staff_target_manageable` — a fellow
+    organisation admin) is named, but never sent to People, where there is nothing they can do:
+    "… Ask HalaTuju support to change this." (review fix 6).
+
+    A student's or sponsor's own login is not a staff account and never reaches here: it is still
+    invited on the already-registered 201 path — lead ruling 2026-10-19 (a person with a student
+    login may legitimately become staff; the inviter learns only that the address has a HalaTuju
+    login, which is pre-existing, accepted behaviour). The sentences are served; the web adds none.
     """
     if existing is None or not _listed_on_people(caller, existing):
         return Response({'error': NOT_INVITABLE, 'code': 'not_invitable'}, status=409)
@@ -80,8 +86,12 @@ def already_exists_answer(caller, existing):
         where = f'{name} is already on your team as {label}.'
     else:
         where = f'{name} is on your team as {label}, but switched off.'
-    then = (f'To change what they can do, open People → {name}.' if existing.is_active
-            else f'To bring them back, open People → {name}.')
+    if not _staff_target_manageable(caller, existing):
+        then = 'Ask HalaTuju support to change this.'
+    elif existing.is_active:
+        then = f'To change what they can do, open People → {name}.'
+    else:
+        then = f'To bring them back, open People → {name}.'
     return Response({'error': f'{where} {then}', 'code': 'already_on_team', 'name': name,
                      'preset': role, 'is_active': existing.is_active}, status=409)
 
@@ -207,7 +217,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             return Response({'error': 'email and name are required'}, status=400)
 
         # TD-335: a switched-off invitee who never signed in is invited AGAIN (`staff_reinvite`).
-        reuse = PartnerAdmin.objects.filter(email=email).first()
+        reuse = PartnerAdmin.objects.filter(email__iexact=email).first()  # rows predate lowering
         exists = already_exists_answer(admin, reuse)   # request #39: says only what People shows
         if reuse is not None and not staff_reinvite.may_reuse(admin, reuse):
             return exists

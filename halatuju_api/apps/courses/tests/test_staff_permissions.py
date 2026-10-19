@@ -91,6 +91,13 @@ class Resolve(TestCase):
                 self.assertIn('see_all', preset, role)
 
 
+class TheDjangoAdminCannotEditThem(TestCase):
+    def test_permissions_is_read_only_until_the_sprint_4_editor(self):
+        # A hand edit in /admin/ would skip every rule the editor enforces (review fix 4).
+        from django.contrib import admin as django_admin
+        self.assertIn('permissions', django_admin.site._registry[PartnerAdmin].readonly_fields)
+
+
 class Holders(TestCase):
     def setUp(self):
         self.org = PartnerOrganisation.objects.create(code='h-org', name='H')

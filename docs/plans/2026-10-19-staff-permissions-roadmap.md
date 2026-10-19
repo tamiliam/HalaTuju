@@ -303,6 +303,19 @@ lib + drift test and the invite message. Two build notes for S2/S3:
   `payments_check` and `org_admin`'s lead tier holds `payments_approve`, because S1 must reproduce
   today and no payment gate converts until S2. S2 changes exactly those two presets and the three
   golden rows marked `s2` (check, approval, check-armed), quoting the owner's ruling.
+- **⚠ SUPERSEDES item 5's "a student login" (lead ruling 2026-10-19, adversarial review):** an
+  address that belongs to a student's or sponsor's own login is NOT answered with the neutral 409. It
+  keeps the existing 201 "already has an account — access granted" path: a person with a student
+  login may legitimately become staff, and the inviter learns only that the address has a HalaTuju
+  login — pre-existing behaviour, accepted. The neutral `not_invitable` answer covers existing STAFF
+  accounts the caller cannot see on People (another organisation, a super, a referral partner).
+- **Review fixes (same day):** a TD-335 re-invite resets `permissions` to NULL (the new role's preset,
+  never a stale custom set — the S4 door-list ruling, brought forward); the invite matches the stored
+  address case-insensitively; a listed-but-unmanageable colleague (a fellow org_admin) is told "Ask
+  HalaTuju support to change this." instead of being sent to People; `permissions` is read-only in
+  the Django admin until S4; the golden table gained seven rows (payment email recipients ×2, the
+  served check flag, `_other_active_finance`, the run-in-progress and open-cases switch refusals, the
+  assignable list as an org_admin reads it) — 26 rows, 8 marked `s2`.
 - **S3 finding:** the lead tier holds `qc`, so "people who hold `review` or `qc` appear on Reviewers"
   would ADD org_admins to the Reviewers tab, where they are not today. Declared as a divergence in
   the golden table; S3 must exclude the lead tier there (or ask the owner).

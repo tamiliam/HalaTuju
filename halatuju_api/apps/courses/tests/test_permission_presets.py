@@ -23,6 +23,7 @@ approver, and no preset holds the CHECK any more. Every other row must stay exac
 The reverse sweep (`ReverseSweep`) holds the vocabulary: every catalogue key reaches at least one row,
 every stored role resolves, and no row names a key the catalogue does not have.
 """
+import datetime
 from types import SimpleNamespace
 from unittest import mock
 
@@ -198,6 +199,64 @@ GOLDEN = {
         's2': S2_RULING + ' — re-keyed to "an active member holds payments_check"; wallet credits '
                           'keep the finance-role rule (credit_check_required).',
     },
+    'check_step_served_on_a_run': {
+        'where': 'views_admin/payments.py _payment_run_detail finance_check_required (a run of an '
+                 'organisation whose only active member is X)',
+        'keys': ('payments_check',),
+        'today': _t('finance'),
+        'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_check'))),
+        's2': S2_RULING + ' — served as check_step_required beside it; same predicate.',
+    },
+    'countersign_email_goes_to': {
+        'where': 'emails/payment_mail.py send_payment_countersign_email (role org_admin)',
+        'keys': ('payments_approve',),
+        'today': _t('org_admin'),
+        'rule': lambda a, c: a in sp.holders(c.org, 'payments_approve'),
+        's2': S2_RULING + ' — the "ready" email goes to the approvers (Finance), else the '
+                          'checkers when armed, else the org admins under the fallback.',
+    },
+    'check_email_goes_to': {
+        'where': 'emails/payment_mail.py send_payment_finance_check_email (role finance)',
+        'keys': ('payments_check',),
+        'today': _t('finance'),
+        'rule': lambda a, c: a in sp.holders(c.org, 'payments_check'),
+        's2': S2_RULING + ' — goes to payments_check holders, when anybody holds it.',
+    },
+    'other_active_finance': {
+        'where': 'staff_lifecycle._other_active_finance (the role-change consequence: is X another '
+                 'active finance member of the target\'s organisation?)',
+        'keys': ('payments_check',),
+        'today': _t('finance'),
+        'rule': lambda a, c: c.alone(a, lambda org: bool(sp.holders(org, 'payments_check'))),
+        's2': S2_RULING + ' — the consequence words follow the re-keyed check; credits keep the '
+                          'finance-role rule.',
+    },
+    'switch_refused_for_unfinished_run': {
+        'where': 'staff_lifecycle.plan_role_change run_in_progress (X made / signed an unfinished '
+                 'run and is switched to its role pair)',
+        'keys': ('payments_check',),
+        'today': _t('admin'),
+        'rule': lambda a, c: c.pair_preset_holds(a, ('payments_check',)),
+        's2': S2_RULING + ' — "cannot check their own run" becomes "cannot approve their own run" '
+                          '(the pair preset then holds payments_approve).',
+    },
+    'switch_refused_with_open_cases': {
+        'where': 'staff_lifecycle.plan_role_change has_open_cases (X holds an in-play case and is '
+                 'switched to its role pair) — the refusal the S4 PATCH reuses',
+        'keys': ('review', 'see_all'),
+        'today': _t('admin'),
+        'rule': lambda a, c: c.pair_preset_lacks(a, ('review', 'see_all')),
+    },
+    'assignable_list_for_org_admin': {
+        'where': 'views_admin/lifecycle.py AdminAssignableAdminsView (role__in), read by an org_admin',
+        'keys': ('review',),
+        'today': _t('org_admin', 'admin', 'qc', 'reviewer'),
+        'rule': lambda a, c: a.has_perm('review') and a.owning_organisation_id == c.org.id,
+        'diverges': {r: R1 + ' The org_admin\'s LIST is wide today (the cockpit unions the current '
+                         'assignee in from it, bug #66) while its assign endpoint and the web '
+                         'picker take reviewers only; S3 keeps the list and serves `assignable`.'
+                     for r in ('org_admin', 'admin', 'qc')},
+    },
     # ── G. the team (lead tier: stays on role in #39, so the key maps but never converts) ────────
     'may_invite_staff': {
         'where': 'courses/views_staff.py AdminInviteView (who may invite)',
@@ -358,6 +417,84 @@ class GoldenTable(TestCase):
         from apps.scholarship.payments import finance_check_required
         return self.alone(a, finance_check_required)
 
+    def probe_check_step_served_on_a_run(self, a):
+        import datetime
+        from apps.scholarship.models import PaymentRun
+        caller = make_admin('super', super_admin=True)
+
+        def served(org):
+            run = PaymentRun.objects.create(organisation=org, payment_date=datetime.date(2026, 11, 1),
+                                            reference=f'PR-GOLD-{org.code}', status='admin_signed')
+            r = self._http(caller, 'get', f'/api/v1/admin/scholarship/payment-runs/{run.id}/')
+            self.assertEqual(r.status_code, 200, r.content)
+            return r.json()['finance_check_required']
+        return self.alone(a, served)
+
+    def _recipients(self, send):
+        from django.core import mail
+        run = SimpleNamespace(id=1, reference='PR-GOLD', organisation=self.org,
+                              admin_signed_name='Maker', payment_date=datetime.date(2026, 11, 1))
+        mail.outbox.clear()
+        with mock.patch('apps.scholarship.emails.payment_mail._run_totals', return_value=(1, 100)), \
+                mock.patch('apps.scholarship.emails.payment_mail._run_month_label',
+                           return_value='November 2026'):
+            send(run)
+        return {to for m in mail.outbox for to in m.to}
+
+    def probe_countersign_email_goes_to(self, a):
+        from apps.scholarship.emails.payment_mail import send_payment_countersign_email
+        return a.email in self._recipients(send_payment_countersign_email)
+
+    def probe_check_email_goes_to(self, a):
+        from apps.scholarship.emails.payment_mail import send_payment_finance_check_email
+        return a.email in self._recipients(send_payment_finance_check_email)
+
+    def probe_other_active_finance(self, a):
+        from apps.scholarship.staff_lifecycle import _other_active_finance
+
+        def ask(org):
+            target = make_admin('admin', owning_org=org)
+            return _other_active_finance(target)
+        return self.alone(a, ask)
+
+    def _plan_switch(self, a, open_cases, runs):
+        from apps.scholarship import staff_lifecycle as sl
+        to = sl.ROLE_PAIRS.get(a.role, 'finance')
+        with mock.patch.object(sl, 'open_cases', return_value=open_cases), \
+                mock.patch.object(sl, 'runs_in_progress', return_value=runs):
+            try:
+                sl.plan_role_change(a, to)
+            except sl.RoleChangeRefused as e:
+                return e.code
+        return None
+
+    def probe_switch_refused_for_unfinished_run(self, a):
+        return self._plan_switch(a, 0, 1) == 'run_in_progress'
+
+    def probe_switch_refused_with_open_cases(self, a):
+        return self._plan_switch(a, 1, 0) == 'has_open_cases'
+
+    def probe_assignable_list_for_org_admin(self, a):
+        r = self._http(self.people['org_admin'], 'get', '/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        return a.id in {row['id'] for row in r.json()['admins']}
+
+    # ── rule helpers: the role pairs are preset-bound (R2), so the rule reads the PAIR's preset ──
+    @staticmethod
+    def _pair_preset(a):
+        from apps.scholarship.staff_lifecycle import ROLE_PAIRS
+        if a.is_super or a.role not in ROLE_PAIRS:
+            return None
+        return set(sp.preset_for(ROLE_PAIRS[a.role]))
+
+    def pair_preset_holds(self, a, keys):
+        preset = self._pair_preset(a)
+        return preset is not None and bool(preset & set(keys))
+
+    def pair_preset_lacks(self, a, keys):
+        preset = self._pair_preset(a)
+        return preset is not None and not (preset & set(keys))
+
     def probe_may_invite_staff(self, a):
         # Name and email missing: an admitted caller gets 400, a refused one 403.
         return self._http(a, 'post', '/api/v1/admin/invite/', {'role': 'reviewer'}).status_code != 403
@@ -422,4 +559,7 @@ class ReverseSweep(TestCase):
 
     def test_the_s2_rows_are_exactly_the_payment_chain(self):
         s2 = sorted(g for g, row in GOLDEN.items() if 's2' in row)
-        self.assertEqual(s2, ['check_step_armed_by', 'sign_the_approval', 'sign_the_check'])
+        self.assertEqual(s2, ['check_email_goes_to', 'check_step_armed_by',
+                              'check_step_served_on_a_run', 'countersign_email_goes_to',
+                              'other_active_finance', 'sign_the_approval', 'sign_the_check',
+                              'switch_refused_for_unfinished_run'])

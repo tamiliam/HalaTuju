@@ -150,10 +150,14 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None):
         row.name, row.role, row.org, row.owning_organisation = name, role, org, owning_org
         row.is_super_admin = (role == 'super')
         row.is_active, row.paused_at, row.programme = True, None, None
+        # ⚠ BACK TO THE PRESET (request #39): the inviter chose a role, and an old custom set of
+        # permissions must never come back with it (roadmap Sprint 4 door list ruling).
+        row.permissions = None
         # ⚠ Written even when None: a login that was removed at Supabase and could not be
         # re-created (the address now belongs to another account) must not leave a dead UID on the
         # row, or `get_admin`'s email backfill — which links only a row with NO UID — never fires.
         row.supabase_user_id = uid
         row.save(update_fields=['name', 'role', 'org', 'owning_organisation', 'is_super_admin',
-                                'is_active', 'paused_at', 'programme', 'supabase_user_id'])
+                                'is_active', 'paused_at', 'programme', 'permissions',
+                                'supabase_user_id'])
     return row, already, None

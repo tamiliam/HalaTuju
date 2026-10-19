@@ -14196,7 +14196,7 @@ The six recommendations that therefore stand (the plan's "Open questions"):
   `org_admin` = the APPROVAL), because no gate converts in S1 and the golden table must prove the
   presets reproduce today. Sprint 2 applies the owner's payment ruling by changing exactly those two
   presets and the three golden rows marked `s2`.
-- **The golden table** (`apps/courses/tests/test_permission_presets.py`): 19 gates × 7 roles, each
+- **The golden table** (`apps/courses/tests/test_permission_presets.py`): 26 gates × 7 roles (19, plus 7 added by the review), each
   probe calling the real gate, green on the unconverted code. Two declared divergences: **R1** on four
   rows (a super may assign reviewer/admin/qc/org_admin, the permission `review` reproduces only the
   org_admin side; kept as a super override — production 2026-10-19: in-play cases with reviewers 68,
@@ -14210,7 +14210,17 @@ The six recommendations that therefore stand (the plan's "Open questions"):
   else** (another organisation's staff, a super, a referral partner) → 409 `not_invitable` with one
   byte-identical sentence: "This email address can't be invited. Ask HalaTuju support." The text is
   served; the web adds no string and removed the dead `apiErrors.adminExists` key. "they", not
-  "she": the record holds no gender.
+  "she": the record holds no gender. A colleague the caller may see but not manage (a fellow
+  org_admin, per `_staff_target_manageable`) is named but told "Ask HalaTuju support to change
+  this." rather than sent to People. The stored address is matched case-insensitively.
+- **Lead ruling (adversarial review, 2026-10-19) — a student's or sponsor's own login is still
+  invited.** It keeps the existing 201 "already has an account — access granted" path, NOT the
+  neutral 409: a person with a student login may legitimately become staff, and the inviter learns
+  only that the address has a HalaTuju login (pre-existing behaviour, accepted). This supersedes the
+  roadmap Sprint 1 item 5's "a student login" in the neutral list.
+- **A TD-335 re-invite resets `permissions` to NULL** (the new role's preset): the inviter chose a
+  role, and an old custom set must never come back with it (the S4 door-list ruling, applied now).
+  `permissions` is read-only in the Django admin until the S4 editor.
 - **`/admin/role/`** serves `permissions` (always resolved), `preset` and `custom`; `role` stays.
 
 **Alternatives considered:** a join table of (person, permission) rows (six writer doors to keep in

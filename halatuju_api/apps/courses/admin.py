@@ -88,3 +88,6 @@ class PartnerAdminAdmin(admin.ModelAdmin):
     list_display = ['name', 'email', 'org', 'is_super_admin', 'created_at']
     list_filter = ['is_super_admin', 'org']
     search_fields = ['name', 'email']
+    # Request #39: read-only here until Sprint 4's editor, which enforces the rules (lead tier,
+    # qc => see_all, open cases, history). A hand edit here would bypass every one of them.
+    readonly_fields = ['permissions']
