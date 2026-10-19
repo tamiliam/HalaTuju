@@ -33,8 +33,10 @@ from .programmes import (
     Programme, ProgrammeCodeAlias, ScholarshipCohort, code_is_free,
 )
 from .applications import (
-    FundingNeed, ScholarshipApplication,
+    ScholarshipApplication,
 )
+# Sources-and-referrals Sprint C (2026-10-19): moved verbatim out of `.applications` (moves only).
+from .funding_need import FundingNeed
 from .documents import (
     ApplicantDocument, Consent, OnboardingResponse, Referee,
 )
