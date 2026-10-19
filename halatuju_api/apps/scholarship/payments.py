@@ -459,7 +459,9 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
 
     ⚠ The run is re-read UNDER A ROW LOCK first (review fix 1, 2026-10-19): an edit from a stale
     page that lands after the approval would otherwise reopen a COMPLETED, PAID run as a draft, which
-    a second approval then pays again. Only the item's own three fields are written."""
+    a second approval then pays again. Then the ITEM is re-read under its own lock and only the fields
+    this request SENT are written (round 2: two tabs editing one item — one excluding, one changing
+    the amount from a stale load — must not undo the exclusion)."""
     run = run_item.run
     from .payments_chain import _lock
     _lock(run)
@@ -467,6 +469,12 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
         raise PaymentsError('not_editable')
     if run.status != 'draft':
         _revert_to_draft(run)
+    fresh = PaymentRunItem.objects.select_for_update().filter(pk=run_item.pk).values(
+        'included', 'exclude_reason', 'amount').first() or {}
+    for k, v in fresh.items():
+        setattr(run_item, k, v)
+    sent = (['included', 'exclude_reason'] if included is not None or exclude_reason is not None
+            else []) + (['amount'] if amount is not None else [])
 
     if included is not None:
         run_item.included = bool(included)
@@ -485,7 +493,7 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
         if val > cap:
             raise PaymentsError('amount_over_cap')
         run_item.amount = val
-    run_item.save(update_fields=['included', 'exclude_reason', 'amount', 'updated_at'])
+    run_item.save(update_fields=sent + ['updated_at'])
     return run_item
 
 

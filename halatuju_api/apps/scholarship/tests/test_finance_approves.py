@@ -23,7 +23,8 @@ from apps.courses.models import PartnerAdmin
 from apps.scholarship import payments
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
-    Disbursement, Donation, PaymentRun, Programme, Sponsor, SponsorProgrammeMembership,
+    Disbursement, Donation, PaymentRun, PaymentRunItem, Programme, Sponsor,
+    SponsorProgrammeMembership,
 )
 from apps.scholarship.tests.test_payments import _make_app, _make_cohort, _make_org, _run
 
@@ -375,6 +376,18 @@ class TestEditAndCancelCannotReopenAPaidRun(_Chain):
         payments.set_item(stale_item, amount='150')     # sees admin_signed under the lock
         run.refresh_from_db()
         self.assertEqual((run.status, run.admin_signed_email), ('draft', ''))
+
+    def test_two_tabs_editing_one_item_cannot_undo_an_exclusion(self):
+        # Round 2 review (2026-10-19): tab A excludes the student; tab B, loaded before that, changes
+        # the amount. B must change ONLY the amount — never re-include her or clear the reason.
+        run = self._run()
+        tab_a = PaymentRunItem.objects.select_related('run').get(run=run)
+        tab_b = PaymentRunItem.objects.select_related('run').get(run=run)
+        payments.set_item(tab_a, included=False, exclude_reason='left course')
+        payments.set_item(tab_b, amount='150')
+        item = PaymentRunItem.objects.get(pk=tab_a.pk)
+        self.assertEqual((item.included, item.exclude_reason, item.amount),
+                         (False, 'left course', Decimal('150')))
 
     def test_complete_refuses_a_run_already_paid(self):
         run, _, _ = self._paid_run_and_stale_copies()
