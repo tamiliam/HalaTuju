@@ -434,7 +434,7 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>What can I do as a finance admin?</>,
       a: <>You <strong>approve</strong> payment runs. Somebody prepares the month&rsquo;s list and signs it; you
         check it and approve it, and your approval releases the money &mdash; the instruction goes to Vircle with
-        the payment file, and you are copied. Runs waiting for you are listed at the top of
+        the payment file, and you and your organisation admins are copied. Runs waiting for you are listed at the top of
         <strong> Payments</strong>, and the menu shows how many. You also <strong>check</strong> wallet credits
         before your organisation admin countersigns them. You can read the <strong>funding summary</strong>
         &mdash; what each student was awarded, paid and still has left. You cannot create, edit or cancel a run.</>,

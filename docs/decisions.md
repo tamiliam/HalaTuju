@@ -14281,7 +14281,9 @@ modelled); maker ≠ approver; a third signer stays possible later by permission
    `payments_check`), like the approval — a Prepare+Check maker can never strand their own run. The
    payload's `check_step_required` / `finance_check_required` are this per-run answer (true also once
    a check is collected, for the layout); the email routing follows it.
-3. (Owner decision pending: the org admin's notice of a released run — not changed.)
+3. **The org admin's notice of a released run.** Owner decision on review item 3 (2026-10-19, option A): "when a run completes, the Vircle instruction email is ALSO copied to the organisation's active org admins, for information (in addition to the approver, deduplicated; never someone inactive; the CSV attachment stays as is)." Built in
+   `payment_mail._instruction_cc`: the approver first, then every ACTIVE org admin of the run's
+   organisation (never a super), each address once, case-insensitive.
 4. **A holder who has never signed in is not eligible** (`first_seen_at IS NULL`): production —
    BrightPath's only Finance person (id 24) had never signed in. Until they do, the org admin approves
    under the fallback **and receives the "awaits your approval" email; Finance is not emailed** (they

@@ -45,7 +45,8 @@ export const roleFinance: ManualChapter = {
         not just the screen. When you are satisfied, type your <strong>full name</strong> in the
         <strong> Approved</strong> box and click <strong>Approve &amp; send to Vircle</strong>. Your name must
         match the name on your account exactly, and it is recorded against the run permanently. The instruction
-        is emailed to Vircle at once, with you copied, so you hold your own record of what was sent.</>
+        is emailed to Vircle at once, with you and your organisation admins copied, so you all hold a record
+        of what was sent.</>
       ),
       img: '/manual/finance-signature.png',
       alt: 'The signature steps on a payment run',

@@ -238,7 +238,8 @@ export const roleOrgAdmin: ManualChapter = {
         and signs it, then your <strong>finance admin approves</strong> it. Only at that approval is the payment
         instruction emailed to Vircle with the file attached — nothing moves before that. You still create, edit
         and cancel runs, and you still put the organisation&rsquo;s money into Vircle (outside HalaTuju); what
-        changed in October 2026 is that you <strong>no longer countersign</strong> each run.</>
+        changed in October 2026 is that you <strong>no longer countersign</strong> each run. You are still
+        <strong>copied</strong> on every instruction sent to Vircle, so you know what has been released.</>
       ),
       img: '/manual/org-admin-payments.png',
       alt: 'A payment run awaiting approval (placeholder)',

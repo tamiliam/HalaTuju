@@ -179,7 +179,8 @@ the screen labels the steps Prepared / Checked / Approved):
   already at `admin_signed`. While armed, an approver at `admin_signed` is refused with
   `finance_check_required`.
 - **approver** (`payments_approve` — preset `finance`) → `completed`, which releases the money and
-  emails Vircle (approver CC'd). Stored in the `org_admin_signed_*` triple (a kept misnomer).
+  emails Vircle (the approver AND every active org admin CC'd, deduplicated — owner 2026-10-19,
+  option A). Stored in the `org_admin_signed_*` triple (a kept misnomer).
 - **the fallback:** when NO active `payments_approve` holder who has SIGNED IN (`first_seen_at`)
   and has not already signed the run exists, the **organisation admin** approves (the pre-change path). Live, per run: an organisation
   with no Finance person works exactly as before; the sole approver who prepared the run, the last

@@ -108,7 +108,8 @@ class TestInFlightOnDeployDay(_Chain):
         self.assertEqual((disb.status, disb.actioned_by), ('released', 'fina@x.com'))
         vircle = [m for m in mail.outbox if m.to == ['gokula@vircle.com']]
         self.assertEqual(len(vircle), 1)
-        self.assertEqual(vircle[0].cc, ['fina@x.com'])                 # the approver is copied
+        # The approver is copied, and (owner 2026-10-19, option A) the active org admins too.
+        self.assertEqual(vircle[0].cc, ['fina@x.com', 'suresh@x.com'])
         self.assertIn('prepared by Kulaly Maker and approved by Fina Approver', vircle[0].body)
         # A reader of the released money, unchanged: the Programme Overview's "paid" counts the
         # disbursement Finance's approval wrote, exactly as it counted Suresh's.
@@ -454,3 +455,42 @@ class TestAnApproverWhoHasNeverSignedIn(_Chain):
         self.assertFalse(payments.check_required_for(run))
         self.assertFalse(payments.finance_check_required(self.org))
         self.assertEqual(payments.next_step_for(run, self.finance), 'approve')
+
+
+class TestTheVircleInstructionIsCopiedToTheOrgAdmins(_Chain):
+    """Owner 2026-10-19 (#39 S2 review item 3, option A): the Vircle instruction is ALSO copied to the
+    organisation's active org admins, for information — deduplicated, never an inactive account; the
+    CSV attachment unchanged."""
+
+    def _vircle_mail(self):
+        return [m for m in mail.outbox if m.to == ['gokula@vircle.com']]
+
+    def test_finance_approves_finance_and_every_active_org_admin_are_copied(self):
+        second = _person(self.org, 'org_admin', 'Second Lead', 'lead2@x.com')
+        run = self._run()
+        self._sign(run, self.maker)
+        mail.outbox = []
+        self._sign(run, self.finance)
+        (msg,) = self._vircle_mail()
+        self.assertEqual(msg.cc, ['fina@x.com', 'suresh@x.com', second.email])
+        self.assertEqual(msg.attachments[0][0], f'{run.reference}.csv')
+
+    def test_an_org_admin_approving_under_the_fallback_is_copied_once(self):
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=False)
+        run = self._run()
+        self._sign(run, self.maker)
+        mail.outbox = []
+        self._sign(run, self.suresh)
+        (msg,) = self._vircle_mail()
+        self.assertEqual(msg.cc, ['suresh@x.com'])
+
+    def test_an_inactive_org_admin_is_never_copied(self):
+        gone = _person(self.org, 'org_admin', 'Gone Lead', 'gone@x.com')
+        PartnerAdmin.objects.filter(pk=gone.pk).update(is_active=False)
+        run = self._run()
+        self._sign(run, self.maker)
+        mail.outbox = []
+        self._sign(run, self.finance)
+        (msg,) = self._vircle_mail()
+        self.assertNotIn('gone@x.com', msg.cc)
+        self.assertEqual(msg.cc, ['fina@x.com', 'suresh@x.com'])

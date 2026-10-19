@@ -52,6 +52,11 @@ ORDER BY d.id;
 api they are absent, and admins would lose the edit and cancel controls until the api lands. The old
 web against the new api is safe (it ignores the new keys; the server refuses any wrong step).
 
+## Who is copied on the Vircle instruction
+
+Owner decision on review item 3 (2026-10-19, option A): "when a run completes, the Vircle instruction email is ALSO copied to the organisation's active org admins, for information (in addition to the approver, deduplicated; never someone inactive; the CSV attachment stays as is)." So on a Finance approval the copy goes to Finance AND every active org admin; under
+the fallback the approving org admin is copied once.
+
 ## A Finance person who has never signed in (review fix 4)
 
 A `payments_approve` (or `payments_check`) holder counts as eligible only once they have signed in

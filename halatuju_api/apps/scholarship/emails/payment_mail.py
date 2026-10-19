@@ -125,6 +125,23 @@ def send_payment_finance_check_email(run):
     return sent
 
 
+def _instruction_cc(run):
+    """Who is copied on the Vircle instruction: the approver, then the organisation's active org
+    admins, each address once (case-insensitive), in that order."""
+    from apps.courses.models import PartnerAdmin
+    emails = [(run.org_admin_signed_email or '').strip()]
+    emails += list(PartnerAdmin.objects.filter(
+        owning_organisation_id=getattr(run, 'organisation_id', None), role='org_admin',
+        is_active=True, is_super_admin=False).order_by('id').values_list('email', flat=True))
+    seen, cc = set(), []
+    for e in emails:
+        e = (e or '').strip()
+        if e and e.casefold() not in seen:
+            seen.add(e.casefold())
+            cc.append(e)
+    return cc
+
+
 def send_payment_run_email(run):
     """Payments D7 — on the approval, email Vircle the payment instruction with the run's
     CSV attached. Enabled when ``VIRCLE_PAYMENTS_EMAIL`` is set (default gokula@vircle.com);
@@ -153,8 +170,11 @@ def send_payment_run_email(run):
     )
     # Owner 2026-07-17 (approver's ask): CC the APPROVER — the final signer, Finance since #39
     # Sprint 2 (the org admin under the fallback) — so the organisation holds its own copy of
-    # exactly what was sent to Vircle.
-    cc = [e for e in [(run.org_admin_signed_email or '').strip()] if e]
+    # exactly what was sent to Vircle. Owner 2026-10-19 (#39 S2 review item 3, option A): ALSO the
+    # organisation's ACTIVE org admins, for information — they no longer sign the run, and they
+    # fund Vircle. Deduplicated case-insensitively (an org admin approving under the fallback is
+    # copied once); never an inactive account.
+    cc = _instruction_cc(run)
     try:
         msg = EmailMessage(
             subject=f'{_PROG_EN} — payment instruction {run.reference} ({month})',
