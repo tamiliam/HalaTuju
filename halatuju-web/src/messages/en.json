@@ -6756,7 +6756,7 @@
       "open": "Permissions",
       "close": "Close",
       "fixed": "{name}'s permissions are fixed and cannot be changed here.",
-      "unlistedHint": "A Reviewer or QC keeps “Review assigned students” or “Quality check”, or they would disappear from People.",
+      "unlistedHint": "A Reviewer or QC must keep “Review assigned students” or “Quality check”. For someone who only needs Spending or to view, invite them as an Admin instead.",
       "restoreFirst": "{name}’s access is revoked. Restore them before changing what they can do.",
       "effect": {
         "check_on": "Payment runs gain a check step: {name} checks each run before it is approved.",

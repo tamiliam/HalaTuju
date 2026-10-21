@@ -68,7 +68,8 @@ export const roleOrgAdmin: ManualChapter = {
             <li>Nobody signs a payment run twice: a person may prepare <em>and</em> approve runs, never both on the
             same run &mdash; and nobody checks or approves a run they created.</li>
             <li>A Reviewer or QC keeps <em>Review assigned students</em> or <em>Quality check</em>; without both they
-            would disappear from People. To take both away, change their role instead.</li>
+            would disappear from People. For someone who only needs Spending or to view, invite them as an
+            <strong> Admin</strong> instead.</li>
             <li>A revoked person&rsquo;s permissions can&rsquo;t be changed until you restore them.</li>
             <li><strong>Change role</strong> puts a changed set back to the new role&rsquo;s usual set, and says so
             before you answer.</li>

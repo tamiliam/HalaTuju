@@ -88,7 +88,8 @@ def _refuse_unlisted(target, after):
         raise PermissionChangeRefused(
             'would_leave_people', 400,
             'A Reviewer or QC must keep "Review assigned students" or "Quality check", or they would '
-            'disappear from People. To take both away, change their role instead.')
+            'disappear from People. For someone who only needs Spending or to view, invite them as '
+            'an Admin instead.')
 
 
 def _refuse_target(target, by):

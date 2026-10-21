@@ -6756,7 +6756,7 @@
       "open": "Kebenaran",
       "close": "Tutup",
       "fixed": "Kebenaran {name} adalah tetap dan tidak boleh diubah di sini.",
-      "unlistedHint": "Penilai atau Kawalan mutu mesti mengekalkan “Nilai pelajar yang ditugaskan” atau “Kawalan mutu”, jika tidak mereka akan hilang daripada senarai Orang.",
+      "unlistedHint": "Penilai atau Kawalan mutu mesti mengekalkan “Nilai pelajar yang ditugaskan” atau “Kawalan mutu”. Bagi seseorang yang hanya memerlukan Perbelanjaan atau untuk melihat, jemput mereka sebagai Pentadbir.",
       "restoreFirst": "Akses {name} telah ditarik balik. Pulihkan aksesnya sebelum mengubah apa yang boleh dilakukannya.",
       "effect": {
         "check_on": "Larian pembayaran mendapat langkah semakan: {name} menyemak setiap larian sebelum diluluskan.",

@@ -30,6 +30,9 @@ Only a super or the organisation admin, through the same `_staff_target_manageab
    eligibility (S2 review fix 4): a person who has never signed in gets `not_signed_in` instead of
    "the org admin stops approving". Codes: `check_on/off`, `approver_fallback_on/off`, `not_signed_in`,
    `files_widened` (Finance given `review` / `see_all`), `prepare_and_approve`.
+   **Review fix 2 (2026-10-21): the creator bar uses `created_by` only.** Somebody who EDITS a
+   colleague's run without creating or signing it can still approve it — accepted, because the maker's
+   signature (re-collected after any edit, which clears every signature) keeps two people involved.
 6. **The reviewer page's Pause follows the server's target rule:** the detail payload serves `pausable`
    (`is_review_target`), closing S3 review fix 4. The caller side stays super / org_admin.
 7. **The Guide opens sections, not chapters:** a section tagged `perm` shows to a team member holding
