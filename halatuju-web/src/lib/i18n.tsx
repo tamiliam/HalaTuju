@@ -7,6 +7,8 @@ import {
   useRef,
   useState,
   useCallback,
+  useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react'
 
@@ -16,7 +18,9 @@ import { useBranding } from '@/lib/branding-context'
 import {
   FALLBACK_CATALOGUE,
   catalogueIfLoaded,
+  catalogueVersion,
   loadCatalogue,
+  subscribeCatalogues,
   type Catalogue,
 } from '@/lib/messages'
 
@@ -65,6 +69,25 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string {
     }
   }
   return typeof current === 'string' ? current : path
+}
+
+/**
+ * TD-360: the value of `key` in `catalogue`, or in ENGLISH when the key's whole top-level
+ * NAMESPACE is absent from `catalogue` — which happens for exactly one reason: that slice of the
+ * reader's language has not arrived yet (a Malay / Tamil staff member's first admin page in a tab,
+ * accepted by the owner 2026-10-21). The words are right in a language, just briefly not theirs.
+ *
+ * ⚠ NEVER a fallback for a missing KEY. A namespace that is present but lacks the key returns the
+ * key itself, exactly as before — the contract `tOr` and the key-echo guard are built on.
+ */
+function lookup(catalogue: Catalogue, key: string): string {
+  if (catalogue !== FALLBACK_CATALOGUE) {
+    const namespace = key.split('.', 1)[0]
+    if (!Object.prototype.hasOwnProperty.call(catalogue, namespace)) {
+      return getNestedValue(FALLBACK_CATALOGUE, key)
+    }
+  }
+  return getNestedValue(catalogue, key)
 }
 
 /**
@@ -156,6 +179,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // Branding lives in the OUTER BrandingProvider (see providers.tsx). Its five AUTO_TOKENS are
   // auto-injected into every render, BENEATH the explicit call-site params (which always win).
   const branding = useBranding()
+  /**
+   * TD-360: moves whenever a message SLICE arrives or becomes required (the admin layout's words).
+   * A slice that lands for the language already on screen is merged into the same catalogue
+   * object, so identity cannot tell `t` it changed — this counter does. It also re-runs the effect
+   * below, which is how a required-but-missing slice gets fetched for the locale on screen.
+   */
+  const sliceVersion = useSyncExternalStore(subscribeCatalogues, catalogueVersion, catalogueVersion)
 
   // The stored locale's catalogue, for a reader who arrives already set to Malay or Tamil. A
   // no-op for English and for anything already in memory. `setActive` is guarded on the locale
@@ -178,7 +208,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       () => { /* keep showing English; the words are right in a language, just not this one */ },
     )
     return () => { alive = false }
-  }, [locale])
+  }, [locale, sliceVersion])
 
   // ⚠ THIS EFFECT NO LONGER RUNS AFTER A SWITCH, AND THAT IS THE SECOND HALF OF THE ONE-FETCH
   // RULE. `setLocale` commits `locale` only once the catalogue is in memory, so by the time
@@ -221,14 +251,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  // TD-360: the words AND the slice version as one value, so a slice merged into the SAME
+  // catalogue object still gives consumers a new `t` (identity alone cannot see that change).
+  const words = useMemo(() => ({ catalogue, sliceVersion }), [catalogue, sliceVersion])
+
   const t = useCallback(
     (key: string, params?: Record<string, string>) => {
-      const value = getNestedValue(catalogue, key)
+      const value = lookup(words.catalogue, key)
       // Branding tokens first, explicit params override them. interpolateMessage has a
       // '{'-absent fast path, so a plain string is returned untouched (byte-identical to before).
       return interpolateMessage(value, { ...brandingParams(branding, locale), ...params })
     },
-    [catalogue, locale, branding]
+    [words, locale, branding]
   )
 
   return (

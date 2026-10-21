@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable React strict mode
@@ -29,6 +31,21 @@ const nextConfig = {
   pageExtensions: process.env.NEXT_PUBLIC_SANDBOX
     ? ['tsx', 'ts', 'jsx', 'js', 'sandbox.tsx']
     : ['tsx', 'ts', 'jsx', 'js'],
+
+  /*
+   * TD-360: `import x from '@/messages/en.json?slice=admin'` gets only that slice of the file,
+   * cut at build time by `scripts/messages-slice-loader.js` (see its header). The message files
+   * themselves are never changed or copied. `codeStandards.test.ts` asserts this rule exists and
+   * points at the loader — a loader nobody wires is the TD-281 failure.
+   */
+  webpack(config) {
+    config.module.rules.push({
+      test: /[\\/]messages[\\/](en|ms|ta)\.json$/,
+      resourceQuery: /slice=/,
+      use: [{ loader: path.join(__dirname, 'scripts', 'messages-slice-loader.js') }],
+    })
+    return config
+  },
 }
 
 module.exports = nextConfig

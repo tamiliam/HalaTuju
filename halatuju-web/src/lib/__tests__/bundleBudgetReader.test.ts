@@ -10,7 +10,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import {
-  exactRoutes, layoutEntries, manifestReadings, nearLine, NEAR_LINE_KB, printTolerance,
+  CEILING_KB, exactRoutes, layoutEntries, manifestReadings, nearLine, NEAR_LINE_KB, printTolerance,
   routeOfEntry, SHRINK_SLACK_KB,
 } from '../../../scripts/bundle-budget'
 
@@ -117,9 +117,9 @@ describe('the near-line check', () => {
   })
 
   test('the margin covers the drift seen, and a freshly recorded line is never inside it', () => {
-    // The gate read 0.062 kB heavier (2026-10-05). 0.15 is the floor recorded 2026-10-06 and a
-    // ratchet: raise it (to 0.25 once TD-344 frees apply and application), never lower it.
-    expect(NEAR_LINE_KB).toBeGreaterThanOrEqual(0.15)
+    // The gate read 0.062 kB heavier (2026-10-05). 0.15 was the floor recorded 2026-10-06; it is
+    // a ratchet and was RAISED to 0.25 by TD-360 Sprint 1 (2026-10-21), closing TD-344. Never lower.
+    expect(NEAR_LINE_KB).toBeGreaterThanOrEqual(0.25)
     expect(NEAR_LINE_KB).toBeGreaterThan(2 * 0.062)
     // A line is recorded SHRINK_SLACK_KB over the build less the fraction (code-standards.json),
     // so it leaves at least SHRINK_SLACK_KB - 1 kB of room: the check must not fire on a fresh line.
@@ -127,6 +127,11 @@ describe('the near-line check', () => {
       const line = Math.floor(build) + SHRINK_SLACK_KB
       expect(nearLine(new Map([['/r', build]]), { '/r': line }, 0, 229)).toEqual([])
     }
+  })
+
+  test('the "must be named" ceiling only ever comes down (300 → 250 on 2026-10-21, TD-360)', () => {
+    expect(CEILING_KB).toBeLessThanOrEqual(250)
+    expect(CEILING_KB).toBeGreaterThan(87)   // never below the shared floor under every route
   })
 
   test('⚠ only the deploy gate passes --gate; the one local command never does', () => {

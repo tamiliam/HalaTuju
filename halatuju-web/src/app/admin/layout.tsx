@@ -1,5 +1,9 @@
 'use client'
 
+// TD-360: the admin console's words (the `admin.*` slice) — for its side effect, BEFORE anything
+// renders, so the server render and the first paint have them. Only this layout and the sandbox's
+// load it; see the module's header.
+import '@/lib/messagesAdmin'
 import { AdminAuthProvider, useAdminAuth } from '@/lib/admin-auth-context'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'

@@ -11,6 +11,8 @@
  * The chrome below is the ONE exception, and it is deliberately plain: a picker and a banner,
  * nothing that resembles a product surface.
  */
+// TD-360: the sandbox mounts admin surfaces too, so it needs the admin slice like the console.
+import '@/lib/messagesAdmin'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'

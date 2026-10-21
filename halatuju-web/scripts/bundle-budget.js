@@ -82,9 +82,13 @@ const NEXT_DIR = path.join(WEB_ROOT, '.next')
  * 300 kB, set 2026-09-20: the median route is ~256 kB and the shared floor is 87 kB, so this is
  * "about 45 kB of page on top of a normal page" — comfortably above ordinary variation and well
  * below the routes that were genuinely heavy when it was set.
+ * LOWERED to 250 kB on 2026-10-21 (TD-360 Sprint 1, the owner's decision): the admin words left
+ * every non-admin route, the worst route fell to ~224 kB and the median to ~180, so at 300 the
+ * ceiling would have watched nothing for a long time. 250 is again "about 45 kB of page on top of
+ * a normal page". The three ledgered routes keep their own, ratcheted lines below it.
  * ⚠ LOWER IT, NEVER RAISE IT. Raising it grants an exemption to every route at once, silently.
  */
-const CEILING_KB = 300
+const CEILING_KB = 250
 
 /**
  * How far a recorded number may sit ABOVE the real one before the ratchet asks for it to be
@@ -103,7 +107,8 @@ const MEDIAN_SLACK_KB = 2
  * blocking main for every session: the gate's build reads ~0.06 kB heavier than a local one
  * (`/profile` 309.945 here, 310.007 there; TD-306 refused at 53 bytes under the boundary), and a
  * string added to the shared en.json moves every route that loads it, so the route that tips is
- * often one the change never touched. The rule that would have caught each lived only in a habit —
+ * often one the change never touched. (Since TD-360, 2026-10-21, an `admin.*` string moves only
+ * the admin layout, which is printed, not budgeted; every other namespace still moves every route.) The rule that would have caught each lived only in a habit —
  * `docs/lessons.md` ("a local budget pass by a few bytes is not a pass") and a lead's brief ("the
  * 0.30 kB floor"). So: run locally, a budgeted route — or the median — with less than NEAR_LINE_KB
  * of room under its line FAILS, and the change that left the room that thin takes weight off
@@ -114,13 +119,14 @@ const MEDIAN_SLACK_KB = 2
  * ⚠ THE MARGIN IS A RATCHET: RAISE IT, NEVER LOWER IT. 0.15 kB (2026-10-06) is 2.4 times the
  * drift seen so far, so a local pass is a gate pass with room to spare. The review wanted 0.25,
  * and on the day it was written that failed on two routes (`/scholarship/apply` 0.189 kB of room,
- * `/scholarship/application` 0.179): raise it to 0.25 when TD-344 takes their weight off. It
- * agrees with SHRINK_SLACK_KB: a line is recorded 2 kB over the build less the fraction, so a
- * freshly recorded line leaves 1 to 2 kB of room — never inside this margin. ⚠ NEVER RAISE A
- * BUDGET TO GET OUT OF IT, and never pass `--gate` on a dev box: both turn the check back into
- * the habit it replaced.
+ * `/scholarship/application` 0.179): raise it to 0.25 when TD-344 takes their weight off.
+ * RAISED to 0.25 on 2026-10-21 (TD-360 Sprint 1, closing TD-344): the admin words left those
+ * routes and every line was re-recorded with 1 to 2 kB of room. It agrees with SHRINK_SLACK_KB:
+ * a line is recorded 2 kB over the build less the fraction, so a freshly recorded line leaves 1
+ * to 2 kB of room — never inside this margin. ⚠ NEVER RAISE A BUDGET TO GET OUT OF IT, and never
+ * pass `--gate` on a dev box: both turn the check back into the habit it replaced.
  */
-const NEAR_LINE_KB = 0.15
+const NEAR_LINE_KB = 0.25
 const GATE = process.argv.includes('--gate')
 
 /**
@@ -392,8 +398,8 @@ function check(output) {
   } else if (near.length) {
     failures.push(
       `less than ${NEAR_LINE_KB} kB of room under a budgeted line. The deploy gate's build reads `
-      + '~0.06 kB heavier than this one, and the next string in en.json moves every route that loads '
-      + 'it — so this passes here and is refused there. Take weight off before pushing (a lazy '
+      + '~0.06 kB heavier than this one, and the next non-admin string in en.json moves every route '
+      + 'that loads it — so this passes here and is refused there. Take weight off before pushing (a lazy '
       + 'boundary for a single-branch import, a leaf for helpers a big module carries to routes that '
       + 'never call them). ⚠ NEVER RAISE THE BUDGET, and never pass --gate locally.\n  '
       + near.join('\n  '))
@@ -444,7 +450,7 @@ function verdict(output) {
 
 module.exports = {
   routeOfEntry, layoutEntries, manifestReadings, exactRoutes, printTolerance, nearLine,
-  NEAR_LINE_KB, SHRINK_SLACK_KB,
+  NEAR_LINE_KB, SHRINK_SLACK_KB, CEILING_KB,
 }
 
 const fromLog = process.argv.indexOf('--from-log')

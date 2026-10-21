@@ -833,6 +833,22 @@ describe('the first-load-JS budget', () => {
     expect(pkg.scripts['bundle-budget']).toContain(READER)
   })
 
+  test('⚠ TD-360: next.config.js really wires the message-slice loader the slices depend on', () => {
+    // `?slice=` imports are cut by `scripts/messages-slice-loader.js`. Without the rule, webpack
+    // hands every `?slice=` import the WHOLE file: nothing breaks, every route quietly carries the
+    // admin words again, and only the kilobytes say so. A reader nobody wires is TD-281.
+    const config = jest.requireActual(path.join(WEB_ROOT, 'next.config.js')) as {
+      webpack: (c: { module: { rules: unknown[] } }) => { module: { rules: Array<Record<string, unknown>> } }
+    }
+    const out = config.webpack({ module: { rules: [] } })
+    const rule = out.module.rules.find((r) => String(r.resourceQuery).includes('slice='))
+    expect(rule).toBeDefined()
+    expect(String(rule?.test)).toContain('messages')
+    const loaderPath = ((rule?.use as Array<{ loader: string }>) ?? [])[0]?.loader
+    expect(loaderPath).toBe(path.join(WEB_ROOT, 'scripts', 'messages-slice-loader.js'))
+    expect(fs.existsSync(loaderPath)).toBe(true)
+  })
+
   test('⚠ the DEPLOY GATE runs it — the half that makes the number mean anything', () => {
     // TD-281 in one assertion. If this fails, the kilobyte figures in code-standards.json have
     // quietly become decoration: recorded, readable, and enforced by nothing.

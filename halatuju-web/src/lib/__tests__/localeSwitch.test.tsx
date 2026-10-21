@@ -61,6 +61,10 @@ jest.mock('@/lib/messages', () => {
   return {
     __state: state,
     FALLBACK_CATALOGUE: real.en,
+    // TD-360: the slice registry's announcements. Nothing here is sliced (whole files), so the
+    // version never moves; `localeSlices.test.tsx` drives the real registry slice by slice.
+    subscribeCatalogues: () => () => {},
+    catalogueVersion: () => 0,
     catalogueIfLoaded: (l: string) => state.loaded[l],
     isCatalogueLoaded: (l: string) => state.loaded[l] !== undefined,
     loadCatalogue: (l: string) => {
