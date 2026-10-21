@@ -457,7 +457,7 @@ message itself tells you what to do; this table is the why.
 | **No dead weight** — every package in `dependencies` is imported somewhere | `codeStandards.test.ts` | Downloaded on every build, audited on every scan, and read by the next person as something this app uses |
 | **The app boundary** — `courses → scholarship` imports may not rise above 25, and the module-level ones may not rise above 1 | `test_code_standards.py` | Two apps that import each other are one app with a line drawn through it, and the import-time half is what takes the service down at start-up |
 | **New tests use the factory** — a test file not already in the ledger of 134 may not call `ScholarshipApplication.objects.create(`; a listed file's count may only fall | `test_code_standards.py` | A hand-built fixture can describe a state the product cannot reach, and then the test passes for ever while testing nothing (BrightPath #24). See **Test fixtures** below |
-| **A route may not get heavier** — no route's first-load JS may reach **300 kB** unless it is in the `first_load_js` ledger with its own number, no ledgered route may pass that number, and the **median across all routes** may not rise above **229 kB** (256 until TD-300, 2026-09-28) | `scripts/bundle-budget.js` **in the deploy gate** (+ `codeStandards.test.ts` for the ledger and the wiring) | A visitor downloaded 1.53 MB of message catalogues to read one language, and nothing counted it for a year. See **The two budgets H18 added** below — this one is NOT measured by jest and that matters |
+| **A route may not get heavier** — no route's first-load JS may reach **250 kB** (300 until TD-360, 2026-10-21) unless it is in the `first_load_js` ledger with its own number, no ledgered route may pass that number, and the **median across all routes** may not rise above **180 kB** (256 until TD-300, 229 until TD-360) | `scripts/bundle-budget.js` **in the deploy gate** (+ `codeStandards.test.ts` for the ledger and the wiring) | A visitor downloaded 1.53 MB of message catalogues to read one language, and nothing counted it for a year. See **The two budgets H18 added** below — this one is NOT measured by jest and that matters |
 | **Opening one applicant may not cost more queries** — the officer's applicant-detail GET is pinned at **38**, with or without documents, with ZERO slack | `test_query_budgets.py` (the reading) + `test_code_standards.py` (the ratchet) | It was **315** and **385** — an N+1 nobody had counted since June. TD-282 fixed it with the document snapshot (below); the two numbers are now EQUAL because a document costs nothing extra to open. The budget's job now is to notice if that comes undone |
 
 **Post-freeze query budgets — `_admitted` (TD-286, 2026-10-04).** A query budget set after H18 is a
@@ -504,18 +504,19 @@ and it runs **inside the Cloud Build deploy gate** (`halatuju-web/cloudbuild.yam
 after `npm run gates`), which is the only place a build already happens. A regression therefore
 turns the gate red before the image is pushed.
 
-- It refuses three things: a route at or above the **300 kB ceiling** that is not in the ledger; a
-  ledgered route past its own number; the **median** above 229 kB (TD-300 took it from 256).
+- It refuses three things: a route at or above the **250 kB ceiling** (300 until TD-360,
+  2026-10-21) that is not in the ledger; a ledgered route past its own number; the **median** above
+  180 kB (TD-300 took it from 256 to 229, TD-360 to 180).
 - **Every run prints a TIGHTNESS NOTE** (TD-300): how far the median sits under its budget, how
   many routes are within 1 kB of it, and how many routes may each cross the budget before the
   median does. **Watch that last count** — at 0 the next byte on a median route turns the gate red
   for a reason unrelated to the change that added it (that was TD-300).
 - **A dev-box run is STRICTER than the gate** (Consolidation Review 2026-10-06): it FAILS when any
-  budgeted route, or the median, has less than `NEAR_LINE_KB` (0.15 kB) of room under its line,
-  because the gate's build reads ~0.06 kB heavier and the next en.json string moves every route.
-  The gate runs `npm run bundle-budget -- --gate` and only prints that finding. Take weight off;
-  never raise a line, and never pass `--gate` locally. The margin is a ratchet (0.25 when TD-344
-  frees `/scholarship/apply` and `/scholarship/application`).
+  budgeted route, or the median, has less than `NEAR_LINE_KB` (0.25 kB) of room under its line,
+  because the gate's build reads ~0.06 kB heavier and the next non-admin en.json string moves every
+  route. The gate runs `npm run bundle-budget -- --gate` and only prints that finding. Take weight
+  off; never raise a line, and never pass `--gate` locally. The margin is a ratchet (0.15 → 0.25 on
+  2026-10-21, closing TD-344).
 - ⛔ **No value import from `@supabase/supabase-js` in `src/`** — the three clients are AUTH-ONLY
   (`src/lib/supabaseAuthClient.ts`); one `createClient` puts 29 kB back on 73 routes.
   `import type` is fine. Enforced by `src/lib/__tests__/supabaseAuthClient.test.ts`.
@@ -889,9 +890,14 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
   `patch('…')` and `patch.object(…)`; use `tests/package_patch.py`'s `patch_engine`. Grep a module for
   `__file__` as well as `__name__` before splitting it.
 - `apps/scholarship/constants.py` is a LEAF — adding one import to it undoes its purpose.
-- **i18n delivery:** `src/lib/messages.ts` is the ONE place a catalogue is imported; ⛔ never add a line to
-  `oneLocalePerVisitor.test.ts`'s exemption list — lazy-load, split, or serve the value from the api.
-  Every new English string moves every route's first-load weight (TD-360).
+- **i18n delivery:** `src/lib/messages.ts` (English core) and `src/lib/messagesAdmin.ts` (English
+  admin) are the only static catalogue imports; ⛔ never add a line to `oneLocalePerVisitor.test.ts`'s
+  exemption list — lazy-load, split, or serve the value from the api. **Since TD-360 (2026-10-21) each
+  file ships in two slices cut at build time** (`?slice=core` / `?slice=admin`, `scripts/messages-slice-loader.js`;
+  the three files stay whole and are still the source of truth). An `admin.*` string moves only the
+  admin layout (printed, not budgeted); a string in ANY other namespace still moves every route.
+  ⛔ Never use an `admin.*` key outside the console — `sliceReach.test.ts` fails, because that route
+  would show the raw dotted key in production.
 - **Serve, never assemble or derive in the browser:** `apply_url`, a gift's `state`, a request's status;
   a draft (theme or copy) must never reach a visitor; "draft from English" drafts and never saves.
 - **Status is derived, never stored** (invitations); `last_send_ok` is tri-state (null = not recorded).
@@ -968,8 +974,9 @@ scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / co
   /profile. **On hold by owner ruling:** TD-366 (releasing an awarded student who stops answering — until
   signing is finalised), TD-353 (two organisations at once). **Now tier:** TD-367 (a payment run can pay a
   CLOSED student), TD-356, TD-348, TD-252.
-- **en.json is at the bundle line:** median 228.568/229, `/scholarship/application` 273.546/274 — the next
-  string needs weight taken off first (TD-360); run `npm run bundle-budget` before any push that adds one.
+- **Bundle room (TD-360 Sprint 1, 2026-10-21):** median 178.829/180, `/scholarship/apply` 191.962/193,
+  `/scholarship/application` 221.861/223, `/profile` 218.548/220 — 1.04 to 1.45 kB each. `admin.*` strings
+  no longer move these; a non-admin string still does. Run `npm run bundle-budget` before any push that adds one.
   Malay/Tamil first drafts go to Sol (tagged there), never to the owner as a reminder.
 - **Owner actions open:** record parent calls for #116, #62, #125, #25 (not #20); the 24 Owner-decision
   questions in the register.

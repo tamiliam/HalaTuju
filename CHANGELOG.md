@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-360 Sprint 1 — the admin console's words leave every non-admin route - 2026-10-21
+
+Built on branch `td360` (base `6aec3206`). **Not pushed, not deployed. No migration. No string added,
+removed or reworded** (`src/messages/*.json` untouched). Non-billed hygiene; prerequisite for request #39
+Sprint 4. Roadmap `docs/plans/2026-10-20-td360-split-messages-roadmap.md`; decision `docs/decisions.md`
+2026-10-21; retrospective `docs/retrospectives/retrospective-2026-10-21-td360-admin-slice.md`.
+
+- **Sliced delivery (`8b1b57ce`):** `scripts/messages-slice-loader.js` (wired in `next.config.js`) cuts
+  each message file at build time into `core` (every namespace but `admin`) and `admin`. English core
+  static (`lib/messages.ts`); English admin merged in by `lib/messagesAdmin.ts`, imported only by the
+  admin and sandbox layouts; ms/ta as four literal lazy slices (`lib/messageChunks.ts`). A switch commits
+  only with every required slice in; an absent namespace answers in English (owner-accepted brief flash
+  for a Malay/Tamil officer's first console page). jest maps `?slice=` to the whole file.
+- **Leaf (`7d5f5054`):** `lib/sessionPolicy.ts` (on every page) no longer imports `lib/navigation.ts`
+  for the super check — new `lib/superRole.ts`. ~2.5 kB off every route.
+- **Numbers (local exact):** median 228.833 → 178.829 kB; `/scholarship/application` 273.611 → 221.861;
+  `/profile` 270.306 → 218.548; `/scholarship/apply` 243.716 → 191.962. Malay/Tamil lazy chunk 98.7 →
+  48.1 / 128.9 → 63.1 kB gz for a student. ⚠ `/admin/*` printed figures fell ~49 kB with no real gain
+  (words moved to the admin layout); admin first paint rose ~2.9 kB.
+- **Budgets (ratchet):** median 229 → 180; `/profile` 271 → 220; `/scholarship/apply` 244 → 193;
+  `/scholarship/application` 274 → 223; `CEILING_KB` 300 → 250 (owner); `NEAR_LINE_KB` 0.15 → 0.25.
+- **Tests:** new `sliceReach.test.ts` (no route outside `/admin` reaches an `admin.*` key; bite-checked),
+  `messagesSlice.test.ts`, `messagesRegistry.test.ts`, `localeSlices.test.tsx`; `oneLocalePerVisitor`
+  sees `?slice=` imports and pins each static import's slice; loader wiring in `codeStandards`; ceiling
+  and margin floors in `bundleBudgetReader`; two `sessionPolicy` rows + an agreement test. Jest 4300 →
+  4343 (267 → 271 suites).
+- **Closed:** TD-360, TD-344. Docs: technical-debt.md, decisions.md, `halatuju_api/CLAUDE.md`,
+  `.claude/ARCHITECTURE_MAP.md`, `code-standards.json` notes, the roadmap's as-built note.
+
 ## Request #39, Sprint 3 of 4 — the gates read permissions - 2026-10-19
 
 Built on branch `perm-s3` (base `09b8766e`, Sprints 1-2 live). **Not pushed, not deployed. No migration. No visible change for anyone** (every person is on a preset; the golden table proves each converted gate answers as before). Adversarial review pending.

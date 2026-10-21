@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## The message files ship in audience slices, cut at build time; the files stay whole — 2026-10-21 (owner "yes" to the TD-360 roadmap)
+
+**Owner's rulings (2026-10-21).** (1) Split only the admin console's words now; the scholarship /
+sponsor split waits for its trigger (a third near-line fight caused by a non-admin string). (2) Lower
+the "must be named" first-load ceiling 300 → 250 kB. (3) A Malay / Tamil staff member's first console
+page in a tab may show admin words in English for a moment; no spinner.
+
+**The design.** `src/messages/{en,ms,ta}.json` remain the single source of truth, one file per language,
+every key — Sol, `check-i18n.js`, backend tests and ~40 jest tests read them by path. A webpack loader
+(`scripts/messages-slice-loader.js`) answers `?slice=admin` with the `admin` namespace and `?slice=core`
+with every OTHER namespace (complement on purpose: a new namespace can never be missing from a route).
+English core is the static fallback (`lib/messages.ts`); English admin is merged INTO that same object
+(identity kept, so `contentLocale`'s derivation is untouched) by `lib/messagesAdmin.ts`, imported only by
+`app/admin/layout.tsx` and the sandbox layout, at module evaluation — so the server render and first
+paint of every admin page have the words. A required slice set: `loadCatalogue` resolves only when every
+required slice of a language is in, so a switch commits whole or not at all (the 2026-09-21 rule). An
+ABSENT namespace answers in English (ruling 3); a missing KEY still echoes the key (`tOr`'s contract).
+Requiring a slice fetches nothing itself: the provider asks for the language on screen only.
+
+**Why not new files per audience:** it would touch Sol's import, every reader by path and the consent
+snapshot for no runtime gain. **Why not a second provider/context:** one catalogue object per language
+keeps `t()` and the language-switch rules exactly as they were.
+
+**Held by:** `sliceReach.test.ts` (no route outside `/admin` reaches an `admin.*` key — a shared
+component that starts using one fails, naming the import chain), `messagesSlice.test.ts`,
+`oneLocalePerVisitor.test.ts` (who may import which slice), `messagesRegistry.test.ts`,
+`localeSlices.test.tsx`, and `codeStandards.test.ts` (the loader is wired). ⚠ The admin routes' printed
+first-load figure is not the reader's cost any more — their words are in the admin layout (TD-304).
+
 ## Staff lifecycle: a role changes only within its pair; cancel and delete reach the LOGIN — 2026-10-09 (owner "go"; lead rulings in the build)
 
 **Owner's rulings.** (1) The switchable roles are **Admin ↔ Finance** and **Reviewer ↔ QC** — never to

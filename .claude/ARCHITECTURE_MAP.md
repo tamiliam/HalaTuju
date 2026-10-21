@@ -890,7 +890,11 @@ src/lib/
 ├── api.ts                         # HTTP client for Django backend (all endpoint wrappers incl. calculateMerit/Cgpa/Pathways)
 ├── supabase.ts                    # Supabase client init (auth, Google OAuth, OTP)
 ├── auth-context.tsx               # Auth React Context (session, token, profile hydration, localStorage)
-├── i18n.tsx                       # Custom i18n context: t() function, locale switcher, localStorage
+├── i18n.tsx                       # Custom i18n context: t() function, locale switcher, localStorage; TD-360: re-renders on a slice arriving, an ABSENT namespace answers in English
+├── messages.ts                    # Catalogue registry: English core static; per-locale slices (core, admin) merged into one object; loadCatalogue waits for every REQUIRED slice
+├── messageChunks.ts               # TD-360: the four literal lazy imports (ms/ta × core/admin) — the network edge tests mock
+├── messagesAdmin.ts               # TD-360: English admin slice + marks `admin` required; imported ONLY by app/admin/layout.tsx and the sandbox layout
+├── superRole.ts                   # TD-360: isSuperRole leaf (sessionPolicy uses it, so the admin route registry stays off every page)
 ├── staffPermissions.ts            # #39: the 8 permission keys + hasPerm(role, key) over the SERVED list (no presets mirrored; drift test both ways); S3: TEAM_ROLES + admitsRow (the registry rows' perms predicate)
 └── subjects.ts                    # Subject code → name mapping (60+ SPM + STPM codes)
 ```
@@ -932,7 +936,19 @@ src/messages/
 └── ta.json                        # Tamil (459 keys)
 ```
 
-Validated by `scripts/check-i18n.js` (ensures identical key structure across all 3 files).
+Validated by `scripts/check-i18n.js` (ensures identical key structure across all 3 files). (The key
+counts above are historical; the files hold ~5,400 keys each in 2026-10.)
+
+**Delivery by slice (TD-360 Sprint 1, 2026-10-21).** The three files stay whole and are the source of
+truth (Sol, `check-i18n.js`, backend and jest tests read them by path). At BUILD time
+`scripts/messages-slice-loader.js` (wired in `next.config.js`, `resourceQuery: /slice=/`) answers
+`@/messages/xx.json?slice=core|admin`: `admin` = the `admin` namespace, `core` = every other one (a new
+namespace defaults to core). English core is static (`lib/messages.ts`); English admin rides in the admin
+layout chunk (`lib/messagesAdmin.ts`); ms/ta slices are lazy chunks (`lib/messageChunks.ts`). jest maps
+`?slice=` to the whole file. Guards: `messagesSlice.test.ts` (the cut), `sliceReach.test.ts` (no route
+outside `/admin` reaches an `admin.*` key), `oneLocalePerVisitor.test.ts` (who may import what),
+`messagesRegistry.test.ts` + `localeSlices.test.tsx` (slice timing). An `admin.*` string moves no budgeted
+first-load line; any other string still moves every route.
 
 ### Frontend Root Files
 

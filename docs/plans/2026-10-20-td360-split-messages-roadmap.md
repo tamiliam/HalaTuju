@@ -202,6 +202,24 @@ docs: `CHANGELOG.md`, `docs/technical-debt.md` (close TD-360 and TD-344), `halat
 build, measure, ratchet 0.75 · smoke 0.75 · docs + retrospective 1.0 · code review + fixes 1.0 =
 **10.0 h**. (A wrong spike that forces the prebuild fallback adds ~1 h.)
 
+**As built (2026-10-21, `7d5f5054` + `8b1b57ce`, branch `td360`, not deployed):**
+- **Spike passed** — TS ambient `*.json?slice=…`, Next 14.2 webpack and the jest mapper all took the
+  query on the first build; no prebuild fallback. en-admin sits only in `app/admin/layout-*.js`; the
+  ms/ta slices are in no manifest entry (lazy).
+- **Measured** (local exact): median 228.833 → **178.829**; `/scholarship/application` 273.611 → 221.861;
+  `/profile` 270.306 → 218.548; `/scholarship/apply` 243.716 → 191.962 (the estimate was −49.9; the real
+  −51.7 includes the leaf below). Ratcheted: 180 / 223 / 220 / 193; ceiling 250; `NEAR_LINE_KB` 0.25.
+  Admin first paint +2.9 kB (two slices compress slightly worse than one file).
+- **Deviations:** (1) the four literal `import()`s are in a new `lib/messageChunks.ts` (the mockable
+  network edge), not `messages.ts`; (2) the guard found `lib/sessionPolicy.ts` → `lib/navigation.ts` on
+  every page (missed by the static scan above), fixed by the leaf `lib/superRole.ts` (`7d5f5054`);
+  (3) `requireSlice` fetches nothing — the first cut fetched the admin slice of every language in memory,
+  caught in the browser smoke; (4) one declared unrouted file in the guard (`AiReliabilityCard.tsx`,
+  hidden since 2026-06-13, mounted by no route); (5) new test files `messagesRegistry.test.ts` and
+  `localeSlices.test.tsx` instead of additions to `localeDelivery` / `localeSwitch`.
+- **Not done:** no in-console switcher exists to click, so the browser smoke switched on student pages and
+  entered / hard-refreshed the console in each language; the in-console switch is a rendered jest test.
+
 ### Sprint 2 — scholarship and sponsor slices (DEFERRED; open question 1)
 
 Would take `scholarship` (29.3 kB gz) and the four `sponsor*` namespaces (6.1 kB gz) off the ~20
