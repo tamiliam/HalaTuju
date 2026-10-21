@@ -17,6 +17,12 @@
  * ⚠ CONSERVATIVE ON PURPOSE: a key in a reachable file fails even if that branch never renders on
  * the route. Moving the key, or the import, is the fix — never an exemption list.
  *
+ * Review fixes (2026-10-21): every file is read by the TypeScript PARSER (a `/*` inside a `//`
+ * comment had swallowed real imports under the regex stripper); a bare `'admin'` VALUE in a
+ * reachable non-admin file is refused too (a namespace joined to a key at run time), with a short
+ * declared list of the known non-i18n ones; and the readers of the server-chosen `label_key`
+ * (seeded `admin.programme.question.*`) are pinned to the admin side.
+ *
  * The second claim is the converse: every file holding an `admin.*` key IS reachable from an
  * admin (or sandbox) entry — so an `admin.*` key cannot sit in a file the console does not load.
  *
@@ -26,6 +32,7 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
+import * as ts from 'typescript'
 
 const SRC = path.join(__dirname, '..', '..')              // .../src
 const APP = path.join(SRC, 'app')
@@ -41,10 +48,61 @@ const ENTRY = /^(page|layout|error|not-found|loading|template|global-error|defau
 /** The sandbox's route files only exist in a sandbox build (`*.sandbox.tsx`, see next.config.js). */
 const SANDBOX_ENTRY = /^(page|layout)\.sandbox\.tsx$/
 
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
-    .replace(/(^|[^:])\/\/[^\n]*/g, (m, lead: string) => lead + ' '.repeat(m.length - lead.length))
+/**
+ * What one source file says, read by the TYPESCRIPT PARSER — never by regex.
+ *
+ * ⚠ Review fix (2026-10-21): the first cut stripped `/* … *\/` before `//` with regexes, so a `/*`
+ * inside a LINE comment (`app/admin/guide/page.tsx`: `// src/content/manual/* —`) opened a "block"
+ * that swallowed the real imports below it, and the walk silently stopped there. The parser knows
+ * what a comment, a string and a template are, so no text in either can hide or invent an edge.
+ *
+ *  - `specifiers`: every RUNTIME module specifier — `import … from`, `import '…'`, `export … from`,
+ *    `import()`, `require()`. `import type` / `export type` are skipped: erased, they ship nothing.
+ *  - `strings`: every string literal and template in a VALUE position, with its line. A template
+ *    is spelled with `${}` for each hole (`` `admin.${h}` `` → `admin.${}`). Literals in a TYPE
+ *    position (`type SliceName = 'core' | 'admin'`) are erased at build and are not collected.
+ *  - `readsLabelKey`: the file reads a `.label_key` property (a key the SERVER chose; see below).
+ */
+interface FileScan {
+  specifiers: string[]
+  strings: Array<{ text: string; line: number }>
+  readsLabelKey: boolean
+}
+
+function scanSource(fileName: string, source: string): FileScan {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true,
+    /\.[jt]sx$/.test(fileName) ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
+  const out: FileScan = { specifiers: [], strings: [], readsLabelKey: false }
+  const specifierNodes = new Set<ts.Node>()
+  const lineOf = (n: ts.Node) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1
+  const inTypePosition = (n: ts.Node) => ts.isLiteralTypeNode(n.parent)
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      specifierNodes.add(node.moduleSpecifier)
+      if (!node.importClause?.isTypeOnly) out.specifiers.push(node.moduleSpecifier.text)
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      specifierNodes.add(node.moduleSpecifier)
+      if (!node.isTypeOnly) out.specifiers.push(node.moduleSpecifier.text)
+    } else if (ts.isCallExpression(node) && node.arguments.length > 0
+      && ts.isStringLiteralLike(node.arguments[0])
+      && (node.expression.kind === ts.SyntaxKind.ImportKeyword
+        || (ts.isIdentifier(node.expression) && node.expression.text === 'require'))) {
+      specifierNodes.add(node.arguments[0])
+      out.specifiers.push(node.arguments[0].text)
+    } else if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+      && !specifierNodes.has(node) && !inTypePosition(node)) {
+      out.strings.push({ text: node.text, line: lineOf(node) })
+    } else if (ts.isTemplateExpression(node)) {
+      const text = node.head.text + node.templateSpans.map((s) => '${}' + s.literal.text).join('')
+      out.strings.push({ text, line: lineOf(node) })
+    } else if (ts.isPropertyAccessExpression(node) && node.name.text === 'label_key') {
+      out.readsLabelKey = true
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return out
 }
 
 function walk(dir: string, acc: string[]): string[] {
@@ -65,10 +123,7 @@ function walk(dir: string, acc: string[]): string[] {
 const rel = (f: string) => path.relative(SRC, f).split(path.sep).join('/')
 
 const FILES = walk(SRC, [])
-const TEXT = new Map(FILES.map((f) => [f, stripComments(fs.readFileSync(f, 'utf8'))]))
-
-/** Every module specifier a file names: static, re-export, side-effect, `import()`, `require()`. */
-const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)['"]([^'"\n]+)['"]/g
+const SCAN = new Map(FILES.map((f) => [f, scanSource(f, fs.readFileSync(f, 'utf8'))]))
 
 function resolveSpecifier(from: string, spec: string): string | null {
   const bare = spec.split('?')[0]
@@ -78,15 +133,15 @@ function resolveSpecifier(from: string, spec: string): string | null {
   else return null                                       // a package — not ours to walk
   for (const cand of [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`,
     path.join(base, 'index.ts'), path.join(base, 'index.tsx')]) {
-    if (TEXT.has(cand)) return cand
+    if (SCAN.has(cand)) return cand
   }
   return null                                            // JSON, CSS, an asset — no code to walk
 }
 
 const EDGES = new Map(FILES.map((f) => {
   const out = new Set<string>()
-  for (const m of (TEXT.get(f) as string).matchAll(SPECIFIER)) {
-    const to = resolveSpecifier(f, m[1])
+  for (const spec of (SCAN.get(f) as FileScan).specifiers) {
+    const to = resolveSpecifier(f, spec)
     if (to) out.add(to)
   }
   return [f, [...out]]
@@ -111,18 +166,37 @@ function chain(parent: Map<string, string | null>, f: string): string {
   return out.join(' → ')
 }
 
-/** An `admin.` key literal or template prefix: `'admin.x'`, `"admin.x"`, `` `admin.x` ``, `` `admin.${h}` ``. */
-const ADMIN_KEY = /['"`]admin\.(?:\$\{|[A-Za-z_][\w]*)/g
-const LOOKS_LIKE_A_FILE = /['"`]admin\.(ts|tsx|js|jsx|json|py|md|css|html)['"`]/
+/**
+ * An `admin.` key: a literal or template that STARTS with `admin.` and a key segment (or a hole) —
+ * `'admin.x'`, `` `admin.x` ``, `` `admin.${h}` `` — or a template that BUILDS one after a hole
+ * (`` `${ns}admin.` ``). A file name (`'admin.ts'`) is not a key.
+ */
+const ADMIN_KEY = /^admin\.(?:\$\{\}|[A-Za-z_])|\$\{\}admin\./
+const LOOKS_LIKE_A_FILE = /^admin\.(ts|tsx|js|jsx|json|py|md|css|html)$/
+
+/** The namespace NAME alone — `'admin'` joined to `'.x'` at run time (`[ns, k].join('.')`). */
+const BARE_ADMIN = /^admin$/
+
+function hitsIn(f: string, rule: RegExp, skip?: RegExp): string[] {
+  return (SCAN.get(f) as FileScan).strings
+    .filter((s) => rule.test(s.text) && !(skip && skip.test(s.text)))
+    .map((s) => `${rel(f)}:${s.line}  ${JSON.stringify(s.text.slice(0, 40))}`)
+}
 
 function adminKeysIn(f: string): string[] {
-  const text = TEXT.get(f) as string
-  const out: string[] = []
-  text.split('\n').forEach((line, i) => {
-    if (LOOKS_LIKE_A_FILE.test(line)) return
-    for (const m of line.matchAll(ADMIN_KEY)) out.push(`${rel(f)}:${i + 1}  ${m[0]}…`)
-  })
-  return out
+  return hitsIn(f, ADMIN_KEY, LOOKS_LIKE_A_FILE)
+}
+
+/**
+ * Reachable non-admin files where a bare `'admin'` VALUE is known to be something other than an
+ * i18n namespace — each with what it is. A new one is a question, not a line to add: if the value
+ * can reach `t()` (joined with `'.'`), the screen shows a raw key. Literals in TYPE positions
+ * (`SliceName = 'core' | 'admin'` in `lib/messageChunks.ts`) are erased and never collected.
+ */
+const BARE_ADMIN_ALLOWED: Record<string, string> = {
+  'lib/sessionPolicy.ts':
+    'The privileged SESSION SCOPE (`enforceSingleScope(\'admin\' | \'sponsor\')`) and the superseded '
+    + 'flag it stores — an auth scope name, never joined into a message key.',
 }
 
 const isAdminSide = (f: string) => f.startsWith(path.join(APP, 'admin') + path.sep)
@@ -157,17 +231,42 @@ describe('the walk really read the tree (floors, TD-276)', () => {
 
   test('a whole-namespace TEMPLATE key is seen, not just literals', () => {
     expect(adminKeysIn(path.join(SRC, 'components', 'admin', 'InvitationsTable.tsx')).join('\n'))
-      .toContain('`admin.${')
+      .toContain('"admin.${}"')
   })
 
-  test('the pattern catches each shape and ignores prose and file names', () => {
-    const shapes = (s: string) => [...s.matchAll(ADMIN_KEY)].map((m) => m[0])
-    // The match is the quote, the namespace and the first segment — enough to name the key.
-    expect(shapes("t('admin.save')")).toEqual(["'admin.save"])
-    expect(shapes('t("admin.nav.home")')).toEqual(['"admin.nav'])
-    expect(shapes('t(`admin.${h}`)')).toEqual(['`admin.${'])
-    expect(shapes("router.push('/admin/login')")).toEqual([])
-    expect(shapes("const KEY = 'administration.x'")).toEqual([])
+  test('the patterns catch each shape and ignore paths, prose and file names', () => {
+    const keys = (src: string) => scanSource('x.ts', src).strings
+      .filter((s) => ADMIN_KEY.test(s.text) && !LOOKS_LIKE_A_FILE.test(s.text)).map((s) => s.text)
+    expect(keys("t('admin.save')")).toEqual(['admin.save'])
+    expect(keys('t("admin.nav.home")')).toEqual(['admin.nav.home'])
+    expect(keys('t(`admin.${h}`)')).toEqual(['admin.${}'])
+    expect(keys('t(`${ns}admin.x`)')).toEqual(['${}admin.x'])
+    expect(keys("router.push('/admin/login')")).toEqual([])
+    expect(keys("const KEY = 'administration.x'")).toEqual([])
+    expect(keys("const f = 'admin.ts'")).toEqual([])
+    // Comments are not code, and a string is not a comment.
+    expect(keys("// t('admin.save')\n/* 'admin.x' */\nconst s = '// admin.y'")).toEqual([])
+    const bare = (src: string) => scanSource('x.ts', src).strings.filter((s) => BARE_ADMIN.test(s.text)).length
+    expect(bare("const ns = 'admin'; t([ns, 'save'].join('.'))")).toBe(1)
+    // A literal in a TYPE position is erased at build, so it is not collected.
+    expect(bare("type SliceName = 'core' | 'admin'")).toBe(0)
+  })
+
+  test('⚠ review fix: a `/*` inside a LINE comment does not swallow the imports below it', () => {
+    const src = "// src/content/manual/* — the chapters\nimport x from '@/lib/real'\n"
+      + "const y = import('./lazy')\nexport { z } from '../reexported'\n"
+    expect(scanSource('fixture.tsx', src).specifiers).toEqual(['@/lib/real', './lazy', '../reexported'])
+    // …and the real file that met it: every import of the Guide page is followed.
+    const guide = path.join(SRC, 'app', 'admin', 'guide', 'page.tsx')
+    const text = fs.readFileSync(guide, 'utf8')
+    const literalImports = [...text.matchAll(/^import [^\n]*from '(@\/[^']+)'/gm)].map((m) => m[1])
+    expect(literalImports.length).toBeGreaterThan(0)
+    for (const spec of literalImports) expect((SCAN.get(guide) as FileScan).specifiers).toContain(spec)
+  })
+
+  test('type-only imports are not edges — they ship nothing', () => {
+    expect(scanSource('x.ts', "import type { A } from '@/lib/a'\nexport type { B } from './b'\n").specifiers)
+      .toEqual([])
   })
 })
 
@@ -182,6 +281,35 @@ describe('no route outside /admin reaches the admin slice', () => {
     // `common.*` or the route's own namespace), or stop importing the admin module from there.
     // Never add an exemption here.
     expect({ adminKeysOnNonAdminRoutes: offenders }).toEqual({ adminKeysOnNonAdminRoutes: [] })
+  })
+
+  test('⚠ no reachable non-admin file holds a bare "admin" value, except the declared ones', () => {
+    // `'admin'` joined to a key at run time is the shape the admin.* rule above cannot see.
+    const offenders = [...FROM_NON_ADMIN.keys()]
+      .filter((f) => !(rel(f) in BARE_ADMIN_ALLOWED))
+      .flatMap((f) => hitsIn(f, BARE_ADMIN).map((h) => `${h}\n    via ${chain(FROM_NON_ADMIN, f)}`))
+    expect({ bareAdminOnNonAdminRoutes: offenders }).toEqual({ bareAdminOnNonAdminRoutes: [] })
+  })
+
+  test('each bare-"admin" allowance is real, still needed, still reachable, and says why', () => {
+    for (const [f, why] of Object.entries(BARE_ADMIN_ALLOWED)) {
+      const full = path.join(SRC, ...f.split('/'))
+      expect(hitsIn(full, BARE_ADMIN).length).toBeGreaterThan(0)
+      expect(FROM_NON_ADMIN.has(full)).toBe(true)
+      expect(why.length).toBeGreaterThan(60)
+    }
+  })
+
+  test('a key the SERVER chooses as `label_key` (seeded `admin.programme.question.*`) is rendered on the admin side only', () => {
+    // `seed_application_catalogue.py` seeds question labels as `admin.programme.question.<code>`
+    // and serves them as `label_key`; no static scan can see a key that arrives in a payload. So
+    // the READERS are pinned: every production file that reads `.label_key` must be one no route
+    // outside /admin reaches. A student-side reader of that payload would show a raw dotted key.
+    const readers = FILES.filter((f) => (SCAN.get(f) as FileScan).readsLabelKey)
+    expect(readers.map(rel)).toContain('components/admin/ProgrammeConfigTab.tsx')
+    const leaking = readers.filter((f) => FROM_NON_ADMIN.has(f))
+      .map((f) => `${rel(f)}\n    via ${chain(FROM_NON_ADMIN, f)}`)
+    expect({ labelKeyReadersOnNonAdminRoutes: leaking }).toEqual({ labelKeyReadersOnNonAdminRoutes: [] })
   })
 
   test('no route outside /admin imports the admin slice loader', () => {
@@ -217,7 +345,7 @@ describe('every admin.* key lives where the console loads it', () => {
   test('each declared unrouted file is real, holds admin keys, and is still mounted by no route', () => {
     for (const [f, why] of Object.entries(UNROUTED)) {
       const full = path.join(SRC, ...f.split('/'))
-      expect(TEXT.has(full)).toBe(true)
+      expect(SCAN.has(full)).toBe(true)
       expect(adminKeysIn(full).length).toBeGreaterThan(0)
       expect(FROM_ADMIN.has(full) || FROM_NON_ADMIN.has(full)).toBe(false)
       expect(why.length).toBeGreaterThan(60)

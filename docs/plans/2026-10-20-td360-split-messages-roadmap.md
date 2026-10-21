@@ -217,6 +217,15 @@ build, measure, ratchet 0.75 · smoke 0.75 · docs + retrospective 1.0 · code r
   caught in the browser smoke; (4) one declared unrouted file in the guard (`AiReliabilityCard.tsx`,
   hidden since 2026-06-13, mounted by no route); (5) new test files `messagesRegistry.test.ts` and
   `localeSlices.test.tsx` instead of additions to `localeDelivery` / `localeSwitch`.
+- **What covers the slice registration (review, 2026-10-21):** jest's `moduleNameMapper` hands every
+  `?slice=` import the WHOLE file, so no jest render test can see a missing slice. Only
+  `messagesSlice.test.ts` (the cut on the real files), the `next.config.js` wiring test in
+  `codeStandards.test.ts` and a real `next build` (`npm run bundle-budget`, the deploy gate) cover it;
+  `sliceReach.test.ts` covers the reach. Review fixes: the reach guard reads files with the TypeScript
+  parser (a `/*` inside a `//` comment had hidden imports), refuses a bare `'admin'` value off the
+  console (one declared allowance, `sessionPolicy.ts`'s session scope), and pins `label_key` readers to
+  the admin side. Raised: TD-388 (pre-existing hydration mismatch with ms/ta stored), TD-389 (`admin`
+  stays required for the tab).
 - **Not done:** no in-console switcher exists to click, so the browser smoke switched on student pages and
   entered / hard-refreshed the console in each language; the in-console switch is a rendered jest test.
 
