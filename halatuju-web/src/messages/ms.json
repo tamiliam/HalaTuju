@@ -6705,6 +6705,67 @@
     "changeRole": "Tukar peranan",
     "roleChangeConfirm": "Tukar {name} kepada {role}?",
     "financeCheckOn": "Mereka akan meluluskan larian pembayaran, dan kredit dompet akan memerlukan semakan kewangan.",
-    "financeCheckOff": "Mereka satu-satunya pentadbir kewangan: pentadbir organisasi akan meluluskan larian pembayaran semula, dan kredit dompet tidak lagi melalui semakan kewangan."
+    "financeCheckOff": "Mereka satu-satunya pentadbir kewangan: pentadbir organisasi akan meluluskan larian pembayaran semula, dan kredit dompet tidak lagi melalui semakan kewangan.",
+    "perm": {
+      "review": {
+        "name": "Nilai pelajar yang ditugaskan",
+        "desc": "Temu duga dan buat keputusan bagi pelajar yang ditugaskan kepadanya."
+      },
+      "see_all": {
+        "name": "Lihat semua pelajar",
+        "desc": "Baca fail setiap pelajar dalam organisasi ini."
+      },
+      "qc": {
+        "name": "Kawalan mutu",
+        "desc": "Semak keputusan penilai lain. Tidak sekali-kali keputusannya sendiri."
+      },
+      "spending": {
+        "name": "Perbelanjaan",
+        "desc": "Lihat dan susun perbelanjaan pelajar."
+      },
+      "payments_prepare": {
+        "name": "Sediakan larian pembayaran",
+        "desc": "Bina larian dan tandatanganinya sebagai penyedia."
+      },
+      "payments_check": {
+        "name": "Semak larian pembayaran",
+        "desc": "Semakan pertengahan pilihan sebelum kelulusan."
+      },
+      "payments_approve": {
+        "name": "Luluskan larian pembayaran",
+        "desc": "Melepaskan bayaran daripada Vircle kepada pelajar. Tidak sekali-kali bagi larian yang disediakannya."
+      }
+    },
+    "permEditor": {
+      "title": "Apa yang boleh dilakukan oleh {name}",
+      "subtitle": "Bermula daripada set {preset}. Hidupkan kebenaran tambahan apabila diperlukan.",
+      "students": "Pelajar",
+      "money": "Wang",
+      "custom": "Tersuai",
+      "changed": "diubah",
+      "qcHint": "Perlukan “Lihat semua pelajar” dahulu.",
+      "save": "Simpan perubahan",
+      "reset": "Set semula kepada {preset}",
+      "footnote": "Anda tidak boleh mengubah kebenaran anda sendiri atau kebenaran pentadbir organisasi.",
+      "noChange": "Tiada perubahan daripada apa yang boleh dilakukan oleh {name} sekarang.",
+      "gives": "Menyimpan memberi {name}: {list}.",
+      "takes": "{name} kehilangan: {list}.",
+      "nothingElse": "Tiada perkara lain yang berubah.",
+      "saved": "Disimpan. {name} melihat perubahan pada halaman seterusnya.",
+      "loadFailed": "Kebenaran {name} tidak dapat dimuatkan.",
+      "open": "Kebenaran",
+      "close": "Tutup",
+      "fixed": "Kebenaran {name} adalah tetap dan tidak boleh diubah di sini.",
+      "effect": {
+        "check_on": "Larian pembayaran mendapat langkah semakan: {name} menyemak setiap larian sebelum diluluskan.",
+        "check_off": "{name} satu-satunya penyemak: larian terus daripada penyediaan kepada kelulusan semula.",
+        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya.",
+        "approver_fallback_on": "{name} satu-satunya pelulus: pentadbir organisasi meluluskan larian pembayaran semula.",
+        "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
+        "files_widened": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
+        "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama."
+      }
+    },
+    "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu."
   }
 }

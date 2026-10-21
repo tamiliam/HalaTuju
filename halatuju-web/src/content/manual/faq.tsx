@@ -65,6 +65,13 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>I&rsquo;m stuck, or something looks wrong — whom do I contact?</>,
       a: <>Email the HalaTuju team at <strong>help@halatuju.xyz</strong> and we&rsquo;ll help.</>,
     },
+    {
+      q: <>I can see a page my role doesn&rsquo;t usually have. Is that a mistake?</>,
+      a: <>Probably not. Your organisation admin can give a person more than their role&rsquo;s usual set
+        &mdash; a reviewer who also looks after <strong>Spending</strong>, for example &mdash; or take something
+        away. The Guide then shows you the parts that describe what you were given. If you think it is wrong,
+        ask your organisation admin; only they can change it, and you can&rsquo;t change your own.</>,
+    },
   ],
   reviewer: [
     {
@@ -232,6 +239,25 @@ export const FAQ: Record<Audience, QA[]> = {
     },
   ],
   org_admin: [
+    {
+      q: <>How do I let somebody do more (or less) than their role?</>,
+      a: <>On <strong>People</strong>, open a reviewer&rsquo;s page, or press <strong>Permissions</strong> beside
+        an admin. Switch permissions on or off, read the line underneath &mdash; it says what saving would do
+        &mdash; and press <strong>Save changes</strong>. <strong>Reset</strong> returns them to their role&rsquo;s
+        usual set. See <em>Changing what someone can do</em> in your chapter of the Guide.</>,
+    },
+    {
+      q: <>Why can&rsquo;t I switch off <strong>Review assigned students</strong> for somebody?</>,
+      a: <>Because they still have cases assigned to them, and without it they could not open those cases.
+        Hand the cases to someone else first (the <strong>Assigned</strong> control on Applications), then try
+        again. The same holds for <strong>See all students</strong> on an admin who is holding a case.</>,
+    },
+    {
+      q: <>Somebody&rsquo;s permissions changed when I changed their role. Why?</>,
+      a: <>A changed set was chosen on top of the OLD role, so <strong>Change role</strong> puts it back to the
+        new role&rsquo;s usual set; the question says so before you answer. Open their permissions again to
+        add anything back.</>,
+    },
     {
       q: <>An applicant shows <strong>&ldquo;Shared phone: call parent&rdquo;</strong>. What do I do?</>,
       a: <>The parent phone they gave is also their own number. That is often a genuine family phone, so it is

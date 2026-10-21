@@ -21,11 +21,16 @@ export const roleFinance: ManualChapter = {
         Vircle, which happens outside HalaTuju. Nothing is paid until you approve. For <strong>wallet
         credits</strong> (sponsor money coming in) you are still the <strong>check</strong>: an admin records the
         credit, you check it, and your organisation admin countersigns. Your job is the money, not the students
-        &mdash; you don&rsquo;t review applications, and you can&rsquo;t see applicant files.</>
+        &mdash; you don&rsquo;t review applications, and you can&rsquo;t see applicant files.
+        <br /><br />
+        <em>Your organisation may have given you more than this role&rsquo;s usual set</em> &mdash; for
+        example the Spending page. If it has, the parts of the Guide that describe it appear in the
+        sidebar under the role they come from.</>
       ),
     },
     {
       anchor: 'finance-where',
+      perm: 'payments_approve',
       title: 'Where to find Payments',
       body: (
         <>Point at the strip of icons on the left to open the menu, and choose <strong>Payments</strong> under
@@ -38,6 +43,7 @@ export const roleFinance: ManualChapter = {
     },
     {
       anchor: 'finance-checking',
+      perm: 'payments_approve',
       title: 'Approving a run',
       body: (
         <>Open a run to see every student on it, the amount each is due, and the total. Download the
@@ -53,6 +59,7 @@ export const roleFinance: ManualChapter = {
     },
     {
       anchor: 'finance-not-right',
+      perm: 'payments_approve',
       title: 'If something isn’t right',
       body: (
         <>Then <strong>don&rsquo;t approve</strong>. That is the whole point of the step &mdash; the run cannot
@@ -64,6 +71,7 @@ export const roleFinance: ManualChapter = {
     },
     {
       anchor: 'finance-three-signers',
+      perm: 'payments_approve',
       title: 'Different people sign',
       body: (
         <>Every signature on a run must belong to a <strong>different person</strong>, so you cannot approve a
@@ -75,6 +83,7 @@ export const roleFinance: ManualChapter = {
     },
     {
       anchor: 'finance-funding-summary',
+      perm: 'payments_approve',
       title: 'The funding summary',
       body: (
         <>Below the runs list you&rsquo;ll find the <strong>funding summary</strong>: every student your

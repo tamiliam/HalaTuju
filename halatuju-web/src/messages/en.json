@@ -6705,6 +6705,67 @@
     "changeRole": "Change role",
     "roleChangeConfirm": "Change {name} to {role}?",
     "financeCheckOn": "They will approve payment runs, and wallet credits will need a finance check.",
-    "financeCheckOff": "They are the only finance admin: the organisation admin will approve payment runs again, and wallet credits will skip the finance check."
+    "financeCheckOff": "They are the only finance admin: the organisation admin will approve payment runs again, and wallet credits will skip the finance check.",
+    "perm": {
+      "review": {
+        "name": "Review assigned students",
+        "desc": "Interview and decide on the students assigned to them."
+      },
+      "see_all": {
+        "name": "See all students",
+        "desc": "Read every student's file in this organisation."
+      },
+      "qc": {
+        "name": "Quality check",
+        "desc": "Check other reviewers' decisions. Never their own."
+      },
+      "spending": {
+        "name": "Spending",
+        "desc": "See and sort what students spend."
+      },
+      "payments_prepare": {
+        "name": "Prepare payment runs",
+        "desc": "Build a run and sign it as the maker."
+      },
+      "payments_check": {
+        "name": "Check payment runs",
+        "desc": "An optional middle check before approval."
+      },
+      "payments_approve": {
+        "name": "Approve payment runs",
+        "desc": "Releases payments from Vircle to students. Never on a run they prepared."
+      }
+    },
+    "permEditor": {
+      "title": "What {name} can do",
+      "subtitle": "Starts from the {preset} set. Switch on extra permissions when they need them.",
+      "students": "Students",
+      "money": "Money",
+      "custom": "Custom",
+      "changed": "changed",
+      "qcHint": "Needs “See all students” first.",
+      "save": "Save changes",
+      "reset": "Reset to {preset}",
+      "footnote": "You cannot change your own permissions or an organisation admin's.",
+      "noChange": "No change from what {name} can do now.",
+      "gives": "Saving gives {name}: {list}.",
+      "takes": "{name} loses: {list}.",
+      "nothingElse": "Nothing else changes.",
+      "saved": "Saved. {name} sees the change on their next page.",
+      "loadFailed": "Could not load {name}'s permissions.",
+      "open": "Permissions",
+      "close": "Close",
+      "fixed": "{name}'s permissions are fixed and cannot be changed here.",
+      "effect": {
+        "check_on": "Payment runs gain a check step: {name} checks each run before it is approved.",
+        "check_off": "{name} is the only checker: runs go straight from preparing to approval again.",
+        "approver_fallback_off": "{name} becomes the approver of payment runs; the organisation admin stops approving them.",
+        "approver_fallback_on": "{name} is the only approver: the organisation admin approves payment runs again.",
+        "not_signed_in": "{name} has never signed in, so the payment change takes effect at their first sign-in.",
+        "files_widened": "{name} will open the files of the students assigned to them.",
+        "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run."
+      }
+    },
+    "permissionsReset": "Their custom permissions go back to the new role’s set."
   }
 }

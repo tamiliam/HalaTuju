@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import {
-  visibleChapters, manualRole, resolveTarget, defaultChapterSlug,
+  visibleChapters, manualRole, manualPerms, resolveTarget, defaultChapterSlug,
   type ManualChapter, type ManualRole,
 } from '@/content/manual'
 
@@ -49,21 +49,23 @@ function ManualImage({ src, alt, float }: { src: string; alt?: string; float?: b
 export default function AdminManualPage() {
   const { role } = useAdminAuth()
   const mr = useMemo(() => manualRole(role), [role])
-  const chapters = useMemo(() => visibleChapters(mr), [mr])
+  // #39 S4: the permissions a team member was GIVEN open those sections of other chapters.
+  const perms = useMemo(() => manualPerms(role), [role])
+  const chapters = useMemo(() => visibleChapters(mr, perms), [mr, perms])
   const [active, setActive] = useState<string>(() => defaultChapterSlug(mr))
   const [pendingAnchor, setPendingAnchor] = useState<string | undefined>(undefined)
 
   // Land on the caller's own chapter (or a deep-linked one). Re-resolve when the role loads.
   useEffect(() => {
     const apply = () => {
-      const t = resolveTarget(typeof window !== 'undefined' ? window.location.hash : '', mr)
+      const t = resolveTarget(typeof window !== 'undefined' ? window.location.hash : '', mr, perms)
       setActive(t.slug)
       setPendingAnchor(t.anchor)
     }
     apply()
     window.addEventListener('hashchange', apply)
     return () => window.removeEventListener('hashchange', apply)
-  }, [mr])
+  }, [mr, perms])
 
   // After the chapter renders, scroll to a deep-linked section (else to the top).
   useEffect(() => {

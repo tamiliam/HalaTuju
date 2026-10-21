@@ -9,6 +9,7 @@
 // (the authority) and the live UI — no invented behaviour. When a role power changes, its
 // chapter + FAQ update in the same change (the currency rule now covers all chapters).
 import type { ReactNode } from 'react'
+import type { StaffPermission } from '@/lib/staffPermissions'
 
 /** The concrete staff roles a chapter can be scoped to. `super` sees everything. */
 export type ManualRole = 'reviewer' | 'qc' | 'org_admin' | 'admin' | 'finance' | 'super'
@@ -29,6 +30,11 @@ export interface ManualSection {
   float?: boolean
   /** Render the QC two-person-control ("no conflict") banner above this section. */
   noConflictBanner?: boolean
+  /** The staff permission this section documents (request #39 Sprint 4). A team member whose
+   *  organisation GAVE them that permission sees this section even though the chapter is another
+   *  role's (`visibleChapters`). ⚠ Tag only with a key no OTHER role's preset holds, or that preset
+   *  would grow a chapter it never had — `manual.test.ts` asks every preset. */
+  perm?: StaffPermission
 }
 
 export interface ManualChapter {

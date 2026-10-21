@@ -5,7 +5,7 @@
  * ⚠ THREE SPANS of the old `admin-api.ts` (168-218, 284-352, 821-862). The invitation READER
  * (`./invitations`) was written in the middle of them, and `inviteAdmin` 500 lines later.
  */
-import { API_BASE, adminFetch } from './client'
+import { API_BASE, adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 
 // ── Admin management ────────────────────────────────────────────────
@@ -38,6 +38,11 @@ export interface AdminItem {
   /** What this person has DONE, `{what: count}`, empty when nothing. The reason a delete is
    *  refused, so the screen can name it instead of greying a button for no visible cause. */
   work?: Record<string, number>
+  /** Request #39 Sprint 4 — People's permission chips. `custom` = a set saved on the editor; the two
+   *  lists are what differs from the preset (both empty on it), decided by the server. */
+  custom?: boolean
+  permissions_added?: string[]
+  permissions_removed?: string[]
   /** THIS row's dormancy threshold, resolved for the person's own organisation on the server
    *  (Org Config Sprint C). `standingOf` reads it; the old constant is only its fallback. */
   dormant_days?: number
@@ -96,7 +101,50 @@ export async function changeAdminRole(adminId: number, role: string, dryRun: boo
     throw err
   }
   return body as { id: number; from: string; to: string; dry_run: boolean
-                   consequence: 'finance_check_on' | 'finance_check_off' | null }
+                   consequence: 'finance_check_on' | 'finance_check_off' | null
+                   /** #39 S4: a saved custom set of permissions goes back to the new preset. */
+                   permissions_reset?: boolean }
+}
+
+/** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches
+ *  the editor may show, in the server's catalogue order; `editable` is false for a row nobody edits
+ *  (an organisation admin, a super, a partner, your own). */
+export interface StaffPermissionsView {
+  id: number
+  name: string
+  role: string
+  is_active: boolean
+  editable: boolean
+  preset: string[]
+  permissions: string[]
+  custom: boolean
+  keys: string[]
+}
+
+/** The server's answer to a save or a dry run: the set it would hold, what differs from the set it
+ *  holds now, and what else the save would do (`consequences`, worded by the screen). */
+export interface StaffPermissionsPlan {
+  id: number
+  role: string
+  dry_run: boolean
+  changed: boolean
+  permissions: string[]
+  custom: boolean
+  added: string[]
+  removed: string[]
+  consequences: string[]
+}
+
+export async function getStaffPermissions(adminId: number, options?: ApiOptions) {
+  return adminFetch<StaffPermissionsView>(`/api/v1/admin/admins/${adminId}/permissions/`, options)
+}
+
+/** Save a set, or with `dryRun` ask what saving it would do. A refusal throws with the server's
+ *  sentence and its `code` (`has_open_cases`, `qc_needs_see_all`, …). */
+export async function saveStaffPermissions(adminId: number, permissions: string[], dryRun: boolean,
+                                           options?: ApiOptions) {
+  return adminMutate<StaffPermissionsPlan>(`/api/v1/admin/admins/${adminId}/permissions/`, 'PATCH',
+    { permissions, dry_run: dryRun }, options)
 }
 
 export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore', options?: ApiOptions) {

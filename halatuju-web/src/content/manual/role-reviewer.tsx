@@ -32,7 +32,11 @@ export const roleReviewer: ManualChapter = {
         <strong>You will not see money anywhere on this page</strong>, and you will not see the programme&rsquo;s
         overall figures. Those belong to the people who run the gift. What you see is your own cases, and
         nothing else. An <strong>intake year</strong> picker at the top narrows them to one round, if you
-        want it.</>
+        want it.
+        <br /><br />
+        <em>Your organisation may have given you more than this role&rsquo;s usual set</em> &mdash; for
+        example the Spending page. If it has, the parts of the Guide that describe it appear in the
+        sidebar under the role they come from.</>
       ),
     },
     {
@@ -47,6 +51,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-your-applicants',
+      perm: 'review',
       title: 'Your applicants',
       body: (
         <>On <strong>Applications</strong> you&rsquo;ll see <strong>only the applicants assigned to you</strong>
@@ -61,6 +66,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-working-a-case',
+      perm: 'review',
       title: 'Working a case',
       body: (
         <>Your review is the <strong>four checks</strong> (see Basics). Green tiles move past quickly; your real
@@ -74,6 +80,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-profile-card',
+      perm: 'review',
       title: 'The student profile',
       body: (
         <>The <strong>Student profile (draft)</strong> is a short summary written automatically from the
@@ -86,6 +93,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-queries',
+      perm: 'review',
       title: 'Asking the student something',
       body: (
         <>If something&rsquo;s unclear, don&rsquo;t guess. <strong>Raise a query</strong> or <strong>request a
@@ -97,6 +105,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-scheduling',
+      perm: 'review',
       title: 'Scheduling the interview',
       body: (
         <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to <strong>propose three
@@ -108,6 +117,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-interview-stage',
+      perm: 'review',
       title: 'The interview stage',
       body: (
         <>When you&rsquo;re ready to talk to the student, the <strong>Interview Stage</strong> gathers your agenda
@@ -126,6 +136,7 @@ export const roleReviewer: ManualChapter = {
     },
     {
       anchor: 'reviewer-decision',
+      perm: 'review',
       title: 'Your decision',
       body: (
         <>In the <strong>Decision</strong> card you rate the AI&rsquo;s verification (<strong>Pass</strong> or

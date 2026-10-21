@@ -22,6 +22,9 @@ the finance-ROLE rule (`payments.credit_check_required`), so the same appointmen
 check. Moving the last one reverses both. The plan names that consequence (`finance_check_on` /
 `finance_check_off`, codes kept for the screen) so it is said BEFORE the click.
 
+⚠ **A SWITCH RESETS A CUSTOM SET OF PERMISSIONS** (#39 Sprint 4): `change_role` writes `permissions`
+back to NULL, the new role's preset, and the dry run says so first (`permissions_reset`).
+
 ⚠ **A LOGIN IS ONLY EVER REMOVED WHEN IT IS OURS AND UNUSED.** `retire_login` deletes the Supabase
 user only when nothing else rides on it (no student profile, profile alias or sponsor account),
 it has only an email identity, and it either never signed in or never chose its own password.
@@ -81,9 +84,12 @@ def _other_active_finance(target):
 def plan_role_change(target, new_role):
     """What switching ``target`` to ``new_role`` would do, or `RoleChangeRefused`.
 
-    Returns ``{'from', 'to', 'consequence'}`` where consequence is `FINANCE_CHECK_ON`,
-    `FINANCE_CHECK_OFF` or None. Pure apart from reads, so a dry run and the real change share it.
+    Returns ``{'from', 'to', 'consequence', 'permissions_reset'}`` where consequence is
+    `FINANCE_CHECK_ON`, `FINANCE_CHECK_OFF` or None, and ``permissions_reset`` says a saved CUSTOM set
+    of permissions (#39 Sprint 4) goes back to the new role's preset. Pure apart from reads, so a dry
+    run and the real change share it.
     """
+    from apps.courses import staff_permissions
     old = target.role
     if target.is_super or ROLE_PAIRS.get(old) != new_role:
         raise RoleChangeRefused(
@@ -112,10 +118,11 @@ def plan_role_change(target, new_role):
             consequence = FINANCE_CHECK_ON
         elif old == 'finance' and not _other_active_finance(target):
             consequence = FINANCE_CHECK_OFF
-    return {'from': old, 'to': new_role, 'consequence': consequence}
+    return {'from': old, 'to': new_role, 'consequence': consequence,
+            'permissions_reset': staff_permissions.is_custom(target)}
 
 
-def change_role(target_id, new_role, *, dry_run=False):
+def change_role(target_id, new_role, *, dry_run=False, by=None):
     """Plan, and unless ``dry_run`` apply, the switch. Returns ``(target, plan)``.
 
     The row is LOCKED for the plan and the write, so a revoke or another switch landing in between
@@ -125,9 +132,15 @@ def change_role(target_id, new_role, *, dry_run=False):
     "Paused" pill on a finance admin would be a control that lies — `set_paused`'s own rule). An
     OPEN invitation for this person carries the new role too: the Invitations page shows the role
     from it, and a Resend reads the account's.
+
+    ⚠ AND `permissions` GOES BACK TO NULL — the NEW role's preset (#39 Sprint 4). A custom set was
+    chosen on top of the OLD role; carried across a switch it would mean something nobody chose (a
+    Reviewer + Spending switched to QC keeping Spending). The dry run says so (`permissions_reset`),
+    and a reset of a custom set writes a history row (`kind='role_change'`) beside the AUDIT line.
     """
+    from apps.courses import staff_permissions
     from apps.courses.models import PartnerAdmin
-    from . import invitations
+    from . import invitations, staff_permissions_admin
     from .models import Invitation
     with transaction.atomic():
         target = PartnerAdmin.objects.select_for_update().filter(pk=target_id).first()
@@ -136,7 +149,8 @@ def change_role(target_id, new_role, *, dry_run=False):
         plan = plan_role_change(target, new_role)
         if dry_run:
             return target, plan
-        fields = {'role': new_role, 'is_super_admin': False}
+        before = staff_permissions.resolve(target)
+        fields = {'role': new_role, 'is_super_admin': False, 'permissions': None}
         # ⚠ A pause is KEPT between reviewer and QC on purpose: both are review roles that can be
         # assigned work, so "no new work for now" still means something; only Finance clears it.
         if new_role == 'finance':
@@ -146,6 +160,9 @@ def change_role(target_id, new_role, *, dry_run=False):
             audience='staff', partner_admin=target)).update(role=new_role)
         for k, v in fields.items():
             setattr(target, k, v)
+        if plan['permissions_reset']:
+            staff_permissions_admin.record(target, before, staff_permissions.resolve(target),
+                                           by=by, kind='role_change')
     return target, plan
 
 

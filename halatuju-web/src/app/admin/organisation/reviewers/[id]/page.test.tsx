@@ -23,6 +23,12 @@ jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
 jest.mock('@/lib/admin-api')
+// The permission editor is its own chunk with its own request (#39 Sprint 4) and its own test
+// (`PermissionEditor.test.tsx`); here only WHETHER the page shows it matters.
+jest.mock('@/components/admin/LazyPermissionEditor', () => ({
+  __esModule: true,
+  default: ({ adminId }: { adminId: number }) => <div data-testid="perm-editor">{adminId}</div>,
+}))
 
 const mockApi = api as jest.Mocked<typeof api>
 
@@ -305,5 +311,38 @@ describe('which gift a reviewer covers', () => {
     fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
     await waitFor(() =>
       expect(screen.getByText('admin.reviewers.detail.giftFailed')).toBeTruthy())
+  })
+})
+
+describe('#39 Sprint 4: the permission card, and Pause on the target rule of the server', () => {
+  it('shows the organisation admin the card for this person', async () => {
+    await loaded()
+    expect(screen.getByTestId('perm-editor').textContent).toBe('5')
+  })
+
+  it('shows a super the card too', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await loaded()
+    expect(screen.getByTestId('perm-editor')).toBeTruthy()
+  })
+
+  it('never shows a plain admin or finance the card', async () => {
+    for (const r of ['admin', 'finance']) {
+      viewerRole = { role: r }
+      const { unmount } = render(<AdminReviewerDetailPage />)
+      await waitFor(() => expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy())
+      expect(screen.queryByTestId('perm-editor')).toBeNull()
+      unmount()
+    }
+  })
+
+  it('offers Pause only where the endpoint takes it (`pausable`)', async () => {
+    await loaded({ pausable: false })
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
+  })
+
+  it('offers Pause to a Finance + Review person the endpoint accepts', async () => {
+    await loaded({ role: 'finance', pausable: true })
+    expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
   })
 })

@@ -49,6 +49,34 @@ export const roleOrgAdmin: ManualChapter = {
       alt: 'The Invitations page with invite and revoke controls (placeholder)',
     },
     {
+      anchor: 'org-admin-permissions',
+      title: 'Changing what someone can do',
+      body: (
+        <>Each person&rsquo;s role is a <strong>starting set</strong> of permissions, and you can change it. On
+        <strong> People</strong>, open a reviewer&rsquo;s page, or press <strong>Permissions</strong> beside an admin,
+        and the card <strong>What &hellip; can do</strong> lists them in two groups: <em>Students</em> (Review
+        assigned students, See all students, Quality check) and <em>Money</em> (Spending, Prepare, Check and
+        Approve payment runs). Switch one on or off and the line underneath says what saving would do
+        &mdash; for example that giving someone <em>Approve payment runs</em> makes them the approver, so you
+        stop approving runs. Nothing changes until you press <strong>Save changes</strong>; <strong>Reset</strong>
+        puts the role&rsquo;s usual set back. A person whose set differs from their role shows a
+        <strong> Custom</strong> chip on People, with what was added or taken away.
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li><strong>Quality check</strong> needs <em>See all students</em>: a checker reads every decision.</li>
+            <li>Somebody who still has cases assigned keeps <em>Review assigned students</em> (and an admin
+            holding cases keeps <em>See all students</em>) until the cases are handed to someone else.</li>
+            <li>Nobody signs a payment run twice: a person may prepare <em>and</em> approve runs, never both on the
+            same run.</li>
+            <li><strong>Change role</strong> puts a changed set back to the new role&rsquo;s usual set, and says so
+            before you answer.</li>
+            <li>You cannot change your own permissions, another organisation admin&rsquo;s, or give anyone
+            <em> Manage the team</em> &mdash; that stays with you.</li>
+          </ul>
+          <span className="mt-2 block">The change takes effect on the person&rsquo;s next page. Every change is
+          recorded &mdash; who changed what, from what to what, and when.</span></>
+      ),
+    },
+    {
       anchor: 'org-admin-assigning',
       title: 'Assigning applicants',
       body: (

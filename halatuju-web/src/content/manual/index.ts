@@ -11,6 +11,7 @@ import { roleAdminGeneral } from './role-admin-general'
 import { roleFinance } from './role-finance'
 import { helpChapter } from './help'
 import { effectiveRole } from '@/lib/navigation'
+import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 export type { ManualChapter, ManualSection, ManualRole, Audience } from './types'
 
@@ -39,15 +40,34 @@ export function manualRole(role: { role?: string; is_super_admin?: boolean } | n
   return undefined   // partner / anything else
 }
 
+/** The permissions a TEAM member holds, as `/admin/role/` served them (request #39) — and none for
+ *  anybody else: an organisation admin and a super already see every chapter, a partner none. */
+export function manualPerms(
+  role: { role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null } | null | undefined,
+): readonly string[] {
+  if (!role || effectiveRole(role) === 'super') return []
+  return (TEAM_ROLES as readonly string[]).includes(role.role ?? '') ? (role.permissions ?? []) : []
+}
+
+/** Shown under another role's chapter when only the sections for given permissions are open. */
+export const GIVEN_BLURB = 'The parts of this role your organisation has given you.'
+
 /** Chapters visible to a role. Basics + Help are always shown; role chapters are shown to
- *  their own role, to org_admin (they manage those people), and to super. */
-export function visibleChapters(role: ManualRole | undefined): ManualChapter[] {
+ *  their own role, to org_admin (they manage those people), and to super.
+ *
+ *  ⚠ #39 Sprint 4: a team member ALSO sees, in another role's chapter, the sections tagged with a
+ *  permission they hold (`ManualSection.perm`) — Rohini, a Reviewer given Spending, reads her own
+ *  chapter whole and the General admin chapter's Spending section. Nothing else of that chapter. */
+export function visibleChapters(role: ManualRole | undefined,
+                                permissions: readonly string[] = []): ManualChapter[] {
   const seesAllRoles = role === 'super' || role === 'org_admin'
-  return CHAPTERS.filter((c) => {
-    if (c.group !== 'role') return true
-    if (seesAllRoles) return true
-    return c.role === role
-  })
+  const out: ManualChapter[] = []
+  for (const c of CHAPTERS) {
+    if (c.group !== 'role' || seesAllRoles || c.role === role) { out.push(c); continue }
+    const given = c.sections.filter((s) => s.perm && permissions.includes(s.perm))
+    if (given.length > 0) out.push({ ...c, blurb: GIVEN_BLURB, sections: given })
+  }
+  return out
 }
 
 /** The chapter a caller lands on: their own role chapter if they have one, else the first
@@ -63,8 +83,9 @@ export function defaultChapterSlug(role: ManualRole | undefined): string {
 export function resolveTarget(
   hash: string | undefined,
   role: ManualRole | undefined,
+  permissions: readonly string[] = [],
 ): { slug: string; anchor?: string } {
-  const visible = visibleChapters(role)
+  const visible = visibleChapters(role, permissions)
   const clean = (hash || '').replace(/^#/, '')
   if (clean) {
     const byslug = visible.find((c) => c.slug === clean)

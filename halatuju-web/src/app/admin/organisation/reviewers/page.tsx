@@ -27,6 +27,8 @@ import { byCategory } from '@/lib/adminStaff'
 import { switchableTo } from '@/lib/staffRole'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
+import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
+import PermissionChips from '@/components/admin/PermissionChips'
 
 // Organisation → **People**: the directory of everybody who is already in.
 //
@@ -91,6 +93,9 @@ export default function AdminReviewersList() {
   // The admin whose delete is being confirmed (typed confirmation, 2026-10-09). Null = closed.
   const [deleting, setDeleting] = useState<AdminItem | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
+  // The admin whose permissions are open (#39 Sprint 4). Null = closed. A reviewer's live on their
+  // own page; an admin or finance person has no page of their own, so theirs opens here.
+  const [permFor, setPermFor] = useState<AdminItem | null>(null)
   // Which reviewer row is mid-revoke. The staff actions carry their own busy id from the hook;
   // the reviewers table acts on the same endpoint but keeps its own list, so it needs its own.
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -204,6 +209,18 @@ export default function AdminReviewersList() {
 
       {panel === 'admins' && (<>
         <MessageBanner message={staffMessage} />
+        {permFor && token && (
+          <div className="mb-4">
+            <div className="mb-1 flex justify-end">
+              <button type="button" onClick={() => setPermFor(null)}
+                className="text-xs font-medium text-primary-600 hover:text-primary-800">
+                {t('admin.permEditor.close')}
+              </button>
+            </div>
+            <LazyPermissionEditor key={permFor.id} adminId={permFor.id} name={permFor.name}
+              token={token} onSaved={reloadStaff} />
+          </div>
+        )}
         {/* The SAME table the platform's two staff screens use — one component, so a third copy
             of "who is in, and may I switch them off" cannot drift from the other two. It already
             knows that revoked beats paused, and already draws phone cards. */}
@@ -212,6 +229,7 @@ export default function AdminReviewersList() {
           onToggle={canManage ? toggle : undefined}
           onDelete={canManage ? setDeleting : undefined}
           onChangeRole={canManage ? changeRole : undefined}
+          onPermissions={canManage ? setPermFor : undefined}
           soleOrgAdmin={soleOrgAdmin} />
         {deleting && (
           <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
@@ -290,6 +308,7 @@ export default function AdminReviewersList() {
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${roleBadge(r.role)}`}>
                     {t(`admin.reviewers.role.${r.role}`)}
                   </span>
+                  <PermissionChips row={r} />
                   {orderedLanguages(r).map((code) => (
                     <span key={code} className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600">
                       {t(`admin.reviewers.lang.${code}`)}
@@ -359,6 +378,8 @@ export default function AdminReviewersList() {
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roleBadge(r.role)}`}>
                         {t(`admin.reviewers.role.${r.role}`)}
                       </span>
+                      {/* #39 S4: what this person's set adds to (or takes from) the role. */}
+                      {r.custom && <div className="mt-1"><PermissionChips row={r} /></div>}
                     </td>
                     <td className="px-4 py-3 text-ground-700">
                       {orderedLanguages(r).length === 0

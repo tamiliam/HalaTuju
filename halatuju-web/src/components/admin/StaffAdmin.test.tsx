@@ -155,3 +155,37 @@ describe('the row actions (2026-09-09)', () => {
     expect(t.queryByText('admin.changeRole')).toBeNull()
   })
 })
+
+describe('#39 Sprint 4: permission chips and the Permissions action', () => {
+  const act = (rows: AdminItem[], on: Partial<Parameters<typeof StaffTable>[0]> = {}) => {
+    const r = render(<StaffTable rows={rows} canAct {...on} />)
+    return within(r.container.querySelector('[data-testid="table-scroller"]') as HTMLElement)
+  }
+
+  it('shows what a custom set adds and takes away, beside the role', () => {
+    const t = act([row({ id: 21, name: 'Rohini', custom: true, permissions_added: ['spending'],
+                         permissions_removed: [] }),
+                   row({ id: 22, name: 'Plain', role: 'admin', custom: false })])
+    expect(t.getAllByTestId('permission-chips')).toHaveLength(1)
+    expect(t.getByText('admin.permEditor.custom')).toBeTruthy()
+    expect(t.getByText('+ admin.perm.spending.name')).toBeTruthy()
+  })
+
+  it('offers Permissions on an active TEAM member only — never an org admin or a revoked row', () => {
+    const onPermissions = jest.fn()
+    const t = act([row({ id: 31, name: 'Admin A', role: 'admin' }),
+                   row({ id: 32, name: 'Lead', role: 'org_admin' }),
+                   row({ id: 33, name: 'Gone', role: 'finance', is_active: false }),
+                   row({ id: 34, name: 'Fin', role: 'finance' })],
+                  { onPermissions })
+    const buttons = t.getAllByText('admin.permEditor.open')
+    expect(buttons.length).toBe(2)
+    buttons[1].click()
+    expect(onPermissions).toHaveBeenCalledWith(expect.objectContaining({ id: 34 }))
+  })
+
+  it('offers no Permissions when the page passes no handler (a viewer who cannot act)', () => {
+    const t = act([row({ id: 35, name: 'Admin B', role: 'admin' })])
+    expect(t.queryByText('admin.permEditor.open')).toBeNull()
+  })
+})

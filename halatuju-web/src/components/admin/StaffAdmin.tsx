@@ -8,9 +8,11 @@ import {
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
+import PermissionChips from '@/components/admin/PermissionChips'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { switchableTo, workSummary } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 /**
  * Everything the four staff-facing pages share, in one place.
@@ -54,7 +56,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, soleOrgAdmin }: {
+                             onDelete, onChangeRole, onPermissions, soleOrgAdmin }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -65,6 +67,9 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   onDelete?: (a: AdminItem) => void
   /** Switch within the pair (`lib/staffRole`). Offered only where a switch exists. */
   onChangeRole?: (a: AdminItem) => void
+  /** Open "What <name> can do" (#39 Sprint 4). Offered on a TEAM member's row only — an
+   *  organisation admin's lead tier is fixed, and the server refuses it anyway. */
+  onPermissions?: (a: AdminItem) => void
   /** The sole active org_admin of a tenant cannot be revoked — the backend enforces it; this
    *  just keeps a dead affordance off the screen. */
   soleOrgAdmin?: (a: AdminItem) => boolean
@@ -138,6 +143,12 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             {t('admin.changeRole')}
           </button>
         )}
+        {onPermissions && a.is_active && (TEAM_ROLES as readonly string[]).includes(a.role) && (
+          <button disabled={busyId === a.id} onClick={() => onPermissions(a)}
+            className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
+            {t('admin.permEditor.open')}
+          </button>
+        )}
       </div>
     )
   }
@@ -166,8 +177,11 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] ${roleBadge(a.role)}`}>
-                {t(`admin.role.${a.role}`)}
+              <span className="flex flex-wrap items-center gap-1">
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] ${roleBadge(a.role)}`}>
+                  {t(`admin.role.${a.role}`)}
+                </span>
+                <PermissionChips row={a} />
               </span>
               {actions}
             </div>
@@ -203,6 +217,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${roleBadge(a.role)}`}>
                   {t(`admin.role.${a.role}`)}
                 </span>
+                {/* #39 S4: what this person's set adds to (or takes from) the role. */}
+                {a.custom && <div className="mt-1"><PermissionChips row={a} /></div>}
               </td>
               {/* Revoked beats paused: a revoked account cannot be brought back by un-pausing,
                   so showing "Paused" over it would name the smaller of two facts. Pause is
@@ -300,8 +316,12 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
     setBusyId(a.id); setMessage(null)
     try {
       const plan = await changeAdminRole(a.id, to, true, { token })
-      const note = plan.consequence === 'finance_check_on' ? t('admin.financeCheckOn')
-        : plan.consequence === 'finance_check_off' ? t('admin.financeCheckOff') : ''
+      const note = [
+        plan.consequence === 'finance_check_on' ? t('admin.financeCheckOn')
+          : plan.consequence === 'finance_check_off' ? t('admin.financeCheckOff') : '',
+        // #39 S4: a saved custom set goes back to the new role's preset — said BEFORE the click.
+        plan.permissions_reset ? t('admin.permissionsReset') : '',
+      ].filter(Boolean).join(' ')
       const ask = t('admin.roleChangeConfirm', { name: a.name, role: t(`admin.role.${to}`) })
       if (!window.confirm(note ? `${ask} ${note}` : ask)) return false
       await changeAdminRole(a.id, to, false, { token })

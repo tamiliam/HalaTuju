@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 from ..models import ReviewerProfile, ScholarshipApplication
 from ..serializers_admin import ReviewerProfileSerializer
-from ..services import PauseError, set_paused
+from ..services import PauseError, is_review_target, set_paused
 
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
@@ -162,6 +162,8 @@ def _reviewer_dict(admin, work):
 
     ⚠ NO corrections figure here, by decision (2026-08-02). See `reopen.reviewer_reopens`.
     """
+    from apps.courses import staff_permissions
+    added, removed = staff_permissions.preset_diff(admin)
     return {
         'id': admin.id,
         'name': admin.name,
@@ -195,6 +197,11 @@ def _reviewer_dict(admin, work):
         'programme_id': admin.programme_id,
         'programme_name': (admin.programme.name_en or admin.programme.code)
                           if admin.programme_id else '',
+        # Request #39 Sprint 4: People's permission chips — the same three fields the staff list
+        # serves (`views_staff._permission_chips`), so the two tabs cannot disagree.
+        'custom': staff_permissions.is_custom(admin),
+        'permissions_added': added,
+        'permissions_removed': removed,
     }
 
 
@@ -323,6 +330,11 @@ class AdminReviewerDetailView(_ReviewersBase):
                 for r in reopen_service.reviewer_reopens(target, organisation_id=org_id)
             ],
             'programmes': self._gift_choices(admin),
+            # #39 Sprint 4 (S3 review fix 4): whether `AdminReviewerPauseView` would ACCEPT this
+            # person — `set_paused`'s own target rule, so the page offers Pause exactly where the
+            # endpoint takes it (a Finance + Review person is pausable; a set with no review power
+            # is not). The CALLER side (super / org_admin) stays the page's.
+            'pausable': is_review_target(target),
         })
         return Response(payload)
 

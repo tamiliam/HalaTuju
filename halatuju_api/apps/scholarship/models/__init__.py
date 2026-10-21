@@ -91,4 +91,7 @@ from .merchant_flags import NOTE_MAX, MerchantFlag, MerchantFlagNote
 # organisation that added it. Points only at `courses.PartnerOrganisation`; every FK to it names it
 # as a string, so its place in this order does not matter.
 from .sources import ReferralSource
+# Request #39 Sprint 4 (2026-10-21) — model 68, NEW: the history of a staff member's permissions.
+# Points only at `courses.PartnerAdmin` / `courses.PartnerOrganisation`, by string.
+from .staff_permission_changes import StaffPermissionChange
 

@@ -11,6 +11,7 @@ import {
 } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import RecordState from '@/components/admin/RecordState'
+import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
 import {
   credentialLines, displayPhone, hasNoHistory, orderedLanguages, outcomeSegments, phoneState,
   turnaroundBand, type OutcomeKey,
@@ -104,10 +105,14 @@ export default function AdminReviewerDetailPage() {
   // Changing who gets work is staff management, so this is NARROWER than reading the page: an
   // `admin` or `finance` may look, only super/org_admin may act. The endpoint re-gates anyway.
   const viewerRole = effectiveRole(role)
-  const mayPause = viewerRole === 'super' || viewerRole === 'org_admin'
+  const mayManage = viewerRole === 'super' || viewerRole === 'org_admin'
+  // ⚠ AND THE TARGET SIDE IS THE SERVER'S (#39 Sprint 4, S3 review fix 4): `pausable` is the pause
+  // endpoint's own target rule, so a Finance + Review person is offered Pause and a set with no
+  // review power is not. Absent on an older payload = as before.
+  const mayPause = mayManage && detail?.pausable !== false
   // Same gate, same reason, and deliberately a separate name: pause and gift are two different
   // verbs that happen to share a role today. One constant would tie them together by accident.
-  const mayGift = mayPause
+  const mayGift = mayManage
 
   const load = useCallback(() => {
     if (!token || !id) return
@@ -266,6 +271,13 @@ export default function AdminReviewerDetailPage() {
         </div>
 
       </section>
+
+      {/* ── What this person can do (#39 Sprint 4) — the organisation admin's (or a super's) card.
+          Its own chunk, and its own request: the server says whether the row is editable at all. */}
+      {mayManage && token && (
+        <LazyPermissionEditor adminId={detail.id} name={detail.name || detail.email} token={token}
+          onSaved={load} />
+      )}
 
       {/* ── 2. Outcomes | About, side by side ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-3.5">

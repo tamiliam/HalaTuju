@@ -10,11 +10,16 @@ export const roleQc: ManualChapter = {
   sections: [
     {
       anchor: 'qc-what-it-is',
+      perm: 'qc',
       title: 'What QC is',
       body: (
         <>QC is the <strong>second pair of eyes</strong>. After a reviewer records their verdict, the case waits at
         <strong> Interviewed (awaiting QC)</strong> for you to check the work before it becomes a recommendation a
-        sponsor can see. You see <strong>every</strong> application in your organisation, not just assigned ones.</>
+        sponsor can see. You see <strong>every</strong> application in your organisation, not just assigned ones.
+        <br /><br />
+        <em>Your organisation may have given you more than this role&rsquo;s usual set</em> &mdash; for
+        example the Spending page. If it has, the parts of the Guide that describe it appear in the
+        sidebar under the role they come from.</>
       ),
       img: '/manual/qc-queue.png',
       alt: 'The awaiting-QC queue (placeholder — screenshot pass pending)',
@@ -37,6 +42,7 @@ export const roleQc: ManualChapter = {
     },
     {
       anchor: 'qc-accept-reopen',
+      perm: 'qc',
       title: 'Accept or Reopen',
       body: (
         <>On an awaiting-QC case, the <strong>Quality control</strong> box gives you two choices:
@@ -50,6 +56,7 @@ export const roleQc: ManualChapter = {
     },
     {
       anchor: 'qc-gap-floor',
+      perm: 'qc',
       title: 'The gap floor',
       body: (
         <>If any of the four facts is still <strong className="text-critical-700">red</strong>, <strong>Accept is
@@ -60,6 +67,7 @@ export const roleQc: ManualChapter = {
     },
     {
       anchor: 'qc-review-all',
+      perm: 'qc',
       title: 'You can review, not just QC',
       body: (
         <>You&rsquo;re also a <strong>review-all</strong> role: you can act on any case in your organisation, so
@@ -70,6 +78,7 @@ export const roleQc: ManualChapter = {
     },
     {
       anchor: 'qc-no-conflict',
+      perm: 'qc',
       title: 'The no-conflict rule',
       noConflictBanner: true,
       body: (

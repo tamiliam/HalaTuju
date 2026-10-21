@@ -160,6 +160,7 @@ from .views_admin import (
     AdminReviewerSystemEmailsView,
     AdminInvitationCancelView, AdminInvitationsView,
     AdminStaffRoleView,
+    AdminStaffPermissionsView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -368,6 +369,8 @@ urlpatterns = [
     # People → Change role (staff lifecycle, 2026-10-09). Beside the courses app's own
     # `admin/admins/<id>/revoke|resend/`; no pattern there can match `role/`.
     path('admin/admins/<int:admin_id>/role/', AdminStaffRoleView.as_view()),
+    # People → What <name> can do (#39 Sprint 4). Same neighbourhood, same reasoning.
+    path('admin/admins/<int:admin_id>/permissions/', AdminStaffPermissionsView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

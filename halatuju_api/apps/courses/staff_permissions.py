@@ -80,7 +80,8 @@ def clean(keys):
     dependent key without its dependency are all dropped. Returns a tuple in catalogue order.
 
     ⚠ It never ADDS a key. A list that says `qc` without `see_all` is a list somebody wrote by hand
-    (the Sprint 4 editor refuses it); answering it with LESS access is the safe reading."""
+    (the Sprint 4 editor refuses it, `apps/scholarship/staff_permissions_admin.asked_set`); answering
+    it with LESS access is the safe reading."""
     if not isinstance(keys, (list, tuple)):
         return ()
     held = {k for k in keys if isinstance(k, str) and k in CATALOGUE and k not in LEAD_TIER_ONLY}
@@ -138,6 +139,16 @@ def is_custom(admin):
     the preset is stored as NULL by the editor (Sprint 4), so this is derivable, never stored."""
     return (admin is not None and not admin.is_super and admin.role in PRESETS
             and getattr(admin, 'permissions', None) is not None)
+
+
+def preset_diff(admin):
+    """``(added, removed)``: the keys a team member holds BEYOND their preset, and the preset keys
+    they do NOT hold — what People's permission chips show (Sprint 4). Both empty on the preset, and
+    for anybody whose set is not editable (the lead tier, a super, a partner)."""
+    if not is_custom(admin):
+        return [], []
+    held, preset = resolve(admin), preset_for(admin.role)
+    return [k for k in held if k not in preset], [k for k in preset if k not in held]
 
 
 def holders(organisation, key):

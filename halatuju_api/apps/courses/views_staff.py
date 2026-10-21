@@ -41,6 +41,14 @@ logger = logging.getLogger('apps.courses.views_admin')
 NOT_INVITABLE = "This email address can't be invited. Ask HalaTuju support."
 
 
+def _permission_chips(admin):
+    """`custom` and what differs from the preset — People's permission chips (#39 Sprint 4)."""
+    from . import staff_permissions
+    added, removed = staff_permissions.preset_diff(admin)
+    return {'custom': staff_permissions.is_custom(admin),
+            'permissions_added': added, 'permissions_removed': removed}
+
+
 def _listed_on_people(caller, target):
     """Whether ``caller`` already sees ``target`` on People — `AdminListView`'s own filter: a super
     lists every staff account; anyone else only their organisation's programme staff."""
@@ -491,6 +499,9 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # the reason instead of hiding a button for no visible cause.
                 'deletable': _deletable_now(admin, a),
                 'work': staff_footprint.footprint(a),
+                # Request #39 Sprint 4: People's permission chips. `custom` = a set saved on the
+                # editor; the two lists are what differs from the preset (both empty on it).
+                **_permission_chips(a),
                 # The invitation behind this person, and how far it got. Computed server-side so
                 # the screen renders a word rather than re-deriving the rule — the same split
                 # `_reviewer_dict` / `reviewerTable.ts` uses.

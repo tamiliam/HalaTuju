@@ -13,6 +13,10 @@ import type { Audience } from '../types'
 import path from 'path'
 import { NAV_ITEMS } from '@/lib/navigation'
 import { readWeb, walkFloor, floorCount, WEB_ROOT } from '@/test/sourceGuard'
+import { manualPerms, GIVEN_BLURB } from '../index'
+import { servedPermissions } from '@/test/staffPresets'
+import { STAFF_PERMISSIONS } from '@/lib/staffPermissions'
+import en from '@/messages/en.json'
 
 // TD-168 (2026-10-04): DERIVED from the registry, never hand-listed. The hand-kept array let the
 // finance chapter (Sprint 14) register while every test here stayed green covering nothing new.
@@ -178,5 +182,70 @@ describe('FAQ audience filtering', () => {
     expect(canSeeAllFaq('reviewer')).toBe(false)
     expect(canSeeAllFaq('qc')).toBe(false)
     expect(canSeeAllFaq('admin')).toBe(false)
+  })
+})
+
+describe('#39 Sprint 4: permissions a person was GIVEN open those sections of other chapters', () => {
+  const TEAM: ManualRole[] = ['reviewer', 'qc', 'admin', 'finance']
+  const asServed = (role: string, permissions: string[]) => manualPerms({ role, permissions })
+
+  test('on its preset every team role still sees ONLY its own role chapter (nothing moved)', () => {
+    for (const r of TEAM) {
+      const own = visibleChapters(r).map((c) => c.slug)
+      expect(visibleChapters(r, asServed(r, servedPermissions(r))).map((c) => c.slug)).toEqual(own)
+    }
+  })
+
+  test("every tag names a key that only its OWN chapter's preset holds", () => {
+    // A tag held by another role's preset would grow that role a chapter it never had.
+    for (const c of CHAPTERS.filter((x) => x.group === 'role' && x.role)) {
+      for (const sec of c.sections.filter((x) => x.perm)) {
+        expect(STAFF_PERMISSIONS).toContain(sec.perm)
+        for (const r of TEAM.filter((x) => x !== c.role)) {
+          expect([r, servedPermissions(r).includes(sec.perm!)]).toEqual([r, false])
+        }
+      }
+    }
+  })
+
+  test("Rohini (Reviewer + Spending) reads her chapter whole and ONLY the Spending section of General admin", () => {
+    const seen = visibleChapters('reviewer', asServed('reviewer', ['review', 'spending']))
+    const admin = seen.find((c) => c.slug === 'role-admin-general')!
+    expect(admin.sections.map((x) => x.anchor)).toEqual(['admin-general-spending'])
+    expect(admin.blurb).toBe(GIVEN_BLURB)
+    const own = seen.find((c) => c.slug === 'role-reviewer')!
+    expect(own.sections.length).toBe(CHAPTERS.find((c) => c.slug === 'role-reviewer')!.sections.length)
+    expect(seen.map((c) => c.slug)).not.toContain('role-finance')
+    // A deep link to that section resolves for her, and to nobody without Spending.
+    expect(resolveTarget('#admin-general-spending', 'reviewer', ['review', 'spending']))
+      .toEqual({ slug: 'role-admin-general', anchor: 'admin-general-spending' })
+    expect(resolveTarget('#admin-general-spending', 'reviewer', ['review']).slug).toBe('role-reviewer')
+  })
+
+  test("Finance + Review opens the reviewer's case-work sections, never the reviewer overview", () => {
+    const rev = visibleChapters('finance', asServed('finance', ['review', 'payments_approve']))
+      .find((c) => c.slug === 'role-reviewer')!
+    expect(rev.sections.map((x) => x.anchor)).toContain('reviewer-working-a-case')
+    expect(rev.sections.map((x) => x.anchor)).not.toContain('reviewer-overview')
+  })
+
+  test('an organisation admin, a super and a partner carry no given permissions', () => {
+    expect(manualPerms({ role: 'org_admin', permissions: ['see_all', 'qc'] })).toEqual([])
+    expect(manualPerms({ role: 'reviewer', is_super_admin: true, permissions: ['review'] })).toEqual([])
+    expect(manualPerms({ role: 'partner', permissions: ['review'] })).toEqual([])
+    expect(manualPerms(null)).toEqual([])
+  })
+
+  test('the org admin chapter carries "Changing what someone can do"', () => {
+    const org = CHAPTERS.find((c) => c.slug === 'role-org-admin')!
+    expect(org.sections.map((x) => x.anchor)).toContain('org-admin-permissions')
+  })
+
+  test('every editable permission has a name and a description in the admin words', () => {
+    const perm = (en as unknown as { admin: { perm: Record<string, { name: string; desc: string }> } })
+      .admin.perm
+    for (const k of STAFF_PERMISSIONS.filter((x) => x !== 'manage_team')) {
+      expect([k, !!perm[k]?.name, !!perm[k]?.desc]).toEqual([k, true, true])
+    }
   })
 })

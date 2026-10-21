@@ -4,8 +4,10 @@ Assigning a reviewer, pausing one, and the income-route switch.
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
+import contextlib
 import logging
 
+from django.db import transaction
 from django.utils import timezone
 
 from .errors import AssignmentError, PauseError
@@ -152,6 +154,36 @@ def is_assignable(application):
     return application.status in ASSIGNABLE_STATUSES
 
 
+def _refuse_stage(application, current, reviewer, now):
+    """The stage rules of `assign_reviewer`, in their order (moved out verbatim, #39 Sprint 4, when
+    the row lock pushed the function past the 150-line standard). Raises `AssignmentError`."""
+    unassigning = reviewer is None and current is not None
+
+    # Checked FIRST, ahead of the general stage gate: an unassign at 'interviewed' or beyond is
+    # also not-assignable, but 'findings_submitted' tells the super what to DO about it (reopen the
+    # decision), where 'not_assignable' would only tell them they can't. The more specific,
+    # more actionable refusal wins.
+    if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
+        raise AssignmentError('findings_submitted')
+
+    # A case may only change hands while there is a review to do (Completed / interviewing).
+    # Gates assign, REASSIGN and unassign alike — a rejected or awarded student has no live
+    # review, and retargeting one would detach finished work from the person who did it.
+    if not is_assignable(application):
+        raise AssignmentError('not_assignable')
+
+    # Ready-gate applies only to the first assignment of an unassigned application.
+    if current is None and reviewer is not None and not is_ready_for_assignment(application, now):
+        raise AssignmentError('not_ready')
+
+
+def _locked(reviewer):
+    """``reviewer`` re-read with its row locked (the permissions editor's lock). A row that has
+    vanished keeps the stale object, which `_can_review` then judges as before."""
+    from apps.courses.models import PartnerAdmin
+    return PartnerAdmin.objects.select_for_update().filter(pk=reviewer.pk).first() or reviewer
+
+
 def assign_reviewer(application, *, reviewer, by_admin, now=None):
     """F7: (re)assign an application to a reviewer, audited. The caller must already
     have checked the actor is a super-admin. Rules:
@@ -173,69 +205,62 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     from .. import usage as _usage
     now = now or timezone.now()
 
-    if reviewer is not None and not _can_review(reviewer):
-        # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and
-        # telling an org_admin that a paused volunteer "is not a reviewer" is simply untrue — she
-        # is one, she has stepped back. Found by walking pause end-to-end on production
-        # (2026-08-03); the dropdown disables a paused option, so this is reached from a page that
-        # loaded BEFORE somebody was paused, which is precisely when a wrong reason misleads most.
-        # Revoked is checked first: a revoked account is a bigger fact than a pause on top of it.
-        raise AssignmentError(
-            'not_reviewer' if not getattr(reviewer, 'is_active', False)
-            else 'reviewer_paused' if getattr(reviewer, 'paused_at', None) is not None
-            else 'not_reviewer')
+    # ⚠ THE TARGET IS RE-READ UNDER ITS ROW LOCK (#39 Sprint 4, the TD-382 class). The editor's
+    # permissions PATCH locks the same row to count the person's open cases before it removes
+    # `review`; with both holding it, an assignment racing that removal is serialised — whichever
+    # commits second sees the first, so a case can never land on somebody who just lost the power
+    # to open it. An UNASSIGN takes no lock and no transaction, exactly as before.
+    locked = transaction.atomic() if reviewer is not None else contextlib.nullcontext()
+    with locked:
+        if reviewer is not None:
+            reviewer = _locked(reviewer)
+        if reviewer is not None and not _can_review(reviewer):
+            # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and
+            # telling an org_admin that a paused volunteer "is not a reviewer" is simply untrue — she
+            # is one, she has stepped back. Found by walking pause end-to-end on production
+            # (2026-08-03); the dropdown disables a paused option, so this is reached from a page that
+            # loaded BEFORE somebody was paused, which is precisely when a wrong reason misleads most.
+            # Revoked is checked first: a revoked account is a bigger fact than a pause on top of it.
+            raise AssignmentError(
+                'not_reviewer' if not getattr(reviewer, 'is_active', False)
+                else 'reviewer_paused' if getattr(reviewer, 'paused_at', None) is not None
+                else 'not_reviewer')
 
-    current = application.assigned_to
-    if (current.id if current else None) == (reviewer.id if reviewer else None):
-        return application  # no-op
+        current = application.assigned_to
+        if (current.id if current else None) == (reviewer.id if reviewer else None):
+            return application  # no-op
 
-    unassigning = reviewer is None and current is not None
+        unassigning = reviewer is None and current is not None
+        _refuse_stage(application, current, reviewer, now)
 
-    # Checked FIRST, ahead of the general stage gate: an unassign at 'interviewed' or beyond is
-    # also not-assignable, but 'findings_submitted' tells the super what to DO about it (reopen the
-    # decision), where 'not_assignable' would only tell them they can't. The more specific,
-    # more actionable refusal wins.
-    if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
-        raise AssignmentError('findings_submitted')
-
-    # A case may only change hands while there is a review to do (Completed / interviewing).
-    # Gates assign, REASSIGN and unassign alike — a rejected or awarded student has no live
-    # review, and retargeting one would detach finished work from the person who did it.
-    if not is_assignable(application):
-        raise AssignmentError('not_assignable')
-
-    # Ready-gate applies only to the first assignment of an unassigned application.
-    if current is None and reviewer is not None and not is_ready_for_assignment(application, now):
-        raise AssignmentError('not_ready')
-
-    AssignmentEvent.objects.create(
-        application=application, from_admin=current, to_admin=reviewer,
-        by_email=getattr(by_admin, 'email', '') or '',
-    )
-    status_reverted = False
-    if unassigning:
-        # Release the outgoing reviewer's interview artefacts BEFORE we clear assigned_to
-        # (the teardown notifies that reviewer). Best-effort — never block the unassignment.
-        from .. import scheduling
-        try:
-            scheduling.release_for_unassign(application, now=now)
-        except Exception:
-            logger.exception('release_for_unassign failed for application %s', application.id)
-        if application.status == 'interviewing':
-            application.status = 'profile_complete'
-            status_reverted = True
-    application.assigned_to = reviewer
-    application.assigned_at = now if reviewer is not None else None
-    # Reset the verdict-SLA nudge stamps (TD-131) so the new reviewer's clock starts clean —
-    # otherwise a prior owner's stamps would suppress nudges for the new assignee.
-    application.review_nudged_soon_at = None
-    application.review_nudged_overdue_at = None
-    application.review_escalated_at = None
-    _fields = ['assigned_to', 'assigned_at',
-               'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at']
-    if status_reverted:
-        _fields.append('status')
-    application.save(update_fields=_fields)
+        AssignmentEvent.objects.create(
+            application=application, from_admin=current, to_admin=reviewer,
+            by_email=getattr(by_admin, 'email', '') or '',
+        )
+        status_reverted = False
+        if unassigning:
+            # Release the outgoing reviewer's interview artefacts BEFORE we clear assigned_to
+            # (the teardown notifies that reviewer). Best-effort — never block the unassignment.
+            from .. import scheduling
+            try:
+                scheduling.release_for_unassign(application, now=now)
+            except Exception:
+                logger.exception('release_for_unassign failed for application %s', application.id)
+            if application.status == 'interviewing':
+                application.status = 'profile_complete'
+                status_reverted = True
+        application.assigned_to = reviewer
+        application.assigned_at = now if reviewer is not None else None
+        # Reset the verdict-SLA nudge stamps (TD-131) so the new reviewer's clock starts clean —
+        # otherwise a prior owner's stamps would suppress nudges for the new assignee.
+        application.review_nudged_soon_at = None
+        application.review_nudged_overdue_at = None
+        application.review_escalated_at = None
+        _fields = ['assigned_to', 'assigned_at',
+                   'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at']
+        if status_reverted:
+            _fields.append('status')
+        application.save(update_fields=_fields)
 
     # Notify the reviewer they have a new applicant to review. Only on an actual
     # assignment (not an unassign); the no-op short-circuit above means an unchanged

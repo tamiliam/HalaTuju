@@ -15,7 +15,11 @@ export const roleAdminGeneral: ManualChapter = {
         <>As a <strong>general admin</strong> you can <strong>read</strong> everything in your organisation — all
         applications, the Sponsors list, the Invitations page — without acting on any of it. No verdicts,
         no assignments, no staff changes. There is <strong>one exception, and it is money in</strong>: you are the
-        person who <em>prepares</em> it. See <em>Money: you prepare, someone else approves</em> below.</>
+        person who <em>prepares</em> it. See <em>Money: you prepare, someone else approves</em> below.
+        <br /><br />
+        <em>Your organisation may have given you more than this role&rsquo;s usual set</em> &mdash; for
+        example the Spending page. If it has, the parts of the Guide that describe it appear in the
+        sidebar under the role they come from.</>
       ),
     },
     {
@@ -45,7 +49,20 @@ export const roleAdminGeneral: ManualChapter = {
       ),
     },
     {
+      anchor: 'admin-general-spending',
+      perm: 'spending',
+      title: 'The Spending page',
+      body: (
+        <><strong>Spending</strong> (in the menu, inside a gift) shows what each student has spent from their
+        wallet, sorted into categories, so you can see where the money goes. You can sort a purchase into a
+        different category and <strong>flag a shop</strong> to look into it, with a note; a flag is your
+        organisation&rsquo;s own working note and never changes any money or total. Like the rest of your
+        remit it is about the students&rsquo; spending, not their applications: it opens no application file.</>
+      ),
+    },
+    {
       anchor: 'admin-general-money',
+      perm: 'payments_prepare',
       title: 'Money: you prepare, someone else approves',
       body: (
         <>On both money paths you are the <strong>maker</strong> — the person who prepares the entry and signs it

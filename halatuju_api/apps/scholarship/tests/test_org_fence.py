@@ -426,6 +426,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # `_staff_target_manageable`, the courses staff fence Revoke / Resend / Delete use: an
         # org_admin reaches only their OWN organisation's non-org_admin staff; anything else 404s.
         'AdminStaffRoleView': 'staff-target-fenced (_staff_target_manageable)+org_admin-or-super',
+        # People → What <name> can do (#39 Sprint 4): the SAME fence as Change role, through the
+        # same `_staff_target_manageable` — an org_admin reaches only their own organisation's
+        # team members (another organisation's id is 404); the service then refuses the rows
+        # nobody edits (an org_admin, a super, a partner, the caller's own) for a super too.
+        'AdminStaffPermissionsView': 'staff-target-fenced (_staff_target_manageable)+org_admin-or-super',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

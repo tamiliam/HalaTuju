@@ -146,7 +146,10 @@ class TestTheTable(_Base):
             # `is_active` because revoked is NOT paused and the screen has to say which;
             # `last_seen_at` because NULL means not recorded, never "never signed in".
             'is_active', 'last_seen_at',
-            'programme_id', 'programme_name'})
+            'programme_id', 'programme_name',
+            # #39 Sprint 4: People's permission chips — whether the set is custom, and what it adds
+            # to / takes from the preset. Keys only, never the raw stored column.
+            'custom', 'permissions_added', 'permissions_removed'})
 
     def test_the_gift_column_is_back_because_its_own_trigger_fired(self):
         """⚠ THIS TEST USED TO ASSERT THE OPPOSITE, and the reason it flipped is the point.

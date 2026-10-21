@@ -55,6 +55,10 @@ export interface AdminReviewer {
    *  render it as "every gift", never as a blank cell that reads as missing data. */
   programme_id: number | null
   programme_name: string
+  /** Request #39 Sprint 4 — the permission chips, the same three fields as `AdminItem`. */
+  custom?: boolean
+  permissions_added?: string[]
+  permissions_removed?: string[]
 }
 
 /** A gift the caller may scope a reviewer to. Includes gifts that are not switched on yet:
@@ -119,6 +123,9 @@ export interface AdminReviewerDetail extends AdminReviewer {
   phone: string
   share_phone_with_students: boolean
   reopens: AdminReviewerReopen[]
+  /** #39 S4: would the pause endpoint ACCEPT this person (`set_paused`'s own target rule)? Absent
+   *  on an older payload, which is read as "yes" — what the page assumed before it existed. */
+  pausable?: boolean
 }
 
 export async function listReviewers(
