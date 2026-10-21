@@ -27,6 +27,7 @@
  */
 
 import { admitsRow, type StaffPermission } from './staffPermissions'
+import { isSuperRole } from './superRole'
 
 /** The scope a page belongs to. Platform → Organisation → Programme is the platform hierarchy
  *  (`apps/scholarship/models.py` Programme docstring); `utility` is "yours, not any scope's". */
@@ -449,7 +450,7 @@ export function effectiveRole(
   role: { role?: string; is_super_admin?: boolean } | null | undefined,
 ): AdminRoleName {
   if (!role) return 'reviewer'
-  if (role.is_super_admin || role.role === 'super') return 'super'
+  if (isSuperRole(role)) return 'super'
   return (ROLE_NAMES as readonly string[]).includes(role.role ?? '')
     ? (role.role as AdminRoleName)
     : 'reviewer'

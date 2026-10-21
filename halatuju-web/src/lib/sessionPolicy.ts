@@ -11,7 +11,8 @@
 // localStorage propagates to any other tab on that scope via the client's storage listener.
 import { getAdminSupabase } from './admin-supabase'
 import { getSponsorSupabase } from './sponsor-supabase'
-import { effectiveRole } from './navigation'
+// TD-360: the leaf, NOT `./navigation` — this module rides on every page; see superRole.ts.
+import { isSuperRole } from './superRole'
 
 type Scope = 'admin' | 'sponsor'
 
@@ -59,7 +60,7 @@ async function isSuperIdentity(token: string): Promise<boolean> {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     })
     const data = await res.json()
-    return effectiveRole(data) === 'super'
+    return isSuperRole(data)
   } catch {
     return false  // fail-closed: treat as non-super (enforce the policy)
   }

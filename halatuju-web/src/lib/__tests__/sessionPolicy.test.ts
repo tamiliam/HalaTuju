@@ -70,6 +70,33 @@ describe('enforceSingleScope — one privileged scope per identity, super exempt
     expect(adminSignOut).toHaveBeenCalledWith({ scope: 'local' })
     expect(wasScopeSuperseded('admin')).toBe(true)
   })
+
+  // TD-360 (2026-10-21): the super check moved from `navigation.effectiveRole` to the leaf
+  // `superRole.isSuperRole`, so this module (on every page) stops importing the admin route
+  // registry. The two shapes the API can say "super" in must both still exempt.
+  test('sponsor side also exempts a payload that says role: "super"', async () => {
+    global.fetch = jest.fn(async () => ({ json: async () => ({ role: 'super' }) })) as unknown as typeof fetch
+    await enforceSingleScope('sponsor', { token: 't' })
+    expect(adminSignOut).not.toHaveBeenCalled()
+  })
+
+  test('an org admin is NOT super, so the sponsor side ends their admin session', async () => {
+    global.fetch = jest.fn(async () => ({ json: async () => ({ role: 'admin', is_super_admin: false }) })) as unknown as typeof fetch
+    await enforceSingleScope('sponsor', { token: 't' })
+    expect(adminSignOut).toHaveBeenCalledWith({ scope: 'local' })
+  })
+})
+
+describe('isSuperRole agrees with navigation.effectiveRole on every shape', () => {
+  test('same answer for super, non-super, empty and missing payloads', () => {
+    const { isSuperRole } = jest.requireActual('../superRole') as typeof import('../superRole')
+    const { effectiveRole } = jest.requireActual('../navigation') as typeof import('../navigation')
+    const shapes = [
+      null, undefined, {}, { role: 'super' }, { is_super_admin: true }, { is_super_admin: false },
+      { role: 'admin' }, { role: 'reviewer', is_super_admin: true }, { role: 'nonsense' },
+    ]
+    for (const s of shapes) expect(isSuperRole(s)).toBe(effectiveRole(s) === 'super')
+  })
 })
 
 describe('consumeSuperseded', () => {
