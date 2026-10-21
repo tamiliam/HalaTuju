@@ -37,7 +37,7 @@ none.
 | `spending` | Spending | The Spending page: named students' spending, flags, categories |
 | `payments_prepare` | Prepare payment runs | Create, edit, cancel runs; sign as MAKER |
 | `payments_check` | Check payment runs | The optional middle signature. Dormant until somebody holds it; armed PER RUN when an eligible holder exists |
-| `payments_approve` | Approve payment runs | The final signature, which completes the run and releases Vircle → students |
+| `payments_approve` | Approve payment runs | The final signature, which completes the run and releases Vircle → students. Never on a run the person signed OR CREATED (`created_by`; #39 S4 review fix 2) — the organisation admin's fallback excepted |
 | `manage_team` | (not switchable) | Invite, resend, revoke, restore, delete, change role, **change permissions**. Lead tier only in #39 (owner question 3) |
 
 Reading Payments (list, run, CSV, funding summary) is open to anybody holding any `payments_*` key, or
@@ -57,7 +57,8 @@ admin → the card *What <name> can do* (`PATCH admin/admins/<id>/permissions/`)
 organisation admin**, and only on a TEAM member of their own organisation — never their own row, an
 organisation admin's, a super's or a partner's (`_staff_target_manageable`, then the service). The
 server refuses: an unknown key, `manage_team` (`lead_tier`), `qc` without `see_all`, a revoked person
-(`not_active`), and taking `review` (or `see_all`, when `review` does not stay) from somebody holding
+(`not_active`), a Reviewer / QC left with neither `review` nor `qc` (`would_leave_people` — they would
+vanish from People), and taking `review` (or `see_all`, when `review` does not stay) from somebody holding
 in-play cases (`has_open_cases`, under the person's row lock; the assign service takes the same lock).
 A dry run names the consequences first: the check step switching on/off, the organisation admin's
 approval fallback switching off/on, a person who has never signed in (the payment change waits for

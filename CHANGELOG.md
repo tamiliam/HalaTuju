@@ -40,6 +40,32 @@ clickable mock the owner approved on 2026-10-21 in place of Stitch.
 - **Bundle:** median 178.831 → 178.855 kB (1.1 kB under 180); worst 221.861 → 221.878; budget ok.
 - Docs: role-matrix restructured (catalogue + presets + lead tier), decisions.md, ARCHITECTURE_MAP,
   `halatuju_api/CLAUDE.md` migration pointer, the plan's as-built note, the arc retrospective.
+- **Review fixes (adversarial review, 2026-10-21 — SHIP AFTER FIXES; `f9499251`):**
+  1. (HIGH) A Reviewer / QC set holding neither `review` nor `qc` is refused (`would_leave_people`):
+     they would appear on neither People tab, so nobody could reach their card, Revoke or Delete. The
+     editor warns first. The PATCH is the only writer of a custom set (Change role and re-invite reset to
+     a preset; the Django admin is read-only).
+  2. (MEDIUM) The run's CREATOR (`created_by`, casefolded) may not check or approve it by permission
+     (`payments_chain._barred_from_approving`, read by `eligible_checkers` / `eligible_approvers`,
+     `next_step_for` and `_refusal` → `same_signer`), so the list, the gate and the emails agree. The
+     organisation admin's fallback keeps today's rule (the org admin creates runs and approves only
+     when nobody else can). ⚠ An EDIT is not recorded per person (no column); an edit reverts the run to
+     draft and clears every signature, so the editor would have to sign again as maker to be barred.
+  3. (MEDIUM) `files_widened` split: `files_widened_all` (gains `see_all`, any role — a Reviewer too)
+     and `files_widened_assigned` (gains `review` from no file access).
+  4. (MEDIUM) Change role's dry run serves `consequences` = the editor's own rule from the held set to
+     the new preset (so a reset's approval-fallback / check change is named); `finance_check_on/off` now
+     word only the wallet-credit check.
+  5. (LOW) `staff_lifecycle.open_cases` also counts an assigned case whose decision is REOPENED
+     (`decision_reopened_at`), for both the editor and Admin → Finance.
+  6. (LOW) `approver_fallback_off` wording excepts runs the person prepared or already signed.
+  7. (LOW) `assign_reviewer` re-asks `may_assign_to(by_admin, target)` on the LOCKED row.
+  8. (LOW) GET `editable` is false for a revoked person; the card says "restore them first".
+  9. (LOW) The editor drops the previous preview when a new dry run starts (Save needs the new one).
+  10. (NIT) `dry_run` only on JSON `true`; a save resolving to the same keys writes nothing
+      (`changed: false`, no history row).
+  Bite-checked 1-4 (each guard removed: its test fails). api 8554 → 8566; jest 4372 → 4375; bundle
+  median 178.856 kB (1.1 kB headroom).
 
 ## TD-360 Sprint 1 — the admin console's words leave every non-admin route - 2026-10-21
 
