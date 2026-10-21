@@ -131,12 +131,28 @@ def _email(admin):
     return (getattr(admin, 'email', '') or '').strip().casefold()
 
 
+def _barred_from_approving(run):
+    """Who may NOT check or approve this run through a PERMISSION: everybody who signed it, AND the
+    person who CREATED it (`created_by`, casefolded). #39 S4 review fix 2: a person holding Prepare +
+    Approve could otherwise build a run, let a colleague sign it as maker, and approve it themselves —
+    "never both on the same run" must hold for the author, not only the signers.
+
+    ⚠ NOT the fallback's rule. The organisation admin creates runs (lead tier, never the maker) and
+    approves only when nobody else can; barring the creator there would strand every run an org admin
+    built in an organisation with no eligible approver — today's path, unchanged."""
+    barred = set(_collected_signer_emails(run))
+    author = (getattr(run, 'created_by', '') or '').strip().casefold()
+    if author:
+        barred.add(author)
+    return barred
+
+
 def eligible_checkers(run, cache=None):
     """Active `payments_check` holders of the run's organisation who have signed in and have NOT
     signed this run."""
-    signed = _collected_signer_emails(run)
+    barred = _barred_from_approving(run)
     return [a for a in _holders(_org_id(run), 'payments_check', cache)
-            if _signed_in(a) and _email(a) not in signed]
+            if _signed_in(a) and _email(a) not in barred]
 
 
 def check_required_for(run, cache=None):
@@ -149,9 +165,9 @@ def check_required_for(run, cache=None):
 def eligible_approvers(run, cache=None):
     """Active `payments_approve` holders of the run's organisation who have signed in and have NOT
     signed this run."""
-    signed = _collected_signer_emails(run)
+    barred = _barred_from_approving(run)
     return [a for a in _holders(_org_id(run), 'payments_approve', cache)
-            if _signed_in(a) and _email(a) not in signed]
+            if _signed_in(a) and _email(a) not in barred]
 
 
 def approver_fallback(run, cache=None):
@@ -185,7 +201,7 @@ def _holds_eligibly(admin, key):
 
 
 def _may_approve(run, admin, cache=None):
-    if _holds_eligibly(admin, 'payments_approve'):
+    if _holds_eligibly(admin, 'payments_approve') and _email(admin) not in _barred_from_approving(run):
         return True
     return _is_lead_tier(admin) and approver_fallback(run, cache)
 
@@ -217,7 +233,8 @@ def next_step_for(run, admin, cache=None):
     if run.status == 'draft':
         return STEP_SIGN if admin.has_perm('payments_prepare') else None
     if run.status == 'admin_signed' and check_required_for(run, cache):
-        return STEP_CHECK if _holds_eligibly(admin, 'payments_check') else None
+        return (STEP_CHECK if _holds_eligibly(admin, 'payments_check')
+                and _email(admin) not in _barred_from_approving(run) else None)
     return STEP_APPROVE if _may_approve(run, admin, cache) else None
 
 
@@ -232,6 +249,9 @@ def _refusal(run, admin):
         return 'wrong_role'
     if _email(admin) in _collected_signer_emails(run):
         return 'same_signer'
+    if (_email(admin) in _barred_from_approving(run) and not _is_lead_tier(admin)
+            and (admin.has_perm('payments_approve') or admin.has_perm('payments_check'))):
+        return 'same_signer'                     # S4 fix 2: they CREATED it — the same rule's reason
     if run.status == 'admin_signed' and check_required_for(run):
         if _may_approve(run, admin):
             return 'finance_check_required'      # told WHY: from his seat nothing looks amiss

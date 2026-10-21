@@ -233,7 +233,7 @@ class TestCasesAreNeverStranded(TestCase):
         target = make_admin('reviewer', owning_org=self.org)
         make_application('assigned', reviewer=target, cohort=self.cohort)
         for dry in (True, False):
-            r = _patch(self.org_admin, target, ['spending'], dry_run=dry)
+            r = _patch(self.org_admin, target, ['see_all', 'qc'], dry_run=dry)
             self.assertEqual((r.status_code, r.json()['code'], r.json()['open_cases']),
                              (409, 'has_open_cases', 1))
         self.assertIsNone(_fresh(target).permissions)
@@ -251,14 +251,14 @@ class TestCasesAreNeverStranded(TestCase):
     def test_a_finished_case_does_not_block(self):
         target = make_admin('reviewer', owning_org=self.org)
         make_application('rejected', reviewer=target, cohort=self.cohort)
-        self.assertEqual(_patch(self.org_admin, target, ['spending']).status_code, 200)
+        self.assertEqual(_patch(self.org_admin, target, ['see_all', 'qc']).status_code, 200)
 
     def test_an_assignment_racing_the_removal_re_reads_the_target(self):
         """The TD-382 class: the assign service re-reads its target under the editor's row lock, so
         a page that loaded before `review` was taken away cannot hand the case over."""
         target = make_admin('reviewer', owning_org=self.org)
         stale = PartnerAdmin.objects.get(pk=target.pk)          # holds `review` in memory
-        self.assertEqual(_patch(self.org_admin, target, ['spending']).status_code, 200)
+        self.assertEqual(_patch(self.org_admin, target, ['see_all', 'qc']).status_code, 200)
         app = make_application('profile_complete', cohort=self.cohort)
         with self.assertRaises(AssignmentError) as caught:
             assign_reviewer(app, reviewer=stale, by_admin=self.org_admin)
@@ -304,7 +304,15 @@ class TestConsequences(TestCase):
 
     def test_finance_given_review_is_told_the_files_widen(self):
         fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
-        self.assertEqual(self._says(fin, ['review', 'payments_approve']), ['files_widened'])
+        self.assertEqual(self._says(fin, ['review', 'payments_approve']), ['files_widened_assigned'])
+
+    def test_see_all_is_named_as_every_file_not_assigned_only(self):
+        """Review fix 3: Finance or a Reviewer given See all reads EVERY student's file."""
+        fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
+        self.assertEqual(self._says(fin, ['see_all', 'payments_approve']), ['files_widened_all'])
+        rev = make_admin('reviewer', owning_org=self.org)
+        self.assertEqual(self._says(rev, ['review', 'see_all']), ['files_widened_all'])
+        self.assertEqual(self._says(rev, ['review', 'spending']), [])
 
     def test_prepare_and_approve_together_is_named(self):
         fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
@@ -396,3 +404,120 @@ class TestPeopleChipsAndPause(TestCase):
             r = client.post(f'/api/v1/admin/reviewers/{target.pk}/pause/', {'paused': True},
                             format='json')
             self.assertEqual(r.status_code, 200 if expect else 400, r.content[:200])
+
+@override_settings(**API)
+class TestReviewFixes(TestCase):
+    """The Sprint 4 adversarial review (2026-10-21): SHIP AFTER FIXES. One test per finding."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = make_org()
+        cls.cohort = make_cohort(owning_organisation=cls.org)
+        cls.org_admin = make_admin('org_admin', owning_org=cls.org, first_seen_at=SEEN)
+
+    # 1 (HIGH) — nobody vanishes from People.
+    def test_a_reviewer_or_qc_must_keep_review_or_qc(self):
+        rev = make_admin('reviewer', owning_org=self.org)
+        qc = make_admin('qc', owning_org=self.org)
+        for target, keys in ((rev, ['spending']), (rev, []), (qc, ['see_all', 'spending'])):
+            for dry in (True, False):
+                r = _patch(self.org_admin, target, keys, dry_run=dry)
+                self.assertEqual((r.status_code, r.json()['code']), (400, 'would_leave_people'), keys)
+        self.assertIsNone(_fresh(rev).permissions)
+        self.assertEqual(_patch(self.org_admin, rev, ['see_all', 'qc']).status_code, 200)
+        self.assertEqual(_patch(self.org_admin, qc, ['review']).status_code, 200)
+        # Admin / Finance are listed by ROLE on the Admins tab, so an empty set stays reachable.
+        self.assertEqual(_patch(self.org_admin, make_admin('admin', owning_org=self.org), [])
+                         .status_code, 200)
+
+    # 2 (MEDIUM) — the creator of a run never approves or checks it.
+    def _run(self, creator, maker):
+        return PaymentRun.objects.create(
+            organisation=self.org, payment_date=datetime.date(2026, 11, 1), status='admin_signed',
+            created_by=creator.email.upper(), admin_signed_email=maker.email,
+            admin_signed_name=maker.name)
+
+    def test_the_creator_cannot_approve_and_the_fallback_takes_it(self):
+        author = make_admin('admin', owning_org=self.org, first_seen_at=SEEN,
+                            permissions=['see_all', 'payments_prepare', 'payments_approve'])
+        maker = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
+        run = self._run(author, maker)
+        self.assertIsNone(payments.next_step_for(run, author))
+        self.assertEqual(payments.eligible_approvers(run), [])
+        self.assertTrue(payments.approver_fallback(run))
+        self.assertEqual(payments.next_step_for(run, self.org_admin), 'approve')
+        with self.assertRaises(payments.PaymentsError) as caught:
+            payments.sign(run, author, author.name)
+        self.assertEqual(caught.exception.code, 'same_signer')
+        # Another approver who did not create it is the approver; the fallback goes off.
+        other = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
+        self.assertEqual(payments.eligible_approvers(run), [other])
+        self.assertEqual(payments.next_step_for(run, other), 'approve')
+
+    def test_the_creator_cannot_check_either(self):
+        author = make_admin('admin', owning_org=self.org, first_seen_at=SEEN,
+                            permissions=['see_all', 'payments_prepare', 'payments_check'])
+        maker = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
+        run = self._run(author, maker)
+        self.assertEqual(payments.eligible_checkers(run), [])
+        self.assertFalse(payments.check_required_for(run))     # nobody else could: no check step
+        self.assertIsNone(payments.next_step_for(run, author))
+
+    def test_an_org_admin_who_created_a_run_still_approves_under_the_fallback(self):
+        maker = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
+        run = self._run(self.org_admin, maker)
+        self.assertEqual(payments.next_step_for(run, self.org_admin), 'approve')
+
+    # 4 (MEDIUM) — Change role names what the reset does to the payment chain.
+    def _role(self, target, role):
+        return authed_client(self.org_admin).patch(
+            f'/api/v1/admin/admins/{target.pk}/role/', {'role': role, 'dry_run': True}, format='json')
+
+    def test_change_role_names_the_approval_fallback(self):
+        adm = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)   # no approver yet
+        self.assertIn('approver_fallback_off', self._role(adm, 'finance').json()['consequences'])
+        fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
+        self.assertIn('approver_fallback_on', self._role(fin, 'admin').json()['consequences'])
+
+    def test_a_finance_person_without_approve_changes_no_approval_by_switching(self):
+        fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN, permissions=[])
+        body = self._role(fin, 'admin').json()
+        self.assertNotIn('approver_fallback_on', body['consequences'])
+        self.assertIn('files_widened_all', body['consequences'])     # the admin preset: see_all
+        self.assertTrue(body['permissions_reset'])
+        self.assertEqual(body['consequence'], 'finance_check_off')   # the CREDIT check still moves
+
+    # 5 (LOW) — a reopened decision is a held case.
+    def test_a_reopened_decision_counts_as_a_held_case(self):
+        rev = make_admin('reviewer', owning_org=self.org)
+        make_application('rejected', reviewer=rev, cohort=self.cohort,
+                         decision_reopened_at=timezone.now())
+        r = _patch(self.org_admin, rev, ['see_all', 'qc'])
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'has_open_cases'))
+
+    # 7 (LOW) — the caller-aware rule, on the locked row.
+    def test_an_org_admin_cannot_hand_a_case_to_a_non_review_holder_through_the_service(self):
+        adm = make_admin('admin', owning_org=self.org)          # an R1 target for a super only
+        app = make_application('profile_complete', cohort=self.cohort)
+        with self.assertRaises(AssignmentError) as caught:
+            assign_reviewer(app, reviewer=adm, by_admin=self.org_admin)
+        self.assertEqual(caught.exception.code, 'not_reviewer')
+
+    # 8 (LOW) — a revoked person's card is not editable.
+    def test_a_revoked_person_is_not_editable(self):
+        gone = make_admin('reviewer', owning_org=self.org, is_active=False)
+        body = authed_client(self.org_admin).get(_url(gone)).json()
+        self.assertEqual((body['editable'], body['is_active']), (False, False))
+
+    # 10 (NIT) — only a JSON true is a dry run; a same-set save changes nothing.
+    def test_only_a_boolean_true_is_a_dry_run(self):
+        rev = make_admin('reviewer', owning_org=self.org)
+        r = _patch(self.org_admin, rev, ['review', 'spending'], dry_run='yes')
+        self.assertEqual(r.json()['dry_run'], False)
+        self.assertEqual(_fresh(rev).permissions, ['review', 'spending'])
+
+    def test_a_reordered_same_set_writes_no_history(self):
+        rev = make_admin('reviewer', owning_org=self.org, permissions=['spending', 'review'])
+        r = _patch(self.org_admin, rev, ['review', 'spending'])
+        self.assertEqual((r.status_code, r.json()['changed']), (200, False))
+        self.assertFalse(StaffPermissionChange.objects.exists())

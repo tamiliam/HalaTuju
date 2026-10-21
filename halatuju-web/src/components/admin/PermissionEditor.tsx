@@ -67,6 +67,9 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
   useEffect(() => {
     if (!view || !dirty) { setPlan(null); setRefusal(null); return }
     const n = ++asked.current
+    // Review fix 9: the previous answer is about the previous set — drop it before asking, so Save
+    // (which needs a plan) can never act on a stale preview while this one is in flight.
+    setPlan(null); setRefusal(null)
     saveStaffPermissions(adminId, want, true, { token })
       .then((p) => { if (n === asked.current) { setPlan(p); setRefusal(null) } })
       .catch((e: Error & { code?: string }) => {
@@ -91,7 +94,9 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
   const who = view.name || name
   const preset = t(`admin.role.${view.role}`)
   if (!view.editable) {
-    return <p className="text-sm text-ground-500">{t('admin.permEditor.fixed', { name: who })}</p>
+    // A revoked person is not editable (review fix 8): say how to get there, draw no dead switches.
+    return <p className="text-sm text-ground-500">{t(view.is_active ? 'admin.permEditor.fixed'
+      : 'admin.permEditor.restoreFirst', { name: who })}</p>
   }
 
   const save = async () => {
@@ -158,6 +163,10 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
   // A key the server adds later still gets a switch, under Money's line, rather than vanishing.
   const other = view.keys.filter((k) => !STUDENTS.includes(k) && !MONEY.includes(k))
   const custom = !sameSet(want, view.preset)
+  // Review fix 1: a Reviewer or QC holding neither key would vanish from People; the server refuses
+  // it (`would_leave_people`) and the hint says why before the refusal arrives.
+  const unlisted = ['reviewer', 'qc'].includes(view.role)
+    && !want.includes('review') && !want.includes('qc')
   const text = line()
 
   return (
@@ -179,6 +188,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
       <p className="mb-2 mt-0.5 text-sm text-ground-500">{t('admin.permEditor.subtitle', { preset })}</p>
 
       {group(t('admin.permEditor.students'), STUDENTS)}
+      {unlisted && (
+        <p className="text-xs text-caution-700" data-testid="unlisted-hint">
+          {t('admin.permEditor.unlistedHint')}
+        </p>
+      )}
       {group(t('admin.permEditor.money'), MONEY)}
       {other.length > 0 && <div className="mt-2 border-t border-ground-100 pt-3">{other.map(row)}</div>}
 

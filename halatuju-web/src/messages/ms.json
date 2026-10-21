@@ -6704,8 +6704,8 @@
     "hasWorkRevoke": "Ada kerja yang direkodkan — tarik balik akses sahaja",
     "changeRole": "Tukar peranan",
     "roleChangeConfirm": "Tukar {name} kepada {role}?",
-    "financeCheckOn": "Mereka akan meluluskan larian pembayaran, dan kredit dompet akan memerlukan semakan kewangan.",
-    "financeCheckOff": "Mereka satu-satunya pentadbir kewangan: pentadbir organisasi akan meluluskan larian pembayaran semula, dan kredit dompet tidak lagi melalui semakan kewangan.",
+    "financeCheckOn": "Kredit dompet akan memerlukan semakan kewangan.",
+    "financeCheckOff": "Dia satu-satunya pentadbir kewangan: kredit dompet tidak lagi melalui semakan kewangan.",
     "perm": {
       "review": {
         "name": "Nilai pelajar yang ditugaskan",
@@ -6756,13 +6756,16 @@
       "open": "Kebenaran",
       "close": "Tutup",
       "fixed": "Kebenaran {name} adalah tetap dan tidak boleh diubah di sini.",
+      "unlistedHint": "Penilai atau Kawalan mutu mesti mengekalkan “Nilai pelajar yang ditugaskan” atau “Kawalan mutu”, jika tidak mereka akan hilang daripada senarai Orang.",
+      "restoreFirst": "Akses {name} telah ditarik balik. Pulihkan aksesnya sebelum mengubah apa yang boleh dilakukannya.",
       "effect": {
         "check_on": "Larian pembayaran mendapat langkah semakan: {name} menyemak setiap larian sebelum diluluskan.",
         "check_off": "{name} satu-satunya penyemak: larian terus daripada penyediaan kepada kelulusan semula.",
-        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya.",
+        "approver_fallback_off": "{name} menjadi pelulus larian pembayaran; pentadbir organisasi berhenti meluluskannya, kecuali larian yang {name} sediakan atau telah tandatangani.",
         "approver_fallback_on": "{name} satu-satunya pelulus: pentadbir organisasi meluluskan larian pembayaran semula.",
         "not_signed_in": "{name} belum pernah log masuk, jadi perubahan pembayaran berkuat kuasa pada log masuk pertamanya.",
-        "files_widened": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
+        "files_widened_all": "{name} akan dapat membaca fail setiap pelajar dalam organisasi ini.",
+        "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama."
       }
     },

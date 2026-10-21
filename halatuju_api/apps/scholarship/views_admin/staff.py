@@ -67,7 +67,8 @@ class AdminStaffRoleView(_AdminBase):
                          'from': plan['from'], 'to': plan['to'],
                          'consequence': plan['consequence'],
                          # #39 S4: a saved custom set goes back to the NEW role's preset.
-                         'permissions_reset': plan['permissions_reset'], 'dry_run': dry_run})
+                         'permissions_reset': plan['permissions_reset'],
+                         'consequences': plan['consequences'], 'dry_run': dry_run})
 
 
 class AdminStaffPermissionsView(_AdminBase):
@@ -106,7 +107,10 @@ class AdminStaffPermissionsView(_AdminBase):
         admin, target, err = self._target(request, admin_id)
         if err:
             return err
-        editable = (not target.is_super and target.role in sp.TEAM_ROLES and target.pk != admin.pk)
+        # S4 review fix 8: a revoked person is not editable either (the PATCH refuses `not_active`),
+        # so the card draws no dead switches; `is_active` lets it say "restore them first".
+        editable = (not target.is_super and target.role in sp.TEAM_ROLES and target.pk != admin.pk
+                    and target.is_active)
         return Response({'id': target.pk, 'name': target.name, 'role': target.role,
                          'is_active': target.is_active, 'editable': editable,
                          'preset': list(sp.preset_for(target.role)),
@@ -122,7 +126,7 @@ class AdminStaffPermissionsView(_AdminBase):
         if body is None or 'permissions' not in body:
             return Response({'error': 'permissions must be a list of permission names.',
                              'code': 'bad_request'}, status=status.HTTP_400_BAD_REQUEST)
-        dry_run = body.get('dry_run') in (True, 'true', '1', 1)
+        dry_run = body.get('dry_run') is True          # S4 review fix 10: only a JSON true
         try:
             target, plan = spa.change_permissions(target.pk, body['permissions'], by=admin,
                                                   dry_run=dry_run)

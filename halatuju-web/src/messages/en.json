@@ -6704,8 +6704,8 @@
     "hasWorkRevoke": "Has work on record — revoke instead",
     "changeRole": "Change role",
     "roleChangeConfirm": "Change {name} to {role}?",
-    "financeCheckOn": "They will approve payment runs, and wallet credits will need a finance check.",
-    "financeCheckOff": "They are the only finance admin: the organisation admin will approve payment runs again, and wallet credits will skip the finance check.",
+    "financeCheckOn": "Wallet credits will need a finance check.",
+    "financeCheckOff": "They are the only finance admin: wallet credits will skip the finance check.",
     "perm": {
       "review": {
         "name": "Review assigned students",
@@ -6756,13 +6756,16 @@
       "open": "Permissions",
       "close": "Close",
       "fixed": "{name}'s permissions are fixed and cannot be changed here.",
+      "unlistedHint": "A Reviewer or QC keeps “Review assigned students” or “Quality check”, or they would disappear from People.",
+      "restoreFirst": "{name}’s access is revoked. Restore them before changing what they can do.",
       "effect": {
         "check_on": "Payment runs gain a check step: {name} checks each run before it is approved.",
         "check_off": "{name} is the only checker: runs go straight from preparing to approval again.",
-        "approver_fallback_off": "{name} becomes the approver of payment runs; the organisation admin stops approving them.",
+        "approver_fallback_off": "{name} becomes an approver of payment runs; the organisation admin stops approving them, except runs {name} prepared or already signed.",
         "approver_fallback_on": "{name} is the only approver: the organisation admin approves payment runs again.",
         "not_signed_in": "{name} has never signed in, so the payment change takes effect at their first sign-in.",
-        "files_widened": "{name} will open the files of the students assigned to them.",
+        "files_widened_all": "{name} will be able to read every student’s file in this organisation.",
+        "files_widened_assigned": "{name} will open the files of the students assigned to them.",
         "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run."
       }
     },

@@ -214,6 +214,11 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     with locked:
         if reviewer is not None:
             reviewer = _locked(reviewer)
+            # #39 S4 review fix 7: the caller-aware rule, re-asked on the LOCKED row — an org admin
+            # may hand a case only to an own-organisation `review` holder, and that row may have
+            # changed since the endpoint asked.
+            if by_admin is not None and not may_assign_to(by_admin, reviewer):
+                raise AssignmentError('not_reviewer')
         if reviewer is not None and not _can_review(reviewer):
             # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and
             # telling an org_admin that a paused volunteer "is not a reviewer" is simply untrue — she

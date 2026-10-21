@@ -28,7 +28,8 @@ from django.db import transaction
 #: The dry run's consequence codes, worded by the screen (`admin.permEditor.effect.*`).
 CHECK_ON, CHECK_OFF = 'check_on', 'check_off'
 FALLBACK_ON, FALLBACK_OFF = 'approver_fallback_on', 'approver_fallback_off'
-FILES_WIDENED = 'files_widened'
+FILES_ALL = 'files_widened_all'            # gains `see_all`: EVERY student's file
+FILES_ASSIGNED = 'files_widened_assigned'  # gains `review` from no file access: the assigned ones
 PREPARE_AND_APPROVE = 'prepare_and_approve'
 NOT_SIGNED_IN = 'not_signed_in'
 
@@ -71,6 +72,23 @@ def asked_set(asked):
                 'qc_needs_see_all', 400,
                 'Quality check needs "See all students": a checker reads every decision.')
     return tuple(k for k in sp.CATALOGUE if k in held)
+
+
+#: The roles People lists on the REVIEWERS tab only (`adminStaff.byCategory`), and the keys that put
+#: somebody on that tab (`_ReviewersBase._reviewers`: team members holding `review` or `qc`).
+REVIEWERS_TAB_ROLES = ('reviewer', 'qc')
+REVIEWERS_TAB_KEYS = ('review', 'qc')
+
+
+def _refuse_unlisted(target, after):
+    """#39 S4 review fix 1: a Reviewer or QC whose set holds neither `review` nor `qc` would be on
+    NEITHER People tab — the Admins tab lists by role, the Reviewers tab by those keys — so nobody
+    could reach their card, Revoke or Delete again. Refused, so People always lists everyone."""
+    if target.role in REVIEWERS_TAB_ROLES and not set(REVIEWERS_TAB_KEYS) & set(after):
+        raise PermissionChangeRefused(
+            'would_leave_people', 400,
+            'A Reviewer or QC must keep "Review assigned students" or "Quality check", or they would '
+            'disappear from People. To take both away, change their role instead.')
 
 
 def _refuse_target(target, by):
@@ -127,8 +145,13 @@ def consequences(target, before, after):
                 out.append(off)
         if not signed_in and gained & {'payments_check', 'payments_approve'}:
             out.append(NOT_SIGNED_IN)
-    if target.role == 'finance' and gained & {'review', 'see_all'}:
-        out.append(FILES_WIDENED)
+    # #39 S4 review fix 3: say WHICH files. `see_all` opens every student's (a Reviewer or Finance
+    # person given it, or Finance switched to Admin); `review` from no file access opens only the
+    # students assigned to them.
+    if 'see_all' in gained:
+        out.append(FILES_ALL)
+    elif 'review' in gained and not ({'review', 'see_all'} & set(before)):
+        out.append(FILES_ASSIGNED)
     if {'payments_prepare', 'payments_approve'} <= set(after) and not (
             {'payments_prepare', 'payments_approve'} <= set(before)):
         out.append(PREPARE_AND_APPROVE)
@@ -144,6 +167,7 @@ def plan_change(target, asked, *, by=None):
     _refuse_target(target, by)
     after = asked_set(asked)
     before = sp.resolve(target)
+    _refuse_unlisted(target, after)
     _refuse_stranding(target, before, after)
     stored = None if after == sp.preset_for(target.role) else list(after)
     return {
@@ -177,7 +201,9 @@ def change_permissions(target_id, asked, *, by, dry_run=False):
         if target is None:
             raise PermissionChangeRefused('not_found', 404, 'Admin not found')
         plan = plan_change(target, asked, by=by)
-        plan['changed'] = plan['stored'] != target.permissions
+        # #39 S4 review fix 10: "changed" means what the person can DO changed. A list that resolves
+        # to the same keys (a reordered or hand-written one) writes nothing and records nothing.
+        plan['changed'] = plan['before'] != plan['after']
         if dry_run or not plan['changed']:
             return target, plan
         PartnerAdmin.objects.filter(pk=target.pk, role=target.role, is_active=True).update(

@@ -95,14 +95,14 @@ it('names every consequence the server returns, and what is taken away', async (
                 permissions: ['payments_approve'] }
   mockApi.saveStaffPermissions.mockResolvedValue(plan({
     added: ['review'], removed: ['payments_approve'],
-    consequences: ['approver_fallback_on', 'files_widened'],
+    consequences: ['approver_fallback_on', 'files_widened_assigned'],
   }))
   await open(fin)
   fireEvent.click(toggle('payments_approve'))
   const line = await screen.findByRole('status')
   await waitFor(() => expect(line.textContent).toContain('admin.permEditor.effect.approver_fallback_on'))
   expect(line.textContent).toContain('admin.permEditor.takes(name=Suresh;list=“admin.perm.payments_approve.name”)')
-  expect(line.textContent).toContain('admin.permEditor.effect.files_widened(name=Suresh)')
+  expect(line.textContent).toContain('admin.permEditor.effect.files_widened_assigned(name=Suresh)')
   expect(line.textContent).not.toContain('admin.permEditor.nothingElse')
 })
 
@@ -150,6 +150,36 @@ it('draws no switches for a row nobody edits', async () => {
   mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false })
   render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
   await waitFor(() => expect(screen.getByText('admin.permEditor.fixed(name=Rohini)')).toBeTruthy())
+  expect(screen.queryByRole('switch')).toBeNull()
+})
+
+it('drops the old preview the moment a new dry run starts, so Save cannot act on it (fix 9)', async () => {
+  let answer: (p: api.StaffPermissionsPlan) => void = () => {}
+  mockApi.saveStaffPermissions
+    .mockResolvedValueOnce(plan({ added: ['spending'], permissions: ['review', 'spending'] }))
+    .mockImplementationOnce(() => new Promise((res) => { answer = res }))
+  await open()
+  fireEvent.click(toggle('spending'))
+  const save = screen.getByText('admin.permEditor.save') as HTMLButtonElement
+  await waitFor(() => expect(save.disabled).toBe(false))
+  fireEvent.click(toggle('see_all'))                        // a second change, its answer pending
+  expect(save.disabled).toBe(true)
+  await act(async () => { answer(plan({ added: ['see_all', 'spending'] })) })
+  expect(save.disabled).toBe(false)
+})
+
+it('warns that a Reviewer holding neither Review nor Quality check would leave People (fix 1)', async () => {
+  mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+  await open()
+  expect(screen.queryByTestId('unlisted-hint')).toBeNull()
+  fireEvent.click(toggle('review'))
+  expect(screen.getByTestId('unlisted-hint').textContent).toBe('admin.permEditor.unlistedHint')
+})
+
+it('tells a revoked person\'s admin to restore them first, with no switches (fix 8)', async () => {
+  mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false, is_active: false })
+  render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
+  await waitFor(() => expect(screen.getByText('admin.permEditor.restoreFirst(name=Rohini)')).toBeTruthy())
   expect(screen.queryByRole('switch')).toBeNull()
 })
 

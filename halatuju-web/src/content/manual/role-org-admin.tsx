@@ -66,7 +66,10 @@ export const roleOrgAdmin: ManualChapter = {
             <li>Somebody who still has cases assigned keeps <em>Review assigned students</em> (and an admin
             holding cases keeps <em>See all students</em>) until the cases are handed to someone else.</li>
             <li>Nobody signs a payment run twice: a person may prepare <em>and</em> approve runs, never both on the
-            same run.</li>
+            same run &mdash; and nobody checks or approves a run they created.</li>
+            <li>A Reviewer or QC keeps <em>Review assigned students</em> or <em>Quality check</em>; without both they
+            would disappear from People. To take both away, change their role instead.</li>
+            <li>A revoked person&rsquo;s permissions can&rsquo;t be changed until you restore them.</li>
             <li><strong>Change role</strong> puts a changed set back to the new role&rsquo;s usual set, and says so
             before you answer.</li>
             <li>You cannot change your own permissions, another organisation admin&rsquo;s, or give anyone

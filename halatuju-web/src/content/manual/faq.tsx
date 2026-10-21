@@ -467,7 +467,7 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Why can&rsquo;t I approve this run?</>,
-      a: <>Usually because you already signed it &mdash; every signature on a run must be a different person, so
+      a: <>Usually because you already signed it, or created it &mdash; every signature on a run must be a different person, so
         if you prepared it (or checked it, before the change) your organisation admin approves it instead. Or
         your organisation has given someone the separate <strong>check</strong> step, and the run is waiting for
         that first.</>,

@@ -50,11 +50,14 @@ class RoleChangeRefused(Exception):
 
 
 def open_cases(admin):
-    """How many in-play applications are assigned to ``admin``."""
+    """How many cases ``admin`` still HOLDS: in-play applications assigned to them, and — #39 S4
+    review fix 5 — any assigned case whose decision has been REOPENED (`decision_reopened_at`), which
+    can sit at `rejected` while it waits for the assigned officer to decide again. Both the
+    permission editor's stranding rule and Admin → Finance read this one count."""
     from .models import ScholarshipApplication
     from .services.apply_gate import IN_PLAY_STATUSES
-    return ScholarshipApplication.objects.filter(
-        assigned_to=admin, status__in=IN_PLAY_STATUSES).count()
+    return ScholarshipApplication.objects.filter(assigned_to=admin).filter(
+        Q(status__in=IN_PLAY_STATUSES) | Q(decision_reopened_at__isnull=False)).count()
 
 
 #: A payment run still on its way — anything short of `completed` / `cancelled`.
@@ -118,8 +121,15 @@ def plan_role_change(target, new_role):
             consequence = FINANCE_CHECK_ON
         elif old == 'finance' and not _other_active_finance(target):
             consequence = FINANCE_CHECK_OFF
+    # #39 S4 review fix 4: what the switch does to the PERMISSIONS — the editor's own consequences,
+    # from the set they hold now to the new role's preset (a reset included), so the approval
+    # fallback and the check step are said from the same rule. `consequence` above is now the WALLET
+    # CREDIT check only (a finance-ROLE rule), and is worded so.
+    from . import staff_permissions_admin
     return {'from': old, 'to': new_role, 'consequence': consequence,
-            'permissions_reset': staff_permissions.is_custom(target)}
+            'permissions_reset': staff_permissions.is_custom(target),
+            'consequences': staff_permissions_admin.consequences(
+                target, staff_permissions.resolve(target), staff_permissions.preset_for(new_role))}
 
 
 def change_role(target_id, new_role, *, dry_run=False, by=None):

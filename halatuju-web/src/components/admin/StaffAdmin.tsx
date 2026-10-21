@@ -321,6 +321,9 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
           : plan.consequence === 'finance_check_off' ? t('admin.financeCheckOff') : '',
         // #39 S4: a saved custom set goes back to the new role's preset — said BEFORE the click.
         plan.permissions_reset ? t('admin.permissionsReset') : '',
+        // #39 S4 review fix 4: what the switch does to the payment chain and to files, from the
+        // editor's own rule (the approval fallback, the check step) — worded as the editor words it.
+        ...(plan.consequences ?? []).map((c) => t(`admin.permEditor.effect.${c}`, { name: a.name })),
       ].filter(Boolean).join(' ')
       const ask = t('admin.roleChangeConfirm', { name: a.name, role: t(`admin.role.${to}`) })
       if (!window.confirm(note ? `${ask} ${note}` : ask)) return false

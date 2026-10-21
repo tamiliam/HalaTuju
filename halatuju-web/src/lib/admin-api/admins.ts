@@ -103,7 +103,9 @@ export async function changeAdminRole(adminId: number, role: string, dryRun: boo
   return body as { id: number; from: string; to: string; dry_run: boolean
                    consequence: 'finance_check_on' | 'finance_check_off' | null
                    /** #39 S4: a saved custom set of permissions goes back to the new preset. */
-                   permissions_reset?: boolean }
+                   permissions_reset?: boolean
+                   /** #39 S4 review fix 4: the editor's consequence codes for this switch. */
+                   consequences?: string[] }
 }
 
 /** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches
