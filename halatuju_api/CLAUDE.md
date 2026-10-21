@@ -927,7 +927,7 @@ chooses its referral sources on Programme → Configuration ("Who referred you?"
 gift's `{code, name}` list; the apply form adds Halatuju.xyz / Facebook-WhatsApp / Other always; the
 submit refuses any other code (400 `referral_source_not_offered`). Org-timing Sprint 1 (2026-10-07) and
 request #31 + TD-371..377 (2026-10-08) are live too. Ledgers (applied migrate-first, contiguous):
-scholarship ends at 0172, courses at 0077 — **next free: scholarship 0173 / courses 0078.** Register:
+scholarship ends at 0174, courses at 0083 on main; **#39 S4 (`perm-s4`) adds scholarship 0175_staff_permission_changes, applied by hand BEFORE its deploy** — **next free after it: scholarship 0176 / courses 0084.** Register:
 **120 open.**
 - **Org-timing Sprint 2 is next (≈2026-10-14 — one week live with no timing incident):** drop the UNREAD
   intake-round columns `success_delay_hours`, `decline_delay_hours`, `query_response_sla_days` and the dead

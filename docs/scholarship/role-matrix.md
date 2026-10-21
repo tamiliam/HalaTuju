@@ -17,35 +17,76 @@ what is worth showing, never what is permitted; the fence stays `_AdminBase._org
 `navigation.ts`, then the page guard, in one commit.** `navigation.test.ts` holds a per-role
 visibility snapshot, so a drift shows up as a failing test rather than a quietly wrong menu.
 
-**⚠ Moving to permissions (org request #39, owner 2026-10-19 — roadmap
-`docs/plans/2026-10-19-staff-permissions-roadmap.md`).** *"A reviewer is someone with review
-permission. A QC likewise is an admin with QC permission."* Team members (`admin`, `finance`, `qc`,
-`reviewer`) are becoming a set of permissions (`review`, `see_all`, `qc`, `spending`,
-`payments_prepare`, `payments_check`, `payments_approve`; `manage_team` stays a lead-tier power), with
-today's roles kept as **presets**; `org_admin` is a fixed lead tier; `super` / `partner` are unchanged.
-**This table is still the law today:** Sprint 1 (built 2026-10-19) only ADDS the catalogue
-(`apps/courses/staff_permissions.py`, `PartnerAdmin.permissions`, NULL = the preset) and serves it on
-`/admin/role/`; no gate reads it yet, and `apps/courses/tests/test_permission_presets.py` (the golden
-table) proves each preset reproduces this table, gate by gate. The one other S1 change is the invite's
-"already exists" answer (an address already on your team is named; any other account gets one neutral
-sentence). **Sprint 2 (built 2026-10-19) changed the Payments cells below:** the payment gates read
-permissions, Finance APPROVES runs, and the organisation admin stops countersigning (approving only
-under the per-run fallback). Wallet credits are unchanged. **Sprint 3 (built 2026-10-19) changed NO
-cell:** the B40 Applications, file, QC, assignment and Spending gates (roadmap Appendix A, groups A-D)
-now read permissions — `see_all` (read every application), `review` (be assigned; read and work the
-assigned ones), `qc` (the QC gate and org-wide writes; needs `see_all`), `spending` (the Spending page)
-— and every preset gets exactly the cells below (the golden table). What a permission SET adds only
-matters once one is saved (Sprint 4, or a reviewed SQL update): e.g. a Finance person given Review
-reads ONLY the files of students assigned to them (owner, 2026-10-19); a Reviewer given Spending opens
-the Spending page. Two R1/R2 rulings hold: a super may still assign an admin / qc / org_admin
-(`services.R1_SUPER_TARGET_ROLES`), and the Overview sections, reviewer profile hold, graduation
-review, sponsors, sources, wallet credits and team screens stay on the ROLE (preset-bound). Org
-admins stay OFF the Reviewers tab although their lead tier holds `qc` (owner, 2026-10-19). Sprint 4
-restructures this file as catalogue + presets + lead tier.
+**Organisation access is a set of PERMISSIONS (org request #39, owner 2026-10-19; all four sprints built
+by 2026-10-21 — roadmap `docs/plans/2026-10-19-staff-permissions-roadmap.md`).** *"A reviewer is someone
+with review permission. A QC likewise is an admin with QC permission."* This file is therefore in three
+parts: the **catalogue** (what each permission opens), the **presets** (the set each role starts with),
+and the **lead tier** (the organisation admin, fixed). The per-role table further down is what each
+role gets **on its preset** — `apps/courses/tests/test_permission_presets.py` (the golden table) proves
+the code gives exactly that, gate by gate. Platform roles (`super`, referral `partner`) sit outside: a
+super passes every permission (and still fills only ONE signature on a payment run); a partner holds
+none.
+
+### 1. The catalogue (`apps/courses/staff_permissions.py` `CATALOGUE`)
+
+| Key | On screen | What it opens (the gates that read it) |
+|---|---|---|
+| `review` | Review assigned students | May be ASSIGNED cases; opens and works the cases assigned to them, files included; proposes interview times; may be paused. Applications list scope "assigned" |
+| `see_all` | See all students | Reads every application in the organisation (no writes unless assigned). Applications scope "all" |
+| `qc` | Quality check | The QC gate, and working on any case in the organisation. **Needs `see_all`** (the editor holds it back; the server refuses a set without it and reads a stored one fail-closed) |
+| `spending` | Spending | The Spending page: named students' spending, flags, categories |
+| `payments_prepare` | Prepare payment runs | Create, edit, cancel runs; sign as MAKER |
+| `payments_check` | Check payment runs | The optional middle signature. Dormant until somebody holds it; armed PER RUN when an eligible holder exists |
+| `payments_approve` | Approve payment runs | The final signature, which completes the run and releases Vircle → students |
+| `manage_team` | (not switchable) | Invite, resend, revoke, restore, delete, change role, **change permissions**. Lead tier only in #39 (owner question 3) |
+
+Reading Payments (list, run, CSV, funding summary) is open to anybody holding any `payments_*` key, or
+the lead tier.
+
+### 2. The presets (`PRESETS`; a NULL `PartnerAdmin.permissions` means "the preset")
+
+| Role (preset label) | Holds | Note |
+|---|---|---|
+| `reviewer` | `review` | |
+| `qc` | `see_all`, `qc` | |
+| `admin` | `see_all`, `spending`, `payments_prepare` | |
+| `finance` | `payments_approve` | Since #39 S2 (owner option A): Finance APPROVES runs |
+
+**Changing a set (#39 Sprint 4, 2026-10-21):** People → a reviewer's page, or **Permissions** beside an
+admin → the card *What <name> can do* (`PATCH admin/admins/<id>/permissions/`). **Only a super or the
+organisation admin**, and only on a TEAM member of their own organisation — never their own row, an
+organisation admin's, a super's or a partner's (`_staff_target_manageable`, then the service). The
+server refuses: an unknown key, `manage_team` (`lead_tier`), `qc` without `see_all`, a revoked person
+(`not_active`), and taking `review` (or `see_all`, when `review` does not stay) from somebody holding
+in-play cases (`has_open_cases`, under the person's row lock; the assign service takes the same lock).
+A dry run names the consequences first: the check step switching on/off, the organisation admin's
+approval fallback switching off/on, a person who has never signed in (the payment change waits for
+their first sign-in), a Finance person's files widening, prepare-and-approve together. A set equal to
+the preset is stored as NULL; anything else is "custom" and shows chips on People. **Change role resets
+a custom set to the new role's preset** (said before the click); revoke / restore keep it; a TD-335
+re-invite resets it. Every change writes a `staff_permission_changes` row (who, whom, before → after,
+when) and an `AUDIT staff_permissions_changed` line. The Django admin shows `permissions` read-only.
+
+### 3. The lead tier (`org_admin`, `LEAD_TIER`) — fixed, never edited
+
+`see_all`, `qc`, `spending`, `manage_team`, plus the powers that are not catalogue keys and stay on the
+role: configuration, gifts, contracts, sponsors' acceptance, assigning cases, billing, requests, the
+parent's contact, creating / editing / cancelling runs (never signing as maker), and approving a run
+**only under the per-run fallback** (nobody eligible holds `payments_approve`). Org admins stay OFF the
+Reviewers tab although the tier holds `qc` (owner, 2026-10-19).
+
+**Preset-bound surfaces (R2) read the ROLE, not the set:** the Overview sections, the reviewer profile
+hold and profile cards, graduation review, sponsors, sources, sponsor emails, wallet credits, team
+read-only views. So a Reviewer given Spending (Rohini) gets the Spending page and keeps the reviewer's
+Overview; a Finance person given Review reads ONLY the files of students assigned to them (owner,
+2026-10-19). A super may still assign an admin / qc / org_admin that holds `see_all`
+(`services.R1_SUPER_TARGET_ROLES`).
+
+### 4. What each role gets on its preset
 
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
+| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · **change a team member's permissions** *(#39 S4, 2026-10-21; never their own, never an org_admin's)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
 | **Admin — General** (`admin`) | **Everything** — as org_admin (a read; the page has no controls) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
 | **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per transaction per week, transactions per active student per week, spending by category. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + APPROVAL — the final signature that releases the money; #39 S2, 2026-10-19)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | **Own work only** — the cases awaiting QC (oldest wait first) + own pace. **No money, no programme-wide funnel** | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |

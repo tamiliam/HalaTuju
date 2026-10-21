@@ -1,7 +1,8 @@
 # Staff permissions and Finance approval of payment runs: roadmap (org request #39)
 
-**Status (2026-10-19):** Sprints 1 and 2 LIVE. Sprint 3 BUILT on `perm-s3` (no migration), not pushed
-or deployed; adversarial review pending. Sprint 4 not started. **Original status:** PLAN, written 2026-10-19 on
+**Status (2026-10-21):** Sprints 1-3 and TD-360 LIVE. Sprint 4 (the editor) BUILT on `perm-s4` (migration
+scholarship 0175, to be applied by hand before deploy), not pushed or deployed; adversarial review
+pending. **Earlier status (2026-10-19):** Sprints 1 and 2 LIVE; Sprint 3 built. **Original status:** PLAN, written 2026-10-19 on
 `perm-plan` (base `d15c0f14`). Request #39
 was quoted at **34 h (30 permissions + 4 payments, indicative)** and is waiting for the organisation
 to accept it. This plan **re-estimates it at 36 h** (see "Hours"), offers a way to hold it at 34 h, and
@@ -558,6 +559,15 @@ change. No migration, no new strings. Notes for the reviewer and S4:
 
 ### Sprint 4 — the permission editor on People (medium) · 9.0 h · Stage 3b
 
+**⚠ DESIGN OF RECORD (owner, 2026-10-21): the owner approved a clickable HTML mock IN PLACE OF the Stitch
+prototype below** — Stitch timed out twice. The mock is the approval: on the person's page a card "What
+<name> can do", subtitle "Starts from the <preset> set…", groups STUDENTS (Review assigned students / See
+all students / Quality check, held behind "Needs See all students") and MONEY (Spending / Prepare / Check /
+Approve payment runs), each row a label, a one-line description and a site Toggle; a "Custom" chip beside
+the preset chip; a "changed" marker per row; a live consequence line from the server's dry run; "Save
+changes" and "Reset to <preset>"; the footnote "You cannot change your own permissions or an organisation
+admin's."
+
 **Goal:** an org admin (or super) changes what a person can do, safely, and Rohini gets review +
 spending.
 
@@ -611,6 +621,37 @@ docs.
 | Adversarial review + fixes | 1.25 |
 | Docs (role-matrix restructure, decisions) | 0.75 |
 | **Total** | **9.0** |
+
+**As built (2026-10-21, branch `perm-s4`, base `cd9b69ea`, commit `a6cc35d1`):** no moves-only split was
+needed (no touched file sat at its line). Migration **scholarship `0175_staff_permission_changes`** (the
+next free number in the tree; DDL + RLS + policy + ledger row in its docstring). Notes for the reviewer:
+- **Design:** the owner's approved mock, not Stitch (see the ruling at the top of this section).
+- **Endpoint:** `GET / PATCH admin/admins/<id>/permissions/` — GET serves `preset`, `permissions`,
+  `custom`, `editable`, `keys`; PATCH (and its dry run) answers `added`, `removed`, `consequences`,
+  `changed`. Refusals: `own_permissions` (403), `not_editable`, `unknown_permission`, `lead_tier`,
+  `qc_needs_see_all`, `bad_request`, `not_active` (400), `has_open_cases` (409, with `open_cases`).
+- **Stranding (S3 notes):** refused when the set loses `review`, or loses `see_all` without keeping
+  `review`, while the person holds in-play cases. **The TD-382-class race** is closed by one lock on the
+  PERSON's row, which `assign_reviewer` now also takes (re-reading its target); the test feeds it a stale
+  object holding `review` after the removal and gets `not_reviewer`.
+- **Consequences** are computed against SIGNED-IN holders (S2 fix 4); a target who never signed in gets
+  `not_signed_in` instead of a fallback change that would not happen yet. `files_widened` = a Finance
+  person gaining `review` or `see_all`. `prepare_and_approve` added (not in the plan's list) because the
+  mock's line says it.
+- **Readers:** People chips on both tabs; `pausable` on the reviewer detail (S3 fix 4 closed); the Guide's
+  per-section `perm` tags (only keys no other preset holds — a test sweeps every preset); the Invitations
+  grouping and the welcome letter stay on the preset (`role`), unchanged.
+- **Doors and their tests (`test_permission_editor.py`):** the PATCH per key (refusals and consequences
+  classes); Change role resets + history (`TestChangeRoleResets`); revoke/restore keep the set; delete
+  keeps the history (footprint unchanged — a permission change is not "work"); re-invite resets (S1's test
+  stands); the invite (NULL, unchanged); assignment racing a removal; granting `payments_approve` mid-run
+  (`approver_fallback` flips live, `next_step_for` → approve) and `payments_check` (`finance_check_required`
+  flips); the edited person's cached `/admin/role/` (Spending 403 on the next request).
+- **Not done / for the lead:** the browser click-through (the console needs a Supabase session; the local
+  run drove a real `runserver` over HTTP with the screen's exact calls instead); a re-invite's reset
+  writes no history row (it lives in `courses`; the cross-app ratchet); the Django admin keeps
+  `permissions` read-only on purpose; ms/ta strings are first drafts for Sol.
+- **Bundle:** median 178.831 → 178.855 kB (1.1 kB headroom); the editor is its own chunk.
 
 ---
 

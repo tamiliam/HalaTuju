@@ -1,5 +1,44 @@
 # Architectural Decisions — HalaTuju
 
+## The staff-permission editor: server-decided, dry-run first, stranding refused under a row lock — 2026-10-21 (#39 Sprint 4; owner approved the design mock in place of Stitch)
+
+**What.** People → a person → *What <name> can do*: `GET / PATCH admin/admins/<id>/permissions/`
+(`views_admin/staff.AdminStaffPermissionsView`, rules in `apps/scholarship/staff_permissions_admin.py`).
+Reviewers edit on their own page; an admin or finance person through **Permissions** on the Admins tab.
+Only a super or the organisation admin, through the same `_staff_target_manageable` fence as Change role
+(404 outside it); the service then refuses what that fence lets a super reach — your own row
+(`own_permissions`), an org admin / super / partner (`not_editable`). Refused sets: unknown keys,
+`manage_team` (`lead_tier`), `qc` without `see_all`, a revoked person, and removing `review` (or
+`see_all` when `review` does not stay) from somebody holding in-play cases (`has_open_cases`).
+
+**Rulings in the build (lead; the owner may overrule).**
+1. **Design of record = the clickable mock the owner approved on 2026-10-21** (Stitch timed out twice):
+   one card, Students / Money groups, site Toggles, "Custom" + "changed" markers, a consequence line from
+   the server's DRY RUN, Save and Reset. The screen re-derives no rule; each toggle asks the server.
+2. **The race with assignment is closed by one lock on the PERSON's row.** The PATCH counts open cases
+   under `select_for_update` on the target; `services.assign_reviewer` now re-reads its target under the
+   same lock (inside a transaction for an assign; an unassign is unchanged). Whichever commits second sees
+   the first (TD-382 class). The stage checks moved verbatim into `_refuse_stage` to keep the function
+   under the 150-line standard.
+3. **A set equal to the preset is stored as NULL** (custom stays derivable). **Change role resets a custom
+   set to NULL** — a set chosen on top of the old role would mean something nobody chose — and the dry run
+   says so (`permissions_reset`). Revoke / restore keep the set. The TD-335 re-invite already resets (S1).
+4. **History in a table** (`staff_permission_changes`, scholarship 0175, RLS + one service_role policy):
+   edits and role-change resets, resolved before/after, SET_NULL on the person so a delete keeps it. A
+   re-invite's reset writes no row (it lives in `courses`; the cross-app ratchet), only S1's behaviour.
+5. **Consequences are computed against signed-in holders** (`first_seen_at`), the payment chain's own
+   eligibility (S2 review fix 4): a person who has never signed in gets `not_signed_in` instead of
+   "the org admin stops approving". Codes: `check_on/off`, `approver_fallback_on/off`, `not_signed_in`,
+   `files_widened` (Finance given `review` / `see_all`), `prepare_and_approve`.
+6. **The reviewer page's Pause follows the server's target rule:** the detail payload serves `pausable`
+   (`is_review_target`), closing S3 review fix 4. The caller side stays super / org_admin.
+7. **The Guide opens sections, not chapters:** a section tagged `perm` shows to a team member holding
+   that key, in another role's chapter (blurb "The parts of this role your organisation has given you").
+   Tags use only keys no OTHER preset holds, so presets see exactly what they saw (a test asks each).
+8. **Words:** permission names and the editor in the `admin.*` slice (moves no budgeted route);
+   ms/ta first drafts, for Sol. The Django admin keeps `permissions` read-only (a side door with no rules
+   and no history otherwise).
+
 ## The message files ship in audience slices, cut at build time; the files stay whole — 2026-10-21 (owner "yes" to the TD-360 roadmap)
 
 **Owner's rulings (2026-10-21).** (1) Split only the admin console's words now; the scholarship /

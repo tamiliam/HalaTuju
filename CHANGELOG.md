@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #39, Sprint 4 of 4 — the permission editor on People - 2026-10-21
+
+Built on branch `perm-s4` (base `cd9b69ea`, Sprints 1-3 and TD-360 live). Commit `a6cc35d1`. **Not pushed,
+not deployed. Migration scholarship `0175_staff_permission_changes` — apply by hand BEFORE the deploy**
+(DDL, RLS, policy and ledger row in its docstring). Adversarial review pending. Design of record: the
+clickable mock the owner approved on 2026-10-21 in place of Stitch.
+
+- **API:** `GET / PATCH admin/admins/<id>/permissions/ {permissions, dry_run?}`
+  (`views_admin/staff.AdminStaffPermissionsView`; rules `apps/scholarship/staff_permissions_admin.py`).
+  Super / org_admin via `_staff_target_manageable` (404 outside); refuses own row (403
+  `own_permissions`), org_admin / super / partner (`not_editable`), unknown keys, `manage_team`
+  (`lead_tier`), `qc` without `see_all`, revoked (`not_active`), and stranding (`has_open_cases`: taking
+  `review`, or `see_all` without `review`, from someone holding in-play cases) under the person's row
+  lock. Dry-run consequences `check_on/off`, `approver_fallback_on/off`, `not_signed_in`,
+  `files_widened`, `prepare_and_approve`. A set equal to the preset is stored NULL.
+- **Race:** `services.assign_reviewer` re-reads its target under the same row lock (assign only; stage
+  checks moved verbatim to `_refuse_stage`, keeping the function under 150 lines).
+- **History:** `StaffPermissionChange` / `staff_permission_changes` (edits + role-change resets; SET_NULL
+  on the person) + `AUDIT staff_permissions_changed`.
+- **Change role** resets a custom set to the new preset; the dry run serves `permissions_reset` and the
+  confirmation says so. Revoke / restore keep the set (tested).
+- **People:** both lists serve `custom`, `permissions_added`, `permissions_removed`
+  (`staff_permissions.preset_diff`); chips on the Admins and Reviewers tabs. The reviewer detail serves
+  `pausable` and its Pause follows it (S3 review fix 4).
+- **Web:** `components/admin/PermissionEditor.tsx` (lazy via `LazyPermissionEditor.tsx`) on the reviewer
+  page and through **Permissions** on the Admins tab; `PermissionChips.tsx`; `lib/admin-api/admins.ts`
+  gains `getStaffPermissions` / `saveStaffPermissions`. 25 new `admin.*` keys per language (en; ms/ta first
+  drafts, to tag in Sol).
+- **Guide/FAQ:** org-admin section *Changing what someone can do*; a "may have given you more" line in
+  each team chapter; a General admin *Spending page* section; sections tagged `perm` open for a team
+  member given that key (presets unchanged, tested); four FAQ entries.
+- **Tests:** api 8524 → 8554 (+30, `test_permission_editor.py`; org-fence classification; reviewers
+  key-set pin). Web jest 4343 → 4372 (+29: `PermissionEditor.test.tsx` 9, StaffTable 3, reviewer page 5,
+  manual 7, plus suites touched). Local run on a scratch database: Rohini's Reviewer + Spending made
+  through the endpoint; Spending 200, Applications assigned-only, Payments 403, own-row edit refused.
+- **Bundle:** median 178.831 → 178.855 kB (1.1 kB under 180); worst 221.861 → 221.878; budget ok.
+- Docs: role-matrix restructured (catalogue + presets + lead tier), decisions.md, ARCHITECTURE_MAP,
+  `halatuju_api/CLAUDE.md` migration pointer, the plan's as-built note, the arc retrospective.
+
 ## TD-360 Sprint 1 — the admin console's words leave every non-admin route - 2026-10-21
 
 Built on branch `td360` (base `6aec3206`). **Not pushed, not deployed. No migration. No string added,
