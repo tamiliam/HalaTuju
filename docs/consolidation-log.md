@@ -12,6 +12,7 @@ _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits ar
 - 2026-10-19 0ca7eefb refactor(scholarship): move FundingNeed into models/funding_need.py (moves only) (scholarship models · 3; logged by the #39 session for the Sources session)
 - 2026-10-19 3bd909c9 refactor(courses): move StpmCourse and StpmRequirement into models_stpm.py (moves only) (courses models · 3; logged by the #39 session for the Sources session)
 - 2026-10-22 a8ccea58 fix: a gift's Awarded count no longer counts an award that fell through (api closure ever_awarded_q, gifts card, overview awards-per-month + 2 tests; CHANGELOG · 3)
+- 2026-10-22 61d04f40 fix: the Applicants Source filter lists only the chosen gift's sources (request #41) (api source-names view; web applicants page + sources api client + tests; CHANGELOG · 3)
 
 ## Sprints since the last review
 
