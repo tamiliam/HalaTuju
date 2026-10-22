@@ -43,6 +43,22 @@ PRE_AWARD_STATUSES = frozenset({
 #: A funder has committed (awarded) or the student is funded (active / maintenance).
 POST_AWARD_STATUSES = frozenset({'awarded', 'active', 'maintenance'})
 
+
+
+def ever_awarded_q():
+    """The ONE answer to "how many students were awarded" (a gift's card, the awards-per-month chart).
+
+    Counts a student who is awarded, active or in maintenance now, or was CLOSED after funding
+    began (`active_at`, stamped once and never cleared). ⚠ NOT `awarded_at` alone: an award that
+    fell through before it became active (sponsor withdrew, student declined, lapse, hold) keeps its
+    stamp, goes back to the pool and may later be rejected or closed — and is not an award
+    (2026-10-22: the owner's test record, awarded then rejected, made the card read 66 against the
+    list's 65). A close straight from `awarded` needs no live money (`sponsorship_open`), so it is a
+    fallen-through award too."""
+    from django.db.models import Q
+    return Q(status__in=POST_AWARD_STATUSES) | Q(status='closed', active_at__isnull=False)
+
+
 #: Statuses that carry a live sponsorship BY NATURE: the agreement has bound and the student is
 #: funded. The pre-existing funded close (S6) has always closed these with the sponsorship left as
 #: it is, and still does — the sponsorship refusal below does not apply to them.

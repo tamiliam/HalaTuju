@@ -585,6 +585,13 @@ class FiguresTests(_Base):
                   self._body('ov-oa')['applications_series']['awards_per_month']}
         self.assertEqual(months['2026-07'], 1)
 
+    def test_an_award_that_fell_through_is_not_charted(self):
+        """It keeps `awarded_at`, but it is not an award (`closure.ever_awarded_q`, 2026-10-22)."""
+        self._app('fell', status='rejected', awarded_at=_local(2026, 7, 22))
+        months = {m['month']: m['count'] for m in
+                  self._body('ov-oa')['applications_series']['awards_per_month']}
+        self.assertEqual(months['2026-07'], 1)
+
     def test_every_category_slice_is_present_and_the_blank_one_is_its_own(self):
         """⚠⚠ `unsorted` (the sorter looked and could not place it) and `none` (nothing has
         looked yet) are DIFFERENT STATES. Neither is folded into the other and neither is

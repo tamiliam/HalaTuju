@@ -669,12 +669,26 @@ class TestTheCardsCounts(_Case):
     def test_it_counts_a_student_who_HAS_BEEN_awarded_at_every_later_stage(self):
         """⚠ THE WHOLE POINT. `awarded` is one stage in awarded → active → maintenance → closed, so
         counting the status alone would make the number FALL as students progress. Someone who was
-        awarded stays awarded; `awarded_at` is stamped set-if-null and never cleared."""
+        awarded stays awarded — a closed one counts once funding had begun (`active_at`)."""
         from django.utils import timezone
         cohort = self._cohort(self.spare, 'award')
-        for i, status in enumerate(('awarded', 'active', 'maintenance', 'closed')):
-            self._student(cohort, f'st{i}', status=status, awarded_at=timezone.now())
+        now = timezone.now()
+        for i, status in enumerate(('awarded', 'active', 'maintenance')):
+            self._student(cohort, f'st{i}', status=status, awarded_at=now)
+        self._student(cohort, 'st3', status='closed', awarded_at=now, active_at=now)
         self.assertEqual(self._row('sab-a-count')['awarded'], 4)
+
+    def test_an_award_that_FELL_THROUGH_does_not_count(self):
+        """2026-10-22: the owner's test record was awarded, then rejected, and the card read 66
+        against the list's 65. A fallen-through award keeps `awarded_at` (the sponsor withdrew, the
+        student declined, a lapse or hold) and goes back to the pool — rejected, recommended again,
+        or closed before funding began. None of them is an award."""
+        from django.utils import timezone
+        cohort = self._cohort(self.spare, 'fell')
+        now = timezone.now()
+        for i, status in enumerate(('rejected', 'recommended', 'interviewed', 'closed')):
+            self._student(cohort, f'fell{i}', status=status, awarded_at=now)
+        self.assertEqual(self._row('sab-a-count')['awarded'], 0)
 
     def test_a_row_awarded_BEFORE_the_stamp_existed_still_counts(self):
         """The status arm is the fallback for legacy rows carrying no `awarded_at` — `vircle.py`

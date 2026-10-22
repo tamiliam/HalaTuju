@@ -376,9 +376,12 @@ def applications_per_week(scope, *, today):
 
 
 def awards_per_month(scope, *, today):
-    """Awards made, by month — contiguous to the current month, zero-filled."""
-    dates = [_local_date(dt) for dt in scope.values_list('awarded_at', flat=True)
-             if dt is not None]
+    """Awards made, by month — contiguous to the current month, zero-filled.
+
+    Only awards that held (`closure.ever_awarded_q`): one that fell through keeps its `awarded_at`."""
+    from .closure import ever_awarded_q
+    dates = [_local_date(dt) for dt in scope.filter(ever_awarded_q())
+             .values_list('awarded_at', flat=True) if dt is not None]
     if not dates:
         return []
     counts = {}

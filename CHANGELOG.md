@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: a gift's "Awarded" count no longer counts an award that fell through - 2026-10-22
+
+Small lane. The Programmes card read 66 against the applicant list's 65: it counted any row with
+`awarded_at`, and an award that falls through (sponsor withdrew, student declined, lapse, hold) keeps
+that stamp. One definition now, `closure.ever_awarded_q` (awarded / active / maintenance, or closed
+after funding began), used by the card and the overview's awards-per-month chart. Live data: BrightPath
+66 → 65 (the extra one is the owner's test record, app 16); Sabah 0 → 0. Nothing stored changes.
+
 ## Team — permissions on each person's own page - 2026-10-22
 
 Team: every team member's permissions now live on their own page, on a Permissions tab, with the

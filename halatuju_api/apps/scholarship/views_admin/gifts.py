@@ -9,6 +9,7 @@ from django.db.models import IntegerField, OuterRef, Q, Subquery
 
 from .. import branding
 from ..birth_state import stored_keys
+from ..closure import ever_awarded_q
 from ..models import Donation, ScholarshipApplication
 
 
@@ -213,17 +214,11 @@ def _programme_row(p, blocker=None):
         # Counted on a programme ALREADY narrowed to the caller's own `owning_organisation`, so it
         # cannot be handed another tenant's programme in the first place.
         'applications': students.count(),
-        # ⚠ "HAS EVER BEEN AWARDED", NEVER `status='awarded'`. `awarded` is one stage in a chain
-        # (awarded → active → maintenance → closed), so counting the status alone would make the
-        # number FALL as students progress — twelve today, three next month, with nobody having
-        # lost anything. `awarded_at` is stamped set-if-null by `stamp_first` and never cleared, so
-        # it is the durable answer; the status arm catches any row awarded before that stamp
-        # existed (`vircle.py` notes such rows exist). `closed` is deliberately absent from the
-        # status arm — a closed case that was awarded carries the stamp, and one that was not is
-        # not an award.
-        'awarded': students.filter(
-            Q(awarded_at__isnull=False)
-            | Q(status__in=('awarded', 'active', 'maintenance'))).count(),
+        # ⚠ "HAS BEEN AWARDED", NEVER `status='awarded'` alone: `awarded` is one stage in a chain
+        # (awarded → active → maintenance → closed), so the status alone would make the number FALL
+        # as students progress. And never `awarded_at` alone either: an award that fell through
+        # keeps its stamp (2026-10-22). One definition, `closure.ever_awarded_q`.
+        'awarded': students.filter(ever_awarded_q()).count(),
         # The year currently taking applications, or None. Named `open_year` rather than `is_open`
         # because a PROGRAMME is never open — one of its years is.
         'open_year': open_year,
