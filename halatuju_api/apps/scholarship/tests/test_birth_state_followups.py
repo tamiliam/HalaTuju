@@ -342,7 +342,11 @@ class TestAnOwnIcChangeIsAudited(TestCase):
         for nric in nrics:
             self.assertNotIn(nric, line)
             self.assertNotIn(nric.replace('-', ''), line)
-        self.assertIsNone(re.search(r'\d{6}-?\d{2}-?\d{4}', line))
+        # Bounded by anything that is not part of a UUID: the line carries the student's UUID, and a
+        # random one whose leading segments happen to be all digits ("13129320-3255-…") matched the
+        # bare pattern and failed the deploy build once (2026-10-22).
+        self.assertIsNone(re.search(
+            r'(?<![0-9a-fA-F-])\d{6}-?\d{2}-?\d{4}(?![0-9a-fA-F-])', line))
         for name in ('sabah', 'selangor', 'Sabah', 'Selangor', 'IC code'):
             self.assertNotIn(name, line)
 
