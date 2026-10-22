@@ -87,6 +87,44 @@ class TestWhoMayAsk(TestCase):
         self.assertFalse(officer_queries_allowed(app))
 
 
+class TestOfficerRequestsStateIsServed(TestCase):
+    """Request #40: the cockpit offered "Request a document" at `shortlisted`, the endpoint refused
+    it (`querying_closed`) and the screen said nothing. The cockpit now reads whether requests are
+    open off the payload — served from the endpoint's own predicate, so the two cannot disagree."""
+
+    # Real stages from the factory (not hand-built rows), each with its expected answer.
+    _EXPECTED = {
+        'shortlisted': 'documents_step', 'profile_complete': 'open', 'assigned': 'open',
+        'interviewing': 'open', 'recommended': 'closed', 'awarded': 'closed', 'closed': 'closed',
+        'expired': 'closed',   # never finished documents, but the case has ended — not waiting
+    }
+
+    def _app(self, stage, **kw):
+        from apps.scholarship.tests.factories import make_application
+        return make_application(stage=stage, **kw)
+
+    def test_each_stage(self):
+        from apps.scholarship.services import officer_requests_state
+        for stage, expected in self._EXPECTED.items():
+            with self.subTest(stage=stage):
+                app = self._app(stage)
+                self.assertEqual(officer_requests_state(app), expected)
+                # Never disagrees with the predicate the endpoint refuses on.
+                self.assertEqual(expected == 'open', officer_queries_allowed(app))
+
+    def test_closed_at_awaiting_qc(self):
+        from apps.scholarship.services import officer_requests_state
+        self.assertEqual(officer_requests_state(self._app('awaiting_qc', outcome='recommend')),
+                         'closed')
+
+    def test_the_cockpit_payload_carries_it(self):
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        shortlisted = AdminApplicationDetailSerializer(self._app('shortlisted')).data
+        completed = AdminApplicationDetailSerializer(self._app('profile_complete')).data
+        self.assertEqual(shortlisted['officer_requests'], 'documents_step')
+        self.assertEqual(completed['officer_requests'], 'open')
+
+
 class TestAutoSyncsRespectTheStage(TestCase):
     """The two auto-engines must not CREATE outside the Completed stage — but must still do their
     housekeeping (auto-resolve a cleared gap) everywhere, and must never withdraw an open item."""

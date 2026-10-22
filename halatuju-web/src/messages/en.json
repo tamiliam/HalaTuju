@@ -3928,6 +3928,13 @@
         }
       },
       "requestInfoError": "Could not send the request.",
+      "requestsDocumentsStep": "The student is still completing their documents. What they still owe is listed under Blockers; they are already being asked for it.",
+      "requestRefused": {
+        "querying_closed": "This case is not taking new requests at this stage.",
+        "prompt_required": "Write what you are asking for before sending.",
+        "bad_kind": "That kind of request is not recognised.",
+        "bad_member": "That family member is not recognised."
+      },
       "requestDocTitle": "Request a document",
       "requestDocNotePlaceholder": "Explain what's needed (prefilled — edit as you like)",
       "requestDocStd": {

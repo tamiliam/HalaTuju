@@ -103,7 +103,7 @@ import { CockpitHeader } from './view/CockpitHeader'
 import { ApplicantCards } from './view/ApplicantCards'
 import { VerificationVerdict } from './view/VerificationVerdict'
 import { GeneratedProfile } from './view/GeneratedProfile'
-import { OutstandingPanel } from './view/OutstandingPanel'
+import { OutstandingPanel, requestRefusalText } from './view/OutstandingPanel'
 import { RefereesPanel, InterviewStage } from './view/InterviewPanels'
 import { DocumentsDrawer } from './view/DocumentsDrawer'
 import { RateAndEstimate } from './view/RateAndEstimate'
@@ -162,6 +162,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  // Request #40: a refused raise / document request is explained BESIDE its form. It used to go to
+  // `error`, which renders in the decision panel far down the page — so the screen looked silent.
+  const [requestError, setRequestError] = useState('')
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
@@ -693,11 +696,11 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
 
   const doRaiseQuery = async () => {
     if (!token || !infoNote.trim()) return
-    setBusy('raise'); setError('')
+    setBusy('raise'); setError(''); setRequestError('')
     try {
       setApp(await raiseResolutionItem(id, { kind: 'explanation', prompt: infoNote.trim(), fact: 'identity' }, { token }))
       setInfoNote('')
-    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
+    } catch (e) { setRequestError(requestRefusalText(e, t)) } finally { setBusy('') }
   }
 
   // A standard request line for the selected (doc, person) — prefills the note box so the
@@ -732,7 +735,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     if (!token || !reqResolved) return
     const { docType, member } = reqResolved
     const prompt = reqDocNote.trim() || stdDocRequest(docType, member)
-    setBusy('reqdoc'); setError('')
+    setBusy('reqdoc'); setError(''); setRequestError('')
     try {
       setApp(await raiseResolutionItem(
         id,
@@ -740,7 +743,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         { token },
       ))
       setReqDocNote(''); setReqCategory(''); setReqQualifier('')
-    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
+    } catch (e) { setRequestError(requestRefusalText(e, t)) } finally { setBusy('') }
   }
 
   const doActionResolution = async (itemId: number, action: 'waive' | 'resolve' | 'reopen') => {
@@ -981,6 +984,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         reqCategory={reqCategory} reqQualifier={reqQualifier} reqDocNote={reqDocNote}
         setReqDocNote={setReqDocNote} reqResolved={reqResolved}
         onReqCategory={onReqCategory} onReqQualifier={onReqQualifier} doRequestDoc={doRequestDoc}
+        requestError={requestError}
       />
 
 

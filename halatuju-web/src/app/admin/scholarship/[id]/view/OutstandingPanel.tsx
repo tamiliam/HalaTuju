@@ -13,11 +13,30 @@ import type { AdminScholarshipDetail, AdminResolutionItem } from '@/lib/admin-ap
 
 import { REQUEST_CATEGORIES, REQ_CAT, type T } from './shared'
 
+/** The refusal codes `resolution-items/` answers with that have their own words. */
+const REQUEST_REFUSAL_CODES = ['querying_closed', 'prompt_required', 'bad_kind', 'bad_member']
+
+/**
+ * Request #40: what to say when raising a query / requesting a document fails — never nothing.
+ * A server refusal says WHY (its code in words, else the server's own message); no answer at all
+ * (a dropped connection — `fetch` throws without a status) says the request could not be sent.
+ */
+export function requestRefusalText(e: unknown, t: T): string {
+  const err = (e ?? {}) as { status?: number; code?: string; message?: string }
+  if (typeof err.status !== 'number') return t('admin.scholarship.requestInfoError')
+  if (err.code && REQUEST_REFUSAL_CODES.includes(err.code)) {
+    return t(`admin.scholarship.requestRefused.${err.code}`)
+  }
+  // `adminMutate` falls back to "Admin API error: <status>" when the body had no message.
+  const msg = err.message ?? ''
+  return msg && !msg.startsWith('Admin API error:') ? msg : t('admin.scholarship.requestInfoError')
+}
+
 export function OutstandingPanel({
   app, t, busy, canWrite, decisionReopened, queryingLocked, lockReason,
   infoNote, setInfoNote, doRaiseQuery, doActionResolution,
   reqCategory, reqQualifier, reqDocNote, setReqDocNote, reqResolved,
-  onReqCategory, onReqQualifier, doRequestDoc,
+  onReqCategory, onReqQualifier, doRequestDoc, requestError,
 }: {
   app: AdminScholarshipDetail
   t: T
@@ -38,7 +57,12 @@ export function OutstandingPanel({
   onReqCategory: (key: string) => void
   onReqQualifier: (q: string) => void
   doRequestDoc: () => void
+  /** Why the last raise / request failed — shown beside the controls, not in a distant panel. */
+  requestError: string
 }) {
+  // Request #40: while the student is still at their Documents step the server refuses every
+  // request (the student cannot see one yet), so the controls are replaced by one line saying so.
+  const documentsStep = app.officer_requests === 'documents_step'
   return (<>
 
       {/* ── Check 2 — Outstanding: student-facing tasks only (queries + doc requests).
@@ -179,7 +203,12 @@ export function OutstandingPanel({
         {/* Raise work for the student — merged into the Check-2 box with a clear divider.
             Two roles: (1) raise a query, (2) request a document. Each adds a to-do to the
             student's Action Centre (they're notified there — no separate per-item email). */}
-        {canWrite && !queryingLocked && (
+        {canWrite && !queryingLocked && documentsStep && (
+          <p className="border-t border-ground-200 pt-3 mt-1 text-xs text-ground-500">
+            {t('admin.scholarship.requestsDocumentsStep')}
+          </p>
+        )}
+        {canWrite && !queryingLocked && !documentsStep && (
           <div className="border-t border-ground-200 pt-3 mt-1 space-y-3">
             <p className="text-xs text-ground-500">{t('admin.scholarship.raiseSectionHint')}</p>
             <div className="space-y-1.5">
@@ -242,6 +271,11 @@ export function OutstandingPanel({
                 </>
               )}
             </div>
+            {requestError && (
+              <p role="alert" className="rounded-md bg-critical-50 px-3 py-2 text-xs text-critical-700">
+                {requestError}
+              </p>
+            )}
           </div>
         )}
       </div>

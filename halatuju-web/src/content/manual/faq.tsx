@@ -151,7 +151,9 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>How do I ask the student a question?</>,
       a: <>Use <strong>Raise a query</strong> or <strong>Request a document</strong>. They get an email; their
-        reply shows in the <strong>Outstanding</strong> box.</>,
+        reply shows in the <strong>Outstanding</strong> box. While the student is still completing their
+        documents, a note takes the place of both: what they still owe is listed under <strong>Blockers</strong>,
+        and they are already being asked for it.</>,
     },
     {
       q: <>What does &ldquo;Save verdict &amp; generate final profile&rdquo; do?</>,

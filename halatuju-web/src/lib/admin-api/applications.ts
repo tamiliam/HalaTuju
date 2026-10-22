@@ -335,6 +335,12 @@ export interface AdminScholarshipDetail {
   qc_override_reason?: string
   rejected_by_name: string
   resolution_items: AdminResolutionItem[]
+  /**
+   * Request #40: may a reviewer raise a query / request a document now? Served from the
+   * endpoint's own rule (`services.officer_requests_state`). 'documents_step' = the student has
+   * not finished their Documents step. Optional: a build that predates it keeps the form.
+   */
+  officer_requests?: 'open' | 'documents_step' | 'closed'
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
   award_amount: string | null
   /** Standardised pathway-derived assistance (RM3,000 STPM / RM2,000 otherwise), auto-applied

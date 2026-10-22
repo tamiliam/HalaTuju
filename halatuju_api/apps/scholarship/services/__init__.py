@@ -97,7 +97,7 @@ from .offer_sync import (
 from .querying import (
     AUTO_QUERY_STATUSES, OFFICER_QUERY_STATUSES, QUERYING_LOCKED_STATUSES,
     _maybe_autofinalise, auto_queries_allowed, officer_queries_allowed,
-    querying_locked, submit_interview,
+    officer_requests_state, querying_locked, submit_interview,
 )
 from .details import (
     _DEEPER_FIELDS, _PROFILE_ADDRESS_FIELDS, save_application_details,

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: Request a document explains itself instead of failing silently (request #40) - 2026-10-22
+
+Small lane. At `shortlisted` the cockpit offered Raise a query / Request a document, the API refused
+(`querying_closed`, the student cannot see a request before finishing their Documents step) and the
+error landed in the decision panel far down the page.
+- **API:** the cockpit payload serves `officer_requests` (`open` / `documents_step` / `closed`), from
+  `services.officer_requests_state`, read off the endpoint's own `officer_queries_allowed`.
+- **Web:** at `documents_step` the controls are replaced by one line (en/ms/ta); any other refusal is
+  explained beside the form (per-code words, else the server's message; a dropped connection says it
+  could not be sent). FAQ "How do I ask the student a question?" gains one sentence.
+
 ## fix: the Applicants Source filter lists only the chosen gift's sources (request #41) - 2026-10-22
 
 Small lane. With one gift chosen, the Source filter listed every source the organisation has.

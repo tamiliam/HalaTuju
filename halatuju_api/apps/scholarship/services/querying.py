@@ -68,6 +68,26 @@ def officer_queries_allowed(application):
             and application.status in OFFICER_QUERY_STATUSES)
 
 
+def officer_requests_state(application):
+    """What the cockpit's raise-a-query / request-a-document controls should offer, SERVED so the
+    web never re-derives the stage list (request #40). One of:
+
+      * ``'open'``           — ``officer_queries_allowed``: the endpoint will accept a request.
+      * ``'documents_step'`` — refused because the student has not finished their own Documents
+                               step (no ``profile_completed_at``, case still live). What they owe is on the
+                               Blockers list and they are already being asked for it.
+      * ``'closed'``         — refused for any other stage reason.
+
+    Read off the SAME predicate the endpoint refuses on, so the two cannot disagree.
+    """
+    if officer_queries_allowed(application):
+        return 'open'
+    # A case that ended before finishing documents (expired, rejected) is closed, not waiting.
+    if application.profile_completed_at is None and not querying_locked(application):
+        return 'documents_step'
+    return 'closed'
+
+
 def _maybe_autofinalise(application, session):
     """S4: on interview submit, refine the draft into the final polished profile from the
     findings — gated behind CHECK2_AUTO_GENERATE (dark by default; billable Gemini call),

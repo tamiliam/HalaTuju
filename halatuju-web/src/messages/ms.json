@@ -3928,6 +3928,13 @@
         }
       },
       "requestInfoError": "Tidak dapat menghantar permintaan.",
+      "requestsDocumentsStep": "Pelajar masih melengkapkan dokumen mereka. Apa yang masih perlu diserahkan tersenarai di bawah Halangan; mereka sudah pun diminta menyerahkannya.",
+      "requestRefused": {
+        "querying_closed": "Permohonan ini tidak menerima permintaan baharu pada peringkat ini.",
+        "prompt_required": "Tulis apa yang anda minta sebelum menghantar.",
+        "bad_kind": "Jenis permintaan itu tidak dikenali.",
+        "bad_member": "Ahli keluarga itu tidak dikenali."
+      },
       "requestDocTitle": "Minta dokumen",
       "requestDocNotePlaceholder": "Terangkan apa yang diperlukan (telah diisi — sunting ikut keperluan)",
       "requestDocStd": {

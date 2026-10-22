@@ -357,6 +357,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
     query_sla = serializers.SerializerMethodField()
     funding_estimate = serializers.SerializerMethodField()
     resolution_items = serializers.SerializerMethodField()
+    # Request #40: may a reviewer raise a query / request a document right now? 'open' |
+    # 'documents_step' | 'closed' — served from the endpoint's own predicate so the cockpit does
+    # not offer a form the server will refuse (see services.officer_requests_state).
+    officer_requests = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     consent_blockers = serializers.SerializerMethodField()
     # The "you haven't submitted yet" nudge state (drives the Blockers-box reminder button):
@@ -522,6 +526,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             'query_sla',
             'funding_estimate',
             'resolution_items',
+            'officer_requests',
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
@@ -542,6 +547,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, serializers.ModelSer
             # open (see `officerCockpit.assignOptions`).
             'programme_id',
         ]
+
+    def get_officer_requests(self, obj):
+        from .services import officer_requests_state
+        return officer_requests_state(obj)
 
     def get_disbursements(self, obj):
         from .disbursement import disbursement_dict
