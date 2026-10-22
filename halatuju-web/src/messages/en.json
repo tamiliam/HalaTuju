@@ -6753,8 +6753,6 @@
       "nothingElse": "Nothing else changes.",
       "saved": "Saved. {name} sees the change on their next page.",
       "loadFailed": "Could not load {name}'s permissions.",
-      "open": "Permissions",
-      "close": "Close",
       "fixed": "{name}'s permissions are fixed and cannot be changed here.",
       "unlistedHint": "A Reviewer or QC must keep “Review assigned students” or “Quality check”. For someone who only needs Spending or to view, invite them as an Admin instead.",
       "restoreFirst": "{name}’s access is revoked. Restore them before changing what they can do.",
@@ -6768,6 +6766,23 @@
         "files_widened_assigned": "{name} will open the files of the students assigned to them.",
         "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run."
       }
+    },
+    "person": {
+      "back": "Team",
+      "tabsAria": "Person panels",
+      "tabProfile": "Profile",
+      "tabPermissions": "Permissions",
+      "invited": "Invited, no sign-in recorded yet",
+      "notAllowed": "Only an organisation admin can open a team member's permissions."
+    },
+    "permHistory": {
+      "title": "Changes",
+      "on": "{perm} switched on",
+      "off": "{perm} switched off",
+      "roleReset": "Reset to the {role} set by a role change",
+      "byAt": "By {by}, {at}",
+      "team": "the HalaTuju team",
+      "empty": "No changes yet. {name} has the {role} set."
     },
     "permissionsReset": "Their custom permissions go back to the new role’s set."
   }

@@ -521,3 +521,72 @@ class TestReviewFixes(TestCase):
         r = _patch(self.org_admin, rev, ['review', 'spending'])
         self.assertEqual((r.status_code, r.json()['changed']), (200, False))
         self.assertFalse(StaffPermissionChange.objects.exists())
+
+
+@override_settings(**API)
+class TestPersonPageReadsTheHistory(TestCase):
+    """Team → a person → Permissions (2026-10-22): the GET also serves the header and the history."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org, cls.other = make_org(), make_org()
+        cls.org_admin = make_admin('org_admin', owning_org=cls.org, name='Priya Lead')
+        cls.super = make_admin('super', super_admin=True)
+        cls.target = make_admin('admin', owning_org=cls.org, first_seen_at=SEEN)
+
+    def _get(self, who, target=None):
+        return authed_client(who).get(_url(target or self.target))
+
+    def test_header_and_history_shape_newest_first(self):
+        _patch(self.org_admin, self.target, ['see_all', 'payments_prepare'])       # Spending off
+        _patch(self.org_admin, self.target, ['see_all', 'payments_prepare', 'payments_approve'])
+        body = self._get(self.org_admin).json()
+        self.assertEqual((body['email'], body['signed_in'], body['paused']),
+                         (self.target.email, True, False))
+        self.assertTrue(body['created_at'])
+        first, second = body['history']
+        self.assertEqual((first['kind'], first['role'], first['added'], first['removed']),
+                         ('edit', 'admin', ['payments_approve'], []))
+        self.assertEqual((second['added'], second['removed']), ([], ['spending']))
+        self.assertEqual((first['by'], first['by_super']), ('Priya Lead', False))
+        self.assertTrue(first['at'] and first['before'] == ['see_all', 'payments_prepare'])
+
+    def test_the_history_is_capped_and_an_invitee_is_not_signed_in(self):
+        fresh = make_admin('finance', owning_org=self.org)
+        for i in range(25):
+            StaffPermissionChange.objects.create(target=fresh, organisation=self.org, kind='edit',
+                                                 role='finance',
+                                                 before=[], after=['spending'] if i % 2 else [])
+        body = self._get(self.org_admin, fresh).json()
+        self.assertEqual((len(body['history']), body['signed_in']), (20, False))
+
+    def test_a_supers_address_is_never_shown_to_an_organisation(self):
+        _patch(self.super, self.target, ['see_all'])
+        row = self._get(self.org_admin).json()['history'][0]
+        self.assertEqual((row['by'], row['by_super']), ('', True))
+        self.assertNotIn(self.super.email, str(self._get(self.org_admin).content))
+        self.assertTrue(self._get(self.super).json()['history'][0]['by_super'])
+
+    def test_another_organisations_admin_is_404_and_admin_or_finance_403(self):
+        stranger = make_admin('org_admin', owning_org=self.other)
+        self.assertEqual(self._get(stranger).status_code, 404)
+        for role in ('admin', 'finance'):
+            self.assertEqual(self._get(make_admin(role, owning_org=self.org)).status_code, 403)
+
+    def test_a_person_moved_to_another_organisation_shows_none_of_the_old_ones_history(self):
+        # A cancelled invite re-sent into another organisation reuses the row (`bring_back`).
+        moved = make_admin('finance', owning_org=self.org)
+        _patch(self.org_admin, moved, ['spending', 'payments_approve'])
+        PartnerAdmin.objects.filter(pk=moved.pk).update(owning_organisation=self.other)
+        their_lead = make_admin('org_admin', owning_org=self.other)
+        res = self._get(their_lead, moved)
+        self.assertEqual(res.json()['history'], [])
+        self.assertNotIn(self.org_admin.email, str(res.content))
+
+    def test_a_revoked_person_still_shows_their_history(self):
+        gone = make_admin('reviewer', owning_org=self.org)
+        _patch(self.org_admin, gone, ['review', 'spending'])
+        PartnerAdmin.objects.filter(pk=gone.pk).update(is_active=False)
+        body = self._get(self.org_admin, gone).json()
+        self.assertEqual((body['is_active'], len(body['history'])), (False, 1))
+        self.assertEqual(body['history'][0]['added'], ['spending'])

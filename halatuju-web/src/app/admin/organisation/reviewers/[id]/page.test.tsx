@@ -16,7 +16,8 @@ jest.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) =>
     <a href={href}>{children}</a>,
 }))
-jest.mock('next/navigation', () => ({ useParams: () => ({ id: '5' }) }))
+let mockParamId = '5'
+jest.mock('next/navigation', () => ({ useParams: () => ({ id: mockParamId }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
@@ -55,6 +56,7 @@ const DETAIL = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockParamId = '5'
   viewerRole = { role: 'org_admin' }
   mockApi.getReviewerDetail.mockResolvedValue(DETAIL)
 })
@@ -230,6 +232,14 @@ describe('the role gate and failure', () => {
        expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
      })
 
+  it('says not found, never loads for ever, for an address that is not a number', async () => {
+    // `reviewers/admins` with no id falls through to this page (2026-10-22).
+    mockParamId = 'admins'
+    render(<AdminReviewerDetailPage />)
+    await waitFor(() => expect(screen.getByTestId('record-not-found')).toBeTruthy())
+    expect(mockApi.getReviewerDetail).not.toHaveBeenCalled()
+  })
+
   it('links back to the list it came from', async () => {
     await loaded()
     expect(screen.getByText('← admin.reviewers.detail.back').closest('a')!
@@ -315,23 +325,46 @@ describe('which gift a reviewer covers', () => {
 })
 
 describe('#39 Sprint 4: the permission card, and Pause on the target rule of the server', () => {
-  it('shows the organisation admin the card for this person', async () => {
+  // 2026-10-22 (owner's option A): the card lives on a Permissions TAB, beside Profile.
+  afterEach(() => { window.history.replaceState(null, '', '/') })
+
+  it('gives the organisation admin a Profile | Permissions bar, opening on Profile', async () => {
     await loaded()
+    const tabs = screen.getAllByRole('tab').map((b) => b.textContent)
+    expect(tabs).toEqual(['admin.person.tabProfile', 'admin.person.tabPermissions'])
+    expect(screen.queryByTestId('perm-editor')).toBeNull()
+    fireEvent.click(screen.getByText('admin.person.tabPermissions'))
     expect(screen.getByTestId('perm-editor').textContent).toBe('5')
+    // The Profile content steps aside while the card is open, and the address says which tab.
+    expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
+    expect(window.location.hash).toBe('#permissions')
+    fireEvent.click(screen.getByText('admin.person.tabProfile'))
+    expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy()
+    expect(window.location.hash).toBe('')
   })
 
-  it('shows a super the card too', async () => {
+  it('opens straight on Permissions from #permissions', async () => {
+    window.history.replaceState(null, '', '/x#permissions')
+    mockApi.getReviewerDetail.mockResolvedValue(DETAIL)
+    render(<AdminReviewerDetailPage />)
+    await waitFor(() => expect(screen.getByTestId('perm-editor')).toBeTruthy())
+  })
+
+  it('shows a super the tab too', async () => {
     viewerRole = { role: 'reviewer', is_super_admin: true }
     await loaded()
+    fireEvent.click(screen.getByText('admin.person.tabPermissions'))
     expect(screen.getByTestId('perm-editor')).toBeTruthy()
   })
 
-  it('never shows a plain admin or finance the card', async () => {
+  it('never shows a plain admin or finance the card — and draws no tab bar at all', async () => {
+    window.history.replaceState(null, '', '/x#permissions')       // even when asked by the address
     for (const r of ['admin', 'finance']) {
       viewerRole = { role: r }
       const { unmount } = render(<AdminReviewerDetailPage />)
       await waitFor(() => expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy())
       expect(screen.queryByTestId('perm-editor')).toBeNull()
+      expect(screen.queryByRole('tablist')).toBeNull()
       unmount()
     }
   })

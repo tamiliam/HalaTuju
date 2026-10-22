@@ -12,8 +12,12 @@ answerable next year — the reasoning behind `guardian_contact_changes`. The `A
 staff_permissions_changed` line is written as well.
 
 ⚠ SET_NULL, NEVER CASCADE: deleting a staff row (only ever one with no recorded work) keeps its
-history, and `target_email` still names who it was about. Nothing reads this table through the API
-yet; the Django admin and the database are its readers.
+history, and `target_email` still names who it was about.
+
+READERS: the person page's "Changes" list, through `GET admin/admins/<id>/permissions/`
+(`views_admin/staff.py` `_permission_history`, 2026-10-22) — the latest rows for a LIVE target
+only, and never a super's address to an organisation; the Django admin and the database read the
+rest.
 """
 from django.db import models
 

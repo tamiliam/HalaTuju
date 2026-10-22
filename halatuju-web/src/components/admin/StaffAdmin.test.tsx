@@ -156,7 +156,7 @@ describe('the row actions (2026-09-09)', () => {
   })
 })
 
-describe('#39 Sprint 4: permission chips and the Permissions action', () => {
+describe('#39 Sprint 4: permission chips, and the name that opens the person page', () => {
   const act = (rows: AdminItem[], on: Partial<Parameters<typeof StaffTable>[0]> = {}) => {
     const r = render(<StaffTable rows={rows} canAct {...on} />)
     return within(r.container.querySelector('[data-testid="table-scroller"]') as HTMLElement)
@@ -171,21 +171,22 @@ describe('#39 Sprint 4: permission chips and the Permissions action', () => {
     expect(t.getByText('+ admin.perm.spending.name')).toBeTruthy()
   })
 
-  it('offers Permissions on an active TEAM member only — never an org admin or a revoked row', () => {
-    const onPermissions = jest.fn()
-    const t = act([row({ id: 31, name: 'Admin A', role: 'admin' }),
-                   row({ id: 32, name: 'Lead', role: 'org_admin' }),
-                   row({ id: 33, name: 'Gone', role: 'finance', is_active: false }),
-                   row({ id: 34, name: 'Fin', role: 'finance' })],
-                  { onPermissions })
-    const buttons = t.getAllByText('admin.permEditor.open')
-    expect(buttons.length).toBe(2)
-    buttons[1].click()
-    expect(onPermissions).toHaveBeenCalledWith(expect.objectContaining({ id: 34 }))
+  it('links a name only where the page gives an address, on the table AND the phone card', () => {
+    // 2026-10-22: a team member's permissions live on their own page; the PAGE decides who links.
+    const nameHref = (a: AdminItem) => (a.role === 'admin' ? `/people/${a.id}` : null)
+    const r = render(<StaffTable rows={[row({ id: 31, name: 'Admin A', role: 'admin' }),
+                                        row({ id: 32, name: 'Lead', role: 'org_admin' })]}
+      canAct nameHref={nameHref} />)
+    const table = within(r.container.querySelector('[data-testid="table-scroller"]') as HTMLElement)
+    expect(table.getByText('Admin A').closest('a')?.getAttribute('href')).toBe('/people/31')
+    expect(table.getByText('Lead').closest('a')).toBeNull()
+    const cards = within(r.getByTestId('staff-cards'))
+    expect(cards.getByText('Admin A').closest('a')?.getAttribute('href')).toBe('/people/31')
+    expect(cards.getByText('Lead').closest('a')).toBeNull()
   })
 
-  it('offers no Permissions when the page passes no handler (a viewer who cannot act)', () => {
-    const t = act([row({ id: 35, name: 'Admin B', role: 'admin' })])
-    expect(t.queryByText('admin.permEditor.open')).toBeNull()
+  it('draws every name as plain text when the page passes no addresses (the platform screens)', () => {
+    const r = render(<StaffTable rows={[row({ id: 35, name: 'Admin B', role: 'admin' })]} canAct />)
+    expect(r.container.querySelector('a')).toBeNull()
   })
 })

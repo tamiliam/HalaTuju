@@ -27,8 +27,8 @@ import { byCategory } from '@/lib/adminStaff'
 import { switchableTo } from '@/lib/staffRole'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
-import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
 import PermissionChips from '@/components/admin/PermissionChips'
+import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 // Organisation → **People**: the directory of everybody who is already in.
 //
@@ -93,9 +93,13 @@ export default function AdminReviewersList() {
   // The admin whose delete is being confirmed (typed confirmation, 2026-10-09). Null = closed.
   const [deleting, setDeleting] = useState<AdminItem | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
-  // The admin whose permissions are open (#39 Sprint 4). Null = closed. A reviewer's live on their
-  // own page; an admin or finance person has no page of their own, so theirs opens here.
-  const [permFor, setPermFor] = useState<AdminItem | null>(null)
+  // ⚠ A TEAM MEMBER'S PERMISSIONS LIVE ON THEIR OWN PAGE (2026-10-22, owner's option A). The
+  // Admins tab used to open the card above this list; now the NAME opens the person's page, which
+  // has a Permissions tab — the same place a reviewer's are. Only where the viewer may manage, and
+  // only for a team member who is not revoked: an organisation admin's set is fixed.
+  const personHref = (a: AdminItem) =>
+    a.is_active && a.manageable !== false && (TEAM_ROLES as readonly string[]).includes(a.role)
+      ? `/admin/organisation/reviewers/admins/${a.id}` : null
   // Which reviewer row is mid-revoke. The staff actions carry their own busy id from the hook;
   // the reviewers table acts on the same endpoint but keeps its own list, so it needs its own.
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -209,18 +213,6 @@ export default function AdminReviewersList() {
 
       {panel === 'admins' && (<>
         <MessageBanner message={staffMessage} />
-        {permFor && token && (
-          <div className="mb-4">
-            <div className="mb-1 flex justify-end">
-              <button type="button" onClick={() => setPermFor(null)}
-                className="text-xs font-medium text-primary-600 hover:text-primary-800">
-                {t('admin.permEditor.close')}
-              </button>
-            </div>
-            <LazyPermissionEditor key={permFor.id} adminId={permFor.id} name={permFor.name}
-              token={token} onSaved={reloadStaff} />
-          </div>
-        )}
         {/* The SAME table the platform's two staff screens use — one component, so a third copy
             of "who is in, and may I switch them off" cannot drift from the other two. It already
             knows that revoked beats paused, and already draws phone cards. */}
@@ -229,7 +221,7 @@ export default function AdminReviewersList() {
           onToggle={canManage ? toggle : undefined}
           onDelete={canManage ? setDeleting : undefined}
           onChangeRole={canManage ? changeRole : undefined}
-          onPermissions={canManage ? setPermFor : undefined}
+          nameHref={canManage ? personHref : undefined}
           soleOrgAdmin={soleOrgAdmin} />
         {deleting && (
           <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}

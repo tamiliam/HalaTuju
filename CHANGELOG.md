@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team — permissions on each person's own page - 2026-10-22
+
+Team: every team member's permissions now live on their own page, on a Permissions tab, with the
+history of changes. Owner-approved mock (option A). No migration. Own clean-up work, not billed.
+
+- **API:** the existing `GET admin/admins/<id>/permissions/` (same super / org_admin fence, 404 outside)
+  also serves the page header (`email`, `created_at`, `signed_in`, `paused`) and `history`: the
+  person's latest 20 `StaffPermissionChange` rows, newest first (`kind`, `role`, `before`, `after`,
+  `added`, `removed`, `at`, `by`, `by_super`). A change made by a super comes back as `by_super` with
+  `by` blank to an organisation (the screen says "the HalaTuju team"); anyone else is named from their
+  staff row in the person's organisation, or by the address recorded. No new endpoint.
+- **Web:** new page `/admin/organisation/reviewers/admins/[id]` for Admin and Finance people (header,
+  one "Permissions" tab, "← Team" back to the Admins tab); the reviewer page gains a Profile |
+  Permissions bar for super / org_admin (`#permissions` opens it). On the Admins tab the Permissions
+  button and the card above the list are gone; an active team member's NAME links to their page
+  (`StaffTable` `nameHref`, absent on the platform staff screens). New `PermissionHistory.tsx`
+  ("Changes") is rendered by `PermissionEditor` inside its lazy chunk and re-read after each save.
+- **Adversarial review fixes:** the history shows only rows of the person's CURRENT organisation (a
+  cancelled invite re-sent into another organisation reuses the staff row, and `target=` alone showed
+  the new organisation the old one's changes and admin addresses); a non-number reviewer address
+  (the bare `reviewers/admins`) says "not found" instead of loading for ever. Regression test each.
+- **i18n:** `admin.person.*` and `admin.permHistory.*` in en/ms/ta (ms/ta first drafts, to tag in Sol);
+  `admin.permEditor.open` / `.close` removed.
+- **Guide/FAQ:** *Changing what someone can do* and the org-admin FAQ now point to the person's page.
+- **Tests:** api 8572 passed / 3 skipped (+6 `TestPersonPageReadsTheHistory`); jest 4394 / 273 suites
+  (new admin page test 8; editor history 5; reviewer page tabs; StaffTable name links; Admins tab 4).
+- **Bundle:** `/admin/organisation/reviewers` 188 kB, `/reviewers/[id]` 177 kB, new
+  `/reviewers/admins/[id]` 175 kB; median 178.647 kB (1.4 kB under 180); budget ok.
+
 ## Request #39, Sprint 4 of 4 — the permission editor on People - 2026-10-21
 
 Built on branch `perm-s4` (base `cd9b69ea`, Sprints 1-3 and TD-360 live). Commit `a6cc35d1`. **Not pushed,

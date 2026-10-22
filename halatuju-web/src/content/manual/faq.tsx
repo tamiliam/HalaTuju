@@ -241,10 +241,11 @@ export const FAQ: Record<Audience, QA[]> = {
   org_admin: [
     {
       q: <>How do I let somebody do more (or less) than their role?</>,
-      a: <>On <strong>People</strong>, open a reviewer&rsquo;s page, or press <strong>Permissions</strong> beside
-        an admin. Switch permissions on or off, read the line underneath &mdash; it says what saving would do
-        &mdash; and press <strong>Save changes</strong>. <strong>Reset</strong> returns them to their role&rsquo;s
-        usual set. See <em>Changing what someone can do</em> in your chapter of the Guide.</>,
+      a: <>On <strong>Team</strong>, click the person&rsquo;s name (on the Reviewers or the Admins tab) and open
+        the <strong>Permissions</strong> tab on their page. Switch permissions on or off, read the line underneath
+        &mdash; it says what saving would do &mdash; and press <strong>Save changes</strong>. <strong>Reset</strong>
+        returns them to their role&rsquo;s usual set, and <strong>Changes</strong> underneath lists who changed
+        what, and when. See <em>Changing what someone can do</em> in your chapter of the Guide.</>,
     },
     {
       q: <>Why can&rsquo;t I switch off <strong>Review assigned students</strong> for somebody?</>,
@@ -255,7 +256,7 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Somebody&rsquo;s permissions changed when I changed their role. Why?</>,
       a: <>A changed set was chosen on top of the OLD role, so <strong>Change role</strong> puts it back to the
-        new role&rsquo;s usual set; the question says so before you answer. Open their permissions again to
+        new role&rsquo;s usual set; the question says so before you answer. Open the <strong>Permissions</strong> tab on their page to
         add anything back.</>,
     },
     {

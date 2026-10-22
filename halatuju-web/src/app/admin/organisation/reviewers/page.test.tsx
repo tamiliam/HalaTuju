@@ -300,6 +300,45 @@ describe('the Admins tab (2026-09-09)', () => {
   })
 })
 
+describe('the Admins tab: a team member\'s name opens their page (2026-10-22)', () => {
+  // Permissions live on the person's own page now, not in a card above this list.
+  const WITH_ADMIN = [...ADMINS, { id: 14, name: 'Arun Pillai', email: 'arun@example.org',
+    role: 'admin', is_active: true, is_super_admin: false, org_name: null,
+    created_at: '2026-01-01T00:00:00Z' }] as unknown as api.AdminItem[]
+  const hrefOf = (name: string) =>
+    within(table()).getByText(name).closest('a')?.getAttribute('href') ?? null
+
+  const openAdmins = async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: WITH_ADMIN })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Arun Pillai').length).toBeGreaterThan(0))
+  }
+
+  it('links an active Admin to /admin/organisation/reviewers/admins/<id>', async () => {
+    await openAdmins()
+    expect(hrefOf('Arun Pillai')).toBe('/admin/organisation/reviewers/admins/14')
+  })
+
+  it('⚠ leaves an organisation admin and a revoked person as plain text', async () => {
+    await openAdmins()
+    expect(hrefOf('Dina Ismail')).toBeNull()                 // org_admin: a fixed lead tier
+    expect(hrefOf('Shanti Subramaniam')).toBeNull()          // revoked finance
+  })
+
+  it('⚠ links nobody for a viewer who may not manage (finance)', async () => {
+    viewerRole = { role: 'finance' }
+    await openAdmins()
+    expect(hrefOf('Arun Pillai')).toBeNull()
+  })
+
+  it('no longer offers a Permissions button or a card above the list', async () => {
+    await openAdmins()
+    expect(screen.queryByText('admin.permEditor.open')).toBeNull()
+    expect(screen.queryByTestId('permission-editor')).toBeNull()
+  })
+})
+
 describe('what the reviewers table gained (2026-09-09)', () => {
   it('says when somebody was last here', async () => {
     await loaded()

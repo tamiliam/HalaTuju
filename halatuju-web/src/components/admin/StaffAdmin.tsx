@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 import {
@@ -12,7 +13,6 @@ import PermissionChips from '@/components/admin/PermissionChips'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { switchableTo, workSummary } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
-import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 /**
  * Everything the four staff-facing pages share, in one place.
@@ -56,7 +56,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, onPermissions, soleOrgAdmin }: {
+                             onDelete, onChangeRole, nameHref, soleOrgAdmin }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -67,9 +67,10 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   onDelete?: (a: AdminItem) => void
   /** Switch within the pair (`lib/staffRole`). Offered only where a switch exists. */
   onChangeRole?: (a: AdminItem) => void
-  /** Open "What <name> can do" (#39 Sprint 4). Offered on a TEAM member's row only — an
-   *  organisation admin's lead tier is fixed, and the server refuses it anyway. */
-  onPermissions?: (a: AdminItem) => void
+  /** Where the row's NAME links to, or null for plain text (2026-10-22: a team member's permissions
+   *  live on their own page, so the name opens it). Absent = every name is plain text, which is
+   *  what the platform's staff screens draw. The page decides which rows qualify. */
+  nameHref?: (a: AdminItem) => string | null
   /** The sole active org_admin of a tenant cannot be revoked — the backend enforces it; this
    *  just keeps a dead affordance off the screen. */
   soleOrgAdmin?: (a: AdminItem) => boolean
@@ -143,14 +144,17 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             {t('admin.changeRole')}
           </button>
         )}
-        {onPermissions && a.is_active && (TEAM_ROLES as readonly string[]).includes(a.role) && (
-          <button disabled={busyId === a.id} onClick={() => onPermissions(a)}
-            className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
-            {t('admin.permEditor.open')}
-          </button>
-        )}
       </div>
     )
+  }
+
+  /** The name, as a link to the person's page when the page offers one for this row; otherwise
+   *  exactly what the row drew before (`plain`). */
+  const nameOf = (a: AdminItem, link: string, plain: React.ReactNode) => {
+    const href = nameHref?.(a)
+    return href
+      ? <Link href={href} className={`${link} text-primary-600 hover:text-primary-800`}>{a.name}</Link>
+      : plain
   }
 
   return (
@@ -166,7 +170,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
           <div key={a.id} className="rounded-xl border border-ground-200 bg-ground-0 p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <span className="block text-sm font-semibold text-ground-900">{a.name}</span>
+                {nameOf(a, 'block text-sm font-semibold',
+                  <span className="block text-sm font-semibold text-ground-900">{a.name}</span>)}
                 <span className="block truncate text-[11px] text-ground-500">{a.email}</span>
                 {showOrg && (
                   <span className="block text-[11px] text-ground-400">{a.owning_org_name || '—'}</span>
@@ -210,7 +215,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
         <tbody className="divide-y">
           {rows.map((a) => (
             <tr key={a.id}>
-              <td className="px-4 py-3">{a.name}</td>
+              <td className="px-4 py-3">{nameOf(a, 'font-medium', a.name)}</td>
               <td className="px-4 py-3 text-ground-500">{a.email}</td>
               {showOrg && <td className="px-4 py-3 text-ground-500">{a.owning_org_name || '—'}</td>}
               <td className="px-4 py-3">

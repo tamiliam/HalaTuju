@@ -11,6 +11,7 @@ import {
 } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import RecordState from '@/components/admin/RecordState'
+import PanelTabs from '@/components/admin/PanelTabs'
 import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
 import {
   credentialLines, displayPhone, hasNoHistory, orderedLanguages, outcomeSegments, phoneState,
@@ -115,7 +116,10 @@ export default function AdminReviewerDetailPage() {
   const mayGift = mayManage
 
   const load = useCallback(() => {
-    if (!token || !id) return
+    // A segment that is not a number (e.g. the bare `reviewers/admins` folder of the admin person
+    // page) can name no reviewer: say "not found" instead of loading for ever.
+    if (!Number.isInteger(id) || id <= 0) { setLoadFailed(true); return }
+    if (!token) return
     getReviewerDetail(id, { token })
       .then(setDetail)
       .catch(() => setLoadFailed(true))
@@ -123,6 +127,23 @@ export default function AdminReviewerDetailPage() {
   }, [token, id])
 
   useEffect(() => { load() }, [load])
+
+  // ── Profile | Permissions (2026-10-22, the owner's option A). The permission card used to sit
+  // above the outcomes for whoever may manage; it is now a tab, the same place an admin's lives
+  // (`reviewers/admins/[id]`). `#permissions` opens it directly. Read after mount: the hash does not
+  // exist on the server pass, and reading it during render would mismatch the hydration.
+  const [tab, setTab] = useState<'profile' | 'permissions'>('profile')
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#permissions') setTab('permissions')
+  }, [])
+  const selectTab = (k: 'profile' | 'permissions') => {
+    setTab(k)
+    // Keep the address in step, so a reload or a copied link lands on the same tab.
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '',
+        `${window.location.pathname}${window.location.search}${k === 'permissions' ? '#permissions' : ''}`)
+    }
+  }
 
   if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!detail) return <RecordState loading={!loadFailed} />
@@ -272,13 +293,25 @@ export default function AdminReviewerDetailPage() {
 
       </section>
 
+      {/* ── The tabs. Only somebody who may manage sees Permissions, and with one tab there is no
+          bar at all — an `admin` or `finance` reader sees the profile exactly as before. */}
+      {mayManage && (
+        <PanelTabs ariaLabelKey="admin.person.tabsAria" active={tab}
+          onSelect={(k) => selectTab(k as 'profile' | 'permissions')}
+          tabs={[
+            { key: 'profile', labelKey: 'admin.person.tabProfile' },
+            { key: 'permissions', labelKey: 'admin.person.tabPermissions' },
+          ]} />
+      )}
+
       {/* ── What this person can do (#39 Sprint 4) — the organisation admin's (or a super's) card.
           Its own chunk, and its own request: the server says whether the row is editable at all. */}
-      {mayManage && token && (
+      {mayManage && token && tab === 'permissions' && (
         <LazyPermissionEditor adminId={detail.id} name={detail.name || detail.email} token={token}
           onSaved={load} />
       )}
 
+      {(!mayManage || tab === 'profile') && (<>
       {/* ── 2. Outcomes | About, side by side ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-3.5">
         <Block title={t('admin.reviewers.detail.outcomes')}
@@ -387,6 +420,7 @@ export default function AdminReviewerDetailPage() {
           </ul>
         )}
       </Block>
+      </>)}
     </div>
   )
 }

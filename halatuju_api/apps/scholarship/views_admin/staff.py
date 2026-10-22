@@ -75,7 +75,9 @@ class AdminStaffPermissionsView(_AdminBase):
     """GET / PATCH admin/admins/<id>/permissions/ — what one person may do (request #39 Sprint 4).
 
     GET serves the editor: the person's preset, their RESOLVED set, whether it is custom, and the
-    keys the editor may show. PATCH ``{permissions: [...], dry_run?}`` saves a new set; with
+    keys the editor may show — plus, since 2026-10-22, the person page's header (email, joined,
+    signed in, paused) and the latest ``history`` rows, so the page and its "Changes" list need no
+    second request. PATCH ``{permissions: [...], dry_run?}`` saves a new set; with
     ``dry_run: true`` it answers what the save WOULD do (``added`` / ``removed`` / ``consequences``)
     without writing, and refuses exactly as the save would — the screen's consequence line reads it.
 
@@ -113,9 +115,15 @@ class AdminStaffPermissionsView(_AdminBase):
                     and target.is_active)
         return Response({'id': target.pk, 'name': target.name, 'role': target.role,
                          'is_active': target.is_active, 'editable': editable,
+                         # The person page's header (Team → a person → Permissions, 2026-10-22).
+                         'email': target.email, 'created_at': target.created_at,
+                         'signed_in': target.first_seen_at is not None,
+                         'paused': target.paused_at is not None,
                          'preset': list(sp.preset_for(target.role)),
                          'permissions': list(sp.resolve(target)),
-                         'custom': sp.is_custom(target), 'keys': list(spa.editable_keys())})
+                         'custom': sp.is_custom(target), 'keys': list(spa.editable_keys()),
+                         'history': _permission_history(target, admin)})
+
 
     def patch(self, request, admin_id):
         from .. import staff_permissions_admin as spa
@@ -141,3 +149,43 @@ class AdminStaffPermissionsView(_AdminBase):
                          'changed': plan['changed'], 'permissions': plan['after'],
                          'custom': plan['custom'], 'added': plan['added'],
                          'removed': plan['removed'], 'consequences': plan['consequences']})
+
+
+#: How many history rows the person page shows. The table keeps every row; the screen the latest.
+HISTORY_LIMIT = 20
+
+
+def _permission_history(target, viewer):
+    """The target's `StaffPermissionChange` rows, newest first, worded-ready for the screen.
+
+    ⚠ A SUPER'S ADDRESS IS NOT SHOWN TO AN ORGANISATION. A change made by the HalaTuju team comes back
+    as ``by_super: true`` with ``by`` blank unless the viewer is a super too; the screen says "the
+    HalaTuju team". Anybody else is named from their staff row in the TARGET's organisation, or by
+    the address recorded at the time when that row is gone or elsewhere.
+
+    ⚠ ONLY THE TARGET'S CURRENT ORGANISATION'S ROWS. A cancelled invite re-sent into ANOTHER
+    organisation reuses the same staff row (`staff_reinvite.bring_back`), so `target=` alone would
+    show the new organisation the old one's changes and its admins' addresses (review, 2026-10-22)."""
+    from apps.courses.models import PartnerAdmin
+    from ..models import StaffPermissionChange
+    rows = list(StaffPermissionChange.objects.filter(
+        target=target, organisation_id=target.owning_organisation_id)
+        .order_by('-created_at', '-id')[:HISTORY_LIMIT])
+    emails = {r.changed_by_email for r in rows if r.changed_by_email and r.changed_by_role != 'super'}
+    names = {}
+    if emails and target.owning_organisation_id is not None:
+        names = {a.email.lower(): a.name for a in PartnerAdmin.objects.filter(
+            email__in=emails, owning_organisation_id=target.owning_organisation_id) if a.name}
+    out = []
+    for r in rows:
+        before, after = list(r.before or []), list(r.after or [])
+        by_super = r.changed_by_role == 'super'
+        if by_super:
+            by = (r.changed_by_email or '') if viewer.is_super else ''
+        else:
+            by = names.get((r.changed_by_email or '').lower(), r.changed_by_email or '')
+        out.append({'kind': r.kind, 'role': r.role, 'before': before, 'after': after,
+                    'added': [k for k in after if k not in before],
+                    'removed': [k for k in before if k not in after],
+                    'at': r.created_at, 'by': by, 'by_super': by_super})
+    return out

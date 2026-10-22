@@ -6,9 +6,10 @@
  * all students, a "Custom" chip and "changed" markers, a consequence line worded from the SERVER's
  * dry run (never re-derived here), the server's refusal shown as it is, Save and Reset.
  */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import PermissionEditor from './PermissionEditor'
 import * as api from '@/lib/admin-api/admins'
+import { formatDateTime } from '@/lib/formatDate'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({
@@ -187,4 +188,65 @@ it('says so when the permissions cannot be loaded', async () => {
   mockApi.getStaffPermissions.mockRejectedValue(new Error('404'))
   render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
   await waitFor(() => expect(screen.getByText('admin.permEditor.loadFailed(name=Rohini)')).toBeTruthy())
+})
+
+// ── Changes (2026-10-22): the history under the card, from the SAME GET ─────────────────────────
+const AT = '2026-10-20T09:15:00Z'
+const change = (over: Partial<api.StaffPermissionChangeRow>): api.StaffPermissionChangeRow => ({
+  kind: 'edit', role: 'reviewer', before: ['review'], after: ['review'], added: [], removed: [],
+  at: AT, by: 'Priya Lead', by_super: false, ...over,
+})
+
+describe('Changes', () => {
+  it('words each change in plain terms, newest first as served, with who and when', async () => {
+    await open({ ...ROHINI, history: [
+      change({ added: ['spending'], removed: ['payments_approve'] }),
+      change({ kind: 'role_change', role: 'qc', by: '', by_super: true }),
+    ] })
+    const items = within(screen.getByTestId('permission-history')).getAllByRole('listitem')
+    expect(items).toHaveLength(2)
+    expect(items[0].textContent).toContain(
+      'admin.permHistory.on(perm=admin.perm.spending.name) · admin.permHistory.off(perm=admin.perm.payments_approve.name)')
+    expect(items[0].textContent).toContain(`admin.permHistory.byAt(by=Priya Lead;at=${formatDateTime(AT)})`)
+    expect(items[1].textContent).toContain('admin.permHistory.roleReset(role=admin.role.qc)')
+    // A super's change names the team, never an address.
+    expect(items[1].textContent).toContain('by=admin.permHistory.team')
+  })
+
+  it('says there is nothing yet, naming the set the person holds', async () => {
+    await open()                                      // an older api: no `history` at all
+    expect(screen.getByText('admin.permHistory.empty(name=Rohini;role=admin.role.reviewer)')).toBeTruthy()
+  })
+
+  it('re-reads the list after a save, so the new line appears', async () => {
+    mockApi.saveStaffPermissions
+      .mockResolvedValueOnce(plan({ added: ['spending'], permissions: ['review', 'spending'] }))
+      .mockResolvedValueOnce(plan({ dry_run: false, added: ['spending'],
+                                    permissions: ['review', 'spending'], custom: true }))
+    await open()
+    mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, history: [change({ added: ['spending'] })] })
+    fireEvent.click(toggle('spending'))
+    const save = screen.getByText('admin.permEditor.save') as HTMLButtonElement
+    await waitFor(() => expect(save.disabled).toBe(false))
+    await act(async () => { fireEvent.click(save) })
+    await waitFor(() => expect(screen.getByText('admin.permHistory.on(perm=admin.perm.spending.name)'))
+      .toBeTruthy())
+    expect(mockApi.getStaffPermissions).toHaveBeenCalledTimes(2)
+  })
+
+  it('uses the page\'s own GET when it is handed one, and asks nothing more', async () => {
+    render(<PermissionEditor adminId={7} name="Rohini" token="tok"
+      initial={{ ...ROHINI, history: [change({ added: ['spending'] })] }} />)
+    expect(screen.getByTestId('permission-editor')).toBeTruthy()
+    expect(screen.getByText('admin.permHistory.on(perm=admin.perm.spending.name)')).toBeTruthy()
+    expect(mockApi.getStaffPermissions).not.toHaveBeenCalled()
+  })
+
+  it('still shows a revoked person\'s history under the "restore first" line', async () => {
+    mockApi.getStaffPermissions.mockResolvedValue({ ...ROHINI, editable: false, is_active: false,
+      history: [change({ added: ['spending'] })] })
+    render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
+    await waitFor(() => expect(screen.getByTestId('permission-history')).toBeTruthy())
+    expect(screen.getByText('admin.permHistory.on(perm=admin.perm.spending.name)')).toBeTruthy()
+  })
 })

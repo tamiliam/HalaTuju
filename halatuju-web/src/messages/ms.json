@@ -6753,8 +6753,6 @@
       "nothingElse": "Tiada perkara lain yang berubah.",
       "saved": "Disimpan. {name} melihat perubahan pada halaman seterusnya.",
       "loadFailed": "Kebenaran {name} tidak dapat dimuatkan.",
-      "open": "Kebenaran",
-      "close": "Tutup",
       "fixed": "Kebenaran {name} adalah tetap dan tidak boleh diubah di sini.",
       "unlistedHint": "Penilai atau Kawalan mutu mesti mengekalkan “Nilai pelajar yang ditugaskan” atau “Kawalan mutu”. Bagi seseorang yang hanya memerlukan Perbelanjaan atau untuk melihat, jemput mereka sebagai Pentadbir.",
       "restoreFirst": "Akses {name} telah ditarik balik. Pulihkan aksesnya sebelum mengubah apa yang boleh dilakukannya.",
@@ -6768,6 +6766,23 @@
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama."
       }
+    },
+    "person": {
+      "back": "Pasukan",
+      "tabsAria": "Panel individu",
+      "tabProfile": "Profil",
+      "tabPermissions": "Kebenaran",
+      "invited": "Dijemput, belum ada log masuk direkodkan",
+      "notAllowed": "Hanya pentadbir organisasi boleh membuka kebenaran ahli pasukan."
+    },
+    "permHistory": {
+      "title": "Perubahan",
+      "on": "{perm} dihidupkan",
+      "off": "{perm} dimatikan",
+      "roleReset": "Diset semula kepada set {role} oleh perubahan peranan",
+      "byAt": "Oleh {by}, {at}",
+      "team": "pasukan HalaTuju",
+      "empty": "Belum ada perubahan. {name} mempunyai set {role}."
     },
     "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu."
   }

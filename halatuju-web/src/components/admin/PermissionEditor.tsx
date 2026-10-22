@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Toggle from '@/components/Toggle'
+import PermissionHistory from './PermissionHistory'
 import { useT } from '@/lib/i18n'
 import {
   getStaffPermissions, saveStaffPermissions,
@@ -22,6 +23,10 @@ import {
  * the one local rule, Quality check needing See all students, only mirrors what the server refuses.
  *
  * Loaded as its own chunk by `LazyPermissionEditor` — most visits to People never open it.
+ *
+ * Under the card, **Changes** (2026-10-22): the same GET's `history`, re-read after every save so the
+ * new line appears. A page that already holds the GET (the admin person page draws its header from
+ * it) passes it as `initial`, and the card asks nothing more until a save.
  */
 
 const STUDENTS = ['review', 'see_all', 'qc']
@@ -34,6 +39,8 @@ export interface PermissionEditorProps {
   token: string
   /** Told after a save lands, so the page can re-read its list (the chips). */
   onSaved?: () => void
+  /** The GET this page already made, so the card does not make it twice. */
+  initial?: StaffPermissionsView
 }
 
 type Refusal = { message: string; code: string }
@@ -41,11 +48,11 @@ type Refusal = { message: string; code: string }
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((k) => b.includes(k))
 
-export default function PermissionEditor({ adminId, name, token, onSaved }: PermissionEditorProps) {
+export default function PermissionEditor({ adminId, name, token, onSaved, initial }: PermissionEditorProps) {
   const { t } = useT()
-  const [view, setView] = useState<StaffPermissionsView | null>(null)
+  const [view, setView] = useState<StaffPermissionsView | null>(initial ?? null)
   const [loadFailed, setLoadFailed] = useState(false)
-  const [want, setWant] = useState<string[]>([])
+  const [want, setWant] = useState<string[]>(initial?.permissions ?? [])
   const [plan, setPlan] = useState<StaffPermissionsPlan | null>(null)
   const [refusal, setRefusal] = useState<Refusal | null>(null)
   const [busy, setBusy] = useState(false)
@@ -54,12 +61,13 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
   const asked = useRef(0)
 
   useEffect(() => {
+    if (initial) return
     let live = true
     getStaffPermissions(adminId, { token })
       .then((v) => { if (live) { setView(v); setWant(v.permissions) } })
       .catch(() => { if (live) setLoadFailed(true) })
     return () => { live = false }
-  }, [adminId, token])
+  }, [adminId, token, initial])
 
   const dirty = !!view && !sameSet(want, view.permissions)
 
@@ -93,10 +101,16 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
   if (!view) return null
   const who = view.name || name
   const preset = t(`admin.role.${view.role}`)
+  // `?? []`: an api a few minutes behind this page serves no history yet; the list says "none".
+  const history = <PermissionHistory rows={view.history ?? []} name={who} role={view.role} />
   if (!view.editable) {
-    // A revoked person is not editable (review fix 8): say how to get there, draw no dead switches.
-    return <p className="text-sm text-ground-500">{t(view.is_active ? 'admin.permEditor.fixed'
-      : 'admin.permEditor.restoreFirst', { name: who })}</p>
+    // A revoked person is not editable (review fix 8): say how to get there, draw no dead switches —
+    // but their history still reads.
+    return (<>
+      <p className="text-sm text-ground-500">{t(view.is_active ? 'admin.permEditor.fixed'
+        : 'admin.permEditor.restoreFirst', { name: who })}</p>
+      {history}
+    </>)
   }
 
   const save = async () => {
@@ -107,6 +121,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
       setWant(p.permissions)
       setSaved(true)
       onSaved?.()
+      // Re-read for the Changes list: the new line is the server's, with its own time and author.
+      // A failed re-read leaves the saved card as it is — the save itself has landed.
+      getStaffPermissions(adminId, { token })
+        .then((v) => setView((cur) => (cur ? { ...cur, history: v.history } : cur)))
+        .catch(() => {})
     } catch (e) {
       const err = e as Error & { code?: string }
       setRefusal({ message: err.message, code: err.code ?? '' })
@@ -169,7 +188,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
     && !want.includes('review') && !want.includes('qc')
   const text = line()
 
-  return (
+  return (<>
     <section className="rounded-xl border bg-ground-0 px-4 py-4 shadow-sm sm:px-5"
       aria-labelledby={`perm-editor-${adminId}`} data-testid="permission-editor">
       <div className="flex flex-wrap items-center gap-2">
@@ -219,5 +238,6 @@ export default function PermissionEditor({ adminId, name, token, onSaved }: Perm
       </div>
       <p className="mt-3 text-xs text-ground-500">{t('admin.permEditor.footnote')}</p>
     </section>
-  )
+    {history}
+  </>)
 }
