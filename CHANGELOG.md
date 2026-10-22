@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: the Applicants Source filter lists only the chosen gift's sources (request #41) - 2026-10-22
+
+Small lane. With one gift chosen, the Source filter listed every source the organisation has.
+- **API:** `GET admin/scholarship/source-names/?programme=<gift code>` (the code the list sends)
+  returns the gift's LINKED sources (switched off since or not) plus any of the gift's organisation's
+  sources one of its applicants answered on the application (`referral_code`, what the filter matches;
+  the profile's chip is not read), applicants read cohort-aware (`programme_student_queryset`). An unknown or
+  another organisation's gift is a 404 (`_gift_narrowing`); a super reads any gift. No `?programme=` is unchanged.
+- **Web:** the Applicants page sends the chosen gift and re-reads on a switch; after a successful read
+  a selected source the new gift lacks (not a fixed choice) falls back to All sources.
+
 ## fix: a gift's "Awarded" count no longer counts an award that fell through - 2026-10-22
 
 Small lane. The Programmes card read 66 against the applicant list's 65: it counted any row with

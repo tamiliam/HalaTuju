@@ -187,15 +187,29 @@ export default function AdminScholarshipList() {
       .catch(() => {})
   }, [token, canAssign])
 
-  // The Source filter and tooltips: the caller's organisation's source names, read once — NOT added
-  // to the list endpoint (pinned at 4 queries). Since sources Sprint C every list role may read
-  // them (reviewer and QC included); on a failure the fixed three and the bare code still render.
+  // The Source filter and tooltips: the source names, read separately — NOT added to the list
+  // endpoint (pinned at 4 queries). Since sources Sprint C every list role may read them (reviewer
+  // and QC included); on a failure the fixed three and the bare code still render.
+  // Request #41: scoped to the chosen gift (the same code the list sends), the names are only THAT
+  // gift's sources — its linked ones plus any its applicants answered — and re-read when the gift
+  // changes. Waits for `urlRead`, like the list, so a shared link never reads the wrong gift's names
+  // first. Only the newest reply lands; after a SUCCESSFUL read, a selected source the new gift does
+  // not have (and that is not one of the fixed three) falls back to All sources. A row whose source
+  // is not in the list keeps falling back to its bare code.
   useEffect(() => {
-    if (!token) return
-    getSourceNames({ token })
-      .then((d) => setSourceNames(Object.fromEntries(d.sources.map((s) => [s.code, s.name]))))
+    if (!token || !mayView || !urlRead) return
+    let current = true
+    getSourceNames({ programme: chosen || undefined }, { token })
+      .then((d) => {
+        if (!current) return
+        const names: Record<string, string> = Object.fromEntries(d.sources.map((s) => [s.code, s.name]))
+        setSourceNames(names)
+        setSource((sel) => (sel && !Object.prototype.hasOwnProperty.call(names, sel)
+          && !(FIXED_REFERRAL_CODES as readonly string[]).includes(sel) ? '' : sel))
+      })
       .catch(() => {})
-  }, [token])
+    return () => { current = false }
+  }, [token, mayView, urlRead, chosen])
   const sourceFilterCodes = [
     ...Object.keys(sourceNames).filter((c) => !(FIXED_REFERRAL_CODES as readonly string[]).includes(c))
       .sort((a, b) => sourceNames[a].localeCompare(sourceNames[b])),

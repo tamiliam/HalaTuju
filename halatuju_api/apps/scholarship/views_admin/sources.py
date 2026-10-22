@@ -214,7 +214,20 @@ class AdminSourceNamesView(_AdminBase):
     open that list may call it — reviewer and QC too, who get 403 on Sources — and it serves names
     only (never a contact, a count or an id). Fenced like Sources: an organisation's staff get
     their own organisation's sources (switched-off ones too, so old applicants stay filterable;
-    an organisation-less caller gets none); a super gets every organisation's, narrowed by `?org=`."""
+    an organisation-less caller gets none); a super gets every organisation's, narrowed by `?org=`.
+
+    `?programme=<gift code>` (request #41, 2026-10-22) — the SAME code the Applications list sends —
+    narrows to THAT gift's sources: every source LINKED to it (a link row exists — switched off in
+    Sources since or not, so old applicants stay filterable), plus any source of the gift's own
+    organisation whose code one of the gift's applicants carries (an unlinked one included; other
+    unlinked sources, switched off or not, are left out). "The gift's applicants" is
+    `programme_student_queryset` — the cohort-aware predicate the list uses; "carries" is the
+    application's own answer (`referral_code`), the field the list's Source filter matches. The
+    student profile's chip (`referral_source`) is deliberately NOT read: a code only on a profile would be an
+    option that can only return 0 rows. Sources are looked up INSIDE the gift's organisation only
+    (codes are unique per organisation). The gift is resolved by `_gift_narrowing`: an unknown or
+    another organisation's gift is a 404 for an organisation's staff, never a leak; a super may
+    name any gift (then `?org=` is not read). No `?programme=` → exactly as before."""
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -222,8 +235,18 @@ class AdminSourceNamesView(_AdminBase):
             return self._deny()
         if self._b40_scope(admin) == 'none':
             return self._deny_role()
+        from django.db.models import Q
         from ..models import ReferralSource
-        if self.has_role(admin, 'super'):
+        from .gifts import programme_student_queryset
+        programme, err = self._gift_narrowing(request, admin)
+        if err:
+            return err
+        if programme is not None:
+            applicants = programme_student_queryset(programme)
+            qs = ReferralSource.objects.owned_by(programme.organisation_id).filter(
+                Q(gift_links__programme=programme)
+                | Q(code__in=applicants.values('referral_code'))).distinct()
+        elif self.has_role(admin, 'super'):
             org, err = self._org_narrowing(request, admin)
             if err:
                 return err

@@ -14,7 +14,7 @@
  * heading SAYS, and what the request CARRIES — because a fix to one without the other leaves the
  * console still describing one gift while listing another's students.
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import AdminScholarshipList from './page'
 import * as api from '@/lib/admin-api'
@@ -172,6 +172,82 @@ describe('the Source filter and tooltips read the registry', () => {
       unmount()
     }
     expect(mockApi.getSources).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * Request #41: scoped to one gift, the Source filter offers only THAT gift's sources (the server
+ * narrows on the same gift code the list sends), re-read when the gift changes. A selected source
+ * the new gift does not have falls back to All sources — only after a successful read.
+ */
+describe('the Source filter follows the chosen gift (request #41)', () => {
+  type Names = Awaited<ReturnType<typeof api.getSourceNames>>
+  const names = (...codes: string[]) => ({ sources: codes.map((c) => ({ code: c, name: c.toUpperCase() })) }) as Names
+  const SABAH = { chosen: 'bp-sabah', programme: { code: 'bp-sabah', name: 'Sabah' } }
+  const FLAGSHIP = { chosen: 'bp-flagship', programme: { code: 'bp-flagship', name: 'Flagship' } }
+  const filter = () => screen.getByTitle('admin.scholarship.allSources') as HTMLSelectElement
+  const lastListSource = () => mockApi.getScholarshipApplications.mock.calls.at(-1)?.[0]?.source
+
+  it('asks for the chosen gift\'s names, and for every source when none is chosen', async () => {
+    scope = SABAH
+    const view = render(<AdminScholarshipList />)
+    await waitFor(() => expect(mockApi.getSourceNames).toHaveBeenCalled())
+    expect(mockApi.getSourceNames.mock.calls[0]).toEqual([{ programme: 'bp-sabah' }, { token: 'tok' }])
+    view.unmount()
+    mockApi.getSourceNames.mockClear()
+    scope = { chosen: '', programme: null }
+    render(<AdminScholarshipList />)
+    await waitFor(() => expect(mockApi.getSourceNames).toHaveBeenCalled())
+    expect(mockApi.getSourceNames.mock.calls[0][0]).toEqual({ programme: undefined })
+  })
+
+  it('re-reads on a gift switch and drops a selected source the new gift does not have', async () => {
+    scope = FLAGSHIP
+    mockApi.getSourceNames.mockResolvedValue(names('pptm', 'smc'))
+    const view = render(<AdminScholarshipList />)
+    await waitFor(() => expect(Array.from(filter().options).map((o) => o.value)).toContain('pptm'))
+    fireEvent.change(filter(), { target: { value: 'pptm' } })
+    await waitFor(() => expect(lastListSource()).toBe('pptm'))
+
+    mockApi.getSourceNames.mockResolvedValue(names('cumig', 'smc'))
+    scope = SABAH
+    view.rerender(<AdminScholarshipList />)
+    await waitFor(() => expect(mockApi.getSourceNames).toHaveBeenLastCalledWith(
+      { programme: 'bp-sabah' }, { token: 'tok' }))
+    await waitFor(() => expect(filter().value).toBe(''))
+    expect(Array.from(filter().options).map((o) => o.value))
+      .toEqual(['', 'cumig', 'smc', 'halatuju', 'social', 'other'])
+    await waitFor(() => expect(lastListSource()).toBeUndefined())
+  })
+
+  it('keeps a selected source the new gift has, and a fixed choice', async () => {
+    for (const kept of ['smc', 'social']) {
+      scope = FLAGSHIP
+      mockApi.getSourceNames.mockResolvedValue(names('pptm', 'smc'))
+      const view = render(<AdminScholarshipList />)
+      await waitFor(() => expect(Array.from(filter().options).map((o) => o.value)).toContain('smc'))
+      fireEvent.change(filter(), { target: { value: kept } })
+      mockApi.getSourceNames.mockResolvedValue(names('cumig', 'smc'))
+      scope = SABAH
+      view.rerender(<AdminScholarshipList />)
+      await waitFor(() => expect(Array.from(filter().options).map((o) => o.value)).toContain('cumig'))
+      expect(filter().value).toBe(kept)
+      view.unmount()
+    }
+  })
+
+  it('a failed read never resets the selected source', async () => {
+    scope = FLAGSHIP
+    mockApi.getSourceNames.mockResolvedValue(names('pptm'))
+    const view = render(<AdminScholarshipList />)
+    await waitFor(() => expect(Array.from(filter().options).map((o) => o.value)).toContain('pptm'))
+    fireEvent.change(filter(), { target: { value: 'pptm' } })
+    mockApi.getSourceNames.mockRejectedValue(new Error('500'))
+    scope = SABAH
+    view.rerender(<AdminScholarshipList />)
+    await waitFor(() => expect(mockApi.getSourceNames).toHaveBeenCalledTimes(2))
+    await act(async () => { await Promise.resolve() })
+    expect(filter().value).toBe('pptm')
   })
 })
 

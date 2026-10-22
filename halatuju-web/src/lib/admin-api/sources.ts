@@ -55,10 +55,14 @@ export async function getSources(options?: ApiOptions) {
  * Source NAMES for the Applications list's Source filter, column and tooltips (sources Sprint C):
  * every list role may call it — reviewer and QC too, who get 403 on `getSources` — and it serves
  * `{code, name}` only, fenced to the caller's organisation (a super: every organisation's).
+ *
+ * `programme` (request #41) — the gift CODE the list sends — narrows to that gift's sources: its
+ * linked ones plus any its applicants answered on their application. Omitted = every source the caller may see, as before.
  */
-export async function getSourceNames(options?: ApiOptions) {
+export async function getSourceNames(filters: { programme?: string } = {}, options?: ApiOptions) {
+  const q = filters.programme ? `?programme=${encodeURIComponent(filters.programme)}` : ''
   return adminFetch<{ sources: { code: string; name: string }[] }>(
-    '/api/v1/admin/scholarship/source-names/', options)
+    `/api/v1/admin/scholarship/source-names/${q}`, options)
 }
 
 export async function createSource(

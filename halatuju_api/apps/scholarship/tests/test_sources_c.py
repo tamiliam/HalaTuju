@@ -218,6 +218,114 @@ class TestSourceNames(_TwoOrganisations):
             self.assertNotIn(planted, body)
 
 
+class TestSourceNamesForOneGift(_TwoOrganisations):
+    """Request #41: `?programme=<gift code>` (the code the Applications list sends) narrows the
+    names to that gift's linked sources plus any its applicants carry — inside the gift's own
+    organisation, fenced like every gift-scoped read (another organisation's gift → 404)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        # A's second gift links only `hss`; `muet` is A's but linked to no gift.
+        cls.gift_a2 = make_programme(organisation=cls.a, code='sc-gift-a2', is_active=True)
+        cls.round_a2 = make_cohort(programme=cls.gift_a2, code='sc-a2-2026', is_open=True,
+                                   is_active=True)
+        cls.hss = make_source(cls.a, 'hss', name='HSS')
+        cls.muet = make_source(cls.a, 'muet', name='MUET')
+        cls.ewrf = make_source(cls.a, 'ewrf', name='EWRF')   # nobody's link, nobody carries it
+        ProgrammeReferralSource.objects.create(programme=cls.gift_a2, source=cls.hss)
+
+    def _codes(self, admin, gift, **extra):
+        resp = authed_client(admin).get(NAMES, {'programme': gift, **extra})
+        self.assertEqual(resp.status_code, 200, resp.content)
+        return [s['code'] for s in resp.json()['sources']]
+
+    def test_only_the_gifts_linked_sources(self):
+        qc = make_admin('qc', owning_org=self.a)
+        self.assertEqual(self._codes(qc, 'sc-gift-a2'), ['hss'])
+        self.assertEqual(self._codes(qc, 'sc-gift-a'), ['cumig', 'pptm', 'smc'])
+
+    def test_an_unlinked_source_an_applicant_answered_is_listed(self):
+        """Her application's answer is what the Source filter matches (`referral_code`)."""
+        make_application('submitted', cohort=self.round_a2, student=make_student(),
+                         referral_code='smc', source=self.smc_a)
+        self.assertEqual(self._codes(make_admin('reviewer', owning_org=self.a), 'sc-gift-a2'),
+                         ['hss', 'smc'])
+
+    def test_an_unlinked_source_only_on_an_applicants_profile_is_not_listed(self):
+        """The live Sabah case: her profile carries `cumig`, her answer was a fixed choice. The
+        filter matches the answer, so `cumig` could only return 0 rows — it is not offered."""
+        make_application('submitted', cohort=self.round_a2,
+                         student=make_student(referral_source='cumig'),
+                         referral_code='social', source=None)
+        self.assertEqual(self._codes(make_admin('admin', owning_org=self.a), 'sc-gift-a2'),
+                         ['hss'])
+
+    def test_another_gifts_applicants_do_not_widen_this_gift(self):
+        make_application('submitted', cohort=self.round_a, student=make_student(),
+                         referral_code='muet', source=self.muet)
+        self.assertEqual(self._codes(make_admin('qc', owning_org=self.a), 'sc-gift-a2'), ['hss'])
+        self.assertIn('muet', self._codes(make_admin('qc', owning_org=self.a), 'sc-gift-a'))
+
+    def test_a_moved_cohorts_applicants_count_for_their_new_gift(self):
+        """The cohort-aware predicate: `ScholarshipApplication.programme` is set once, so an
+        application whose round moved to this gift still counts here."""
+        app = make_application('submitted', cohort=self.round_a, student=make_student(),
+                               referral_code='muet', source=self.muet)
+        self.round_a.programme = self.gift_a2
+        self.round_a.save(update_fields=['programme'])
+        app.refresh_from_db()
+        self.assertEqual(app.programme_id, self.gift_a.pk)            # the stale column
+        self.assertIn('muet', self._codes(make_admin('qc', owning_org=self.a), 'sc-gift-a2'))
+
+    def test_a_carried_code_resolves_inside_the_gifts_organisation_only(self):
+        """B's applicant answered `smc`: B's SMC is named, never A's same-coded one."""
+        make_application('submitted', cohort=self.round_b, student=make_student(),
+                         referral_code='smc', source=self.smc_b)
+        resp = authed_client(make_admin('super', super_admin=True)).get(
+            NAMES, {'programme': 'sc-gift-b'})
+        self.assertEqual(resp.json(), {'sources': [{'code': 'smc', 'name': 'SMC B'}]})
+
+    def test_a_linked_source_switched_off_is_still_listed(self):
+        self.hss.is_active = False
+        self.hss.show_in_apply = False
+        self.hss.save(update_fields=['is_active', 'show_in_apply'])
+        self.assertEqual(self._codes(make_admin('qc', owning_org=self.a), 'sc-gift-a2'), ['hss'])
+
+    def test_an_unlinked_switched_off_source_nobody_carries_is_left_out(self):
+        self.ewrf.is_active = False
+        self.ewrf.save(update_fields=['is_active'])
+        self.assertNotIn('ewrf', self._codes(make_admin('qc', owning_org=self.a), 'sc-gift-a'))
+
+    def test_another_organisations_gift_or_an_unknown_one_is_404(self):
+        for role in ('org_admin', 'admin', 'reviewer', 'qc'):
+            for gift in ('sc-gift-b', 'no-such-gift'):
+                with self.subTest(role=role, gift=gift):
+                    resp = authed_client(make_admin(role, owning_org=self.a)).get(
+                        NAMES, {'programme': gift})
+                    self.assertEqual(resp.status_code, 404)
+                    self.assertNotIn('SMC B', resp.content.decode())
+        self.assertEqual(authed_client(make_admin('reviewer')).get(
+            NAMES, {'programme': 'sc-gift-a'}).status_code, 404)    # organisation-less
+
+    def test_a_super_reads_any_gift(self):
+        sup = make_admin('super', super_admin=True)
+        self.assertEqual(self._codes(sup, 'sc-gift-b'), ['smc'])
+        self.assertEqual(self._codes(sup, 'sc-gift-a2'), ['hss'])
+        self.assertEqual(authed_client(sup).get(NAMES, {'programme': 'nope'}).status_code, 404)
+
+    def test_roles_without_the_list_are_still_refused(self):
+        for role in ('finance', 'partner'):
+            with self.subTest(role=role):
+                self.assertEqual(authed_client(make_admin(role, owning_org=self.a)).get(
+                    NAMES, {'programme': 'sc-gift-a'}).status_code, 403)
+
+    def test_no_programme_is_unchanged(self):
+        codes = [s['code'] for s in authed_client(make_admin('qc', owning_org=self.a))
+                 .get(NAMES).json()['sources']]
+        self.assertEqual(sorted(codes), ['cumig', 'ewrf', 'hss', 'muet', 'pptm', 'smc'])
+
+
 class TestTheApplyFormPrefill(_TwoOrganisations):
     """Owner's ruling 4: a `?ref=` code never pre-fills "Who referred you?"; only her own earlier
     answer to the SAME organisation does."""
