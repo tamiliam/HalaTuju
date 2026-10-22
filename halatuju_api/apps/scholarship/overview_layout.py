@@ -1,10 +1,15 @@
-"""The organisation's Overview layout — which widgets show, and in what order.
+"""The Overview layout — which widgets show, and in what order.
 
-Owner ruling, 2026-09-18 ("Programme Overview phase 2"): the layout is PER ORGANISATION, set by
-the org admin, read by everyone in that organisation. It lives in its own table
-(`OrganisationOverviewLayout`) rather than in `courses.org_config`, because that module is a
-catalogue of integer settings by doctrine — "a catalogue, not a form builder" — and an ordered
-list of switches is exactly the form-builder case it refuses.
+Owner ruling, 2026-09-18 ("Programme Overview phase 2"): the layout was PER ORGANISATION, set by
+the org admin, read by everyone in that organisation. Request #42 (BrightPath, 2026-10-22) made
+it **an organisation default plus a per-gift override**: a gift may hold its own layout
+(`ProgrammeOverviewLayout`); a gift without one shows the organisation's
+(`OrganisationOverviewLayout`), and with neither, `default()`. Two gifts at different stages
+want different panels (`docs/decisions.md`, 2026-10-22). `for_programme` is the one place that
+order of fall-back is spelled. Both live in their own tables rather than in
+`courses.org_config`, because that module is a catalogue of integer settings by doctrine — "a
+catalogue, not a form builder" — and an ordered list of switches is exactly the form-builder
+case it refuses.
 
 ⚠⚠ **THE LAYOUT NARROWS AND ORDERS. IT NEVER WIDENS.** `apply()` takes the sections a ROLE is
 entitled to (`programme_overview.SECTIONS_BY_ROLE`) and returns the subset the organisation has
@@ -78,24 +83,53 @@ def normalised(value):
 
 
 def for_org(org):
-    """The organisation's stored layout, or the default when it has never saved one."""
-    from .models import OrganisationOverviewLayout
+    """The organisation's stored layout, or the default when it has never saved one.
 
-    if org is None:
-        return default()
-    # org-fence: reached by `organisation=org`, and `org` is the caller's own tenant (or the
-    # named gift's owner under the platform scope) — resolved by `programme_overview.build`.
-    stored = (OrganisationOverviewLayout.objects
-              .filter(organisation=org)
-              .values_list('sections', flat=True).first())
+    A row the model's own fence would have refused — only reachable by a hand edit of the
+    table — also falls back to the default: the page is worth more than the preference.
+    """
+    return for_org_with_source(org)[0]
+
+
+def _stored(model, **lookup):
+    """A stored list, normalised, or None when there is no row (or only a hand-broken one)."""
+    # org-fence: `lookup` is one organisation or one gift, already resolved by the caller.
+    stored =model.objects.filter(**lookup).values_list('sections', flat=True).first()
     if not stored:
-        return default()
+        return None
     try:
         return normalised(stored)
     except OverviewLayoutError:
-        # A row the model's own fence would have refused — only reachable by a hand edit of the
-        # table. The page is worth more than the preference, so fall back rather than 500.
-        return default()
+        return None
+
+
+def for_programme_with_source(programme):
+    """`(layout, source)` for one gift: its own row (`'gift'`), else its organisation's
+    (`'organisation'`), else the default (`'default'`). Request #42."""
+    from .models import ProgrammeOverviewLayout
+
+    # org-fence: `programme` was resolved inside the caller's fence (`_gift_narrowing`).
+    own = _stored(ProgrammeOverviewLayout, programme=programme)
+    if own is not None:
+        return own, 'gift'
+    return for_org_with_source(programme.organisation)
+
+
+def for_programme(programme):
+    """The gift's layout — its own, else its organisation's, else the default."""
+    return for_programme_with_source(programme)[0]
+
+
+def for_org_with_source(org):
+    """`(layout, source)` for an organisation: `'organisation'` when it saved one, else
+    `'default'`."""
+    from .models import OrganisationOverviewLayout
+
+    if org is None:
+        return default(), 'default'
+    # org-fence: reached by `organisation=org`, the caller's own tenant (or the gift's owner).
+    stored = _stored(OrganisationOverviewLayout, organisation=org)
+    return (stored, 'organisation') if stored is not None else (default(), 'default')
 
 
 def apply(layout, role_sections):

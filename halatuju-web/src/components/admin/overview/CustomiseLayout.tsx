@@ -26,6 +26,13 @@
  * Save follows the platform's nothing-to-save standard (`SaveBar`): asleep until the list actually
  * differs from what arrived, with the reason one hover away. Every outcome has a line on screen —
  * saved, refused with the offending panel named, or a generic failure. There is no silent branch.
+ *
+ * ⚠⚠ **ON A GIFT, THIS EDITS THAT GIFT ONLY** (request #42, 2026-10-22). With `gift` set, Save
+ * writes the gift's own layout and the heading names the gift; with no gift (the all-gifts page)
+ * it edits the organisation's layout, which is the starting point for every gift without its own.
+ * "Use the organisation layout" deletes the gift's own layout, and is drawn ONLY when the server
+ * said the layout on screen IS the gift's own (`source === 'gift'`) — there is nothing to remove
+ * otherwise.
  */
 import { useEffect, useRef, useState } from 'react'
 
@@ -33,7 +40,8 @@ import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admi
 import { Toggle } from '@/components/sources/shared'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
-import { saveOverviewLayout } from '@/lib/admin-api'
+import { resetOverviewLayout, saveOverviewLayout } from '@/lib/admin-api'
+import type { OverviewLayoutSource } from '@/lib/admin-api'
 import { SECTION_KEYS, isDirty, moveItem, setOn, type LayoutRow } from '@/lib/overviewLayout'
 
 /** ⚠ The i18n guard resolves `${K}.` templates by this LITERAL name. */
@@ -54,9 +62,15 @@ type Outcome =
   | { kind: 'saved' }
   | { kind: 'error' }
   | { kind: 'refused'; code: string; key: string }
+  | { kind: 'resetError' }
 
-export default function CustomiseLayout({ initial, org, onSaved, onCancel }: {
+export default function CustomiseLayout({ initial, gift, source, org, onSaved, onCancel }: {
   initial: LayoutRow[]
+  /** The gift whose Overview this is — Save and reset then act on THAT GIFT only. Absent on the
+   *  all-gifts page, where the organisation's layout (every gift's default) is edited. */
+  gift?: { code: string; name: string }
+  /** Whose layout `initial` is (the payload's `layout_source`). */
+  source?: OverviewLayoutSource
   /** A super's `?org=` override; an org_admin sends nothing and edits their own organisation. */
   org?: string
   onSaved: () => void
@@ -125,7 +139,7 @@ export default function CustomiseLayout({ initial, org, onSaved, onCancel }: {
     setBusy(true)
     try {
       // The WHOLE list, in the order the cards are in — see the module note.
-      await saveOverviewLayout(list, org, { token })
+      await saveOverviewLayout(list, gift ? { programme: gift.code } : { org }, { token })
       setOutcome({ kind: 'saved' })
       onSaved()
     } catch (e) {
@@ -140,10 +154,27 @@ export default function CustomiseLayout({ initial, org, onSaved, onCancel }: {
     }
   }
 
+  /** "Use the organisation layout": delete this gift's own layout. Any unsaved edit on screen is
+   *  dropped with it — the page re-reads and shows the organisation's layout. */
+  const onReset = async () => {
+    if (!token || !gift || busy) return
+    setBusy(true)
+    try {
+      await resetOverviewLayout(gift.code, { token })
+      setOutcome({ kind: 'saved' })
+      onSaved()
+    } catch {
+      setOutcome({ kind: 'resetError' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const statusLine = () => {
     switch (outcome.kind) {
       case 'saved': return t(`${K}.customise.saved`)
       case 'error': return t(`${K}.customise.error`)
+      case 'resetError': return t(`${K}.customise.resetError`)
       case 'refused':
         return t(`${K}.customise.refused`, { name: sectionName(outcome.key) })
       default:
@@ -155,8 +186,23 @@ export default function CustomiseLayout({ initial, org, onSaved, onCancel }: {
 
   return (
     <div className="mt-6" data-testid="customise-layout">
-      <h2 className="text-sm font-semibold text-ground-900">{t(`${K}.customise.title`)}</h2>
-      <p className="mt-1 text-sm text-ground-600">{t(`${K}.customise.hint`)}</p>
+      <h2 className="text-sm font-semibold text-ground-900" data-testid="customise-title">
+        {gift
+          ? t(`${K}.customise.titleGift`, { name: gift.name })
+          : t(`${K}.customise.title`)}
+      </h2>
+      <p className="mt-1 text-sm text-ground-600" data-testid="customise-hint">
+        {t(gift ? `${K}.customise.hintGift` : `${K}.customise.hint`)}
+      </p>
+      {/* Whose layout this gift is showing — so a person knows whether Save creates the gift's
+          own layout or changes one it already has. */}
+      {gift && (
+        <p className="mt-1 text-sm text-ground-600" data-testid="customise-source">
+          {t(source === 'gift'
+            ? `${K}.customise.sourceGift`
+            : `${K}.customise.sourceOrganisation`)}
+        </p>
+      )}
       <p className="mt-1 text-sm text-ground-600">{t(`${K}.customise.orderHint`)}</p>
 
       <ul className="mt-3 space-y-2">
@@ -202,6 +248,13 @@ export default function CustomiseLayout({ initial, org, onSaved, onCancel }: {
       </ul>
 
       <SaveBar status={statusLine()} testId="customise-outcome">
+        {gift && source === 'gift' && (
+          <button type="button" data-testid="reset-layout" disabled={busy}
+            onClick={() => void onReset()}
+            className={SAVE_BAR_SECONDARY}>
+            {t(`${K}.customise.useOrganisation`)}
+          </button>
+        )}
         <button type="button" data-testid="discard-layout" onClick={onCancel}
           className={SAVE_BAR_SECONDARY}>
           {t(`${K}.customise.discard`)}

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #42 — the Overview layout per gift - 2026-10-22
+
+BrightPath's two gifts are at different stages and want different Overview panels. The layout was
+per organisation (2026-09-18); it is now **an organisation default plus a per-gift override**.
+- **API:** new table `programme_overview_layouts` (`ProgrammeOverviewLayout`, one row per gift,
+  same validation as the organisation's; migration `0176`, apply by hand with RLS + one
+  `service_role` policy). `overview_layout.for_programme` = the gift's own, else the organisation's,
+  else the default; `programme_overview.build` uses it when a gift is chosen and adds
+  `layout_source` (`gift` | `organisation` | `default`) beside `layout` for org_admin/super.
+  `admin/scholarship/organisation/overview-layout/` takes `?programme=<gift code>` (via
+  `_gift_narrowing`: another organisation's gift 404, a super any): GET reports `source`, PUT writes
+  the gift's row only, DELETE removes it (DELETE with no gift is 400 `programme_required`). AUDIT
+  lines name the gift id (`overview_layout_set … programme=<id>`, `overview_layout_reset`).
+  Role shaping and `apply()` are unchanged; `mine`/`qc` untouched. No backfill — on go-live every
+  gift shows the organisation layout exactly as before.
+- **Web:** on a gift's Overview, Customise says "Choose the panels for <gift>", saves for that gift
+  only, and offers **Use the organisation layout** when the gift has its own; with no gift chosen it
+  edits the organisation layout, worded as the default for gifts without their own. The page
+  re-reads after a save or reset. New strings in en/ms/ta (admin slice); FAQ + org-admin guide updated.
+- **Docs:** `docs/decisions.md` (2026-10-22 entry), role matrix, `overview_layout` docstring.
+
 ## fix: Request a document explains itself instead of failing silently (request #40) - 2026-10-22
 
 Small lane. At `shortlisted` the cockpit offered Raise a query / Request a document, the API refused

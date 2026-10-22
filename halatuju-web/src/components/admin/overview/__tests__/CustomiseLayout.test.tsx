@@ -13,7 +13,7 @@
  *
  * ⚠ No jest-dom matchers exist in this project: `toBeNull` / `not.toBeNull` / `toEqual`.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import CustomiseLayout from '../CustomiseLayout'
 import * as api from '@/lib/admin-api'
@@ -202,5 +202,86 @@ describe('the save bar', () => {
     const line = await screen.findByTestId('customise-outcome')
     await waitFor(() =>
       expect(line.textContent).toBe('admin.programmeOverview.customise.error'))
+  })
+})
+
+/* ⚠⚠ REQUEST #42 (2026-10-22): ON A GIFT, THE EDITOR ACTS ON THAT GIFT ONLY. The heading names the
+ * gift, Save carries the gift's code, and "Use the organisation layout" appears only when the
+ * layout on screen is the gift's own — on the all-gifts page there is no gift and no reset. */
+describe('on a gift', () => {
+  const GIFT = { code: 'b40-flagship', name: 'Flagship Bursary' }
+  const K = 'admin.programmeOverview.customise'
+
+  beforeEach(() => {
+    mockApi.resetOverviewLayout.mockResolvedValue({ ...STORED, source: 'organisation' })
+  })
+
+  const drawGift = (source: 'gift' | 'organisation' | 'default') => render(
+    <CustomiseLayout initial={LAYOUT()} gift={GIFT} source={source}
+      onSaved={onSaved} onCancel={onCancel} />)
+
+  it('names the gift in the heading and drops the whole-organisation hint', () => {
+    drawGift('organisation')
+    expect(screen.getByTestId('customise-title').textContent).toBe(`${K}.titleGift|Flagship Bursary`)
+    expect(screen.getByTestId('customise-hint').textContent).toBe(`${K}.hintGift`)
+    expect(screen.getByTestId('customise-source').textContent).toBe(`${K}.sourceOrganisation`)
+  })
+
+  it('saves for that gift only', async () => {
+    drawGift('organisation')
+    fireEvent.click(screen.getByRole('switch', { name: NAME('money') }))
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(mockApi.saveOverviewLayout).toHaveBeenCalled())
+    expect(mockApi.saveOverviewLayout.mock.calls[0][1]).toEqual({ programme: 'b40-flagship' })
+  })
+
+  it('hides "Use the organisation layout" when the gift has no layout of its own', () => {
+    drawGift('organisation')
+    expect(screen.queryByTestId('reset-layout')).toBeNull()
+    cleanupAndDraw('default')
+    expect(screen.queryByTestId('reset-layout')).toBeNull()
+  })
+
+  it('offers it on a gift layout, and the press deletes the gift layout and reloads', async () => {
+    drawGift('gift')
+    expect(screen.getByTestId('customise-source').textContent).toBe(`${K}.sourceGift`)
+    const reset = screen.getByTestId('reset-layout')
+    expect(reset.textContent).toBe(`${K}.useOrganisation`)
+    fireEvent.click(reset)
+    await waitFor(() => expect(mockApi.resetOverviewLayout).toHaveBeenCalled())
+    expect(mockApi.resetOverviewLayout.mock.calls[0][0]).toBe('b40-flagship')
+    expect(mockApi.saveOverviewLayout).not.toHaveBeenCalled()
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  })
+
+  it('says so on screen when the reset fails', async () => {
+    mockApi.resetOverviewLayout.mockRejectedValue(new Error('boom'))
+    drawGift('gift')
+    fireEvent.click(screen.getByTestId('reset-layout'))
+    const line = await screen.findByTestId('customise-outcome')
+    await waitFor(() => expect(line.textContent).toBe(`${K}.resetError`))
+    expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  function cleanupAndDraw(source: 'gift' | 'organisation' | 'default') {
+    cleanup()
+    drawGift(source)
+  }
+})
+
+describe('on all gifts (no gift chosen)', () => {
+  it('edits the organisation layout, says it is the default, and offers no reset', async () => {
+    render(<CustomiseLayout initial={LAYOUT()} source="organisation"
+      onSaved={onSaved} onCancel={onCancel} />)
+    expect(screen.getByTestId('customise-title').textContent)
+      .toBe('admin.programmeOverview.customise.title')
+    expect(screen.getByTestId('customise-hint').textContent)
+      .toBe('admin.programmeOverview.customise.hint')
+    expect(screen.queryByTestId('customise-source')).toBeNull()
+    expect(screen.queryByTestId('reset-layout')).toBeNull()
+    fireEvent.click(screen.getByRole('switch', { name: NAME('money') }))
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(mockApi.saveOverviewLayout).toHaveBeenCalled())
+    expect(mockApi.saveOverviewLayout.mock.calls[0][1]).toEqual({ org: undefined })
   })
 })

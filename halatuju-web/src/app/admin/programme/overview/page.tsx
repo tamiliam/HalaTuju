@@ -10,7 +10,7 @@
  * the menu already withholds them from, and a client-side gate is one edit away from being wrong.
  *
  * ⚠⚠ **`sections` IS AN ORDER, NOT A SET** (phase 2). The server narrows the role's sections by the
- * organisation's saved layout and sends them arranged; this page maps that list through
+ * saved layout — the gift's own, else the organisation's (request #42) — and sends them arranged; this page maps that list through
  * `SECTION_RENDERERS` and draws nothing of its own accord. A run of fixed JSX here would be a
  * second spelling of the order — and the one that silently won.
  *
@@ -165,6 +165,11 @@ export default function ProgrammeOverviewPage() {
       {editing && layout && (
         <CustomiseLayout
           initial={layout}
+          // ⚠ THE GIFT IS THE ONE THE PAYLOAD DESCRIBES (request #42): on a gift's Overview,
+          // Save and "Use the organisation layout" act on that gift only; with no gift chosen
+          // the organisation's layout — every gift's default — is edited.
+          gift={data?.programme ?? undefined}
+          source={data?.layout_source}
           onSaved={() => { setCustomising(false); load() }}
           onCancel={() => setCustomising(false)}
         />

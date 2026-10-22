@@ -200,9 +200,11 @@ export const roleOrgAdmin: ManualChapter = {
         part that belongs to their job. Two things on it are yours to set. An <strong>intake year</strong>
         picker at the top narrows every figure on the page to one round &mdash; every figure, the money
         included. And <strong>Customise</strong>, at the top right, lets you switch each panel on or off
-        <em>for your whole organisation</em>: what you hide is hidden for every colleague who would have
-        seen it, in the same order for everybody. A reviewer&rsquo;s own cases and a QC&rsquo;s queue are not
-        panels and cannot be switched off. Platform-only tools —
+        and put them in order <em>for that gift</em>: what you hide is hidden for every colleague on the
+        gift, and your other gifts are not affected. A gift with no layout of its own shows the
+        <em> organisation layout</em>, which you set from Customise with no gift chosen; <strong>Use the
+        organisation layout</strong> sends a gift back to it. A reviewer&rsquo;s own cases and a QC&rsquo;s
+        queue are not panels and cannot be switched off. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),

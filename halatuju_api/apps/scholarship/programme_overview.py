@@ -720,7 +720,8 @@ def build(admin, org, programme, *, cohort=None, now=None):
     query it may not read the answer to — and, more importantly, a bug in the serialisation below
     can never surface a section `sections_for` withheld.
 
-    ⚠⚠ THE ORGANISATION'S LAYOUT NARROWS AND ORDERS; IT NEVER WIDENS (`overview_layout.apply`).
+    ⚠⚠ THE LAYOUT (the gift's own, else the organisation's — request #42) NARROWS AND ORDERS; IT
+    NEVER WIDENS (`overview_layout.apply`).
     `sections` is emitted in the layout's order and the page renders in that order. `mine` and
     `qc` are pages, not widgets, and pass through untouched. A layout that hides everything a
     role may see yields `sections: []` with a 200 — the view's 403 is about entitlement, which is
@@ -749,7 +750,12 @@ def build(admin, org, programme, *, cohort=None, now=None):
         sla_org = programme.organisation
     clocks = review_clocks(sla_org)
 
-    layout = overview_layout.for_org(sla_org) if sla_org is not None else None
+    # Request #42: a named gift reads ITS OWN layout first, then its organisation's, then the
+    # default; with no gift the organisation's layout is the page's (and the gifts' default).
+    layout, layout_source = (
+        overview_layout.for_programme_with_source(programme) if programme is not None
+        else overview_layout.for_org_with_source(sla_org) if sla_org is not None
+        else (None, None))
     sections = (overview_layout.apply(layout, role_sections)
                 if layout is not None else list(role_sections))
 
@@ -771,6 +777,7 @@ def build(admin, org, programme, *, cohort=None, now=None):
     }
     if layout is not None and may_customise(admin):
         payload['layout'] = layout
+        payload['layout_source'] = layout_source  # 'gift' | 'organisation' | 'default'
 
     if 'funnel' in sections:
         payload['funnel'] = funnel(scope)

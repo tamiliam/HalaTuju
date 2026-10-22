@@ -188,12 +188,14 @@ export type {
 } from './admin-api/payments'
 
 // The Programme Overview — how is this gift doing, shaped by role.
-export { getProgrammeOverview, getOverviewLayout, saveOverviewLayout } from './admin-api/overview'
+export {
+  getProgrammeOverview, getOverviewLayout, saveOverviewLayout, resetOverviewLayout,
+} from './admin-api/overview'
 export type {
   OverviewFunnel, OverviewMoney, OverviewAttention, OverviewWeekCount, OverviewMonthCount,
   OverviewMoneyMonth, OverviewStudentWeek, OverviewStudentOverall, OverviewCategory,
   OverviewBand, OverviewMyCase, OverviewQcCase, OverviewPace, OverviewIntake, OverviewLayoutRow,
-  OverviewLayout, ProgrammeOverview,
+  OverviewLayout, OverviewLayoutScope, OverviewLayoutSource, ProgrammeOverview,
 } from './admin-api/overview'
 
 // The officer's sponsor-spending screen.

@@ -87,7 +87,7 @@ Overview; a Finance person given Review reads ONLY the files of students assigne
 
 | Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the organisation's widget layout (Customise)** · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · **change a team member's permissions** *(#39 S4, 2026-10-21; never their own, never an org_admin's)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
+| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, **all six charts** (a stage at zero is not drawn) · **sets the widget layout (Customise) — per gift, with the organisation's as the default** *(#42)* · intake-year filter | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **change role within a pair — Admin ↔ Finance, Reviewer ↔ QC** *(2026-10-09)* · **change a team member's permissions** *(#39 S4, 2026-10-21; never their own, never an org_admin's)* · delete an admin with no recorded work · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel; approves a run ONLY under the fallback** *(#39 S2: no countersignature while Finance can approve)* | edit | view |
 | **Admin — General** (`admin`) | **Everything** — as org_admin (a read; the page has no controls) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
 | **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per transaction per week, transactions per active student per week, spending by category. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + APPROVAL — the final signature that releases the money; #39 S2, 2026-10-19)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | **Own work only** — the cases awaiting QC (oldest wait first) + own pace. **No money, no programme-wide funnel** | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
@@ -156,7 +156,7 @@ menu already withholds those pages from. A role missing from that map receives n
 
 | Role | Sections received |
 |---|---|
-| `super` / `org_admin` / `admin` | `funnel`, `money`, `attention`, `applications_series`, `money_series` (+ `layout` for `super` / `org_admin`) |
+| `super` / `org_admin` / `admin` | `funnel`, `money`, `attention`, `applications_series`, `money_series` (+ `layout` and `layout_source` for `super` / `org_admin`) |
 | `finance` | `money`, `money_series` |
 | `qc` | `qc` |
 | `reviewer` | `mine` |
@@ -174,6 +174,10 @@ switchable. A layout that hides every widget a role may see yields `sections: []
 **Who edits it: `org_admin` + super** (`AdminOverviewLayoutView`, GET/PUT
 `admin/scholarship/organisation/overview-layout/`, organisation derived, `?org=` for a super,
 cross-tenant 404). The Overview shows Customise by the PRESENCE of `layout` on the payload.
+**Per gift since request #42 (2026-10-22):** `ProgrammeOverviewLayout` is a gift's own layout and
+overrides the organisation's for that gift only; the organisation's is the default for gifts without
+one. Same endpoint with `?programme=<gift code>` (GET reports `source`, PUT writes the gift's row,
+DELETE removes it; another organisation's gift 404). Same writers, same narrowing rule.
 
 **⚠ THE INTAKE FILTER NARROWS EVERYTHING INSIDE THE FENCE.** `?intake=<cohort id>` is resolved by
 `_AdminBase._intake_narrowing`: a non-super only within their organisation, and within the named

@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## The Overview layout is an organisation default plus a per-gift override — 2026-10-22 (request #42, BrightPath; owner approved)
+
+**What.** The Overview's Customise layout was per organisation (ruling 2026-09-18). It is now held at two
+levels: `organisation_overview_layouts` (unchanged) is the **default**, and `programme_overview_layouts`
+(new, one row per gift) is a gift's **own** layout. A gift reads its own, else the organisation's, else
+the platform default (`overview_layout.for_programme`, the one place that order is spelled). On a
+gift's Overview, Customise saves for that gift only; with no gift chosen it edits the organisation
+default. "Use the organisation layout" deletes the gift's row (`DELETE …/overview-layout/?programme=`);
+a DELETE with no gift is refused rather than read as "delete the organisation's layout".
+**Why.** BrightPath runs two gifts at different stages — one awarding and paying, one still
+collecting applications — and the panels that matter on one are noise on the other. A single
+organisation-wide layout forced one gift's arrangement on the other.
+**Unchanged.** The layout still only narrows and orders (`apply()`); role shaping is the first gate;
+`mine`/`qc` are pages, not widgets. Who may edit: `org_admin` + super. No backfill: with no gift rows,
+every gift looks exactly as it did.
+**Revisit if:** an organisation wants layouts per intake year, or per person — neither is in scope.
+
 ## The staff-permission editor: server-decided, dry-run first, stranding refused under a row lock — 2026-10-21 (#39 Sprint 4; owner approved the design mock in place of Stitch)
 
 **What.** People → a person → *What <name> can do*: `GET / PATCH admin/admins/<id>/permissions/`

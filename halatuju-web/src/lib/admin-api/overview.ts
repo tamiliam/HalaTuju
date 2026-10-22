@@ -120,9 +120,23 @@ export interface OverviewLayoutRow {
   on: boolean
 }
 
+/**
+ * Whose layout a gift is showing (request #42, 2026-10-22): its OWN (`gift`), its organisation's
+ * (`organisation` — the default for every gift without one), or the platform default (`default`,
+ * nobody has saved anything). "Use the organisation layout" is offered only on `gift`.
+ */
+export type OverviewLayoutSource = 'gift' | 'organisation' | 'default'
+
+/** Which layout a call is about: a gift (`programme`, its code) or, with none, the organisation
+ *  (`org` is a super's `?org=` override; an org_admin sends nothing). */
+export interface OverviewLayoutScope { programme?: string; org?: string }
+
 /** The layout as stored, with who last touched it. */
 export interface OverviewLayout {
   organisation: { code: string; name: string }
+  /** The gift the layout was read for, or `null` for the organisation's own. */
+  programme?: { code: string; name: string } | null
+  source?: OverviewLayoutSource
   sections: OverviewLayoutRow[]
   updated_by_email: string
   updated_at: string | null
@@ -173,6 +187,8 @@ export interface ProgrammeOverview {
    * server has already answered the question.
    */
   layout?: OverviewLayoutRow[]
+  /** Arrives WITH `layout` (request #42): whether the chosen gift's layout is its own. */
+  layout_source?: OverviewLayoutSource
 }
 
 /**
@@ -194,14 +210,21 @@ export async function getProgrammeOverview(
     `/api/v1/admin/scholarship/programme-overview/${gift}${intake}`, options)
 }
 
-/** GET the organisation's Overview layout. `org` is a super's `?org=` override; an org_admin
- *  sends nothing and gets their own organisation. An organisation with no stored row gets the
- *  platform default, so this never 404s on "you have not customised yet". */
+const LAYOUT_PATH = '/api/v1/admin/scholarship/organisation/overview-layout/'
+
+/** `?programme=<gift code>` when a gift is named (it wins: the gift's owner IS the organisation),
+ *  else `?org=` for a super, else nothing. */
+const layoutQuery = (scope: OverviewLayoutScope = {}) => (scope.programme
+  ? giftQuery(scope.programme)
+  : (scope.org ? `?org=${encodeURIComponent(scope.org)}` : ''))
+
+/** GET a layout — a gift's (`programme`), or the organisation's. A gift or organisation with no
+ *  stored row gets what it falls back to (`source` says which), so this never 404s on "you have
+ *  not customised yet". Another organisation's gift is a 404. */
 export async function getOverviewLayout(
-  org?: string, options?: ApiOptions,
+  scope: OverviewLayoutScope = {}, options?: ApiOptions,
 ): Promise<OverviewLayout> {
-  const q = org ? `?org=${encodeURIComponent(org)}` : ''
-  return adminFetch(`/api/v1/admin/scholarship/organisation/overview-layout/${q}`, options)
+  return adminFetch(`${LAYOUT_PATH}${layoutQuery(scope)}`, options)
 }
 
 /**
@@ -213,10 +236,19 @@ export async function getOverviewLayout(
  * would carry no order at all, which is the one thing this list exists to record.
  */
 export async function saveOverviewLayout(
-  sections: OverviewLayoutRow[], org?: string, options?: ApiOptions,
+  sections: OverviewLayoutRow[], scope: OverviewLayoutScope = {}, options?: ApiOptions,
 ): Promise<OverviewLayout> {
-  const q = org ? `?org=${encodeURIComponent(org)}` : ''
-  return adminMutate(
-    `/api/v1/admin/scholarship/organisation/overview-layout/${q}`, 'PUT', { sections }, options)
+  return adminMutate(`${LAYOUT_PATH}${layoutQuery(scope)}`, 'PUT', { sections }, options)
+}
+
+/**
+ * "Use the organisation layout" (request #42): delete ONE GIFT's own layout so it falls back to
+ * the organisation's. The gift is REQUIRED — the server refuses a reset with no gift
+ * (`programme_required`) rather than touch the organisation's layout.
+ */
+export async function resetOverviewLayout(
+  programme: string, options?: ApiOptions,
+): Promise<OverviewLayout> {
+  return adminMutate(`${LAYOUT_PATH}${giftQuery(programme)}`, 'DELETE', null, options)
 }
 

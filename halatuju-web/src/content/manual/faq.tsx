@@ -10,10 +10,10 @@ export const FAQ: Record<Audience, QA[]> = {
   everyone: [
     {
       q: <>A panel is missing from my <strong>Overview</strong>, or the page says everything is switched off.</>,
-      a: <>Your organisation admin chooses which panels the Overview shows, for the whole organisation. A
-        panel you expected and cannot see has been switched off for everybody, not just for you &mdash; ask
-        them, and they can switch it back on from <strong>Customise</strong>. Your own cases (reviewers) and
-        your queue (QC) are never switched off.</>,
+      a: <>Your organisation admin chooses which panels the Overview shows &mdash; for each gift, with an
+        organisation layout as the starting point. A panel you expected and cannot see has been switched off
+        for everybody on that gift, not just for you &mdash; ask them, and they can switch it back on from
+        <strong> Customise</strong>. Your own cases (reviewers) and your queue (QC) are never switched off.</>,
     },
     {
       q: <>Is this paid? Do I get any compensation?</>,
@@ -283,11 +283,14 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Can I choose which panels the <strong>Overview</strong> shows?</>,
-      a: <>Yes. Open a gift&rsquo;s Overview and press <strong>Customise</strong> at the top right. Each panel
-        has a switch; turn off the ones you do not want and press <strong>Save</strong>. It applies to your
-        <em> whole organisation</em>: a panel you hide is hidden for every colleague who would have seen it,
-        and everybody sees the panels in the same order. A reviewer&rsquo;s own cases and a QC&rsquo;s queue are
-        not panels &mdash; they cannot be switched off. If you switch off every panel a colleague could see,
+      a: <>Yes, for each gift. Open a gift&rsquo;s Overview and press <strong>Customise</strong> at the top right.
+        Each panel has a switch and arrows; turn off the ones you do not want, put them in order and press
+        <strong> Save</strong>. That layout is <em>this gift&rsquo;s own</em>: a panel you hide is hidden for every
+        colleague on this gift, and your other gifts are not affected. A gift with no layout of its own shows
+        the <em>organisation layout</em> &mdash; set it from Customise on the Overview with no gift chosen; it
+        is the starting point for every such gift. To send a gift back to the organisation layout, press
+        <strong> Use the organisation layout</strong> in Customise (it appears only when the gift has its
+        own). A reviewer&rsquo;s own cases and a QC&rsquo;s queue are not panels &mdash; they cannot be switched off. If you switch off every panel a colleague could see,
         their Overview says so rather than showing an empty page. (The platform team, looking across every
         organisation, has to open a gift before Customise appears.)</>,
     },

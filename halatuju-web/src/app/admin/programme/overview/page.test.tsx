@@ -623,6 +623,40 @@ describe('customising the layout', () => {
     ])
   })
 
+  /* ⚠⚠ REQUEST #42: THE PAGE HANDS THE EDITOR THE GIFT THE PAYLOAD DESCRIBES, and re-reads the
+   * Overview after a reset so the panels follow the organisation's layout at once. */
+  it('passes the gift to the editor and re-reads after "Use the organisation layout"', async () => {
+    authRole = { role: 'org_admin' }
+    mockApi.getProgrammeOverview.mockResolvedValue({ ...ORG_ADMIN_PAYLOAD, layout_source: 'gift' })
+    mockApi.resetOverviewLayout.mockResolvedValue({
+      organisation: { code: 'mynadi', name: 'MyNadi' }, source: 'organisation',
+      sections: LAYOUT, updated_by_email: '', updated_at: null,
+    })
+    render(<ProgrammeOverviewPage />)
+    fireEvent.click(await screen.findByTestId('customise-button'))
+    expect(screen.getByTestId('customise-title').textContent)
+      .toBe('admin.programmeOverview.customise.titleGift|Test Gift')
+    const reads = mockApi.getProgrammeOverview.mock.calls.length
+    fireEvent.click(screen.getByTestId('reset-layout'))
+    await waitFor(() => expect(mockApi.resetOverviewLayout).toHaveBeenCalled())
+    expect(mockApi.resetOverviewLayout.mock.calls[0][0]).toBe('b40')
+    await waitFor(() =>
+      expect(mockApi.getProgrammeOverview.mock.calls.length).toBeGreaterThan(reads))
+    // The editor closed and the panels are back.
+    expect(await screen.findByTestId('overview-funnel')).not.toBeNull()
+  })
+
+  it('edits the organisation layout, with no reset, when no gift is chosen', async () => {
+    authRole = { role: 'org_admin' }
+    mockApi.getProgrammeOverview.mockResolvedValue({
+      ...ORG_ADMIN_PAYLOAD, programme: null, layout_source: 'organisation' })
+    render(<ProgrammeOverviewPage />)
+    fireEvent.click(await screen.findByTestId('customise-button'))
+    expect(screen.getByTestId('customise-title').textContent)
+      .toBe('admin.programmeOverview.customise.title')
+    expect(screen.queryByTestId('reset-layout')).toBeNull()
+  })
+
   /* ⚠ EVERY ARROW NAMES ITS PANEL AND ITS DIRECTION. Ten buttons all called "Move up" is what a
    * screen-reader user would otherwise be handed, and an accessible name is invisible twice over
    * — never drawn, and absent from all three locales identically, so parity cannot see it. */

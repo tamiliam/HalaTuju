@@ -256,10 +256,11 @@ class RolesAndShapeTests(_Base):
         """⚠ THE ROLE GATE, PINNED. A section arriving by accident fails HERE, not on a screen."""
         # ⚠ `layout` (keys and flags, never data) is on the payload ONLY for the roles that may
         # edit it — org_admin and super. A plain admin, finance, qc, reviewer never receive it,
-        # and the page shows the Customise button by its presence.
+        # and the page shows the Customise button by its presence. `layout_source` travels with
+        # it (request #42, 2026-10-22): whether the layout is the gift's own.
         expected = {
-            'ov-su': _FULL | {'layout'},
-            'ov-oa': _FULL | {'layout'},
+            'ov-su': _FULL | {'layout', 'layout_source'},
+            'ov-oa': _FULL | {'layout', 'layout_source'},
             'ov-adm': _FULL,
             'ov-fin': _ALWAYS | {'money', 'money_series'},
             'ov-qc': _ALWAYS | {'qc'},
@@ -270,7 +271,8 @@ class RolesAndShapeTests(_Base):
                 body = self._body(uid)
                 self.assertEqual(set(body), keys)
                 # `sections` must DESCRIBE the payload, not merely accompany it.
-                self.assertEqual(set(body['sections']), keys - _ALWAYS - {'layout'})
+                self.assertEqual(set(body['sections']),
+                                 keys - _ALWAYS - {'layout', 'layout_source'})
 
     def test_a_reviewer_gets_no_money_and_no_programme_wide_funnel(self):
         body = self._body('ov-rev')
@@ -784,6 +786,65 @@ class LayoutTests(_Base):
     def test_the_catalogue_is_the_full_widget_set(self):
         from apps.scholarship import overview_layout
         self.assertEqual(overview_layout.CUSTOMISABLE, programme_overview.FULL)
+
+
+class GiftLayoutTests(_Base):
+    """Request #42 (2026-10-22): a gift's own layout overrides the organisation's FOR THAT GIFT
+    ONLY; a gift without one shows the organisation's; the all-gifts page reads the organisation's."""
+
+    @staticmethod
+    def _rows(order, off=()):
+        return [{'key': k, 'on': k not in off} for k in order]
+
+    def _store_org(self, sections):
+        from apps.scholarship.models import OrganisationOverviewLayout
+        OrganisationOverviewLayout.objects.update_or_create(
+            organisation=self.org, defaults={'sections': sections})
+
+    def _store_gift(self, gift, sections):
+        from apps.scholarship.models import ProgrammeOverviewLayout
+        ProgrammeOverviewLayout.objects.update_or_create(
+            programme=gift, defaults={'sections': sections})
+
+    def test_with_no_rows_every_gift_shows_the_default(self):
+        body = self._body('ov-oa')
+        self.assertEqual(body['layout'], self._rows(_WIDGETS))
+        self.assertEqual(body['layout_source'], 'default')
+
+    def test_a_gift_without_its_own_shows_the_organisation_layout(self):
+        self._store_org(self._rows(_WIDGETS, off=('funnel',)))
+        body = self._body('ov-oa', '?programme=ov-gift2')
+        self.assertNotIn('funnel', body['sections'])
+        self.assertEqual(body['layout_source'], 'organisation')
+
+    def test_a_gift_layout_applies_to_that_gift_only(self):
+        self._store_org(self._rows(_WIDGETS, off=('funnel',)))
+        self._store_gift(self.gift, self._rows(['money', 'funnel', 'attention',
+                                                'applications_series', 'money_series'],
+                                               off=('attention',)))
+        body = self._body('ov-oa')
+        self.assertEqual(body['sections'],
+                         ['money', 'funnel', 'applications_series', 'money_series'])
+        self.assertEqual(body['layout_source'], 'gift')
+        # The other gift and the all-gifts page still read the organisation's layout.
+        self.assertNotIn('funnel', self._body('ov-oa', '?programme=ov-gift2')['sections'])
+        all_gifts = self._body('ov-oa', '')
+        self.assertNotIn('funnel', all_gifts['sections'])
+        self.assertIn('attention', all_gifts['sections'])
+        self.assertEqual(all_gifts['layout_source'], 'organisation')
+
+    def test_a_gift_layout_still_never_widens_a_role(self):
+        self._store_gift(self.gift, self._rows(_WIDGETS, off=('money',)))
+        self.assertEqual(self._body('ov-fin')['sections'], ['money_series'])
+        self.assertEqual(self._body('ov-rev')['sections'], ['mine'])
+        self.assertEqual(self._body('ov-qc')['sections'], ['qc'])
+        self.assertNotIn('layout_source', self._body('ov-adm'))
+
+    def test_the_super_reads_the_named_gifts_own_layout(self):
+        self._store_gift(self.gift, self._rows(_WIDGETS, off=('money_series',)))
+        body = self._body('ov-su')
+        self.assertNotIn('money_series', body['sections'])
+        self.assertEqual(body['layout_source'], 'gift')
 
 
 class IntakeTests(_Base):

@@ -10,7 +10,7 @@ from django.test import TestCase
 
 from apps.courses.models import PartnerOrganisation
 from apps.scholarship import overview_layout
-from apps.scholarship.models import OrganisationOverviewLayout
+from apps.scholarship.models import OrganisationOverviewLayout, ProgrammeOverviewLayout
 
 from .test_programme_overview import _Base
 
@@ -127,3 +127,124 @@ class EndpointTests(_Base):
         r = self._put('ov-su', rows(off=('funnel',)), '?org=brightpath')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertNotIn('funnel', self._body('ov-oa')['sections'])
+
+
+class GiftEndpointTests(_Base):
+    """Request #42 (2026-10-22): `?programme=<gift code>` reads, writes and resets ONE gift's own
+    layout; the organisation's row is the default every gift without one falls back to."""
+
+    def _put(self, uid, sections, query='?programme=ov-gift'):
+        return self._client(uid).put(LAYOUT_URL + query, {'sections': sections}, format='json')
+
+    def _delete(self, uid, query='?programme=ov-gift'):
+        return self._client(uid).delete(LAYOUT_URL + query)
+
+    def _org_row(self, sections):
+        OrganisationOverviewLayout.objects.create(organisation=self.org, sections=sections)
+
+    def test_a_gift_with_no_rows_reads_the_default(self):
+        body = self._client('ov-oa').get(LAYOUT_URL + '?programme=ov-gift').json()
+        self.assertEqual(body['source'], 'default')
+        self.assertEqual(body['programme'], {'code': 'ov-gift', 'name': 'Overview Gift'})
+        self.assertEqual(body['sections'], rows())
+
+    def test_a_gift_with_no_row_reads_the_organisation_layout(self):
+        self._org_row(rows(off=('money',)))
+        body = self._client('ov-oa').get(LAYOUT_URL + '?programme=ov-gift').json()
+        self.assertEqual(body['source'], 'organisation')
+        self.assertEqual(body['sections'], rows(off=('money',)))
+        # ...and the all-gifts read is the organisation's own, with no gift named.
+        body = self._client('ov-oa').get(LAYOUT_URL).json()
+        self.assertEqual(body['source'], 'organisation')
+        self.assertIsNone(body['programme'])
+
+    def test_put_writes_the_gift_row_only(self):
+        self._org_row(rows(off=('money',)))
+        wanted = rows(['money', 'funnel', 'attention', 'applications_series', 'money_series'],
+                      off=('funnel',))
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = self._put('ov-oa', wanted)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['source'], 'gift')
+        self.assertEqual(r.json()['sections'], wanted)
+        self.assertEqual(r.json()['updated_by_email'], 'ov-oa@ov.test')
+        self.assertEqual(ProgrammeOverviewLayout.objects.get(programme=self.gift).sections, wanted)
+        # The organisation's row is untouched, and so is the other gift.
+        self.assertEqual(OrganisationOverviewLayout.objects.get(organisation=self.org).sections,
+                         rows(off=('money',)))
+        self.assertFalse(ProgrammeOverviewLayout.objects.filter(programme=self.gift2).exists())
+        line = [l for l in logs.output if 'AUDIT overview_layout_set' in l][0]
+        self.assertIn(f'programme={self.gift.id}', line)
+        self.assertIn('was=funnel+,money-,', line)
+        self.assertIn('now=money+,funnel-,', line)
+
+    def test_a_first_gift_save_equal_to_the_org_layout_still_audits_and_stores(self):
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = self._put('ov-oa', rows())
+        self.assertEqual(r.json()['source'], 'gift')
+        self.assertTrue(any('AUDIT overview_layout_set' in l for l in logs.output))
+        with self.assertNoLogs('apps.scholarship.views_admin', level='INFO'):
+            self._put('ov-oa', rows())
+
+    def test_put_refuses_a_bad_list_for_a_gift_too(self):
+        r = self._put('ov-oa', rows()[:-1])
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'missing_section')
+        self.assertFalse(ProgrammeOverviewLayout.objects.exists())
+
+    def test_the_model_refuses_a_bad_gift_list_from_the_shell(self):
+        row = ProgrammeOverviewLayout(programme=self.gift, sections=[{'key': 'mine', 'on': True}])
+        with self.assertRaises(overview_layout.OverviewLayoutError):
+            row.save()
+
+    def test_delete_removes_the_gift_row_and_never_the_org_row(self):
+        self._org_row(rows(off=('money',)))
+        self._put('ov-oa', rows(off=('funnel',)))
+        self._put('ov-oa', rows(off=('attention',)), '?programme=ov-gift2')
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = self._delete('ov-oa')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['source'], 'organisation')
+        self.assertEqual(r.json()['sections'], rows(off=('money',)))
+        self.assertFalse(ProgrammeOverviewLayout.objects.filter(programme=self.gift).exists())
+        self.assertTrue(ProgrammeOverviewLayout.objects.filter(programme=self.gift2).exists())
+        self.assertTrue(OrganisationOverviewLayout.objects.filter(organisation=self.org).exists())
+        line = [l for l in logs.output if 'AUDIT overview_layout_reset' in l][0]
+        self.assertIn(f'programme={self.gift.id}', line)
+        # The gift's Overview now shows the organisation's layout again.
+        self.assertNotIn('money', self._body('ov-oa')['sections'])
+        # A second reset is harmless and writes no audit line.
+        with self.assertNoLogs('apps.scholarship.views_admin', level='INFO'):
+            self.assertEqual(self._delete('ov-oa').status_code, 200)
+
+    def test_delete_without_a_gift_is_a_400_and_deletes_nothing(self):
+        self._org_row(rows(off=('money',)))
+        r = self._delete('ov-oa', '')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'programme_required')
+        self.assertTrue(OrganisationOverviewLayout.objects.filter(organisation=self.org).exists())
+
+    def test_another_organisations_gift_is_404_for_org_staff(self):
+        self.assertEqual(
+            self._client('ov-oa').get(LAYOUT_URL + '?programme=ov-other-gift').status_code, 404)
+        self.assertEqual(self._put('ov-oa', rows(), '?programme=ov-other-gift').status_code, 404)
+        self.assertEqual(self._delete('ov-oa', '?programme=ov-other-gift').status_code, 404)
+        self.assertEqual(self._put('ov-oa', rows(), '?programme=no-such-gift').status_code, 404)
+        self.assertFalse(ProgrammeOverviewLayout.objects.exists())
+
+    def test_only_org_admin_and_super_may_write_a_gift_layout(self):
+        for uid in ('ov-adm', 'ov-fin', 'ov-qc', 'ov-rev', 'ov-ptr'):
+            with self.subTest(uid=uid):
+                self.assertEqual(self._put(uid, rows()).status_code, 403)
+                self.assertEqual(self._delete(uid).status_code, 403)
+                self.assertEqual(
+                    self._client(uid).get(LAYOUT_URL + '?programme=ov-gift').status_code, 403)
+        self.assertFalse(ProgrammeOverviewLayout.objects.exists())
+
+    def test_a_super_may_act_on_any_gift(self):
+        r = self._put('ov-su', rows(off=('money',)), '?programme=ov-other-gift')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['organisation']['code'], 'ov-other')
+        self.assertTrue(ProgrammeOverviewLayout.objects.filter(programme=self.other_gift).exists())
+        self.assertEqual(self._delete('ov-su', '?programme=ov-other-gift').status_code, 200)
+        self.assertFalse(ProgrammeOverviewLayout.objects.exists())

@@ -526,6 +526,36 @@ class OrganisationOverviewLayout(models.Model):
         return super().save(*args, **kwargs)
 
 
+class ProgrammeOverviewLayout(models.Model):
+    """One gift's own Overview layout — overrides the organisation's (request #42, 2026-10-22).
+
+    Same shape and same fence as `OrganisationOverviewLayout`. No row means the gift shows the
+    organisation's layout (and, with no organisation row either, the default) — see
+    `overview_layout.for_programme`. Deleting the row is how a gift goes back to the
+    organisation's layout; it never touches the organisation row.
+    """
+    programme = models.OneToOneField(
+        'scholarship.Programme', on_delete=models.CASCADE,
+        related_name='overview_layout')
+    sections = models.JSONField(
+        default=list,
+        help_text='Ordered list of {key, on} over the five customisable Overview widgets.')
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'programme_overview_layouts'
+
+    def __str__(self):
+        return f'Overview layout for gift {self.programme_id}'
+
+    def save(self, *args, **kwargs):
+        from .. import overview_layout
+        self.sections = overview_layout.normalised(self.sections)
+        return super().save(*args, **kwargs)
+
+
 class BillingSequence(models.Model):
     """The last number used, per document kind per year — what makes numbering GAP-FREE.
 

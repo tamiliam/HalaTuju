@@ -77,7 +77,7 @@ class AdminProgrammeOverviewView(_AdminBase):
 
 
 class AdminOverviewLayoutView(_AdminBase):
-    """GET/PUT `admin/scholarship/organisation/overview-layout/` — which Overview widgets an
+    """GET/PUT/DELETE `admin/scholarship/organisation/overview-layout/` — which Overview widgets an
     organisation shows, and in what order (Programme Overview phase 2, 2026-09-18).
 
     Edited from the Overview's Customise mode by the org admin; read by
@@ -89,6 +89,13 @@ class AdminOverviewLayoutView(_AdminBase):
     mirrored (same 404-not-403, same refusal to pick silently between two, `?org=` for a super).
     A third copy of `_gate`/`_organisation_for`; extracting a verb-less base for the three is
     noted as debt rather than done inside a feature sprint.
+
+    Request #42 (2026-10-22): `?programme=<gift code>` reads and writes THAT GIFT's own layout
+    (`ProgrammeOverviewLayout`), resolved by `_gift_narrowing` — another tenant's gift is a 404,
+    a super may name any. A gift with no row serves the organisation's layout; `source` says
+    which (`gift` | `organisation` | `default`). DELETE with `?programme=` removes the gift's row
+    ("Use the organisation layout"); DELETE without it is a 400 `programme_required`. Without
+    `?programme=` everything is as before: the organisation's layout, now the gifts' default.
 
     Who may write: `org_admin` and super — the layout changes what every colleague sees.
 
@@ -131,14 +138,41 @@ class AdminOverviewLayoutView(_AdminBase):
                 status=status.HTTP_400_BAD_REQUEST)
         return orgs[0], None
 
-    def _payload(self, org):
+    def _scope(self, request, admin):
+        """`(org, programme|None, error)`. With `?programme=<gift code>` the gift is resolved by
+        `_gift_narrowing` (inside the caller's fence: another tenant's gift is a 404, a super may
+        name any) and the organisation is the gift's owner; without it, the organisation is
+        derived as before (`?org=` for a super)."""
+        programme, err = self._gift_narrowing(request, admin)
+        if err:
+            return None, None, err
+        if programme is not None:
+            return programme.organisation, programme, None
+        org, err = self._organisation_for(
+            admin, (request.query_params.get('org') or '').strip())
+        return org, None, err
+
+    def _payload(self, org, programme=None):
         from .. import overview_layout
-        from ..models import OrganisationOverviewLayout
-        # org-fence: `org` is the derived organisation above.
-        row = OrganisationOverviewLayout.objects.filter(organisation=org).first()
+        from ..models import OrganisationOverviewLayout, ProgrammeOverviewLayout
+        if programme is not None:
+            sections, source = overview_layout.for_programme_with_source(programme)
+            # org-fence: `programme` came through `_gift_narrowing` above.
+            row = (ProgrammeOverviewLayout.objects.filter(programme=programme).first()
+                   if source == 'gift' else
+                   OrganisationOverviewLayout.objects.filter(organisation=org).first())
+        else:
+            sections, source = overview_layout.for_org_with_source(org)
+            # org-fence: `org` is the derived organisation above.
+            row = OrganisationOverviewLayout.objects.filter(organisation=org).first()
         return {
             'organisation': {'code': org.code, 'name': org.name},
-            'sections': overview_layout.for_org(org),
+            'programme': ({'code': programme.code, 'name': programme.name_en}
+                          if programme is not None else None),
+            # 'gift' (this gift's own) | 'organisation' | 'default' - request #42. The screen
+            # shows "Use the organisation layout" only on 'gift'.
+            'source': source,
+            'sections': sections,
             'updated_by_email': row.updated_by_email if row else '',
             'updated_at': row.updated_at.isoformat() if row else None,
         }
@@ -147,10 +181,10 @@ class AdminOverviewLayoutView(_AdminBase):
         admin, err = self._gate(request)
         if err:
             return err
-        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        org, programme, err = self._scope(request, admin)
         if err:
             return err
-        return Response(self._payload(org))
+        return Response(self._payload(org, programme))
 
     @staticmethod
     def _compact(sections):
@@ -158,12 +192,12 @@ class AdminOverviewLayoutView(_AdminBase):
 
     def put(self, request):
         from .. import overview_layout
-        from ..models import OrganisationOverviewLayout
+        from ..models import OrganisationOverviewLayout, ProgrammeOverviewLayout
 
         admin, err = self._gate(request)
         if err:
             return err
-        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        org, programme, err = self._scope(request, admin)
         if err:
             return err
         try:
@@ -171,17 +205,51 @@ class AdminOverviewLayoutView(_AdminBase):
         except overview_layout.OverviewLayoutError as exc:
             return Response({'error': exc.code, 'code': exc.code, 'key': exc.key},
                             status=status.HTTP_400_BAD_REQUEST)
-        was = overview_layout.for_org(org)
-        # org-fence: as above. ⚠ `defaults=` carries the list INTO the create: the model's
-        # `save()` validates, and a row created empty first would be refused before the update.
-        row, created = OrganisationOverviewLayout.objects.get_or_create(
-            organisation=org,
-            defaults={'sections': sections, 'updated_by_email': admin.email or ''})
+        by = admin.email or ''
+        if programme is not None:
+            was, source = overview_layout.for_programme_with_source(programme)
+            # org-fence: as above. A gift's save writes ONLY the gift's row, never the org's.
+            row, created = ProgrammeOverviewLayout.objects.get_or_create(
+                programme=programme, defaults={'sections': sections, 'updated_by_email': by})
+        else:
+            was, source = overview_layout.for_org(org), None
+            # org-fence: as above. ⚠ `defaults=` carries the list INTO the create: the model's
+            # `save()` validates, and a row created empty first would be refused before the update.
+            row, created = OrganisationOverviewLayout.objects.get_or_create(
+                organisation=org, defaults={'sections': sections, 'updated_by_email': by})
         if not created:
             row.sections = sections
-            row.updated_by_email = admin.email or ''
+            row.updated_by_email = by
             row.save()
-        if was != sections:
-            logger.info('AUDIT overview_layout_set org=%s was=%s now=%s by=%s',
-                        org.code, self._compact(was), self._compact(sections), admin.email or '')
-        return Response(self._payload(org))
+        # ⚠ A gift's FIRST save is always a change of state (it now has a layout of its own),
+        # even when the list equals the organisation's it was showing - so it is audited.
+        if was != sections or (programme is not None and source != 'gift'):
+            gift = f' programme={programme.id}' if programme is not None else ''
+            logger.info('AUDIT overview_layout_set org=%s%s was=%s now=%s by=%s',
+                        org.code, gift, self._compact(was), self._compact(sections), by)
+        return Response(self._payload(org, programme))
+
+    def delete(self, request):
+        """Request #42: "Use the organisation layout" - delete ONE GIFT's own layout, so the gift
+        falls back to the organisation's. ⚠ Needs `?programme=`: without it this is a 400, never
+        "delete the organisation's layout" (that is the default every gift falls back to)."""
+        from .. import overview_layout
+        from ..models import ProgrammeOverviewLayout
+
+        admin, err = self._gate(request)
+        if err:
+            return err
+        programme, err = self._gift_narrowing(request, admin)
+        if err:
+            return err
+        if programme is None:
+            return Response({'error': 'programme_required', 'code': 'programme_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        was, source = overview_layout.for_programme_with_source(programme)
+        # org-fence: `programme` came through `_gift_narrowing`; only this gift's row goes.
+        deleted, _ = ProgrammeOverviewLayout.objects.filter(programme=programme).delete()
+        if deleted:
+            logger.info('AUDIT overview_layout_reset org=%s programme=%s was=%s by=%s',
+                        programme.organisation.code, programme.id,
+                        self._compact(was) if source == 'gift' else '-', admin.email or '')
+        return Response(self._payload(programme.organisation, programme))

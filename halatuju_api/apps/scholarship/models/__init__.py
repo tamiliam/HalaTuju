@@ -65,7 +65,8 @@ from .agreements import (
 )
 from .billing import (
     BillingRate, BillingSequence, InvoiceIssuer, OrgBillingAdjustment, OrgBillingDetails,
-    OrgBuildHours, OrganisationOverviewLayout, PlatformCost, UsageEvent,
+    OrgBuildHours, OrganisationOverviewLayout, PlatformCost, ProgrammeOverviewLayout,
+    UsageEvent,
 )
 from .invoices import (
     Invoice, InvoiceLine, InvoiceReceipt,
