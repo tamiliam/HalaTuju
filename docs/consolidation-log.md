@@ -11,6 +11,7 @@ _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits ar
 - 2026-10-19 20c6fe14 fix(apply-copy): an organisation's paragraph breaks show to students (request #34) (web apply page, ApplyCopyTab, ActionCentre + 3 tests; api apply_copy_draft prompt + test; CHANGELOG · 10)
 - 2026-10-19 0ca7eefb refactor(scholarship): move FundingNeed into models/funding_need.py (moves only) (scholarship models · 3; logged by the #39 session for the Sources session)
 - 2026-10-19 3bd909c9 refactor(courses): move StpmCourse and StpmRequirement into models_stpm.py (moves only) (courses models · 3; logged by the #39 session for the Sources session)
+- 2026-10-22 a8ccea58 fix: a gift's Awarded count no longer counts an award that fell through (api closure ever_awarded_q, gifts card, overview awards-per-month + 2 tests; CHANGELOG · 3)
 
 ## Sprints since the last review
 
@@ -21,6 +22,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a 95937b41
 - 2026-10-21 TD-360 Sprint 1 (the admin message slice; budgets ratcheted, TD-344 closed) — 7d5f5054 8b1b57ce f0318c14
 - 2026-10-21 request #39 Sprint 4 (the permission editor on People; history table, scholarship 0175) — a6cc35d1 f9499251 390596f8
+- 2026-10-22 Team person pages sprint (permissions on each person's page + change history; own clean-up) — 43aa061a
 
 ## Reviews
 
