@@ -1379,3 +1379,11 @@ between the deploy and the drop — and no test can see it, because the test dat
 too. **Rule:** before removing a field ahead of its drop, read the live column's nullability and
 default (rendered DDL, `information_schema`); a `NOT NULL` column without a database default gets one
 in a migrate-first expand, pinned by a test on the migration. (sources-and-referrals Sprint D)
+
+## 2026-10-24 — the last error in a fallback chain hides the cause
+
+Gemini's prepaid credit ran out (402) for ~20 hours, but every stored error said "model not found":
+the cascade kept only the LAST model's message, and the last model had been retired (404). **Rule:** a
+fallback chain that fails reports EVERY attempt's error (`gemini.cascade_failure`), and a model is
+removed from a cascade the day it is retired — a dead fallback adds nothing but a misleading error.
+(AI-outage sprint)

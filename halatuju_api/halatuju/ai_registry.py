@@ -141,7 +141,7 @@ JOBS = [
      'module': 'apps/courses/management/commands/map_course_careers.py', 'fixed': True},
     {'key': 'stpm_headlines', 'label': 'Writing STPM course headlines (batch)',
      'seam': SEAM_OWN, 'provider': GEMINI,
-     'source': BY_LITERAL, 'from': 'gemini-2.0-flash',
+     'source': BY_LITERAL, 'from': 'gemini-2.5-flash',
      'module': 'apps/courses/management/commands/generate_stpm_headlines.py', 'fixed': True},
 ]
 

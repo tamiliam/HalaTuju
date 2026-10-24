@@ -91,7 +91,10 @@ from .genuineness.bands import canonical_status, stored_status
 #                  gate and divergence readers are unchanged (review F1).
 #   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (a different one →
 #                  pathway_confirm, red until answered); Saluran Terbuka (SATU) reads red at once.
-VERDICT_ENGINE_VERSION = '2026-10-04.1'
+#   2026-10-24.1 — the AI outage: a read NOT YET MADE (none, or deferred by our outage) is no longer
+#                  "unreadable" — the offer ('offer_unreadable'), the relationship docs and the STR
+#                  ('str_not_current' unreadable → 'unknown', still Unsure) raise no student ask.
+VERDICT_ENGINE_VERSION = '2026-10-24.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -640,7 +643,10 @@ def _verdict_income(application):
     # 'stale'/'unreadable' → Unsure (NOT the blue 'review'): a review tile would read BLUE off the
     # verified earner-IC/relationship greens, overstating a doc whose cycle is old or whose approval
     # never read. Same reasoning as the salary unsure/over bands below.
-    str_unsure = bool(sc and sc['current_status'] in ('stale', 'unreadable'))
+    # 'unknown' (not read yet / deferred by OUR outage, 2026-10-24) bands with them: an unread
+    # approval must never band better than a badly-read one. Its line is the unticketed
+    # 'str_present_unverified' below, so it asks the student for nothing.
+    str_unsure = bool(sc and sc['current_status'] in ('stale', 'unreadable', 'unknown'))
     # V5 (#10): a POSITIVE recipient mismatch (the STR is in someone else's name) bands Unsure
     # (amber) per str-proof-spec.md §8 — never a blue 'review' read off the earner-IC/relationship
     # greens, which would overstate an STR that provably belongs to a different person.
@@ -758,6 +764,11 @@ def _verdict_pathway(application):
     # IC, e.g. a "your offer will be released later" memo) vs a genuinely blurry scan → grey/pending
     # (an under-read, capped at Probable), NOT a red chip. Only when identity didn't already flag.
     elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
+        # NOT READ YET (none, or deferred by OUR outage — 2026-10-24): no claim and NO student
+        # request; a reviewer sees the deferred chip, and the hourly sweep reads it when we are back.
+        from .read_errors import read_deferred
+        if read_deferred(offer.vision_fields):
+            return _fact('pathway', 'review', evidence, [])
         if chk['programme'] or chk['institution']:
             return _fact('pathway', 'review', evidence, [_item('offer_no_identity')])
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])

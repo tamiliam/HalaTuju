@@ -15,6 +15,7 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from halatuju.throttling import UploadRateThrottle
 
 from .document_snapshot import SNAPSHOT_ORDER
+from .read_errors import is_ai_service_error
 from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication, ScholarshipCohort
 from .serializers import (
     ApplicantDocumentSerializer,
@@ -698,18 +699,16 @@ def _note_unresolved_attempts(app, doc, stale_ids, kept_previous):
       attempt_same_file   — the latest one was byte-identical-looking (same name + size) to a copy
                             already superseded in this slot
       attempt_rejected    — the STR keep-better guard kept the previous proof live
-    Best-effort; never blocks the upload response."""
+    Best-effort; never blocks the upload response. OUR outage deferring the read is no attempt."""
+    if is_ai_service_error((doc.vision_fields or {}).get('error')):
+        return
     try:
-        from .resolution import CODE_TO_TICKET
-        from .check2_queries import DOC_SPECS
         same_file = bool(
             stale_ids and (doc.original_filename or '')
             and ApplicantDocument.objects.filter(
                 id__in=stale_ids, original_filename=doc.original_filename,
                 size=doc.size or 0).exists())
-        doc_codes = {c for c, s in CODE_TO_TICKET.items() if s.get('doc_type') == doc.doc_type}
-        doc_codes |= {c for c, s in DOC_SPECS.items() if s.get('doc_type') == doc.doc_type}
-        for item in app.resolution_items.filter(code__in=doc_codes, status='open'):
+        for item in _open_doc_request_items(app, doc.doc_type):   # the circuit-breaker's own set
             p = dict(item.params or {})
             p['attempts'] = int(p.get('attempts') or 0) + 1
             p['attempt_same_file'] = same_file
@@ -741,6 +740,8 @@ def _stage_attempts_exhausted(app, doc, settings):
     `settings` argument is kept — callers pass it and it still carries the doc-assist knobs —
     but it is no longer where this number comes from.
     """
+    if is_ai_service_error((doc.vision_fields or {}).get('error')):
+        return False                    # OUR outage deferred the read — not the student's attempt
     from apps.courses import org_config
     k = org_config.value(app.owning_organisation, 'doc_stage_max_attempts')
     prior = max((int((i.params or {}).get('attempts') or 0)
@@ -2054,6 +2055,7 @@ class CronRunView(APIView):
 
     JOBS = {
         'vision-outage': 'alert_vision_outage',
+        'read-outage-start': ('alert_vision_outage', ('--hourly',)),  # hourly: mail a Vision/Gemini outage the hour it starts (2026-10-24)
         'decision-emails': 'send_pending_decision_emails',
         'application-reminders': 'send_application_reminders',
         'application-nudges': 'send_application_nudges',  # frequent (~15 min): one-time auto "you haven't submitted yet" nudge (shortlisted, consented, unsubmitted)
@@ -2091,7 +2093,7 @@ class CronRunView(APIView):
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
         'reextract-offers': 'reextract_offers',  # one-off batches (20/run): re-score offers with missing/below-genuine (<0.70) authenticity under the current MODEL_VERSION
-        'reprocess-ic-vision': 'reprocess_unread_ic',  # frequent (~15 min): self-heal IC/parent_ic stuck unprocessed (silent upload OCR failures → false 'service unavailable' consent block)
+        'reprocess-ic-vision': 'reprocess_unread_ic',  # HOURLY (0 * * * *): self-heal reads stuck unprocessed or deferred by OUR outage (services.read_retry)
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)
         'backfill-confirmed-profiles': 'backfill_confirmed_profiles',  # one-off TD-210: confirmed pathway onto the profile (DRY RUN unless BACKFILL_CONFIRMED_PROFILES_APPLY=1)

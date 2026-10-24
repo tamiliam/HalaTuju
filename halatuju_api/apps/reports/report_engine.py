@@ -30,8 +30,7 @@ logger = logging.getLogger(__name__)
 # Gemini model cascade — try in order until one succeeds
 MODEL_CASCADE = [
     'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
+    'gemini-2.5-flash-lite',     # 2.0-flash retired (404) and removed, 2026-10-24
 ]
 
 # SPM subject display names for prompt formatting
@@ -311,7 +310,7 @@ def generate_report(grades, eligible_courses, insights,
     prompt_template = get_prompt(lang, exam_type=exam_type)
 
     # Try models in cascade
-    last_error = None
+    errors = []                  # EVERY model's error: the last alone hid a 402 (2026-10-24)
     for model_name in MODEL_CASCADE:
         try:
             full_prompt = prompt_template.format(
@@ -323,7 +322,7 @@ def generate_report(grades, eligible_courses, insights,
             )
         except (KeyError, IndexError) as e:
             logger.error(f'Prompt formatting error: {e}')
-            last_error = str(e)
+            errors.append((model_name, f'prompt formatting: {e}'))
             continue
 
         try:
@@ -351,11 +350,12 @@ def generate_report(grades, eligible_courses, insights,
             }
 
         except Exception as e:
-            last_error = str(e)
+            errors.append((model_name, str(e)))
             logger.warning(f'Generation failed with {model_name}: {e}')
             continue
 
-    logger.warning(f'All Gemini models failed. Last error: {last_error}')
+    from apps.scholarship.gemini import cascade_failure
+    logger.warning(f'Gemini cascade exhausted — {cascade_failure(errors)}')
 
     # OpenAI fallback — try after Gemini cascade exhausted
     openai_key = getattr(settings, 'OPENAI_API_KEY', '')
@@ -364,7 +364,7 @@ def generate_report(grades, eligible_courses, insights,
             from openai import OpenAI
         except ImportError:
             logger.error('openai package not installed')
-            return {'error': f'All AI models failed: {last_error}'}
+            return {'error': cascade_failure(errors)}
 
         try:
             openai_client = OpenAI(api_key=openai_key)
@@ -393,7 +393,7 @@ def generate_report(grades, eligible_courses, insights,
             }
         except Exception as e:
             logger.error(f'OpenAI fallback also failed: {e}')
-            last_error = str(e)
+            errors.append(('gpt-4o-mini', str(e)))
 
-    logger.error(f'All AI models failed. Last error: {last_error}')
-    return {'error': f'All AI models failed: {last_error}'}
+    logger.error(cascade_failure(errors))
+    return {'error': cascade_failure(errors)}

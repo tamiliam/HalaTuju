@@ -6,11 +6,14 @@ A transient failure in the Vision MyKad pipeline at upload can leave an IC / par
 "couldn't read the IC" cockpit verdict, even though Vision is up. This re-runs Vision on every
 such document so the gate / verdict reflect the real read.
 
-Run via the internal cron endpoint job ``reprocess-ic-vision`` (e.g. every 15-30 min), or
-manually: ``python manage.py reprocess_unread_ic``. Billable (one Vision read per stuck doc);
+Run via the internal cron endpoint job ``reprocess-ic-vision`` (Cloud Scheduler
+``halatuju-reprocess-ic-vision``, HOURLY, ``0 * * * *``), or manually:
+``python manage.py reprocess_unread_ic``. Billable (one Vision read per stuck doc);
 each doc is picked up only while it has no run, so the cost is bounded and one-off per doc.
 TD-151 (2026-10-02): the sweep also re-reads the slip, offer, income proofs and relationship
 documents stuck with no read at all (`services.blockers._SELF_HEAL_READ_TYPES`); `--dry-run` counts.
+2026-10-24: and documents whose stored read is OUR service failing (`services.read_retry`) —
+skipped while Gemini reads are down, at most 72 hours per document, never on a closed case.
 """
 from django.core.management.base import BaseCommand
 

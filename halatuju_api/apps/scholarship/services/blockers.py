@@ -9,19 +9,9 @@ from django.utils import timezone
 from .. import requirements
 from ..document_snapshot import latest_doc, live_docs, present_doc_types
 from ..models import ApplicantDocument
-
-
-# Vision errors that mean the FILE couldn't be decoded/fetched (a PDF/video/corrupt
-# upload, or a storage-fetch glitch) — re-uploading a clear photo/scan fixes it.
-# Distinct from a genuine OCR-SERVICE outage (quota/network/unconfigured), where
-# re-uploading won't help. Drives the ic_unreadable vs ic_service_down split AND is
-# excluded from the outage detector's service-failure count. (TD-080)
-_IC_DECODE_ERROR_MARKERS = ('empty image', 'bad image data', 'could not fetch')
-
-
-def is_ic_decode_error(err: str) -> bool:
-    e = (err or '').lower()
-    return any(m in e for m in _IC_DECODE_ERROR_MARKERS)
+# The IC's decode-vs-service split (TD-080) lives in `read_errors` since 2026-10-24, so the
+# supporting-document path in `vision` can use it too (`services` still re-exports both names).
+from ..read_errors import is_ic_decode_error
 
 
 def ic_identity_blockers(application):
@@ -69,36 +59,8 @@ def ic_identity_blockers(application):
     return out
 
 
-def detect_vision_outage(window_hours=24):
-    """Passive Google-Vision health signal from recent IC / parent_ic OCR outcomes.
-
-    Returns ``(is_down, stats)``. ``is_down`` is True when there were OCR attempts
-    in the window and EVERY one carried a service-level error with NOT ONE success
-    — i.e. the OCR *service* (not a single blurry image) has been failing for
-    everyone who tried. A poor image ('empty image' / read-nothing) is NOT counted
-    as a service failure, so a run of bad uploads alone never trips the alert.
-
-    Read-only; no Vision API calls (so the check itself costs nothing). Pair with a
-    daily scheduled run so the admin is alerted once a day while an outage persists.
-    """
-    from django.utils import timezone
-    from datetime import timedelta
-    cutoff = timezone.now() - timedelta(hours=window_hours)
-    docs = ApplicantDocument.objects.filter(
-        doc_type__in=['ic', 'parent_ic'], vision_run_at__gte=cutoff,
-    ).only('vision_error', 'vision_nric', 'vision_name')
-    attempts = successes = service_failures = 0
-    for d in docs:
-        attempts += 1
-        if not d.vision_error and (d.vision_nric or d.vision_name):
-            successes += 1
-        elif d.vision_error and not is_ic_decode_error(d.vision_error):
-            service_failures += 1
-    is_down = attempts >= 1 and successes == 0 and service_failures >= 1
-    return is_down, {
-        'window_hours': window_hours, 'attempts': attempts,
-        'successes': successes, 'service_failures': service_failures,
-    }
+# The outage detectors (`detect_vision_outage`, and the Gemini one beside it) live in `outage.py`
+# since 2026-10-24.
 
 
 #: TD-151 (3), 2026-10-02 — the READ documents the submission gates and the verdict depend on, swept
@@ -141,15 +103,21 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
     (``_SELF_HEAL_READ_TYPES``), re-read through ``reextract.reextract_document`` — the one
     dispatcher the cockpit's Re-run uses. ``dry_run`` counts what WOULD be re-read, per type, and
     reads nothing (``{scanned, by_type}``) — run it before the first deploy to size the backlog.
+
+    2026-10-24: the remaining batch room also re-reads live documents whose stored read is OUR
+    service failing (``read_retry``: same Re-run core, each at most once per run — the list is
+    taken BEFORE any read, so a read that fails in this run is not retried in it).
     """
     from ..vision import run_vision_for_document
     from ..reextract import reextract_document
+    from .read_retry import run_service_retries, service_error_documents
     stuck = _stuck_unread_documents(limit)
+    retry = service_error_documents(limit - len(stuck))
     if dry_run:
         by_type = {}
-        for doc in stuck:
+        for doc in stuck + retry:
             by_type[doc.doc_type] = by_type.get(doc.doc_type, 0) + 1
-        return {'scanned': len(stuck), 'by_type': by_type}
+        return {'scanned': len(stuck) + len(retry), 'by_type': by_type}
     scanned = processed = errored = 0
     for doc in stuck:
         scanned += 1
@@ -177,7 +145,8 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
                 doc.vision_error = 'reprocess_failed'
             doc.vision_run_at = timezone.now()
             doc.save(update_fields=['vision_error', 'vision_run_at'])
-    return {'scanned': scanned, 'processed': processed, 'errored': errored}
+    s, p, e = run_service_retries(retry)
+    return {'scanned': scanned + s, 'processed': processed + p, 'errored': errored + e}
 
 
 def income_doc_blockers(application):
@@ -430,10 +399,14 @@ def document_red_blockers(application):
 def document_unreadable_blockers(application):
     """Compulsory documents that were uploaded but are UNREADABLE — a bad/blurry/skewed
     photo the student can simply re-take (Gopal already says exactly this). Owner policy:
-    don't accept what we can't verify. EXCLUDES our own OCR-service outages: the Gemini
-    docs (slip/offer/relationship) surface an outage as 'pending' (not processed), not
-    'unreadable'; the Vision IC path is guarded with is_ic_decode_error (a service error
-    is not the student's fault). Returns blocker codes."""
+    don't accept what we can't verify. EXCLUDES our own service outages, which are not the
+    student's fault: the Vision IC path is guarded with is_ic_decode_error, and a Gemini read
+    (slip / offer / relationship doc) that failed on OUR side is stored as 'review_manually'
+    (`read_errors.is_ai_service_error`, at the one choke point in `vision._run_field_extraction_impl`),
+    which every reader below treats as 'pending', never 'unreadable'. That has been true since
+    2026-10-24; before it, ANY extraction error — Gemini's prepaid credit running out included —
+    was stored as 'unreadable' and blocked here, although this docstring already claimed
+    otherwise. Returns blocker codes."""
     from ..academic_engine import student_slip_check
     from ..pathway_engine import student_offer_check
     from ..income_engine import (income_cluster_advice, effective_working_members,

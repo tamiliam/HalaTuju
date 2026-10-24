@@ -467,7 +467,9 @@ def verdict_for_document(doc):
             return ''
         if sv == 'name_mismatch':
             return 'bank_holder_mismatch'
-        if sv in ('incomplete', 'wrong_doc', 'unreadable', 'review_manually'):
+        if sv == 'review_manually':
+            return sv                   # not read yet (TD-392b) — a reviewer checks it, no re-upload
+        if sv in ('incomplete', 'wrong_doc', 'unreadable'):
             return 'bank_details_unclear'
         return ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the

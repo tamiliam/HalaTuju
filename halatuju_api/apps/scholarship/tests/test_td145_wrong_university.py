@@ -195,7 +195,9 @@ class WrongUniversityVerdictTest(_Catalogue):
                              for it in self._pathway(app)['unresolved']))
 
     def test_the_engine_version_moved(self):
-        self.assertEqual(VERDICT_ENGINE_VERSION, '2026-10-04.1')
+        # Superseded 2026-10-24: this pinned '2026-10-04.1' exactly. The AI-outage sprint moved a
+        # band again ('2026-10-24.1'), so what TD-145 owes is that the version is no OLDER than its own.
+        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-04.1')
 
 
 class ConfirmDropsStaleCourseIdTest(_Catalogue):

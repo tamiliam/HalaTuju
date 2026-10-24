@@ -32,8 +32,7 @@ logger = logging.getLogger(__name__)
 # Gemini model cascade — same order as report_engine.py
 MODEL_CASCADE = [
     'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
+    'gemini-2.5-flash-lite',     # 2.0-flash retired (404) and removed, 2026-10-24
 ]
 
 # Regex to extract MASCO codes like "2141-01" from Gemini response

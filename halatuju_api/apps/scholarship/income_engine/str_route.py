@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 
+from ..read_errors import read_deferred
 from .buckets import _name_bucket, _nric_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
 from .relationships import _MEMBER_ORDER
@@ -32,8 +33,8 @@ _STR_RECOGNISED_SOURCES = ('letter', 'semakan_status', 'dashboard')
 # submission blocker) each carrying its own stale subset, so the two WORST states
 # (wrong_type/unreadable) were silently treated as fine by some of them.
 # NB 'unreadable' is deliberately NOT here: it is AMBER per the spec (the status token
-# didn't read — misread ≠ disproven), and a never-scanned legacy doc also reads
-# 'unreadable', so blocking on it would gate consent on our own extraction backlog.
+# didn't read — misread ≠ disproven). (A never-scanned or outage-deferred doc read 'unreadable'
+# too until 2026-10-24; it now reads 'unknown', in no tuple here — `_read_str_check`.)
 STR_RED_STATES = ('wrong_type', 'rejected', 'stale')
 # The student coach nudges on the fixable non-green states too (an unreadable status →
 # re-upload cleanly; a dateless 'unconfirmed' approval → a dated proof confirms the cycle).
@@ -213,7 +214,10 @@ def _read_str_check(doc):
     return {
         'name': name, 'nric': nric, 'status': status, 'year': year,
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
-        'current_status': _str_currency(status, year, cohort_year, f.get('source_type', '')),
+        # NOT READ YET (none, or deferred by OUR outage) is 'unknown' — the state the student and
+        # officer screens already draw grey — never 'unreadable', which asks for a re-upload (2026-10-24).
+        'current_status': ('unknown' if read_deferred(vf)
+                           else _str_currency(status, year, cohort_year, f.get('source_type', ''))),
         'ic_present': ic is not None,
         # TD-285 (F1, F-A): whose ICs, on which FIELD, the recipient was compared against, and
         # whose IC is on file at all. Server-side only — the

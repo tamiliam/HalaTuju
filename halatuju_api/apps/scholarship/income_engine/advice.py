@@ -89,6 +89,10 @@ def income_cluster_advice(application, member):
         rel_status = icc['name_status'] if icc else 'pending'
         rel_ran = (getattr(rel_obj, 'vision_fields_run_at', None)
                    or getattr(rel_obj, 'vision_run_at', None))
+        # A read that has not JUDGED the document — none yet, or deferred by our outage
+        # ('review_manually', 2026-10-24) — cannot have found it unreadable.
+        from ..read_errors import read_deferred
+        rel_ran = rel_ran and not read_deferred(getattr(rel_obj, 'vision_fields', None))
         # Code-health S4 #18: 'pending' can come from EITHER side of the comparison. Only
         # blame the relationship doc when the EARNER IC has actually been read — an IC whose
         # OCR is still pending (vision_run_at NULL, a known transient state the self-heal

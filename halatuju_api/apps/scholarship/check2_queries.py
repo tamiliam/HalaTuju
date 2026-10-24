@@ -487,6 +487,8 @@ def sync_check2_queries(application):
     # Track whether a NEW student-visible check2 item is created this pass → re-notify (all
     # source='check2' items are student-visible when the flag is on; see views._student_visible).
     raised_student_visible = False
+    from .check2_deferred import held_doc_requests   # a document OUR outage left unread: no change
+    held = held_doc_requests(application, DOC_SPECS, existing, proof_wanted)
 
     # Uncapped PROOF doc-requests (design decision #1): create when wanted + absent,
     # auto-resolve when the parent's income gap clears. V2 (#4): these are DOC-KIND items and are
@@ -495,6 +497,8 @@ def sync_check2_queries(application):
     # the CLARIFY queries below stay once-ever — a typed answer isn't re-asked.)
     for code, spec in DOC_SPECS.items():
         item = existing.get(code)
+        if code in held:
+            continue
         if code in proof_wanted:
             if item is None and may_ask:         # machine asks only in the Completed stage
                 try:

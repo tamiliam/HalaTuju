@@ -149,5 +149,9 @@ class TestItResolvesRatherThanRemembers(TestCase):
     def test_models_in_use_covers_the_fallbacks_and_the_other_provider(self):
         models = ai_registry.models_in_use()
         self.assertIn('gemini-2.5-pro', models)        # the pro cascade + three settings
-        self.assertIn('gemini-2.0-flash', models)      # bottom of the cascade; a real reachable
+        self.assertIn('gemini-2.5-flash-lite', models)  # bottom of the cascade; a real reachable
+        # Superseded 2026-10-24: this line used to pin 'gemini-2.0-flash' as the bottom of the
+        # cascade. Google retired that model (404) and it was removed from every cascade, because
+        # the cascade error then reported its 404 instead of the real cause (a 402).
+        self.assertNotIn('gemini-2.0-flash', models)
         self.assertIn('gpt-4o-mini', models)           # the OpenAI fallback

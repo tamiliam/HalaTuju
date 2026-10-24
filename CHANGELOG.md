@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: an AI outage is not the student's unreadable document (the Gemini 402 incident) - 2026-10-24
+
+On 2026-10-23/24 Gemini's prepaid credit ran out (HTTP 402) for ~20 hours. Every Gemini document read
+failed, was stored as `unreadable` — so students were told to re-take good photos and the consent
+gate blocked them — the stored error named a retired model's 404 instead of the 402, and no alert
+fired because the outage check looked only at IC OCR.
+- **Outage ≠ unreadable:** `is_ai_service_error` (one classifier, now in `read_errors`: the cascade-failed prefix,
+  no key, no SDK, `rate_limited`) decides at the one choke point, `vision._run_field_extraction_impl`.
+  Our failure stores the existing deferred state `review_manually` + `service_error: True`;
+  document-level failures (`no text`, `could not fetch image`, …) stay `unreadable`. The income
+  cluster's relationship-doc check (`income_cluster_advice`) no longer counts a deferred read as
+  read. `document_unreadable_blockers`' docstring now says what the code does.
+- **Self-heal:** the hourly `reprocess-ic-vision` sweep also re-reads live slip / offer / income /
+  relationship documents whose stored read is a service error (the incident's `unreadable` rows
+  included) through `reextract_document`, never over a read with fields, once per run (bounds
+  revised after the review, below); `rate_limited` ones wait for the same per-application hourly cap
+  the upload path uses.
+- **Alert:** the outage check (now `services/outage.py`) also covers Gemini document reads, one email
+  per service that is down, carrying the stored error. `alert_vision_outage --hourly` is a stateless
+  start-edge mode (2-hour window, mails only an outage the run an hour earlier could not see); new
+  cron door `read-outage-start`. The daily `vision-outage` job and its args are unchanged.
+- **Honest errors:** `gemini.cascade_failure` names every model's own error (≤600 chars) in both
+  cascade seams and the counsellor report; `gemini-2.0-flash` (retired) is gone from every cascade,
+  `generate_stpm_headlines` and the AI registry.
+- **After the adversarial review (same day):** `read_errors.py` is the one home for "our fault or
+  the document's" (`is_ai_service_error`, `is_ocr_service_error` — the IC's TD-080 split, moved out
+  of `blockers.py` — and `read_deferred`). A read not yet made (none, or deferred) raises no student
+  request after submission: no `offer_unreadable`, no `birth_cert_unreadable` /
+  `guardianship_letter_unreadable` (`relationship_doc_unreadable`, TD-391), an STR reads `unknown`
+  (not `unreadable`), its `doc_match_verdict` is `pending` and it gets no `str_not_current` coach.
+  **`VERDICT_ENGINE_VERSION` 2026-10-24.1** (a band moves for those reads). A deferred upload is no
+  failed attempt (no attempt stamp, no circuit-breaker). A model that answers with no parseable
+  JSON is the document's problem (`unparseable model response`, billed once, not retried); the prose
+  seam treats an empty answer the same way. A Vision OCR outage on a text-read document is deferred
+  (`OCR service failed: …`), and a deferred bank statement gets the reviewer copy (TD-392). The
+  clobber guard keeps any real verdict over our outage. The sweep's retry half moved to
+  `services/read_retry.py`: skipped while Gemini reads are down, one paid probe then stop, a
+  72-hour window per document from its first retry (replacing the 48-run count), never a closed
+  case, and it now also covers bills, bank statements, school-leaving certificates and semester
+  results; a failure selecting them cannot stop the never-read half. The hourly alert needs two
+  failures from two applications and compares with the run 65 minutes back (scheduler jitter).
+  `generate_stpm_headlines` runs 2.5-flash with a thinking budget of 0.
+- **After the round-2 and round-3 reviews:** while a bill, school-leaving certificate, semester
+  result or support letter is deferred by our outage (`read_errors.deferred_by_us`), Check 2 HOLDS
+  that request — no new ask, no auto-resolve on an unscanned document (`check2_deferred`); the
+  gap readers themselves are unchanged. A 400 is the document's problem only when its message names
+  the file ("Unable to process input image", "The document has no pages", "Request payload size
+  exceeds the limit", "Provided image is not valid") and mentions no key, billing, quota,
+  precondition, permission or model, on EVERY model — a revoked key's 400 is our outage. A clean
+  PDF supporting document no longer counts as a Vision success (its text layer never reaches
+  Vision). A deferred STR bands Unsure like a badly-read one, still with no
+  student ask. The cascade no longer stops at the first unparseable answer: it goes on to the next
+  model; a read is the DOCUMENT's problem (`No model could read this document`, unreadable, not
+  retried) only when every model answered unparseably or refused the file (the content rule above,
+  the code read from the SDK's `code`); any model failing on our side keeps it a service error.
+  Same in the prose seam. The Vision outage check now counts supporting documents' OCR too.
+- **Tests:** `test_ai_outage.py` (+51, factory-built), each fix bitten by an injected fault.
+  TD-390 (the IC second opinion), TD-393 (a staged re-upload during an outage is never re-judged),
+  TD-394 (a deferred EPF / support letter holds the income gate), TD-395 (pre-fix Vision-outage
+  rows, with the query) and TD-396 (an officer reason line for a deferred offer needs i18n) raised
+  and left; TD-391 and TD-392 raised and closed.
+
 ## Request #42 — the Overview layout per gift - 2026-10-22
 
 BrightPath's two gifts are at different stages and want different Overview panels. The layout was

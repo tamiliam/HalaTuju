@@ -32,9 +32,14 @@ def relationship_doc_unreadable(doc) -> bool:
     to read is blank did the document tell us nothing. A wrong-type document is a separate,
     already-handled state (``verdict_engine._doc_wrong_type``) — it is a different message to
     the student ("that is not a birth certificate") from "we could not read yours".
+
+    ⚠ NOT READ YET IS NOT UNREADABLE EITHER (TD-391, 2026-10-24). A document whose read never ran,
+    or that OUR outage deferred (``review_manually``), has not been judged: it is False here, so it
+    raises no "send a clearer copy" request and the hourly sweep reads it when the service is back.
     """
+    from ..read_errors import read_deferred
     fields = _REL_DOC_READ_FIELDS.get(getattr(doc, 'doc_type', ''))
-    if doc is None or not fields:
+    if doc is None or not fields or read_deferred(getattr(doc, 'vision_fields', None)):
         return False
     f = _doc_fields(doc)
     return not any((f.get(k) or '').strip() for k in fields)

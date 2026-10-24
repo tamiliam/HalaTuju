@@ -18,6 +18,9 @@ from typing import Optional
 from django.conf import settings
 from django.utils import timezone
 
+from .gemini import cascade_failure, document_failure
+from .read_errors import (OCR_SERVICE_FAILED, UNPARSEABLE_RESPONSE, is_ai_service_error,
+                          is_ocr_service_error, model_rejected_document, read_deferred)
 from .pdf_pages import pdf_first_page_png as _pdf_first_page_png
 from .pdf_pages import pdf_text_layer as _pdf_text_layer
 
@@ -1606,7 +1609,7 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
     client = genai.Client(api_key=api_key)
     contents = (prompt if image is None
                 else [types.Part.from_bytes(data=image, mime_type=mime_type), prompt])
-    last_error = None
+    ours, document = [], []          # why each model failed: OUR side, or the document (2026-10-24)
     for model_name in MODEL_CASCADE:
         try:
             resp = client.models.generate_content(
@@ -1614,15 +1617,21 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
                 config=types.GenerateContentConfig(
                     response_mime_type='application/json', response_schema=schema, temperature=0.1),
             )
-            from . import usage   # billable Gemini call — best-effort meter (tokens from usage_metadata)
-            _it, _ot = usage.gemini_tokens(resp)
-            usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
-            return json.loads(resp.text)
         except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
-            last_error = str(e)
+            (document if model_rejected_document(e) else ours).append((model_name, str(e)))
             logger.warning('Gemini JSON call failed with %s: %s', model_name, e)
             continue
-    return {'_error': f'All AI models failed: {last_error}'}
+        from . import usage   # billable Gemini call — best-effort meter (tokens from usage_metadata)
+        _it, _ot = usage.gemini_tokens(resp)
+        usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
+        try:
+            return json.loads(resp.text)
+        except (TypeError, ValueError) as e:   # answered (billed) with nothing usable: try the next
+            document.append((model_name, f'{UNPARSEABLE_RESPONSE}: {e}'))
+            logger.warning('Gemini JSON call: %s returned no parseable JSON: %s', model_name, e)
+    # Any model failing on OUR side makes the read ours (a healthy fallback never really answered);
+    # only when every model looked and none could use the document is it the document's problem.
+    return {'_error': cascade_failure(ours + document) if ours else document_failure(document)}
 
 
 # The `warnings` are shown to a NON-TECHNICAL officer in the cockpit (docsDrawer). Steer Gemini to
@@ -2070,8 +2079,9 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
             ex['capture'] = 'ai'
     else:
         r = ocr if ocr is not None else ocr_document(doc)
-        if r['error'] or not (r['text'] or '').strip():
-            ex = {'fields': {}, 'warnings': [], 'error': r['error'] or 'no text read'}
+        if r['error'] or not (r['text'] or '').strip():   # Vision OCR down → OUR outage (TD-392a), not the file
+            ex = {'fields': {}, 'warnings': [], 'error': (f"{OCR_SERVICE_FAILED}: {r['error']}"
+                  if is_ocr_service_error(r['error']) else r['error'] or 'no text read')}
         else:
             # Deterministic label capture first (never raises); None → Gemini. TD-319: so does an EPF table read 'unknown'.
             from .epf_contribution_fallback import deterministic_or_epf_fallback
@@ -2082,9 +2092,10 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
                 ex = extract_document_fields(r['text'], doc.doc_type)
                 ex['capture'] = 'ai'
 
-    if ex['error']:
-        result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable',
-                  'capture': ex.get('capture', 'ai'), 'error': ex['error']}
+    if ex['error']:   # OUR AI outage is a deferred read ('review_manually'), never the student's 'unreadable'
+        svc = is_ai_service_error(ex['error'])
+        result = {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable',
+                  'capture': ex.get('capture', 'ai'), 'error': ex['error'], 'service_error': svc}
     else:
         verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
                                       postcode=postcode, city=city, street=street,
@@ -2267,8 +2278,11 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
     # Overwriting good fields with an empty error read is exactly the incident mode that
     # destroyed vision_fields in the past (memory: halatuju_never_reextract_locally).
     # Keep the stored read; report the failure to the caller without persisting it.
+    # 2026-10-24: nor does OUR outage overwrite a real stored verdict (a true 'unreadable' included).
     prior = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-    if result['error'] and (prior.get('fields') or (prior.get('text') or '').strip()):
+    real_verdict = not read_deferred(prior) and not is_ai_service_error(prior.get('error'))
+    if result['error'] and (prior.get('fields') or (prior.get('text') or '').strip()
+                            or (result['service_error'] and real_verdict)):
         logger.warning('run_field_extraction: kept stored extraction for doc %s (re-run failed: %s)',
                        doc.id, result['error'])
         return {**result, 'stale_kept': True}

@@ -26,8 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 # Gemini model cascade
 MODEL_CASCADE = [
     'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
+    'gemini-2.5-flash-lite',     # 2.0-flash retired (404) and removed, 2026-10-24
 ]
 
 MASCO_CODE_RE = re.compile(r'\b(\d{4}-\d{2})\b')

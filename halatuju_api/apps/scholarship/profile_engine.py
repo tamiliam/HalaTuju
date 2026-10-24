@@ -28,12 +28,14 @@ from django.conf import settings
 from apps.courses.exam_questions import results_held
 
 from .document_snapshot import SNAPSHOT_ORDER
+from .gemini import cascade_failure, document_failure
+from .read_errors import UNPARSEABLE_RESPONSE, model_rejected_document
 from .models import FundingNeed
 from .shortlisting import count_spm_a_grades
 
 logger = logging.getLogger(__name__)
 
-MODEL_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+MODEL_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']   # 2.0-flash retired (404), 2026-10-24
 # The FINAL profile is the conclusive document a sponsor reads, generated rarely (once
 # per accepted student) — so it runs on Pro for the best prose, falling back to the
 # Flash cascade if Pro is unavailable. The high-volume DRAFT stays on the Flash cascade.
@@ -299,7 +301,7 @@ def _call_gemini_text(prompt, target_language, models=None):
         return {'error': 'AI module not installed'}
 
     client = genai.Client(api_key=api_key)
-    last_error = None
+    ours, rejected = [], []          # the same split as vision._call_gemini_json (2026-10-24)
     for model_name in (models or MODEL_CASCADE):
         try:
             start = time.time()
@@ -308,15 +310,18 @@ def _call_gemini_text(prompt, target_language, models=None):
             from . import usage   # billable Gemini prose call — best-effort meter
             _it, _ot = usage.gemini_tokens(response)
             usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
+            if not (response.text or '').strip():   # answered (billed) with nothing: try the next
+                rejected.append((model_name, f'{UNPARSEABLE_RESPONSE}: empty text'))
+                continue
             return {
                 'markdown': response.text, 'model_used': model_name,
                 'language': target_language, 'generation_time_ms': elapsed,
             }
         except Exception as e:
-            last_error = str(e)
+            (rejected if model_rejected_document(e) else ours).append((model_name, str(e)))
             logger.warning('Gemini text generation failed with %s: %s', model_name, e)
             continue
-    return {'error': f'All AI models failed: {last_error}'}
+    return {'error': cascade_failure(ours + rejected) if ours else document_failure(rejected)}
 
 
 def _resolve_language(application, language):

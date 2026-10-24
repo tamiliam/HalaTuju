@@ -8,26 +8,49 @@ from django.core.mail import send_mail
 from .shared import _P, logger
 
 
+#: Per read service: (subject, what failed, what it does to students, where to look). The Gemini row
+#: arrived 2026-10-24, after its prepaid credit ran out for ~20 hours and no alert fired.
+_OUTAGE_COPY = {
+    'vision': (
+        'Document OCR (Google Vision) may be down',
+        'every Google Vision OCR attempt (ICs and supporting documents)',
+        'shortlisted students cannot pass the consent identity check (their IC can\'t be '
+        'auto-verified) and supporting documents are held for a reviewer',
+        'Please check the Google Vision API status, quota and billing for the HalaTuju project.'),
+    'gemini': (
+        'Document AI reads (Gemini) may be down',
+        'every Gemini document read (results slips, offer letters, income and relationship '
+        'documents)',
+        'those documents are held as "a reviewer will check this by hand" instead of being '
+        'auto-checked; the hourly self-heal sweep re-reads them once Gemini answers again',
+        'Please check the Gemini API key, prepaid credit and billing in Google AI Studio.'),
+}
+
+
 def send_vision_outage_alert_email(stats):
-    """Alert the admin that Google Vision OCR appears to be down — every recent
-    IC/parent-IC OCR attempt errored and none succeeded. Sent to
+    """Alert the admin that a document-READ service appears to be down — every recent attempt
+    errored and none succeeded. ``stats['service']`` names it: 'vision' (Google Vision OCR of the
+    IC, the original and the default) or 'gemini' (Gemini document reads, 2026-10-24). Sent to
     ``settings.ADMIN_NOTIFY_EMAIL`` (contact@halatuju.xyz); skipped silently if unset.
     English-only (internal). Best-effort — swallows send failures."""
     to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
     if not to_email:
         return False
+    subject, what, impact, where = _OUTAGE_COPY[stats.get('service') or 'vision']
+    sample = (stats.get('sample_error') or '').strip()
+    repeat = ('This alert is sent when the outage STARTS; the daily check repeats it while it lasts.'
+              if stats.get('mode') == 'start' else
+              'This is an automated alert and will repeat daily until the service recovers.')
     try:
         send_mail(
-            subject='[HalaTuju] Document OCR (Google Vision) may be down',
+            subject=f'[HalaTuju] {subject}',
             message=(
-                'Automated check: in the last {window_hours}h, every IC / parent-IC '
-                'OCR attempt failed with a service error and none succeeded '
-                '({service_failures} service failures across {attempts} attempts).\n\n'
-                'While this persists, shortlisted students cannot pass the consent '
-                'identity check (their IC can\'t be auto-verified). Please check the '
-                'Google Vision API status, quota and billing for the HalaTuju project.\n\n'
-                'This is an automated alert and will repeat daily until OCR recovers.'
-            ).format(**stats),
+                f'Automated check: in the last {stats["window_hours"]}h, {what} failed with a '
+                f'service error and none succeeded ({stats["service_failures"]} service failures '
+                f'across {stats["attempts"]} attempts).\n\n'
+                + (f'The error we stored:\n{sample}\n\n' if sample else '')
+                + f'While this persists, {impact}. {where}\n\n{repeat}'
+            ),
             from_email=_P.email_from,
             recipient_list=[to_email],
         )

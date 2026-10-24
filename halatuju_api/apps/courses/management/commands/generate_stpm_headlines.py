@@ -87,9 +87,12 @@ class Command(BaseCommand):
 
             try:
                 response = client.models.generate_content(
-                    model='gemini-2.0-flash',
+                    model='gemini-2.5-flash',     # 2.0-flash retired (404), 2026-10-24
                     contents=[SYSTEM_PROMPT, user_prompt],
-                    config={'temperature': 0.9, 'max_output_tokens': 4096},
+                    # 2.5-flash THINKS by default and its thinking tokens count against
+                    # max_output_tokens, which could leave the JSON truncated; a headline needs none.
+                    config={'temperature': 0.9, 'max_output_tokens': 4096,
+                            'thinking_config': {'thinking_budget': 0}},
                 )
                 text = response.text.strip()
                 # Strip markdown fences if present

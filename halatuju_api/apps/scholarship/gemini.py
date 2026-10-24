@@ -25,8 +25,47 @@ swallowed the seams would move the boundary the rule names.
 **Metering is inside.** `usage.record_usage` runs on every successful call, best-effort, exactly
 as it did in all three copies. A caller that bypassed this would be a billable call outside the
 meter — the thing rule 6 exists to prevent.
+
+**The cascade's failure string is built here too** (`cascade_failure`), for both cascade seams.
+2026-10-24: Gemini's prepaid credit ran out (402) for ~20 hours; the error kept only the LAST
+model's message — a retired model's 404 — so nobody could see the cause. Whether a stored error is
+OUR outage or the document's problem is `read_errors`, which reads the prefix this writes.
 """
 from django.conf import settings
+
+from .read_errors import CASCADE_FAILED, DOCUMENT_FAILED
+
+#: The stored cascade error stays readable on a cockpit row and in a log line.
+_CASCADE_ERROR_MAX = 600
+
+
+def cascade_failure(errors) -> str:
+    """The one error string for a cascade in which EVERY model failed, naming each model and its
+    own message — `errors` is `[(model, message), …]` in the order tried. The last message alone
+    hid a 402 behind a retired model's 404 for a day (2026-10-24). Each message is cut to an even
+    share so the whole stays under `_CASCADE_ERROR_MAX`; the prefix never changes, because
+    `read_errors.is_ai_service_error` and the outage alert read it."""
+    return _joined(CASCADE_FAILED, errors)
+
+
+def document_failure(errors) -> str:
+    """The error string when EVERY model looked at the document and none could use it — the same
+    shape as `cascade_failure`, under `read_errors.DOCUMENT_FAILED`, which is NOT a service error."""
+    return _joined(DOCUMENT_FAILED, errors)
+
+
+def _joined(prefix, errors):
+    head = f'{prefix}: '
+    if not errors:
+        return head + 'no model was tried'
+    share = max(40, (_CASCADE_ERROR_MAX - len(head)) // len(errors) - 2)
+    parts = []
+    for model, msg in errors:
+        one = ' '.join(str(msg or '').split())        # a provider error spans several lines
+        label = f'{model}: '
+        room = max(20, share - len(label))
+        parts.append(label + (one if len(one) <= room else one[:room - 1] + '…'))
+    return (head + '; '.join(parts))[:_CASCADE_ERROR_MAX]
 
 
 def generate_text(prompt, model, *, images=None, exc, unconfigured, unavailable):

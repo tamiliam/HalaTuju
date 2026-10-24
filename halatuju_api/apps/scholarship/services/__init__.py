@@ -49,11 +49,15 @@ from .queries_sla import (
     QUERY_SLA_ACTIVE_STATUSES, is_ready_for_assignment, open_clarify_queries,
     open_student_tasks, query_sla, query_sla_days,
 )
+from ..read_errors import _IC_DECODE_ERROR_MARKERS  # moved out of blockers.py, 2026-10-24
 from .blockers import (
-    _IC_DECODE_ERROR_MARKERS, _INCOME_CLUSTER_DOC_TYPES, _offer_blocks,
-    detect_vision_outage, document_red_blockers, document_unreadable_blockers,
+    _INCOME_CLUSTER_DOC_TYPES, _offer_blocks,
+    document_red_blockers, document_unreadable_blockers,
     ic_identity_blockers, income_doc_blockers, is_ic_decode_error,
     reprocess_unread_ic_documents,
+)
+from .outage import (
+    detect_service_outages, detect_vision_outage,
 )
 from .completeness import (
     _family_done, _guardian_docs_done, application_completeness,
