@@ -14509,3 +14509,47 @@ the dashboard's Source column changes.
 
 **Revisit if:** the partner dashboard is redesigned (the chip's one reader), a second organisation
 joins (TD-386 c/d), or the referral-partner screen is prototyped (TD-387).
+
+## 2026-10-24 — The AI outage: our failure is a deferred read, never the student's "unreadable"
+
+Context: Gemini's prepaid credit ran out (402) for ~20 hours on 2026-10-23/24 and every read was stored
+as the student's `unreadable` (retro `docs/retrospectives/retrospective-2026-10-24-ai-outage.md`).
+
+**1. A read that failed on OUR side is stored `review_manually`, not a new state.**
+**Decision:** our failure writes the existing "AI skipped → not extracted" verdict `review_manually`, plus
+`service_error: True` and the full error, at the one choke point (`vision._run_field_extraction_impl`).
+**Alternatives considered:** a new verdict (`service_down` / `pending_read`) with its own copy and chip.
+**Rationale:** every reader (pathway, academic, resolution, help, the web checklist) already treated
+`review_manually` as pending; a new state would have needed every one of them, plus en/ms/ta copy and a
+frontend change, to learn it — and each one missed would have defaulted to the old wrong answer.
+**Trade-offs:** `review_manually` now means two things (our throttle, our outage); the `service_error` marker
+and the error string tell them apart where it matters (the sweep, the alert). Readers of what the old
+`unreadable` CAUSED still had to be found by hand (three review rounds did).
+**Revisit if:** the officer needs to tell "AI down" from "AI skipped" on screen (TD-396 is the first step).
+
+**2. Ours or the document's — the classification rule (`read_errors.py`).**
+**Decision:** a failure is the DOCUMENT's only on a positive signal naming the file: no text on it, a
+corrupt/unfetchable image, or every model refusing its CONTENT (HTTP 400/413 whose message names the file —
+"Unable to process input image", "The document has no pages", "Request payload size exceeds the limit",
+"Provided image is not valid" — and mentions no key, billing, quota, precondition, permission or model) or
+answering with nothing parseable. Anything else — 402/403/404/429/5xx, timeouts, a revoked key's 400, our own
+malformed request, an unrecognised 400, a Vision OCR service error, any model failing on our side while the
+others did not answer — is OURS: deferred, re-read by the hourly sweep, counted by the outage alert.
+**Alternatives considered:** status-code-only (every 400 = the file) — rejected in round 3 because a revoked
+key answers 400 and would repeat the incident.
+**Rationale:** the errors are asymmetric — a wrong "ours" costs a retry, a wrong "theirs" costs a student.
+**Trade-offs:** a genuinely bad file that Gemini refuses with an unlisted message is retried for up to 72 h
+before an officer sees it; the phrase list must grow from real messages, never guesses.
+**Revisit if:** Gemini publishes structured error reasons for content rejections.
+
+**3. TD-394 — a deferred EPF / support letter does not satisfy the income gate (owner ruling 2026-10-25).**
+**Decision:** keep as is (option A): a money gate never passes on a document nobody has read; the student
+waits for the hourly sweep. **Alternatives considered:** a non-blocking "pending our read" state; accepting
+presence while deferred. **Revisit if:** outages stop being rare and short.
+
+**4. An OpenAI fallback for document reads is sequenced AFTER this sprint and TD-390 (TD-399).**
+**Decision:** no second AI provider for document reads yet. It is its own sprint, after the owner rules on
+sending student documents to a second processor (privacy / DPA) and after an accuracy run of OpenAI on the
+eval corpus (`eval_doc_recognition`). **Rationale:** a fallback that reads worse, or that a family never
+agreed to, is not a fix for an outage; this sprint made an outage harmless and visible instead.
+**Revisit if:** the owner's privacy ruling lands and the eval run shows parity.

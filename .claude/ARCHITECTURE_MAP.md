@@ -457,7 +457,13 @@ refine: `profile_engine.py` — `generate_sponsor_profile` (draft from the form)
 (v2: draft + submitted `InterviewSession` findings → `SponsorProfile.final_markdown`), both routed through the shared
 `_call_gemini_text` seam. Phase C added `InterviewSession` (findings keyed to anomaly/gap codes) + `PartnerAdmin.role`.
 All Gemini engines mock one seam in tests (`vision._call_gemini_json` for JSON, `profile_engine._call_gemini_text`
-for prose) — no billable calls in CI. **Student-facing help (v2.20.0):** `help_engine.py` ("Cikgu Gopal") —
+for prose) — no billable calls in CI. **Read failures — ours or the document's (AI-outage sprint, 2026-10-24):**
+`read_errors.py` is the one classifier (`is_ai_service_error`, `is_ocr_service_error`, `model_rejected_document`,
+`read_deferred`, `deferred_by_us`); `gemini.py` builds the cascade's error strings (`cascade_failure`,
+`document_failure`); our failure is stored `review_manually` + `service_error` at the choke point in
+`vision._run_field_extraction_impl`. `check2_deferred.py` holds Check-2 doc requests while a read is deferred;
+`services/read_retry.py` is the hourly sweep's re-read of deferred reads; `services/outage.py` holds the
+Vision/Gemini outage detectors behind `alert_vision_outage`. **Student-facing help (v2.20.0):** `help_engine.py` ("Cikgu Gopal") —
 `generate_document_help(doc_type, verdict, *, first_name, target_language)` phrases an already-decided document
 verdict into a warm 2-3 sentence coach note (reuses `_call_gemini_text`); `verdict_for_document` maps a doc's
 soft signals to the verdict, mirroring the FE chip precedence. Served by `DocumentHelpView`

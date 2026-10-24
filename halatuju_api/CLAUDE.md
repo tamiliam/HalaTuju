@@ -151,6 +151,10 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    every deploy (`SyncReleaseJob`) but NOT its env: mirror an env change onto the job by hand.
 9. Scheduled work runs as **Cloud Scheduler → `POST /api/v1/internal/cron/<job>/`** with
    `X-Cron-Secret` (`CronRunView.JOBS`); a POST needs a body (`-d '{}'`) or the load balancer answers 411.
+   Read-service health (2026-10-24): `vision-outage` (daily 02:00 UTC, Vision OCR + Gemini reads, 24 h
+   window), `read-outage-start` (`halatuju-read-outage-start`, hourly at :05 MYT, `--hourly` start-edge:
+   mails once when an outage begins, ≥2 failures from ≥2 applications), `reprocess-ic-vision`
+   (`halatuju-reprocess-ic-vision`, hourly: never-read docs + reads our outage deferred).
 10. **When more than one agent is in the checkout:** declare the files you own in
    `AGENT-TERRITORY.log` (gitignored); stage explicit paths, never `git add -A`; build in a
    `git worktree` and push from it with `git push origin HEAD:main` — never check out `main` there.
@@ -176,7 +180,7 @@ Defaults live in `halatuju/settings/base.py` and `production.py`; each has a com
 | `SUPABASE_URL` | Supabase project URL — the ES256 JWKS check needs it |
 | `SUPABASE_JWT_SECRET` | HS256 secret for legacy anon/service JWTs |
 | `SUPABASE_SERVICE_ROLE_KEY` | Creates staff Supabase accounts (invite/resend); without it onboarding 500s |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` | AI: Gemini primary, OpenAI the report fallback |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` | AI: Gemini primary, OpenAI the report fallback. ⚠ The Gemini key must belong to the HalaTuju GCP project (billing PREPAID since 2026-10-24 — credit running out is an outage, 402); set it on `halatuju-api` AND the `release-decisions` job. Until 2026-10-24 the live key sat in a project outside the owner's billing view |
 | `GOOGLE_CLOUD_VISION_API_KEY` | Cloud Vision OCR (also usable by the eval tools) |
 | `CONTRACT_QUIZ_MODEL`, `APPLY_COPY_DRAFT_MODEL`, `REQUESTS_TRIAGE_MODEL` | The one model each job uses (no silent downgrade) |
 | `GOOGLE_DWD_SERVICE_ACCOUNT` | The Workspace delegation account's EMAIL (`halatuju-meet@…`), **keyless** (TD-125): the runtime SA signs as it through the IAM Credentials API. Not a secret. Empty → Meet/Drive/Sheets do nothing |
@@ -920,15 +924,28 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**Per-gift referral sources (Sprints 1 + 2) are LIVE (2026-10-09, `ffa0983a`, api-01117-4m6 /
-web-00968-28w; retro `docs/retrospectives/retrospective-2026-10-09-per-gift-sources.md`).** Each gift
+**The AI-outage sprint is LIVE (2026-10-25, `9d3ff53a`, api-01135-djr; retro
+`docs/retrospectives/retrospective-2026-10-24-ai-outage.md`).** OUR read failing (Gemini or Vision down,
+unconfigured, throttled, a revoked key) is stored `review_manually` + `service_error`, never the student's
+`unreadable` — one classifier, `apps/scholarship/read_errors.py`; a document is blamed only when every model
+refused its CONTENT or none parsed an answer. Deferred reads raise no student request, no consent blocker,
+no attempt, and hold Check-2 requests (`check2_deferred.py`); the hourly sweep re-reads them
+(`services/read_retry.py`); the outage alert covers Gemini and supporting-document OCR.
+`VERDICT_ENGINE_VERSION` 2026-10-24.1. Register: **130 open**.
+- **Next: TD-390** — the IC's Gemini second opinion silently does not run during an outage and nothing
+  retries it (identity gate: adversarial review before the push). **Then TD-399** — an OpenAI fallback for
+  document reads, gated on the owner's privacy ruling (a second processor) and an eval run on the corpus.
+- ⚠ A Check-2 request held for a deferred read stays frozen if the sweep's 72 h pass (TD-397); TD-394
+  (a deferred EPF/letter holds the income gate) is KEPT by owner ruling.
+
+**Earlier (still current):** per-gift referral sources (Sprints 1 + 2) are LIVE (2026-10-09, `ffa0983a`,
+api-01117-4m6 / web-00968-28w; retro `docs/retrospectives/retrospective-2026-10-09-per-gift-sources.md`). Each gift
 chooses its referral sources on Programme → Configuration ("Who referred you?" toggles; table
 `programme_referral_sources`, rules in `apps/scholarship/gift_sources.py`); the public intake serves that
 gift's `{code, name}` list; the apply form adds Halatuju.xyz / Facebook-WhatsApp / Other always; the
 submit refuses any other code (400 `referral_source_not_offered`). Org-timing Sprint 1 (2026-10-07) and
 request #31 + TD-371..377 (2026-10-08) are live too. Ledgers (applied migrate-first, contiguous):
-scholarship ends at 0174, courses at 0083 on main; **#39 S4 (`perm-s4`) adds scholarship 0175_staff_permission_changes, applied by hand BEFORE its deploy** — **next free after it: scholarship 0176 / courses 0084.** Register:
-**120 open.**
+scholarship ends at 0174, courses at 0083 on main; **#39 S4 (`perm-s4`) adds scholarship 0175_staff_permission_changes, applied by hand BEFORE its deploy** — and request #42 added scholarship 0176 (the AI-outage sprint added none) — **next free: scholarship 0177 / courses 0084.**
 - **Org-timing Sprint 2 is next (≈2026-10-14 — one week live with no timing incident):** drop the UNREAD
   intake-round columns `success_delay_hours`, `decline_delay_hours`, `query_response_sla_days` and the dead
   `fail_email_delay_days` (roadmap `docs/plans/2026-10-07-org-timing-settings-roadmap.md`). Timings live in

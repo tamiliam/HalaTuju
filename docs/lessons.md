@@ -1387,3 +1387,20 @@ the cascade kept only the LAST model's message, and the last model had been reti
 fallback chain that fails reports EVERY attempt's error (`gemini.cascade_failure`), and a model is
 removed from a cascade the day it is retired — a dead fallback adds nothing but a misleading error.
 (AI-outage sprint)
+
+## 2026-10-24 — when a failure must be blamed on someone, an unrecognised one is OURS
+
+The first fix classed every HTTP 400 as the document's fault; a revoked API key answers 400 too, which
+would have told students their good photos were unreadable — the incident again. The two mistakes are
+not symmetric: a wrong "ours" costs a retry, a wrong "theirs" costs a student. **Rule:** blame the user
+(the student, the file, the input) only on a POSITIVE signal that names their part, and let every
+unrecognised failure default to ours. (AI-outage sprint, review round 3)
+
+## 2026-10-24 — a new state is checked against the readers of the old state's CONSEQUENCES
+
+Storing our outage as `review_manually` instead of `unreadable` fixed the consent gate, but the verdict
+still raised "send a clearer copy" requests, the upload still counted a failed attempt, and an STR still
+closed its own request: they read things DERIVED from the old value (ticket codes, coach codes, currency
+states), which a grep for the field never finds. **Rule:** when a stored value changes meaning, list what
+the old value CAUSED (requests, blockers, copy, counters, alerts) and test each one, not only each reader
+of the field. (AI-outage sprint, review round 1)
