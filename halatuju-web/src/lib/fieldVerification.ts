@@ -47,7 +47,7 @@ function factVerified(doc: AdminApplicantDocument, factKey: string): boolean {
  * ONLY when a live document of the right type reports its relevant fact as a clean match.
  */
 export function fieldVerifications(
-  app: Pick<AdminScholarshipDetail, 'documents'>,
+  app: Pick<AdminScholarshipDetail, 'documents' | 'guardian_ic_name_match'>,
 ): Partial<Record<VerifiableField, FieldVerification>> {
   const docs = (app.documents || []).filter(isLive)
   const out: Partial<Record<VerifiableField, FieldVerification>> = {}
@@ -119,8 +119,15 @@ export function fieldVerifications(
   set('address', 'water_bill', 'address', 'utilityBill') ||
     set('address', 'electricity_bill', 'address', 'utilityBill')
 
-  //  · Parent name: the parent's IC is on file and legibly read.
-  set('parentName', 'parent_ic', 'name', 'parentIc')
+  //  · Parent name (request #45): the CONTACT name matches the name read off a live parent/guardian
+  //    IC. It used to tick whenever ANY parent IC was read — app 171 showed it beside the mother's
+  //    name with only the father's IC on file. The name match is the server's (`vision.name_match`,
+  //    served as `guardian_ic_name_match`); the drawer's Name chip must ALSO be green, so a card
+  //    whose genuineness says it is not an IC cannot lend its read name. No match → no tick.
+  const matched = new Set(app.guardian_ic_name_match || [])
+  if (docs.some((d) => d.doc_type === 'parent_ic' && matched.has(d.id) && factVerified(d, 'name'))) {
+    out.parentName = { source: 'parentIc' }
+  }
   //  · STR: only when the proof is BOTH approved (Lulus) AND current (dated).
   if (docs.some((d) => d.doc_type === 'str' && factVerified(d, 'status') && factVerified(d, 'current'))) {
     out.str = { source: 'strDoc' }

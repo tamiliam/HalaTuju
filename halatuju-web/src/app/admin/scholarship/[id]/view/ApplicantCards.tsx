@@ -22,6 +22,7 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import { Card, Field, Grades, joinOr, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
 import { GuardianCorrect } from './GuardianCorrect'
 import { GuardianCallRecord } from './GuardianCallRecord'
+import { FamilyAnswers } from './FamilyAnswers'
 
 export function ApplicantCards({
   app, t, vtip, incomeValue, incomeTip, incomeNote,
@@ -128,6 +129,11 @@ export function ApplicantCards({
         const personLabel = isNonParentGuardian
           ? t('admin.scholarship.guardianLabel')
           : t('admin.scholarship.parentLabel')
+        // Request #45: the name line is the parent CONTACT, not the family — the student's own
+        // family answers are listed below it (FamilyAnswers). The phone keeps "Parent phone".
+        const contactLabel = isNonParentGuardian
+          ? t('admin.scholarship.guardianContactLabel')
+          : t('admin.scholarship.parentContactLabel')
         return (
           <div className="space-y-4">
             {/* Two independent columns rather than a row-major grid, so each column
@@ -158,13 +164,14 @@ export function ApplicantCards({
                   <Field label={t('admin.scholarship.householdSize')} value={sizeValue} verifiedLabel={sizeTip} note={sizeNote} noteTone={sizeNoteTone} />
                   <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
                   <Field label={t('admin.scholarship.perCapita')} value={perCapita != null ? `RM ${Number(perCapita).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null} />
-                  <Field label={personLabel} value={guardian?.name} verifiedLabel={vtip('parentName')} />
+                  <Field label={contactLabel} value={guardian?.name} verifiedLabel={vtip('parentName')} />
                   <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={<>
                     {guardian?.phone ? formatPhone(guardian.phone) : '—'}
                     {canCorrectGuardian && <GuardianCorrect appId={app.id} name={guardian?.name || ''} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
                     {canCorrectGuardian && <GuardianCallRecord appId={app.id} phone={guardian?.phone || ''} t={t} onDone={onGuardianCorrected} />}
                   </>} note={app.guardian_needs_call ? t('admin.scholarship.call.needs') : undefined} />
                 </dl>
+                <FamilyAnswers app={app} t={t} />
               </Card>
               </div>
 

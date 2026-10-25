@@ -4260,6 +4260,18 @@
       "parentLabel": "பெற்றோர்",
       "guardianLabel": "பாதுகாவலர்",
       "guardianPhone": "{role} தொலைபேசி",
+      "parentContactLabel": "தொடர்புக்கான பெற்றோர்",
+      "guardianContactLabel": "தொடர்புக்கான பாதுகாவலர்",
+      "familyAnswers": {
+        "title": "குடும்பம் பற்றி (மாணவரின் பதில்கள்)",
+        "notFilled": "இன்னும் நிரப்பப்படவில்லை",
+        "earns": "வருமானம் உண்டு",
+        "declared": "மாதம் RM {amount} என அறிவிக்கப்பட்டது",
+        "notWorkingSince": "{since} முதல் வேலை இல்லை",
+        "reason": "காரணம்: {reason}",
+        "earners": "வருமானம் ஈட்டுபவர்கள்",
+        "noEarner": "யாரும் குறிப்பிடப்படவில்லை"
+      },
       "call": {
         "needs": "பகிரப்பட்ட தொலைபேசி: பெற்றோரை அழைக்கவும்",
         "record": "அழைப்பைப் பதிவு செய்",

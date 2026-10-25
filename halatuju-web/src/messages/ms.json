@@ -4260,6 +4260,18 @@
       "parentLabel": "Ibu bapa",
       "guardianLabel": "Penjaga",
       "guardianPhone": "Telefon {role}",
+      "parentContactLabel": "Ibu bapa untuk dihubungi",
+      "guardianContactLabel": "Penjaga untuk dihubungi",
+      "familyAnswers": {
+        "title": "Tentang keluarga (jawapan pelajar)",
+        "notFilled": "Belum diisi",
+        "earns": "Berpendapatan",
+        "declared": "Diisytiharkan RM {amount} sebulan",
+        "notWorkingSince": "Tidak bekerja sejak {since}",
+        "reason": "Sebab: {reason}",
+        "earners": "Pencari nafkah",
+        "noEarner": "Tiada yang dinamakan"
+      },
       "call": {
         "needs": "Telefon dikongsi: hubungi ibu bapa",
         "record": "Rekod panggilan",

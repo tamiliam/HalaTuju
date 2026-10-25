@@ -4260,6 +4260,18 @@
       "parentLabel": "Parent",
       "guardianLabel": "Guardian",
       "guardianPhone": "{role} phone",
+      "parentContactLabel": "Parent contact",
+      "guardianContactLabel": "Guardian contact",
+      "familyAnswers": {
+        "title": "About your family (student's answers)",
+        "notFilled": "Not filled in yet",
+        "earns": "Earns",
+        "declared": "Declared RM {amount} a month",
+        "notWorkingSince": "Not working since {since}",
+        "reason": "Reason: {reason}",
+        "earners": "Household earners",
+        "noEarner": "No one named"
+      },
       "call": {
         "needs": "Shared phone: call parent",
         "record": "Record call",

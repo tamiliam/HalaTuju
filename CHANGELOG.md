@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: the cockpit shows the student's family answers, and the parent tick means a real name match (request #45) - 2026-10-25
+
+- **Family answers:** Family & finances now lists the student's "About your family" answers — each member, occupation, who earns, any declared monthly wage, and why/since when someone is not working (`view/FamilyAnswers.tsx`); "Not filled in yet" when empty. Same page gate as the income beside it; the payload stays role-invariant.
+- **Contact label:** the name line reads "Parent contact" / "Guardian contact" so it is not taken for the family.
+- **Name tick:** shown only when the contact name matches the name read off a live parent/guardian IC. The match is the server's (`vision.name_match`, the `parent_ic_name_mismatch` anomaly's matcher), served as `guardian_ic_name_match` with `income_declared` / `income_nonearning` from a new mixin, `serializers_admin_family.py` (`serializers_admin.py` is at its size allowance). App 171's shape — the father's IC, the mother's name — no longer ticks.
+
 ## fix: an AI outage is not the student's unreadable document (the Gemini 402 incident) - 2026-10-24
 
 On 2026-10-23/24 Gemini's prepaid credit ran out (HTTP 402) for ~20 hours. Every Gemini document read

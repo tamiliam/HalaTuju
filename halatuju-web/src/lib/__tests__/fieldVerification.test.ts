@@ -160,11 +160,28 @@ describe('fieldVerifications', () => {
     expect(fv.address).toEqual({ source: 'utilityBill' })
   })
 
-  it('ticks parentName from a readable parent IC', () => {
-    const fv = fieldVerifications(app([
-      { doc_type: 'parent_ic', income_ic_check: { readable: true, member: 'father', name_status: 'match' } },
-    ]))
+  // Request #45: the tick means the CONTACT name matches a read parent IC — the server names the
+  // matching ICs in `guardian_ic_name_match` — not merely that some parent IC was read.
+  const readableParentIc = { id: 11, doc_type: 'parent_ic', income_ic_check: { readable: true, member: 'father', name_status: 'match' } }
+
+  it('ticks parentName when the server matched the contact name to a readable parent IC', () => {
+    const fv = fieldVerifications({ documents: [readableParentIc], guardian_ic_name_match: [11] } as never)
     expect(fv.parentName).toEqual({ source: 'parentIc' })
+  })
+
+  it('does NOT tick parentName for a readable parent IC whose name is someone else (app 171)', () => {
+    // The father's IC is read; the contact name is the mother's → the server matched nothing.
+    expect(fieldVerifications({ documents: [readableParentIc], guardian_ic_name_match: [] } as never).parentName).toBeUndefined()
+    // An api revision that predates #45 sends no field at all → still no tick (never a guess).
+    expect(fieldVerifications(app([readableParentIc])).parentName).toBeUndefined()
+  })
+
+  it('does NOT tick parentName from a matched id whose card is not an IC, or is superseded', () => {
+    const notIc = { ...readableParentIc, authenticity: { status: 'not_ic' } }
+    const old = { ...readableParentIc, superseded_at: '2026-07-01T00:00:00Z' }
+    for (const d of [notIc, old]) {
+      expect(fieldVerifications({ documents: [d], guardian_ic_name_match: [11] } as never).parentName).toBeUndefined()
+    }
   })
 
   it('ticks str only when approved AND current', () => {

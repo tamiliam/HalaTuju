@@ -91,6 +91,15 @@ export const FAQ: Record<Audience, QA[]> = {
         shows none.</>,
     },
     {
+      q: <>Where do I see what the student told us about their <strong>family</strong>?</>,
+      a: <>In <strong>Family &amp; finances</strong>, under <strong>About your family</strong>: each family member
+        the student listed, their occupation, who earns, any monthly income they declared, and why and since
+        when someone is not working. These are the student&rsquo;s own answers, not checked facts. The
+        <strong> Parent contact</strong> line above them is only the person we call &mdash; it is not the whole
+        family. The small tick beside that name appears only when the name matches a parent&rsquo;s or
+        guardian&rsquo;s IC the student uploaded; no tick means it does not match, or no such IC has been read.</>,
+    },
+    {
       q: <>What is the <strong>place-of-birth</strong> line beside the NRIC?</>,
       a: <>The state the student was born in, read from the place-of-birth code in her IC number (the two
         digits in the middle). A gift can accept only students born in certain states; one born elsewhere,

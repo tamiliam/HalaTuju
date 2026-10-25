@@ -191,6 +191,21 @@ export interface AdminScholarshipDetail {
   // P2 (Check 2): the school/tertiary split — the family-burden breakdown
   siblings_in_school: number | null
   siblings_in_tertiary: number | null
+  // The student's "About your family" roster (served since 2026-06; typed for request #45).
+  father_name?: string
+  father_occupation?: string
+  father_occupation_other?: string
+  mother_name?: string
+  mother_occupation?: string
+  mother_occupation_other?: string
+  other_family_members?: Array<{ role?: string; occupation?: string; occupation_other?: string; name?: string }> | null
+  /** Request #45: declared average monthly wage per member (RM) and, for a member not working,
+   *  why and since when ('YYYY-MM'). Optional: an api revision before #45 does not send them. */
+  income_declared?: Record<string, number> | null
+  income_nonearning?: Record<string, { reason?: string; since?: string }> | null
+  /** Request #45: ids of the live parent/guardian ICs whose READ name matches `guardians[0].name`
+   *  — matched on the server (`vision.name_match`). Absent/empty = no match → no tick. */
+  guardian_ic_name_match?: number[] | null
   family_context: string
   daily_life: string
   consent_to_contact: boolean
