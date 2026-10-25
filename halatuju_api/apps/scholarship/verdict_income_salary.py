@@ -58,22 +58,24 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
     from .income_engine import (member_relationship_status, relationship_doc_for,
                                 chain_verified_earner, earner_monthly_income)
     from .income_shown import income_shown
+    from .read_errors import ic_second_opinion_deferred
     evidence = []
     found = {
         'any_financial': False,   # ≥1 member supplied a payslip/EPF (or an ACCEPTED declared income)
         'all_confirmed': True,    # every member's relationship is a positive 'match'
         'declared_backed': [], 'declared_unproven': [],   # Phase 2A: carried by a declared amount
-        'ic_missing': [], 'ic_unreadable': [], 'patronymic_mismatch': [],
+        'ic_missing': [], 'ic_unreadable': [], 'patronymic_mismatch': [], 'ic_deferred': [],
         'bc_missing': False, 'bc_mismatch': False, 'letter_missing': False,
     }
     for m in members:
         ic_doc = _latest_doc_for_member(application, 'parent_ic', m)
         ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
+        deferred = ic_doc is not None and ic_second_opinion_deferred(ic_doc)
         if ic_doc is None:
             found['ic_missing'].append(m)
             found['all_confirmed'] = False
-        elif not ic_name:
-            found['ic_unreadable'].append(m)
+        elif not ic_name:           # TD-390: a card our outage left half-read is not "unreadable"
+            found['ic_deferred' if deferred else 'ic_unreadable'].append(m)
             found['all_confirmed'] = False
         else:
             evidence.append(_item('earner_ic_present', member=m, name=ic_name))
@@ -98,7 +100,7 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
             rel = 'match'
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
-        elif rel == 'mismatch':
+        elif rel == 'mismatch' and not deferred:
             if m == 'mother':
                 found['bc_mismatch'] = True
             else:
@@ -155,6 +157,8 @@ def _salary_unresolved(members, rel_docs, found):
             gap.append(_item('guardianship_letter_not_genuine'))
     if found['ic_unreadable']:
         review.append(_item('earner_ic_unreadable', members=found['ic_unreadable']))
+    if found['ic_deferred']:
+        review.append(_item('ic_service_down', members=found['ic_deferred']))
     if found['patronymic_mismatch']:
         review.append(_item('father_patronymic_mismatch', members=found['patronymic_mismatch']))
     if found['bc_mismatch']:

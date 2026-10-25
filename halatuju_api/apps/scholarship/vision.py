@@ -13,14 +13,16 @@ import json
 import logging
 import math
 import re
+from datetime import timedelta
 from typing import Optional
 
 from django.conf import settings
 from django.utils import timezone
 
 from .gemini import cascade_failure, document_failure
-from .read_errors import (OCR_SERVICE_FAILED, UNPARSEABLE_RESPONSE, is_ai_service_error,
-                          is_ocr_service_error, model_rejected_document, read_deferred)
+from .read_errors import (IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, OCR_SERVICE_FAILED,
+                          UNPARSEABLE_RESPONSE, is_ai_service_error, is_ocr_service_error,
+                          model_rejected_document, read_deferred)
 from .pdf_pages import pdf_first_page_png as _pdf_first_page_png
 from .pdf_pages import pdf_text_layer as _pdf_text_layer
 
@@ -910,6 +912,7 @@ def run_vision_for_document(doc) -> dict:
     _ctx = _doc_usage_ctx(doc)
     image = _fetch_image_bytes(doc.storage_path)
     used_gemini = False
+    second, second_error = '', ''   # TD-390: the second opinion was 'ok' / failed on 'ours' / 'theirs'
     with _ctx:
         if image is None:
             result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
@@ -922,7 +925,20 @@ def run_vision_for_document(doc) -> dict:
                         g = _gemini_ic_second_opinion(image, doc.content_type)
                     if not g.get('_error'):
                         result = _merge_ic_reads(result, g, profile)
-                        used_gemini = True
+                        used_gemini, second = True, 'ok'
+                    else:
+                        second_error = g['_error']
+                        second = 'ours' if is_ai_service_error(second_error) else 'theirs'
+    prior = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    had_read = not doc.vision_error and (doc.vision_nric or doc.vision_name)
+    if had_read and ((second == 'ours' and prior.get('capture') == 'ai')
+                     or (result.get('error') and prior.get(IC_SECOND_OPINION_ERROR))):
+        # TD-390: a re-run during an outage never replaces a read the second opinion completed, and
+        # a re-run of a half-read card that fails at Vision keeps the half it had (and its mark).
+        logger.warning('run_vision: kept stored IC read for doc %s (re-run failed: %s)',
+                       doc.id, second_error or result.get('error'))
+        return {'nric': doc.vision_nric, 'name': doc.vision_name, 'address': doc.vision_address,
+                'error': second_error or result.get('error'), 'stale_kept': True}
     doc.vision_nric = result['nric'] or ''
     doc.vision_name = result['name'] or ''
     doc.vision_address = result.get('address', '') or ''
@@ -936,6 +952,21 @@ def run_vision_for_document(doc) -> dict:
         # deterministic Vision OCR unless the low-confidence Gemini second opinion was merged in.
         vf['capture'] = 'ai' if used_gemini else 'deterministic'
         vf_changed = True
+        # TD-390: a REQUIRED second opinion that failed on OUR side leaves only half a read — mark it
+        # (the gate says "service down", readers say "pending", the hourly sweep re-runs it); any
+        # other outcome clears the mark. `ic_second_opinion` is the outcome the outage alert counts.
+        if second == 'ours':
+            vf[IC_SECOND_OPINION_ERROR] = second_error[:600]
+            now = timezone.now()
+            if not (vf.get(IC_SECOND_OPINION_UNTIL) or 0) > now.timestamp():   # absent or lapsed: a NEW
+                vf[IC_SECOND_OPINION_UNTIL] = int((now + timedelta(hours=72)).timestamp())   # outage
+        else:
+            vf.pop(IC_SECOND_OPINION_ERROR, None)
+            vf.pop(IC_SECOND_OPINION_UNTIL, None)
+        if second:
+            vf['ic_second_opinion'] = second
+        else:
+            vf.pop('ic_second_opinion', None)
     if image is not None and getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
         with usage.usage_context(application=getattr(doc, 'application', None), source='genuineness'):
             auth = ic_genuineness(image, doc.content_type)

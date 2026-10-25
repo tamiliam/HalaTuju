@@ -33,7 +33,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from ..models import ApplicantDocument
-from ..read_errors import RATE_LIMITED, SERVICE_ERROR_PREFIXES, is_ai_service_error
+from ..read_errors import (IC_SECOND_OPINION_ERROR, RATE_LIMITED, SERVICE_ERROR_PREFIXES,
+                           is_ai_service_error)
 from .blockers import _SELF_HEAL_READ_TYPES
 
 logger = logging.getLogger('apps.scholarship.services')   # the package's name: the log metric counts by it
@@ -68,18 +69,42 @@ def service_error_documents(limit):
                 .order_by('vision_fields_run_at')[:limit])
         hour_ago = now - timedelta(hours=1)
         cap = getattr(settings, 'DOC_ASSIST_RATE_LIMIT_PER_HOUR', 15)
-        return [d for d in rows if not d.vision_fields.get('fields')     # never re-read over a good read
-                and (d.vision_fields.get('error') != RATE_LIMITED
-                     or ApplicantDocument.objects.filter(application_id=d.application_id,
-                                                         vision_fields_run_at__gte=hour_ago).count() < cap)]
+        fields = [d for d in rows if not d.vision_fields.get('fields')     # never re-read over a good read
+                  and (d.vision_fields.get('error') != RATE_LIMITED
+                       or ApplicantDocument.objects.filter(application_id=d.application_id,
+                                                           vision_fields_run_at__gte=hour_ago).count() < cap)]
+        # TD-390 (2026-10-25): ICs whose REQUIRED Gemini second opinion our outage skipped, in the
+        # room left — same gate, same window (stamped at the failure), same open-case rule.
+        ics = (ApplicantDocument.objects
+               .filter(doc_type__in=('ic', 'parent_ic'), superseded_at__isnull=True,
+                       vision_fields__has_key=IC_SECOND_OPINION_ERROR,
+                       vision_fields__ic_second_opinion_until__gt=int(now.timestamp()))
+               .exclude(application__status__in=CASE_CLOSED_STATES)
+               .order_by('vision_run_at')[:max(limit - len(fields), 0)])
+        return fields + list(ics)
     except Exception:                   # the never-read sweep must still run
         logger.exception('service-error retry selection failed; the never-read sweep continues')
         return []
 
 
+def _reread_ic(doc):
+    """TD-390: re-run the MyKad read (Vision OCR + the second opinion). Stamps the run time BEFORE
+    reading so a killed read moves to the back of the queue; `vision.run_vision_for_document` never
+    lets a failed second opinion replace a read one already completed. Returns the second opinion's
+    error while it is still owed, else the read's own error ('' when it recovered)."""
+    from ..vision import run_vision_for_document
+    doc.vision_run_at = timezone.now()
+    doc.save(update_fields=['vision_run_at'])
+    result = run_vision_for_document(doc)
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    return vf.get(IC_SECOND_OPINION_ERROR) or result.get('error') or ''
+
+
 def _reread(doc):
     """Re-read one document through the Re-run core; return the error the new read stored ('' when
     it recovered). Stamps the window and the read time BEFORE reading."""
+    if doc.doc_type in ('ic', 'parent_ic'):
+        return _reread_ic(doc)
     from ..reextract import reextract_document
     now = timezone.now()
     until = doc.vision_fields.get(RETRY_UNTIL) or int((now + SERVICE_RETRY_WINDOW).timestamp())

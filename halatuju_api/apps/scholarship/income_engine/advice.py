@@ -50,8 +50,8 @@ def income_cluster_advice(application, member):
     if icc:
         if icc['name_status'] == 'mismatch':
             return 'income_relationship_mismatch'
-        if getattr(ic, 'vision_run_at', None) and not icc['readable']:
-            return 'unreadable'
+        if getattr(ic, 'vision_run_at', None) and not icc['readable'] and not icc.get('deferred'):
+            return 'unreadable'                  # (TD-390: never for a read our outage left half-done)
     if str_doc is not None:
         sc = student_str_check(str_doc)
         if sc and sc['current_status'] in STR_COACH_STATES:
@@ -98,7 +98,7 @@ def income_cluster_advice(application, member):
         # OCR is still pending (vision_run_at NULL, a known transient state the self-heal
         # cron clears) used to surface as 'income_rel_doc_unreadable', telling the student
         # to re-upload a perfectly fine birth certificate and blocking submission on it.
-        ic_ran = bool(getattr(ic, 'vision_run_at', None))
+        ic_ran = bool(getattr(ic, 'vision_run_at', None)) and not (icc or {}).get('deferred')
         if rel_status == 'pending' and rel_ran and ic_ran:
             return 'income_rel_doc_unreadable'
     return ''

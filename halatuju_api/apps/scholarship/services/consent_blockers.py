@@ -68,4 +68,5 @@ def consent_blockers(application):
     # …and a COMPULSORY doc that's present but UNREADABLE (a bad photo the student can
     # re-take) must be re-uploaded too — but never block on OUR OCR-service outages.
     blockers.extend(document_unreadable_blockers(application))
-    return blockers
+    # One line per code: the income gate and the identity gate can both say "try later" (TD-390).
+    return list(dict.fromkeys(blockers))

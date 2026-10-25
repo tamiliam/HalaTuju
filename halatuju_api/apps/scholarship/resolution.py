@@ -341,8 +341,8 @@ def doc_match_verdict(doc):
             return 'mismatch'
         ran = bool(getattr(doc, 'vision_run_at', None))
         err = getattr(doc, 'vision_error', '') or ''
-        if not ran:
-            return 'pending'          # not scanned yet — don't greenlight an unread IC
+        if not ran or chk.get('deferred'):
+            return 'pending'          # not scanned yet, or (TD-390) its second opinion is owed by us
         # An OCR-service outage is not the student's fault — don't call it unreadable.
         if (not err or is_ic_decode_error(err)) and not chk.get('readable'):
             return 'unreadable'
@@ -423,6 +423,9 @@ def doc_match_verdict(doc):
         err = getattr(doc, 'vision_error', '') or ''
         service_down = bool(err) and not is_ic_decode_error(err)
         if not service_down:
+            from .read_errors import ic_second_opinion_deferred
+            if ic_second_opinion_deferred(doc):
+                return 'pending'      # TD-390: the read our outage left half-done neither fails nor passes
             from .vision import nric_match, name_match
             prof = getattr(doc.application, 'profile', None)
             if not doc.vision_nric or not doc.vision_name:

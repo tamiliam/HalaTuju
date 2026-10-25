@@ -14547,6 +14547,19 @@ before an officer sees it; the phrase list must grow from real messages, never g
 waits for the hourly sweep. **Alternatives considered:** a non-blocking "pending our read" state; accepting
 presence while deferred. **Revisit if:** outages stop being rare and short.
 
+**3b. TD-390 scenario B — an STR we cannot judge only because the earner's own IC is half-read
+(owner ruling 2026-10-25, option A).**
+**Decision:** when the earner's OWN card carries a live second-opinion mark and no cleanly-read card
+decides the STR's recipient, the income gate BLOCKS with the existing `ic_service_down` ("our
+document-check service is temporarily unavailable, please try again later" — student and officer copy
+already in en/ms/ta) on both income routes, exactly where a stranger's STR would block
+(`income_str_ownership.str_pending_blocks_submission`). It never passes, and it never says
+`str_not_household`. After the 72-hour window the card's read is complete again and the stranger rule
+answers as before. **Alternatives considered:** let the STR count, as the F1 ruling does for an STR we
+cannot judge (rejected: the comparison was blocked by OUR outage, not by a missing card); block with
+`str_not_household` (rejected: blames the student for our outage). **Revisit if:** outages stop being
+rare and short (with TD-394).
+
 **4. An OpenAI fallback for document reads is sequenced AFTER this sprint and TD-390 (TD-399).**
 **Decision:** no second AI provider for document reads yet. It is its own sprint, after the owner rules on
 sending student documents to a second processor (privacy / DPA) and after an accuracy run of OpenAI on the

@@ -103,6 +103,30 @@ def read_deferred(vision_fields) -> bool:
     return not vf.get('fields') and (vf.get('student_verdict') or '') in ('', 'review_manually')
 
 
+#: TD-390 (2026-10-25). An IC / parent_ic whose deterministic MyKad read was low-confidence NEEDED the
+#: Gemini second opinion, and the second opinion failed on OUR side: the stored read is only half a
+#: read. The marker holds the error; the epoch is the hourly sweep's 72-hour window (`read_retry`).
+IC_SECOND_OPINION_ERROR = 'ic_second_opinion_error'
+IC_SECOND_OPINION_UNTIL = 'ic_second_opinion_until'
+
+
+def ic_second_opinion_deferred(doc) -> bool:
+    """True when this IC's stored read is missing a REQUIRED second opinion our outage skipped. Every
+    reader that would turn the read into a mismatch or "unreadable" asks this first and says
+    "pending" / "service down" instead — never "match": a deferred IC must not pass identity.
+
+    ⚠ ONLY WITHIN ITS WINDOW (review, 2026-10-25). Once `IC_SECOND_OPINION_UNTIL` has passed the
+    sweep has given up, and the stored read is treated as COMPLETE again: its mismatches, its
+    "unreadable" and its anomalies all show, exactly as before TD-390. A deferral can delay a signal;
+    it can never hide one. A mark with no window (never written by the code) counts as expired."""
+    from django.utils import timezone
+    vf = getattr(doc, 'vision_fields', None)
+    if not (isinstance(vf, dict) and vf.get(IC_SECOND_OPINION_ERROR)):
+        return False
+    until = vf.get(IC_SECOND_OPINION_UNTIL)
+    return isinstance(until, (int, float)) and until > timezone.now().timestamp()
+
+
 def deferred_by_us(vision_fields) -> bool:
     """The narrower case: a read was ATTEMPTED and our service deferred it (`review_manually`, no
     fields) — the state the hourly sweep re-reads. Check 2 HOLDS its document requests while such a

@@ -5,6 +5,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from ..read_errors import ic_second_opinion_deferred
 from ..vision import nric_close
 from .buckets import _combine_relationship, _name_bucket, _nric_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
@@ -73,6 +74,8 @@ def student_bc_check(doc):
     # exactly what the chain is built on, so it is verified (never red on the wrong card).
     if mother_status != 'match' and chain_verified_earner(app, 'mother'):
         mother_status = 'match'
+    if mother_status == 'mismatch' and mic is not None and ic_second_opinion_deferred(mic):
+        mother_status = 'no_ref'         # TD-390: a card our outage left half-read proves no clash
     father_name = (f.get('bc_father_name', '') or '').strip()
     father_status = _name_bucket(father_name, father_name_from_ic(student))
     return {
@@ -104,6 +107,8 @@ def student_guardianship_check(doc):
     guardian_status = _combine_relationship(_name_bucket(g_name, gic_name),
                                             _nric_bucket(g_nric, gic_nric),
                                             nric_close(g_nric, gic_nric))
+    if guardian_status == 'mismatch' and gic is not None and ic_second_opinion_deferred(gic):
+        guardian_status = 'no_ref'       # TD-390: as for the mother row above
     ward_name = (f.get('ward_name', '') or '').strip()
     return {
         'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,

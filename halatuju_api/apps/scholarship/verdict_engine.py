@@ -43,6 +43,7 @@ import copy
 from dataclasses import asdict, dataclass, field
 
 from .document_snapshot import latest_doc, present_doc_types
+from .read_errors import ic_second_opinion_deferred, read_deferred
 from .services import ic_identity_blockers
 from .vision import name_match
 from .genuineness.bands import canonical_status, stored_status
@@ -91,10 +92,11 @@ from .genuineness.bands import canonical_status, stored_status
 #                  gate and divergence readers are unchanged (review F1).
 #   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (a different one →
 #                  pathway_confirm, red until answered); Saluran Terbuka (SATU) reads red at once.
-#   2026-10-24.1 — the AI outage: a read NOT YET MADE (none, or deferred by our outage) is no longer
-#                  "unreadable" — the offer ('offer_unreadable'), the relationship docs and the STR
-#                  ('str_not_current' unreadable → 'unknown', still Unsure) raise no student ask.
-VERDICT_ENGINE_VERSION = '2026-10-24.1'
+#   2026-10-24.1 — the AI outage: a read not yet made (offer, relationship docs, STR → 'unknown',
+#                  still Unsure) is no longer "unreadable" and raises no student ask.
+#   2026-10-25.1 — TD-390: an IC whose required second opinion our outage skipped is "service down",
+#                  never a name/NRIC/relationship mismatch red chip or an "unreadable" earner IC.
+VERDICT_ENGINE_VERSION = '2026-10-25.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -255,6 +257,8 @@ def _verdict_identity(application):
         elif verdict == 'partial':
             evidence.append(_item('name_resolved_truncation',
                                   ocr_name=ic.vision_name, profile_name=pname))
+        elif ic_second_opinion_deferred(ic):   # TD-390: half a read is no name mismatch — no ask
+            unresolved.append(_item('ic_service_down'))
         else:  # 'mismatch'
             unresolved.append(_item('name_mismatch',
                                     ocr_name=ic.vision_name, profile_name=pname))
@@ -570,8 +574,11 @@ def _verdict_income(application):
     from .income_engine import _member_ic_doc
     ic_doc = _member_ic_doc(application, earner)
     earner_ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
+    ic_deferred = ic_doc is not None and ic_second_opinion_deferred(ic_doc)   # TD-390
     if ic_doc is None:
         gap.append(_item('earner_ic_missing', members=[earner]))
+    elif not earner_ic_name and ic_deferred:
+        review.append(_item('ic_service_down', members=[earner]))
     elif not earner_ic_name:
         review.append(_item('earner_ic_unreadable', members=[earner]))
     else:
@@ -614,6 +621,7 @@ def _verdict_income(application):
     # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
     if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):
         rel = 'match'
+    rel = 'pending' if (rel == 'mismatch' and ic_deferred) else rel   # TD-390: half a read, no clash
     if rel == 'match':
         evidence.append(_item('relationship_confirmed'))
     elif rel == 'mismatch':
@@ -643,9 +651,7 @@ def _verdict_income(application):
     # 'stale'/'unreadable' → Unsure (NOT the blue 'review'): a review tile would read BLUE off the
     # verified earner-IC/relationship greens, overstating a doc whose cycle is old or whose approval
     # never read. Same reasoning as the salary unsure/over bands below.
-    # 'unknown' (not read yet / deferred by OUR outage, 2026-10-24) bands with them: an unread
-    # approval must never band better than a badly-read one. Its line is the unticketed
-    # 'str_present_unverified' below, so it asks the student for nothing.
+    # 'unknown' (not read yet / deferred by our outage) bands with them, unticketed (2026-10-24).
     str_unsure = bool(sc and sc['current_status'] in ('stale', 'unreadable', 'unknown'))
     # V5 (#10): a POSITIVE recipient mismatch (the STR is in someone else's name) bands Unsure
     # (amber) per str-proof-spec.md §8 — never a blue 'review' read off the earner-IC/relationship
@@ -764,10 +770,7 @@ def _verdict_pathway(application):
     # IC, e.g. a "your offer will be released later" memo) vs a genuinely blurry scan → grey/pending
     # (an under-read, capped at Probable), NOT a red chip. Only when identity didn't already flag.
     elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
-        # NOT READ YET (none, or deferred by OUR outage — 2026-10-24): no claim and NO student
-        # request; a reviewer sees the deferred chip, and the hourly sweep reads it when we are back.
-        from .read_errors import read_deferred
-        if read_deferred(offer.vision_fields):
+        if read_deferred(offer.vision_fields):   # not read yet / our outage: no claim, no ask (2026-10-24)
             return _fact('pathway', 'review', evidence, [])
         if chk['programme'] or chk['institution']:
             return _fact('pathway', 'review', evidence, [_item('offer_no_identity')])

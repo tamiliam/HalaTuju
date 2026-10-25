@@ -11,7 +11,7 @@ from ..document_snapshot import latest_doc, live_docs, present_doc_types
 from ..models import ApplicantDocument
 # The IC's decode-vs-service split (TD-080) lives in `read_errors` since 2026-10-24, so the
 # supporting-document path in `vision` can use it too (`services` still re-exports both names).
-from ..read_errors import is_ic_decode_error
+from ..read_errors import ic_second_opinion_deferred, is_ic_decode_error
 
 
 def ic_identity_blockers(application):
@@ -20,7 +20,8 @@ def ic_identity_blockers(application):
     The IC is OCR'd once at upload (run_vision_for_document, synchronous), so by
     consent time the vision_* fields are populated or carry an error. Returns the
     relevant blocker code(s):
-      - 'ic_service_down'  : the OCR service errored (Vision down / quota / config)
+      - 'ic_service_down'  : the OCR service errored (Vision down / quota / config), or (TD-390)
+                             the read needed the Gemini second opinion and our outage skipped it
                              → re-uploading won't help; tell the student to retry later.
       - 'ic_unreadable'    : OCR ran but couldn't read the IC (poor image) → re-upload.
       - 'ic_nric_mismatch' : the IC's NRIC doesn't match the profile NRIC.
@@ -40,8 +41,12 @@ def ic_identity_blockers(application):
         # (ic_service_down). Pre-TD-080 this lumped "Bad image data." into
         # service_down, stranding PDF-IC students with a false "system down".
         return ['ic_unreadable'] if is_ic_decode_error(ic.vision_error) else ['ic_service_down']
+    # TD-390: the read needed the Gemini second opinion and OUR outage skipped it — a block that
+    # opinion might have lifted is "service down, try later", never the student's mismatch. It STILL
+    # blocks: a deferred IC never passes identity.
+    deferred = ic_second_opinion_deferred(ic)
     if not (ic.vision_nric or ic.vision_name):
-        return ['ic_unreadable']  # OCR succeeded but read nothing usable (poor image)
+        return ['ic_service_down' if deferred else 'ic_unreadable']  # read nothing usable (poor image)
     out = []
     pnric = (getattr(application.profile, 'nric', '') or '').strip()
     pname = (getattr(application.profile, 'name', '') or '').strip()
@@ -56,7 +61,9 @@ def ic_identity_blockers(application):
     # name-mismatch chip either way.
     if not nric_verified and ic.vision_name and pname and name_match(ic.vision_name, pname) == 'mismatch':
         out.append('ic_name_mismatch')
-    return out
+    # A half read passes only on a VERIFIED NRIC — a matching name alone (the NRIC unread, the very
+    # field the second opinion was asked for) is not identity (review, 2026-10-25).
+    return ['ic_service_down'] if (deferred and (out or not nric_verified)) else out
 
 
 # The outage detectors (`detect_vision_outage`, and the Gemini one beside it) live in `outage.py`
@@ -186,8 +193,12 @@ def income_doc_blockers(application):
     # `income_str_ownership`, which also documents why an UNREAD STR is not a stranger's one.
     # TD-285 F1 (2026-09-29): only a TRUE stranger blocks; an STR we cannot judge counts here and
     # its missing IC is asked after submission (see `stranger_str_blocks_submission`).
-    from ..income_str_ownership import STR_NOT_HOUSEHOLD, stranger_str_blocks_submission
+    from ..income_str_ownership import (STR_NOT_HOUSEHOLD, STR_PENDING_OUR_READ,
+                                        str_pending_blocks_submission, stranger_str_blocks_submission)
     strangers_str = stranger_str_blocks_submission(application)
+    # TD-390, owner ruling 2026-10-25: an STR we could not judge ONLY because the earner's own card is
+    # half-read blocks as "still checking, try later" — handled exactly like a stranger's, never passed.
+    held_str = not strangers_str and str_pending_blocks_submission(application)
     present = present_doc_types(application)
     out = []
     if route == 'str':
@@ -196,7 +207,7 @@ def income_doc_blockers(application):
         # failed the format gate. Mirrors the salary branch's identical early-return below.
         # (`salary_income_satisfied` reads the un-tightened STR arm, so a stranger's STR could
         # satisfy it — hence the F8 guard on both of its call sites in this function.)
-        if not strangers_str and salary_income_satisfied(application):
+        if not (strangers_str or held_str) and salary_income_satisfied(application):
             return []
         earner = (getattr(application, 'income_earner', '') or '').strip()
         if not earner:
@@ -207,6 +218,8 @@ def income_doc_blockers(application):
             out.append('str_missing')
         elif strangers_str:
             out.append(STR_NOT_HOUSEHOLD)      # present, but it belongs to somebody else
+        elif held_str:
+            out.append(STR_PENDING_OUR_READ)   # present, but we are still checking whose it is
         if _member_ic_doc(application, earner) is None:
             out.append(f'parent_ic_missing:{earner}')   # names the single STR earner
         rel = relationship_doc_for(earner)          # birth_certificate / guardianship_letter / ''
@@ -228,12 +241,14 @@ def income_doc_blockers(application):
     # If any selected member's cluster is complete + coherent, the income requirement is met and
     # every OTHER member's gaps become soft Check-2 follow-ups — so a family that has fully
     # documented one earner is never trapped over a second earner's missing/partial docs.
-    if not strangers_str and salary_income_satisfied(application):
+    if not (strangers_str or held_str) and salary_income_satisfied(application):
         return []
     if strangers_str:
         # F8. Nothing else in this household shows what it earns (`stranger_str_blocks_submission`
         # checked), so the STR is carrying the gate and it is not this family's.
         out.append(STR_NOT_HOUSEHOLD)
+    elif held_str:
+        out.append(STR_PENDING_OUR_READ)       # TD-390: the STR carries the gate; we are still checking
     # No cluster complete yet — list what's still needed so the student can finish at least one.
     # Income is shown ANY ONE way (owner 2026-07-25): a payslip, an EPF statement, a declared amount
     # backed by a supporting letter, OR a non-breached household STR (means-test, P3). So a cash /
@@ -436,7 +451,8 @@ def document_unreadable_blockers(application):
         if ic is not None:
             ran = bool(getattr(ic, 'vision_run_at', None))
             err = getattr(ic, 'vision_error', '') or ''
-            service_down = bool(err) and not is_ic_decode_error(err)   # OUR outage → don't block
+            service_down = ((bool(err) and not is_ic_decode_error(err))   # OUR outage → don't block
+                            or ic_second_opinion_deferred(ic))            # (TD-390: Gemini's, too)
             if ran and not service_down and not student_income_ic_check(ic).get('readable'):
                 codes.add('income_document_unreadable')
         # The relationship doc (BC / guardianship letter) is a Gemini field-extraction doc,

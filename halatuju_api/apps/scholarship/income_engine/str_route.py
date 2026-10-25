@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from ..read_errors import read_deferred
+from ..read_errors import ic_second_opinion_deferred, read_deferred
 from .buckets import _name_bucket, _nric_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
 from .relationships import _MEMBER_ORDER
@@ -117,13 +117,17 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
     can tell "a stranger" from "we cannot judge" without a second read of the same ICs."""
     members = list(dict.fromkeys([m for m in ([tagged_member] + list(_MEMBER_ORDER)) if m]))
     name_hit = nric_hit = None
-    name_seen = nric_seen = False
+    name_seen = nric_seen = clean_name_seen = clean_nric_seen = earner_deferred = False
     for m in members:
         ic = _member_ic_doc(application, m)
         if ic is None:
             continue
         ic_name = (getattr(ic, 'vision_name', '') or '').strip()
         ic_nric = (getattr(ic, 'vision_nric', '') or '').strip()
+        deferred = ic_second_opinion_deferred(ic)
+        earner_deferred = earner_deferred or (deferred and m == tagged_member)
+        clean_name_seen = clean_name_seen or (bool(ic_name) and not deferred)
+        clean_nric_seen = clean_nric_seen or (bool(ic_nric) and not deferred)
         if read_into is not None:
             for field, value in (('on_file', True), ('name', ic_name), ('nric', ic_nric)):
                 if value and m not in read_into[field]:
@@ -138,6 +142,16 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
                 nric_hit = m
     name_status = 'match' if name_hit else ('mismatch' if (name and name_seen) else 'no_ref')
     nric_status = 'match' if nric_hit else ('mismatch' if (nric and nric_seen) else 'no_ref')
+    # TD-390, scoped by review (2026-10-25): a mismatch is held back ONLY when the earner's OWN card is
+    # half-read AND no cleanly-read card was compared on that field. A clean card's positive mismatch
+    # always stands — another member's deferred card never clears a stranger's STR.
+    held = False
+    if earner_deferred and name_status == 'mismatch' and not clean_name_seen:
+        name_status, held = 'no_ref', True
+    if earner_deferred and nric_status == 'mismatch' and not clean_nric_seen:
+        nric_status, held = 'no_ref', True
+    if held and read_into is not None:
+        read_into['held'] = True     # owner ruling 2026-10-25: the gate says "still checking", not pass
     return name_status, nric_status, (name_hit or nric_hit or tagged_member or '')
 
 
@@ -208,6 +222,9 @@ def _read_str_check(doc):
     # confirmed recipient can still hold a stale/rejected STR.)
     if member and chain_verified_earner(app, member):
         name_status = nric_status = 'match'
+    # TD-390 (owner ruling 2026-10-25): the match was held back ONLY because the earner's own card is
+    # half-read and no clean card decides it — the income gate waits ("still checking"), never passes.
+    pending_our_read = bool(ic_read_members.pop('held', False)) and 'match' not in (name_status, nric_status)
 
     cohort_year = getattr(getattr(app, 'cohort', None), 'year', None)
     ic = _member_ic_doc(app, member) if member else None
@@ -219,6 +236,7 @@ def _read_str_check(doc):
         'current_status': ('unknown' if read_deferred(vf)
                            else _str_currency(status, year, cohort_year, f.get('source_type', ''))),
         'ic_present': ic is not None,
+        'pending_our_read': pending_our_read,
         # TD-285 (F1, F-A): whose ICs, on which FIELD, the recipient was compared against, and
         # whose IC is on file at all. Server-side only — the
         # student serializer strips it, so the documents payload is byte-identical.

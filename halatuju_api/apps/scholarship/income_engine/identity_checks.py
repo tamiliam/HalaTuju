@@ -8,6 +8,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 from __future__ import annotations
 
 from ..document_snapshot import latest_doc, live_docs
+from ..read_errors import ic_second_opinion_deferred
 from ..vision import nric_close, relationship_name_match as name_match
 from .buckets import _name_bucket, _nric_bucket
 from .relationships import _relationship_inputs, member_relationship_status, student_name_for_link
@@ -146,6 +147,13 @@ def student_income_ic_check(doc):
     if chain_verified:
         wrong_card = 'mismatch' in (name_status, proof_name_status, proof_nric_status)
         name_status = 'match'
+    # TD-390: the card needed the Gemini second opinion and our outage skipped it — a mismatch read
+    # off half a read is not a finding. Pending until the hourly sweep re-reads it; never a match.
+    deferred = ic_second_opinion_deferred(doc)
+    if deferred:
+        name_status = 'pending' if name_status in ('mismatch', 'unknown') else name_status
+        proof_name_status, proof_nric_status = (
+            'no_ref' if s == 'mismatch' else s for s in (proof_name_status, proof_nric_status))
 
     return {
         'nric': getattr(doc, 'vision_nric', '') or '',
@@ -159,6 +167,7 @@ def student_income_ic_check(doc):
         'proof_nric_status': proof_nric_status,
         'chain_verified': chain_verified,
         'wrong_card': wrong_card,
+        'deferred': deferred,
     }
 
 
@@ -426,6 +435,8 @@ def student_income_proof_check(doc):
 
     name_status = _name_bucket(name, ic_name)
     nric_status = _nric_bucket(nric, ic_nric)
+    if ic is not None and ic_second_opinion_deferred(ic):   # TD-390: half a read proves no mismatch
+        name_status, nric_status = ('no_ref' if s == 'mismatch' else s for s in (name_status, nric_status))
     # IC-NUMBER chain (#9): the earner is confirmed by the BC↔proof IC-number match, so this
     # slip/EPF belongs to the verified earner — it is NOT red against a wrong card in the slot
     # (father's IC in the mother slot, but the EPF is the mother's). The number already settled

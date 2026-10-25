@@ -212,3 +212,24 @@ def stranger_str_blocks_submission(application) -> bool:
         return False
     return not any(income_shown(application, m).shown
                    for m in ie.effective_working_members(application, any_route=True))
+
+
+#: The consent-gate code a STR pending OUR read answers with — the existing "our document-check
+#: service is temporarily unavailable, please try again later" (en/ms/ta, student and officer copy).
+STR_PENDING_OUR_READ = 'ic_service_down'
+
+
+def str_pending_blocks_submission(application) -> bool:
+    """TD-390, owner ruling 2026-10-25 (scenario B, option A). True when the live STR's recipient
+    could not be judged ONLY because the earner's own IC is half-read (its required Gemini second
+    opinion skipped by our outage, inside the 72-hour window) and no cleanly-read card decides it —
+    and that STR is, as in ``stranger_str_blocks_submission``, the only thing standing in for the
+    household's income. The gate then WAITS ("still checking, try later"): it never passes on a
+    recipient nobody could compare, and it never blames the student with ``str_not_household``.
+    After the window the card's read is complete again and the stranger rule decides as before."""
+    from . import income_engine as ie
+    from .income_shown import income_shown
+    if not (_latest_str_check(application) or {}).get('pending_our_read'):
+        return False
+    return not any(income_shown(application, m).shown
+                   for m in ie.effective_working_members(application, any_route=True))

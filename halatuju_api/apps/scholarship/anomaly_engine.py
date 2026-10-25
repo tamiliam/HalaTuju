@@ -26,6 +26,7 @@ from typing import Optional
 
 from .document_snapshot import latest_doc, live_docs
 from .models import ApplicantDocument, FundingNeed
+from .read_errors import ic_second_opinion_deferred
 from .services import age_from_nric
 from .vision import MY_STATES, name_match
 
@@ -86,7 +87,8 @@ def _funding_need(application) -> Optional[FundingNeed]:
 def _detect_vision_nric_mismatch(application) -> Optional[Anomaly]:
     """S13 OCR read a different NRIC from what the student typed."""
     ic = _latest_ic_doc(application)
-    if ic is None or not ic.vision_run_at or ic.vision_error or not ic.vision_nric:
+    if ic is None or not ic.vision_run_at or ic.vision_error or not ic.vision_nric \
+            or ic_second_opinion_deferred(ic):   # TD-390: half a read flags nothing
         return None
     profile_nric = (getattr(application.profile, 'nric', '') or '').strip()
     if not profile_nric:
@@ -103,7 +105,8 @@ def _detect_vision_nric_mismatch(application) -> Optional[Anomaly]:
 def _detect_vision_name_mismatch(application) -> Optional[Anomaly]:
     """S13 OCR name doesn't fully match the profile name."""
     ic = _latest_ic_doc(application)
-    if ic is None or not ic.vision_run_at or ic.vision_error or not ic.vision_name:
+    if ic is None or not ic.vision_run_at or ic.vision_error or not ic.vision_name \
+            or ic_second_opinion_deferred(ic):
         return None
     profile_name = (getattr(application.profile, 'name', '') or '').strip()
     if not profile_name:
@@ -277,7 +280,8 @@ def _detect_parent_ic_name_mismatch(application) -> Optional[Anomaly]:
     """S17: Vision-OCR name on the parent_ic upload differs from the guardian
     name typed on the consent. Same name_match logic as the student's IC."""
     pic = _latest_parent_ic_doc(application)
-    if pic is None or not pic.vision_run_at or pic.vision_error or not pic.vision_name:
+    if pic is None or not pic.vision_run_at or pic.vision_error or not pic.vision_name \
+            or ic_second_opinion_deferred(pic):
         return None
     consent = _latest_active_consent(application)
     if consent is None or consent.granted_by != 'guardian':
@@ -297,7 +301,8 @@ def _detect_parent_ic_underage(application) -> Optional[Anomaly]:
     """S17: the 'guardian' uploaded an IC of someone <18 — they cannot
     legally consent for the minor applicant. Hard signal for the admin."""
     pic = _latest_parent_ic_doc(application)
-    if pic is None or not pic.vision_run_at or pic.vision_error or not pic.vision_nric:
+    if pic is None or not pic.vision_run_at or pic.vision_error or not pic.vision_nric \
+            or ic_second_opinion_deferred(pic):
         return None
     age = age_from_nric(pic.vision_nric)
     if age is None or age >= 18:

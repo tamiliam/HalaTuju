@@ -9,8 +9,8 @@ from datetime import timedelta
 from django.utils import timezone
 
 from ..models import ApplicantDocument
-from ..read_errors import (OCR_SERVICE_FAILED, RATE_LIMITED, is_ai_service_error,
-                           is_ic_decode_error, is_ocr_service_error)
+from ..read_errors import (IC_SECOND_OPINION_ERROR, OCR_SERVICE_FAILED, RATE_LIMITED,
+                           is_ai_service_error, is_ic_decode_error, is_ocr_service_error)
 
 #: The hourly (start-edge) mode compares with the run one hour ago, taken a few minutes EARLIER
 #: than an exact hour so Cloud Scheduler's jitter cannot slide the reference past the previous
@@ -85,6 +85,21 @@ def _gemini_read_window(since, until):
             service_failures += 1
             apps.add(app_id)
             sample = sample or err
+    # TD-390: the IC's Gemini second opinion, where one was REQUIRED, by the IC's own read stamp (an
+    # IC never carries `vision_fields_run_at`, so nothing is counted twice). 'theirs' (Gemini looked
+    # and refused the image) is an attempt that proves nothing either way.
+    for app_id, vf in ApplicantDocument.objects.filter(
+            doc_type__in=('ic', 'parent_ic'), vision_run_at__gte=since, vision_run_at__lt=until,
+            vision_fields__has_key='ic_second_opinion',
+    ).values_list('application_id', 'vision_fields'):
+        outcome = (vf or {}).get('ic_second_opinion')
+        attempts += 1
+        if outcome == 'ok':
+            successes += 1
+        elif outcome == 'ours':
+            service_failures += 1
+            apps.add(app_id)
+            sample = sample or (vf.get(IC_SECOND_OPINION_ERROR) or '')
     return attempts, successes, service_failures, len(apps), sample
 
 

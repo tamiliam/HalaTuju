@@ -33,6 +33,7 @@ deleting the evidence: upload a matching card, lock; delete the card, unlock; ch
 A lock you can undo by removing the proof is not a lock.
 """
 from .genuineness.bands import canonical_status, stored_status
+from .read_errors import ic_second_opinion_deferred
 from .vision import name_match, nric_close, nric_match
 
 # The name comparisons that mean "the same person". ``partial`` is one set being a strict
@@ -88,6 +89,11 @@ def compare(doc, profile):
             nric = 'mismatch'
     else:
         nric = 'unknown'
+    if doc is not None and ic_second_opinion_deferred(doc):
+        # TD-390: the card needed Gemini's second look and our outage skipped it — a differing value
+        # read off half a read is not something to tell the student about. A match still locks.
+        name = 'unknown' if name in ('partial', 'mismatch') else name
+        nric = 'unknown' if nric in ('near', 'mismatch') else nric
 
     return {
         'name': name,

@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-390 — an IC whose Gemini second opinion our outage skipped is "service down", never a mismatch - 2026-10-25
+
+During the 2026-10-23/24 outage a MyKad read that NEEDED Gemini's second look (a field missing, or
+disagreeing with what the student typed) was stored as if complete: the gate said `ic_nric_mismatch` /
+`ic_unreadable` for a card Gemini might have rescued, and nothing retried or counted it.
+- **The mark:** `run_vision_for_document` records a required second opinion that failed on OUR side
+  (`read_errors.is_ai_service_error`; a refusal of the image is not ours) as
+  `vision_fields['ic_second_opinion_error']` + a 72-hour `ic_second_opinion_until`, and the outcome
+  `ic_second_opinion` ('ok' / 'ours' / 'theirs'); any later outcome clears the mark. A re-run during an
+  outage never replaces a read the second opinion completed, and a re-run that fails at Vision keeps
+  the half read and its mark.
+- **An honest gate, not a looser one:** `ic_identity_blockers` answers `ic_service_down` (existing code,
+  existing "try later" copy) where the half read would block — it still blocks consent.
+- **Readers say pending:** the parent-IC check (`student_income_ic_check`, `deferred`), the cluster
+  coach, `doc_match_verdict` (IC and parent IC), `document_unreadable_blockers`, the STR / birth-
+  certificate / guardianship / payslip cross-checks against that card, the verdict (identity name,
+  earner IC on both routes, relationship clash → `ic_service_down`, unticketed), the help coach
+  (`review_manually`), the student's IC chips, `identity.compare`, the officer anomalies.
+  **`VERDICT_ENGINE_VERSION` 2026-10-25.1.**
+- **Self-heal and alert:** the hourly sweep re-runs marked ICs under the same gate as other deferred
+  reads (`services/read_retry.py`: Gemini not down, the 72-hour window, open cases, one probe then
+  stop); the outage alert counts a required second opinion as a Gemini attempt (by the IC's own read
+  stamp — never twice).
+- **After the review:** (1) the STR household match holds a mismatch back ONLY when the earner's own
+  card is half-read and no cleanly-read card was compared on that field — another member's deferred
+  card never clears a stranger's STR (every other converted reader already compares one specific
+  card); (2) a half-read own IC passes only on a VERIFIED NRIC, never on a matching name alone;
+  (3) the mark counts only inside its 72-hour window — past it the stored read is complete again and
+  every mismatch, "unreadable" and officer flag returns: a deferral delays a signal, never hides one.
+- **Owner ruling (scenario B, option A), review round 2:** an STR we cannot judge ONLY because the
+  earner's own card is half-read blocks the income gate with the existing `ic_service_down` ("try
+  later") on both routes — never passes, never `str_not_household`; after the 72-hour window the
+  stranger rule answers as before (`income_str_ownership.str_pending_blocks_submission`). The consent
+  list now names each code once. A new failure on a lapsed mark starts a new 72-hour window.
+- **Tests:** `test_td390_ic_second_opinion.py` (+28, factory-built), every fix bitten by an injected
+  fault. TD-390 closed; TD-400 (the guardian's typed check at a minor's consent) and TD-401 (a name
+  without an NRIC passes identity — pre-existing, its own sprint) raised.
+
 ## fix: the cockpit shows the student's family answers, and the parent tick means a real name match (request #45) - 2026-10-25
 
 - **Family answers:** Family & finances now lists the student's "About your family" answers — each member, occupation, who earns, any declared monthly wage, and why/since when someone is not working (`view/FamilyAnswers.tsx`); "Not filled in yet" when empty. Same page gate as the income beside it; the payload stays role-invariant.

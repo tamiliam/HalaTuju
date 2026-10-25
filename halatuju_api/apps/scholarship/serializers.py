@@ -908,19 +908,22 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         """'match' / 'mismatch' / 'unreadable' — soft signal. Empty when Vision hasn't run."""
         if obj.doc_type != 'ic' or obj.vision_run_at is None:
             return ''
-        if obj.vision_error or not obj.vision_nric:
-            return 'unreadable'
+        from .read_errors import ic_second_opinion_deferred
         from .vision import nric_match
-        return 'match' if nric_match(obj.vision_nric, getattr(obj.application.profile, 'nric', '') or '') else 'mismatch'
+        v = ('unreadable' if obj.vision_error or not obj.vision_nric else 'match'
+             if nric_match(obj.vision_nric, getattr(obj.application.profile, 'nric', '') or '') else 'mismatch')
+        # TD-390: a read our outage left half-done shows as not-yet-read, never a red chip.
+        return '' if v != 'match' and ic_second_opinion_deferred(obj) else v
 
     def get_vision_name_verdict(self, obj):
         """'match' / 'partial' / 'mismatch' / 'unreadable' — soft signal. Empty when Vision hasn't run."""
         if obj.doc_type != 'ic' or obj.vision_run_at is None:
             return ''
-        if obj.vision_error or not obj.vision_name:
-            return 'unreadable'
+        from .read_errors import ic_second_opinion_deferred
         from .vision import name_match
-        return name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or '')
+        v = ('unreadable' if obj.vision_error or not obj.vision_name
+             else name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or ''))
+        return '' if v in ('unreadable', 'mismatch') and ic_second_opinion_deferred(obj) else v   # TD-390
 
     def get_authenticity(self, obj):
         """Genuineness fingerprint summary {status, reason, doc_seen} — soft, flag-gated.

@@ -449,7 +449,8 @@ class ADeferredReadAsksTheStudentForNothing(TestCase):
 
     def test_the_engine_version_moved_with_the_band(self):
         from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION
-        self.assertEqual(VERDICT_ENGINE_VERSION, '2026-10-24.1')
+        # TD-390 (2026-10-25) moved a band again; the AI-outage sprint's own move is what this pins.
+        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-24.1')
 
 
 class CheckTwoHoldsItsRequestsWhileOurOutageHasADocumentUnread(TestCase):

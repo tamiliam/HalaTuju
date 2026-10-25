@@ -21,6 +21,7 @@ patches that one function, so CI runs with zero billable calls.
 import logging
 
 from . import branding as _branding
+from .read_errors import ic_second_opinion_deferred
 from .profile_engine import DEFAULT_LANGUAGE  # noqa: F401  (re-exported for callers/tests)
 
 logger = logging.getLogger(__name__)
@@ -341,6 +342,8 @@ def verdict_for_document(doc):
     if doc.doc_type == 'ic':
         if doc.vision_run_at is None:
             return ''
+        if ic_second_opinion_deferred(doc):
+            return 'review_manually'     # TD-390: our outage owes this card a second look — no re-upload
         if doc.vision_error or not doc.vision_nric:
             return 'unreadable'
         from .vision import name_match, nric_match
@@ -368,6 +371,8 @@ def verdict_for_document(doc):
         if member:
             return income_cluster_advice(doc.application, member)
         # A non-income parent_ic (e.g. minor consent) — just flag an unreadable card.
+        if ic_second_opinion_deferred(doc):
+            return 'review_manually'     # TD-390, as for the student's own IC above
         if doc.vision_error or not (doc.vision_name or '').strip():
             return 'unreadable'
         return ''
