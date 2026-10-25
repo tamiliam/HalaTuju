@@ -38,6 +38,14 @@ three" (TD-324: 68 live agree, 1 Form Six explorer, 0 the other way) and they re
 (2026-10-02, TD-218 and TD-324). The owner has also said (2026-10-02) that "results held" means
 the HIGHEST completed qualification; when Matric / Asasi / Poly join the results page this rule
 is to be written as "highest" outright (TD-326).
+
+Third results route S2a (2026-10-25, TD-326 / requests #37 #38 #43): it now is. Matriculation, Asasi
+(Foundation) and Diploma join SPM and STPM. ``completed_qualifications`` (a list each results form
+writes ON COMPLETION) is what "highest" ranks over - still never the presence of data (#15). Every
+legacy row has it blank, and a blank list leaves the rule above exactly as it was (D1: the 27 legacy
+rows recorded SPM with STPM data on file are NOT promoted here; see docs/decisions.md).
+``is_tertiary`` is the one "STPM-equivalent" test, ``overall_cgpa`` the one CGPA, ``merit_100`` the
+one merit.
 """
 from rest_framework import serializers
 
@@ -62,6 +70,53 @@ def has_stpm_results(profile):
     return bool(profile.stpm_grades or {}) or profile.stpm_cgpa is not None
 
 
+#: The third results route (owner, 2026-10-25): STPM-equivalent qualifications with a CGPA on a
+#: 4.00 scale. Diploma means a PUBLIC diploma only (ruling D5) - see ``diploma_is_public``.
+THIRD_ROUTE = ('matric', 'asasi', 'diploma')
+#: Every qualification a results form can complete, lowest first.
+QUALIFICATIONS = ('spm', 'stpm') + THIRD_ROUTE
+#: "STPM-equivalent": the results that face `min_stpm_pngk` and rank on a CGPA.
+TERTIARY = frozenset(('stpm',) + THIRD_ROUTE)
+#: When two tertiary qualifications are both completed (rare) and the last form completed is not
+#: one of them, this order breaks the tie. Deterministic; not a claim that one outranks another.
+_TERTIARY_TIE_ORDER = ('stpm',) + THIRD_ROUTE
+#: Plain names, for reasons and the sponsor line. English, like 'SPM' / 'STPM' there.
+QUALIFICATION_LABELS = {
+    'spm': 'SPM', 'stpm': 'STPM', 'matric': 'Matriculation', 'asasi': 'Asasi', 'diploma': 'Diploma',
+}
+#: The model choices for `exam_type` / `results_exam_type` (one list, so the two cannot drift).
+EXAM_CHOICES = [('spm', 'SPM'), ('stpm', 'STPM'), ('matric', 'Matriculation'),
+                ('asasi', 'Asasi (Foundation)'), ('diploma', 'Diploma')]
+#: Where a Diploma is from (D5). Only 'public' counts; '' = not stated.
+INSTITUTION_TYPE_CHOICES = [('public', 'Public institution'), ('private', 'Private college')]
+
+
+def is_tertiary(held):
+    """THE "STPM-equivalent" test: STPM, Matriculation, Asasi or Diploma results. Every reader that
+    means "faces the CGPA floor / ranks on a CGPA" asks this, never ``== 'stpm'`` (S2a)."""
+    return (held or '').strip().lower() in TERTIARY
+
+
+def completed_qualifications(profile):
+    """The qualifications a results form was COMPLETED for, normalised: known values only, lower
+    case, first occurrence kept. [] for a legacy row (the column is blank on every row before S2a),
+    a non-list, or no profile."""
+    raw = getattr(profile, 'completed_qualifications', None) if profile else None
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for q in raw:
+        q = q.strip().lower() if isinstance(q, str) else ''
+        if q in QUALIFICATIONS and q not in out:
+            out.append(q)
+    return out
+
+
+def _has_higher_results(profile):
+    """FALSE is conclusive (no third-route CGPA on file); TRUE proves only that a form was filled."""
+    return getattr(profile, 'higher_cgpa', None) is not None
+
+
 def results_held(profile):
     """Which qualification we hold RESULTS for — NOT which exam the student is heading for.
 
@@ -76,16 +131,155 @@ def results_held(profile):
     3. otherwise the declaration, normalised.
 
     Self-correcting: the day her STPM results land, this returns 'stpm' again with nobody
-    remembering to change anything."""
+    remembering to change anything.
+
+    "HIGHEST COMPLETED" (third results route S2a, 2026-10-25) is step 0, before the three above:
+    when ``completed_qualifications`` is NOT blank, the answer is the highest qualification in it
+    (the recorded completion counts too - it is itself a completion). Any tertiary one beats SPM;
+    between two tertiary ones the recorded completion wins, else ``_TERTIARY_TIE_ORDER``. Only a
+    completed FORM puts a value in that list (the sync drops an entry with no results behind it),
+    so presence of data still never promotes (#15). The list is BLANK on every legacy row, so
+    steps 1-3 answer for them exactly as before (`test_exam_questions.TABLE`).
+
+    The third route also gets step 2's correction, for the same reason: declared Matriculation /
+    Asasi / Diploma (the third card tapped) with no third-route CGPA and SPM grades on file reads
+    'spm'. Values: 'spm', 'stpm', 'matric', 'asasi', 'diploma', or ''."""
     if not profile:
         return ''
     recorded = (getattr(profile, 'results_exam_type', '') or '').strip().lower()
+    completed = completed_qualifications(profile)
+    if completed:
+        done = set(completed) | ({recorded} if recorded in QUALIFICATIONS else set())
+        tertiary = [q for q in _TERTIARY_TIE_ORDER if q in done]
+        if tertiary:
+            return recorded if recorded in tertiary else tertiary[0]
+        return 'spm'
     if recorded:
         return recorded
     declared = (getattr(profile, 'exam_type', '') or '').strip().lower()
     if declared == 'stpm' and not has_stpm_results(profile) and (profile.grades or {}):
         return 'spm'
+    if declared in THIRD_ROUTE and not _has_higher_results(profile) and (profile.grades or {}):
+        return 'spm'
     return declared
+
+
+def overall_from(academic_cgpa, koko):
+    """THE overall-CGPA arithmetic: academic x 0.9 + co-curriculum (0-10, capped at 10) x 0.04,
+    rounded to 2 decimals - i.e. 0.9 x CGPA + 0.1 x (koko / 10 x 4). The STPM calculator
+    (`courses.views.CalculateCgpaView`) and the third route both call this; nothing else may
+    restate it."""
+    return round(academic_cgpa * 0.9 + min(koko, 10) * 0.04, 2)
+
+
+def _as_float(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def third_route_overall(kind, cgpa, koko):
+    """The overall CGPA for a third-route result, or None when it cannot be computed honestly.
+
+    Diploma: the CGPA as is (no co-curriculum component). Matriculation / Asasi: ``overall_from``.
+    A CGPA outside (0, 4] is not a CGPA (the guard `merit_100` applies to STPM since S1); a missing
+    or negative co-curriculum score for Matriculation / Asasi gives None, never a made-up 0."""
+    if kind not in THIRD_ROUTE:
+        return None
+    cgpa = _as_float(cgpa)
+    if cgpa is None or not 0 < cgpa <= 4.0:
+        return None
+    if kind == 'diploma':
+        return round(cgpa, 2)
+    koko = _as_float(koko)
+    if koko is None or koko < 0:
+        return None
+    return overall_from(cgpa, koko)
+
+
+def overall_cgpa(profile):
+    """THE overall CGPA of the tertiary results we hold - computed, never stored for the third
+    route. STPM: the stored `stpm_cgpa` (already the overall figure). Third route:
+    ``third_route_overall``. None for SPM, no profile, or nothing usable (a stored STPM value
+    outside (0, 4] included - S1's guard)."""
+    if not profile:
+        return None
+    held = results_held(profile)
+    if held == 'stpm':
+        cgpa = _as_float(getattr(profile, 'stpm_cgpa', None))
+        if cgpa is None or not 0 < cgpa <= 4.0:
+            return None
+        return cgpa
+    if held in THIRD_ROUTE:
+        return third_route_overall(held, getattr(profile, 'higher_cgpa', None),
+                                   getattr(profile, 'higher_koko', None))
+    return None
+
+
+def diploma_is_public(profile):
+    """D5 (owner, 2026-10-25): only a diploma from a PUBLIC institution counts. True only when the
+    student said so; 'private' and not-stated are both False (fail closed)."""
+    kind = (getattr(profile, 'higher_institution_type', '') or '') if profile else ''
+    return kind.strip().lower() == 'public'
+
+
+def held_summary(profile):
+    """The held results in a few words, for the AI sponsor-profile input (`profile_engine`).
+    SPM / STPM keep the bare code they always had ('spm' / 'stpm'); a third-route holder is named,
+    marked STPM-equivalent, with the overall CGPA — the prompt's `STPM PNGK:` slot reads
+    `stpm_cgpa` and is 'n/a' for them. '' when nothing is held."""
+    held = results_held(profile)
+    if held not in THIRD_ROUTE:
+        return held
+    cgpa = overall_cgpa(profile)
+    line = f'{QUALIFICATION_LABELS[held]} (STPM-equivalent)'
+    return f'{line}, overall CGPA {cgpa:.2f}' if cgpa is not None else line
+
+
+def third_route_payload(profile):
+    """The profile payload's third-route keys (`courses.views.ProfileView.get`, S2a): the raw
+    entries, what "highest" ranks over, and the overall CGPA from the ONE function — computed,
+    never stored, so the web never restates the formula."""
+    return {
+        'higher_cgpa': profile.higher_cgpa,
+        'higher_koko': profile.higher_koko,
+        'higher_institution_type': profile.higher_institution_type,
+        'completed_qualifications': profile.completed_qualifications,
+        'overall_cgpa': overall_cgpa(profile),
+    }
+
+
+def third_route_calculation(data):
+    """`CalculateCgpaView`'s answer for a third-route body ``{kind, higher_cgpa, koko_score}``:
+    ``{cgpa, academic_cgpa, merit_percent}``, or None when the kind, the CGPA (0, 4] or a
+    required co-curriculum score is missing or bad. Diploma = its CGPA as is."""
+    kind = str(data.get('kind') or '').strip().lower()
+    overall = third_route_overall(kind, data.get('higher_cgpa'), data.get('koko_score'))
+    if overall is None:
+        return None
+    return {'cgpa': overall, 'academic_cgpa': round(float(data['higher_cgpa']), 2),
+            'merit_percent': round(overall / 4.0 * 100, 2)}
+
+
+def spm_grades_for(profile):
+    """The student's SPM grades, from ONE reader. SPM holders: `grades`, unchanged. Tertiary
+    holders: `grades` merged over `spm_prereq_grades` (the STPM page's SPM block writes the
+    latter; live, 42 of 64 STPM holders have `grades`, 54 `spm_prereq_grades`), `grades` winning a
+    clash because it is the full SPM record the comparison reads today.
+
+    S2a provides this; it does NOT yet feed `academic_engine.compare_academics`, which still reads
+    `profile.grades` - the SPM comparison input is unchanged until S3b moves it, characterised."""
+    if not profile:
+        return {}
+    grades = getattr(profile, 'grades', None)
+    grades = dict(grades) if isinstance(grades, dict) else {}
+    if not is_tertiary(results_held(profile)):
+        return grades
+    prereq = getattr(profile, 'spm_prereq_grades', None)
+    merged = dict(prereq) if isinstance(prereq, dict) else {}
+    merged.update(grades)
+    return merged
 
 
 def merit_100(profile):
@@ -93,7 +287,7 @@ def merit_100(profile):
 
     Keyed on ``results_held`` (the results we HOLD), never the declaration:
 
-    * **STPM** — overall CGPA / 4 x 100, rounded to 2 decimals: the course side's own rule
+    * **STPM and the third route** (S2a) — ``overall_cgpa`` / 4 x 100, rounded to 2 decimals: the course side's own rule
       (`courses.views.CalculateCgpaView`: ``merit_percent = round(overall / 4.0 * 100, 2)``).
       `stpm_cgpa` already holds the OVERALL CGPA (academic x 0.9 + koko x 0.04): the STPM results
       page stores the calculator's ``cgpa`` (the overall figure), never ``academic_cgpa``, and it
@@ -109,13 +303,14 @@ def merit_100(profile):
     this function (lessons, Sabah S2a 2026-09-02)."""
     if not profile:
         return None
-    if results_held(profile) == 'stpm':
-        cgpa = getattr(profile, 'stpm_cgpa', None)
-        # Outside (0, 4] is not a CGPA: a 0 stored before the calculator answered, or a hand-sent
-        # value. Absent, never a made-up figure that would top or sink the sort (S1 review).
-        if cgpa is None or not 0 < float(cgpa) <= 4.0:
+    if is_tertiary(results_held(profile)):
+        # STPM and the third route (S2a): overall CGPA / 4 x 100. `overall_cgpa` carries S1's guard
+        # - outside (0, 4] is not a CGPA (a 0 stored before the calculator answered, or a hand-sent
+        # value): absent, never a made-up figure that would top or sink the sort (S1 review).
+        cgpa = overall_cgpa(profile)
+        if cgpa is None:
             return None
-        return round(float(cgpa) / 4.0 * 100, 2)
+        return round(cgpa / 4.0 * 100, 2)
     grades = dict(getattr(profile, 'grades', None) or {})
     if not grades:
         return None

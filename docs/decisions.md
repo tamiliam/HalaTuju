@@ -1,5 +1,35 @@
 # Architectural Decisions — HalaTuju
 
+## "Results held" is the HIGHEST completed qualification; Matriculation / Asasi / Diploma are STPM-equivalent — 2026-10-25 (third results route S2a; owner decisions 2–3, rulings D1 D3 D5)
+
+**What.** `exam_questions.results_held` ranks over `completed_qualifications` — a list each
+results form writes ON COMPLETION, guarded in the sync serializer (an entry with no results
+behind it is dropped) — plus the recorded `results_exam_type`. Any tertiary qualification
+(`is_tertiary`: STPM, Matriculation, Asasi, Diploma) beats SPM; between two tertiary ones the
+recorded completion wins, else a fixed order (STPM, Matriculation, Asasi, Diploma). A BLANK list
+(every row before S2a) leaves the old rule untouched. The third route has its own columns
+(`higher_cgpa`, `higher_koko`, `higher_institution_type`) because `stpm_cgpa` feeds
+`has_stpm_results` and `coq_score` the SPM merit. The overall CGPA is computed, never stored
+(`overall_cgpa`; one formula, `overall_from`, shared with the STPM calculator). The gate tests
+`min_stpm_pngk` on it with a reason naming the qualification; `min_merit_score` stays SPM-only
+(D3); a Diploma not from a public institution is ineligible (D5) — "not stated" fails closed.
+**Why.** #15: presence of data never promotes, so "highest" needs a completion record, not the
+data. Declared third-route with no CGPA and SPM grades reads SPM (the Form Six correction,
+extended). **D1 — not promoted in S2a.** Promoting the 27 legacy applications recorded/declared
+SPM with STPM data needs a document lookup per application inside `results_held` (a profile-only
+rule today, read by the gate, the pool, the slip parser) and the detection S3b builds. S2a leaves
+them exactly as they are and records the list, read-only 2026-10-25: applications 15, 16, 71,
+153, 154, 161, 169, 185, 201, 204, 205, 226, 235, 251, 252, 253, 258, 262, 264, 268, 270, 273,
+276, 279, 282, 310, 342 — of which **6 have a live document whose read exam is STPM** (153, 201,
+204, 268, 273, 310; all in the `results_slip` slot). Promotion is left to S3b/S4, shown first as
+that count. **Shut until S2b (review round 1):** `settings.THIRD_ROUTE_OPEN` (default off)
+makes the profile writer refuse every third-route value (400 `third_route_closed`), because with
+no form and no document check an SPM applicant could type herself out of the SPM rules; the list
+is reconciled on every write (stale entries pruned; one third-route kind; a legacy STPM holder
+never demoted by a list that omits 'stpm'); `PROMPT_VERSION` waits for S2b (no live input moves,
+and a bump is a billable refresh of every sponsor profile). **Open (S2b):** the web sponsor filter's `levelOf` knows only SPM / STPM, so a
+"Matriculation · CGPA" card has no level facet yet.
+
 ## Merit is ONE 0–100 figure on every route; STPM = overall CGPA ÷ 4 × 100 — 2026-10-25 (third results route S1; owner decision 3 of the approved roadmap)
 
 **What.** `apps/courses/exam_questions.merit_100(profile)` is the only definition of an

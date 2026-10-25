@@ -48,6 +48,28 @@ SHAPES = {
     'mirage_15': dict(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=4.0),
     'declared_stpm_nothing': dict(exam_type='stpm'),
     'blank': dict(exam_type=''),
+    # ── Third results route S2a (2026-10-25): NEW rows only; every row above is unchanged. ──
+    'matric_completed': dict(exam_type='matric', grades=SPM, higher_cgpa=3.5, higher_koko=8,
+                             results_exam_type='matric',
+                             completed_qualifications=['spm', 'matric']),
+    'asasi_completed': dict(exam_type='asasi', grades=SPM, higher_cgpa=3.2, higher_koko=7,
+                            results_exam_type='asasi', completed_qualifications=['spm', 'asasi']),
+    'diploma_completed': dict(exam_type='diploma', grades=SPM, higher_cgpa=2.8,
+                              higher_institution_type='public', results_exam_type='diploma',
+                              completed_qualifications=['spm', 'diploma']),
+    'third_card_tapped_no_results': dict(exam_type='matric', grades=SPM),
+    'third_card_nothing': dict(exam_type='diploma'),
+    # "highest": STPM completed, then the SPM form completed last (#153's shape going forward)
+    'highest_stpm_then_spm': dict(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=3.5,
+                                  results_exam_type='spm',
+                                  completed_qualifications=['spm', 'stpm']),
+    # D1: #153 TODAY — recorded SPM, STPM data on file, no completed list: NOT promoted
+    'd1_legacy_recorded_spm_with_stpm': dict(exam_type='spm', grades=SPM, stpm_grades=STPM,
+                                             stpm_cgpa=3.92, results_exam_type='spm'),
+    # #15 with a completed list: only SPM completed; typed STPM data proves nothing
+    'completed_spm_typed_stpm': dict(exam_type='stpm', grades=SPM, stpm_grades=STPM,
+                                     stpm_cgpa=4.0, results_exam_type='spm',
+                                     completed_qualifications=['spm']),
 }
 
 #: Floors unreachable on purpose, so `_academic_ok`'s failure reason NAMES the branch that ran.
@@ -57,6 +79,19 @@ _COHORT = SimpleNamespace(min_stpm_pngk=4.1, min_spm_a_count=99, min_spm_bplus_c
 
 def _profile(shape):
     return StudentProfile(supabase_user_id='char', **SHAPES[shape])
+
+
+def _shortlist_branch(why):
+    """Which `_academic_ok` branch ran, from its failure reason (the floors are unreachable):
+    'PNGK ...' is STPM's; '<Matriculation|Asasi|Diploma> CGPA ...' the third route's (S2a);
+    anything else the SPM bar."""
+    if 'PNGK' in why:
+        return 'stpm'
+    first = why.split(' ')[0]
+    for code in exam_questions.THIRD_ROUTE:
+        if first == exam_questions.QUALIFICATION_LABELS[code]:
+            return code
+    return 'spm'
 
 
 def _readers(p):
@@ -75,7 +110,7 @@ def _readers(p):
     _res, diag = vision._extract_slip_deterministic(doc, b'img', words=[])
     field = ApplicationReadSerializer().fields['exam_type']
     return {
-        'shortlist': 'stpm' if 'PNGK' in why else 'spm',
+        'shortlist': _shortlist_branch(why),
         'pool': pool.academic_band(p).split(' ')[0],
         'leaving_cert_ask': leaving,
         'semester_ask': semester,
@@ -104,6 +139,21 @@ TABLE = {
     'mirage_15':                       ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
     'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
     'blank':                           ('',     '',     'spm',  'SPM',  True,  False, True,  ''),
+    # Third results route S2a (2026-10-25) — NEW rows; the rows above are unchanged. The third
+    # route is heading-for neither SPM nor STPM, so both income asks stay quiet (leave / sem False).
+    'matric_completed':                ('matric', 'matric', 'matric', 'Matriculation',
+                                        False, False, False, 'matric'),
+    'asasi_completed':                 ('asasi', 'asasi', 'asasi', 'Asasi',
+                                        False, False, False, 'asasi'),
+    'diploma_completed':               ('diploma', 'diploma', 'diploma', 'Diploma',
+                                        False, False, False, 'diploma'),
+    'third_card_tapped_no_results':    ('matric', 'spm', 'spm', 'SPM',
+                                        False, False, True, 'spm'),
+    'third_card_nothing':              ('diploma', 'diploma', 'diploma', 'Diploma',
+                                        False, False, False, 'diploma'),
+    'highest_stpm_then_spm':           ('spm',  'stpm', 'stpm', 'STPM', True,  False, False, 'stpm'),
+    'd1_legacy_recorded_spm_with_stpm': ('spm', 'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
+    'completed_spm_typed_stpm':        ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),
 }
 
 
@@ -178,7 +228,9 @@ class TestTheCharacterisationTable(SimpleTestCase):
             got = _readers(p)
             with self.subTest(shape=shape):
                 self.assertEqual(got['shortlist'], held)
-                self.assertEqual(got['pool'], held.upper())
+                # the band's first word is the qualification's name: 'SPM' / 'STPM' as before,
+                # 'Matriculation' / 'Asasi' / 'Diploma' for the third route (S2a)
+                self.assertEqual(got['pool'], exam_questions.QUALIFICATION_LABELS[held])
                 self.assertEqual(got['spm_parser'], held == 'spm')
 
 
@@ -307,7 +359,9 @@ _READERS = {
     'apps/scholarship/serializers.py': 'ResultsHeldField(',
     # TD-325 (2026-10-04): the sponsor-profile prompt and the Check-2 facts ledger name the
     # results we hold (owner ruling TD-324), so they read `results_held` too.
-    'apps/scholarship/profile_engine.py': 'results_held(',
+    # Third results route S2a (2026-10-25): through `held_summary(`, which is `results_held` plus
+    # the third route's name and CGPA (tested in test_third_route.py).
+    'apps/scholarship/profile_engine.py': 'held_summary(',
     'apps/scholarship/submission_review.py': 'results_held(',
 }
 _API = Path(__file__).resolve().parents[3]

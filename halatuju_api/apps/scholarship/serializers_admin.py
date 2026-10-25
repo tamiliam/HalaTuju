@@ -233,6 +233,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     # `held_qualification`. A Form Six student holds SPM results and reads SPM.
     qualification = serializers.SerializerMethodField()
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
+    overall_cgpa = serializers.SerializerMethodField()    # S2a: tertiary CGPA; None for SPM
     spm_a_count = serializers.SerializerMethodField()
     # Source (THIS application's answer, kept at submit — sources Sprint C) + the merit, for the list.
     referral_source = serializers.CharField(source='referral_code', read_only=True)
@@ -255,7 +256,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'profile_id', 'cohort_code', 'qualification',
-            'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score', 'call_language',
+            'spm_a_count', 'stpm_pngk', 'overall_cgpa', 'referral_source', 'merit_score',
+            'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name', 'assignable', 'ready_for_assignment',
@@ -276,6 +278,10 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
 
     def get_qualification(self, obj):
         return held_qualification(obj.profile)
+
+    def get_overall_cgpa(self, obj):
+        from apps.courses.exam_questions import overall_cgpa
+        return overall_cgpa(getattr(obj, 'profile', None))
 
     def get_merit_score(self, obj):
         return _application_merit_score(obj)
@@ -299,6 +305,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
     # `held_qualification`. A Form Six student holds SPM results and reads SPM.
     qualification = serializers.SerializerMethodField()
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
+    overall_cgpa = serializers.SerializerMethodField()    # S2a: tertiary CGPA; None for SPM
     household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
     receives_str = serializers.BooleanField(source='profile.receives_str', read_only=True)
@@ -324,6 +331,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
     coq_score = serializers.FloatField(source='profile.coq_score', read_only=True)
     grades = serializers.JSONField(source='profile.grades', read_only=True)
     stpm_grades = serializers.JSONField(source='profile.stpm_grades', read_only=True)
+    higher_cgpa = serializers.FloatField(source='profile.higher_cgpa', read_only=True)
+    higher_koko = serializers.FloatField(source='profile.higher_koko', read_only=True)
+    higher_institution_type = serializers.CharField(source='profile.higher_institution_type',
+                                                    read_only=True)
     spm_prereq_grades = serializers.JSONField(source='profile.spm_prereq_grades', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
     merit_score = serializers.SerializerMethodField()
@@ -435,7 +446,8 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'school', 'nric', 'nric_verified', 'profile_id', 'qualification',
-            'spm_a_count', 'merit_score', 'stpm_pngk', 'household_income', 'household_size',
+            'spm_a_count', 'merit_score', 'stpm_pngk', 'overall_cgpa', 'household_income',
+            'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state', 'birth_state',
@@ -443,6 +455,8 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
             'source', 'witness_org',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
+            # Third results route S2a: the raw CGPA / co-curriculum as entered + D5's answer
+            'higher_cgpa', 'higher_koko', 'higher_institution_type',
             # "Your story" narrative (S2) + support + declaration
             'first_in_family', 'parents_occupation', 'siblings_studying_count',
             # P2 (Check 2): the school/tertiary split (cockpit shows the burden breakdown)
@@ -642,6 +656,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
 
     def get_qualification(self, obj):
         return held_qualification(obj.profile)
+
+    def get_overall_cgpa(self, obj):
+        from apps.courses.exam_questions import overall_cgpa
+        return overall_cgpa(getattr(obj, 'profile', None))
 
     def get_merit_score(self, obj):
         return _application_merit_score(obj)

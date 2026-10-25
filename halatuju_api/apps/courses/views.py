@@ -39,7 +39,7 @@ from .engine import (
     prepare_merit_inputs,
     calculate_merit_score,
 )
-from .exam_questions import results_held
+from .exam_questions import overall_from, results_held, third_route_calculation, third_route_payload
 from .pathways import check_all_pathways, get_pathway_fit_score
 from .pismp_taxonomy import classify_pismp, aliran_of, ALIRAN_VALUES, ALIRAN_LABELS
 from .serializers import (
@@ -1161,6 +1161,7 @@ class ProfileView(APIView):
             'elective_subjects': profile.elective_subjects,
             'spm_elective_subjects': profile.spm_elective_subjects,     # TD-069
             'spm_stream': profile.spm_stream,
+            **third_route_payload(profile),      # S2a: higher_*, completed list, overall_cgpa
         })
 
     def put(self, request):
@@ -2107,11 +2108,21 @@ class CalculateCgpaView(APIView):
 
     Request:  {"stpm_grades": {"PA": "A", "MATH_T": "B+", ...}, "koko_score": 8}
     Response: {"cgpa": 3.42, "academic_cgpa": 3.44, "merit_percent": 85.5}
+
+    Third route (S2a): {"kind": "matric"|"asasi"|"diploma", "higher_cgpa": 3.5, "koko_score": 8}
+    -> {"cgpa": 3.47, "academic_cgpa": 3.5, "merit_percent": 86.75} (Diploma = CGPA as is), from
+    `exam_questions.third_route_calculation` (the gate's own arithmetic); a bad body -> 400.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
         data = request.data
+        if 'higher_cgpa' in data:
+            out = third_route_calculation(data)
+            if out is None:
+                return Response({'error': 'kind, higher_cgpa (0-4] and koko_score are required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            return Response(out)
         stpm_grades = data.get('stpm_grades')
         if not stpm_grades or not isinstance(stpm_grades, dict):
             return Response(
@@ -2121,11 +2132,11 @@ class CalculateCgpaView(APIView):
 
         academic_cgpa = calculate_stpm_cgpa(stpm_grades)
         koko_score = float(data.get('koko_score', 0))
-        overall_cgpa = round(academic_cgpa * 0.9 + min(koko_score, 10) * 0.04, 2)
-        merit_percent = round((overall_cgpa / 4.0) * 100, 2)
+        overall = overall_from(academic_cgpa, koko_score)
+        merit_percent = round((overall / 4.0) * 100, 2)
 
         return Response({
-            'cgpa': overall_cgpa,
+            'cgpa': overall,
             'academic_cgpa': academic_cgpa,
             'merit_percent': merit_percent,
         })

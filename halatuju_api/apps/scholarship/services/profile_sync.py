@@ -7,6 +7,8 @@ Moves only: not a line of this body was reworded. See `__init__.py`. Then, on 20
 """
 from django.utils import timezone
 
+from apps.courses.exam_questions import results_held
+
 from ..shortlisting import count_spm_a_grades
 
 # Financial fields the apply form may collect/refresh. Their canonical home is
@@ -144,6 +146,14 @@ def build_intake_snapshot(profile, app_data):
             'exam_type': getattr(p, 'exam_type', '') if p else '',
             'grades': getattr(p, 'grades', {}) if p else {},
             'stpm_cgpa': getattr(p, 'stpm_cgpa', None) if p else None,
+            # Third results route S2a: what was declared for Matriculation / Asasi / Diploma, and
+            # the results held at submit (the "highest completed" rule's answer then).
+            'higher_cgpa': getattr(p, 'higher_cgpa', None) if p else None,
+            'higher_koko': getattr(p, 'higher_koko', None) if p else None,
+            'higher_institution_type': getattr(p, 'higher_institution_type', '') if p else '',
+            'completed_qualifications': list(getattr(p, 'completed_qualifications', None) or [])
+                                        if p else [],
+            'results_held': results_held(p) if p else '',
             'spm_a_count': count_spm_a_grades(getattr(p, 'grades', None) if p else None),
             'household_income': getattr(p, 'household_income', None) if p else None,
             'household_size': getattr(p, 'household_size', None) if p else None,

@@ -161,6 +161,11 @@ COURSE_REFRESH_REMINDER_EMAIL = os.environ.get('COURSE_REFRESH_REMINDER_EMAIL', 
 # lawyer signs off on exposing (anonymised) student data to sponsors. While off,
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.
 SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1', 'true', 'yes')
+# Third results route (Matriculation / Asasi / Diploma): OFF until S2b ships the student form.
+# While off, the profile PUT / sync REFUSE the new exam values and the third-route fields (400,
+# code 'third_route_closed') — the server side (S2a) is built, but with no form and no document
+# check yet, an open door would let an SPM applicant type themselves out of the SPM rules.
+THIRD_ROUTE_OPEN = os.environ.get('THIRD_ROUTE_OPEN', '').lower() in ('1', 'true', 'yes')
 
 # TD-258: the MOCK self-service donation endpoint (POST /api/v1/sponsor/wallet/donate/).
 # It mints a CONFIRMED, programme-less credit out of nothing, so on real data it is

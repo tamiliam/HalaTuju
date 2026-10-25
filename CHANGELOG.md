@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## Third results route S2a — the route, server side - 2026-10-25
+
+A profile can now hold Matriculation, Asasi (Foundation) or Diploma results, and "results held"
+is the HIGHEST completed qualification (TD-326; requests #37 #38 #43). Server only; the student
+pages are S2b.
+- **The door is SHUT until S2b (review round 1):** `settings.THIRD_ROUTE_OPEN` (env, default off).
+  While off, PUT /profile/ and the sync REFUSE `matric` / `asasi` / `diploma` exam values, any
+  non-empty `higher_*` field and any non-empty `completed_qualifications` (400, `error:
+  third_route_closed`) — without a form or a document check, an SPM applicant could otherwise type
+  a 4.00 Asasi CGPA and leave the SPM rules. S2b turns it on.
+- **Migration `courses` 0084 (migrate-first, by hand):** `exam_type` / `results_exam_type` gain
+  `matric` / `asasi` / `diploma` (choices only); four additive columns on `api_student_profiles` —
+  `higher_cgpa`, `higher_koko` (NULL), `higher_institution_type` (D5, `''` default in the
+  database), `completed_qualifications` (jsonb, `'[]'` default in the database). Nothing
+  backfilled. `stpm_cgpa` and `coq_score` are NOT reused. DDL + ledger row in the docstring.
+- **`apps/courses/exam_questions.py`:** `results_held` ranks over `completed_qualifications` plus
+  the recorded completion (any tertiary beats SPM; ties → the recorded one); a blank list — every
+  legacy row — answers exactly as before. `is_tertiary`, `overall_cgpa` (STPM stored; Matric/Asasi
+  0.9 × CGPA + 0.1 × koko/10 × 4; Diploma as is), `overall_from` (the one formula, now also the STPM
+  calculator's), `third_route_overall`, `diploma_is_public`, `spm_grades_for` (provided, not yet
+  wired into the SPM comparison — S3b). `merit_100` extends to the third route (overall/4 × 100).
+- **Gate (`shortlisting`):** third route → `min_stpm_pngk` on the overall CGPA, reason naming the
+  qualification ("Matriculation CGPA 2.70 below 2.90"); a Diploma not from a public institution →
+  rejected as ineligible with a plain reason (D5); `min_merit_score` stays SPM-only (D3). The STPM
+  branch is byte-identical.
+- **Readers:** sponsor line "Matriculation · CGPA 3.47" (`pool.academic_band`) and the sponsor
+  email's standout score reads the CGPA, not the letters of the name (`sponsor_cards._acad_score`);
+  AI profile input names the qualification + overall CGPA (`exam_questions.held_summary`;
+  `PROMPT_VERSION` NOT bumped — no live input moves while the route is shut, and a bump would mark
+  every sponsor profile stale; S2b bumps it); review
+  claims, admin list/detail (`overall_cgpa`, `higher_*`), profile payload, sync serializer (range
+  checks; the completed list is reconciled on EVERY write — an entry whose results are gone is
+  pruned, with a third-route marker; one third-route kind, the recorded one; a legacy STPM holder
+  keeps 'stpm' while STPM data backs it, so a list that omits it cannot demote her), intake snapshot; CGPA calculator accepts `{kind, higher_cgpa, koko_score}`.
+  Reports pinned unchanged (the SPM prompt path; S2b).
+- **D1:** no read-time promotion in S2a; the 27 legacy rows are listed in `docs/decisions.md` (6
+  have a detected STPM slip on file) for S3b/S4.
+- Tests: `apps/scholarship/tests/test_third_route.py` (new), `test_exam_questions.TABLE` (8 new
+  rows; legacy rows unchanged), `apps/reports/tests/test_views.py` (pin), `test_two_referral_columns` (snapshot
+  key set: five keys added).
+
 ## TD-401 + TD-402 — two holes in the submission gate: an IC with no NRIC, a stranger's STR via a re-pointed earner - 2026-10-25
 
 - **TD-401 (identity):** a student MyKad read with a name but NO NRIC passed `ic_identity_blockers` on

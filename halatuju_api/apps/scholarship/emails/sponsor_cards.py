@@ -154,16 +154,19 @@ def _facts_bits(card, lang):
 
 def _acad_score(academic):
     """A rough 'best academic' score for the subject hook, off pool.academic_band's format
-    ('SPM · N As' / 'STPM · PNGK X.X'): the SPM A-count, or an STPM CGPA magnitude — whichever
-    is larger. Subject flavour only, never load-bearing."""
+    ('SPM · N As' / 'STPM · PNGK X.X' / 'Matriculation · CGPA X.XX'): the SPM A-count, or the
+    CGPA magnitude. Subject flavour only, never load-bearing.
+
+    A line carrying a CGPA scores the CGPA alone (third results route S2a): the old letter-count
+    fallback read the A's in 'MATRICULATION · CGPA' as three, so a 2.10 scored 3.0. An STPM line
+    has no letter A in it, so its score is unchanged; an SPM line has no decimal, so its is too."""
     import re
     a = (academic or '').upper()
-    counts = [int(m) for m in re.findall(r'(\d+)\s*A', a)]   # "7 As" / "9A" → 7 / 9
-    score = float(max(counts)) if counts else float(a.count('A'))
-    m = re.search(r'(\d\.\d+)', a)                            # STPM "PNGK 3.5" → 3.5
+    m = re.search(r'(\d\.\d+)', a)                            # "PNGK 3.5" / "CGPA 3.47"
     if m:
-        score = max(score, float(m.group(1)))
-    return score
+        return float(m.group(1))
+    counts = [int(m) for m in re.findall(r'(\d+)\s*A', a)]   # "7 As" / "9A" → 7 / 9
+    return float(max(counts)) if counts else float(a.count('A'))
 
 
 def _pick_standout(cards):

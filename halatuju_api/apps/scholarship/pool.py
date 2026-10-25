@@ -12,7 +12,8 @@ gated behind the ``SPONSOR_POOL_ENABLED`` flag (off until lawyer sign-off).
 import hashlib
 import re
 
-from apps.courses.exam_questions import results_held
+from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa,
+                                         results_held)
 from .shortlisting import count_spm_a_grades
 
 # Fixed salt so a student's public alias is stable across deploys but not a
@@ -36,12 +37,21 @@ def academic_band(profile):
     A summary of results, so it reads `results_held` — held on the declaration by Now sprint 4,
     switched the same day on the owner's ruling (2026-10-02, TD-324: 68 live agree, 1 Form Six
     explorer now reads 'SPM · N As' instead of a bare 'STPM', 0 declared-SPM students with a
-    recorded STPM completion whose card would turn to 'STPM · PNGK x')."""
+    recorded STPM completion whose card would turn to 'STPM · PNGK x').
+
+    Third results route S2a: Matriculation / Asasi / Diploma read as STPM-equivalent:
+    'Matriculation · CGPA 3.47' (the OVERALL CGPA, 2 decimals), or the bare name when there is no
+    usable CGPA. `emails.sponsor_cards._acad_score` parses this line."""
     if profile is None:
         return ''
-    if results_held(profile) == 'stpm':
+    held = results_held(profile)
+    if held == 'stpm':
         cgpa = getattr(profile, 'stpm_cgpa', None)
         return f'STPM · PNGK {cgpa}' if cgpa is not None else 'STPM'
+    if held in THIRD_ROUTE:
+        label = QUALIFICATION_LABELS[held]
+        cgpa = overall_cgpa(profile)
+        return f'{label} · CGPA {cgpa:.2f}' if cgpa is not None else label
     a = count_spm_a_grades(getattr(profile, 'grades', None) or {})
     return f"SPM · {a} A{'' if a == 1 else 's'}"
 

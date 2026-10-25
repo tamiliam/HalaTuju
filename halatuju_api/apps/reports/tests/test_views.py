@@ -203,3 +203,24 @@ class TestReportViews(TestCase):
         self.assertIsNone(call_kwargs['stpm_grades'])
         self.assertIsNone(call_kwargs['stpm_cgpa'])
         self.assertIsNone(call_kwargs['muet_band'])
+
+    @patch('apps.reports.views.generate_report')
+    def test_a_third_route_student_gets_the_spm_report_path_PIN(self, mock_gen):
+        """Third results route S2a, PIN (the report's content for this route is S2b's, roadmap
+        section 4): a Matriculation declaration reaches the engine as 'matric' with no STPM data,
+        and the prompt it selects is the SPM one — nothing crashes, nothing reads as STPM."""
+        from apps.reports.prompts import get_prompt
+        mock_gen.return_value = {
+            'markdown': 'text', 'model_used': 'gemini-2.5-flash', 'generation_time_ms': 100,
+        }
+        self.profile.exam_type = 'matric'
+        self.profile.higher_cgpa, self.profile.higher_koko = 3.5, 8
+        self.profile.save()
+        self.client.post('/api/v1/reports/generate/',
+                         {'eligible_courses': [{'course_name': 'Diploma IT'}], 'insights': {}},
+                         format='json')
+        call_kwargs = mock_gen.call_args[1]
+        self.assertEqual(call_kwargs['exam_type'], 'matric')
+        self.assertIsNone(call_kwargs['stpm_grades'])
+        self.assertIsNone(call_kwargs['stpm_cgpa'])
+        self.assertEqual(get_prompt('bm', exam_type='matric'), get_prompt('bm', exam_type='spm'))

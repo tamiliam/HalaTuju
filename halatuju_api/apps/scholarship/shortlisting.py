@@ -14,6 +14,9 @@ The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan
                         AND >= min_spm_credit_count at C or better
                         AND merit point >= min_merit_score;
                    STPM: PNGK >= min_stpm_pngk                            → else REJECT
+                   Matriculation / Asasi / Diploma (third results route S2a): the OVERALL
+                   CGPA (`exam_questions.overall_cgpa`) >= min_stpm_pngk  → else REJECT
+                   (a Diploma not from a PUBLIC institution is a hard gate, step 1: D5)
   3. Income      — STR recipient → PASS (bucket A);
                    else gross household income <= income_ceiling (the DOSM B40 line)
                    → PASS (bucket B);
@@ -38,13 +41,15 @@ Consequences worth stating rather than discovering:
   * Neither income ceiling set → the financial test passes, with bucket '' (not 'B'): 'B' means
     "passed the income test", and there was no income test.
   * `min_merit_score` applies to SPM applicants only — an STPM applicant's comparable figure is
-    the PNGK, which is `min_stpm_pngk`.
+    the PNGK, which is `min_stpm_pngk`. The same holds for the third route (owner ruling D3,
+    2026-10-25): Matriculation / Asasi / Diploma face the CGPA floor only.
   * `allowed_birth_states` is a LIST, so "off" is the EMPTY list rather than `None` — the same
     switch in list form. Off means the IC is not read at all, so an unreadable IC passes it.
 """
 from dataclasses import dataclass
 
-from apps.courses.exam_questions import results_held
+from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, diploma_is_public,
+                                         results_held, third_route_overall)
 
 from .birth_state import check as check_birth_state
 
@@ -157,6 +162,27 @@ def _academic_ok(profile, cohort):
             return True, ''
         return False, f'PNGK {p} below {floor}'
 
+    if exam in THIRD_ROUTE:
+        # STPM-equivalent (third results route S2a): the same `min_stpm_pngk` floor, on the OVERALL
+        # CGPA (Matriculation / Asasi 0.9 x CGPA + 0.1 x koko/10 x 4; Diploma as is). The STPM
+        # branch above is left byte-identical (it compares the stored figure raw). The reason
+        # names the qualification, because a reviewer reads it: "Matriculation CGPA 2.70 below 2.90".
+        floor = cohort.min_stpm_pngk
+        if floor is None:
+            return True, ''
+        label = QUALIFICATION_LABELS[exam]
+        raw = getattr(profile, 'higher_cgpa', None)
+        if raw is None:
+            return False, f'{label} CGPA not provided'
+        overall = third_route_overall(exam, raw, getattr(profile, 'higher_koko', None))
+        if overall is None:
+            if exam != 'diploma' and getattr(profile, 'higher_koko', None) is None:
+                return False, f'{label} co-curriculum score not provided'
+            return False, f'{label} CGPA not readable ({raw})'
+        if overall >= floor:
+            return True, ''
+        return False, f'{label} CGPA {overall:.2f} below {floor:.2f}'
+
     grades = getattr(profile, 'grades', None) if profile else None
     a = count_spm_a_grades(grades)
     strong = count_spm_strong_grades(grades)
@@ -255,6 +281,20 @@ def evaluate(application, cohort):
     ok, why = check_birth_state(getattr(profile, 'nric', '') if profile else '',
                                 getattr(cohort, 'allowed_birth_states', None))
     if not ok:
+        return ShortlistResult('rejected', '', why, 'ineligible')
+
+    # D5 (owner, 2026-10-25): only a PUBLIC diploma counts — a private-college diploma is not
+    # accepted by UA, so it does not qualify for this route at all. Out of scope, not a shortfall:
+    # 'ineligible', whatever the CGPA and whether or not the intake sets a CGPA floor. Not stated
+    # fails closed (the form always asks; only a hand-sent profile lacks it).
+    if profile is not None and results_held(profile) == 'diploma' and not diploma_is_public(profile):
+        stated = (getattr(profile, 'higher_institution_type', '') or '').strip().lower()
+        if stated == 'private':
+            why = ('Diploma from a private college: only diplomas from public institutions count '
+                   'for this programme')
+        else:
+            why = ('Diploma institution not stated: only diplomas from public institutions count '
+                   'for this programme')
         return ShortlistResult('rejected', '', why, 'ineligible')
 
     # 2. Academic floor → 'merit'

@@ -378,7 +378,10 @@ class TestWhatTheImageAlreadyServingNeeds(_World):
         self.assertEqual(set(app.intake_snapshot['profile']), {
             'name', 'school', 'preferred_state', 'contact_phone', 'preferred_call_language',
             'guardians', 'referral_source', 'exam_type', 'grades', 'stpm_cgpa', 'spm_a_count',
-            'household_income', 'household_size', 'receives_str', 'receives_jkm'})
+            'household_income', 'household_size', 'receives_str', 'receives_jkm',
+            # Third results route S2a (2026-10-25): ADDED keys only; none of the above moved
+            'higher_cgpa', 'higher_koko', 'higher_institution_type', 'completed_qualifications',
+            'results_held'})
         self.assertEqual(app.intake_snapshot['profile']['referral_source'], 'smc')
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
         # The value is the SOURCE this application named, under `source` (Sprint C). The old

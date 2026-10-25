@@ -10,8 +10,9 @@ All data lives in Supabase PostgreSQL. Models:
 - StudentProfile, SavedCourse
 """
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Value
 
+from .exam_questions import EXAM_CHOICES, INSTITUTION_TYPE_CHOICES
 from .utils import tidy_parentage_marker
 
 
@@ -793,12 +794,8 @@ class StudentProfile(models.Model):
     financial_pressure = models.CharField(max_length=20, blank=True)
     travel_willingness = models.CharField(max_length=50, blank=True)
 
-    # STPM / exam type fields
-    exam_type = models.CharField(
-        max_length=10,
-        choices=[('spm', 'SPM'), ('stpm', 'STPM')],
-        default='spm',
-    )
+    # STPM / exam type fields. Choices: `exam_questions.EXAM_CHOICES` (+ Matric/Asasi/Diploma, S2a)
+    exam_type = models.CharField(max_length=10, choices=EXAM_CHOICES, default='spm')
     # ⚠ WHICH EXAM'S RESULTS WERE LAST *COMPLETED* — not which exam was last SELECTED.
     #
     # `exam_type` above answers two different questions and cannot answer both: "which exam am I
@@ -815,9 +812,28 @@ class StudentProfile(models.Model):
     # type STPM grades to explore, and nothing on the record distinguishes that from a result.
     results_exam_type = models.CharField(
         max_length=10, blank=True, default='',
-        choices=[('spm', 'SPM'), ('stpm', 'STPM')],
+        choices=EXAM_CHOICES,
         help_text="Which exam's results were last COMPLETED. Blank = never recorded.",
     )
+    # ⚠ THIRD RESULTS ROUTE (S2a, 2026-10-25): Matriculation / Asasi / Diploma. Their own columns,
+    # on purpose: NOT `stpm_cgpa` (`has_stpm_results` reads it, so a Matriculation CGPA there would
+    # make `results_held` say STPM) and NOT `coq_score` (the SPM merit input). The OVERALL CGPA is
+    # computed, never stored (`exam_questions.overall_cgpa`).
+    higher_cgpa = models.FloatField(
+        null=True, blank=True,
+        help_text="Matriculation / Asasi / Diploma CGPA (0-4) AS ENTERED. NULL = none.")
+    higher_koko = models.FloatField(
+        null=True, blank=True,
+        help_text="Matriculation / Asasi co-curriculum score (0-10). NULL for Diploma.")
+    higher_institution_type = models.CharField(
+        max_length=10, blank=True, default='', db_default='', choices=INSTITUTION_TYPE_CHOICES,
+        help_text="Diploma only: 'public' or 'private'. Only a PUBLIC diploma counts (D5).")
+    # What "highest" ranks over (`exam_questions.results_held`): each results form adds its value
+    # ON COMPLETION, and the sync drops an entry with no results behind it — so presence of data
+    # never promotes (#15). [] on every row before S2a = the old rule, unchanged (D1).
+    completed_qualifications = models.JSONField(
+        default=list, blank=True, db_default=Value([], output_field=models.JSONField()),
+        help_text="Qualifications whose results form was COMPLETED, e.g. ['spm', 'matric'].")
     stpm_grades = models.JSONField(
         default=dict, blank=True,
         help_text="STPM grades: {'PA': 'A', 'MATH_T': 'B+', ...}"

@@ -2,8 +2,11 @@
 Serializers for the courses API.
 """
 import re
+from types import SimpleNamespace
 
 from rest_framework import serializers
+
+from .exam_questions import QUALIFICATIONS, THIRD_ROUTE, results_held
 from .models import Course, FieldTaxonomy, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
 
 #: The shape of an SPM subject key as the web catalogue writes them ('bm', 'b_tamil', 'addmath').
@@ -298,6 +301,12 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     # TD-069 review F3: declared here WITHOUT the model's max_length, so an over-long label reaches
     # `validate_spm_stream` and is DROPPED there, instead of 400-ing the whole sync first.
     spm_stream = serializers.CharField(required=False, allow_blank=True)
+    # Third results route S2a: range-checked here (a CGPA is 0-4, co-curriculum 0-10); an
+    # out-of-range number is REFUSED, like any other malformed field — the form never sends one.
+    higher_cgpa = serializers.FloatField(required=False, allow_null=True, min_value=0,
+                                         max_value=4)
+    higher_koko = serializers.FloatField(required=False, allow_null=True, min_value=0,
+                                         max_value=10)
 
     def validate(self, attrs):
         """⚠ `results_exam_type` MUST BE BACKED BY RESULTS, and that is checked HERE — on the
@@ -312,21 +321,87 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         An unbacked value is DROPPED, not rejected: the marker is a refinement, and failing a
         student's whole profile sync over it would trade a display fault for a data-loss one.
         """
-        claimed = (attrs.get('results_exam_type') or '').strip().lower()
-        if not claimed:
-            return attrs
         inst = self.instance
+        self._refuse_third_route_while_closed(attrs)
 
         def _merged(field):
             return attrs[field] if field in attrs else getattr(inst, field, None)
 
-        if claimed == 'stpm':
-            backed = bool(_merged('stpm_grades') or {}) or _merged('stpm_cgpa') is not None
-        else:
-            backed = bool(_merged('grades') or {})
-        if not backed:
+        def _backed(q):
+            if q == 'stpm':
+                return bool(_merged('stpm_grades') or {}) or _merged('stpm_cgpa') is not None
+            if q in THIRD_ROUTE:                        # third results route S2a
+                return _merged('higher_cgpa') is not None
+            return bool(_merged('grades') or {}) or bool(_merged('spm_prereq_grades') or {})
+
+        claimed = (attrs.get('results_exam_type') or '').strip().lower()
+        if claimed and claimed != 'spm' and not _backed(claimed):
             attrs.pop('results_exam_type', None)
+        elif claimed == 'spm' and not bool(_merged('grades') or {}):
+            attrs.pop('results_exam_type', None)      # SPM's marker: `grades` only, as before S2a
+
+        # S2a: `completed_qualifications` is what "highest" ranks over (`results_held`), so it is
+        # kept IN STEP ON EVERY WRITE, not only when sent (review round 1): an entry whose results
+        # are gone is PRUNED (presence never promotes, #15; nor does a stale entry); one third-route
+        # kind at a time — `higher_cgpa` holds one CGPA — the recorded one when it is one; and an
+        # STPM holder the old rule reads as STPM keeps 'stpm' while STPM data backs it, so a list
+        # that omits it can never demote her. A blank list stays blank (the old rule, D1).
+        # A third-route marker (a new value; no legacy row holds one) goes when its CGPA goes.
+        marker = _merged('results_exam_type') or ''
+        if marker in THIRD_ROUTE and not _backed(marker):
+            attrs['results_exam_type'] = ''
+        stored = list(getattr(inst, 'completed_qualifications', None) or []) if inst else []
+        base = attrs.get('completed_qualifications', stored)
+        if base:
+            recorded = (_merged('results_exam_type') or '').strip().lower()
+            done = [q for q in base if _backed(q)]
+            legacy = SimpleNamespace(
+                exam_type=_merged('exam_type'), results_exam_type=recorded, grades=_merged('grades'),
+                stpm_grades=_merged('stpm_grades'), stpm_cgpa=_merged('stpm_cgpa'),
+                higher_cgpa=_merged('higher_cgpa'), completed_qualifications=[])
+            if 'stpm' not in done and _backed('stpm') and results_held(legacy) == 'stpm':
+                done.append('stpm')
+            if recorded in THIRD_ROUTE and recorded not in done and _backed(recorded):
+                done.append(recorded)                 # the recorded completion is a completion
+            third = [q for q in done if q in THIRD_ROUTE]
+            if len(third) > 1 or (recorded in THIRD_ROUTE and third and third != [recorded]):
+                keep = recorded if recorded in THIRD_ROUTE else third[-1]
+                done = [q for q in done if q not in THIRD_ROUTE or q == keep]
+            if done != stored or 'completed_qualifications' in attrs:
+                attrs['completed_qualifications'] = done
         return attrs
+
+    def _refuse_third_route_while_closed(self, attrs):
+        """⚠ THE DOOR IS SHUT UNTIL S2b (`settings.THIRD_ROUTE_OPEN`, default off; review round 1).
+        The server side is built, but with no student form and no document check yet, a logged-in
+        SPM applicant could PUT `results_exam_type='asasi'` + a 4.00 CGPA and leave the SPM rules.
+        While closed: the new exam values, any non-empty third-route field and any non-empty
+        `completed_qualifications` are REFUSED (400, code 'third_route_closed'); null / '' / []
+        are harmless and pass."""
+        from django.conf import settings
+        if getattr(settings, 'THIRD_ROUTE_OPEN', False):
+            return
+        bad = [f for f in ('exam_type', 'results_exam_type')
+               if (attrs.get(f) or '').strip().lower() in THIRD_ROUTE]
+        bad += [f for f in ('higher_cgpa', 'higher_koko', 'higher_institution_type',
+                            'completed_qualifications') if attrs.get(f) not in (None, '', [])]
+        if bad:
+            raise serializers.ValidationError(
+                {'error': 'third_route_closed',
+                 **{f: 'Matriculation / Asasi / Diploma results are not open yet.' for f in bad}},
+                code='third_route_closed')
+
+    def validate_completed_qualifications(self, value):
+        """A list of qualification codes (S2a). A non-list is refused; unknown entries and
+        duplicates are dropped, case and spaces normalised. Backing is checked in ``validate``."""
+        if not isinstance(value, list) or len(value) > 10:
+            raise serializers.ValidationError('Expected a list of qualifications.')
+        out = []
+        for q in value:
+            q = q.strip().lower() if isinstance(q, str) else ''
+            if q in QUALIFICATIONS and q not in out:
+                out.append(q)
+        return out
 
     def validate_spm_elective_subjects(self, value):
         """A list of subject KEYS, nothing else (TD-069). `elective_subjects` has never been
@@ -377,6 +452,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'household_income', 'household_size',
             'exam_type', 'results_exam_type',
             'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
+            # Third results route S2a (Matriculation / Asasi / Diploma) + "highest completed"
+            'higher_cgpa', 'higher_koko', 'higher_institution_type', 'completed_qualifications',
             # `referral_source` is NOT here (two columns, 2026-10-09): PUT ignores it, and the sync
             # hands it to `referral_links.apply_ref_code` (first touch) — never a plain overwrite.
             'spm_prereq_grades', 'stream_subjects', 'elective_subjects',

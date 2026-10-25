@@ -25,7 +25,7 @@ import time
 
 from django.conf import settings
 
-from apps.courses.exam_questions import results_held
+from apps.courses.exam_questions import held_summary
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .gemini import cascade_failure, document_failure
@@ -92,6 +92,7 @@ DEFAULT_LANGUAGE = 'English'
 #                  every route (`exam_questions.merit_100`) — an STPM holder's was the raw PNGK
 #                  (3.7), now overall CGPA / 4 x 100 (92.5); the line is labelled "out of 100".
 #                  SPM merits are unchanged.
+#   (S2a: `held_summary` moves no live input while the route is shut — NO bump; S2b bumps it.)
 PROMPT_VERSION = '2026-10-25.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
@@ -735,7 +736,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         school=pval('school'),
         # The results we HOLD, not the exam declared (TD-325; owner ruling TD-324: results held =
         # the highest completed qualification). A Form Six explorer is 'spm' here, not 'stpm'.
-        qualification=(results_held(profile) or 'n/a'),
+        qualification=(held_summary(profile) or 'n/a'),
         merit=_merit(application),
         grades_summary=_grades_summary(profile),
         stpm_pngk=pval('stpm_cgpa', 'n/a'),

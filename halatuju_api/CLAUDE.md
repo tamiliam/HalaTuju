@@ -197,6 +197,7 @@ Defaults live in `halatuju/settings/base.py` and `production.py`; each has a com
 | `DOC_ASSIST_RATE_LIMIT_PER_HOUR`, `DOC_ASSIST_ONLY_WHEN_UNCERTAIN`, `IC_GEMINI_FALLBACK_ENABLED` (default ON), `DOC_GENUINENESS_CHECK_ENABLED` | Paid AI reads on upload |
 | `CHECK2_STUDENT_QUERIES_ENABLED`, `CHECK2_AUTO_GENERATE`, `CHECK2_ANSWER_RELEVANCE_ENABLED`, `VERDICT_CASE_SUMMARY_ENABLED` | Check-2 switches (the last three are paid) |
 | `SPONSOR_POOL_ENABLED` | The anonymised sponsor pool (live) |
+| `THIRD_ROUTE_OPEN` | Matriculation / Asasi / Diploma results accepted by the profile writer (third results route). OFF until S2b ships the form; while off those writes 400 `third_route_closed` |
 | `SPONSOR_MOCK_DONATIONS_ENABLED` | **NEVER in production** (TD-258) — mints money; refuses to arm against a real database |
 | `SPONSOR_COMMS_ENABLED`, `SPONSOR_TERMS_ENABLED`, `PARTNER_COMMS_ENABLED`, `PARTNER_NOTIFY_MAX_PER_RUN` | Platform halves of two-gate comms (each template has its own switch) |
 | `SPONSOR_SEEN_THROTTLE_HOURS`, `ADMIN_SEEN_THROTTLE_HOURS`, `POOL_FUNDED_GRACE_HOURS` | Last-seen stamps; how long a funded card lingers |
