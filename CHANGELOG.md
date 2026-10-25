@@ -20,14 +20,20 @@ All notable changes to this project will be documented in this file.
   pin is amended, with the reason, for the gap arm only).
 - **Tests:** `test_td401_td402_gate_holes.py` (+9, factory-built); every fix bitten by an injected fault.
   TD-401 and TD-402 closed.
-- **Salary route, per member (owner ruling 2026-10-25, option A — decisions.md 3c):** the review's probe 1
-  (the mother working with a clean IC + birth certificate and no payslip, the father on the form with no
-  IC, a stranger's STR nobody could judge) still passed: the per-member `income_evidence_missing` check
-  took the unmatched STR through F1. It now applies the same matched-STR rule (`cluster_income_matched`):
-  `income_evidence_missing:<member>`, or her IC alone while it is missing. The verdict keeps F1's reading
-  (no band moves, no version bump); the student's income cue and Check 2 already agreed. Salary-route F1
-  pins in `test_income_evidence_homes`, `test_income_whose_str_vouches` (a layer over the frozen TD-285
-  record) and `test_consent` (#45, now a matched STR) are amended with the reason. +6 tests, bitten.
+- **An STR no card matched is not income proof — one rule, both routes (owner ruling 2026-10-25,
+  option A — decisions.md 3c):** the review's probe 1 (salary: the mother working with no payslip, the
+  father on the form with no IC, a stranger's STR nobody could judge) and probe 1c (the same family on
+  the STR route) both passed on F1's "an STR we cannot judge counts". The gate now asks, for an STR no
+  card matched: the IC of the roster member who could settle it (`parent_ic_missing:<member>` — the card
+  TD-309 already offers, so family 3, the father working and the STR naming the non-working mother, is
+  asked for HER IC); with every card on file, `str_not_household` for a stranger, else
+  `income_document_unreadable` (or `ic_service_down` when the read is ours to finish); on the salary
+  route with no IC to ask, the member's `income_evidence_missing`. The verdict keeps F1's reading (no
+  band moves, no version bump); the student's income cue and Check 2 already agreed. F1 gate pins in
+  `test_income_evidence_homes`, `test_income_whose_str_vouches` (a layer over the frozen TD-285 record)
+  and `test_consent` are re-pinned with the reason; "ready" fixtures that used a never-read STR now use
+  `factories.matched_str_pair`. Tests added, every branch bitten. TD-403 raised (a stale STR in the
+  household's own name still passes — owner to rule).
 
 ## Third results route S1 — merit on one 0–100 scale - 2026-10-25
 

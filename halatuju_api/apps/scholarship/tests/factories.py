@@ -369,6 +369,24 @@ def authed_client(admin_or_uid, client=None):
     return client
 
 
+# ── The household's own STR ─────────────────────────────────────────────────────────────────
+def matched_str_pair(application, *, name='AROON A/L SAMY', nric='700101-14-5003', member=''):
+    """A parent's IC and the household STR, both READ and naming the same person — what a real
+    family's upload leaves. Since the owner's ruling of 2026-10-25 an STR is income proof at the
+    submission gate only when a card MATCHED its recipient, so a never-read pair no longer passes.
+    Returns ``(parent_ic, str_doc)``."""
+    from apps.scholarship.models import ApplicantDocument
+    now = timezone.now()
+    ic = ApplicantDocument.objects.create(
+        application=application, doc_type='parent_ic', storage_path='test/parent_ic',
+        household_member=member, vision_name=name, vision_nric=nric, vision_run_at=now)
+    str_doc = ApplicantDocument.objects.create(
+        application=application, doc_type='str', storage_path='test/str', vision_run_at=now,
+        vision_fields={'fields': {'recipient_name': name, 'recipient_nric': nric, 'status': 'Lulus',
+                                  'year': '2026'}, 'student_verdict': 'ok', 'error': ''})
+    return ic, str_doc
+
+
 # ── The interview ───────────────────────────────────────────────────────────────────────────
 def answered_findings(application, verdict='resolved'):
     """Findings answering EVERY item on ``application``'s interview agenda (TD-253).

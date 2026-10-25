@@ -14,7 +14,7 @@ from apps.scholarship.models import (
 )
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, answered_findings, auth_token as _token, make_application, make_cohort,
-    make_student,
+    make_student, matched_str_pair,
 )
 
 SUPER = 'super-uid'
@@ -87,8 +87,9 @@ class PhaseCBase(TestCase):
         """Satisfy all 7 completeness parts for ``app`` (gate v2: STR route + father
         earner, with a compulsory offer letter + the route's income docs)."""
         FundingNeed.objects.create(application=app, categories=['living'], programme_months=36)
-        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip', 'offer_letter'):
             ApplicantDocument.objects.create(application=app, doc_type=dt, storage_path=f'x/{dt}')
+        matched_str_pair(app)     # the earner's IC + his own STR, both read (ruling 2026-10-25)
         Consent.objects.create(application=app, version='t', is_active=True)
         ScholarshipApplication.objects.filter(pk=app.id).update(
             income_route='str', income_earner='father',

@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship.tests.factories import (
-    answered_findings, make_application, make_cohort, make_student,
+    answered_findings, make_application, make_cohort, make_student, matched_str_pair,
 )
 from apps.scholarship.models import (
     ApplicantDocument, Referee, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
@@ -594,8 +594,9 @@ class TestAdminScholarship(TestCase):
             siblings_in_school=1, siblings_in_tertiary=0,
             verdict_decided_at=timezone.now())
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
-        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip', 'offer_letter'):
             ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')
+        matched_str_pair(self.app)   # the earner's IC + his own STR, both read (ruling 2026-10-25)
         Consent.objects.create(application=self.app, version='t', is_active=True)
 
     def test_verify_accept_locks_nric_and_advances(self):

@@ -4,7 +4,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.scholarship.tests.factories import (
-    make_application, make_cohort, make_student,
+    make_application, make_cohort, make_student, matched_str_pair,
 )
 from apps.scholarship.models import ScholarshipCohort
 from apps.scholarship.models import (
@@ -74,8 +74,7 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         ApplicantDocument.objects.create(application=self.app, doc_type='offer_letter', storage_path='o')
-        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
-        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
+        matched_str_pair(self.app)   # the earner's IC + his own STR, both read (ruling 2026-10-25)
         Consent.objects.create(application=self.app, version='t', is_active=True)
 
     def test_quiz_done_from_signals(self):
@@ -132,8 +131,9 @@ class TestCompleteness(TestCase):
         """Gate v2: STR route (father) — ic + results + offer_letter + parent_ic + STR."""
         self.app.income_route, self.app.income_earner = 'str', 'father'
         self.app.save()
-        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip', 'offer_letter'):
             ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=dt)
+        matched_str_pair(self.app)   # the earner's IC + his own STR, both read (ruling 2026-10-25)
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
     def test_documents_done_true_with_salary_route(self):
@@ -186,8 +186,9 @@ class TestCompleteness(TestCase):
 
         # + compulsory documents (gate v2: ic + results_slip + offer_letter + the STR
         # route's earner IC + STR) — still not complete (consent + address missing)
-        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip', 'offer_letter'):
             ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=dt)
+        matched_str_pair(self.app)   # the earner's IC + his own STR, both read (ruling 2026-10-25)
         self.assertFalse(application_completeness(self.app)['complete'])
 
         # + active consent — still not complete (address missing)

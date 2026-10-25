@@ -92,9 +92,20 @@ class TestConsentApi(TestCase):
             vision_run_at=now, vision_error='')
         ApplicantDocument.objects.create(application=app, doc_type='results_slip', storage_path='x/r')
         ApplicantDocument.objects.create(application=app, doc_type='offer_letter', storage_path='x/o')
-        ApplicantDocument.objects.create(application=app, doc_type='str', storage_path='x/s')
+        # Owner ruling 2026-10-25: an STR is income proof only once a card MATCHED its recipient, so
+        # the ready family's STR names the parent whose IC is on file (`_add_parent_ic_with_ocr` too).
+        ApplicantDocument.objects.create(application=app, doc_type='str', storage_path='x/s',
+                                         vision_fields=self._str_fields('AROON', '700101-14-0001'),
+                                         vision_run_at=now)
         if parent_ic:
-            ApplicantDocument.objects.create(application=app, doc_type='parent_ic', storage_path='x/pi')
+            ApplicantDocument.objects.create(application=app, doc_type='parent_ic', storage_path='x/pi',
+                                             vision_name='AROON', vision_nric='700101-14-0001',
+                                             vision_run_at=now, vision_error='')
+
+    @staticmethod
+    def _str_fields(name, nric):
+        return {'fields': {'recipient_name': name, 'recipient_nric': nric, 'status': 'Lulus',
+                           'year': '2026'}, 'student_verdict': 'ok', 'error': ''}
 
     def _ic_doc(self, app):
         from apps.scholarship.models import ApplicantDocument
@@ -132,6 +143,8 @@ class TestConsentApi(TestCase):
         view's hard-gate name+NRIC match has something to compare against."""
         from django.utils import timezone
         from apps.scholarship.models import ApplicantDocument
+        ApplicantDocument.objects.filter(application=self.app_minor, doc_type='str').update(
+            vision_fields=self._str_fields(name, nric))      # this parent's own STR (see _make_ready)
         return ApplicantDocument.objects.create(
             application=self.app_minor, doc_type='parent_ic', storage_path='x/p',
             vision_nric=nric, vision_name=name,
@@ -423,14 +436,24 @@ class TestIncomeGateV2(TestCase):
         # STR doc leads, then the earner IC (matches the Documents-UI display order);
         # the IC code is member-qualified so the checklist names the earner.
         self.assertEqual(self._blockers(app), ['str_missing', 'parent_ic_missing:father'])
-        self._doc(app, 'parent_ic')
-        self._doc(app, 'str')
+        ic, s = self._doc(app, 'parent_ic'), self._doc(app, 'str')
+        # Owner ruling 2026-10-25: an STR nobody has read yet matches no card — "try later", ours.
+        self.assertEqual(self._blockers(app), ['ic_service_down'])
+        self._read_as_one_person(ic, s)
         self.assertEqual(self._blockers(app), [])   # father → patronymic, no BC
+
+    def _read_as_one_person(self, ic, str_doc):
+        """The IC and the STR READ, and naming the same parent (the ruling's genuine family)."""
+        from django.utils import timezone
+        ic.vision_name, ic.vision_nric, ic.vision_run_at = 'Rani A/P Muthu', '720202-14-5006', timezone.now()
+        ic.save()
+        str_doc.vision_fields = {'fields': {'recipient_name': 'RANI A/P MUTHU', 'recipient_nric': '720202-14-5006',
+                                            'status': 'Lulus', 'year': '2026'}, 'student_verdict': 'ok'}
+        str_doc.save()
 
     def test_str_mother_also_needs_birth_certificate(self):
         app = self._app(route='str', earner='mother')
-        self._doc(app, 'parent_ic')
-        self._doc(app, 'str')
+        self._read_as_one_person(self._doc(app, 'parent_ic'), self._doc(app, 'str'))
         self.assertEqual(self._blockers(app), ['birth_certificate_missing'])
         self._doc(app, 'birth_certificate')
         self.assertEqual(self._blockers(app), [])
@@ -607,8 +630,9 @@ class TestIncomeGateV2(TestCase):
     def test_documents_done_strict_for_new_submission(self):
         from apps.scholarship.services import application_completeness
         app = self._app(route='str', earner='father')          # shortlisted
-        for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip'):
             self._doc(app, dt)
+        self._read_as_one_person(self._doc(app, 'parent_ic'), self._doc(app, 'str'))   # ruling 2026-10-25
         self.assertFalse(application_completeness(app)['documents_done'])  # no offer letter
         self._doc(app, 'offer_letter')
         self.assertTrue(application_completeness(app)['documents_done'])

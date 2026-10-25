@@ -197,8 +197,8 @@ def income_doc_blockers(application):
     # and never WHOSE it is, so a stranger's letter used to clear this gate. The ownership test is
     # applied here rather than inside that predicate because it also feeds the verdict — see
     # `income_str_ownership`, which also documents why an UNREAD STR is not a stranger's one.
-    # TD-285 F1 (2026-09-29): only a TRUE stranger blocks; an STR we cannot judge counts here and
-    # its missing IC is asked after submission (see `stranger_str_blocks_submission`).
+    # TD-285 F1 (2026-09-29): only a TRUE stranger is `str_not_household`. Since the owner's ruling of
+    # 2026-10-25 an STR we cannot judge no longer COUNTS here either (`_unmatched_str_asks`).
     from ..income_str_ownership import (STR_NOT_HOUSEHOLD, STR_PENDING_OUR_READ,
                                         str_pending_blocks_submission, stranger_str_blocks_submission)
     strangers_str = stranger_str_blocks_submission(application)
@@ -228,8 +228,12 @@ def income_doc_blockers(application):
             out.append(STR_NOT_HOUSEHOLD)      # present, but it belongs to somebody else
         elif held_str:
             out.append(STR_PENDING_OUR_READ)   # present, but we are still checking whose it is
-        if _member_ic_doc(application, earner) is None:
+        earner_ic_missing = _member_ic_doc(application, earner) is None
+        if earner_ic_missing:
             out.append(f'parent_ic_missing:{earner}')   # names the single STR earner
+        if 'str' in present and not (strangers_str or held_str):
+            out.extend(c for c in _unmatched_str_asks(application, ic_asked=earner_ic_missing)
+                       if c not in out)
         rel = relationship_doc_for(earner)          # birth_certificate / guardianship_letter / ''
         if rel and rel not in present:
             out.append(f'{rel}_missing')            # birth_certificate_missing / guardianship_letter_missing
@@ -265,6 +269,7 @@ def income_doc_blockers(application):
     # shared with `member_cluster_complete`, so the gate and the wizard agree. IC + relationship docs
     # stay required (identity/link).
     need_bc = need_guard = False
+    str_carried = []
     for m in members:
         # Member-qualified codes so the checklist names each person — IC then income evidence,
         # grouped per member to match the Documents-UI member blocks.
@@ -275,19 +280,51 @@ def income_doc_blockers(application):
         # income evidence only when a card MATCHED the STR's recipient (`cluster_income_matched`) —
         # the same answer the student's own income cue (`income_shown`) and Check 2 already give.
         # With the IC still missing, the IC ask alone is the next step: that card may match the STR.
-        if not member_income_evidenced(application, m) or not (
-                ic_missing or cluster_income_matched(application, m)):
+        if not member_income_evidenced(application, m):
             out.append(f'income_evidence_missing:{m}')
+        elif not (ic_missing or cluster_income_matched(application, m)):
+            str_carried.append(m)
         rel = relationship_doc_for(m)
         if rel == 'birth_certificate' and 'birth_certificate' not in present:
             need_bc = True
         elif rel == 'guardianship_letter' and 'guardianship_letter' not in present:
             need_guard = True
+    if str_carried:
+        # Only an unmatched STR carries these members: the roster IC that would settle it, else their income.
+        asks = [c for c in _unmatched_str_asks(application, ic_asked=False) if c.startswith('parent_ic')]
+        out.extend([c for c in asks if c not in out] if asks
+                   else [f'income_evidence_missing:{m}' for m in str_carried])
     if need_bc:
         out.append('birth_certificate_missing')
     if need_guard:
         out.append('guardianship_letter_missing')
     return out
+
+
+def _unmatched_str_asks(application, *, ic_asked):
+    """Owner ruling 2026-10-25 (option A) — ONE rule on BOTH routes, superseding F1 for the GATE: an STR
+    is income proof only when a card MATCHED its recipient. For one no card matched, the gate asks for
+    the IC of each roster member who could settle it (`str_owner_ic_asks` — the Documents page already
+    offers each a tagged card, TD-309); with every card on file and still no match, a clearer document
+    (`income_document_unreadable`: a card or the recipient did not read) — or, when that read is OURS
+    to finish (never run, deferred by our outage), "try later" (`ic_service_down`), never the student's
+    fault — unless an IC is already being asked for. `[]` when a card matched, or when the STR provably
+    names a stranger — the stranger rule answers that. The verdict keeps F1's lenient reading."""
+    from ..income_engine import str_recipient_matched
+    from ..income_str_ownership import STR_PENDING_OUR_READ, str_owner_ic_asks, str_recipient_is_stranger
+    from ..read_errors import read_deferred
+    if str_recipient_matched(application) or str_recipient_is_stranger(application):
+        return []
+    missing = str_owner_ic_asks(application)['missing']
+    if missing:
+        return [f'parent_ic_missing:{m}' for m in missing]
+    if ic_asked:
+        return []
+    str_doc = latest_doc(application, 'str')
+    ours = (str_doc is not None and read_deferred(str_doc.vision_fields)) or any(
+        not d.vision_run_at or (d.vision_error and not is_ic_decode_error(d.vision_error))
+        or ic_second_opinion_deferred(d) for d in live_docs(application, 'parent_ic'))
+    return [STR_PENDING_OUR_READ if ours else 'income_document_unreadable']
 
 
 def _offer_blocks(application):

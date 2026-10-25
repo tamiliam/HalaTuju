@@ -200,6 +200,8 @@ def stranger_str_blocks_submission(application) -> bool:
     because before submission the Documents page offers a mother's IC slot only when she is a
     working member or the earner — asking there would be a dead end (TD-309). So this fires on
     a SUBSET of the households the pre-ruling gate blocked: nobody is newly blocked.
+    (SUPERSEDED AT THE GATE by the owner's ruling of 2026-10-25: TD-309 now offers that card, and
+    the gate asks for it — `services.blockers._unmatched_str_asks`. This predicate is unchanged.)
 
     False the moment any working member's income is SHOWN on its own (a usable payslip, a
     readable EPF, or a declared amount backed by a letter that read): the household has answered

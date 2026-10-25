@@ -753,22 +753,32 @@ def _state_of(key):
 
 
 #: OWNER RULING 2026-10-25 (option A), applied on top of the TD-285 record above, which stays as
-#: TD-285 froze it (the way `_since_td306` sits on the Check-2 tables): on the SALARY route an STR
-#: is a working member's income evidence AT THE GATE only when a card MATCHED its recipient
-#: (`cluster_income_matched`). F1's "an STR we cannot judge counts" no longer frees the gate there,
-#: and neither does an STR whose recipient never read. The father's IC is on file in every one of
-#: these states; where his own papers show no income (nothing, or a letter with no amount) he is
-#: now asked for it. Nothing but the gate moves — the verdict keeps its lenient reading.
-SALARY_STR_UNMATCHED = TRUE_STRANGER | UNJUDGED | {'own_unread'}
+#: TD-285 froze it (the way `_since_td306` sits on the Check-2 tables): ONE rule on BOTH routes — an
+#: STR is income proof AT THE GATE only when a card MATCHED its recipient. F1's "an STR we cannot
+#: judge counts" no longer frees the gate, and neither does an STR whose recipient never read. The
+#: father's IC is on file in every one of these states; where his own papers show no income (nothing,
+#: or a letter with no amount), the gate now asks: for the MOTHER's IC where hers is the card that
+#: could settle it (the Documents page offers it, TD-309); else, on the salary route, for his income,
+#: and on the STR route for a clearer document (a true stranger there is already `str_not_household`).
+#: Nothing but the gate moves — the verdict keeps its lenient reading.
+STR_UNMATCHED = TRUE_STRANGER | UNJUDGED | {'own_unread'}
 _UNSHOWN = {('declared', 'none'), ('no-amount', 'none'), ('no-amount', 'letter')}
 
 
-def _since_salary_str_ruling(key, row):
+def _since_str_ruling(key, row):
     route, state, amount, evidence = key.split('/')
-    if route != 'salary' or state not in SALARY_STR_UNMATCHED or (amount, evidence) not in _UNSHOWN:
+    if state not in STR_UNMATCHED or (amount, evidence) not in _UNSHOWN:
         return row
+    if UNJUDGED_ASK.get(state, '').endswith('_missing'):
+        add = 'parent_ic_missing:mother'
+    elif route == 'salary':
+        add = 'income_evidence_missing:father'
+    elif state in TRUE_STRANGER:
+        return row
+    else:
+        add = 'income_document_unreadable'
     i = FIELDS.index('blockers')
-    return row[:i] + (tuple(sorted(row[i] + ('income_evidence_missing:father',))),) + row[i + 1:]
+    return row[:i] + (tuple(sorted(row[i] + (add,))),) + row[i + 1:]
 
 
 # ════════════════════════════════════════════════════════════════════════════════════════════
@@ -787,7 +797,7 @@ def _make_matrix_test(route, state):
                 with self.subTest(row=key):
                     self.assertEqual(
                         self.readings(self.build(route, state, declared, evidence)),
-                        _since_salary_str_ruling(key, expected(key)),
+                        _since_str_ruling(key, expected(key)),
                         f'{key} moved. Only a stranger\'s STR with a household IC on file may '
                         f'move under TD-285, and only as MOVED says. Fields: {FIELDS}')
     test.__name__ = f'test_{route}_{state}'
@@ -834,7 +844,9 @@ class TestTheMovedSetIsExactlyTheRuling(TestCase):
         """OWNER'S F1 RULING, AS THE LEAD READS IT (review F-B/F-D): we cannot judge is not
         "stranger" — the STR counts, so it does not block. Every reading of these rows is the
         untouched tree's, save the gate, from which `str_not_household` leaves and NOTHING takes
-        its place (the Documents page cannot take a non-working mother's IC before submission)."""
+        its place (the Documents page cannot take a non-working mother's IC before submission).
+        This is TD-285's record and stays as it was; the owner's ruling of 2026-10-25 moves the gate
+        again, on top of it (`_since_str_ruling`, pinned in its own test)."""
         for key in all_keys():
             if _state_of(key) in UNJUDGED and key in MOVED:
                 with self.subTest(row=key):
@@ -852,18 +864,20 @@ class TestTheMovedSetIsExactlyTheRuling(TestCase):
                 self.assertLessEqual(set(expected(key)[FIELDS.index('blockers')]),
                                      set(BEFORE[key][FIELDS.index('blockers')]))
 
-    def test_the_2026_10_25_ruling_adds_one_ask_on_the_salary_route_only(self):
-        """The layer above, pinned: it touches the GATE alone, on salary rows alone, and adds
-        exactly `income_evidence_missing:father` — never removes a code."""
-        moved = [k for k in all_keys() if _since_salary_str_ruling(k, BEFORE[k]) != BEFORE[k]]
-        self.assertEqual(len(moved), 3 * len(SALARY_STR_UNMATCHED))
+    def test_the_2026_10_25_ruling_adds_one_ask_per_row_and_moves_nothing_else(self):
+        """The layer above, pinned: it touches the GATE alone, adds exactly ONE ask per moved row —
+        never removes a code — and on the STR route never touches a true stranger's row."""
+        moved = [k for k in all_keys() if _since_str_ruling(k, BEFORE[k]) != BEFORE[k]]
+        self.assertEqual(len(moved), 3 * (2 * len(STR_UNMATCHED) - len(TRUE_STRANGER)))
         i = FIELDS.index('blockers')
         for key in moved:
             with self.subTest(row=key):
-                self.assertTrue(key.startswith('salary/'))
-                after = _since_salary_str_ruling(key, BEFORE[key])
+                after = _since_str_ruling(key, BEFORE[key])
                 self.assertEqual(after[:i] + after[i + 1:], BEFORE[key][:i] + BEFORE[key][i + 1:])
-                self.assertEqual(set(after[i]) - set(BEFORE[key][i]), {'income_evidence_missing:father'})
+                added = set(after[i]) - set(BEFORE[key][i])
+                self.assertEqual(len(added), 1)
+                self.assertLessEqual(added, {'parent_ic_missing:mother', 'income_evidence_missing:father',
+                                             'income_document_unreadable'})
 
     def test_a_true_strangers_gate_rows_are_unchanged(self):
         """A true stranger is still blocked EXACTLY as before — `str_not_household`."""
@@ -993,10 +1007,9 @@ class TestTheRulingInWords(WhoseStrBase):
                 self.assertIn('mismatch', (sc['name_status'], sc['nric_status']))
                 self.assertIs(income_engine.has_valid_str(app), True)
                 self.assertEqual(str_owner_ic_asks(app), {'missing': ['mother'], 'unreadable': []})
-                # Owner ruling 2026-10-25: on the salary route the STR no card matched is not the
-                # working father's income proof, so the gate asks for his income.
-                self.assertEqual(services.income_doc_blockers(app),
-                                 ['income_evidence_missing:father'] if route == 'salary' else [])
+                # Owner ruling 2026-10-25 (both routes): an STR no card matched is no income proof
+                # at the gate, which asks for HER IC — the card the Documents page offers (TD-309).
+                self.assertEqual(services.income_doc_blockers(app), ['parent_ic_missing:mother'])
                 submitted = self.build(route, 'mothers_str_only_fathers_ic', True, 'none',
                                        submitted=True)
                 self.assertIn(_ASK_MOTHER_IC, _gap_sets(submitted)[1])

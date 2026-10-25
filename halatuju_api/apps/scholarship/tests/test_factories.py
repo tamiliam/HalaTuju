@@ -141,9 +141,10 @@ class TestTheFactoryMatchesTheProduct(TestCase):
         completable application since Phase C."""
         FundingNeed.objects.create(
             application=application, categories=['living'], programme_months=36)
-        for doc_type in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+        for doc_type in ('ic', 'results_slip', 'offer_letter'):
             ApplicantDocument.objects.create(
                 application=application, doc_type=doc_type, storage_path=f'test/{doc_type}')
+        factories.matched_str_pair(application)     # the earner's IC + his own STR, both read
         Consent.objects.create(application=application, version='t', is_active=True)
         ScholarshipApplication.objects.filter(pk=application.pk).update(
             income_route='str', income_earner='father',

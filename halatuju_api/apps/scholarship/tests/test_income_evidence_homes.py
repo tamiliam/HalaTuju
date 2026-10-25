@@ -1007,11 +1007,11 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         lead reads the ruling (review F-B/F-D) it does not block: the ask for her IC is raised
         after submission, where the Action Centre can take the upload. On both routes.
 
-        SUPERSEDED ON THE SALARY ROUTE (owner ruling 2026-10-25, option A): there the STR is a
-        working member's income proof at the gate only when a card MATCHED its recipient, so the
-        working father is asked for his income. `str_not_household` still never fires."""
-        for route, kw, want in (('salary', {}, ['income_evidence_missing:father']),
-                                ('str', {'members': (), 'earner': 'father'}, [])):
+        SUPERSEDED FOR THE GATE ON BOTH ROUTES (owner ruling 2026-10-25, option A): an STR is income
+        proof only when a card MATCHED its recipient, so the gate asks for the IC that could settle
+        it — the mother's, offered on the Documents page (TD-309). `str_not_household` never fires."""
+        for route, kw, want in (('salary', {}, ['parent_ic_missing:mother']),
+                                ('str', {'members': (), 'earner': 'father'}, ['parent_ic_missing:mother'])):
             with self.subTest(route=route):
                 app = self._app(route=route, **kw)
                 self._ic(app)
@@ -1022,11 +1022,12 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         """The owner's own example. Her STR, his IC: it mismatches the only IC we can compare, and
         only her IC could settle it — so it is not called somebody else's, and it does not block.
         (Before the ruling: `['str_not_household']`.) Once her IC lands it simply matches.
-        On the SALARY route (owner ruling 2026-10-25) the unmatched STR is not the working father's
-        income proof until then, so he is asked for his income; her IC landing clears it."""
+        Owner ruling 2026-10-25 (option A, both routes): until then the unmatched STR is no income
+        proof at the gate, which asks for HER IC (the Documents page offers it, TD-309); it landing
+        and matching clears it."""
         from apps.scholarship.income_str_ownership import str_owner_ic_asks
-        for route, kw, want in (('salary', {}, ['income_evidence_missing:father']),
-                                ('str', {'members': (), 'earner': 'father'}, [])):
+        for route, kw, want in (('salary', {}, ['parent_ic_missing:mother']),
+                                ('str', {'members': (), 'earner': 'father'}, ['parent_ic_missing:mother'])):
             with self.subTest(route=route):
                 app = self._app(route=route, **kw)
                 self._ic(app)
@@ -1340,8 +1341,13 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         passed via a re-pointed earner. The early return now needs the STR MATCHED (or the cluster's
         income shown on its own), so the gap arm asks for what the STR route always asks: the
         earner's own IC and her relationship document. The VERDICT is still untouched (the other pins
-        in this file), and the mismatch arm is still clear on F8."""
-        self.assertEqual(services.income_doc_blockers(self._mismatch_arm()), [])
+        in this file), and the mismatch arm is still clear on F8.
+
+        ⚠ SUPERSEDED FOR THE MISMATCH ARM BY THE OWNER'S RULING OF 2026-10-25 (option A, both routes):
+        an STR no card matched is income proof on neither route, so the gate asks for the one IC that
+        could settle it — the mother's, which the Documents page offers (TD-309). Still not F8's
+        `str_not_household`; the verdict is still untouched."""
+        self.assertEqual(services.income_doc_blockers(self._mismatch_arm()), ['parent_ic_missing:mother'])
         self.assertEqual(services.income_doc_blockers(self._gap_arm()),
                          ['parent_ic_missing:mother', 'birth_certificate_missing'])
 

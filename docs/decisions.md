@@ -14598,25 +14598,33 @@ cannot judge (rejected: the comparison was blocked by OUR outage, not by a missi
 `str_not_household` (rejected: blames the student for our outage). **Revisit if:** outages stop being
 rare and short (with TD-394).
 
-**3c. Salary route — an STR no card matched is not a working member's income proof at the gate
-(owner ruling 2026-10-25, option A; supersedes F1 FOR THE GATE on that route).**
-**Decision:** the salary route's per-member check accepts the household STR as a member's income evidence
-only when a card MATCHED its recipient (`cluster_income_matched`) — the TD-402 rule, now on every arm of
-the gate. The case that forced it (the TD-401/402 review's probe 1): the mother works (clean IC + birth
-certificate, no payslip), the father is on the form with no IC, the STR names a stranger; F1 could not
-judge it, so it counted, and the gate passed with no income shown. Now: `income_evidence_missing:<member>`
-("show her income — a payslip, EPF, or an amount with a supporting letter"), or — while that member's IC
-is itself missing — `parent_ic_missing:<member>` alone, since her card may match the STR and settle it.
-The student's own income cue (`income_shown`) and the Check-2 proof ask already gave this answer, so no
-surface now says "complete" while another blocks. **Unchanged:** the verdict keeps F1's lenient reading
-(no band moves; `VERDICT_ENGINE_VERSION` not bumped); the STR route; `str_not_household` fires exactly as
-before; the frozen gate for already-submitted students. **Consequence:** on the salary route, an STR whose
-recipient did not read, or that only a non-working parent's (absent) card could match, no longer carries
-a working member with no papers of their own — that family is asked for his income or a clearer STR.
-**Alternatives considered:** keep F1 at the gate (rejected: it passed probe 1 with no income anywhere);
-ask for the non-working parent's IC (rejected: the Documents step cannot take it before submission).
-**Revisit if:** students commonly hold a genuine STR that does not read — then the fix is the read, not
-the gate.
+**3c. An STR no card matched is not income proof at the submission gate — ONE rule on BOTH routes
+(owner ruling 2026-10-25, option A: "an STR counts as income proof only when it matches someone's IC";
+supersedes F1 FOR THE GATE).**
+**Decision:** the gate accepts the household STR as income evidence only when a card MATCHED its
+recipient — the TD-402 rule, now on every arm of the gate, on both routes (`services.blockers.
+_unmatched_str_asks`). For an STR no card matched, the gate asks, in order: (1) the IC of each roster
+member whose card could settle it (`parent_ic_missing:<member>`, from `str_owner_ic_asks` — the same
+rule that already offers that member a tagged card on the Documents page, TD-309, so a non-working
+mother's IC is NOT a dead end); (2) with every relevant card on file and still no match, the stranger
+rule's answer (`str_not_household`), or, where nothing positively mismatched (a card or the recipient
+did not read), a clearer document (`income_document_unreadable`) — or "try later" (`ic_service_down`)
+when that read is ours to finish (never run, deferred by our outage); (3) on the salary route with no IC
+to ask, the working member's own income (`income_evidence_missing:<member>`). The cases that forced it
+(reviews of the TD-401/402 sprint): probe 1 (salary: the mother works with no payslip, the father on the
+form with no IC, a stranger's STR — passed with no income anywhere), probe 1c (the same family on the STR
+route, earner = mother — passed), and family 3 (salary: the father works with no payslip, the STR names
+the non-working mother, her IC not on file — now asked for HER IC, not his income). The student's own
+income cue (`income_shown`) and the Check-2 asks already gave this answer, so no surface says "complete"
+while another blocks. **Unchanged:** the verdict keeps F1's lenient reading (no band moves;
+`VERDICT_ENGINE_VERSION` not bumped); `str_not_household` fires exactly as before; the frozen gate for
+already-submitted students; a STALE STR in the household's own name (TD-403 — about WHEN, not WHOSE).
+**Consequence:** a family whose STR no card matched — its recipient unread, or only an absent card could
+match it — is asked for that card, a clearer document or (salary route) the earner's income.
+**Alternatives considered:** keep F1 at the gate (rejected: probes 1 and 1c passed with no income
+anywhere); ask the salary-route earner's income instead of the mother's IC in family 3 (rejected: the
+wrong document, and her IC is the one that settles it). **Revisit if:** students commonly hold a genuine
+STR that does not read — then the fix is the read, not the gate.
 
 **4. An OpenAI fallback for document reads is sequenced AFTER this sprint and TD-390 (TD-399).**
 **Decision:** no second AI provider for document reads yet. It is its own sprint, after the owner rules on

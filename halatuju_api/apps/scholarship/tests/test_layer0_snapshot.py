@@ -21,6 +21,7 @@ from apps.scholarship.models import (
     ApplicantDocument, ApplicationItem, Consent, FundingNeed, Programme,
     ProgrammeApplicationItem, ScholarshipApplication, ScholarshipCohort,
 )
+from apps.scholarship.tests.factories import matched_str_pair
 
 
 class _SnapshotCase(TestCase):
@@ -48,9 +49,10 @@ class _SnapshotCase(TestCase):
             siblings_in_school=0, siblings_in_tertiary=0)
         FundingNeed.objects.create(application=self.app, categories=['books'], programme_months=12)
         Consent.objects.create(application=self.app, is_active=True)
-        for t in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+        for t in ('ic', 'results_slip', 'offer_letter'):
             ApplicantDocument.objects.create(application=self.app, doc_type=t,
                                              storage_path=f'{t}.pdf')
+        matched_str_pair(self.app)   # the earner's IC + his own STR, both read (ruling 2026-10-25)
 
     def _set(self, code, state, kind='question'):
         item = ApplicationItem.objects.get(kind=kind, code=code)

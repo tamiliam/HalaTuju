@@ -157,16 +157,21 @@ class AnStrNobodyMatchedCarriesNoClusterPastTheGate(TestCase):
 
 
 class AnUnmatchedStrIsNoWorkingMembersIncomeProofEither(TestCase):
-    """Owner ruling 2026-10-25 (option A), superseding F1 FOR THE GATE: on the salary route the
-    per-member check (`income_evidence_missing:<member>`) accepts the household STR as a member's
-    income evidence only when a card MATCHED its recipient. The verdict keeps its lenient reading."""
+    """Owner ruling 2026-10-25 (option A), ONE rule on BOTH routes, superseding F1 FOR THE GATE: an
+    STR is income proof only when a card MATCHED its recipient. Unmatched, the gate asks for the IC of
+    the roster member who could settle it (the Documents page offers that card, TD-309); with every
+    card on file, the stranger rule's answer, or a clearer document. The verdict keeps F1's reading."""
 
-    def _app(self, *, mother_occ='private', father_occ='private'):
+    def _app(self, *, route='salary', earner='', working=('mother',), mother_occ='private'):
         return make_application(
-            'profile_complete', income_route='salary', income_earner='',
-            income_working_members=['mother'], father_name=FATHER, mother_name=MOTHER,
-            father_occupation=father_occ, mother_occupation=mother_occ, other_family_members=[],
+            'profile_complete', income_route=route, income_earner=earner,
+            income_working_members=list(working), father_name=FATHER, mother_name=MOTHER,
+            father_occupation='private', mother_occupation=mother_occ, other_family_members=[],
             student=make_student(nric=STUDENT_NRIC, name=STUDENT))
+
+    def _father_ic(self, app):
+        _doc(app, 'parent_ic', household_member='father', vision_run_at=timezone.now(),
+             vision_name=FATHER.upper(), vision_nric=FATHER_NRIC)
 
     def _mother_cluster(self, app):
         """The mother's clean, linked cluster with NO payslip: her IC + the birth certificate."""
@@ -183,15 +188,18 @@ class AnUnmatchedStrIsNoWorkingMembersIncomeProofEither(TestCase):
             'student_verdict': 'ok', 'error': ''})
 
     def test_probe_1_a_strangers_str_nobody_could_judge_now_blocks(self):
-        """Father on the form with no IC (so F1 cannot judge), mother working with no payslip."""
+        """Father on the form with no IC (so F1 cannot judge), mother working with no payslip. Only
+        the father's card could settle whose STR it is, so the gate asks for it — the card the
+        Documents page offers (`ic_slots`); once it lands and mismatches, it is 1b."""
         from apps.scholarship.income_shown import income_shown
+        from apps.scholarship.income_str_ownership import str_owner_ic_asks
         from apps.scholarship.services import consent_blockers, income_doc_blockers
         app = self._app()
         self._mother_cluster(app)
         self._str(app, STRANGER, STRANGER_NRIC)
-        out = income_doc_blockers(app)
-        self.assertIn('income_evidence_missing:mother', out)
-        self.assertIn('income_evidence_missing:mother', consent_blockers(app))
+        self.assertEqual(income_doc_blockers(app), ['parent_ic_missing:father'])
+        self.assertIn('parent_ic_missing:father', consent_blockers(app))
+        self.assertEqual(str_owner_ic_asks(app)['missing'], ['father'])   # the page's slot, same rule
         # The student's own income cue already said "not shown" — the surfaces now agree.
         self.assertFalse(income_shown(app, 'mother').shown)
 
@@ -200,10 +208,60 @@ class AnUnmatchedStrIsNoWorkingMembersIncomeProofEither(TestCase):
         from apps.scholarship.services import income_doc_blockers
         app = self._app()
         self._mother_cluster(app)
-        _doc(app, 'parent_ic', household_member='father', vision_run_at=timezone.now(),
-             vision_name=FATHER.upper(), vision_nric=FATHER_NRIC)
+        self._father_ic(app)
         self._str(app, STRANGER, STRANGER_NRIC)
-        self.assertIn(STR_NOT_HOUSEHOLD, income_doc_blockers(app))
+        self.assertEqual(sorted(income_doc_blockers(app)),
+                         ['income_evidence_missing:mother', STR_NOT_HOUSEHOLD])
+
+    def test_probe_1c_the_str_route_dodge_is_closed(self):
+        """The probe-1 family on the STR route (earner = the mother, the father's IC never uploaded,
+        a stranger's STR): used to read []. The STR route asks the same question now."""
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app(route='str', earner='mother', working=())
+        self._mother_cluster(app)
+        self._str(app, STRANGER, STRANGER_NRIC)
+        self.assertEqual(income_doc_blockers(app), ['parent_ic_missing:father'])
+        self._father_ic(app)                       # every card on file, still no match → stranger
+        self.assertEqual(income_doc_blockers(app), ['str_not_household'])
+
+    def test_family_3_the_working_fathers_household_str_names_the_mother(self):
+        """Father works with no payslip, the STR names the (non-working) mother, her IC not on file:
+        ask for HER IC — the Documents page offers her a card (TD-309) — not his income. Her card
+        landing and matching clears the gate."""
+        from apps.scholarship.income_str_ownership import str_owner_ic_asks
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app(working=('father',), mother_occ='homemaker')
+        self._father_ic(app)
+        self._str(app, MOTHER, MOTHER_NRIC)
+        self.assertEqual(income_doc_blockers(app), ['parent_ic_missing:mother'])
+        self.assertEqual(str_owner_ic_asks(app)['missing'], ['mother'])
+        _doc(app, 'parent_ic', household_member='mother', vision_run_at=timezone.now(),
+             vision_name=MOTHER.upper(), vision_nric=MOTHER_NRIC)
+        self.assertEqual(income_doc_blockers(app), [])
+
+    def test_genuine_5_the_str_route_with_a_matched_str_passes(self):
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app(route='str', earner='mother', working=())
+        self._mother_cluster(app)
+        self._str(app, MOTHER, MOTHER_NRIC)
+        self.assertEqual(income_doc_blockers(app), [])
+
+    def test_an_str_whose_recipient_did_not_read_asks_for_a_clearer_one(self):
+        """Every card on file, the STR read but its recipient blank: no match, not a stranger."""
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app(route='str', earner='mother', working=())
+        self._mother_cluster(app)
+        self._father_ic(app)
+        self._str(app, '', '')
+        self.assertEqual(income_doc_blockers(app), ['income_document_unreadable'])
+
+    def test_an_str_our_outage_never_read_is_try_later_not_the_students_fault(self):
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app(route='str', earner='mother', working=())
+        self._mother_cluster(app)
+        self._father_ic(app)
+        _doc(app, 'str', vision_fields={'student_verdict': 'review_manually', 'service_error': True})
+        self.assertEqual(income_doc_blockers(app), ['ic_service_down'])
 
     def test_genuine_2_a_payslip_carries_her_income(self):
         from apps.scholarship.services import income_doc_blockers
