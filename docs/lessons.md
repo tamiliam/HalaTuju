@@ -1413,3 +1413,12 @@ reader would have suppressed its signal for ever). **Rule:** a "wait, we are sti
 applies only to the comparison that actually uses the deferred input, and it carries its own deadline
 that every READER honours, after which the old answer returns in full. A deferral may delay a signal; it
 may never hide one. (TD-390 sprint, review round 1)
+
+## 2026-10-25 — a gate rule the owner states applies to every door into the same state
+
+The owner ruled "an STR counts as income proof only when it matches someone's IC". The first fix closed
+the reviewer's probe on the salary route, the code path it went through; the same family on the STR route
+— a second door into the same state, a submission resting on that STR — still passed. **Rule:** before
+fixing a gate rule, list the doors per RULE (every route, early return and fallback that can reach the
+state the rule governs), not per code path the probe touched, and pin the probe at each door. (TD-401/402
+sprint, review round 2)

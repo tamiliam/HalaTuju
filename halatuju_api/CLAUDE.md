@@ -924,19 +924,31 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**TD-390 is LIVE (2026-10-25, `46b1c0bd`; retro
+**TD-401 + TD-402 and the owner's STR ruling are LIVE (2026-10-25, `014cae5b`, `4f582222`, `76a07ee7`;
+retro `docs/retrospectives/retrospective-2026-10-25-td401-td402-str-ruling.md`).** Identity rests on the
+card's NRIC (a student IC with a name but no NRIC is `ic_unreadable`). An STR is income proof at the
+submission gate only when a card MATCHED its recipient, on BOTH routes (`decisions.md` 2026-10-24 item 3c,
+superseding F1 for the gate; the verdict keeps F1's lenient reading): unmatched, the gate asks for the IC of
+the roster member who could settle it (`services.blockers._unmatched_str_asks` — the card TD-309 already
+offers), else `str_not_household`, a clearer document, or "try later" when the read is ours.
+`VERDICT_ENGINE_VERSION` 2026-10-25.2. Fixtures needing a household's own STR use
+`factories.matched_str_pair`. Register: **133 open**.
+- **Next: the owner's document corpus gaps brief** (`docs/plans/2026-10-25-document-corpus-gaps-brief.md`,
+  org request #47) — the lead plans it.
+- **TD-404 suggested soon** (Sabah/Sarawak applicants): `AK`/`ANAK` and romanisation variants make a
+  genuine family's STR read as a stranger's — every name match, so an adversarial review.
+- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Then TD-403** once the owner rules (a stale STR in the household's own name passes both gates), and
+  **TD-399** (OpenAI fallback for document reads, gated on the owner's privacy ruling + an eval run).
+
+**Earlier — TD-390 is LIVE (2026-10-25, `46b1c0bd`; retro
 `docs/retrospectives/retrospective-2026-10-25-td390-ic-second-opinion.md`).** A MyKad read that NEEDED the
 Gemini second opinion, skipped by our outage, is marked on the row (`read_errors.IC_SECOND_OPINION_ERROR`,
 72-hour window, renewed by a new outage): the gate answers `ic_service_down` (still blocks; a half read
 passes only on a verified NRIC), every reader scoped to THAT card says pending, the sweep re-runs it, the
 alert counts it, and past the window the old read applies in full. Owner ruling (scenario B): an STR we
 cannot judge only because the earner's own card is half-read blocks as "try later". `VERDICT_ENGINE_VERSION`
-2026-10-25.1. Register: **132 open**.
-- **Next: TD-402 + TD-401** — money/identity holes live today (owner to confirm): a stranger's STR passes via
-  a re-pointed earner whose IC was never uploaded; a student IC with a name but no NRIC passes identity
-  (count the live applications it would hold first). Adversarial review before the push.
-- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
-- **Then TD-399** — OpenAI fallback for document reads, gated on the owner's privacy ruling + an eval run.
+2026-10-25.1.
 
 **Earlier — the AI-outage sprint is LIVE (2026-10-25, `9d3ff53a`, api-01135-djr; retro
 `docs/retrospectives/retrospective-2026-10-24-ai-outage.md`).** OUR read failing (Gemini or Vision down,
