@@ -924,17 +924,27 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**The AI-outage sprint is LIVE (2026-10-25, `9d3ff53a`, api-01135-djr; retro
+**TD-390 is LIVE (2026-10-25, `46b1c0bd`; retro
+`docs/retrospectives/retrospective-2026-10-25-td390-ic-second-opinion.md`).** A MyKad read that NEEDED the
+Gemini second opinion, skipped by our outage, is marked on the row (`read_errors.IC_SECOND_OPINION_ERROR`,
+72-hour window, renewed by a new outage): the gate answers `ic_service_down` (still blocks; a half read
+passes only on a verified NRIC), every reader scoped to THAT card says pending, the sweep re-runs it, the
+alert counts it, and past the window the old read applies in full. Owner ruling (scenario B): an STR we
+cannot judge only because the earner's own card is half-read blocks as "try later". `VERDICT_ENGINE_VERSION`
+2026-10-25.1. Register: **132 open**.
+- **Next: TD-402 + TD-401** — money/identity holes live today (owner to confirm): a stranger's STR passes via
+  a re-pointed earner whose IC was never uploaded; a student IC with a name but no NRIC passes identity
+  (count the live applications it would hold first). Adversarial review before the push.
+- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Then TD-399** — OpenAI fallback for document reads, gated on the owner's privacy ruling + an eval run.
+
+**Earlier — the AI-outage sprint is LIVE (2026-10-25, `9d3ff53a`, api-01135-djr; retro
 `docs/retrospectives/retrospective-2026-10-24-ai-outage.md`).** OUR read failing (Gemini or Vision down,
 unconfigured, throttled, a revoked key) is stored `review_manually` + `service_error`, never the student's
 `unreadable` — one classifier, `apps/scholarship/read_errors.py`; a document is blamed only when every model
 refused its CONTENT or none parsed an answer. Deferred reads raise no student request, no consent blocker,
 no attempt, and hold Check-2 requests (`check2_deferred.py`); the hourly sweep re-reads them
 (`services/read_retry.py`); the outage alert covers Gemini and supporting-document OCR.
-`VERDICT_ENGINE_VERSION` 2026-10-24.1. Register: **130 open**.
-- **Next: TD-390** — the IC's Gemini second opinion silently does not run during an outage and nothing
-  retries it (identity gate: adversarial review before the push). **Then TD-399** — an OpenAI fallback for
-  document reads, gated on the owner's privacy ruling (a second processor) and an eval run on the corpus.
 - ⚠ A Check-2 request held for a deferred read stays frozen if the sweep's 72 h pass (TD-397); TD-394
   (a deferred EPF/letter holds the income gate) is KEPT by owner ruling.
 

@@ -1404,3 +1404,12 @@ closed its own request: they read things DERIVED from the old value (ticket code
 states), which a grep for the field never finds. **Rule:** when a stored value changes meaning, list what
 the old value CAUSED (requests, blockers, copy, counters, alerts) and test each one, not only each reader
 of the field. (AI-outage sprint, review round 1)
+
+## 2026-10-25 — a deferral is scoped to the one input it defers, and it expires into the old behaviour
+
+TD-390's first cut held back an STR mismatch when ANY household card awaited its second opinion (so an
+unrelated card let a stranger's STR pass), and its mark never lapsed (so after the sweep gave up every
+reader would have suppressed its signal for ever). **Rule:** a "wait, we are still checking" state
+applies only to the comparison that actually uses the deferred input, and it carries its own deadline
+that every READER honours, after which the old answer returns in full. A deferral may delay a signal; it
+may never hide one. (TD-390 sprint, review round 1)

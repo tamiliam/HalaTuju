@@ -29,6 +29,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-23 request #42 sprint (the Overview layout per gift; scholarship 0176) — d5861a66
 - 2026-10-22 Team person pages sprint (permissions on each person's page + change history; own clean-up) — 43aa061a
 - 2026-10-25 AI-outage sprint (our read failure is never the student's unreadable; sweep, alert, honest cascade errors; three review rounds) — 9d3ff53a
+- 2026-10-25 TD-390 sprint (a skipped IC second opinion is our outage: mark, honest gate, scoped pending readers, sweep, alert; owner ruling on scenario B) — 46b1c0bd
 
 ## Reviews
 
