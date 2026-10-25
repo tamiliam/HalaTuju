@@ -334,7 +334,25 @@ S3 → S4. S1 can run in parallel with S2a in a worktree.
 - Web route checks are spread over 20 files — a missed branch silently falls to `stpm_pending` /
   `spm`; the S2b reviewer gets the full list.
 
-## 7. Open decisions for the owner
+## 7a. Owner rulings (2026-10-25)
+- **D1:** (b)+(c) — promote to the higher route only when a detected STPM document is on file, and list
+  the affected applications for reviewers (show the count first).
+- **D2:** browse-only degree list for the third route; the apply page's degree picker unfiltered.
+- **D3:** `min_merit_score` stays SPM-only. Context from the owner: BrightPath flagship sets no
+  minimum merit (offering institutions set merit); it asks only for 5 A's, an SPM rule. STPM and
+  STPM-equivalent applicants are tested on the CGPA floor (`min_stpm_pngk`) only — as `_academic_ok`
+  already does for STPM today.
+- **D4:** the SPM results block is required on BOTH the STPM route and the third route.
+- **D6:** one upload each (SPM slip and higher results).
+- **D9:** the system does NOT ask for SPM automatically; a reviewer may ask. A tertiary student MAY
+  upload their SPM slip at any time, but it is optional and never a blocker for STPM/equivalent
+  applicants.
+- **D7:** the organisation-facing plan (request #38) already tells BrightPath the new order is shown to
+  them before S1 goes live.
+- Still open: **D5** (which diplomas count), **D8** (default: classify at read time only), **D10**
+  (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
+
+## 7. Open decisions for the owner (as raised)
 - **D1** Legacy "highest": for the 27 applications recorded SPM with STPM data on file (#153 is one),
   (a) leave until the student re-completes a results form, (b) promote when a detected STPM document
   is on file, or (c) list them for reviewers. Recommended (b)+(c), shown first as a count.
