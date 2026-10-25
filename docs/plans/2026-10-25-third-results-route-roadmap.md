@@ -365,7 +365,11 @@ before/after list before anything that moves applicants.
   applicants.
 - **D7:** the organisation-facing plan (request #38) already tells BrightPath the new order is shown to
   them before S1 goes live.
-- Still open: **D5** (which diplomas count), **D8** (default: classify at read time only), **D10**
+- **D5 (2026-10-25):** only PUBLIC diplomas count (polytechnic, UiTM, public university, other public
+  institutions). A private-college diploma is not accepted by UA, so it does not qualify for this
+  route. S2a/S2b: the Diploma choice asks where the diploma is from; "private college" is not accepted
+  (plain message on the form; the gate refuses it with a clear reason if it reaches submit).
+- Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
 ## 7. Open decisions for the owner (as raised)
