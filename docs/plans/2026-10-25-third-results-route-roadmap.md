@@ -317,6 +317,22 @@ sprint is whole.
 Order: S1 (independent, smallest, exposes the ranking change early) → S2a (riskiest: a gate) → S2b →
 S3 → S4. S1 can run in parallel with S2a in a worktree.
 
+## 5a. Sprint path as approved by the owner (2026-10-25)
+
+Six sprints, ~84 h. S3 is split for reviewability; the rulings in §7a are folded in.
+
+| # | Sprint | Hours | Migration | Gate before it starts |
+|---|---|---|---|---|
+| S1 | Merit on one 0-100 scale | 8 | no | none |
+| S2a | Third route, server side | 14 | yes | owner answers D5 (which diplomas count) |
+| S2b | Third route, student side (+ SPM block required on the STPM page too, D4) | 20 | no | S2a live |
+| S3a | Higher-results upload: model, requirements, submit (SPM optional, never a blocker, D9; one upload each, D6) | 14 | yes | S2b live; upload-card mock approved (D10) |
+| S3b | Detection (`results_kind.py`, routing only) + academic tile + coaching; VERDICT_ENGINE_VERSION | 12 | no | S3a live |
+| S4 | Reviewer requests by name (#37) + wrong-slip handling (#43); no automatic SPM ask (D9) | 16 | no | S3b live |
+
+Every sprint: adversarial review before push; migrations via MCP before push; owner sees the
+before/after list before anything that moves applicants.
+
 ## 6. Risks
 - **"Highest" moves live records.** 27 applications are recorded/declared SPM with STPM data on file
   (15 shortlisted, 8 profile complete, 2 rejected, 1 interviewed, 1 awarded; 0 below their cohort's
