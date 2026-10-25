@@ -380,14 +380,16 @@ def reconcile_income_route(application, *, by='auto'):
     Reuses ``switch_income_route`` (which audit-logs and recomputes the resolution queue without
     ever re-blocking a submission). Idempotent + no-op-safe. Returns the resulting route."""
     from ..income_engine import (household_str_status, salary_income_satisfied,
-                                 effective_working_members, member_cluster_complete)
+                                 effective_working_members, member_cluster_complete,
+                                 cluster_income_matched)
     route = (getattr(application, 'income_route', '') or '').strip()
     str_grade, str_member = household_str_status(application)
     str_ok = str_grade is not None
-    salary_ok = salary_income_satisfied(application)
+    # TD-402: the gate's reading — a cluster carried only by an STR no card matched cleared nothing.
+    salary_ok = salary_income_satisfied(application, str_must_match=True)
     if route == 'str' and not str_ok and salary_ok:
         members = [m for m in effective_working_members(application, any_route=True)
-                   if member_cluster_complete(application, m)]
+                   if member_cluster_complete(application, m) and cluster_income_matched(application, m)]
         switch_income_route(application, route='salary', members=members, by=by)
         return 'salary'
     if route == 'salary' and not salary_ok and str_ok:

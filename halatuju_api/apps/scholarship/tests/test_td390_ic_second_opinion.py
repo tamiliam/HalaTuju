@@ -165,7 +165,7 @@ class TheStudentsOwnIc(TestCase):
         self.assertIn('ic_service_down', codes)
         self.assertNotIn('name_mismatch', codes)
         self.assertNotIn('name_mismatch', _ticketable_unresolved(self.app))
-        self.assertEqual(VERDICT_ENGINE_VERSION, '2026-10-25.1')
+        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-25.1')   # TD-401/402 moved it again
 
     def test_the_students_chips_and_coach_do_not_call_it_a_mismatch(self):
         from apps.scholarship.help_engine import verdict_for_document

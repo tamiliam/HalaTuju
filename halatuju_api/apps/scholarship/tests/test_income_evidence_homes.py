@@ -1318,13 +1318,19 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         (`str_gate_reading`), and that answer may not move because a verdict band did. Pinned on
         both arms. ⚠ OWNER'S F1 RULING, 2026-09-29: both arms hold no MOTHER's IC, so the STR
         cannot be judged and does not block (the lead's reading, review F-B). Both arms are
-        therefore clear — the gap arm too: with the F8 guard lifted, the father's complete cluster
-        (his IC links him, and the STR the gate no longer calls a stranger's is his income's
-        fourth way) satisfies the gate's "one complete cluster" early return, exactly as it does
-        for any household whose STR counts. Before the ruling both read `str_not_household`."""
-        for arm in (self._mismatch_arm, self._gap_arm):
-            with self.subTest(arm=arm.__name__):
-                self.assertEqual(services.income_doc_blockers(arm()), [])
+        therefore clear on F8. Before the ruling both read `str_not_household`.
+
+        ⚠ SUPERSEDED FOR THE GAP ARM BY TD-402 (2026-10-25, owner rule with TD-394: a money gate never
+        passes on a document nobody has matched). This pin used to say the gap arm was clear too:
+        the father's cluster, carried by the household-STR arm, satisfied the gate's "one complete
+        cluster" early return although NO card had matched that STR — which is how a stranger's STR
+        passed via a re-pointed earner. The early return now needs the STR MATCHED (or the cluster's
+        income shown on its own), so the gap arm asks for what the STR route always asks: the
+        earner's own IC and her relationship document. The VERDICT is still untouched (the other pins
+        in this file), and the mismatch arm is still clear on F8."""
+        self.assertEqual(services.income_doc_blockers(self._mismatch_arm()), [])
+        self.assertEqual(services.income_doc_blockers(self._gap_arm()),
+                         ['parent_ic_missing:mother', 'birth_certificate_missing'])
 
 
 # ════════════════════════════════════════════════════════════════════════════════════════════

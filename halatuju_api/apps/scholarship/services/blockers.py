@@ -23,7 +23,7 @@ def ic_identity_blockers(application):
       - 'ic_service_down'  : the OCR service errored (Vision down / quota / config), or (TD-390)
                              the read needed the Gemini second opinion and our outage skipped it
                              → re-uploading won't help; tell the student to retry later.
-      - 'ic_unreadable'    : OCR ran but couldn't read the IC (poor image) → re-upload.
+      - 'ic_unreadable'    : OCR ran but couldn't read the IC, or read no NRIC (TD-401) → re-upload.
       - 'ic_nric_mismatch' : the IC's NRIC doesn't match the profile NRIC.
       - 'ic_name_mismatch' : the IC's name is a different person's (disjoint tokens).
     A 'partial' name (one set a subset of the other — same person, shorter/longer
@@ -47,6 +47,11 @@ def ic_identity_blockers(application):
     deferred = ic_second_opinion_deferred(ic)
     if not (ic.vision_nric or ic.vision_name):
         return ['ic_service_down' if deferred else 'ic_unreadable']  # read nothing usable (poor image)
+    # TD-401 (owner hard-gate ruling: identity rests on a VERIFIED NRIC). A card whose NRIC did not
+    # read at all used to pass on its name alone; it is now "re-upload a clearer photo" — whether or
+    # not the profile has an NRIC to compare, because the identity must rest on the CARD's number.
+    if not ic.vision_nric:
+        return ['ic_service_down' if deferred else 'ic_unreadable']
     out = []
     pnric = (getattr(application.profile, 'nric', '') or '').strip()
     pname = (getattr(application.profile, 'name', '') or '').strip()
@@ -207,7 +212,9 @@ def income_doc_blockers(application):
         # failed the format gate. Mirrors the salary branch's identical early-return below.
         # (`salary_income_satisfied` reads the un-tightened STR arm, so a stranger's STR could
         # satisfy it — hence the F8 guard on both of its call sites in this function.)
-        if not (strangers_str or held_str) and salary_income_satisfied(application):
+        # TD-402: only a cluster whose STR a card MATCHED (or whose income shows on its own) may skip
+        # the earner's own IC — `salary_income_satisfied(str_must_match=True)`.
+        if not (strangers_str or held_str) and salary_income_satisfied(application, str_must_match=True):
             return []
         earner = (getattr(application, 'income_earner', '') or '').strip()
         if not earner:
@@ -241,8 +248,8 @@ def income_doc_blockers(application):
     # If any selected member's cluster is complete + coherent, the income requirement is met and
     # every OTHER member's gaps become soft Check-2 follow-ups — so a family that has fully
     # documented one earner is never trapped over a second earner's missing/partial docs.
-    if not (strangers_str or held_str) and salary_income_satisfied(application):
-        return []
+    if not (strangers_str or held_str) and salary_income_satisfied(application, str_must_match=True):
+        return []                              # (TD-402: the same matched-STR rule as the STR route)
     if strangers_str:
         # F8. Nothing else in this household shows what it earns (`stranger_str_blocks_submission`
         # checked), so the STR is carrying the gate and it is not this family's.

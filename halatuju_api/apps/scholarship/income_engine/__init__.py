@@ -81,9 +81,10 @@ from .utilities import (
 from .advice import income_cluster_advice, income_requirements, salary_member_blocks
 from .evidence import (
     _member_has_epf_value, _salary_slip_not_wrongtype, any_member_income_evidenced,
-    declared_amount, has_income_support_doc, has_valid_str, household_str_status,
-    income_established, member_cluster_complete, member_income_evidenced,
-    salary_income_satisfied, str_confirmed_current, str_not_breached, usable_salary_slip
+    cluster_income_matched, declared_amount, has_income_support_doc, has_valid_str,
+    household_str_status, income_established, member_cluster_complete, member_income_evidenced,
+    salary_income_satisfied, str_confirmed_current, str_not_breached, str_recipient_matched,
+    usable_salary_slip
 )
 from .freshness import (
     _DEDUP_DOC_TYPES, _HOUSEHOLD_WIDE_DEDUP, _INCOME_DOC_CURRENT_MONTHS, _dedup_clean_rank,

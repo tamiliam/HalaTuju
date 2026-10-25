@@ -42,12 +42,15 @@ class _Base(TestCase):
 
 
 def _patch_signals(*, str_status, salary_ok, members=('father',)):
-    """Patch the four income-engine signals reconcile/gate read (imported at call time)."""
+    """Patch the five income-engine signals reconcile/gate read (imported at call time)."""
     return [
         mock.patch(f'{ENGINE}.household_str_status', return_value=str_status),
         mock.patch(f'{ENGINE}.salary_income_satisfied', return_value=salary_ok),
         mock.patch(f'{ENGINE}.effective_working_members', return_value=list(members)),
         mock.patch(f'{ENGINE}.member_cluster_complete', return_value=True),
+        # TD-402 (2026-10-25): reconcile reads the gate's rule, so a stubbed clean cluster also has
+        # its income matched (shown on its own, or a MATCHED STR — `cluster_income_matched`).
+        mock.patch(f'{ENGINE}.cluster_income_matched', return_value=True),
     ]
 
 

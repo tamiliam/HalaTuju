@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-401 + TD-402 — two holes in the submission gate: an IC with no NRIC, a stranger's STR via a re-pointed earner - 2026-10-25
+
+- **TD-401 (identity):** a student MyKad read with a name but NO NRIC passed `ic_identity_blockers` on
+  the name alone. It now answers `ic_unreadable` ("upload a clearer image") — also when the profile has
+  no NRIC to compare, because identity rests on the CARD's number (owner's hard-gate ruling) — and
+  `ic_service_down` while a second opinion is deferred (TD-390). The coach, the request verdict and the
+  student's chip already called such a card unreadable; the gate was the odd one out. The lead counted
+  production first: zero live student ICs in that state. `VERDICT_ENGINE_VERSION` 2026-10-25.2.
+- **TD-402 (money):** STR route, `income_earner` re-pointed at a parent whose IC was never uploaded, the
+  other parent's clean card linked, the STR a stranger's: the gate's "one complete cluster is enough"
+  early return passed it on the household-STR arm. That early return (both routes) and the consent-time
+  route reconcile now read `salary_income_satisfied(str_must_match=True)`: an STR-carried cluster counts
+  only when a card has MATCHED the STR's recipient. The scenario asks for the earner's own IC; a genuine
+  family (earner's IC + matched STR) and an earner whose income shows on its own still pass. The verdict
+  keeps the recipient-agnostic reading (F8 is a gate ruling; `test_income_evidence_homes`' blast-radius
+  pin is amended, with the reason, for the gap arm only).
+- **Tests:** `test_td401_td402_gate_holes.py` (+9, factory-built); every fix bitten by an injected fault.
+  TD-401 and TD-402 closed.
+
 ## Third results route S1 — merit on one 0–100 scale - 2026-10-25
 
 The admin merit was two numbers on two scales in one column: SPM a 0–100 course-guide merit, STPM

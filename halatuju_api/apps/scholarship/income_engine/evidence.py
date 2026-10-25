@@ -113,6 +113,15 @@ def str_not_breached(application):
     return not (auth and auth not in ('genuine', 'likely_genuine'))   # a positive non-genuine call → breached
 
 
+def str_recipient_matched(application):
+    """True when the live STR's recipient MATCHED a household member's card on name or NRIC (or the
+    IC-number chain confirmed it) — the STR is provably this family's. Currency and genuineness are
+    ``str_not_breached``'s question, not this one's (TD-402)."""
+    str_doc = latest_doc(application, 'str') if getattr(application, 'documents', None) is not None else None
+    sc = student_str_check(str_doc) if str_doc is not None else None
+    return bool(sc and 'match' in (sc.get('name_status'), sc.get('nric_status')))
+
+
 def str_confirmed_current(application):
     """True when the household's latest live STR reads as CURRENT — approved AND showing a payment
     this cycle. This is the exact criterion the Action-Centre ``str_not_current`` request asks the
@@ -217,6 +226,14 @@ def any_member_income_evidenced(application) -> bool:
                for m in effective_working_members(application, any_route=True))
 
 
+def cluster_income_matched(application, member):
+    """TD-402 — a cluster's income is shown on its own (payslip / EPF / declared + letter), or the
+    household STR carrying it has had its recipient MATCHED by a card. False only for a cluster
+    carried by an STR nobody matched — see ``salary_income_satisfied(str_must_match=True)``."""
+    from ..income_shown import income_shown
+    return income_shown(application, member).shown or str_recipient_matched(application)
+
+
 def member_cluster_complete(application, member):
     """True when this working member's salary-route income cluster is COMPLETE and COHERENT on its
     own — the unit behind the "one complete, clean earner cluster is enough to submit" gate (owner
@@ -252,7 +269,7 @@ def member_cluster_complete(application, member):
     return True
 
 
-def salary_income_satisfied(application):
+def salary_income_satisfied(application, *, str_must_match=False):
     """True when AT LEAST ONE working member has a complete, clean cluster
     (`member_cluster_complete`). This is the "one clean cluster is enough to submit" gate (owner
     2026-07-08): once one earner is fully and coherently documented, every OTHER member's missing
@@ -275,8 +292,18 @@ def salary_income_satisfied(application):
     predicate too (str-proof-spec.md §6 rule 2, the ABSENT-STR case), so **widening it MOVES A
     BAND** — measure the blast radius on production before you touch it. Callers today:
     `services.income_doc_blockers` / `document_red_blockers` (the gate) and
-    `verdict_engine._verdict_income` (the band)."""
+    `verdict_engine._verdict_income` (the band).
+
+    ``str_must_match`` (TD-402, 2026-10-25; owner rule with TD-394 — a money gate never passes on a
+    document nobody has matched) is the SUBMISSION GATE's form of this question, and only the gate
+    passes it. "One clean cluster is enough" lets the gate skip every other requirement — the STR
+    route's own earner IC included — so a cluster carried by the household-STR arm alone counts there
+    only when a card has MATCHED that STR's recipient. Without it a stranger's STR that F1 cannot
+    judge (the re-pointed earner's IC never uploaded) carried the other parent's clean card through.
+    The verdict keeps the recipient-agnostic reading (`test_income_evidence_homes`: F8 is a GATE
+    ruling, so tightening the predicate the band reads would move a band)."""
     return any(member_cluster_complete(application, m)
+               and (not str_must_match or cluster_income_matched(application, m))
                for m in effective_working_members(application, any_route=True))
 
 

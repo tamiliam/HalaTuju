@@ -143,10 +143,14 @@ class TestEitherRouteSatisfies(_Base):
 class TestGateSuppression(_Base):
     """With one clean cluster, a SECOND member's missing/mismatched docs stop blocking."""
 
+    # TD-402 (2026-10-25): for the GATE a clean cluster also needs its income MATCHED — shown on its
+    # own, or carried by an STR a card matched (`cluster_income_matched`). These stubs stand in for
+    # a cluster that is clean in every way, so they stub that half too.
     def test_income_doc_blockers_clear_when_one_cluster_complete(self):
         app = self._app('e')  # mother + father selected; only mother will "qualify"
         with patch_engine(income_engine, 'member_cluster_complete',
-                        side_effect=lambda a, m: m == 'mother'):
+                          side_effect=lambda a, m: m == 'mother'), \
+                patch_engine(income_engine, 'cluster_income_matched', return_value=True):
             self.assertEqual(services.income_doc_blockers(app), [])
 
     def test_extraneous_parent_ic_mismatch_suppressed_when_cluster_complete(self):
@@ -163,7 +167,8 @@ class TestGateSuppression(_Base):
                 self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
             # One clean cluster → the same mismatch is a soft Check-2 item, NOT a blocker.
             with patch_engine(income_engine, 'member_cluster_complete',
-                            side_effect=lambda a, m: m == 'mother'):
+                              side_effect=lambda a, m: m == 'mother'), \
+                    patch_engine(income_engine, 'cluster_income_matched', return_value=True):
                 self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
 
     def test_str_route_dispositive_str_suppresses_extraneous_ic_mismatch(self):

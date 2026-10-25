@@ -92,11 +92,10 @@ from .genuineness.bands import canonical_status, stored_status
 #                  gate and divergence readers are unchanged (review F1).
 #   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (a different one →
 #                  pathway_confirm, red until answered); Saluran Terbuka (SATU) reads red at once.
-#   2026-10-24.1 — the AI outage: a read not yet made (offer, relationship docs, STR → 'unknown',
-#                  still Unsure) is no longer "unreadable" and raises no student ask.
-#   2026-10-25.1 — TD-390: an IC whose required second opinion our outage skipped is "service down",
-#                  never a name/NRIC/relationship mismatch red chip or an "unreadable" earner IC.
-VERDICT_ENGINE_VERSION = '2026-10-25.1'
+#   2026-10-24.1 — AI outage: a read not yet made is no longer "unreadable" (no student ask).
+#   2026-10-25.1 — TD-390: a card our outage left half-read is "service down", never a mismatch.
+#   2026-10-25.2 — TD-401: an IC with no NRIC read is unreadable (a gap, not a pass on the name).
+VERDICT_ENGINE_VERSION = '2026-10-25.2'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
