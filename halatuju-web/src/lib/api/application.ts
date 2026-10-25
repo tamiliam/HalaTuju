@@ -217,6 +217,9 @@ export async function getScholarshipIntake(programme?: string): Promise<{
   /** "Who referred you?" — THIS gift's sources, `{code, name}` only ([] when no gift can be named;
    *  absent from an older api). The form adds the three fixed choices (`lib/referralSources`). */
   sources?: ReferralSource[]
+  /** The fixed choices THIS gift offers, in form order (request #44) — `other` always. Absent from
+   *  an older api: the form then offers all three (`offeredFixedCodes`). */
+  fixed_sources?: string[]
 }> {
   // ⚠ THE PROGRAMME CODE IS NOT OPTIONAL IN PRACTICE — pass it whenever the URL carries one.
   // Without it this asks "is anything open ANYWHERE?", which is a different question: with one

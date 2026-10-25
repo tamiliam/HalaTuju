@@ -6101,9 +6101,12 @@
         "requestLink": "To add a document or question that is not listed, raise it in Requests.",
         "sourcesHint": "The organisations this gift's apply form lists. Only sources switched on in Sources appear here.",
         "sourcesCount": "{n} of {m} on this form",
-        "sourcesNone": "None is on yet, so this form lists only the three below.",
+        "sourcesNone": "None is on yet, so this form lists only the fixed choices below.",
         "sourcesAlways": "Always on every form:",
         "sourcesLink": "Add a source or switch one off in Sources",
+        "sourcesFixedTitle": "Fixed choices",
+        "sourcesFixedHint": "Shown after this gift's own sources. Switch one off and this form stops offering it; {other} stays on every form.",
+        "sourcesAlwaysOn": "Always on",
         "sourceGone": "{source} was switched off in Sources, so it has left this list. Nothing was saved; check and save again.",
         "desc": {
           "document": {

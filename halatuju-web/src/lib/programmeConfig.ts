@@ -8,7 +8,9 @@
  * The Layer 2 constraint holds here too: the ROW ORDER below is a display convention computed at
  * render from the item's kind and code — never stored, never per-programme.
  */
-import type { ProgrammeConfigItem, ProgrammeConfigSource, ProgrammeItemState } from '@/lib/admin-api'
+import type {
+  ProgrammeConfigItem, ProgrammeConfigSource, ProgrammeConfiguration, ProgrammeItemState,
+} from '@/lib/admin-api'
 
 export const ITEM_STATES: readonly ProgrammeItemState[] = ['off', 'optional', 'required']
 
@@ -91,6 +93,19 @@ export function allowedStates(item: ProgrammeConfigItem): readonly ProgrammeItem
  * exactly what the PUT's `sources` map sends: only the codes whose switch differs from the server.
  */
 export type SourceDraft = Record<string, boolean>
+
+/**
+ * Every on/off switch the card draws, as one list for the draft and the diff: the organisation's
+ * sources, then the SWITCHABLE fixed choices (request #44 — `halatuju`, `social`; never `other`).
+ * A source can never carry a fixed code (the server refuses it), so the two cannot collide, and the
+ * PUT sends both in the one `sources` map.
+ */
+export function sourceSwitches(config: Pick<ProgrammeConfiguration, 'sources' | 'fixed_sources'> | null): ProgrammeConfigSource[] {
+  if (!config) return []
+  const fixed = (config.fixed_sources ?? []).filter((f) => f.switchable)
+    .map((f) => ({ code: f.code, name: f.code, on: f.on }))
+  return [...(config.sources ?? []), ...fixed]
+}
 
 export function sourceDraftFrom(sources: ProgrammeConfigSource[]): SourceDraft {
   return Object.fromEntries(sources.map((s) => [s.code, s.on]))

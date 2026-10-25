@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #44 — a gift can switch off Facebook / WhatsApp and Halatuju.xyz - 2026-10-25
+
+BrightPath wants each partner-run gift's applicants to name the partner who referred them.
+- **Configuration:** the gift's "Who referred you?" card gains **Fixed choices** — a site Toggle each
+  for Facebook / WhatsApp (`social`) and Halatuju.xyz (`halatuju`), in the same draft, SaveBar and
+  `sources` PUT map as the organisation's sources, audited with the existing
+  `AUDIT programme_source_set` line. **Other** shows "Always on"; the PUT refuses it
+  (`fixed_source_locked`). An older api (no `fixed_sources`) keeps the old read-only footer.
+- **Storage:** `Programme.offers_halatuju` / `offers_social`, boolean NOT NULL DEFAULT true in the
+  database (scholarship **0177**, plain ADD COLUMN — every existing and new gift starts ON).
+- **One rule:** `gift_sources.offered_fixed_codes(programme)` feeds the submit (`is_offered` refuses a
+  switched-off code with the existing `referral_source_not_offered`), the public intake (new
+  `fixed_sources: [...]`, all three when no gift) and the card (`fixed_sources_for`).
+- **Web:** `referralOptions` lists only the served `fixed_sources` (Other always; absent → all three,
+  so either deploy order is safe); a returning student's saved fixed choice no longer offered is
+  cleared and she chooses again. Past answers keep their label; the Applicants Source filter still
+  lists the three fixed codes.
+- Decision recorded (reverses the 2026-10-08 "not toggles" for two of the three); Guide and FAQ
+  updated; admin strings in en, ms, ta.
+- Tests: `test_fixed_source_switches.py` (13), `referralSources.test.ts` (+3),
+  `page.referral.test.tsx` (+5), `ProgrammeConfigTab.sources.test.tsx` (+4).
+
 ## TD-390 — an IC whose Gemini second opinion our outage skipped is "service down", never a mismatch - 2026-10-25
 
 During the 2026-10-23/24 outage a MyKad read that NEEDED Gemini's second look (a field missing, or

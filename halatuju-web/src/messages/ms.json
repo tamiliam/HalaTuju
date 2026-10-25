@@ -6101,9 +6101,12 @@
         "requestLink": "Untuk menambah dokumen atau soalan yang tidak disenaraikan, kemukakannya dalam Permintaan.",
         "sourcesHint": "Organisasi yang disenaraikan oleh borang permohonan pemberian ini. Hanya sumber yang dihidupkan dalam Sumber dipaparkan di sini.",
         "sourcesCount": "{n} daripada {m} pada borang ini",
-        "sourcesNone": "Belum ada yang dihidupkan, jadi borang ini hanya menyenaraikan tiga pilihan di bawah.",
+        "sourcesNone": "Belum ada yang dihidupkan, jadi borang ini hanya menyenaraikan pilihan tetap di bawah.",
         "sourcesAlways": "Sentiasa ada pada setiap borang:",
         "sourcesLink": "Tambah sumber atau matikan satu dalam Sumber",
+        "sourcesFixedTitle": "Pilihan tetap",
+        "sourcesFixedHint": "Dipaparkan selepas sumber pemberian ini sendiri. Matikan satu dan borang ini tidak lagi menawarkannya; {other} kekal pada setiap borang.",
+        "sourcesAlwaysOn": "Sentiasa ada",
         "sourceGone": "{source} telah dimatikan dalam Sumber, jadi ia tiada lagi dalam senarai ini. Tiada apa-apa disimpan; semak dan simpan semula.",
         "desc": {
           "document": {

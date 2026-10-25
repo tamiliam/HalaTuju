@@ -7,6 +7,8 @@
  *   • the list is THIS gift's served sources (by the server's names), then Halatuju.xyz,
  *     Facebook / WhatsApp and Other — always; a served code that collides with one of those is
  *     shown once; an intake with no `sources` (older api) or a failed intake → the three alone;
+ *     since request #44 only the fixed choices the gift serves in `fixed_sources` (all three when
+ *     absent), and a saved fixed choice the gift switched off is cleared like any other;
  *   • a saved choice the list does not offer is CLEARED, never silently resubmitted;
  *   • a submit the server refuses (`referral_source_not_offered`) re-reads the list, returns her
  *     to the field with a plain sentence, and loses nothing else she typed.
@@ -198,6 +200,47 @@ describe('a saved choice', () => {
     mount('smc')
     await screen.findByTestId('apply-gift-line')
     await waitFor(() => expect(select().value).toBe('smc'))
+  })
+})
+
+// ── Request #44 (2026-10-25): a gift may switch off Facebook / WhatsApp and Halatuju.xyz ──────
+describe('a gift that switched off a fixed choice', () => {
+  const SERVED = (fixed: string[]) => ({ ...OPEN([SMC]), fixed_sources: fixed })
+
+  it('does not offer it; Other stays', async () => {
+    intake.mockResolvedValue(SERVED(['halatuju', 'other']))
+    mount()
+    await screen.findByTestId('apply-gift-line')
+    expect(optionCodes()).toEqual(['', 'smc', 'halatuju', 'other'])
+  })
+
+  it('offers only Other when both are off', async () => {
+    intake.mockResolvedValue(SERVED(['other']))
+    mount()
+    await screen.findByTestId('apply-gift-line')
+    expect(optionCodes()).toEqual(['', 'smc', 'other'])
+  })
+
+  it('offers all three when the intake sends no `fixed_sources` (an older api)', async () => {
+    intake.mockResolvedValue(OPEN([SMC]))
+    mount()
+    await screen.findByTestId('apply-gift-line')
+    expect(optionCodes()).toEqual(['', 'smc', 'halatuju', 'social', 'other'])
+  })
+
+  it('clears a returning student\'s saved `social`, so she chooses again', async () => {
+    intake.mockResolvedValue(SERVED(['halatuju', 'other']))
+    mount('social')
+    await screen.findByTestId('apply-gift-line')
+    await waitFor(() => expect(select().value).toBe(''))
+    expect(optionCodes()).not.toContain('social')
+  })
+
+  it('keeps a saved fixed choice the gift still offers', async () => {
+    intake.mockResolvedValue(SERVED(['halatuju', 'other']))
+    mount('halatuju')
+    await screen.findByTestId('apply-gift-line')
+    await waitFor(() => expect(select().value).toBe('halatuju'))
   })
 })
 

@@ -24,6 +24,10 @@ from apps.scholarship import services
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.tests.test_api import TEST_JWT_SECRET, _make_token
 
+#: The fixed referral choices every gift-less answer serves (request #44): nothing can have switched
+#: one off, so all three — and this says nothing about any tenant.
+ALL_FIXED = ['halatuju', 'social', 'other']
+
 
 def _org(code):
     # NB: never 'brightpath' — migration 0098 already seeds that org into the test DB.
@@ -172,7 +176,7 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         # (`programme_code` is '' — this fixture's cohort has no programme to route by.)
         self.assertEqual(resp.json(),
                          {'open': True, 'cohort_name': 'Cohort a-2026', 'programme_code': '',
-                          'choices': [], 'apply_copy': {}, 'sources': []})
+                          'choices': [], 'apply_copy': {}, 'sources': [], 'fixed_sources': ALL_FIXED})
 
     def test_a_closed_intake_still_reads_closed(self):
         self.cohort_a.is_open = False
@@ -180,7 +184,7 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/').json(),
             {'open': False, 'cohort_name': '', 'programme_code': '', 'choices': [],
-             'apply_copy': {}, 'sources': []},
+             'apply_copy': {}, 'sources': [], 'fixed_sources': ALL_FIXED},
         )
 
     def test_two_open_rounds_stay_OPEN_but_name_neither(self):
@@ -346,7 +350,7 @@ class TestApplyLinkEndToEnd(TestCase):
         self.assertEqual(body,
                          {'open': True, 'cohort_name': 'Cohort b-2026',
                           'programme_code': 'tenant-b-bursary', 'choices': [], 'apply_copy': {},
-                          'sources': []})
+                          'sources': [], 'fixed_sources': ALL_FIXED})
 
     def test_intake_status_hides_whether_an_unknown_programme_exists(self):
         """Public and unauthenticated — 'closed' rather than 404, or anyone could enumerate
@@ -359,7 +363,7 @@ class TestApplyLinkEndToEnd(TestCase):
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/?programme=nope').json(),
             {'open': False, 'cohort_name': '', 'programme_code': '', 'choices': [],
-             'apply_copy': {}, 'sources': []},
+             'apply_copy': {}, 'sources': [], 'fixed_sources': ALL_FIXED},
         )
 
 

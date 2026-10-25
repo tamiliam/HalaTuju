@@ -216,6 +216,10 @@ class AdminProgrammeConfigurationView(_AdminBase):
     for this gift; PUT takes `sources: {<code>: true|false}` beside `items`. The WHOLE request —
     items and sources — is validated before anything is written, and each change writes an
     `AUDIT programme_source_set` line. The rules live in `gift_sources`.
+
+    `fixed_sources` (request #44, 2026-10-25): GET lists the three fixed choices as
+    `{code, on, switchable}`; `halatuju` and `social` are switched in the SAME `sources` map (a
+    source can never take a fixed code), `other` is refused (`fixed_source_locked`). Same audit line.
     """
 
     ROLES = ('org_admin',)
@@ -287,6 +291,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
             'live_applicants': live,
             'items': items,
             'sources': gift_sources.sources_for(programme),
+            'fixed_sources': gift_sources.fixed_sources_for(programme),
         }
 
     def get(self, request):
@@ -340,6 +345,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
             resolved.append((item, state))
         try:
             source_changes = gift_sources.resolve_changes(request.data.get('sources'), programme)
+            fixed_changes = gift_sources.resolve_fixed_changes(request.data.get('sources'))
         except gift_sources.GiftSourceError as exc:
             return Response({'error': exc.code, 'code': exc.code, 'source': exc.source},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -361,8 +367,11 @@ class AdminProgrammeConfigurationView(_AdminBase):
                 logger.info('AUDIT programme_item_set programme=%s item=%s:%s was=%s now=%s by=%s',
                             programme.code, item.kind, item.code, was, state, admin.email or '')
             # org-fence: `programme` was fenced to the caller's organisation in _programme_for.
-            for source, was, now in gift_sources.apply_changes(programme, source_changes):
+            changed = [(source.code, was, now) for source, was, now
+                       in gift_sources.apply_changes(programme, source_changes)]
+            changed += gift_sources.apply_fixed_changes(programme, fixed_changes)
+            for code, was, now in changed:
                 logger.info('AUDIT programme_source_set programme=%s source=%s was=%s now=%s by=%s',
-                            programme.code, source.code, 'on' if was else 'off',
+                            programme.code, code, 'on' if was else 'off',
                             'on' if now else 'off', admin.email or '')
         return Response(self._payload(programme))

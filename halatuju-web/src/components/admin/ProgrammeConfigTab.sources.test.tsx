@@ -202,3 +202,65 @@ describe('the empty and failed states', () => {
     expect(mockApi.getProgrammeConfiguration).toHaveBeenCalledTimes(1)
   })
 })
+
+// ── Request #44 (2026-10-25): Facebook / WhatsApp and Halatuju.xyz get a switch per gift ─────────
+describe('the fixed choices', () => {
+  const FIXED: api.ProgrammeConfigFixedSource[] = [
+    { code: 'halatuju', on: true, switchable: true },
+    { code: 'social', on: true, switchable: true },
+    { code: 'other', on: true, switchable: false },
+  ]
+  const fixedToggle = (code: string) =>
+    screen.getByTestId(`fixed-${code}`).querySelector('button[role="switch"]') as HTMLButtonElement | null
+
+  beforeEach(() => {
+    mockApi.getProgrammeConfiguration.mockResolvedValue({ ...CONFIG, fixed_sources: FIXED })
+    mockApi.saveProgrammeConfiguration.mockImplementation(async (_items, _p, _o, sources) => ({
+      ...CONFIG,
+      fixed_sources: FIXED.map((f) => (sources && f.code in sources ? { ...f, on: sources[f.code] } : f)),
+    }))
+  })
+
+  it('draw a site Toggle for Halatuju.xyz and Facebook / WhatsApp, and Other as always on', async () => {
+    await loaded()
+    expect(fixedToggle('halatuju')?.getAttribute('aria-checked')).toBe('true')
+    expect(fixedToggle('social')?.getAttribute('aria-label')).toBe('scholarship.apply.org.social')
+    expect(fixedToggle('other')).toBeNull()
+    expect(screen.getByTestId('fixed-other').textContent).toContain('admin.programme.config.sourcesAlwaysOn')
+    // The old read-only footer gives way to the switches; the source count is unchanged.
+    expect(screen.queryByTestId('sources-always')).toBeNull()
+    expect(screen.getByTestId('sources-count').textContent).toBe('admin.programme.config.sourcesCount|1,2')
+    expect(screen.queryByRole('checkbox')).toBeNull()                 // toggles, never tick boxes
+  })
+
+  it('a switch counts in the shared bar and saves in the same `sources` map', async () => {
+    await loaded()
+    fireEvent.click(fixedToggle('social') as HTMLButtonElement)
+    fireEvent.click(toggle('cumig'))
+    expect(fixedToggle('social')?.getAttribute('aria-checked')).toBe('false')
+    expect(screen.getByTestId('save-outcome').textContent).toBe('admin.programme.config.changed|2')
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(mockApi.saveProgrammeConfiguration).toHaveBeenCalledTimes(1))
+    expect(mockApi.saveProgrammeConfiguration.mock.calls[0][3]).toEqual({ social: false, cumig: true })
+    await waitFor(() => expect(screen.getByTestId('save-outcome').textContent)
+      .toBe('admin.programme.config.saved'))
+    expect(fixedToggle('social')?.getAttribute('aria-checked')).toBe('false')
+    expect(saveButton().disabled).toBe(true)
+  })
+
+  it('Discard puts a fixed switch back', async () => {
+    await loaded()
+    fireEvent.click(fixedToggle('halatuju') as HTMLButtonElement)
+    fireEvent.click(screen.getByText('admin.programme.config.discard'))
+    expect(fixedToggle('halatuju')?.getAttribute('aria-checked')).toBe('true')
+    expect(saveButton().disabled).toBe(true)
+  })
+
+  it('an older api with no `fixed_sources` keeps the read-only footer and no extra switch', async () => {
+    mockApi.getProgrammeConfiguration.mockResolvedValue(CONFIG)
+    await loaded()
+    expect(screen.getByTestId('sources-always')).toBeTruthy()
+    expect(screen.queryByTestId('sources-fixed')).toBeNull()
+    expect(screen.getByTestId('sources-card').querySelectorAll('[role="switch"]')).toHaveLength(2)
+  })
+})

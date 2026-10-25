@@ -225,7 +225,7 @@ export {
 } from './admin-api/orgConfig'
 export type {
   AdminScopeOrg, AdminScopeProgramme, AdminScopes, ProgrammeItemState, ProgrammeConfigItem,
-  ProgrammeConfigSource, ProgrammeConfiguration, OrganisationConfigSetting,
+  ProgrammeConfigSource, ProgrammeConfigFixedSource, ProgrammeConfiguration, OrganisationConfigSetting,
   OrganisationConfiguration,
 } from './admin-api/orgConfig'
 

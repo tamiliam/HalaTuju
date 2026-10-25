@@ -83,6 +83,8 @@ export interface ApplyGift {
   /** "Who referred you?" — THIS gift's served sources (per-gift sources S2). null = the intake sent
    *  none (older api, failed fetch): the form offers the three fixed choices alone. */
   sources: ReferralSource[] | null
+  /** The fixed choices THIS gift offers (request #44). null = not sent (older api): all three. */
+  fixedSources: string[] | null
   /** The server refused the submitted referral code; the list was re-read and the form asks again. */
   referralRefused: boolean
   /** Re-read the sources after a `referral_source_not_offered` refusal and raise `referralRefused`. */
@@ -116,6 +118,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
   const [othersOpen, setOthersOpen] = useState(false)
   const [noneOpen, setNoneOpen] = useState(false)
   const [sources, setSources] = useState<ReferralSource[] | null>(null)
+  const [fixedSources, setFixedSources] = useState<string[] | null>(null)
   const [referralRefused, setReferralRefused] = useState(false)
   // Bumped by `change` so the intake is asked again even when the URL code was already '' (a 409
   // on a bare visit) — setting '' to '' would not re-run the effect.
@@ -133,7 +136,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
     // Never show (or submit) one gift's name or code while another is in force.
     setCopy(undefined); setName(''); setServed(''); setChoices([]); setCanChange(false)
     setSettled(false); setClosed(false); setOthersOpen(false); setNoneOpen(false)
-    setSources(null); setReferralRefused(false)
+    setSources(null); setFixedSources(null); setReferralRefused(false)
     // ⚠ THE GIFT'S CODE GOES WITH THE QUESTION. Without it this asks "is anything open ANYWHERE?"
     // — a student on a closed gift's poster was shown the whole form and refused only at submit.
     getScholarshipIntake(urlCode).then((r) => {
@@ -142,6 +145,7 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
       setCopy(r.apply_copy)
       // THIS gift's "who referred you" sources, in the same answer as its name and code.
       setSources(Array.isArray(r.sources) ? r.sources : null)
+      setFixedSources(Array.isArray(r.fixed_sources) ? r.fixed_sources : null)
       setSettled(true)
       if (!r.open) {
         if (urlCode) setClosed(true)              // a NAMED gift: say so, on its own page
@@ -213,12 +217,13 @@ export function useApplyGift(router: { replace: (href: string) => void }): Apply
     try {
       const r = await getScholarshipIntake(code)
       setSources(Array.isArray(r.sources) ? r.sources : null)
+      setFixedSources(Array.isArray(r.fixed_sources) ? r.fixed_sources : null)
     } catch { /* keep the list already shown */ }
     setReferralRefused(true)
   }, [code])
 
   return {
     code, copy, choices, name, canChange, settled, closed, othersOpen, noneOpen, pick, change, recheck,
-    named: urlCode, sources, referralRefused, refuseReferral,
+    named: urlCode, sources, fixedSources, referralRefused, refuseReferral,
   }
 }

@@ -229,8 +229,8 @@ export default function ScholarshipApplyPage() {
     },
     []
   )
-  // "Who referred you?": THIS gift's sources + the fixed three; a value not among them is cleared.
-  const referralOpts = useReferralOptions(gift.settled, gift.sources, gift.code, form.referringOrg, () => update('referringOrg', ''))
+  // "Who referred you?": THIS gift's sources + the fixed choices it offers; a value not among them is cleared.
+  const referralOpts = useReferralOptions(gift.settled, gift.sources, gift.code, form.referringOrg, () => update('referringOrg', ''), gift.fixedSources)
 
   // Live-revalidate ONLY while an error is already showing (i.e. after a Continue/
   // Submit attempt). As the student fixes fields, keep the red box in sync: update

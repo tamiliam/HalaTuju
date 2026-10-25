@@ -70,6 +70,20 @@ class Programme(models.Model):
                   '{"en": {"title": …, "intro": …, "criteria": […]}, "ms": {…}, "ta": {…}}. '
                   'Blank means the platform default. Validated by apply_copy.normalise.',
     )
+    # ── Two of the three fixed "Who referred you?" choices, per gift (request #44, 2026-10-25) ──
+    #
+    # ON by default (and in the DATABASE, `db_default`, so the image still serving can create a
+    # gift between migrate and deploy): every gift offered both before this, and a new gift starts
+    # the same. `other` has no switch — it is on every form, always (decisions.md). The rule that
+    # reads these is `gift_sources.offered_fixed_codes`; nothing else should.
+    offers_halatuju = models.BooleanField(
+        default=True, db_default=True,
+        help_text="The apply form offers 'Halatuju.xyz' as who referred the student.",
+    )
+    offers_social = models.BooleanField(
+        default=True, db_default=True,
+        help_text="The apply form offers 'Facebook / WhatsApp' as who referred the student.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -63,12 +63,20 @@ export interface ProgrammeConfigItem {
  */
 export interface ProgrammeConfigSource { code: string; name: string; on: boolean }
 
+/**
+ * One of the three FIXED choices on this gift's form (request #44, 2026-10-25): `halatuju` and
+ * `social` are `switchable` and are switched in the SAME `sources` map as the sources; `other` is
+ * never switchable (the server refuses it with `fixed_source_locked`). Absent from an older api.
+ */
+export interface ProgrammeConfigFixedSource { code: string; on: boolean; switchable: boolean }
+
 export interface ProgrammeConfiguration {
   programme: { code: string; name: string; organisation: string }
   /** Applications on this programme still inside the submission gate — COUNTED server-side. */
   live_applicants: number
   items: ProgrammeConfigItem[]
   sources: ProgrammeConfigSource[]
+  fixed_sources?: ProgrammeConfigFixedSource[]
 }
 
 /** GET the configuration. `programme` is optional for an org_admin (their one programme) and

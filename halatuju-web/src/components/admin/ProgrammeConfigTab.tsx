@@ -24,7 +24,7 @@ import {
 } from '@/lib/admin-api'
 import {
   ITEM_STATES, allowedStates, changes, documents, draftFrom, isHeavy, itemKey, questions,
-  sourceChanges, sourceDraftFrom, tally, type Draft, type SourceDraft,
+  sourceChanges, sourceDraftFrom, sourceSwitches, tally, type Draft, type SourceDraft,
 } from '@/lib/programmeConfig'
 import { useProgrammeScope } from '@/lib/programmeScope'
 
@@ -136,7 +136,7 @@ export default function ProgrammeConfigTab() {
       const c = await getProgrammeConfiguration(code, { token })
       setConfig(c)
       setDraft(draftFrom(c.items))
-      setSourceDraft(sourceDraftFrom(c.sources ?? []))
+      setSourceDraft(sourceDraftFrom(sourceSwitches(c)))
       setProgrammeChoices(null)
     } catch (e) {
       const err = e as Error & { body?: { code?: string; programmes?: string[] } }
@@ -152,7 +152,9 @@ export default function ProgrammeConfigTab() {
 
   const pending = useMemo(() => (config ? changes(config.items, draft) : []), [config, draft])
   const sources = useMemo(() => config?.sources ?? [], [config])
-  const pendingSources = useMemo(() => sourceChanges(sources, sourceDraft), [sources, sourceDraft])
+  // The sources AND the switchable fixed choices (request #44): one draft, one diff, one PUT map.
+  const switches = useMemo(() => sourceSwitches(config), [config])
+  const pendingSources = useMemo(() => sourceChanges(switches, sourceDraft), [switches, sourceDraft])
   const pendingCount = pending.length + Object.keys(pendingSources).length
   const docs = useMemo(() => (config ? documents(config.items) : []), [config])
   const qs = useMemo(() => (config ? questions(config.items) : []), [config])
@@ -164,14 +166,14 @@ export default function ProgrammeConfigTab() {
 
   const toggleSource = (code: string) => {
     setOutcome({ kind: 'idle' })
-    const was = sources.find((s) => s.code === code)?.on ?? false
+    const was = switches.find((s) => s.code === code)?.on ?? false
     setSourceDraft((d) => ({ ...d, [code]: !(d[code] ?? was) }))
   }
 
   const discard = () => {
     if (config) {
       setDraft(draftFrom(config.items))
-      setSourceDraft(sourceDraftFrom(config.sources ?? []))
+      setSourceDraft(sourceDraftFrom(sourceSwitches(config)))
     }
     setOutcome({ kind: 'idle' })
   }
@@ -185,7 +187,7 @@ export default function ProgrammeConfigTab() {
       const c = await saveProgrammeConfiguration(pending, programme, { token }, pendingSources)
       setConfig(c)
       setDraft(draftFrom(c.items))
-      setSourceDraft(sourceDraftFrom(c.sources ?? []))
+      setSourceDraft(sourceDraftFrom(sourceSwitches(c)))
       setOutcome({ kind: 'saved' })
     } catch (e) {
       const err = e as Error & { body?: { code?: string; item?: string; source?: string } }
@@ -204,8 +206,8 @@ export default function ProgrammeConfigTab() {
           const c = await getProgrammeConfiguration(programme, { token })
           setConfig(c)
           const kept = Object.fromEntries(Object.entries(sourceDraft)
-            .filter(([code]) => (c.sources ?? []).some((s) => s.code === code)))
-          setSourceDraft({ ...sourceDraftFrom(c.sources ?? []), ...kept })
+            .filter(([code]) => sourceSwitches(c).some((s) => s.code === code)))
+          setSourceDraft({ ...sourceDraftFrom(sourceSwitches(c)), ...kept })
         } catch { /* the line below still says what happened */ }
         setOutcome({ kind: 'staleSource', source: name })
       } else {
@@ -271,7 +273,7 @@ export default function ProgrammeConfigTab() {
           ].map(({ key, rows, title, hint }) => (
             <Fragment key={key}>
               {key === 'documents' && (
-                <ProgrammeSourcesCard sources={sources} draft={sourceDraft}
+                <ProgrammeSourcesCard sources={sources} fixed={config.fixed_sources} draft={sourceDraft}
                   onToggle={toggleSource} t={t} />
               )}
               <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"

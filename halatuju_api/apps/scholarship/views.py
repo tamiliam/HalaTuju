@@ -211,6 +211,7 @@ class ScholarshipIntakeView(APIView):
             'apply_copy': copy,
             # Who-referred-you choices of THAT gift ([] when none can be named) — `gift_sources`.
             'sources': gift_sources.public_sources(p),
+            'fixed_sources': gift_sources.offered_fixed_codes(p),   # request #44; all three when no gift
         })
 
 
@@ -290,7 +291,7 @@ class ApplicationListCreateView(APIView):
         if not verdict.allowed:
             return Response({'error': apply_gate.REFUSAL[verdict.reason], 'code': verdict.reason},
                             status=status.HTTP_409_CONFLICT)
-        # Who referred you: blank, a fixed choice, or a source THIS gift offers — else refused, nothing written.
+        # Who referred you: blank, or a fixed choice / source THIS gift offers — else refused, nothing written.
         if not gift_sources.is_offered(cohort.programme, validated.get('referral_source')):
             return Response({'error': 'referral_source_not_offered', 'code': 'referral_source_not_offered'},
                             status=status.HTTP_400_BAD_REQUEST)

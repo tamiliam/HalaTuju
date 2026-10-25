@@ -10,9 +10,13 @@
  *
  * ⚠ The fixed three are a CONSTANT the server also holds (`gift_sources.FIXED_CODES`) — a mirror,
  * so it is guarded, not trusted. drift-test: halatuju-web/src/lib/__tests__/referralSources.test.ts
+ *
+ * Request #44 (2026-10-25): a gift may switch off `halatuju` and `social`; the intake then serves
+ * `fixed_sources`, the fixed codes THIS gift offers, and the form lists only those. `other` is on
+ * every form, always. Absent (an older api mid-deploy) -> all three, as before.
  */
 
-/** On every form, after the gift's own sources. Labels: `scholarship.apply.org.<code>`. */
+/** The fixed choices, after the gift's own sources, in form order. Labels: `scholarship.apply.org.<code>`. */
 export const FIXED_REFERRAL_CODES = ['halatuju', 'social', 'other'] as const
 
 /** One source as the public intake serves it: code and name, nothing else. */
@@ -25,22 +29,35 @@ type T = (key: string) => string
 const isFixed = (code: string) => (FIXED_REFERRAL_CODES as readonly string[]).includes(code)
 
 /**
- * The apply form's options: the gift's served sources (server name as label), then the fixed three
- * (i18n labels). A served code that collides with a fixed one is dropped — the fixed one, with its
- * own label, stands. `null`/absent sources (an older api, a failed intake) → the fixed three only.
+ * The fixed codes the form offers: the served `fixed_sources` (request #44) kept in OUR order and to
+ * OUR three, with `other` always; absent / not a list (an older api, a failed intake) → all three.
  */
-export function referralOptions(sources: ReferralSource[] | null | undefined, t: T): ReferralOption[] {
+export function offeredFixedCodes(fixed: readonly string[] | null | undefined): string[] {
+  if (!Array.isArray(fixed)) return [...FIXED_REFERRAL_CODES]
+  return FIXED_REFERRAL_CODES.filter((code) => code === 'other' || fixed.includes(code))
+}
+
+/**
+ * The apply form's options: the gift's served sources (server name as label), then the fixed choices
+ * this gift offers (i18n labels; `offeredFixedCodes`). A served code that collides with a fixed one
+ * is dropped — the fixed one, with its own label, stands, and only if offered. `null`/absent sources
+ * (an older api, a failed intake) → the fixed choices only.
+ */
+export function referralOptions(
+  sources: ReferralSource[] | null | undefined, t: T, fixed?: readonly string[] | null,
+): ReferralOption[] {
   const seen = new Set<string>()
   const own = (sources ?? []).filter((s) => {
     if (!s.code || isFixed(s.code) || seen.has(s.code)) return false
     seen.add(s.code)
     return true
   }).map((s) => ({ code: s.code, label: s.name || s.code }))
-  return [...own, ...FIXED_REFERRAL_CODES.map((code) => ({ code, label: t(`scholarship.apply.org.${code}`) }))]
+  return [...own, ...offeredFixedCodes(fixed).map((code) => ({ code, label: t(`scholarship.apply.org.${code}`) }))]
 }
 
 /**
- * A stored code's full name for an ADMIN surface (a tooltip, a filter): the fixed three from i18n,
+ * A stored code's full name for an ADMIN surface (a tooltip, a filter): the fixed three from i18n
+ * (offered by the gift today or not, so a past answer keeps its label),
  * a source from the server's names, else the code itself — never a raw message key.
  */
 export function referralLabel(code: string | null | undefined, t: T, names?: Record<string, string>): string {

@@ -7,7 +7,7 @@
  * submit, or hide one the server accepts. So the two lists must be EQUAL, in order.
  */
 import {
-  FIXED_REFERRAL_CODES, isReferralNotOffered, referralLabel, referralOptions,
+  FIXED_REFERRAL_CODES, isReferralNotOffered, offeredFixedCodes, referralLabel, referralOptions,
 } from '@/lib/referralSources'
 import { pySeq, readApi } from '@/test/apiSource'
 
@@ -18,6 +18,13 @@ describe('the fixed three match the server (drift)', () => {
     const server = pySeq(readApi('apps/scholarship/gift_sources.py'), 'FIXED_CODES')
     expect(server.length).toBe(3)                 // the read found the tuple, not nothing
     expect([...FIXED_REFERRAL_CODES]).toEqual(server)
+  })
+
+  it('the server lets a gift switch off exactly halatuju and social — never other (request #44)', () => {
+    const line = readApi('apps/scholarship/gift_sources.py').split('\n')
+      .find((l) => l.startsWith('SWITCHABLE_FIXED = {')) ?? ''
+    const keys = Array.from(line.matchAll(/'(\w+)':/g)).map((m) => m[1])
+    expect(keys).toEqual(['halatuju', 'social'])
   })
 })
 
@@ -42,7 +49,25 @@ describe('referralOptions', () => {
       expect(referralOptions(none, t).map((o) => o.code)).toEqual(['halatuju', 'social', 'other'])
     }
   })
+
+  // Request #44: the served `fixed_sources` narrows the fixed choices; absent → all three.
+  it('offers only the served fixed choices, in the web order, with Other always', () => {
+    const codes = (fixed?: string[] | null) => referralOptions([SMC_ROW], t, fixed).map((o) => o.code)
+    expect(codes(['other', 'halatuju'])).toEqual(['smc', 'halatuju', 'other'])
+    expect(codes(['other'])).toEqual(['smc', 'other'])
+    expect(codes([])).toEqual(['smc', 'other'])                     // Other is never switched off
+    expect(codes(['social', 'nope', 'other'])).toEqual(['smc', 'social', 'other'])   // unknown codes ignored
+    for (const absent of [undefined, null]) expect(codes(absent)).toEqual(['smc', 'halatuju', 'social', 'other'])
+    expect(offeredFixedCodes(undefined)).toEqual(['halatuju', 'social', 'other'])
+  })
+
+  it('drops a colliding source code even when that fixed choice is switched off', () => {
+    expect(referralOptions([{ code: 'social', name: 'Fake' }], t, ['other']).map((o) => o.code))
+      .toEqual(['other'])
+  })
 })
+
+const SMC_ROW = { code: 'smc', name: 'SMC' }
 
 describe('referralLabel', () => {
   it('reads a fixed code from i18n, a source from the names, else the bare code', () => {

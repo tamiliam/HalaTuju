@@ -188,7 +188,9 @@ export const roleOrgAdmin: ManualChapter = {
         <br /><br />
         Your programme&rsquo;s own group — <strong>Overview</strong>, <strong>Applications</strong>,
         <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
-        for, which organisations its &ldquo;Who referred you?&rdquo; list offers, and its intake year — a source
+        for, which organisations its &ldquo;Who referred you?&rdquo; list offers — and whether that list also
+        offers <strong>Facebook / WhatsApp</strong> and <strong>Halatuju.xyz</strong>; <strong>Other</strong> is
+        always there — and its intake year — a source
         switched on in <strong>Sources</strong> joins no gift until you switch it on there),
         <strong> Payments</strong> and <strong>Spending</strong> —
         <strong> appears only once you are inside a gift</strong>. Open <strong>Programmes</strong> and choose a

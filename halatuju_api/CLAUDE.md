@@ -952,10 +952,12 @@ no attempt, and hold Check-2 requests (`check2_deferred.py`); the hourly sweep r
 api-01117-4m6 / web-00968-28w; retro `docs/retrospectives/retrospective-2026-10-09-per-gift-sources.md`). Each gift
 chooses its referral sources on Programme → Configuration ("Who referred you?" toggles; table
 `programme_referral_sources`, rules in `apps/scholarship/gift_sources.py`); the public intake serves that
-gift's `{code, name}` list; the apply form adds Halatuju.xyz / Facebook-WhatsApp / Other always; the
+gift's `{code, name}` list; the apply form adds Halatuju.xyz / Facebook-WhatsApp / Other (since request
+#44 a gift may switch off the first two — `Programme.offers_halatuju` / `offers_social`, served as
+`fixed_sources`, one rule `gift_sources.offered_fixed_codes`; Other is never switchable); the
 submit refuses any other code (400 `referral_source_not_offered`). Org-timing Sprint 1 (2026-10-07) and
 request #31 + TD-371..377 (2026-10-08) are live too. Ledgers (applied migrate-first, contiguous):
-scholarship ends at 0174, courses at 0083 on main; **#39 S4 (`perm-s4`) adds scholarship 0175_staff_permission_changes, applied by hand BEFORE its deploy** — and request #42 added scholarship 0176 (the AI-outage sprint added none) — **next free: scholarship 0177 / courses 0084.**
+scholarship ends at 0174, courses at 0083 on main; **#39 S4 (`perm-s4`) adds scholarship 0175_staff_permission_changes, applied by hand BEFORE its deploy** — and request #42 added scholarship 0176 (the AI-outage sprint added none) — request #44 adds scholarship 0177_programme_fixed_source_switches (plain ADD COLUMN, migrate-first) — **next free: scholarship 0178 / courses 0084.**
 - **Org-timing Sprint 2 is next (≈2026-10-14 — one week live with no timing incident):** drop the UNREAD
   intake-round columns `success_delay_hours`, `decline_delay_hours`, `query_response_sla_days` and the dead
   `fail_email_delay_days` (roadmap `docs/plans/2026-10-07-org-timing-settings-roadmap.md`). Timings live in

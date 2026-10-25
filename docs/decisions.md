@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## A gift may switch off Facebook / WhatsApp and Halatuju.xyz; Other stays on every form — 2026-10-25 (request #44, BrightPath; owner approved)
+
+**What.** Reverses, for two of the three, the 2026-10-08 ruling that the fixed "Who referred you?"
+choices "are NOT toggles". Each gift's Configuration card now has a site `Toggle` for **Facebook /
+WhatsApp** (`social`) and **Halatuju.xyz** (`halatuju`), beside the organisation's own sources and
+saved by the same SaveBar, with the same `AUDIT programme_source_set` line. **Other** (`other`) is
+never switchable (the PUT refuses it, `fixed_source_locked`). Stored as two booleans on the gift,
+`Programme.offers_halatuju` / `offers_social` (scholarship 0177), ON by default in the database, so
+every existing gift and every new gift starts with both on. One server rule,
+`gift_sources.offered_fixed_codes`, feeds the submit check (`is_offered` refuses a switched-off code
+with the existing `referral_source_not_offered`), the public intake (`fixed_sources`) and the card.
+**Why.** Partner attribution: a gift run through partner organisations wants every applicant to
+name the partner who referred them, and "Facebook / WhatsApp" or "Halatuju.xyz" let a student skip
+that. `other` stays so a student is never forced to pick a partner who did not refer them.
+**Unchanged.** Past answers keep their code and label everywhere; the Applicants Source filter
+always lists the three fixed codes. A returning student whose saved choice is no longer offered is
+asked to choose again. A web that meets an older api (no `fixed_sources`) offers all three.
+**Revisit if:** a gift wants `other` off too, or wants its own extra fixed choices.
+
 ## The Overview layout is an organisation default plus a per-gift override — 2026-10-22 (request #42, BrightPath; owner approved)
 
 **What.** The Overview's Customise layout was per organisation (ruling 2026-09-18). It is now held at two
@@ -13947,6 +13966,8 @@ rows, migration 0172. The rulings:
   "not on this form"; the form then shows only the three fixed defaults, and the card says so.
 - The three fixed defaults — Halatuju.xyz (`halatuju`), Facebook / WhatsApp (`social`), Other
   (`other`) — are on every form and are NOT toggles; the card shows them as a read-only footer.
+  ⚠ SUPERSEDED for `social` and `halatuju` on 2026-10-25 (request #44): a gift may switch those two
+  off; `other` stays on every form. See the entry at the top.
 - Seeded at migration: every ACTIVE gift gets every active source, except a source whose old
   `programme` FK was set, which goes on that one gift only (production: 7 sources, none set, 2
   active gifts → 14 rows; the inactive `testing` gift gets none). **At the cutover (2026-10-09)

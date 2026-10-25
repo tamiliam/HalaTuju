@@ -2,8 +2,10 @@
 
 // "Who referred you?" on the apply form (per-gift referral sources, Sprint 2, 2026-10-08).
 //
-// The options are THIS gift's served sources (the server's names) and then the three fixed choices
-// (`lib/referralSources`). Two rules live here so the page stays small:
+// The options are THIS gift's served sources (the server's names) and then the fixed choices it
+// offers (`lib/referralSources`; request #44 lets a gift switch off `halatuju` / `social`, and a
+// saved fixed choice the gift no longer offers is cleared by the first rule like any other code).
+// Two rules live here so the page stays small:
 //
 //   • A CHOICE NOT IN THE LIST IS CLEARED, never silently resubmitted — but ONLY when the list is
 //     really known: the intake answered WITH a `sources` list, for a NAMED gift. A profile can carry
@@ -26,10 +28,10 @@ import { referralOptions, type ReferralOption, type ReferralSource } from '@/lib
  *  `giftCode` is the gift in force ('' = none named yet). */
 export function useReferralOptions(
   settled: boolean, sources: ReferralSource[] | null, giftCode: string, value: string,
-  clear: () => void,
+  clear: () => void, fixed: string[] | null = null,
 ): ReferralOption[] {
   const { t } = useT()
-  const options = useMemo(() => referralOptions(sources, t), [sources, t])
+  const options = useMemo(() => referralOptions(sources, t, fixed), [sources, t, fixed])
   const codes = options.map((o) => o.code).join('|')
   const known = settled && Array.isArray(sources) && !!giftCode
   // The latest `clear`, without making the effect re-run on every new arrow the page passes.

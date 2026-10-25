@@ -311,6 +311,17 @@ export const FAQ: Record<Audience, QA[]> = {
         there is no such footer to match, so the heading names the round.</>,
     },
     {
+      q: <>Can a gift stop offering <strong>Facebook / WhatsApp</strong> or <strong>Halatuju.xyz</strong> as
+        &ldquo;Who referred you?&rdquo;</>,
+      a: <>Yes, each on its own, for one gift at a time. Open the gift&rsquo;s <strong>Configuration</strong>; under
+        &ldquo;Who referred you?&rdquo;, below your organisation&rsquo;s sources, <strong>Fixed choices</strong> has a
+        switch for each. Turn one off and press <strong>Save</strong>: that gift&rsquo;s apply form stops offering
+        it, and your other gifts are not affected. Every gift starts with both on. <strong>Other</strong> is
+        always offered and cannot be switched off, so a student is never made to name somebody who did not
+        refer them. Students who already chose one keep their answer, and the Source filter on Applications
+        still finds them; a student who returns to the form is asked to choose again.</>,
+    },
+    {
       q: <>Why does my <strong>Overview</strong> look different from my colleague&rsquo;s?</>,
       a: <>Because the page is shaped by what each person&rsquo;s role is for, and that is decided before the
         page is even sent &mdash; nothing is merely hidden. <strong>You, and a general admin, see all of
