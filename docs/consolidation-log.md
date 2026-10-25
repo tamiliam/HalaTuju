@@ -15,6 +15,7 @@ _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits ar
 - 2026-10-22 61d04f40 fix: the Applicants Source filter lists only the chosen gift's sources (request #41) (api source-names view; web applicants page + sources api client + tests; CHANGELOG · 3)
 - 2026-10-22 f604f3f6 test: the IC-shape check no longer matches a random student UUID (test_birth_state_followups · 1; flaky deploy-build failure)
 - 2026-10-22 082487df fix: Request a document explains itself instead of failing silently (request #40) (api querying officer_requests_state + serializer; web OutstandingPanel, view, api type, FAQ, messages + tests · 7 source files; note: view.actions.test "raising a query" still raises at shortlisted, a stage the server refuses)
+- 2026-10-25 4493f60a fix: the cockpit shows the student's family answers, and the parent tick means a real name match (request #45) (api serializers_admin_family + serializer base; web FamilyAnswers, ApplicantCards, fieldVerification, api type, FAQ, messages + tests · 7 source files)
 
 ## Sprints since the last review
 
