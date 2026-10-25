@@ -26,6 +26,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a 95937b41
 - 2026-10-21 TD-360 Sprint 1 (the admin message slice; budgets ratcheted, TD-344 closed) — 7d5f5054 8b1b57ce f0318c14
 - 2026-10-21 request #39 Sprint 4 (the permission editor on People; history table, scholarship 0175) — a6cc35d1 f9499251 390596f8
+- 2026-10-26 third results route S2a (the route, server side; courses 0084; shut behind THIRD_ROUTE_OPEN) — e4096440
 - 2026-10-25 third results route S1 (merit on one 0-100 scale; request #38) — 50df8d7f
 - 2026-10-25 request #44 sprint (a gift can switch off Facebook / WhatsApp and Halatuju.xyz; scholarship 0177) — f73161da
 - 2026-10-23 request #42 sprint (the Overview layout per gift; scholarship 0176) — d5861a66
