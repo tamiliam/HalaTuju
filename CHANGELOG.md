@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Third results route S1 — merit on one 0–100 scale - 2026-10-25
+
+The admin merit was two numbers on two scales in one column: SPM a 0–100 course-guide merit, STPM
+the raw PNGK (1.28–4.00). On "merit, highest first" every STPM holder sorted below every SPM holder.
+- **One definition:** `apps/courses/exam_questions.merit_100(profile)`, keyed on `results_held`.
+  SPM: the course-guide merit, byte-identical (0 of 282 live SPM merits move). STPM: overall CGPA
+  ÷ 4 × 100, two decimals — the course side's own rule (`CalculateCgpaView`). `stpm_cgpa` already
+  stores the OVERALL CGPA (the STPM page saves the calculator's `cgpa`, never `academic_cgpa`).
+  `None` when there is nothing to score — absent, never 0 (#106).
+- **Readers routed through it:** `serializers_admin._application_merit_score` (now a one-line
+  delegate; list + detail serializers), the applications list merit sort (absent now sorts LAST
+  both ways instead of as 0), `profile_engine._merit` (AI profile input; the prompt line reads
+  "Merit score (out of 100)"; `PROMPT_VERSION` 2026-10-25.1).
+- **Web:** list column "Merit /100", cockpit "Merit score (out of 100)", and the STPM CGPA gets its
+  own "CGPA (out of 4.00)" line on the Academic card (it used to be visible only as the merit).
+  en / ms / ta in the admin slice. Reviewer Guide (Your applicants) + FAQ entry.
+- **Unchanged by ruling D3:** `min_merit_score` stays SPM-only (`shortlisting.spm_merit`); no gate moves.
+- **Live effect (read-only report):** 63 STPM-held applications now read 32.0–100.0 and interleave;
+  2026-bpb-s 201 of 202 change rank, b40-2026 142 of 142, GSS Ipoh 0 of 1. BrightPath is to see the
+  new order before deploy (D7).
+- Tests: `test_merit_100.py` (new, characterisation + conversion + null + sort + one definition),
+  `test_held_qualification.py` (STPM pins moved 3.7 → 92.5, 4.0 → 100.0),
+  `ApplicantCards.merit.test.tsx` (new).
+
 ## Request #44 — a gift can switch off Facebook / WhatsApp and Halatuju.xyz - 2026-10-25
 
 BrightPath wants each partner-run gift's applicants to name the partner who referred them.

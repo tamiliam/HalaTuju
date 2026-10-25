@@ -3889,7 +3889,7 @@
       "unassigned": "Unassigned",
       "assigned": "Assigned",
       "source": "Source",
-      "merit": "Merit",
+      "merit": "Merit /100",
       "qualShort": "Qual.",
       "applied": "Applied",
       "prev": "Previous",
@@ -4341,7 +4341,8 @@
           "unknown": "Not chosen"
         }
       },
-      "meritScore": "Merit score",
+      "meritScore": "Merit score (out of 100)",
+      "stpmCgpa": "CGPA (out of 4.00)",
       "ownWords": {
         "toggle": "Show the student's own words",
         "hide": "Hide the student's own words"

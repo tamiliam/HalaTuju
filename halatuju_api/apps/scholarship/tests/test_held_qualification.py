@@ -64,7 +64,9 @@ class TestHeldQualification(TestCase):
     def test_a_real_stpm_student_is_untouched(self):
         app = self._app(exam_type='stpm', grades=SPM, stpm_grades=STPM, stpm_cgpa=3.7)
         self.assertEqual(held_qualification(app.profile), 'stpm')
-        self.assertEqual(_application_merit_score(app), 3.7)
+        # Third results route S1 (2026-10-25): one 0-100 merit — overall CGPA 3.7 / 4 x 100.
+        # It was the raw PNGK (3.7) before S1.
+        self.assertEqual(_application_merit_score(app), 92.5)
 
     def test_a_cgpa_alone_still_counts_as_stpm_results(self):
         # Grades can be absent while the CGPA is on file; that is still STPM held.
@@ -80,6 +82,7 @@ class TestHeldQualification(TestCase):
         app = self._app(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=4.0)
         self.assertEqual(held_qualification(app.profile), 'spm')
         self.assertNotEqual(_application_merit_score(app), 4.0)
+        self.assertNotEqual(_application_merit_score(app), 100.0)   # S1: nor its 0-100 form
 
     def test_a_plain_spm_student_is_untouched(self):
         app = self._app(exam_type='spm', grades=SPM, stpm_grades={}, stpm_cgpa=None)
@@ -147,7 +150,7 @@ class TestRecordedCompletionWins(TestCase):
         app = self._app(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=4.0,
                         results_exam_type='stpm')
         self.assertEqual(held_qualification(app.profile), 'stpm')
-        self.assertEqual(_application_merit_score(app), 4.0)
+        self.assertEqual(_application_merit_score(app), 100.0)   # CGPA 4.0 on the 0-100 scale (S1)
 
     def test_blank_falls_back_to_exactly_what_the_row_read_before(self):
         # Every pre-column row is blank, so the fallback must be behaviour-preserving.

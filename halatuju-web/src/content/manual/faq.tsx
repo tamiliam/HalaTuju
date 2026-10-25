@@ -91,6 +91,15 @@ export const FAQ: Record<Audience, QA[]> = {
         shows none.</>,
     },
     {
+      q: <>Why did STPM students move up the list when I sort by <strong>merit</strong>?</>,
+      a: <>The merit score is now <strong>out of 100 for every student</strong>. An SPM student&rsquo;s is
+        worked out from her SPM grades and co-curriculum, exactly as before. An STPM student&rsquo;s used to be
+        her CGPA as it stands (for example 3.70), so every STPM student sorted below every SPM student; it is
+        now her overall CGPA ÷ 4 × 100 (3.70 shows as 92.5), the same conversion the course guide uses. Her
+        CGPA itself has not changed: it now has its own <strong>CGPA</strong> line on the Academic card. A dash means there are no
+        results to score yet &mdash; it is not a zero, and it always sorts last.</>,
+    },
+    {
       q: <>Where do I see what the student told us about their <strong>family</strong>?</>,
       a: <>In <strong>Family &amp; finances</strong>, under <strong>About your family</strong>: each family member
         the student listed, their occupation, who earns, any monthly income they declared, and why and since

@@ -88,6 +88,49 @@ def results_held(profile):
     return declared
 
 
+def merit_100(profile):
+    """THE merit, on ONE 0-100 scale for every route (third results route S1, 2026-10-25).
+
+    Keyed on ``results_held`` (the results we HOLD), never the declaration:
+
+    * **STPM** — overall CGPA / 4 x 100, rounded to 2 decimals: the course side's own rule
+      (`courses.views.CalculateCgpaView`: ``merit_percent = round(overall / 4.0 * 100, 2)``).
+      `stpm_cgpa` already holds the OVERALL CGPA (academic x 0.9 + koko x 0.04): the STPM results
+      page stores the calculator's ``cgpa`` (the overall figure), never ``academic_cgpa``, and it
+      is the only writer. So 3.70 -> 92.5, 4.00 -> 100.0.
+    * **SPM** — the course-guide merit from the stored grades / stream / co-curriculum, rounded to
+      1 decimal. Byte-identical to the admin merit before S1 (`tests/test_merit_100.py`).
+
+    ``None`` when there is nothing to score — ABSENT, never 0 (#106): a blank merit is not a low
+    score. Derived live; there is no stored merit column.
+
+    ⚠ NOT A GATE. `shortlisting.spm_merit` (the `min_merit_score` test) keys on the declared exam
+    and stays SPM-only by the owner's ruling D3 (2026-10-25); it shares the engine arithmetic, not
+    this function (lessons, Sabah S2a 2026-09-02)."""
+    if not profile:
+        return None
+    if results_held(profile) == 'stpm':
+        cgpa = getattr(profile, 'stpm_cgpa', None)
+        # Outside (0, 4] is not a CGPA: a 0 stored before the calculator answered, or a hand-sent
+        # value. Absent, never a made-up figure that would top or sink the sort (S1 review).
+        if cgpa is None or not 0 < float(cgpa) <= 4.0:
+            return None
+        return round(float(cgpa) / 4.0 * 100, 2)
+    grades = dict(getattr(profile, 'grades', None) or {})
+    if not grades:
+        return None
+    # The engine's core uses 'history'; profiles store it as 'hist'. The eligibility flow
+    # renames it before scoring, so mirror that — else History reads as a fail (G) and the
+    # merit is understated.
+    if 'hist' in grades:
+        grades['history'] = grades.pop('hist')
+    from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
+    s1, s2, s3 = prepare_merit_inputs(grades, getattr(profile, 'stream_subjects', None) or None)
+    coq = profile.coq_score if getattr(profile, 'coq_score', None) is not None else 0
+    result = calculate_merit_score(s1, s2, s3, coq)
+    return round(result['final_merit'], 1)
+
+
 class ResultsHeldField(serializers.Field):
     """A read-only field serving ``results_held(<object>.profile)`` under whatever name it is
     declared as — so a serializer can switch a wire field onto the accessor in ONE line and keep

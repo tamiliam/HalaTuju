@@ -101,8 +101,9 @@ def spm_merit(profile):
     `held_qualification`, then marked "NOT A GATE, AND MUST NOT BECOME ONE", while this gate keyed
     on the declared exam. Since 2026-10-02 (TD-324, the owner's ruling) `_academic_ok` asks the
     SAME question — `results_held`, of which `held_qualification` is an alias — so the reason is no
-    longer a different exam. What still differs is the SHAPE of the answer: that function returns
-    the STPM PNGK as the merit for an STPM holder (a ranking figure), this one only ever scores SPM
+    longer a different exam. What still differs is the SHAPE of the answer: that function (since S1,
+    2026-10-25, a delegate of `exam_questions.merit_100`) returns the STPM overall CGPA converted to
+    0-100 for an STPM holder (a ranking figure), this one only ever scores SPM
     grades and is reached only on `_academic_ok`'s SPM branch, where the PNGK is `min_stpm_pngk`'s
     business. Merging them is a refactor with its own characterisation, not a tidy-up.
 

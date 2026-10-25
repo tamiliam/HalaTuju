@@ -88,7 +88,11 @@ DEFAULT_LANGUAGE = 'English'
 #   2026-10-04.1 — TD-325 (an INPUT change): `Qualification:` is `exam_questions.results_held` (the
 #                  results HELD; owner ruling TD-324), not the declared exam — a Form Six explorer
 #                  read 'stpm' with nothing behind it.
-PROMPT_VERSION = '2026-10-04.1'
+#   2026-10-25.1 — Third results route S1 (an INPUT change): `Merit score:` is one 0-100 figure on
+#                  every route (`exam_questions.merit_100`) — an STPM holder's was the raw PNGK
+#                  (3.7), now overall CGPA / 4 x 100 (92.5); the line is labelled "out of 100".
+#                  SPM merits are unchanged.
+PROMPT_VERSION = '2026-10-25.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -242,7 +246,7 @@ story to reconcile the figures.
 THE STUDENT (alias {alias})
 Pronouns (use these for the student, never "they"): {pronouns}
 School / college: {school}
-Qualification: {qualification}    Merit score: {merit}
+Qualification: {qualification}    Merit score (out of 100): {merit}
 SPM grades: {grades_summary}    STPM PNGK: {stpm_pngk}
 Home town / state: {region}
 Household income (RM/month, as reported): {household_income}    Household size: {household_size}
@@ -477,7 +481,8 @@ def _income_evidence(application):
 
 
 def _merit(application):
-    """The course-guide merit score (0-100 for SPM; PNGK for STPM), or 'not provided'."""
+    """The merit on ONE 0-100 scale for every route (`exam_questions.merit_100`; STPM = overall
+    CGPA / 4 x 100 since third results route S1), or 'not provided'."""
     from .serializers_admin import _application_merit_score
     m = _application_merit_score(application)
     return 'not provided' if m in (None, '') else str(m)

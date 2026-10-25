@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## Merit is ONE 0–100 figure on every route; STPM = overall CGPA ÷ 4 × 100 — 2026-10-25 (third results route S1; owner decision 3 of the approved roadmap)
+
+**What.** `apps/courses/exam_questions.merit_100(profile)` is the only definition of an
+applicant's merit. Keyed on `results_held`: SPM the course-guide merit (unchanged to the byte),
+STPM `round(stpm_cgpa / 4 × 100, 2)` — the course side's conversion (`CalculateCgpaView`).
+`stpm_cgpa` is the OVERALL CGPA (academic × 0.9 + koko × 0.04): the STPM results page stores the
+calculator's `cgpa` and there is no other writer, so no recomputation is needed. Null is absent,
+never 0 (#106), and the merit sort puts it last in both directions. Readers: the admin list,
+detail and merit sort (through `serializers_admin._application_merit_score`, now a delegate) and
+the AI profile input (`profile_engine._merit`, PROMPT_VERSION bumped). **Why.** Two scales in one
+column ranked every STPM holder below every SPM holder (a 4.00 CGPA under a 40-point SPM merit).
+**Not changed, deliberately:** `min_merit_score` stays SPM-only (owner ruling D3 — the CGPA floor
+`min_stpm_pngk` is the tertiary bar), and `shortlisting.spm_merit` keeps its own call to the engine,
+keyed on the declared exam (lessons, Sabah S2a: a display figure must not become a gate). Readers
+that show the raw PNGK as a FACT, not a merit, keep it: the sponsor line (`pool.academic_band`,
+S2a), the reports engine, the student export, the `stpm_pngk` wire field.
+
 ## A gift may switch off Facebook / WhatsApp and Halatuju.xyz; Other stays on every form — 2026-10-25 (request #44, BrightPath; owner approved)
 
 **What.** Reverses, for two of the three, the 2026-10-08 ruling that the fixed "Who referred you?"

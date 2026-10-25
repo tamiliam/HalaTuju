@@ -34,7 +34,7 @@ export interface AdminScholarshipListItem {
   spm_a_count: number | null
   stpm_pngk: number | null
   referral_source: string | null   // the referring org chosen at apply (Source column)
-  merit_score: number | null       // course-guide merit (SPM 0-100 / STPM PNGK), computed live
+  merit_score: number | null       // ONE 0-100 merit on every route (api `merit_100`; STPM = CGPA/4x100), computed live; null = absent
   call_language: string            // student's preferred call language: en/ms/ta/mixed/'' — for reviewer matching
   status: string
   bucket: string

@@ -201,6 +201,10 @@ export function ApplicantCards({
                       </>
                     )
                   })()} />
+                  {/* Third results route S1: the merit above is now out of 100 on every route (STPM =
+                      overall CGPA ÷ 4 × 100), so the CGPA itself — which the shortlist floor reads —
+                      gets its own line instead of hiding inside the merit. */}
+                  {isStpm && <Field label={t('admin.scholarship.stpmCgpa')} value={app.stpm_pngk == null ? app.stpm_pngk : Number(app.stpm_pngk).toFixed(2)} />}
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
                 </dl>
                 <div className="mt-3">

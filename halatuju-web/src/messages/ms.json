@@ -3889,7 +3889,7 @@
       "unassigned": "Belum ditugaskan",
       "assigned": "Ditugaskan",
       "source": "Sumber",
-      "merit": "Merit",
+      "merit": "Merit /100",
       "qualShort": "Kelayakan",
       "applied": "Memohon",
       "prev": "Sebelumnya",
@@ -4341,7 +4341,8 @@
           "unknown": "Belum dipilih"
         }
       },
-      "meritScore": "Skor merit",
+      "meritScore": "Skor merit (daripada 100)",
+      "stpmCgpa": "PNGK (daripada 4.00)",
       "ownWords": {
         "toggle": "Tunjukkan kata-kata pelajar sendiri",
         "hide": "Sembunyikan kata-kata pelajar sendiri"

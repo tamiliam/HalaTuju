@@ -148,8 +148,14 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.order_by('-submitted_at' if desc else 'submitted_at')
             page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'merit':
+            # One 0-100 merit for every route (`exam_questions.merit_100`, third results route S1),
+            # so SPM and STPM holders interleave. An absent merit is NOT a low score (#106): it
+            # sorts LAST in both directions instead of reading as 0.
             from ..serializers_admin import _application_merit_score
-            rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
+            scored = [(a, _application_merit_score(a)) for a in qs]
+            rows = [a for a, m in sorted((r for r in scored if r[1] is not None),
+                                         key=lambda r: r[1], reverse=desc)]
+            rows += [a for a, m in scored if m is None]
             page = paginator.paginate_queryset(rows, request, view=self)
         else:
             page = paginator.paginate_queryset(qs, request, view=self)

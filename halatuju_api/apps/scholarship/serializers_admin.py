@@ -214,33 +214,15 @@ held_qualification = results_held
 
 
 def _application_merit_score(obj):
-    """The course-guide merit (0-100) used for ranking — a single number rolling up grades
-    + co-curriculum. SPM: computed academic+CoQ merit. STPM: the PNGK (CGPA) is the merit
-    indicator. None if there's nothing to score. Derived LIVE from the persisted
-    grades/CoQ/stream — there is no stored merit column (the inputs are the source of truth).
+    """The application's merit, 0-100 on every route — `exam_questions.merit_100(obj.profile)`.
 
-    ⚠ Keyed on `held_qualification`, NOT the declared `exam_type`. Ranking a student by results
-    she does not have produces None, and a blank merit is not a low score — it is absence from the
-    ordering altogether, which is how #106 became unsortable and uncomparable while looking fine.
-    """
-    p = obj.profile
-    if not p:
-        return None
-    if held_qualification(p) == 'stpm':
-        return p.stpm_cgpa
-    grades = dict(p.grades or {})
-    if not grades:
-        return None
-    # The engine's core uses 'history'; profiles store it as 'hist'. The eligibility flow
-    # renames it before scoring, so mirror that — else History reads as a fail (G) and the
-    # merit is understated.
-    if 'hist' in grades:
-        grades['history'] = grades.pop('hist')
-    from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
-    s1, s2, s3 = prepare_merit_inputs(grades, getattr(p, 'stream_subjects', None) or None)
-    coq = p.coq_score if p.coq_score is not None else 0
-    result = calculate_merit_score(s1, s2, s3, coq)
-    return round(result['final_merit'], 1)
+    The ONE definition lives there (third results route S1, 2026-10-25): SPM the course-guide
+    merit (unchanged to the byte), STPM the overall CGPA / 4 x 100 (it was the raw PNGK before
+    S1, so every STPM holder sorted below every SPM holder). None when there is nothing to score —
+    absent, never 0 (#106). The list, the detail, the merit sort and the AI profile input all
+    read this, so they cannot disagree."""
+    from apps.courses import exam_questions
+    return exam_questions.merit_100(getattr(obj, 'profile', None))
 
 
 class AdminApplicationListSerializer(serializers.ModelSerializer):
