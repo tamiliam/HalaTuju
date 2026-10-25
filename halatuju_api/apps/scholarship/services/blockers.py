@@ -178,7 +178,8 @@ def income_doc_blockers(application):
     from ..income_engine import (working_members, relationship_doc_for,
                                 _member_ic_doc, _cluster_docs, str_not_breached,
                                 salary_income_satisfied, usable_salary_slip,
-                                member_income_evidenced, household_str_status)
+                                member_income_evidenced, household_str_status,
+                                cluster_income_matched)
     # ⚠ LAYER 0 TOUCHES THIS FUNCTION IN EXACTLY ONE PLACE: whether it runs at all.
     #
     # Everything below is the income ROUTE ENGINE — STR versus salary, per-member evidence,
@@ -267,9 +268,15 @@ def income_doc_blockers(application):
     for m in members:
         # Member-qualified codes so the checklist names each person — IC then income evidence,
         # grouped per member to match the Documents-UI member blocks.
-        if _member_ic_doc(application, m) is None:
+        ic_missing = _member_ic_doc(application, m) is None
+        if ic_missing:
             out.append(f'parent_ic_missing:{m}')
-        if not member_income_evidenced(application, m):
+        # Owner ruling 2026-10-25 (supersedes F1 for the GATE): the household-STR arm is this member's
+        # income evidence only when a card MATCHED the STR's recipient (`cluster_income_matched`) —
+        # the same answer the student's own income cue (`income_shown`) and Check 2 already give.
+        # With the IC still missing, the IC ask alone is the next step: that card may match the STR.
+        if not member_income_evidenced(application, m) or not (
+                ic_missing or cluster_income_matched(application, m)):
             out.append(f'income_evidence_missing:{m}')
         rel = relationship_doc_for(m)
         if rel == 'birth_certificate' and 'birth_certificate' not in present:

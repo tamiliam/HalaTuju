@@ -988,7 +988,8 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         self._mother_ic(app)
         _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
         self.assertEqual(income_engine.household_str_status(app), (None, None))
-        self.assertEqual(self.blockers(app), ['str_not_household'])
+        # Owner ruling 2026-10-25: nor is it the working father's income proof — he is asked too.
+        self.assertEqual(self.blockers(app), ['income_evidence_missing:father', 'str_not_household'])
 
     def test_a_strangers_str_no_longer_clears_the_gate_on_the_str_route(self):
         # Used to read `[]`: the STR branch asked only whether a document of type `str` was
@@ -1004,25 +1005,33 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         The same STR, but the MOTHER — on the roster — has no IC on file, so we cannot say it is
         not hers. It used to read `['str_not_household']` (F8, and TD-285 as first built). As the
         lead reads the ruling (review F-B/F-D) it does not block: the ask for her IC is raised
-        after submission, where the Action Centre can take the upload. On both routes."""
-        for route, kw in (('salary', {}), ('str', {'members': (), 'earner': 'father'})):
+        after submission, where the Action Centre can take the upload. On both routes.
+
+        SUPERSEDED ON THE SALARY ROUTE (owner ruling 2026-10-25, option A): there the STR is a
+        working member's income proof at the gate only when a card MATCHED its recipient, so the
+        working father is asked for his income. `str_not_household` still never fires."""
+        for route, kw, want in (('salary', {}, ['income_evidence_missing:father']),
+                                ('str', {'members': (), 'earner': 'father'}, [])):
             with self.subTest(route=route):
                 app = self._app(route=route, **kw)
                 self._ic(app)
                 _str_doc(app, recipient_name=self.STRANGER_NAME, recipient_nric=self.STRANGER_NRIC)
-                self.assertEqual(self.blockers(app), [])
+                self.assertEqual(self.blockers(app), want)
 
     def test_the_mothers_str_with_only_the_fathers_ic_counts(self):
         """The owner's own example. Her STR, his IC: it mismatches the only IC we can compare, and
         only her IC could settle it — so it is not called somebody else's, and it does not block.
-        (Before the ruling: `['str_not_household']`.) Once her IC lands it simply matches."""
+        (Before the ruling: `['str_not_household']`.) Once her IC lands it simply matches.
+        On the SALARY route (owner ruling 2026-10-25) the unmatched STR is not the working father's
+        income proof until then, so he is asked for his income; her IC landing clears it."""
         from apps.scholarship.income_str_ownership import str_owner_ic_asks
-        for route, kw in (('salary', {}), ('str', {'members': (), 'earner': 'father'})):
+        for route, kw, want in (('salary', {}, ['income_evidence_missing:father']),
+                                ('str', {'members': (), 'earner': 'father'}, [])):
             with self.subTest(route=route):
                 app = self._app(route=route, **kw)
                 self._ic(app)
                 _str_doc(app, recipient_name=self.MOTHER_NAME, recipient_nric=self.MOTHER_NRIC)
-                self.assertEqual(self.blockers(app), [])
+                self.assertEqual(self.blockers(app), want)
                 self.assertEqual(str_owner_ic_asks(app), {'missing': ['mother'], 'unreadable': []})
                 self._mother_ic(app)
                 self.assertEqual(self.blockers(app), [])
@@ -1040,7 +1049,8 @@ class TestWhoseStrIsIt(IncomeHomesBase):
                 _str_doc(app, recipient_name='', recipient_nric=self.STRANGER_NRIC)
                 sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
                 self.assertEqual((sc['name_status'], sc['nric_status']), ('no_ref', 'mismatch'))
-                self.assertEqual(self.blockers(app), ['str_not_household'])
+                self.assertEqual(self.blockers(app), (['income_evidence_missing:father'] if route == 'salary'
+                                                      else []) + ['str_not_household'])
 
     # ── the two things that must NEVER be read as a stranger's STR ──────────────────────────
     def test_an_unreadable_str_is_not_a_strangers_str(self):
@@ -1051,7 +1061,10 @@ class TestWhoseStrIsIt(IncomeHomesBase):
         _str_doc(app, recipient_name='', recipient_nric='')
         sc = income_engine.student_str_check(app.documents.get(doc_type='str'))
         self.assertEqual((sc['name_status'], sc['nric_status']), ('no_ref', 'no_ref'))
-        self.assertEqual(self.blockers(app), [])
+        self.assertNotIn('str_not_household', self.blockers(app))
+        # …but (owner ruling 2026-10-25) an STR no card matched is not the working father's income
+        # proof on the salary route either: he is asked for his income, not told it is a stranger's.
+        self.assertEqual(self.blockers(app), ['income_evidence_missing:father'])
 
     def test_a_str_uploaded_before_any_household_ic_is_not_a_strangers_str(self):
         # Nothing has been compared yet — the ICs simply are not in. The gate asks for the IC

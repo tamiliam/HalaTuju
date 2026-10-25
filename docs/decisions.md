@@ -14598,6 +14598,26 @@ cannot judge (rejected: the comparison was blocked by OUR outage, not by a missi
 `str_not_household` (rejected: blames the student for our outage). **Revisit if:** outages stop being
 rare and short (with TD-394).
 
+**3c. Salary route — an STR no card matched is not a working member's income proof at the gate
+(owner ruling 2026-10-25, option A; supersedes F1 FOR THE GATE on that route).**
+**Decision:** the salary route's per-member check accepts the household STR as a member's income evidence
+only when a card MATCHED its recipient (`cluster_income_matched`) — the TD-402 rule, now on every arm of
+the gate. The case that forced it (the TD-401/402 review's probe 1): the mother works (clean IC + birth
+certificate, no payslip), the father is on the form with no IC, the STR names a stranger; F1 could not
+judge it, so it counted, and the gate passed with no income shown. Now: `income_evidence_missing:<member>`
+("show her income — a payslip, EPF, or an amount with a supporting letter"), or — while that member's IC
+is itself missing — `parent_ic_missing:<member>` alone, since her card may match the STR and settle it.
+The student's own income cue (`income_shown`) and the Check-2 proof ask already gave this answer, so no
+surface now says "complete" while another blocks. **Unchanged:** the verdict keeps F1's lenient reading
+(no band moves; `VERDICT_ENGINE_VERSION` not bumped); the STR route; `str_not_household` fires exactly as
+before; the frozen gate for already-submitted students. **Consequence:** on the salary route, an STR whose
+recipient did not read, or that only a non-working parent's (absent) card could match, no longer carries
+a working member with no papers of their own — that family is asked for his income or a clearer STR.
+**Alternatives considered:** keep F1 at the gate (rejected: it passed probe 1 with no income anywhere);
+ask for the non-working parent's IC (rejected: the Documents step cannot take it before submission).
+**Revisit if:** students commonly hold a genuine STR that does not read — then the fix is the read, not
+the gate.
+
 **4. An OpenAI fallback for document reads is sequenced AFTER this sprint and TD-390 (TD-399).**
 **Decision:** no second AI provider for document reads yet. It is its own sprint, after the owner rules on
 sending student documents to a second processor (privacy / DPA) and after an accuracy run of OpenAI on the

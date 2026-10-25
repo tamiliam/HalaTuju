@@ -522,12 +522,16 @@ class TestIncomeGateV2(TestCase):
     def test_salary_slip_supportive_when_non_breached_str_present(self):
         # #45: an e-hailing father with no payslip no longer traps a genuinely-B40 family at submission
         # when a valid STR is on file — the STR is the means-test, so the slip is supportive, not required.
+        # Owner ruling 2026-10-25: the STR carries his income only once his card MATCHED its recipient.
         app = self._app(route='salary', members=['father', 'mother'])
-        self._doc(app, 'parent_ic', member='father')
+        ic = self._doc(app, 'parent_ic', member='father')
+        ic.vision_name, ic.vision_nric = 'Rajan A/L Muthu', '700101-14-5555'
+        ic.save()
         self._doc(app, 'parent_ic', member='mother')
         self._doc(app, 'salary_slip', member='mother')     # mother's slip present; father's (informal) absent
         self._doc(app, 'birth_certificate')
-        self._str_doc(app, member='father')                # a valid, non-breached STR (the father's)
+        self._str_doc(app, member='father', recipient_name='RAJAN A/L MUTHU',
+                      recipient_nric='700101-14-5555')     # a valid, non-breached STR (the father's)
         self.assertEqual(self._blockers(app), [])          # no salary_slip_missing:father
 
     def test_income_evidence_still_required_when_str_breached(self):

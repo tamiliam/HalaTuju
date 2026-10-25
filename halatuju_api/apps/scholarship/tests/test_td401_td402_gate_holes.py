@@ -141,8 +141,8 @@ class AnStrNobodyMatchedCarriesNoClusterPastTheGate(TestCase):
 
     def test_the_salary_route_early_return_uses_the_same_rule(self):
         """Salary route, father working, his clean card linked, no payslip, an STR no card matched:
-        the early return no longer fires; what follows is the F1 ruling's own per-member reading
-        (an STR we cannot judge counts; the mother's IC is asked after submission)."""
+        the early return no longer fires, and (owner ruling 2026-10-25, below) neither does the
+        per-member reading let the unmatched STR stand in for his income."""
         from apps.scholarship.income_engine import salary_income_satisfied
         from apps.scholarship.services import income_doc_blockers
         app = self._app(earner='', route='salary', members=('father',))
@@ -154,3 +154,91 @@ class AnStrNobodyMatchedCarriesNoClusterPastTheGate(TestCase):
         app.income_working_members = ['father', 'mother']
         app.save(update_fields=['income_working_members'])
         self.assertIn('parent_ic_missing:mother', income_doc_blockers(app))
+
+
+class AnUnmatchedStrIsNoWorkingMembersIncomeProofEither(TestCase):
+    """Owner ruling 2026-10-25 (option A), superseding F1 FOR THE GATE: on the salary route the
+    per-member check (`income_evidence_missing:<member>`) accepts the household STR as a member's
+    income evidence only when a card MATCHED its recipient. The verdict keeps its lenient reading."""
+
+    def _app(self, *, mother_occ='private', father_occ='private'):
+        return make_application(
+            'profile_complete', income_route='salary', income_earner='',
+            income_working_members=['mother'], father_name=FATHER, mother_name=MOTHER,
+            father_occupation=father_occ, mother_occupation=mother_occ, other_family_members=[],
+            student=make_student(nric=STUDENT_NRIC, name=STUDENT))
+
+    def _mother_cluster(self, app):
+        """The mother's clean, linked cluster with NO payslip: her IC + the birth certificate."""
+        _doc(app, 'parent_ic', household_member='mother', vision_run_at=timezone.now(),
+             vision_name=MOTHER.upper(), vision_nric=MOTHER_NRIC)
+        _doc(app, 'birth_certificate', vision_fields={
+            'fields': {'bc_child_name': STUDENT, 'bc_mother_name': MOTHER, 'bc_mother_nric': MOTHER_NRIC},
+            'student_verdict': 'ok', 'error': ''})
+
+    def _str(self, app, name, nric):
+        return _doc(app, 'str', vision_fields={
+            'fields': {'recipient_name': name.upper(), 'recipient_nric': nric, 'status': 'Lulus',
+                       'year': '2026', 'source_type': 'semakan_status'},
+            'student_verdict': 'ok', 'error': ''})
+
+    def test_probe_1_a_strangers_str_nobody_could_judge_now_blocks(self):
+        """Father on the form with no IC (so F1 cannot judge), mother working with no payslip."""
+        from apps.scholarship.income_shown import income_shown
+        from apps.scholarship.services import consent_blockers, income_doc_blockers
+        app = self._app()
+        self._mother_cluster(app)
+        self._str(app, STRANGER, STRANGER_NRIC)
+        out = income_doc_blockers(app)
+        self.assertIn('income_evidence_missing:mother', out)
+        self.assertIn('income_evidence_missing:mother', consent_blockers(app))
+        # The student's own income cue already said "not shown" — the surfaces now agree.
+        self.assertFalse(income_shown(app, 'mother').shown)
+
+    def test_probe_1b_a_judged_strangers_str_still_reads_str_not_household(self):
+        from apps.scholarship.income_str_ownership import STR_NOT_HOUSEHOLD
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app()
+        self._mother_cluster(app)
+        _doc(app, 'parent_ic', household_member='father', vision_run_at=timezone.now(),
+             vision_name=FATHER.upper(), vision_nric=FATHER_NRIC)
+        self._str(app, STRANGER, STRANGER_NRIC)
+        self.assertIn(STR_NOT_HOUSEHOLD, income_doc_blockers(app))
+
+    def test_genuine_2_a_payslip_carries_her_income(self):
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app()
+        self._mother_cluster(app)
+        _doc(app, 'salary_slip', household_member='mother', vision_fields={
+            'fields': {'name': MOTHER.upper(), 'nric': MOTHER_NRIC, 'gross_income': '2200',
+                       'period': '09/2026'}, 'student_verdict': 'ok', 'error': ''})
+        self._str(app, STRANGER, STRANGER_NRIC)
+        self.assertEqual(income_doc_blockers(app), [])
+
+    def test_genuine_3_the_mothers_own_str_with_her_ic_missing_asks_for_her_ic(self):
+        """Expected under the ruling: until a card matches the STR, her IC is what is asked for."""
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app()
+        _doc(app, 'birth_certificate', vision_fields={
+            'fields': {'bc_child_name': STUDENT, 'bc_mother_name': MOTHER, 'bc_mother_nric': MOTHER_NRIC},
+            'student_verdict': 'ok', 'error': ''})
+        self._str(app, MOTHER, MOTHER_NRIC)
+        out = income_doc_blockers(app)
+        self.assertIn('parent_ic_missing:mother', out)
+        # The IC ask alone: her card may match the STR, so she is not sent hunting for a payslip.
+        self.assertNotIn('income_evidence_missing:mother', out)
+
+    def test_genuine_4_the_mothers_own_str_matched_by_her_card_passes(self):
+        from apps.scholarship.services import income_doc_blockers
+        app = self._app()
+        self._mother_cluster(app)
+        self._str(app, MOTHER, MOTHER_NRIC)
+        self.assertEqual(income_doc_blockers(app), [])
+
+    def test_the_verdict_keeps_its_lenient_reading(self):
+        """The ruling is a GATE ruling: the predicate the band reads still accepts the STR."""
+        from apps.scholarship.income_engine import member_income_evidenced
+        app = self._app()
+        self._mother_cluster(app)
+        self._str(app, STRANGER, STRANGER_NRIC)
+        self.assertIs(member_income_evidenced(app, 'mother'), True)
