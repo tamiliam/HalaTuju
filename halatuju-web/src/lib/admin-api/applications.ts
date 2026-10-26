@@ -193,9 +193,12 @@ export interface AdminScholarshipDetail {
   higher_koko?: number | null
   higher_institution_type?: string
   /** Third results route S3b (D13, review fix 3): results changes the student made before submitting
-   *  — "SPM results only" or an SPM slip moved out of the higher-results card. Always recorded. */
-  results_change_notes?: { at: string; kind: 'only_spm' | 'refiled_spm'; submitted?: boolean;
-    cleared?: string; cgpa?: number | null; by?: string; document_id?: number }[]
+   *  — "SPM results only" or an SPM slip moved out of the higher-results card; S4 (D15): a higher
+   *  result moved out of the SPM card ('refiled_higher', by the student or `by: 'team'`). */
+  results_change_notes?: { at: string; kind: 'only_spm' | 'refiled_spm' | 'refiled_higher'; submitted?: boolean;
+    cleared?: string; cgpa?: number | null; by?: string; document_id?: number
+    /** S4 (D15): the kind a higher result moved out of the SPM card was filed as. */
+    results_kind?: string }[]
   // "Your story" narrative (S2) + support + declaration
   first_in_family: boolean
   parents_occupation: string

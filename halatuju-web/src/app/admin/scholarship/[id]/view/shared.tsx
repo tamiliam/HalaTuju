@@ -42,13 +42,19 @@ type ReqCategory = {
   qualifier: 'whose' | 'which' | null
   docType?: string                                          // 'whose' | null → fixed doc_type
   members?: readonly string[]                               // 'whose' → the person options
-  options?: readonly { value: string; docType: string }[]  // 'which' → sub-type options
+  options?: readonly { value: string; docType: string; kind?: string }[]  // 'which' → sub-types
 }
 export const REQUEST_CATEGORIES: readonly ReqCategory[] = [
   { key: 'ic', qualifier: null, docType: 'ic' },                                   // Applicant's IC
+  // Third results route S4 (#37): the SPM slip, or the higher results BY NAME — each kind its own
+  // choice, carried to the server as `results_kind` so the upload lands in the right slot.
   { key: 'results_slip', qualifier: 'which', options: [
       { value: 'spm', docType: 'results_slip' },
-      { value: 'cgpa', docType: 'semester_result' } ] },                            // SPM / current CGPA
+      { value: 'higher_stpm', docType: 'higher_results', kind: 'stpm' },
+      { value: 'higher_matric', docType: 'higher_results', kind: 'matric' },
+      { value: 'higher_asasi', docType: 'higher_results', kind: 'asasi' },
+      { value: 'higher_diploma', docType: 'higher_results', kind: 'diploma' },
+      { value: 'cgpa', docType: 'semester_result' } ] },                            // SPM / higher / CGPA
   { key: 'offer_letter', qualifier: null, docType: 'offer_letter' },
   { key: 'str', qualifier: 'whose', docType: 'str', members: ['father', 'mother', 'guardian'] },
   { key: 'parent_ic', qualifier: 'whose', docType: 'parent_ic',
@@ -71,14 +77,27 @@ export const REQUEST_CATEGORIES: readonly ReqCategory[] = [
 export const REQ_CAT = new Map(REQUEST_CATEGORIES.map((c) => [c.key, c]))
 // Resolve a (category, qualifier) pick to a concrete request, or null when the qualifier is
 // required but not yet chosen (→ keeps the Request button disabled).
-export function resolveReq(catKey: string, qual: string): { docType: string; member: string } | null {
+export type ResolvedReq = { docType: string; member: string; kind?: string }
+export function resolveReq(catKey: string, qual: string): ResolvedReq | null {
   const c = REQ_CAT.get(catKey)
   if (!c) return null
   if (c.qualifier === null) return { docType: c.docType!, member: '' }
   if (c.qualifier === 'whose') return qual ? { docType: c.docType!, member: qual } : null
   const opt = c.options!.find((o) => o.value === qual)
-  return opt ? { docType: opt.docType, member: '' } : null
+  return opt ? { docType: opt.docType, member: '', ...(opt.kind ? { kind: opt.kind } : {}) } : null
 }
+/** The Academic card's line for one `results_change_notes` entry (third results route S3b + S4):
+ *  "SPM results only", an SPM slip moved out of the higher card, or (S4, D15) a higher result moved
+ *  OUT of the SPM card — by the student, or by the team (`by: 'team'`, the 2026-10-26 backfill). */
+export function resultsChangeKey(n: { kind: string; by?: string }): string {
+  if (n.kind === 'refiled_spm') return 'admin.scholarship.resultsChanged.refiledSpm'
+  if (n.kind === 'refiled_higher') {
+    return n.by === 'team' ? 'admin.scholarship.resultsChanged.refiledHigherTeam'
+      : 'admin.scholarship.resultsChanged.refiledHigher'
+  }
+  return 'admin.scholarship.resultsChanged.onlySpm'
+}
+
 // The fact a requested document belongs to comes from `@/lib/docCategory` — see
 // `docTypeToRequestFact`. A private `DOC_FACT` literal lived here until TD-262 chunk 1 and had
 // never gained `income_support_doc`, so a request for the one document that proves an informal

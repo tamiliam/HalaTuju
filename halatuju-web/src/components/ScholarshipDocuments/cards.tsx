@@ -24,7 +24,7 @@ import {
   ResultsSlipChecklist,
 } from './checklists'
 import { OfferLetterChecklist, SupportingDocChip } from './checklistsPathway'
-import { LazyHigherDetails, LazyKindLine } from './LazyHigherResults'
+import { LazyHigherDetails, LazyKindLine, LazySlipHigherNote } from './LazyHigherResults'
 
 // Busy/filter key for a doc card. Salary-route income docs are scoped to a household
 // member, so two members' salary slips don't share one busy spinner or file list.
@@ -325,7 +325,9 @@ export function SingleDocCard({
         <div key={`m${d.id}`}>
           {/* The results slip + offer letter get clinical fact-checklists; every
               other supporting doc keeps the single soft chip. */}
-          {d.doc_type === 'results_slip' && d.academic_check ? (
+          {d.doc_type === 'results_slip' && d.academic_check?.higher_kind ? (
+            <LazySlipHigherNote doc={d} chk={d.academic_check} token={token} onChanged={onChanged} />
+          ) : d.doc_type === 'results_slip' && d.academic_check ? (
             <ResultsSlipChecklist doc={d} t={t} />
           ) : d.doc_type === 'higher_results' && d.higher_check ? (
             <LazyHigherDetails doc={d} chk={d.higher_check} token={token} onChanged={onChanged} />

@@ -395,6 +395,10 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
     from .genuineness.bands import canonical_status, needs_attention
     for dt, label in _GENUINENESS_DOC_LABELS.items():
         doc = latest_doc(application, dt)
+        if dt == 'results_slip':                 # S4 (#43): an SPM-list score of a higher result
+            from .wrong_slip import spm_genuineness_skipped     # is no signal (C3's own stands)
+            if spm_genuineness_skipped(doc):
+                continue
         raw = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status
         if needs_attention(raw, dt):         # canonical 'suspect' / 'not_<type>' (folds legacy)
             from .genuineness.bands import stored_authenticity

@@ -3975,7 +3975,8 @@
         "querying_closed": "Permohonan ini tidak menerima permintaan baharu pada peringkat ini.",
         "prompt_required": "Tulis apa yang anda minta sebelum menghantar.",
         "bad_kind": "Jenis permintaan itu tidak dikenali.",
-        "bad_member": "Ahli keluarga itu tidak dikenali."
+        "bad_member": "Ahli keluarga itu tidak dikenali.",
+        "results_kind_required": "Pilih keputusan yang hendak diminta: STPM, Matrikulasi, Asasi atau Diploma."
       },
       "requestDocTitle": "Minta dokumen",
       "requestDocNotePlaceholder": "Terangkan apa yang diperlukan (telah diisi — sunting ikut keperluan)",
@@ -3983,6 +3984,10 @@
         "ic": "Kad Pengenalan (MyKad) — pastikan nama dan nombor IC anda jelas kelihatan",
         "parent_ic": "Kad Pengenalan (MyKad) — nama dan nombor IC jelas kelihatan",
         "results_slip": "slip keputusan SPM — slip rasmi penuh dengan nama anda jelas kelihatan",
+        "higher_stpm": "slip keputusan atau sijil STPM — dokumen rasmi penuh dengan nama anda jelas kelihatan",
+        "higher_matric": "slip keputusan Matrikulasi — slip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
+        "higher_asasi": "transkrip Asasi — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
+        "higher_diploma": "transkrip Diploma — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
         "semester_result": "slip keputusan semester kolej/universiti terkini — menunjukkan CGPA semasa anda",
         "school_leaving_cert": "surat berhenti sekolah atau testimonial",
         "offer_letter": "surat tawaran — mesti dialamatkan kepada anda dan menunjukkan nama/IC anda",
@@ -4018,6 +4023,10 @@
       },
       "requestWhich": {
         "spm": "SPM",
+        "higher_stpm": "Keputusan STPM",
+        "higher_matric": "Keputusan Matrikulasi",
+        "higher_asasi": "Keputusan Asasi",
+        "higher_diploma": "Keputusan Diploma",
         "cgpa": "CGPA kolej semasa",
         "water_bill": "Air",
         "electricity_bill": "Elektrik",
@@ -4556,6 +4565,7 @@
           "higher_results_name_ok": "Keputusan pengajian tinggi atas nama pelajar.",
           "higher_results_unverified": "Keputusan pengajian tinggi belum dibaca — semak dengan mata.",
           "higher_results_is_spm": "Dokumen dalam slot keputusan pengajian tinggi kelihatan seperti slip SPM, bukan keputusan {held}. Pelajar telah dimaklumkan; sahkan keputusan yang dimilikinya.",
+          "results_slip_is_higher": "Ini keputusan pengajian tinggi ({kind}), bukan slip SPM. Ia tidak dibandingkan dengan gred SPM yang dimasukkan, dan pelajar tidak diminta mengubah sebarang gred.",
           "higher_results_kind_differs": "Halaman keputusan menyatakan {held}, tetapi dokumen yang dimuat naik kelihatan seperti keputusan {seen}. Pelajar telah dimaklumkan; sahkan yang betul.",
           "higher_results_kind_ok": "Dokumen kelihatan sebagai keputusan {held}, seperti di halaman keputusan.",
           "higher_results_cgpa_ok": "PNGK pada dokumen ({cgpa}) sepadan dengan yang dimasukkan.",
@@ -4901,7 +4911,9 @@
           "diploma": "Diploma",
           "other": "pengajian tinggi"
         },
-        "refiledSpm": "Pada {date}, sebelum menghantar, pelajar memindahkan slip SPM dari kad keputusan pengajian tinggi ke slip keputusan SPM."
+        "refiledSpm": "Pada {date}, sebelum menghantar, pelajar memindahkan slip SPM dari kad keputusan pengajian tinggi ke slip keputusan SPM.",
+        "refiledHigher": "Pada {date}, sebelum menghantar, pelajar memindahkan keputusan {kind} mereka dari slip keputusan SPM ke kad keputusan pengajian tinggi.",
+        "refiledHigherTeam": "Dipindahkan dari kad SPM ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}."
       }
     },
     "students": "Pelajar",
@@ -6928,9 +6940,11 @@
       "note": {
         "spmSlip": "Ini kelihatan seperti slip keputusan SPM anda. Sila muat naiknya di bahagian \"Slip keputusan SPM\" di bawah, dan muat naik keputusan {kind} anda di sini.",
         "kindDiffers": "Ini kelihatan seperti keputusan {seen}, tetapi permohonan anda menunjukkan {held}.",
-        "gradesDiffer": "Sesetengah mata pelajaran atau gred pada slip ini berbeza daripada yang dimasukkan."
+        "gradesDiffer": "Sesetengah mata pelajaran atau gred pada slip ini berbeza daripada yang dimasukkan.",
+        "slipIsHigher": "Ini kelihatan seperti keputusan {kind} anda. Sila muat naiknya di bahagian \"Keputusan STPM / Matrikulasi / Asasi / Diploma\" di atas."
       },
       "moveToSpm": "Pindahkan ke slip keputusan SPM",
+      "moveToHigher": "Pindahkan ke keputusan {kind}",
       "noHigher": "Tiada keputusan STPM, Matrikulasi, Asasi atau Diploma?",
       "updateResults": "Kemas kini keputusan anda",
       "correctResults": "Betulkan keputusan {kind} anda",

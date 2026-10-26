@@ -437,7 +437,8 @@ class TestTheAcademicCard(TestCase):
                     if f['fact'] == 'academic')
 
     def test_the_engine_version_moved(self):
-        self.assertEqual(VERDICT_ENGINE_VERSION, '2026-10-26.3')
+        # S3 moved it to 2026-10-26.3; S4 (#43, the wrong-slip card) moved it on — pinned there.
+        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-26.3')
 
     def test_missing_is_a_gap_and_asks_for_higher_results(self):
         f = self._academic(_app(STPM_HELD, DEGREE))

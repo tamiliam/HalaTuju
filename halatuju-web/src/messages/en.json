@@ -3975,7 +3975,8 @@
         "querying_closed": "This case is not taking new requests at this stage.",
         "prompt_required": "Write what you are asking for before sending.",
         "bad_kind": "That kind of request is not recognised.",
-        "bad_member": "That family member is not recognised."
+        "bad_member": "That family member is not recognised.",
+        "results_kind_required": "Choose which results to ask for: STPM, Matriculation, Asasi or Diploma."
       },
       "requestDocTitle": "Request a document",
       "requestDocNotePlaceholder": "Explain what's needed (prefilled — edit as you like)",
@@ -3983,6 +3984,10 @@
         "ic": "IC (MyKad) — make sure your name and IC number are clearly visible",
         "parent_ic": "IC (MyKad) — name and IC number clearly visible",
         "results_slip": "SPM results slip — the full official slip with your name clearly visible",
+        "higher_stpm": "STPM results slip or certificate — the full official document with your name clearly visible",
+        "higher_matric": "Matriculation results slip — the full official slip with your name and CGPA clearly visible",
+        "higher_asasi": "Asasi (Foundation) transcript — the full official transcript with your name and CGPA clearly visible",
+        "higher_diploma": "Diploma transcript — the full official transcript with your name and CGPA clearly visible",
         "semester_result": "latest college/university semester result slip — showing your current CGPA",
         "school_leaving_cert": "school leaving certificate (surat berhenti sekolah) or a testimonial",
         "offer_letter": "offer letter — it must be addressed to you and show your name/IC",
@@ -4018,6 +4023,10 @@
       },
       "requestWhich": {
         "spm": "SPM",
+        "higher_stpm": "STPM results",
+        "higher_matric": "Matriculation results",
+        "higher_asasi": "Asasi results",
+        "higher_diploma": "Diploma results",
         "cgpa": "Current college CGPA",
         "water_bill": "Water",
         "electricity_bill": "Electricity",
@@ -4556,6 +4565,7 @@
           "higher_results_name_ok": "The higher results are in the student's name.",
           "higher_results_unverified": "The higher results have not been read yet — check them by eye.",
           "higher_results_is_spm": "The document in the higher-results slot reads as an SPM slip, not {held} results. The student has been told; confirm which results they hold.",
+          "results_slip_is_higher": "This is a higher result ({kind}), not an SPM slip. It was not compared with the SPM grades entered, and the student has not been asked to change any grades.",
           "higher_results_kind_differs": "The results page says {held}, but the uploaded document reads as {seen} results. The student has been told; confirm which is right.",
           "higher_results_kind_ok": "The document reads as {held} results, as on the results page.",
           "higher_results_cgpa_ok": "The CGPA on the document ({cgpa}) matches the one entered.",
@@ -4901,7 +4911,9 @@
           "diploma": "Diploma",
           "other": "higher"
         },
-        "refiledSpm": "On {date}, before submitting, the student moved an SPM slip out of the higher-results card into the SPM results slip."
+        "refiledSpm": "On {date}, before submitting, the student moved an SPM slip out of the higher-results card into the SPM results slip.",
+        "refiledHigher": "On {date}, before submitting, the student moved their {kind} results out of the SPM results slip into the higher-results card.",
+        "refiledHigherTeam": "Moved from the SPM card to the {kind} results card by the HalaTuju team on {date}."
       }
     },
     "students": "Students",
@@ -6928,9 +6940,11 @@
       "note": {
         "spmSlip": "This appears to be your SPM results slip. Please upload it under \"SPM results slip\" below, and upload your {kind} results here.",
         "kindDiffers": "This appears to be {seen} results, but your application shows {held}.",
-        "gradesDiffer": "Some subjects or grades on this slip differ from those entered."
+        "gradesDiffer": "Some subjects or grades on this slip differ from those entered.",
+        "slipIsHigher": "This appears to be your {kind} results. Please upload it under \"STPM / Matriculation / Asasi / Diploma results\" above."
       },
       "moveToSpm": "Move it to SPM results slip",
+      "moveToHigher": "Move it to {kind} results",
       "noHigher": "Don't have STPM, Matriculation, Asasi or Diploma results?",
       "updateResults": "Update your results",
       "correctResults": "Correct your {kind} results",

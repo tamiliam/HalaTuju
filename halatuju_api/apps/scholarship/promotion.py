@@ -93,6 +93,9 @@ def doc_quality(doc):
     if dt == 'str':
         return income_engine.str_proof_quality(doc)
     usable = 1 if doc_match_verdict(doc) == 'ok' else 0
+    if dt == 'results_slip':            # S4 review: a higher result is never a usable SPM slip
+        from .wrong_slip import fills_spm_slot
+        usable = usable if fills_spm_slot(doc) else 0
     if dt == 'offer_letter':
         return (usable,) + _offer_quality(doc)
     genuine = income_engine._doc_genuine_rank(doc)

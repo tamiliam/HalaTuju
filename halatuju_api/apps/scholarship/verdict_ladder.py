@@ -86,6 +86,9 @@ def _academic_red_chips(application):
     if slip is None:
         return n
     n += 1 if _slip_name_status(slip) == 'mismatch' else 0
+    from .wrong_slip import higher_kind
+    if higher_kind(slip):              # S4 (#43): a higher result here is never SPM-compared
+        return n
     data = read_slip(slip)
     if data['names']:
         cmp = compare_academics(higher_results.spm_grades_for(application.profile), data)
@@ -196,6 +199,7 @@ def _apply_genuineness_ladder(application, facts):
             from .higher_results import anchors_on_higher
             if anchors_on_higher(application):          # S3b: the higher results anchor the card;
                 docs = ['higher_results', 'results_slip']   # unscored ("not checked") → Probable
+            docs = _without_spm_scored_higher(application, fact, docs)
         step = _genuineness_step(application, docs)
         band_step = step
         if fact['fact'] == 'pathway':
@@ -213,6 +217,18 @@ def _apply_genuineness_ladder(application, facts):
         fact['status'] = _BAND_LADDER[min(band_i, len(_BAND_LADDER) - 1)]
         _add_genuineness_caveat(application, fact, docs, step)
     return facts
+
+
+def _without_spm_scored_higher(application, fact, docs):
+    """S4 (#43): the SPM card's document is a higher result whose stored score came from the SPM
+    lists alone (before C3) — a measurement of the wrong thing, so it feeds no step; a C3 score
+    (1.9.0+) stands, whatever it says (`wrong_slip.spm_genuineness_skipped`). Asked only when the
+    card already said so (`results_slip_is_higher`), so no other application pays a query."""
+    from .wrong_slip import spm_genuineness_skipped
+    named = any(i.get('code') == 'results_slip_is_higher' for i in fact.get('unresolved', []))
+    if named and 'results_slip' in docs and spm_genuineness_skipped(_latest_doc(application, 'results_slip')):
+        return [d for d in docs if d != 'results_slip']
+    return docs
 
 
 # ── TD-114 (2026-10-02): a NEVER-SCORED anchor document holds its fact at Probable ──

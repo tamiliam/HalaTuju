@@ -114,17 +114,19 @@ export const FAQ: Record<Audience, QA[]> = {
         results they are and the CGPA (and, for STPM, the subject grades) against what she entered; an SPM slip
         is compared only if one is on file. Their genuineness is <strong>not checked</strong> yet &mdash; read the
         document yourself. When the document looks like a different kind of results, or an SPM slip, the card
-        says so and the student was shown a note; none of these stops her application.</>,
+        says so and the student was shown a note; none of these stops her application. Since 27 October 2026 a higher result uploaded as her
+        <strong> SPM slip</strong> is recognised too: the card says it is a higher result, not an SPM slip, nothing is compared with her SPM
+        grades and she is never told to change them; where her page shows the higher-results card she is offered a one-tap move into it.</>,
     },
     {
-      q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved an SPM slip</strong>. What happened?</>,
+      q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved</strong> a slip between the results cards. What happened?</>,
       a: <>Before submitting, she either chose &ldquo;Continue with SPM results only&rdquo; &mdash; the STPM,
         Matriculation, Asasi or Diploma results she had entered were removed, her SPM results were kept, and
         she is now assessed on SPM &mdash; or moved an SPM slip she had put in the higher-results card into the
         SPM slot. The note gives the date (and, for the first, which results went and their CGPA). She may
         have been shortlisted on the results she removed: the shortlist was <strong>not</strong> run again, so
         judge the change yourself and ask at interview if it is unclear. Once an application is submitted
-        these two actions are closed &mdash; request any document you need instead.</>,
+        these actions are closed &mdash; request any document you need instead. A higher result moved OUT of the SPM card (by her, or by the HalaTuju team on 26 October 2026) is noted the same way.</>,
     },
     {
       q: <>Why did STPM students move up the list when I sort by <strong>merit</strong>?</>,

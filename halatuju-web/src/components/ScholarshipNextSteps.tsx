@@ -30,6 +30,7 @@ import InfoBox from '@/components/InfoBox'
 import FieldLabel from '@/components/FieldLabel'
 import FamilyRosterFields from '@/components/FamilyRosterFields'
 import type { ConfirmTarget } from '@/lib/actionCentre'
+import { resultsEditPath } from '@/lib/qualification'
 import { type OtherMember } from '@/lib/familyRoster'
 
 // Anti-spam ceiling for the free-text Story fields — mirrors the backend's
@@ -171,13 +172,13 @@ export default function ScholarshipNextSteps({
   const handleConfirmNav = (target: ConfirmTarget) => {
     if (target === 'grades') {
       setOnboardingReturn('/scholarship/application')
-      // ⚠ The SPM form, for EVERY route, on purpose (S2b round 2, finding C): this ticket is about
-      // the SPM grades the slip is compared with, and the comparison reads `profile.grades` — which
-      // only the SPM form writes (the STPM / third-route pages write `spm_prereq_grades`, so the
-      // ticket could never close). The server refuses to let this form demote a tertiary holder
-      // (`_never_demote_held_results`). Re-route by results held when S3b moves the comparison
-      // onto `spm_grades_for`.
-      router.push('/onboarding/grades')
+      // By the results HELD (third results route S4, 2026-10-27). This ticket is about the SPM
+      // grades the slip is compared with. Until S3b the comparison read `profile.grades`, which only
+      // the SPM form writes, so S2b (round 2, finding C) sent every route to the SPM form; since S3b
+      // it reads `spm_grades_for`, which for an STPM / third-route holder includes the SPM block of
+      // HER results page — so that page is where she corrects them, and the SPM form (which the
+      // server would not let demote her, `_never_demote_held_results`) is no longer the way.
+      router.push(resultsEditPath(profile?.results_held))
       return
     }
     const tabFor: Record<Exclude<ConfirmTarget, 'grades'>, NextStepKey> = {

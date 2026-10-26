@@ -14,11 +14,16 @@
  *      (D) an SPM slip in this card → "Move it to SPM results slip" (re-filed, file kept), and for the
  *          rare case "Don't have …?" → the "Continue with SPM results only" confirm box;
  *      (B) another higher kind → "Update your results";  (C) differences → "Correct your … results".
+ *  - `SlipHigherNote` (S4, owner ruling D15) — the reverse: STPM / Matriculation / Asasi / Diploma
+ *    results in the SPM card → "Please upload it under … above" + "Move it to STPM results" (re-filed,
+ *    file kept), offered only where the higher card is shown (D12) and before submit. Never a grade
+ *    comparison and never "change your grades": the SPM checks do not run on such a document.
  */
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { continueWithSpmOnly, refileToSpm, type ApplicantDocument, type HigherCheck } from '@/lib/api'
+import { continueWithSpmOnly, refileToSpm, type AcademicCheck, type ApplicantDocument, type HigherCheck } from '@/lib/api'
+import { refileToHigher } from '@/lib/api/documents'
 import { useT } from '@/lib/i18n'
 import { resultsEditPath } from '@/lib/qualification'
 import { clearHigherResultsLocally } from '@/lib/resultsLocal'
@@ -176,6 +181,35 @@ export function HigherNote({ doc, chk, token, onChanged }: {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+export function SlipHigherNote({ doc, chk, token, onChanged }: {
+  doc: ApplicantDocument; chk: AcademicCheck; token: string | null; onChanged?: () => void
+}) {
+  const { t } = useT()
+  const label = useKindLabel()
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const kind = chk.higher_kind || ''
+  // D12: where the Documents page shows no higher-results card (a post-SPM pathway), the student is
+  // told nothing here — the reviewer sees what the document is. Never a grade comparison.
+  if (!kind || !chk.move_offered) return null
+  const move = async () => {
+    if (!token) return
+    setBusy(true); setFailed(false)
+    try { await refileToHigher(doc.id, { token }); onChanged?.() } catch { setFailed(true) } finally { setBusy(false) }
+  }
+  return (
+    <div className="mt-2 rounded-xl bg-primary-50 ring-1 ring-primary-100 p-3">
+      <p className="text-sm leading-relaxed text-primary-900/90">{t('documentsTab.higher.note.slipIsHigher', { kind: label(kind) })}</p>
+      {chk.actions_open === false ? null : (
+        <button type="button" disabled={busy} onClick={move} className={`mt-1.5 ${linkCls} disabled:opacity-50`}>
+          {t('documentsTab.higher.moveToHigher', { kind: label(kind) })}<span aria-hidden>→</span>
+        </button>
+      )}
+      {failed && <p className="mt-1 text-xs text-critical-600">{t('verifyEmail.networkError')}</p>}
     </div>
   )
 }

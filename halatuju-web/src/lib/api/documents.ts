@@ -208,8 +208,11 @@ export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 
 
 export interface AcademicCheck {
   name: SlipCheckStatus
-  subjects: SlipCheckStatus
-  results: SlipCheckStatus
+  // 'not_spm' (third results route S4, #43): the SPM card holds a HIGHER result (`higher_kind`), so
+  // nothing was compared with the SPM grades — neither a match nor a mismatch. The card then draws
+  // the S4 note instead of the SPM checklist (`cards.tsx`), so the checklist never meets it.
+  subjects: SlipCheckStatus | 'not_spm'
+  results: SlipCheckStatus | 'not_spm'
   candidate_name: string
   exam: string
   exam_year: string
@@ -218,6 +221,11 @@ export interface AcademicCheck {
   mismatched: { subject: string; typed: string; slip: string }[]
   uncertain: { subject: string; typed: string; slip: string; band: string }[]
   slip_count: number
+  /** S4 (#43): set when the SPM card holds STPM / Matriculation / Asasi / Diploma results. */
+  higher_kind?: '' | 'stpm' | 'matric' | 'asasi' | 'diploma'
+  /** S4 (D15 + D12): "Move it to … results" is on offer (the higher card is shown, not submitted). */
+  move_offered?: boolean
+  actions_open?: boolean
 }
 
 /** Third results route S3b — a higher-results document against the results page (server-built). */
@@ -387,6 +395,15 @@ export async function deleteDocument(id: number, options?: ApiOptions): Promise<
  *  that reads as an SPM slip into the SPM slot (the file and its read are kept). */
 export async function refileToSpm(documentId: number, options?: ApiOptions): Promise<{ status: string }> {
   return apiRequest('/api/v1/scholarship/results/refile-to-spm/', {
+    method: 'POST', body: JSON.stringify({ document_id: documentId }), ...options,
+  })
+}
+
+/** Third results route S4 (D15): "Move it to STPM results" — the reverse of `refileToSpm`: a document
+ *  in the SPM card that reads as higher results is re-filed into the higher-results card (the file
+ *  kept; read again on the server). Refused after submit (409) and where no higher card is shown. */
+export async function refileToHigher(documentId: number, options?: ApiOptions): Promise<{ status: string; results_kind: string }> {
+  return apiRequest('/api/v1/scholarship/results/refile-to-higher/', {
     method: 'POST', body: JSON.stringify({ document_id: documentId }), ...options,
   })
 }

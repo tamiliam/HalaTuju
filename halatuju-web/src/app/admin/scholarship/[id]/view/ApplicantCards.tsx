@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/formatDate'
 import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
-import { Card, Field, Grades, joinOr, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
+import { Card, Field, Grades, joinOr, resultsChangeKey, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
 import { GuardianCorrect } from './GuardianCorrect'
 import { GuardianCallRecord } from './GuardianCallRecord'
 import { FamilyAnswers } from './FamilyAnswers'
@@ -234,13 +234,15 @@ export function ApplicantCards({
                     trailing={!isStpm && !third && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
                   />
                   {/* Third results route S3b (D13, review fix 3): what the student changed in her
-                      results before submitting — "SPM results only" or a slip moved to the SPM card.
+                      results before submitting — "SPM results only" or a slip moved to the SPM card;
+                      S4 (D15): a higher result moved OUT of the SPM card, by her or by the team.
                       Always recorded, so a CGPA she was shortlisted on never vanishes silently. */}
                   {(app.results_change_notes || []).map((n, i) => (
                     <p key={i} className="mt-2 rounded-lg bg-caution-50 px-3 py-2 text-xs text-caution-800 ring-1 ring-caution-200">
-                      {t(n.kind === 'refiled_spm' ? 'admin.scholarship.resultsChanged.refiledSpm' : 'admin.scholarship.resultsChanged.onlySpm', {
+                      {t(resultsChangeKey(n), {
                         date: (n.at || '').slice(0, 10),
                         cleared: t(`admin.scholarship.resultsChanged.kind.${n.cleared || 'other'}`),
+                        kind: t(`admin.scholarship.resultsChanged.kind.${n.results_kind || 'other'}`),
                         cgpa: n.cgpa != null ? Number(n.cgpa).toFixed(2) : '—',
                       })}
                     </p>

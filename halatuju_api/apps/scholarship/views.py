@@ -1131,8 +1131,8 @@ class DocumentListCreateView(APIView):
         staged = single and (new_doc_type not in _BYPASS_JUDGE_TYPES)
         existing_live = (ApplicantDocument.objects.filter(id__in=stale_ids)
                          .order_by(*SNAPSHOT_ORDER).first() if staged else None)
-        if new_doc_type == 'higher_results':   # S3a (D13): the kind is the results held, never picked
-            serializer.validated_data['results_kind'] = results_route.upload_kind(app)
+        if new_doc_type == 'higher_results':   # S3a (D13) the results held; S4 a request's own kind
+            serializer.validated_data['results_kind'] = results_route.upload_kind(app, new_request_code)
         with transaction.atomic():
             doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
             from django.utils import timezone as _tz
@@ -1262,14 +1262,14 @@ class DocumentListCreateView(APIView):
         #     newer Lulus dashboard over a weaker semakan → currency dominates → replaces.
         kept_previous = False
         if staged:
-            from . import promotion
+            from . import promotion, wrong_slip as _ws   # S4: a higher result never displaces an SPM slip
             from .resolution import doc_match_verdict
             from django.utils import timezone as _tz2
             # USABLE = the read did not CONFIRM a problem: 'ok' (clean) or 'pending' (not scanned yet —
             # newest still wins, the task stays open, and the quality proxy keeps a pending doc from
             # burying an 'ok' one). Only a CONFIRMED 'mismatch'/'unreadable' is not-usable → stays
             # staged so a wrong/blurry re-upload can't displace a good live proof.
-            usable = doc_match_verdict(doc) not in ('mismatch', 'unreadable')
+            usable = doc_match_verdict(doc) not in ('mismatch', 'unreadable') and _ws.fills_spm_slot(doc)
             if promotion.should_promote(doc, existing_live, usable=usable):
                 # Promote: supersede everything this upload replaces — the staged-against set (the
                 # slot sweep, incl. any blank-tagged legacy copy) PLUS any other live copy in this

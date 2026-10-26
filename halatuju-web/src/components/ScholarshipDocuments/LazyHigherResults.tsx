@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from 'react'
 
-import type { ApplicantDocument, HigherCheck } from '@/lib/api'
+import type { AcademicCheck, ApplicantDocument, HigherCheck } from '@/lib/api'
 
 type Mod = typeof import('./HigherResults')
 
@@ -47,4 +47,12 @@ export function LazyHigherDetails({ doc, chk, token, onChanged }: {
       <m.HigherNote doc={doc} chk={chk} token={token} onChanged={onChanged} />
     </>
   )
+}
+
+/** S4 (#43, D15): a higher result in the SPM card — the note, and "Move it to … results". */
+export function LazySlipHigherNote({ doc, chk, token, onChanged }: {
+  doc: ApplicantDocument; chk: AcademicCheck; token: string | null; onChanged?: () => void
+}) {
+  const m = useHigherModule()
+  return m ? <m.SlipHigherNote doc={doc} chk={chk} token={token} onChanged={onChanged} /> : null
 }

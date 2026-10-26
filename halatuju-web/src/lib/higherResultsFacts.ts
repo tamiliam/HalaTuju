@@ -5,7 +5,7 @@
  * genuineness fact: higher results have no signature family yet, so the Academic card says "not
  * checked". Its own leaf because `officerCockpit.ts` is at its size allowance.
  */
-import type { HigherCheck } from '@/lib/api'
+import type { AcademicCheck, HigherCheck } from '@/lib/api'
 
 // The cockpit's own two shapes, restated structurally so this leaf imports nothing back from
 // `officerCockpit.ts` (no import loop); tsc checks they still fit where they are returned.
@@ -24,4 +24,15 @@ export function higherResultsFacts(
   ]
   if (c.grades_status) facts.push({ key: 'results', status: factStatus(c.grades_status) })
   return facts
+}
+
+/**
+ * S4 (#43): the SPM card holds a HIGHER result (`academic_check.higher_kind`). Name, and Type in red
+ * — it is not an SPM slip — and no Subjects / Results: nothing was compared with the SPM grades.
+ */
+export function slipHigherFacts(
+  c: AcademicCheck,
+  st: (s: string | undefined | null) => FactStatus,
+): DocumentFactLabel[] {
+  return [{ key: 'name', status: st(c.name) }, { key: 'type', status: 'not' }]
 }

@@ -705,13 +705,13 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
 
   // A standard request line for the selected (doc, person) — prefills the note box so the
   // reviewer can elaborate, and is the fallback if they clear it.
-  const stdDocRequest = (dt: string, m: string) => {
+  const stdDocRequest = (dt: string, m: string, kind = '') => {   // kind: S4 results by name
     if (!dt) return ''
     // "Other document" has no standard clause — the reviewer types exactly what they need,
     // so leave the box empty (the generic "the requested document …" prefill was unhelpful).
     if (dt === 'other') return ''
     // Rich per-document clause (says what we look for) — clarity for the student.
-    const docTxt = t(`admin.scholarship.requestDocStd.${dt}`)
+    const docTxt = t(`admin.scholarship.requestDocStd.${kind ? `higher_${kind}` : dt}`)
     const memberTxt = m ? t(`scholarship.docs.income.wizard.member.${m}`) : ''
     return m
       ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
@@ -729,17 +729,17 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const onReqQualifier = (q: string) => {
     setReqQualifier(q)
     const r = resolveReq(reqCategory, q)
-    setReqDocNote(r ? stdDocRequest(r.docType, r.member) : '')
+    setReqDocNote(r ? stdDocRequest(r.docType, r.member, r.kind) : '')
   }
   const doRequestDoc = async () => {
     if (!token || !reqResolved) return
-    const { docType, member } = reqResolved
-    const prompt = reqDocNote.trim() || stdDocRequest(docType, member)
+    const { docType, member, kind } = reqResolved
+    const prompt = reqDocNote.trim() || stdDocRequest(docType, member, kind)
     setBusy('reqdoc'); setError(''); setRequestError('')
     try {
       setApp(await raiseResolutionItem(
         id,
-        { kind: 'doc', doc_type: docType, household_member: member, prompt, fact: docTypeToRequestFact(docType) },
+        { kind: 'doc', doc_type: docType, household_member: member, prompt, fact: docTypeToRequestFact(docType), ...(kind ? { results_kind: kind } : {}) },
         { token },
       ))
       setReqDocNote(''); setReqCategory(''); setReqQualifier('')

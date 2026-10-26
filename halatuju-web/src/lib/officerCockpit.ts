@@ -6,7 +6,7 @@
  * re-implements them.
  */
 
-import { higherResultsFacts } from '@/lib/higherResultsFacts'
+import { higherResultsFacts, slipHigherFacts } from '@/lib/higherResultsFacts'
 import { docTypeToFact } from '@/lib/docCategory'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
 
@@ -414,7 +414,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // a merely SUSPECT (amber) slip — usually a cropped footer — does NOT cap them, so the reviewer
     // sees "the values are here and match, but we're not certain the slip is genuine".
     const st = (v: string | undefined | null): FactStatus => (cap ? 'not' : factStatus(v))
-    const facts: DocumentFactLabel[] = [
+    const facts: DocumentFactLabel[] = c.higher_kind ? slipHigherFacts(c, st) : [   // S4 (#43)
       { key: 'name', status: st(c.name) },
       { key: 'subjects', status: st(c.subjects) },
       { key: 'results', status: st(c.results) },

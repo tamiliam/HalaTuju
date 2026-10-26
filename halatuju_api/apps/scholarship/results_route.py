@@ -19,13 +19,15 @@ Submit, so a submitted application keeps the requirement it was gated on (a pre-
 so the mapping only ever relabels it; it never invents a requirement for a programme that asks for
 no results (state 'off' → untouched).
 
-The two actions (D13, after the detection notes in `higher_results.py`) are open ONLY BEFORE the
+The student actions (D13, after the detection notes in `higher_results.py`) are open ONLY BEFORE the
 Step-4 Submit (adversarial review, fixes 1+2): after it the frozen requirement, the reviewed slip
 and any award stand, and the reviewer's own request route is the way. Each leaves a note the
 reviewer sees (`results_change_notes`, fix 3) — a student shortlisted on a CGPA must never arrive
 silently as SPM.
   * ``refile_to_spm`` — "Move it to SPM results slip": an SPM slip uploaded into the higher-results
     card is re-filed into the SPM slot (the file kept, read again as an SPM slip).
+  * ``refile_to_higher`` (S4, D15) — "Move it to STPM results": the mirror of ``refile_to_spm``, for
+    a higher result uploaded into the SPM card (note kind ``refiled_higher``).
   * ``clear_to_spm`` — "Continue with SPM results only": the higher results ENTERED are removed,
     explicitly — the one door that may move a profile down from tertiary results it still holds
     (the sync's `_never_demote_held_results` guards every other door).
@@ -141,12 +143,21 @@ def map_documents(application, resolved: dict) -> dict:
     return out
 
 
-def upload_kind(application) -> str:
-    """The `results_kind` a new higher-results upload carries: the results held, when tertiary
-    (D13 — the card shows it read-only and "Change" opens the results page). '' otherwise."""
+def held_kind(application) -> str:
+    """The results held, when tertiary; '' otherwise."""
     from apps.courses.exam_questions import is_tertiary
     kind = held(application)
     return kind if is_tertiary(kind) else ''
+
+
+def upload_kind(application, request_code: str = '') -> str:
+    """The `results_kind` a new higher-results upload carries: the results held, when tertiary
+    (D13 — the card shows it read-only and "Change" opens the results page). S4 (#37): an upload
+    answering an officer's request for named results carries THAT request's kind
+    (`results_requests.requested_kind`), so it lands in the right slot whatever the results page
+    holds. '' otherwise."""
+    from .results_requests import requested_kind
+    return requested_kind(application, request_code) or held_kind(application)
 
 
 # ── The two student actions (D13) ──────────────────────────────────────────────────────────────
@@ -195,6 +206,53 @@ def refile_to_spm(application, doc) -> 'object':
     _note(application, 'refiled_spm', document_id=doc.id)
     logger.info('AUDIT results_refiled_to_spm app=%s doc=%s kept_existing=%s', application.id,
                 doc.id, bool(doc.superseded_at))
+    from .resolution import sync_resolution_items
+    sync_resolution_items(application)
+    return doc
+
+
+def refile_to_higher(application, doc, kind) -> 'object':
+    """D15 (S4, 2026-10-27) — the mirror of `refile_to_spm`: "Move it to STPM results". A document
+    in the SPM card that reads as a higher result (`wrong_slip.higher_kind`) is re-filed into the
+    higher-results card with that kind, BEFORE submit only (the caller refuses otherwise, and offers
+    it only where the higher card is shown, D12). The FILE is kept; its SPM-slip READ is cleared so
+    the live service reads it again as higher results — the hourly sweep picks up a document whose
+    run stamps are NULL and whose `vision_fields` is empty; it is never re-read from a local
+    checkout. One live higher-results upload: the moved document and any live one are compared by
+    `promotion.should_promote` and the weaker becomes history. If the kind differs from the results
+    page, the S3 "Different results" note then speaks in the higher card. A reviewer note of its own
+    kind (`refiled_higher`) records the move. Returns the document."""
+    from django.db import transaction
+    from . import promotion
+    from .document_snapshot import live_docs
+    from .models import ApplicantDocument
+    with transaction.atomic():
+        # Review finding 5: lock the row, so a double tap moves it — and notes it — once.
+        locked = ApplicantDocument.objects.select_for_update().filter(pk=doc.pk).first()
+        if locked is None or locked.doc_type != 'results_slip' or locked.superseded_at is not None:
+            return locked or doc
+        return _refile_to_higher_locked(application, locked, kind, promotion, live_docs, ApplicantDocument)
+
+
+def _refile_to_higher_locked(application, doc, kind, promotion, live_docs, ApplicantDocument):
+    existing = live_docs(application, 'higher_results').exclude(id=doc.id).first()
+    doc.doc_type, doc.results_kind, doc.request_code = 'higher_results', kind, ''
+    doc.vision_fields, doc.vision_fields_run_at, doc.vision_run_at = {}, None, None
+    doc.vision_name_match, doc.vision_address_match, doc.vision_error = '', '', ''
+    doc.save(update_fields=['doc_type', 'results_kind', 'request_code', 'vision_fields',
+                            'vision_fields_run_at', 'vision_run_at', 'vision_name_match',
+                            'vision_address_match', 'vision_error'])
+    now = timezone.now()
+    if existing is None or promotion.should_promote(doc, existing, usable=True):
+        ApplicantDocument.objects.filter(
+            application=application, doc_type='higher_results', superseded_at__isnull=True,
+        ).exclude(id=doc.id).update(superseded_at=now, superseded_by=doc)
+    else:
+        ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=now, superseded_by=existing)
+    doc.refresh_from_db()
+    _note(application, 'refiled_higher', document_id=doc.id, results_kind=kind, by='student')
+    logger.info('AUDIT results_refiled_to_higher app=%s doc=%s kind=%s kept_existing=%s',
+                application.id, doc.id, kind, bool(doc.superseded_at))
     from .resolution import sync_resolution_items
     sync_resolution_items(application)
     return doc

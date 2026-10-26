@@ -104,7 +104,10 @@ export const roleReviewer: ManualChapter = {
       body: (
         <>If something&rsquo;s unclear, don&rsquo;t guess. <strong>Raise a query</strong> or <strong>request a
         document</strong> — the student gets an email and replies, and their answer appears in the
-        <strong> Outstanding</strong> box. Best done before the interview so your conversation is focused.</>
+        <strong> Outstanding</strong> box. Best done before the interview so your conversation is focused.
+        Results are asked for <strong>by name</strong>: under <strong>Results slip</strong> choose the SPM slip, or
+        STPM, Matriculation, Asasi or Diploma results; her upload lands in that card and closes the request only
+        when it is that kind of results. The system never asks for an SPM slip by itself.</>
       ),
       img: '/reviewer-guide/step6-outstanding.png',
       alt: 'The Outstanding box and the raise-a-query controls',

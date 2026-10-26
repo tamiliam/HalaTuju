@@ -37,7 +37,7 @@ class AdminRequestInfoView(_AdminBase):
 class AdminResolutionItemView(_AdminBase):
     """POST .../<pk>/resolution-items/ — officer raises a manual resolution ticket
     (the structured successor to request-info). Body: {kind, prompt, doc_type?,
-    fact?}. Reviewer/super only."""
+    fact?, household_member?, results_kind?}. Reviewer/super only."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
@@ -59,12 +59,21 @@ class AdminResolutionItemView(_AdminBase):
         member = (request.data.get('household_member') or '').strip()
         if member and member not in ('father', 'mother', 'guardian', 'brother', 'sister'):
             return Response({'error': 'bad_member'}, status=status.HTTP_400_BAD_REQUEST)
+        doc_type = (request.data.get('doc_type') or '').strip()
+        # S4 (#37): a request for named higher results carries its kind (chosen, else the one on file).
+        from ..results_requests import request_params
+        extra, bad = request_params(app, doc_type, request.data.get('results_kind'))
+        if bad:
+            return Response({'error': bad}, status=status.HTTP_400_BAD_REQUEST)
         from ..resolution import add_officer_item
-        add_officer_item(app, kind=kind, prompt=prompt,
-                         admin_email=getattr(admin, 'email', '') or '',
-                         doc_type=(request.data.get('doc_type') or '').strip(),
-                         fact=(request.data.get('fact') or 'other').strip(),
-                         household_member=member)
+        item = add_officer_item(app, kind=kind, prompt=prompt,
+                                admin_email=getattr(admin, 'email', '') or '',
+                                doc_type=doc_type,
+                                fact=(request.data.get('fact') or 'other').strip(),
+                                household_member=member)
+        if extra:
+            item.params = {**(item.params or {}), **extra}
+            item.save(update_fields=['params'])
         # Re-notify the student that there's something new for them — but DON'T email
         # per item (a reviewer raises several in one sitting → email spam + Brevo quota).
         # Instead reset the one-time notify stamp so the delayed, batched, idempotent

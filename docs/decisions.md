@@ -1,5 +1,65 @@
 # Architectural Decisions — HalaTuju
 
+## A higher result in the SPM card is named, never SPM-compared; reviewers ask for results by name; D1 promotes on a document only — 2026-10-27 (third results route S4; rulings D1 D9 D12 D15)
+
+**What a document in the SPM card IS** is answered at read time from what is stored
+(`apps/scholarship/wrong_slip.py`): the routing detection of `results_kind.py` on the read's `exam`
+title, accepted only on a document that read as a result (rows or a CGPA), or the corpus-gaps C3
+family (`doc_seen` STPM, genuine or suspect). It scores nothing, so no `MODEL_VERSION` bump. Such a
+document skips the SPM comparison entirely (subjects / results `not_spm`): a reader that compares,
+coaches or holds on those values cannot meet a higher result. The reviewer's card names it
+(`results_slip_is_higher`) and stays at Probable at best; the band can move, so
+`VERDICT_ENGINE_VERSION` 2026-10-27.1.
+
+**Genuineness: never contradict C3.** A stored score from MODEL_VERSION 1.9.0 or later was computed by
+a scorer that knew STPM and chose the family itself, so it stands — including C3's `not_<type>` for the
+online checker page (ruling 1A). A score from before 1.9.0 measured an STPM document against the SPM
+lists alone; for a recognised higher result it is read as no signal (no ladder step, no
+`document_not_genuine` anomaly), never as suspect. Live, that is two closed applications (#131, #280);
+every new upload is scored by C3. The document's own authenticity chip is unchanged (its serializer is
+at its size allowance; the two rows are closed).
+
+**The reverse move (D15)** follows `refile_to_spm` exactly (file kept, read cleared for the live sweep,
+one live upload by promotion, an audit line, a reviewer note of its own kind `refiled_higher`, 409 after
+submit) and is offered only where the higher card is shown (D12). The team's six moves of 2026-10-26 get
+the same note with `by: 'team'` from a report-first, idempotent command — the note's date is the move's.
+
+**Requests by name (#37).** A results request carries its kind in `params.results_kind`, so the upload
+lands in the right slot whatever the results page holds, and an upload closes a results request only
+when it IS those results (`results_requests.answers`) — kept either way, so the reviewer sees what came.
+No automatic ask (D9); the officer gate is unchanged (#40).
+
+**D1 (b) built: promote only on a recognised document, at read time.** `results_held` gains a step for
+legacy rows (blank `completed_qualifications`) only: SPM + STPM data on file + a live document
+recognised as STPM results → STPM. Presence of data alone still never promotes (#15). The witness is
+REGISTERED by the scholarship app (`STPM_DOCUMENT_WITNESS`), not imported, so the app boundary holds and
+the course guide alone keeps the old rule. It moves merit, the held label, the sponsor line and (for the
+three unsubmitted rows) which card is required — the degree-bound three already needed the higher card
+under D14; the promotion makes their SPM slip optional (D9). The gate is not re-run; the before/after
+list goes to the owner before release.
+
+**Adversarial review (2026-10-27), five fixes.** (1) An unread higher-results upload is a D1
+witness only if it was MOVED out of the SPM card (its `refiled_higher` note) — a fresh or
+request-keyed upload, or one our outage left unread, never promotes until it is read as STPM. (2) A
+higher result is never a usable SPM slip (`wrong_slip.fills_spm_slot`: `promotion.doc_quality`, the
+upload's staged check), so it cannot push a live SPM slip into history, and it closes no
+`results_slip` item, the system's included; for an applicant who holds no tertiary results and must
+upload an SPM slip, the card keeps `results_slip_missing` (a tertiary holder is never asked, D9). (3)
+Both cards' witnesses need a document that read as a RESULT (rows or a CGPA) under a title that is
+not a trial ("percubaan") examination or an offer / registration letter. (4) The profile sync's
+no-demote guard computes "after" by the same rule, D1 included, so a promoted row can still save its
+results fields. (5) An upload takes a request's kind only while the request is OPEN; the reverse move
+locks the document row (a double tap moves and notes once); the team's note records `submitted`
+as of the move (all six were unsubmitted then).
+
+**`PROMPT_VERSION` deliberately NOT bumped.** The six promoted rows' anonymous sponsor profiles were
+generated when they read SPM and still say so; a bump would mark EVERY sponsor profile stale and
+`refresh_sponsor_profiles` is paid. They change with a scoped refresh of those six on the owner's word.
+
+**Factory note (tests):** `make_application('profile_complete')` freezes the requirements AFTER stamping
+the submit, so it freezes the catalogue's plain "SPM slip required", never the D12 mapping. S3 and S4
+tests pass an explicit `requirements_snapshot` for a tertiary submitted application.
+
 ## The required results upload follows the chosen course; the card shows the results page's type; notes never block — 2026-10-26 (third results route S3a + S3b; rulings D6 D9 D12 D13)
 
 **The rule (D12), in one place.** `apps/scholarship/results_route.py` answers "which results upload

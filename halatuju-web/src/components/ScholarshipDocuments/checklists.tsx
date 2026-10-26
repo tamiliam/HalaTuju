@@ -416,7 +416,7 @@ export function GuardianshipChecklist({ doc, t }: { doc: ApplicantDocument; t: (
 // the exam (year) as a soft data point. Cikgu Gopal (below) gives the specific
 // "what to do" only when there's a real problem.
 
-type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'
+type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending' | 'not_spm'   // not_spm: S4, never drawn here
 
 function slipBadgeKind(s: SlipStatus): ICCheckKind {
   if (s === 'match') return 'match'

@@ -407,7 +407,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
         def _after(field):
             return attrs[field] if field in attrs else _merged(field)
+        # The SAME rule as `before`, D1 included (S4 review finding 4): the stored row's identity and
+        # state ride along, so a profile promoted on its STPM document is still promoted "after" and
+        # may save its results fields; nothing that does not lower the held results is dropped.
         after = results_held(SimpleNamespace(
+            pk=inst.pk, _state=inst._state,
             exam_type=_after('exam_type'), results_exam_type=_after('results_exam_type'),
             grades=_merged('grades'), stpm_grades=_merged('stpm_grades'),
             stpm_cgpa=_merged('stpm_cgpa'), higher_cgpa=_merged('higher_cgpa'),

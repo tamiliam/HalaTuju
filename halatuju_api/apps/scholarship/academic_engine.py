@@ -703,6 +703,9 @@ def student_slip_check(doc) -> dict:
     / 'pending', plus ``{candidate_name, missing, mismatched, slip_count}`` detail.
     Reads ONLY the student's own document + profile (no admin data)."""
     name = _slip_name_status(doc)
+    from .wrong_slip import slip_check          # S4 (#43): a higher result here is never compared
+    if (higher := slip_check(doc, name)) is not None:
+        return higher
     data = read_slip(doc)
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     sv = vf.get('student_verdict')

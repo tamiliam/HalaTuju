@@ -94,7 +94,8 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-26.1 — corpus-gaps C1: a known public TVET issuer's offer is NOT CHECKED (no step; Probable).
 #   2026-10-26.2 — TD-403: an STR's year is asked against THIS calendar year; a later year = 'future' (Unsure).
 #   2026-10-26.3 — third route S3: the higher-results Academic card; the SPM slip reads spm_grades_for.
-VERDICT_ENGINE_VERSION = '2026-10-26.3'
+#   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared.
+VERDICT_ENGINE_VERSION = '2026-10-27.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -287,7 +288,7 @@ def _verdict_academic(application, spm_only=False):
     Third route S3: a higher-results applicant's card is `higher_results.verdict_academic`, which
     folds THIS answer in (`spm_only`) only when an SPM slip is on file (D9)."""
     from .academic_engine import compare_academics, read_slip, _slip_name_status
-    from . import higher_results
+    from . import higher_results, wrong_slip
     if not spm_only and higher_results.anchors_on_higher(application):
         return higher_results.verdict_academic(application, _verdict_academic(application, True))
     evidence, unresolved = [], []
@@ -302,11 +303,9 @@ def _verdict_academic(application, spm_only=False):
     # for "the slip could not be read" (it falsely flagged Sharvani's clean, fully-read slip).
     name_status = _slip_name_status(slip)
     if name_status == 'mismatch':
-        # A slip in a different name is a RED Name chip (owner 2026-07-07 red-chip ladder), no longer
-        # a hard gap: the ladder deducts −1 (→ Probable) for the lone mismatch, and it stacks with any
-        # subject/grade chip + the genuineness step (so someone-else's slip whose grades also diverge
-        # still lands Fail). Still an `application_completeness` submission blocker — a SEPARATE gate
-        # (services.py), unchanged. We continue below so subject/grade chips are surfaced too.
+        # A RED Name chip (owner 2026-07-07 ladder: −1, stacking with subject/grade chips + the
+        # genuineness step), not a hard gap; still an `application_completeness` blocker (a separate
+        # gate). We continue below so subject/grade chips are surfaced too.
         unresolved.append(_item('results_slip_name_mismatch'))
     name_ok = name_status == 'match'
     if name_status == 'unreadable':
@@ -314,7 +313,8 @@ def _verdict_academic(application, spm_only=False):
     elif name_status == 'match':
         evidence.append(_item('results_slip_name_ok'))
     # 'pending' → the slip's name is not yet decided; make no claim either way.
-
+    if kind := wrong_slip.higher_kind(slip):                   # S4 (#43): not an SPM slip at all
+        return wrong_slip.academic_fact(slip, kind, evidence, unresolved)
     data = read_slip(slip)
     if not data['names']:
         # The slip hasn't been field-extracted yet (legacy upload) — grades

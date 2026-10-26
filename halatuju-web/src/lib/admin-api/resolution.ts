@@ -42,7 +42,9 @@ export interface AdminResolutionItem {
  *  student's Action Centre. */
 export async function raiseResolutionItem(
   id: number,
-  payload: { kind: 'doc' | 'confirm' | 'explanation'; prompt: string; doc_type?: string; fact?: string; household_member?: string },
+  payload: { kind: 'doc' | 'confirm' | 'explanation'; prompt: string; doc_type?: string; fact?: string; household_member?: string
+    /** S4 (#37): the higher results asked for by name (stpm / matric / asasi / diploma). */
+    results_kind?: string },
   options?: ApiOptions,
 ): Promise<AdminScholarshipDetail> {
   return adminMutate<AdminScholarshipDetail>(

@@ -11,10 +11,10 @@ import { showsCheck2Box } from '@/lib/officerCockpit'
 import { itemCopy, localiseParams, titleSourceFor } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminResolutionItem } from '@/lib/admin-api'
 
-import { REQUEST_CATEGORIES, REQ_CAT, type T } from './shared'
+import { REQUEST_CATEGORIES, REQ_CAT, type ResolvedReq, type T } from './shared'
 
 /** The refusal codes `resolution-items/` answers with that have their own words. */
-const REQUEST_REFUSAL_CODES = ['querying_closed', 'prompt_required', 'bad_kind', 'bad_member']
+const REQUEST_REFUSAL_CODES = ['querying_closed', 'prompt_required', 'bad_kind', 'bad_member', 'results_kind_required']
 
 /**
  * Request #40: what to say when raising a query / requesting a document fails — never nothing.
@@ -53,7 +53,7 @@ export function OutstandingPanel({
   reqQualifier: string
   reqDocNote: string
   setReqDocNote: Dispatch<SetStateAction<string>>
-  reqResolved: { docType: string; member: string } | null
+  reqResolved: ResolvedReq | null
   onReqCategory: (key: string) => void
   onReqQualifier: (q: string) => void
   doRequestDoc: () => void

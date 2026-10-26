@@ -42,8 +42,9 @@ is to be written as "highest" outright (TD-326).
 Third results route S2a (2026-10-25, TD-326 / requests #37 #38 #43): it now is. Matriculation, Asasi
 (Foundation) and Diploma join SPM and STPM. ``completed_qualifications`` (a list each results form
 writes ON COMPLETION) is what "highest" ranks over - still never the presence of data (#15). Every
-legacy row has it blank, and a blank list leaves the rule above exactly as it was (D1: the 27 legacy
-rows recorded SPM with STPM data on file are NOT promoted here; see docs/decisions.md).
+legacy row has it blank, and a blank list leaves the rule above exactly as it was. D1: S2a did NOT
+promote the 27 legacy rows recorded SPM with STPM data on file; S4 (2026-10-27) promotes those whose
+STPM results are on file AS A RECOGNISED DOCUMENT, at read time (``_stpm_document_on_file``).
 ``is_tertiary`` is the one "STPM-equivalent" test, ``overall_cgpa`` the one CGPA, ``merit_100`` the
 one merit.
 """
@@ -143,7 +144,11 @@ def results_held(profile):
 
     The third route also gets step 2's correction, for the same reason: declared Matriculation /
     Asasi / Diploma (the third card tapped) with no third-route CGPA and SPM grades on file reads
-    'spm'. Values: 'spm', 'stpm', 'matric', 'asasi', 'diploma', or ''."""
+    'spm'.
+
+    D1 (S4, 2026-10-27) is step 4, for a LEGACY row only (blank list): an answer of 'spm' with STPM
+    data on file reads 'stpm' when a live document is RECOGNISED as STPM results
+    (``_stpm_document_on_file``). Values: 'spm', 'stpm', 'matric', 'asasi', 'diploma', or ''."""
     if not profile:
         return ''
     recorded = (getattr(profile, 'results_exam_type', '') or '').strip().lower()
@@ -154,14 +159,39 @@ def results_held(profile):
         if tertiary:
             return recorded if recorded in tertiary else tertiary[0]
         return 'spm'
-    if recorded:
-        return recorded
+    answer = recorded or _declared_held(profile)
+    if answer == 'spm' and has_stpm_results(profile) and _stpm_document_on_file(profile):
+        return 'stpm'               # D1: a legacy SPM row whose STPM results are on file AS A DOCUMENT
+    return answer
+
+
+def _declared_held(profile):
     declared = (getattr(profile, 'exam_type', '') or '').strip().lower()
     if declared == 'stpm' and not has_stpm_results(profile) and (profile.grades or {}):
         return 'spm'
     if declared in THIRD_ROUTE and not _has_higher_results(profile) and (profile.grades or {}):
         return 'spm'
     return declared
+
+
+#: D1 (owner ruling 2026-10-25, (b)+(c); built in third results route S4, 2026-10-27): the witness
+#: "a LIVE document of this student's is recognised as STPM results" - the scholarship app's
+#: `wrong_slip.stpm_results_on_file`, REGISTERED by `ScholarshipConfig.ready` so this module
+#: imports nothing from scholarship (the app boundary). None (the course guide alone, a test with
+#: no app) -> no promotion, the rule exactly as before.
+STPM_DOCUMENT_WITNESS = None
+
+
+def _stpm_document_on_file(profile):
+    """Step 4 of ``results_held``, for LEGACY rows only (a blank ``completed_qualifications``):
+    recorded / declared SPM, STPM data on file AND a document recognised as STPM results -> 'stpm'.
+    Read-time only: nothing is written to the profile. Presence of DATA alone still never promotes
+    (#15: #15's own STPM-shaped data has no STPM document behind it); the document is the evidence.
+    Only a STORED profile can have documents, so a sync's in-memory namespace (or an unsaved
+    instance) never promotes and never queries."""
+    witness = STPM_DOCUMENT_WITNESS
+    saved = getattr(getattr(profile, '_state', None), 'adding', True) is False   # a stored row
+    return bool(witness) and saved and witness(profile)
 
 
 def overall_from(academic_cgpa, koko):

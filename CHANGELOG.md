@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file.
 
+## Third results route S4 — reviewer requests and wrong slips - 2026-10-27
+
+Reviewers ask for results BY NAME (#37), and an STPM / Matriculation / Asasi / Diploma result
+uploaded as the SPM slip is recognised (#43; roadmap `docs/plans/2026-10-25-third-results-route-roadmap.md`
+§5a S4, owner rulings D1 D9 D12 D15). No migration (S3's columns). No `MODEL_VERSION` bump (detection
+reused; nothing scored). **`VERDICT_ENGINE_VERSION` 2026-10-27.1.** Not run by the build: the lead runs
+`note_team_refiled_higher --apply` after the deploy.
+- **A higher result in the SPM card (#43)** — new `apps/scholarship/wrong_slip.py`, read at READ time
+  from stored fields (free; never a re-read). Two witnesses: `results_kind` detection on the read's
+  `exam` title (only on a document that read as a RESULT — subject rows or a CGPA — so #77's
+  Matriculation OFFER letter stays the wrong document it is) and C3's STPM family (`doc_seen`
+  `stpm_slip` / `stpm_certificate`, genuine or suspect). Such a document is never compared with the SPM
+  grades: no "missing subjects", no grade mismatch, "Lulus Penuh" never read as E, no SPM year, no
+  coach, never "change your grades" (`student_slip_check` → subjects / results `not_spm`). The
+  reviewer's Academic card says `results_slip_is_higher` ("This is a higher result (STPM), not an SPM
+  slip …", Probable at best) and counts no Subjects / Results chip; the drawer shows Name + Type (red).
+  The SPM-family genuineness step and the `document_not_genuine` anomaly are skipped ONLY where the
+  stored score predates C3 (MODEL_VERSION below 1.9.0, a score against the SPM lists alone); a C3 score
+  stands, whatever it says (ruling 1A's `not_<type>` included).
+- **"Move it to STPM results" (D15)** — `results_route.refile_to_higher`, POST
+  `/api/v1/scholarship/results/refile-to-higher/`: the reverse of `refile_to_spm` — file kept, filed as
+  `higher_results` with the detected kind, read cleared for the hourly live sweep, one live upload by
+  promotion, audit line `results_refiled_to_higher`, reviewer note `refiled_higher` (`by: 'student'`).
+  Offered only where the Documents page shows the higher card (D12) and before submit (409
+  `application_submitted` after; 400 `not_a_higher_result` / `higher_card_not_shown`). A kind that
+  differs from the results page then gets S3's "Different results" note. Where no higher card is shown
+  the student is told nothing; the reviewer sees what the document is.
+- **The team's move of 2026-10-26** — `python manage.py note_team_refiled_higher` (report-only;
+  `--apply` writes; idempotent; skips a pair whose document is no longer that application's live
+  higher-results upload): the `refiled_higher` note with `by: 'team'` on apps 189, 257, 258, 275, 325,
+  333 (docs 2680, 3109, 3709, 3053, 3490, 3661 — all six still live and re-read, measured 2026-10-27).
+  The cockpit reads "Moved from the SPM card to the STPM results card by the HalaTuju team on 2026-10-26."
+- **Reviewer requests by name (#37)** — "Request a document" → Results slip offers SPM, STPM,
+  Matriculation, Asasi or Diploma results, and the current CGPA slip. A higher-results request carries
+  its kind (`params.results_kind`; chosen, else the results held, else the kind detected in the SPM card;
+  none → 400 `results_kind_required`), the upload for it lands in `higher_results` with THAT kind
+  (`results_route.upload_kind(app, request_code)`), and it closes the request only when it answers it
+  (`results_requests.answers`: an STPM result does not close an "SPM results slip" request, nor an SPM
+  slip a higher-results one — the document is kept, the request stays open). An SPM request after a
+  higher-results-only submission works. Still only while `officer_requests_state` is open (#40); NO
+  automatic Check-2 SPM ask (D9).
+- **D1, the legacy rows** — `exam_questions.results_held` step 4 (read time, no profile write): a legacy
+  row (blank `completed_qualifications`) answering SPM with STPM data on file reads STPM when a LIVE
+  document is recognised as STPM results (`wrong_slip.stpm_results_on_file`, registered by
+  `ScholarshipConfig.ready` so the courses app imports nothing from scholarship). Data alone still never
+  promotes (#15). Live: 6 of the 28 such rows (153, 201, 204, 268, 273, 310); the gate is not re-run.
+- **The grades ticket** — the Action Centre "grades" ticket now opens the results page HELD
+  (`resultsEditPath(profile.results_held)`); `DocumentHelpCoach`'s SPM-slip link stays on the SPM form;
+  `resultsEditLinks.test.ts` updated.
+- **Moves-only split:** the post-award tasks (bank details, Vircle) left `resolution.py` (at the
+  600-line standard) for `resolution_postaward.py`, re-exported unchanged.
+- **Review fixes (2026-10-27):** an unread upload promotes only if it was moved out of the SPM card;
+  a higher result is never a usable SPM slip (never buries a live one, closes no results-slip item;
+  an SPM holder who must upload one keeps `results_slip_missing`); trial / offer titles and reads with
+  no rows or CGPA are not results; the no-demote guard uses the D1 rule; request kinds only while open;
+  the move locks its row; the team's note is `submitted: false` as of the move. No `PROMPT_VERSION`
+  bump: the six promoted rows' sponsor profiles still say SPM until a scoped, owner-approved refresh.
+- i18n en/ms/ta (documents slice: the note and its action; admin slice: the card line, the two notes,
+  the request choices, their standard lines, the refusal); reviewer FAQ + Guide.
+
 ## Third results route S3a + S3b — higher-results upload - 2026-10-26
 
 A student bound for a degree with STPM, Matriculation, Asasi or Diploma results uploads ONE
