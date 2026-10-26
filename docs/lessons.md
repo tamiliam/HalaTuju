@@ -1438,3 +1438,13 @@ C2 verified UiTM letters on their OCR texts, but a digital PDF is read through i
 no letterhead — so two genuine letters would still have been blocked. **Rule:** a recognition change is
 verified on every reading the system takes of that document (photo OCR, PDF text layer, any other
 extractor), and a gap noticed on one of them is a blocker, not a note. (Corpus-gaps C2 review)
+
+## 2026-10-26 — on a classification ladder, the rule that disqualifies runs before every rung that can answer first
+
+TD-403 added "an earlier year's STR does not count" as a rung BELOW the approval and rejection rungs, so a
+2025 page whose status did not read answered `unreadable` (which the gate counts) and a 2024 rejection
+answered `rejected` (which replaces a live STR) — the year rule never ran for either. Then, once `stale`
+meant "any earlier year", the upload ranking still sorted it above `unreadable` on its old meaning
+("stale = approved"). **Rule:** a new disqualifying rule goes ABOVE every rung that returns a state a
+reader acts on, with a test row for each rung it must pre-empt; and when a state's meaning widens, re-read
+every reader that relied on what it used to imply — rankings and chips, not only gates. (TD-403 reviews)

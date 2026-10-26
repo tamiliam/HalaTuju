@@ -937,8 +937,12 @@ MODEL_VERSION 1.8.2, VERDICT_ENGINE_VERSION 2026-10-26.1. Register: **134 open**
   accepted, 2A certified photocopy accepted), per the roadmap.
 - **Then C4 — the live re-run** of the affected offers and STPM results (owner-approved, paid, on the live
   service only — the lead runs it).
-- **TD-403** (a stale STR in the household's own name) in another worktree, once the owner rules;
-  **TD-404 soon** (Sabah/Sarawak `AK`/`ANAK` names — every name match, adversarial review).
+- **TD-403 is LIVE (2026-10-26; `32a847f1`, `cafcfc43`, `85921925`, `b67dd4f5` + `ed342354`; retro
+  `docs/retrospectives/retrospective-2026-10-26-td403-str-this-year.md`).** An STR counts as income proof
+  only if it is from THIS year — `str_route.str_this_year(application)`, the one seam: today in Malaysia
+  before submission, the year of `profile_completed_at` once submitted (strict, no Jan–Mar grace). An
+  earlier year = `stale` (`str_stale:<year>`), a later one = neutral `future` (`str_not_this_year`).
+  `VERDICT_ENGINE_VERSION` 2026-10-26.2. **TD-404 soon** (Sabah/Sarawak `AK`/`ANAK` names — every name match, adversarial review).
 
 **Earlier — TD-401 + TD-402 and the owner's STR ruling are LIVE (2026-10-25, `014cae5b`, `4f582222`, `76a07ee7`;
 retro `docs/retrospectives/retrospective-2026-10-25-td401-td402-str-ruling.md`).** Identity rests on the
@@ -950,7 +954,7 @@ offers), else `str_not_household`, a clearer document, or "try later" when the r
 `VERDICT_ENGINE_VERSION` 2026-10-25.2. Fixtures needing a household's own STR use
 `factories.matched_str_pair`. Register: **133 open**.
 - **Still queued: the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
-- **Then TD-403** once the owner rules (a stale STR in the household's own name passes both gates), and
+- **Then TD-403** — LIVE 2026-10-26 (see above), and
   **TD-399** (OpenAI fallback for document reads, gated on the owner's privacy ruling + an eval run).
 
 **Earlier — TD-390 is LIVE (2026-10-25, `46b1c0bd`; retro
