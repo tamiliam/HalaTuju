@@ -37,6 +37,14 @@ gates; a LATER year's STR page read as current. Not pushed yet — an adversaria
   Malay/Tamil first drafts; `lib/blockers.isYearQualified` / `blockerVars` render `{year}` in the
   consent list and the officer Blockers card). Held for the owner: the Check-2 `str_not_current`
   request and re-notify email for Completed-stage students on 1 January.
+- **Review of `5454063c` (same day):** (1) the STR re-upload guard (`_STR_CURRENCY_RANK`) now ranks another
+  year's page (`stale`, `future`) BELOW `unreadable` — a blurred 2026 re-upload replaces a live 2025 STR
+  instead of being kept out, and neither ever replaces a current / unconfirmed one. (2) An earlier year's
+  REJECTION (a 2024 "Ditolak") reads `stale`, not `rejected`, so it is not "news" and no longer replaces
+  a live 2026 Lulus; `rejected` is this year's or a dateless one. (3) Officer gloss: stale = "from an
+  earlier year — not this year's proof". (4) The STR coach (Gopal's prompt and the static en/ms/ta copy,
+  Malay/Tamil first drafts) gently adds "if your STR is from this year, we may have misread it — upload a
+  clearer copy or the Semakan Status page".
 
 ## Corpus gaps C2 — UiTM offers score as a public university; an officer's offer request waits for the officer - 2026-10-26
 

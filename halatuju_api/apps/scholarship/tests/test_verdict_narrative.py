@@ -46,7 +46,9 @@ class TestRenderItem(SimpleTestCase):
 
     def test_str_not_current_is_status_specific(self):
         self.assertIn('NOT an STR', vn._render_item(_item('str_not_current', status='wrong_type')))
-        self.assertIn('PRIOR cycle', vn._render_item(_item('str_not_current', status='stale')))
+        # TD-403: 'stale' is any EARLIER year's page, no longer "approved, prior cycle".
+        self.assertIn('EARLIER year', vn._render_item(_item('str_not_current', status='stale')))
+        self.assertIn('LATER year', vn._render_item(_item('str_not_current', status='future')))
 
     def test_members_list_joins(self):
         self.assertIn('father', vn._render_item(_item('earner_ic_missing', members=['father'])))

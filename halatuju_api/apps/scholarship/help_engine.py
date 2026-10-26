@@ -234,6 +234,8 @@ VERDICT_FIX_HINT = {
         'letter. A plain screenshot that clearly shows "Lulus" is ENOUGH — they do NOT need to '
         'find a particular date or page. If they have no current STR, reassure them it is fine: '
         'they can instead show the family\'s income with a salary slip / EPF (the other route). '
+        'Gently add that if their STR IS from this year, we may have misread it (the year or the '
+        'status) — a clearer copy or the MySTR "Semakan Status" page will help. '
         'Nothing is rejected and a person will review — do NOT imply they did anything wrong.'
     ),
     'bank_holder_mismatch': (

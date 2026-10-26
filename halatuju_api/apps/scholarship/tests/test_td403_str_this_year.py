@@ -82,7 +82,11 @@ class TheCurrencyLadder(TestCase):
             ('Lulus', '2027', 'semakan_status', 'future'),
             ('berjaya', '2027', 'semakan_status', 'future'),   # the live application-status page
             ('Ditolak', '2027', 'semakan_status', 'future'),   # next year's news, not this year's
-            ('Ditolak', '2025', 'semakan_status', 'rejected'),
+            # An EARLIER year's rejection is not news about this year (review of 5454063c) → stale.
+            ('Ditolak', '2025', 'semakan_status', 'stale'),
+            ('Tidak Layak', '2024', 'letter', 'stale'),
+            ('Ditolak', '2026', 'semakan_status', 'rejected'),   # this year's rejection: as before
+            ('Ditolak', '', 'semakan_status', 'rejected'),       # dateless rejection: as before
             # An earlier year never counts, whether or not its status read (review of 0d32b712).
             ('Dalam proses', '2025', 'semakan_status', 'stale'),
             ('', '2025', 'semakan_status', 'stale'),
@@ -223,6 +227,54 @@ class ALaterYearsPageDoesNotCountAndBlamesNobody(TestCase):
         app, _ = _family('salary', year='2027', status='berjaya')
         _payslip(app)
         self.assertEqual(_income_gate(app), [])
+
+
+def _upload_str(app, *, year, status, source_type='semakan_status'):
+    """A re-upload of the household STR (the keep-better guard decides whether it takes the slot)."""
+    return ApplicantDocument.objects.create(
+        application=app, doc_type='str', storage_path=f'test/str/{ApplicantDocument.objects.count()}',
+        vision_run_at=timezone.now(), vision_fields={'fields': {
+            'recipient_name': FATHER.upper(), 'recipient_nric': FATHER_NRIC, 'status': status,
+            'year': year, 'source_type': source_type}, 'student_verdict': 'ok', 'error': ''})
+
+
+def _promotes(new_doc, live_doc):
+    """The upload path's own decision (views → promotion.should_promote, usable = doc_match_verdict)."""
+    from apps.scholarship.promotion import should_promote
+    from apps.scholarship.resolution import doc_match_verdict
+    return should_promote(new_doc, live_doc, usable=doc_match_verdict(new_doc) not in ('mismatch', 'unreadable'))
+
+
+class TheKeepBetterGuardByYear(TestCase):
+    """Review of 5454063c: the STR re-upload guard ranked by "stale ⇒ approved", no longer true."""
+
+    def test_a_blurred_this_year_upload_replaces_a_live_earlier_year_str(self):
+        """Probe: a live 2025 STR (blocked) + a new 2026 upload whose status is blurred (unreadable,
+        which counts at the gate) used to be KEPT OUT, leaving the student blocked."""
+        app, live = _family('str', year='2025')
+        new = _upload_str(app, year='2026', status='')
+        self.assertIs(_promotes(new, live), True)
+
+    def test_another_years_page_never_replaces_a_current_or_unconfirmed_str(self):
+        for live_year, live_source in (('2026', 'semakan_status'), ('', 'semakan_status')):
+            for year, status in (('2025', 'Lulus'), ('2025', ''), ('2027', 'Lulus'), ('2027', 'berjaya')):
+                with self.subTest(live_year=live_year, year=year, status=status):
+                    app, live = _family('str', year=live_year, source_type=live_source)
+                    self.assertIs(_promotes(_upload_str(app, year=year, status=status), live), False)
+
+    def test_an_earlier_years_rejection_is_not_news(self):
+        """A 2024 'Ditolak' read `rejected` (quality None: "news, always replace"), so it promoted
+        over a live 2026 Lulus and blocked the family. It is now `stale` and stays out."""
+        from apps.scholarship.income_engine import str_proof_quality, student_str_check
+        app, live = _family('str', year='2026')
+        old = _upload_str(app, year='2024', status='Ditolak')
+        self.assertEqual(student_str_check(old)['current_status'], 'stale')
+        self.assertIsNotNone(str_proof_quality(old))
+        self.assertIs(_promotes(old, live), False)
+
+    def test_this_years_rejection_is_still_news(self):
+        app, live = _family('str', year='2026')
+        self.assertIs(_promotes(_upload_str(app, year='2026', status='Ditolak'), live), True)
 
 
 @pytest.mark.usefixtures('real_str_clock')

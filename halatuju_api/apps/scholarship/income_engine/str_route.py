@@ -100,21 +100,23 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
                       `str_not_breached` counts, so it passed where the same page saying "Lulus" was
                       blocked). So 'stale' no longer implies an approval — the chips do not claim
                       "Lulus" for it — and 'unreadable' is only ever this year's or a dateless page.
-                      A clear 'rejected' still says so first.
+                      An earlier year's REJECTION is 'stale' too (review of 5454063c): it is not
+                      news about this year, so it must not replace a live STR the way a 'rejected'
+                      does (``str_proof_quality`` None). 'rejected' is this year's or a dateless one.
     No year read stays 'unconfirmed' (Probable — the officer checks)."""
     s = (status_raw or '').lower()
     st = (source_type or '').strip().lower()
     m = _STR_YEAR_RE.search(year_str or '')
     read_year = int(m.group(1)) if m else None
     this_year = int(cohort_year) if cohort_year else None
-    if st != 'unknown' and read_year and this_year and read_year > this_year:
-        return 'future'
+    if st != 'unknown' and read_year and this_year and read_year != this_year:
+        # TD-403: another year's page is never this year's proof — read status or not, approved or
+        # rejected, dashboard or not. Later → 'future' (no fault of the family's); earlier → 'stale'.
+        return 'future' if read_year > this_year else 'stale'
     if any(w in s for w in _STR_REJECTED_WORDS):
         return 'rejected'
     if st == 'unknown':
         return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
-    if read_year and this_year and read_year < this_year:
-        return 'stale'               # TD-403: an earlier year never counts — read status or not, dashboard or not
     if not any(w in s for w in _STR_APPROVED_WORDS):
         return 'unreadable'          # no readable "Lulus"/"diluluskan" → STR approval can't be confirmed
     # SURFACE CEILING (owner 2026-07-07): a DASHBOARD confirms APPROVAL but is a self-service snapshot
@@ -195,8 +197,11 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
 # only decides ties (both Lulus + dateless): a Semakan (shows the payment-dates page → can reach
 # 'current') carries MORE than a Dashboard (home totals, capped at 'unconfirmed'), which carries
 # more than an unrecognised page.
-# TD-403: a LATER year's page ranks with an unreadable one — it proves nothing about THIS year.
-_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'stale': 2, 'unreadable': 1, 'future': 1, 'wrong_type': 0}
+# TD-403 (review of 5454063c): another year's page — earlier ('stale') or later ('future') — ranks
+# BELOW an unreadable one. 'stale' used to rank above it on "stale ⇒ approved", no longer true; and an
+# unreadable page of THIS year counts at the gate where another year's never does, so a blurred 2026
+# re-upload must be able to replace a live 2025 STR (and neither may ever replace a current one).
+_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'unreadable': 2, 'stale': 1, 'future': 1, 'wrong_type': 0}
 _STR_SOURCE_RANK = {'letter': 3, 'semakan_status': 2, 'dashboard': 1}
 
 
