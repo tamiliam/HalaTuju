@@ -191,6 +191,17 @@ def issuer_display(key: str) -> str:
     return TVET_ISSUERS[key][0] if key in TVET_ISSUERS else ''
 
 
+def officer_must_close(doc, item) -> bool:
+    """C1 review (corpus-gaps C2): True when an upload must NOT close `item` because the uploaded
+    offer is NOT CHECKED and `item` is an OFFICER's own offer-letter request. The officer asked for
+    the official offer and nobody has checked this one — so it waits for the officer, who closes it
+    by hand. System and Check-2 requests are untouched, and it never blocks the student."""
+    from .bands import NOT_CHECKED, stored_status
+    return (getattr(doc, 'doc_type', '') == 'offer_letter' and getattr(item, 'source', '') == 'officer'
+            and getattr(item, 'doc_type', '') == 'offer_letter'
+            and stored_status(getattr(doc, 'vision_fields', None)) == NOT_CHECKED)
+
+
 def not_checked_issuer(vision_fields) -> str:
     """The `{issuer}` of the officer's `offer_issuer_not_checked` line (owner ruling A): the stored
     NOT CHECKED offer's issuer, by its `doc_seen` key. The verdict's Pathway card reads it off the offer

@@ -26,6 +26,7 @@ with the user 2026-06-02):
 from django.db import IntegrityError
 from django.utils import timezone
 
+from .genuineness.offer_issuers import officer_must_close
 from .models import ResolutionItem
 from .verdict_engine import build_verdict
 
@@ -445,14 +446,11 @@ def doc_match_verdict(doc):
 
 
 def resolve_doc_items_for_upload(application, doc):
-    """A student uploaded ``doc`` via the Action Centre — clear any OPEN ``doc``-kind
-    task for that ``doc_type`` IF the file scans clean (``doc_match_verdict == 'ok'``).
-
-    This is what finally resolves **officer** document requests on upload (system doc
-    items already clear via ``sync_resolution_items`` when their verdict gap closes;
-    re-resolving them here is idempotent). On a mismatch/unreadable the task stays open
-    so the student re-uploads (the caller surfaces Cikgu Gopal's advice). Returns the
-    verdict so the caller can tell the frontend.
+    """A student uploaded ``doc`` via the Action Centre — clear any OPEN ``doc``-kind task for that
+    ``doc_type`` IF the file scans clean (``doc_match_verdict == 'ok'``). This is what resolves
+    **officer** document requests on upload (system items clear via ``sync_resolution_items``; here
+    it is idempotent). On a mismatch/unreadable the task stays open for a re-upload. Returns the
+    verdict for the frontend — 'pending' when an officer's offer request waits for the officer (C2).
     """
     # The bank-details task is upload-THEN-CONFIRM: the upload only pre-fills the three
     # fields (account numbers are high-stakes — the student reviews/corrects before saving),
@@ -470,7 +468,7 @@ def resolve_doc_items_for_upload(application, doc):
         # A plain upload (no request_code) resolves by doc_type, as before.
         qs = qs.filter(code=rc) if rc else qs.filter(doc_type=doc.doc_type)
         upload_member = (getattr(doc, 'household_member', '') or '').strip()
-        str_still_insufficient = False
+        str_still_insufficient = held_for_officer = False
         str_ic_named = None          # TD-316: read once, and only if an STR-IC ask is in `qs`
         for item in qs:
             # V2 (#4): MEMBER-AWARE. A member-tagged request (V1.3 now writes
@@ -480,14 +478,12 @@ def resolve_doc_items_for_upload(application, doc):
             item_member = ((item.params or {}).get('household_member') or '').strip()
             if item_member and upload_member and item_member != upload_member:
                 continue
-            # V2 (#4): CRITERION-AWARE for income_doc_stale — re-check recency before clearing, so a
-            # freshly-uploaded-but-STILL-stale salary slip can't silence the "send a current one"
-            # ask (the gap persists, so leave the task open).
+            # V2 (#4): CRITERION-AWARE for income_doc_stale — re-check recency before clearing, so a fresh
+            # but STILL-stale salary slip can't silence the "send a current one" ask (the gap persists).
             if item.code == 'income_doc_stale' and income_engine.stale_income_proof(application):
                 continue
-            # TD-316: ONE FACT DECIDES THE ASK, THE OFFER AND THE RESOLUTION. An IC whose NAME read
-            # is 'ok' here even when the field the STR needs did not; the ask clears only once
-            # `str_ic_slots` — the rule that raised it and offers the TD-309 card — drops the member.
+            # TD-316: ONE FACT DECIDES THE ASK, THE OFFER AND THE RESOLUTION. An IC whose NAME read is 'ok'
+            # here even when the field the STR needs did not; it clears once `str_ic_slots` drops the member.
             if '_ic_for_str_' in item.code:
                 if str_ic_named is None:
                     from .income_str_ownership import str_owner_ic_asks
@@ -503,7 +499,12 @@ def resolve_doc_items_for_upload(application, doc):
             if item.code == 'str_not_current' and not income_engine.str_confirmed_current(application):
                 str_still_insufficient = True
                 continue
+            if officer_must_close(doc, item):      # an unchecked TVET offer: the officer decides (C2)
+                held_for_officer = True
+                continue
             resolve_item(item, doc=doc, by='student')
+        if held_for_officer:
+            return 'pending'
         if str_still_insufficient:
             # A valid-but-still-not-current STR: non-'ok' so the FE surfaces the Action-Centre coach's
             # detail advice, while the task stays open. NOT 'mismatch'/'unreadable' — the scan was fine.

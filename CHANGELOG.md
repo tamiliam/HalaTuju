@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Corpus gaps C2 — UiTM offers score as a public university; an officer's offer request waits for the officer - 2026-10-26
+
+- **UiTM (MODEL_VERSION 1.8.1).** UiTM's machine-generated offer never prints "Tawaran Kemasukan",
+  so its letters read "suspect" 0.40 and raised the "upload your official offer" request. The
+  public-university family now also matches UiTM's own offer line ("anda ditawarkan tempat untuk
+  mengikuti program di UiTM" — kept whole, so a pemakluman cannot borrow it), its office (Bahagian
+  Pengambilan Pelajar) and its summons ("hadir mendaftar pada tarikh"). On the seven real letters'
+  OCR: genuine, 0.90 (six) and 0.80 (one with a garbled office line); every other cached offer scores
+  exactly as before (95 of 95). "Mod Pengajian" left out on purpose (catalogue). Wording in
+  `docs/scholarship/offer-letter-catalogue.md`. Live re-score is roadmap C4.
+- **C1 review follow-up.** A "not checked" TVET offer reads "ok" to the scan check, so it used to close
+  an OFFICER's own "upload your official offer" request on upload. That request now stays open
+  ("pending") until the officer closes it by hand (`offer_issuers.officer_must_close`). System and
+  Check-2 requests close as before, and the student is never blocked.
+- **Tests:** `test_corpus_gaps_c2.py` (synthetic UiTM letters from the PII-free wording; the pemakluman
+  and short-office guards; every other letter against a frozen 1.8.0 university list; the reporting
+  bonus; the upload door; the officer request kept open, closed by hand, and the system request still
+  closing). Every change bitten.
+
 ## Corpus gaps C1 — a known public TVET issuer reads "not checked"; an honest private-college reason - 2026-10-26
 
 Request #47: an ILKBS offer read "suspect" against the nearest university pattern, which raised the

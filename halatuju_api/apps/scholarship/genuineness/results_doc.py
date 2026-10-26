@@ -92,7 +92,9 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       a KNOWN public TVET issuer named on its letterhead (Belia & Sukan / MARA / JTM — `offer_issuers`)
 #       reads NOT CHECKED (`bands.NOT_CHECKED`, no signal) instead of the nearest family's band; a
 #       private college gets an honest reason. No family/weight change. Backfill: roadmap C4 (live).
-MODEL_VERSION = '1.8.0'
+#   1.8.1 (2026-10-26) — corpus-gaps C2: UiTM joins the UA family on its own offer line, office (Bahagian
+#       Pengambilan Pelajar) and "hadir mendaftar pada tarikh" (0.40 → 0.80–0.90). Backfill: C4 (live).
+MODEL_VERSION = '1.8.1'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -138,11 +140,9 @@ CERT_SIGNATURES = [
     ('Director of Examinations',     ['DIRECTOR OF EXAMINATIONS'],           2, 'text'),
 ]
 
-# Birth certificate (JPN Sijil Kelahiran) — standard document, so same signature approach.
-# Mostly fixed printed strings; the JATA NEGARA crest + the barcode (which encodes the child's
-# IC) are the two visual markers (the barcode is the BC's machine token, ~ the slip's QR).
-# NOTE: the BC genuineness path is scored TEXT-ONLY (no image read is wired for the BC, unlike
-# the results-slip). So the visual signatures (JATA NEGARA crest + barcode) could never be
+# Birth certificate (JPN Sijil Kelahiran) — standard document, same signature approach: fixed printed
+# strings, plus two visual markers (the crest, and the barcode encoding the child's IC, ~ the slip's
+# QR). NOTE: scored TEXT-ONLY (no image read is wired for the BC), so those visuals could never be
 # credited — they only ever dragged a genuine plain BC toward 'suspect' (3/13 unseen BCs dipped
 # to 0.63–0.67 in held-out testing) while catching zero fakes. They are DROPPED here so the
 # text signatures alone score the doc honestly. (To escalate to a visual read later — "option b"
@@ -294,21 +294,21 @@ _UA_NAMES = [
 # office / clause / program / date wordings vary by institution → union-matched, weight 1 each.
 UA_OFFER_SIGNATURES = [
     ('public university (UA) name', list(_UA_NAMES),                               3, 'text'),
-    # ONLY the official offer HEADER "Tawaran Kemasukan". A "Pemakluman Kemasukan" (admission
-    # NOTIFICATION — e.g. the UM SATU/UPU-rayuan pre-offer, #31) is NOT the official offer, so it
-    # must not match here → it floors at suspect → reviewer requests the real offer. (NB: do NOT add
-    # 'SURAT TAWARAN' — a pemakluman MENTIONS "surat tawaran rasmi (akan menyusul)", which would
-    # wrongly match.) Owner policy: official offer letters only.
-    ('offer/admission line',        ['TAWARAN KEMASUKAN'],                        3, 'text'),
+    # ONLY the official offer line: "Tawaran Kemasukan", or UiTM's own (1.8.1 — it never prints that
+    # header). A "Pemakluman Kemasukan" (admission NOTIFICATION, the UM SATU pre-offer #31) must not
+    # match → floors at suspect. NB never 'SURAT TAWARAN' (a pemakluman mentions "surat tawaran rasmi"),
+    # and UiTM's line keeps "PROGRAM DI UITM": bare "ditawarkan tempat untuk mengikuti" is on a31 too.
+    ('offer/admission line',        ['TAWARAN KEMASUKAN',
+                                     'ANDA DITAWARKAN TEMPAT UNTUK MENGIKUTI PROGRAM DI UITM'], 3, 'text'),
     ('academic office',             ['PEJABAT PENGURUSAN AKADEMIK', 'PUSAT PENGURUSAN AKADEMIK',
                                      'BAHAGIAN HAL EHWAL AKADEMIK', 'PEJABAT PENDAFTAR',
-                                     'PUSAT PEMASARAN DAN KEMASUKAN'],             1, 'text'),
+                                     'PUSAT PEMASARAN DAN KEMASUKAN', 'BAHAGIAN PENGAMBILAN PELAJAR'], 1, 'text'),
     ('finality / no-change clause', ['PERTUKARAN PROGRAM ADALAH TIDAK DIBENARKAN',
                                      'SEBARANG PERTUKARAN', 'TIDAK DIBENARKAN MENUKAR PROGRAM',
                                      'TAWARAN AKAN DITARIK BALIK', 'ADALAH MUKTAMAD'], 1, 'text'),
     ('Program / Kod Program',       ['PROGRAM PENGAJIAN', 'PROGRAM KOD'],          1, 'text'),
-    ('registration date',           ['TARIKH PENDAFTARAN', 'TARIKH MENDAFTAR',
-                                     'TARIKH LAPOR DIRI'],                         1, 'text'),
+    ('registration date',           ['TARIKH PENDAFTARAN', 'TARIKH MENDAFTAR', 'TARIKH LAPOR DIRI',
+                                     'HADIR MENDAFTAR PADA TARIKH'],               1, 'text'),
 ]
 
 # STR (Sumbangan Tunai Rahmah) — THREE genuine approval artefacts (owner-specified 2026-06-27),

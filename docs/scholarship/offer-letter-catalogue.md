@@ -102,6 +102,30 @@ TAWARAN KEMASUKAN KE PROGRAM DIPLOMA UNIVERSITI MALAYSIA PAHANG AL-SULTAN ABDULL
 "Program yang ditawarkan adalah MUKTAMAD dan sebarang pertukaran adalah TIDAK DIBENARKAN."
 **Variables:** name, NRIC, date, program + optional faculty + optional TARIKH PENDAFTARAN.
 
+### UA — UiTM (Bahagian Pengambilan Pelajar) — scored since MODEL_VERSION 1.8.1 (corpus-gaps C2)
+The fixed printed wording of 7 real UiTM offers (sessions 2024/25–2026/27; PII-free, roadmap C0). One
+machine-generated "SURAT TAWARAN" from online.uitm.edu.my; the newer ones add a contact footer.
+UNIVERSITI TEKNOLOGI MARA (letterhead; OCR may split it — the footer repeats it) · BAHAGIAN
+PENGAMBILAN PELAJAR (letterhead + signature title) · "Sukacita dimaklumkan bahawa anda ditawarkan
+tempat untuk mengikuti program di UiTM" (**the offer line — UiTM never prints "Tawaran Kemasukan"**) ·
+placement labels Program / Mod Pengajian / Fakulti / Tempoh Pengajian / Sesi Kemasukan / Kampus ·
+"Sila hadir mendaftar pada tarikh, masa dan tempat yang ditetapkan" then Tarikh / Masa / Tempat ·
+MAKLUMAT PENTING: "Program dan kampus yang ditawarkan adalah muktamad", "Sebarang permohonan pertukaran
+tidak dibenarkan", "Tawaran ini adalah terbatal sekiranya terdapat maklumat yang salah", "Calon hanya
+diterima sebagai pelajar UiTM setelah membuat pendaftaran secara dalam talian", "UiTM berhak menukarkan
+calon ke mana-mana kampus" · fees block (Kemudahan dan Bayaran / Kolej Kediaman / Yuran Pengajian / Kos
+Ditanggung oleh Kerajaan) · "Dokumen ini adalah janaan komputer dan tidak memerlukan tandatangan" ·
+No Siri · Dicetak pada · "UiTM di hatiku".
+**Scored by (`UA_OFFER_SIGNATURES`):** the UA name; the offer line *with* "program di UiTM" (the bare
+"ditawarkan tempat untuk mengikuti" also sits on the UM SATU pemakluman a31, which policy 1.1 keeps off
+the offer line); BAHAGIAN PENGAMBILAN PELAJAR (not the shorter "Pengambilan Pelajar", which a12 also
+carries); "hadir mendaftar pada tarikh"; the finality clause via "adalah muktamad". 0.90 on six
+letters, 0.80 on one whose OCR garbled the office line. **Not used:** "Surat Tawaran" (policy 1.1);
+"Mod Pengajian" (it sits on 29 of 95 other cached offers, and would let a UiTM-worded page with no
+university name reach genuine). **Reporting date:** the bare "Tarikh" label inside the summons —
+already allowed for `ua_offer` in `pathway_engine._REPORTING_LABELS`.
+**Variables:** name, NRIC, No. Pelajar, programme, mode, faculty, campus, session, reporting date.
+
 ## Known public issuers NOT fingerprinted yet — "not checked" (MODEL_VERSION 1.8.0)
 
 Owner rulings A, B, C (2026-10-26, `docs/decisions.md`; corpus-gaps roadmap C1): an offer that reads

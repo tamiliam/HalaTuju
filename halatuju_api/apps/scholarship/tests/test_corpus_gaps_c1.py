@@ -66,7 +66,7 @@ class TheScorer(TestCase):
         self.assertEqual(_pre_c1(ILKBS_OFFER)[:3], ('suspect', 'ua_offer', 0.4))   # what 1.7.0 said
         g = signature_genuineness(ILKBS_OFFER, doc_type='offer_letter')
         self.assertEqual((g['status'], g['type'], g['model_version']),
-                         (NOT_CHECKED, 'tvet_belia_sukan', '1.8.0'))
+                         (NOT_CHECKED, 'tvet_belia_sukan', MODEL_VERSION))
         self.assertIn('NOT CHECKED', g['reason'])
         self.assertIn('Kementerian Belia dan Sukan', g['reason'])
         self.assertEqual(assess('offer_letter', ocr_text=ILKBS_OFFER)['status'], NOT_CHECKED)
@@ -125,7 +125,7 @@ class TheScorer(TestCase):
 
     def test_not_checked_is_no_signal_never_a_fake(self):
         self.assertEqual(canonical_status(NOT_CHECKED, 'offer_letter'), '')
-        self.assertEqual(MODEL_VERSION, '1.8.0')
+        self.assertGreaterEqual(MODEL_VERSION, '1.8.0')     # the net shipped at 1.8.0 (C2: 1.8.1)
 
     def test_the_tvet_pathways_have_a_family(self):
         from apps.scholarship.offer_pathway import pathway_family
@@ -239,7 +239,7 @@ class TheDoors(TestCase):
     def test_the_upload_stores_not_checked_unfolded(self):
         auth = self._upload(ILKBS_OFFER).vision_fields['authenticity']
         self.assertEqual((auth['status'], auth['doc_seen'], auth['model_version']),
-                         (NOT_CHECKED, 'tvet_belia_sukan', '1.8.0'))
+                         (NOT_CHECKED, 'tvet_belia_sukan', MODEL_VERSION))
 
     def test_no_block_no_request_no_student_chip(self):
         from apps.scholarship.pathway_engine import offer_band, offer_official_status
