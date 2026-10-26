@@ -407,6 +407,12 @@ before/after list before anything that moves applicants.
   Please upload it under \"SPM results slip\" below, and upload your STPM results here." with a primary
   "Move it to SPM results slip" (re-files the document into the SPM slot in one tap) and, in small text,
   "Don't have STPM, Matriculation, Asasi or Diploma results?" leading to the SPM-only confirm box.
+- **D14 (2026-10-26):** for a NOT-yet-submitted application bound for a university degree (PISMP
+  aside), a post-SPM results slip is a MUST — the higher-results card is required even when the student
+  entered only SPM results (the SPM slip stays required for them too). Their card adds: "Required for
+  degree courses. Enter your STPM, Matriculation, Asasi or Diploma results, or choose a post-SPM pathway
+  if you only have SPM results." with links to the results choice and the course choice. Submitted
+  applications keep their frozen requirement; check 2 or the reviewer can ask (S4).
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
