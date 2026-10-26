@@ -160,6 +160,14 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    `git worktree` and push from it with `git push origin HEAD:main` — never check out `main` there.
    ⚠ A `node_modules` JUNCTION in a worktree must be removed with `[IO.Directory]::Delete('<path>')`
    BEFORE `git worktree remove`: a recursive delete walks into the real `node_modules` (happened 2026-10-05).
+11. **A live re-read through a Cloud Run JOB must carry the service's read flags.** The jobs
+   (`release-decisions` and the rest) carry only core env, not the `halatuju-api` service's
+   `DOC_GENUINENESS_CHECK_ENABLED` / `BILLING_USAGE_ENABLED`; with the genuineness flag off the re-read
+   silently rewrites `vision_fields` WITHOUT `authenticity` — it wipes the stored score (corpus C4,
+   2026-10-26; TD-407). Run it as `gcloud run jobs execute <job> --task-timeout=3600s
+   --update-env-vars=DOC_GENUINENESS_CHECK_ENABLED=1,BILLING_USAGE_ENABLED=true` (plus `--account` /
+   `--project`), and check a sample of re-read rows for an `authenticity` block before calling it done.
+   A batch over a few dozen documents also outlasts the job's default 10-minute task timeout.
 
 **Where documents go:** a new retrospective in `docs/retrospectives/`, release notes in
 `docs/releases/`, sprint and incident history in `docs/sprint-history.md`, a domain rule in
@@ -925,7 +933,21 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**Corpus gaps C1 + C2 are LIVE (2026-10-26; C1 `1a2b4962` + `95131a65`, api-01144-sfg / web-00988-nhg;
+**The corpus-gaps arc is DONE (2026-10-26): C3 + C4 LIVE (C3 `0ae5f431`, api-01147-9gw; C4 the lead's live
+re-run of 43 documents; retro `docs/retrospectives/retrospective-2026-10-26-corpus-c3-c4.md`).** STPM results
+are scored as STPM (`genuineness/stpm_doc.py`, MODEL_VERSION 1.9.0) in the results and semester-result
+slots; the online checker page is not a result document (ruling 1A), a certified copy is (2A). C4: 11 UiTM
+offers → genuine, 17 STPM documents → genuine, IKBN d3465 → not checked. ⚠ A re-read through a Cloud Run
+JOB must carry the service flags — without `DOC_GENUINENESS_CHECK_ENABLED` it wipes stored scores
+("How a change reaches production" item 11; TD-407, Now tier). Only the data-gated TVET families remain.
+Register: **134 open** (TD-407 raised).
+- **Next: TD-404 soon** (Sabah/Sarawak `AK`/`ANAK` names — every name match, adversarial review).
+- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Then TD-399** — OpenAI fallback for document reads, after the owner's privacy ruling (a second
+  processor) and an eval run on the corpus.
+- **TD-407 (Now tier)** — the re-read guard; small, worth slotting before the next live re-read.
+
+**Earlier — corpus gaps C1 + C2 are LIVE (2026-10-26; C1 `1a2b4962` + `95131a65`, api-01144-sfg / web-00988-nhg;
 C2 `1accaab9` + `a781b49a`; retro `docs/retrospectives/retrospective-2026-10-26-corpus-c1-c2.md`).** C1: a
 suspect-band offer with offer wording from a known public TVET issuer named on its letterhead is stored
 `unchecked` (`genuineness/offer_issuers.py`) and read as no signal everywhere (no block, no official-offer
@@ -933,10 +955,6 @@ request, Probable; the officer is told "not checked"); KPTM / UniKL stay private
 `decisions.md` 2026-10-26). C2: UiTM scores as a public university, photo OCR and PDF text layer alike; an
 officer's own offer request is held for the officer, never closed by a "not checked" upload.
 MODEL_VERSION 1.8.2, VERDICT_ENGINE_VERSION 2026-10-26.1. Register: **134 open** (TD-406 raised).
-- **Next: C3 — the STPM results family** (slip + certificate; owner rulings 1A online-checker page not
-  accepted, 2A certified photocopy accepted), per the roadmap.
-- **Then C4 — the live re-run** of the affected offers and STPM results (owner-approved, paid, on the live
-  service only — the lead runs it).
 - **TD-403 is LIVE (2026-10-26; `32a847f1`, `cafcfc43`, `85921925`, `b67dd4f5` + `ed342354`; retro
   `docs/retrospectives/retrospective-2026-10-26-td403-str-this-year.md`).** An STR counts as income proof
   only if it is from THIS year — `str_route.str_this_year(application)`, the one seam: today in Malaysia

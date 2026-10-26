@@ -1448,3 +1448,12 @@ meant "any earlier year", the upload ranking still sorted it above `unreadable` 
 ("stale = approved"). **Rule:** a new disqualifying rule goes ABOVE every rung that returns a state a
 reader acts on, with a test row for each rung it must pre-empt; and when a state's meaning widens, re-read
 every reader that relied on what it used to imply — rankings and chips, not only gates. (TD-403 reviews)
+
+## 2026-10-26 — a job is not the service: it runs the same code with different flags
+
+Corpus C4's live re-read ran through a Cloud Run JOB, which carries only core env. Without the service's
+`DOC_GENUINENESS_CHECK_ENABLED` the re-read silently rewrote 16 documents with no genuineness score — and
+the same had already happened, unnoticed, to the AI-outage re-reads two days earlier. **Rule:** before a
+job writes live data, diff its env against the service whose behaviour it borrows and pass the missing
+flags explicitly; check a sample of written rows for the field the run exists to set; and a write path
+must never replace a stored value with silence because a feature flag happens to be off. (Corpus C4)

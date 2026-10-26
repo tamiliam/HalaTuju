@@ -64,7 +64,10 @@ officer's offer request is held for the officer, never closed by a "not checked"
   C0 wording; the other 20 universities unchanged.
 - **Complexity:** low. **~4 h.** Gate: C0 (UiTM wording).
 
-### C3 — STPM results family (slip + certificate)
+### C3 — STPM results family (slip + certificate) — ✅ LIVE 2026-10-26
+**Done:** `0ae5f431` (api-01147-9gw), MODEL_VERSION 1.9.0, `genuineness/stpm_doc.py`; owner rulings 1A (the
+online checker page is not a result document) and 2A (a certified copy is). Retro
+`docs/retrospectives/retrospective-2026-10-26-corpus-c3-c4.md`.
 - **Goal:** STPM results (Majlis Peperiksaan Malaysia) are scored as STPM, not as a bad SPM slip —
   in the results slot and the semester-result slot.
 - **Scope:** a new STPM list in `results_doc.py` registered in `_RESULTS_LISTS`; the results-slot
@@ -77,7 +80,13 @@ officer's offer request is held for the officer, never closed by a "not checked"
   no longer drops the Academic card one or two bands.
 - **Complexity:** medium. **~12 h.** Gate: C0 (STPM wording).
 
-### C4 — Live re-run of the affected documents (ops, no code)
+### C4 — Live re-run of the affected documents (ops, no code) — ✅ DONE 2026-10-26
+**Done (the lead):** 43 documents re-scored through the `release-decisions` job — 11 UiTM offers → genuine
+(0.80–0.90), IKBN d3465 → not checked, 17 STPM documents → genuine (0.92–1.00), d3109 → suspect 0.36, the
+checker page d3303 stays not a result document. ⚠ The first run lacked the service's genuineness flag and
+wiped 16 scores (re-run with the flags; TD-407; retro).
+
+**The arc is complete except the data-gated TVET families below.**
 - **Goal:** the ≈30 documents scored under the old patterns are re-scored with the new ones.
 - **How:** on the live service only — `reextract_offers` with a new `PASS_MARKER` (offers below 0.70)
   and `reextract_documents` (STPM results), or the cockpit Re-run. Paid (Gemini + Vision, a few
