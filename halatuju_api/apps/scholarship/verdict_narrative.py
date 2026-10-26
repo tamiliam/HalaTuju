@@ -56,6 +56,7 @@ _CODE_GLOSS = {
         'wrong_type': 'the document in the STR slot is NOT an STR — it does not count as STR proof',
         'rejected': 'the STR application was rejected (Ditolak) — not approved',
         'stale': 'the STR is approved but from a PRIOR cycle (stale)',
+        'future': "the STR page is for a LATER year (likely next year's application status) — not this year's proof",
         'unreadable': 'the STR approval status could not be read and no payment is shown',
         'unconfirmed': 'the STR is approved (Lulus) but has NO payment date to pin the current cycle',
     },

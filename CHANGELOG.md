@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-403 — an STR counts as income proof only if it is from this year - 2026-10-26
+
+Owner ruling 2026-10-26 (`docs/decisions.md`). A STALE STR in the earner's own name passed both income
+gates; a LATER year's STR page read as current. Not pushed yet — an adversarial review follows.
+- **This year = today in Malaysia** (`income_engine.str_route.str_this_year`, `timezone.localdate` under
+  Asia/Kuala_Lumpur), no longer the cohort's year. `_str_currency` asks the year of every recognised
+  format, the dashboard included.
+- **An earlier year's STR does not count:** `str_not_breached` now treats `stale` as breached, so the
+  "one clean cluster" early return and the per-member loop no longer pass on it; the gate blocks with the
+  existing `str_person_mismatch` on both routes (+ `income_evidence_missing:<member>` on the salary route).
+- **A later year's page is the new state `future`** (likely next year's application status): not
+  counted (`has_valid_str` / `household_str_status` / `str_not_breached` all refuse it), never red, and
+  never "stale". New neutral gate code `str_not_this_year` (student consent + officer Blockers copy,
+  en/ms/ta, Malay/Tamil first drafts); request verdict `insufficient`; the student coach
+  (`STR_COACH_STATES`, api + web) and Gopal's copy name it kindly; student chip "For a later year — we
+  need this year's STR" with no status chip; officer chip amber, verdict `str_not_current_future`.
+- **Unchanged:** no year read → `unconfirmed` (passes, Probable); this year's STR passes as before; income
+  shown another way (payslip / EPF / declared + letter) still carries the household.
+- **Verdict:** `future` bands Unsure (a 2027 "Lulus" was Certain) — `VERDICT_ENGINE_VERSION` 2026-10-26.1.
+- **Officer cockpit:** a stale / future STR no longer makes the salary documents supportive (mirrors
+  `str_not_breached`).
+- **Tests:** `test_td403_str_this_year.py` (both routes, the ladder, frozen clock at 31 Dec 23:59 and
+  1 Jan 00:01 MYT, payslip case); jest `StrChecklist.test.tsx` + cockpit/drift updates. `conftest.py` pins
+  the STR year to 2026 for every other test (`real_str_clock` opts out); `factories.matched_str_pair` takes
+  `year` / `status` / `source_type`. TD-403 closed.
+
 ## Corpus gaps C2 — UiTM offers score as a public university; an officer's offer request waits for the officer - 2026-10-26
 
 - **UiTM (MODEL_VERSION 1.8.1).** UiTM's machine-generated offer never prints "Tawaran Kemasukan",

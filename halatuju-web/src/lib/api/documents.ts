@@ -125,7 +125,9 @@ export interface StrCheck {
   // 'wrong_type' = the file is not an STR document at all; 'unreadable' = we could not read it.
   // The backend has always emitted both (verdict_engine.py) and officerCockpit.ts handles both;
   // only this union lagged, which the type check found on 2026-09-18 (TD-221).
-  current_status: 'current' | 'stale' | 'rejected' | 'unconfirmed' | 'unknown' | 'wrong_type' | 'unreadable'
+  // TD-403 (2026-10-26): the year is THIS calendar year; 'future' = a page for a LATER year (likely
+  // next year's application status) — not this year's proof, and never shown as the family's fault.
+  current_status: 'current' | 'stale' | 'future' | 'rejected' | 'unconfirmed' | 'unknown' | 'wrong_type' | 'unreadable'
   ic_present: boolean
   // TD-309: the roster members whose IC would settle whose STR this is (`str_ic_slots` — the
   // same rule Check 2 asks from). 'missing' = no IC on file; 'unreadable' = on file, unread.

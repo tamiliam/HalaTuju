@@ -447,7 +447,11 @@ def document_red_blockers(application):
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
             if person_red(dt, chk) or chk.get('current_status') in income_engine.STR_RED_STATES:
-                codes.add('str_person_mismatch')
+                codes.add('str_person_mismatch')      # incl. an EARLIER year's STR ('stale', TD-403)
+            elif chk.get('current_status') == 'future':
+                # TD-403 (owner 2026-10-26): a LATER year's page (next year's application status) is
+                # not this year's proof — asked for neutrally, never "doesn't match" or "out of date".
+                codes.add('str_not_this_year')
         elif dt == 'birth_certificate':
             # ⚠ THE FATHER ROW IS DELIBERATELY NOT A BLOCKER (BrightPath #23, owner 2026-09-08).
             # It compares the certificate's father against the patronymic in the STUDENT'S own

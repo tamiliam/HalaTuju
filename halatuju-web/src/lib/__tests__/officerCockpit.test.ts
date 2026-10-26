@@ -411,6 +411,7 @@ describe('documentFacts', () => {
         .find((f) => f.key === 'current')!.status
     expect(cur('current')).toBe('verified')      // 🟢 dated this cycle
     expect(cur('stale')).toBe('partial')         // 🟡 prior-year (a real concern)
+    expect(cur('future')).toBe('partial')        // 🟡 a LATER year's page (TD-403) — not this year's
     expect(cur('unconfirmed')).toBe('unknown')   // ⚪ approved but no date → we don't know
     expect(cur('unreadable')).toBe('unknown')    // ⚪ couldn't tell
     expect(cur('rejected')).toBe('unknown')      // ⚪ date n/a (Status chip carries the red)
@@ -427,6 +428,7 @@ describe('documentFacts', () => {
     expect(stat('rejected')).toBe('not')         // 🔴 Ditolak
     expect(stat('wrong_type')).toBe('not')       // 🔴 not an STR — no approval to show
     expect(stat('unreadable')).toBe('partial')   // 🟡 cropped — couldn't read the status line
+    expect(stat('future')).toBe('unknown')       // ⚪ a later year's status says nothing about this year
   })
 
   it('semester result → Name + IC No (green on match, red otherwise) + CGPA (green found / grey none)', () => {
@@ -1092,6 +1094,17 @@ describe('incomeSubSections', () => {
     expect(sub.salary.some((s) => s.docType === 'income_evidence' && s.doc === null)).toBe(true)
   })
 
+  it('TD-403: an earlier or a later year\'s STR is not this year\'s proof → salary docs ARE required', () => {
+    // Mirrors `str_not_breached` (owner 2026-10-26): only THIS year's STR makes the salary docs supportive.
+    for (const cs of ['stale', 'future'] as const) {
+      const str = doc({ id: 1, doc_type: 'str', household_member: 'mother',
+        str_check: strCheck({ current_status: cs }), authenticity: { status: 'genuine', reason: '' } })
+      const sub = incomeSubSections(
+        { income_route: 'salary', income_working_members: ['father'] }, [str])
+      expect(sub.salary.some((s) => s.docType === 'income_evidence' && s.doc === null)).toBe(true)
+    }
+  })
+
   it('#63 regression: a salary-route family WITH STR docs still shows them (never hidden)', () => {
     // #63 was mis-switched to the salary route while holding a valid current STR (mother, Lulus)
     // plus an officer-requested copy. The STR sub used to be gated to route==='str', and the
@@ -1468,6 +1481,7 @@ describe('verdictItemKey — STR-not-current resolves to a flat per-status key',
     expect(verdictItemKey(item('str_not_current', { status: 'wrong_type' }))).toBe('str_not_current_wrong_type')
     expect(verdictItemKey(item('str_not_current', { status: 'rejected' }))).toBe('str_not_current_rejected')
     expect(verdictItemKey(item('str_not_current', { status: 'stale' }))).toBe('str_not_current_stale')
+    expect(verdictItemKey(item('str_not_current', { status: 'future' }))).toBe('str_not_current_future')
     expect(verdictItemKey(item('str_not_current', { status: 'unreadable' }))).toBe('str_not_current_unreadable')
     expect(verdictItemKey(item('str_not_current', { status: 'unconfirmed' }))).toBe('str_not_current_unconfirmed')
   })

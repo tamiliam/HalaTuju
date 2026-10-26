@@ -5,10 +5,10 @@ import type { ApplicantDocument } from './api'
 import { relationshipDocFor, type WorkingMember } from './incomeWizard'
 
 // V2 (#16): mirror of the backend `income_engine.STR_COACH_STATES` (STR_RED_STATES +
-// unreadable + unconfirmed) — the STR currency states for which the doc-anchored Gopal coaches.
-// Keep in step with income_engine.py / help_engine.py.
+// unreadable + unconfirmed + future, TD-403) — the STR currency states for which the doc-anchored
+// Gopal coaches. Keep in step with income_engine.py / help_engine.py.
 // drift-test: halatuju-web/src/lib/__tests__/strCoachDrift.test.ts
-const STR_COACH_STATES = new Set(['wrong_type', 'rejected', 'stale', 'unreadable', 'unconfirmed'])
+const STR_COACH_STATES = new Set(['wrong_type', 'rejected', 'stale', 'unreadable', 'unconfirmed', 'future'])
 
 // Verdict codes the backend + these fallbacks share (same set as help_engine.VERDICT_GUIDANCE).
 export const HELP_VERDICTS = [

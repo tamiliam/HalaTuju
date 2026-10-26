@@ -14759,3 +14759,39 @@ sending student documents to a second processor (privacy / DPA) and after an acc
 eval corpus (`eval_doc_recognition`). **Rationale:** a fallback that reads worse, or that a family never
 agreed to, is not a fix for an outage; this sprint made an outage harmless and visible instead.
 **Revisit if:** the owner's privacy ruling lands and the eval run shows parity.
+
+## 2026-10-26 — TD-403: an STR counts as income proof only if it is from THIS year
+
+**Context:** TD-403 (raised by the review of the salary-route STR ruling, 2026-10-25). A 2024 STR in the
+earner's own name, his card matching it, and nothing else passed the submission gate on both routes:
+`str_not_breached` counted `stale` as not breached, so the cluster completed and the lenient
+`income_established` skipped the cluster's reds. Separately, an STR read as a LATER year read `current`
+(green): live, one 'semakan_status' page read as 2027, status 'berjaya', uploaded 2026-10-26 — almost
+certainly the family's 2027 APPLICATION status. Live STRs (lead's count): 44 year 2026, 1 year 2025,
+47 no year, 1 year 2027. The database stores only the STR's year (`fields.year`), not a letter date.
+**Decision (owner ruling 2026-10-26):**
+- An STR counts as income proof only if it is from THIS calendar year — today in Malaysia
+  (`timezone.localdate`, `TIME_ZONE = 'Asia/Kuala_Lumpur'`), so it turns over at Malaysian midnight on
+  1 January (`income_engine.str_route.str_this_year`). Strict all year round.
+- An EARLIER year's approval does not count (`stale`, now on a dashboard too): the gate blocks with the
+  existing stale code `str_person_mismatch` on both routes, and the student's chip reads "Out of date —
+  needs this year's STR"; on the salary route the earner's income is also asked for.
+- An STR whose year did not read stays `unconfirmed` — not blocked by this rule; verdict Probable, the
+  officer checks.
+- A LATER year's page is the new state `future`: not counted, but never called stale, never red and
+  never the family's fault. The gate asks for this year's STR (or a working member's income) with a new
+  neutral code, `str_not_this_year` (en/ms/ta; the Malay and Tamil are first drafts); the request
+  verdict is `insufficient` (it closes no ask and is not a mismatch); the verdict bands it Unsure with
+  `str_not_current(status='future')`.
+- Income shown another way (a valid payslip, EPF, or a declared amount with a letter) still carries the
+  household past an old or later-year STR — unchanged, as for a rejected STR.
+**Alternatives considered:** a January–March grace period for last year's STR (rejected by the owner:
+letters are believed to be dated in January); B — let an officer judge a stale STR after submission
+(rejected: a money gate never passes on proof that is not this year's); calling a later-year page
+`stale` or `rejected` (rejected: it blames the family for what is usually a pending application).
+**Consequence:** the 1 live 2025 STR household and the 1 live 2027 household are asked for this year's STR
+unless their income shows another way. A 2027 "Lulus" page no longer reads Certain
+(`VERDICT_ENGINE_VERSION` 2026-10-26.1). The test suite pins the STR year to 2026
+(`conftest.STR_TEST_YEAR`) so its fixtures do not rot on 1 January 2027.
+**Revisit if:** a genuine STR letter dated later than January turns up, or the extractor starts storing
+the letter date.

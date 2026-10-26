@@ -297,14 +297,20 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
   // STATUS answers "is it approved?" (Lulus/diluluskan); YEAR answers "is it for this cycle?"
   // (a date, never an amount). The single currency ladder decomposes onto the two axes.
   const APPROVED_STATES = ['current', 'unconfirmed', 'stale']   // a "Lulus" was read/inferred
+  // TD-403: a LATER year's page ('future' — likely next year's application) carries no status chip
+  // at all: its status is about another year, and nothing on it is the family's fault. The Year row
+  // says what is needed instead.
   const statusPill =
     APPROVED_STATES.includes(chk.current_status)
       ? pill('match', t('scholarship.docs.strCheck.approved'))
       : chk.current_status === 'unknown'
         ? pill('none', t('scholarship.docs.strCheck.unknown'))
-        : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
+        : chk.current_status === 'future'
+          ? null
+          : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
   // Year: current (dated this cycle) → green; unconfirmed (approved, no date) → amber; stale
-  // (prior year) → red; anything not approved → neutral (the Status row carries that story).
+  // (prior year) → red; future (a later year) → amber, neutral wording; anything not approved →
+  // neutral (the Status row carries that story).
   const yearPill =
     chk.current_status === 'current'
       ? pill('match', t('scholarship.docs.strCheck.current'))
@@ -312,7 +318,9 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
         ? pill('partial', t('scholarship.docs.strCheck.unconfirmed'))
         : chk.current_status === 'stale'
           ? pill('mismatch', t('scholarship.docs.strCheck.stale'))
-          : pill('none', t('scholarship.docs.strCheck.unknown'))
+          : chk.current_status === 'future'
+            ? pill('partial', t('scholarship.docs.strCheck.future'))
+            : pill('none', t('scholarship.docs.strCheck.unknown'))
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-ground-700">

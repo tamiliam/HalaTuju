@@ -342,17 +342,15 @@ class TestStrLadder(IncomeHomesBase):
         self.assertIs(income_engine.str_not_breached(app), True)
         self.assertIs(income_engine.str_confirmed_current(app), False)
 
-    def test_stale_str_still_evidences_income(self):
-        # A prior-year approval is STALE, and stale is explicitly NOT breached
-        # (`str_not_breached` is broader than `has_valid_str`).
+    def test_stale_str_no_longer_evidences_income(self):
+        # A prior-year approval is STALE. Until TD-403 stale was NOT breached, so it cleared the
+        # submission gate while `household_str_status` refused it (H8-FINDING F7: two bars one
+        # function apart). The owner's ruling of 2026-10-26 — an STR counts only if it is from THIS
+        # year — closes that: stale is breached now, and both bars refuse it.
         app = self._with_str(status='Lulus', year='2024')
-        self.assertIs(self.served(app), True)
+        self.assertIs(income_engine.str_not_breached(app), False)
+        self.assertIs(self.served(app), False)
         self.assertIs(income_engine.has_valid_str(app), False)
-        # H8-FINDING (F7): a STALE STR clears the submission gate but is NOT a dispositive
-        # STR — `household_str_status` returns (None, None), so the verdict does not settle
-        # on it. Two different STR bars live one function apart. Documented in
-        # `str_not_breached`'s own docstring, so this is a pinned intention, not a defect —
-        # but it means "the STR way" is not one thing, and a unification must keep both bars.
         self.assertEqual(income_engine.household_str_status(app), (None, None))
 
     def test_unreadable_str_still_evidences_income(self):
@@ -690,11 +688,11 @@ class TestStrRouteFallThrough(IncomeHomesBase):
     # ── the same three with NO usable payslip: nothing to prefer, nothing moves ─────────────
     def test_stale_str_with_no_payslip_does_not_move(self):
         app = self._str_route(status='Lulus', year='2024')
-        # ⚠ AND `salary_income_satisfied` IS TRUE HERE, which is exactly why it is not the gate
-        # for item 1: the submission gate's "one complete cluster" is satisfied on ANY of the
-        # four ways, and the fourth is a non-breached household STR — this very STR. Pinned so a
-        # later reader does not "simplify" the fall-through onto it.
-        self.assertIs(income_engine.salary_income_satisfied(app), True)
+        # `salary_income_satisfied` WAS true here until TD-403 (the fourth way, a non-breached
+        # household STR, was this very stale STR) — which is why it was never the gate for item 1.
+        # Since the owner's ruling of 2026-10-26 a stale STR is breached and carries no cluster.
+        # The verdict does not move either way.
+        self.assertIs(income_engine.salary_income_satisfied(app), False)
         self.assertEqual(self.verdict(app), ('recommend', ['str_not_current']))
 
     def test_unreadable_str_with_an_unusable_payslip_does_not_move(self):

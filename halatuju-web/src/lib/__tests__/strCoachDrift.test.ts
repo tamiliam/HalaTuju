@@ -36,7 +36,7 @@ const redStates = pySeq(engineSrc, 'STR_RED_STATES')
  * the api's coach band, but not to the other, shows up as a row that answers differently.
  */
 const LADDER: StrCheck['current_status'][] = [
-  'current', 'stale', 'rejected', 'unconfirmed', 'unknown', 'wrong_type', 'unreadable',
+  'current', 'stale', 'future', 'rejected', 'unconfirmed', 'unknown', 'wrong_type', 'unreadable',
 ]
 
 function strDoc(currentStatus: StrCheck['current_status'], icPresent: boolean): ApplicantDocument {
@@ -54,7 +54,7 @@ describe('parse sanity — the api bands were really found', () => {
   test('STR_COACH_STATES resolved through its `STR_RED_STATES + (…)` concatenation', () => {
     // If `pySeq` ever stopped resolving the named half it would read 2 states, not 5, and this
     // test — not a silently narrowed guard — is what says so.
-    expect(coachStates.length).toBe(5)
+    expect(coachStates.length).toBe(6)   // TD-403 added 'future'
     expect(redStates.length).toBe(3)
     expect(redStates.every((s) => coachStates.includes(s))).toBe(true)
   })

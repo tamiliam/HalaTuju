@@ -266,6 +266,7 @@ function strCurrencyFactStatus(s: string | undefined | null): FactStatus {
   switch (s) {
     case 'current': return 'verified'
     case 'stale': return 'partial'
+    case 'future': return 'partial'   // TD-403: a LATER year's page — not this year's proof
     default: return 'unknown'   // unconfirmed / unreadable / rejected / wrong_type → date unknown or n/a
   }
 }
@@ -869,7 +870,9 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     // authenticity states ('likely_genuine') that the narrower FE unions don't enumerate.
     const cs = String(d.str_check?.current_status || '')
     const auth = String(d.authenticity?.status || '')
-    if (!cs || cs === 'wrong_type' || cs === 'rejected') return false
+    // TD-403 (2026-10-26): an earlier year's ('stale') or a later year's ('future') STR is not this
+    // year's proof, so it no longer makes the salary documents supportive — as `str_not_breached`.
+    if (!cs || cs === 'wrong_type' || cs === 'rejected' || cs === 'stale' || cs === 'future') return false
     if (auth && auth !== 'genuine' && auth !== 'likely_genuine') return false
     return true
   })

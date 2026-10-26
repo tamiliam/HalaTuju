@@ -781,6 +781,24 @@ def _since_str_ruling(key, row):
     return row[:i] + (tuple(sorted(row[i] + (add,))),) + row[i + 1:]
 
 
+#: TD-403 (owner ruling 2026-10-26), a third layer on the two above: an STR counts as income proof only
+#: if it is from THIS year. The two `*_stale` states hold a 2024 STR, which no longer carries the
+#: father's cluster (`str_not_breached` treats stale as breached), so on the SALARY route, where his
+#: own papers show no income, the gate asks for HIS income — and no longer for the mother's IC, which
+#: could only have settled WHOSE a stale STR is. Nothing but the salary-route gate moves here: the
+#: STR route's `income_doc_blockers` is unchanged (its stale block is `document_red_blockers`'s
+#: `str_person_mismatch`, pinned in `test_td403_str_this_year`), and no reading but the gate moves.
+TD403_STALE = frozenset({'own_stale', 'stranger_stale'})
+
+
+def _since_td403(key, row):
+    route, state, amount, evidence = key.split('/')
+    if route != 'salary' or state not in TD403_STALE or (amount, evidence) not in _UNSHOWN:
+        return row
+    i = FIELDS.index('blockers')
+    return row[:i] + (('income_evidence_missing:father',),) + row[i + 1:]
+
+
 # ════════════════════════════════════════════════════════════════════════════════════════════
 # 1. THE MATRIX, ROW BY ROW — every row BEFORE, except exactly what MOVED says
 # ════════════════════════════════════════════════════════════════════════════════════════════
@@ -797,7 +815,7 @@ def _make_matrix_test(route, state):
                 with self.subTest(row=key):
                     self.assertEqual(
                         self.readings(self.build(route, state, declared, evidence)),
-                        _since_str_ruling(key, expected(key)),
+                        _since_td403(key, _since_str_ruling(key, expected(key))),
                         f'{key} moved. Only a stranger\'s STR with a household IC on file may '
                         f'move under TD-285, and only as MOVED says. Fields: {FIELDS}')
     test.__name__ = f'test_{route}_{state}'
@@ -878,6 +896,21 @@ class TestTheMovedSetIsExactlyTheRuling(TestCase):
                 self.assertEqual(len(added), 1)
                 self.assertLessEqual(added, {'parent_ic_missing:mother', 'income_evidence_missing:father',
                                              'income_document_unreadable'})
+
+    def test_the_td403_layer_moves_six_salary_gate_rows_and_nothing_else(self):
+        """TD-403 (2026-10-26): a stale STR no longer carries the father's cluster — the salary-route
+        gate asks for his income on the six rows where nothing else shows it, and only there."""
+        i = FIELDS.index('blockers')
+        moved = [k for k in all_keys()
+                 if _since_td403(k, _since_str_ruling(k, BEFORE[k])) != _since_str_ruling(k, BEFORE[k])]
+        self.assertEqual(len(moved), 6)
+        for key in moved:
+            with self.subTest(row=key):
+                self.assertTrue(key.startswith('salary/'))
+                self.assertIn(_state_of(key), TD403_STALE)
+                before, after = _since_str_ruling(key, BEFORE[key]), _since_td403(key, _since_str_ruling(key, BEFORE[key]))
+                self.assertEqual(after[:i] + after[i + 1:], before[:i] + before[i + 1:])
+                self.assertEqual(after[i], ('income_evidence_missing:father',))
 
     def test_a_true_strangers_gate_rows_are_unchanged(self):
         """A true stranger is still blocked EXACTLY as before — `str_not_household`."""

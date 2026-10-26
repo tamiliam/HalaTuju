@@ -361,8 +361,9 @@ def doc_match_verdict(doc):
         chk = income_engine.student_str_check(doc) or {}
         if person_red(dt, chk) or chk.get('current_status') in income_engine.STR_RED_STATES:
             return 'mismatch'
-        if chk.get('current_status') == 'unknown':
-            return 'pending'          # not read yet / deferred by OUR outage — must not close the ask
+        cs = chk.get('current_status')   # 'unknown' = not read yet / deferred by OUR outage; TD-403
+        if cs in ('unknown', 'future'):  # 'future' = a LATER year's page: neither closes the ask, neither is red
+            return 'pending' if cs == 'unknown' else 'insufficient'
     elif dt == 'birth_certificate':
         # The FATHER row is not a blocker (#23): it is checked against the patronymic in the
         # student's own name, and a father with no Malaysian IC must not stop a re-upload from

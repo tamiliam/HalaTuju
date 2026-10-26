@@ -89,7 +89,7 @@ VERDICT_GUIDANCE = {
     # Bank statement: one or more of the three details (bank name, account number, account
     # holder) could not be read clearly from the document.
     'bank_details_unclear': "we could not clearly read all three details we need from this bank statement — the bank name, the account number, and the account-holder name — one or more was missing or too blurry to read",
-    'str_not_current': "the STR uploaded does not positively show it was APPROVED — it may be an application record/printout (a SALINAN) with no approval status, an out-of-date (prior-year) STR, a document about a DIFFERENT aid (a SARA / Sumbangan Asas Rahmah letter is NOT the same as STR), or one whose status couldn't be read; an STR proves B40 when it clearly shows 'Lulus'/'Diluluskan'",
+    'str_not_current': "the STR uploaded does not positively show it was APPROVED — it may be an application record/printout (a SALINAN) with no approval status, an out-of-date (prior-year) STR, a page for a LATER year (next year's application status — no fault of the family's), a document about a DIFFERENT aid (a SARA / Sumbangan Asas Rahmah letter is NOT the same as STR), or one whose status couldn't be read; an STR proves B40 when it clearly shows 'Lulus'/'Diluluskan'",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -222,6 +222,8 @@ VERDICT_FIX_HINT = {
     'str_not_current': (
         'We could not confirm this STR was APPROVED — it looks like an application record / '
         'printout (a "SALINAN") that shows no approval status, an out-of-date (prior-year) STR, a '
+        'page for a LATER year (usually next year\'s application status — never their fault; ask '
+        'kindly for THIS year\'s STR), a '
         'document about a DIFFERENT aid (a SARA / Sumbangan Asas Rahmah letter is NOT the same as '
         'STR), or one whose status we could not read. Gently explain that the STR proves the '
         'family qualifies when it clearly shows it was approved ("Lulus" / "Diluluskan"). If it '

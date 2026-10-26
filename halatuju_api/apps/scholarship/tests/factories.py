@@ -370,20 +370,25 @@ def authed_client(admin_or_uid, client=None):
 
 
 # ── The household's own STR ─────────────────────────────────────────────────────────────────
-def matched_str_pair(application, *, name='AROON A/L SAMY', nric='700101-14-5003', member=''):
+def matched_str_pair(application, *, name='AROON A/L SAMY', nric='700101-14-5003', member='',
+                     year='2026', status='Lulus', source_type=None):
     """A parent's IC and the household STR, both READ and naming the same person — what a real
     family's upload leaves. Since the owner's ruling of 2026-10-25 an STR is income proof at the
     submission gate only when a card MATCHED its recipient, so a never-read pair no longer passes.
+    ``year`` is the STR's stored year — since TD-403 only THIS year's counts (the suite pins this
+    year to 2026, ``conftest.STR_TEST_YEAR``); ``source_type`` is left unset (legacy) unless given.
     Returns ``(parent_ic, str_doc)``."""
     from apps.scholarship.models import ApplicantDocument
     now = timezone.now()
     ic = ApplicantDocument.objects.create(
         application=application, doc_type='parent_ic', storage_path='test/parent_ic',
         household_member=member, vision_name=name, vision_nric=nric, vision_run_at=now)
+    fields = {'recipient_name': name, 'recipient_nric': nric, 'status': status, 'year': year}
+    if source_type is not None:
+        fields['source_type'] = source_type
     str_doc = ApplicantDocument.objects.create(
         application=application, doc_type='str', storage_path='test/str', vision_run_at=now,
-        vision_fields={'fields': {'recipient_name': name, 'recipient_nric': nric, 'status': 'Lulus',
-                                  'year': '2026'}, 'student_verdict': 'ok', 'error': ''})
+        vision_fields={'fields': fields, 'student_verdict': 'ok', 'error': ''})
     return ic, str_doc
 
 

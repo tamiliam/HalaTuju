@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+from django.utils import timezone
+
 from ..read_errors import ic_second_opinion_deferred, read_deferred
 from .buckets import _name_bucket, _nric_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
@@ -37,8 +39,21 @@ _STR_RECOGNISED_SOURCES = ('letter', 'semakan_status', 'dashboard')
 # too until 2026-10-24; it now reads 'unknown', in no tuple here — `_read_str_check`.)
 STR_RED_STATES = ('wrong_type', 'rejected', 'stale')
 # The student coach nudges on the fixable non-green states too (an unreadable status →
-# re-upload cleanly; a dateless 'unconfirmed' approval → a dated proof confirms the cycle).
-STR_COACH_STATES = STR_RED_STATES + ('unreadable', 'unconfirmed')
+# re-upload cleanly; a dateless 'unconfirmed' approval → a dated proof confirms the cycle; a
+# LATER year's page → this year's STR, TD-403 — NOT red: it is nobody's fault, see `_str_currency`).
+STR_COACH_STATES = STR_RED_STATES + ('unreadable', 'unconfirmed', 'future')
+#: TD-403 (owner ruling 2026-10-26): the states in which an STR on file is NOT this year's income
+#: proof by its YEAR — an earlier year ('stale') or a later one ('future'). Neither carries income.
+STR_NOT_THIS_YEAR_STATES = ('stale', 'future')
+
+
+def str_this_year():
+    """The calendar year an STR must be from to count as income proof (owner ruling 2026-10-26,
+    TD-403): TODAY IN MALAYSIA — ``timezone.localdate`` under ``TIME_ZONE = 'Asia/Kuala_Lumpur'`` —
+    so it turns over at Malaysian midnight on 1 January, not at UTC midnight eight hours later.
+    Strict all year round (no January–March grace: letters are believed to be dated in January).
+    The test suite pins it (``conftest._str_year_pinned``) so its 2026-dated fixtures do not rot."""
+    return timezone.localdate().year
 
 
 def _str_currency(status_raw, year_str, cohort_year, source_type=''):
@@ -71,15 +86,34 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
     "Lulus", so without a date we can't confirm the cycle (→ BLUE, confirm at interview / open
     Maklumat Pembayaran). A blank/legacy ``source_type`` (extracted before classification) is
     TOLERATED — it falls through to the status assessment rather than being forced to wrong_type;
-    a re-run repopulates it."""
+    a re-run repopulates it.
+
+    ⚠ TD-403 (owner ruling 2026-10-26): ``cohort_year`` is now THIS calendar year (``str_this_year``
+    — the caller passes it), and the YEAR is asked of every recognised format, the dashboard too:
+      'future'      — a recognised STR page read as a LATER year (live: a 2027 'semakan_status' page,
+                      'berjaya' — next year's APPLICATION status, not an approval). Not this year's
+                      proof, whatever its status says, and NOT the family's fault → never 'stale',
+                      never red; the gate asks neutrally for this year's STR (``str_not_this_year``).
+      'stale'       — an approval of an EARLIER year, now on every format (a dashboard's read year
+                      too, ahead of its 'unconfirmed' ceiling). It stays an APPROVED state (the
+                      chips show "Lulus"), so an earlier page whose status did not read stays
+                      'unreadable' — that state's own question, not this one's.
+    No year read stays 'unconfirmed' (Probable — the officer checks)."""
     s = (status_raw or '').lower()
     st = (source_type or '').strip().lower()
+    m = _STR_YEAR_RE.search(year_str or '')
+    read_year = int(m.group(1)) if m else None
+    this_year = int(cohort_year) if cohort_year else None
+    if st != 'unknown' and read_year and this_year and read_year > this_year:
+        return 'future'
     if any(w in s for w in _STR_REJECTED_WORDS):
         return 'rejected'
     if st == 'unknown':
         return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
     if not any(w in s for w in _STR_APPROVED_WORDS):
         return 'unreadable'          # no readable "Lulus"/"diluluskan" → STR approval can't be confirmed
+    if read_year and this_year and read_year < this_year:
+        return 'stale'               # TD-403: an earlier year's approval never counts — dashboard or not
     # SURFACE CEILING (owner 2026-07-07): a DASHBOARD confirms APPROVAL but is a self-service snapshot
     # that cannot certify the cycle to certainty — its max band is Probable. So an approved dashboard
     # caps at 'unconfirmed' (BLUE) regardless of any date read. Only the LETTER (dated) and the
@@ -87,14 +121,9 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
     if st == 'dashboard':
         return 'unconfirmed'
     # Letter / Semakan / blank-legacy. The Year question: a DATE (letter date / Maklumat-Pembayaran
-    # credit date) pins the cycle. No date → unconfirmed (BLUE); prior-year → stale (AMBER);
-    # current-or-later → current (GREEN).
-    m = _STR_YEAR_RE.search(year_str or '')
-    if not m:
-        return 'unconfirmed'
-    if cohort_year and int(m.group(1)) < int(cohort_year):
-        return 'stale'
-    return 'current'
+    # credit date) pins the cycle. No date → unconfirmed (BLUE); this year → current (GREEN). (An
+    # earlier or later year has already returned above, TD-403.)
+    return 'current' if read_year else 'unconfirmed'
 
 
 def _str_recipient_household_match(application, name, nric, tagged_member='', read_into=None):
@@ -163,7 +192,8 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
 # only decides ties (both Lulus + dateless): a Semakan (shows the payment-dates page → can reach
 # 'current') carries MORE than a Dashboard (home totals, capped at 'unconfirmed'), which carries
 # more than an unrecognised page.
-_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'stale': 2, 'unreadable': 1, 'wrong_type': 0}
+# TD-403: a LATER year's page ranks with an unreadable one — it proves nothing about THIS year.
+_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'stale': 2, 'unreadable': 1, 'future': 1, 'wrong_type': 0}
 _STR_SOURCE_RANK = {'letter': 3, 'semakan_status': 2, 'dashboard': 1}
 
 
@@ -194,7 +224,7 @@ def student_str_check(doc):
 def _read_str_check(doc):
     """For an STR document: the recipient facts (name · NRIC · status · year) matched against the
     HOUSEHOLD — every parent/guardian's IC, on name OR nric independently — plus whether it's
-    CURRENT (this cohort year + approved). Returns ``{name, nric, status, year, member,
+    CURRENT (this calendar year + approved — TD-403). Returns ``{name, nric, status, year, member,
     name_status, nric_status, current_status, ic_present}`` or None for a non-STR doc.
 
     name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (household-level — see
@@ -226,7 +256,7 @@ def _read_str_check(doc):
     # half-read and no clean card decides it — the income gate waits ("still checking"), never passes.
     pending_our_read = bool(ic_read_members.pop('held', False)) and 'match' not in (name_status, nric_status)
 
-    cohort_year = getattr(getattr(app, 'cohort', None), 'year', None)
+    this_year = str_this_year()     # TD-403: THIS calendar year (Malaysia), no longer the cohort's
     ic = _member_ic_doc(app, member) if member else None
     return {
         'name': name, 'nric': nric, 'status': status, 'year': year,
@@ -234,7 +264,7 @@ def _read_str_check(doc):
         # NOT READ YET (none, or deferred by OUR outage) is 'unknown' — the state the student and
         # officer screens already draw grey — never 'unreadable', which asks for a re-upload (2026-10-24).
         'current_status': ('unknown' if read_deferred(vf)
-                           else _str_currency(status, year, cohort_year, f.get('source_type', ''))),
+                           else _str_currency(status, year, this_year, f.get('source_type', ''))),
         'ic_present': ic is not None,
         'pending_our_read': pending_our_read,
         # TD-285 (F1, F-A): whose ICs, on which FIELD, the recipient was compared against, and

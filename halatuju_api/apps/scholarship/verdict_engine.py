@@ -97,7 +97,8 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-25.1 — TD-390: a card our outage left half-read is "service down", never a mismatch.
 #   2026-10-25.2 — TD-401: an IC with no NRIC read is unreadable (a gap, not a pass on the name).
 #   2026-10-26.1 — corpus-gaps C1: a known public TVET issuer's offer is NOT CHECKED (no step; Probable).
-VERDICT_ENGINE_VERSION = '2026-10-26.1'
+#   2026-10-26.2 — TD-403: an STR's year is asked against THIS calendar year; a later year = 'future' (Unsure).
+VERDICT_ENGINE_VERSION = '2026-10-26.2'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -653,14 +654,14 @@ def _verdict_income(application):
     # verified earner-IC/relationship greens, overstating a doc whose cycle is old or whose approval
     # never read. Same reasoning as the salary unsure/over bands below.
     # 'unknown' (not read yet / deferred by our outage) bands with them, unticketed (2026-10-24).
-    str_unsure = bool(sc and sc['current_status'] in ('stale', 'unreadable', 'unknown'))
+    str_unsure = bool(sc and sc['current_status'] in ('stale', 'future', 'unreadable', 'unknown'))
     # V5 (#10): a POSITIVE recipient mismatch (the STR is in someone else's name) bands Unsure
     # (amber) per str-proof-spec.md §8 — never a blue 'review' read off the earner-IC/relationship
     # greens, which would overstate an STR that provably belongs to a different person.
     str_mismatch = False
     if str_doc is None:
         gap.append(_item('income_proof_missing'))
-    elif sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'):
+    elif sc and sc['current_status'] in ('stale', 'future', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'):
         review.append(_item('str_not_current', status=sc['current_status']))
     elif sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
         str_mismatch = True

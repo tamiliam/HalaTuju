@@ -66,9 +66,9 @@ from .doc_checks import (
     student_guardianship_check, student_income_support_check
 )
 from .str_route import (
-    STR_COACH_STATES, STR_RED_STATES, _STR_APPROVED_WORDS, _STR_CURRENCY_RANK,
+    STR_COACH_STATES, STR_NOT_THIS_YEAR_STATES, STR_RED_STATES, _STR_APPROVED_WORDS, _STR_CURRENCY_RANK,
     _STR_RECOGNISED_SOURCES, _STR_REJECTED_WORDS, _STR_SOURCE_RANK, _STR_YEAR_RE, _str_currency,
-    _str_recipient_household_match, str_proof_quality, student_str_check
+    _str_recipient_household_match, str_proof_quality, str_this_year, student_str_check
 )
 from .utilities import (
     _MONTH_ABBR, _UTILITY_ACCEPT_MONTHS, _UTILITY_B40_CEILING, _UTILITY_CURRENT_MONTHS,
