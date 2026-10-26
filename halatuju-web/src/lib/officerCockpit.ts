@@ -951,8 +951,7 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
 }
 
 // ── Document row presentation (cockpit Documents drawer) ─────────────────────────────
-// A per-doc-TYPE glyph so the icon space carries meaning (not just "is it an IC"); the row
-// tints the badge by the doc's verdict. Emoji (the cockpit has no icon library).
+// A per-doc-TYPE emoji glyph (no icon library), so the icon carries meaning; the row tints it by verdict.
 const DOC_ICON: Record<string, string> = {
   ic: '🪪', parent_ic: '🪪', results_slip: '🎓', higher_results: '🎓', offer_letter: '🏫',
   str: '💵', salary_slip: '🧾', epf: '🏦', income_support_doc: '✉️', water_bill: '💧',

@@ -74,12 +74,12 @@ describe('D12: the cards follow the server\'s answer', () => {
   it('a university-bound STPM applicant sees the higher card (required) and an optional SPM slip', async () => {
     await mount(appWith(DEGREE_STPM))
     expect(screen.getByText('scholarship.docs.type.higher_results')).toBeTruthy()
-    expect(screen.getByText('scholarship.docs.help.higher_results')).toBeTruthy()
+    expect(screen.getByText('documentsTab.help.higher_results')).toBeTruthy()
     expect(screen.getByText('scholarship.docs.type.results_slip')).toBeTruthy()
-    expect(screen.getByText('scholarship.docs.help.results_slip_optional')).toBeTruthy()
+    expect(screen.getByText('documentsTab.help.results_slip_optional')).toBeTruthy()
     // the read-only type line, from the results held (D13: no picker)
-    expect(await screen.findByText(/scholarship\.docs\.higher\.typeLabel/)).toBeTruthy()
-    expect(screen.getByText('scholarship.docs.higher.kind.stpm')).toBeTruthy()
+    expect(await screen.findByText(/documentsTab\.higher\.typeLabel/)).toBeTruthy()
+    expect(screen.getByText('documentsTab.higher.kind.stpm')).toBeTruthy()
     expect(screen.queryByRole('combobox')).toBeNull()
   })
 
@@ -87,7 +87,7 @@ describe('D12: the cards follow the server\'s answer', () => {
     await mount(appWith(POST_SPM))
     expect(screen.queryByText('scholarship.docs.type.higher_results')).toBeNull()
     expect(screen.getByText('scholarship.docs.help.results_slip')).toBeTruthy()
-    expect(screen.queryByText('scholarship.docs.help.results_slip_optional')).toBeNull()
+    expect(screen.queryByText('documentsTab.help.results_slip_optional')).toBeNull()
   })
 
   it('owner ruling: SPM only + a degree → both cards required, with why and the two ways out', async () => {
@@ -95,17 +95,17 @@ describe('D12: the cards follow the server\'s answer', () => {
       documents: { required: ['ic', 'higher_results', 'results_slip', 'offer_letter'], optional: [] },
     }
     await mount(appWith(BOTH, 'spm'))
-    expect(await screen.findByText('scholarship.docs.higher.spmOnlyHelp')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.higher.spmOnlyHelp')).toBeTruthy()
     expect(screen.getByText('scholarship.docs.help.results_slip')).toBeTruthy()      // SPM slip required, usual help
-    fireEvent.click(screen.getByText('scholarship.docs.higher.updateResults'))
+    fireEvent.click(screen.getByText('documentsTab.higher.updateResults'))
     expect(push).toHaveBeenCalledWith('/onboarding/exam-type')
-    fireEvent.click(screen.getByText('scholarship.docs.higher.choosePathway'))
+    fireEvent.click(screen.getByText('documentsTab.higher.choosePathway'))
     expect(push).toHaveBeenCalledWith('/profile#pathway')
   })
 
   it('"Change" opens the results page and returns to the application', async () => {
     await mount(appWith(DEGREE_STPM, 'diploma'))
-    fireEvent.click(await screen.findByText('scholarship.docs.higher.change'))
+    fireEvent.click(await screen.findByText('documentsTab.higher.change'))
     expect(push).toHaveBeenCalledWith('/onboarding/higher-grades')
   })
 })
@@ -114,8 +114,8 @@ describe('D13: the one-line read and the one note', () => {
   it('a clean read says so in one line, with no note', async () => {
     mockApi.listDocuments.mockResolvedValue({ documents: [higherDoc({})] })
     await mount(appWith(DEGREE_STPM))
-    expect(await screen.findByText('scholarship.docs.higher.readOk')).toBeTruthy()
-    expect(screen.queryByText('scholarship.docs.higher.moveToSpm')).toBeNull()
+    expect(await screen.findByText('documentsTab.higher.readOk')).toBeTruthy()
+    expect(screen.queryByText('documentsTab.higher.moveToSpm')).toBeNull()
   })
 
   it('(B) another kind → "Update your results" opens that results page', async () => {
@@ -123,8 +123,8 @@ describe('D13: the one-line read and the one note', () => {
       kind_status: 'different', kind_detected: 'matric', note: 'kind_differs', note_kind: 'matric',
       note_path: '/onboarding/higher-grades' })] })
     await mount(appWith(DEGREE_STPM))
-    expect(await screen.findByText('scholarship.docs.higher.note.kindDiffers')).toBeTruthy()
-    fireEvent.click(screen.getByText('scholarship.docs.higher.updateResults'))
+    expect(await screen.findByText('documentsTab.higher.note.kindDiffers')).toBeTruthy()
+    fireEvent.click(screen.getByText('documentsTab.higher.updateResults'))
     expect(push).toHaveBeenCalledWith('/onboarding/higher-grades')
   })
 
@@ -133,7 +133,7 @@ describe('D13: the one-line read and the one note', () => {
       grades_status: 'mismatch', note: 'grades_differ', note_kind: 'stpm',
       note_path: '/onboarding/stpm-grades' })] })
     await mount(appWith(DEGREE_STPM))
-    fireEvent.click(await screen.findByText('scholarship.docs.higher.correctResults'))
+    fireEvent.click(await screen.findByText('documentsTab.higher.correctResults'))
     expect(push).toHaveBeenCalledWith('/onboarding/stpm-grades')
   })
 
@@ -141,18 +141,18 @@ describe('D13: the one-line read and the one note', () => {
     mockApi.listDocuments.mockResolvedValue({ documents: [higherDoc({
       kind_status: 'spm', kind_detected: 'spm', note: 'spm_slip', note_kind: 'stpm', actions_open: false })] })
     await mount(appWith(DEGREE_STPM))
-    expect(await screen.findByText('scholarship.docs.higher.note.spmSlip')).toBeTruthy()
-    expect(screen.queryByText('scholarship.docs.higher.moveToSpm')).toBeNull()
-    expect(screen.queryByText('scholarship.docs.higher.noHigher')).toBeNull()
+    expect(await screen.findByText('documentsTab.higher.note.spmSlip')).toBeTruthy()
+    expect(screen.queryByText('documentsTab.higher.moveToSpm')).toBeNull()
+    expect(screen.queryByText('documentsTab.higher.noHigher')).toBeNull()
   })
 
   it('(D) an SPM slip → "Move it to SPM results slip" re-files it and refreshes the cards', async () => {
     mockApi.listDocuments.mockResolvedValue({ documents: [higherDoc({
       kind_status: 'spm', kind_detected: 'spm', note: 'spm_slip', note_kind: 'stpm' })] })
     await mount(appWith(DEGREE_STPM))
-    expect(await screen.findByText('scholarship.docs.higher.note.spmSlip')).toBeTruthy()
+    expect(await screen.findByText('documentsTab.higher.note.spmSlip')).toBeTruthy()
     const before = mockApi.listDocuments.mock.calls.length
-    fireEvent.click(screen.getByText('scholarship.docs.higher.moveToSpm'))
+    fireEvent.click(screen.getByText('documentsTab.higher.moveToSpm'))
     await waitFor(() => expect(mockApi.refileToSpm).toHaveBeenCalledWith(41, { token: 't' }))
     await waitFor(() => expect(mockApi.listDocuments.mock.calls.length).toBeGreaterThan(before))
   })
@@ -165,15 +165,15 @@ describe('D13: the one-line read and the one note', () => {
     mockApi.listDocuments.mockResolvedValue({ documents: [higherDoc({
       kind_status: 'spm', kind_detected: 'spm', note: 'spm_slip', note_kind: 'stpm' })] })
     await mount(appWith(DEGREE_STPM))
-    fireEvent.click(await screen.findByText('scholarship.docs.higher.noHigher'))
+    fireEvent.click(await screen.findByText('documentsTab.higher.noHigher'))
     expect(screen.getByRole('alertdialog')).toBeTruthy()
-    expect(screen.getByText('scholarship.docs.higher.confirm.title')).toBeTruthy()
+    expect(screen.getByText('documentsTab.higher.confirm.title')).toBeTruthy()
     // Cancel changes nothing
-    fireEvent.click(screen.getByText('scholarship.docs.higher.confirm.cancel'))
+    fireEvent.click(screen.getByText('documentsTab.higher.confirm.cancel'))
     expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(mockApi.continueWithSpmOnly).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByText('scholarship.docs.higher.noHigher'))
-    fireEvent.click(screen.getByText('scholarship.docs.higher.confirm.go'))
+    fireEvent.click(screen.getByText('documentsTab.higher.noHigher'))
+    fireEvent.click(screen.getByText('documentsTab.higher.confirm.go'))
     await waitFor(() => expect(mockApi.continueWithSpmOnly).toHaveBeenCalledWith(41, { token: 't' }))
     await waitFor(() => expect(push).toHaveBeenCalledWith('/profile#pathway'))
     expect(localStorage.getItem(KEY_STPM_CGPA)).toBeNull()

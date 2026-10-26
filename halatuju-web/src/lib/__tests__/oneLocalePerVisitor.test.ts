@@ -60,6 +60,12 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
     'TD-360. English ADMIN only — the console\'s words, imported for its side effect by '
     + '`app/admin/layout.tsx` and the sandbox layout, so it rides in the ADMIN LAYOUT chunk and on '
     + 'no student, public or sponsor route (`sliceReach.test.ts` proves the reach).',
+  'src/lib/messagesDocuments.ts':
+    'Third results route S3 (2026-10-26). English DOCUMENTS-TAB words only (`documentsTab.*`), '
+    + 'imported for its side effect by `components/ScholarshipDocuments.tsx`, which every route '
+    + 'reaches through an `import()` (`LazyScholarshipDocuments`) — so they ride in the chunk of '
+    + 'the TAB and in the first-load JS of no route. The admin slice pattern: weight OFF every '
+    + 'route, not onto one.',
   // ⚠ `src/lib/preUPlan.ts` WAS HERE, and it is gone — TD-280, closed by code health H18. The
   // officer cockpit's Malay pre-U track label is now RESOLVED BY THE API and served on the
   // payload (`pre_u_track_label`), so the browser downloads no Malay catalogue for it and there
@@ -78,6 +84,7 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
 const STATIC_IMPORT_SHAPE: Record<string, string[]> = {
   'src/lib/messages.ts': ['en?slice=core'],
   'src/lib/messagesAdmin.ts': ['en?slice=admin'],
+  'src/lib/messagesDocuments.ts': ['en?slice=documents'],
   'src/lib/applyCopyPlatform.ts': ['en', 'ms', 'ta'],
 }
 

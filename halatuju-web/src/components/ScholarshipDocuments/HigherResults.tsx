@@ -29,7 +29,7 @@ const linkCls = 'inline-flex items-center gap-1 text-sm font-semibold text-prima
 
 function useKindLabel() {
   const { t } = useT()
-  return (k: string) => (k ? t(`scholarship.docs.higher.kind.${k}`) : '')
+  return (k: string) => (k ? t(`documentsTab.higher.kind.${k}`) : '')
 }
 
 function goToResults(router: ReturnType<typeof useRouter>, path: string) {
@@ -46,15 +46,15 @@ export function KindLine({ kind, spmOnly = false }: { kind: string; spmOnly?: bo
   if (!kind && spmOnly) {
     return (
       <div className="text-xs text-ground-600 mt-1">
-        <p>{t('scholarship.docs.higher.spmOnlyHelp')}</p>
+        <p>{t('documentsTab.higher.spmOnlyHelp')}</p>
         <p className="mt-1 flex flex-wrap gap-x-3">
           <button type="button" className="text-primary-600 hover:underline"
             onClick={() => goToResults(router, '/onboarding/exam-type')}>
-            {t('scholarship.docs.higher.updateResults')}
+            {t('documentsTab.higher.updateResults')}
           </button>
           <button type="button" className="text-primary-600 hover:underline"
             onClick={() => router.push('/profile#pathway')}>
-            {t('scholarship.docs.higher.choosePathway')}
+            {t('documentsTab.higher.choosePathway')}
           </button>
         </p>
       </div>
@@ -63,11 +63,11 @@ export function KindLine({ kind, spmOnly = false }: { kind: string; spmOnly?: bo
   if (!kind) return null
   return (
     <p className="text-xs text-ground-600 mt-1">
-      {t('scholarship.docs.higher.typeLabel')} <span className="font-medium text-ground-800">{label(kind)}</span>
+      {t('documentsTab.higher.typeLabel')} <span className="font-medium text-ground-800">{label(kind)}</span>
       {' · '}
       <button type="button" className="text-primary-600 hover:underline"
         onClick={() => goToResults(router, resultsEditPath(kind))}>
-        {t('scholarship.docs.higher.change')}
+        {t('documentsTab.higher.change')}
       </button>
     </p>
   )
@@ -83,10 +83,10 @@ export function HigherChecklist({ chk }: { chk: HigherCheck }) {
   const label = useKindLabel()
   if (chk.note) return null
   let line = ''
-  if (chk.name === 'mismatch') line = t('scholarship.docs.higher.nameMismatch')
-  else if (chk.readable === false) line = t('scholarship.docs.higher.unreadable')
+  if (chk.name === 'mismatch') line = t('documentsTab.higher.nameMismatch')
+  else if (chk.readable === false) line = t('documentsTab.higher.unreadable')
   else if (chk.kind_status === 'match' && chk.cgpa_status === 'match' && chk.cgpa_slip != null)
-    line = t('scholarship.docs.higher.readOk', { kind: label(chk.kind_held), cgpa: chk.cgpa_slip.toFixed(2) })
+    line = t('documentsTab.higher.readOk', { kind: label(chk.kind_held), cgpa: chk.cgpa_slip.toFixed(2) })
   if (!line) return null
   const bad = chk.name === 'mismatch' || chk.readable === false
   return <p className={`mt-2 text-xs ${bad ? 'text-critical-600' : 'text-positive-700'}`}>{line}</p>
@@ -120,10 +120,10 @@ export function HigherNote({ doc, chk, token, onChanged }: {
   }
 
   const body = chk.note === 'spm_slip'
-    ? t('scholarship.docs.higher.note.spmSlip', { kind: held })
+    ? t('documentsTab.higher.note.spmSlip', { kind: held })
     : chk.note === 'kind_differs'
-      ? t('scholarship.docs.higher.note.kindDiffers', { seen: label(chk.kind_detected), held })
-      : t('scholarship.docs.higher.note.gradesDiffer')
+      ? t('documentsTab.higher.note.kindDiffers', { seen: label(chk.kind_detected), held })
+      : t('documentsTab.higher.note.gradesDiffer')
 
   return (
     <div className="mt-2 rounded-xl bg-primary-50 ring-1 ring-primary-100 p-3">
@@ -131,12 +131,12 @@ export function HigherNote({ doc, chk, token, onChanged }: {
       {chk.note === 'spm_slip' ? (chk.actions_open === false ? null : (
         <>
           <button type="button" disabled={busy} onClick={refile} className={`mt-1.5 ${linkCls} disabled:opacity-50`}>
-            {t('scholarship.docs.higher.moveToSpm')}<span aria-hidden>→</span>
+            {t('documentsTab.higher.moveToSpm')}<span aria-hidden>→</span>
           </button>
           <p className="mt-1">
             <button type="button" disabled={busy} onClick={() => setConfirming(true)}
               className="text-xs text-ground-500 underline underline-offset-2 hover:text-ground-700">
-              {t('scholarship.docs.higher.noHigher')}
+              {t('documentsTab.higher.noHigher')}
             </button>
           </p>
         </>
@@ -144,8 +144,8 @@ export function HigherNote({ doc, chk, token, onChanged }: {
         <button type="button" onClick={() => goToResults(router, chk.note_path || resultsEditPath(chk.kind_held))}
           className={`mt-1.5 ${linkCls}`}>
           {chk.note === 'kind_differs'
-            ? t('scholarship.docs.higher.updateResults')
-            : t('scholarship.docs.higher.correctResults', { kind: held })}
+            ? t('documentsTab.higher.updateResults')
+            : t('documentsTab.higher.correctResults', { kind: held })}
           <span aria-hidden>→</span>
         </button>
       )}
@@ -155,22 +155,22 @@ export function HigherNote({ doc, chk, token, onChanged }: {
           className="fixed inset-0 z-50 flex items-center justify-center bg-ground-900/40 px-4">
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
             <h2 id="spm-only-title" className="text-base font-semibold text-ground-900">
-              {t('scholarship.docs.higher.confirm.title')}
+              {t('documentsTab.higher.confirm.title')}
             </h2>
-            <p className="mt-1 text-sm text-ground-600">{t('scholarship.docs.higher.confirm.intro')}</p>
+            <p className="mt-1 text-sm text-ground-600">{t('documentsTab.higher.confirm.intro')}</p>
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-ground-700">
-              <li>{t('scholarship.docs.higher.confirm.removed', { kind: held })}</li>
-              <li>{t('scholarship.docs.higher.confirm.pathway')}</li>
-              <li>{t('scholarship.docs.higher.confirm.reviewer')}</li>
+              <li>{t('documentsTab.higher.confirm.removed', { kind: held })}</li>
+              <li>{t('documentsTab.higher.confirm.pathway')}</li>
+              <li>{t('documentsTab.higher.confirm.reviewer')}</li>
             </ul>
             <div className="mt-5 flex justify-end gap-3">
               <button type="button" onClick={() => setConfirming(false)} disabled={busy}
                 className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50">
-                {t('scholarship.docs.higher.confirm.cancel')}
+                {t('documentsTab.higher.confirm.cancel')}
               </button>
               <button type="button" onClick={spmOnly} disabled={busy}
                 className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('scholarship.docs.higher.confirm.go')}
+                {t('documentsTab.higher.confirm.go')}
               </button>
             </div>
           </div>

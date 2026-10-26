@@ -8,9 +8,10 @@
  * dotted keys in production and every jest render test would still pass on the whole file.
  *
  * Claims, for en, ms and ta:
- *  - `core ∪ admin` is the WHOLE file — no namespace lost, every value identical;
- *  - `core ∩ admin` is empty — no namespace shipped twice;
- *  - `admin` is exactly the `admin` namespace, and `core` is every other one (so a new namespace
+ *  - `core ∪ admin ∪ documents` is the WHOLE file — no namespace lost, every value identical;
+ *  - no two slices share a namespace — none shipped twice;
+ *  - `admin` is exactly the `admin` namespace, `documents` exactly `documentsTab` (third results
+ *    route S3, the student Documents tab's words), and `core` is every other one (so a new namespace
  *    defaults to core and can never go missing from a route);
  *  - an unknown slice name THROWS rather than shipping an empty catalogue;
  *  - the loader turns a query into JSON text that parses to the slice.
@@ -29,20 +30,25 @@ const FILES = [['en', en], ['ms', ms], ['ta', ta]] as Array<[string, Record<stri
 describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
   const core = pickSlice(file, 'core')
   const admin = pickSlice(file, 'admin')
+  const documents = pickSlice(file, 'documents')
 
-  test('core ∪ admin is the whole file, value for value', () => {
-    expect({ ...core, ...admin }).toEqual(file)
-    expect(Object.keys(core).length + Object.keys(admin).length).toBe(Object.keys(file).length)
+  test('core ∪ admin ∪ documents is the whole file, value for value', () => {
+    expect({ ...core, ...admin, ...documents }).toEqual(file)
+    expect(Object.keys(core).length + Object.keys(admin).length + Object.keys(documents).length)
+      .toBe(Object.keys(file).length)
   })
 
-  test('core ∩ admin is empty', () => {
-    expect(Object.keys(core).filter((ns) => ns in admin)).toEqual([])
+  test('no two slices share a namespace', () => {
+    expect(Object.keys(core).filter((ns) => ns in admin || ns in documents)).toEqual([])
+    expect(Object.keys(admin).filter((ns) => ns in documents)).toEqual([])
   })
 
-  test('admin is the admin namespace alone; core is every other namespace', () => {
+  test('admin and documents are their namespaces alone; core is every other namespace', () => {
     expect(Object.keys(admin)).toEqual(['admin'])
     expect(admin.admin).toBe(file.admin)
-    expect(Object.keys(core)).toEqual(Object.keys(file).filter((ns) => ns !== 'admin'))
+    expect(Object.keys(documents)).toEqual(['documentsTab'])
+    expect(documents.documentsTab).toBe(file.documentsTab)
+    expect(Object.keys(core)).toEqual(Object.keys(file).filter((ns) => ns !== 'admin' && ns !== 'documentsTab'))
     // A floor, so a file that lost its namespaces cannot pass the identity checks above on {}.
     expect(Object.keys(core).length).toBeGreaterThanOrEqual(30)
   })
@@ -71,5 +77,6 @@ describe('the loader', () => {
     const tomorrow = { ...(en as Record<string, unknown>), brandNewNamespace: { hello: 'Hello' } }
     expect(pickSlice(tomorrow, 'core')).toHaveProperty('brandNewNamespace')
     expect(pickSlice(tomorrow, 'admin')).not.toHaveProperty('brandNewNamespace')
+    expect(pickSlice(tomorrow, 'documents')).not.toHaveProperty('brandNewNamespace')
   })
 })

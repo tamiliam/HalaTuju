@@ -2014,13 +2014,12 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
 
 
 def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:
-    """Extract fields + a deterministic student-facing verdict, store on the doc.
-    Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass.
+    """Extract fields + a deterministic student-facing verdict, store on the doc. Never blocks,
+    never raises. Pass ``ocr`` to reuse a prior OCR pass.
 
-    The **results slip** is read DETERMINISTICALLY by positional OCR first (the
-    standardised SPM table parses by geometry, immune to row-transposition); only if
-    that can't lock onto the table does it fall back to reading the IMAGE with Gemini.
-    Every other supporting doc reads the OCR text."""
+    The **results slip** is read DETERMINISTICALLY by positional OCR first (the standardised SPM
+    table parses by geometry, immune to row-transposition); only if that can't lock onto the table
+    does it fall back to the IMAGE with Gemini. Higher results: `higher_results.extract`."""
     from .doc_parse import parse_by_labels      # deterministic-first for standardised docs
     # A full-pipeline ocr dict (ocr_document_full) may carry the fetched bytes + the word
     # boxes from its single Vision call — reuse them instead of re-downloading / re-billing.
@@ -2088,8 +2087,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         else:
             ex = extract_document_fields(_otext, doc.doc_type)
             ex['capture'] = 'ai'
-    elif doc.doc_type == 'higher_results':        # third route S3b: Gemini image read + kind detection
-        ex = _higher_extract(doc, ocr, _image, extract_document_fields)
+    elif doc.doc_type == 'higher_results': ex = _higher_extract(doc, ocr, _image, extract_document_fields)
     elif doc.doc_type == 'birth_certificate':
         # Geometry-first, like the results slip. The BC's KANAK-KANAK / BAPA / IBU blocks place the
         # child's "Nama" far from the parents'; flattened OCR cross-wires them (#10 read the father's

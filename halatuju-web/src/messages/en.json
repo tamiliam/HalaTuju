@@ -1364,9 +1364,7 @@
           "bank_holder_mismatch": "The account holder on this statement is not you. The bursary can only be paid into a bank account in your own name — please upload a statement for your own account.",
           "bank_details_unclear": "We could not clearly read all three details (bank name, account number, and account holder). Please upload a clearer photo or PDF where all three are visible."
         },
-        "school_leaving_cert": "A photo/PDF of your school-leaving certificate (surat berhenti sekolah) or testimonial.",
-        "higher_results": "A photo or PDF of your official results slip or transcript, showing your CGPA.",
-        "results_slip_optional": "A photo or PDF of your official SPM results slip. Optional for STPM, Matriculation, Asasi and Diploma applicants."
+        "school_leaving_cert": "A photo/PDF of your school-leaving certificate (surat berhenti sekolah) or testimonial."
       },
       "income": {
         "title": "Proof of household income",
@@ -1655,40 +1653,7 @@
           "pending": "Not checked yet"
         }
       },
-      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document.",
-      "higher": {
-        "typeLabel": "Type of results:",
-        "change": "Change",
-        "readOk": "{kind} results. CGPA {cgpa}, as entered on your application.",
-        "nameMismatch": "The name on these results doesn't match yours. Please upload your own results.",
-        "unreadable": "We couldn't read these results. Please upload a clearer copy.",
-        "kind": {
-          "stpm": "STPM",
-          "matric": "Matriculation",
-          "asasi": "Asasi",
-          "diploma": "Diploma"
-        },
-        "note": {
-          "spmSlip": "This appears to be your SPM results slip. Please upload it under \"SPM results slip\" below, and upload your {kind} results here.",
-          "kindDiffers": "This appears to be {seen} results, but your application shows {held}.",
-          "gradesDiffer": "Some subjects or grades on this slip differ from those entered."
-        },
-        "moveToSpm": "Move it to SPM results slip",
-        "noHigher": "Don't have STPM, Matriculation, Asasi or Diploma results?",
-        "updateResults": "Update your results",
-        "correctResults": "Correct your {kind} results",
-        "confirm": {
-          "title": "Continue with SPM results only",
-          "intro": "Confirm only if you do not hold STPM, Matriculation, Asasi or Diploma results.",
-          "removed": "The {kind} results you entered will be removed. Your SPM results will not be changed.",
-          "pathway": "A degree course needs post-SPM results, so you will be asked to choose a post-SPM pathway, such as Matriculation, Form 6 or Polytechnic.",
-          "reviewer": "If your application has been submitted, your reviewer will be informed.",
-          "go": "Remove and choose a pathway",
-          "cancel": "Cancel"
-        },
-        "spmOnlyHelp": "Required for degree courses. Enter your STPM, Matriculation, Asasi or Diploma results, or choose a post-SPM pathway if you only have SPM results.",
-        "choosePathway": "Choose a post-SPM pathway"
-      }
+      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
     },
     "referee": {
       "name": "Referee name",
@@ -6946,5 +6911,44 @@
       "empty": "No changes yet. {name} has the {role} set."
     },
     "permissionsReset": "Their custom permissions go back to the new role’s set."
+  },
+  "documentsTab": {
+    "higher": {
+      "typeLabel": "Type of results:",
+      "change": "Change",
+      "readOk": "{kind} results. CGPA {cgpa}, as entered on your application.",
+      "nameMismatch": "The name on these results doesn't match yours. Please upload your own results.",
+      "unreadable": "We couldn't read these results. Please upload a clearer copy.",
+      "kind": {
+        "stpm": "STPM",
+        "matric": "Matriculation",
+        "asasi": "Asasi",
+        "diploma": "Diploma"
+      },
+      "note": {
+        "spmSlip": "This appears to be your SPM results slip. Please upload it under \"SPM results slip\" below, and upload your {kind} results here.",
+        "kindDiffers": "This appears to be {seen} results, but your application shows {held}.",
+        "gradesDiffer": "Some subjects or grades on this slip differ from those entered."
+      },
+      "moveToSpm": "Move it to SPM results slip",
+      "noHigher": "Don't have STPM, Matriculation, Asasi or Diploma results?",
+      "updateResults": "Update your results",
+      "correctResults": "Correct your {kind} results",
+      "confirm": {
+        "title": "Continue with SPM results only",
+        "intro": "Confirm only if you do not hold STPM, Matriculation, Asasi or Diploma results.",
+        "removed": "The {kind} results you entered will be removed. Your SPM results will not be changed.",
+        "pathway": "A degree course needs post-SPM results, so you will be asked to choose a post-SPM pathway, such as Matriculation, Form 6 or Polytechnic.",
+        "reviewer": "If your application has been submitted, your reviewer will be informed.",
+        "go": "Remove and choose a pathway",
+        "cancel": "Cancel"
+      },
+      "spmOnlyHelp": "Required for degree courses. Enter your STPM, Matriculation, Asasi or Diploma results, or choose a post-SPM pathway if you only have SPM results.",
+      "choosePathway": "Choose a post-SPM pathway"
+    },
+    "help": {
+      "higher_results": "A photo or PDF of your official results slip or transcript, showing your CGPA.",
+      "results_slip_optional": "A photo or PDF of your official SPM results slip. Optional for STPM, Matriculation, Asasi and Diploma applicants."
+    }
   }
 }

@@ -1364,9 +1364,7 @@
           "bank_holder_mismatch": "Pemegang akaun pada penyata ini bukan anda. Biasiswa hanya boleh dibayar ke akaun bank atas nama anda sendiri — sila muat naik penyata untuk akaun anda sendiri.",
           "bank_details_unclear": "Kami tidak dapat membaca ketiga-tiga butiran dengan jelas (nama bank, nombor akaun, dan pemegang akaun). Sila muat naik foto atau PDF yang lebih jelas di mana ketiga-tiganya kelihatan."
         },
-        "school_leaving_cert": "Foto/PDF sijil berhenti sekolah (surat berhenti sekolah) atau testimonial anda.",
-        "higher_results": "Gambar atau PDF slip keputusan atau transkrip rasmi anda, yang menunjukkan PNGK anda.",
-        "results_slip_optional": "Gambar atau PDF slip keputusan SPM rasmi anda. Pilihan bagi pemohon STPM, Matrikulasi, Asasi dan Diploma."
+        "school_leaving_cert": "Foto/PDF sijil berhenti sekolah (surat berhenti sekolah) atau testimonial anda."
       },
       "income": {
         "title": "Bukti pendapatan isi rumah",
@@ -1655,40 +1653,7 @@
           "pending": "Belum disemak"
         }
       },
-      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas.",
-      "higher": {
-        "typeLabel": "Jenis keputusan:",
-        "change": "Tukar",
-        "readOk": "Keputusan {kind}. PNGK {cgpa}, seperti yang dimasukkan dalam permohonan anda.",
-        "nameMismatch": "Nama pada keputusan ini tidak sepadan dengan nama anda. Sila muat naik keputusan anda sendiri.",
-        "unreadable": "Kami tidak dapat membaca keputusan ini. Sila muat naik salinan yang lebih jelas.",
-        "kind": {
-          "stpm": "STPM",
-          "matric": "Matrikulasi",
-          "asasi": "Asasi",
-          "diploma": "Diploma"
-        },
-        "note": {
-          "spmSlip": "Ini kelihatan seperti slip keputusan SPM anda. Sila muat naiknya di bahagian \"Slip keputusan SPM\" di bawah, dan muat naik keputusan {kind} anda di sini.",
-          "kindDiffers": "Ini kelihatan seperti keputusan {seen}, tetapi permohonan anda menunjukkan {held}.",
-          "gradesDiffer": "Sesetengah mata pelajaran atau gred pada slip ini berbeza daripada yang dimasukkan."
-        },
-        "moveToSpm": "Pindahkan ke slip keputusan SPM",
-        "noHigher": "Tiada keputusan STPM, Matrikulasi, Asasi atau Diploma?",
-        "updateResults": "Kemas kini keputusan anda",
-        "correctResults": "Betulkan keputusan {kind} anda",
-        "confirm": {
-          "title": "Teruskan dengan keputusan SPM sahaja",
-          "intro": "Sahkan hanya jika anda tidak memiliki keputusan STPM, Matrikulasi, Asasi atau Diploma.",
-          "removed": "Keputusan {kind} yang anda masukkan akan dibuang. Keputusan SPM anda tidak akan diubah.",
-          "pathway": "Kursus ijazah memerlukan keputusan lepasan SPM, jadi anda akan diminta memilih laluan lepasan SPM, seperti Matrikulasi, Tingkatan 6 atau Politeknik.",
-          "reviewer": "Jika permohonan anda telah dihantar, penyemak anda akan dimaklumkan.",
-          "go": "Buang dan pilih laluan",
-          "cancel": "Batal"
-        },
-        "spmOnlyHelp": "Wajib untuk kursus ijazah. Masukkan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, atau pilih laluan lepasan SPM jika anda hanya mempunyai keputusan SPM.",
-        "choosePathway": "Pilih laluan lepasan SPM"
-      }
+      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
     },
     "referee": {
       "name": "Nama perujuk",
@@ -6946,5 +6911,44 @@
       "empty": "Belum ada perubahan. {name} mempunyai set {role}."
     },
     "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu."
+  },
+  "documentsTab": {
+    "higher": {
+      "typeLabel": "Jenis keputusan:",
+      "change": "Tukar",
+      "readOk": "Keputusan {kind}. PNGK {cgpa}, seperti yang dimasukkan dalam permohonan anda.",
+      "nameMismatch": "Nama pada keputusan ini tidak sepadan dengan nama anda. Sila muat naik keputusan anda sendiri.",
+      "unreadable": "Kami tidak dapat membaca keputusan ini. Sila muat naik salinan yang lebih jelas.",
+      "kind": {
+        "stpm": "STPM",
+        "matric": "Matrikulasi",
+        "asasi": "Asasi",
+        "diploma": "Diploma"
+      },
+      "note": {
+        "spmSlip": "Ini kelihatan seperti slip keputusan SPM anda. Sila muat naiknya di bahagian \"Slip keputusan SPM\" di bawah, dan muat naik keputusan {kind} anda di sini.",
+        "kindDiffers": "Ini kelihatan seperti keputusan {seen}, tetapi permohonan anda menunjukkan {held}.",
+        "gradesDiffer": "Sesetengah mata pelajaran atau gred pada slip ini berbeza daripada yang dimasukkan."
+      },
+      "moveToSpm": "Pindahkan ke slip keputusan SPM",
+      "noHigher": "Tiada keputusan STPM, Matrikulasi, Asasi atau Diploma?",
+      "updateResults": "Kemas kini keputusan anda",
+      "correctResults": "Betulkan keputusan {kind} anda",
+      "confirm": {
+        "title": "Teruskan dengan keputusan SPM sahaja",
+        "intro": "Sahkan hanya jika anda tidak memiliki keputusan STPM, Matrikulasi, Asasi atau Diploma.",
+        "removed": "Keputusan {kind} yang anda masukkan akan dibuang. Keputusan SPM anda tidak akan diubah.",
+        "pathway": "Kursus ijazah memerlukan keputusan lepasan SPM, jadi anda akan diminta memilih laluan lepasan SPM, seperti Matrikulasi, Tingkatan 6 atau Politeknik.",
+        "reviewer": "Jika permohonan anda telah dihantar, penyemak anda akan dimaklumkan.",
+        "go": "Buang dan pilih laluan",
+        "cancel": "Batal"
+      },
+      "spmOnlyHelp": "Wajib untuk kursus ijazah. Masukkan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, atau pilih laluan lepasan SPM jika anda hanya mempunyai keputusan SPM.",
+      "choosePathway": "Pilih laluan lepasan SPM"
+    },
+    "help": {
+      "higher_results": "Gambar atau PDF slip keputusan atau transkrip rasmi anda, yang menunjukkan PNGK anda.",
+      "results_slip_optional": "Gambar atau PDF slip keputusan SPM rasmi anda. Pilihan bagi pemohon STPM, Matrikulasi, Asasi dan Diploma."
+    }
   }
 }

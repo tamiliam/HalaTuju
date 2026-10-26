@@ -12,6 +12,7 @@
  *
  * The slices:
  *   - `admin` = the `admin` namespace only.
+ *   - `documents` = the `documentsTab` namespace only (the student Documents tab's own words).
  *   - `core`  = EVERY OTHER namespace. It is the complement on purpose: a namespace added
  *     tomorrow lands in core by default, so it can never be missing from a route that needs it.
  * An unknown slice name THROWS (a typo would otherwise ship an empty catalogue and every key on
@@ -25,6 +26,9 @@
 /** The named slices and the top-level namespaces each holds. `core` is everything else. */
 const SLICES = {
   admin: ['admin'],
+  // Third results route S3 (2026-10-26): the student Documents tab's own words, loaded with the
+  // tab's chunk (`lib/messagesDocuments.ts`) — never on a route that does not open the tab.
+  documents: ['documentsTab'],
 }
 
 const SLICE_NAMES = ['core', ...Object.keys(SLICES)]

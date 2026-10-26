@@ -31,6 +31,8 @@ import {
 import { asksForDocument, documentRequirement } from '@/lib/nextSteps'
 import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
 import { isTertiary } from '@/lib/qualification'
+// The tab's own words (`documentsTab.*`) ride in THIS chunk, not in every route's core catalogue.
+import '@/lib/messagesDocuments'
 
 import {
   docKey,
@@ -225,13 +227,14 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       <div className="space-y-3">
         {card('higher_results', {
           required: higherState === 'required',
+          helpOverride: t('documentsTab.help.higher_results'),
           higherKind: isTertiary(app?.exam_type) ? String(app?.exam_type) : '',
           // Owner ruling 2026-10-26: SPM only + a degree chosen → both cards required; say why.
           higherSpmOnly: higherState === 'required' && !isTertiary(app?.exam_type),
         })}
         {slipState !== 'off' && card('results_slip', {
           required: slipState === 'required',
-          helpOverride: slipState === 'optional' ? t('scholarship.docs.help.results_slip_optional') : undefined,
+          helpOverride: slipState === 'optional' ? t('documentsTab.help.results_slip_optional') : undefined,
         })}
       </div>
     </section>

@@ -226,6 +226,8 @@ const SPECS: NamespaceSpec[] = [
   { ns: 'contactForm', minLeaves: 10 },
   { ns: 'apiErrors', minLeaves: 25 },
   { ns: 'admin', minLeaves: 1800 },
+  // Third results route S3: the student Documents tab's own words (its own message slice).
+  { ns: 'documentsTab', minLeaves: 20 },
 ]
 
 describe('the scan found the tree and the catalogue (the floor)', () => {
