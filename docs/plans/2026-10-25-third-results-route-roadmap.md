@@ -403,6 +403,10 @@ before/after list before anything that moves applicants.
   course; audit line; reviewer told if after submit. **PISMP** counts as a post-SPM pathway for D12
   (SPM slip required, no higher-results card). Because the escape routes live in detection, **S3a and
   S3b are built together and released together.**
+- **D13a (2026-10-26):** case (D) assumes a MISFILE first: "This appears to be your SPM results slip.
+  Please upload it under \"SPM results slip\" below, and upload your STPM results here." with a primary
+  "Move it to SPM results slip" (re-files the document into the SPM slot in one tap) and, in small text,
+  "Don't have STPM, Matriculation, Asasi or Diploma results?" leading to the SPM-only confirm box.
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
