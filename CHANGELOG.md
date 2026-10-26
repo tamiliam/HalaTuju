@@ -27,6 +27,16 @@ gates; a LATER year's STR page read as current. Not pushed yet — an adversaria
   1 Jan 00:01 MYT, payslip case); jest `StrChecklist.test.tsx` + cockpit/drift updates. `conftest.py` pins
   the STR year to 2026 for every other test (`real_str_clock` opts out); `factories.matched_str_pair` takes
   `year` / `status` / `source_type`. TD-403 closed.
+- **Review of `0d32b712` (same day):** (1) BLOCKER fixed — an earlier year's page whose status did not
+  read was `unreadable`, which `str_not_breached` counts, so it passed the gate and even resolved an STR
+  request; the year is now asked BEFORE the approval word, so any earlier year is `stale` and
+  `unreadable` is only this year's or a dateless page. `stale` therefore no longer implies "Lulus": the
+  student's and the officer's Status chip stay grey/blank for it. (3) A stale STR now has its own plain
+  ask instead of `str_person_mismatch` ("doesn't match"): the year-qualified code `str_stale:<year>` —
+  student "Your STR is from {year}. Please upload this year's STR.", officer line to match (en/ms/ta,
+  Malay/Tamil first drafts; `lib/blockers.isYearQualified` / `blockerVars` render `{year}` in the
+  consent list and the officer Blockers card). Held for the owner: the Check-2 `str_not_current`
+  request and re-notify email for Completed-stage students on 1 January.
 
 ## Corpus gaps C2 — UiTM offers score as a public university; an officer's offer request waits for the officer - 2026-10-26
 

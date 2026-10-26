@@ -8,8 +8,10 @@ certainly the family's 2027 APPLICATION status) read `current`, the strongest st
 
 The ruling, as built:
   * THIS year (the calendar year in Malaysia, `str_this_year`) — counts, as before.
-  * an EARLIER year — `stale`: does not count; the gate blocks with the existing stale code
-    (`str_person_mismatch`, "re-upload the correct, current STR") and the chip "needs this year's STR".
+  * an EARLIER year — `stale`, whether or not its status read: does not count; the gate blocks with
+    its own plain ask, `str_stale:<year>` ("Your STR is from 2025. Please upload this year's STR.";
+    review of 0d32b712 — it was `str_person_mismatch`, "doesn't match"), and the chip "needs this
+    year's STR".
   * no year read — `unconfirmed`, as before: passes the gate, verdict Probable.
   * a LATER year — `future`: does not count, but is never called stale and never blames the family;
     the gate asks for this year's STR with its own neutral code, `str_not_this_year`.
@@ -81,8 +83,12 @@ class TheCurrencyLadder(TestCase):
             ('berjaya', '2027', 'semakan_status', 'future'),   # the live application-status page
             ('Ditolak', '2027', 'semakan_status', 'future'),   # next year's news, not this year's
             ('Ditolak', '2025', 'semakan_status', 'rejected'),
-            # 'stale' stays an APPROVED state (the chips say Lulus): an old unread status is unreadable.
-            ('Dalam proses', '2025', 'semakan_status', 'unreadable'),
+            # An earlier year never counts, whether or not its status read (review of 0d32b712).
+            ('Dalam proses', '2025', 'semakan_status', 'stale'),
+            ('', '2025', 'semakan_status', 'stale'),
+            ('', '2025', 'letter', 'stale'),
+            ('', '2026', 'semakan_status', 'unreadable'),      # this year, unread: as before
+            ('', '', 'semakan_status', 'unreadable'),          # no year, unread: as before
             ('Dalam proses', '2026', 'semakan_status', 'unreadable'),
             # A dashboard still caps at unconfirmed this year — but its year is still read.
             ('Lulus', '2026', 'dashboard', 'unconfirmed'),
@@ -114,11 +120,37 @@ class AnEarlierYearsStrDoesNotCount(TestCase):
                 self.assertIs(str_not_breached(app), False)
                 self.assertIs(salary_income_satisfied(app), False)
                 gate = _income_gate(app)
-                self.assertIn('str_person_mismatch', gate)      # the existing stale code
+                self.assertIn('str_stale:2025', gate)           # "Your STR is from 2025 …"
+                self.assertNotIn('str_person_mismatch', gate)   # never "doesn't match"
                 self.assertNotIn('str_not_this_year', gate)
-                self.assertIn('str_person_mismatch', consent_blockers(app))
+                self.assertIn('str_stale:2025', consent_blockers(app))
                 chip = ApplicantDocumentSerializer(str_doc).data['str_check']
                 self.assertEqual(chip['current_status'], 'stale')   # "needs this year's STR"
+
+    def test_an_earlier_year_with_an_unread_status_blocks_too(self):
+        """Review of 0d32b712: a 2025 page whose status did not read was 'unreadable' — counted by
+        `str_not_breached` — so it passed, and even resolved an STR request, where the same page
+        saying "Lulus" was blocked. An earlier year never counts, read status or not."""
+        from apps.scholarship.income_engine import str_not_breached
+        from apps.scholarship.resolution import doc_match_verdict
+        for status in ('', 'Dalam proses'):
+            for route in ROUTES:
+                with self.subTest(status=status, route=route):
+                    app, str_doc = _family(route, year='2025', status=status)
+                    self.assertIs(str_not_breached(app), False)
+                    self.assertIn('str_stale:2025', _income_gate(app))
+                    self.assertEqual(doc_match_verdict(str_doc), 'mismatch')   # closes no request
+
+    def test_this_year_or_no_year_with_an_unread_status_is_as_before(self):
+        """'unreadable' is now only ever this year's page or a dateless one — unchanged."""
+        from apps.scholarship.income_engine import str_not_breached, student_str_check
+        for year in ('2026', ''):
+            for route in ROUTES:
+                with self.subTest(year=year, route=route):
+                    app, str_doc = _family(route, year=year, status='')
+                    self.assertEqual(student_str_check(str_doc)['current_status'], 'unreadable')
+                    self.assertIs(str_not_breached(app), True)
+                    self.assertFalse([c for c in _income_gate(app) if c.startswith('str_')])
 
     def test_the_salary_route_also_asks_for_the_earners_income(self):
         app, _ = _family('salary', year='2025')
@@ -212,7 +244,7 @@ class TheYearTurnsAtMalaysianMidnight(TestCase):
         with mock.patch.object(timezone, 'now', return_value=self.LAST_MINUTE):
             self.assertEqual(_income_gate(app), [])
         with mock.patch.object(timezone, 'now', return_value=self.FIRST_MINUTE):
-            self.assertIn('str_person_mismatch', _income_gate(app))
+            self.assertIn('str_stale:2026', _income_gate(app))
 
     def test_a_2027_page_is_future_until_midnight_and_then_counts(self):
         app, _ = _family('str', year='2027')

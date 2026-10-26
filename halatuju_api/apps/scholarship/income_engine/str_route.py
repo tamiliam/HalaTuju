@@ -94,10 +94,13 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
                       'berjaya' — next year's APPLICATION status, not an approval). Not this year's
                       proof, whatever its status says, and NOT the family's fault → never 'stale',
                       never red; the gate asks neutrally for this year's STR (``str_not_this_year``).
-      'stale'       — an approval of an EARLIER year, now on every format (a dashboard's read year
-                      too, ahead of its 'unconfirmed' ceiling). It stays an APPROVED state (the
-                      chips show "Lulus"), so an earlier page whose status did not read stays
-                      'unreadable' — that state's own question, not this one's.
+      'stale'       — any recognised page of an EARLIER year, on every format (a dashboard's read
+                      year too, ahead of its 'unconfirmed' ceiling) and WHETHER OR NOT its status
+                      read (review of 0d32b712: an unread-status 2025 page read 'unreadable', which
+                      `str_not_breached` counts, so it passed where the same page saying "Lulus" was
+                      blocked). So 'stale' no longer implies an approval — the chips do not claim
+                      "Lulus" for it — and 'unreadable' is only ever this year's or a dateless page.
+                      A clear 'rejected' still says so first.
     No year read stays 'unconfirmed' (Probable — the officer checks)."""
     s = (status_raw or '').lower()
     st = (source_type or '').strip().lower()
@@ -110,10 +113,10 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
         return 'rejected'
     if st == 'unknown':
         return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
+    if read_year and this_year and read_year < this_year:
+        return 'stale'               # TD-403: an earlier year never counts — read status or not, dashboard or not
     if not any(w in s for w in _STR_APPROVED_WORDS):
         return 'unreadable'          # no readable "Lulus"/"diluluskan" → STR approval can't be confirmed
-    if read_year and this_year and read_year < this_year:
-        return 'stale'               # TD-403: an earlier year's approval never counts — dashboard or not
     # SURFACE CEILING (owner 2026-07-07): a DASHBOARD confirms APPROVAL but is a self-service snapshot
     # that cannot certify the cycle to certainty — its max band is Probable. So an approved dashboard
     # caps at 'unconfirmed' (BLUE) regardless of any date read. Only the LETTER (dated) and the

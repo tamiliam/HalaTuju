@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useT } from '@/lib/i18n'
+import { isYearQualified } from '@/lib/blockerCodes'
 import {
   getConsentStatus, recordConsent, listDocuments,
   type ApplicantDocument, type ConsentStatus,
@@ -320,15 +321,18 @@ export default function ScholarshipConsent({
           <ul className="mt-1.5 list-disc space-y-1 pl-5">
             {blockers.map((b) => {
               // Member-qualified income codes ("parent_ic_missing:father") name the person;
-              // everything else is a plain blocker code.
+              // year-qualified ones (TD-403, "str_stale:2025") name the year; everything else is
+              // a plain blocker code.
               const [code, member] = b.split(':')
               return (
                 <li key={b}>
-                  {member
-                    ? t(`scholarship.consent.blocker.${code}_member`, {
-                        member: t(`scholarship.docs.income.wizard.member.${member}`),
-                      })
-                    : t(`scholarship.consent.blocker.${code}`)}
+                  {member && isYearQualified(code)
+                    ? t(`scholarship.consent.blocker.${code}_year`, { year: member })
+                    : member
+                      ? t(`scholarship.consent.blocker.${code}_member`, {
+                          member: t(`scholarship.docs.income.wizard.member.${member}`),
+                        })
+                      : t(`scholarship.consent.blocker.${code}`)}
                 </li>
               )
             })}

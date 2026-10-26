@@ -14773,9 +14773,11 @@ certainly the family's 2027 APPLICATION status. Live STRs (lead's count): 44 yea
 - An STR counts as income proof only if it is from THIS calendar year — today in Malaysia
   (`timezone.localdate`, `TIME_ZONE = 'Asia/Kuala_Lumpur'`), so it turns over at Malaysian midnight on
   1 January (`income_engine.str_route.str_this_year`). Strict all year round.
-- An EARLIER year's approval does not count (`stale`, now on a dashboard too): the gate blocks with the
-  existing stale code `str_person_mismatch` on both routes, and the student's chip reads "Out of date —
-  needs this year's STR"; on the salary route the earner's income is also asked for.
+- An EARLIER year's STR does not count (`stale`, on a dashboard too, and whether or not its status read
+  — review of `0d32b712`: an unread-status 2025 page had passed as `unreadable`): the gate blocks on both
+  routes with its own plain ask, `str_stale:<year>` ("Your STR is from {year}. Please upload this
+  year's STR." — not the "doesn't match" of `str_person_mismatch`), and the student's chip reads "Out of
+  date — needs this year's STR"; on the salary route the earner's income is also asked for.
 - An STR whose year did not read stays `unconfirmed` — not blocked by this rule; verdict Probable, the
   officer checks.
 - A LATER year's page is the new state `future`: not counted, but never called stale, never red and

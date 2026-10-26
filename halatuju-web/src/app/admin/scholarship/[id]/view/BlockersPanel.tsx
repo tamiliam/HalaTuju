@@ -8,10 +8,9 @@
  */
 import {
   showsBlockerBox,
-  parseBlocker,
   stuckStep,
   blockerLabelKey,
-  memberLabelKey,
+  blockerVars,
   nudgeButton,
 } from '@/lib/blockers'
 import { formatDate } from '@/lib/formatDate'
@@ -50,13 +49,12 @@ export function BlockersPanel({ app, t, busy, isSuper, role, nudgeMsg, doNudge }
                 <ul className="mt-1.5 ml-5 list-disc space-y-1 text-caution-800">
                   {codes.map((raw) => {
                     // Income codes are member-qualified ("parent_ic_missing:mother") so the line
-                    // names the person; everything else is a plain code.
-                    const { member } = parseBlocker(raw)
+                    // names the person — or (TD-403) year-qualified ("str_stale:2025"), so it names
+                    // the year; everything else is a plain code.
+                    const vars = blockerVars(raw, t)
                     return (
                       <li key={raw}>
-                        {member
-                          ? t(blockerLabelKey(raw), { member: t(memberLabelKey(member)) })
-                          : t(blockerLabelKey(raw))}
+                        {vars ? t(blockerLabelKey(raw), vars) : t(blockerLabelKey(raw))}
                       </li>
                     )
                   })}

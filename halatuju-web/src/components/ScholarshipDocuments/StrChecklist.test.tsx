@@ -21,9 +21,11 @@ function strDoc(current_status: StrCheck['current_status'], status = 'Lulus'): A
 }
 
 describe('StrChecklist — the year rows (TD-403)', () => {
-  test('an earlier year asks for this year\'s STR on the Year row', () => {
-    render(<StrChecklist doc={strDoc('stale')} t={t} />)
-    expect(screen.getByText('scholarship.docs.strCheck.stale')).toBeTruthy()
+  test('an earlier year asks for this year\'s STR on the Year row, and claims no approval', () => {
+    // 'stale' is any earlier year's page, read status or not (review of 0d32b712).
+    render(<StrChecklist doc={strDoc('stale', '')} t={t} />)
+    expect(screen.getAllByText('scholarship.docs.strCheck.stale')).toHaveLength(1)   // Year row only
+    expect(screen.queryByText('scholarship.docs.strCheck.approved')).toBeNull()
     expect(screen.queryByText('scholarship.docs.strCheck.future')).toBeNull()
   })
 

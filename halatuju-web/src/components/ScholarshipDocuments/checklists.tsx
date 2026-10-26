@@ -296,16 +296,16 @@ export function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: stri
   // The STR model is exactly four variables — Name · IC · Status · Year (owner 2026-07-07).
   // STATUS answers "is it approved?" (Lulus/diluluskan); YEAR answers "is it for this cycle?"
   // (a date, never an amount). The single currency ladder decomposes onto the two axes.
-  const APPROVED_STATES = ['current', 'unconfirmed', 'stale']   // a "Lulus" was read/inferred
-  // TD-403: a LATER year's page ('future' — likely next year's application) carries no status chip
-  // at all: its status is about another year, and nothing on it is the family's fault. The Year row
-  // says what is needed instead.
+  const APPROVED_STATES = ['current', 'unconfirmed']   // a "Lulus" was read/inferred
+  // TD-403: a page of ANOTHER year — earlier ('stale', whether or not its status read) or later
+  // ('future' — likely next year's application) — carries no status chip at all: its status is about
+  // another year, so "Approved" would claim what we do not know. The Year row says what is needed.
   const statusPill =
     APPROVED_STATES.includes(chk.current_status)
       ? pill('match', t('scholarship.docs.strCheck.approved'))
       : chk.current_status === 'unknown'
         ? pill('none', t('scholarship.docs.strCheck.unknown'))
-        : chk.current_status === 'future'
+        : chk.current_status === 'future' || chk.current_status === 'stale'
           ? null
           : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
   // Year: current (dated this cycle) → green; unconfirmed (approved, no date) → amber; stale

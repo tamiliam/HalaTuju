@@ -9,6 +9,10 @@
  *
  * Pure functions only (no React), so they unit-test in a plain node env.
  */
+// TD-403: a year-qualified code (`str_stale:2025`) — its home is the shared leaf, re-exported here.
+import { isYearQualified } from './blockerCodes'
+
+export { isYearQualified }
 
 // Statuses whose cockpit shows the Blockers card. SHORTLISTED only: the card answers "what does
 // this student still owe before they can submit?", and a student at `profile_complete` (Awaiting
@@ -63,11 +67,20 @@ export function stuckStep(codes: string[]): BlockerStep | null {
 
 /**
  * i18n key for one blocker line. A member-qualified code uses the `_member` variant,
- * which interpolates the person's name (reusing the wizard's member labels).
+ * which interpolates the person's name (reusing the wizard's member labels); a
+ * year-qualified one (`isYearQualified`) uses the `_year` variant with `{year}`.
  */
 export function blockerLabelKey(raw: string): string {
   const { code, member } = parseBlocker(raw)
-  return `admin.scholarship.blockers.item.${code}${member ? '_member' : ''}`
+  const suffix = member ? (isYearQualified(code) ? '_year' : '_member') : ''
+  return `admin.scholarship.blockers.item.${code}${suffix}`
+}
+
+/** The interpolation values for one blocker line: `{year}` or `{member}` (already translated). */
+export function blockerVars(raw: string, t: (key: string) => string): Record<string, string> | undefined {
+  const { code, member } = parseBlocker(raw)
+  if (!member) return undefined
+  return isYearQualified(code) ? { year: member } : { member: t(memberLabelKey(member)) }
 }
 
 /** i18n key for a member's display name — the same labels the income wizard uses. */

@@ -400,7 +400,7 @@ describe('documentFacts', () => {
       .toEqual([
         { key: 'recipient', status: 'verified' },
         { key: 'ic_no', status: 'not' },
-        { key: 'status', status: 'verified' },   // 'stale' is still approved (Lulus) → green
+        { key: 'status', status: 'unknown' },    // 'stale' = another year's page, read or not (TD-403) → grey
         { key: 'current', status: 'partial' },   // …but a prior-year cycle → amber
       ])
   })
@@ -423,7 +423,7 @@ describe('documentFacts', () => {
       documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
         .find((f) => f.key === 'status')!.status
     expect(stat('current')).toBe('verified')     // 🟢 Lulus
-    expect(stat('stale')).toBe('verified')       // 🟢 Lulus (just an old cycle)
+    expect(stat('stale')).toBe('unknown')        // ⚪ an earlier year's page, read status or not (TD-403)
     expect(stat('unconfirmed')).toBe('verified') // 🟢 Lulus (just no date)
     expect(stat('rejected')).toBe('not')         // 🔴 Ditolak
     expect(stat('wrong_type')).toBe('not')       // 🔴 not an STR — no approval to show

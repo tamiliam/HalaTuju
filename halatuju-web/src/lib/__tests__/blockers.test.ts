@@ -4,7 +4,7 @@
  */
 import {
   BLOCKER_BOX_STATUSES, showsBlockerBox, parseBlocker, stepOf, stuckStep, blockerLabelKey,
-  nudgeButton, NudgeState,
+  blockerVars, isYearQualified, nudgeButton, NudgeState,
 } from '@/lib/blockers'
 
 describe('showsBlockerBox', () => {
@@ -42,6 +42,25 @@ describe('blockerLabelKey', () => {
   })
   test('bare codes use the plain key', () => {
     expect(blockerLabelKey('str_missing')).toBe('admin.scholarship.blockers.item.str_missing')
+  })
+  test('TD-403: a year-qualified code uses the _year variant, never _member', () => {
+    expect(blockerLabelKey('str_stale:2025')).toBe('admin.scholarship.blockers.item.str_stale_year')
+    expect(blockerLabelKey('str_stale')).toBe('admin.scholarship.blockers.item.str_stale')
+  })
+})
+
+describe('blockerVars', () => {
+  const t = (key: string) => `T(${key})`
+  test('a year-qualified code carries the year, untranslated', () => {
+    expect(isYearQualified('str_stale')).toBe(true)
+    expect(blockerVars('str_stale:2025', t)).toEqual({ year: '2025' })
+  })
+  test('a member-qualified code carries the translated member label', () => {
+    expect(blockerVars('parent_ic_missing:mother', t))
+      .toEqual({ member: 'T(scholarship.docs.income.wizard.member.mother)' })
+  })
+  test('a bare code carries nothing', () => {
+    expect(blockerVars('str_missing', t)).toBeUndefined()
   })
 })
 

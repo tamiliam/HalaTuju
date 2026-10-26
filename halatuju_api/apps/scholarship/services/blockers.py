@@ -446,9 +446,15 @@ def document_red_blockers(application):
                   # person-mismatch on it never blocks submission — the cluster coach handles it.
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
-            if person_red(dt, chk) or chk.get('current_status') in income_engine.STR_RED_STATES:
-                codes.add('str_person_mismatch')      # incl. an EARLIER year's STR ('stale', TD-403)
-            elif chk.get('current_status') == 'future':
+            cs = chk.get('current_status')
+            if person_red(dt, chk) or (cs in income_engine.STR_RED_STATES and cs != 'stale'):
+                codes.add('str_person_mismatch')
+            if cs == 'stale':
+                # TD-403: an EARLIER year's STR gets its own plain ask — "Your STR is from {year}" —
+                # never "doesn't match". The year rides after the colon (`str_stale:2025`).
+                m = income_engine._STR_YEAR_RE.search(chk.get('year') or '')
+                codes.add(f'str_stale:{m.group(1)}' if m else 'str_stale')
+            elif cs == 'future':
                 # TD-403 (owner 2026-10-26): a LATER year's page (next year's application status) is
                 # not this year's proof — asked for neutrally, never "doesn't match" or "out of date".
                 codes.add('str_not_this_year')

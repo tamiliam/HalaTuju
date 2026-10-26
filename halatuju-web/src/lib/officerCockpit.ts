@@ -274,14 +274,17 @@ function strCurrencyFactStatus(s: string | undefined | null): FactStatus {
 /**
  * Tone for the STR APPROVAL status chip — the third required STR variable (after recipient
  * name + IC), distinct from the currency/date dimension above. Was it approved (Lulus)?
- *   current / stale / unconfirmed → all carry an approved status → green (Lulus).
+ *   current / unconfirmed → carry an approved status → green (Lulus).
+ *   stale / future (another year's page, TD-403) → grey — that year's status says nothing here.
  *   rejected (Ditolak) / wrong_type (not an STR at all) → red — no valid approval.
  *   unreadable (cropped page, status line not visible) → amber — couldn't read it, NOT a
  *     "not approved" (don't brand a cropped upload as rejected).
  */
 function strStatusFactStatus(s: string | undefined | null): FactStatus {
   switch (s) {
-    case 'current': case 'stale': case 'unconfirmed': return 'verified'
+    // TD-403 review: 'stale' is any EARLIER year's page, read status or not, so it no longer
+    // implies Lulus — grey "we don't know", like 'future'; the Current chip carries the amber.
+    case 'current': case 'unconfirmed': return 'verified'
     case 'rejected': case 'wrong_type': return 'not'
     case 'unreadable': return 'partial'
     default: return 'unknown'
