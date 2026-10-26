@@ -413,6 +413,10 @@ before/after list before anything that moves applicants.
   degree courses. Enter your STPM, Matriculation, Asasi or Diploma results, or choose a post-SPM pathway
   if you only have SPM results." with links to the results choice and the course choice. Submitted
   applications keep their frozen requirement; check 2 or the reviewer can ask (S4).
+- **D15 (2026-10-26):** S4 starts with the reverse move — "Move it to STPM results" (one tap) when
+  detection or the C3 score recognises STPM / Matriculation / Asasi / Diploma results in the SPM card.
+  The 8 legacy STPM slips already in the SPM card of shortlisted, unsubmitted tertiary holders are moved
+  by the team after S3 ships (owner go on the exact list; reviewer note on each).
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
