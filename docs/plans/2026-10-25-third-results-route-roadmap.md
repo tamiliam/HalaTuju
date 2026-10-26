@@ -390,6 +390,19 @@ before/after list before anything that moves applicants.
   Safeguards: ONE higher qualification at a time (completing the Diploma form clears earlier STPM
   entries and vice versa); the upload card's type must agree with the results page, otherwise a note
   with a link to the results page.
+- **D13 (2026-10-26) — supersedes D11 revised:** NO standing "My results are different" link and NO
+  type dropdown. The higher-results card shows the type read-only from the results page — "Type of
+  results: STPM · Change" — where "Change" opens that results page; the upload's kind always equals
+  results held. Every redirect comes from detection (S3b), shown only when a problem is found:
+  (B) entered STPM, uploaded a Matriculation slip → note + link to the third-route results page;
+  (C) entered STPM, subjects/grades do not match → note + link to the STPM results page (like today's
+  missing-subject note); (D) entered STPM but uploaded an SPM slip while a university degree is chosen →
+  note "This is an SPM results slip. A degree course needs STPM, Matriculation, Asasi or Diploma
+  results. If you only have SPM results, please choose a post-SPM pathway instead." with ONE action
+  (after a confirm box) that clears the higher results AND takes the student to change the chosen
+  course; audit line; reviewer told if after submit. **PISMP** counts as a post-SPM pathway for D12
+  (SPM slip required, no higher-results card). Because the escape routes live in detection, **S3a and
+  S3b are built together and released together.**
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
