@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## Corpus gaps C3 — STPM results are scored as STPM, not as a bad SPM slip - 2026-10-26
+
+- **The STPM family (MODEL_VERSION 1.9.0, `genuineness/stpm_doc.py`).** A slip list and a certificate
+  list (16 signatures each) from the fixed wording of ten real STPM documents, scored beside the SPM pair
+  — which is untouched and listed first, so a tie goes to SPM. STPM results used to read "suspect"
+  0.39–0.52 against SPM and drop the Academic card a band or two. On the real documents: every slip and
+  certificate genuine (slips 0.96–1.00; certificates 0.92, 1.00 with the crest); all 96 cached SPM
+  documents score exactly as before under every QR/crest combination.
+- **Owner rulings (decisions.md 2026-10-26).** 1A: the online results-checker page is not a result
+  document — it reads as a wrong document and the reviewer asks for the real slip or certificate. 2A: a
+  certified photocopy scores like the certificate.
+- **Also:** the semester-result slot scores an STPM document (and leaves every other slip unscored); an
+  STPM slip in the school-leaving slot is caught as a misfile; the picture check asks about "SPM or STPM".
+  Live re-score is roadmap C4.
+- **Tests:** `test_corpus_gaps_c3.py` (synthetic, from the PII-free wording); every change bitten.
+
 ## TD-403 — an STR counts as income proof only if it is from this year - 2026-10-26
 
 Owner ruling 2026-10-26 (`docs/decisions.md`). A STALE STR in the earner's own name passed both income

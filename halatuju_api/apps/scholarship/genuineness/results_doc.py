@@ -19,6 +19,7 @@ import re
 import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exported for callers)
+from .stpm_doc import STPM_LISTS
 
 # Version of the deterministic document-recognition model — the signature FAMILIES + weights +
 # identity gates + bands in THIS module. **Bump on ANY calibration change** (a new family, a
@@ -95,7 +96,9 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #   1.8.1 (2026-10-26) — corpus-gaps C2: UiTM joins the UA family on its own offer line, office (Bahagian
 #       Pengambilan Pelajar) and "hadir mendaftar pada tarikh" (0.40 → 0.80–0.90). Backfill: C4 (live).
 #   1.8.2 (2026-10-26) — C2 review: a UiTM PDF's text layer (no letterhead) is named by UiTM's own clauses.
-MODEL_VERSION = '1.8.2'
+#   1.9.0 (2026-10-26) — corpus-gaps C3: the STPM family (slip + certificate, `stpm_doc`) beside the
+#       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
+MODEL_VERSION = '1.9.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -312,12 +315,10 @@ UA_OFFER_SIGNATURES = [
                                      'HADIR MENDAFTAR PADA TARIKH'],               1, 'text'),
 ]
 
-# STR (Sumbangan Tunai Rahmah) — THREE genuine approval artefacts (owner-specified 2026-06-27),
-# each scored as its own form; score_signatures takes the best fit. The IDENTITY anchor for each
-# is its DISTINCTIVE PAGE MARKER, deliberately NOT the shared "Maklumat Pemohon" / "Sumbangan
-# Tunai Rahmah" strings — because those also appear on an LHDN **SALINAN** application copy (a8,
-# a23) and must NOT be mistaken for an approval. A **SARA** letter (a63, Perdana Menteri) carries
-# none of these markers. So: SALINAN + SARA fall to 'unrecognised' → holistic, never genuine STR.
+# STR (Sumbangan Tunai Rahmah) — THREE genuine approval artefacts (owner-specified 2026-06-27), each its
+# own form, best fit wins. Each form's IDENTITY anchor is its DISTINCTIVE PAGE MARKER, NOT the shared
+# "Maklumat Pemohon" / "Sumbangan Tunai Rahmah" strings, which also sit on an LHDN **SALINAN** copy (a8,
+# a23); a **SARA** letter (a63) has none — both fall to 'unrecognised' → holistic, never a genuine STR.
 # (Approval vs not — diluluskan / Lulus — is the extraction `status` field, a separate axis.)
 STR_LETTER_SIGNATURES = [          # MOF approval letter (Kementerian Kewangan)
     ('Kementerian Kewangan Malaysia', ['KEMENTERIAN KEWANGAN MALAYSIA'],         3, 'text'),
@@ -354,7 +355,8 @@ STR_SEMAKAN_SIGNATURES = [         # MySTR Semakan Status check page
 
 # A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
 # results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
-_RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
+_RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES,   # SPM FIRST: max()
+                  **STPM_LISTS}                       # gives a tie to the first key (1.9.0, `stpm_doc`)
 _STR_LISTS = {'str_letter': STR_LETTER_SIGNATURES, 'str_dashboard': STR_DASHBOARD_SIGNATURES,
               'str_semakan': STR_SEMAKAN_SIGNATURES}
 _OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIGNATURES,
@@ -362,7 +364,7 @@ _OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIG
                 'ua_offer': UA_OFFER_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'birth_certificate': {'birth_certificate': BC_SIGNATURES},
-             'epf': {'epf': EPF_SIGNATURES},
+             'epf': {'epf': EPF_SIGNATURES}, 'stpm_result': STPM_LISTS,
              'offer_letter': _OFFER_LISTS,
              'str': _STR_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
@@ -370,9 +372,7 @@ _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
 # Issuer "identity" anchors — STR only (1.4.0 dropped the offer anchor: an offer is banded by score).
 # Its DISTINCTIVE page marker guards the LHDN SALINAN / SARA copies that share the generic strings.
 _IDENTITY = {'str': {
-    # The DISTINCTIVE page marker per STR approval form (NOT the shared "Maklumat Pemohon" /
-    # "Sumbangan Tunai Rahmah" — those also sit on an LHDN SALINAN copy). A doc matching none
-    # (a SALINAN, a SARA letter) is 'unrecognised' → holistic, never a genuine STR.
+    # The DISTINCTIVE page marker per STR approval form (see the STR lists above for why).
     'str_letter':    ['KEMENTERIAN KEWANGAN MALAYSIA'],
     'str_dashboard': ['STATUS PERMOHONAN STR'],
     # Any of three anchors recognises a genuine Semakan — robust to crop AND OCR layout noise:
@@ -457,7 +457,7 @@ _VISUAL_SCHEMA = {'type': 'object', 'properties': {
     'has_qr_code': {'type': 'boolean'}, 'has_jata_negara_crest': {'type': 'boolean'}},
     'required': ['has_qr_code', 'has_jata_negara_crest']}
 _VISUAL_PROMPT = (
-    'This image was uploaded as a Malaysian SPM results slip or certificate. Ignore the text '
+    'This image was uploaded as a Malaysian SPM or STPM results slip or certificate. Ignore the text '
     'and report two VISUAL features: has_qr_code — is a QR code / 2D barcode present anywhere on '
     'the document? has_jata_negara_crest — is the Malaysian national crest (Jata Negara, the '
     'tiger-and-shield coat of arms) present in the header?')
@@ -559,13 +559,13 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
 # Families a misfiled document is checked AGAINST — each a self-recognising type (a high score on
 # its own signatures IS the recognition; no image / identity anchor needed). STR is handled
 # separately via `signature_genuineness` because its identity anchor guards the SALINAN/SARA copies.
-# Deliberately excludes the multi-issuer offer family (needs identity anchoring + an image) and IC
-# (multimodal). Extend this map as new self-recognising families are added.
+# Excludes the multi-issuer offer family and IC (multimodal). Extend as self-recognising families land.
 _MISFILE_FAMILIES = {
     'epf': EPF_SIGNATURES,
     'birth_certificate': BC_SIGNATURES,
     'results_slip': SLIP_SIGNATURES,
     'certificate': CERT_SIGNATURES,
+    **STPM_LISTS,                          # 1.9.0 — an STPM slip / certificate in the wrong slot
 }
 
 

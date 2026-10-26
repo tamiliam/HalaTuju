@@ -29,7 +29,7 @@ def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, 
     multimodal checks; OCR text + visual flags for the results-slip signature scorer)."""
     if doc_type in ('ic', 'parent_ic'):
         return ic_genuineness(image, content_type)
-    if doc_type in ('results_slip', 'certificate'):
+    if doc_type in ('results_slip', 'certificate', 'stpm_slip', 'stpm_certificate'):   # SPM + STPM (1.9.0)
         return signature_genuineness(ocr_text, has_qr=has_qr, has_crest=has_crest)
     if doc_type == 'offer_letter':
         # MODEL_VERSION 1.4.0: the offer is signature-scored purely by-score (no issuer anchor) →

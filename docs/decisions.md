@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## STPM results are fingerprinted like SPM; the online results-checker page is not a result document; a certified copy is — 2026-10-26 (corpus-gaps C3; owner rulings 1A, 2A)
+
+**What.** STPM results (Majlis Peperiksaan Malaysia) get their own family (MODEL_VERSION 1.9.0,
+`genuineness/stpm_doc.py`): a slip list and a certificate list from the fixed wording of ten real
+documents, scored BESIDE the untouched SPM pair, SPM first so a tie goes to SPM. Best fit names the type
+(`stpm_slip` / `stpm_certificate`). The semester-result slot scores a document against the STPM lists
+only when an STPM issuer anchor is on the page; any other semester slip stays unscored, as before.
+**Ruling 1A — the online results-checker page is NOT accepted.** A screenshot or print of the STPM
+results-checker web page carries no issuer, no signature and no disclaimer; it scores below the
+suspect floor (`not_<type>`), so the Academic card treats it as a wrong document and the reviewer asks
+for the real slip or certificate.
+**Ruling 2A — a CERTIFIED photocopy with a clear stamp IS accepted.** Its text is the certificate's
+(only the crest does not show), so it scores like the certificate (0.92 on the real copy).
+**Why.** STPM results were scored as bad SPM slips (suspect 0.39–0.52, from SPM substrings such as
+"SEKOLAH" inside "PERSEKOLAHAN"), dropping a genuine STPM student's Academic card one or two bands.
+**Trade-offs.** The checker page is a real record of real results, but an unsigned web page is not a
+document we can check; the student is asked once for the official one. **Revisit if:** MPM publishes a
+verifiable e-result (a QR or a lookup) — then the checker page could be verified rather than refused.
+
 ## A known public TVET issuer we have not fingerprinted reads "not checked"; TVET offers are supported public offers — 2026-10-26 (corpus-gaps C1; owner rulings A, B, C)
 
 **Ruling A — the safety net (partly reverses 1.4.0), for a GENUINE-LOOKING letter only.** An offer
