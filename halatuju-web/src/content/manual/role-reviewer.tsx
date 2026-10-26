@@ -58,7 +58,7 @@ export const roleReviewer: ManualChapter = {
         — not everyone&rsquo;s. Each row shows the name, source, qualification, merit score and status. The
         merit score is <strong>out of 100 for every student</strong>: an SPM student&rsquo;s comes from her SPM
         grades and co-curriculum, an STPM student&rsquo;s is her overall CGPA ÷ 4 × 100 (a CGPA of 3.70 shows as
-        92.5), so sorting by merit puts both in one order. A dash means there are no results to score yet —
+        92.5) — and so is a Matriculation, Asasi or Diploma student&rsquo;s — so sorting by merit puts them all in one order. A dash means there are no results to score yet —
         it is not a zero, and it always sorts last. Click a
         name to open the review screen — everything is on that one page. For an STPM student, the Academic
         card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when

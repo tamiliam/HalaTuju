@@ -13,12 +13,17 @@ export interface PoolFilter {
   level?: string
 }
 
+/** The third results route's names, as the server's card line begins (`pool.academic_band`:
+ *  'Matriculation · CGPA 3.47'); pinned to `exam_questions.QUALIFICATION_LABELS`
+ *  (drift-test: halatuju-web/src/lib/__tests__/qualificationDrift.test.ts). */
+const THIRD_ROUTE_LEVELS = ['Matriculation', 'Asasi', 'Diploma']
+
 /** Coarse study level derived from the academic band (e.g. "SPM · 7A 1B" → "SPM"). */
 export function levelOf(academic: string): string {
   const a = (academic || '').trim()
   if (a.startsWith('SPM')) return 'SPM'
   if (a.startsWith('STPM')) return 'STPM'
-  return ''
+  return THIRD_ROUTE_LEVELS.find((l) => a === l || a.startsWith(`${l} ·`)) ?? ''
 }
 
 /** Filter pool cards by field / state / level. An empty filter value means "any". */

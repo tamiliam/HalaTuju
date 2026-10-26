@@ -357,9 +357,9 @@ class TestTheReadersOnAMatricHolder(TestCase):
         prompt = profile_engine._build_prompt(self.app)
         self.assertIn('Qualification: Matriculation (STPM-equivalent), overall CGPA 3.47 ', prompt)
         self.assertIn('Merit score (out of 100): 86.75', prompt)
-        # NO bump in S2a (review round 1): no live profile's input moves while the route is
-        # shut, and a bump would mark every sponsor profile stale (a billable refresh). S2b bumps.
-        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-10-25.1')
+        # NO bump in S2a (review round 1): no live profile's input moved while the route was
+        # shut. S2b opens the route and bumps it (superseding the S2a pin of '2026-10-25.1').
+        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-10-26.1')
 
     def test_the_ai_profile_input_is_unchanged_for_spm(self):
         from apps.scholarship import profile_engine
@@ -526,7 +526,9 @@ class TestTheDoorIsShutUntilS2b(TestCase):
         for bad in ({'exam_type': 'matric'}, {'results_exam_type': 'diploma'},
                     {'higher_cgpa': 3.0}, {'higher_koko': 5},
                     {'higher_institution_type': 'public'},
-                    {'completed_qualifications': ['spm']}):
+                    # S2b narrowed this from ['spm']: only a list NAMING a third-route kind is the
+                    # escape; an SPM / STPM list is what every SPM / STPM sync now sends.
+                    {'completed_qualifications': ['spm', 'matric']}):
             with self.subTest(bad=repr(bad)):
                 s = ProfileUpdateSerializer(self.p, data=bad, partial=True)
                 self.assertFalse(s.is_valid())
@@ -540,6 +542,19 @@ class TestTheDoorIsShutUntilS2b(TestCase):
         self.assertTrue(s.is_valid(), s.errors)
         saved = s.save()
         self.assertEqual((saved.results_exam_type, saved.completed_qualifications), ('stpm', []))
+
+    def test_an_spm_or_stpm_completed_list_passes_while_shut_S2b(self):
+        """S2b: the web sends the WHOLE completed list with every SPM / STPM sync. Shut must still
+        let those through, or a web release that beat the switch would 400 every SPM student's
+        onboarding sync (grades lost). Only a list naming a third-route kind is refused."""
+        for ok in (['spm'], ['spm', 'stpm']):
+            with self.subTest(ok=','.join(ok)):
+                s = ProfileUpdateSerializer(self.p, data={
+                    'exam_type': 'spm', 'results_exam_type': 'spm', 'completed_qualifications': ok},
+                    partial=True)
+                self.assertTrue(s.is_valid(), s.errors)
+        saved = s.save()
+        self.assertEqual(eq.results_held(saved), 'spm')
 
     @override_settings(THIRD_ROUTE_OPEN=True)
     def test_open_the_same_write_lands(self):
@@ -600,3 +615,63 @@ class TestTheListStaysInStep(TestCase):
         saved = self._save(p, {'muet_band': 4})
         self.assertEqual(saved.completed_qualifications, [])
         self.assertEqual(eq.results_held(saved), 'spm')
+
+
+@override_settings(THIRD_ROUTE_OPEN=True)
+class TestAStaleSyncNeverDemotes(TestCase):
+    """S2b adversarial review (HIGH): a sign-in from a stale browser sends the results set it last
+    saw — e.g. `results_exam_type='spm'`, `['spm']`, `exam_type='spm'`. The guard is built from the
+    STORED profile: a profile holding tertiary results that are still on file stays where it was.
+    Only clearing the results themselves demotes. (The review's probe table.)"""
+
+    _n = 0
+    STALE = {'exam_type': 'spm', 'results_exam_type': 'spm', 'completed_qualifications': ['spm']}
+
+    def _profile(self, **fields):
+        type(self)._n += 1
+        return StudentProfile.objects.create(supabase_user_id=f'stale-{self._n}', name='A Student',
+                                             **fields)
+
+    def _sync(self, profile, data):
+        s = ProfileUpdateSerializer(profile, data=data, partial=True)
+        self.assertTrue(s.is_valid(), s.errors)
+        return s.save()
+
+    def test_the_probe_table(self):
+        rows = [
+            ('legacy STPM (recorded blank)', dict(exam_type='stpm', grades=SPM, stpm_grades=STPM,
+                                                  stpm_cgpa=3.5), 'stpm'),
+            ('legacy STPM (recorded stpm)', dict(exam_type='stpm', grades=SPM, stpm_grades=STPM,
+                                                 stpm_cgpa=3.5, results_exam_type='stpm'), 'stpm'),
+            ("['spm','stpm'] list", dict(exam_type='stpm', grades=SPM, stpm_grades=STPM,
+                                         stpm_cgpa=3.5, results_exam_type='stpm',
+                                         completed_qualifications=['spm', 'stpm']), 'stpm'),
+            ('Matriculation', MATRIC, 'matric'),
+            ('Diploma', DIPLOMA, 'diploma'),
+        ]
+        for label, fields, held in rows:
+            with self.subTest(row=label):
+                p = self._profile(**fields)
+                self.assertEqual(eq.results_held(p), held)
+                saved = self._sync(p, dict(self.STALE))
+                self.assertEqual(eq.results_held(saved), held)
+
+    def test_clearing_the_results_still_demotes(self):
+        p = self._profile(**MATRIC)
+        saved = self._sync(p, {**self.STALE, 'higher_cgpa': None})
+        self.assertEqual(eq.results_held(saved), 'spm')
+        p = self._profile(exam_type='stpm', grades=SPM, stpm_grades=STPM, stpm_cgpa=3.5,
+                          results_exam_type='stpm')
+        saved = self._sync(p, {**self.STALE, 'stpm_grades': {}, 'stpm_cgpa': None})
+        self.assertEqual(eq.results_held(saved), 'spm')
+
+    def test_an_spm_holder_and_a_lateral_move_are_untouched(self):
+        p = self._profile(exam_type='spm', grades=SPM, results_exam_type='spm')
+        saved = self._sync(p, dict(self.STALE))
+        self.assertEqual(eq.results_held(saved), 'spm')
+        p = self._profile(**MATRIC)            # Matriculation -> a completed public Diploma form
+        saved = self._sync(p, {'exam_type': 'diploma', 'results_exam_type': 'diploma',
+                               'higher_cgpa': 3.1, 'higher_koko': None,
+                               'higher_institution_type': 'public',
+                               'completed_qualifications': ['spm', 'diploma']})
+        self.assertEqual(eq.results_held(saved), 'diploma')

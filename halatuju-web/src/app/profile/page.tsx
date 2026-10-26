@@ -22,6 +22,7 @@ import {
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
+import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
 import LazyGuardianContactSection from '@/components/profile/LazyGuardianContactSection'
@@ -139,6 +140,13 @@ export default function ProfilePage() {
   const [pathwayForm, setPathwayForm] = useState<PathwayForm>(EMPTY_PATHWAY)
   // Full profile object kept for PathwayPicker's eligibility fetch (grades/exam_type/etc).
   const [profileObj, setProfileObj] = useState<StudentProfile | null>(null)
+  // Third results route S2b: every student edits on the form for the results she HOLDS (an STPM
+  // holder sent to the SPM form was demoted by finishing it — S2b review); a Matriculation / Asasi /
+  // Diploma holder reads the SERVER's overall CGPA here (`merit_score` is the SPM merit).
+  const thirdHeld = isThirdRoute(profileObj?.results_held) ? profileObj?.results_held : null
+  const resultsPath = resultsEditPath(profileObj?.results_held)
+  const meritShown = thirdHeld ? (profileObj?.overall_cgpa != null ? profileObj.overall_cgpa.toFixed(2) : null) : meritScore
+  const meritLabel = t(thirdHeld ? 'onboarding.cgpaLabel' : 'profile.meritScore')
   const [angkaGiliran, setAngkaGiliran] = useState('')
   // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
   const [school, setSchool] = useState('')
@@ -1248,11 +1256,11 @@ export default function ProfilePage() {
                     the SAME tappable shortcut as the view state (it was an inert span here, which is
                     why merit looked editable from the view but not from inside edit). Tapping jumps
                     to the grades page (stashing a return to /profile). */}
-                <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
+                <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push(resultsPath) }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
-                  <span className="text-sm font-medium text-ground-700">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
-                    {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                  <span className="text-sm font-medium text-ground-700">{meritLabel}</span>
+                  <span className={`text-sm text-right ${meritShown != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
+                    {meritShown != null ? meritShown : t('profile.meritTapAdd')}
                   </span>
                 </button>
                 <div className="border-t border-ground-100 pt-4">
@@ -1288,11 +1296,11 @@ export default function ProfilePage() {
                 </div>
                 {/* Merit — tap to the grades editor, then return here (not the
                     course-guide recommendations). */}
-                <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
+                <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push(resultsPath) }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
-                  <span className="text-sm text-ground-500">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
-                    {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                  <span className="text-sm text-ground-500">{meritLabel}</span>
+                  <span className={`text-sm text-right ${meritShown != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
+                    {meritShown != null ? meritShown : t('profile.meritTapAdd')}
                   </span>
                 </button>
                 {/* Pathway — show the chosen COURSE when one exists, else the pathway type;

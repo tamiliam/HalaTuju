@@ -34,7 +34,7 @@ export const KEY_SIGNAL_STRENGTH = 'halatuju_signal_strength'
 /** Whether a report has been generated: 'true' | absent */
 export const KEY_REPORT_GENERATED = 'halatuju_report_generated'
 
-/** Exam type: 'spm' | 'stpm' */
+/** Exam type: 'spm' | 'stpm' | 'matric' | 'asasi' | 'diploma' (the last three: the third results route) */
 export const KEY_EXAM_TYPE = 'halatuju_exam_type'
 /**
  * Which exam's results were last COMPLETED — distinct from KEY_EXAM_TYPE, which is set by
@@ -42,6 +42,17 @@ export const KEY_EXAM_TYPE = 'halatuju_exam_type'
  * editors when their form is finished, and synced to `profile.results_exam_type`.
  */
 export const KEY_RESULTS_EXAM_TYPE = 'halatuju_results_exam_type'
+
+/** Third results route (S2b): the Matriculation / Asasi / Diploma CGPA AS PRINTED (number as string).
+ *  Which of the three is KEY_EXAM_TYPE / KEY_RESULTS_EXAM_TYPE. The overall CGPA is never stored
+ *  here — the server computes it (`exam_questions.overall_cgpa`). */
+export const KEY_HIGHER_CGPA = 'halatuju_higher_cgpa'
+
+/** Third results route: the Matriculation / Asasi co-curriculum score, 0-10 (absent for Diploma). */
+export const KEY_HIGHER_KOKO = 'halatuju_higher_koko'
+
+/** Third results route, Diploma only: 'public' (only a public diploma counts, ruling D5). */
+export const KEY_HIGHER_INSTITUTION = 'halatuju_higher_institution'
 
 /** STPM grades object: Record<string, string> */
 export const KEY_STPM_GRADES = 'halatuju_stpm_grades'
@@ -118,9 +129,10 @@ export function clearAll(): void {
     .forEach(k => localStorage.removeItem(k))
 }
 
-/** Check if the user has entered any subject grades (SPM or STPM). */
+/** Check if the user has entered any results (SPM or STPM grades, or a third-route CGPA). */
 export function hasGrades(): boolean {
   try {
+    if (localStorage.getItem(KEY_HIGHER_CGPA)) return true
     const spm = localStorage.getItem(KEY_GRADES)
     if (spm && Object.keys(JSON.parse(spm)).length > 0) return true
     const stpm = localStorage.getItem(KEY_STPM_GRADES)

@@ -598,6 +598,8 @@
     "examTypeSubtitle": "Select the exam you took to get started.",
     "spmDesc": "Sijil Pelajaran Malaysia",
     "stpmDesc": "Sijil Tinggi Persekolahan Malaysia",
+    "higherCardTitle": "Matriculation, Asasi or Diploma",
+    "higherCardDesc": "STPM-equivalent qualifications",
     "comingSoon": "Coming Soon",
     "selectStream": "What stream did you take?",
     "gradesSubtitleNew": "Enter your grades so we can find courses that match your results.",
@@ -632,6 +634,24 @@
     "cgpaLabel": "Overall CGPA",
     "cgpaFormula": "90% academic + 10% co-curriculum",
     "cgpaAutoCalc": "Auto-calculated",
+    "higherGradesTitle": "Your Results",
+    "higherGradesSubtitle": "Enter your results and your SPM grades.",
+    "higherWhich": "Which did you take?",
+    "higherKind": {
+      "matric": "Matriculation",
+      "asasi": "Asasi (Foundation)",
+      "diploma": "Diploma"
+    },
+    "higherWhere": "Where is your diploma from?",
+    "higherInst": {
+      "public": "Public institution (polytechnic, UiTM, public university, other public)",
+      "private": "Private college"
+    },
+    "higherPrivateNo": "A diploma from a private college is not accepted through UA, so it does not qualify here.",
+    "higherResults": "Your CGPA and MUET",
+    "higherCgpa": "CGPA",
+    "higherCgpaHint": "As printed on your results (0.00–4.00)",
+    "meritLabel": "Merit (out of 100)",
     "spmPrerequisites": "SPM Results",
     "spmPrereqHint": "Some degree programmes require minimum SPM grades.",
     "spmCompulsory": "Compulsory",
@@ -669,6 +689,8 @@
     "qualifyFor": "You qualify for",
     "qualifyCourses": "courses",
     "editProfile": "Edit Profile",
+    "higherBrowseTitle": "Degree programmes",
+    "higherBrowseNote": "We do not have entry rules for Matriculation, Asasi and Diploma holders yet, so this is every degree programme. Check each programme's own requirements.",
     "clearFilter": "Clear",
     "loadMore": "Load More",
     "remaining": "remaining",
@@ -4343,6 +4365,20 @@
       },
       "meritScore": "Merit score (out of 100)",
       "stpmCgpa": "CGPA (out of 4.00)",
+      "qualificationLabel": {
+        "matric": "Matriculation",
+        "asasi": "Asasi",
+        "diploma": "Diploma"
+      },
+      "heldResults": "Results held",
+      "higherCgpaEntered": "CGPA as printed",
+      "higherKoko": "Co-curriculum (out of 10)",
+      "diplomaFrom": "Diploma from",
+      "diplomaInst": {
+        "public": "Public institution",
+        "private": "Private college (does not qualify)",
+        "unstated": "Not stated"
+      },
       "ownWords": {
         "toggle": "Show the student's own words",
         "hide": "Hide the student's own words"

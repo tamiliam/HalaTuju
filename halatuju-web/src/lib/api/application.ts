@@ -5,6 +5,7 @@
  * ⚠ TWO SPANS of the old `api.ts` (1472-1667 and 1744-1792). The interview calls sat in the
  * middle of the application's own functions; they are now `./interview`.
  */
+import type { Qualification } from '@/lib/qualification'
 import type { Locale } from '@/lib/branding'
 import type { IncomeShownMap } from '@/lib/incomeShown'
 import type { ReferralSource } from '@/lib/referralSources'
@@ -63,7 +64,7 @@ export interface ScholarshipApplication {
   // Academic + financial fields are derived live from the canonical profile.
   /** The results we HOLD (server `exam_questions.results_held`, TD-218) — NOT the exam the
    *  student declared, which a card tap sets with no results behind it. */
-  exam_type?: 'spm' | 'stpm'
+  exam_type?: Qualification
   spm_a_count: number | null
   stpm_pngk: number | null
   household_income: number | null

@@ -205,22 +205,66 @@ class TestReportViews(TestCase):
         self.assertIsNone(call_kwargs['muet_band'])
 
     @patch('apps.reports.views.generate_report')
-    def test_a_third_route_student_gets_the_spm_report_path_PIN(self, mock_gen):
-        """Third results route S2a, PIN (the report's content for this route is S2b's, roadmap
-        section 4): a Matriculation declaration reaches the engine as 'matric' with no STPM data,
-        and the prompt it selects is the SPM one — nothing crashes, nothing reads as STPM."""
+    def test_a_third_route_student_gets_the_stpm_equivalent_report_path(self, mock_gen):
+        """Third results route S2b (supersedes S2a's PIN, which held this route on the SPM prompt
+        until S2b owned its content, roadmap section 4): a Matriculation holder reaches the engine
+        as 'matric' with her results (the qualification, the CGPA as printed, the server's overall
+        CGPA, the co-curriculum score, MUET) and her SPM grades from the ONE reader
+        (`spm_grades_for`, the STPM page's block included); the prompt is the STPM-equivalent one,
+        never the SPM leaver's."""
         from apps.reports.prompts import get_prompt
         mock_gen.return_value = {
             'markdown': 'text', 'model_used': 'gemini-2.5-flash', 'generation_time_ms': 100,
         }
-        self.profile.exam_type = 'matric'
-        self.profile.higher_cgpa, self.profile.higher_koko = 3.5, 8
+        self.profile.exam_type = self.profile.results_exam_type = 'matric'
+        self.profile.higher_cgpa, self.profile.higher_koko, self.profile.muet_band = 3.5, 8, 4
+        self.profile.completed_qualifications = ['spm', 'matric']
+        self.profile.spm_prereq_grades = {'hist': 'B'}
+        self.profile.save()
+        self.client.post('/api/v1/reports/generate/',
+                         {'eligible_courses': [{'course_name': 'Ijazah'}], 'insights': {}},
+                         format='json')
+        kw = mock_gen.call_args[1]
+        self.assertEqual(kw['exam_type'], 'matric')
+        self.assertIsNone(kw['stpm_grades'])
+        self.assertIsNone(kw['stpm_cgpa'])
+        self.assertEqual(kw['higher'], {'label': 'Matriculation', 'cgpa': 3.5, 'overall_cgpa': 3.47,
+                                        'koko': 8.0, 'muet_band': 4})
+        self.assertEqual(kw['grades'], {'bm': 'A', 'eng': 'B+', 'math': 'A-', 'hist': 'B'})
+        self.assertEqual(get_prompt('bm', exam_type='matric'), get_prompt('bm', exam_type='stpm'))
+        self.assertNotEqual(get_prompt('en', exam_type='diploma'), get_prompt('en', exam_type='spm'))
+        snap = GeneratedReport.objects.latest('id').student_profile_snapshot
+        self.assertEqual((snap['exam_type'], snap['higher']['overall_cgpa']), ('matric', 3.47))
+
+    @patch('apps.reports.views.generate_report')
+    def test_a_declared_third_route_with_no_cgpa_reads_its_spm_results(self, mock_gen):
+        """The card tapped, no CGPA entered, SPM grades on file: `results_held` reads SPM (the Form
+        Six rule, extended in S2a), and so does the report — never a third-route report on nothing."""
+        mock_gen.return_value = {
+            'markdown': 'text', 'model_used': 'gemini-2.5-flash', 'generation_time_ms': 100,
+        }
+        self.profile.exam_type = 'asasi'
         self.profile.save()
         self.client.post('/api/v1/reports/generate/',
                          {'eligible_courses': [{'course_name': 'Diploma IT'}], 'insights': {}},
                          format='json')
-        call_kwargs = mock_gen.call_args[1]
-        self.assertEqual(call_kwargs['exam_type'], 'matric')
-        self.assertIsNone(call_kwargs['stpm_grades'])
-        self.assertIsNone(call_kwargs['stpm_cgpa'])
-        self.assertEqual(get_prompt('bm', exam_type='matric'), get_prompt('bm', exam_type='spm'))
+        kw = mock_gen.call_args[1]
+        self.assertEqual(kw['exam_type'], 'spm')
+        self.assertIsNone(kw['higher'])
+
+    @patch('apps.reports.views.generate_report')
+    def test_a_form_six_explorer_gets_the_report_for_the_results_she_holds(self, mock_gen):
+        """S2b review: the HELD qualification on every route. Declared STPM, no STPM results, SPM
+        grades on file -> `results_held` is SPM, and so is the report (it used to be the STPM
+        prompt over "no STPM grades")."""
+        mock_gen.return_value = {
+            'markdown': 'text', 'model_used': 'gemini-2.5-flash', 'generation_time_ms': 100,
+        }
+        self.profile.exam_type = 'stpm'
+        self.profile.save()
+        self.client.post('/api/v1/reports/generate/',
+                         {'eligible_courses': [{'course_name': 'Diploma IT'}], 'insights': {}},
+                         format='json')
+        kw = mock_gen.call_args[1]
+        self.assertEqual(kw['exam_type'], 'spm')
+        self.assertIsNone(kw['stpm_grades'])

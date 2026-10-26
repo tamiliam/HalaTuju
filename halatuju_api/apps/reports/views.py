@@ -13,6 +13,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from apps.courses.exam_questions import (
+    QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa, results_held, spm_grades_for,
+)
 from apps.courses.models import StudentProfile
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from .models import GeneratedReport
@@ -90,8 +93,21 @@ class GenerateReportView(APIView):
                     field_cache[fk] = ''
             course['field_display'] = field_cache.get(fk, '')
 
-        # Determine exam type
-        exam_type = profile.exam_type or 'spm'
+        # Which results the report is about: the results HELD (`results_held`, the one rule), on
+        # every route (S2b review) — never the declared exam, so a Form Six explorer who declared
+        # STPM with nothing behind it gets her SPM report, and a third-route card tapped with no
+        # CGPA reads the SPM results held. Matriculation / Asasi / Diploma are STPM-equivalent and
+        # carry their own results block.
+        held = results_held(profile) or 'spm'
+        higher = None
+        if held in THIRD_ROUTE:
+            exam_type = held
+            grades = spm_grades_for(profile)
+            higher = {'label': QUALIFICATION_LABELS[held], 'cgpa': profile.higher_cgpa,
+                      'overall_cgpa': overall_cgpa(profile), 'koko': profile.higher_koko,
+                      'muet_band': profile.muet_band}
+        else:
+            exam_type = 'stpm' if held == 'stpm' else 'spm'
 
         # Call Gemini via report engine
         result = generate_report(
@@ -105,6 +121,7 @@ class GenerateReportView(APIView):
             stpm_grades=profile.stpm_grades if exam_type == 'stpm' else None,
             stpm_cgpa=profile.stpm_cgpa if exam_type == 'stpm' else None,
             muet_band=profile.muet_band if exam_type == 'stpm' else None,
+            higher=higher,
         )
 
         if 'error' in result:
@@ -134,6 +151,7 @@ class GenerateReportView(APIView):
                     if exam_type == 'stpm'
                     else {}
                 ),
+                **({'higher': higher} if higher else {}),
             },
             eligible_courses_snapshot=eligible_courses,
             model_used=result['model_used'],

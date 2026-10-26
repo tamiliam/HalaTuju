@@ -16,7 +16,8 @@ import { render, waitFor } from '@testing-library/react'
 import AuthGateModal from './AuthGateModal'
 import * as api from '@/lib/api'
 import {
-  KEY_ELEKTIF, KEY_GRADES, KEY_SPM_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_STREAM,
+  KEY_ELEKTIF, KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_HIGHER_INSTITUTION, KEY_HIGHER_KOKO,
+  KEY_RESULTS_EXAM_TYPE, KEY_SPM_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_STREAM, KEY_STPM_GRADES,
 } from '@/lib/storage'
 
 jest.mock('next/navigation', () => ({
@@ -30,6 +31,8 @@ jest.mock('@/lib/api', () => ({
   __esModule: true,
   claimNric: jest.fn(),
   syncProfile: jest.fn(() => Promise.resolve({})),
+  // The server's profile at sign-in: by default it records no completion yet (a first onboarding).
+  getProfile: jest.fn(() => Promise.resolve({ results_exam_type: '', completed_qualifications: [] })),
 }))
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en' }),
@@ -86,4 +89,159 @@ it('sends none of them when this device never entered any', async () => {
   expect(sent).not.toHaveProperty('spm_elective_subjects')
   expect(sent).not.toHaveProperty('spm_stream')
   expect(sent.grades).toEqual({ bm: 'A' })
+})
+
+// ── Third results route S2b: the results travel as a SET, the completed list whole ──────────
+describe('the results half of the sign-in sync (third results route S2b)', () => {
+  it('sends a Matriculation completion with its CGPA, koko and the FULL completed list', async () => {
+    localStorage.setItem(KEY_EXAM_TYPE, 'matric')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'matric')
+    localStorage.setItem(KEY_HIGHER_CGPA, '3.5')
+    localStorage.setItem(KEY_HIGHER_KOKO, '8')
+    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify({ bm: 'A', eng: 'A', hist: 'B', math: 'A' }))
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    expect(sent).toMatchObject({
+      exam_type: 'matric', results_exam_type: 'matric', higher_cgpa: 3.5, higher_koko: 8,
+      higher_institution_type: '', completed_qualifications: ['spm', 'matric'],
+    })
+    expect(sent.spm_prereq_grades).toEqual({ bm: 'A', eng: 'A', hist: 'B', math: 'A' })
+  })
+
+  it('a Diploma sends no co-curriculum score and says where it is from', async () => {
+    localStorage.setItem(KEY_EXAM_TYPE, 'diploma')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'diploma')
+    localStorage.setItem(KEY_HIGHER_CGPA, '2.8')
+    localStorage.setItem(KEY_HIGHER_KOKO, '9')          // left over from a Matriculation entry
+    localStorage.setItem(KEY_HIGHER_INSTITUTION, 'public')
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    expect(mockApi.syncProfile.mock.calls[0][0]).toMatchObject({
+      higher_cgpa: 2.8, higher_koko: null, higher_institution_type: 'public',
+      completed_qualifications: ['spm', 'diploma'],
+    })
+  })
+
+  it('an STPM completion sends its list and never touches the third-route fields', async () => {
+    localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+    localStorage.setItem(KEY_HIGHER_CGPA, '3.1')         // an abandoned third-route entry
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    expect(sent.results_exam_type).toBe('stpm')
+    expect(sent.completed_qualifications).toEqual(['spm', 'stpm'])
+    expect(sent).not.toHaveProperty('higher_cgpa')
+  })
+
+  it('a browser that never completed a results form sends neither the marker nor a list', async () => {
+    localStorage.setItem(KEY_EXAM_TYPE, 'asasi')        // a card tap, nothing completed
+    localStorage.setItem(KEY_GRADES, JSON.stringify({ bm: 'A' }))
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    expect(sent.exam_type).toBe('asasi')
+    expect(sent).not.toHaveProperty('results_exam_type')
+    expect(sent).not.toHaveProperty('completed_qualifications')
+  })
+})
+
+// ── S2b adversarial review (HIGH): the sign-in door never overwrites a RECORDED completion ──────
+describe('a stale browser at sign-in leaves a recorded completion alone', () => {
+  const staleSpm = () => {
+    localStorage.setItem(KEY_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_GRADES, JSON.stringify({ bm: 'A' }))
+  }
+  it.each([
+    ['a legacy STPM holder (recorded stpm, blank list)', { results_exam_type: 'stpm', completed_qualifications: [] }],
+    ["an ['spm','stpm'] holder", { results_exam_type: 'stpm', completed_qualifications: ['spm', 'stpm'] }],
+    ['a Matriculation holder', { results_exam_type: 'matric', completed_qualifications: ['spm', 'matric'] }],
+    ['a list with no marker', { results_exam_type: '', completed_qualifications: ['spm', 'stpm'] }],
+  ])('%s: no marker, no list, no exam type is sent', async (_label, server) => {
+    mockApi.getProfile.mockResolvedValueOnce(server as never)
+    staleSpm()
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    expect(sent).not.toHaveProperty('results_exam_type')
+    expect(sent).not.toHaveProperty('completed_qualifications')
+    expect(sent).not.toHaveProperty('exam_type')
+    expect(sent.grades).toEqual({ bm: 'A' })              // the rest of the sync still goes
+  })
+
+  // Round 1 also pinned "a recorded SPM account is not PROMOTED by an STPM browser". Round 2
+  // (finding B) SUPERSEDED that: a move UP from held SPM is sent, or a returning SPM student's new
+  // results are lost — see the describe below. What stays pinned: no move, nothing sent.
+  it('a recorded SPM account whose browser also says SPM: nothing is sent', async () => {
+    mockApi.getProfile.mockResolvedValueOnce(
+      { results_exam_type: 'spm', completed_qualifications: ['spm'], results_held: 'spm' } as never)
+    localStorage.setItem(KEY_EXAM_TYPE, 'spm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    expect(mockApi.syncProfile.mock.calls[0][0]).not.toHaveProperty('results_exam_type')
+  })
+
+  it('an unreadable server profile sends no results set (cautious)', async () => {
+    mockApi.getProfile.mockRejectedValueOnce(new Error('down'))
+    staleSpm()
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A' }))
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    expect(sent).not.toHaveProperty('results_exam_type')
+    expect(sent.stpm_grades).toEqual({ PA: 'A' })        // and nothing after it was skipped
+  })
+
+  it('an empty browser sends nothing of the results set', async () => {
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    for (const k of ['exam_type', 'results_exam_type', 'completed_qualifications', 'higher_cgpa']) {
+      expect(sent).not.toHaveProperty(k)
+    }
+  })
+})
+
+// ── S2b round 2 (finding B): a RETURNING SPM account that entered new tertiary results signed out ──
+describe('a move UP is sent at sign-in; the server still refuses a move down', () => {
+  const SERVER_SPM = { results_exam_type: 'spm', completed_qualifications: ['spm'], results_held: 'spm' }
+
+  it('STPM results entered while signed out reach an account recorded SPM', async () => {
+    mockApi.getProfile.mockResolvedValueOnce(SERVER_SPM as never)
+    localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A' }))
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    const sent = mockApi.syncProfile.mock.calls[0][0]
+    expect(sent).toMatchObject({ exam_type: 'stpm', results_exam_type: 'stpm', completed_qualifications: ['spm', 'stpm'] })
+    expect(sent.stpm_grades).toEqual({ PA: 'A', MATH_T: 'A' })
+  })
+
+  it('Matriculation results entered while signed out reach an account recorded SPM', async () => {
+    mockApi.getProfile.mockResolvedValueOnce(SERVER_SPM as never)
+    localStorage.setItem(KEY_EXAM_TYPE, 'matric')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'matric')
+    localStorage.setItem(KEY_HIGHER_CGPA, '3.5')
+    localStorage.setItem(KEY_HIGHER_KOKO, '8')
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    expect(mockApi.syncProfile.mock.calls[0][0]).toMatchObject({
+      results_exam_type: 'matric', higher_cgpa: 3.5, completed_qualifications: ['spm', 'matric'],
+    })
+  })
+
+  it('a move between two tertiary kinds is NOT sent (recency cannot be told)', async () => {
+    mockApi.getProfile.mockResolvedValueOnce(
+      { results_exam_type: 'stpm', completed_qualifications: ['spm', 'stpm'], results_held: 'stpm' } as never)
+    localStorage.setItem(KEY_EXAM_TYPE, 'matric')
+    localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'matric')
+    localStorage.setItem(KEY_HIGHER_CGPA, '3.5')
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    expect(mockApi.syncProfile.mock.calls[0][0]).not.toHaveProperty('results_exam_type')
+  })
 })

@@ -2,6 +2,82 @@
 
 All notable changes to this project will be documented in this file.
 
+## Third results route S2b — the route, student side - 2026-10-26
+
+A student can choose **Matriculation, Asasi or Diploma** ("STPM-equivalent qualifications"), enter
+the results per the approved mock, and apply (roadmap `docs/plans/2026-10-25-third-results-route-roadmap.md`
+§5a; rulings D2 D4 D5). ⚠ **Release: set `THIRD_ROUTE_OPEN=1` on `halatuju-api`
+(`--update-env-vars`) BEFORE the push** — until then the live api refuses every third-route write.
+- **Choose Your Exam:** a third card in the SPM / STPM card style (grid of three); the tap only
+  opens the new page — nothing is recorded until its form is completed.
+- **New `onboarding/higher-grades` ("Your Results"):** (1) Matriculation / Asasi (Foundation) /
+  Diploma; for a Diploma "Where is your diploma from?" — public institution vs private college; a
+  private college shows a plain "not accepted through UA" message and Continue stays shut (D5);
+  (2) CGPA as printed (0.00–4.00), co-curriculum 0–10 (HIDDEN for a Diploma), MUET band (the STPM
+  page's control), live **Overall CGPA** and **Merit (out of 100)** from the SERVER calculator
+  (`calculateHigherCgpa` → `third_route_calculation`; no copy of the formula); (3) SPM Results,
+  REQUIRED. Continue needs type (+ public diploma), CGPA, koko (not Diploma), MUET and the SPM block.
+- **One SPM results block** (`components/SpmResultsBlock.tsx`), lifted verbatim from the STPM page
+  and used by both. **D4: the block is now REQUIRED on the STPM page too** (the four compulsory SPM
+  subjects graded) — the only behaviour change there; its rendered HTML is otherwise byte-identical
+  (jsdom, compared before/after). `stpm-grades/page.tsx` 647 → 409 lines (its oversize-ledger entry removed).
+- **Sync as one set** (`lib/resultsSync.ts`, both doors: onboarding + sign-in): `exam_type`,
+  `results_exam_type`, the WHOLE `completed_qualifications` derived from the last completed form
+  (`['spm']` / `['spm','stpm']` / `['spm', kind]`), and for the third route `higher_cgpa`,
+  `higher_koko` (null for a Diploma), `higher_institution_type`. The sign-in sync now also sends
+  `results_exam_type`. The login hydrate restores the `higher_*` fields; the onboarding guard
+  counts a third-route CGPA as results.
+- **Every web branch on the route:** `lib/qualification.ts` (new leaf: the codes, `isTertiary`,
+  `isThirdRoute`, `completedQualificationsFor`, `resultsEditPath`; drift-tested against
+  `exam_questions.py`), `lib/scholarship.ts` (`Qualification` now five codes,
+  `profileAcademicSummary` with the served `overall_cgpa`, `applyFormError` tertiary = degree),
+  `lib/resultsCache.ts` (new `higher` view), `scholarship/apply` (results card "Matriculation ·
+  Overall CGPA 3.47"; degree picker UNFILTERED for the route — every degree, D2), `PathwayPicker`
+  (same), `dashboard` (browse-only degree list with a note, no merit band — `components/HigherRouteDegrees.tsx`;
+  no SPM eligibility run), `search` (the note instead of the "eligible only" switch), `profile`
+  (results row shows the overall CGPA and edits on the new page), `ScholarshipReview`
+  ("Matriculation · CGPA 3.47" + the SPM block's grades), admin `ApplicantCards` (results held +
+  overall CGPA, CGPA as printed, co-curriculum or diploma institution, MUET, merit, SPM grades;
+  chosen degree links to `/stpm/…`), admin list + cockpit header + students pages (the
+  qualification named, not "MATRIC"), sponsor filter `levelOf` (Matriculation / Asasi / Diploma).
+  `saved` reviewed: it branches on the COURSE's type, not the route — unchanged.
+- **Server:** `PROMPT_VERSION` 2026-10-26.1 (the AI profile's `Qualification:` input now moves;
+  the sponsor-profile re-draft it marks stale is paid and owner-run). Reports: a third-route holder
+  gets the STPM-equivalent prompt with her own results block (`_format_higher_results`: the
+  qualification, CGPA as printed, overall CGPA, co-curriculum, MUET, SPM grades from
+  `spm_grades_for`); a declared third route with no CGPA reads its SPM results. The shut door
+  (`THIRD_ROUTE_OPEN` off) now refuses a `completed_qualifications` list only when it NAMES a
+  third-route kind — an SPM / STPM list (what every sync now sends) passes, so a web release can
+  never 400 an SPM student's onboarding sync.
+- **Adversarial review fixes (before push):** (1) **no sync demotes held tertiary results** —
+  `ProfileUpdateSerializer._never_demote_held_results`, built from the STORED profile: if it held
+  STPM / Matriculation / Asasi / Diploma, the write would make it SPM, and those results are still
+  on file, the write's `results_exam_type` / `completed_qualifications` / `exam_type` are dropped
+  (only clearing the results demotes); on the web the sign-in door sends the results set only when
+  the server records no completion (`signInResultsFields`) — never demotes, never promotes;
+  (2) `/profile`'s results row, the Action Centre "grades" ticket and the onboarding Back link
+  route by the results HELD (`resultsEditPath`); (3) a sync refused `third_route_closed` is retried
+  once without the third-route results (`syncProfileSafely`, logged) — the third card is NOT hidden
+  (no public config endpoint exists to serve the switch); (4) the required SPM block prefills the
+  four compulsory grades from `grades` when it lacks them; (5) reports, dashboard and search pick the
+  route from the served `results_held` (a Form Six explorer's report is now her SPM one).
+- **Review round 2:** (B) the sign-in door sends a move UP (held SPM → tertiary) entered while
+  signed out, and the login hydrate leaves that pending move alone (`browserMovesUp`); tertiary →
+  tertiary is not sent. (C) the Action Centre "grades" ticket is back on the SPM form (the slip
+  comparison reads `profile.grades` until S3b). (A) recorded in `docs/decisions.md` as a known
+  trade-off for the owner: the guard keeps an STPM-read Form Six explorer on STPM.
+- **i18n** en/ms/ta (student strings in core, admin strings in the admin slice); reviewer manual:
+  a new FAQ entry and the merit paragraph cover the route. Malay and Tamil are first drafts for Sol.
+- **Tests (jest):** `qualificationDrift` (new, in the api guard manifest), `resultsCache`,
+  `AuthGateModal.sync`, `onboarding/profile/page.sync` (new), `stpm-grades/page` (D4),
+  `exam-type/page` (new), `higher-grades/page` (new, 19), `PathwayPicker`,
+  `scholarship/apply/page.thirdRoute` (new), `dashboard/page.thirdRoute` (new), `ScholarshipReview`,
+  `ApplicantCards.thirdRoute` (new), `onboardingGuardThirdRoute` (new), `thirdRouteSummary` (new),
+  `sponsorFilter` (amended: "Diploma" is now a level). **(pytest):** `reports/test_views` (the S2a
+  PIN superseded), `reports/test_report_engine`, `test_third_route` (PROMPT_VERSION pin, the narrowed
+  shut door). Each new rule was bitten by an injected fault (one silent bite fixed by a kinder-than-real
+  fixture).
+
 ## Third results route S2a — the route, server side - 2026-10-25
 
 A profile can now hold Matriculation, Asasi (Foundation) or Diploma results, and "results held"

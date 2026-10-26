@@ -6,10 +6,12 @@ import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
-import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
+import { getProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import SchoolSelect from '@/components/SchoolSelect'
-import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
+import { resultsSyncFields, syncProfileSafely } from '@/lib/resultsSync'
+import { resultsEditPath } from '@/lib/qualification'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
 import { applyPagePath } from '@/lib/applyPagePath'
 
@@ -44,7 +46,12 @@ export default function ProfileInputPage() {
   // so the box cannot vanish under a student who is filling it in.
   const [schoolKnown, setSchoolKnown] = useState<boolean>(false)
 
-  useEffect(() => { setReturning(hasApplyReturn()); setReturnPath(peekOnboardingReturn()) }, [])
+  // Back = the results form this student came from (S2b: three forms now, not one).
+  const [backPath, setBackPath] = useState(resultsEditPath('spm'))
+  useEffect(() => {
+    setReturning(hasApplyReturn()); setReturnPath(peekOnboardingReturn())
+    setBackPath(resultsEditPath(localStorage.getItem(KEY_EXAM_TYPE)))
+  }, [])
 
   useEffect(() => {
     const stashSchool = (peekApplyStash()?.school ?? '').trim()
@@ -148,17 +155,13 @@ export default function ProfileInputPage() {
       const spmStream = localStorage.getItem(KEY_SPM_STREAM)
       if (spmStream) syncPayload.spm_stream = spmStream
 
-      // Include STPM data
-      const examType = localStorage.getItem(KEY_EXAM_TYPE)
-      if (examType) syncPayload.exam_type = examType
-
       // ⚠ WHICH RESULTS WERE COMPLETED, which is not the same claim as which exam was selected.
-      // Only the two results editors write this, and only when their form is finished — so
+      // Only the three results editors write it, and only when their form is finished — so
       // reaching this page carries it, and abandoning a selection never does. The server checks
       // it is backed by results on file and drops it otherwise; this is the honest half of a
-      // guarantee the browser cannot make alone.
-      const resultsExamType = localStorage.getItem(KEY_RESULTS_EXAM_TYPE)
-      if (resultsExamType) syncPayload.results_exam_type = resultsExamType
+      // guarantee the browser cannot make alone. It travels WITH the whole completed list and the
+      // third route's fields, as one set (`resultsSyncFields`, third results route S2b).
+      Object.assign(syncPayload, resultsSyncFields(localStorage))
 
       const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
       if (stpmGradesStr) {
@@ -182,7 +185,7 @@ export default function ProfileInputPage() {
       }
 
       try {
-        await syncProfile(syncPayload, { token })
+        await syncProfileSafely(syncPayload, { token })
         await refreshProfile()
       } catch {
         // Continue even if sync fails — localStorage has the data
@@ -392,7 +395,7 @@ export default function ProfileInputPage() {
         {/* Navigation */}
         <div className="flex justify-between items-center">
           <Link
-            href="/onboarding/grades"
+            href={backPath}
             className="px-6 py-3 text-ground-600 hover:text-ground-900"
           >
             {t('common.back')}

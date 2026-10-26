@@ -8,6 +8,7 @@
  * document-verified income and household-size readings are still computed in the cockpit and
  * arrive here as props, because the header uses them too.
  */
+import { isThirdRoute } from '@/lib/qualification'
 import VerifiedTick from '@/components/VerifiedTick'
 import {
   formatPhone,
@@ -48,6 +49,10 @@ export function ApplicantCards({
       {/* Applicant info — three explicit columns (About+Family / Academic / Support…) */}
       {(() => {
         const isStpm = app.qualification === 'stpm'
+        // Third results route S2b: Matriculation / Asasi / Diploma — STPM-equivalent, but its own
+        // lines: the qualification + the server's overall CGPA, the CGPA as printed, the SPM block.
+        const third = isThirdRoute(app.qualification) ? app.qualification : null
+        const fmt2 = (n?: number | null) => (n == null ? n : Number(n).toFixed(2))
         // Pathway context: matric/stpm are INSTITUTION pathways (track + school);
         // everything else (asasi, university, poly, pismp…) is a PROGRAMME pathway
         // (a chosen course), so Pre-U track doesn't apply.
@@ -76,7 +81,8 @@ export function ApplicantCards({
         // STPM degree); a pre-U pick (no course_id) → its /pathway page, keyed by the track/stream
         // (owner 2026-07-17). Falls back to null (plain text) only when neither exists.
         const courseHref = (cid?: string) => {
-          if (cid) return isStpm ? `/stpm/${cid}` : `/course/${cid}`
+          // A third-route student names a degree too (the unfiltered degree list, D2) → /stpm.
+          if (cid) return isStpm || third ? `/stpm/${cid}` : `/course/${cid}`
           if (app.chosen_pathway === 'stpm') return `/pathway/stpm${app.pre_u_track ? `?stream=${app.pre_u_track}` : ''}`
           if (app.chosen_pathway === 'matric') return `/pathway/matric${app.pre_u_track ? `?track=${app.pre_u_track}` : ''}`
           return null
@@ -190,7 +196,7 @@ export function ApplicantCards({
                       student: that merit comes from STPM, so an SPM year would misstate its source. */}
                   <Field label={t('admin.scholarship.meritScore')} value={(() => {
                     if (app.merit_score == null) return app.merit_score
-                    const sy = isStpm ? null : spmExamYear(app.documents)
+                    const sy = isStpm || third ? null : spmExamYear(app.documents)
                     if (!sy) return app.merit_score
                     return (
                       <>
@@ -206,6 +212,14 @@ export function ApplicantCards({
                       gets its own line instead of hiding inside the merit. */}
                   {isStpm && <Field label={t('admin.scholarship.stpmCgpa')} value={app.stpm_pngk == null ? app.stpm_pngk : Number(app.stpm_pngk).toFixed(2)} />}
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
+                  {third && <>
+                    <Field label={t('admin.scholarship.heldResults')} value={`${t(`admin.scholarship.qualificationLabel.${third}`)}${app.overall_cgpa != null ? ` · CGPA ${fmt2(app.overall_cgpa)}` : ''}`} />
+                    <Field label={t('admin.scholarship.higherCgpaEntered')} value={fmt2(app.higher_cgpa)} />
+                    {third === 'diploma'
+                      ? <Field label={t('admin.scholarship.diplomaFrom')} value={t(`admin.scholarship.diplomaInst.${app.higher_institution_type || 'unstated'}`)} />
+                      : <Field label={t('admin.scholarship.higherKoko')} value={app.higher_koko} />}
+                    <Field label="MUET" value={app.muet_band} />
+                  </>}
                 </dl>
                 <div className="mt-3">
                   <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
@@ -216,8 +230,8 @@ export function ApplicantCards({
                       STPM student's STPM grades are NOT what academic_check verifies (it would sit
                       on a match against the separate SPM slip → misattribution, #132). */}
                   <Grades
-                    grades={isStpm ? app.stpm_grades : app.grades}
-                    trailing={!isStpm && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
+                    grades={isStpm ? app.stpm_grades : third ? { ...(app.spm_prereq_grades || {}), ...(app.grades || {}) } : app.grades}
+                    trailing={!isStpm && !third && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
                   />
                   {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
                     <div className="mt-2">

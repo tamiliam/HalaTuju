@@ -203,3 +203,67 @@ describe('a simulated login restores the record (the real AuthProvider hydrate)'
     expect(localStorage.getItem(KEY_SPM_STREAM)).toBeNull()
   })
 })
+
+// ── Third results route S2b, ruling D4: the SPM block is REQUIRED on the STPM page too ─────────
+describe('D4 — Continue waits for the SPM results block', () => {
+  const stpmReady = () => {
+    localStorage.setItem(KEY_STPM_STREAM, 'science')
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A', PHYSICS: 'A', CHEMISTRY: 'B' }))
+    localStorage.setItem(KEY_MUET_BAND, '4')
+  }
+  const continueButton = () => screen.getByText('common.continue').closest('button') as HTMLButtonElement
+
+  it('is disabled with STPM complete but the four compulsory SPM subjects not all graded', () => {
+    stpmReady()
+    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify({ bm: 'A', eng: 'A', hist: 'B' }))   // no math
+    render(<StpmGradesPage />)
+    expect(continueButton().disabled).toBe(true)
+    fireEvent.click(continueButton())
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('opens once the last compulsory SPM grade is chosen — on the shared block', async () => {
+    stpmReady()
+    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify({ bm: 'A', eng: 'A', hist: 'B' }))
+    render(<StpmGradesPage />)
+    const mathRow = screen.getByText('Matematik').parentElement as HTMLElement
+    fireEvent.change(mathRow.querySelector('select') as HTMLSelectElement, { target: { value: 'B+' } })
+    expect(continueButton().disabled).toBe(false)
+    fireEvent.click(continueButton())
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding/profile'))
+    expect(JSON.parse(localStorage.getItem(KEY_SPM_PREREQ) as string)).toMatchObject({ math: 'B+' })
+  })
+
+  it('is disabled with no SPM block at all (it used to be optional)', () => {
+    stpmReady()
+    render(<StpmGradesPage />)
+    expect(continueButton().disabled).toBe(true)
+  })
+})
+
+// ── S2b review (D4 prefill): the compulsory SPM grades already in `grades` fill the block ─────────
+describe('the required SPM block prefills from the SPM grades on file', () => {
+  it('fills the four compulsory subjects from KEY_GRADES when the block holds none, so Continue opens', async () => {
+    localStorage.setItem(KEY_STPM_STREAM, 'science')
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A', PHYSICS: 'A', CHEMISTRY: 'B' }))
+    localStorage.setItem(KEY_MUET_BAND, '4')
+    localStorage.setItem(KEY_GRADES, JSON.stringify({ bm: 'A', eng: 'B+', hist: 'B', math: 'A-', moral: 'A' }))
+    render(<StpmGradesPage />)
+    const mathRow = screen.getByText('Matematik').parentElement as HTMLElement
+    expect((mathRow.querySelector('select') as HTMLSelectElement).value).toBe('A-')
+    const button = screen.getByText('common.continue').closest('button') as HTMLButtonElement
+    expect(button.disabled).toBe(false)
+    fireEvent.click(button)
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding/profile'))
+    // only the compulsory four are copied — never the rest of the SPM record
+    expect(JSON.parse(localStorage.getItem(KEY_SPM_PREREQ) as string)).toEqual({ bm: 'A', eng: 'B+', hist: 'B', math: 'A-' })
+  })
+
+  it("never overwrites a grade the block already holds", () => {
+    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify({ bm: 'C', eng: 'A', hist: 'A', math: 'A' }))
+    localStorage.setItem(KEY_GRADES, JSON.stringify({ bm: 'A+' }))
+    render(<StpmGradesPage />)
+    const bmRow = screen.getByText('Bahasa Melayu').parentElement as HTMLElement
+    expect((bmRow.querySelector('select') as HTMLSelectElement).value).toBe('C')
+  })
+})

@@ -33,6 +33,8 @@ export interface AdminScholarshipListItem {
   qualification: string
   spm_a_count: number | null
   stpm_pngk: number | null
+  /** The overall CGPA of the held tertiary results (STPM or the third route; server `overall_cgpa`). */
+  overall_cgpa?: number | null
   referral_source: string | null   // the referring org chosen at apply (Source column)
   merit_score: number | null       // ONE 0-100 merit on every route (api `merit_100`; STPM = CGPA/4x100), computed live; null = absent
   call_language: string            // student's preferred call language: en/ms/ta/mixed/'' — for reviewer matching
@@ -184,6 +186,12 @@ export interface AdminScholarshipDetail {
   grades: Record<string, string>
   stpm_grades: Record<string, string>
   spm_prereq_grades: Record<string, string>
+  /** Third results route (S2a, served): the overall CGPA (server-computed), the CGPA as printed,
+   *  the co-curriculum score (null for a Diploma) and where a Diploma is from (D5). */
+  overall_cgpa?: number | null
+  higher_cgpa?: number | null
+  higher_koko?: number | null
+  higher_institution_type?: string
   // "Your story" narrative (S2) + support + declaration
   first_in_family: boolean
   parents_occupation: string

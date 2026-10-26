@@ -14,12 +14,13 @@ import ProgrammePicker from '@/components/ProgrammePicker'
 import InstitutionPicker from '@/components/InstitutionPicker'
 import AliranPicker from '@/components/AliranPicker'
 import {
-  checkEligibility, calculatePathways, checkStpmEligibility,
+  checkEligibility, calculatePathways,
   type EligibleCourse, type StudentProfile,
 } from '@/lib/api'
+import { isTertiary, type Qualification } from '@/lib/qualification'
 import {
   eligiblePathways, PATHWAY_ORDER, programmesForPathway, isProgrammePathway,
-  eligibleMatricTracks, STPM_STREAMS, stpmDegreesToCourses, UNCERTAINTY_REASONS,
+  eligibleMatricTracks, STPM_STREAMS, UNCERTAINTY_REASONS,
   pismpAlirans, bidangForAliran, aliranForChosen, profileAcademicSummary,
   type ChosenProgramme, type PismpAliran,
 } from '@/lib/scholarship'
@@ -47,7 +48,9 @@ export default function PathwayPicker({
 }) {
   const { t } = useT()
   // The RESULTS we hold, not the declared exam (TD-325) — the same rule as /apply's Plans step.
-  const examType: 'spm' | 'stpm' = profileAcademicSummary(profile).examType
+  // `tertiary` = STPM or the third route (S2b): a degree picker, no SPM pathway step.
+  const examType: Qualification = profileAcademicSummary(profile).examType
+  const tertiary = isTertiary(examType)
 
   // Eligibility data feeds the eligible-only dropdowns (same call /apply makes).
   const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
@@ -85,13 +88,11 @@ export default function PathwayPicker({
   useEffect(() => {
     if (!token || !profile) return
     setLoading(true)
-    if (profileAcademicSummary(profile).examType === 'stpm') {
-      checkStpmEligibility({
-        stpm_grades: profile.stpm_grades || {}, spm_grades: profile.grades || {},
-        cgpa: profile.stpm_cgpa ?? 0, muet_band: profile.muet_band ?? 0,
-        gender: profile.gender, nationality: profile.nationality, colorblind: profile.colorblind,
-      }, { token })
-        .then((res) => setEligibleCourses(stpmDegreesToCourses(res.eligible_courses)))
+    const held = profileAcademicSummary(profile).examType
+    if (isTertiary(held)) {
+      // STPM: the degrees its results qualify for; the third route: every degree, unfiltered (D2).
+      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token))
+        .then(setEligibleCourses)
         .catch(() => setEligibleCourses([]))
         .finally(() => setLoading(false))
       setPathwayStats({}); setMatricTracks([])
@@ -151,7 +152,7 @@ export default function PathwayPicker({
       </div>
 
       {/* Decided → eligible pathway dropdown (SPM) or degree picker (STPM). */}
-      {form.pathwayCertainty === 'sure' && (examType === 'stpm' ? (
+      {form.pathwayCertainty === 'sure' && (tertiary ? (
         <div>
           <FieldLabel>{t('scholarship.apply.plan.degreeLabel')}</FieldLabel>
           <ProgrammePicker courses={eligibleCourses} value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
@@ -166,7 +167,7 @@ export default function PathwayPicker({
       {/* Still deciding → optional leanings (SPM) + reasons + note. */}
       {form.pathwayCertainty === 'uncertain' && (
         <div className="space-y-5">
-          {examType !== 'stpm' && (
+          {!tertiary && (
             <div>
               <FieldLabel>{t('scholarship.apply.plan.leaningLabel')}</FieldLabel>
               <div className="flex flex-wrap gap-2">
@@ -192,7 +193,7 @@ export default function PathwayPicker({
       )}
 
       {/* Decided SPM pathway → programme combobox, or matric track / STPM stream → institution. */}
-      {form.pathwayCertainty === 'sure' && examType !== 'stpm' && form.chosenPathway && (
+      {form.pathwayCertainty === 'sure' && !tertiary && form.chosenPathway && (
         form.chosenPathway === 'pismp' ? (
           // Teacher-training: navigate Aliran (school type) → Bidang (subject), instead
           // of type-searching a course name the student may not know.

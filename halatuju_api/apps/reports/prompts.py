@@ -457,7 +457,9 @@ Eligibility Summary: {insights_summary}
 
 
 def get_prompt(lang='bm', exam_type='spm'):
-    """Return the prompt template for the given language and exam type."""
-    if exam_type == 'stpm':
+    """Return the prompt template for the given language and exam type. Matriculation / Asasi /
+    Diploma (third results route S2b) are STPM-equivalent: the STPM prompt, degree-bound."""
+    from apps.courses.exam_questions import is_tertiary
+    if is_tertiary(exam_type):
         return PROMPT_STPM_EN if lang == 'en' else PROMPT_STPM_BM
     return PROMPT_EN if lang == 'en' else PROMPT_BM

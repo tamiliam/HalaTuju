@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 from rest_framework import serializers
 
-from .exam_questions import QUALIFICATIONS, THIRD_ROUTE, results_held
+from .exam_questions import QUALIFICATIONS, THIRD_ROUTE, is_tertiary, results_held
 from .models import Course, FieldTaxonomy, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
 
 #: The shape of an SPM subject key as the web catalogue writes them ('bm', 'b_tamil', 'addmath').
@@ -369,22 +369,56 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 done = [q for q in done if q not in THIRD_ROUTE or q == keep]
             if done != stored or 'completed_qualifications' in attrs:
                 attrs['completed_qualifications'] = done
+        self._never_demote_held_results(attrs, _merged, _backed)
         return attrs
+
+    def _never_demote_held_results(self, attrs, _merged, _backed):
+        """⚠ S2b review (HIGH): a sync may NOT move a profile DOWN from tertiary results it still
+        holds. Built from the STORED profile — never the incoming marker, which is exactly what a
+        stale browser sends (a sign-in from a device that last saw `'spm'`). If the profile held
+        STPM / Matriculation / Asasi / Diploma before this write, the write would make it hold SPM,
+        and that qualification's results are still on file after the write, the results fields of
+        the write (`results_exam_type`, `completed_qualifications` and `exam_type` — the stored
+        answer may rest on the declaration) are DROPPED and the stored answer stands. Only clearing the
+        results themselves (`stpm_grades` + `stpm_cgpa`, or `higher_cgpa`) demotes."""
+        inst = self.instance
+        if inst is None or getattr(inst, 'pk', None) is None:
+            return
+        before = results_held(inst)
+        if not is_tertiary(before) or not _backed(before):
+            return
+
+        def _after(field):
+            return attrs[field] if field in attrs else _merged(field)
+        after = results_held(SimpleNamespace(
+            exam_type=_after('exam_type'), results_exam_type=_after('results_exam_type'),
+            grades=_merged('grades'), stpm_grades=_merged('stpm_grades'),
+            stpm_cgpa=_merged('stpm_cgpa'), higher_cgpa=_merged('higher_cgpa'),
+            completed_qualifications=_after('completed_qualifications') or []))
+        if is_tertiary(after):
+            return
+        for f in ('results_exam_type', 'completed_qualifications', 'exam_type'):
+            attrs.pop(f, None)
 
     def _refuse_third_route_while_closed(self, attrs):
         """⚠ THE DOOR IS SHUT UNTIL S2b (`settings.THIRD_ROUTE_OPEN`, default off; review round 1).
         The server side is built, but with no student form and no document check yet, a logged-in
         SPM applicant could PUT `results_exam_type='asasi'` + a 4.00 CGPA and leave the SPM rules.
-        While closed: the new exam values, any non-empty third-route field and any non-empty
-        `completed_qualifications` are REFUSED (400, code 'third_route_closed'); null / '' / []
-        are harmless and pass."""
+        While closed: the new exam values, any non-empty third-route field and a
+        `completed_qualifications` naming a third-route kind are REFUSED (400, code
+        'third_route_closed'); null / '' / [] and an SPM / STPM list (S2b) are harmless and pass."""
         from django.conf import settings
         if getattr(settings, 'THIRD_ROUTE_OPEN', False):
             return
         bad = [f for f in ('exam_type', 'results_exam_type')
                if (attrs.get(f) or '').strip().lower() in THIRD_ROUTE]
-        bad += [f for f in ('higher_cgpa', 'higher_koko', 'higher_institution_type',
-                            'completed_qualifications') if attrs.get(f) not in (None, '', [])]
+        bad += [f for f in ('higher_cgpa', 'higher_koko', 'higher_institution_type')
+                if attrs.get(f) not in (None, '', [])]
+        # S2b: the web sends the WHOLE list with every SPM / STPM sync, so only a list NAMING a
+        # third-route kind is the escape — refusing ['spm'] would 400 every onboarding sync (and
+        # lose its grades) on a web release that beat the switch.
+        if any(q in THIRD_ROUTE for q in (attrs.get('completed_qualifications') or [])):
+            bad.append('completed_qualifications')
         if bad:
             raise serializers.ValidationError(
                 {'error': 'third_route_closed',

@@ -21,14 +21,16 @@ const NOTHING: CachedResults = { view: 'none' }
  * ⚠ Safe to re-run ONLY because these screens display results and never edit them. If a caller
  * ever lets somebody type into state derived from this, re-reading would clobber their input.
  */
-export function useCachedResults(hydrationSignal: unknown): { results: CachedResults; ready: boolean } {
+export function useCachedResults(
+  hydrationSignal: unknown, held?: string | null,   // `held`: the server's results_held (S2b)
+): { results: CachedResults; ready: boolean } {
   const [results, setResults] = useState<CachedResults>(NOTHING)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    setResults(resolveCachedResults(localStorage))
+    setResults(resolveCachedResults(localStorage, held))
     setReady(true)
-  }, [hydrationSignal])
+  }, [hydrationSignal, held])
 
   return { results, ready }
 }

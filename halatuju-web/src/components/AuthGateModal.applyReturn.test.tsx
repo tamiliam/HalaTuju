@@ -27,6 +27,7 @@ jest.mock('@/lib/api', () => ({
   __esModule: true,
   claimNric: jest.fn(),
   syncProfile: jest.fn(() => Promise.resolve({})),
+  getProfile: jest.fn(() => Promise.resolve({})),
 }))
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en' }),

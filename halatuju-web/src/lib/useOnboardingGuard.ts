@@ -1,5 +1,5 @@
 import { useAuth } from '@/lib/auth-context'
-import { KEY_GRADES, KEY_STPM_GRADES } from '@/lib/storage'
+import { KEY_GRADES, KEY_HIGHER_CGPA, KEY_STPM_GRADES } from '@/lib/storage'
 
 /**
  * Guards pages that require a completed profile with grades.
@@ -36,6 +36,7 @@ export function useOnboardingGuard() {
         if (g && Object.keys(JSON.parse(g)).length > 0) return true
         const sg = localStorage.getItem(KEY_STPM_GRADES)
         if (sg && Object.keys(JSON.parse(sg)).length > 0) return true
+        if (localStorage.getItem(KEY_HIGHER_CGPA)) return true     // third results route (S2b)
       } catch { /* ignore */ }
       return false
     })()
@@ -45,6 +46,9 @@ export function useOnboardingGuard() {
   // status === 'ready' — AuthProvider profile is the single source of truth
   const hasGrades = profile?.grades && Object.keys(profile.grades).length > 0
   const hasStpmGrades = profile?.stpm_grades && Object.keys(profile.stpm_grades).length > 0
+  // Third results route (S2b): a Matriculation / Asasi / Diploma CGPA is a result on its own —
+  // without this, a student who finished that form was sent back to "Choose Your Exam".
+  const hasHigher = profile?.higher_cgpa != null
 
-  return { ready: !!(hasGrades || hasStpmGrades), loading: false, needsNric: false }
+  return { ready: !!(hasGrades || hasStpmGrades || hasHigher), loading: false, needsNric: false }
 }

@@ -598,6 +598,8 @@
     "examTypeSubtitle": "Pilih peperiksaan yang anda ambil untuk bermula.",
     "spmDesc": "Sijil Pelajaran Malaysia",
     "stpmDesc": "Sijil Tinggi Persekolahan Malaysia",
+    "higherCardTitle": "Matrikulasi, Asasi atau Diploma",
+    "higherCardDesc": "Kelayakan setaraf STPM",
     "comingSoon": "Akan Datang",
     "selectStream": "Aliran apa yang anda ambil?",
     "gradesSubtitleNew": "Masukkan gred anda supaya kami boleh cari kursus yang sesuai.",
@@ -632,6 +634,24 @@
     "cgpaLabel": "PNGK Keseluruhan",
     "cgpaFormula": "90% akademik + 10% kokurikulum",
     "cgpaAutoCalc": "Dikira secara automatik",
+    "higherGradesTitle": "Keputusan Anda",
+    "higherGradesSubtitle": "Masukkan keputusan anda dan gred SPM anda.",
+    "higherWhich": "Yang mana satu anda ambil?",
+    "higherKind": {
+      "matric": "Matrikulasi",
+      "asasi": "Asasi",
+      "diploma": "Diploma"
+    },
+    "higherWhere": "Diploma anda dari institusi mana?",
+    "higherInst": {
+      "public": "Institusi awam (politeknik, UiTM, universiti awam, institusi awam lain)",
+      "private": "Kolej swasta"
+    },
+    "higherPrivateNo": "Diploma dari kolej swasta tidak diterima melalui UA, jadi ia tidak layak di sini.",
+    "higherResults": "PNGK dan MUET anda",
+    "higherCgpa": "PNGK",
+    "higherCgpaHint": "Seperti yang tercetak pada keputusan anda (0.00–4.00)",
+    "meritLabel": "Merit (daripada 100)",
     "spmPrerequisites": "Keputusan SPM",
     "spmPrereqHint": "Sesetengah program ijazah memerlukan gred SPM minimum.",
     "spmCompulsory": "Wajib",
@@ -669,6 +689,8 @@
     "qualifyFor": "Anda layak memohon",
     "qualifyCourses": "kursus",
     "editProfile": "Sunting Profil",
+    "higherBrowseTitle": "Program ijazah",
+    "higherBrowseNote": "Kami belum mempunyai syarat kemasukan bagi lepasan Matrikulasi, Asasi dan Diploma, jadi ini semua program ijazah. Semak syarat setiap program.",
     "clearFilter": "Padam",
     "loadMore": "Muat Lebih",
     "remaining": "lagi",
@@ -4343,6 +4365,20 @@
       },
       "meritScore": "Skor merit (daripada 100)",
       "stpmCgpa": "PNGK (daripada 4.00)",
+      "qualificationLabel": {
+        "matric": "Matrikulasi",
+        "asasi": "Asasi",
+        "diploma": "Diploma"
+      },
+      "heldResults": "Keputusan yang dimiliki",
+      "higherCgpaEntered": "PNGK seperti tercetak",
+      "higherKoko": "Kokurikulum (daripada 10)",
+      "diplomaFrom": "Diploma dari",
+      "diplomaInst": {
+        "public": "Institusi awam",
+        "private": "Kolej swasta (tidak layak)",
+        "unstated": "Tidak dinyatakan"
+      },
       "ownWords": {
         "toggle": "Tunjukkan kata-kata pelajar sendiri",
         "hide": "Sembunyikan kata-kata pelajar sendiri"

@@ -170,6 +170,12 @@ export default function ScholarshipNextSteps({
   const handleConfirmNav = (target: ConfirmTarget) => {
     if (target === 'grades') {
       setOnboardingReturn('/scholarship/application')
+      // ⚠ The SPM form, for EVERY route, on purpose (S2b round 2, finding C): this ticket is about
+      // the SPM grades the slip is compared with, and the comparison reads `profile.grades` — which
+      // only the SPM form writes (the STPM / third-route pages write `spm_prereq_grades`, so the
+      // ticket could never close). The server refuses to let this form demote a tertiary holder
+      // (`_never_demote_held_results`). Re-route by results held when S3b moves the comparison
+      // onto `spm_grades_for`.
       router.push('/onboarding/grades')
       return
     }

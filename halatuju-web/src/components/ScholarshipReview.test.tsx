@@ -155,4 +155,25 @@ describe('the results card reads the results we HOLD (TD-218)', () => {
     // positive: one of her ten SPM grades is drawn (Bahasa Tamil A, from the fixture)
     expect(screen.getAllByText(/ A\+?$/).length).toBeGreaterThan(0)
   })
+
+  // Third results route S2b: never "MATRIC" in capitals, never an empty SPM row.
+  it('names a Matriculation holder in words, with the overall CGPA, and shows her SPM block grades', async () => {
+    mockApi.listDocuments.mockResolvedValue({ documents: [doc(1, 'ic')] })
+    mockApi.getConsentStatus.mockResolvedValue(
+      { is_minor: false, consents: [] } as unknown as api.ConsentStatus)
+    render(
+      <ScholarshipReview
+        app={{ ...sandboxApplication, exam_type: 'matric', stpm_pngk: null } as unknown as ScholarshipApplication}
+        profile={{ ...sandboxProfileSpm, grades: {}, spm_prereq_grades: { bm: 'A', math: 'B+' },
+          overall_cgpa: 3.47 } as unknown as StudentProfile}
+        token="sandbox-token" onEdit={jest.fn()} onBack={jest.fn()} onSubmit={jest.fn()}
+        submitting={false} submitError={null} canSubmit confirmed
+        t={(k: string) => k} lang="en"
+      />,
+    )
+    await waitFor(() => expect(screen.getByText(SECTION('identity'))).toBeTruthy())
+    expect(screen.getByText('onboarding.higherKind.matric · CGPA 3.47')).toBeTruthy()
+    expect(screen.queryByText(/MATRIC/)).toBeNull()
+    expect(screen.getAllByText(/ B\+$/).length).toBeGreaterThan(0)     // Matematik B+, from the block
+  })
 })

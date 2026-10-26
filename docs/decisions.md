@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## The web sends the WHOLE completed list, derived from the last completed form; the shut door refuses only third-route kinds — 2026-10-26 (third results route S2b; rulings D2 D4 D5)
+
+**What.** Every profile sync (finishing onboarding, signing in) sends the results as ONE set,
+read in one place (`halatuju-web/src/lib/resultsSync.ts`): `exam_type`, `results_exam_type` and
+`completed_qualifications` — the last DERIVED from the recorded completion
+(`lib/qualification.completedQualificationsFor`: SPM page → `['spm']`; STPM page →
+`['spm','stpm']`; the third-route page → `['spm', kind]`) — plus, only for a third-route kind,
+`higher_cgpa`, `higher_koko` (null for a Diploma) and `higher_institution_type`. A browser that
+never completed a results form sends none of the three. The sign-in sync now sends
+`results_exam_type` too (it sent only `exam_type`). The SPM results block is ONE component
+(`components/SpmResultsBlock.tsx`) on both the STPM page and `onboarding/higher-grades`, REQUIRED on
+both (D4: the four compulsory SPM subjects graded, the SPM page's own bar); the STPM page otherwise
+renders identically (jsdom HTML compared before/after). Third-route SPM grades go where the STPM
+page's go (`spm_prereq_grades`), which `exam_questions.spm_grades_for` already merges.
+`settings.THIRD_ROUTE_OPEN` still shuts the third route, but a `completed_qualifications` list is
+refused only when it NAMES a third-route kind. **Why.** The server REPLACES the list on every sync
+and ranks "highest" over it, so a partial or separately-kept list could promote or demote. It is
+the last form's completion, not a running union, so a Form Six explorer who once typed STPM grades
+and then completed the SPM form still reads SPM (#15); the server prunes any unbacked entry. The
+narrower refusal makes the release order safe: with the old rule, a web release that beat the env
+switch would have 400'd every SPM / STPM onboarding sync and lost its grades; an SPM / STPM list
+opens no door that `results_exam_type` did not. **Review (HIGH), the same day:** a sync may never move a profile DOWN from tertiary results it
+still holds — the server judges that from the STORED profile (an incoming marker is exactly what a
+stale browser sends), and only clearing the results demotes; and the sign-in door sends the results
+set only to a profile with no recorded completion, so a stale device neither demotes nor promotes.
+**Round 2:** finding B — the sign-in door ALSO sends the set when it moves her UP (held SPM →
+STPM / Matriculation / Asasi / Diploma, entered while signed out), and the login hydrate does not
+overwrite that pending move first; a move between two tertiary kinds is not sent (recency cannot be
+told). Finding C — the Action Centre "grades" ticket stays on the SPM form until S3b moves the slip
+comparison onto `spm_grades_for`. **Known trade-off (finding A) — owner ruled 2026-10-26 (roadmap D11): a student action "I don't have STPM results" clears the STPM data, built in S3a:** the
+no-demotion guard keeps a profile the server ALREADY reads as STPM on STPM — including a Form Six
+explorer who declared STPM and typed made-up STPM grades/CGPA (#15's shape). Completing the SPM form
+no longer moves her to SPM; only clearing the STPM data does. Before S2b the SPM form's completion
+did. The live count of such profiles was not measured here; the owner chooses between keeping the
+guard as is, or letting an SPM completion demote when the STPM data was never a completed form
+(blank `results_exam_type` and list).
+**Course side (D2):** no eligibility verdict for
+the third route — the dashboard browses every degree (`components/HigherRouteDegrees.tsx`, no merit
+band), the search page shows the note instead of the "eligible only" switch, and both degree
+pickers (`/scholarship/apply`, `/profile`) list every degree unfiltered (`lib/degreeChoices.ts`).
+**Reports:** a third-route holder gets the STPM-equivalent prompt with her own results block
+(`report_engine._format_higher_results`); a declared third route with no CGPA reads its SPM
+results, as `results_held` does. `PROMPT_VERSION` 2026-10-26.1 (the route's input now moves; the
+re-draft of sponsor profiles it marks stale is paid and owner-run).
+
 ## "Results held" is the HIGHEST completed qualification; Matriculation / Asasi / Diploma are STPM-equivalent — 2026-10-25 (third results route S2a; owner decisions 2–3, rulings D1 D3 D5)
 
 **What.** `exam_questions.results_held` ranks over `completed_qualifications` — a list each

@@ -23,6 +23,8 @@ import time
 
 from django.conf import settings
 
+from apps.courses.exam_questions import THIRD_ROUTE
+
 from .prompts import get_prompt
 
 logger = logging.getLogger(__name__)
@@ -165,6 +167,23 @@ def _format_stpm_grades(stpm_grades, cgpa=None, muet_band=None):
     return '\n'.join(lines) if lines else 'Tiada maklumat gred STPM.'
 
 
+def _format_higher_results(higher, spm_grades):
+    """Third results route (S2b): a Matriculation / Asasi / Diploma result for the prompt — the
+    qualification named and marked STPM-equivalent, the CGPA as printed, the OVERALL CGPA the
+    server computed (`exam_questions.overall_cgpa`; a Diploma's is its CGPA as is), the
+    co-curriculum score (none for a Diploma), MUET, then the SPM grades the student also holds."""
+    def _two(v):
+        return f'{float(v):.2f}' if v is not None else 'n/a'
+    lines = [f"- {higher.get('label') or 'Higher results'} (STPM-equivalent)",
+             f"- CGPA: {_two(higher.get('cgpa'))} (overall CGPA {_two(higher.get('overall_cgpa'))})"]
+    if higher.get('koko') is not None:
+        lines.append(f"- Co-curriculum: {higher['koko']:g} / 10")
+    if higher.get('muet_band') is not None:
+        lines.append(f"- MUET: Band {higher['muet_band']}")
+    lines.append('- SPM:\n' + _format_grades(spm_grades))
+    return '\n'.join(lines)
+
+
 def _format_grades(grades):
     """Format SPM grades into a readable string for the prompt."""
     if not grades:
@@ -267,7 +286,7 @@ def _format_insights(insights):
 def generate_report(grades, eligible_courses, insights,
                     student_signals=None, student_name='pelajar',
                     lang='bm', exam_type='spm',
-                    stpm_grades=None, stpm_cgpa=None, muet_band=None):
+                    stpm_grades=None, stpm_cgpa=None, muet_band=None, higher=None):
     """
     Generate an AI counselor report using Gemini.
 
@@ -278,6 +297,8 @@ def generate_report(grades, eligible_courses, insights,
         student_signals: optional quiz signals dict
         student_name: student display name (default 'pelajar')
         lang: 'bm' or 'en'
+        exam_type: 'spm', 'stpm', or a third-route kind ('matric' / 'asasi' / 'diploma', S2b)
+        higher: third route only — {label, cgpa, overall_cgpa, koko, muet_band}
 
     Returns:
         dict with either:
@@ -301,6 +322,10 @@ def generate_report(grades, eligible_courses, insights,
     # Format data for prompt
     if exam_type == 'stpm':
         academic_context = _format_stpm_grades(stpm_grades, stpm_cgpa, muet_band)
+    elif exam_type in THIRD_ROUTE and higher:
+        # Third results route S2b: STPM-equivalent — the STPM prompt family (`get_prompt`), fed
+        # the qualification's own results, never an empty "no STPM grades" block.
+        academic_context = _format_higher_results(higher, grades)
     else:
         academic_context = _format_grades(grades)
     student_profile = _format_signals(student_signals, lang=lang)

@@ -1,5 +1,6 @@
 'use client'
 
+import { isTertiary, isThirdRoute } from '@/lib/qualification'   // third results route S2b
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import {
@@ -175,12 +176,12 @@ export default function AdminStudentList() {
               </div>
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
-                  s.exam_type === 'stpm'
+                  isTertiary(s.exam_type)
                     ? 'bg-category-4-surface text-category-4-ink'
                     : 'bg-category-5-surface text-category-5-ink'
                 }`}
               >
-                {s.exam_type?.toUpperCase()}
+                {isThirdRoute(s.exam_type) ? t(`admin.scholarship.qualificationLabel.${s.exam_type}`) : s.exam_type?.toUpperCase()}
               </span>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-ground-500">
@@ -232,12 +233,12 @@ export default function AdminStudentList() {
                 <td className="px-4 py-3.5">
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      s.exam_type === 'stpm'
+                      isTertiary(s.exam_type)
                         ? 'bg-category-4-surface text-category-4-ink'
                         : 'bg-category-5-surface text-category-5-ink'
                     }`}
                   >
-                    {s.exam_type?.toUpperCase()}
+                    {isThirdRoute(s.exam_type) ? t(`admin.scholarship.qualificationLabel.${s.exam_type}`) : s.exam_type?.toUpperCase()}
                   </span>
                 </td>
                 <td className="px-4 py-3.5 text-ground-600">{s.school || '\u2014'}</td>

@@ -1,5 +1,6 @@
 'use client'
 
+import { isThirdRoute } from '@/lib/qualification'   // third results route S2b: named, not 'MATRIC'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -377,7 +378,7 @@ export default function AdminScholarshipList() {
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${bucketBadge(a.bucket)}`}>
                     {a.bucket || '—'}
                   </span>
-                  <span className="text-[11px] text-ground-600">{a.qualification?.toUpperCase()}</span>
+                  <span className="text-[11px] text-ground-600">{isThirdRoute(a.qualification) ? t(`admin.scholarship.qualificationLabel.${a.qualification}`) : a.qualification?.toUpperCase()}</span>
                   <span className="text-[11px] text-ground-500">·</span>
                   <span className="text-[11px] text-ground-700">
                     {t('admin.scholarship.merit')} <span className="font-medium">{a.merit_score ?? '—'}</span>
@@ -481,7 +482,7 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bucketBadge(a.bucket)}`}>{a.bucket || '—'}</span>
                   </td>
-                  <td className="px-4 py-3 text-ground-600">{a.qualification?.toUpperCase()}</td>
+                  <td className="px-4 py-3 text-ground-600">{isThirdRoute(a.qualification) ? t(`admin.scholarship.qualificationLabel.${a.qualification}`) : a.qualification?.toUpperCase()}</td>
                   <td className="px-4 py-3 text-ground-700 tabular-nums">{a.merit_score ?? '—'}</td>
                   <td className="px-4 py-3">
                     {(() => {

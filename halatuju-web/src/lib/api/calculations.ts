@@ -81,6 +81,24 @@ export async function calculateCgpa(
   })
 }
 
+/**
+ * Third results route (S2b): the overall CGPA and the merit of a Matriculation / Asasi / Diploma
+ * result, from the SERVER's calculator (`exam_questions.third_route_calculation`, the gate's own
+ * arithmetic) — the web never restates the formula. Diploma ignores the co-curriculum score.
+ */
+export async function calculateHigherCgpa(
+  kind: string,
+  higherCgpa: number,
+  kokoScore: number | null,
+  options?: ApiOptions
+): Promise<CgpaResult> {
+  return apiRequest('/api/v1/calculate/cgpa/', {
+    method: 'POST',
+    body: JSON.stringify({ kind, higher_cgpa: higherCgpa, koko_score: kokoScore }),
+    ...options,
+  })
+}
+
 export async function calculatePathways(
   grades: Record<string, string>,
   coqScore: number,

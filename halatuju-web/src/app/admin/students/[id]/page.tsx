@@ -1,5 +1,6 @@
 'use client'
 
+import { isThirdRoute } from '@/lib/qualification'   // third results route S2b
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getPartnerStudent, deleteStudent, type StudentDetailData } from '@/lib/admin-api'
 import { useParams, useRouter } from 'next/navigation'
@@ -95,7 +96,7 @@ export default function AdminStudentDetail() {
 
       <h1 className="text-2xl font-bold mb-1">{data.name || t('admin.noName')}</h1>
       <p className="text-ground-500 mb-8 text-sm">
-        {formatNricDisplay(data.nric)} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
+        {formatNricDisplay(data.nric)} &middot; {isThirdRoute(data.exam_type) ? t(`admin.scholarship.qualificationLabel.${data.exam_type}`) : data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

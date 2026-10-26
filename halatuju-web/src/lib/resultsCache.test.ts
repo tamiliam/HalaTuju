@@ -8,7 +8,7 @@
 import { resolveCachedResults, type ReadableStore } from './resultsCache'
 import {
   KEY_ALIRAN, KEY_EXAM_TYPE, KEY_GRADES, KEY_MERIT, KEY_MUET_BAND, KEY_PROFILE,
-  KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES,
+  KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO,
 } from './storage'
 
 function store(values: Record<string, string>): ReadableStore {
@@ -95,5 +95,49 @@ describe('resolveCachedResults', () => {
     expect(resolveCachedResults(store({
       [KEY_GRADES]: SPM_GRADES, [KEY_PROFILE]: DEMOGRAPHICS,
     })).view).toBe('spm')
+  })
+
+  // ── Third results route S2b ───────────────────────────────────────────────────────────
+  it.each(['matric', 'asasi', 'diploma'])('reads a %s student as the third route, never as SPM', (kind) => {
+    const r = resolveCachedResults(store({
+      [KEY_EXAM_TYPE]: kind, [KEY_PROFILE]: DEMOGRAPHICS, [KEY_HIGHER_CGPA]: '3.5',
+      [KEY_HIGHER_KOKO]: '8', [KEY_MUET_BAND]: '4', [KEY_SPM_PREREQ]: SPM_GRADES,
+      [KEY_GRADES]: SPM_GRADES,       // SPM grades on file too: the held route still wins
+    }))
+    expect(r.view).toBe('higher')
+    if (r.view !== 'higher') throw new Error('narrowing')
+    expect(r.higher.kind).toBe(kind)
+    expect(r.higher.cgpa).toBe(3.5)
+    expect(r.higher.spmGrades).toEqual({ bm: 'A', eng: 'B+', math: 'A-' })
+    expect(r.profile.grades).toEqual({})
+  })
+
+  it('declared third route with no CGPA falls back to the SPM grades held (the Form Six rule)', () => {
+    const r = resolveCachedResults(store({
+      [KEY_EXAM_TYPE]: 'matric', [KEY_GRADES]: SPM_GRADES, [KEY_PROFILE]: DEMOGRAPHICS,
+    }))
+    expect(r.view).toBe('spm')
+  })
+
+  it('declared third route with nothing at all reads as none, never as an STPM prompt', () => {
+    expect(resolveCachedResults(store({ [KEY_EXAM_TYPE]: 'asasi' })).view).toBe('none')
+  })
+})
+
+describe('the server\'s results_held picks the view when it is known (S2b review)', () => {
+  const STORE = {
+    [KEY_EXAM_TYPE]: 'spm', [KEY_GRADES]: SPM_GRADES, [KEY_PROFILE]: DEMOGRAPHICS,
+    [KEY_HIGHER_CGPA]: '3.5', [KEY_SPM_PREREQ]: SPM_GRADES,
+  }
+  it('a stale cached "spm" does not hide a held Matriculation result', () => {
+    const r = resolveCachedResults(store(STORE), 'matric')
+    expect(r.view).toBe('higher')
+  })
+  it('a stale cached third-route exam does not override a held SPM', () => {
+    expect(resolveCachedResults(store({ ...STORE, [KEY_EXAM_TYPE]: 'asasi' }), 'spm').view).toBe('spm')
+  })
+  it('no served answer: the browser decides, as before', () => {
+    expect(resolveCachedResults(store(STORE)).view).toBe('spm')
+    expect(resolveCachedResults(store(STORE), '').view).toBe('spm')
   })
 })

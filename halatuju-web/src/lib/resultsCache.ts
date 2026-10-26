@@ -28,8 +28,9 @@
  * for onboarding the student has already done.
  */
 import type { StudentProfile } from '@/lib/api'
+import { isThirdRoute, type ThirdRouteKind } from '@/lib/qualification'
 import {
-  KEY_ALIRAN, KEY_EXAM_TYPE, KEY_GRADES, KEY_MERIT, KEY_MUET_BAND, KEY_PROFILE,
+  KEY_ALIRAN, KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_MERIT, KEY_MUET_BAND, KEY_PROFILE,
   KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES,
 } from '@/lib/storage'
 
@@ -45,8 +46,18 @@ export interface StpmCache {
   spmGrades: Record<string, string>
 }
 
+/** Third results route (S2b): Matriculation / Asasi / Diploma. The CGPA as printed; the overall
+ *  figure is the server's (`overall_cgpa`), never worked out here. */
+export interface HigherCache {
+  kind: ThirdRouteKind
+  cgpa: number
+  spmGrades: Record<string, string>
+}
+
 export type CachedResults =
   | { view: 'stpm'; profile: StudentProfile; stpm: StpmCache }
+  /** The third route: no entry rules exist for it yet, so the dashboard BROWSES degrees (D2). */
+  | { view: 'higher'; profile: StudentProfile; higher: HigherCache }
   | { view: 'spm'; profile: StudentProfile }
   /** Declared STPM, results not entered yet, and no SPM grades to fall back to. */
   | { view: 'stpm_pending' }
@@ -100,26 +111,39 @@ function stpmCache(store: ReadableStore): StpmCache | null {
   }
 }
 
-/** Resolve what the dashboard should draw. See the module docstring before changing the order. */
-export function resolveCachedResults(store: ReadableStore): CachedResults {
-  const examType = store.getItem(KEY_EXAM_TYPE) || 'spm'
+/** The bare demographics profile a non-SPM view carries (no SPM grades: it is not scored on them). */
+function bareProfile(store: ReadableStore): StudentProfile {
+  const d = demographics(store)
+  return {
+    grades: {},
+    gender: (d.gender as StudentProfile['gender']) || 'male',
+    nationality: (d.nationality as StudentProfile['nationality']) || 'malaysian',
+    colorblind: !!d.colorblind,
+    disability: !!d.disability,
+  } as StudentProfile
+}
+
+/** Resolve what the dashboard should draw. See the module docstring before changing the order.
+ *  `held` = the SERVER's `results_held` when a profile is loaded (S2b review): it picks the view,
+ *  so a stale cached exam type cannot; without it, this browser's own exam type does. */
+export function resolveCachedResults(store: ReadableStore, held?: string | null): CachedResults {
+  const examType = held || store.getItem(KEY_EXAM_TYPE) || 'spm'
+
+  // Third results route (S2b). A CGPA is the whole result; with none, the SPM grades held answer,
+  // exactly as the Form Six rule below does for STPM (the server's `results_held` agrees).
+  if (isThirdRoute(examType)) {
+    const cgpa = parseFloat(store.getItem(KEY_HIGHER_CGPA) || '')
+    if (Number.isFinite(cgpa)) {
+      const spmGrades = parse<Record<string, string>>(store.getItem(KEY_SPM_PREREQ)) ?? {}
+      return { view: 'higher', profile: bareProfile(store), higher: { kind: examType, cgpa, spmGrades } }
+    }
+    const spm = spmProfile(store)
+    return spm ? { view: 'spm', profile: spm } : { view: 'none' }
+  }
 
   if (examType === 'stpm') {
     const stpm = stpmCache(store)
-    if (stpm) {
-      const d = demographics(store)
-      return {
-        view: 'stpm',
-        stpm,
-        profile: {
-          grades: {},
-          gender: (d.gender as StudentProfile['gender']) || 'male',
-          nationality: (d.nationality as StudentProfile['nationality']) || 'malaysian',
-          colorblind: !!d.colorblind,
-          disability: !!d.disability,
-        } as StudentProfile,
-      }
-    }
+    if (stpm) return { view: 'stpm', stpm, profile: bareProfile(store) }
     // Declared STPM, no STPM results. The SPM grades they DO hold are the better answer.
     const spm = spmProfile(store)
     return spm ? { view: 'spm', profile: spm } : { view: 'stpm_pending' }

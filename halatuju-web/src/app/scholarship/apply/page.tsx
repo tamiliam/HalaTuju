@@ -16,9 +16,9 @@ import {
   claimNric,
   checkEligibility,
   calculatePathways,
-  checkStpmEligibility,
   type EligibleCourse,
 } from '@/lib/api'
+import { isTertiary, isThirdRoute, type Qualification } from '@/lib/qualification'
 import {
   profileToApplyDefaults,
   profileAcademicSummary,
@@ -32,7 +32,6 @@ import {
   isInstitutionPathway,
   eligibleMatricTracks,
   STPM_STREAMS,
-  stpmDegreesToCourses,
   UNCERTAINTY_REASONS,
   pismpAlirans,
   bidangForAliran,
@@ -141,7 +140,8 @@ export default function ScholarshipApplyPage() {
   // are eligibility checks on results, so a Form Six explorer with no STPM results was sent to an
   // STPM degree check fed nothing and shown an empty picker. `profileAcademicSummary` reads the
   // served `results_held` — the same rule as the Results step.
-  const examType: 'spm' | 'stpm' = profileAcademicSummary(profile).examType
+  const examType: Qualification = profileAcademicSummary(profile).examType
+  const tertiary = isTertiary(examType)   // STPM or the third route (S2b): a degree, no pathway step
   // ⚠ THE RESULTS STEP NAMES NO EXAM. It used to read "My SPM Results" / "My STPM Results" off
   // the DECLARED exam — which is a claim we cannot back: the declaration moves on a card tap and
   // needs no results behind it, so a Form Six student holding ten SPM grades was shown "My STPM
@@ -195,17 +195,12 @@ export default function ScholarshipApplyPage() {
   useEffect(() => {
     if (status !== 'ready' || !token || !profile) return
     setPathwayLoading(true)
-    if (profileAcademicSummary(profile).examType === 'stpm') {
-      checkStpmEligibility({
-        stpm_grades: profile.stpm_grades || {},
-        spm_grades: profile.grades || {},
-        cgpa: profile.stpm_cgpa ?? 0,
-        muet_band: profile.muet_band ?? 0,
-        gender: profile.gender,
-        nationality: profile.nationality,
-        colorblind: profile.colorblind,
-      }, { token })
-        .then((res) => setEligibleCourses(stpmDegreesToCourses(res.eligible_courses)))
+    const held = profileAcademicSummary(profile).examType
+    if (isTertiary(held)) {
+      // STPM: its eligible degrees; Matriculation / Asasi / Diploma: EVERY degree, unfiltered (D2).
+      // Lazy: only a tertiary student needs the degree loader (and the bytes stay off the page entry).
+      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token))
+        .then(setEligibleCourses)
         .catch(() => setEligibleCourses([]))
         .finally(() => setPathwayLoading(false))
       setPathwayStats({}); setMatricTracks([])
@@ -610,6 +605,11 @@ export default function ScholarshipApplyPage() {
                 <p className="text-3xl font-bold text-primary-700">{academic.stpmCgpa?.toFixed(2)}</p>
                 <p className="text-sm text-ground-600 mt-1">{t('scholarship.apply.pngkLabel')}</p>
               </>
+            ) : isThirdRoute(academic.examType) ? (
+              <>{/* Third results route S2b: the qualification and the SERVER's overall CGPA */}
+                <p className="text-3xl font-bold text-primary-700">{academic.overallCgpa?.toFixed(2) ?? '—'}</p>
+                <p className="text-sm text-ground-600 mt-1">{t(`onboarding.higherKind.${academic.examType}`)} · {t('onboarding.cgpaLabel')}</p>
+              </>
             ) : (
               <>
                 <p className="text-3xl font-bold text-primary-700">{academic.aCount} {t('scholarship.apply.aGradesWord')}</p>
@@ -652,7 +652,7 @@ export default function ScholarshipApplyPage() {
 
         {/* Decided → eligible-only pathway dropdown (SPM leavers). STPM students get the
             degree branch (P5); the course picker for the chosen pathway lands in P3. */}
-        {form.pathwayCertainty === 'sure' && (examType === 'stpm' ? (
+        {form.pathwayCertainty === 'sure' && (tertiary ? (
           // STPM students have no SPM pathway step — they pick their degree directly.
           <div>
             <FieldLabel required tip={t('scholarship.apply.plan.degreeTip')}>{t('scholarship.apply.plan.degreeLabel')}</FieldLabel>
@@ -682,7 +682,7 @@ export default function ScholarshipApplyPage() {
             <p className="rounded-xl border border-ground-200 bg-ground-50 p-3 text-sm text-ground-600">
               {t('scholarship.apply.plan.uncertainIntro')}
             </p>
-            {examType !== 'stpm' ? (
+            {!tertiary ? (
               // SPM leavers lean towards pathways — show the full menu (incl. PISMP),
               // not just eligible ones: leanings are exploratory, not a commitment.
               <div>
@@ -751,7 +751,7 @@ export default function ScholarshipApplyPage() {
         {/* Decided pathway → the one course. Programme pathways (poly/asasi/university/
             kkom/pismp/iljtm/ilkbs) reveal an eligible-only course combobox; matric/stpm
             take the stream/track → institution flow (P4 stub for now). */}
-        {form.pathwayCertainty === 'sure' && examType !== 'stpm' && form.chosenPathway && (
+        {form.pathwayCertainty === 'sure' && !tertiary && form.chosenPathway && (
           form.chosenPathway === 'pismp' ? (
             // Teacher-training: navigate Aliran (school type) → Bidang (subject), instead
             // of type-searching a course name the student may not know.

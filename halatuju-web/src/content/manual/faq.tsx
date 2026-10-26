@@ -91,6 +91,18 @@ export const FAQ: Record<Audience, QA[]> = {
         shows none.</>,
     },
     {
+      q: <>What is a <strong>Matriculation, Asasi or Diploma</strong> student on the Academic card?</>,
+      a: <>Since 26 October 2026 a student may enter Matriculation, Asasi (Foundation) or Diploma results
+        instead of STPM. They count as <strong>STPM-equivalent</strong>: the gift&rsquo;s minimum CGPA is
+        tested on her overall CGPA, and her merit is that CGPA ÷ 4 × 100, as for an STPM student. The card
+        shows the qualification with her overall CGPA (for example <strong>Matriculation · CGPA 3.47</strong>),
+        the CGPA as printed on her results, her co-curriculum score (Matriculation and Asasi: the overall CGPA
+        is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall CGPA is its CGPA as it is), her MUET band
+        and the SPM grades she entered. Only a diploma from a <strong>public</strong> institution counts; a
+        private-college diploma does not qualify. On 26 October 2026 there is no separate upload for these
+        results yet, so check what she entered against the results document she did upload.</>,
+    },
+    {
       q: <>Why did STPM students move up the list when I sort by <strong>merit</strong>?</>,
       a: <>The merit score is now <strong>out of 100 for every student</strong>. An SPM student&rsquo;s is
         worked out from her SPM grades and co-curriculum, exactly as before. An STPM student&rsquo;s used to be

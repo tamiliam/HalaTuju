@@ -12,9 +12,10 @@ import { usePathname } from 'next/navigation'
 import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
 import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
+import { browserMovesUp } from '@/lib/qualification'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -196,16 +197,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (Array.isArray(profile.elective_subjects) && profile.elective_subjects.length > 0) {
       localStorage.setItem(KEY_ELEKTIF, JSON.stringify(profile.elective_subjects))
     }
+    // ⚠ S2b round 2 (finding B): this browser holds a tertiary results form the server has not
+    // got yet (an SPM-held account that entered STPM / Matriculation results while signed out).
+    // The sign-in sync is about to send it — so the hydrate must NOT overwrite its results first.
+    const pendingUp = browserMovesUp(localStorage, profile.results_held)
     // TD-069: the STPM path's SPM prerequisites, for the same reason. Its aliran picks are not
     // stored — the STPM form derives them from these grades minus the core and the electives.
-    const pre = profile.spm_prereq_grades, el = profile.spm_elective_subjects
+    const pre = pendingUp ? null : profile.spm_prereq_grades
+    const el = pendingUp ? null : profile.spm_elective_subjects
     // Writing the server's grades drops this browser's aliran picks, so the form re-derives them
     // from THESE grades rather than mixing two devices' entries (review F2).
     if (pre && Object.keys(pre).length > 0) {
       localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify(pre)); localStorage.removeItem(KEY_SPM_ALIRAN)
     }
     if (Array.isArray(el) && el.length > 0) localStorage.setItem(KEY_SPM_ELEKTIF, JSON.stringify(el))
-    if (profile.spm_stream) localStorage.setItem(KEY_SPM_STREAM, profile.spm_stream)
+    if (profile.spm_stream && !pendingUp) localStorage.setItem(KEY_SPM_STREAM, profile.spm_stream)
     // Merge into the existing cached profile rather than overwriting it, so values
     // set elsewhere (notably the grades step's coqScore) survive a profile refresh.
     let demo: Record<string, unknown> = {}
@@ -227,7 +233,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (profile.student_signals) {
       localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
     }
-    // STPM data
+    // STPM data (and the exam, the completion, the third route) — left alone on a pending move up
+    if (pendingUp) return
     if (profile.stpm_grades && Object.keys(profile.stpm_grades).length > 0) {
       localStorage.setItem(KEY_STPM_GRADES, JSON.stringify(profile.stpm_grades))
     }
@@ -245,6 +252,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // completed a results form would sync a BLANK over a recorded completion.
       localStorage.setItem(KEY_RESULTS_EXAM_TYPE, profile.results_exam_type)
     }
+    // Third results route (S2b): the CGPA as entered, the co-curriculum score and where a Diploma
+    // is from — so the results form rebuilds after a login, and the next sync re-sends what is held.
+    if (profile.higher_cgpa != null) localStorage.setItem(KEY_HIGHER_CGPA, String(profile.higher_cgpa))
+    if (profile.higher_koko != null) localStorage.setItem(KEY_HIGHER_KOKO, String(profile.higher_koko))
+    if (profile.higher_institution_type) localStorage.setItem(KEY_HIGHER_INSTITUTION, profile.higher_institution_type)
   }, [profile])
 
   const isAnonymous = session?.user?.is_anonymous ?? true

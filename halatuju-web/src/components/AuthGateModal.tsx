@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
-import { syncProfile, claimNric, type SyncProfileData } from '@/lib/api'
+import { claimNric, getProfile, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
+import { signInResultsFields, syncProfileSafely } from '@/lib/resultsSync'
 import IcInput from './IcInput'
 import IcClaimPanel from './IcClaimPanel'
 import type { ClaimChannel } from '@/lib/profileClaim'
@@ -161,8 +162,11 @@ export default function AuthGateModal() {
       }
       const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
       if (signals) syncData.student_signals = JSON.parse(signals)
-      const examType = localStorage.getItem(KEY_EXAM_TYPE)
-      if (examType) syncData.exam_type = examType
+      // exam_type + the recorded completion + the WHOLE completed list (+ the third route's fields),
+      // as one set — and ONLY when the server records no completion yet: a stale browser must
+      // never overwrite one (`signInResultsFields`, S2b review).
+      const server = await getProfile({ token: tkn }).catch(() => null)
+      Object.assign(syncData, signInResultsFields(localStorage, server))
       const stpmGrades = localStorage.getItem(KEY_STPM_GRADES)
       if (stpmGrades) syncData.stpm_grades = JSON.parse(stpmGrades)
       const stpmCgpa = localStorage.getItem(KEY_STPM_CGPA)
@@ -174,7 +178,7 @@ export default function AuthGateModal() {
     const ref = localStorage.getItem(KEY_REFERRAL_SOURCE)
     if (ref) syncData.referral_source = ref
     try {
-      await syncProfile(syncData, { token: tkn })
+      await syncProfileSafely(syncData, { token: tkn })
     } catch { /* non-critical */ }
   }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { isThirdRoute } from '@/lib/qualification'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   listDocuments, getConsentStatus,
@@ -91,7 +92,11 @@ export default function ScholarshipReview({
   const subjectLabel = (code: string) => SUBJECT_NAMES[code]?.[lang === 'en' ? 'en' : 'bm'] || SUBJECT_NAMES[code]?.en || code
   const spmGrades = Object.entries(profile?.grades || {})
   const stpmGrades = Object.entries(profile?.stpm_grades || {})
-  const grades = app.exam_type === 'stpm' ? stpmGrades : spmGrades
+  // Third results route S2b: the SPM grades are the STPM page's block (`spm_prereq_grades`), with
+  // `grades` winning a clash — the server's `spm_grades_for` reading, so the row is never empty.
+  const third = isThirdRoute(app.exam_type) ? app.exam_type : null
+  const grades = app.exam_type === 'stpm' ? stpmGrades
+    : third ? Object.entries({ ...(profile?.spm_prereq_grades || {}), ...(profile?.grades || {}) }) : spmGrades
   const fn = app.funding_need
   const plansLabel = app.chosen_programme?.course_name
     || [app.chosen_pathway, app.pre_u_track, app.pre_u_institution].filter(Boolean).join(' · ')
@@ -124,7 +129,8 @@ export default function ScholarshipReview({
       <Card title={s('section.results')} locked>
         <p className="text-xs font-medium text-ground-400">
           {/* `app.exam_type` is the results we HOLD (TD-218) — the same answer that picks the grades below. */}
-          {(app.exam_type || 'spm').toUpperCase()}
+          {third ? `${t(`onboarding.higherKind.${third}`)}${profile?.overall_cgpa != null ? ` · CGPA ${profile.overall_cgpa.toFixed(2)}` : ''}`
+            : (app.exam_type || 'spm').toUpperCase()}
           {app.exam_type === 'stpm' && app.stpm_pngk != null ? ` · PNGK ${app.stpm_pngk}` : ''}
         </p>
         <div className="flex flex-wrap gap-1.5">

@@ -6,6 +6,7 @@
  * top with the other types and its functions 240 lines below; nothing but authoring order
  * put them apart.
  */
+import type { Qualification } from '@/lib/qualification'
 import type { ClaimChannel } from '@/lib/profileClaim'
 
 import { apiRequest } from './client'
@@ -52,16 +53,24 @@ export interface StudentProfile {
   contact_phone_verified?: boolean
   phone_verify_enabled?: boolean   // student phone-verify control live? (paused by default — cost)
   whatsapp_opt_in?: boolean
-  exam_type?: 'spm' | 'stpm'
+  exam_type?: Qualification
   /** Which exam's results were last COMPLETED — '' when never recorded. Not the same
    *  question as `exam_type`, which a card tap sets with no results behind it. */
-  results_exam_type?: '' | 'spm' | 'stpm'
+  results_exam_type?: '' | Qualification
   /** The SERVER's answer to "which results do we hold?" (`exam_questions.results_held`, TD-218) —
    *  served so every student screen uses the one rule, never a copy of it. */
-  results_held?: '' | 'spm' | 'stpm'
+  results_held?: '' | Qualification
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
+  /** Third results route (S2a, served): the Matriculation / Asasi / Diploma CGPA as entered,
+   *  the co-curriculum score (null for Diploma), where a Diploma is from, what "highest" ranks
+   *  over, and the OVERALL CGPA of the held tertiary results (STPM too) — computed by the server. */
+  higher_cgpa?: number | null
+  higher_koko?: number | null
+  higher_institution_type?: '' | 'public' | 'private'
+  completed_qualifications?: Qualification[]
+  overall_cgpa?: number | null
   // Financial detail — canonical home for the BrightPath Bursary Programme
   household_income?: number | null
   household_size?: number | null
@@ -213,6 +222,12 @@ export interface SyncProfileData {
   spm_prereq_grades?: Record<string, string>   // TD-069: the STPM path's SPM prerequisites
   spm_elective_subjects?: string[]
   spm_stream?: string
+  // Third results route (S2b). Sent with `results_exam_type`, always as a set: the sync REPLACES
+  // `completed_qualifications`, so it is the whole list (`lib/resultsSync.ts`).
+  higher_cgpa?: number | null
+  higher_koko?: number | null
+  higher_institution_type?: string
+  completed_qualifications?: string[]
 }
 
 export async function syncProfile(

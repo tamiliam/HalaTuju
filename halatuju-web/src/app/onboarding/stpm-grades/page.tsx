@@ -10,21 +10,16 @@ import {
   STPM_SUBJECTS,
   STPM_GRADES,
   MUET_BANDS,
-  SPM_PREREQ_COMPULSORY,
-  SPM_PREREQ_STREAM_POOLS,
-  SPM_ALL_ELECTIVE_SUBJECTS,
-  SPM_GRADE_OPTIONS,
-  MAX_SPM_ELECTIVES,
-  getSubjectName,
 } from '@/lib/subjects'
 import { calculateCgpa } from '@/lib/api'
-import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_SPM_ELEKTIF } from '@/lib/storage'
+import SpmResultsBlock, { useSpmResultsBlock } from '@/components/SpmResultsBlock'
+import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 
 type Stream = 'science' | 'arts'
 
 export default function StpmGradesPage() {
   const router = useRouter()
-  const { t, locale } = useT()
+  const { t } = useT()
 
   const [stream, setStream] = useState<Stream | null>(null)
   const [stpmGrades, setStpmGrades] = useState<Record<string, string>>({ PA: '' })
@@ -33,10 +28,8 @@ export default function StpmGradesPage() {
   const [showElective, setShowElective] = useState(false)
   const [muetBand, setMuetBand] = useState<number | null>(null)
   const [kokoScore, setKokoScore] = useState<string>('')
-  const [spmGrades, setSpmGrades] = useState<Record<string, string>>({})
-  const [spmStream, setSpmStream] = useState<string>('science')
-  const [spmAliranSubjects, setSpmAliranSubjects] = useState<string[]>(['', '', '', ''])
-  const [spmElektifSlots, setSpmElektifSlots] = useState<string[]>([])
+  // The SPM results block (Section 4) — its state, rebuild and storage are the shared block's.
+  const spm = useSpmResultsBlock()
 
   useEffect(() => {
     const savedStream = localStorage.getItem(KEY_STPM_STREAM)
@@ -55,23 +48,6 @@ export default function StpmGradesPage() {
     if (savedMuet) setMuetBand(parseInt(savedMuet))
     const savedKoko = localStorage.getItem(KEY_KOKO_SCORE)
     if (savedKoko) setKokoScore(savedKoko)
-    const savedSpm = localStorage.getItem(KEY_SPM_PREREQ)
-    const prereq: Record<string, string> = savedSpm ? JSON.parse(savedSpm) : {}
-    if (savedSpm) setSpmGrades(prereq)
-    const savedSpmStream = localStorage.getItem(KEY_SPM_STREAM)
-    if (savedSpmStream) setSpmStream(savedSpmStream)
-    const savedElektif = localStorage.getItem(KEY_SPM_ELEKTIF)
-    const elektif: string[] = savedElektif ? JSON.parse(savedElektif) : []
-    if (savedElektif) setSpmElektifSlots(elektif)
-    // TD-069: the server keeps the grades and the elective picks, not the aliran picks — after a
-    // login (no saved key) they are exactly what is left: grades minus the core minus electives.
-    const savedAliran = localStorage.getItem(KEY_SPM_ALIRAN)
-    const core = SPM_PREREQ_COMPULSORY.map(s => s.id)
-    const aliran: string[] = savedAliran
-      ? JSON.parse(savedAliran)
-      : Object.keys(prereq).filter(k => !core.includes(k) && !elektif.includes(k))
-    // Pad to 4 slots
-    if (aliran.length > 0) setSpmAliranSubjects([...aliran, '', '', '', ''].slice(0, 4))
   }, [])
 
   // Stream-specific subjects for the 3 main slots
@@ -122,71 +98,6 @@ export default function StpmGradesPage() {
     setStpmGrades(prev => ({ ...prev, [subjectId]: grade }))
   }
 
-  const handleSpmGradeChange = (subjectId: string, grade: string) => {
-    setSpmGrades(prev => ({ ...prev, [subjectId]: grade }))
-  }
-
-  // SPM stream handlers for Section 4
-  const handleSpmStreamChange = (newStream: string) => {
-    // Clear old aliran subject grades
-    spmAliranSubjects.filter(Boolean).forEach(id => {
-      setSpmGrades(prev => { const next = { ...prev }; delete next[id]; return next })
-    })
-    setSpmStream(newStream)
-    setSpmAliranSubjects(['', '', '', ''])
-    setSpmElektifSlots([])
-  }
-
-  const handleSpmAliranChange = (index: number, newId: string) => {
-    const oldId = spmAliranSubjects[index]
-    if (oldId) {
-      setSpmGrades(prev => { const next = { ...prev }; delete next[oldId]; return next })
-    }
-    setSpmAliranSubjects(prev => prev.map((s, i) => i === index ? newId : s))
-  }
-
-  const addSpmElektifSlot = () => {
-    if (spmElektifSlots.length < MAX_SPM_ELECTIVES) setSpmElektifSlots(prev => [...prev, ''])
-  }
-
-  const removeSpmElektifSlot = (index: number) => {
-    const id = spmElektifSlots[index]
-    if (id) {
-      setSpmGrades(prev => { const next = { ...prev }; delete next[id]; return next })
-    }
-    setSpmElektifSlots(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const updateSpmElektifSubject = (index: number, newId: string) => {
-    const oldId = spmElektifSlots[index]
-    if (oldId) {
-      setSpmGrades(prev => { const next = { ...prev }; delete next[oldId]; return next })
-    }
-    setSpmElektifSlots(prev => prev.map((s, i) => i === index ? newId : s))
-  }
-
-  // Computed pools for SPM prereq stream/elective dropdowns.
-  // Stream options sorted alphabetically by display name (locale-aware).
-  const spmStreamPool = useMemo(() => {
-    return [...(SPM_PREREQ_STREAM_POOLS[spmStream] || [])].sort((a, b) =>
-      getSubjectName(a.id, locale).localeCompare(getSubjectName(b.id, locale))
-    )
-  }, [spmStream, locale])
-
-  const spmAllSelectedPrereq = useMemo(() => {
-    const coreIds = SPM_PREREQ_COMPULSORY.map(s => s.id)
-    return [...coreIds, ...spmAliranSubjects.filter(Boolean), ...spmElektifSlots.filter(Boolean)]
-  }, [spmAliranSubjects, spmElektifSlots])
-
-  // Elective pool = every non-core subject minus the core and the aliran picks. The OTHER elective
-  // slots are excluded per row below. (Excluding every elective pick here also removed each row's
-  // own pick from its own dropdown, so a chosen elective showed as unselected — TD-069.)
-  const spmElektifPool = useMemo(() => {
-    const coreIds = SPM_PREREQ_COMPULSORY.map(s => s.id)
-    const taken = [...coreIds, ...spmAliranSubjects.filter(Boolean)]
-    return SPM_ALL_ELECTIVE_SUBJECTS.filter(s => !taken.includes(s.id))
-  }, [spmAliranSubjects])
-
   const [academicCgpa, setAcademicCgpa] = useState(0)
   const [overallCgpa, setOverallCgpa] = useState(0)
 
@@ -220,6 +131,7 @@ export default function StpmGradesPage() {
     && gradedSubjects.length >= 3
     && muetBand !== null
     && stream !== null
+    && spm.complete          // D4 (third results route S2b): the SPM results block is REQUIRED
 
   const handleContinue = () => {
     if (!isComplete) return
@@ -231,10 +143,7 @@ export default function StpmGradesPage() {
     localStorage.setItem(KEY_STPM_CGPA, String(overallCgpa))
     localStorage.setItem(KEY_MUET_BAND, String(muetBand))
     localStorage.setItem(KEY_KOKO_SCORE, kokoScore)
-    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify(spmGrades))
-    localStorage.setItem(KEY_SPM_STREAM, spmStream)
-    localStorage.setItem(KEY_SPM_ALIRAN, JSON.stringify(spmAliranSubjects.filter(Boolean)))
-    localStorage.setItem(KEY_SPM_ELEKTIF, JSON.stringify(spmElektifSlots.filter(Boolean)))
+    spm.save()
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     // Completed, so it is a RESULT and not merely a selection — see results_exam_type.
     localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'stpm')
@@ -477,166 +386,8 @@ export default function StpmGradesPage() {
           </div>
         </div>
 
-        {/* Section 4: SPM Prerequisites — stream-based design */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">4</span>
-            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.spmPrerequisites')}</h2>
-          </div>
-          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.spmPrereqHint')}</p>
-
-          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
-            {/* A) SPM Stream pills */}
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmStream')}</div>
-              <div className="flex gap-2">
-                {([
-                  { id: 'science', key: 'spmSains' },
-                  { id: 'arts', key: 'spmSastera' },
-                  { id: 'technical', key: 'spmTeknikal' },
-                ] as const).map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => handleSpmStreamChange(s.id)}
-                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
-                      spmStream === s.id
-                        ? 'bg-brand-fill text-brand-fill-ink shadow-sm'
-                        : 'bg-ground-0 text-ground-600 border border-ground-200 hover:bg-ground-50'
-                    }`}
-                  >
-                    {t(`onboarding.${s.key}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* B) Core subjects — 2-col grid */}
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmCompulsory')}</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {SPM_PREREQ_COMPULSORY.map(subject => (
-                  <div key={subject.id} className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-ground-700 flex-1">{subject.name}</span>
-                    <select
-                      value={spmGrades[subject.id] || ''}
-                      onChange={(e) => handleSpmGradeChange(subject.id, e.target.value)}
-                      className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                        spmGrades[subject.id]
-                          ? 'bg-primary-50 border-primary-200 text-primary-700'
-                          : 'bg-ground-50 border-ground-300 text-ground-500'
-                      }`}
-                    >
-                      <option value="">{t('onboarding.grade')}</option>
-                      {SPM_GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* C) Stream subjects — 4 dropdown rows */}
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">
-                {t('onboarding.spmStreamHint')}
-              </div>
-              <div className="space-y-2">
-                {spmAliranSubjects.map((subjectId, index) => (
-                  <div key={`aliran-${index}`} className="flex items-center gap-2">
-                    <select
-                      value={subjectId}
-                      onChange={(e) => handleSpmAliranChange(index, e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
-                    >
-                      <option value="">{t('onboarding.selectSubject')}</option>
-                      {spmStreamPool
-                        .filter(s => !spmAllSelectedPrereq.includes(s.id) || s.id === subjectId)
-                        .map(s => (
-                          <option key={s.id} value={s.id}>{getSubjectName(s.id, locale)}</option>
-                        ))}
-                    </select>
-                    {subjectId && (
-                      <select
-                        value={spmGrades[subjectId] || ''}
-                        onChange={(e) => handleSpmGradeChange(subjectId, e.target.value)}
-                        className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                          spmGrades[subjectId]
-                            ? 'bg-primary-50 border-primary-200 text-primary-700'
-                            : 'bg-ground-50 border-ground-300 text-ground-500'
-                        }`}
-                      >
-                        <option value="">{t('onboarding.grade')}</option>
-                        {SPM_GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    )}
-                    <button
-                      onClick={() => handleSpmAliranChange(index, '')}
-                      className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
-                      aria-label={t('common.remove')}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* D) Electives — 0 to MAX_SPM_ELECTIVES slots + add button */}
-            <div>
-              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmOptional')}</div>
-              <div className="space-y-2">
-                {spmElektifSlots.map((subjectId, index) => (
-                  <div key={`elektif-${index}`} className="flex items-center gap-2">
-                    <select
-                      value={subjectId}
-                      onChange={(e) => updateSpmElektifSubject(index, e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
-                    >
-                      <option value="">{t('onboarding.selectSubject')}</option>
-                      {spmElektifPool
-                        .filter(s => !spmElektifSlots.includes(s.id) || s.id === subjectId)
-                        .map(s => (
-                          <option key={s.id} value={s.id}>{getSubjectName(s.id, locale)}</option>
-                        ))}
-                    </select>
-                    {subjectId && (
-                      <select
-                        value={spmGrades[subjectId] || ''}
-                        onChange={(e) => handleSpmGradeChange(subjectId, e.target.value)}
-                        className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                          spmGrades[subjectId]
-                            ? 'bg-primary-50 border-primary-200 text-primary-700'
-                            : 'bg-ground-50 border-ground-300 text-ground-500'
-                        }`}
-                      >
-                        <option value="">{t('onboarding.grade')}</option>
-                        {SPM_GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    )}
-                    <button
-                      onClick={() => removeSpmElektifSlot(index)}
-                      className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
-                      aria-label={t('common.remove')}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-                {spmElektifSlots.length < MAX_SPM_ELECTIVES && (
-                  <button
-                    onClick={addSpmElektifSlot}
-                    className="w-full py-2.5 rounded-lg border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 text-sm transition-all"
-                  >
-                    {t('onboarding.spmAddElective')}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Section 4: SPM results — the shared block (third results route S2b), REQUIRED (D4) */}
+        <SpmResultsBlock block={spm} step={4} />
 
         {/* Navigation */}
         <div className="flex justify-between items-center">

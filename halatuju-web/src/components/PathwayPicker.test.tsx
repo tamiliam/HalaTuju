@@ -9,7 +9,7 @@
 import { render, waitFor } from '@testing-library/react'
 
 import PathwayPicker, { type PathwayForm } from './PathwayPicker'
-import { checkEligibility, checkStpmEligibility } from '@/lib/api'
+import { checkEligibility, checkStpmEligibility, searchStpmCourses } from '@/lib/api'
 import { sandboxProfileFormSix, sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
 
 jest.mock('@/lib/i18n', () => ({
@@ -22,6 +22,7 @@ jest.mock('@/lib/api', () => ({
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
   checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [] })),
+  searchStpmCourses: jest.fn(() => Promise.resolve({ courses: [], total_count: 0, filters: {} })),
 }))
 
 const FORM: PathwayForm = {
@@ -50,4 +51,14 @@ describe('PathwayPicker reads the results held, not the declared exam (TD-325)',
     await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
     expect(checkEligibility).not.toHaveBeenCalled()
   })
+
+  it.each(['matric', 'asasi', 'diploma'])(
+    'a %s holder gets the UNFILTERED degree list (D2) — never an eligibility check fed nothing',
+    async (kind) => {
+      (searchStpmCourses as jest.Mock).mockClear()
+      mount({ ...sandboxProfileStpm, results_held: kind, higher_cgpa: 3.4 })
+      await waitFor(() => expect(searchStpmCourses).toHaveBeenCalledWith({}, { token: 'tkn' }))
+      expect(checkStpmEligibility).not.toHaveBeenCalled()
+      expect(checkEligibility).not.toHaveBeenCalled()
+    })
 })

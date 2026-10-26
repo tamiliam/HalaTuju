@@ -92,8 +92,9 @@ DEFAULT_LANGUAGE = 'English'
 #                  every route (`exam_questions.merit_100`) — an STPM holder's was the raw PNGK
 #                  (3.7), now overall CGPA / 4 x 100 (92.5); the line is labelled "out of 100".
 #                  SPM merits are unchanged.
-#   (S2a: `held_summary` moves no live input while the route is shut — NO bump; S2b bumps it.)
-PROMPT_VERSION = '2026-10-25.1'
+#   2026-10-26.1 — Third results route S2b (route open): `Qualification:` = `held_summary` (S2a), e.g.
+#                  "Matriculation (STPM-equivalent), overall CGPA 3.47"; SPM / STPM unchanged.
+PROMPT_VERSION = '2026-10-26.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (

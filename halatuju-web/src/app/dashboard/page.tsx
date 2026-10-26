@@ -25,6 +25,7 @@ import AppFooter from '@/components/AppFooter'
 import ScholarshipBanner from '@/components/ScholarshipBanner'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
+import HigherRouteDegrees from '@/components/HigherRouteDegrees'
 import { useToast } from '@/components/ToastContext'
 import { KEY_RESUME_ACTION, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS, COURSE_PAGE_SIZE } from '@/lib/storage'
 import type { StpmResultFraming } from '@/lib/api'
@@ -59,11 +60,12 @@ export default function DashboardPage() {
   // What THIS BROWSER holds, re-read when the server profile lands. Derived, not copied into
   // state: five useStates fed by one effect is what let the page hold an answer the cache had
   // already contradicted. See `useCachedResults` and `resolveCachedResults`.
-  const { results: cached, ready: cacheReady } = useCachedResults(authProfile)
-  const profile: StudentProfile | null =
-    cached.view === 'stpm' || cached.view === 'spm' ? cached.profile : null
+  const { results: cached, ready: cacheReady } = useCachedResults(authProfile, authProfile?.results_held)
+  const profile: StudentProfile | null = cached.view === 'stpm' || cached.view === 'spm'
+    || cached.view === 'higher' ? cached.profile : null
   const stpmData = cached.view === 'stpm' ? cached.stpm : null
-  const examType: 'spm' | 'stpm' = cached.view === 'stpm' ? 'stpm' : 'spm'
+  // 'higher' = Matriculation / Asasi / Diploma (third results route S2b): browse degrees only (D2).
+  const examType: 'spm' | 'stpm' | 'higher' = cached.view === 'stpm' || cached.view === 'higher' ? cached.view : 'spm'
   // Declared STPM, results not entered yet, nothing to fall back on. NOT the same as "no profile".
   const stpmPending = cached.view === 'stpm_pending'
   const isLoading = !cacheReady
@@ -159,7 +161,7 @@ export default function DashboardPage() {
   } = useQuery({
     queryKey: ['eligibility', profile],
     queryFn: () => checkEligibility(profile!),
-    enabled: !!profile,
+    enabled: !!profile && examType !== 'higher',   // no SPM eligibility run for the third route
   })
 
   // Query ranking when eligibility + quiz signals are both ready
@@ -375,6 +377,11 @@ export default function DashboardPage() {
               />
             )}
           </>
+        )}
+
+        {cached.view === 'higher' && (
+          <HigherRouteDegrees kind={cached.higher.kind} savedIds={savedIds} onToggleSave={handleSaveOrGate}
+            onLoadMoreGate={() => { if (!isAuthenticated) { showAuthGate('loadmore'); return true } return false }} />
         )}
 
         {/* Compact Dashboard Header */}

@@ -12,6 +12,7 @@ import { useSavedCourses } from '@/hooks/useSavedCourses'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
+import { isThirdRoute } from '@/lib/qualification'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
 
 export default function SearchPage() {
@@ -34,7 +35,7 @@ function SearchPageInner() {
   const { t, locale } = useT()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { isAuthenticated, showAuthGate } = useAuth()
+  const { isAuthenticated, showAuthGate, profile: authProfile } = useAuth()
   const { savedIds, toggleSave } = useSavedCourses()
   const { fieldOptions, loaded: taxonomyLoaded } = useFieldTaxonomy(locale)
   const [courses, setCourses] = useState<SearchCourse[]>([])
@@ -51,6 +52,12 @@ function SearchPageInner() {
   const [qualification, setQualification] = useState(searchParams.get('qualification') || '')
   const [aliran, setAliran] = useState(searchParams.get('aliran') || '')
   const [displayCount, setDisplayCount] = useState(COURSE_PAGE_SIZE)
+  // Matriculation / Asasi / Diploma results held in this browser (third results route S2b)?
+  const [thirdRoute, setThirdRoute] = useState(false)
+  // The server's results_held when a profile is loaded (S2b review), else this browser's own.
+  useEffect(() => {
+    setThirdRoute(isThirdRoute(authProfile?.results_held || localStorage.getItem(KEY_EXAM_TYPE)))
+  }, [authProfile])
 
   // Eligible toggle
   const [eligibleOnly, setEligibleOnly] = useState(false)
@@ -427,6 +434,11 @@ function SearchPageInner() {
               ⚠ IT MAY SHRINK AND ITS TEXT WRAPS ON PURPOSE (TD-312). It was `flex-shrink-0`, so in
               Tamil its one-line description made /search 375 px wide on a 360 px phone. Only the
               switch itself keeps its size. `navLayout.test.ts` pins these classes. */}
+          {thirdRoute ? (
+            // Third results route S2b (D2): no entry rules exist for Matriculation / Asasi /
+            // Diploma, so there is no "eligible" set to filter to — say so instead of showing none.
+            <p className="min-w-0 max-w-sm break-words text-xs text-ground-500">{t('dashboard.higherBrowseNote')}</p>
+          ) : (
           <button
             type="button"
             onClick={handleEligibleToggle}
@@ -448,6 +460,7 @@ function SearchPageInner() {
               <span className="block text-xs text-ground-400">{t('search.eligibleToggleDesc')}</span>
             </div>
           </button>
+          )}
           </div>
         </div>
 

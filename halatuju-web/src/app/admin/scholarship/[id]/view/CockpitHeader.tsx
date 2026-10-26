@@ -7,6 +7,7 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
+import { isThirdRoute } from '@/lib/qualification'
 import Link from 'next/link'
 import VerifiedTick from '@/components/VerifiedTick'
 import { formatNric, referralAcronym } from '@/lib/scholarship'
@@ -91,7 +92,7 @@ export function CockpitHeader({
             <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-caution-100 px-1.5 text-xs font-bold text-caution-700">{app.bucket}</span>
           )}
           {app.qualification && (
-            <span className="rounded-full border border-ground-200 px-2 py-0.5 text-xs font-medium text-ground-500">{app.qualification.toUpperCase()}</span>
+            <span className="rounded-full border border-ground-200 px-2 py-0.5 text-xs font-medium text-ground-500">{isThirdRoute(app.qualification) ? t(`admin.scholarship.qualificationLabel.${app.qualification}`) : app.qualification.toUpperCase()}</span>
           )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ground-500">

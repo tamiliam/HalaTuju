@@ -369,6 +369,12 @@ before/after list before anything that moves applicants.
   institutions). A private-college diploma is not accepted by UA, so it does not qualify for this
   route. S2a/S2b: the Diploma choice asks where the diploma is from; "private college" is not accepted
   (plain message on the form; the gate refuses it with a clear reason if it reaches submit).
+- **D11 (2026-10-26):** the S2b guard keeps a student held as STPM while STPM results are on file. Owner
+  chose a STUDENT action, "I don't have STPM results", that clears the STPM data (so a Form Six explorer
+  with made-up grades can drop them, e.g. when asked for documentation they cannot supply — STPM is
+  needed for public universities but not for every course). Build in S3a (uploads), with: an audit line;
+  a note to the reviewer when it happens after submit; the gate is not re-run (it runs at submit only),
+  so the reviewer judges any post-submit change; it never touches SPM data.
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 

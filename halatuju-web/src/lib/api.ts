@@ -86,7 +86,7 @@ export type {
 
 // Stateless, public sums — merit, CGPA, pathways — and the field taxonomy.
 export {
-  fetchFieldTaxonomy, calculateMerit, calculateCgpa, calculatePathways,
+  fetchFieldTaxonomy, calculateMerit, calculateCgpa, calculateHigherCgpa, calculatePathways,
 } from './api/calculations'
 export type { FieldTaxonomyEntry, MeritResult, CgpaResult, PathwayResult } from './api/calculations'
 

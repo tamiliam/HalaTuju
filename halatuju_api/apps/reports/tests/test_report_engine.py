@@ -528,3 +528,44 @@ class TestExamTypeRouting(TestCase):
         call_args = mock_client.models.generate_content.call_args
         prompt_text = str(call_args)
         self.assertIn('SPM', prompt_text)
+
+
+class TestTheThirdRouteAcademicContext(TestCase):
+    """Third results route S2b: the prompt's academic block names the qualification and carries
+    the CGPA as printed, the server's overall CGPA, co-curriculum, MUET and the SPM grades."""
+
+    def test_it_names_the_qualification_and_both_cgpas(self):
+        from apps.reports.report_engine import _format_higher_results
+        text = _format_higher_results(
+            {'label': 'Matriculation', 'cgpa': 3.5, 'overall_cgpa': 3.47, 'koko': 8.0,
+             'muet_band': 4}, {'bm': 'A'})
+        self.assertIn('Matriculation (STPM-equivalent)', text)
+        self.assertIn('CGPA: 3.50', text)
+        self.assertIn('3.47', text)
+        self.assertIn('MUET: Band 4', text)
+        self.assertIn('SPM', text)
+
+    def test_a_diploma_has_no_co_curriculum_line(self):
+        from apps.reports.report_engine import _format_higher_results
+        text = _format_higher_results(
+            {'label': 'Diploma', 'cgpa': 2.8, 'overall_cgpa': 2.8, 'koko': None, 'muet_band': 3}, {})
+        self.assertIn('Diploma (STPM-equivalent)', text)
+        self.assertNotIn('urikulum', text)
+        self.assertNotIn('Co-curriculum', text)
+
+    @patch('google.genai.Client')
+    @patch('apps.reports.report_engine.settings')
+    def test_the_third_route_prompt_carries_that_block(self, mock_settings, mock_client_cls):
+        mock_settings.GEMINI_API_KEY = 'test-key'
+        mock_response = MagicMock()
+        mock_response.text = 'ok'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+        generate_report(grades={'bm': 'A'}, eligible_courses=SAMPLE_COURSES,
+                        insights=SAMPLE_INSIGHTS, lang='en', exam_type='asasi',
+                        higher={'label': 'Asasi', 'cgpa': 3.2, 'overall_cgpa': 3.16, 'koko': 7.0,
+                                'muet_band': 4})
+        prompt = mock_client.models.generate_content.call_args[1]['contents']
+        self.assertIn('Asasi (STPM-equivalent)', prompt)
+        self.assertNotIn('Tiada maklumat gred STPM', prompt)

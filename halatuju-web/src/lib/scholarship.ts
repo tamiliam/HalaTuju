@@ -6,6 +6,7 @@
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
 import { APPLY_RETURN_KEY, safeSession, type StorageLike } from './applyReturn'
+import { asQualification, isThirdRoute, isTertiary, type Qualification } from './qualification'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -18,7 +19,7 @@ export function countAGrades(grades?: Record<string, string> | null): number {
   ).length
 }
 
-export type Qualification = 'spm' | 'stpm'
+export type { Qualification }   // the results routes (SPM, STPM, the third route): `./qualification`
 export type IntendedPathway =
   | '' | 'asasi' | 'matrik' | 'stpm' | 'pismp' | 'diploma' | 'degree' | 'other'
 
@@ -475,6 +476,8 @@ export interface AcademicSummary {
   aCount: number          // SPM A+/A/A- count
   aPlusCount: number      // SPM A+ count, for the "including N A+" line
   stpmCgpa: number | null
+  /** The SERVER's overall CGPA of the held tertiary results (S2b; `overall_cgpa`), else null. */
+  overallCgpa: number | null
   hasData: boolean        // does the profile carry enough academic data to score?
 }
 
@@ -491,19 +494,19 @@ export function profileAcademicSummary(profile?: StudentProfile | null): Academi
   const served = profile?.results_held
   const recorded = profile?.results_exam_type
   const pick = served || recorded
-  const examType: Qualification = pick
-    ? (pick === 'stpm' ? 'stpm' : 'spm')
-    : (profile?.exam_type === 'stpm' ? 'stpm' : 'spm')
+  // Third results route S2b: Matriculation / Asasi / Diploma are read as themselves, never as SPM.
+  const examType: Qualification = asQualification(pick || profile?.exam_type)
   const grades = profile?.grades
   const aCount = countAGrades(grades)
   const aPlusCount = grades
     ? Object.values(grades).filter((g) => typeof g === 'string' && g.trim().toUpperCase() === 'A+').length
     : 0
   const stpmCgpa = profile?.stpm_cgpa ?? null
+  const overallCgpa = profile?.overall_cgpa ?? (examType === 'stpm' ? stpmCgpa : null)
   const hasData = examType === 'stpm'
     ? stpmCgpa != null
-    : !!grades && Object.keys(grades).length > 0
-  return { examType, aCount, aPlusCount, stpmCgpa, hasData }
+    : isThirdRoute(examType) ? profile?.higher_cgpa != null : !!grades && Object.keys(grades).length > 0
+  return { examType, aCount, aPlusCount, stpmCgpa, overallCgpa, hasData }
 }
 
 export interface ApplicationPayload {
@@ -638,19 +641,21 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // valid answer (it never traps an unsure student). A decided SPM leaver must then
   // pick a pathway from the eligible-only dropdown.
   if (!form.pathwayCertainty) return 'pathwayCertainty'
-  if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && !form.chosenPathway) return 'chosenPathway'
+  // A tertiary student (STPM or the third route, S2b) has no SPM pathway step: a degree instead.
+  const tertiary = isTertiary(examType)
+  if (form.pathwayCertainty === 'sure' && !tertiary && !form.chosenPathway) return 'chosenPathway'
   // A decided programme-pathway (poly/asasi/university/kkom/pismp/iljtm/ilkbs) needs the one
   // chosen course; the institution pathways (matric/stpm) take the P4 stream/track flow instead.
-  if (form.pathwayCertainty === 'sure' && examType !== 'stpm'
+  if (form.pathwayCertainty === 'sure' && !tertiary
       && isProgrammePathway(form.chosenPathway) && !form.chosenProgramme) return 'chosenProgramme'
   // A decided institution pathway (matriculation / STPM) needs the track-or-stream and
   // then the college-or-school.
-  if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && isInstitutionPathway(form.chosenPathway)) {
+  if (form.pathwayCertainty === 'sure' && !tertiary && isInstitutionPathway(form.chosenPathway)) {
     if (!form.preUTrack) return 'preUTrack'
     if (!form.preUInstitution) return 'preUInstitution'
   }
   // A decided STPM student picks a degree directly (no SPM pathway/track step).
-  if (form.pathwayCertainty === 'sure' && examType === 'stpm' && !form.chosenProgramme) return 'chosenProgramme'
+  if (form.pathwayCertainty === 'sure' && tertiary && !form.chosenProgramme) return 'chosenProgramme'
   // The Uncertain branch is intentionally non-blocking — leanings/reasons/note are optional.
   // My Support — consent + the signed declaration are both required to apply.
   if (!form.consentToContact) return 'consent'
