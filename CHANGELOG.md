@@ -45,6 +45,13 @@ gates; a LATER year's STR page read as current. Not pushed yet — an adversaria
   earlier year — not this year's proof". (4) The STR coach (Gopal's prompt and the static en/ms/ta copy,
   Malay/Tamil first drafts) gently adds "if your STR is from this year, we may have misread it — upload a
   clearer copy or the Semakan Status page".
+- **A submitted case keeps its submission year** (owner ruling, same day — the held 1-January question):
+  `str_this_year(application)` is the one seam — today in Malaysia before submission, the Malaysian year
+  of `profile_completed_at` once submitted (cleared and re-stamped if the case goes back to the wizard;
+  a decision reopen keeps it), the intake year for a legacy submitted row with no stamp. An STR uploaded
+  after submission is judged against the submission year. So after 1 January a case submitted in 2026
+  with a 2026 STR gets no stale state, no `str_not_current` request, no re-notify email and no band drop.
+  A static test (`TheSeam`) refuses any other module computing the STR currency or its year.
 
 ## Corpus gaps C2 — UiTM offers score as a public university; an officer's offer request waits for the officer - 2026-10-26
 

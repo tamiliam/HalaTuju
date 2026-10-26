@@ -47,12 +47,38 @@ STR_COACH_STATES = STR_RED_STATES + ('unreadable', 'unconfirmed', 'future')
 STR_NOT_THIS_YEAR_STATES = ('stale', 'future')
 
 
-def str_this_year():
-    """The calendar year an STR must be from to count as income proof (owner ruling 2026-10-26,
-    TD-403): TODAY IN MALAYSIA — ``timezone.localdate`` under ``TIME_ZONE = 'Asia/Kuala_Lumpur'`` —
-    so it turns over at Malaysian midnight on 1 January, not at UTC midnight eight hours later.
-    Strict all year round (no January–March grace: letters are believed to be dated in January).
+#: Statuses an application holds BEFORE the student's Submit. Past these, a missing
+#: `profile_completed_at` is a legacy row, not an unsubmitted one (`str_this_year`).
+_PRE_SUBMIT_STATUSES = ('submitted', 'shortlisted')
+
+
+def str_this_year(application):
+    """THE ONE SEAM for "this year" in the STR rule — the calendar year an STR must be from to count
+    as income proof for ``application`` (TD-403). Every reader of STR currency reaches it through
+    ``_read_str_check``; ``test_td403_str_this_year.TheSeam`` fails if anything else computes it.
+
+      * NOT YET SUBMITTED → TODAY in Malaysia (owner ruling 2026-10-26): ``timezone.localdate``
+        under ``TIME_ZONE = 'Asia/Kuala_Lumpur'``, so it turns over at Malaysian midnight on
+        1 January, not at UTC midnight eight hours later. Strict all year (no Jan–Mar grace).
+      * SUBMITTED → the Malaysian calendar year of the SUBMISSION, ``profile_completed_at`` (owner
+        ruling 2026-10-26, second part: "If the STR was current at the point of submission, we let
+        it be, even if by the time the student is considered the date has passed 1 Jan"). That
+        stamp is written once, at the student's Submit (``services.confirmation``), and cleared only
+        when the case falls back into the wizard (``revert_if_profile_incomplete``) — so a
+        resubmission re-stamps it and is judged afresh; a reviewer's decision reopen (``reopen``)
+        does not touch it. An STR uploaded AFTER submission (answering a request) is judged against
+        the submission year too: the assessment is for that intake, and a reviewer can still ask
+        for a newer one by hand.
+      * A row past submission with no stamp (legacy) → its intake (cohort) year, else today.
+
     The test suite pins it (``conftest._str_year_pinned``) so its 2026-dated fixtures do not rot."""
+    submitted_at = getattr(application, 'profile_completed_at', None)
+    if submitted_at:
+        return timezone.localtime(submitted_at).year
+    if (getattr(application, 'status', '') or '') not in _PRE_SUBMIT_STATUSES:
+        cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
+        if cohort_year:
+            return int(cohort_year)
     return timezone.localdate().year
 
 
@@ -264,7 +290,7 @@ def _read_str_check(doc):
     # half-read and no clean card decides it — the income gate waits ("still checking"), never passes.
     pending_our_read = bool(ic_read_members.pop('held', False)) and 'match' not in (name_status, nric_status)
 
-    this_year = str_this_year()     # TD-403: THIS calendar year (Malaysia), no longer the cohort's
+    this_year = str_this_year(app)  # TD-403: today, or the submission year once submitted
     ic = _member_ic_doc(app, member) if member else None
     return {
         'name': name, 'nric': nric, 'status': status, 'year': year,

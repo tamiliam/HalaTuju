@@ -24,7 +24,7 @@ from datetime import datetime, timezone as dt_timezone
 from unittest import mock
 
 import pytest
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship.models import ApplicantDocument
@@ -37,8 +37,10 @@ MOTHER = 'Kamala A/P Suppiah'
 
 
 def _family(route, *, year, status='Lulus', source_type='semakan_status'):
+    # 'shortlisted': still in the wizard, so "this year" is TODAY (a submitted case keeps its
+    # submission year — `ASubmittedCaseKeepsItsSubmissionYear` stamps one explicitly).
     app = make_application(
-        'profile_complete', income_route=route, income_earner='father' if route == 'str' else '',
+        'shortlisted', income_route=route, income_earner='father' if route == 'str' else '',
         income_working_members=['father'] if route == 'salary' else [], father_name=FATHER,
         mother_name=MOTHER, father_occupation='private', mother_occupation='homemaker',
         other_family_members=[], student=make_student(nric=STUDENT_NRIC, name=STUDENT))
@@ -277,6 +279,152 @@ class TheKeepBetterGuardByYear(TestCase):
         self.assertIs(_promotes(_upload_str(app, year='2026', status='Ditolak'), live), True)
 
 
+def _myt(y, mo, d, h=12, mi=0):
+    """A Malaysian wall-clock instant as an aware UTC datetime (MYT = UTC+8)."""
+    from datetime import timedelta
+    return datetime(y, mo, d, h, mi, tzinfo=dt_timezone.utc) - timedelta(hours=8)
+
+
+@pytest.mark.usefixtures('real_str_clock')
+class ASubmittedCaseKeepsItsSubmissionYear(TestCase):
+    """Owner ruling 2026-10-26 (second part): "If the STR was current at the point of submission, we
+    let it be, even if by the time the student is considered the date has passed 1 Jan." Clock frozen
+    at 2027-01-05 (MYT); the case was submitted on 2026-11-01 with a 2026 STR."""
+
+    NOW = _myt(2027, 1, 5)
+    SUBMITTED = _myt(2026, 11, 1)
+
+    def _submitted(self, year='2026', **kw):
+        app, str_doc = _family('str', year=year, **kw)
+        app.status, app.profile_completed_at = 'profile_complete', self.SUBMITTED
+        app.save(update_fields=['status', 'profile_completed_at'])
+        return app, str_doc
+
+    def _at_now(self):
+        return mock.patch.object(timezone, 'now', return_value=self.NOW)
+
+    def test_a_2026_str_stays_current_everywhere(self):
+        from apps.scholarship.help_engine import verdict_for_document
+        from apps.scholarship.income_engine import str_this_year
+        from apps.scholarship.resolution import doc_match_verdict
+        from apps.scholarship.serializers import ApplicantDocumentSerializer
+        from apps.scholarship.verdict_narrative import _fact_band
+        app, str_doc = self._submitted()
+        with self._at_now():
+            self.assertEqual(timezone.localdate().year, 2027)          # the year HAS turned
+            self.assertEqual(str_this_year(app), 2026)                 # …but this case keeps 2026
+            self.assertEqual(ApplicantDocumentSerializer(str_doc).data['str_check']['current_status'],
+                             'current')                                # student + officer chips
+            self.assertEqual(_income_gate(app), [])
+            self.assertEqual(verdict_for_document(str_doc), '')         # no coach
+            self.assertEqual(doc_match_verdict(str_doc), 'ok')
+            self.assertEqual(_fact_band(_income_fact(app)), 'Certain')  # band unchanged
+
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+    def test_no_str_request_and_no_re_notify(self):
+        from apps.scholarship.resolution import sync_resolution_items
+        app, _ = self._submitted()
+        with mock.patch.object(timezone, 'now', return_value=self.SUBMITTED):
+            sync_resolution_items(app)              # the submission-day sync (the fixture's other asks)
+        app.query_raised_notified_at = self.SUBMITTED          # …and the student was told
+        app.save(update_fields=['query_raised_notified_at'])
+        with self._at_now():
+            sync_resolution_items(app)              # the first sync after the year turns
+        app.refresh_from_db()
+        self.assertFalse(app.resolution_items.filter(code='str_not_current').exists())
+        self.assertIsNotNone(app.query_raised_notified_at)     # nothing new → no re-notify email
+
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+    def test_control_an_str_stale_at_submission_still_raises_the_request(self):
+        """The path above is live: a 2025 STR was ALREADY stale at a 2026 submission."""
+        from apps.scholarship.resolution import sync_resolution_items
+        app, _ = self._submitted(year='2025')
+        app.query_raised_notified_at = self.SUBMITTED
+        app.save(update_fields=['query_raised_notified_at'])
+        with self._at_now():
+            sync_resolution_items(app)
+        app.refresh_from_db()
+        self.assertTrue(app.resolution_items.filter(code='str_not_current').exists())
+        self.assertIsNone(app.query_raised_notified_at)
+
+    def test_an_unsubmitted_case_reads_today(self):
+        from apps.scholarship.income_engine import student_str_check
+        _app, str_doc = _family('str', year='2026')        # still in the wizard (no stamp)
+        with self._at_now():
+            self.assertEqual(student_str_check(str_doc)['current_status'], 'stale')
+            self.assertIn('str_stale:2026', _income_gate(_app))
+
+    def test_a_case_sent_back_to_the_wizard_reads_today_and_resubmission_restamps(self):
+        from apps.scholarship.income_engine import str_this_year, student_str_check
+        app, str_doc = self._submitted()
+        app.status, app.profile_completed_at = 'shortlisted', None      # revert_if_profile_incomplete
+        app.save(update_fields=['status', 'profile_completed_at'])
+        with self._at_now():
+            self.assertEqual(student_str_check(str_doc)['current_status'], 'stale')
+            app.status, app.profile_completed_at = 'profile_complete', timezone.now()   # resubmitted
+            app.save(update_fields=['status', 'profile_completed_at'])
+            self.assertEqual(str_this_year(app), 2027)
+            self.assertEqual(student_str_check(str_doc)['current_status'], 'stale')
+
+    def test_an_str_uploaded_after_submission_is_judged_against_the_submission_year(self):
+        from apps.scholarship.income_engine import student_str_check
+        app, _ = self._submitted(year='2025')
+        with self._at_now():
+            later = _upload_str(app, year='2026', status='Lulus')       # answering a request
+            self.assertEqual(student_str_check(later)['current_status'], 'current')
+            newer = _upload_str(app, year='2027', status='Lulus')
+            self.assertEqual(student_str_check(newer)['current_status'], 'future')
+
+    def test_the_submission_stamp_wins_over_the_intake_year(self):
+        """The stamp decides, not the cohort: an intake labelled 2025 submitted in Nov 2026 → 2026."""
+        from apps.scholarship.income_engine import str_this_year
+        app, _ = self._submitted()
+        app.cohort.year = 2025
+        app.cohort.save(update_fields=['year'])
+        with self._at_now():
+            self.assertEqual(str_this_year(app), 2026)
+
+    def test_a_legacy_submitted_row_with_no_stamp_reads_its_intake_year(self):
+        from apps.scholarship.income_engine import str_this_year
+        app, _ = _family('str', year='2026')
+        app.status = 'interviewing'
+        app.save(update_fields=['status'])
+        with self._at_now():
+            self.assertEqual(str_this_year(app), app.cohort.year)
+
+
+class TheSeam(TestCase):
+    """Every reader of STR currency gets the application's reference year through ONE seam,
+    `str_route.str_this_year(application)`, inside `_read_str_check`. No other module may compute
+    the currency or the year itself — a reader that did would judge a submitted case by today."""
+
+    def test_only_str_route_computes_str_currency_or_its_year(self):
+        import pathlib
+        import re
+        root = pathlib.Path(__file__).resolve().parents[1]
+        pattern = re.compile(r'\b(_str_currency|str_this_year)\(')
+        offenders = []
+        for path in root.rglob('*.py'):
+            rel = path.relative_to(root).as_posix()
+            if rel.startswith('tests/') or rel == 'income_engine/str_route.py':
+                continue
+            if pattern.search(path.read_text(encoding='utf-8')):
+                offenders.append(rel)
+        self.assertEqual(offenders, [])
+
+    def test_the_seam_is_given_the_application(self):
+        import inspect
+        from apps.scholarship.income_engine import str_route
+        src = inspect.getsource(str_route._read_str_check)
+        self.assertIn('str_this_year(app)', src)
+        self.assertEqual(len(re_findall(r'_str_currency\(', src)), 1)
+
+
+def re_findall(pattern, text):
+    import re
+    return re.findall(pattern, text)
+
+
 @pytest.mark.usefixtures('real_str_clock')
 class TheYearTurnsAtMalaysianMidnight(TestCase):
     """Asia/Kuala_Lumpur is UTC+8: 31 Dec 23:59 MYT = 15:59 UTC; 1 Jan 00:01 MYT = 16:01 UTC."""
@@ -286,10 +434,11 @@ class TheYearTurnsAtMalaysianMidnight(TestCase):
 
     def test_this_year_follows_the_malaysian_calendar(self):
         from apps.scholarship.income_engine.str_route import str_this_year
+        app, _ = _family('str', year='2026')             # not yet submitted → today
         with mock.patch.object(timezone, 'now', return_value=self.LAST_MINUTE):
-            self.assertEqual(str_this_year(), 2026)
+            self.assertEqual(str_this_year(app), 2026)
         with mock.patch.object(timezone, 'now', return_value=self.FIRST_MINUTE):
-            self.assertEqual(str_this_year(), 2027)      # still 31 Dec in UTC
+            self.assertEqual(str_this_year(app), 2027)   # still 31 Dec in UTC
 
     def test_a_2026_str_counts_until_midnight_and_then_is_stale(self):
         app, _ = _family('str', year='2026')

@@ -14797,3 +14797,24 @@ unless their income shows another way. A 2027 "Lulus" page no longer reads Certa
 (`conftest.STR_TEST_YEAR`) so its fixtures do not rot on 1 January 2027.
 **Revisit if:** a genuine STR letter dated later than January turns up, or the extractor starts storing
 the letter date.
+
+**Addendum — a submitted case keeps its submission year (owner ruling 2026-10-26, second part).**
+"If the STR was current at the point of submission, we let it be, even if by the time the student is
+considered the date has passed 1 Jan." Strict, no January–March grace (re-confirmed).
+- **"This year" for an application** (`str_route.str_this_year(application)`, the one seam every STR
+  reader reaches through `_read_str_check`; a static test refuses any other module computing the
+  currency or the year): not yet submitted → today in Malaysia; submitted → the Malaysian calendar year
+  of `profile_completed_at`; a row past submission with no stamp (legacy) → its intake (cohort) year.
+- **Why `profile_completed_at`:** it is written once, at the student's own Submit
+  (`services.confirmation`, the moment the gate passed and the requirement set was frozen), and cleared
+  only when the case falls back into the wizard (`revert_if_profile_incomplete`). So a case sent back
+  and resubmitted is judged afresh at its new submission, and a reviewer's decision reopen (`reopen`),
+  which does not touch it, keeps the original year. The requirement snapshot carries no timestamp, and
+  later stamps (assignment, interview) are the office's timing, not the student's.
+- **An STR uploaded after submission** (answering a request) is judged against the submission year too:
+  the assessment is for that intake, so a 2026 STR uploaded in January 2027 for a 2026 submission
+  counts, and a 2027 page then reads `future` (neutral, not counted). A reviewer can still ask for a newer
+  one by hand.
+- **Guaranteed after 1 January** for a case submitted in 2026 with a 2026 STR: no stale/future state, no
+  Check-2 `str_not_current` request, no re-notify email, no verdict band drop (Certain stays Certain), no
+  officer red chip, no coach (`test_td403_str_this_year.ASubmittedCaseKeepsItsSubmissionYear`).
