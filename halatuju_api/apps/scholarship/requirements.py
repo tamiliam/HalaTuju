@@ -56,6 +56,10 @@ DOCUMENT_AGGREGATES = frozenset({'income_proof'})
 # the two cannot drift without a test failing. They exist so that an application with no
 # programme keeps behaving exactly as it does now.
 PLATFORM_REQUIRED_DOCUMENTS = ('ic', 'results_slip', 'offer_letter', 'income_proof')
+# ⚠ `higher_results` (third results route S3a) is NOT a catalogue item and never appears in these
+# tuples: it is the per-applicant relabelling of the core `results_slip` item by
+# `results_route.map_documents` (D12) — an organisation asks for "the results", and WHICH upload
+# carries them is the student's route, not the organisation's setting.
 PLATFORM_OPTIONAL_DOCUMENTS = ('water_bill', 'electricity_bill', 'statement_of_intent', 'photo',
                                # Sprint 3b: rendered by the student Documents tab since long
                                # before Layer 0, and missing from every list that claimed to
@@ -124,6 +128,16 @@ def resolve(application, kind: str) -> dict[str, str]:
         out = _platform_defaults(kind)
     else:
         out = programme_states(programme, kind)
+
+    # Third results route S3a (D12): WHICH results upload is required follows the chosen course —
+    # a per-APPLICANT rule applied on top of the programme's catalogue, like `_offer_blocks`' STPM
+    # exemption. Only for an application not yet submitted: once submitted it reads its frozen copy
+    # above (and a submitted row with no copy — none live, defensive — keeps the catalogue's answer,
+    # so nothing it was gated on can move). `freeze` reads through here, so the mapping is frozen.
+    if kind == 'document' and getattr(application, 'profile_completed_at', None) is None \
+            and getattr(application, 'pk', None) is not None:
+        from .results_route import map_documents
+        out = map_documents(application, out)
 
     return _memoise(application, kind, out)
 

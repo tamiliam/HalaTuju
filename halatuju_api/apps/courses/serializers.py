@@ -339,6 +339,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             attrs.pop('results_exam_type', None)
         elif claimed == 'spm' and not bool(_merged('grades') or {}):
             attrs.pop('results_exam_type', None)      # SPM's marker: `grades` only, as before S2a
+        self._one_higher_qualification(attrs)
 
         # S2a: `completed_qualifications` is what "highest" ranks over (`results_held`), so it is
         # kept IN STEP ON EVERY WRITE, not only when sent (review round 1): an entry whose results
@@ -371,6 +372,22 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 attrs['completed_qualifications'] = done
         self._never_demote_held_results(attrs, _merged, _backed)
         return attrs
+
+    @staticmethod
+    def _one_higher_qualification(attrs):
+        """⚠ ONE HIGHER QUALIFICATION AT A TIME (third results route S3a, owner ruling D11/D13).
+        A write that COMPLETES the third-route form — its marker kept above AND its CGPA in this
+        payload — clears any earlier STPM entries; one that completes the STPM form — marker kept
+        AND STPM results in this payload — clears the third route's. Set IN THE ATTRS, so it wins
+        over a stale browser copy riding in the same sync (the web resends its stored STPM CGPA on
+        every finish), and BEFORE the bookkeeping below, so `completed_qualifications` is pruned to
+        match and the no-demote guard reads the switch as the deliberate move it is (the old
+        results are no longer on file). A marker sent with no results behind it clears nothing."""
+        kept = (attrs.get('results_exam_type') or '').strip().lower()
+        if kept in THIRD_ROUTE and attrs.get('higher_cgpa') is not None:
+            attrs['stpm_grades'], attrs['stpm_cgpa'] = {}, None
+        elif kept == 'stpm' and (attrs.get('stpm_grades') or attrs.get('stpm_cgpa') is not None):
+            attrs['higher_cgpa'], attrs['higher_koko'], attrs['higher_institution_type'] = None, None, ''
 
     def _never_demote_held_results(self, attrs, _merged, _backed):
         """⚠ S2b review (HIGH): a sync may NOT move a profile DOWN from tertiary results it still

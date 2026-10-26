@@ -4,6 +4,7 @@ from django.urls import path
 from .views_branding import BrandingView
 from .views_guardian_contact import StudentGuardianContactView
 from .views_apply_gate import ApplyGateView
+from .views_results import RefileToSpmView, SpmOnlyView
 from .views import (
     ApplicationConfirmView,
     ApplicationOnboardingCompleteView,
@@ -228,6 +229,9 @@ urlpatterns = [
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('scholarship/documents/<int:pk>/help/', DocumentHelpView.as_view()),
+    # Third results route S3b (D13): the higher-results card's SPM-slip note.
+    path('scholarship/results/refile-to-spm/', RefileToSpmView.as_view()),
+    path('scholarship/results/spm-only/', SpmOnlyView.as_view()),
     path('scholarship/income/<str:member>/help/', IncomeClusterHelpView.as_view()),
     path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),

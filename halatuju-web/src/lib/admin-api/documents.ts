@@ -3,6 +3,7 @@
  * reader returned — plus re-running vision, and the referees.
  */
 import type {
+  HigherCheck,
   AcademicCheck, PathwayCheck, IncomeIcCheck, IncomeProofCheck,
   StrCheck, UtilityCheck, BcCheck, GuardianshipCheck, SupportDocCheck, SemesterCheck,
   SchoolLeavingCheck,
@@ -53,6 +54,9 @@ export interface AdminApplicantDocument {
   // ApplicantDocumentSerializer, so these arrive on the admin response too). Each is
   // null unless its doc_type matches. The cockpit renders them as coloured fact-labels.
   academic_check?: AcademicCheck | null
+  // Third results route S3a/S3b: the higher-results upload's kind + its check against the profile.
+  higher_check?: HigherCheck | null
+  results_kind?: string
   pathway_check?: PathwayCheck | null
   income_ic_check?: IncomeIcCheck | null
   income_proof_check?: IncomeProofCheck | null

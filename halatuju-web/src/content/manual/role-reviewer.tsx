@@ -62,7 +62,9 @@ export const roleReviewer: ManualChapter = {
         it is not a zero, and it always sorts last. Click a
         name to open the review screen — everything is on that one page. For an STPM student, the Academic
         card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when
-        she has entered them. Beside the NRIC, the header shows where her IC says she was
+        she has entered them. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
+        results uploads those results instead of an SPM slip; the Documents drawer names them by kind
+        (for example <strong>STPM results</strong>). Beside the NRIC, the header shows where her IC says she was
         <strong> born</strong>.</>
       ),
       img: '/reviewer-guide/step1-list.png',

@@ -30,6 +30,7 @@ import {
 } from '@/lib/api'
 import { asksForDocument, documentRequirement } from '@/lib/nextSteps'
 import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
+import { isTertiary } from '@/lib/qualification'
 
 import {
   docKey,
@@ -133,7 +134,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
-  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; legacyBlank?: boolean } = {}) => (
+  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; legacyBlank?: boolean; higherKind?: string; higherSpmOnly?: boolean } = {}) => (
     <SingleDocCard
       key={docKey(docType, extra.member)}
       docType={docType}
@@ -144,6 +145,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       t={t}
       token={token}
       lang={locale}
+      onChanged={() => { refresh(); onChange?.() }}
       {...extra}
     />
   )
@@ -209,6 +211,31 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       </section>
     )
   }
+  // Third results route S3a (D12): WHICH results upload is required follows the chosen course, and
+  // arrives on the payload like every other requirement. With a higher-results card the section holds
+  // two: higher results first (required, or offered), then the SPM slip — optional for a higher-results
+  // applicant (D9, its own help line), required otherwise. `app.exam_type` is the served results held.
+  // No block at all ("we were not told") draws every catalogue card — but `higher_results` is not a
+  // catalogue card, it is the server's per-applicant relabelling, so with no block it stays off.
+  const higherState = req ? docState('higher_results') : 'off'
+  const slipState = docState('results_slip')
+  const academic = higherState === 'off' ? section('academic', 'results_slip') : (
+    <section>
+      {sectionHead('academic', null)}
+      <div className="space-y-3">
+        {card('higher_results', {
+          required: higherState === 'required',
+          higherKind: isTertiary(app?.exam_type) ? String(app?.exam_type) : '',
+          // Owner ruling 2026-10-26: SPM only + a degree chosen → both cards required; say why.
+          higherSpmOnly: higherState === 'required' && !isTertiary(app?.exam_type),
+        })}
+        {slipState !== 'off' && card('results_slip', {
+          required: slipState === 'required',
+          helpOverride: slipState === 'optional' ? t('scholarship.docs.help.results_slip_optional') : undefined,
+        })}
+      </div>
+    </section>
+  )
   // The Other bucket is a plain list, so it thins rather than disappears — unless every one of
   // its documents is off, in which case the collapsible would open onto nothing.
   const otherDocs = ['school_leaving_cert', 'statement_of_intent', 'photo']
@@ -217,7 +244,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   return (
     <div className="space-y-6">
       {section('identity', 'ic', { showVisionChip: true })}
-      {section('academic', 'results_slip')}
+      {academic}
       {section('pathway', 'offer_letter')}
 
       {/* `income_proof` is ONE switch over the whole household-income route engine — see

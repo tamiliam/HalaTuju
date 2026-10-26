@@ -21,7 +21,8 @@ import {
   STORY_QUESTION_CODES,
   type NextStepKey,
 } from '@/lib/nextSteps'
-import ScholarshipDocuments from '@/components/ScholarshipDocuments'
+// Third results route S3: the Documents tab is its own chunk (see the wrapper's note).
+import ScholarshipDocuments from '@/components/scholarship/LazyScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
 import ScholarshipReview from '@/components/ScholarshipReview'
 import ActionCentre from '@/components/ActionCentre'

@@ -60,6 +60,9 @@ export const HELP_VERDICTS = [
  * call as well, so good/unchecked docs never hit the endpoint.
  */
 export function shouldShowCoach(doc: ApplicantDocument): boolean {
+  // Third results route S3b (D13): the higher-results card speaks in fixed notes with one link
+  // each (`HigherResultsNote`), never the AI coach — the server's help verdict is '' for it too.
+  if (doc.doc_type === 'higher_results') return false
   // IC / parent_ic — Vision OCR verdicts (only meaningful once Vision has run).
   if (doc.vision_run_at) {
     const nv = doc.vision_nric_verdict

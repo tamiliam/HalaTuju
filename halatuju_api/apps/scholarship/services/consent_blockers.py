@@ -46,6 +46,9 @@ def consent_blockers(application):
         blockers.append('ic_missing')
     if 'results_slip' in required and 'results_slip' not in present:
         blockers.append('results_slip_missing')
+    # Third results route S3a (D12): the higher-results upload, when it is the one required.
+    if 'higher_results' in required and 'higher_results' not in present:
+        blockers.append('higher_results_missing')
     if 'offer_letter' not in required:
         pass                                          # not asked for — neither missing nor checked
     elif 'offer_letter' not in present:               # gate v2: compulsory for everyone

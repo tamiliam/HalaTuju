@@ -2,7 +2,10 @@
 ⛔ `application_completeness` — DO NOT CHANGE IT, IN ANY DIRECTION.
 Its legacy document-type arm is deliberately more permissive; replacing it
 un-submits students and nulls their `requirements_snapshot` (H8 ruling).
-It was MOVED here byte-identically at H15 and not touched.
+It was MOVED here byte-identically at H15 and not touched — until the third results route S3a
+(2026-10-26, owner rulings D12/D9), which ADDED the higher-results upload to both arms on the
+brief's instruction: strictly additive on the submitted arm (an OR), and on the strict arm only
+for an application whose live requirement names `higher_results`. Nothing it judged before moves.
 
 Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`.
@@ -98,10 +101,16 @@ def application_completeness(application):
         # `income_doc_blockers`, never a way to take it apart.
         required = requirements.required_documents(application)
         required_types = required - requirements.DOCUMENT_AGGREGATES
+        # Third results route S3a: the higher-results upload is the same bar in another slot — a
+        # copy in a different name does not satisfy it, when it is the one we require (D12).
+        higher = (application.documents.filter(doc_type='higher_results', superseded_at__isnull=True)
+                  .order_by(*SNAPSHOT_ORDER).first()) if 'higher_results' in required else None
+        higher_name_ok = higher is None or _slip_name_status(higher) != 'mismatch'
         documents_done = (
             required_types.issubset(present)
             # A results slip in a different name only matters if we asked for one.
             and (slip_name_ok or 'results_slip' not in required)
+            and higher_name_ok
             and not income_doc_blockers(application)
         )
     else:
@@ -117,8 +126,15 @@ def application_completeness(application):
         from ..income_engine import any_member_income_evidenced
         income_shown = (bool(present & {'str', 'salary_slip', 'epf'})
                         or any_member_income_evidenced(application))
+        # Third results route S3a — ⚠ AN OR, THAT ONLY ADDS (the rule above): an application
+        # SUBMITTED with higher results under a frozen "higher_results required" (D12) has no SPM
+        # slip to show and must not read incomplete — `revert_if_profile_incomplete` would un-submit
+        # it. Every application submitted before S3a froze "results_slip required" and is untouched.
+        results_shown = 'results_slip' in present or (
+            'higher_results' in present
+            and requirements.resolve(application, 'document').get('higher_results') == 'required')
         documents_done = (
-            {'ic', 'results_slip', 'parent_ic'}.issubset(present)
+            {'ic', 'parent_ic'}.issubset(present) and results_shown
             and income_shown
         )
     # `consent` is a CORE catalogue item (a legal requirement, not a programme preference):

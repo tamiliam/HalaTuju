@@ -33,7 +33,7 @@ from .serializers import (
     SignUploadSerializer,
     StudentAwardSerializer,
 )
-from . import apply_copy, gift_sources
+from . import apply_copy, gift_sources, results_route
 from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
@@ -912,7 +912,7 @@ def _reslot_income_doc(doc, ocr) -> bool:
 
 # Academic-completeness docs that are single-per-person: exactly ONE live copy per member should
 # exist, so a duplicate across request-code slots is collapsed (see _collapse_duplicate_docs).
-_ACADEMIC_SINGLE_TYPES = frozenset({'school_leaving_cert', 'semester_result'})
+_ACADEMIC_SINGLE_TYPES = frozenset({'school_leaving_cert', 'semester_result', 'higher_results'})
 
 
 def _collapse_duplicate_docs(app, doc_type, member) -> None:
@@ -953,7 +953,7 @@ SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'income_support_doc',
     # V4: the promoted academic-completeness docs — field-extract the CGPA / school on upload so
     # the officer sees the read and a blank upload is held (see resolution.doc_match_verdict).
-    'school_leaving_cert', 'semester_result',
+    'school_leaving_cert', 'semester_result', 'higher_results',   # + third route S3b
 } | BILL_DOC_TYPES | RELATIONSHIP_DOC_TYPES)
 # Free-text docs (the letter of intent) that get OCR'd into vision_fields['text'] so
 # Check-2's submission review can read the student's motivation in her own words. No
@@ -1131,6 +1131,8 @@ class DocumentListCreateView(APIView):
         staged = single and (new_doc_type not in _BYPASS_JUDGE_TYPES)
         existing_live = (ApplicantDocument.objects.filter(id__in=stale_ids)
                          .order_by(*SNAPSHOT_ORDER).first() if staged else None)
+        if new_doc_type == 'higher_results':   # S3a (D13): the kind is the results held, never picked
+            serializer.validated_data['results_kind'] = results_route.upload_kind(app)
         with transaction.atomic():
             doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
             from django.utils import timezone as _tz

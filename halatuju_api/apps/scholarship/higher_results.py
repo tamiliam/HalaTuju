@@ -1,0 +1,331 @@
+"""The higher-results upload (STPM / Matriculation / Asasi / Diploma), read and checked.
+Third results route S3a + S3b (2026-10-26; roadmap §5 S3, owner rulings D6 D9 D12 D13).
+
+What this module owns, in the order a document meets it:
+
+1. **The read** (`SCHEMA`, `HINT`, `extract`) — one Gemini read of the image for the name, the
+   exam title, the CGPA and (STPM) the subject grades, plus the routing detection of
+   `results_kind.py` from the upload's OCR text. ⚠ No genuineness step: higher results have no
+   signature family yet (the corpus work, #47), so the Academic card shows "not checked" and the
+   TD-114 floor holds the fact at Probable at best — never a "suspect" it has not earned.
+2. **The student's check** (`student_higher_check`) — the facts the Documents card shows and the
+   ONE note it may add (D13), each with one link:
+     (D) an SPM slip in this card → "This appears to be your SPM results slip …" + "Move it to SPM
+         results slip" (a misfile first), with "Don't have … results?" for the rare case;
+     (B) a different higher kind than the results page → "This appears to be Matriculation
+         results, but your application shows STPM." + "Update your results";
+     (C) subjects / grades / CGPA that differ from those entered → "Some subjects or grades on this
+         slip differ from those entered." + "Correct your STPM results".
+   A note is NEVER a block (D13). "Cannot tell" (no detection, nothing read) says nothing.
+3. **The gate's reading** (`match_verdict`) — the Action Centre / promotion verdict.
+4. **The reviewer's Academic card** (`verdict_academic`, `red_chips`) — name + kind + CGPA (+ STPM
+   grades) against the profile; the SPM slip compared only when one is on file (D9).
+
+The SPM slip itself is untouched here: `academic_engine.student_slip_check` still reads it.
+"""
+from __future__ import annotations
+
+import re
+
+from apps.courses.exam_questions import spm_grades_for  # re-exported: one SPM-grade reader (S3b)
+
+_STR = {'type': 'string'}
+
+#: The Gemini schema for a higher-results document (registered in `vision._FIELD_SCHEMAS`).
+SCHEMA = {'type': 'object', 'properties': {
+    'candidate_name': _STR, 'exam': _STR, 'cgpa': _STR, 'cgpa_label': _STR, 'institution': _STR,
+    'results': {'type': 'array', 'items': {'type': 'object',
+                'properties': {'subject': _STR, 'grade': _STR}}},
+    'warnings': {'type': 'array', 'items': _STR},
+}}
+
+#: The extraction hint (registered in `vision._DOC_HINTS`).
+HINT = (' This is a Malaysian post-SPM results document — an STPM results slip or certificate '
+        '(Sijil Tinggi Persekolahan Malaysia), a Matriculation results slip (Program Matrikulasi), '
+        'an Asasi / Foundation transcript, or a Diploma transcript. Read: "candidate_name" = the '
+        'student\'s full name; "exam" = the document\'s own title exactly as printed (e.g. "SIJIL '
+        'TINGGI PERSEKOLAHAN MALAYSIA 2025" or "KEPUTUSAN PEPERIKSAAN PROGRAM MATRIKULASI"); '
+        '"cgpa" = the CUMULATIVE grade point average (PNGK / CGPA) as a number like 3.67, or '
+        'empty if none is printed — never a one-semester PNG / GPA; "cgpa_label" = the label '
+        'printed beside that number exactly as printed (e.g. PNGK, CGPA, CUMULATIVE GPA); "institution" = the college / university, if printed; '
+        '"results" = one {subject, grade} per subject row with the LETTER grade exactly as printed '
+        '(A, A-, B+ …) — subject NAME only, no code. Ignore MUET lines and watermark text.')
+
+#: The student tickets these codes raise (merged into `resolution.CODE_TO_TICKET`): a missing or
+#: unreadable upload is the student's to fix in the Action Centre (the `_missing` / `_unreadable`
+#: suffix puts both in `STUDENT_DOC_REQUEST_CODES`); another person's name is a doc ticket the
+#: reviewer raises by hand, like the SPM slip's. The kind / CGPA / grade notes raise NO ticket —
+#: the Documents card says them, the reviewer sees them, and none is a block (D13).
+TICKETS = {
+    'higher_results_missing': {'fact': 'academic', 'kind': 'doc', 'doc_type': 'higher_results'},
+    'higher_results_unreadable': {'fact': 'academic', 'kind': 'doc', 'doc_type': 'higher_results'},
+    'higher_results_name_mismatch': {'fact': 'academic', 'kind': 'doc', 'doc_type': 'higher_results'},
+}
+
+#: The results page that edits each kind (the web's `resultsEditPath`).
+RESULTS_PAGE = {'stpm': '/onboarding/stpm-grades', 'matric': '/onboarding/higher-grades',
+                'asasi': '/onboarding/higher-grades', 'diploma': '/onboarding/higher-grades'}
+
+#: STPM subject keys (`stpm_grades`, the web's `STPM_SUBJECTS`) → the names a slip prints for
+#: them, Malay and English. An unrecognised printed subject is IGNORED (cannot tell → no note).
+_STPM_NAMES = {
+    'PA': ('pengajian am', 'general studies'), 'MATH_T': ('matematik t', 'mathematics t'),
+    'MATH_M': ('matematik m', 'mathematics m'), 'PHYSICS': ('fizik', 'physics'),
+    'CHEMISTRY': ('kimia', 'chemistry'), 'BIOLOGY': ('biologi', 'biology'),
+    'FURTHER_MATH': ('matematik lanjutan t', 'further mathematics t', 'further mathematics'),
+    'ECONOMICS': ('ekonomi', 'economics'), 'ACCOUNTING': ('perakaunan', 'accounting'),
+    'BUSINESS': ('pengajian perniagaan', 'business studies'), 'GEOGRAFI': ('geografi', 'geography'),
+    'SEJARAH': ('sejarah', 'history'), 'KESUSASTERAAN_MELAYU': ('kesusasteraan melayu',),
+    'BAHASA_MELAYU': ('bahasa melayu',), 'BAHASA_CINA': ('bahasa cina', 'chinese language'),
+    'BAHASA_TAMIL': ('bahasa tamil', 'tamil language'), 'SENI_VISUAL': ('seni visual', 'visual arts'),
+    'SYARIAH': ('syariah', 'syariah islamiah'), 'USULUDDIN': ('usuluddin',),
+    'ICT': ('sains komputer', 'ict', 'information and communications technology', 'computing'),
+}
+
+
+def _squash(s):
+    return re.sub(r'[^a-z0-9]', '', (s or '').lower())
+
+
+_STPM_BY_NAME = {_squash(n): key for key, names in _STPM_NAMES.items() for n in names}
+
+
+def _fields(doc):
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    f = vf.get('fields')
+    return vf, (f if isinstance(f, dict) else {})
+
+
+#: How far a slip's CGPA may sit from the one entered and still agree (review fix 7): a print
+#: rounds to two places and some transcripts to one, so 0.01 read rounding as a mismatch.
+CGPA_TOLERANCE = 0.05
+#: A label that names a CUMULATIVE figure — the only one a mismatch may be asserted against. A bare
+#: PNG / GPA is one semester's (review fix 7); an unlabelled number cannot be told apart.
+_CUMULATIVE_LABEL = re.compile(r'PNGK|CGPA|KUMULATIF|CUMULATIVE|HIMPUNAN', re.IGNORECASE)
+
+
+def _as_cgpa(v):
+    try:
+        x = float(str(v).strip().replace(',', '.'))
+    except (TypeError, ValueError):
+        return None
+    return x if 0 < x <= 4.0 else None
+
+
+# ── 1. The read ───────────────────────────────────────────────────────────────────────────────
+
+
+def extract(doc, ocr, image_fn, extract_fn):
+    """The higher-results read for `vision._run_field_extraction_impl`: Gemini on the IMAGE (a
+    transcript's table, like the SPM slip's, does not survive flat OCR), then the routing detection
+    from the upload's OCR text (fallback: the read's own exam title). Returns the usual `ex` dict.
+    The detection is stored beside the fields — `results_kind_detected` and the markers seen."""
+    from .results_kind import detect, detect_from_fields, kinds_seen
+    text = ((ocr or {}).get('text') if isinstance(ocr, dict) else '') or ''
+    if ocr is None:          # a caller with no shared read (never the upload, which passes one)
+        from .vision import ocr_document
+        text = (ocr_document(doc) or {}).get('text', '') or ''
+    image = image_fn()
+    if image is not None:
+        ex = extract_fn('', doc.doc_type, image=image, content_type=doc.content_type)
+    else:
+        ex = extract_fn(text, doc.doc_type)
+    ex['capture'] = 'ai'
+    fields = ex.get('fields')
+    if isinstance(fields, dict) and fields and not ex.get('error'):
+        fields['results_kind_detected'] = detect(text) or detect_from_fields(fields)
+        fields['results_kind_markers'] = kinds_seen(text)
+    return ex
+
+
+# ── 2. The student's check ─────────────────────────────────────────────────────────────────────
+
+
+def _entered_cgpa(profile, kind):
+    """The CGPA the student ENTERED for this kind, on the slip's own scale: STPM — the academic
+    CGPA of the entered grades (`stpm_engine.calculate_stpm_cgpa`, the MQA scale; `stpm_cgpa` is
+    the OVERALL figure with co-curriculum and is not what a slip prints); the third route — the
+    CGPA as entered (`higher_cgpa`). None when nothing was entered."""
+    if profile is None:
+        return None
+    if kind == 'stpm':
+        grades = getattr(profile, 'stpm_grades', None) or {}
+        if not grades:
+            return None
+        from apps.courses.stpm_engine import calculate_stpm_cgpa
+        return calculate_stpm_cgpa(grades) or None
+    return _as_cgpa(getattr(profile, 'higher_cgpa', None))
+
+
+def _compare_stpm(profile, fields):
+    """(missing, mismatched) — printed STPM subjects the student did not enter, and entered
+    grades that differ from the slip's. Unrecognised printed subjects are ignored."""
+    entered = {k: (g or '').strip().upper() for k, g in (getattr(profile, 'stpm_grades', None) or {}).items()}
+    missing, mismatched = [], []
+    for row in fields.get('results') or []:
+        if not isinstance(row, dict):
+            continue
+        name = (row.get('subject') or '').strip()
+        key = _STPM_BY_NAME.get(_squash(re.sub(r'^\d+\s*', '', name)))   # "950 MATEMATIK (T)"
+        if key is None:
+            continue
+        slip = re.sub(r'\s+', '', (row.get('grade') or '')).upper()
+        if key not in entered:
+            missing.append(name)
+        elif slip and slip != entered[key]:
+            mismatched.append({'subject': name, 'typed': entered[key], 'slip': slip})
+    return missing, mismatched
+
+
+def student_higher_check(doc) -> dict:
+    """The facts of ONE higher-results document against the student's own profile — the single
+    source the Documents card, the gates and the Academic card read, so none can disagree.
+
+    ``{name, candidate_name, exam, kind_held, kind_detected, kind_status, cgpa_slip,
+    cgpa_entered, cgpa_status, grades_status, missing, mismatched, readable, note, note_kind,
+    note_path, actions_open}``.
+    Statuses: 'match' / 'mismatch' / 'unreadable' / 'pending' ('' when not applicable).
+    `kind_status`: 'match' | 'different' | 'spm' | '' (cannot tell). `readable` is None until
+    read. `note`: 'spm_slip' | 'kind_differs' | 'grades_differ' | '' — the ONE note to show (D13),
+    in that order; `note_kind` is the results page the note's link opens."""
+    from apps.courses.exam_questions import is_tertiary, results_held
+    from .academic_engine import _slip_name_status
+    vf, f = _fields(doc)
+    sv = vf.get('student_verdict')
+    read = bool(sv) and sv != 'review_manually'
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    held = results_held(profile)
+    kind_held = held if is_tertiary(held) else (getattr(doc, 'results_kind', '') or '')
+    detected = (f.get('results_kind_detected') or '') if read else ''
+    kind_status = ('' if not detected or not kind_held else 'spm' if detected == 'spm'
+                   else 'match' if detected == kind_held else 'different')
+    slip_cgpa = _as_cgpa(f.get('cgpa'))
+    entered = _entered_cgpa(profile, kind_held)
+    if not read:
+        cgpa_status = 'pending'
+    elif slip_cgpa is None:
+        cgpa_status = 'unreadable'
+    elif entered is None:
+        cgpa_status = 'pending'
+    elif abs(slip_cgpa - entered) <= CGPA_TOLERANCE:
+        cgpa_status = 'match'
+    elif _CUMULATIVE_LABEL.search(str(f.get('cgpa_label') or '')):
+        cgpa_status = 'mismatch'
+    else:
+        cgpa_status = 'pending'       # a figure we cannot tell is cumulative: never a note (fix 7)
+    missing, mismatched = ([], [])
+    grades_status = ''
+    if kind_held == 'stpm' and read and kind_status != 'spm':
+        missing, mismatched = _compare_stpm(profile, f)
+        grades_status = 'mismatch' if (missing or mismatched) else (
+            'match' if f.get('results') else 'pending')
+    readable = None if not read else bool(
+        sv not in ('wrong_doc', 'unreadable') and (slip_cgpa is not None or f.get('results')
+                                                   or (f.get('candidate_name') or '').strip()))
+    if kind_status == 'spm':
+        note, note_kind = 'spm_slip', kind_held
+    elif kind_status == 'different':
+        note, note_kind = 'kind_differs', detected
+    elif grades_status == 'mismatch' or cgpa_status == 'mismatch':
+        note, note_kind = 'grades_differ', kind_held
+    else:
+        note, note_kind = '', ''
+    return {
+        'name': _slip_name_status(doc), 'candidate_name': f.get('candidate_name') or '',
+        'exam': (f.get('exam') or '').strip(), 'kind_held': kind_held, 'kind_detected': detected,
+        'kind_status': kind_status, 'cgpa_slip': slip_cgpa, 'cgpa_entered': entered,
+        'cgpa_status': cgpa_status, 'grades_status': grades_status, 'missing': missing,
+        'mismatched': mismatched, 'readable': readable, 'note': note, 'note_kind': note_kind,
+        'note_path': RESULTS_PAGE.get(note_kind, ''),
+        # The note's two ACTIONS (move it / SPM only) are open only before the Step-4 Submit
+        # (review fix 1+2); after it the reviewer's own request route is the way.
+        'actions_open': getattr(getattr(doc, 'application', None), 'profile_completed_at', 1) is None,
+    }
+
+
+# ── 3. The gate's reading ──────────────────────────────────────────────────────────────────────
+
+
+def match_verdict(doc) -> str:
+    """`resolution.doc_match_verdict` for a higher-results upload: 'mismatch' (another person's
+    name), 'unreadable' (nothing usable read), 'pending' (not read yet) or 'ok'. A kind / grades
+    note is NOT a mismatch (D13: a note is never a block) — so an SPM slip filed here is still
+    promoted into the card, where its note can offer to move it."""
+    chk = student_higher_check(doc)
+    if chk['name'] == 'mismatch':
+        return 'mismatch'
+    if chk['readable'] is None:
+        return 'pending'
+    return 'ok' if chk['readable'] else 'unreadable'
+
+
+# ── 4. The reviewer's Academic card ────────────────────────────────────────────────────────────
+
+
+def anchors_on_higher(application) -> bool:
+    """Is the Academic fact about the higher results? Exactly when they are the REQUIRED upload
+    (live D12 rule, or frozen at submit). Every application submitted before S3a, and every SPM
+    route, keeps the SPM card unchanged."""
+    from . import requirements
+    return requirements.resolve(application, 'document').get('higher_results') == 'required'
+
+
+def verdict_academic(application, spm_fact):
+    """The Academic fact for a higher-results applicant. `spm_fact` is the SPM card's own answer
+    (`verdict_engine._verdict_academic(spm_only=True)`), folded in ONLY when an SPM slip is on file
+    (D9: optional — a missing one is no gap and asks nothing)."""
+    from .verdict_engine import _fact, _item, _latest_doc
+    doc = _latest_doc(application, 'higher_results')
+    if doc is None:
+        return _fact('academic', 'gap', [], [_item('higher_results_missing')])
+    chk = student_higher_check(doc)
+    evidence, unresolved = [], []
+    if chk['name'] == 'mismatch':
+        unresolved.append(_item('higher_results_name_mismatch'))
+    elif chk['name'] == 'match':
+        evidence.append(_item('higher_results_name_ok'))
+    if chk['readable'] is None:
+        unresolved.append(_item('higher_results_unverified'))
+    elif not chk['readable']:
+        unresolved.append(_item('higher_results_unreadable'))
+    from apps.courses.exam_questions import QUALIFICATION_LABELS as name   # the sponsor line's words
+    kind = name.get(chk['kind_held'], chk['kind_held'])
+    if chk['kind_status'] == 'spm':
+        unresolved.append(_item('higher_results_is_spm', held=kind))
+    elif chk['kind_status'] == 'different':
+        unresolved.append(_item('higher_results_kind_differs', held=kind,
+                                seen=name.get(chk['kind_detected'], chk['kind_detected'])))
+    elif chk['kind_status'] == 'match':
+        evidence.append(_item('higher_results_kind_ok', held=kind))
+    if chk['cgpa_status'] == 'match':
+        evidence.append(_item('higher_results_cgpa_ok', cgpa=f"{chk['cgpa_slip']:.2f}"))
+    elif chk['cgpa_status'] == 'mismatch':
+        unresolved.append(_item('higher_results_cgpa_mismatch', entered=f"{chk['cgpa_entered']:.2f}",
+                                slip=f"{chk['cgpa_slip']:.2f}"))
+    elif chk['cgpa_status'] == 'unreadable':
+        unresolved.append(_item('higher_results_cgpa_unread'))
+    if chk['missing']:
+        unresolved.append(_item('higher_results_subjects_missing', subjects=', '.join(chk['missing'])))
+    for m in chk['mismatched']:
+        unresolved.append(_item('higher_results_grade_mismatch', **m))
+    evidence.append(_item('higher_results_not_checked'))       # genuineness: no family yet
+    clean = (chk['name'] == 'match' and chk['readable'] and chk['kind_status'] == 'match'
+             and chk['cgpa_status'] == 'match' and chk['grades_status'] in ('', 'match'))
+    if spm_fact is not None and _latest_doc(application, 'results_slip') is not None:
+        evidence += spm_fact['evidence']
+        unresolved += spm_fact['unresolved']
+        clean = clean and spm_fact['status'] == 'verified'
+    return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)
+
+
+def red_chips(application) -> int:
+    """RED academic chips for the higher card — Name, Kind (another kind / an SPM slip), Results
+    (CGPA or STPM grades that differ). 0-3. Unread / cannot-tell are grey, never red."""
+    from .verdict_engine import _latest_doc
+    doc = _latest_doc(application, 'higher_results')
+    if doc is None:
+        return 0
+    chk = student_higher_check(doc)
+    return ((1 if chk['name'] == 'mismatch' else 0)
+            + (1 if chk['kind_status'] in ('spm', 'different') else 0)
+            + (1 if 'mismatch' in (chk['cgpa_status'], chk['grades_status']) or chk['missing'] else 0))

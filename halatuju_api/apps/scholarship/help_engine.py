@@ -380,6 +380,10 @@ def verdict_for_document(doc):
         if doc.vision_error or not (doc.vision_name or '').strip():
             return 'unreadable'
         return ''
+    # Third route S3b (D13): the higher-results card speaks in fixed, deterministic notes with one
+    # link each (`higher_results.student_higher_check`), never an AI coach — nothing to phrase here.
+    if doc.doc_type == 'higher_results':
+        return ''
     # Results slip — the three clinical checks (name / subjects / results), most
     # important first: a wrong-person slip, then a missing subject, then a grade that
     # disagrees with the typed profile. Computed by the SAME engine the FE checklist

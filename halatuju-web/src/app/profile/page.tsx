@@ -26,7 +26,9 @@ import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
 import LazyGuardianContactSection from '@/components/profile/LazyGuardianContactSection'
-import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
+import type { PathwayForm } from '@/components/PathwayPicker'
+// Third results route S3b: fetched when the section opens (see the wrapper's note).
+import PathwayPicker from '@/components/scholarship/LazyPathwayPicker'
 import type { OtherMember } from '@/lib/familyRoster'
 import type { StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
@@ -421,6 +423,15 @@ export default function ProfilePage() {
     setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
     setEditingSection(section)
   }
+
+  // Third results route S3b (D13): "Continue with SPM results only" sends the student here to
+  // choose a post-SPM pathway — `/profile#pathway` opens the section holding the pathway picker.
+  const [pathwayHashDone, setPathwayHashDone] = useState(false)
+  useEffect(() => {
+    if (loading || pathwayHashDone || typeof window === 'undefined') return
+    setPathwayHashDone(true)
+    if (window.location.hash === '#pathway') startEditing('application')
+  }, [loading, pathwayHashDone, startEditing])
 
   const cancelEditing = () => {
     postcode.edited()

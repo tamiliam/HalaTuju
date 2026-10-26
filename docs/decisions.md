@@ -1,5 +1,65 @@
 # Architectural Decisions — HalaTuju
 
+## The required results upload follows the chosen course; the card shows the results page's type; notes never block — 2026-10-26 (third results route S3a + S3b; rulings D6 D9 D12 D13)
+
+**The rule (D12), in one place.** `apps/scholarship/results_route.py` answers "which results upload
+does THIS application need", from the chosen course first and the results held second. It relabels
+the core `results_slip` catalogue item — an organisation asks for "the results"; which upload
+carries them is the student's route, not a setting — so `higher_results` is never a catalogue item.
+It is applied in `requirements.resolve` only for an application not yet submitted and is FROZEN by
+`requirements.freeze` at the Step-4 Submit, so a submitted application keeps its requirement: a
+pre-S3a snapshot has no `higher_results` key and keeps "SPM slip required". Course classification:
+a `course_id` found in `stpm_courses` is a degree (the post-STPM catalogue holds only degrees); any
+other `course_id` is SPM-entry (the SPM catalogue's UA diplomas, Asasi, PISMP, polytechnic …) —
+the programme beats a stale pathway code (live: `chosen_pathway='stpm'` beside a degree); then the
+code (`degree` → degree; matric / stpm / asasi / poly / kkom / pismp / iljtm / ilkbs / diploma →
+post-SPM); then an offer's programme NAME (`offer_pathway.detect_pathway_type`); a bare
+`university` code with nothing else is undecided (the SPM form's `university` courses are
+diplomas). PISMP is post-SPM (D13). A tertiary holder whose stored pathway is a pre-U code she has
+already passed (`stpm` / `matric` / `asasi`, or her own kind) with no course is a stale autofill and
+reads undecided (lead's ruling; live #196, #147). **Owner ruling (2026-10-26):** a degree needs
+post-SPM results, so an SPM-only holder bound for a degree is REQUIRED to upload them before submit,
+and her SPM slip stays required too (she always has academic evidence); the card says so with links
+to the results choice and the course choice. A programme that set the results optional is never
+escalated (only 'required' / 'optional' are mapped; anything else is left alone).
+
+**D9.** An optional SPM slip never blocks: its name / unreadable reds are skipped by the gate when it
+is not the required upload (the reviewer still sees them). The grandfathered submitted arm of
+`application_completeness` gains an OR (higher results under a frozen higher requirement) — it only
+adds, so nothing submitted before can newly fail.
+
+**D13.** No type picker: the upload's `results_kind` is the results held at upload, shown read-only
+with "Change" → the results page. Detection (`results_kind.py`) is ROUTING ONLY — fixed printed
+markers, "cannot tell" when none or two point the way, no score, nothing reused from
+`genuineness/results_doc.py`, so no `MODEL_VERSION` bump. A note is shown only on a detected
+problem and is never a block (an SPM slip in the card is still promoted, so its note can offer the
+move). (D) assumes a MISFILE first: "Move it to SPM results slip" re-files the document (the file
+kept, its higher-results read CLEARED so the live self-heal sweep reads it as an SPM slip — never a
+local re-read; one live slip per slot by `promotion.should_promote`). **Both actions are open only
+before the Step-4 Submit** (adversarial review): after it they could wipe results an award rests on,
+raise a ticket the frozen requirement can never close, or demote a slip the reviewer has read, so
+they answer 409 `application_submitted` and the reviewer's request route is the way. Each ALWAYS
+leaves a reviewer note (`results_change_notes`) — a student shortlisted on a CGPA must never arrive
+silently as SPM. "Continue with SPM results only" is the ONE door that may move a profile down from tertiary results it still holds
+(the sync's `_never_demote_held_results` still refuses every other): it clears the higher results
+ENTERED, keeps every SPM grade (copying the STPM page's SPM block into `grades` when that is the
+only SPM record), audits, and appends to `ScholarshipApplication.results_change_notes`, shown on
+the cockpit's Academic card. The shortlist is NOT re-run; the reviewer judges. A CGPA difference is
+a note only for a figure labelled cumulative (PNGK / CGPA …) and beyond ±0.05 — never a semester
+PNG or an unlabelled number.
+
+**One higher qualification at a time (D11/D13).** A sync that completes one higher form (its marker
+kept AND its results in the payload) clears the other's entries, set in the attrs before the
+bookkeeping so `completed_qualifications` prunes to match and the no-demote guard reads the switch
+as deliberate. A marker with no results behind it clears nothing.
+
+**The Academic card** for a higher-results applicant anchors on the higher results (name, kind,
+CGPA — STPM's slip PNGK is compared with the ACADEMIC CGPA of the entered grades, MQA scale, not
+the stored overall `stpm_cgpa` — and STPM subject grades); the SPM slip is folded in only when on
+file. Genuineness is "not checked" (no family yet) and the TD-114 floor holds it at Probable.
+`VERDICT_ENGINE_VERSION` 2026-10-26.3. The SPM comparison now reads `spm_grades_for` everywhere it
+compares a slip (verdict, ladder chips, student check).
+
 ## STPM results are fingerprinted like SPM; the online results-checker page is not a result document; a certified copy is — 2026-10-26 (corpus-gaps C3; owner rulings 1A, 2A)
 
 **What.** STPM results (Majlis Peperiksaan Malaysia) get their own family (MODEL_VERSION 1.9.0,

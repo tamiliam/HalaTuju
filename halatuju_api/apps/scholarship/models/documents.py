@@ -10,6 +10,11 @@ from django.db import models
 from ..document_snapshot import SNAPSHOT_ORDER
 from .applications import ScholarshipApplication
 
+#: The kinds of higher results a `higher_results` document can carry — the tertiary qualifications
+#: of `apps.courses.exam_questions.TERTIARY`, written out (models stay free of the courses app).
+RESULTS_KIND_CHOICES = [('stpm', 'STPM'), ('matric', 'Matriculation'), ('asasi', 'Asasi'),
+                        ('diploma', 'Diploma')]
+
 class ApplicantDocument(models.Model):
     """A supporting document for an application, stored in a private Supabase
     Storage bucket. Only the storage path + metadata live here; file bytes never
@@ -50,6 +55,10 @@ class ApplicantDocument(models.Model):
         # current-performance box (SemesterResult is post-award only). Gemini-extracted; soft.
         ('school_leaving_cert', 'School Leaving Certificate'),
         ('semester_result', 'Semester Result Slip'),
+        # Third results route S3a (2026-10-26, request #38): the ONE upload of a tertiary holder's
+        # STPM / Matriculation / Asasi / Diploma results. WHICH kind is stored in `results_kind`
+        # (set from the results page at upload, ruling D13); the SPM slip stays `results_slip`.
+        ('higher_results', 'Higher Results'),
         # Catch-all for a reviewer-requested document not in the fixed list. Lands under "Other".
         ('other', 'Other Document'),
     ]
@@ -85,6 +94,13 @@ class ApplicantDocument(models.Model):
     # clobbering the student's route doc. '' = the student's own apply-form/route doc
     # (shared slot — unchanged behaviour).
     request_code = models.CharField(max_length=20, blank=True, default='')
+    # Third results route S3a: for a `higher_results` upload, the kind of results it is meant to be
+    # — always the student's results held at upload time (`exam_questions.results_held`, ruling D13:
+    # no type picker). '' for every other document and for legacy rows. What the document actually
+    # SAYS it is lives in `vision_fields['fields']['results_kind_detected']` (S3b, `results_kind.py`).
+    results_kind = models.CharField(
+        max_length=10, blank=True, default='', db_default='', choices=RESULTS_KIND_CHOICES,
+        help_text="higher_results only: stpm / matric / asasi / diploma, from the results held.")
     storage_path = models.CharField(max_length=500)
     original_filename = models.CharField(max_length=255, blank=True, default='')
     content_type = models.CharField(max_length=100, blank=True, default='')

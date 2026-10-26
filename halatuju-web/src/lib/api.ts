@@ -112,10 +112,11 @@ export type { InterviewSlot, InterviewMessage, InterviewSchedule } from './api/i
 export {
   signUploadDocument, uploadFileToSignedUrl, recordDocument, listDocuments, deleteDocument,
   getDocumentHelp, getIncomeHelp, listReferees, addReferee, getConsentStatus, recordConsent,
+  refileToSpm, continueWithSpmOnly,
 } from './api/documents'
 export type {
   ApplicantDocument, BcCheck, GuardianshipCheck, SupportDocCheck, StrCheck, IncomeIcCheck,
-  IncomeProofCheck, UtilityCheck, SlipCheckStatus, AcademicCheck, SemesterCheck,
+  IncomeProofCheck, UtilityCheck, SlipCheckStatus, AcademicCheck, HigherCheck, SemesterCheck,
   SchoolLeavingCheck, PathwayCheck, Referee, ConsentStatus, DocumentLimits, GradeDiff,
   DocumentHelp,
 } from './api/documents'

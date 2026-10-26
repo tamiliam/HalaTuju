@@ -99,8 +99,32 @@ export const FAQ: Record<Audience, QA[]> = {
         the CGPA as printed on her results, her co-curriculum score (Matriculation and Asasi: the overall CGPA
         is 90% CGPA and 10% co-curriculum; a Diploma&rsquo;s overall CGPA is its CGPA as it is), her MUET band
         and the SPM grades she entered. Only a diploma from a <strong>public</strong> institution counts; a
-        private-college diploma does not qualify. On 26 October 2026 there is no separate upload for these
-        results yet, so check what she entered against the results document she did upload.</>,
+        private-college diploma does not qualify. Her results document is the separate
+        <strong> STPM / Matriculation / Asasi / Diploma results</strong> upload (see the next question).</>,
+    },
+    {
+      q: <>Which <strong>results</strong> must a student upload, and what does the Academic card check?</>,
+      a: <>It follows the course she has chosen. Bound for a <strong>university degree</strong> with STPM,
+        Matriculation, Asasi or Diploma results, she uploads those results (<strong>required</strong>); her SPM
+        slip is <strong>optional</strong> and never stops her submitting. A student with only SPM results who
+        chose a degree must upload higher results too (a degree needs them), as well as her SPM slip. On a <strong>post-SPM pathway</strong>
+        (Matriculation, Form 6, Polytechnic, ILKBS, PISMP and so on) only the <strong>SPM results slip</strong> is
+        required. With no course chosen yet, it follows the results she holds. An application keeps the
+        requirement it was submitted under. The Academic card checks the higher results&rsquo; name, which
+        results they are and the CGPA (and, for STPM, the subject grades) against what she entered; an SPM slip
+        is compared only if one is on file. Their genuineness is <strong>not checked</strong> yet &mdash; read the
+        document yourself. When the document looks like a different kind of results, or an SPM slip, the card
+        says so and the student was shown a note; none of these stops her application.</>,
+    },
+    {
+      q: <>The Academic card says the student <strong>only has SPM results</strong>, or <strong>moved an SPM slip</strong>. What happened?</>,
+      a: <>Before submitting, she either chose &ldquo;Continue with SPM results only&rdquo; &mdash; the STPM,
+        Matriculation, Asasi or Diploma results she had entered were removed, her SPM results were kept, and
+        she is now assessed on SPM &mdash; or moved an SPM slip she had put in the higher-results card into the
+        SPM slot. The note gives the date (and, for the first, which results went and their CGPA). She may
+        have been shortlisted on the results she removed: the shortlist was <strong>not</strong> run again, so
+        judge the change yourself and ask at interview if it is unclear. Once an application is submitted
+        these two actions are closed &mdash; request any document you need instead.</>,
     },
     {
       q: <>Why did STPM students move up the list when I sort by <strong>merit</strong>?</>,

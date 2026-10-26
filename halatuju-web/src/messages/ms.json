@@ -1299,7 +1299,7 @@
     "docs": {
       "type": {
         "ic": "Kad pengenalan (IC)",
-        "results_slip": "Slip keputusan SPM/STPM",
+        "results_slip": "Slip keputusan SPM",
         "photo": "Foto",
         "epf": "Penyata KWSP",
         "str": "Dokumen STR",
@@ -1315,7 +1315,8 @@
         "income_support_doc": "Dokumen sokongan pendapatan",
         "school_leaving_cert": "Sijil berhenti sekolah",
         "bank_statement": "Penyata bank",
-        "income_proof": "Bukti pendapatan isi rumah"
+        "income_proof": "Bukti pendapatan isi rumah",
+        "higher_results": "Keputusan STPM / Matrikulasi / Asasi / Diploma"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
@@ -1363,7 +1364,9 @@
           "bank_holder_mismatch": "Pemegang akaun pada penyata ini bukan anda. Biasiswa hanya boleh dibayar ke akaun bank atas nama anda sendiri — sila muat naik penyata untuk akaun anda sendiri.",
           "bank_details_unclear": "Kami tidak dapat membaca ketiga-tiga butiran dengan jelas (nama bank, nombor akaun, dan pemegang akaun). Sila muat naik foto atau PDF yang lebih jelas di mana ketiga-tiganya kelihatan."
         },
-        "school_leaving_cert": "Foto/PDF sijil berhenti sekolah (surat berhenti sekolah) atau testimonial anda."
+        "school_leaving_cert": "Foto/PDF sijil berhenti sekolah (surat berhenti sekolah) atau testimonial anda.",
+        "higher_results": "Gambar atau PDF slip keputusan atau transkrip rasmi anda, yang menunjukkan PNGK anda.",
+        "results_slip_optional": "Gambar atau PDF slip keputusan SPM rasmi anda. Pilihan bagi pemohon STPM, Matrikulasi, Asasi dan Diploma."
       },
       "income": {
         "title": "Bukti pendapatan isi rumah",
@@ -1652,7 +1655,40 @@
           "pending": "Belum disemak"
         }
       },
-      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
+      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas.",
+      "higher": {
+        "typeLabel": "Jenis keputusan:",
+        "change": "Tukar",
+        "readOk": "Keputusan {kind}. PNGK {cgpa}, seperti yang dimasukkan dalam permohonan anda.",
+        "nameMismatch": "Nama pada keputusan ini tidak sepadan dengan nama anda. Sila muat naik keputusan anda sendiri.",
+        "unreadable": "Kami tidak dapat membaca keputusan ini. Sila muat naik salinan yang lebih jelas.",
+        "kind": {
+          "stpm": "STPM",
+          "matric": "Matrikulasi",
+          "asasi": "Asasi",
+          "diploma": "Diploma"
+        },
+        "note": {
+          "spmSlip": "Ini kelihatan seperti slip keputusan SPM anda. Sila muat naiknya di bahagian \"Slip keputusan SPM\" di bawah, dan muat naik keputusan {kind} anda di sini.",
+          "kindDiffers": "Ini kelihatan seperti keputusan {seen}, tetapi permohonan anda menunjukkan {held}.",
+          "gradesDiffer": "Sesetengah mata pelajaran atau gred pada slip ini berbeza daripada yang dimasukkan."
+        },
+        "moveToSpm": "Pindahkan ke slip keputusan SPM",
+        "noHigher": "Tiada keputusan STPM, Matrikulasi, Asasi atau Diploma?",
+        "updateResults": "Kemas kini keputusan anda",
+        "correctResults": "Betulkan keputusan {kind} anda",
+        "confirm": {
+          "title": "Teruskan dengan keputusan SPM sahaja",
+          "intro": "Sahkan hanya jika anda tidak memiliki keputusan STPM, Matrikulasi, Asasi atau Diploma.",
+          "removed": "Keputusan {kind} yang anda masukkan akan dibuang. Keputusan SPM anda tidak akan diubah.",
+          "pathway": "Kursus ijazah memerlukan keputusan lepasan SPM, jadi anda akan diminta memilih laluan lepasan SPM, seperti Matrikulasi, Tingkatan 6 atau Politeknik.",
+          "reviewer": "Jika permohonan anda telah dihantar, penyemak anda akan dimaklumkan.",
+          "go": "Buang dan pilih laluan",
+          "cancel": "Batal"
+        },
+        "spmOnlyHelp": "Wajib untuk kursus ijazah. Masukkan keputusan STPM, Matrikulasi, Asasi atau Diploma anda, atau pilih laluan lepasan SPM jika anda hanya mempunyai keputusan SPM.",
+        "choosePathway": "Pilih laluan lepasan SPM"
+      }
     },
     "referee": {
       "name": "Nama perujuk",
@@ -1744,7 +1780,10 @@
         "ic_service_down": "Perkhidmatan semakan dokumen kami tidak tersedia buat sementara waktu. Sila cuba lagi kemudian.",
         "ic_nric_mismatch": "Nombor IC pada IC yang dimuat naik tidak sepadan dengan profil anda. Sila semak NRIC anda.",
         "ic_name_mismatch": "Nama pada IC yang dimuat naik tidak sepadan dengan profil anda. Sila semak nama anda.",
-        "no_application": "Kami tidak dapat menemui permohonan anda."
+        "no_application": "Kami tidak dapat menemui permohonan anda.",
+        "higher_results_missing": "Muat naik keputusan STPM, Matrikulasi, Asasi atau Diploma anda dalam langkah Dokumen.",
+        "higher_results_name_mismatch": "Nama pada keputusan anda tidak sepadan dengan nama anda — sila muat naik semula keputusan anda sendiri dalam langkah Dokumen.",
+        "higher_results_unreadable": "Kami tidak dapat membaca keputusan anda — sila muat naik salinan yang lebih jelas dalam langkah Dokumen."
       },
       "given": "Persetujuan diberikan. Terima kasih.",
       "givenHeading": "Apa yang anda persetujui",
@@ -2347,6 +2386,18 @@
         "pathway_type_switch": {
           "title": "Sahkan perubahan laluan anda",
           "desc": "Anda memberitahu kami anda mengikuti {declared_pathway}, tetapi surat tawaran anda adalah untuk {offer_pathway} ({programme} di {institution}). Jika anda telah bertukar ke {offer_pathway}, sahkannya dan kami akan mengemas kini rekod anda. Jika ini bukan tawaran anda, muat naik yang betul."
+        },
+        "higher_results_missing": {
+          "title": "Muat naik keputusan STPM, Matrikulasi, Asasi atau Diploma anda",
+          "desc": "Kami memerlukan slip keputusan atau transkrip rasmi anda, dengan nama dan PNGK anda jelas kelihatan."
+        },
+        "higher_results_unreadable": {
+          "title": "Muat naik semula salinan keputusan yang lebih jelas",
+          "desc": "Imbasan tidak jelas. Sila muat naik salinan yang lebih jelas."
+        },
+        "higher_results_name_mismatch": {
+          "title": "Semak nama pada keputusan anda",
+          "desc": "Nama pada keputusan anda tidak sepadan dengan profil anda. Sila semak semula."
         }
       },
       "vircle": {
@@ -4533,7 +4584,21 @@
           "other_scholarships_followup": "Biasiswa lain disenaraikan semasa memohon — pelajar diminta yang mana, jumlah, dan sama ada diterima/ditawarkan (elak pembiayaan berganda).",
           "pension_amount_unknown": "Ibu/bapa yang bersara atau tidak berupaya bekerja mungkin menerima pencen atau bantuan yang belum dikira — pelajar telah ditanya sama ada mereka menerimanya dan, jika ya, lebih kurang berapa (tiada dokumen diminta sehingga disahkan).",
           "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
-          "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah)."
+          "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
+          "higher_results_missing": "Tiada keputusan STPM / Matrikulasi / Asasi / Diploma dimuat naik.",
+          "higher_results_unreadable": "Keputusan pengajian tinggi tidak dapat dibaca — minta salinan yang lebih jelas.",
+          "higher_results_name_mismatch": "Keputusan pengajian tinggi atas nama berbeza. Sahkan.",
+          "higher_results_name_ok": "Keputusan pengajian tinggi atas nama pelajar.",
+          "higher_results_unverified": "Keputusan pengajian tinggi belum dibaca — semak dengan mata.",
+          "higher_results_is_spm": "Dokumen dalam slot keputusan pengajian tinggi kelihatan seperti slip SPM, bukan keputusan {held}. Pelajar telah dimaklumkan; sahkan keputusan yang dimilikinya.",
+          "higher_results_kind_differs": "Halaman keputusan menyatakan {held}, tetapi dokumen yang dimuat naik kelihatan seperti keputusan {seen}. Pelajar telah dimaklumkan; sahkan yang betul.",
+          "higher_results_kind_ok": "Dokumen kelihatan sebagai keputusan {held}, seperti di halaman keputusan.",
+          "higher_results_cgpa_ok": "PNGK pada dokumen ({cgpa}) sepadan dengan yang dimasukkan.",
+          "higher_results_cgpa_mismatch": "PNGK dimasukkan {entered}, tetapi dokumen menunjukkan {slip}. Semak.",
+          "higher_results_cgpa_unread": "Tiada PNGK dapat dibaca daripada dokumen — semak dengan mata.",
+          "higher_results_subjects_missing": "Mata pelajaran STPM pada slip tetapi tidak dimasukkan: {subjects}.",
+          "higher_results_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip STPM menunjukkan {slip}. Semak.",
+          "higher_results_not_checked": "Kesahihan keputusan pengajian tinggi BELUM disemak (tiada corak untuk dokumen ini) — semak dokumen dengan mata."
         }
       },
       "blockers": {
@@ -4600,7 +4665,10 @@
           "ic_nric_mismatch": "IC yang sepadan dengan profil mereka — NRIC pada IC yang dimuat naik berbeza",
           "ic_name_mismatch": "IC yang sepadan dengan profil mereka — nama pada IC yang dimuat naik berbeza",
           "ic_service_down": "Tiada daripada pelajar — perkhidmatan semakan dokumen kami tidak tersedia buat sementara waktu. Cuba lagi kemudian.",
-          "no_application": "Tiada permohonan dijumpai."
+          "no_application": "Tiada permohonan dijumpai.",
+          "higher_results_missing": "Keputusan STPM / Matrikulasi / Asasi / Diploma mereka",
+          "higher_results_name_mismatch": "Keputusan pengajian tinggi mereka sendiri — yang dimuat naik atas nama lain",
+          "higher_results_unreadable": "Salinan keputusan pengajian tinggi yang lebih jelas — kami tidak dapat membaca yang dimuat naik"
         }
       },
       "decision": {
@@ -4773,7 +4841,8 @@
           "reasonable": "Munasabah",
           "outstanding": "Tunggakan",
           "school": "Sekolah",
-          "behaviour": "Kelakuan"
+          "behaviour": "Kelakuan",
+          "type": "Jenis"
         },
         "billValue": {
           "amount": "Amaun",
@@ -4800,7 +4869,8 @@
           "statement_of_intent": "Penyata hasrat",
           "photo": "Gambar",
           "other": "Dokumen lain",
-          "bank_statement": "Penyata bank"
+          "bank_statement": "Penyata bank",
+          "higher_results": "Keputusan STPM / Matrikulasi / Asasi / Diploma"
         },
         "parentIcOf": "IC {member}",
         "ofMember": "{doc} {member}",
@@ -4827,6 +4897,12 @@
           "school": "Sekolah",
           "behaviour": "Kelakuan",
           "notes": "Nota"
+        },
+        "higherKind": {
+          "stpm": "Keputusan STPM",
+          "matric": "Keputusan Matrikulasi",
+          "asasi": "Keputusan Asasi",
+          "diploma": "Keputusan Diploma"
         }
       },
       "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan.",
@@ -4850,6 +4926,17 @@
       },
       "qcOverride": {
         "title": "Diterima walaupun ada bendera merah oleh"
+      },
+      "resultsChanged": {
+        "onlySpm": "Pada {date}, sebelum menghantar, pelajar membuang keputusan {cleared} yang dimasukkan (PNGK {cgpa}) dan meneruskan dengan keputusan SPM sahaja. Mereka disenarai pendek berdasarkan keputusan yang dimiliki ketika itu, dan senarai pendek tidak dijalankan semula — nilai perubahan ini sendiri.",
+        "kind": {
+          "stpm": "STPM",
+          "matric": "Matrikulasi",
+          "asasi": "Asasi",
+          "diploma": "Diploma",
+          "other": "pengajian tinggi"
+        },
+        "refiledSpm": "Pada {date}, sebelum menghantar, pelajar memindahkan slip SPM dari kad keputusan pengajian tinggi ke slip keputusan SPM."
       }
     },
     "students": "Pelajar",

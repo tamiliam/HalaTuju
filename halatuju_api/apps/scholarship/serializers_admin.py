@@ -517,7 +517,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'interview_agenda',
-            'verdict',
+            'verdict', 'results_change_notes',   # S3b: results changed after submit (D13)
             'submission_review',
             'query_sla',
             'funding_estimate',

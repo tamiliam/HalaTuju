@@ -6,6 +6,7 @@
  * re-implements them.
  */
 
+import { higherResultsFacts } from '@/lib/higherResultsFacts'
 import { docTypeToFact } from '@/lib/docCategory'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
 
@@ -136,7 +137,7 @@ export function groupDocumentsByFact(
     const rank = (dt: string) => { const i = order.indexOf(dt); return i < 0 ? 99 : i }
     list.sort((a, b) => rank(a.doc_type) - rank(b.doc_type))
   }
-  orderBy(groups.academic, ['results_slip', 'semester_result'])
+  orderBy(groups.academic, ['higher_results', 'results_slip', 'semester_result'])
   orderBy(groups.additional, ['school_leaving_cert', 'statement_of_intent', 'photo'])
   return groups
 }
@@ -421,6 +422,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     if (gf) facts.push(gf)
     return facts
   }
+  if (dt === 'higher_results') return higherResultsFacts(doc.higher_check, factStatus)   // S3b
   if (dt === 'offer_letter') {
     const c = doc.pathway_check
     if (!c) return []
@@ -952,7 +954,7 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
 // A per-doc-TYPE glyph so the icon space carries meaning (not just "is it an IC"); the row
 // tints the badge by the doc's verdict. Emoji (the cockpit has no icon library).
 const DOC_ICON: Record<string, string> = {
-  ic: '🪪', parent_ic: '🪪', results_slip: '🎓', offer_letter: '🏫',
+  ic: '🪪', parent_ic: '🪪', results_slip: '🎓', higher_results: '🎓', offer_letter: '🏫',
   str: '💵', salary_slip: '🧾', epf: '🏦', income_support_doc: '✉️', water_bill: '💧',
   electricity_bill: '⚡', birth_certificate: '👶', guardianship_letter: '📜',
   statement_of_intent: '✍️', photo: '🖼️',

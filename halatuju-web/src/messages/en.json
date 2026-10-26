@@ -1299,7 +1299,7 @@
     "docs": {
       "type": {
         "ic": "Identity card (IC)",
-        "results_slip": "SPM/STPM results slip",
+        "results_slip": "SPM results slip",
         "photo": "Photo",
         "epf": "EPF statement",
         "str": "STR document",
@@ -1315,7 +1315,8 @@
         "income_support_doc": "Income support document",
         "school_leaving_cert": "School-leaving certificate",
         "bank_statement": "Bank statement",
-        "income_proof": "Proof of household income"
+        "income_proof": "Proof of household income",
+        "higher_results": "STPM / Matriculation / Asasi / Diploma results"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
@@ -1363,7 +1364,9 @@
           "bank_holder_mismatch": "The account holder on this statement is not you. The bursary can only be paid into a bank account in your own name — please upload a statement for your own account.",
           "bank_details_unclear": "We could not clearly read all three details (bank name, account number, and account holder). Please upload a clearer photo or PDF where all three are visible."
         },
-        "school_leaving_cert": "A photo/PDF of your school-leaving certificate (surat berhenti sekolah) or testimonial."
+        "school_leaving_cert": "A photo/PDF of your school-leaving certificate (surat berhenti sekolah) or testimonial.",
+        "higher_results": "A photo or PDF of your official results slip or transcript, showing your CGPA.",
+        "results_slip_optional": "A photo or PDF of your official SPM results slip. Optional for STPM, Matriculation, Asasi and Diploma applicants."
       },
       "income": {
         "title": "Proof of household income",
@@ -1652,7 +1655,40 @@
           "pending": "Not checked yet"
         }
       },
-      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
+      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document.",
+      "higher": {
+        "typeLabel": "Type of results:",
+        "change": "Change",
+        "readOk": "{kind} results. CGPA {cgpa}, as entered on your application.",
+        "nameMismatch": "The name on these results doesn't match yours. Please upload your own results.",
+        "unreadable": "We couldn't read these results. Please upload a clearer copy.",
+        "kind": {
+          "stpm": "STPM",
+          "matric": "Matriculation",
+          "asasi": "Asasi",
+          "diploma": "Diploma"
+        },
+        "note": {
+          "spmSlip": "This appears to be your SPM results slip. Please upload it under \"SPM results slip\" below, and upload your {kind} results here.",
+          "kindDiffers": "This appears to be {seen} results, but your application shows {held}.",
+          "gradesDiffer": "Some subjects or grades on this slip differ from those entered."
+        },
+        "moveToSpm": "Move it to SPM results slip",
+        "noHigher": "Don't have STPM, Matriculation, Asasi or Diploma results?",
+        "updateResults": "Update your results",
+        "correctResults": "Correct your {kind} results",
+        "confirm": {
+          "title": "Continue with SPM results only",
+          "intro": "Confirm only if you do not hold STPM, Matriculation, Asasi or Diploma results.",
+          "removed": "The {kind} results you entered will be removed. Your SPM results will not be changed.",
+          "pathway": "A degree course needs post-SPM results, so you will be asked to choose a post-SPM pathway, such as Matriculation, Form 6 or Polytechnic.",
+          "reviewer": "If your application has been submitted, your reviewer will be informed.",
+          "go": "Remove and choose a pathway",
+          "cancel": "Cancel"
+        },
+        "spmOnlyHelp": "Required for degree courses. Enter your STPM, Matriculation, Asasi or Diploma results, or choose a post-SPM pathway if you only have SPM results.",
+        "choosePathway": "Choose a post-SPM pathway"
+      }
     },
     "referee": {
       "name": "Referee name",
@@ -1744,7 +1780,10 @@
         "ic_service_down": "Our document-check service is temporarily unavailable. Please try again later.",
         "ic_nric_mismatch": "The NRIC on your uploaded IC doesn't match your profile. Please check your NRIC.",
         "ic_name_mismatch": "The name on your uploaded IC doesn't match your profile. Please check your name.",
-        "no_application": "We couldn't find your application."
+        "no_application": "We couldn't find your application.",
+        "higher_results_missing": "Upload your STPM, Matriculation, Asasi or Diploma results in the Documents step.",
+        "higher_results_name_mismatch": "The name on your results doesn't match yours — please re-upload your own results in the Documents step.",
+        "higher_results_unreadable": "We couldn't read your results — please upload a clearer copy in the Documents step."
       },
       "given": "Consent given. Thank you.",
       "givenHeading": "What you agreed to",
@@ -2347,6 +2386,18 @@
         "pathway_type_switch": {
           "title": "Confirm your pathway change",
           "desc": "You told us you were taking {declared_pathway}, but your offer letter is for {offer_pathway} ({programme} at {institution}). If you've switched to {offer_pathway}, confirm it and we'll update your record. If this isn't your offer, upload the right one instead."
+        },
+        "higher_results_missing": {
+          "title": "Upload your STPM, Matriculation, Asasi or Diploma results",
+          "desc": "We need your official results slip or transcript, showing your name and CGPA clearly."
+        },
+        "higher_results_unreadable": {
+          "title": "Re-upload a clearer copy of your results",
+          "desc": "The scan was unclear. Please upload a clearer copy."
+        },
+        "higher_results_name_mismatch": {
+          "title": "Check the name on your results",
+          "desc": "The name on your results doesn't match your profile. Please re-check."
         }
       },
       "vircle": {
@@ -4533,7 +4584,21 @@
           "other_scholarships_followup": "Other scholarships were listed at apply — the student has been asked which, the amount, and whether received/offered (avoid double-funding).",
           "pension_amount_unknown": "A retired / unable-to-work parent may draw a pension or benefit that isn't yet counted — the student has been asked whether they receive one and, if so, roughly how much (no document demanded until they confirm).",
           "father_pension_proof_missing": "Father is retired/unable and the student confirmed he draws a pension — asked to upload the statement (counts as household income).",
-          "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income)."
+          "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income).",
+          "higher_results_missing": "No STPM / Matriculation / Asasi / Diploma results uploaded.",
+          "higher_results_unreadable": "The higher results could not be read — ask for a clearer copy.",
+          "higher_results_name_mismatch": "The higher results are in a different name. Confirm.",
+          "higher_results_name_ok": "The higher results are in the student's name.",
+          "higher_results_unverified": "The higher results have not been read yet — check them by eye.",
+          "higher_results_is_spm": "The document in the higher-results slot reads as an SPM slip, not {held} results. The student has been told; confirm which results they hold.",
+          "higher_results_kind_differs": "The results page says {held}, but the uploaded document reads as {seen} results. The student has been told; confirm which is right.",
+          "higher_results_kind_ok": "The document reads as {held} results, as on the results page.",
+          "higher_results_cgpa_ok": "The CGPA on the document ({cgpa}) matches the one entered.",
+          "higher_results_cgpa_mismatch": "CGPA entered {entered}, but the document reads {slip}. Check.",
+          "higher_results_cgpa_unread": "No CGPA could be read off the document — check it by eye.",
+          "higher_results_subjects_missing": "STPM subjects on the slip but not entered: {subjects}.",
+          "higher_results_grade_mismatch": "{subject}: typed {typed}, but the STPM slip reads {slip}. Check.",
+          "higher_results_not_checked": "Genuineness of higher results is NOT checked yet (no pattern for these documents) — check the document by eye."
         }
       },
       "blockers": {
@@ -4600,7 +4665,10 @@
           "ic_nric_mismatch": "An IC matching their profile — the NRIC on the uploaded IC differs",
           "ic_name_mismatch": "An IC matching their profile — the name on the uploaded IC differs",
           "ic_service_down": "Nothing from the student — our document-check service is temporarily unavailable. Try again later.",
-          "no_application": "No application found."
+          "no_application": "No application found.",
+          "higher_results_missing": "Their STPM / Matriculation / Asasi / Diploma results",
+          "higher_results_name_mismatch": "Their own higher results — the one uploaded is in another name",
+          "higher_results_unreadable": "A clearer copy of their higher results — we couldn't read the one uploaded"
         }
       },
       "decision": {
@@ -4773,7 +4841,8 @@
           "reasonable": "Reasonable",
           "outstanding": "Outstanding",
           "school": "School",
-          "behaviour": "Behaviour"
+          "behaviour": "Behaviour",
+          "type": "Type"
         },
         "billValue": {
           "amount": "Amount",
@@ -4800,7 +4869,8 @@
           "statement_of_intent": "Statement of intent",
           "photo": "Photo",
           "other": "Other document",
-          "bank_statement": "Bank statement"
+          "bank_statement": "Bank statement",
+          "higher_results": "STPM / Matriculation / Asasi / Diploma results"
         },
         "parentIcOf": "{member}'s IC",
         "ofMember": "{member}'s {doc}",
@@ -4827,6 +4897,12 @@
           "school": "School",
           "behaviour": "Behaviour",
           "notes": "Notes"
+        },
+        "higherKind": {
+          "stpm": "STPM results",
+          "matric": "Matriculation results",
+          "asasi": "Asasi results",
+          "diploma": "Diploma results"
         }
       },
       "profilePending": "The profile is generated automatically when the application is handed over for review.",
@@ -4850,6 +4926,17 @@
       },
       "qcOverride": {
         "title": "Accepted over a red flag by"
+      },
+      "resultsChanged": {
+        "onlySpm": "On {date}, before submitting, the student removed the {cleared} results entered (CGPA {cgpa}) and continued with SPM results only. They were shortlisted on the results they held then, and the shortlist was not re-run — judge the change yourself.",
+        "kind": {
+          "stpm": "STPM",
+          "matric": "Matriculation",
+          "asasi": "Asasi",
+          "diploma": "Diploma",
+          "other": "higher"
+        },
+        "refiledSpm": "On {date}, before submitting, the student moved an SPM slip out of the higher-results card into the SPM results slip."
       }
     },
     "students": "Students",

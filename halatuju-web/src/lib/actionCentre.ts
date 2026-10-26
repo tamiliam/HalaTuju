@@ -122,6 +122,10 @@ export const KNOWN_CODES = [
   'results_slip_missing',
   'results_slip_unreadable',
   'results_slip_name_mismatch',
+  // Third results route S3a — the higher-results upload's tickets (`higher_results.TICKETS`).
+  'higher_results_missing',
+  'higher_results_unreadable',
+  'higher_results_name_mismatch',
   'academic_missing_subjects',
   'academic_grade_mismatch',
   // #71 — the slip's letter AND Malay band agree but differ from the typed grade (a confident,

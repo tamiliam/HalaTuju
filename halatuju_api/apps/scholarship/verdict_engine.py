@@ -2,9 +2,8 @@
 Verification Verdict engine — the synthesis layer over the post-shortlist
 signals (see ``docs/scholarship/verification-verdict-plan.md``, Sprint 1).
 
-Rolls the scattered per-document signals (Vision OCR matchers, doc-assist
-fields, completeness, the anomaly engine) into ONE four-fact verdict the
-coordinator AUDITS rather than assembles:
+Rolls the scattered per-document signals (Vision OCR matchers, doc-assist fields, completeness,
+the anomaly engine) into ONE four-fact verdict the coordinator AUDITS rather than assembles:
 
     Identity  — name + NRIC, checkable by matching → the AI may ASSERT 'verified'
     Academic  — the results slip is the student's (grade-accuracy lands in S2)
@@ -12,19 +11,16 @@ coordinator AUDITS rather than assembles:
                 document, else it RECOMMENDS and a human decides
     Pathway   — the offer letter
 
-Pure + deterministic — **no LLM calls**, no model writes (mirrors
-``anomaly_engine``). Each ``_verdict_*`` builder returns a fact dict;
-``build_verdict`` collects the four in a fixed order. The serializer exposes the
-list; the frontend resolves the human-readable labels from
-``admin.scholarship.verdict.*`` by code (params interpolate), so the server
-stays locale-agnostic.
+Pure + deterministic — **no LLM calls**, no model writes (mirrors ``anomaly_engine``). Each
+``_verdict_*`` builder returns a fact dict; ``build_verdict`` collects the four in a fixed order.
+The serializer exposes the list; the frontend resolves the human-readable labels from
+``admin.scholarship.verdict.*`` by code (params interpolate), so the server stays locale-agnostic.
 
 Design rules encoded here (settled in the plan):
   - **Green is expensive** — when in doubt the status drops to 'review', never up.
-  - **Resolve before you escalate** — an OCR name truncation (the IC's name token
-    set is a SUBSET of the typed name, e.g. a patronymic that spilled onto a
-    second line) is settled silently as evidence, NOT raised as a mismatch; the
-    NRIC is the hard identity key.
+  - **Resolve before you escalate** — an OCR name truncation (the IC's name token set is a SUBSET
+    of the typed name, e.g. a patronymic that spilled onto a second line) is settled silently as
+    evidence, NOT raised as a mismatch; the NRIC is the hard identity key.
   - **Income green needs a verified STR *document***, not the self-declared flag.
   - **Address is a coherence test** — only a state-level (major) divergence
     escalates; sub-state postcode drift is noise and never flags.
@@ -97,7 +93,8 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-25.2 — TD-401: an IC with no NRIC read is unreadable (a gap, not a pass on the name).
 #   2026-10-26.1 — corpus-gaps C1: a known public TVET issuer's offer is NOT CHECKED (no step; Probable).
 #   2026-10-26.2 — TD-403: an STR's year is asked against THIS calendar year; a later year = 'future' (Unsure).
-VERDICT_ENGINE_VERSION = '2026-10-26.2'
+#   2026-10-26.3 — third route S3: the higher-results Academic card; the SPM slip reads spm_grades_for.
+VERDICT_ENGINE_VERSION = '2026-10-26.3'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -283,13 +280,16 @@ def _verdict_identity(application):
 
 # ── Academic (results slip) ──────────────────────────────────────────────────
 
-def _verdict_academic(application):
-    """The slip must be the student's (name match), every subject on it must be
-    entered (completeness), and the typed grades must match the slip (accuracy).
-    All three clean → 'verified'. The slip's grades and the typed grades are two
-    independent readings: agreement is strong verification, a disagreement
-    pinpoints the one cell to check."""
+def _verdict_academic(application, spm_only=False):
+    """The slip must be the student's (name match), every subject on it must be entered
+    (completeness), and the typed grades must match the slip (accuracy). All three clean →
+    'verified'. Two independent readings: agreement verifies, a disagreement pinpoints the cell.
+    Third route S3: a higher-results applicant's card is `higher_results.verdict_academic`, which
+    folds THIS answer in (`spm_only`) only when an SPM slip is on file (D9)."""
     from .academic_engine import compare_academics, read_slip, _slip_name_status
+    from . import higher_results
+    if not spm_only and higher_results.anchors_on_higher(application):
+        return higher_results.verdict_academic(application, _verdict_academic(application, True))
     evidence, unresolved = [], []
     slip = _latest_doc(application, 'results_slip')
     if slip is None:
@@ -322,7 +322,7 @@ def _verdict_academic(application):
         unresolved.append(_item('grades_unverified'))
         return _fact('academic', 'review', evidence, unresolved)
 
-    cmp = compare_academics(getattr(application.profile, 'grades', None), data)
+    cmp = compare_academics(higher_results.spm_grades_for(application.profile), data)
     if cmp['missing']:
         unresolved.append(_item('academic_missing_subjects',
                                 entered=cmp['slip_count'] - len(cmp['missing']),

@@ -817,15 +817,14 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # Genuineness fingerprint (verification-assurance): {status, reason, doc_seen} — soft,
     # flag-gated. status ∈ canonical genuine / suspect / not_<type>. Null if it didn't run.
     authenticity = serializers.SerializerMethodField()
-    # Check-1 Academic: the three clinical checks for a results slip (name/subjects/
-    # results), server-computed against the student's own profile — null for other types.
+    # Check-1 Academic: the results slip's three clinical checks (name/subjects/results) vs the
+    # student's own profile; S3b: the higher-results check (`higher_results`). Null otherwise.
     academic_check = serializers.SerializerMethodField()
-    # Check-1 Pathway: the offer-letter facts (name + IC checks + data points) —
-    # null unless doc_type=offer_letter.
+    higher_check = serializers.SerializerMethodField()
+    # Check-1 Pathway: the offer-letter facts (name + IC + data points) — null unless offer_letter.
     pathway_check = serializers.SerializerMethodField()
-    # Check-1 Income: the earner-IC relationship facts — null unless doc_type=parent_ic.
+    # Check-1 Income: the earner-IC relationship facts (parent_ic); a member-tagged slip / EPF vs the IC.
     income_ic_check = serializers.SerializerMethodField()
-    # Check-1 Income: a member-tagged salary slip / EPF vs that member's IC.
     income_proof_check = serializers.SerializerMethodField()
     # Check-1 Income: the STR document — recipient vs the earner IC + currency.
     str_check = serializers.SerializerMethodField()
@@ -840,17 +839,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     semester_check = serializers.SerializerMethodField()
     # Academic: a school-leaving cert — school + name/NRIC (vs the student) + kelakuan + activities.
     school_leaving_check = serializers.SerializerMethodField()
-    # Officer box: the household member this income doc belongs to — its stored tag, or (for a
-    # blank-tagged doc) resolved by the name on the doc against the family roster. Display-only.
+    # Officer box: whose income doc this is — its tag, else resolved by the name on it. Display-only.
     resolved_member = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
         fields = [
             'id', 'doc_type', 'household_member', 'original_filename', 'content_type', 'size',
-            'verification_status', 'uploaded_at', 'download_url',
-            # S13: Vision OCR soft-signal fields (populated only for IC).
-            # Post-S14: vision_address surfaced for admin cross-check, no matcher.
+            'verification_status', 'uploaded_at', 'download_url', 'results_kind',
+            # S13: Vision OCR soft-signal fields (IC only); post-S14 vision_address (admin, no matcher).
             'vision_nric', 'vision_name', 'vision_address',
             'vision_run_at', 'vision_error',
             'vision_nric_verdict', 'vision_name_verdict', 'authenticity',
@@ -858,8 +855,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'vision_name_match', 'vision_address_match',
             # Document-assist: Gemini-extracted fields + student verdict (stored).
             'vision_fields', 'vision_fields_run_at',
-            # Check-1 Academic: results-slip 3-check (null unless doc_type=results_slip).
-            'academic_check',
+            # Check-1 Academic: results-slip 3-check; third route S3b: the higher-results check.
+            'academic_check', 'higher_check',
             # Check-1 Pathway: offer-letter facts (null unless doc_type=offer_letter).
             'pathway_check',
             # Check-1 Income: earner-IC relationship facts (null unless doc_type=parent_ic).
@@ -971,14 +968,18 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
                                         'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}
 
     def get_academic_check(self, obj):
-        """{name, subjects, results, candidate_name, missing, mismatched, slip_count}
-        for a results slip — the three clinical checks against the student's own
-        profile. Null for every other doc type (the FE renders the IC/supporting
-        chips instead)."""
+        """{name, subjects, results, candidate_name, missing, mismatched, slip_count} for a results
+        slip — the three clinical checks against the student's own profile. Null otherwise."""
         if obj.doc_type != 'results_slip':
             return None
         from .academic_engine import student_slip_check
         return student_slip_check(obj)
+
+    def get_higher_check(self, obj):
+        if obj.doc_type != 'higher_results':          # S3b: `higher_results.student_higher_check`
+            return None
+        from .higher_results import student_higher_check
+        return student_higher_check(obj)
 
     def get_pathway_check(self, obj):
         """{name, ic, + data points} for an offer letter — the clinical facts against

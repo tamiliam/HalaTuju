@@ -47,6 +47,11 @@ export interface ApplicantDocument {
   // Check-1 Academic: the three clinical checks for a results slip (name / subjects /
   // results), server-computed against the student's own profile. null for other types.
   academic_check?: AcademicCheck | null
+  // Third results route S3b: the higher-results upload's check (`higher_results.student_higher_check`)
+  // — the read against the results page, and the ONE note the card may show. null for other types.
+  higher_check?: HigherCheck | null
+  // Third results route S3a: which higher results this upload is ('' for every other document).
+  results_kind?: '' | 'stpm' | 'matric' | 'asasi' | 'diploma'
   // Check-1 Pathway: the offer-letter facts (name + IC checks + data points). null
   // unless doc_type=offer_letter.
   pathway_check?: PathwayCheck | null
@@ -215,6 +220,30 @@ export interface AcademicCheck {
   slip_count: number
 }
 
+/** Third results route S3b — a higher-results document against the results page (server-built). */
+export interface HigherCheck {
+  name: 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
+  candidate_name: string
+  exam: string
+  kind_held: string
+  kind_detected: string
+  /** '' = we cannot tell (never a disagreement). */
+  kind_status: '' | 'match' | 'different' | 'spm'
+  cgpa_slip: number | null
+  cgpa_entered: number | null
+  cgpa_status: 'match' | 'mismatch' | 'unreadable' | 'pending'
+  grades_status: '' | 'match' | 'mismatch' | 'pending'
+  missing: string[]
+  mismatched: { subject: string; typed: string; slip: string }[]
+  readable: boolean | null
+  /** The ONE note to show (D13), never a block: (D) an SPM slip here, (B) another higher kind, (C) differences. */
+  note: '' | 'spm_slip' | 'kind_differs' | 'grades_differ'
+  note_kind: string
+  note_path: string
+  /** The note's actions (move it / SPM only) — open only before the Step-4 Submit (review fix 1+2). */
+  actions_open?: boolean
+}
+
 export interface SemesterCheck {
   name: string
   nric: string
@@ -352,6 +381,24 @@ export async function listDocuments(
 
 export async function deleteDocument(id: number, options?: ApiOptions): Promise<{ status: string }> {
   return apiRequest(`/api/v1/scholarship/documents/${id}/`, { method: 'DELETE', ...options })
+}
+
+/** Third results route S3b (D13): "Move it to SPM results slip" — re-file a higher-results upload
+ *  that reads as an SPM slip into the SPM slot (the file and its read are kept). */
+export async function refileToSpm(documentId: number, options?: ApiOptions): Promise<{ status: string }> {
+  return apiRequest('/api/v1/scholarship/results/refile-to-spm/', {
+    method: 'POST', body: JSON.stringify({ document_id: documentId }), ...options,
+  })
+}
+
+/** Third results route S3b (D13): "Continue with SPM results only" — the server removes the higher
+ *  results entered (SPM untouched) and, when given, re-files the SPM slip from the higher card. */
+export async function continueWithSpmOnly(
+  documentId: number | null, options?: ApiOptions,
+): Promise<{ status: string; cleared: string; refiled: boolean }> {
+  return apiRequest('/api/v1/scholarship/results/spm-only/', {
+    method: 'POST', body: JSON.stringify({ document_id: documentId }), ...options,
+  })
 }
 
 // "Cikgu Gopal" document-help coach. `source`: 'ai' = warm Gemini message;

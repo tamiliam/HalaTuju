@@ -55,6 +55,8 @@ const DOC_FACT_BY_TYPE: Record<string, DocFact> = {
   ic: 'identity',
   // Academic = the SPM slip AND the continuing-student current-CGPA slip.
   results_slip: 'academic',
+  // Third results route S3a: the STPM / Matriculation / Asasi / Diploma results upload.
+  higher_results: 'academic',
   semester_result: 'academic',
   offer_letter: 'pathway',
   parent_ic: 'income',

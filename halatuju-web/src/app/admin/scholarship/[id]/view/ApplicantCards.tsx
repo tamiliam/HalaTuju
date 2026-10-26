@@ -233,6 +233,18 @@ export function ApplicantCards({
                     grades={isStpm ? app.stpm_grades : third ? { ...(app.spm_prereq_grades || {}), ...(app.grades || {}) } : app.grades}
                     trailing={!isStpm && !third && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
                   />
+                  {/* Third results route S3b (D13, review fix 3): what the student changed in her
+                      results before submitting — "SPM results only" or a slip moved to the SPM card.
+                      Always recorded, so a CGPA she was shortlisted on never vanishes silently. */}
+                  {(app.results_change_notes || []).map((n, i) => (
+                    <p key={i} className="mt-2 rounded-lg bg-caution-50 px-3 py-2 text-xs text-caution-800 ring-1 ring-caution-200">
+                      {t(n.kind === 'refiled_spm' ? 'admin.scholarship.resultsChanged.refiledSpm' : 'admin.scholarship.resultsChanged.onlySpm', {
+                        date: (n.at || '').slice(0, 10),
+                        cleared: t(`admin.scholarship.resultsChanged.kind.${n.cleared || 'other'}`),
+                        cgpa: n.cgpa != null ? Number(n.cgpa).toFixed(2) : '—',
+                      })}
+                    </p>
+                  ))}
                   {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
                     <div className="mt-2">
                       <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>

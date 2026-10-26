@@ -24,6 +24,7 @@ import {
   ResultsSlipChecklist,
 } from './checklists'
 import { OfferLetterChecklist, SupportingDocChip } from './checklistsPathway'
+import { LazyHigherDetails, LazyKindLine } from './LazyHigherResults'
 
 // Busy/filter key for a doc card. Salary-route income docs are scoped to a household
 // member, so two members' salary slips don't share one busy spinner or file list.
@@ -153,6 +154,7 @@ function docDone(docType: string, doc: ApplicantDocument | undefined): boolean {
       return !!c && c.name === 'match' && c.subjects === 'match' && c.results === 'match'
         && docIsGenuine(doc)
     }
+    // (`higher_results` never folds: the approved mock keeps its card open with the one-line read.)
     // Nothing to verify — uploaded IS finished.
     case 'photo':
     case 'statement_of_intent':
@@ -240,6 +242,9 @@ export function SingleDocCard({
   member = '',
   legacyBlank = false,
   suppressCoach = false,
+  higherKind,
+  higherSpmOnly = false,
+  onChanged,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -259,6 +264,12 @@ export function SingleDocCard({
   legacyBlank?: boolean
   // Income cluster docs suppress their per-file coach — one cluster coach speaks for them.
   suppressCoach?: boolean
+  // Third results route S3a: the higher-results card's read-only "Type of results" (results held).
+  higherKind?: string
+  // …and, for an SPM-only holder bound for a degree, why the card is required (owner ruling).
+  higherSpmOnly?: boolean
+  // A card action that changed the documents server-side (the higher card's "Move it …").
+  onChanged?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const busy = busyType === docKey(docType, member)
@@ -316,6 +327,8 @@ export function SingleDocCard({
               other supporting doc keeps the single soft chip. */}
           {d.doc_type === 'results_slip' && d.academic_check ? (
             <ResultsSlipChecklist doc={d} t={t} />
+          ) : d.doc_type === 'higher_results' && d.higher_check ? (
+            <LazyHigherDetails doc={d} chk={d.higher_check} token={token} onChanged={onChanged} />
           ) : d.doc_type === 'offer_letter' && d.pathway_check ? (
             <OfferLetterChecklist doc={d} t={t} />
           ) : d.doc_type === 'parent_ic' && d.income_ic_check ? (
@@ -385,6 +398,7 @@ export function SingleDocCard({
           <p className="text-xs text-ground-500 mt-0.5">
             {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
           </p>
+          {higherKind !== undefined && <LazyKindLine kind={higherKind} spmOnly={higherSpmOnly} />}
         </div>
         {/* With one file, Replace lives in the chip below (beside the file it replaces); the
             header trigger shows only to CHOOSE a first file, or to replace when the card

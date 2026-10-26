@@ -1045,6 +1045,9 @@ export function docFileLayout(fileCount: number): DocFileLayout {
  */
 export const DOC_TYPES = [
   'ic', 'results_slip',
+  // Third results route S3a: the ONE upload of STPM / Matriculation / Asasi / Diploma results.
+  // Whether it is asked for is the server's per-applicant answer (D12), on the payload like any other.
+  'higher_results',
   ...INCOME_PROOF_TYPES,
   'water_bill', 'electricity_bill', 'statement_of_intent', 'offer_letter', 'photo',
   'school_leaving_cert',

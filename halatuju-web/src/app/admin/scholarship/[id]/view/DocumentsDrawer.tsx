@@ -75,6 +75,12 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                 ? t('admin.scholarship.docsDrawer.parentIcOf', { member })
                 : t('admin.scholarship.docsDrawer.ofMember', { member, doc: base })
             }
+            // Third results route S3a: the higher-results upload is named by its kind ("STPM results").
+            if (d.doc_type === 'higher_results') {
+              return d.results_kind
+                ? t(`admin.scholarship.docsDrawer.higherKind.${d.results_kind}`)
+                : t('admin.scholarship.docsDrawer.type.higher_results')
+            }
             return TYPE_KEYS.has(d.doc_type)
               ? t(`admin.scholarship.docsDrawer.type.${d.doc_type}`)
               : (d.original_filename || d.doc_type)

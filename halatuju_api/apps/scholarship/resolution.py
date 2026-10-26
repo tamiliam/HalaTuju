@@ -27,6 +27,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from .genuineness.offer_issuers import hold_for_officer, officer_must_close
+from .higher_results import TICKETS as _HIGHER_TICKETS, match_verdict as _higher_match_verdict  # S3a
 from .models import ResolutionItem
 from .verdict_engine import build_verdict
 
@@ -46,9 +47,9 @@ CODE_TO_TICKET = {
     'results_slip_name_mismatch': {'fact': 'academic', 'kind': 'doc', 'doc_type': 'results_slip'},
     'academic_missing_subjects':  {'fact': 'academic', 'kind': 'confirm'},
     'academic_grade_mismatch':    {'fact': 'academic', 'kind': 'confirm'},
-    # #71 (owner 2026-07-08): the slip's letter + Malay band AGREE → the typed grade is confidently
-    # wrong (not an OCR blind spot); same student-confirm resolution flow, distinct plain copy.
+    # #71 (owner 2026-07-08): letter + Malay band AGREE → the typed grade is confidently wrong.
     'academic_grade_band_mismatch': {'fact': 'academic', 'kind': 'confirm'},
+    **_HIGHER_TICKETS,
     # Income
     'income_proof_missing': {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     # Income Check-1 (item 3: earner identity + relationship). `income_unverified_needs_interview`
@@ -61,10 +62,9 @@ CODE_TO_TICKET = {
     # genuineness) — a required relationship proof is effectively absent → auto-ask a re-upload.
     'birth_cert_not_genuine':       {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
     'guardianship_letter_not_genuine': {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
-    # #23 (owner 2026-09-08): the doc IS on file and IS the right kind, but nothing could be read
-    # off it — which used to score exactly like a document that checked out. A DIFFERENT message
-    # from *_not_genuine: "we could not read yours", not "that is not a birth certificate". The
-    # `_unreadable` suffix puts both in STUDENT_DOC_REQUEST_CODES automatically.
+    # #23 (owner 2026-09-08): the doc IS on file and the right kind, but nothing could be read off it
+    # (it used to score like a document that checked out). Not *_not_genuine: "we could not read
+    # yours". The `_unreadable` suffix puts both in STUDENT_DOC_REQUEST_CODES automatically.
     'birth_cert_unreadable':           {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
     'guardianship_letter_unreadable':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
     'birth_cert_mismatch':          {'fact': 'income', 'kind': 'confirm'},
@@ -81,12 +81,11 @@ CODE_TO_TICKET = {
     'offer_no_identity':   {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_name_mismatch': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     # NOTE: 'pathway_confirm' AND 'pathway_undeclared' are intentionally NOT here. Both are STUDENT
-    # queries routed through Check 2 (source='check2') so CHECK2_STUDENT_QUERIES_ENABLED governs
-    # them + they ride the query email — see check2_queries._sync_pathway_confirm. 'pathway_confirm'
-    # = the one-tap "is this offer your final chosen pathway?"; 'pathway_undeclared' = an ambiguous
-    # offer we can't pin (a PISMP offer with no aliran) → the student picks their exact course on the
-    # profile page (owner 2026-07-15). As a 'system' item either would be hidden from the student
-    # queue, so only the officer would ever see it.
+    # queries routed through Check 2 (source='check2', CHECK2_STUDENT_QUERIES_ENABLED) that ride the
+    # query email — see check2_queries._sync_pathway_confirm. 'pathway_confirm' = the one-tap "is this
+    # offer your final chosen pathway?"; 'pathway_undeclared' = an offer we can't pin (a PISMP offer
+    # with no aliran) → the student picks the exact course on the profile page (owner 2026-07-15).
+    # As a 'system' item either would be hidden from the student queue; only the officer would see it.
 }
 
 # The "review assistant" (Check 2) asks the STUDENT to upload a compulsory document straight
@@ -296,6 +295,8 @@ def doc_match_verdict(doc):
     def red(chk, *keys):
         return any((chk or {}).get(k) == 'mismatch' for k in keys)
 
+    if dt == 'higher_results':                       # third route S3a (D13: a note never blocks)
+        return _higher_match_verdict(doc)
     if dt == 'results_slip':
         chk = student_slip_check(doc) or {}
         # NOTE: 'subjects' is deliberately NOT a doc mismatch. A slip 'subjects' mismatch means

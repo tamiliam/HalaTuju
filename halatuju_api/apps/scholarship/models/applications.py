@@ -759,6 +759,14 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True,
         help_text="What the programme asked for, frozen at the Step-4 Submit. NULL until then.",
     )
+    # Third results route S3b (ruling D13): the reviewer's record of a RESULTS change the student
+    # made after submitting — today only "I only have SPM results" (`results_route.clear_to_spm`).
+    # A list of {at, kind, cleared, cgpa}; the gate is NOT re-run, the reviewer judges the change.
+    # Shown on the cockpit's Academic card. [] for every application where nothing happened.
+    results_change_notes = models.JSONField(
+        default=list, blank=True, db_default=models.Value([], output_field=models.JSONField()),
+        help_text="Results changes made after submit, for the reviewer: [{at, kind, cleared, cgpa}].",
+    )
 
     # ── S5 verdict audit / override capture (Verification-verdict roadmap) ──────
     # When the officer records their verdict in the review cockpit, we snapshot the

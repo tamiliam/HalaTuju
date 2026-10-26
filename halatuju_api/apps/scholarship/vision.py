@@ -25,6 +25,7 @@ from .read_errors import (IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, OCR_
                           model_rejected_document, read_deferred)
 from .pdf_pages import pdf_first_page_png as _pdf_first_page_png
 from .pdf_pages import pdf_text_layer as _pdf_text_layer
+from .higher_results import HINT as _HIGHER_HINT, SCHEMA as _HIGHER_SCHEMA, extract as _higher_extract
 
 logger = logging.getLogger(__name__)
 
@@ -1273,7 +1274,7 @@ GEMINI_EXTRACT_DOC_TYPES = frozenset({
     # V1: the declared-informal-income supporting doc must be READ, not merely present.
     'income_support_doc',
     # V4: promoted academic-completeness docs — read the CGPA / school so the officer sees it.
-    'school_leaving_cert', 'semester_result',
+    'school_leaving_cert', 'semester_result', 'higher_results',   # + third route S3b
 })
 
 _STR = {'type': 'string'}
@@ -1378,6 +1379,7 @@ _FIELD_SCHEMAS = {
     # semester label, and the CGPA (the officer's current-performance read).
     'semester_result': _doc_schema({'name': _STR, 'nric': _STR, 'institution': _STR,
                                     'programme': _STR, 'semester': _STR, 'cgpa': _STR}),
+    'higher_results': _HIGHER_SCHEMA,     # third route S3b: STPM / Matric / Asasi / Diploma results
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -1387,7 +1389,7 @@ _NAME_FIELD = {
     'bank_statement': 'account_holder',
     # V4 — a school-leaving cert names the STUDENT (matched against them). A semester_result has
     # no student-name field (institution/programme/cgpa) → no name-match, the read is the signal.
-    'school_leaving_cert': 'name',
+    'school_leaving_cert': 'name', 'higher_results': 'candidate_name',
 }
 
 # Optional per-doc-type instruction appended to the extraction prompt.
@@ -1396,6 +1398,7 @@ _DOC_HINTS = {
     # Ask for both, ALIGNED to the same row — the academic engine cross-checks them to
     # catch a row-transposition misread. (The deterministic `_split_band` still strips
     # any band words that leak into the subject name.)
+    'higher_results': _HIGHER_HINT,
     'school_leaving_cert': (' This is a Malaysian school-leaving certificate (Sijil Berhenti '
                             'Sekolah). Read: "name" = the student (Nama Murid); "nric" = the '
                             'student\'s No. Kad Pengenalan (12 digits); "school" = the issuing '
@@ -1780,7 +1783,7 @@ def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
     downstream — never a confident wrong-person mismatch. Pure; never raises."""
     if not isinstance(data, dict):
         return data
-    if doc_type == 'results_slip' and data.get('candidate_name'):
+    if doc_type in ('results_slip', 'higher_results') and data.get('candidate_name'):
         data['candidate_name'] = _strip_name_label(data['candidate_name'])
     elif doc_type == 'offer_letter' and data.get('reporting_date'):
         data['reporting_date'] = _normalise_reporting_date(data['reporting_date'])
@@ -2085,6 +2088,8 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         else:
             ex = extract_document_fields(_otext, doc.doc_type)
             ex['capture'] = 'ai'
+    elif doc.doc_type == 'higher_results':        # third route S3b: Gemini image read + kind detection
+        ex = _higher_extract(doc, ocr, _image, extract_document_fields)
     elif doc.doc_type == 'birth_certificate':
         # Geometry-first, like the results slip. The BC's KANAK-KANAK / BAPA / IBU blocks place the
         # child's "Nama" far from the parents'; flattened OCR cross-wires them (#10 read the father's

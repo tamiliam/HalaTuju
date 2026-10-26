@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file.
 
+## Third results route S3a + S3b — higher-results upload - 2026-10-26
+
+A student bound for a degree with STPM, Matriculation, Asasi or Diploma results uploads ONE
+**STPM / Matriculation / Asasi / Diploma results** document instead of an SPM slip (request #38;
+roadmap `docs/plans/2026-10-25-third-results-route-roadmap.md` §5a S3a+S3b, owner rulings D6 D9
+D12 D13; built and released together). ⚠ **Release: migration `scholarship.0178_higher_results`
+FIRST, by hand** (DDL + ledger row in its docstring: two additive NOT NULL columns with database
+defaults, `applicant_documents.results_kind`, `scholarship_applications.results_change_notes`).
+- **Which upload is required follows the chosen course (D12)** — `results_route.py`, applied on top
+  of the catalogue in `requirements.resolve` for an application NOT yet submitted, and frozen into
+  `requirements_snapshot` at the Step-4 Submit (a submitted application keeps what it was gated on;
+  every pre-S3a snapshot keeps "SPM slip required"). A degree (a `course_id` in `stpm_courses`, the
+  `degree` code, or an offer named as one) + tertiary results held → higher results required, SPM
+  slip optional; a post-SPM pathway (Matriculation, Form 6, Asasi, Polytechnic, Kolej Komuniti,
+  PISMP, ILJTM, ILKBS, an SPM-catalogue course) → SPM slip required, no higher card; no course chosen
+  → by the results held. A tertiary holder whose stored pathway is a pre-U code she has already passed
+  (`stpm` / `matric` / `asasi`, or her own kind) with no course is a stale autofill → undecided (lead's
+  ruling, live #196 / #147). **Owner ruling:** an SPM-only holder bound for a degree must upload higher
+  results too (both cards required), and the card says why, with links to the results choice and to the
+  course choice. A programme that made the results optional is never escalated.
+- **Every S3 door:** completeness (the strict arm checks the higher upload's name too; the
+  grandfathered submitted arm gains an OR — higher results under a frozen higher requirement — and
+  loses nothing), consent blockers (`higher_results_missing`), red / unreadable blockers (an
+  optional SPM slip never blocks, D9; `higher_results_name_mismatch` / `_unreadable`), resolution
+  tickets (`higher_results.TICKETS`), promotion (fuller read wins), the self-heal read sweep, the
+  upload (the kind is the results held, never picked — D13), extraction (one Gemini image read +
+  `results_kind.py` detection), the help coach (silent; fixed notes instead), the Action Centre copy.
+- **Detection (S3b, routing only):** `results_kind.py` reads fixed printed markers (STPM / MPM —
+  never a MUET slip —, Matrikulasi, Asasi / Foundation, Diploma, SPM). Two kinds at once, or none,
+  is "cannot tell" and says nothing. It scores nothing, sits outside `genuineness/results_doc.py`
+  and reuses nothing from it: **no MODEL_VERSION bump**.
+- **The Academic card (S3b)** for a higher-results applicant: name, kind and CGPA (STPM: the
+  academic CGPA of the entered grades against the slip's PNGK, and each subject grade) against the
+  profile; the SPM slip compared only when one is on file; genuineness "not checked" (TD-114 holds
+  it at Probable). The SPM slip now compares `spm_grades_for` (an STPM holder's SPM block counts).
+  **`VERDICT_ENGINE_VERSION` 2026-10-26.3.**
+- **The card (approved mock v4):** "Type of results: STPM · Change" read-only from the results
+  page; one line when the read is clean; otherwise ONE note, never a block — (B) another kind →
+  "Update your results"; (C) different subjects / grades / CGPA → "Correct your … results"; (D) an
+  SPM slip → "Move it to SPM results slip" (re-filed into the SPM slot, the file kept and its read
+  cleared so the live self-heal sweep reads it as an SPM slip, one live slip per slot, the higher card
+  asks again) and, for the rare case, "Continue with SPM results only" (confirm box → the higher
+  results ENTERED are removed, SPM kept → `/profile#pathway`). **Both actions are open only before the
+  Step-4 Submit** (409 `application_submitted` after — adversarial review); each is audited and ALWAYS
+  leaves a reviewer note on the cockpit's Academic card. A CGPA note needs a figure labelled cumulative
+  (PNGK / CGPA) and a difference over ±0.05.
+  The SPM card is renamed "SPM results slip" and says when it is optional.
+- **One higher qualification at a time:** completing the third-route form clears earlier STPM
+  entries and completing the STPM form clears the third route's — on the server (the sync, before
+  its bookkeeping, so the no-demote guard reads it as the deliberate switch) and in the browser.
+- **Bundle:** the new English words cost every route ~0.7 kB; the Documents tab (on
+  `/scholarship/application`) and `/profile`'s pathway picker now load on demand, and both budget
+  lines were lowered to the measured figure (216, 203).
+- Cockpit: Documents drawer names the upload by kind ("STPM results") with Name · Type · CGPA ·
+  Results facts. Reviewer FAQ (two entries) and Guide updated. en / ms / ta (Malay and Tamil are
+  first drafts).
+- **Tests:** `test_third_route_s3.py` (66: destination per pathway code, the rule both ways, the
+  freeze, the acceptance cases, every blocker, detection, the notes, the card, both actions through
+  the API, the switches); jest `ScholarshipDocuments.higherResults.test.tsx` (rendered clicks),
+  `resultsLocal.test.ts`.
+
 ## Corpus gaps C3 — STPM results are scored as STPM, not as a bad SPM slip - 2026-10-26
 
 - **The STPM family (MODEL_VERSION 1.9.0, `genuineness/stpm_doc.py`).** A slip list and a certificate

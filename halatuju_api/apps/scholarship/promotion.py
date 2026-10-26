@@ -49,6 +49,10 @@ def _slip_completeness(doc):
         from .academic_engine import read_slip
         s = read_slip(doc)
         return (len(s.get('names') or []), len(s.get('grades') or {}))   # subjects read, then graded
+    if dt == 'higher_results':          # third route S3a: CGPA read, then subject rows read
+        from .higher_results import _fields
+        f = _fields(doc)[1]
+        return (1 if str(f.get('cgpa') or '').strip() else 0, len(f.get('results') or []))
     if dt == 'semester_result':
         from .academic_engine import semester_check
         c = semester_check(doc) or {}
@@ -92,7 +96,7 @@ def doc_quality(doc):
     if dt == 'offer_letter':
         return (usable,) + _offer_quality(doc)
     genuine = income_engine._doc_genuine_rank(doc)
-    if dt in ('results_slip', 'semester_result'):
+    if dt in ('results_slip', 'semester_result', 'higher_results'):
         return (usable, genuine, _slip_completeness(doc), getattr(doc, 'id', 0) or 0)
     recency = income_engine._income_doc_recency(doc) or (0, 0)
     return (usable, genuine, recency, getattr(doc, 'id', 0) or 0)

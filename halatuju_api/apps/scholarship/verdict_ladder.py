@@ -78,13 +78,17 @@ def _academic_red_chips(application):
     student never entered), Results (a CONFIRMED typed-vs-slip grade mismatch). 0–3. An uncertain
     grade (band disagreement) and an unread slip are grey/pending, not red."""
     from .academic_engine import compare_academics, read_slip, _slip_name_status
+    from . import higher_results
+    # Third route S3b: a higher-results applicant's card counts the higher card's chips, plus the
+    # SPM slip's when one is on file (the same pair `higher_results.verdict_academic` reads).
+    n = higher_results.red_chips(application) if higher_results.anchors_on_higher(application) else 0
     slip = _latest_doc(application, 'results_slip')
     if slip is None:
-        return 0
-    n = 1 if _slip_name_status(slip) == 'mismatch' else 0
+        return n
+    n += 1 if _slip_name_status(slip) == 'mismatch' else 0
     data = read_slip(slip)
     if data['names']:
-        cmp = compare_academics(getattr(application.profile, 'grades', None), data)
+        cmp = compare_academics(higher_results.spm_grades_for(application.profile), data)
         if cmp['missing']:
             n += 1
         if cmp['mismatched']:
@@ -188,6 +192,10 @@ def _apply_genuineness_ladder(application, facts):
         docs = _LADDER_DOCS.get(fact['fact'])
         if not docs:
             continue
+        if fact['fact'] == 'academic':
+            from .higher_results import anchors_on_higher
+            if anchors_on_higher(application):          # S3b: the higher results anchor the card;
+                docs = ['higher_results', 'results_slip']   # unscored ("not checked") → Probable
         step = _genuineness_step(application, docs)
         band_step = step
         if fact['fact'] == 'pathway':

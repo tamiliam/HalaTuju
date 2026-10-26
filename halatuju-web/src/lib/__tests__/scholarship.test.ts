@@ -1099,8 +1099,9 @@ describe('formatFileSize', () => {
 
 describe('DOC_TYPES', () => {
   it('lists all supporting document types including S4 + S17 additions', () => {
-    expect(DOC_TYPES).toHaveLength(14)
+    expect(DOC_TYPES).toHaveLength(15)
     expect(DOC_TYPES).toContain('ic')
+    expect(DOC_TYPES).toContain('higher_results')   // third results route S3a
     expect(DOC_TYPES).toContain('reference_letter')
     expect(DOC_TYPES).toContain('salary_slip')
     expect(DOC_TYPES).toContain('water_bill')

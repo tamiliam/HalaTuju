@@ -82,7 +82,7 @@ def ic_identity_blockers(application):
 #: `vision_run_at`, field extraction `vision_fields_run_at`) AND `vision_fields` EMPTY — a document
 #: that carries any stored read (one made before either stamp existed included) is never re-read by
 #: the sweep, so nothing it holds can be overwritten (review F1) — and never a superseded one.
-_SELF_HEAL_READ_TYPES = ('results_slip', 'offer_letter', 'salary_slip', 'epf', 'str',
+_SELF_HEAL_READ_TYPES = ('results_slip', 'higher_results', 'offer_letter', 'salary_slip', 'epf', 'str',
                          'birth_certificate', 'guardianship_letter', 'income_support_doc')
 #: Written on a row BEFORE the sweep reads it; a completed read overwrites it. Left on a row, it
 #: means the process died mid-read — the sweep will not try again; an officer's Re-run can.
@@ -411,12 +411,22 @@ def document_red_blockers(application):
     # submission blocker. The student's OWN identity/academic/pathway reds (results_slip /
     # offer_letter) still always block -- they're not income-cluster docs.
     income_ok = income_engine.income_established(application)
+    # Third results route S3a (D9): a results upload blocks only when it is the REQUIRED one — the
+    # SPM slip of a higher-results applicant is optional and never a blocker; the reviewer still
+    # sees its chips. `higher_results` carries the same identity red (a slip in another name).
+    asked = requirements.required_documents(application)
 
     for doc in live_docs(application):
         dt = doc.doc_type
         if income_ok and dt in _INCOME_CLUSTER_DOC_TYPES:
             continue
-        if dt == 'results_slip':
+        if dt in ('results_slip', 'higher_results') and dt not in asked:
+            continue
+        if dt == 'higher_results':
+            from ..academic_engine import _slip_name_status
+            if _slip_name_status(doc) == 'mismatch':
+                codes.add('higher_results_name_mismatch')
+        elif dt == 'results_slip':
             chk = student_slip_check(doc)
             if chk.get('name') == 'mismatch':
                 codes.add('results_slip_name_mismatch')      # identity red -> still hard-blocks
@@ -488,9 +498,15 @@ def document_unreadable_blockers(application):
     from ..income_engine import (income_cluster_advice, effective_working_members,
                                 _member_ic_doc, student_income_ic_check)
     codes = set()
-    slip = latest_doc(application, 'results_slip')
+    asked = requirements.required_documents(application)      # S3a (D9): only the REQUIRED upload
+    slip = latest_doc(application, 'results_slip') if 'results_slip' in asked else None
     if slip and student_slip_check(slip).get('name') == 'unreadable':
         codes.add('results_slip_unreadable')
+    higher = latest_doc(application, 'higher_results') if 'higher_results' in asked else None
+    if higher is not None:
+        from ..higher_results import student_higher_check
+        if student_higher_check(higher).get('readable') is False:
+            codes.add('higher_results_unreadable')
     offer = latest_doc(application, 'offer_letter')
     if offer and student_offer_check(offer).get('name') == 'unreadable':
         codes.add('offer_letter_unreadable')
