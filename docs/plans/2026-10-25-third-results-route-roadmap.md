@@ -417,6 +417,12 @@ before/after list before anything that moves applicants.
   detection or the C3 score recognises STPM / Matriculation / Asasi / Diploma results in the SPM card.
   The 8 legacy STPM slips already in the SPM card of shortlisted, unsubmitted tertiary holders are moved
   by the team after S3 ships (owner go on the exact list; reviewer note on each).
+  **Done 2026-10-26 (owner "go"):** 6 moved by one guarded SQL update (doc_type results_slip ->
+  higher_results, results_kind 'stpm', read cleared exactly as `refile_to_spm` does so the hourly live
+  sweep re-reads them): docs 2680/#189, 3109/#257, 3709/#258, 3053/#275, 3490/#325, 3661/#333. Left:
+  #304 (academic transcript, kind unclear) and #337 (live file is an SPM certificate). The reviewer
+  note was NOT written yet — the cockpit renders only 'only_spm'/'refiled_spm' kinds; S4 adds the
+  reverse-move note kind and backfills these 6.
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
