@@ -2170,8 +2170,10 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
                     if text.strip() and not (rr or {}).get('error') else None)
             if auth and auth.get('status'):
                 # The by-score status is stored as-is (the pathway verdict + submission gate treat
-                # anything != 'genuine' as not an official offer). A legacy 'unrecognised' (pre-1.4.0
-                # stored value) is still folded to 'suspect' for badge/cap vocabulary.
+                # anything != 'genuine' as not an official offer). A legacy 'unrecognised' (pre-1.4.0,
+                # "an issuer we do not know") is still folded to 'suspect'. 1.8.0's NOT CHECKED
+                # (`bands.NOT_CHECKED` — a KNOWN public TVET issuer) is NOT folded: it is stored as
+                # itself and every reader takes it as no signal (owner ruling A, 2026-10-26).
                 st = 'suspect' if auth['status'] == 'unrecognised' else auth['status']
                 result['authenticity'] = {
                     'status': st,

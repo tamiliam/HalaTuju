@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Corpus gaps C1 — a known public TVET issuer reads "not checked"; an honest private-college reason - 2026-10-26
+
+Request #47: an ILKBS offer read "suspect" against the nearest university pattern, which raised the
+"upload your official offer" request and risked the submission block. Owner rulings A + B
+(`docs/decisions.md`, 2026-10-26).
+- **Not checked (MODEL_VERSION 1.8.0).** An offer below the genuine band whose letterhead names an
+  issuer on the closed list — Kementerian Belia dan Sukan / IKBN / IKTBN / ILKBS; MARA / TVETMARA /
+  IKM / KKTM; JTM / ADTEC / ILP / JPK — is stored `unchecked` (`genuineness/offer_issuers.py`). It
+  reads as no signal everywhere: no genuineness step, no block, no official-document request, no
+  student chip, Probable at most (TD-114); the officer's Pathway card says "Offer from {issuer} …
+  NOT checked. Check the letter by eye." (`offer_issuer_not_checked`, en/ms/ta — Malay and Tamil are
+  first drafts). A letter carrying a fingerprinted family's issuer line, a private company, or an
+  issuer not on the list scores exactly as before. `VERDICT_ENGINE_VERSION` 2026-10-26.1.
+- **TVET offers count (ruling B).** `ilkbs` / `iljtm` / `kkom` join the tertiary pathway family.
+- **Private college reason.** A private college / university keeps its band; its reason now says
+  "private college / university (IPTS)" instead of the nearest public family's name.
+- The stale 1.4.0 comments ("unknown issuers go to a holistic check") are corrected. Live re-run of
+  the affected offers is roadmap C4 (owner-approved, on the live service only).
+- **Tests:** `test_corpus_gaps_c1.py` (request #47's shape, each ministry, an unnamed-issuer forgery
+  and every fingerprinted family against the 1.7.0 rule, the private college, the upload door, the
+  gate, the request, the serializer, the verdict); `eval/labels.json` regression entry. Every change
+  bitten.
+
 ## Third results route S2b — the route, student side - 2026-10-26
 
 A student can choose **Matriculation, Asasi or Diploma** ("STPM-equivalent qualifications"), enter

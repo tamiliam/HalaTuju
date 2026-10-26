@@ -102,6 +102,32 @@ TAWARAN KEMASUKAN KE PROGRAM DIPLOMA UNIVERSITI MALAYSIA PAHANG AL-SULTAN ABDULL
 "Program yang ditawarkan adalah MUKTAMAD dan sebarang pertukaran adalah TIDAK DIBENARKAN."
 **Variables:** name, NRIC, date, program + optional faculty + optional TARIKH PENDAFTARAN.
 
+## Known public issuers NOT fingerprinted yet — "not checked" (MODEL_VERSION 1.8.0)
+
+Owner rulings A + B (2026-10-26, `docs/decisions.md`; corpus-gaps roadmap C1): an offer below the
+genuine band whose LETTERHEAD names one of these reads **not checked** (`bands.NOT_CHECKED`) — no
+genuineness penalty, no block, no official-document request; the officer is told plainly and checks
+the letter by eye. TVET offers COUNT as supported official public offers (ruling B). The list is closed
+and lives in `genuineness/offer_issuers.py` (`TVET_ISSUERS`); a family of its own is added only once we
+hold ≥3 genuine letters (roadmap "Later").
+
+| Ministry | Names matched (letterhead only) | Acronyms (whole word) |
+|---|---|---|
+| Kementerian Belia dan Sukan | Kementerian Belia dan Sukan · Institut Kemahiran Belia Negara · Institut Kemahiran Tinggi Belia Negara | ILKBS · IKBN · IKTBN |
+| MARA | Majlis Amanah Rakyat · Institut Kemahiran MARA · Kolej Kemahiran Tinggi MARA | TVETMARA · IKM · KKTM |
+| Jabatan Tenaga Manusia (KESUMA) | Jabatan Tenaga Manusia · Jabatan Pembangunan Kemahiran · Institut Latihan Perindustrian · Pusat Latihan Teknologi Tinggi | JTM · ADTEC · ILP · JPK · ILJTM |
+
+- **Letterhead only** (the first 600 characters of the normalised OCR text): a private college often
+  cites JPK accreditation or MARA sponsorship in its body.
+- **Never over a fingerprinted family:** if any family's own issuer line is on the page (a UA name,
+  Sektor Operasi Sekolah, …) the letter keeps that family's band — "Universiti Teknologi MARA" is a
+  university letter.
+- **Never over a private company:** "Sdn Bhd" is the private-arm veto (1.6.0); "Bhd" / "Berhad" /
+  "Pusat Bertauliah" on the letterhead also keeps the net off.
+- **A private college / university (IPTS)** — a letterhead naming an institution and no public body —
+  keeps its band but now says so: "private college / university (IPTS) - not a supported public
+  issuer", instead of the nearest public family's label.
+
 ## Notes for implementers
 
 - The issuer-office lines above (Pejabat Pengurusan Akademik / Pusat Pengurusan Akademik / Bahagian

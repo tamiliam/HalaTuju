@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 
+from .genuineness.offer_issuers import FAMILY_ISSUER_SIG as _FAMILY_ISSUER_SIG
 from .vision import name_match, nric_match
 
 
@@ -278,16 +279,10 @@ _REPORTING_LABELS = {
     'ua_offer':      ('tarikh mendaftar', 'tarikh pendaftaran', 'tarikh lapor diri',
                       'tarikh dan masa', 'tarikh'),
 }
-# The family's ISSUER signature label (as stored in authenticity.present) — gate 2. These are the
-# weight-3 identity lines of each family in genuineness/results_doc.py; for ua_offer the entry is
-# the 20-UA name signature, so "present" implies the letter names a real public university.
-_FAMILY_ISSUER_SIG = {
-    'stpm':          'Sektor Operasi Sekolah',
-    'matriculation': 'Bahagian Matrikulasi',
-    'polytechnic':   'Jabatan Pend. Politeknik & KK',
-    'pismp':         'Institut Pendidikan Guru',
-    'ua_offer':      'public university (UA) name',
-}
+# The family's ISSUER signature label (as stored in authenticity.present) — gate 2. The weight-3
+# identity lines of each family; for ua_offer the 20-UA name signature, so "present" implies the
+# letter names a real public university. One home since 1.8.0 (the TVET net reads it too):
+# `genuineness.offer_issuers.FAMILY_ISSUER_SIG`, imported at the top of this module.
 
 
 def offer_reporting_bonus(doc) -> bool:
@@ -356,12 +351,13 @@ def offer_official_status(doc) -> str:
                         etc.) → not_offer_letter via the 1.6.0 scorer veto. Owner policy: cannot
                         support these.
       * 'unknown'     — genuineness not computed yet (flag off / AI outage / not re-run since the
-                        signature model shipped). Never gate on our own gap — defer to the reviewer.
+                        signature model shipped), OR NOT CHECKED (1.8.0: a known public TVET issuer,
+                        owner rulings A + B). Never gate on our own gap — defer to the reviewer.
     """
-    from .genuineness.bands import stored_status
+    from .genuineness.bands import canonical_status, stored_status
     status = stored_status(getattr(doc, 'vision_fields', None))   # TD-293 review F7: one reader
-    if not status:
-        return 'unknown'      # unscored OR malformed — no signal, as `stored_status` reads it
+    if not canonical_status(status, 'offer_letter'):
+        return 'unknown'      # unscored, malformed or NOT CHECKED — no signal (`canonical_status`)
     return 'genuine' if status == 'genuine' else 'not_genuine'
 
 

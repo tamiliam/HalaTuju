@@ -88,7 +88,11 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #   1.7.0 (2026-10-04) — TD-145: Saluran Terbuka (SATU) joins the private-arm veto — red at once, no
 #       question (owner option 1). #31's UM "[SALURAN TERBUKA UNIVERSITI MALAYA (SATU)]" read
 #       'suspect'. Backfill: re-run #31's offer from the LIVE cockpit, never locally.
-MODEL_VERSION = '1.7.0'
+#   1.8.0 (2026-10-26) — corpus-gaps C1 (owner rulings A + B): an offer below the genuine band from a
+#       KNOWN public TVET issuer named on its letterhead (Belia & Sukan / MARA / JTM — `offer_issuers`)
+#       reads NOT CHECKED (`bands.NOT_CHECKED`, no signal) instead of the nearest family's band; a
+#       private college gets an honest reason. No family/weight change. Backfill: roadmap C4 (live).
+MODEL_VERSION = '1.8.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -184,14 +188,10 @@ EPF_SIGNATURES = [
     ('KWSP address',               ['MENARA KWSP', 'JALAN SULTAN'],                       1, 'text'),
 ]
 
-# Offer letters — unlike the slip/cert (single issuer), the post-SPM offer comes from THREE
-# standard government issuers, each with a fixed machine-generated letterhead. We score against
-# all three and take the best fit (which also names the pathway). TEXT-ONLY: the issuer
-# fingerprints are conclusive on their own, and the Jata Negara crest is generic boilerplate
-# across every government letter (a weak, easily-forged discriminator) — so no visual signature,
-# which also keeps the scorer fully deterministic + free. The heterogeneous tail (universities,
-# IPG, private foundations) matches NO family and is deferred to the holistic check (see the
-# identity gate in ``signature_genuineness``), so a legitimate university offer is never flagged.
+# Offer letters — five standard public-issuer families, scored together, best fit wins (and names
+# the pathway). TEXT-ONLY: the issuer fingerprints are conclusive and the crest is generic. Since
+# 1.4.0 an offer matching no family is banded by its best score (there is no holistic deferral any
+# more); since 1.8.0 a known public TVET issuer reads NOT CHECKED instead (`offer_issuers`).
 
 # STPM / Tingkatan Enam — MOE, Sektor Operasi Sekolah (the school varies, the issuer is constant).
 # Owner-specified set (2026-06-17): the Jata Negara crest + the issuer line + the letter's standard
@@ -278,7 +278,7 @@ PISMP_OFFER_SIGNATURES = [
 # code. The office / finality-clause / offer-line wordings are UNION-matched across institutions,
 # so a specific letter still scores on its own variant (specificity kept). TEXT-ONLY (institution
 # logos aren't reliably detectable). A university NOT in this list (private / IPTS, e.g. Swinburne)
-# matches no anchor → unrecognised → holistic. Validated out-of-sample 2026-06-20.
+# is banded by score (1.4.0) with a "private college" reason (1.8.0). Validated out-of-sample 2026-06-20.
 _UA_NAMES = [
     'UNIVERSITI MALAYA', 'UNIVERSITI SAINS MALAYSIA', 'UNIVERSITI KEBANGSAAN MALAYSIA',
     'UNIVERSITI PUTRA MALAYSIA', 'UNIVERSITI TEKNOLOGI MALAYSIA', 'UNIVERSITI TEKNOLOGI MARA',
@@ -366,11 +366,8 @@ _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'str': _STR_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
 
-# Issuer "identity" anchors. As of MODEL_VERSION 1.4.0 the OFFER-letter anchor is DROPPED: an offer
-# is scored purely by `band_for` (like the slip / BC / EPF), so a recognised-issuer offer that scores
-# below the suspect floor now reads `not_offer_letter` (fake) rather than being floored at `suspect`.
-# Only STR keeps an anchor — its DISTINCTIVE page marker guards the LHDN SALINAN / SARA copies that
-# share the generic strings (without it a SALINAN would score as a genuine STR).
+# Issuer "identity" anchors — STR only (1.4.0 dropped the offer anchor: an offer is banded by score).
+# Its DISTINCTIVE page marker guards the LHDN SALINAN / SARA copies that share the generic strings.
 _IDENTITY = {'str': {
     # The DISTINCTIVE page marker per STR approval form (NOT the shared "Maklumat Pemohon" /
     # "Sumbangan Tunai Rahmah" — those also sit on an LHDN SALINAN copy). A doc matching none
@@ -551,6 +548,9 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
         status = 'not_' + (doc_type or r['type'])
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
+    if doc_type == 'offer_letter' and status != 'genuine':     # 1.8.0 — see `offer_issuers`
+        from .offer_issuers import unfingerprinted_offer
+        return unfingerprinted_offer(_norm_fold_upper_alnum(ocr_text), r, status, reason, MODEL_VERSION)
     return {'status': status, 'probability': r['probability'], 'type': r['type'],
             'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],
             'model_version': MODEL_VERSION}

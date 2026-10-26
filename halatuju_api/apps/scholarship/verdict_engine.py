@@ -46,7 +46,8 @@ from .document_snapshot import latest_doc, present_doc_types
 from .read_errors import ic_second_opinion_deferred, read_deferred
 from .services import ic_identity_blockers
 from .vision import name_match
-from .genuineness.bands import canonical_status, stored_status
+from .genuineness.bands import NOT_CHECKED, canonical_status, stored_status
+from .genuineness.offer_issuers import not_checked_issuer
 
 
 # ⚠⚠ THE PREDICTOR'S OWN VERSION. BUMP IT WHEN A CHANGE HERE CAN ALTER A FACT'S STATUS, ITS BAND,
@@ -95,7 +96,8 @@ from .genuineness.bands import canonical_status, stored_status
 #   2026-10-24.1 — AI outage: a read not yet made is no longer "unreadable" (no student ask).
 #   2026-10-25.1 — TD-390: a card our outage left half-read is "service down", never a mismatch.
 #   2026-10-25.2 — TD-401: an IC with no NRIC read is unreadable (a gap, not a pass on the name).
-VERDICT_ENGINE_VERSION = '2026-10-25.2'
+#   2026-10-26.1 — corpus-gaps C1: a known public TVET issuer's offer is NOT CHECKED (no step; Probable).
+VERDICT_ENGINE_VERSION = '2026-10-26.1'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -757,12 +759,9 @@ def _verdict_pathway(application):
         return _fact('pathway', 'gap', decl, [_item('offer_letter_missing')])
 
     chk = student_offer_check(offer)
-    # Identity on the letter (name + IC): a wrong name OR IC is a RED content chip the ladder counts
-    # (owner 2026-07-07), NOT an early return — a lone name/IC slip → −1 (Probable), both → −2
-    # (Unsure), and it stacks with the offer's genuineness step (so #12's fake offer + name+IC+pathway
-    # mismatch → Fail). Amber-not-red by decision (decisions.md 2026-07-04): usually a family upload
-    # slip-up, the offer is not the identity anchor the IC is, no submission block wanted. We DON'T
-    # early-return, so the pathway chip below is also evaluated (all three chips are independent).
+    # Identity on the letter: a wrong name OR IC is a RED chip the ladder counts (owner 2026-07-07), not an
+    # early return — one slip → −1, both → −2, stacking with the genuineness step (#12 → Fail). Amber, no
+    # block (decisions.md 2026-07-04: usually a family upload slip-up). The three chips are independent.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
         unresolved.append(_item('offer_name_mismatch'))
     # A general NOTICE / wrong document (body read fine — issuer/programme present — but no name or
@@ -776,6 +775,8 @@ def _verdict_pathway(application):
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
 
     prog, inst = chk['programme'], chk['institution']
+    if stored_status(offer.vision_fields) == NOT_CHECKED:   # C1: officer-only, see `offer_issuers`
+        unresolved.append(_item('offer_issuer_not_checked', issuer=not_checked_issuer(offer.vision_fields)))
     confirmed = application.pathway_confirmed_at is not None
     if confirmed:
         evidence.append(_item('pathway_confirmed', programme=prog, institution=inst))

@@ -18,6 +18,11 @@ SUSPECT_MAX = 0.35      # <  → not_<type> (so few signatures it isn't recognis
 # 'suspect' and 'not_<type>' get the SAME soft treatment (cap + officer flag); only the message differs.
 _GENUINE = {'genuine', 'likely_genuine'}            # incl. the legacy 'likely_genuine'
 _NOT_LEGACY = {'wrong_type', 'not_an_ic'}           # legacy "wrong document" values
+#: MODEL_VERSION 1.8.0 (owner ruling A, 2026-10-26): an offer from a KNOWN public TVET issuer we have
+#: not fingerprinted yet (`offer_issuers`). Stored as itself, read everywhere as NO SIGNAL — like an
+#: unscored document: no genuineness step, no block, no official-document request; the reviewer
+#: checks it by eye. ⚠ Deliberately not `not_checked`: a `not_` prefix reads as a wrong-type FAKE.
+NOT_CHECKED = 'unchecked'
 
 
 def band_for(probability: float) -> str:
@@ -56,8 +61,8 @@ def canonical_status(raw, doc_type=None) -> str:
     existing stored authenticity (from live IC/supporting runs) keeps working without a backfill.
     TD-293: a non-string ``raw`` (a stored ``12345``) is no signal, never an ``AttributeError``."""
     s = (raw if isinstance(raw, str) else '').strip().lower()
-    if not s:
-        return ''
+    if not s or s == NOT_CHECKED:
+        return ''          # no signal: unscored, or a known public issuer not checked (1.8.0)
     if s in _GENUINE:
         return 'genuine'
     if s.startswith('not_') or s in _NOT_LEGACY:

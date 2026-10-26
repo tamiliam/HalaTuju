@@ -54,6 +54,13 @@
       "local": false,
       "checks": {},
       "note": "Scanned payslip whose IC number read with two digits wrong (state code and one serial digit) against the father's MyKad and STR (TD-220). OPEN: reading fewer digits wrongly has no bounded fix yet (TD-151), so no assertion is written; capture it so the next extraction change can be measured against it."
+    },
+    "offer_letter__req47__ilkbs": {
+      "case": "request #47",
+      "doc_type": "offer_letter",
+      "local": false,
+      "checks": {"signature_status": "unchecked"},
+      "note": "A Kementerian Belia dan Sukan (IKBN, under ILKBS) offer letter that read 'suspect' at p=0.40 against the nearest university pattern, which raised the official-document request (corpus-gaps C1). Since MODEL_VERSION 1.8.0 a known public TVET issuer named on the letterhead reads NOT CHECKED: no genuineness step, no block, no request; the reviewer checks it by eye. Synthetic twin: tests/test_corpus_gaps_c1.py. Capture it (fetch_corpus.py / capture_ocr.py, owner's call) and switch the flag."
     }
   }
 }

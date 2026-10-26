@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## A known public TVET issuer we have not fingerprinted reads "not checked"; TVET offers are supported public offers — 2026-10-26 (corpus-gaps C1; owner rulings A + B)
+
+**Ruling A — the safety net (partly reverses 1.4.0).** An offer letter that scores below the
+genuine band and whose LETTERHEAD names an issuer on a CLOSED, NAMED list — Kementerian Belia dan
+Sukan / IKBN / IKTBN / ILKBS; MARA / TVETMARA / IKM / KKTM; JTM / ADTEC / ILP / JPK — is stored
+**not checked** (`genuineness.bands.NOT_CHECKED` = `unchecked`, MODEL_VERSION 1.8.0,
+`genuineness/offer_issuers.py`). Every reader takes it as NO SIGNAL, exactly like an unscored offer:
+no genuineness step on the pathway card, `offer_official_status` → `unknown` (so no submission
+block and no official-document request), no student genuineness chip or note, and TD-114 holds the
+card at Probable. The officer reads it plainly on the Pathway card (`offer_issuer_not_checked`,
+officer-only — not a student ticket) and checks the letter by eye. Everything else keeps today's
+bands: a forged letter from an UNNAMED issuer scores as before, and a letter carrying any
+fingerprinted family's own issuer line (a UA name — "Universiti Teknologi MARA" — Sektor Operasi
+Sekolah, …) stays in that family.
+**Ruling B — TVET offers COUNT as supported official public offers.** They are public institutions,
+not private (IPTS) options: the "not checked" state is a gap in OUR patterns, never a judgement
+against the student. `offer_pathway._PATHWAY_FAMILY` gains `ilkbs` / `iljtm` / `kkom` (tertiary), so
+a TVET choice is no longer an unknown family (a TVET student's confirmed offer no longer overwrites
+her declared pathway). Once a ministry's family is fingerprinted (≥3 genuine letters each), its
+genuine letters read `genuine` like any public offer.
+**Also in C1.** A private college / university letter keeps its band (fake / suspect) but its reason
+now says "private college / university (IPTS)", not the nearest public family's name.
+**Why.** Request #47: an ILKBS letter read `suspect` 0.40 against the university pattern, raising
+the official-document request and risking the submission block, for a gap in our corpus. An offer
+that matches no pattern was compared with the nearest one and banded; it never said "we do not
+know this issuer".
+**Trade-offs.** A forged letter that names a listed TVET issuer passes as "not checked" — the
+reviewer is the backstop, as for any unscored document, and the officer line says so plainly. The
+issuer is read off the letterhead only (the first 600 normalised characters), because private
+colleges cite JPK accreditation or MARA sponsorship in their bodies; a genuine TVET letter whose OCR
+puts the issuer lower falls back to today's band (no worse than before).
+**Revisit if:** a ministry reaches ≥3 genuine letters (give it a family, roadmap "Later"), or the
+reviewers find "not checked" letters that are not genuine.
+
 ## The web sends the WHOLE completed list, derived from the last completed form; the shut door refuses only third-route kinds — 2026-10-26 (third results route S2b; rulings D2 D4 D5)
 
 **What.** Every profile sync (finishing onboarding, signing in) sends the results as ONE set,

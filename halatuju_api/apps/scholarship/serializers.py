@@ -967,8 +967,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         # hide it as amber noise; a genuine/suspect cert renders normally (never a false reject).
         if obj.doc_type == 'school_leaving_cert' and not status.startswith('not_'):
             return None
-        return {'status': status,
-                'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}
+        return None if not status else {'status': status,   # NOT CHECKED (1.8.0) reads as unscored
+                                        'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}
 
     def get_academic_check(self, obj):
         """{name, subjects, results, candidate_name, missing, mismatched, slip_count}

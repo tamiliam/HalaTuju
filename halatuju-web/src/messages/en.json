@@ -4488,6 +4488,7 @@
           "grades_verified": "All {count} grades match the results slip.",
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
           "offer_not_official": "Offer is not a genuine official public-university offer (conditional / private-IPTS / non-official notification) — student asked to upload the official letter.",
+          "offer_issuer_not_checked": "Offer from {issuer} — a public TVET issuer we don't have a pattern for yet, so it was NOT checked. Check the letter by eye.",
           "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
           "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
           "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",

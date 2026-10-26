@@ -1,6 +1,6 @@
 # Document corpus gaps — roadmap (2026-10-25)
 
-**Status:** DRAFT for owner approval. Built from `docs/plans/2026-10-25-document-corpus-gaps-brief.md`
+**Status:** APPROVED by the owner 2026-10-26 — decisions A, B, C (paid OCR capture), D all "yes". Built from `docs/plans/2026-10-25-document-corpus-gaps-brief.md`
 (read it first — the counts, line refs and harm ranking live there). Origin: org request #47.
 
 **Related, separate:** `docs/plans/2026-10-25-third-results-route-roadmap.md` (another session). It

@@ -332,8 +332,10 @@ class SaluranTerbukaVetoTest(TestCase):
         g = signature_genuineness(SATU_31_TEXT, doc_type='offer_letter')
         self.assertEqual(g['status'], 'not_offer_letter')
         self.assertIn('Saluran Terbuka (SATU)', g['reason'])
-        self.assertEqual(g['model_version'], '1.7.0')
-        self.assertEqual(MODEL_VERSION, '1.7.0')
+        # The veto shipped at 1.7.0; the stamp follows the live model (1.8.0, corpus-gaps C1, left
+        # this veto untouched).
+        self.assertEqual(g['model_version'], MODEL_VERSION)
+        self.assertGreaterEqual(MODEL_VERSION, '1.7.0')
 
     def test_saluran_satu_is_vetoed_too(self):
         g = signature_genuineness(GENUINE_UA_TEXT + '\nMelalui Saluran Satu UM',
