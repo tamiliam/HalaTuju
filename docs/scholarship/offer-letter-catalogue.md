@@ -104,8 +104,9 @@ TAWARAN KEMASUKAN KE PROGRAM DIPLOMA UNIVERSITI MALAYSIA PAHANG AL-SULTAN ABDULL
 
 ## Known public issuers NOT fingerprinted yet — "not checked" (MODEL_VERSION 1.8.0)
 
-Owner rulings A + B (2026-10-26, `docs/decisions.md`; corpus-gaps roadmap C1): an offer below the
-genuine band whose LETTERHEAD names one of these reads **not checked** (`bands.NOT_CHECKED`) — no
+Owner rulings A, B, C (2026-10-26, `docs/decisions.md`; corpus-gaps roadmap C1): an offer that reads
+SUSPECT (0.35–0.70), carries offer wording, and whose LETTERHEAD names one of these reads **not
+checked** (`bands.NOT_CHECKED`) — no
 genuineness penalty, no block, no official-document request; the officer is told plainly and checks
 the letter by eye. TVET offers COUNT as supported official public offers (ruling B). The list is closed
 and lives in `genuineness/offer_issuers.py` (`TVET_ISSUERS`); a family of its own is added only once we
@@ -114,11 +115,18 @@ hold ≥3 genuine letters (roadmap "Later").
 | Ministry | Names matched (letterhead only) | Acronyms (whole word) |
 |---|---|---|
 | Kementerian Belia dan Sukan | Kementerian Belia dan Sukan · Institut Kemahiran Belia Negara · Institut Kemahiran Tinggi Belia Negara | ILKBS · IKBN · IKTBN |
-| MARA | Majlis Amanah Rakyat · Institut Kemahiran MARA · Kolej Kemahiran Tinggi MARA | TVETMARA · IKM · KKTM |
+| MARA | Majlis Amanah Rakyat · Institut Kemahiran MARA · Kolej Kemahiran Tinggi MARA · Kolej Profesional MARA · Kolej MARA | TVETMARA · IKM · KKTM |
 | Jabatan Tenaga Manusia (KESUMA) | Jabatan Tenaga Manusia · Jabatan Pembangunan Kemahiran · Institut Latihan Perindustrian · Pusat Latihan Teknologi Tinggi | JTM · ADTEC · ILP · JPK · ILJTM |
 
+- **Suspect band only:** a letter below 0.35 (a typed fake, a skills certificate, a loan letter) stays
+  `not_offer_letter` whatever it names. **Offer wording required:** Tawaran / ditawarkan / surat
+  tawaran / offer of admission ("tawaran pinjaman" is a loan, not an offer).
 - **Letterhead only** (the first 600 characters of the normalised OCR text): a private college often
-  cites JPK accreditation or MARA sponsorship in its body.
+  cites JPK accreditation or MARA sponsorship in its body. A **sponsor line** (Tajaan / ditaja / Penaja /
+  sponsored by) is never the issuer. A bare **3-letter acronym** (IKM, ILP, JTM, JPK) counts only beside
+  offer wording on the letterhead.
+- **MARA-owned but PRIVATE (ruling C):** KPTM (Kolej Poly-Tech MARA) and UniKL (Universiti Kuala
+  Lumpur) — never "not checked", always the private-college reason.
 - **Never over a fingerprinted family:** if any family's own issuer line is on the page (a UA name,
   Sektor Operasi Sekolah, …) the letter keeps that family's band — "Universiti Teknologi MARA" is a
   university letter.
@@ -126,7 +134,8 @@ hold ≥3 genuine letters (roadmap "Later").
   "Pusat Bertauliah" on the letterhead also keeps the net off.
 - **A private college / university (IPTS)** — a letterhead naming an institution and no public body —
   keeps its band but now says so: "private college / university (IPTS) - not a supported public
-  issuer", instead of the nearest public family's label.
+  issuer", instead of the nearest public family's label. Never for a page naming a public university
+  by full or short name (a UiTM PDF text layer says only "UiTM") or a listed public body.
 
 ## Notes for implementers
 

@@ -7,17 +7,25 @@ All notable changes to this project will be documented in this file.
 Request #47: an ILKBS offer read "suspect" against the nearest university pattern, which raised the
 "upload your official offer" request and risked the submission block. Owner rulings A + B
 (`docs/decisions.md`, 2026-10-26).
-- **Not checked (MODEL_VERSION 1.8.0).** An offer below the genuine band whose letterhead names an
-  issuer on the closed list — Kementerian Belia dan Sukan / IKBN / IKTBN / ILKBS; MARA / TVETMARA /
-  IKM / KKTM; JTM / ADTEC / ILP / JPK — is stored `unchecked` (`genuineness/offer_issuers.py`). It
+- **Not checked (MODEL_VERSION 1.8.0).** A suspect-band offer with offer wording whose letterhead
+  names an issuer on the closed list — Kementerian Belia dan Sukan / IKBN / IKTBN / ILKBS; MARA /
+  TVETMARA / IKM / KKTM / Kolej MARA / Kolej Profesional MARA; JTM / ADTEC / ILP / JPK — is stored `unchecked` (`genuineness/offer_issuers.py`). It
   reads as no signal everywhere: no genuineness step, no block, no official-document request, no
   student chip, Probable at most (TD-114); the officer's Pathway card says "Offer from {issuer} …
   NOT checked. Check the letter by eye." (`offer_issuer_not_checked`, en/ms/ta — Malay and Tamil are
   first drafts). A letter carrying a fingerprinted family's issuer line, a private company, or an
   issuer not on the list scores exactly as before. `VERDICT_ENGINE_VERSION` 2026-10-26.1.
+- **The net is narrow (C1 review).** Only a SUSPECT-band letter (0.35–0.70) with offer wording is
+  excused; a fake below 0.35 stays a fake whatever it names; a bare 3-letter acronym needs offer
+  wording on the letterhead; a sponsor line ("Tajaan MARA") is never the issuer. The review's five
+  probes (a typed ILKBS fake, a JPK skills certificate, a MARA loan letter, a page reading "JTM", a
+  MARA-sponsored private college) score exactly as at `7d0f013a`.
+- **MARA's colleges (ruling C).** Kolej MARA and Kolej Profesional MARA are public (on the list);
+  KPTM and UniKL are MARA-owned but private — the private-college reason, never "not checked".
 - **TVET offers count (ruling B).** `ilkbs` / `iljtm` / `kkom` join the tertiary pathway family.
 - **Private college reason.** A private college / university keeps its band; its reason now says
-  "private college / university (IPTS)" instead of the nearest public family's name.
+  "private college / university (IPTS)" instead of the nearest public family's name — never for a
+  page naming a public university (a UiTM PDF text layer says only "UiTM") or a listed public body.
 - The stale 1.4.0 comments ("unknown issuers go to a holistic check") are corrected. Live re-run of
   the affected offers is roadmap C4 (owner-approved, on the live service only).
 - **Tests:** `test_corpus_gaps_c1.py` (request #47's shape, each ministry, an unnamed-issuer forgery

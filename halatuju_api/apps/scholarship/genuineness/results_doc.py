@@ -88,8 +88,8 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #   1.7.0 (2026-10-04) — TD-145: Saluran Terbuka (SATU) joins the private-arm veto — red at once, no
 #       question (owner option 1). #31's UM "[SALURAN TERBUKA UNIVERSITI MALAYA (SATU)]" read
 #       'suspect'. Backfill: re-run #31's offer from the LIVE cockpit, never locally.
-#   1.8.0 (2026-10-26) — corpus-gaps C1 (owner rulings A + B): an offer below the genuine band from a
-#       KNOWN public TVET issuer named on its letterhead (Belia & Sukan / MARA / JTM — `offer_issuers`)
+#   1.8.0 (2026-10-26) — corpus-gaps C1 (owner rulings A-C): a SUSPECT-band offer with offer wording from
+#       a KNOWN public TVET issuer named on its letterhead (Belia & Sukan / MARA / JTM — `offer_issuers`)
 #       reads NOT CHECKED (`bands.NOT_CHECKED`, no signal) instead of the nearest family's band; a
 #       private college gets an honest reason. No family/weight change. Backfill: roadmap C4 (live).
 MODEL_VERSION = '1.8.0'
@@ -550,7 +550,7 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
     if doc_type == 'offer_letter' and status != 'genuine':     # 1.8.0 — see `offer_issuers`
         from .offer_issuers import unfingerprinted_offer
-        return unfingerprinted_offer(_norm_fold_upper_alnum(ocr_text), r, status, reason, MODEL_VERSION)
+        return unfingerprinted_offer(ocr_text, r, status, reason, MODEL_VERSION)
     return {'status': status, 'probability': r['probability'], 'type': r['type'],
             'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],
             'model_version': MODEL_VERSION}

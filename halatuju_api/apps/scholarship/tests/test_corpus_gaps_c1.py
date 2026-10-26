@@ -133,6 +133,87 @@ class TheScorer(TestCase):
             self.assertEqual(pathway_family(p), 'tertiary')
 
 
+_REG = 'PROGRAM PENGAJIAN : DIPLOMA PERNIAGAAN\nTARIKH PENDAFTARAN : 1 JULAI 2026\n'
+# C1 review probes (2026-10-26): each read NOT CHECKED in the first cut. They must score exactly as
+# at 7d0f013a (status, family, probability), whatever names they carry.
+REVIEW_PROBES = {
+    'a typed fake under an ILKBS heading': 'INSTITUT KEMAHIRAN BELIA NEGARA ILKBS\nSurat tawaran\nNama: Ali\n',
+    'a JPK skills certificate in the offer slot': (
+        'JABATAN PEMBANGUNAN KEMAHIRAN\nKEMENTERIAN SUMBER MANUSIA\nSIJIL KEMAHIRAN MALAYSIA\n'
+        'TAHAP 3\nDengan ini diperakui bahawa calon telah memenuhi syarat\n'),
+    'a MARA loan letter': ('MAJLIS AMANAH RAKYAT\nBAHAGIAN PENDIDIKAN\nTAWARAN PINJAMAN PELAJARAN MARA\n'
+                           + _REG),
+    'a page reading only JTM': 'JTM',
+    'a private college MARA sponsors': ('KOLEJ BESTARI\nTajaan MAJLIS AMANAH RAKYAT\nTAWARAN KEMASUKAN\n'
+                                        + _REG),
+}
+# Suspect-band letters, one per guard, so each guard is pinned on a letter only it stops.
+NO_OFFER_WORDS = ('INSTITUT KEMAHIRAN BELIA NEGARA\nPEJABAT PENDAFTAR\n' + _REG
+                  + 'Program ini adalah muktamad.\n')
+SHORT_ACRONYM_HEAD = '{}\n' + _FILLER + '\nTAWARAN KEMASUKAN\nTARIKH LAPOR DIRI : 5 JULAI 2026\n'
+SPONSOR_ACRONYM = 'PUSAT LATIHAN BINTANG\nDitaja oleh TVETMARA\nTAWARAN KEMASUKAN\n' + _REG
+# A genuine UiTM offer's PDF text layer: no letterhead, no full university name — only "UiTM".
+UITM_TEXT_LAYER = ('TAWARAN KEMASUKAN KE PROGRAM DIPLOMA\nUiTM Cawangan Sabah Kampus Kota Kinabalu\n'
+                   'Kolej Pengajian Perakaunan\n' + _REG)
+# Owner ruling C: MARA-owned but PRIVATE, and saying so does not make them public.
+KPTM = 'KOLEJ POLY-TECH MARA\nMilik Majlis Amanah Rakyat\nTAWARAN KEMASUKAN\n' + _REG
+UNIKL = 'UNIVERSITI KUALA LUMPUR (UniKL)\nMilik Majlis Amanah Rakyat\nTAWARAN KEMASUKAN\n' + _REG
+
+
+class TheReviewProbes(TestCase):
+
+    def assertAsBefore(self, text):
+        g = signature_genuineness(text, doc_type='offer_letter')
+        self.assertEqual((g['status'], g['type'], g['probability']), _pre_c1(text)[:3])
+        return g
+
+    def test_each_probe_scores_exactly_as_before(self):
+        for name, text in REVIEW_PROBES.items():
+            with self.subTest(name):
+                g = self.assertAsBefore(text)
+                self.assertNotEqual(g['status'], NOT_CHECKED)
+
+    def test_a_fake_below_the_suspect_floor_is_never_not_checked(self):
+        """Rule 1: the net is the suspect band only — the typed fake and the bare page stay fakes."""
+        for name in ('a typed fake under an ILKBS heading', 'a page reading only JTM'):
+            self.assertEqual(self.assertAsBefore(REVIEW_PROBES[name])['status'], 'not_offer_letter')
+
+    def test_a_sponsor_is_not_the_issuer(self):
+        g = self.assertAsBefore(REVIEW_PROBES['a private college MARA sponsors'])
+        self.assertEqual(g['status'], 'suspect')
+        self.assertTrue(g['reason'].startswith('private college / university (IPTS)'))
+        self.assertNotEqual(self.assertAsBefore(SPONSOR_ACRONYM)['status'], NOT_CHECKED)
+
+    def test_a_suspect_letter_with_no_offer_wording_is_not_excused(self):
+        g = self.assertAsBefore(NO_OFFER_WORDS)
+        self.assertEqual((g['status'], g['reason']), ('suspect', _pre_c1(NO_OFFER_WORDS)[3]))
+
+    def test_a_bare_three_letter_acronym_needs_offer_wording_on_the_letterhead(self):
+        self.assertEqual(self.assertAsBefore(SHORT_ACRONYM_HEAD.format('JTM'))['status'], 'suspect')
+        g = signature_genuineness(SHORT_ACRONYM_HEAD.format('ADTEC'), doc_type='offer_letter')
+        self.assertEqual((g['status'], g['type']), (NOT_CHECKED, 'tvet_jtm'))   # the positive control
+
+    def test_request_47_still_reads_not_checked(self):
+        self.assertEqual(signature_genuineness(ILKBS_OFFER, doc_type='offer_letter')['status'], NOT_CHECKED)
+
+    def test_a_uitm_text_layer_is_never_called_a_private_college(self):
+        g = self.assertAsBefore(UITM_TEXT_LAYER)
+        self.assertEqual(g['reason'], _pre_c1(UITM_TEXT_LAYER)[3])
+
+    def test_the_mara_colleges_are_public(self):
+        for head in ('KOLEJ MARA BANTING', 'KOLEJ PROFESIONAL MARA BERANANG'):
+            with self.subTest(head):
+                g = signature_genuineness(f'{head}\nTAWARAN KEMASUKAN\n{_REG}', doc_type='offer_letter')
+                self.assertEqual((g['status'], g['type']), (NOT_CHECKED, 'tvet_mara'))
+
+    def test_kptm_and_unikl_are_mara_owned_but_private(self):
+        for name, text in (('KPTM', KPTM), ('UniKL', UNIKL)):
+            with self.subTest(name):
+                g = self.assertAsBefore(text)
+                self.assertEqual(g['status'], 'suspect')
+                self.assertTrue(g['reason'].startswith('private college / university (IPTS)'))
+
+
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
 class TheDoors(TestCase):
     """Upload extraction stores NOT CHECKED, and every reader downstream takes it as no signal."""

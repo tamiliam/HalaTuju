@@ -1,10 +1,13 @@
 # Architectural Decisions — HalaTuju
 
-## A known public TVET issuer we have not fingerprinted reads "not checked"; TVET offers are supported public offers — 2026-10-26 (corpus-gaps C1; owner rulings A + B)
+## A known public TVET issuer we have not fingerprinted reads "not checked"; TVET offers are supported public offers — 2026-10-26 (corpus-gaps C1; owner rulings A, B, C)
 
-**Ruling A — the safety net (partly reverses 1.4.0).** An offer letter that scores below the
-genuine band and whose LETTERHEAD names an issuer on a CLOSED, NAMED list — Kementerian Belia dan
-Sukan / IKBN / IKTBN / ILKBS; MARA / TVETMARA / IKM / KKTM; JTM / ADTEC / ILP / JPK — is stored
+**Ruling A — the safety net (partly reverses 1.4.0), for a GENUINE-LOOKING letter only.** An offer
+letter that reads SUSPECT (0.35–0.70 — a real but unfingerprinted offer's shape), carries offer
+wording (Tawaran / ditawarkan / surat tawaran / offer of admission — a loan "tawaran pinjaman" does
+not count), and whose LETTERHEAD names an issuer on a CLOSED, NAMED list — Kementerian Belia dan
+Sukan / IKBN / IKTBN / ILKBS; MARA / TVETMARA / IKM / KKTM / Kolej MARA / Kolej Profesional MARA; JTM /
+ADTEC / ILP / JPK — is stored
 **not checked** (`genuineness.bands.NOT_CHECKED` = `unchecked`, MODEL_VERSION 1.8.0,
 `genuineness/offer_issuers.py`). Every reader takes it as NO SIGNAL, exactly like an unscored offer:
 no genuineness step on the pathway card, `offer_official_status` → `unknown` (so no submission
@@ -20,8 +23,23 @@ against the student. `offer_pathway._PATHWAY_FAMILY` gains `ilkbs` / `iljtm` / `
 a TVET choice is no longer an unknown family (a TVET student's confirmed offer no longer overwrites
 her declared pathway). Once a ministry's family is fingerprinted (≥3 genuine letters each), its
 genuine letters read `genuine` like any public offer.
+**The net is narrow (C1 review, 2026-10-26).** The first cut excused ANY sub-genuine score naming a
+listed body — a typed fake headed "ILKBS", a JPK skills certificate, a MARA loan letter, a page reading
+only "JTM", a private college "Tajaan Majlis Amanah Rakyat" all read not checked, which would have
+closed the officer's official-offer request on each. Now: a `not_offer_letter` (< 0.35) stays exactly
+as before whatever it names; a bare 3-letter acronym (IKM, ILP, JTM, JPK) counts only beside offer
+wording on the letterhead; a sponsor line (Tajaan / ditaja / Penaja / sponsored by) is never the
+issuer. The five probes are regression tests, each scoring exactly as at `7d0f013a`.
+**Ruling C — MARA's colleges (owner, 2026-10-26).** Kolej MARA (e.g. Kolej MARA Banting) and Kolej
+Profesional MARA are PUBLIC: on the list, by full name only. KPTM (Kolej Poly-Tech MARA) and UniKL
+(Universiti Kuala Lumpur) are MARA-OWNED BUT PRIVATE: never not checked, always the private-college
+reason, although their names (or a "milik Majlis Amanah Rakyat" line) say MARA. Why it matters:
+BrightPath Sabah serves Bumiputra students, for whom UiTM and the MARA colleges are common
+destinations — the public ones must not read as forgeries, the private ones must not pass as public.
 **Also in C1.** A private college / university letter keeps its band (fake / suspect) but its reason
-now says "private college / university (IPTS)", not the nearest public family's name.
+now says "private college / university (IPTS)", not the nearest public family's name — never for a
+page naming a public university by full or short name (a UiTM PDF text layer says only "UiTM"), a
+listed public body, or a ministry / department / school on the letterhead.
 **Why.** Request #47: an ILKBS letter read `suspect` 0.40 against the university pattern, raising
 the official-document request and risking the submission block, for a gap in our corpus. An offer
 that matches no pattern was compared with the nearest one and banded; it never said "we do not
