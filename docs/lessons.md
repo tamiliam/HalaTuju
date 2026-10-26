@@ -1422,3 +1422,19 @@ the reviewer's probe on the salary route, the code path it went through; the sam
 fixing a gate rule, list the doors per RULE (every route, early return and fallback that can reach the
 state the rule governs), not per code path the probe touched, and pin the probe at each door. (TD-401/402
 sprint, review round 2)
+
+## 2026-10-26 — an exception that loosens a check is specified by what it must NOT excuse
+
+Corpus-gaps C1's "known public issuer → not checked" net was written for one case (a genuine TVET offer
+the model reads as suspect) and tested only on it; it also excused a typed fake at p=0.00, a skills
+certificate, a loan letter, a page reading "JTM" and a sponsored private college — each would have
+closed an officer's request. **Rule:** before writing an exception, list what else carries its trigger
+(the same names on fakes, near-misses, other document kinds, sponsor lines) and make those the first
+tests; the exception must leave each of them exactly as it scored before. (Corpus-gaps C1 review)
+
+## 2026-10-26 — a document reaches the scorer by more than one reading; check every one
+
+C2 verified UiTM letters on their OCR texts, but a digital PDF is read through its text layer, which had
+no letterhead — so two genuine letters would still have been blocked. **Rule:** a recognition change is
+verified on every reading the system takes of that document (photo OCR, PDF text layer, any other
+extractor), and a gap noticed on one of them is a blocker, not a note. (Corpus-gaps C2 review)

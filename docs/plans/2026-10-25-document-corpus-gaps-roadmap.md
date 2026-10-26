@@ -21,7 +21,9 @@ Its S3 shows higher results as "not checked" until this roadmap's STPM family la
 
 ## 1. Sprints
 
-### C0 — Gather the wording (owner + lead; no code) — gate for C2 and C3
+### C0 — Gather the wording (owner + lead; no code) — gate for C2 and C3 — ✅ DONE 2026-10-26
+**Done:** the lead's read-only capture (decision C, option b) of 7 UiTM offers and 10 STPM documents;
+the wording, PII-free, is in the catalogue (UiTM) and the C3 brief (STPM).
 - **Goal:** the fixed printed text of UiTM offers and STPM results (slip + certificate), taken from
   real documents we already hold.
 - **How (decision C):** (a) the owner reads ~7 UiTM letters and ~5 STPM documents in the cockpit and
@@ -31,7 +33,10 @@ Its S3 shows higher results as "not checked" until this roadmap's STPM family la
 - **Also here (free/cheap):** re-run the 3 unscored offers (UMS ×2, UMK, 24 Oct) from the cockpit.
 - **Done when:** the wording for each family is written into `docs/scholarship/offer-letter-catalogue.md`.
 
-### C1 — "We don't know this issuer yet" (safety net) + an honest private-college reason
+### C1 — "We don't know this issuer yet" (safety net) + an honest private-college reason — ✅ LIVE 2026-10-26
+**Done:** `1a2b4962` + `95131a65` (api-01144-sfg). Narrowed after review to a suspect-band letter with offer
+wording and a letterhead issuer; owner ruling C (Kolej MARA public; KPTM / UniKL private). Retro
+`docs/retrospectives/retrospective-2026-10-26-corpus-c1-c2.md`.
 - **Goal:** an offer from a KNOWN public issuer we have not fingerprinted yet is stored as
   "not checked" — no genuineness penalty, never a block, reviewer checks by eye. A private-college
   offer gets a plain "private college" reason instead of the misleading nearest-family label.
@@ -47,7 +52,10 @@ Its S3 shows higher results as "not checked" until this roadmap's STPM family la
   college offer says "private college".
 - **Complexity:** medium. **~8 h** incl. review. Gate: decisions A + B.
 
-### C2 — UiTM in the public-university family
+### C2 — UiTM in the public-university family — ✅ LIVE 2026-10-26
+**Done:** `1accaab9` + `a781b49a` (MODEL_VERSION 1.8.2): all 7 letters genuine on OCR and text layer; no
+`pathway_engine` change needed (UiTM's bare "Tarikh" is already allowed). Plus the C1 follow-up: an
+officer's offer request is held for the officer, never closed by a "not checked" upload (TD-406 open).
 - **Goal:** UiTM offers (Bahagian Pengambilan Pelajar) score as genuine when genuine.
 - **Scope:** the public-university list in `results_doc.py` (alternative offer line + office line),
   `_FAMILY_ISSUER_SIG` / `_REPORTING_LABELS` (`pathway_engine.py` ≈270–290), tests, catalogue.

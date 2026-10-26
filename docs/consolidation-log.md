@@ -35,6 +35,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-25 AI-outage sprint (our read failure is never the student's unreadable; sweep, alert, honest cascade errors; three review rounds) — 9d3ff53a
 - 2026-10-25 TD-390 sprint (a skipped IC second opinion is our outage: mark, honest gate, scoped pending readers, sweep, alert; owner ruling on scenario B) — 46b1c0bd
 - 2026-10-25 TD-401/402 sprint (identity rests on the card's NRIC; an STR is income proof only when a card matched it, both routes, owner ruling A; three review rounds) — 014cae5b, 4f582222, 76a07ee7
+- 2026-10-26 Corpus gaps C1 + C2 (a known public TVET issuer reads not checked, owner rulings A–C; UiTM scores as a public university, OCR and PDF text layer; an officer's offer request held for the officer) — 1a2b4962, 95131a65, 1accaab9, a781b49a
 
 ## Reviews
 

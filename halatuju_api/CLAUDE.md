@@ -925,7 +925,22 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**TD-401 + TD-402 and the owner's STR ruling are LIVE (2026-10-25, `014cae5b`, `4f582222`, `76a07ee7`;
+**Corpus gaps C1 + C2 are LIVE (2026-10-26; C1 `1a2b4962` + `95131a65`, api-01144-sfg / web-00988-nhg;
+C2 `1accaab9` + `a781b49a`; retro `docs/retrospectives/retrospective-2026-10-26-corpus-c1-c2.md`).** C1: a
+suspect-band offer with offer wording from a known public TVET issuer named on its letterhead is stored
+`unchecked` (`genuineness/offer_issuers.py`) and read as no signal everywhere (no block, no official-offer
+request, Probable; the officer is told "not checked"); KPTM / UniKL stay private (owner rulings A, B, C,
+`decisions.md` 2026-10-26). C2: UiTM scores as a public university, photo OCR and PDF text layer alike; an
+officer's own offer request is held for the officer, never closed by a "not checked" upload.
+MODEL_VERSION 1.8.2, VERDICT_ENGINE_VERSION 2026-10-26.1. Register: **134 open** (TD-406 raised).
+- **Next: C3 — the STPM results family** (slip + certificate; owner rulings 1A online-checker page not
+  accepted, 2A certified photocopy accepted), per the roadmap.
+- **Then C4 — the live re-run** of the affected offers and STPM results (owner-approved, paid, on the live
+  service only — the lead runs it).
+- **TD-403** (a stale STR in the household's own name) in another worktree, once the owner rules;
+  **TD-404 soon** (Sabah/Sarawak `AK`/`ANAK` names — every name match, adversarial review).
+
+**Earlier — TD-401 + TD-402 and the owner's STR ruling are LIVE (2026-10-25, `014cae5b`, `4f582222`, `76a07ee7`;
 retro `docs/retrospectives/retrospective-2026-10-25-td401-td402-str-ruling.md`).** Identity rests on the
 card's NRIC (a student IC with a name but no NRIC is `ic_unreadable`). An STR is income proof at the
 submission gate only when a card MATCHED its recipient, on BOTH routes (`decisions.md` 2026-10-24 item 3c,
@@ -934,11 +949,7 @@ the roster member who could settle it (`services.blockers._unmatched_str_asks` �
 offers), else `str_not_household`, a clearer document, or "try later" when the read is ours.
 `VERDICT_ENGINE_VERSION` 2026-10-25.2. Fixtures needing a household's own STR use
 `factories.matched_str_pair`. Register: **133 open**.
-- **Next: the owner's document corpus gaps brief** (`docs/plans/2026-10-25-document-corpus-gaps-brief.md`,
-  org request #47) — the lead plans it.
-- **TD-404 suggested soon** (Sabah/Sarawak applicants): `AK`/`ANAK` and romanisation variants make a
-  genuine family's STR read as a stranger's — every name match, so an adversarial review.
-- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Still queued: the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
 - **Then TD-403** once the owner rules (a stale STR in the household's own name passes both gates), and
   **TD-399** (OpenAI fallback for document reads, gated on the owner's privacy ruling + an eval run).
 
