@@ -375,6 +375,21 @@ before/after list before anything that moves applicants.
   needed for public universities but not for every course). Build in S3a (uploads), with: an audit line;
   a note to the reviewer when it happens after submit; the gate is not re-run (it runs at submit only),
   so the reviewer judges any post-submit change; it never touches SPM data.
+- **D12 (2026-10-26) — which results upload is REQUIRED follows where the student is going:** a
+  chosen university degree → the higher-results card (STPM / Matriculation / Asasi / Diploma) is
+  required and the SPM slip optional; a chosen post-SPM pathway (Matriculation, Form 6, Polytechnic,
+  ILKBS, etc.) → only the SPM slip is required and the higher-results card is not shown, even if
+  higher results were entered. No course chosen yet ("not sure") → by the results held (owner chose A);
+  it switches once a course is chosen. Supersedes "tertiary → higher results required" in S3a.
+- **D11 revised (2026-10-26):** not a button and not only "remove STPM": one small, unobtrusive text
+  link under the results cards, "My results are different", opening a short choice — "I took
+  Matriculation, Asasi or Diploma instead" (→ third-route results page), "I took STPM instead"
+  (→ STPM results page), "I only have SPM results" (→ clears the higher results entered, confirm box;
+  audit line; reviewer told if after submit). Only the options that apply are shown; shown only where
+  higher results matter (a university degree chosen, or no course chosen and higher results held).
+  Safeguards: ONE higher qualification at a time (completing the Diploma form clears earlier STPM
+  entries and vice versa); the upload card's type must agree with the results page, otherwise a note
+  with a link to the results page.
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
