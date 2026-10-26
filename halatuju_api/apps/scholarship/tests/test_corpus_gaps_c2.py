@@ -46,6 +46,15 @@ PEMAKLUMAN KEMASUKAN
 Sukacita dimaklumkan bahawa anda ditawarkan tempat untuk mengikuti program Asasi.
 Surat tawaran rasmi akan menyusul.
 """
+# A DIGITAL PDF's text layer (C2 review): no letterhead, no footer — only UiTM's own clauses name it.
+UITM_PDF_TEXT_LAYER = (_UITM_BODY + '3. Calon hanya diterima sebagai pelajar UiTM setelah membuat pendaftaran '
+                       'secara dalam talian.\n6. UiTM berhak menukarkan calon ke mana-mana kampus.\n'
+                       'BAHAGIAN PENGAMBILAN PELAJAR\n')
+# Copiers (C2 review probes): a private university borrowing UiTM's offer line, and a private college
+# quoting UiTM's office. Neither may gain UiTM's NAME.
+PRIVATE_COPIES_UITM_LINE = ('UNIVERSITI SWASTA CEMERLANG\nSukacita dimaklumkan bahawa anda ditawarkan tempat '
+                            'untuk mengikuti program di UiTM\nProgram ini adalah muktamad.\n')
+PRIVATE_QUOTES_UITM_OFFICE = 'KOLEJ BESTARI\nBAHAGIAN PENGAMBILAN PELAJAR\nSurat tawaran\nNama :\n'
 # A letter carrying only the shorter "Pengambilan Pelajar" (as on a12) is not the UiTM office.
 SHORT_OFFICE = 'UNIVERSITI TEKNOLOGI MALAYSIA\nUNIT PENGAMBILAN PELAJAR\nTAWARAN KEMASUKAN\n'
 
@@ -74,12 +83,25 @@ class UiTMScoresAsAPublicUniversity(TestCase):
     def test_a_uitm_offer_is_genuine(self):
         g = signature_genuineness(UITM_OFFER, doc_type='offer_letter')
         self.assertEqual((g['status'], g['type'], g['probability'], g['model_version']),
-                         ('genuine', 'ua_offer', 0.9, '1.8.1'))
+                         ('genuine', 'ua_offer', 0.9, MODEL_VERSION))
         self.assertEqual(_ua(_UA_1_8_0, UITM_OFFER), 0.4)               # what 1.8.0 said: suspect
 
     def test_a_garbled_office_line_still_clears(self):
         g = signature_genuineness(UITM_GARBLED_OFFICE, doc_type='offer_letter')
         self.assertEqual((g['status'], g['probability']), ('genuine', 0.8))
+
+    def test_a_uitm_pdf_text_layer_is_named_by_its_own_clauses(self):
+        """1.8.2: a digital PDF is read through its text layer, which has no letterhead."""
+        g = signature_genuineness(UITM_PDF_TEXT_LAYER, doc_type='offer_letter')
+        self.assertIn('public university (UA) name', g['present'])
+        self.assertEqual((g['status'], g['probability']), ('genuine', 0.9))
+
+    def test_a_copier_never_gains_uitms_name(self):
+        for text, band in ((PRIVATE_COPIES_UITM_LINE, 'suspect'), (PRIVATE_QUOTES_UITM_OFFICE, 'not_offer_letter')):
+            with self.subTest(text[:24]):
+                g = signature_genuineness(text, doc_type='offer_letter')
+                self.assertNotIn('public university (UA) name', g['present'])
+                self.assertEqual(g['status'], band)
 
     def test_the_uitm_offer_line_is_not_a_pemakluman(self):
         g = signature_genuineness(UM_PEMAKLUMAN, doc_type='offer_letter')
@@ -114,7 +136,7 @@ class UiTMScoresAsAPublicUniversity(TestCase):
         self.assertIs(offer_reporting_bonus(doc), True)
 
     def test_the_model_version(self):
-        self.assertEqual(MODEL_VERSION, '1.8.1')
+        self.assertEqual(MODEL_VERSION, '1.8.2')
 
 
 def _offer(app, status, *, doc_seen='ua_offer'):
@@ -141,15 +163,17 @@ class TheUploadDoor(TestCase):
             doc.vision_fields = vision.run_field_extraction_for_document(doc, names=[])
         doc.save(update_fields=['vision_fields'])
         auth = doc.vision_fields['authenticity']
-        self.assertEqual((auth['status'], auth['doc_seen'], auth['model_version']), ('genuine', 'ua_offer', '1.8.1'))
+        self.assertEqual((auth['status'], auth['doc_seen'], auth['model_version']), ('genuine', 'ua_offer', MODEL_VERSION))
         self.assertEqual(offer_official_status(doc), 'genuine')
 
 
 class AnOfficersOfferRequestWaitsForTheOfficer(TestCase):
     """C1 review follow-up: a NOT CHECKED offer reads 'ok' to `doc_match_verdict` (nothing failed),
     so it used to close an OFFICER's own "upload your official offer" request on upload. It now stays
-    open — 'pending' — until the officer closes it by hand. System requests close as before, and the
-    student is never blocked."""
+    open, held for the officer (`needs_officer_eye` — the Action Centre's "we've received what you
+    sent; our team is checking it" card), until the officer closes it by hand. The upload itself
+    answers 'ok' (C2 review: 'pending' told the student "still checking — refresh", though nothing
+    automatic will finish it). System requests close as before; the student is never blocked."""
 
     def setUp(self):
         from apps.scholarship.resolution import add_officer_item
@@ -164,10 +188,21 @@ class AnOfficersOfferRequestWaitsForTheOfficer(TestCase):
         self.assertEqual(doc_match_verdict(doc), 'ok')                 # nothing about the scan failed
         return resolve_doc_items_for_upload(self.app, doc)
 
-    def test_a_not_checked_upload_leaves_the_officers_request_open(self):
-        self.assertEqual(self._upload(NOT_CHECKED), 'pending')
+    def test_a_not_checked_upload_leaves_the_officers_request_open_and_with_the_officer(self):
+        self.assertEqual(self._upload(NOT_CHECKED), 'ok')
         self.ask.refresh_from_db()
         self.assertEqual(self.ask.status, 'open')
+        self.assertIs(self.ask.params.get('needs_officer_eye'), True)
+
+    def test_no_failed_attempt_is_stamped_on_the_held_request(self):
+        """The re-ask counter and circuit-breaker read requests by system / Check-2 CODE; an officer's
+        `officer_N` request is not among them, so the hold never reads as "not the page we asked for"."""
+        from apps.scholarship.views import _note_unresolved_attempts, _open_doc_request_items
+        self._upload(NOT_CHECKED)
+        _note_unresolved_attempts(self.app, self.app.documents.get(doc_type='offer_letter'), [], False)
+        self.ask.refresh_from_db()
+        self.assertNotIn('attempts', self.ask.params)
+        self.assertNotIn(self.ask, list(_open_doc_request_items(self.app, 'offer_letter')))
 
     def test_the_officer_closes_it_by_hand(self):
         from apps.scholarship.resolution import resolve_item

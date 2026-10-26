@@ -12,10 +12,18 @@ All notable changes to this project will be documented in this file.
   OCR: genuine, 0.90 (six) and 0.80 (one with a garbled office line); every other cached offer scores
   exactly as before (95 of 95). "Mod Pengajian" left out on purpose (catalogue). Wording in
   `docs/scholarship/offer-letter-catalogue.md`. Live re-score is roadmap C4.
+- **UiTM digital PDFs (1.8.2, C2 review).** A digital PDF is read through its text layer, which has no
+  letterhead, so two of the letters reached only "suspect" 0.60. UiTM's own clauses that name it
+  ("…pelajar UiTM setelah membuat pendaftaran", "UiTM berhak menukarkan calon…") now count as the
+  university's name — never its offer line, which a private letter could copy. All seven OCR texts and
+  all five text layers we hold: genuine; the 95 cached offers unchanged; a private university copying
+  UiTM's offer line stays suspect, a private college quoting its office stays a fake.
 - **C1 review follow-up.** A "not checked" TVET offer reads "ok" to the scan check, so it used to close
-  an OFFICER's own "upload your official offer" request on upload. That request now stays open
-  ("pending") until the officer closes it by hand (`offer_issuers.officer_must_close`). System and
-  Check-2 requests close as before, and the student is never blocked.
+  an OFFICER's own "upload your official offer" request on upload. That request now stays open, held
+  for the officer (`offer_issuers.officer_must_close` / `hold_for_officer`): the student sees the
+  existing "We've received what you sent — our team is now checking this personally" card, and the
+  upload answers "ok" (not "still checking — refresh"); no failed attempt is counted against it. The
+  officer closes it by hand. System and Check-2 requests close as before; the student is never blocked.
 - **Tests:** `test_corpus_gaps_c2.py` (synthetic UiTM letters from the PII-free wording; the pemakluman
   and short-office guards; every other letter against a frozen 1.8.0 university list; the reporting
   bonus; the upload door; the officer request kept open, closed by hand, and the system request still

@@ -26,7 +26,7 @@ with the user 2026-06-02):
 from django.db import IntegrityError
 from django.utils import timezone
 
-from .genuineness.offer_issuers import officer_must_close
+from .genuineness.offer_issuers import hold_for_officer, officer_must_close
 from .models import ResolutionItem
 from .verdict_engine import build_verdict
 
@@ -450,7 +450,8 @@ def resolve_doc_items_for_upload(application, doc):
     ``doc_type`` IF the file scans clean (``doc_match_verdict == 'ok'``). This is what resolves
     **officer** document requests on upload (system items clear via ``sync_resolution_items``; here
     it is idempotent). On a mismatch/unreadable the task stays open for a re-upload. Returns the
-    verdict for the frontend — 'pending' when an officer's offer request waits for the officer (C2).
+    verdict for the frontend. An officer's offer request a NOT CHECKED offer cannot close is held
+    for the officer (`hold_for_officer`: the "our team is checking" card), the upload still 'ok' (C2).
     """
     # The bank-details task is upload-THEN-CONFIRM: the upload only pre-fills the three
     # fields (account numbers are high-stakes — the student reviews/corrects before saving),
@@ -468,7 +469,7 @@ def resolve_doc_items_for_upload(application, doc):
         # A plain upload (no request_code) resolves by doc_type, as before.
         qs = qs.filter(code=rc) if rc else qs.filter(doc_type=doc.doc_type)
         upload_member = (getattr(doc, 'household_member', '') or '').strip()
-        str_still_insufficient = held_for_officer = False
+        str_still_insufficient = False
         str_ic_named = None          # TD-316: read once, and only if an STR-IC ask is in `qs`
         for item in qs:
             # V2 (#4): MEMBER-AWARE. A member-tagged request (V1.3 now writes
@@ -500,11 +501,9 @@ def resolve_doc_items_for_upload(application, doc):
                 str_still_insufficient = True
                 continue
             if officer_must_close(doc, item):      # an unchecked TVET offer: the officer decides (C2)
-                held_for_officer = True
+                hold_for_officer(item)
                 continue
             resolve_item(item, doc=doc, by='student')
-        if held_for_officer:
-            return 'pending'
         if str_still_insufficient:
             # A valid-but-still-not-current STR: non-'ok' so the FE surfaces the Action-Centre coach's
             # detail advice, while the task stays open. NOT 'mismatch'/'unreadable' — the scan was fine.

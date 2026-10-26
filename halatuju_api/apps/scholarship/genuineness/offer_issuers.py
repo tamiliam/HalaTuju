@@ -202,6 +202,19 @@ def officer_must_close(doc, item) -> bool:
             and stored_status(getattr(doc, 'vision_fields', None)) == NOT_CHECKED)
 
 
+def hold_for_officer(item) -> None:
+    """Mark a request `officer_must_close` kept open as WITH THE OFFICER (C2 review): the existing
+    `needs_officer_eye` hold, so the Action Centre shows the calm "we've received what you sent; our
+    team is now checking this personally" card instead of "still checking — refresh" or a re-upload
+    prompt. Nothing automatic finishes it; the officer closes it by hand."""
+    from django.utils import timezone
+    params = dict(item.params or {})
+    params['needs_officer_eye'] = True
+    params.setdefault('escalated_at', timezone.now().isoformat())
+    item.params = params
+    item.save(update_fields=['params'])
+
+
 def not_checked_issuer(vision_fields) -> str:
     """The `{issuer}` of the officer's `offer_issuer_not_checked` line (owner ruling A): the stored
     NOT CHECKED offer's issuer, by its `doc_seen` key. The verdict's Pathway card reads it off the offer

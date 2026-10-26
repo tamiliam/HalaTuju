@@ -94,7 +94,8 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       private college gets an honest reason. No family/weight change. Backfill: roadmap C4 (live).
 #   1.8.1 (2026-10-26) — corpus-gaps C2: UiTM joins the UA family on its own offer line, office (Bahagian
 #       Pengambilan Pelajar) and "hadir mendaftar pada tarikh" (0.40 → 0.80–0.90). Backfill: C4 (live).
-MODEL_VERSION = '1.8.1'
+#   1.8.2 (2026-10-26) — C2 review: a UiTM PDF's text layer (no letterhead) is named by UiTM's own clauses.
+MODEL_VERSION = '1.8.2'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -271,14 +272,12 @@ PISMP_OFFER_SIGNATURES = [
     ('Penetapan bidang muktamad',   ['PENETAPAN BIDANG DAN TEMPAT PENGAJIAN ADALAH MUKTAMAD'], 2, 'text'),
 ]
 
-# Asasi / UA-Diploma / Degree — ONE generic family for the FIXED set of 20 public universities
-# (UA; halatuju-web src/data/publicUniversities.ts == courses UNIV-001..020). Their letterheads
-# diverge, but every UA offer names the university, so the NAME (any of the 20) is the
-# forge-resistant ANCHOR — this covers all 20 incl. ones not yet in the corpus, with no per-uni
-# code. The office / finality-clause / offer-line wordings are UNION-matched across institutions,
-# so a specific letter still scores on its own variant (specificity kept). TEXT-ONLY (institution
-# logos aren't reliably detectable). A university NOT in this list (private / IPTS, e.g. Swinburne)
-# is banded by score (1.4.0) with a "private college" reason (1.8.0). Validated out-of-sample 2026-06-20.
+# Asasi / UA-Diploma / Degree — ONE generic family for the FIXED 20 public universities (UA; web
+# src/data/publicUniversities.ts == courses UNIV-001..020). Every UA offer names the university, so the
+# NAME (any of the 20) is the forge-resistant ANCHOR, covering all 20 with no per-uni code; office /
+# finality / offer-line wordings are UNION-matched across institutions. TEXT-ONLY. A university NOT in
+# this list (private / IPTS, e.g. Swinburne) is banded by score with a "private college" reason (1.8.0).
+# Validated out-of-sample 2026-06-20.
 _UA_NAMES = [
     'UNIVERSITI MALAYA', 'UNIVERSITI SAINS MALAYSIA', 'UNIVERSITI KEBANGSAAN MALAYSIA',
     'UNIVERSITI PUTRA MALAYSIA', 'UNIVERSITI TEKNOLOGI MALAYSIA', 'UNIVERSITI TEKNOLOGI MARA',
@@ -293,7 +292,9 @@ _UA_NAMES = [
 # that merely *mentions* a university without an admission offer can't reach genuine); the
 # office / clause / program / date wordings vary by institution → union-matched, weight 1 each.
 UA_OFFER_SIGNATURES = [
-    ('public university (UA) name', list(_UA_NAMES),                               3, 'text'),
+    # 1.8.2: UiTM's own clauses name it on a letterhead-less PDF text layer — never its offer line (copied).
+    ('public university (UA) name', list(_UA_NAMES) + ['PELAJAR UITM SETELAH MEMBUAT PENDAFTARAN',
+                                                       'UITM BERHAK MENUKARKAN CALON'], 3, 'text'),
     # ONLY the official offer line: "Tawaran Kemasukan", or UiTM's own (1.8.1 — it never prints that
     # header). A "Pemakluman Kemasukan" (admission NOTIFICATION, the UM SATU pre-offer #31) must not
     # match → floors at suspect. NB never 'SURAT TAWARAN' (a pemakluman mentions "surat tawaran rasmi"),
@@ -450,9 +451,8 @@ def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = Fals
             'present': b['present'], 'missing': b['missing'], 'scores': scores}
 
 
-# The two NON-text signatures (QR + crest) are visual, so a tiny multimodal read reports
-# them — far more robust than decoding the QR (a model sees "a QR is present" even on a blurry
-# photo where a decoder fails). Soft: an AI outage / no image → both absent, never a penalty.
+# The two NON-text signatures (QR + crest) are visual: a tiny multimodal read reports them (more robust
+# than decoding a blurry QR). Soft: an AI outage / no image → both absent, never a penalty.
 _VISUAL_SCHEMA = {'type': 'object', 'properties': {
     'has_qr_code': {'type': 'boolean'}, 'has_jata_negara_crest': {'type': 'boolean'}},
     'required': ['has_qr_code', 'has_jata_negara_crest']}

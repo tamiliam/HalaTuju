@@ -116,7 +116,9 @@ diterima sebagai pelajar UiTM setelah membuat pendaftaran secara dalam talian", 
 calon ke mana-mana kampus" · fees block (Kemudahan dan Bayaran / Kolej Kediaman / Yuran Pengajian / Kos
 Ditanggung oleh Kerajaan) · "Dokumen ini adalah janaan komputer dan tidak memerlukan tandatangan" ·
 No Siri · Dicetak pada · "UiTM di hatiku".
-**Scored by (`UA_OFFER_SIGNATURES`):** the UA name; the offer line *with* "program di UiTM" (the bare
+**Scored by (`UA_OFFER_SIGNATURES`):** the UA name — or, on a digital PDF's text layer (no letterhead,
+1.8.2), UiTM's own clauses that name it ("pelajar UiTM setelah membuat pendaftaran", "UiTM berhak
+menukarkan calon"; never the offer line, which a private letter can copy); the offer line *with* "program di UiTM" (the bare
 "ditawarkan tempat untuk mengikuti" also sits on the UM SATU pemakluman a31, which policy 1.1 keeps off
 the offer line); BAHAGIAN PENGAMBILAN PELAJAR (not the shorter "Pengambilan Pelajar", which a12 also
 carries); "hadir mendaftar pada tarikh"; the finality clause via "adalah muktamad". 0.90 on six
