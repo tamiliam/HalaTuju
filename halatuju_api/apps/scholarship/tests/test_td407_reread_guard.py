@@ -139,19 +139,22 @@ class TheCronSweep(TestCase):
 
 
 class TheCommandsPreFlight(TestCase):
-    """Each bulk re-read command refuses to start without the genuineness flag (non-zero exit), runs
-    with it or with `--allow-without-genuineness`, and only WARNS when billing is off."""
+    """Each HAND-RUN bulk re-read command refuses to start without the genuineness flag (non-zero exit),
+    runs with it or with `--allow-without-genuineness`, and only WARNS when billing is off. The HOURLY
+    self-heal (`reprocess_unread_ic`) only warns — see `TheHourlySelfHeal`."""
 
     COMMANDS = (('reextract_documents', 'apps.scholarship.management.commands.reextract_documents.reextract_document'),
-                ('reextract_offers', 'apps.scholarship.management.commands.reextract_offers.reextract_document'),
-                ('reprocess_unread_ic', 'apps.scholarship.management.commands.reprocess_unread_ic.'
-                                        'reprocess_unread_ic_documents'))
+                ('reextract_offers', 'apps.scholarship.management.commands.reextract_offers.reextract_document'))
+    HOURLY = ('reprocess_unread_ic', 'apps.scholarship.management.commands.reprocess_unread_ic.'
+                                     'reprocess_unread_ic_documents')
 
     def _run(self, name, target, **kw):
         out, err = StringIO(), StringIO()
         ret = {'scanned': 0, 'processed': 0, 'errored': 0, 'by_type': {}}
-        with patch(target, return_value=ret if name == 'reprocess_unread_ic' else True):
+        with patch(target, return_value=ret if name == 'reprocess_unread_ic' else True) as m:
             call_command(name, stdout=out, stderr=err, **kw)
+        self.ran = m.called
+        self.out = out.getvalue()
         return err.getvalue()
 
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False)
@@ -168,18 +171,36 @@ class TheCommandsPreFlight(TestCase):
 
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True, BILLING_USAGE_ENABLED=True)
     def test_each_command_runs_with_the_flag_and_says_nothing(self):
-        for name, target in self.COMMANDS:
+        for name, target in self.COMMANDS + (self.HOURLY,):
             with self.subTest(name):
                 self.assertEqual(self._run(name, target), '')
 
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True, BILLING_USAGE_ENABLED=False)
     def test_billing_off_is_a_warning_not_a_refusal(self):
-        for name, target in self.COMMANDS:
+        for name, target in self.COMMANDS + (self.HOURLY,):
             with self.subTest(name):
                 self.assertIn('BILLING_USAGE_ENABLED is off', self._run(name, target))
 
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False)
     def test_a_dry_run_reads_nothing_so_it_is_never_refused(self):
-        for name, target in self.COMMANDS[1:]:
+        for name, target in (self.COMMANDS[1], self.HOURLY):
             with self.subTest(name):
                 self._run(name, target, dry_run=True)
+
+
+class TheHourlySelfHeal(TestCase):
+    """TD-407 review: `reprocess_unread_ic` runs HOURLY from the cron endpoint, which swallows a raised
+    error as a logged warning and a 200 — a refusal would stop the AI-outage self-heal quietly. A
+    flag-off re-read is already safe (stored scores kept), so it WARNS (log + stdout) and runs."""
+
+    HOURLY = TheCommandsPreFlight.HOURLY
+    _run = TheCommandsPreFlight._run
+
+    @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False, BILLING_USAGE_ENABLED=True)
+    def test_it_warns_and_still_runs_without_the_flag(self):
+        name, target = self.HOURLY
+        with self.assertLogs('apps.scholarship.reextract', 'WARNING') as logs:
+            self._run(name, target)
+        self.assertTrue(self.ran)
+        self.assertIn('DOC_GENUINENESS_CHECK_ENABLED is off', self.out)
+        self.assertTrue(any('re-reading anyway' in m for m in logs.output), logs.output)

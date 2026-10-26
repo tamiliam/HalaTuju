@@ -17,7 +17,7 @@ skipped while Gemini reads are down, at most 72 hours per document, never on a c
 """
 from django.core.management.base import BaseCommand
 
-from apps.scholarship.reextract import add_preflight_argument, reread_preflight
+from apps.scholarship.reextract import reread_preflight
 from apps.scholarship.services import reprocess_unread_ic_documents
 
 
@@ -29,7 +29,6 @@ class Command(BaseCommand):
                             help='Max documents to re-process in one run.')
         parser.add_argument('--dry-run', action='store_true',
                             help='Count the stuck documents per type and read nothing (TD-151).')
-        add_preflight_argument(parser)
 
     def handle(self, *args, **opts):
         if opts['dry_run']:
@@ -37,7 +36,9 @@ class Command(BaseCommand):
             self.stdout.write(f"reprocess_unread_ic DRY-RUN: would re-read {r['scanned']} "
                               f"(by type {r['by_type']}); nothing was read")
             return
-        reread_preflight(self, opts)                     # TD-407: never re-read without the service's flags
+        # TD-407 review: HOURLY via the cron endpoint, which swallows a raised error — so WARN and run
+        # (a flag-off re-read keeps stored scores) rather than stop the self-heal quietly.
+        reread_preflight(self, opts, refuse=False)
         r = reprocess_unread_ic_documents(limit=opts['limit'])
         self.stdout.write(self.style.SUCCESS(
             f"reprocess_unread_ic: scanned={r['scanned']} processed={r['processed']} "

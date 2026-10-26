@@ -12,8 +12,10 @@ on 2026-10-24).
   and the MyKad read — carries a document's stored score into a re-read that produced no fresh one (the flag
   off, or no signal this time, e.g. an empty OCR) and logs a WARNING naming the document and the reason. A
   fresh score still replaces it; a first upload is unchanged. No score changes, so no MODEL_VERSION bump.
-- **Pre-flight.** `reextract_documents`, `reextract_offers` and `reprocess_unread_ic` refuse to start (non-zero
-  exit) when the flag is off, unless `--allow-without-genuineness`; a dry run is never refused. With
+- **Pre-flight.** The hand-run `reextract_documents` and `reextract_offers` refuse to start (non-zero exit)
+  when the flag is off, unless `--allow-without-genuineness`; a dry run is never refused. The HOURLY
+  `reprocess_unread_ic` only warns (log + stdout) and runs: the cron endpoint swallows a raised error as a
+  200, so a refusal would stop the AI-outage self-heal quietly, and a flag-off re-read is already safe. With
   `BILLING_USAGE_ENABLED` off they only warn: the reads are correct but unmetered — a reconciliation gap,
   not a data loss.
 - **Tests:** `test_td407_reread_guard.py` (each stored status kept with the flag off, re-scored with it on,
