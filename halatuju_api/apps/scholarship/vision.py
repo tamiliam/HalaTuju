@@ -20,6 +20,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from .gemini import cascade_failure, document_failure
+from .genuineness.bands import keep_stored_authenticity
 from .read_errors import (IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, OCR_SERVICE_FAILED,
                           UNPARSEABLE_RESPONSE, is_ai_service_error, is_ocr_service_error,
                           model_rejected_document, read_deferred)
@@ -974,6 +975,7 @@ def run_vision_for_document(doc) -> dict:
         if auth:
             vf['authenticity'] = auth
             vf_changed = True
+    keep_stored_authenticity(doc, prior, vf)   # TD-407: the merge keeps it; say so when nothing fresh came
     if vf_changed:
         doc.vision_fields = vf
         update_fields.append('vision_fields')
@@ -2311,11 +2313,10 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
                 auth = doc_genuineness(gimg, doc.content_type, doc.doc_type)
                 if auth:
                     result['authenticity'] = auth
-    # Clobber guard (code-health S2 #5): the blob on a row is immutable, so a FAILED run
-    # (fetch/OCR/model error → empty fields) where the row already holds a successful
-    # extraction is OUR failure — a Storage outage or a checkout without Storage access.
-    # Overwriting good fields with an empty error read is exactly the incident mode that
-    # destroyed vision_fields in the past (memory: halatuju_never_reextract_locally).
+    # Clobber guard (code-health S2 #5): the blob on a row is immutable, so a FAILED run (fetch/OCR/model
+    # error → empty fields) where the row already holds a successful extraction is OUR failure — a Storage
+    # outage or a checkout without Storage access. Overwriting good fields with an empty error read is the
+    # incident mode that destroyed vision_fields before (memory: halatuju_never_reextract_locally).
     # Keep the stored read; report the failure to the caller without persisting it.
     # 2026-10-24: nor does OUR outage overwrite a real stored verdict (a true 'unreadable' included).
     prior = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
@@ -2325,6 +2326,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         logger.warning('run_field_extraction: kept stored extraction for doc %s (re-run failed: %s)',
                        doc.id, result['error'])
         return {**result, 'stale_kept': True}
+    keep_stored_authenticity(doc, prior, result)          # TD-407: never a score replaced by silence
     doc.vision_fields = result
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])

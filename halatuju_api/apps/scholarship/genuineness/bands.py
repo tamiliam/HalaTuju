@@ -70,6 +70,26 @@ def canonical_status(raw, doc_type=None) -> str:
     return 'suspect'   # low_confidence / suspect / review / anything else non-empty
 
 
+def keep_stored_authenticity(doc, prior, new) -> None:
+    """TD-407 — never overwrite a genuineness score with silence. A re-read rebuilds a document's
+    ``vision_fields``; when it produced no FRESH ``authenticity`` — ``DOC_GENUINENESS_CHECK_ENABLED`` is
+    off (a Cloud Run job carries only core env: corpus C4 wiped 16 scores this way, and the 2026-10-24
+    re-reads 16 more), or the scorer gave no signal this time (an empty OCR, an AI outage) — the score
+    stored on ``prior`` is carried into ``new`` and a WARNING says so. A fresh score always replaces it;
+    a first read (nothing stored, the upload path) is untouched. Mutates ``new``; returns nothing."""
+    stored = prior.get('authenticity') if isinstance(prior, dict) else None
+    fresh = new.get('authenticity')
+    if not isinstance(stored, dict) or (isinstance(fresh, dict) and fresh is not stored):
+        return
+    import logging
+    from django.conf import settings
+    new['authenticity'] = stored
+    why = ('the re-read gave no genuineness signal' if getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False)
+           else 'DOC_GENUINENESS_CHECK_ENABLED is off')
+    logging.getLogger('apps.scholarship.vision').warning(
+        'TD-407: kept the stored genuineness score of document %s (%s)', getattr(doc, 'id', None), why)
+
+
 def needs_attention(raw, doc_type=None) -> bool:
     """Does this genuineness status warrant the soft cap + officer flag? — anything non-empty
     that isn't 'genuine'."""

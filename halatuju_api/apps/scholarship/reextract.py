@@ -10,6 +10,37 @@ from . import vision as _vision
 logger = logging.getLogger(__name__)
 
 
+#: TD-407: the flag a re-read command needs to run without genuineness on purpose.
+ALLOW_WITHOUT_GENUINENESS = '--allow-without-genuineness'
+
+
+def add_preflight_argument(parser):
+    parser.add_argument(ALLOW_WITHOUT_GENUINENESS, action='store_true',
+                        help='Run although DOC_GENUINENESS_CHECK_ENABLED is off (TD-407). The re-read '
+                             'keeps each stored genuineness score; it scores nothing new.')
+
+
+def reread_preflight(command, opts):
+    """TD-407 pre-flight for a command that re-reads documents in bulk. A Cloud Run JOB carries only
+    core env, so the same command that is safe inside the service can run there without the service's
+    flags (corpus C4). REFUSES to start (``CommandError`` → non-zero exit) when
+    ``DOC_GENUINENESS_CHECK_ENABLED`` is off, unless ``--allow-without-genuineness`` says it is meant:
+    the read would score nothing (the stored score is kept since TD-407, but nothing new is learnt).
+    Only WARNS when ``BILLING_USAGE_ENABLED`` is off: the reads are then correct but not attributed to
+    an organisation's bill — a reconciliation gap the lead can see, not a data loss, and refusing would
+    block every environment where billing is deliberately off."""
+    from django.conf import settings
+    from django.core.management.base import CommandError
+    if not getattr(settings, 'BILLING_USAGE_ENABLED', False):
+        command.stderr.write('reread: BILLING_USAGE_ENABLED is off — these paid reads will not be metered '
+                             'to an organisation (set BILLING_USAGE_ENABLED=true on a job).')
+    if getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False) or opts.get('allow_without_genuineness'):
+        return
+    raise CommandError('reread: DOC_GENUINENESS_CHECK_ENABLED is off, so this re-read would score no '
+                       "document's genuineness (TD-407). Set DOC_GENUINENESS_CHECK_ENABLED=1 (exactly '1') "
+                       f'on the job, as on the halatuju-api service, or pass {ALLOW_WITHOUT_GENUINENESS}.')
+
+
 def reextract_document(doc) -> bool:
     """Re-run the automatic read for one document, dispatched by type. Returns True when a
     known read ran, False for a type with no automatic check (caller decides what to do)."""

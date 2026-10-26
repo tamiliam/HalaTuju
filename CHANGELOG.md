@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-407 — a re-read never wipes a genuineness score; re-read commands refuse to run without the flag - 2026-10-27
+
+Corpus C4's first live re-read ran through a Cloud Run job without the service's
+`DOC_GENUINENESS_CHECK_ENABLED`, and 16 documents lost their stored genuineness score (16 more had, unnoticed,
+on 2026-10-24).
+- **Keep, don't wipe.** `genuineness.bands.keep_stored_authenticity`, called by both writers — the field
+  read behind the cockpit Re-run, `reextract_documents`, `reextract_offers` and the hourly `read_retry` sweep,
+  and the MyKad read — carries a document's stored score into a re-read that produced no fresh one (the flag
+  off, or no signal this time, e.g. an empty OCR) and logs a WARNING naming the document and the reason. A
+  fresh score still replaces it; a first upload is unchanged. No score changes, so no MODEL_VERSION bump.
+- **Pre-flight.** `reextract_documents`, `reextract_offers` and `reprocess_unread_ic` refuse to start (non-zero
+  exit) when the flag is off, unless `--allow-without-genuineness`; a dry run is never refused. With
+  `BILLING_USAGE_ENABLED` off they only warn: the reads are correct but unmetered — a reconciliation gap,
+  not a data loss.
+- **Tests:** `test_td407_reread_guard.py` (each stored status kept with the flag off, re-scored with it on,
+  kept on a no-signal re-read, the IC path, the sweep, each command's pre-flight); the two command test
+  classes now run with the flag on. Every change bitten. TD-407 closed.
+
 ## A gift chooses whether it asks for STPM-level results (owner ruling D16) - 2026-10-27
 
 BrightPath flagship (`brightpath-flagship`, b40-2026) is a POST-SPM programme; BrightPath Sabah is

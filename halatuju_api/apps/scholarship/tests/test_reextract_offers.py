@@ -4,7 +4,7 @@ reextract_document (mocked here — the billable read runs only on the service).
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from io import StringIO
@@ -48,6 +48,7 @@ class TestBelowGenuine(TestCase):
         self.assertTrue(_below_genuine(garbled))
 
 
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)   # TD-407: the command refuses to run without it
 class TestReextractOffersCommand(TestCase):
     def _run(self, **kw):
         out = StringIO()

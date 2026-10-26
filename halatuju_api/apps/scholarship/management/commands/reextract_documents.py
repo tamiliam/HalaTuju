@@ -20,7 +20,7 @@ import os
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.reextract import reextract_document
+from apps.scholarship.reextract import add_preflight_argument, reextract_document, reread_preflight
 
 # Bump this for a future re-extraction pass (e.g. after another parser change).
 PASS_MARKER = 'reextract_2026_06'
@@ -69,8 +69,10 @@ class Command(BaseCommand):
         parser.add_argument('--retry-errors', action='store_true',
                             help="Also re-attempt docs whose last run FAILED (marked 'error'). "
                                  "Default runs skip them so one broken doc can't wedge the pass.")
+        add_preflight_argument(parser)
 
     def handle(self, *args, **opts):
+        reread_preflight(self, opts)                     # TD-407: never re-read without the service's flags
         from apps.scholarship.views import SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
         # ``ic`` is deliberately OUTSIDE the default scope but reachable with an explicit
         # --doc-type. The original exclusion ("ic/parent_ic already store their read in

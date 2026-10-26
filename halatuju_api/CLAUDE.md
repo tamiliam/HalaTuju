@@ -168,6 +168,11 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    --update-env-vars=DOC_GENUINENESS_CHECK_ENABLED=1,BILLING_USAGE_ENABLED=true` (plus `--account` /
    `--project`), and check a sample of re-read rows for an `authenticity` block before calling it done.
    A batch over a few dozen documents also outlasts the job's default 10-minute task timeout.
+   ⚠ The flag is on only for the exact value `1` (`true` leaves it off). **Since TD-407 (2026-10-27) the
+   code guards it too:** a re-read that scores nothing keeps the stored score (WARNING `TD-407: kept the
+   stored genuineness score`), and `reextract_documents` / `reextract_offers` / `reprocess_unread_ic`
+   refuse to start without the flag unless `--allow-without-genuineness`; billing off only warns. The
+   operational rule above still stands — without the flag a re-read keeps old scores but learns nothing.
 
 **Where documents go:** a new retrospective in `docs/retrospectives/`, release notes in
 `docs/releases/`, sprint and incident history in `docs/sprint-history.md`, a domain rule in

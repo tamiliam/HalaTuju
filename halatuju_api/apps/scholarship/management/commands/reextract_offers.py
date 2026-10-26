@@ -16,7 +16,7 @@ genuineness under the current MODEL_VERSION. FORCES billable Gemini reads — ru
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.reextract import reextract_document
+from apps.scholarship.reextract import add_preflight_argument, reextract_document, reread_preflight
 from apps.scholarship.genuineness.bands import GENUINE_MIN
 
 # Bump for a future targeted offer-rescore pass (e.g. after the next MODEL_VERSION change).
@@ -47,11 +47,14 @@ class Command(BaseCommand):
                             help="Also re-attempt docs whose last pass run FAILED (marked 'error').")
         parser.add_argument('--dry-run', action='store_true',
                             help='List the targeted docs without running any (billable) read.')
+        add_preflight_argument(parser)
 
     def handle(self, *args, **opts):
         limit = max(1, opts['limit'])
         retry_errors = opts['retry_errors']
         dry_run = opts['dry_run']
+        if not dry_run:
+            reread_preflight(self, opts)                 # TD-407: a dry run reads nothing
 
         def unprocessed(doc):
             mark = (doc.vision_fields or {}).get(PASS_MARKER)

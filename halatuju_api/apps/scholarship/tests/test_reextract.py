@@ -4,7 +4,7 @@ doc types (photos/ICs excluded), advancing each run. The actual per-doc read is 
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import (
@@ -14,6 +14,7 @@ from apps.scholarship.models import (
 MARKER = 'reextract_2026_06'
 
 
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)   # TD-407: the command refuses to run without it
 class ReextractCommandTests(TestCase):
     def setUp(self):
         cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
