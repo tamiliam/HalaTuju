@@ -88,9 +88,8 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-01.1 — TD-089: a guardian is linked off the letter's guardian AND ward names.
 #   2026-10-02.1 — TD-114: a never-scored IC / slip / offer holds its fact at Probable (verdict_ladder);
 #                  TD-151: a payslip figure outside RM100-20,000 a month is a misread (no figure).
-#   2026-10-03.1 — TD-323: an EPF-implied salary under RM100 a month is no BAND figure (the earner
-#                  falls to a declared amount, else verify at interview). No ceiling; the evidence,
-#                  gate and divergence readers are unchanged (review F1).
+#   2026-10-03.1 — TD-323: an EPF-implied salary under RM100/month is no BAND figure (earner falls to a declared
+#                  amount, else verify at interview). No ceiling; evidence/gate/divergence unchanged (review F1).
 #   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (a different one →
 #                  pathway_confirm, red until answered); Saluran Terbuka (SATU) reads red at once.
 #   2026-10-24.1 — AI outage: a read not yet made is no longer "unreadable" (no student ask).
