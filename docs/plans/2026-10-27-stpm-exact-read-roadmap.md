@@ -33,6 +33,9 @@ Both are issued by Majlis Peperiksaan Malaysia and show the same facts, but in d
 
 The exam year (title / "Tahun Peperiksaan") is the year BEFORE the results date: STPM 2025 results were
 released on 18 Jun 2026. The reader takes the exam year from the title, never from the release date.
+(Owner, checked with an expert, 2026-10-27: "STPM 2025" = the cohort that joined in 2025 and finished in
+2026; results released in 2026; typically born in 2006.) A slip seen with title "STPM 2025" but release date
+18 Jun 2025 is SUSPECT (perhaps a misprint) — see the S3 date-consistency signal.
 The slip's paper rows must not be read as subjects; only the subject rows (with a KOD) count.
 **Layouts vary slightly between years** (stable over about 3 years). The reader keys on a SET of anchors
 with tolerance, never on one exact phrase or position, and an unknown variant falls back to AI.
@@ -86,6 +89,8 @@ There are no OCR caches for STPM yet. The stored prod reads (snapshots `higher_r
 - Replace the blanket `higher_results_not_checked` with a real result.
 - A checker page (1A) asks the student for the real slip or certificate. A certified copy (2A) is accepted.
 - Certificate and slip are judged the same way. No new reviewer label.
+- Date-consistency signal (soft; owner to confirm): a release date whose year is not the exam year + 1 lowers
+  the genuineness score. It never rejects alone, because a misprint is possible.
 - Bump `MODEL_VERSION` to 1.10.0, and `VERDICT_ENGINE_VERSION` (bands can move).
 - **Done when:** d3303-style checker pages are asked for the real document; certified copies pass;
   Matric/Diploma docs are not misjudged as STPM; owner sees the before/after list of affected applications
