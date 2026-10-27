@@ -528,7 +528,11 @@ class TestV4PromotedAsks(_Base):
             code='school_leaving_cert_missing').status, 'resolved')
 
     def test_semester_result_for_continuing_student_only(self):
+        # In Form Six: declared STPM, SPM results only. (2026-10-28: with NO results on file the
+        # declaration alone reads as held STPM — a completer, who is not asked — so the Form Six
+        # student carries the SPM grades she holds.)
         self.profile.exam_type = 'stpm'
+        self.profile.grades = {'bm': 'A', 'eng': 'B', 'math': 'A'}
         self.profile.save()
         sync_check2_queries(self.app)
         codes = self._codes()

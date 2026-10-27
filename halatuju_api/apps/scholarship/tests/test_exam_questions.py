@@ -125,19 +125,21 @@ def _readers(p):
 #     whose cells that ruling amended (sprint 4 pinned heading_for's answer there: stpm/STPM/False
 #     on the three explorer-shaped rows, spm/SPM/True on the promote row) — superseded by the
 #     ruling, not bent to fit.
-#   leaving_cert_ask / semester_ask — MEAN heading-for: unchanged by construction.
+#   leaving_cert_ask / semester_ask — MEAN heading-for: unchanged by construction. Dated
+#     2026-10-28: semester_ask now ALSO excuses a holder of tertiary results (`results_held`
+#     tertiary — an STPM completer has left Form Six); the three rows marked 10-28 moved True→False.
 #   payload — SWITCHED to results_held in sprint 4; the four rows marked * changed then.
 TABLE = {
     #                                   head    held    shortl  pool    leave  sem    parser payload
     'declared_spm':                    ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
-    'declared_stpm_with_stpm':         ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
+    'declared_stpm_with_stpm':         ('stpm', 'stpm', 'stpm', 'STPM', False, False, False, 'stpm'),  # 10-28
     'form_six_explorer':               ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
-    'declared_stpm_both':              ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
+    'declared_stpm_both':              ('stpm', 'stpm', 'stpm', 'STPM', False, False, False, 'stpm'),  # 10-28
     'explorer_recorded_spm':           ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
     'declared_spm_recorded_stpm':      ('spm',  'stpm', 'stpm', 'STPM', True,  False, False, 'stpm'),  # * TD-324
     'declared_stpm_both_recorded_spm': ('stpm', 'spm',  'spm',  'SPM',  False, True,  True,  'spm'),   # * TD-324
     'mirage_15':                       ('spm',  'spm',  'spm',  'SPM',  True,  False, True,  'spm'),
-    'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, True,  False, 'stpm'),
+    'declared_stpm_nothing':           ('stpm', 'stpm', 'stpm', 'STPM', False, False, False, 'stpm'),  # 10-28
     'blank':                           ('',     '',     'spm',  'SPM',  True,  False, True,  ''),
     # Third results route S2a (2026-10-25) — NEW rows; the rows above are unchanged. The third
     # route is heading-for neither SPM nor STPM, so both income asks stay quiet (leave / sem False).

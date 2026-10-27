@@ -2,7 +2,8 @@
 
 Moved here VERBATIM from `income_engine.py` at code health H16 (2026-09-20).
 Moves only: not a line of this body was reworded. See `__init__.py`. TD-218 (2026-10-02) then
-moved one read in `semester_result_gap` onto `heading_for`, answer for answer.
+moved one read in `semester_result_gap` onto `heading_for`, answer for answer; 2026-10-28 then
+excused a holder of completed tertiary results from its legacy arm (an outcome change, see there).
 """
 from __future__ import annotations
 
@@ -30,13 +31,21 @@ def semester_result_gap(application):
         Form 6 runs in semesters; TD-218 keeps this on the declaration because the question is
         where she is studying, not which results she holds). Rarely fires: the programme
         currently processes post-SPM applicants.
+        EXCEPT (2026-10-28) a student who HOLDS completed tertiary results
+        (``results_route.held_kind`` — STPM, or Matriculation / Asasi / Diploma): since the third
+        results route an STPM COMPLETER also declares STPM, and she has left Form Six, so there is
+        no semester to report. It is the very test ``higher_owed`` uses to ask her for her STPM
+        results, so no student is ever treated as "holds STPM" by one ask and "in Form Six" by
+        the other (#254/#265: the semester ask surfaced the moment the owed-higher ask cleared).
     Clears when a ``semester_result`` field-extracts."""
     docs = _docs_or_none(application)
     if docs is None or _has_read_doc(application, 'semester_result'):
         return False
     prof = getattr(application, 'profile', None)
     if heading_for(prof) == 'stpm':
-        return True
+        from ..results_route import held_kind
+        if not held_kind(application):
+            return True
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
     if pathway not in _MULTI_YEAR_PATHWAYS:
         return False

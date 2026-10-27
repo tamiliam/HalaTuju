@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## "Declared STPM" no longer means "in Form Six" for a holder of tertiary results — 2026-10-28 (`semester_result_gap`)
+
+The semester-result ask's legacy arm (TD-218: on the declaration, `heading_for`) now also requires that
+the student does NOT hold completed tertiary results (`results_route.held_kind`, i.e. `results_held` is
+STPM / Matriculation / Asasi / Diploma). Chosen over (a) "a PNGK is entered" and (b) "the chosen course is a
+degree" because it is the ONE signal `higher_owed` already uses to ask her for her STPM results: with any
+other test a student could be "holds STPM" to one ask and "in Form Six" to the other — the #254/#265 bug.
+(b) would also keep asking a completer going to a post-SPM pathway or still undecided, who has equally left
+Form Six. Accepted cost: `results_held` repeats a bare STPM declaration with nothing on file, and a legacy
+row with typed STPM grades reads 'stpm' (#15's presence caveat), so such a row is no longer asked — the
+shortlist gate and sponsor band already treat it as an STPM holder. The multi-year-pathway arm (a past
+intake on STPM / PISMP / Poly / UA) is unchanged, so a completer whose stored pathway is a stale 'stpm' with
+a past start is still asked through it. No verdict reads this ask: no `VERDICT_ENGINE_VERSION` bump.
+
 ## A combined results upload is split into NEW documents; the original stays as history — 2026-10-28 (`split_combined_results`)
 
 When the team splits one upload holding several results documents, each part is a NEW document (new PDF,

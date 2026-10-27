@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix — no semester-result ask for a student who has FINISHED STPM - 2026-10-28
+
+`semester_result_gap`'s legacy arm asked every student who declared STPM for a current-semester result
+("declared STPM = in Form Six"). Since the third results route, STPM completers bound for a degree also
+declare STPM, so #254/#265's shape would get the Check-2 `semester_result_missing` ask the moment their
+owed-higher-results ask cleared (the pairing that once put STPM certificates in the semester slot).
+- The legacy arm now skips a student who holds completed tertiary results (`results_route.held_kind`: STPM,
+  Matriculation, Asasi or Diploma) — the same test `higher_owed` uses to ask for her STPM results. A Form
+  Six student holding only SPM is still asked; the multi-year-pathway arm (past intake) is unchanged; a read
+  semester result still clears. No verdict reads the ask, so no `VERDICT_ENGINE_VERSION` bump.
+- Tests: `test_third_route_higher_owed.TestSemesterAskSkipsResultsCompleters` (6, red on the old code for
+  the completer cases); the `TestOneAskPerDocument` control is now a Form Six student; three
+  characterisation rows in `test_exam_questions.TABLE` (declared STPM, held STPM) move semester_ask to False;
+  `test_check2_queries`' continuing-student case now carries the SPM grades a Form Six student holds.
+
 ## Third results route follow-up — `split_combined_results`, the team's split of combined results uploads - 2026-10-28
 
 Some students uploaded ONE file holding several results documents (an SPM slip on page 1, an STPM

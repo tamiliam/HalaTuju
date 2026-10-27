@@ -21,13 +21,17 @@ from apps.scholarship.models import ResolutionItem
 from apps.scholarship.resolution import resolve_doc_items_for_upload, sync_resolution_items
 from apps.scholarship.services import application_completeness, revert_if_profile_incomplete
 from apps.scholarship.tests.test_third_route_s4 import (
-    DEGREE, POLY, SPM_HELD, SPM_READ, STPM_CERT_READ, STPM_HELD, UNDECIDED, _academic, _app, _doc,
-    _fresh,
+    DEGREE, HIGHER_FROZEN, POLY, SPM, SPM_HELD, SPM_READ, STPM_CERT_READ, STPM_HELD, UNDECIDED,
+    _academic, _app, _doc, _fresh,
 )
 from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION
 
 GENUINE_SPM = {'status': 'genuine', 'doc_seen': 'results_slip', 'probability': 0.95,
                'model_version': '1.9.0', 'reason': 'test'}
+#: A student still IN Form Six: declared STPM (heading for it), SPM results only (`results_held`
+#: reads 'spm'), no STPM results yet.
+FORM_SIX = dict(exam_type='stpm', results_exam_type='spm', grades=SPM,
+                completed_qualifications=['spm'])
 STPM_SLIP = {'candidate_name': 'PRIYA', 'exam': 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025',
              'cgpa': '3.71', 'cgpa_label': 'PNGK', 'results_kind_detected': 'stpm'}
 
@@ -205,8 +209,11 @@ class TestOneAskPerDocument(TestCase):
         self.assertEqual((item.status, item.resolved_by), ('resolved', 'system'))
 
     def test_the_control_still_gets_its_semester_ask(self):
-        """Same STPM holder on a post-SPM pathway: nothing owed, so the semester ask is unchanged."""
-        app = _submitted(plan=POLY)
+        """A student still IN Form Six (declared STPM, SPM results only): nothing owed, so the
+        semester ask is unchanged. (Dated: until 2026-10-28 this control was the STPM completer
+        on a post-SPM pathway — `TestSemesterAskSkipsResultsCompleters` now pins that she is NOT
+        asked: she has finished Form Six, there is no semester to report.)"""
+        app = _submitted(profile=FORM_SIX, plan=POLY)
         sync_check2_queries(app)
         self.assertTrue(self._semester(app).filter(status='open').exists())
 
@@ -232,6 +239,54 @@ class TestOneAskPerDocument(TestCase):
         sync_resolution_items(_fresh(app))
         t = ResolutionItem.objects.get(application=app, source='system', code='higher_results_unreadable')
         self.assertEqual(t.status, 'resolved')
+
+
+class TestSemesterAskSkipsResultsCompleters(TestCase):
+    """2026-10-28: the semester-result ask's legacy arm ("declared STPM = in Form Six") must not
+    fire for a student who HOLDS completed tertiary results (`results_route.held_kind` — the same
+    test `higher_owed` uses). #254/#265's shape: STPM completers bound for a degree, who would get
+    the semester ask the moment their owed-higher ask cleared."""
+
+    def _gap(self, app):
+        from apps.scholarship.income_engine import semester_result_gap
+        return semester_result_gap(_fresh(app))
+
+    def test_a_completer_bound_for_a_degree_is_not_asked(self):
+        # Frozen WITH the higher results required, so nothing is owed: the #254/#265 state once
+        # their owed-higher ask has cleared. Red on the old code (heading_for == 'stpm' → True).
+        app = _submitted()
+        app.requirements_snapshot = HIGHER_FROZEN
+        app.save(update_fields=['requirements_snapshot'])
+        self.assertFalse(higher_owed.owes_higher(_fresh(app)))
+        self.assertFalse(self._gap(app))
+        sync_check2_queries(_fresh(app))
+        self.assertFalse(ResolutionItem.objects.filter(
+            application=app, source='check2', code='semester_result_missing').exists())
+
+    def test_a_completer_on_a_post_spm_pathway_is_not_asked(self):
+        self.assertFalse(self._gap(_submitted(plan=POLY)))
+
+    def test_a_third_route_completer_who_declared_stpm_is_not_asked(self):
+        matric = dict(FORM_SIX, results_exam_type='matric', higher_cgpa=3.5, higher_koko=8,
+                      completed_qualifications=['spm', 'matric'])
+        self.assertFalse(self._gap(_submitted(profile=matric, plan=POLY)))
+
+    def test_a_current_form_six_student_is_still_asked(self):
+        self.assertTrue(self._gap(_submitted(profile=FORM_SIX, plan=DEGREE)))
+        self.assertTrue(self._gap(_submitted(profile=FORM_SIX, plan=UNDECIDED)))
+
+    def test_a_read_semester_result_still_clears(self):
+        app = _submitted(profile=FORM_SIX, plan=POLY)
+        _doc(app, 'semester_result', {'candidate_name': 'PRIYA', 'cgpa': '3.40'})
+        self.assertFalse(self._gap(app))
+
+    def test_the_multi_year_pathway_arm_is_unchanged(self):
+        """A past intake on a multi-year pathway still asks — whatever results are held."""
+        app = _submitted(plan={**POLY, 'chosen_programme': {}})
+        with patch('apps.scholarship.pathway_engine.started_before_cohort', return_value=True):
+            self.assertTrue(self._gap(app))
+        with patch('apps.scholarship.pathway_engine.started_before_cohort', return_value=False):
+            self.assertFalse(self._gap(app))
 
 
 class TestNeverRevertedByThis(TestCase):
