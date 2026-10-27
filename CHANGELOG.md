@@ -91,7 +91,7 @@ An STPM results document in the higher-results slot was always read by Gemini (`
   `has_income_support_doc`, so the gate (`income_doc_blockers`, the per-member loop, the stranger / pending
   STR checks), the cluster (`member_cluster_complete`, `salary_income_satisfied`, `income_established`),
   Check 2's per-member proof ask, TD-409's hold and the verdict band all follow.
-  `VERDICT_ENGINE_VERSION` 2026-10-27.4 (a band can move for a flagged proof).
+  `VERDICT_ENGINE_VERSION` 2026-10-27.5 (a band can move for a flagged proof; .4 was taken by STPM exact-read S3).
 - **No signal still counts.** An unscored proof, a known issuer not fingerprinted (`unchecked`), a read made
   with the genuineness flag off or deferred by our outage: our gap, not the family's — TD-394's rule is
   about a document nobody READ, and the wizard has always counted an unscored proof.
