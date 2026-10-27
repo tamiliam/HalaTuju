@@ -1736,6 +1736,7 @@
         "str_not_household": "STR yang anda muat naik adalah atas nama orang lain — kami hanya boleh menerima STR keluarga anda sendiri. Muat naik STR ibu bapa atau penjaga anda dalam langkah Dokumen, atau tunjukkan pendapatan ahli keluarga yang bekerja (slip gaji, penyata KWSP, atau jumlah dengan surat sokongan).",
         "income_evidence_missing": "Tunjukkan pendapatan setiap ahli keluarga yang bekerja dalam langkah Dokumen — slip gaji, penyata KWSP, atau jumlah yang diisytiharkan dengan surat sokongan.",
         "income_evidence_missing_member": "Tunjukkan pendapatan {member} dalam langkah Dokumen — slip gaji, KWSP, atau jumlah dengan surat sokongan.",
+        "income_declaration_unapproved_member": "Muat naik borang pendapatan {member} yang ditandatangani dan dicop oleh pengesah (cth. ketua kampung, penghulu atau guru besar).",
         "salary_slip_missing": "Muat naik slip gaji bagi setiap ahli keluarga yang bekerja dalam langkah Dokumen.",
         "parent_ic_missing_member": "Muat naik IC {member} dalam langkah Dokumen.",
         "str_needs_recipient_ic": "Sila muat naik halaman STR yang menunjukkan nombor IC penerima (halaman 'Semakan Status' MySTR) dalam langkah Dokumen.",
@@ -4504,6 +4505,7 @@
           "income_salary_unsure": "Pendapatan kasar isi rumah ~RM{amount}/bulan hampir dengan had pendapatan pemberian ini — bukan lulus yang jelas. Sahkan komposisi isi rumah (bilangan ahli, dan sama ada ada ahli lain yang bekerja) semasa temu duga untuk menentukan pendapatan kasar dan per kapita sebenar sebelum meluluskan.",
           "income_declared_accepted_str": "Pendapatan yang diisytiharkan untuk {members} diterima — STR yang sah sudah mengesahkan keperluan isi rumah, jadi gaji yang dinyatakan dikira tanpa slip gaji. Dimasukkan dalam per kapita.",
           "income_declared_accepted_evidenced": "Pendapatan yang diisytiharkan untuk {members} diterima — dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti) menyokong gaji yang dinyatakan. Dimasukkan dalam per kapita.",
+          "income_declared_probable": "Pendapatan {members} bergantung pada jumlah yang diisytiharkan (borang perisytiharan yang disahkan, atau gaji yang diisytiharkan disokong surat) — kekal Berkemungkinan, tidak sekali-kali Pasti. Sahkan semasa temu duga.",
           "income_declared_needs_evidence": "{members} mengisytiharkan gaji, tetapi tiada slip gaji, tiada STR yang sah, dan tiada dokumen sokongan — jadi ia belum boleh dikira. Bukti diperlukan daripada pelajar: mana-mana satu daripada surat majikan/gaji, penyata bank yang menunjukkan pendapatan, atau surat komuniti/penghulu. Permintaan telah dibangkitkan di Pusat Tindakan.",
           "unemployment_epf_corroborated": "KWSP mengesahkan {members} tidak bekerja sekarang (tiada majikan aktif / caruman terhenti) — menyokong gambaran pendapatan terhad isi rumah. Isyarat lembut.",
           "household_size_confirm": "Orang yang diterangkan berjumlah {described}, tetapi saiz isi rumah dimasukkan sebagai {size} — saiz yang lebih kecil membesarkan pendapatan per kapita. Sahkan saiz isi rumah sebenar semasa temu duga. Isyarat lembut.",
@@ -4632,6 +4634,8 @@
           "str_needs_recipient_ic_member": "Nama STR hampir sama dengan nama {member} tetapi tidak tepat dan tiada nombor IC — perlukan halaman yang menunjukkan nombor IC",
           "income_evidence_missing": "Pendapatan bagi setiap ahli keluarga yang bekerja (slip gaji, KWSP, atau jumlah dengan surat)",
           "income_evidence_missing_member": "Pendapatan {member} (slip gaji, KWSP, atau jumlah dengan surat)",
+          "income_declaration_unapproved": "Borang perisytiharan pendapatan tidak ditandatangani dan dicop oleh pengesah, atau tiada badan pengeluar",
+          "income_declaration_unapproved_member": "Borang perisytiharan pendapatan {member} tidak ditandatangani dan dicop oleh pengesah, atau tiada badan pengeluar",
           "salary_slip_missing": "Slip gaji bagi setiap ahli keluarga yang bekerja",
           "salary_slip_missing_member": "Slip gaji {member}",
           "birth_certificate_missing": "Sijil kelahiran mereka — untuk mengesahkan ibu mereka ialah ibu kandung",
@@ -4774,7 +4778,10 @@
             "no_value": "tiada angka caruman yang dapat dibaca",
             "letter_unread": "surat itu tidak dapat dibaca",
             "no_declared_amount": "tiada jumlah diisytiharkan untuk disokong",
-            "suspect": "semakan ketulenannya menandakannya"
+            "suspect": "semakan ketulenannya menandakannya",
+            "declaration_no_header": "perisytiharan pendapatan tanpa badan pengeluar (kepala surat)",
+            "declaration_no_approver": "perisytiharan pendapatan yang tidak ditandatangani dan dicop oleh pengesah",
+            "declaration_no_header_approver": "perisytiharan pendapatan tanpa badan pengeluar dan tanpa tandatangan atau cop pengesah"
           }
         },
         "view": "Lihat",

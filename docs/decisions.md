@@ -15170,3 +15170,23 @@ lower suspect floor (cannot see a checker page that prints the slip); scoring tr
 (marks a genuine MPM document "may not be genuine"); a new reviewer label for 1A (owner: none; `doc_seen` and the
 reason name it); the print-footer rule (marks a scanned or photographed printout, which ruling A accepts).
 The interview flag ("STPM results") fires only when the higher results anchor the Academic card, like the ladder.
+
+## 2026-10-27 — Income declarations: header + approver, never Certain (owner ruling, #374)
+
+**Ruling (owner, 2026-10-27):** *"An informal income document counts ONLY if it carries a HEADER (issuing
+body) AND an APPROVER (signed/stamped by someone — ketua kampung, penghulu, headmaster, employer…). A
+self-declaration form with no approver does NOT count. Even when it counts, a declared amount is never
+Certain."*
+**Decision:** an income DECLARATION (recognised by its title or the declarant's oath, in the salary-slip or
+the support-document slot — `genuineness.declaration_doc`) counts as income shown only when the read found
+an issuing body (`issuer_header`) and an approver: a named or titled person (`approver_name` /
+`approver_title`) whose signature or stamp is visible (`has_stamp_or_signature`). One reader
+(`income_declaration.declaration_missing`) for every door. A declared amount — an approved form, or a declared
+wage backed by a letter — holds the income fact at Probable (`income_declared_probable`). The salary scorer's
+`govt` family now needs a real government-payslip marker (JANM / Jabatan Akauntan Negara, Penyata Gaji /
+e-Penyata, a GRED code): the sector field every income form carries no longer reads as a civil-service slip.
+**Scope (as built):** the header+approver rule applies to RECOGNISED declarations. An informal payslip (TD-410
+option A) and a support letter that is no declaration (an employer's or ketua kampung's letter without
+declaration wording) are judged as before — if the owner means every informal document, that is a wider change.
+**Existing documents** keep the score they were read with until re-read (live, with the flags — TD-407).
+**Versions:** genuineness `MODEL_VERSION` 1.12.0 (salary_doc 1.2.0); `VERDICT_ENGINE_VERSION` 2026-10-27.6.

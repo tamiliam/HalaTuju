@@ -799,6 +799,26 @@ def _since_td403(key, row):
     return row[:i] + (('income_evidence_missing:father',),) + row[i + 1:]
 
 
+#: #374 (owner ruling 2026-10-27), a fourth layer: "a declared amount is never Certain". A household the
+#: verdict greened on an ACCEPTED declared wage (`income_declared_accepted_str` / `_evidenced`) now reads
+#: Probable, with `income_declared_probable` as its one open item. Nothing but the verdict band moves.
+_DECLARED_ACCEPTED = {'income_declared_accepted_str', 'income_declared_accepted_evidenced'}
+
+
+def _since_374(key, row):
+    i = FIELDS.index('verdict')
+    band, unresolved, evidence = row[i]
+    if band != 'verified' or not _DECLARED_ACCEPTED & set(evidence):
+        return row
+    moved = ('review', tuple(sorted(tuple(unresolved) + ('income_declared_probable',))), evidence)
+    return row[:i] + (moved,) + row[i + 1:]
+
+
+def _today(key):
+    """Every layer, in the order the rulings landed."""
+    return _since_374(key, _since_td403(key, _since_str_ruling(key, expected(key))))
+
+
 # ════════════════════════════════════════════════════════════════════════════════════════════
 # 1. THE MATRIX, ROW BY ROW — every row BEFORE, except exactly what MOVED says
 # ════════════════════════════════════════════════════════════════════════════════════════════
@@ -815,7 +835,7 @@ def _make_matrix_test(route, state):
                 with self.subTest(row=key):
                     self.assertEqual(
                         self.readings(self.build(route, state, declared, evidence)),
-                        _since_td403(key, _since_str_ruling(key, expected(key))),
+                        _today(key),
                         f'{key} moved. Only a stranger\'s STR with a household IC on file may '
                         f'move under TD-285, and only as MOVED says. Fields: {FIELDS}')
     test.__name__ = f'test_{route}_{state}'
@@ -911,6 +931,20 @@ class TestTheMovedSetIsExactlyTheRuling(TestCase):
                 before, after = _since_str_ruling(key, BEFORE[key]), _since_td403(key, _since_str_ruling(key, BEFORE[key]))
                 self.assertEqual(after[:i] + after[i + 1:], before[:i] + before[i + 1:])
                 self.assertEqual(after[i], ('income_evidence_missing:father',))
+
+    def test_the_374_layer_moves_only_the_band_of_rows_greened_on_a_declared_amount(self):
+        """#374: verified → review, one added item, evidence and every other reading untouched."""
+        i = FIELDS.index('verdict')
+        prior = {k: _since_td403(k, _since_str_ruling(k, expected(k))) for k in all_keys()}
+        moved = [k for k in all_keys() if _today(k) != prior[k]]
+        self.assertTrue(moved)
+        for key in moved:
+            with self.subTest(row=key):
+                before, after = prior[key], _today(key)
+                self.assertEqual(after[:i] + after[i + 1:], before[:i] + before[i + 1:])
+                self.assertEqual((before[i][0], after[i][0], after[i][2]), ('verified', 'review', before[i][2]))
+                self.assertEqual(set(after[i][1]) - set(before[i][1]), {'income_declared_probable'})
+                self.assertTrue(_DECLARED_ACCEPTED & set(before[i][2]))
 
     def test_a_true_strangers_gate_rows_are_unchanged(self):
         """A true stranger is still blocked EXACTLY as before — `str_not_household`."""

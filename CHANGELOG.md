@@ -127,6 +127,40 @@ Every higher-results upload said "genuineness not checked". Now an STPM one is c
   non-STPM controls scored.
 - Tests: `tests/test_stpm_exact_read_s3.py` (synthetic), officerCockpit jest; Guide + FAQ lines.
 
+## Income declarations — a declaration form counts only with an issuing body and an approver, never Certain (#374, owner ruling) - 2026-10-27
+
+#374: a self-filled "Borang Pengesahan Pendapatan" (a parent's own income statement) uploaded as a salary slip
+was scored `genuine` / `govt` 0.79 and the income fact went CERTAIN. On the #374 shape the old model's civil-
+service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — plus three wage labels.
+- **The salary scorer (salary_doc 1.2.0).** `govt` now needs a real government-payslip marker: Jabatan
+  Akauntan Negara / JANM (a whole word), the title Penyata Gaji / e-Penyata, or a GRED CODE ("GRED N19").
+  'PERKHIDMATAN AWAM' / 'KUMPULAN PERKHIDMATAN' are gone (every income form's sector field carries them).
+- **Declarations are recognised** (`genuineness/declaration_doc.py`) by their title (Borang/Surat Pengesahan
+  Pendapatan, Akuan / Pengisytiharan Pendapatan, Akuan Berkanun, statutory / income declaration…) or the
+  declarant's own oath ("saya mengaku", "I hereby declare"), in the salary-slip OR the support-document slot
+  (the support slot is now scored for this alone) → `suspect`, `doc_seen='declaration'`, never a payslip family.
+- **The extraction reads the approval** — `issuer_header`, `approver_name`, `approver_title`,
+  `has_stamp_or_signature` — for both slots (`income_declaration.APPROVAL_FIELDS` + a prompt hint).
+  `results_doc.MODEL_VERSION` 1.12.0.
+- **The rule (`income_declaration.declaration_missing`).** A declaration counts as income shown ONLY with an
+  issuing body AND an approver (a named or titled person whose signature or stamp is visible) — read by
+  `income_shown.proof_flagged`, so the gate, the cluster, Check 2's per-member ask, TD-409's hold and the
+  verdict follow. A real payslip or EPF outranks an approved form. Without them the student is asked
+  "Please upload {member}'s income form signed and stamped by an approver (e.g. ketua kampung, penghulu or
+  headmaster)" (`income_declaration_unapproved:<member>`), the coach says the same
+  (`declaration_needs_approver`; with the AI off it falls to the generic note — no fallback string, for the
+  bundle budget), and the officer's drawer names what is missing (no issuing body / no approver / neither).
+- **Never Certain.** A household whose income rests on a declared amount — an approved form, or a declared
+  wage backed by a letter — reads Probable (`income_declared_probable`), not Certain.
+  `VERDICT_ENGINE_VERSION` 2026-10-27.6 (a band moves: every Certain household carried by a declared amount).
+- **Existing documents keep their old score until re-read** (see the live re-read list in the report).
+- **TD-410 review note folded in:** a suspect payslip is flagged only when its `doc_seen` names a FORMAL
+  family, listed explicitly (`private` / `govt` / `singapore` / `gig`); an unknown family keeps the benefit
+  of the doubt, like `informal`.
+- **Tests:** `test_income_declarations.py` (synthetic text only) + two verdict cases; the characterisation
+  matrix (`test_income_whose_str_vouches`) gains a #374 layer on top of its untouched record; every change
+  bitten.
+
 ## STPM exact-read S2 — STPM results are read Exact, Gemini only when the reader is unsure - 2026-10-27
 
 An STPM results document in the higher-results slot was always read by Gemini (`capture='ai'`).

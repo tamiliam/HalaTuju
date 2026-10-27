@@ -166,6 +166,15 @@ describe('shouldShowCoach', () => {
     expect(shouldShowCoach(proof(false))).toBe(true)   // no IC yet → "add the IC" nudge
     expect(shouldShowCoach(proof(true))).toBe(false)   // IC present → the IC anchors the coach
   })
+
+  it('#374: a declaration form still lacking its approver coaches even with the IC present', () => {
+    const form = (declaration_missing: ('header' | 'approver')[]) =>
+      doc({ doc_type: 'salary_slip',
+        income_proof_check: { name: 'X', nric: '', points: [], member: 'father', name_status: 'match',
+          nric_status: 'no_ref', ic_present: true, declaration_missing } } as Partial<ApplicantDocument>)
+    expect(shouldShowCoach(form(['approver']))).toBe(true)
+    expect(shouldShowCoach(form([]))).toBe(false)       // an approved form is quiet
+  })
 })
 
 describe('fallbackKeyFor', () => {

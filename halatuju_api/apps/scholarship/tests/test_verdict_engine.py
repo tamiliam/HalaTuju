@@ -1302,7 +1302,8 @@ class TestIncomeDeclared(TestCase):
     def test_valid_str_accepts_declared_into_per_capita(self):
         self._str()                              # 1500 / 4 = 375 < 1584
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'verified')
+        self.assertEqual(f['status'], 'review')  # #374: a declared amount is never Certain (was verified)
+        self.assertIn('income_declared_probable', _codes(f['unresolved']))
         self.assertIn('income_declared_accepted_str', _codes(f['evidence']))
         self.assertIn('income_per_capita_ok', _codes(f['evidence']))
 
@@ -1311,7 +1312,7 @@ class TestIncomeDeclared(TestCase):
         _add_doc(self.app, 'income_support_doc', member='father',
                  student_verdict='ok', fields={'name': 'ABU', 'amount': 'RM1,200'})
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'verified')
+        self.assertEqual(f['status'], 'review')  # #374: a declared amount is never Certain (was verified)
         self.assertIn('income_declared_accepted_evidenced', _codes(f['evidence']))
 
     def test_blank_support_doc_does_not_accept_declared(self):
@@ -1570,6 +1571,28 @@ class TestStrRouteNoStrFallsThroughToSalary(TestCase):
         f = _facts(app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertNotIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_an_approved_declaration_form_is_probable_never_certain(self):
+        # #374 (owner ruling 2026-10-27): an income declaration with an issuing body and an approver
+        # counts — but a declared amount is never Certain, so the same #106 household reads Probable.
+        app = self._app()
+        slip = self._documented_father(app)
+        slip.vision_fields = dict(slip.vision_fields, authenticity={'status': 'suspect', 'doc_seen': 'declaration'},
+                                  fields=dict(slip.vision_fields['fields'], issuer_header='SK CONTOH',
+                                              approver_title='Guru Besar', has_stamp_or_signature='yes'))
+        slip.save(update_fields=['vision_fields'])
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('income_declared_probable', _codes(f['unresolved']))
+
+    def test_an_unapproved_declaration_form_carries_nothing(self):
+        app = self._app()
+        slip = self._documented_father(app)
+        slip.vision_fields = dict(slip.vision_fields, authenticity={'status': 'suspect', 'doc_seen': 'declaration'})
+        slip.save(update_fields=['vision_fields'])
+        f = _facts(app)['income']
+        self.assertNotEqual(f['status'], 'verified')
+        self.assertIn('income_proof_missing', _codes(f['unresolved']))
 
     def test_a_payslip_flagged_as_possibly_fake_no_longer_carries_the_fall_through(self):
         # TD-410: a suspect slip naming a FORMAL family (no current writer — a legacy holistic score)

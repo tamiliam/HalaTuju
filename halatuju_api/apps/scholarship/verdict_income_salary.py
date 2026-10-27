@@ -64,6 +64,7 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
         'any_financial': False,   # ≥1 member supplied a payslip/EPF (or an ACCEPTED declared income)
         'all_confirmed': True,    # every member's relationship is a positive 'match'
         'declared_backed': [], 'declared_unproven': [],   # Phase 2A: carried by a declared amount
+        'declared_form': [],      # #374: carried by an approved DECLARATION form in the payslip slot
         'ic_missing': [], 'ic_unreadable': [], 'patronymic_mismatch': [], 'ic_deferred': [],
         'bc_missing': False, 'bc_mismatch': False, 'letter_missing': False,
     }
@@ -115,8 +116,11 @@ def _salary_member_scan(application, members, student_name, present, rel_docs):
         # gate's own answer. The DECLARED arm below is UNCHANGED and still owns the third way
         # ('declared_evidenced' IS a declared amount + a letter that read) plus the one household
         # fact a per-earner answer cannot see — a declared amount accepted on a valid STR.
-        if income_shown(application, m).way in ('salary_slip', 'epf'):
+        shown = income_shown(application, m)
+        if shown.way in ('salary_slip', 'epf'):
             found['any_financial'] = True
+            if shown.declared:
+                found['declared_form'].append(m)
         else:
             # Phase 2A: no payslip/EPF for this member — a DECLARED informal amount may still
             # carry their income (accepted via a valid STR or a supporting doc), else it's unproven.
@@ -224,6 +228,11 @@ def _salary_place_verdict(application, members, evidence, found, gap, review):
             # 'unsure' demotion deliberately does NOT apply (that grading compensates for
             # an UNverified household; the salary-track redesign will revisit).
             evidence.append(_item('income_per_capita_ok', amount=pc, ceiling=ceiling))
+            # Owner ruling 2026-10-27 (#374): a DECLARED amount is never Certain — an approved
+            # declaration form, or a declared figure backed by a letter, holds income at Probable.
+            declared = found['declared_form'] + [m for m in found['declared_backed'] if m not in found['declared_form']]
+            if declared:
+                return _fact('income', 'review', evidence, [_item('income_declared_probable', members=declared)])
             return _fact('income', 'verified', evidence, [])
     # A human places it: income not shown (an unusable document, or informal with no payslip/EPF),
     # a relationship we couldn't machine-confirm, or a household income that couldn't be computed.

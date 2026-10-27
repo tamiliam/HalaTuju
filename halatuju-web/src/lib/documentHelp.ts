@@ -48,6 +48,8 @@ export const HELP_VERDICTS = [
   'income_rel_doc_unreadable',
   // STR document is out of date (older year / not approved) — STR is awarded annually.
   'str_not_current',
+  // #374's `declaration_needs_approver` has NO fallback copy (bundle budget): with the AI off it falls
+  // to the generic note, and the consent checklist carries the sign-and-stamp ask word for word.
 ] as const
 
 /**
@@ -100,8 +102,9 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
   // Income proof (salary slip / EPF) — the cluster coach lives on the member's IC, so a
   // proof only coaches when there is NO IC yet (nudge to add it). When the IC is present
   // it anchors the coach and the proof stays quiet (no second Gopal for the same person).
+  // #374: a declaration form with no approver / issuing body coaches here too (sign-and-stamp ask).
   if (doc.income_proof_check) {
-    return !doc.income_proof_check.ic_present
+    return !doc.income_proof_check.ic_present || !!doc.income_proof_check.declaration_missing?.length
   }
   // STR — a currency problem is intrinsic to the STR so it coaches HERE; recipient coherence is
   // voiced by the earner-IC cluster coach. Also nudge if no earner IC yet. V2 (#16): mirror the

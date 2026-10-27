@@ -179,6 +179,8 @@ export interface IncomeProofCheck {
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
   ic_present: boolean
+  // #374: what an income DECLARATION form in this slot still lacks to count; absent on older payloads.
+  declaration_missing?: ('header' | 'approver')[]
 }
 
 export interface UtilityCheck {

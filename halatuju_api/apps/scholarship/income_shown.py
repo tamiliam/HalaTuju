@@ -57,13 +57,15 @@ REASON_LETTER_UNREAD = 'letter_unread'           # support letter: student_verdi
 REASON_NO_DECLARED_AMOUNT = 'no_declared_amount'  # letter read, but nothing was declared to back
 REASON_SUSPECT = 'suspect'                       # TD-410: flagged as possibly fake (`proof_flagged`)
 REASONS = (REASON_NOT_SALARY, REASON_NO_VALUE, REASON_LETTER_UNREAD, REASON_NO_DECLARED_AMOUNT,
-           REASON_SUSPECT)
+           REASON_SUSPECT,   # + a declaration's own (#374, `income_declaration._REASON`): what it lacks
+           'declaration_no_header', 'declaration_no_approver', 'declaration_no_header_approver')
 
 
-#: The salary-slip FAMILY whose `suspect` is "not a standard payslip", not "may be fake": the signature
-#: model (`genuineness.salary_doc`, 1.0.0+) returns `suspect` ONLY as `family='informal'` (wage labels, no
-#: statutory scaffold) — private / govt / singapore / gig are always `genuine`, a non-payslip `not_salary`.
-_INFORMAL_SLIP = 'informal'
+#: The salary model's FORMAL families (`genuineness.salary_doc`). Its `suspect` is ONLY `family='informal'`
+#: ("not a standard payslip" — wage labels, no statutory scaffold); private / govt / singapore / gig are
+#: always `genuine`. So a `suspect` naming one of THESE is a possibly-fake call (a legacy or future score),
+#: listed explicitly so an unknown family is never read as one (TD-410 review).
+_FORMAL_SLIP_FAMILIES = frozenset({'private', 'govt', 'singapore', 'gig'})
 
 
 def proof_flagged(doc, doc_type) -> bool:
@@ -72,10 +74,10 @@ def proof_flagged(doc, doc_type) -> bool:
     every door of this module (the gate, the cluster, the verdict band, the chase list, Check 2, TD-409's
     hold):
       * a ``not_<type>`` wrong-type score, on any arm (a payslip's ``not_salary`` already failed before);
-      * a ``suspect`` payslip that names a family OTHER than ``informal`` in ``doc_seen``. The current
-        model never emits one — every suspect slip is informal, a real B40 family's employer letter, and
-        STILL COUNTS (the reviewer checks it as today) — so this catches a legacy holistic score
-        ("not an official document") or a future formal-family band;
+      * a ``suspect`` payslip whose ``doc_seen`` names a FORMAL family (`_FORMAL_SLIP_FAMILIES`). The
+        current model never emits one — every suspect slip is informal, a real B40 family's employer
+        letter, and STILL COUNTS (the reviewer checks it as today), as does one naming no or an unknown
+        family — so this catches a legacy score or a future formal-family band;
       * a ``suspect`` support letter (none is genuineness-scored today).
     ⚠ EPF IS EXCLUDED until TD-411: eight live statements the scorer itself names `epf` read ``not_epf``
     at p=0.00 — no signature matched at all, the shape of a text it could not read, not of a wrong document.
@@ -83,7 +85,13 @@ def proof_flagged(doc, doc_type) -> bool:
     ⚠ NO SIGNAL STILL COUNTS — an unscored document, ``unchecked``, the flag off, a read our outage
     deferred. Those are OUR gaps: TD-394's rule ("a money gate never passes on a document nobody has READ")
     is about the read, which this does not change, and the student's own wizard has always counted an
-    unscored proof ("we never gate on our own missing scan"). The verdict still holds it at Probable."""
+    unscored proof ("we never gate on our own missing scan"). The verdict still holds it at Probable.
+
+    ⚠ A DECLARATION is judged on its own terms first (owner, after #374): it counts only with an issuing
+    body AND an approver (`income_declaration.declaration_missing`), whatever its genuineness band says."""
+    from .income_declaration import declaration_missing, is_declaration
+    if is_declaration(doc):
+        return bool(declaration_missing(doc))
     if doc_type == 'epf':
         return False                                   # TD-411: the EPF scorer's not_epf is not trusted yet
     from .genuineness.bands import canonical_status, stored_authenticity, stored_status
@@ -92,9 +100,9 @@ def proof_flagged(doc, doc_type) -> bool:
     if status in ('', 'genuine'):
         return False
     seen = (stored_authenticity(vf).get('doc_seen') or '').strip().lower()
-    # A suspect slip naming no family is read as the informal one: no writer stores it, and the
-    # benefit of the doubt is the family's (as for no signal).
-    return not (status == 'suspect' and doc_type == 'salary_slip' and seen in ('', _INFORMAL_SLIP))
+    # TD-410 review: a suspect payslip flags only when it names a FORMAL family, listed explicitly — an
+    # informal slip, one naming no family, or any family we do not know keeps the benefit of the doubt.
+    return not (status == 'suspect' and doc_type == 'salary_slip' and seen not in _FORMAL_SLIP_FAMILIES)
 
 
 @dataclass(frozen=True)
@@ -112,11 +120,14 @@ class Unusable:
 class IncomeShown:
     """One earner's answer. ``documents`` are the ids that CARRY the winning way (empty when
     nothing does); ``unusable`` names every income document on file for this earner that cannot
-    carry it, whether or not another document did."""
+    carry it, whether or not another document did. ``declared`` (not served): the income rests on a
+    DECLARED amount — an approved declaration form, or a declared figure backed by a letter — which the
+    owner rules is never Certain (the verdict caps it at Probable)."""
     shown: bool
     way: str | None
     documents: tuple
     unusable: tuple
+    declared: bool = False
 
     def as_dict(self):
         return {'shown': self.shown, 'way': self.way,
@@ -155,6 +166,12 @@ def _unusable(docs, doc_type, reason):
             for d in docs if getattr(d, 'id', None) is not None]
 
 
+def _flagged(docs, doc_type):
+    """A flagged proof's reason: the declaration's own (what it lacks) or `suspect`."""
+    from .income_declaration import missing_reason
+    return [u for d in docs for u in _unusable([d], doc_type, missing_reason(d) or REASON_SUSPECT)]
+
+
 def income_shown(application, member) -> IncomeShown:
     """Has *member*'s income been SHOWN, and by what? See the module docstring — no STR arm."""
     from . import income_engine as ie
@@ -164,8 +181,10 @@ def income_shown(application, member) -> IncomeShown:
     wrong_type = [d for d in slips if not ie._salary_slip_not_wrongtype(d)]
     usable_slips = [d for d in slips if not proof_flagged(d, 'salary_slip')]       # TD-410
     unusable += _unusable(wrong_type, 'salary_slip', REASON_NOT_SALARY)
-    unusable += _unusable([d for d in slips if d not in usable_slips and d not in wrong_type],
-                          'salary_slip', REASON_SUSPECT)
+    unusable += _flagged([d for d in slips if d not in usable_slips and d not in wrong_type], 'salary_slip')
+    from .income_declaration import is_declaration
+    forms = [d for d in usable_slips if is_declaration(d)]                         # an approved declaration
+    payslips = [d for d in usable_slips if d not in forms]
 
     epfs = list(ie._cluster_docs(application, member, 'epf'))
     valued = [e for e in epfs if ie._epf_monthly_salary(ie._doc_fields(e)) is not None]
@@ -179,18 +198,21 @@ def income_shown(application, member) -> IncomeShown:
     declared = ie.declared_amount(application, member)
     unusable += _unusable([d for d in letters if d not in read],
                           'income_support_doc', REASON_LETTER_UNREAD)
-    unusable += _unusable([d for d in read if d not in read_letters], 'income_support_doc', REASON_SUSPECT)
+    unusable += _flagged([d for d in read if d not in read_letters], 'income_support_doc')
     if declared is None:
         unusable += _unusable(read_letters, 'income_support_doc', REASON_NO_DECLARED_AMOUNT)
 
     # Precedence matches ``member_income_evidenced``'s own arm order, so the two can never name
-    # different winners for one household.
-    if usable_slips:
-        return IncomeShown(True, WAY_SALARY_SLIP, _ids(usable_slips), tuple(unusable))
+    # different winners for one household — save that an approved DECLARATION in the payslip slot
+    # yields to a real payslip or a readable EPF, so a declared amount never outranks a document.
+    if payslips:
+        return IncomeShown(True, WAY_SALARY_SLIP, _ids(payslips), tuple(unusable))
     if readable_epfs:
         return IncomeShown(True, WAY_EPF, _ids(readable_epfs), tuple(unusable))
+    if forms:
+        return IncomeShown(True, WAY_SALARY_SLIP, _ids(forms), tuple(unusable), declared=True)
     if declared is not None and read_letters:
-        return IncomeShown(True, WAY_DECLARED_LETTER, _ids(read_letters), tuple(unusable))
+        return IncomeShown(True, WAY_DECLARED_LETTER, _ids(read_letters), tuple(unusable), declared=True)
     return IncomeShown(False, None, (), tuple(unusable))
 
 

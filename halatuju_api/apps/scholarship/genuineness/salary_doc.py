@@ -21,13 +21,20 @@ authority; nothing here hard-blocks on its own. Pure + deterministic given the O
 BUMP MODEL_VERSION on ANY change to the marker groups, weights, or the decision cascade (same
 discipline as results_doc.MODEL_VERSION) — it is persisted on the document and gates re-scoring.
 """
+import re
+
+from .declaration_doc import declaration_genuineness, is_declaration_text
 from .results_doc import _any_token, _norm_fold_upper_alnum
 
 # Version of the salary signature model. History:
 #   1.0.0 (2026-07-09) — initial statutory-grammar cascade; six families.
 #   1.1.0 (2026-07-14) — record `kwsp` separately in markers: the slip's own KWSP line drives
 #                        whether an EPF statement is worth asking for (owner). Bands unchanged.
-MODEL_VERSION = '1.1.0'
+#   1.2.0 (2026-10-27) — #374 / income declarations (owner ruling): an income DECLARATION form is
+#                        recognised first (`declaration_doc`, family 'declaration', `suspect`), and 'govt'
+#                        needs a real government-payslip marker — 'PERKHIDMATAN AWAM' / 'KUMPULAN
+#                        PERKHIDMATAN' (a form's sector field) no longer make a civil-service slip.
+MODEL_VERSION = '1.2.0'
 
 # ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────
 # Statutory scaffold — the private-payslip discriminator. Each GROUP counts once.
@@ -53,7 +60,12 @@ _WAGE_LABELS = [
 # turned out to be an unreliable OCR marker, only 1/99). Civil servants are on pension (KWAP), NOT
 # EPF, so a govt slip legitimately has 0 statutory scaffold — it must be caught here (after the
 # private branch) or it wrongly falls to 'informal'.
-_GOVT_FORMAT = ['PENYATA GAJI', 'PERKHIDMATAN AWAM', 'AKAUNTAN NEGARA', 'JANM', 'KUMPULAN PERKHIDMATAN']
+#: 1.2.0 (#374): ONLY markers a government payslip prints and a form does not — the issuer (Jabatan
+#: Akauntan Negara / JANM, matched as a whole word), the slip title (Penyata Gaji / e-Penyata) or a GRED
+#: CODE (`_GRED_CODE`: "GRED N19", "Gred DG41"). 'PERKHIDMATAN AWAM' / 'KUMPULAN PERKHIDMATAN' were
+#: dropped: they are the SECTOR field of every income form ("Kerajaan / Swasta / Tentera / Polis").
+_GOVT_FORMAT = ['PENYATA GAJI', 'E PENYATA', 'AKAUNTAN NEGARA']
+_GOVT_WORD = re.compile(r'\b(JANM|GRED [A-Z]{1,3} ?\d{1,2})\b')
 _SINGAPORE = ['CPF', 'PTE LTD', 'PRIVATE LIMITED']
 _GIG = ['GRAB', 'FOODPANDA', 'LALAMOVE', 'MAXIM', 'SHOPEEFOOD', 'PANDA']
 # MyKad-distinctive markers that do NOT appear on a genuine payslip (NB: 'KAD PENGENALAN' is a
@@ -80,7 +92,7 @@ def score_family(ocr_text: str) -> dict:
         'statutory': sum(1 for g in _STATUTORY.values() if _any_token(g, tn)),
         'kwsp': _any_token(_STATUTORY['KWSP/EPF'], tn),
         'wage': sum(1 for g in _WAGE_LABELS if _any_token(g, tn)),
-        'govt': _any_token(_GOVT_FORMAT, tn),
+        'govt': _any_token(_GOVT_FORMAT, tn) or bool(_GOVT_WORD.search(tn)),
         'singapore': _any_token(_SINGAPORE, tn),
         'gig': _any_token(_GIG, tn),
         'mykad': _any_token(_MYKAD, tn),
@@ -92,6 +104,8 @@ def salary_genuineness(ocr_text: str) -> dict:
     model_version}``. ``status`` ∈ {'genuine', 'suspect', 'not_salary'} (the canonical cap
     vocabulary); ``family`` names the recognised kind for the verdict/officer layer
     (private/govt/singapore/gig/informal/not_salary). Pure + deterministic; never raises."""
+    if is_declaration_text(ocr_text):     # 1.2.0 (#374): a declaration form is never a payslip family
+        return declaration_genuineness(MODEL_VERSION)
     m = score_family(ocr_text)
     stat, wage = m['statutory'], m['wage']
 

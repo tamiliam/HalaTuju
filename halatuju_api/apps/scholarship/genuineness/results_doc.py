@@ -84,9 +84,8 @@ from .stpm_doc import STPM_LISTS
 #       college that misses the UA list. Pairs with the reporting-bonus gate-3b block
 #       (pathway_engine) so the +1 date bonus can't lift it back to amber. Backfill: re-run offers
 #       (reextract_offers) — a private-arm offer that stored 'genuine' pre-1.6.0 re-scores to fake.
-#   1.7.0 (2026-10-04) — TD-145: Saluran Terbuka (SATU) joins the private-arm veto — red at once, no
-#       question (owner option 1). #31's UM "[SALURAN TERBUKA UNIVERSITI MALAYA (SATU)]" read
-#       'suspect'. Backfill: re-run #31's offer from the LIVE cockpit, never locally.
+#   1.7.0 (2026-10-04) — TD-145: Saluran Terbuka (SATU) joins the private-arm veto (owner option 1; #31's
+#       UM "(SATU)" read 'suspect'). Backfill: re-run #31's offer from the LIVE cockpit, never locally.
 #   1.8.0 (2026-10-26) — corpus-gaps C1 (owner rulings A-C): a SUSPECT-band offer with offer wording from
 #       a KNOWN public TVET issuer named on its letterhead (Belia & Sukan / MARA / JTM — `offer_issuers`)
 #       reads NOT CHECKED (`bands.NOT_CHECKED`, no signal) instead of the nearest family's band; a
@@ -98,7 +97,8 @@ from .stpm_doc import STPM_LISTS
 #       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
 #   1.10.0 / 1.11.0 (2026-10-27) — STPM exact-read S2: read Exact (`stpm_parse`) / S3: scored + 1A. Backfill: S4.
 #   1.12.0 (2026-10-28) — stpm_parse 1.1.0: column-ordered certificate text layer, same gates. No weight change.
-MODEL_VERSION = '1.12.0'
+#   1.13.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields). Backfill: live list.
+MODEL_VERSION = '1.13.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

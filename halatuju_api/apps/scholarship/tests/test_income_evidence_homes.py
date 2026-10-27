@@ -1244,7 +1244,7 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         rest on the STR? (For a TRUE stranger the predicate refuses the figure first; see
         `test_income_whose_str_vouches.py`.)"""
         salary = self._salary_reading_of(self._mismatch_arm())
-        self.assertEqual(salary['status'], 'verified')
+        self.assertEqual(salary['status'], 'review')   # #374: a declared amount is never Certain (was verified)
         self.assertIn('income_proof_present', [i['code'] for i in salary['evidence']])
 
     def test_the_gate_still_bites_where_absence_keeps_the_str_vouching(self):
@@ -1259,7 +1259,7 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         _str_doc(app, status='Lulus', year='2026', recipient_name='', recipient_nric='')
         self.assertIs(income_engine.has_valid_str(app), True)
         salary = self._salary_reading_of(app)
-        self.assertEqual(salary['status'], 'verified')
+        self.assertEqual(salary['status'], 'review')   # #374: a declared amount is never Certain (was verified)
         self.assertIn('income_proof_present', [i['code'] for i in salary['evidence']])
         self.assertEqual(self.verdict(app)[0], 'gap')
 
@@ -1292,14 +1292,16 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         self._letter(app)
         from apps.scholarship.income_shown import income_shown
         self.assertEqual(income_shown(app, 'father').way, 'declared_letter')
-        self.assertEqual(self.verdict(app), ('verified', ['str_recipient_mismatch']))
+        # Still RAISED above §8's amber — but to Probable, not Certain (#374: a declared amount is
+        # never Certain; this read ('verified', ['str_recipient_mismatch']) until then).
+        self.assertEqual(self.verdict(app), ('review', ['income_declared_probable', 'str_recipient_mismatch']))
 
     def test_a_declared_amount_backed_by_a_letter_still_raises_the_gap_arm(self):
         app = self._gap_arm()
         self._letter(app)
-        self.assertEqual(self.verdict(app),
-                         ('verified', ['birth_cert_missing', 'earner_ic_missing',
-                                       'str_recipient_mismatch']))
+        self.assertEqual(self.verdict(app),                  # #374: Probable, never Certain (was verified)
+                         ('review', ['birth_cert_missing', 'earner_ic_missing',
+                                     'income_declared_probable', 'str_recipient_mismatch']))
 
     def test_a_payslip_still_raises_both_arms_with_a_declared_amount_beside_it(self):
         """A real payslip is untouched by any of this — the gate's first way. Pinned WITH the

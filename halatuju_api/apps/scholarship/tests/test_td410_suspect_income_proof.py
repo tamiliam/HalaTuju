@@ -63,7 +63,7 @@ class ThePerEarnerAnswer(_Case):
     def test_an_informal_payslip_still_counts(self):
         """Owner option A: every live suspect slip is the informal family — an employer's letter-slip."""
         from apps.scholarship.income_shown import income_shown
-        for seen in ('informal', 'INFORMAL', None):
+        for seen in ('informal', 'INFORMAL', None, 'payslip'):    # TD-410 review: an unknown family too
             with self.subTest(seen):
                 app = self._app()
                 self._slip(app, 'suspect', seen)

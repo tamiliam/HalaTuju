@@ -1736,6 +1736,7 @@
         "str_not_household": "The STR you uploaded is in someone else's name — we can only accept your own family's STR. Upload your parent's or guardian's STR in the Documents step, or show a working family member's income instead (a payslip, EPF statement, or an amount with a supporting letter).",
         "income_evidence_missing": "Show each working family member's income in the Documents step — a payslip, EPF statement, or a declared amount with a supporting letter.",
         "income_evidence_missing_member": "Show {member}'s income in the Documents step — a payslip, EPF, or an amount with a supporting letter.",
+        "income_declaration_unapproved_member": "Upload {member}'s income form signed and stamped by an approver (e.g. ketua kampung, penghulu or headmaster).",
         "salary_slip_missing": "Upload a salary slip for each working family member in the Documents step.",
         "parent_ic_missing_member": "Upload {member}'s IC in the Documents step.",
         "str_needs_recipient_ic": "Please upload an STR page that shows the recipient's IC number (the MySTR 'Semakan Status' page) in the Documents step.",
@@ -4504,6 +4505,7 @@
           "income_salary_unsure": "Gross household income ~RM{amount}/month sits near this gift's income limit — not a clear pass. Confirm the household composition (size, and whether another member is working) at interview to establish the true gross and per-capita before approving.",
           "income_declared_accepted_str": "Declared income for {members} is accepted — a valid STR already establishes the household's need, so the stated wage counts without a payslip. Included in the per-capita.",
           "income_declared_accepted_evidenced": "Declared income for {members} is accepted — a supporting document (employer/wage letter, bank statements, or a community letter) backs the stated wage. Included in the per-capita.",
+          "income_declared_probable": "Income for {members} rests on a declared amount (an approved declaration form, or a declared wage backed by a letter) — held at Probable, never Certain. Confirm it at interview.",
           "income_declared_needs_evidence": "{members} declared a wage, but there's no payslip, no valid STR, and no supporting document — so it can't count yet. Proof is required from the student: any one of an employer/wage letter, bank statements showing income, or a community/penghulu letter. The request has been raised in the Action Centre.",
           "unemployment_epf_corroborated": "EPF corroborates that {members} isn't currently employed (no active employer / lapsed contributions) — supports the household's limited-income picture. Soft signal.",
           "household_size_confirm": "The people described add up to {described}, but household size is entered as {size} — a smaller size overstates per-capita income. Confirm the true household size at interview. Soft signal.",
@@ -4632,6 +4634,8 @@
           "str_needs_recipient_ic_member": "STR name is close to {member}'s but not exact and shows no IC number — needs the IC-number page",
           "income_evidence_missing": "Income for each working family member (payslip, EPF, or an amount with a letter)",
           "income_evidence_missing_member": "{member}'s income (payslip, EPF, or an amount with a letter)",
+          "income_declaration_unapproved": "An income declaration form not signed and stamped by an approver, or with no issuing body",
+          "income_declaration_unapproved_member": "{member}'s income declaration form is not signed and stamped by an approver, or has no issuing body",
           "salary_slip_missing": "A salary slip for each working family member",
           "salary_slip_missing_member": "{member}'s salary slip",
           "birth_certificate_missing": "Their birth certificate — to confirm the mother is their parent",
@@ -4774,7 +4778,10 @@
             "no_value": "no contribution figure could be read",
             "letter_unread": "the letter could not be read",
             "no_declared_amount": "no declared amount for it to support",
-            "suspect": "its genuineness check flagged it"
+            "suspect": "its genuineness check flagged it",
+            "declaration_no_header": "an income declaration with no issuing body (header)",
+            "declaration_no_approver": "an income declaration not signed and stamped by an approver",
+            "declaration_no_header_approver": "an income declaration with no issuing body and no approver's signature or stamp"
           }
         },
         "view": "View",
