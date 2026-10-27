@@ -1,4 +1,4 @@
-# STPM results read "Exact" — roadmap (drafted 2026-10-27, awaiting owner approval)
+# STPM results read "Exact" — roadmap (drafted 2026-10-27; COMPLETE 2026-10-28, S1–S4 live)
 
 ## Why
 SPM results slips and certificates are read **Exact**: fixed labels are parsed from the OCR text, and Gemini is

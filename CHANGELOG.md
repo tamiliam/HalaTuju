@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM exact-read S4 — live re-read of every higher-results document - 2026-10-28
+
+- Dry run first (local, production-identical input; owner approved option A: re-read all). Then one run of
+  `reextract_documents --doc-type higher_results --pass-marker stpm_s4_20261028` on the `release-decisions`
+  job with `DOC_GENUINENESS_CHECK_ENABLED=1,BILLING_USAGE_ENABLED=true,THIRD_ROUTE_OPEN=1` and a 3600 s
+  timeout (execution release-decisions-twfkb): 35 processed (3 new uploads since the dry run), 0 errors.
+- **After:** 24 STPM documents read Exact (was 2) and genuine; 3 more read by AI and genuine; 2 checker
+  pages (#256, #374) not_stpm_result (1A); not checked as designed: Diploma ×2, Matriculation ×1, unknown
+  kind ×1, the MPM transcript whose page 1 is a cover letter (#257), and one #343 upload. Every exact value
+  matched the earlier AI read. No stored score was wiped.
+- Side effect, expected: the "PNGK" label lets the Academic card compare the read CGPA with the declared one,
+  so a "CGPA differs" note can newly appear where the document and the student's entry really differ.
+  Shortlisting and merit read the declared CGPA and are unchanged. Cost: under US$0.10.
+
 ## STPM exact-read S3 — STPM results in the higher-results slot are checked for genuineness; ruling 1A applies there - 2026-10-27
 
 Every higher-results upload said "genuineness not checked". Now an STPM one is checked like an SPM slip.
