@@ -132,6 +132,13 @@ def is_pathway_switch(new_doc, existing_doc):
     return bool(new_prog and old_prog and new_prog != old_prog)
 
 
+def _str_matched(doc) -> bool:
+    """An STR whose recipient a household card matched, on name or NRIC (False for any other doc)."""
+    from .income_engine import student_str_check
+    sc = student_str_check(doc) or {}
+    return 'match' in (sc.get('name_status'), sc.get('nric_status'))
+
+
 def should_promote(new_doc, existing_doc, *, usable):
     """Should ``new_doc`` take the live slot from ``existing_doc``?
       * empty slot → promote.
@@ -153,6 +160,10 @@ def should_promote(new_doc, existing_doc, *, usable):
     qe = doc_quality(existing_doc)
     if qe is None:
         return True
+    # TD-409 (ruling A: an unmatched STR never counts): an STR no household card matched — now 'pending',
+    # so `usable` — never displaces one a card matched. (A near-miss read 'mismatch' and was kept out before.)
+    if _str_matched(existing_doc) and not _str_matched(new_doc):
+        return False
     # A PATHWAY SWITCH is news, not a better copy of the same news (owner 2026-07-23). The
     # quality bar below assumes both documents describe the SAME fact — true for a re-scan of one
     # offer, false when the student has changed course. #13 switched from Asasi Teknologi

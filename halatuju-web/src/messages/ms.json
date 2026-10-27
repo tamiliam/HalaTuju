@@ -2290,6 +2290,10 @@
           "title": "Muat naik semula kad pengenalan kakak anda",
           "desc": "Kami tidak dapat membaca kad pengenalan kakak anda dengan cukup jelas untuk menyemaknya dengan dokumen STR anda. Sila muat naik gambar kad pengenalan (MyKad) beliau yang jelas dan lengkap supaya kami dapat mengesahkan STR itu milik isi rumah anda."
         },
+        "str_needs_recipient_ic": {
+          "title": "Muat naik halaman STR yang menunjukkan nombor IC penerima",
+          "desc": "Kami tidak dapat mengesahkan pemilik STR ini berdasarkan nama sahaja. Sila muat naik halaman STR yang menunjukkan nombor IC penerima (halaman 'Semakan Status' MySTR)."
+        },
         "utility_bill_missing": {
           "title": "Muat naik bil utiliti",
           "desc": "Sila muat naik bil air atau elektrik terkini untuk rumah anda. Ia mengesahkan alamat anda dan membantu kami memahami isi rumah anda. Mana-mana bil boleh."

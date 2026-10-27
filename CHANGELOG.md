@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-409 — an STR no household card matched never closes an STR request (owner ruling A) - 2026-10-27
+
+- **The upload's verdict.** `resolution.doc_match_verdict` gives an STR whose recipient matched no household
+  card `pending`, not `ok`, unless it is PROVABLY a stranger's (`str_check_names_a_stranger`), which stays a
+  mismatch. A near-miss name or a "cannot judge" STR used to read `mismatch` (a positive field mismatch) — or
+  `ok` when nothing could be compared — and now reads `pending`.
+- **Officer and system requests are held, not closed.** An Action-Centre upload of such an STR holds every open
+  STR request it answers for the officer (`hold_for_officer`: "our team is checking this personally", never
+  "still checking — refresh") and answers `ok`. Both syncs (`sync_resolution_items`, `sync_check2_queries`)
+  hold, rather than auto-resolve, an STR request whose gap cleared while such an STR is live
+  (`income_str_ownership.hold_if_str_unmatched`). A later matched STR closes them as before.
+- **The live slot.** 'pending' counts as usable for promotion, so `promotion.should_promote` now keeps an
+  unmatched STR from displacing one a household card matched (a near-miss used to be kept out as a mismatch).
+- **Check 2 asks for the IC-number page.** After submission a near-miss STR with no IC number raises
+  `str_needs_recipient_ic` (Action Centre, en/ms/ta; ms/ta first drafts), reusing the gate's wording.
+- No verdict band moves (the verdict engine never reads `doc_match_verdict`); no `VERDICT_ENGINE_VERSION` bump.
+- **Tests:** `test_td409_unmatched_str.py`; bitten. TD-409 closed.
+
 ## TD-404 — Sabah/Sarawak and Chinese names: ANAK = AK, BINTI = BT/BTE; one romanised syllable is not a stranger - 2026-10-27
 
 BrightPath Sabah serves Bumiputra students (Iban, Kadazan, Dusun, Bajau, Murut) and Chinese families,

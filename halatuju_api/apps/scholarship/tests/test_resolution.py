@@ -836,6 +836,9 @@ class TestStrNotCurrentReupload(_Base):
     def test_current_str_resolves_the_task(self):
         self._str_route()
         task = self._open_task()
+        ApplicantDocument.objects.create(   # TD-409: only an STR a household card matched closes a request
+            application=self.app, doc_type='parent_ic', household_member='father',
+            storage_path=f'{self.app.id}/parent_ic/x', vision_name='RAJAKUMARI', vision_run_at=timezone.now())
         doc = self._str_doc(status='Lulus', year='2026', amount='RM650')   # dated/paid → current
         verdict = resolve_doc_items_for_upload(self.app, doc)
         task.refresh_from_db()

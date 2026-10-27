@@ -23,7 +23,7 @@ gaps become student clarify queries. Subjective / sensitive / motivational gaps
 from django.db import IntegrityError
 from django.utils import timezone
 
-from . import high_utility_variant as hu, higher_owed
+from . import high_utility_variant as hu, higher_owed, income_str_ownership as own
 from .models import ResolutionItem
 from .str_check_memo import one_str_reading
 from .submission_review import completeness_gaps
@@ -99,11 +99,9 @@ DOC_SPECS = {
     'guardian_income_proof_missing': {'member': 'guardian', 'doc_type': 'salary_slip'},
     'brother_income_proof_missing': {'member': 'brother', 'doc_type': 'salary_slip'},
     'sister_income_proof_missing': {'member': 'sister', 'doc_type': 'salary_slip'},
-    # #117 — a retired/unable PARENT who (the student confirmed) draws a pension → ask for the
-    # statement. NO new doc type + NO migration: it reuses the salary_slip slot, whose extraction
-    # prompt already states it accepts "a government benefit / pension statement … which counts as
-    # household income too" (vision.py). Separate codes purely so the copy can say *pension
-    # statement*, not *salary slip*. Clears when any income evidence for that parent appears.
+    # #117 — a retired/unable PARENT who (the student confirmed) draws a pension → ask for the statement. It
+    # reuses the salary_slip slot (no new doc type/migration; its prompt accepts "a … pension statement", vision.py);
+    # separate codes so the copy says *pension statement*. Clears when any income evidence for that parent appears.
     'father_pension_proof_missing': {'member': 'father', 'doc_type': 'salary_slip'},
     'mother_pension_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
     # S2 — every salary slip on file is older than ~3 months → ask for a current one.
@@ -113,9 +111,9 @@ DOC_SPECS = {
     # employer/wage letter, bank statements, or a community/penghulu letter). Household-level,
     # uncapped — clears when declared_income_gaps() empties (a support doc arrives, or a valid STR).
     'declared_income_evidence_missing': {'doc_type': 'income_support_doc'},
-    # Per-member EPF request (soft, OPTIONAL) — a member (employed with a payslip but no EPF, OR
-    # 'unemployed' where an all-zeros/lapsed EPF corroborates it) has no EPF on file. Per-member so
-    # the request is TAGGED to that person: an EPF belongs to a specific member, and a memberless
+    'str_needs_recipient_ic': {'doc_type': 'str'},   # TD-409: a near-miss STR name → its IC-number page
+    # Per-member EPF request (soft, OPTIONAL) — a member (employed with a payslip but no EPF, OR 'unemployed'
+    # where an all-zeros/lapsed EPF corroborates it) has no EPF on file. TAGGED to that person: a memberless
     # request landed the upload BLANK-tagged (the #63 leak). Clears when that member's EPF arrives.
     'father_epf_missing':   {'member': 'father', 'doc_type': 'epf'},
     'mother_epf_missing':   {'member': 'mother', 'doc_type': 'epf'},
@@ -270,6 +268,7 @@ GOVERNED_BY = {
     'electricity_bill_recheck': (('document', 'electricity_bill'),),
     'utility_bill_missing': _BILLS,              # deprecated code, still auto-resolves
     **{c: _INCOME for c in _STR_IC_CODE.values()},   # TD-285 F1 — whose STR? ask the IC
+    'str_needs_recipient_ic': _INCOME,                 # TD-409 — the STR page with the IC number
 }
 
 
@@ -375,9 +374,10 @@ def _gap_sets(application):
         proof_wanted.add('income_doc_stale')
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
         proof_wanted.add('declared_income_evidence_missing')
-    from . import income_str_ownership as own            # TD-285 F1: whose STR? ask their IC
-    proof_wanted.update(_STR_IC_CODE[(m, kind)] for kind, members
-                        in own.str_owner_ic_asks(application).items() for m in members)
+    ic_asks, near_miss = own.str_check2_ic_asks(application)   # TD-285 F1: whose STR? ask their IC
+    proof_wanted.update(_STR_IC_CODE[(m, kind)] for kind, members in ic_asks.items() for m in members)
+    if near_miss:                                        # TD-409: a near-miss STR name → its IC-number page
+        proof_wanted.add('str_needs_recipient_ic')
     # Per-member EPF requests (employed-with-payslip OR unemployed) — union, one per member, TAGGED.
     for m in set(employed_epf_members(application)) | set(unemployment_epf_members(application)):
         code = _MEMBER_EPF_CODE.get(m)
@@ -529,8 +529,8 @@ def sync_check2_queries(application):
                 item.save(update_fields=['status', 'resolved_by', 'resolved_at',
                                          'resolution_text', 'resolution_doc'])
                 raised_student_visible = True
-        elif item is not None and item.status == 'open':
-            item.status = 'resolved'                 # auto-resolve always (housekeeping, even locked)
+        elif item is not None and item.status == 'open' and not own.hold_if_str_unmatched(application, item):
+            item.status = 'resolved'                 # auto-resolve always (housekeeping, even locked; TD-409)
             item.resolved_by = 'system'
             item.resolved_at = now
             item.save(update_fields=['status', 'resolved_by', 'resolved_at'])

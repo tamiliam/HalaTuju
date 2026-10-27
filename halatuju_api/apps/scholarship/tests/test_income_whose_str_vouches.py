@@ -1254,8 +1254,8 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
         from apps.scholarship.check2_queries import sync_check2_queries
         from apps.scholarship.emails.student_queries import QUERY_RAISED_SUBJECTS
         from apps.scholarship.services import send_due_query_emails
-        with mock.patch('apps.scholarship.income_str_ownership.str_owner_ic_asks',
-                        return_value={'missing': [], 'unreadable': []}):
+        with mock.patch('apps.scholarship.income_str_ownership.str_check2_ic_asks',   # TD-409: Check 2's one read
+                        return_value=({'missing': [], 'unreadable': []}, '')):
             app = self._already_asked('salary', 'mothers_str_only_fathers_ic')
         sync_check2_queries(app)
         app.refresh_from_db()
@@ -1275,8 +1275,8 @@ class TestWhatAStrangersStrHouseholdIsSent(WhoseStrBase):
         her name. She is not asked for an IC she uploaded ("not on file" would be false): the ask
         is `mother_ic_for_str_unreadable` — re-upload a clear one — tagged to her."""
         from apps.scholarship.check2_queries import sync_check2_queries
-        with mock.patch('apps.scholarship.income_str_ownership.str_owner_ic_asks',
-                        return_value={'missing': [], 'unreadable': []}):
+        with mock.patch('apps.scholarship.income_str_ownership.str_check2_ic_asks',   # TD-409: Check 2's one read
+                        return_value=({'missing': [], 'unreadable': []}, '')):
             app = self._already_asked('salary', 'mothers_name_str_her_ic_read_nric')
         sync_check2_queries(app)
         self.assertEqual(self._check2(app, 'open'),

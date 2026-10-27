@@ -178,9 +178,49 @@ def str_recipient_ic_needed(application) -> str:
     """The member whose card the STR's recipient name is one romanised syllable from, when the STR shows
     no IC number — '' otherwise. Neither a match nor a stranger: the card read fine, so the ask is for
     the STR page that carries the recipient's IC number (never "upload a clearer photo")."""
-    sc = _latest_str_check(application) or {}
+    return _near_miss_member(_latest_str_check(application))
+
+
+def _near_miss_member(sc) -> str:
+    sc = sc or {}
     near = (sc.get('ic_read_members') or {}).get('near_miss') or []
     return near[0] if near and not (sc.get('nric') or '').strip() else ''
+
+
+def str_check2_ic_asks(application):
+    """Check 2's two STR-ownership asks off ONE reading of the live STR (the query budget):
+    ``(str_ic_slots, the near-miss member whose STR IC-number page is wanted — '' for none)``."""
+    sc = _latest_str_check(application)
+    return str_ic_slots(sc, application), _near_miss_member(sc)
+
+
+def str_upload_unmatched(doc) -> bool:
+    """TD-409 — an uploaded STR that READ (not waiting on our read) but whose recipient matched NO
+    household card and is not provably a stranger's (`str_check_names_a_stranger`): the F1 "cannot
+    judge" STR, a near-miss name, a recipient that never read. Owner ruling A: an unmatched STR never
+    counts, so such an upload never CLOSES an STR request — it is held for the officer instead."""
+    from . import income_engine as ie
+    return _unmatched(ie.student_str_check(doc), doc.application)
+
+
+def _unmatched(sc, application) -> bool:
+    sc = sc or {}
+    return bool(sc) and sc.get('current_status') != 'unknown' \
+        and 'match' not in (sc.get('name_status'), sc.get('nric_status')) \
+        and not str_check_names_a_stranger(sc, application)
+
+
+def hold_if_str_unmatched(application, item) -> bool:
+    """TD-409 at the two SYNC doors (`resolution.sync_resolution_items`, `check2_queries.sync_check2_
+    queries`): an open STR request whose gap has cleared is NOT closed while the live STR matched no
+    household card (`str_upload_unmatched`) — it is held for the officer (`hold_for_officer`, the "our
+    team is checking" card), who closes it by hand. True when held. Reads the STR only for an STR item."""
+    if getattr(item, 'doc_type', '') != 'str' or not _unmatched(_latest_str_check(application), application):
+        return False
+    if not (item.params or {}).get('needs_officer_eye'):
+        from .genuineness.offer_issuers import hold_for_officer
+        hold_for_officer(item)
+    return True
 
 
 def str_owner_ic_asks(application) -> dict:

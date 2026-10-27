@@ -27,6 +27,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from .genuineness.offer_issuers import hold_for_officer, officer_must_close
+from .income_str_ownership import hold_if_str_unmatched, str_check_names_a_stranger, str_upload_unmatched
 from .higher_results import TICKETS as _HIGHER_TICKETS, match_verdict as _higher_match_verdict  # S3a
 from .models import ResolutionItem
 from .results_requests import answers as results_answers      # S4 (#37)
@@ -194,7 +195,8 @@ def sync_resolution_items(application):
         # which is owned by sync_bank_details_item and is NOT a verdict gap — must never be
         # swept here, or every Action-Centre reload would silently mark the bank task "done"
         # (it isn't in `wanted`, which only holds CODE_TO_TICKET codes). (Bug fix 2026-06-29.)
-        if item.status == 'open' and code in CODE_TO_TICKET and code not in wanted:
+        if item.status == 'open' and code in CODE_TO_TICKET and code not in wanted \
+                and not hold_if_str_unmatched(application, item):    # TD-409, ruling A
             item.status = 'resolved'
             item.resolved_by = 'system'
             item.resolved_at = now
@@ -370,11 +372,15 @@ def doc_match_verdict(doc):
             return 'unreadable'
     elif dt == 'str':
         chk = income_engine.student_str_check(doc) or {}
-        if person_red(dt, chk) or chk.get('current_status') in income_engine.STR_RED_STATES:
+        matched = 'match' in (chk.get('name_status'), chk.get('nric_status'))   # TD-409, ruling A:
+        if chk.get('current_status') in income_engine.STR_RED_STATES or person_red(dt, chk) and (  # an
+                matched or str_check_names_a_stranger(chk, doc.application)):   # unmatched STR is red only if PROVEN a stranger's
             return 'mismatch'
         cs = chk.get('current_status')   # 'unknown' = not read yet / deferred by OUR outage; TD-403
         if cs in ('unknown', 'future'):  # 'future' = a LATER year's page: neither closes the ask, neither is red
             return 'pending' if cs == 'unknown' else 'insufficient'
+        if not matched:
+            return 'pending'             # ruling A: an STR no card matched (near-miss / cannot judge) closes nothing
     elif dt == 'birth_certificate':
         # The FATHER row is not a blocker (#23): it is checked against the patronymic in the
         # student's own name, and a father with no Malaysian IC must not stop a re-upload from
@@ -447,13 +453,10 @@ def doc_match_verdict(doc):
                 return 'mismatch'
             if name_match(doc.vision_name, getattr(prof, 'name', '') or '') == 'mismatch':
                 return 'mismatch'
-    # NB `str` is the only mismatch-only income doc with no pending/unreadable branch here (its
-    # currency states already cover the bad reads). salary_slip / epf / birth_certificate /
-    # guardianship_letter / income_support_doc now each HOLD an unread/blank file (V2 #4 + V1) —
-    # a Gemini error must not fall through to 'ok' and resolve the request unverified. The
-    # interactive upload forces the read first (views._maybe_extract_fields force=True), so
-    # 'pending' normally only persists on a genuine read failure. water_bill / electricity_bill /
-    # statement_of_intent / photo, and every 'uncertain'/soft outcome above → accept.
+    # NB `str` has no unreadable branch (its currency states cover bad reads; unread/unmatched → 'pending').
+    # salary_slip / epf / birth_certificate / guardianship_letter / income_support_doc HOLD an unread/blank
+    # file (V2 #4 + V1): a Gemini error must not resolve the request unverified; the upload forces the read
+    # first (views._maybe_extract_fields force=True). Bills / statement_of_intent / photo / soft → accept.
     return 'ok'
 
 
@@ -473,7 +476,11 @@ def resolve_doc_items_for_upload(application, doc):
         return doc_match_verdict(doc)
     from . import income_engine
     verdict = doc_match_verdict(doc)
-    if verdict == 'ok':
+    # TD-409, ruling A: an STR no card matched never closes a request — it is held for the officer (the
+    # "our team is checking" card, never "still checking — refresh"), and the upload answers 'ok'.
+    held_str = verdict == 'pending' and doc.doc_type == 'str' and str_upload_unmatched(doc)
+    held_any = False
+    if verdict == 'ok' or held_str:
         qs = application.resolution_items.filter(status='open', kind='doc')
         rc = getattr(doc, 'request_code', '') or ''
         # A request-keyed upload (an Action-Centre officer request) resolves EXACTLY that
@@ -514,12 +521,13 @@ def resolve_doc_items_for_upload(application, doc):
                 continue
             if not results_answers(doc, item):     # S4 (#37): SPM asked, STPM sent (or the reverse)
                 continue
-            if officer_must_close(doc, item):      # an unchecked TVET offer: the officer decides (C2)
+            if held_str or officer_must_close(doc, item):   # TD-409 / an unchecked TVET offer (C2)
                 hold_for_officer(item)
+                held_any = True
                 continue
             resolve_item(item, doc=doc, by='student')
         if str_still_insufficient:
             # A valid-but-still-not-current STR: non-'ok' so the FE surfaces the Action-Centre coach's
             # detail advice, while the task stays open. NOT 'mismatch'/'unreadable' — the scan was fine.
             return 'insufficient'
-    return verdict
+    return 'ok' if held_str and held_any else verdict

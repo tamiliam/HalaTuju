@@ -2290,6 +2290,10 @@
           "title": "Re-upload your elder sister's IC",
           "desc": "The IC on file for her could not be read well enough to check your STR. Please upload a clear photo (MyKad)."
         },
+        "str_needs_recipient_ic": {
+          "title": "Upload the STR page with the recipient's IC number",
+          "desc": "We could not confirm whose STR this is from the name alone. Please upload an STR page that shows the recipient's IC number (the MySTR 'Semakan Status' page)."
+        },
         "utility_bill_missing": {
           "title": "Upload a utility bill",
           "desc": "Please upload a recent water or electricity bill for your home. It confirms your address and helps us understand your household. Either bill is fine."

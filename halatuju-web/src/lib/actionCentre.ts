@@ -228,6 +228,7 @@ export const KNOWN_CODES = [
   'guardian_ic_for_str_unreadable',
   'brother_ic_for_str_unreadable',
   'sister_ic_for_str_unreadable',
+  'str_needs_recipient_ic', // TD-409 — post-submission ask for a near-miss STR's IC-number page
   'utility_bill_missing',
   // Owner 2026-07-08 — per-bill utility re-upload (missing / stale / unreadable), replacing the
   // either-or utility_bill_missing.
