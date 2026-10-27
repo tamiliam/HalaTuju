@@ -125,7 +125,7 @@ class TheScorer(TestCase):
 
     def test_not_checked_is_no_signal_never_a_fake(self):
         self.assertEqual(canonical_status(NOT_CHECKED, 'offer_letter'), '')
-        self.assertGreaterEqual(MODEL_VERSION, '1.8.0')     # the net shipped at 1.8.0 (C2: 1.8.1)
+        self.assertGreaterEqual(tuple(map(int, MODEL_VERSION.split('.'))), (1, 8, 0))     # the net shipped at 1.8.0 (C2: 1.8.1)
 
     def test_the_tvet_pathways_have_a_family(self):
         from apps.scholarship.offer_pathway import pathway_family

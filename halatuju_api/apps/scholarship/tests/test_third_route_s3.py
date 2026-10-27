@@ -416,6 +416,92 @@ class TestTheUploadRead(TestCase):
         self.assertEqual(ex['fields']['results_kind_detected'], 'matric')
         self.assertEqual(ex['fields']['results_kind_markers'], ['matric'])
 
+    def test_an_stpm_document_is_read_exact_without_gemini(self):
+        # STPM exact-read S2: a hit stores capture='deterministic' and never calls Gemini.
+        from apps.scholarship.higher_results import extract
+        from apps.scholarship.tests.test_stpm_parse import FOUR, slip_text
+        doc = _doc(_app(STPM_HELD, DEGREE), 'higher_results')
+        calls = []
+        ex = extract(doc, {'text': slip_text(FOUR), 'words': None}, lambda: calls.append('image'),
+                     lambda *a, **kw: calls.append('gemini'))
+        self.assertEqual(calls, [])
+        self.assertEqual((ex['capture'], ex['error']), ('deterministic', ''))
+        self.assertEqual(ex['fields']['cgpa'], '3.17')
+        self.assertEqual(ex['parser_version'], 'stpm_parse 1.0.0')     # beside capture
+        self.assertFalse([k for k in ex['fields'] if 'parser' in k])     # never in the fields
+        self.assertEqual(ex['fields']['results_kind_detected'], 'stpm')
+
+    def test_the_stored_read_keeps_the_version_outside_the_fields(self):
+        from unittest.mock import patch
+
+        from apps.scholarship import vision
+        from apps.scholarship.tests.test_stpm_parse import FOUR, slip_text
+        doc = _doc(_app(STPM_HELD, DEGREE), 'higher_results')
+        with patch('apps.scholarship.vision.extract_document_fields', side_effect=AssertionError('gemini')):
+            r = vision.run_field_extraction_for_document(
+                doc, names=[], ocr={'text': slip_text(FOUR), 'words': None, 'image': b'x', 'error': None})
+        self.assertEqual((r['capture'], r['parser_version']), ('deterministic', 'stpm_parse 1.0.0'))
+        self.assertNotIn('parser_version', r['fields'])
+
+    def test_a_row_completed_from_the_students_entry_is_stored_with_its_audit_list(self):
+        # End to end: profile stpm_grades → _entered_grade → stpm_parse rule 2 → vision_fields.
+        from unittest.mock import patch
+
+        from apps.scholarship import vision
+        from apps.scholarship.tests.test_stpm_parse import SCAN_ROWS, _r, slip_words
+        grades = {'PA': 'A-', 'BAHASA_MELAYU': 'B', 'SEJARAH': 'C+', 'ECONOMICS': ' c ', 'SENI_VISUAL': 'B+'}
+        doc = _doc(_app({**STPM_HELD, 'stpm_grades': grades}, DEGREE), 'higher_results')
+        rows = list(SCAN_ROWS)
+        rows[7] = _r('944@60', 'EKONOMI@110', 'C@585')            # the grade point was not read
+        with patch('apps.scholarship.vision.extract_document_fields', side_effect=AssertionError('gemini')):
+            r = vision.run_field_extraction_for_document(
+                doc, names=[], ocr={'text': '', 'words': slip_words(rows), 'image': b'x', 'error': None})
+        self.assertEqual((r['capture'], r['stpm_rows_from_entry']), ('deterministic', ['EKONOMI']))
+        self.assertNotIn('stpm_rows_from_entry', r['fields'])
+        self.assertNotIn('_rows_from_entry', r['fields'])
+        self.assertEqual(r['fields']['results'][3], {'subject': 'EKONOMI', 'grade': 'C'})
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['stpm_rows_from_entry'], ['EKONOMI'])
+
+    def test_the_exact_reader_gets_the_students_own_stpm_grades(self):
+        from types import SimpleNamespace
+
+        from apps.scholarship.higher_results import _entered_grade
+        doc = SimpleNamespace(application=SimpleNamespace(profile=SimpleNamespace(
+            stpm_grades={'ECONOMICS': 'C', 'PA': 'B+'})))
+        mine = _entered_grade(doc)
+        self.assertEqual((mine('EKONOMI'), mine('PENGAJIAN AM'), mine('SEJARAH')), ('C', 'B+', None))
+        self.assertIsNone(_entered_grade(SimpleNamespace(application=SimpleNamespace(
+            profile=SimpleNamespace(stpm_grades={})))))           # no entry → rule 1 only
+        self.assertIsNone(_entered_grade(SimpleNamespace()))
+
+    def test_a_broken_exact_reader_falls_back_to_gemini(self):
+        import sys
+        from unittest.mock import patch
+
+        from apps.scholarship.higher_results import extract
+        from apps.scholarship.tests.test_stpm_parse import FOUR, slip_text
+        doc = _doc(_app(STPM_HELD, DEGREE), 'higher_results')
+        with patch.dict(sys.modules, {'apps.scholarship.stpm_parse': None}):   # the import raises
+            ex = extract(doc, {'text': slip_text(FOUR)}, lambda: b'img',
+                         lambda *a, **kw: {'fields': {'candidate_name': 'PRIYA'}, 'warnings': [], 'error': ''})
+        self.assertEqual(ex['capture'], 'ai')
+        self.assertEqual(ex['fields']['candidate_name'], 'PRIYA')
+
+    def test_an_unsure_stpm_read_falls_back_to_gemini(self):
+        from apps.scholarship.higher_results import extract
+        from apps.scholarship.tests.test_stpm_parse import FOUR, slip_text
+        doc = _doc(_app(STPM_HELD, DEGREE), 'higher_results')
+        calls = []
+
+        def gemini(text, dt, **kw):
+            calls.append(kw.get('image'))
+            return {'fields': {'candidate_name': 'PRIYA', 'cgpa': '3.42'}, 'warnings': [], 'error': ''}
+        ex = extract(doc, {'text': slip_text(FOUR, pngk='3.42')}, lambda: b'img', gemini)
+        self.assertEqual(calls, [b'img'])                     # today's Gemini image read, unchanged
+        self.assertEqual(ex['capture'], 'ai')
+        self.assertEqual(ex['fields']['results_kind_detected'], 'stpm')
+
     def test_registered_with_the_reader(self):
         from apps.scholarship import vision
         from apps.scholarship.views import SUPPORTING_NAME_CHECK_TYPES

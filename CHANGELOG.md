@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM exact-read S2 — STPM results are read Exact, Gemini only when the reader is unsure - 2026-10-27
+
+An STPM results document in the higher-results slot was always read by Gemini (`capture='ai'`).
+- **A deterministic reader.** New `apps/scholarship/stpm_parse.py` (`PARSER_VERSION` 1.0.0) reads the
+  certificate (2023/24 paper and 2025 bilingual), the results slip (2022-2025, including an online-portal
+  PDF print) and the MPM transcript from the OCR text layer or, for a scan / photo, from the Vision word
+  boxes in visual rows. It returns the Gemini schema's fields (name, exam, PNGK labelled `PNGK`, subject
+  rows — subject rows only, never the slip's paper rows or the certificate's notes page) plus NRIC, index
+  number and exam year. The exam year comes from the title / "Tahun Peperiksaan", never the release date.
+- **Never a wrong Exact value.** It returns None (today's Gemini read runs unchanged) unless every gate
+  passes: a recognised layout from a SET of anchors, one name (no school / stamp word in it; a wrapped
+  name only when it is the one row before the IC), one IC, a known STPM subject on every row, the owner's
+  grade rule, the printed subject count, and the printed PNGK equal to the PNGK recomputed from the rows
+  (Pengajian Am + best three). A checker page, a term result, a cropped table, a garbled text layer or an
+  unknown variant → None.
+- **The grade rule (owner, 2026-10-27).** Letter and grade point read clearly and agreeing on the fixed
+  scale (A 4.00 … F 0.00) → accepted. If one is unclear or missing (a point is first snapped to the valid
+  value within 0.05: 3.66, 3.7, 367, 3,67), the row is completed from the scale ONLY when the value that
+  was read matches the grade the STUDENT entered for that subject (`profile.stpm_grades`, normalised as
+  `_compare_stpm` does), and only on a row that counts towards the PNGK (so the PNGK check guards it).
+  A read value that differs from the entry, no entry, neither read, a point read clearly off the scale
+  (3.50), or a disagreement → None, so Gemini reads it and the reviewer sees any mismatch as today. The
+  subjects completed this way are stored for audit as `vision_fields['stpm_rows_from_entry']`. On a text-layer slip the grade + point must close the block.
+- **The layout is for the reader only** (owner ruling): it is never stored, shown or read by a rule; every
+  layout gives the same `exam` title.
+- **Wired** into `higher_results.extract` (with the student's entered STPM grades): a hit stores
+  `capture='deterministic'` and, beside it at the top of `vision_fields`, `parser_version` and
+  `stpm_rows_from_entry` (one in-place
+  line in `vision.py`, no growth); nothing internal sits in the fields. A failing import or a reader error
+  falls back to Gemini. The kind detection is unchanged. The web chip already honours the stored tag (no web change). The
+  `results_slip` slot is unchanged (an STPM doc there still goes to Gemini): its seam lives in `vision.py`,
+  which is at its size ceiling, and the wrong-slip flow reads that slot's fields — left for a later sprint.
+- **Corpus (local, `eval/stpm_parse_check.py`):** 27 of 39 read Exact (14/21 certificates, 13/18 slips),
+  0 wrong, 0 of 31 controls accepted. Entered grades come from the local `applicants.json` (2 documents
+  have them); four of the fallbacks are one lost letter with no local entry, which rule 2 can complete in
+  production when the student's own grade matches.
+- `MODEL_VERSION` 1.10.0 (recognition change). `VERDICT_ENGINE_VERSION` unchanged: no verdict rule moved;
+  stored reads change only on a re-read (S4).
+- **Tests:** `test_stpm_parse.py` (synthetic twins of every layout), wiring tests in `test_third_route_s3.py`.
+
 ## TD-409 — an STR no household card matched never closes an STR request (owner ruling A) - 2026-10-27
 
 - **The upload's verdict.** `resolution.doc_match_verdict` gives an STR whose recipient matched no household

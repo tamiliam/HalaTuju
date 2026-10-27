@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## STPM results are read Exact from fixed labels; the certificate/slip layout is for the reader only; the exam year is the title's — 2026-10-27 (STPM exact-read S2; owner rulings)
+
+`stpm_parse` recognises the certificate, the results slip and the transcript only to know WHERE each fact
+is printed. For our purpose they are one document: the layout is never stored, shown or read by any rule,
+and every layout gives the same `exam` title. The exam year is the title's ("Slip Keputusan Peperiksaan
+STPM 2025", "TRANSKRIP 2025") or the certificate's "Tahun Peperiksaan", never the release date — STPM 2025
+is released in 2026, and some slips misprint the date. Layouts drift a little every few years, so a layout
+is recognised from a SET of anchors with tolerance, and an unknown variant goes to Gemini. A wrong Exact
+value is worse than an AI read, so the reader returns nothing unless the printed grades, grade points,
+subject count and PNGK all agree. Grade rule (owner, 2026-10-27): a grade letter and its point read
+clearly and agreeing on the fixed scale are accepted; if one is unclear or missing (a point first snapped
+to the valid value within 0.05), the row is completed from the scale only when the value that WAS read
+matches the grade the student entered for that subject, and only on a row that counts towards the
+PNGK; a point read clearly off the scale is a disagreement; otherwise the read goes to Gemini. Rows
+completed this way are recorded beside `capture` (`stpm_rows_from_entry`) for audit. The student's
+grade never enters the read any other way, and the PNGK check still guards every row.
+
 ## Whether an intake asks for STPM-level results is inferred from its STPM floor; blank = SPM-only, at the gate too — 2026-10-27 (owner rulings D16b + D16c, superseding D16's switch)
 
 One place for the instruction: the intake's `min_stpm_pngk`. Set → the intake asks for STPM-level

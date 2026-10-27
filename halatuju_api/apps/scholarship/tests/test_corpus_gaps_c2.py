@@ -136,7 +136,7 @@ class UiTMScoresAsAPublicUniversity(TestCase):
         self.assertIs(offer_reporting_bonus(doc), True)
 
     def test_the_model_version(self):
-        self.assertGreaterEqual(MODEL_VERSION, '1.8.2')      # UiTM shipped at 1.8.1 / 1.8.2 (C3: 1.9.0)
+        self.assertGreaterEqual(tuple(map(int, MODEL_VERSION.split('.'))), (1, 8, 2))      # UiTM shipped at 1.8.1 / 1.8.2 (C3: 1.9.0)
 
 
 def _offer(app, status, *, doc_seen='ua_offer'):

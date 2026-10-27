@@ -140,7 +140,7 @@ class TheSTPMFamily(TestCase):
             self.assertEqual(assess(t, ocr_text=STPM_SLIP)['type'], 'stpm_slip')
 
     def test_the_model_version(self):
-        self.assertEqual(MODEL_VERSION, '1.9.0')
+        self.assertEqual(MODEL_VERSION, '1.10.0')     # C3 set 1.9.0; STPM exact-read S2 moved it on
 
 
 class TheSemesterResultSlot(TestCase):

@@ -112,25 +112,57 @@ def _as_cgpa(v):
     return x if 0 < x <= 4.0 else None
 
 
+def entered_grade_value(g) -> str:
+    """An ENTERED STPM grade as both readers compare it (`_compare_stpm` and the Exact reader)."""
+    return (g or '').strip().upper()
+
+
+def entered_lookup(grades):
+    """`subject name → the student's normalised entry for it`, or None when there are no grades."""
+    if not isinstance(grades, dict) or not grades:
+        return None
+    return lambda subject: entered_grade_value(grades.get(_STPM_BY_NAME.get(_squash(subject)))) or None
+
+
+def _entered_grade(doc):
+    """The student's own STPM grades for the Exact reader's owner rule 2: an unclear grade letter
+    or point may be completed from the scale only when the value read matches the entry."""
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    return entered_lookup(getattr(profile, 'stpm_grades', None))
+
+
 # ── 1. The read ───────────────────────────────────────────────────────────────────────────────
 
 
 def extract(doc, ocr, image_fn, extract_fn):
-    """The higher-results read for `vision._run_field_extraction_impl`: Gemini on the IMAGE (a
-    transcript's table, like the SPM slip's, does not survive flat OCR), then the routing detection
-    from the upload's OCR text (fallback: the read's own exam title). Returns the usual `ex` dict.
-    The detection is stored beside the fields — `results_kind_detected` and the markers seen."""
+    """The higher-results read for `vision._run_field_extraction_impl`. An STPM certificate, slip
+    or transcript is read EXACT first (`stpm_parse`, from the OCR text / word boxes — STPM
+    exact-read S2); anything it is unsure of goes to Gemini on the IMAGE as before (a transcript's
+    table, like the SPM slip's, does not survive flat OCR). Then the routing detection from the
+    upload's OCR text (fallback: the read's own exam title). Returns the usual `ex` dict. The
+    detection is stored beside the fields — `results_kind_detected` and the markers seen."""
     from .results_kind import detect, detect_from_fields, kinds_seen
     text = ((ocr or {}).get('text') if isinstance(ocr, dict) else '') or ''
     if ocr is None:          # a caller with no shared read (never the upload, which passes one)
         from .vision import ocr_document
         text = (ocr_document(doc) or {}).get('text', '') or ''
-    image = image_fn()
-    if image is not None:
-        ex = extract_fn('', doc.doc_type, image=image, content_type=doc.content_type)
+    try:                     # the Exact reader must never break a read: any failure → Gemini
+        from .stpm_parse import PARSER_VERSION, parse as stpm_parse
+        exact = stpm_parse(text, (ocr or {}).get('words') if isinstance(ocr, dict) else None,
+                           entered=_entered_grade(doc))
+    except Exception:
+        exact = None
+    if exact is not None:    # the reader's version is stored beside `capture`, never in the fields
+        ex = {'fields': exact, 'warnings': [], 'error': '', 'capture': 'deterministic',
+              'parser_version': f'stpm_parse {PARSER_VERSION}',
+              'stpm_rows_from_entry': exact.pop('_rows_from_entry', [])}   # audit: rule-2 rows
     else:
-        ex = extract_fn(text, doc.doc_type)
-    ex['capture'] = 'ai'
+        image = image_fn()
+        if image is not None:
+            ex = extract_fn('', doc.doc_type, image=image, content_type=doc.content_type)
+        else:
+            ex = extract_fn(text, doc.doc_type)
+        ex['capture'] = 'ai'
     fields = ex.get('fields')
     if isinstance(fields, dict) and fields and not ex.get('error'):
         fields['results_kind_detected'] = detect(text) or detect_from_fields(fields)
@@ -160,7 +192,7 @@ def _entered_cgpa(profile, kind):
 def _compare_stpm(profile, fields):
     """(missing, mismatched) — printed STPM subjects the student did not enter, and entered
     grades that differ from the slip's. Unrecognised printed subjects are ignored."""
-    entered = {k: (g or '').strip().upper() for k, g in (getattr(profile, 'stpm_grades', None) or {}).items()}
+    entered = {k: entered_grade_value(g) for k, g in (getattr(profile, 'stpm_grades', None) or {}).items()}
     missing, mismatched = [], []
     for row in fields.get('results') or []:
         if not isinstance(row, dict):

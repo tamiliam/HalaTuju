@@ -25,8 +25,7 @@ from .stpm_doc import STPM_LISTS
 # identity gates + bands in THIS module. **Bump on ANY calibration change** (a new family, a
 # weight/anchor/threshold tweak) so a stored genuineness result can be traced to the model that
 # produced it and performance compared across versions. It travels on every result as
-# ``model_version`` (and is persisted in ``vision_fields['authenticity']``).
-# History:
+# ``model_version`` (and is persisted in ``vision_fields['authenticity']``). History:
 #   1.0 (2026-06-27) — first full Layer-1 set held-out-validated on unseen prod docs:
 #       results_slip + certificate, birth_certificate (text-only, visual signatures dropped),
 #       epf (+ wrong-type backstop), offer_letter families (stpm / matriculation / polytechnic /
@@ -98,7 +97,8 @@ from .stpm_doc import STPM_LISTS
 #   1.8.2 (2026-10-26) — C2 review: a UiTM PDF's text layer (no letterhead) is named by UiTM's own clauses.
 #   1.9.0 (2026-10-26) — corpus-gaps C3: the STPM family (slip + certificate, `stpm_doc`) beside the
 #       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
-MODEL_VERSION = '1.9.0'
+#   1.10.0 (2026-10-27) — STPM exact-read S2: STPM higher results read Exact (`stpm_parse`). Backfill: S4.
+MODEL_VERSION = '1.10.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

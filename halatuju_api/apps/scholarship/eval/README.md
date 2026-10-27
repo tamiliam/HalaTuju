@@ -72,7 +72,9 @@ python apps/scholarship/eval/capture_ocr.py results_split/stpm_cert   # nested p
 python apps/scholarship/eval/capture_ocr.py results_slip              # a plain doc_type still works
 ```
 Re-runs skip keys that already have an `.ocr.txt`, and each run prints how many Vision calls it
-made. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
+made. `python apps/scholarship/eval/stpm_parse_check.py` scores the STPM Exact reader
+(`stpm_parse`, S2) against these caches — exact / fallback / WRONG per document, every control
+must be None — and prints keys and field names only, never a value. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
 else gcloud Application Default Credentials.
 
 ## Limits (honest)
