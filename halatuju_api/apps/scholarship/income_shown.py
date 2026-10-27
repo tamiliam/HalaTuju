@@ -57,8 +57,8 @@ REASON_LETTER_UNREAD = 'letter_unread'           # support letter: student_verdi
 REASON_NO_DECLARED_AMOUNT = 'no_declared_amount'  # letter read, but nothing was declared to back
 REASON_SUSPECT = 'suspect'                       # TD-410: flagged as possibly fake (`proof_flagged`)
 REASONS = (REASON_NOT_SALARY, REASON_NO_VALUE, REASON_LETTER_UNREAD, REASON_NO_DECLARED_AMOUNT,
-           REASON_SUSPECT,   # + a declaration's own (#374, `income_declaration._REASON`): what it lacks
-           'declaration_no_header', 'declaration_no_approver', 'declaration_no_header_approver')
+           REASON_SUSPECT,   # + an informal document's own (#374 / 2A, `income_declaration`): what it lacks
+           'approval_no_header', 'approval_no_approver', 'approval_no_header_approver', 'approval_unchecked')
 
 
 #: The salary model's FORMAL families (`genuineness.salary_doc`). Its `suspect` is ONLY `family='informal'`
@@ -78,7 +78,8 @@ def proof_flagged(doc, doc_type) -> bool:
         current model never emits one — every suspect slip is informal, a real B40 family's employer
         letter, and STILL COUNTS (the reviewer checks it as today), as does one naming no or an unknown
         family — so this catches a legacy score or a future formal-family band;
-      * a ``suspect`` support letter (none is genuineness-scored today).
+      * an INFORMAL document (a support letter, an informal payslip, a declaration form) with no issuing
+        body or approver, or not checked for them yet (owner ruling 2A — see the last paragraph).
     ⚠ EPF IS EXCLUDED until TD-411: eight live statements the scorer itself names `epf` read ``not_epf``
     at p=0.00 — no signature matched at all, the shape of a text it could not read, not of a wrong document.
 
@@ -87,11 +88,12 @@ def proof_flagged(doc, doc_type) -> bool:
     is about the read, which this does not change, and the student's own wizard has always counted an
     unscored proof ("we never gate on our own missing scan"). The verdict still holds it at Probable.
 
-    ⚠ A DECLARATION is judged on its own terms first (owner, after #374): it counts only with an issuing
-    body AND an approver (`income_declaration.declaration_missing`), whatever its genuineness band says."""
-    from .income_declaration import declaration_missing, is_declaration
-    if is_declaration(doc):
-        return bool(declaration_missing(doc))
+    ⚠ AN INFORMAL DOCUMENT is judged on its own terms first (owner, after #374; ruling 2A: every support
+    letter, informal payslip and declaration form): it counts only with an issuing body AND an approver,
+    and not at all while that is unchecked (`income_declaration.approval_counts`), whatever its band."""
+    from .income_declaration import approval_counts, is_informal
+    if is_informal(doc):
+        return not approval_counts(doc)
     if doc_type == 'epf':
         return False                                   # TD-411: the EPF scorer's not_epf is not trusted yet
     from .genuineness.bands import canonical_status, stored_authenticity, stored_status

@@ -11,7 +11,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.tests.factories import make_application, make_student
+from apps.scholarship.tests.factories import APPROVED_INFORMAL_FIELDS, make_application, make_student
 
 STUDENT, STUDENT_NRIC = 'DIVASHINI A/P MURUGAN', '080115-05-0132'
 FATHER, FATHER_NRIC = 'MURUGAN A/L SUBRAMANIAM', '700707-05-5671'
@@ -45,8 +45,10 @@ class _Case(TestCase):
             vision_nric=FATHER_NRIC, storage_path=f'test/pic/{app.id}', vision_run_at=timezone.now())
 
     def _slip(self, app, status, seen=None, member='father'):
+        # Signed and stamped: this file is about the GENUINENESS flag. An informal slip also needs its
+        # approver since ruling 2A (#374) — `test_income_declarations` owns that rule.
         return _doc(app, 'salary_slip', member=member, status=status, seen=seen,
-                    fields={'gross_income': '1,450.00'})
+                    fields={'gross_income': '1,450.00', **APPROVED_INFORMAL_FIELDS})
 
 
 class ThePerEarnerAnswer(_Case):
@@ -97,13 +99,18 @@ class ThePerEarnerAnswer(_Case):
                 self.assertIs(income_shown(app, 'father').shown, True)
                 self.assertIs(_member_has_epf_value(app, 'father'), True)
 
-    def test_a_flagged_support_letter_backs_no_declared_amount(self):
+    def test_a_support_letter_is_judged_by_its_approver_not_its_band(self):
+        """Since ruling 2A (#374) a support letter is an INFORMAL document: its issuing body and approver
+        decide (`income_declaration`), whatever genuineness band it carries; an unchecked one waits."""
         from apps.scholarship.income_engine import has_income_support_doc
         from apps.scholarship.income_shown import income_shown
-        for status, shown in (('suspect', False), ('not_income_support_doc', False), (None, True)):
-            with self.subTest(status):
+        checked = {'issuer_header': '', 'approver_name': '', 'approver_title': '', 'has_stamp_or_signature': 'no'}
+        for status, extra, shown in (('suspect', APPROVED_INFORMAL_FIELDS, True), ('suspect', checked, False),
+                                     (None, APPROVED_INFORMAL_FIELDS, True), (None, {}, False)):
+            with self.subTest(status=status, shown=shown):
                 app = self._app(income_declared={'father': 1200})
-                _doc(app, 'income_support_doc', member='father', status=status, fields={'issuer': 'Penghulu'})
+                _doc(app, 'income_support_doc', member='father', status=status,
+                     fields={'issuer': 'Penghulu', **extra})
                 self.assertIs(income_shown(app, 'father').shown, shown)
                 self.assertIs(has_income_support_doc(app, 'father'), shown)
 

@@ -1786,6 +1786,8 @@ def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
     downstream — never a confident wrong-person mismatch. Pure; never raises."""
     if not isinstance(data, dict):
         return data
+    if doc_type in ('salary_slip', 'income_support_doc'):   # #374: a read that ran ALWAYS carries the approval
+        data = {**dict.fromkeys(_APPROVAL, ''), **data}     # keys, so "never checked" stays tellable from "none"
     if doc_type in ('results_slip', 'higher_results') and data.get('candidate_name'):
         data['candidate_name'] = _strip_name_label(data['candidate_name'])
     elif doc_type == 'offer_letter' and data.get('reporting_date'):

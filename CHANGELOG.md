@@ -142,23 +142,37 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
 - **The extraction reads the approval** — `issuer_header`, `approver_name`, `approver_title`,
   `has_stamp_or_signature` — for both slots (`income_declaration.APPROVAL_FIELDS` + a prompt hint).
   `results_doc.MODEL_VERSION` 1.12.0.
-- **The rule (`income_declaration.declaration_missing`).** A declaration counts as income shown ONLY with an
-  issuing body AND an approver (a named or titled person whose signature or stamp is visible) — read by
-  `income_shown.proof_flagged`, so the gate, the cluster, Check 2's per-member ask, TD-409's hold and the
-  verdict follow. A real payslip or EPF outranks an approved form. Without them the student is asked
-  "Please upload {member}'s income form signed and stamped by an approver (e.g. ketua kampung, penghulu or
-  headmaster)" (`income_declaration_unapproved:<member>`), the coach says the same
-  (`declaration_needs_approver`; with the AI off it falls to the generic note — no fallback string, for the
-  bundle budget), and the officer's drawer names what is missing (no issuing body / no approver / neither).
-- **Never Certain.** A household whose income rests on a declared amount — an approved form, or a declared
-  wage backed by a letter — reads Probable (`income_declared_probable`), not Certain.
+- **The rule (`income_declaration`), owner ruling 2A (2026-10-28): EVERY informal income document** — every
+  supporting letter (penghulu / JKKK / employer letter, a declaration), and a payslip the salary model reads as
+  INFORMAL or as a declaration form — counts as income shown ONLY with an issuing body AND an approver (a named
+  or titled person whose signature or stamp is visible). Read by `income_shown.proof_flagged`, so the gate,
+  the cluster, Check 2's per-member ask, TD-409's hold and the verdict follow. A formal, unscored or EPF
+  proof is untouched; a real payslip or EPF outranks an approved form. Without them the student is asked
+  "Upload {member}'s income document signed and stamped by an approver (e.g. employer, ketua kampung,
+  penghulu or headmaster)" (`income_doc_unapproved:<member>`, one string); the server's coach has
+  `income_doc_needs_approver`, but the Documents card does not open it while the member's IC is present
+  (the bundle budget had no room for the extra check — the checklist carries the ask); and the officer's
+  drawer names what is missing (no issuing body / no approver / neither / not checked yet).
+- **Not yet checked ≠ missing (TD-394 + never blame).** A document read before the approval fields existed
+  has none of them: it does NOT count, the gate shows the existing "our check is still running — please try
+  again later" (`ic_service_down`), never "get it signed", Check 2 asks nothing about it (`check2_deferred`),
+  and the officer's drawer says "read before the approver check — re-read it". Every read since stores all
+  four keys (`vision._sanitize_extracted_fields`), so the two states stay apart. Existing letters and
+  informal slips must be re-read live after deploy, before families are asked.
+- **Never Certain (owner ruling 1A).** A household whose income rests on ANY declared amount — an approved
+  form, or a declared wage backed by a letter — reads Probable (`income_declared_probable`), not Certain.
   `VERDICT_ENGINE_VERSION` 2026-10-27.6 (a band moves: every Certain household carried by a declared amount).
 - **Existing documents keep their old score until re-read** (see the live re-read list in the report).
 - **TD-410 review note folded in:** a suspect payslip is flagged only when its `doc_seen` names a FORMAL
   family, listed explicitly (`private` / `govt` / `singapore` / `gig`); an unknown family keeps the benefit
   of the doubt, like `informal`.
-- **Tests:** `test_income_declarations.py` (synthetic text only) + two verdict cases; the characterisation
-  matrix (`test_income_whose_str_vouches`) gains a #374 layer on top of its untouched record; every change
+- **Bundle room:** `scholarship.consent.blocker.str_not_household` shortened (owner OK) — "This STR isn't in
+  the name of anyone in your family. Upload your own household's STR, or show your income another way." —
+  and the student's `scholarship.consent.blocker.income_document_mismatch` deleted (en/ms/ta): no code has
+  emitted it since the verification-accuracy pass (2026-06-11). The officer's copy of it stays.
+- **Tests:** `test_income_declarations.py` (synthetic text only) + verdict cases; the characterisation
+  matrix (`test_income_whose_str_vouches`) gains a #374 layer on top of its untouched record; fixtures that
+  mean "a letter / informal slip that counts" now carry `factories.APPROVED_INFORMAL_FIELDS`; every change
   bitten.
 
 ## STPM exact-read S2 — STPM results are read Exact, Gemini only when the reader is unsure - 2026-10-27

@@ -544,6 +544,9 @@ def _bill(doc_type, fields=None, address_match='', name='', verdict='ok'):
     # `verdict` seeds vision_fields['student_verdict'] — V1: has_income_support_doc now
     # requires a REAL read ('ok'), so a genuine support doc defaults to 'ok'; pass
     # verdict='wrong_doc' to model a blank/unreadable image that must NOT clear the gap.
+    if doc_type == 'income_support_doc':              # 2A (#374): a fixture letter is an approved one
+        from apps.scholarship.tests.factories import APPROVED_INFORMAL_FIELDS
+        fields = {**APPROVED_INFORMAL_FIELDS, **(fields or {})}
     return SimpleNamespace(doc_type=doc_type,
                            vision_fields={'fields': fields or {}, 'student_verdict': verdict},
                            vision_address_match=address_match, vision_name=name)

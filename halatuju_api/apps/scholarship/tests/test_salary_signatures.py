@@ -97,6 +97,10 @@ class TestUsableSalarySlipGate(TestCase):
         vf = {'authenticity': {'status': auth_status}} if auth_status is not None else {}
         if doc_seen is not None:
             vf['authenticity']['doc_seen'] = doc_seen
+            # An informal slip counts only signed and stamped since ruling 2A (#374) — approved here, as
+            # this file is about the family; `test_income_declarations` owns the approver rule.
+            from apps.scholarship.tests.factories import APPROVED_INFORMAL_FIELDS
+            vf['fields'] = dict(APPROVED_INFORMAL_FIELDS)
         return ApplicantDocument.objects.create(
             application=self.app, doc_type='salary_slip', household_member='father',
             storage_path='x', vision_fields=vf, uploaded_at=timezone.now())

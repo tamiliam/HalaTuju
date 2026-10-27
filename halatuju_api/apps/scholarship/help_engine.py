@@ -21,7 +21,7 @@ patches that one function, so CI runs with zero billable calls.
 import logging
 
 from . import branding as _branding
-from .income_declaration import declaration_coach   # #374: a declaration form needs its approver
+from .income_declaration import approval_coach   # #374: an informal income document needs its approver
 from .read_errors import ic_second_opinion_deferred
 from .profile_engine import DEFAULT_LANGUAGE  # noqa: F401  (re-exported for callers/tests)
 
@@ -73,7 +73,7 @@ VERDICT_GUIDANCE = {
     # been uploaded yet, so we cannot confirm the two are the same person. The IC is a
     # REQUIRED document — the application cannot be submitted until it is uploaded.
     'income_proof_needed': "the earner's identity card is in and matches, but their salary slip — the document that actually shows the household income on the salary route — has not been uploaded yet, so it is the logical next step (it comes before the relationship document)",
-    'declaration_needs_approver': "this income declaration form has not been signed and stamped by an approver (or shows no issuing body), so it cannot count yet — it needs to be confirmed by someone such as the ketua kampung, penghulu, headmaster or employer, then uploaded again",
+    'income_doc_needs_approver': "this informal income document (a letter, an informal payslip or a declaration form) has not been signed and stamped by an approver (or shows no issuing body), so it cannot count yet — it needs to be confirmed by someone such as the employer, ketua kampung, penghulu or headmaster, then uploaded again",
     'income_ic_needed': "an income document has been uploaded for this household member, but that person's identity card (IC/MyKad) has not been uploaded yet — and it is required, so the application cannot be completed until it is added; we use it to confirm the income document really belongs to that person",
     # The earner's IC is in and matches the income document, but the relationship-proof
     # document (a birth certificate for a mother, a guardianship letter for a guardian) is
@@ -196,7 +196,7 @@ VERDICT_FIX_HINT = {
         'name or profile. Do NOT claim it is or is not blocked — the submission checklist is the '
         'source of truth.'
     ),
-    'declaration_needs_approver': ('Kindly ask them to have the form signed and stamped by an approver (e.g. the ketua kampung, penghulu, headmaster or employer) and upload it again. Do NOT suggest it is fake or doubt the amount.'),
+    'income_doc_needs_approver': ('Kindly ask them to have the document signed and stamped by an approver (e.g. the employer, ketua kampung, penghulu or headmaster) and upload it again. Do NOT suggest it is fake or doubt the amount.'),
     'income_ic_needed': (
         'They added an income document for this household member but not that person\'s IC yet. '
         'Tell them to upload THAT person\'s MyKad (use the exact family member and income document '
@@ -459,7 +459,7 @@ def verdict_for_document(doc):
             ((doc.application.income_earner or '').strip()
              if (doc.application.income_route or '') == 'str' else '')
         if member:
-            return declaration_coach(doc) if _member_ic_doc(doc.application, member) else 'income_ic_needed'
+            return approval_coach(doc) if _member_ic_doc(doc.application, member) else 'income_ic_needed'
     # Utility bill (water / electricity) — the meaningful check is the HOME ADDRESS (these
     # confirm where the family lives). The bill is in a PARENT's name, so we deliberately do
     # NOT flag a name mismatch (that's the wrong "edit your profile name" nudge). Coach only

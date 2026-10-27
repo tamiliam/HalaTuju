@@ -167,13 +167,12 @@ describe('shouldShowCoach', () => {
     expect(shouldShowCoach(proof(true))).toBe(false)   // IC present → the IC anchors the coach
   })
 
-  it('#374: a declaration form still lacking its approver coaches even with the IC present', () => {
-    const form = (declaration_missing: ('header' | 'approver')[]) =>
+  it('#374: an unapproved informal slip is NOT coached with the IC present (bundle budget) — the checklist asks', () => {
+    const form = (approval_missing: ('header' | 'approver')[]) =>
       doc({ doc_type: 'salary_slip',
         income_proof_check: { name: 'X', nric: '', points: [], member: 'father', name_status: 'match',
-          nric_status: 'no_ref', ic_present: true, declaration_missing } } as Partial<ApplicantDocument>)
-    expect(shouldShowCoach(form(['approver']))).toBe(true)
-    expect(shouldShowCoach(form([]))).toBe(false)       // an approved form is quiet
+          nric_status: 'no_ref', ic_present: true, approval_missing } } as Partial<ApplicantDocument>)
+    expect(shouldShowCoach(form(['approver']))).toBe(false)
   })
 })
 

@@ -7,7 +7,7 @@ from apps.courses.models import StudentProfile
 from apps.scholarship.models import Consent
 from apps.scholarship.services import CONSENT_VERSION, age_from_nric, is_minor
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, auth_token, make_application, make_cohort, make_student,
+    APPROVED_INFORMAL_FIELDS, TEST_JWT_SECRET, auth_token, make_application, make_cohort, make_student,
 )
 
 ADULT = 'consent-adult'
@@ -492,7 +492,8 @@ class TestIncomeGateV2(TestCase):
 
     def _support_letter(self, app, member):
         d = self._doc(app, 'income_support_doc', member=member)
-        d.vision_fields = {'student_verdict': 'ok'}   # a real, readable supporting letter
+        d.vision_fields = {'student_verdict': 'ok',   # a real, readable supporting letter — approved (2A, #374)
+                           'fields': dict(APPROVED_INFORMAL_FIELDS)}
         d.save()
         return d
 
@@ -676,7 +677,8 @@ class TestIncomeGateV2(TestCase):
         return ApplicantDocument.objects.create(
             application=app, doc_type='income_support_doc',
             storage_path=f'x/income_support_doc/{member}', household_member=member,
-            vision_fields={'fields': {'kind': 'community_letter', 'amount': 'RM3500'},
+            vision_fields={'fields': {'kind': 'community_letter', 'amount': 'RM3500',
+                                      **APPROVED_INFORMAL_FIELDS},   # 2A (#374): an approved letter
                            'student_verdict': 'ok' if read else 'wrong_doc'})
 
     def test_grandfathered_declared_plus_support_letter_is_income_shown(self):

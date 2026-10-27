@@ -40,7 +40,8 @@ from django.test import TestCase, override_settings
 
 from apps.scholarship import income_engine, profile_engine, services, verdict_engine
 from apps.scholarship.income_declared_gaps import declared_income_gaps
-from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.factories import (APPROVED_INFORMAL_FIELDS, make_application, make_cohort,
+                                              make_student)
 from apps.scholarship.tests.test_income_evidence_homes import (
     FATHER_NAME, FATHER_NRIC, STUDENT_NAME, _doc, _str_doc)
 
@@ -195,7 +196,8 @@ class WhoseStrBase(TestCase):
             _doc(app, 'epf', 'father', fields=_EPF)
         elif evidence == 'letter':
             d = _doc(app, 'income_support_doc', 'father')
-            d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+            d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman', **APPROVED_INFORMAL_FIELDS},
+                               'student_verdict': 'ok'}   # 2A: a letter that counts is approved
             d.save(update_fields=['vision_fields'])
         return app
 

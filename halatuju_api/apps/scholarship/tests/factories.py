@@ -220,6 +220,14 @@ def _stage_index(stage):
             f'in test_factories.py that walks the new stage through the real code.')
 
 
+#: Owner ruling 2A (#374, 2026-10-28): an INFORMAL income document (a support letter, an informal
+#: payslip, a declaration form) counts only when its read found an issuing body and an approver who
+#: signed or stamped it (`income_declaration`). A fixture that means "a letter / informal slip that
+#: COUNTS" carries these fields, as every read since the rule stores them (synthetic, no real name).
+APPROVED_INFORMAL_FIELDS = {'issuer_header': 'KEDAI CONTOH', 'approver_name': 'PENGURUS CONTOH',
+                            'approver_title': 'Pengurus', 'has_stamp_or_signature': 'yes'}
+
+
 # ── The supporting rows ─────────────────────────────────────────────────────────────────────
 def make_org(code=None, **kw):
     """A tenant ``PartnerOrganisation``. Unique code per call unless one is given."""

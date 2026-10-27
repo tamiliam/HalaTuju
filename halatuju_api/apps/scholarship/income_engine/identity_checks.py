@@ -444,12 +444,13 @@ def student_income_proof_check(doc):
     if chain_verified_earner(doc.application, member):
         name_status = nric_status = 'match'
 
-    from ..income_declaration import declaration_missing
+    from ..income_declaration import approval_missing
     return {
         'name': name, 'nric': nric, 'points': points,
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
         'ic_present': ic is not None,
-        # #374: what an income DECLARATION in this slot still lacks to count (header / approver) —
-        # the student's coach speaks on it; [] for a payslip, an EPF, or an approved form.
-        'declaration_missing': list(declaration_missing(doc)),
+        # #374 / ruling 2A: what an INFORMAL payslip or declaration form in this slot still lacks to count
+        # (header / approver) — the student's coach speaks on it; [] for a formal payslip, an EPF, an
+        # approved one, or one not checked yet (that is ours to finish, never the family's to fix).
+        'approval_missing': list(approval_missing(doc)),
     }

@@ -5,6 +5,7 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 
 from apps.scholarship.check2_queries import MAX_CLARIFY, sync_check2_queries
+from apps.scholarship.tests.factories import APPROVED_INFORMAL_FIELDS
 from apps.scholarship.models import (
     ApplicantDocument, FundingNeed, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
@@ -210,7 +211,8 @@ class TestDeclaredIncomeDocRequest(_Base):
         ApplicantDocument.objects.create(
             application=self.app, doc_type='income_support_doc', household_member='father',
             storage_path='x/support',
-            vision_fields={'fields': {'name': 'ABU', 'amount': 'RM1,200'}, 'student_verdict': 'ok'})
+            vision_fields={'fields': {'name': 'ABU', 'amount': 'RM1,200', **APPROVED_INFORMAL_FIELDS},
+                           'student_verdict': 'ok'})       # 2A (#374): an approved letter
         sync_check2_queries(self.app)
         item.refresh_from_db()
         self.assertEqual(item.status, 'resolved')

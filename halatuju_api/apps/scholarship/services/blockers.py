@@ -281,11 +281,16 @@ def income_doc_blockers(application):
         # the same answer the student's own income cue (`income_shown`) and Check 2 already give.
         # With the IC still missing, the IC ask alone is the next step: that card may match the STR.
         if not member_income_evidenced(application, m):
-            # #374 (owner): a declaration form with no issuing body / approver is asked for again,
-            # signed and stamped — not the generic "show their income" (the form IS their proof).
-            from ..income_declaration import UNAPPROVED, unapproved_declaration_member
-            code = UNAPPROVED if unapproved_declaration_member(application, m) else 'income_evidence_missing'
-            out.append(f'{code}:{m}')
+            # #374 / ruling 2A: an informal document with no issuing body / approver is asked for again,
+            # signed and stamped; one we have not CHECKED yet (read before the rule) is ours to finish —
+            # "still checking, try later" (TD-394 / TD-390), never the family's fault.
+            from ..income_declaration import UNAPPROVED, member_approval_state
+            state = member_approval_state(application, m)
+            if state == 'unchecked':
+                if STR_PENDING_OUR_READ not in out:
+                    out.append(STR_PENDING_OUR_READ)
+            else:
+                out.append(f'{UNAPPROVED if state else "income_evidence_missing"}:{m}')
         elif not (ic_missing or cluster_income_matched(application, m)):
             str_carried.append(m)
         rel = relationship_doc_for(m)

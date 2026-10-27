@@ -9,7 +9,8 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.scholarship.models import ApplicantDocument, FundingNeed
-from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.factories import (APPROVED_INFORMAL_FIELDS, make_application, make_cohort,
+                                              make_student)
 from apps.scholarship.verdict_engine import build_verdict
 
 
@@ -1309,8 +1310,8 @@ class TestIncomeDeclared(TestCase):
 
     def test_support_doc_accepts_declared_when_no_str(self):
         # V1 (#2): a support doc backs the declared income only when it READ (student_verdict='ok').
-        _add_doc(self.app, 'income_support_doc', member='father',
-                 student_verdict='ok', fields={'name': 'ABU', 'amount': 'RM1,200'})
+        _add_doc(self.app, 'income_support_doc', member='father',      # an approved letter (2A, #374)
+                 student_verdict='ok', fields={'name': 'ABU', 'amount': 'RM1,200', **APPROVED_INFORMAL_FIELDS})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'review')  # #374: a declared amount is never Certain (was verified)
         self.assertIn('income_declared_accepted_evidenced', _codes(f['evidence']))
@@ -1562,15 +1563,27 @@ class TestStrRouteNoStrFallsThroughToSalary(TestCase):
         # evenness rule: `_income_genuineness_docs` caps only the documents a route REQUIRES, and the
         # salary route has no fingerprint cap at all. TD-410 (owner option A, 2026-10-27) keeps it so:
         # the informal family's `suspect` means "not a standard payslip", not "may be fake", and it
-        # still COUNTS; only a proof flagged as possibly fake stops counting (the test below).
+        # still COUNTS; only a proof flagged as possibly fake stops counting (the test below). Since
+        # ruling 2A (#374) an informal slip also needs its approver: this one is signed and stamped.
         app = self._app()
         slip = self._documented_father(app)
         slip.vision_fields = dict(slip.vision_fields, authenticity={
-            'status': 'suspect', 'probability': 0.5, 'doc_seen': 'informal'})
+            'status': 'suspect', 'probability': 0.5, 'doc_seen': 'informal'},
+            fields=dict(slip.vision_fields['fields'], **APPROVED_INFORMAL_FIELDS))
         slip.save(update_fields=['vision_fields'])
         f = _facts(app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertNotIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_an_informal_payslip_with_no_approver_carries_nothing(self):
+        # Ruling 2A (#374): the same slip, read since the rule, showing no issuing body or approver.
+        app = self._app()
+        slip = self._documented_father(app)
+        slip.vision_fields = dict(slip.vision_fields, authenticity={'status': 'suspect', 'doc_seen': 'informal'},
+                                  fields=dict(slip.vision_fields['fields'], issuer_header='', approver_name='',
+                                              approver_title='', has_stamp_or_signature='no'))
+        slip.save(update_fields=['vision_fields'])
+        self.assertNotEqual(_facts(app)['income']['status'], 'verified')
 
     def test_an_approved_declaration_form_is_probable_never_certain(self):
         # #374 (owner ruling 2026-10-27): an income declaration with an issuing body and an approver

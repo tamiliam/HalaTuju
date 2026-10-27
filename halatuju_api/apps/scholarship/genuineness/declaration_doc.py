@@ -9,7 +9,8 @@ A declaration is recognised by its TITLE wording, from the OCR text, in either i
 `income_support_doc`). It is scored `suspect` with `doc_seen='declaration'` — never genuine, never a
 payslip family — and whether it COUNTS is a separate question asked of what the read found on it: an
 issuing body (header) and an approver (a named / titled person who signed or stamped it) —
-`income_declaration.declaration_missing`. Pure + deterministic; never raises.
+`income_declaration.approval_missing` (owner ruling 2A, 2026-10-28: the same rule covers EVERY informal income
+document). Pure + deterministic; never raises.
 """
 from .results_doc import _any_token, _norm_fold_upper_alnum
 

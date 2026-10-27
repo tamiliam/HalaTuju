@@ -21,7 +21,8 @@ from django.utils import timezone
 
 from apps.scholarship import income_engine, income_shown as isx
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.factories import (APPROVED_INFORMAL_FIELDS, make_application, make_cohort,
+                                              make_student)
 
 #: A payslip whose OCR read a clean monthly gross (the same shape the homes suite pins).
 _SLIP_FIELDS = {'gross': 'RM 1,800.00', 'net': 'RM 1,650.00', 'period': '08/2026'}
@@ -56,6 +57,8 @@ class IncomeShownBase(TestCase):
         vf = {}
         if fields is not None:
             vf['fields'] = dict(fields)
+            if doc_type == 'income_support_doc':        # 2A (#374): a fixture letter is an approved one
+                vf['fields'] = {**APPROVED_INFORMAL_FIELDS, **vf['fields']}
         if authenticity is not None:
             vf['authenticity'] = {'status': authenticity}
         if student_verdict is not None:

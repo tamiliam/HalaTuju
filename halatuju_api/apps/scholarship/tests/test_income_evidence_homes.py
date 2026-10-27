@@ -46,7 +46,8 @@ from django.utils import timezone
 from apps.scholarship import income_engine, services, verdict_engine
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.verdict_income_salary import verdict_income_salary
-from apps.scholarship.tests.factories import make_application, make_cohort, make_student
+from apps.scholarship.tests.factories import (APPROVED_INFORMAL_FIELDS, make_application, make_cohort,
+                                              make_student)
 
 # ── Document builders ───────────────────────────────────────────────────────────────────────
 #: A salary slip whose OCR read a clean monthly gross. No authenticity signal → the
@@ -209,7 +210,7 @@ class TestEachWayAlone(IncomeHomesBase):
         _doc(app, 'income_support_doc', 'father', fields={'employer': 'Kedai Runcit Aman'})
         # The letter must have READ — `has_income_support_doc` requires student_verdict == 'ok'.
         d = app.documents.get(doc_type='income_support_doc')
-        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman', **APPROVED_INFORMAL_FIELDS}, 'student_verdict': 'ok'}
         d.save(update_fields=['vision_fields'])
         self.assertIs(self.served(app), True)
         self.assertIs(self.live_gate(app), False)
@@ -258,7 +259,7 @@ class TestNearMisses(IncomeHomesBase):
         app = self._app()
         self._ic(app)
         d = _doc(app, 'income_support_doc', 'father', fields={'employer': 'Kedai Runcit Aman'})
-        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman', **APPROVED_INFORMAL_FIELDS}, 'student_verdict': 'ok'}
         d.save(update_fields=['vision_fields'])
         self.assertIs(self.served(app), False)
         self.assertIs(self.live_gate(app), True)
@@ -435,7 +436,7 @@ class TestFrozenGate(IncomeHomesBase):
         app = self._app(submitted=True, declared={'father': 1200})
         self._ic(app)
         d = _doc(app, 'income_support_doc', 'father')
-        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman', **APPROVED_INFORMAL_FIELDS}, 'student_verdict': 'ok'}
         d.save(update_fields=['vision_fields'])
         present = set(app.documents.filter(superseded_at__isnull=True)
                       .values_list('doc_type', flat=True))
@@ -537,7 +538,7 @@ class TestHouseholdShapes(IncomeHomesBase):
         self.assertIs(income_engine.member_is_informal(app, 'father'), True)
         self.assertIs(self.served(app), False)
         d = _doc(app, 'income_support_doc', 'father')
-        d.vision_fields = {'fields': {'employer': 'Pasar Malam'}, 'student_verdict': 'ok'}
+        d.vision_fields = {'fields': {'employer': 'Pasar Malam', **APPROVED_INFORMAL_FIELDS}, 'student_verdict': 'ok'}
         d.save(update_fields=['vision_fields'])
         self.assertIs(self.served(app), True)
 
@@ -580,7 +581,7 @@ class TestVerdictHome(IncomeHomesBase):
         app = self._app(declared={'father': 1200})
         self._ic(app)
         d = _doc(app, 'income_support_doc', 'father')
-        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman', **APPROVED_INFORMAL_FIELDS}, 'student_verdict': 'ok'}
         d.save(update_fields=['vision_fields'])
         status, codes = self.verdict(app)
         self.assertNotIn('income_declared_needs_evidence', codes)
@@ -1201,7 +1202,7 @@ class TestTheFallThroughGateStandsWithoutTheStr(IncomeHomesBase):
         evidence in this section that owes the STR nothing. ⚠ `student_verdict` sits at the TOP
         of `vision_fields`, not under `fields`; `income_support_doc_read` reads it there."""
         d = _doc(app, 'income_support_doc', member)
-        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman'}, 'student_verdict': 'ok'}
+        d.vision_fields = {'fields': {'employer': 'Kedai Runcit Aman', **APPROVED_INFORMAL_FIELDS}, 'student_verdict': 'ok'}
         d.save(update_fields=['vision_fields'])
         return d
 
