@@ -84,6 +84,21 @@ class Programme(models.Model):
         default=True, db_default=True,
         help_text="The apply form offers 'Facebook / WhatsApp' as who referred the student.",
     )
+    # ── Does this gift ask for STPM-level results? (owner ruling D16, 2026-10-27) ──────────────
+    #
+    # BrightPath flagship is a POST-SPM programme (students submit SPM results); BrightPath Sabah is
+    # where STPM-level results matter. So WHICH DOCUMENTS the third results route asks for is a
+    # per-gift setting. OFF: the gift is SPM-only for academic evidence — no D12/D14 mapping (the
+    # SPM slip stays as the programme set it), no higher-results card, no `higher_owed` ask, no
+    # "Move it to STPM results". It is about documents only: the eligibility gate (merit / CGPA
+    # floor) is untouched. ON by default, in the DATABASE too (`db_default`): every gift asked
+    # before this. The ONE reader is `results_route.gift_asks_higher`; nothing else should be.
+    asks_higher_results = models.BooleanField(
+        default=True, db_default=True,
+        verbose_name='Ask for STPM-level results',
+        help_text='Students holding STPM, Matriculation, Asasi or Diploma results are asked to '
+                  'upload them (third results route). Off: this gift asks for the SPM slip only.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

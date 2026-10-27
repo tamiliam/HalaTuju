@@ -423,6 +423,9 @@ before/after list before anything that moves applicants.
   #304 (academic transcript, kind unclear) and #337 (live file is an SPM certificate). The reviewer
   note was NOT written yet — the cockpit renders only 'only_spm'/'refiled_spm' kinds; S4 adds the
   reverse-move note kind and backfills these 6.
+- **D16 (2026-10-27):** whether a gift asks for STPM-level results is PER GIFT
+  (`Programme.asks_higher_results`, default on; BrightPath flagship off — a post-SPM programme). Off:
+  no D12/D14 mapping, no `higher_owed`, no reverse move; eligibility unchanged. See decisions.md.
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 

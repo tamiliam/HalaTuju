@@ -220,6 +220,12 @@ class AdminProgrammeConfigurationView(_AdminBase):
     `fixed_sources` (request #44, 2026-10-25): GET lists the three fixed choices as
     `{code, on, switchable}`; `halatuju` and `social` are switched in the SAME `sources` map (a
     source can never take a fixed code), `other` is refused (`fixed_source_locked`). Same audit line.
+
+    `asks_higher_results` (owner ruling D16, 2026-10-27): GET serves the gift's boolean; PUT may
+    send `asks_higher_results: true|false` beside (or instead of) `items` / `sources` — anything
+    but a JSON boolean is refused (`bad_asks_higher_results`) before anything is written. A change
+    writes `AUDIT programme_setting_set … setting=asks_higher_results was=on now=off`. It reaches
+    unsubmitted applications only; a submitted one keeps its frozen requirement.
     """
 
     ROLES = ('org_admin',)
@@ -292,6 +298,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
             'items': items,
             'sources': gift_sources.sources_for(programme),
             'fixed_sources': gift_sources.fixed_sources_for(programme),
+            'asks_higher_results': programme.asks_higher_results,      # D16
         }
 
     def get(self, request):
@@ -317,7 +324,7 @@ class AdminProgrammeConfigurationView(_AdminBase):
         from ..models import ITEM_STATE_CHOICES, ApplicationItem, ProgrammeApplicationItem
         valid_states = {s for s, _ in ITEM_STATE_CHOICES}
         # `items` may be omitted when only sources change; at least one of the two must be sent.
-        if 'items' not in request.data and 'sources' not in request.data:
+        if not any(k in request.data for k in ('items', 'sources', 'asks_higher_results')):
             return Response({'error': 'bad_items', 'code': 'bad_items'},
                             status=status.HTTP_400_BAD_REQUEST)
         changes = request.data.get('items', [])
@@ -343,6 +350,10 @@ class AdminProgrammeConfigurationView(_AdminBase):
                 return Response({'error': 'core_item', 'code': 'core_item',
                                  'item': f'{kind}:{code}'}, status=status.HTTP_400_BAD_REQUEST)
             resolved.append((item, state))
+        asks_higher = request.data.get('asks_higher_results', None)       # D16
+        if asks_higher is not None and not isinstance(asks_higher, bool):
+            return Response({'error': 'bad_asks_higher_results', 'code': 'bad_asks_higher_results'},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
             source_changes = gift_sources.resolve_changes(request.data.get('sources'), programme)
             fixed_changes = gift_sources.resolve_fixed_changes(request.data.get('sources'))
@@ -374,4 +385,12 @@ class AdminProgrammeConfigurationView(_AdminBase):
                 logger.info('AUDIT programme_source_set programme=%s source=%s was=%s now=%s by=%s',
                             programme.code, code, 'on' if was else 'off',
                             'on' if now else 'off', admin.email or '')
+            # D16: one boolean on the (org-fenced) programme; audited only when it changes.
+            if asks_higher is not None and asks_higher != programme.asks_higher_results:
+                was = programme.asks_higher_results
+                programme.asks_higher_results = asks_higher
+                programme.save(update_fields=['asks_higher_results'])
+                logger.info('AUDIT programme_setting_set programme=%s setting=asks_higher_results '
+                            'was=%s now=%s by=%s', programme.code, 'on' if was else 'off',
+                            'on' if asks_higher else 'off', admin.email or '')
         return Response(self._payload(programme))

@@ -54,6 +54,19 @@ _POST_SPM_TYPES = frozenset({'stpm', 'matric', 'asasi', 'pismp', 'diploma'})
 _PASSED_PRE_U = frozenset({'stpm', 'matric', 'asasi'})
 
 
+def gift_asks_higher(application) -> bool:
+    """Owner ruling D16 (2026-10-27): does this application's GIFT ask for STPM-level results?
+    `Programme.asks_higher_results` — the ONE reader. False (BrightPath flagship, a post-SPM
+    programme): the gift is SPM-only for academic evidence — no D12/D14 mapping
+    (`map_documents`), no `higher_owed` slot / cap / ask, no "Move it to STPM results"
+    (`wrong_slip.move_offered`). True — and no programme at all (the platform floor) — is every
+    rule as before. It decides which DOCUMENTS are asked, never the eligibility gate (merit /
+    CGPA floor unchanged), and a submitted application's frozen snapshot is never rewritten."""
+    from .requirements import _programme_of
+    programme = _programme_of(application)
+    return True if programme is None else bool(getattr(programme, 'asks_higher_results', True))
+
+
 def destination(application) -> str:
     """Where the student is going: DEGREE, POST_SPM or UNDECIDED ('').
 
@@ -131,6 +144,8 @@ def map_documents(application, resolved: dict) -> dict:
     state = resolved.get('results_slip')
     if state not in ('required', 'optional'):
         return resolved                    # off, or anything unknown: the programme asks for no results
+    if not gift_asks_higher(application):
+        return resolved                    # D16: an SPM-only gift — the SPM slip as the programme set it
     need = higher_need(application)
     if not need:
         return resolved

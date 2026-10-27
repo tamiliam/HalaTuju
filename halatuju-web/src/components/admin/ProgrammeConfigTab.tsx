@@ -18,6 +18,7 @@ import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
 import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import ProgrammeSourcesCard from '@/components/admin/ProgrammeSourcesCard'
+import { Toggle } from '@/components/sources/shared'
 import {
   getProgrammeConfiguration, saveProgrammeConfiguration,
   type ProgrammeConfigItem, type ProgrammeConfiguration, type ProgrammeItemState,
@@ -102,6 +103,9 @@ export default function ProgrammeConfigTab() {
   // The referral-source switches (2026-10-08) are a second draft beside the items, shown by
   // `ProgrammeSourcesCard` and saved by the SAME bar — one Save, one pending count, one Discard.
   const [sourceDraft, setSourceDraft] = useState<SourceDraft>({})
+  // D16 (2026-10-27): "Ask for STPM-level results" — one more switch in the SAME draft and bar.
+  // null = untouched; the server's value is `config.asks_higher_results`.
+  const [higherDraft, setHigherDraft] = useState<boolean | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [programmeChoices, setProgrammeChoices] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
@@ -137,6 +141,7 @@ export default function ProgrammeConfigTab() {
       setConfig(c)
       setDraft(draftFrom(c.items))
       setSourceDraft(sourceDraftFrom(sourceSwitches(c)))
+      setHigherDraft(null)
       setProgrammeChoices(null)
     } catch (e) {
       const err = e as Error & { body?: { code?: string; programmes?: string[] } }
@@ -155,7 +160,10 @@ export default function ProgrammeConfigTab() {
   // The sources AND the switchable fixed choices (request #44): one draft, one diff, one PUT map.
   const switches = useMemo(() => sourceSwitches(config), [config])
   const pendingSources = useMemo(() => sourceChanges(switches, sourceDraft), [switches, sourceDraft])
-  const pendingCount = pending.length + Object.keys(pendingSources).length
+  const higherOn = higherDraft ?? config?.asks_higher_results ?? true
+  const higherChanged = config?.asks_higher_results !== undefined && higherDraft !== null
+    && higherDraft !== config.asks_higher_results
+  const pendingCount = pending.length + Object.keys(pendingSources).length + (higherChanged ? 1 : 0)
   const docs = useMemo(() => (config ? documents(config.items) : []), [config])
   const qs = useMemo(() => (config ? questions(config.items) : []), [config])
 
@@ -175,6 +183,7 @@ export default function ProgrammeConfigTab() {
       setDraft(draftFrom(config.items))
       setSourceDraft(sourceDraftFrom(sourceSwitches(config)))
     }
+    setHigherDraft(null)
     setOutcome({ kind: 'idle' })
   }
 
@@ -184,10 +193,13 @@ export default function ProgrammeConfigTab() {
     // Do NOT clear the outcome here on the way in — a refusal must never be wiped by a loader
     // (the sponsor-terms lesson). It is replaced only by this save's own result.
     try {
-      const c = await saveProgrammeConfiguration(pending, programme, { token }, pendingSources)
+      const c = higherChanged
+        ? await saveProgrammeConfiguration(pending, programme, { token }, pendingSources, higherOn)
+        : await saveProgrammeConfiguration(pending, programme, { token }, pendingSources)
       setConfig(c)
       setDraft(draftFrom(c.items))
       setSourceDraft(sourceDraftFrom(sourceSwitches(c)))
+      setHigherDraft(null)
       setOutcome({ kind: 'saved' })
     } catch (e) {
       const err = e as Error & { body?: { code?: string; item?: string; source?: string } }
@@ -275,6 +287,17 @@ export default function ProgrammeConfigTab() {
               {key === 'documents' && (
                 <ProgrammeSourcesCard sources={sources} fixed={config.fixed_sources} draft={sourceDraft}
                   onToggle={toggleSource} t={t} />
+              )}
+              {key === 'documents' && config.asks_higher_results !== undefined && (
+                <section className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-ground-200 bg-ground-0 px-5 py-4 shadow-sm"
+                  data-testid="asks-higher">
+                  <div className="min-w-0">
+                    <p className="font-medium text-ground-900">{t('admin.programme.config.asksHigher')}</p>
+                    <p className="mt-0.5 text-sm text-ground-500">{t('admin.programme.config.asksHigherHint')}</p>
+                  </div>
+                  <Toggle on={higherOn} label={t('admin.programme.config.asksHigher')}
+                    onClick={() => { setOutcome({ kind: 'idle' }); setHigherDraft(!higherOn) }} />
+                </section>
               )}
               <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"
                 aria-labelledby={`section-${key}`}>

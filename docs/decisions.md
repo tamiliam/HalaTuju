@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## Whether a gift asks for STPM-level results is a per-gift setting; off = SPM-only evidence — 2026-10-27 (owner ruling D16)
+
+BrightPath flagship is a POST-SPM programme (students submit SPM results; it was never for post-STPM
+students); BrightPath Sabah is where STPM-level results matter. So the third results route's document
+rules are a property of the GIFT: `Programme.asks_higher_results`, default ON (new and existing gifts —
+every gift asked before this), flagship OFF by the migration's data step. Read through ONE helper,
+`results_route.gift_asks_higher`, by the three doors that ask for higher results: the D12/D14
+requirement mapping, `higher_owed` (slot, cap, Check-2 ask) and the S4 reverse move. OFF is SPM-only
+for academic EVIDENCE — the SPM slip stays as the programme set it — and changes nothing about
+ELIGIBILITY: an STPM-level holder on such a gift is still assessed on the CGPA floor as before (D3).
+The reviewer-facing wrong-slip note stays (it says what a document IS; it asks nothing). Submitted
+applications keep their frozen snapshots; the switch reaches unsubmitted ones and the `higher_owed`
+display of submitted ones only. A boolean rather than a catalogue item: `higher_results` is not an
+organisation's catalogue choice but the per-applicant relabelling of the core results item, and this
+switch only says whether that relabelling applies. Switched on Configuration with a site Toggle,
+saved and audited through the existing Configuration PUT (`programme_setting_set`).
+
 ## Higher results owed over a pre-S3 snapshot are shown, capped and asked for — never un-submitted — 2026-10-27 (#388; owner option A)
 
 An application submitted before S3a keeps the requirement it froze (S3 rule, unchanged). Where that

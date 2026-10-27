@@ -117,8 +117,10 @@ def move_offered(application) -> bool:
     """D15 + D12: is the "Move it to … results" action on offer for this applicant? Only where the
     Documents page shows the higher-results card (a degree, or no course chosen while holding higher
     results), and only before the Step-4 Submit (the S3 actions' rule: 409 after it)."""
-    from . import requirements
+    from . import requirements, results_route
     if application is None or getattr(application, 'profile_completed_at', None) is not None:
+        return False
+    if not results_route.gift_asks_higher(application):     # D16: an SPM-only gift has no card
         return False
     return requirements.resolve(application, 'document').get('higher_results') in ('required', 'optional')
 

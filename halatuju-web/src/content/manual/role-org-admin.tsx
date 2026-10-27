@@ -190,7 +190,9 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
         for, which organisations its &ldquo;Who referred you?&rdquo; list offers — and whether that list also
         offers <strong>Facebook / WhatsApp</strong> and <strong>Halatuju.xyz</strong>; <strong>Other</strong> is
-        always there — and its intake year — a source
+        always there — whether it <strong>asks for STPM-level results</strong> (switch it off for a gift meant
+        for students just out of SPM: it then asks for the SPM results slip only; who is eligible does not
+        change, and submitted applications keep what they were asked) — and its intake year — a source
         switched on in <strong>Sources</strong> joins no gift until you switch it on there),
         <strong> Payments</strong> and <strong>Spending</strong> —
         <strong> appears only once you are inside a gift</strong>. Open <strong>Programmes</strong> and choose a

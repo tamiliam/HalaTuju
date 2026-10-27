@@ -6223,6 +6223,8 @@
         "sourcesFixedTitle": "Pilihan tetap",
         "sourcesFixedHint": "Dipaparkan selepas sumber pemberian ini sendiri. Matikan satu dan borang ini tidak lagi menawarkannya; {other} kekal pada setiap borang.",
         "sourcesAlwaysOn": "Sentiasa ada",
+        "asksHigher": "Minta keputusan peringkat STPM",
+        "asksHigherHint": "Pelajar yang memiliki keputusan STPM, Matrikulasi, Asasi atau Diploma diminta memuat naiknya, dan kursus ijazah memerlukannya. Matikan untuk pemberian lepasan SPM: pemberian itu kemudian hanya meminta slip keputusan SPM. Permohonan yang telah dihantar kekal dengan apa yang diminta.",
         "sourceGone": "{source} telah dimatikan dalam Sumber, jadi ia tiada lagi dalam senarai ini. Tiada apa-apa disimpan; semak dan simpan semula.",
         "desc": {
           "document": {

@@ -77,6 +77,8 @@ export interface ProgrammeConfiguration {
   items: ProgrammeConfigItem[]
   sources: ProgrammeConfigSource[]
   fixed_sources?: ProgrammeConfigFixedSource[]
+  /** D16 (2026-10-27): does this gift ask for STPM-level results? Absent from an older api. */
+  asks_higher_results?: boolean
 }
 
 /** GET the configuration. `programme` is optional for an org_admin (their one programme) and
@@ -96,9 +98,12 @@ export async function saveProgrammeConfiguration(
   items: Pick<ProgrammeConfigItem, 'kind' | 'code' | 'state'>[],
   programme?: string, options?: ApiOptions,
   sources?: Record<string, boolean>,
+  asksHigherResults?: boolean,
 ): Promise<ProgrammeConfiguration> {
   const q = programme ? `?programme=${encodeURIComponent(programme)}` : ''
-  const body = sources && Object.keys(sources).length > 0 ? { items, sources } : { items }
+  const body: Record<string, unknown> = sources && Object.keys(sources).length > 0 ? { items, sources } : { items }
+  // D16: sent only when it changed, so a save of items alone never touches it.
+  if (asksHigherResults !== undefined) body.asks_higher_results = asksHigherResults
   return adminMutate(`/api/v1/admin/scholarship/programme/configuration/${q}`, 'PUT', body, options)
 }
 

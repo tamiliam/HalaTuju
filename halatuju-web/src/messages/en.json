@@ -6223,6 +6223,8 @@
         "sourcesFixedTitle": "Fixed choices",
         "sourcesFixedHint": "Shown after this gift's own sources. Switch one off and this form stops offering it; {other} stays on every form.",
         "sourcesAlwaysOn": "Always on",
+        "asksHigher": "Ask for STPM-level results",
+        "asksHigherHint": "Students holding STPM, Matriculation, Asasi or Diploma results are asked to upload them, and a degree course needs them. Switch off for a post-SPM gift: it then asks for the SPM results slip only. Submitted applications keep what they were asked.",
         "sourceGone": "{source} was switched off in Sources, so it has left this list. Nothing was saved; check and save again.",
         "desc": {
           "document": {

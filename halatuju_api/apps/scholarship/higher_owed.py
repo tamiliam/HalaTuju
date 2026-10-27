@@ -48,6 +48,8 @@ def _owed(application) -> str:
     kind = results_route.held_kind(application)
     if not kind:
         return ''
+    if not results_route.gift_asks_higher(application):        # D16: an SPM-only gift asks none
+        return ''
     docs = requirements.resolve(application, 'document')        # the FROZEN copy once submitted
     if docs.get('higher_results') == 'required' or docs.get('results_slip', 'off') == 'off':
         return ''

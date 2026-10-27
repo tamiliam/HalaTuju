@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## A gift chooses whether it asks for STPM-level results (owner ruling D16) - 2026-10-27
+
+BrightPath flagship (`brightpath-flagship`, b40-2026) is a POST-SPM programme; BrightPath Sabah is
+where STPM-level results matter. New `Programme.asks_higher_results` (verbose "Ask for STPM-level
+results"), **default ON** for new and existing gifts; **scholarship 0179_programme_asks_higher_results**
+(plain ADD COLUMN with a database default + a data step setting the flagship OFF; migrate-first, DDL and
+UPDATE verbatim in the migration docstring). Ships with the #388 follow-up below (one release; no new
+`VERDICT_ENGINE_VERSION`, .2 never went live). No `MODEL_VERSION`.
+- **One reader** — `results_route.gift_asks_higher(application)` (no gift → True). OFF means:
+  `map_documents` returns the programme's answer untouched (no D12 / D14 mapping: the SPM slip stays
+  required as set, no higher-results card, no "post-SPM results a must"); `higher_owed._owed` is ''
+  (no Missing slot, no Probable cap, no Check-2 `higher_results_requested`); `wrong_slip.move_offered`
+  is False (no "Move it to STPM results"; the endpoint refuses `higher_card_not_shown`). The reviewer's
+  wrong-slip note (`results_slip_is_higher`) stays. Eligibility (merit / CGPA floor) is untouched.
+  Submitted applications keep their frozen snapshots — none is rewritten.
+- **Configuration** — the gift's Configuration screen gets a site Toggle above Documents, in the same
+  draft and SaveBar; PUT `asks_higher_results: true|false` (non-boolean → 400
+  `bad_asks_higher_results`, nothing written), audit `AUDIT programme_setting_set … setting=asks_higher_results
+  was=on now=off by=…` only on a change; org fence and role unchanged. en/ms/ta (admin slice). Org-admin Guide line (the FAQ file is at its 600-line limit).
+- Tests: `test_gift_asks_higher.py` (18), `ProgrammeConfigTab.asksHigher.test.tsx` (4).
+- Live (read-only, 2026-10-27): with the flagship OFF the `higher_owed` set is #254, #255, #265, #388
+  (all `bpb-sabah-2026`); #132 and #133 (flagship) drop out. The flagship has 50 unsubmitted
+  applications, no live higher-results upload and no snapshot holding `higher_results`.
+
 ## Higher results owed over a pre-S3 snapshot (#388, owner option A) - 2026-10-27
 
 A SUBMITTED application frozen before S3a ("SPM slip required", no `higher_results` key) whose
