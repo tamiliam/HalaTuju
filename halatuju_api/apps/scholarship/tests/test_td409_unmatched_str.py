@@ -36,9 +36,9 @@ class _STRCase(TestCase):
                      vision_name=name, vision_nric=nric)
         return app
 
-    def _str(self, app, name, nric='', **kw):
+    def _str(self, app, name, nric='', year='2026', **kw):
         return _doc(app, 'str', vision_fields={
-            'fields': {'recipient_name': name, 'recipient_nric': nric, 'status': 'Lulus', 'year': '2026',
+            'fields': {'recipient_name': name, 'recipient_nric': nric, 'status': 'Lulus', 'year': year,
                        'source_type': 'semakan_status'}, 'student_verdict': 'ok', 'error': ''}, **kw)
 
 
@@ -83,6 +83,19 @@ class TheUpload(_STRCase):
                 self.assertEqual(item.status, 'open')
                 self.assertIs(item.params.get('needs_officer_eye'), True)
 
+    def test_a_request_the_payslip_cleared_closes_and_is_not_held(self):
+        """Review probe: the father's payslip shows the income on its own; an unmatched STR beside it
+        is not why `income_proof_missing` cleared, so it closes as before — never "our team is checking"."""
+        from apps.scholarship.resolution import sync_resolution_items
+        app = self._app()
+        system, _officer = self._requests(app)
+        _doc(app, 'salary_slip', household_member='father')
+        self._str(app, 'TAN AH KOW')
+        sync_resolution_items(app)
+        system.refresh_from_db()
+        self.assertEqual((system.status, system.resolved_by), ('resolved', 'system'))
+        self.assertNotIn('needs_officer_eye', system.params)
+
     def test_the_familys_own_str_closes_both(self):
         app = self._app()
         system, officer = self._requests(app)
@@ -102,6 +115,20 @@ class ThePromotion(_STRCase):
         app = self._app()
         live = self._str(app, 'TAN AH KAU')
         self.assertIs(should_promote(self._str(app, 'TAN AH KOW'), live, usable=True), False)
+
+    def test_a_stale_matched_str_is_not_protected(self):
+        """Review probe: the father's 2025 STR (matched, stale) is live; the mother's 2026 STR arrives
+        before her IC (unmatched). It must replace the stale copy (TD-403), or the gate keeps saying
+        "your STR is from 2025" and her IC slot is never offered."""
+        from apps.scholarship.income_engine import student_str_check
+        from apps.scholarship.promotion import should_promote
+        app = self._app()
+        app.documents.filter(doc_type='parent_ic', household_member='mother').delete()
+        live = self._str(app, 'TAN AH KAU', year='2025')
+        self.assertEqual(student_str_check(live)['current_status'], 'stale')
+        new = self._str(app, 'LIM MEI LING')
+        self.assertNotIn('match', (student_str_check(new)['name_status'], student_str_check(new)['nric_status']))
+        self.assertIs(should_promote(new, live, usable=True), True)
 
     def test_a_matched_str_still_displaces_an_unmatched_one(self):
         from apps.scholarship.promotion import should_promote
@@ -139,6 +166,20 @@ class CheckTwo(_STRCase):
         item = self._ask(app)
         self.assertIsNotNone(item)
         self.assertEqual((item.status, item.doc_type), ('open', 'str'))
+
+    def test_a_reopened_ask_drops_the_officer_hold(self):
+        """Review: a re-raisable request that re-opens asks the student again — its own ask shows, not
+        the "our team is checking" card a hold left behind."""
+        app = self._app()
+        self._str(app, 'TAN AH KOW')
+        item = self._ask(app)
+        item.status, item.resolved_by = 'resolved', 'admin'
+        item.params = {'needs_officer_eye': True, 'escalated_at': '2026-10-27T00:00:00'}
+        item.save()
+        self._ask(app)                                                   # the gap is still there → re-open
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+        self.assertEqual(item.params, {})
 
     def test_the_familys_own_str_is_not_asked(self):
         app = self._app()

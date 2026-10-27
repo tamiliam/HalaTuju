@@ -215,6 +215,12 @@ def hold_for_officer(item) -> None:
     item.save(update_fields=['params'])
 
 
+def released_from_officer(params) -> dict:
+    """`params` without the `hold_for_officer` / circuit-breaker hold (TD-409 review): a request that
+    RE-OPENS asks the student again, so it must show its own ask, not "our team is checking"."""
+    return {k: v for k, v in (params or {}).items() if k not in ('needs_officer_eye', 'escalated_at')}
+
+
 def not_checked_issuer(vision_fields) -> str:
     """The `{issuer}` of the officer's `offer_issuer_not_checked` line (owner ruling A): the stored
     NOT CHECKED offer's issuer, by its `doc_seen` key. The verdict's Pathway card reads it off the offer

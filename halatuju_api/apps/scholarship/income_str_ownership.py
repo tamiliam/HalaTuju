@@ -217,6 +217,12 @@ def hold_if_str_unmatched(application, item) -> bool:
     team is checking" card), who closes it by hand. True when held. Reads the STR only for an STR item."""
     if getattr(item, 'doc_type', '') != 'str' or not _unmatched(_latest_str_check(application), application):
         return False
+    # Review: hold only a request still open BECAUSE of the STR — when a working member's income is shown
+    # on its own (a usable payslip, a readable EPF, an amount with a letter), that cleared it: let it close.
+    from . import income_engine as ie
+    from .income_shown import income_shown
+    if any(income_shown(application, m).shown for m in ie.effective_working_members(application, any_route=True)):
+        return False
     if not (item.params or {}).get('needs_officer_eye'):
         from .genuineness.offer_issuers import hold_for_officer
         hold_for_officer(item)

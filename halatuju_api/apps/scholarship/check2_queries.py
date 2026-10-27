@@ -24,6 +24,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from . import high_utility_variant as hu, higher_owed, income_str_ownership as own
+from .genuineness.offer_issuers import released_from_officer
 from .models import ResolutionItem
 from .str_check_memo import one_str_reading
 from .submission_review import completeness_gaps
@@ -521,13 +522,11 @@ def sync_check2_queries(application):
                 # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
                 # stale resolving doc/text so the student is asked for a fresh one. V3 (#6): not
                 # post-lock — a concluded case doesn't re-ask.
-                item.status = 'open'
-                item.resolved_by = ''
-                item.resolved_at = None
-                item.resolution_text = ''
-                item.resolution_doc = None
+                item.status, item.resolved_by, item.resolved_at = 'open', '', None
+                item.resolution_text, item.resolution_doc = '', None
+                item.params = released_from_officer(item.params)   # TD-409 review: the real ask, not "checking"
                 item.save(update_fields=['status', 'resolved_by', 'resolved_at',
-                                         'resolution_text', 'resolution_doc'])
+                                         'resolution_text', 'resolution_doc', 'params'])
                 raised_student_visible = True
         elif item is not None and item.status == 'open' and not own.hold_if_str_unmatched(application, item):
             item.status = 'resolved'                 # auto-resolve always (housekeeping, even locked; TD-409)

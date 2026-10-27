@@ -14,7 +14,13 @@ All notable changes to this project will be documented in this file.
   hold, rather than auto-resolve, an STR request whose gap cleared while such an STR is live
   (`income_str_ownership.hold_if_str_unmatched`). A later matched STR closes them as before.
 - **The live slot.** 'pending' counts as usable for promotion, so `promotion.should_promote` now keeps an
-  unmatched STR from displacing one a household card matched (a near-miss used to be kept out as a mismatch).
+  unmatched STR from displacing one a household card matched (a near-miss used to be kept out as a mismatch)
+  — only while that matched copy still counts (current / unconfirmed); a stale, future or rejected one is
+  replaced as before (TD-403).
+- **Review fixes.** A sync holds an STR request only while no working member's income is shown on its own
+  (a payslip that cleared `income_proof_missing` lets it close). A Check-2 request that re-opens drops
+  the officer hold (`offer_issuers.released_from_officer`), so the student sees the real ask. By design, an
+  officer's STR request already on hold stays held after a later matching card, until the officer closes it.
 - **Check 2 asks for the IC-number page.** After submission a near-miss STR with no IC number raises
   `str_needs_recipient_ic` (Action Centre, en/ms/ta; ms/ta first drafts), reusing the gate's wording.
 - No verdict band moves (the verdict engine never reads `doc_match_verdict`); no `VERDICT_ENGINE_VERSION` bump.

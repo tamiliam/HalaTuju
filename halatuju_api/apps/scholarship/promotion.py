@@ -132,11 +132,14 @@ def is_pathway_switch(new_doc, existing_doc):
     return bool(new_prog and old_prog and new_prog != old_prog)
 
 
-def _str_matched(doc) -> bool:
-    """An STR whose recipient a household card matched, on name or NRIC (False for any other doc)."""
+def _str_matched(doc, *, counting=False) -> bool:
+    """An STR whose recipient a household card matched, on name or NRIC (False for any other doc);
+    with ``counting``, only one that still COUNTS — this cycle's (current / unconfirmed), never a
+    stale / future / rejected one (TD-409 review: guarding those undid TD-403)."""
     from .income_engine import student_str_check
     sc = student_str_check(doc) or {}
-    return 'match' in (sc.get('name_status'), sc.get('nric_status'))
+    return 'match' in (sc.get('name_status'), sc.get('nric_status')) and (
+        not counting or sc.get('current_status') in ('current', 'unconfirmed'))
 
 
 def should_promote(new_doc, existing_doc, *, usable):
@@ -161,8 +164,9 @@ def should_promote(new_doc, existing_doc, *, usable):
     if qe is None:
         return True
     # TD-409 (ruling A: an unmatched STR never counts): an STR no household card matched — now 'pending',
-    # so `usable` — never displaces one a card matched. (A near-miss read 'mismatch' and was kept out before.)
-    if _str_matched(existing_doc) and not _str_matched(new_doc):
+    # so `usable` — never displaces a matched one that still COUNTS. A stale / future / rejected matched
+    # copy is not protected: a newer STR (say the mother's, her IC not yet on file) replaces it (TD-403).
+    if _str_matched(existing_doc, counting=True) and not _str_matched(new_doc):
         return False
     # A PATHWAY SWITCH is news, not a better copy of the same news (owner 2026-07-23). The
     # quality bar below assumes both documents describe the SAME fact — true for a re-scan of one
