@@ -22,6 +22,9 @@ The rules, each pinned in `tests/test_ai_outage.py`:
   moves to the back of the queue and still runs out of time). After that only an officer's Re-run
   reads it again; a new failed read from that Re-run starts a fresh window.
 * **Never a decided case.** Applications in `decline.CASE_CLOSED_STATES` are left as they are.
+
+#374 / owner ruling 2A (2026-10-28): the same pass also re-reads, ONCE each, live income documents whose
+read predates the approver fields (`approval_unchecked_documents`), so none stays "still checking".
 """
 import logging
 from datetime import timedelta
@@ -87,6 +90,41 @@ def service_error_documents(limit):
         return []
 
 
+#: #374 / ruling 2A: stamped on a row before its approval re-read, so the sweep tries each ONCE (a paid read);
+#: a read that lands rebuilds `vision_fields` and drops it. After one try only an officer's Re-run reads it.
+APPROVAL_TRIED = 'approval_reread_at'
+#: The payslip families whose read must carry the approval fields: informal / declaration (ruling 2A), and
+#: `govt` — #374's declaration forms were scored govt before salary_doc 1.2.0 and must be re-scored.
+_APPROVAL_SLIP_FAMILIES = ('informal', 'declaration', 'govt')
+
+
+def approval_unchecked_documents(limit):
+    """#374 / owner ruling 2A (2026-10-28): live income documents on open cases whose stored read PREDATES
+    the approver fields — every `income_support_doc`, and a payslip read as informal / declaration / govt —
+    so the hourly sweep re-reads them even if the lead's manual re-read misses one; until then they count
+    for nothing and the family is told "still checking". Only a row that HAS a read (the never-read half
+    of the sweep owns the rest), never one this sweep already tried (`APPROVAL_TRIED`), oldest first.
+    The re-read is the cockpit's Re-run core (`_reread`): a failed read never replaces the stored one,
+    and TD-407 keeps a stored genuineness score the re-read did not freshly replace. Never raises."""
+    if limit <= 0:
+        return []
+    try:
+        from .decline import CASE_CLOSED_STATES
+        rows = (ApplicantDocument.objects
+                .filter(Q(doc_type='income_support_doc')
+                        | Q(doc_type='salary_slip',
+                            vision_fields__authenticity__doc_seen__in=_APPROVAL_SLIP_FAMILIES),
+                        superseded_at__isnull=True, vision_fields__has_key='fields')
+                .exclude(vision_fields__fields__has_key='has_stamp_or_signature')
+                .exclude(vision_fields__has_key=APPROVAL_TRIED)
+                .exclude(application__status__in=CASE_CLOSED_STATES)
+                .order_by('uploaded_at')[:limit])
+        return [d for d in rows if (d.vision_fields or {}).get('fields')]
+    except Exception:                   # the rest of the sweep must still run
+        logger.exception('approval re-read selection failed; the sweep continues')
+        return []
+
+
 def _reread_ic(doc):
     """TD-390: re-run the MyKad read (Vision OCR + the second opinion). Stamps the run time BEFORE
     reading so a killed read moves to the back of the queue; `vision.run_vision_for_document` never
@@ -108,7 +146,7 @@ def _reread(doc):
     from ..reextract import reextract_document
     now = timezone.now()
     until = doc.vision_fields.get(RETRY_UNTIL) or int((now + SERVICE_RETRY_WINDOW).timestamp())
-    doc.vision_fields = {**doc.vision_fields, RETRY_UNTIL: until}
+    doc.vision_fields = {**doc.vision_fields, RETRY_UNTIL: until, APPROVAL_TRIED: int(now.timestamp())}
     doc.vision_fields_run_at = now
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
     reextract_document(doc)

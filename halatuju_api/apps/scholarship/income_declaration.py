@@ -11,8 +11,9 @@ reads as the INFORMAL family or as a DECLARATION form (`authenticity.doc_seen`).
 statement and an unscored payslip are not (no genuineness signal is our gap, not the family's — TD-410).
 
 **What the read must find**, in four fields the extraction schema gained for both slots (`APPROVAL_FIELDS`):
-an issuing body (`issuer_header`) and an approver — a named or titled person (`approver_name` /
-`approver_title`) whose signature or stamp is visible (`has_stamp_or_signature`).
+an issuing body (`issuer_header`) and an approver — a visible official stamp / company chop on its own
+(owner ruling 3A, 2026-10-28), or a hand signature by a named or titled person (`approver_name` /
+`approver_title`; `has_stamp_or_signature` reads "stamp" / "signature" / "no").
 
 **Never checked is not "missing"** (TD-394: never pass on what nobody has read — and never blame the
 family for OUR gap). A document read before these fields existed carries none of them (`approval_unchecked`):
@@ -36,8 +37,9 @@ APPROVAL_HINT = (
     '(an employer, school, village committee, government office) — empty if there is none, and never '
     'the form\'s own title; "approver_name" = the name of the person who CONFIRMED / APPROVED the '
     'document (not the person declaring the income); "approver_title" = their position (e.g. Ketua '
-    'Kampung, Penghulu, Guru Besar, Pengurus); "has_stamp_or_signature" = "yes" if that approver\'s '
-    'signature or an official stamp/chop is visible, else "no".')
+    'Kampung, Penghulu, Guru Besar, Pengurus); "has_stamp_or_signature" = "stamp" if an official '
+    'stamp / company chop is visible (with or without a signature), "signature" if only a hand '
+    'signature is visible, else "no". A printed QR code or logo is neither.')
 
 #: The payslip families that are informal income documents (`genuineness.salary_doc` / `declaration_doc`).
 _INFORMAL_SLIP_FAMILIES = frozenset({'informal', DECLARATION})
@@ -72,8 +74,13 @@ def approval_unchecked(doc) -> bool:
 def approval_missing(doc) -> tuple:
     """What a CHECKED informal document lacks to count: a subset of ``('header', 'approver')``, in that
     order; ``()`` when it carries both, when it is not informal, or when it was never checked
-    (`approval_unchecked` answers that). The approver is a named or titled person whose signature or
-    stamp is visible (a name with no mark, or a mark nobody owns, is not one)."""
+    (`approval_unchecked` answers that).
+
+    The APPROVER (owner ruling 3A, 2026-10-28): a visible official STAMP / company chop is enough on its
+    own — a small shop's chopped payslip counts with no named signer; a hand SIGNATURE without a stamp
+    still needs a named or titled signer (`approver_name` / `approver_title`); a letter with neither — a
+    QR code or logo only, or unmarked — has none. ``has_stamp_or_signature`` reads "stamp" / "signature" /
+    "no"; a bare "yes" (an older wording) is taken as a signature, the stricter of the two."""
     if not is_informal(doc) or approval_unchecked(doc):
         return ()
     f = _fields(doc)
@@ -82,8 +89,10 @@ def approval_missing(doc) -> tuple:
         v = f.get(key)
         return isinstance(v, str) and bool(v.strip())
 
-    marked = str(f.get('has_stamp_or_signature') or '').strip().lower() in ('yes', 'ya', 'true')
-    approver = marked and (filled('approver_name') or filled('approver_title'))
+    mark = str(f.get('has_stamp_or_signature') or '').strip().lower()
+    stamped = mark in ('stamp', 'chop', 'cop', 'both')
+    signed = mark in ('signature', 'yes', 'ya', 'true')
+    approver = stamped or (signed and (filled('approver_name') or filled('approver_title')))
     return tuple(part for part, ok in (('header', filled('issuer_header')), ('approver', approver)) if not ok)
 
 

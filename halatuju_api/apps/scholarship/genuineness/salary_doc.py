@@ -32,8 +32,9 @@ from .results_doc import _any_token, _norm_fold_upper_alnum
 #                        whether an EPF statement is worth asking for (owner). Bands unchanged.
 #   1.2.0 (2026-10-27) — #374 / income declarations (owner ruling): an income DECLARATION form is
 #                        recognised first (`declaration_doc`, family 'declaration', `suspect`), and 'govt'
-#                        needs a real government-payslip marker — 'PERKHIDMATAN AWAM' / 'KUMPULAN
-#                        PERKHIDMATAN' (a form's sector field) no longer make a civil-service slip.
+#                        needs a real government-payslip or PENSION-statement marker — 'KUMPULAN
+#                        PERKHIDMATAN' / a bare 'PERKHIDMATAN AWAM' (a form's sector field) no longer make
+#                        a civil-service slip; JPA / KWAP / "Penyata Bayaran"+"Pencen" keep pensions govt.
 MODEL_VERSION = '1.2.0'
 
 # ── Marker groups (normalised substring probes; matched via _norm_fold_upper_alnum) ──────────
@@ -60,12 +61,18 @@ _WAGE_LABELS = [
 # turned out to be an unreliable OCR marker, only 1/99). Civil servants are on pension (KWAP), NOT
 # EPF, so a govt slip legitimately has 0 statutory scaffold — it must be caught here (after the
 # private branch) or it wrongly falls to 'informal'.
-#: 1.2.0 (#374): ONLY markers a government payslip prints and a form does not — the issuer (Jabatan
-#: Akauntan Negara / JANM, matched as a whole word), the slip title (Penyata Gaji / e-Penyata) or a GRED
-#: CODE (`_GRED_CODE`: "GRED N19", "Gred DG41"). 'PERKHIDMATAN AWAM' / 'KUMPULAN PERKHIDMATAN' were
-#: dropped: they are the SECTOR field of every income form ("Kerajaan / Swasta / Tentera / Polis").
-_GOVT_FORMAT = ['PENYATA GAJI', 'E PENYATA', 'AKAUNTAN NEGARA']
-_GOVT_WORD = re.compile(r'\b(JANM|GRED [A-Z]{1,3} ?\d{1,2})\b')
+#: 1.2.0 (#374): ONLY markers a government payslip / pension statement prints and an income form does not:
+#:   * the salary issuer (Jabatan Akauntan Negara / JANM, a whole word), the slip title (Penyata Gaji /
+#:     e-Penyata) or a GRED CODE ("GRED N19", "Gred DG41");
+#:   * the PENSION issuer — the full department name JABATAN PERKHIDMATAN AWAM, its site jpa.gov.my, or the
+#:     pension fund KWAP (a whole word) — and the statement title PENYATA BAYARAN printed WITH "PENCEN"
+#:     (JPA's "Penyata Bayaran bagi Tahun …" for a Pencen Bulanan; computer-printed, never stamped, so it
+#:     must stay a formal family, not informal — review of d0d5d079, eval a54 d470/d472).
+#: 'KUMPULAN PERKHIDMATAN' / a bare 'PERKHIDMATAN AWAM' stay OUT: they are the SECTOR field of every income
+#: form ("Kerajaan / Swasta / Tentera / Polis"), which is what made #374's declaration read civil-service.
+_GOVT_FORMAT = ['PENYATA GAJI', 'E PENYATA', 'AKAUNTAN NEGARA', 'JABATAN PERKHIDMATAN AWAM', 'JPA GOV MY']
+_GOVT_WORD = re.compile(r'\b(JANM|KWAP|GRED [A-Z]{1,3} ?\d{1,2})\b')
+_PENSION_TITLE = ('PENYATA BAYARAN', 'PENCEN')     # both, together
 _SINGAPORE = ['CPF', 'PTE LTD', 'PRIVATE LIMITED']
 _GIG = ['GRAB', 'FOODPANDA', 'LALAMOVE', 'MAXIM', 'SHOPEEFOOD', 'PANDA']
 # MyKad-distinctive markers that do NOT appear on a genuine payslip (NB: 'KAD PENGENALAN' is a
@@ -92,7 +99,8 @@ def score_family(ocr_text: str) -> dict:
         'statutory': sum(1 for g in _STATUTORY.values() if _any_token(g, tn)),
         'kwsp': _any_token(_STATUTORY['KWSP/EPF'], tn),
         'wage': sum(1 for g in _WAGE_LABELS if _any_token(g, tn)),
-        'govt': _any_token(_GOVT_FORMAT, tn) or bool(_GOVT_WORD.search(tn)),
+        'govt': (_any_token(_GOVT_FORMAT, tn) or bool(_GOVT_WORD.search(tn))
+                 or all(_any_token([w], tn) for w in _PENSION_TITLE)),
         'singapore': _any_token(_SINGAPORE, tn),
         'gig': _any_token(_GIG, tn),
         'mykad': _any_token(_MYKAD, tn),

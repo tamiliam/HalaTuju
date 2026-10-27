@@ -133,8 +133,13 @@ Every higher-results upload said "genuineness not checked". Now an STPM one is c
 was scored `genuine` / `govt` 0.79 and the income fact went CERTAIN. On the #374 shape the old model's civil-
 service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — plus three wage labels.
 - **The salary scorer (salary_doc 1.2.0).** `govt` now needs a real government-payslip marker: Jabatan
-  Akauntan Negara / JANM (a whole word), the title Penyata Gaji / e-Penyata, or a GRED CODE ("GRED N19").
-  'PERKHIDMATAN AWAM' / 'KUMPULAN PERKHIDMATAN' are gone (every income form's sector field carries them).
+  Akauntan Negara / JANM (a whole word), the title Penyata Gaji / e-Penyata, or a GRED CODE ("GRED N19") —
+  or a PENSION-statement marker (review of d0d5d079: JPA pension statements are computer-printed and never
+  stamped): JABATAN PERKHIDMATAN AWAM in full, jpa.gov.my, KWAP (a whole word), or "Penyata Bayaran" printed
+  with "Pencen". 'KUMPULAN PERKHIDMATAN' and a bare 'PERKHIDMATAN AWAM' are gone (every income form's sector
+  field carries them). On the 99 eval payslips: the two JPA pension statements and a PERKESO "Penyata Bayaran
+  Faedah" (Pencen Penakat) read govt; the 7 lost "govt" slips are declaration forms; private, Singapore and
+  gig slips do not move.
 - **Declarations are recognised** (`genuineness/declaration_doc.py`) by their title (Borang/Surat Pengesahan
   Pendapatan, Akuan / Pengisytiharan Pendapatan, Akuan Berkanun, statutory / income declaration…) or the
   declarant's own oath ("saya mengaku", "I hereby declare"), in the salary-slip OR the support-document slot
@@ -144,8 +149,9 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
   `results_doc.MODEL_VERSION` 1.12.0.
 - **The rule (`income_declaration`), owner ruling 2A (2026-10-28): EVERY informal income document** — every
   supporting letter (penghulu / JKKK / employer letter, a declaration), and a payslip the salary model reads as
-  INFORMAL or as a declaration form — counts as income shown ONLY with an issuing body AND an approver (a named
-  or titled person whose signature or stamp is visible). Read by `income_shown.proof_flagged`, so the gate,
+  INFORMAL or as a declaration form — counts as income shown ONLY with an issuing body AND an approver: a
+  visible official stamp / company chop on its own (owner ruling 3A — a small shop's chopped payslip counts),
+  or a hand signature by a named or titled signer; a header-only, QR-only or unmarked letter does not. Read by `income_shown.proof_flagged`, so the gate,
   the cluster, Check 2's per-member ask, TD-409's hold and the verdict follow. A formal, unscored or EPF
   proof is untouched; a real payslip or EPF outranks an approved form. Without them the student is asked
   "Upload {member}'s income document signed and stamped by an approver (e.g. employer, ketua kampung,
@@ -157,8 +163,12 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
   has none of them: it does NOT count, the gate shows the existing "our check is still running — please try
   again later" (`ic_service_down`), never "get it signed", Check 2 asks nothing about it (`check2_deferred`),
   and the officer's drawer says "read before the approver check — re-read it". Every read since stores all
-  four keys (`vision._sanitize_extracted_fields`), so the two states stay apart. Existing letters and
-  informal slips must be re-read live after deploy, before families are asked.
+  four keys (`vision._sanitize_extracted_fields`), so the two states stay apart. **The lead re-reads the
+  existing letters and informal / declaration / govt slips live right after deploy, before families are
+  asked**; as a safety net the hourly self-heal sweep (`read_retry.approval_unchecked_documents`, run by
+  `reprocess_unread_ic_documents`) also re-reads any live unchecked one on an open case — once each
+  (`approval_reread_at`), skipped while Gemini is down, within the run's bounded batch, never replacing the
+  stored read on a failure, TD-407 keeping a stored score.
 - **Never Certain (owner ruling 1A).** A household whose income rests on ANY declared amount — an approved
   form, or a declared wage backed by a letter — reads Probable (`income_declared_probable`), not Certain.
   `VERDICT_ENGINE_VERSION` 2026-10-27.6 (a band moves: every Certain household carried by a declared amount).

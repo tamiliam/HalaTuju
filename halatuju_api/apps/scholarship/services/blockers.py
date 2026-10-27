@@ -122,9 +122,10 @@ def reprocess_unread_ic_documents(limit=200, dry_run=False):
     """
     from ..vision import run_vision_for_document
     from ..reextract import reextract_document
-    from .read_retry import run_service_retries, service_error_documents
+    from .read_retry import approval_unchecked_documents, run_service_retries, service_error_documents
     stuck = _stuck_unread_documents(limit)
     retry = service_error_documents(limit - len(stuck))
+    retry += approval_unchecked_documents(limit - len(stuck) - len(retry))   # #374 / ruling 2A
     if dry_run:
         by_type = {}
         for doc in stuck + retry:

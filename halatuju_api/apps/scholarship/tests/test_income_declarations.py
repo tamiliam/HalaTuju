@@ -53,6 +53,26 @@ class TheSalaryScorer(SimpleTestCase):
                 g = salary_genuineness(text)
                 self.assertEqual((g['status'], g['family']), ('genuine', 'govt'))
 
+    def test_a_government_pension_statement_is_govt(self):
+        """Review of d0d5d079: a JPA / PERKESO pension statement is computer-printed and never stamped, so
+        it must stay a formal family — the issuer, its site, KWAP, or the title "Penyata Bayaran" + "Pencen"."""
+        from apps.scholarship.genuineness.salary_doc import salary_genuineness
+        for text in ('JABATAN PERKHIDMATAN AWAM MALAYSIA\nPENYATA BAYARAN BAGI TAHUN 2026\nPENCEN BULANAN 1,200.00\n'
+                     'JUMLAH PENDAPATAN 1,200.00',
+                     'JABATAN PERKHIDMATAN AWAM MALAYSIA\nPENDAPATAN 1,200.00',
+                     'www.jpa.gov.my\nPENDAPATAN 1,200.00', 'KWAP\nPENDAPATAN BERSIH 900.00',
+                     'PERKESO\nPENYATA BAYARAN FAEDAH 2026\nPENCEN PENAKAT\nJUMLAH PENDAPATAN 687.50'):
+            with self.subTest(text[:14]):
+                g = salary_genuineness(text)
+                self.assertEqual((g['status'], g['family']), ('genuine', 'govt'))
+
+    def test_a_form_s_sector_field_or_half_a_pension_title_is_not_govt(self):
+        from apps.scholarship.genuineness.salary_doc import score_family
+        for text in (UNTITLED, 'MAKLUMAT\nSektor: Perkhidmatan Awam\nPENDAPATAN BERSIH 800',
+                     'PENYATA BAYARAN\nPENDAPATAN 800', 'BAYARAN PENCEN\nPENDAPATAN 800'):
+            with self.subTest(text[:14]):
+                self.assertIs(score_family(text)['govt'], False)
+
     def test_a_bare_gred_label_or_janm_inside_a_word_is_not_govt(self):
         from apps.scholarship.genuineness.salary_doc import score_family
         for text in ('SLIP GAJI\nGRED JAWATAN\nGAJI POKOK 900', 'SLIP GAJI KEDAI XJANM JANMY\nGAJI POKOK 900'):
@@ -116,8 +136,14 @@ class TheApproverRule(SimpleTestCase):
                   'approval_no_header'),
                  ({**CHECKED, 'issuer_header': 'SK CONTOH', 'approver_name': 'CIKGU CONTOH'},
                   ('approver',), 'approval_no_approver'),          # a name with no mark is no approver
+                 ({**CHECKED, 'issuer_header': 'SK CONTOH', 'has_stamp_or_signature': 'signature'}, ('approver',),
+                  'approval_no_approver'),                          # a signature nobody owns is no approver
                  ({**CHECKED, 'issuer_header': 'SK CONTOH', 'has_stamp_or_signature': 'yes'}, ('approver',),
-                  'approval_no_approver'),                          # a mark nobody owns is no approver
+                  'approval_no_approver'),                          # an older "yes" reads as a signature
+                 ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'has_stamp_or_signature': 'stamp'}, (), ''),  # 3A
+                 ({**CHECKED, 'has_stamp_or_signature': 'stamp'}, ('header',), 'approval_no_header'),
+                 ({**CHECKED, 'issuer_header': 'SK CONTOH', 'approver_title': 'Guru Besar',
+                   'has_stamp_or_signature': 'signature'}, (), ''),    # a titled signer
                  (APPROVED, (), '')]
         for slot, seen in (('salary_slip', 'declaration'), ('salary_slip', 'informal'), ('income_support_doc', None)):
             for fields, missing, reason in cases:
@@ -188,6 +214,20 @@ class ThePerEarnerAnswerAndTheGate(_Case):
                 _doc(app, 'salary_slip', seen='informal', fields={'gross_income': '900', **fields})
                 a = income_shown(app, 'father')
                 self.assertEqual((a.shown, a.declared), (shown, False))   # a payslip, not a declared amount
+
+    def test_owner_ruling_3a_a_company_chop_alone_approves(self):
+        """3A (2026-10-28): a small shop's payslip with its chop counts, no named signer needed; a letter
+        with only a header, or a signature nobody is named for, or a QR code only, does not."""
+        from apps.scholarship.income_shown import income_shown
+        for fields, shown in (({'issuer_header': 'KEDAI RUNCIT CONTOH', 'has_stamp_or_signature': 'stamp'}, True),
+                              ({'issuer_header': 'KEDAI RUNCIT CONTOH', 'has_stamp_or_signature': 'no'}, False),
+                              ({'issuer_header': 'KEDAI RUNCIT CONTOH', 'has_stamp_or_signature': 'signature'}, False),
+                              ({'issuer_header': 'KEDAI RUNCIT CONTOH', 'approver_name': 'AH CONTOH',
+                                'has_stamp_or_signature': 'signature'}, True)):
+            with self.subTest(fields):
+                app = self._app()
+                _doc(app, 'salary_slip', seen='informal', fields={'gross_income': '900', **CHECKED, **fields})
+                self.assertIs(income_shown(app, 'father').shown, shown)
 
     def test_an_approved_form_counts_but_as_a_declared_amount(self):
         from apps.scholarship.income_shown import income_shown
@@ -262,6 +302,50 @@ class TheCoachAndCheckTwo(_Case):
         _doc(app, 'salary_slip', member='mother', fields={'gross_income': 'RM400', **CHECKED})
         sync_check2_queries(app)
         self.assertTrue(app.resolution_items.filter(code='mother_income_proof_missing', status='open').exists())
+
+    def test_the_hourly_sweep_re_reads_each_unchecked_document_once(self):
+        """Review of d0d5d079: the self-heal sweep re-reads a live unchecked income document on an open
+        case — a support letter, an informal / declaration / govt payslip — once, gated like read_retry."""
+        from unittest import mock
+        from apps.scholarship.services import reprocess_unread_ic_documents
+        from apps.scholarship.services.read_retry import approval_unchecked_documents
+        app = self._app()
+        letter = _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800'})
+        govt = _doc(app, 'salary_slip', seen='govt', status='genuine', fields={'gross_income': '800'})
+        _doc(app, 'salary_slip', seen='private', status='genuine', fields={'gross_income': '1,450'})   # formal
+        _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800', **APPROVED})              # checked
+        _doc(app, 'income_support_doc', seen=None, fields={}, verdict='')                              # never read
+        closed = self._app()
+        closed.status = 'closed'
+        closed.save(update_fields=['status'])
+        _doc(closed, 'income_support_doc', seen=None, fields={'amount': 'RM800'})
+        self.assertEqual({d.id for d in approval_unchecked_documents(50)}, {letter.id, govt.id})
+
+        def reread(doc):
+            doc.vision_fields = {'fields': {**doc.vision_fields['fields'], **CHECKED}, 'student_verdict': 'ok'}
+            doc.save(update_fields=['vision_fields'])
+        with mock.patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False), \
+                mock.patch('apps.scholarship.reextract.reextract_document', side_effect=reread) as rx:
+            reprocess_unread_ic_documents()
+            self.assertLessEqual({letter.id, govt.id}, {c.args[0].id for c in rx.call_args_list})
+            rx.reset_mock()
+            reprocess_unread_ic_documents()                       # read now: never picked again
+            self.assertFalse({letter.id, govt.id} & {c.args[0].id for c in rx.call_args_list})
+
+    def test_the_sweep_waits_while_gemini_is_down_and_tries_a_failing_read_only_once(self):
+        from unittest import mock
+        from apps.scholarship.services import reprocess_unread_ic_documents
+        from apps.scholarship.services.read_retry import approval_unchecked_documents
+        app = self._app()
+        letter = _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800'})
+        with mock.patch('apps.scholarship.services.outage.gemini_reads_down', return_value=True), \
+                mock.patch('apps.scholarship.reextract.reextract_document') as rx:
+            reprocess_unread_ic_documents()
+            rx.assert_not_called()
+        with mock.patch('apps.scholarship.services.outage.gemini_reads_down', return_value=False), \
+                mock.patch('apps.scholarship.reextract.reextract_document') as rx:    # a read that lands nothing
+            reprocess_unread_ic_documents()
+        self.assertNotIn(letter.id, {d.id for d in approval_unchecked_documents(50)})   # tried: officer's now
 
     def test_check_two_waits_while_her_document_is_unchecked(self):
         """Not asked again for what she sent: the re-read decides (`check2_deferred`)."""
