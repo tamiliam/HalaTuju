@@ -1466,3 +1466,14 @@ path and deleted nothing — harmless by luck, and it read like a command that h
 that uses a `$` variable runs from a `.ps1` file (`powershell -File …`), never inline through bash; and after a
 destructive command, check that the thing is gone AND that its neighbour (here the main checkout's
 `node_modules`) is intact. (TD-404 close)
+
+## 2026-10-27 — A guard that protects a document asks whether it is still worth protecting
+
+TD-409 made an unmatched STR `pending`, which made it usable for promotion, so a guard was added: an unmatched
+STR never displaces a matched one. It never asked whether the matched one still COUNTED — and a stale matched
+STR (last year's) then kept the slot against this year's, undoing TD-403 and hiding the mother's IC slot.
+The same sprint's sync hold asked "is the live STR unmatched?" instead of "is this request open because of the
+STR?", and held requests a payslip had already answered. **Rule:** when a guard keeps something in place (a
+live document, an open request), key it on the property that makes it worth keeping — still counts, still
+the reason — not on the property that made the new path necessary; and test the guard against the newer,
+better thing it might wrongly block. (TD-409 close)

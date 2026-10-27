@@ -15013,3 +15013,23 @@ considered the date has passed 1 Jan." Strict, no January–March grace (re-conf
 - **Guaranteed after 1 January** for a case submitted in 2026 with a 2026 STR: no stale/future state, no
   Check-2 `str_not_current` request, no re-notify email, no verdict band drop (Certain stays Certain), no
   officer red chip, no coach (`test_td403_str_this_year.ASubmittedCaseKeepsItsSubmissionYear`).
+
+## 2026-10-27 — TD-409: an STR no household card matched closes no request; the officer does
+
+**Decision:** Applying owner ruling A ("an unmatched STR never counts") to requests after submission. An STR
+whose recipient matched no household card and is not proven a stranger's (a near-miss name, "cannot judge")
+reads `pending` in `resolution.doc_match_verdict` — not `ok`, and no longer red. It never closes an STR request:
+the Action-Centre upload holds the requests it answers for the officer (`hold_for_officer`, "our team is
+checking this personally") and answers `ok`; the two syncs hold rather than auto-resolve an STR request whose
+gap cleared while it is live (`income_str_ownership.hold_if_str_unmatched`). A proven stranger's STR stays a
+mismatch, as before.
+**Scope limits (review):** the hold applies only while the STR is why the request is open — no hold when any
+working member's income is shown on its own (`income_shown`; TD-410 asks whether a suspect payslip should
+count). A Check-2 request that re-opens drops the hold (`offer_issuers.released_from_officer`). An officer's
+STR request already on hold stays held after a later matching card, until the officer closes it (by design: the
+officer asked, the officer closes). An unmatched STR never displaces a matched STR that still COUNTS (current /
+unconfirmed) from the live slot; a stale, future or rejected matched copy is replaced (TD-403 unchanged).
+**Why:** before, a near-miss or unjudgeable STR uploaded after submission closed the officer's or the system's
+request — counting an STR the ruling says does not count. **Alternatives rejected:** `mismatch` for every
+unmatched STR (tells a family their own STR is a stranger's); leaving the request open with the generic
+"still checking — refresh" (the read is finished; nothing will change without a person).

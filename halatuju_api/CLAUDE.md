@@ -940,19 +940,27 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**TD-407 and TD-404 are LIVE (2026-10-27; TD-407 `9bdb163f` + `e65a9cd3`, api-01151-gmw; TD-404 `b1fe889c` +
+**TD-409 is pushed (2026-10-27; `ddd46dda` + `ddb26b60`; retro `docs/retrospectives/retrospective-2026-10-27-td409.md`).**
+An STR no household card matched never closes an STR request (owner ruling A): `doc_match_verdict` gives it
+`pending` (red only for a proven stranger's); an upload holds the STR requests it answers for the officer, both
+syncs hold rather than close them (unless a member's income is shown on its own), a re-opened Check-2 request
+drops the hold, and an unmatched STR never displaces a matched one that still counts. Check 2 asks for a
+near-miss STR's IC-number page (`str_needs_recipient_ic`). No band moves. Register: **134 open** (TD-410 raised).
+- **Next: the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Then TD-408** (word order: order-aware patronymics; the father-name splitter learns ANAK) and **TD-399**
+  (OpenAI fallback for document reads, after the owner's privacy ruling).
+- ⚠ **Bundle budget:** the median first-load JS has only **0.4 kB** headroom under 180 kB — the next web change
+  that adds to a shared chunk will FAIL it; budget for a trim.
+- TD-410 (Next tier): does a suspect payslip show income? An owner question before any tightening.
+- Proposed: a code-health split of the genuineness wiring out of `vision.py` (at its allowance twice running).
+
+**Earlier — TD-407 and TD-404 are LIVE (2026-10-27; TD-407 `9bdb163f` + `e65a9cd3`, api-01151-gmw; TD-404 `b1fe889c` +
 `71e38f89` + `0e03a678`; retro `docs/retrospectives/retrospective-2026-10-27-td407-td404.md`).** A re-read never
 replaces a stored genuineness score with nothing (`genuineness.bands.keep_stored_authenticity`); the hand-run
 re-read commands refuse without the flag, the hourly self-heal warns. Every name match treats ANAK/AK and
 BT/BTE as connectors; a household STR one romanised syllable from a card is "cannot judge" and, with no IC
 number on it, asks for the IC-number page (`str_needs_recipient_ic`). `VERDICT_ENGINE_VERSION` 2026-10-27.3.
 Register: **134 open**.
-- **Next: TD-409 (Now tier)** — after submission an unmatched STR must not close an STR request (`pending`, not
-  `ok`), plus a Check-2 ask for a near-miss STR's IC-number page.
-- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
-- **Then TD-408** (order-aware patronymics; the father-name splitter learns ANAK) and **TD-399** (OpenAI fallback
-  for document reads, after the owner's privacy ruling).
-- Proposed: a code-health split of the genuineness wiring out of `vision.py` (at its allowance twice running).
 
 **Earlier — the corpus-gaps arc is DONE (2026-10-26): C3 + C4 LIVE (C3 `0ae5f431`, api-01147-9gw; C4 the lead's live
 re-run of 43 documents; retro `docs/retrospectives/retrospective-2026-10-26-corpus-c3-c4.md`).** STPM results
