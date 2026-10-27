@@ -17,6 +17,12 @@ whose names reached the matchers in forms they did not know.
   counts as a positive mismatch against that card: the existing F1 path asks for the IC instead of
   `str_not_household`. A different given name (KOW / MENG, KAU / KENNETH) and an NRIC mismatch still refuse.
   The student's own IC keeps its exact spelling. `VERDICT_ENGINE_VERSION` 2026-10-27.3.
+- **The ask (review).** When that STR shows no IC number, the gate asks for the STR page that does — a new
+  neutral code `str_needs_recipient_ic:<member>` ("Please upload an STR page that shows the recipient's IC
+  number (the MySTR 'Semakan Status' page)"; officer: "STR name is close to {member}'s but not exact and shows
+  no IC number"), never "upload a clearer photo" and never a person-mismatch. The near-miss card is not asked
+  for again (it read fine). On the salary route the member's income ask stands beside it. en/ms/ta (ms/ta
+  first drafts). TD-408 raised (order-blind name matching; the patronymic splitter does not know ANAK).
 - **Not changed:** the extraction anchors that find a name LINE or split a patronymic (MyKad name line, slip,
   offer, birth-certificate parse, the father-name splitter) — widening them changes what is read.
 - **Tests:** `test_td404_name_forms.py`; every change bitten. TD-404 closed.

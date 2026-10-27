@@ -291,9 +291,11 @@ def income_doc_blockers(application):
             need_guard = True
     if str_carried:
         # Only an unmatched STR carries these members: the roster IC that would settle it, else their income.
-        asks = [c for c in _unmatched_str_asks(application, ic_asked=False) if c.startswith('parent_ic')]
+        every = _unmatched_str_asks(application, ic_asked=False)
+        asks = [c for c in every if c.startswith('parent_ic')]
         out.extend([c for c in asks if c not in out] if asks
-                   else [f'income_evidence_missing:{m}' for m in str_carried])
+                   else [f'income_evidence_missing:{m}' for m in str_carried]   # + TD-404's IC-number page
+                   + [c for c in every if c.startswith('str_needs_recipient_ic')])
     if need_bc:
         out.append('birth_certificate_missing')
     if need_guard:
@@ -311,13 +313,17 @@ def _unmatched_str_asks(application, *, ic_asked):
     fault — unless an IC is already being asked for. `[]` when a card matched, or when the STR provably
     names a stranger — the stranger rule answers that. The verdict keeps F1's lenient reading."""
     from ..income_engine import str_recipient_matched
-    from ..income_str_ownership import STR_PENDING_OUR_READ, str_owner_ic_asks, str_recipient_is_stranger
+    from ..income_str_ownership import (STR_NEEDS_RECIPIENT_IC, STR_PENDING_OUR_READ, str_owner_ic_asks,
+                                        str_recipient_ic_needed, str_recipient_is_stranger)
     from ..read_errors import read_deferred
     if str_recipient_matched(application) or str_recipient_is_stranger(application):
         return []
     missing = str_owner_ic_asks(application)['missing']
     if missing:
         return [f'parent_ic_missing:{m}' for m in missing]
+    near = str_recipient_ic_needed(application)       # TD-404 review: the STR read fine; it needs its IC number
+    if near:
+        return [f'{STR_NEEDS_RECIPIENT_IC}:{near}']
     if ic_asked:
         return []
     str_doc = latest_doc(application, 'str')

@@ -92,16 +92,36 @@ class TheHouseholdSTR(TestCase):
         self._str(app, 'JOHNNY AK GABRIEL')
         self.assertEqual(self._str_check(app)['name_status'], 'match')
 
-    def test_one_romanised_syllable_is_not_a_stranger_it_asks_for_the_ic(self):
+    def test_one_romanised_syllable_is_not_a_stranger_it_asks_for_the_ic_number_page(self):
+        """Review: the STR read fine, so the ask is for its IC-number page — never "a clearer photo",
+        never the father's IC again (his card read fine), never `str_person_mismatch`."""
         from apps.scholarship.income_str_ownership import (STR_NOT_HOUSEHOLD, str_owner_ic_asks,
                                                            str_recipient_is_stranger)
         from apps.scholarship.services import income_doc_blockers
-        app = self._app('Tan Ah Kau', 'Lim Mei Ling')
+        for str_name in ('TAN AH KOW', 'TAN AH KAI'):              # a romanisation, or a brother
+            with self.subTest(str_name):
+                app = self._app('Tan Ah Kau', 'Lim Mei Ling')
+                self._cards(app, 'TAN AH KAU', 'LIM MEI LING')
+                self._str(app, str_name)                              # name only, no NRIC on the STR
+                self.assertIs(str_recipient_is_stranger(app), False)
+                self.assertEqual(str_owner_ic_asks(app), {'missing': [], 'unreadable': []})
+                out = income_doc_blockers(app)
+                self.assertIn('str_needs_recipient_ic:father', out)
+                for never in (STR_NOT_HOUSEHOLD, 'income_document_unreadable', 'str_person_mismatch'):
+                    self.assertNotIn(never, out)
+
+    def test_on_the_salary_route_the_income_ask_stands_beside_it(self):
+        from apps.scholarship.services import income_doc_blockers
+        app = make_application(
+            'profile_complete', income_route='salary', income_earner='', income_working_members=['father'],
+            father_name='Tan Ah Kau', mother_name='Lim Mei Ling', father_occupation='private',
+            mother_occupation='homemaker', other_family_members=[],
+            student=make_student(name=STUDENT, nric=STUDENT_NRIC))
         self._cards(app, 'TAN AH KAU', 'LIM MEI LING')
-        self._str(app, 'TAN AH KOW')                                  # name only, no NRIC on the STR
-        self.assertIs(str_recipient_is_stranger(app), False)
-        self.assertEqual(str_owner_ic_asks(app), {'missing': [], 'unreadable': ['father']})
-        self.assertNotIn(STR_NOT_HOUSEHOLD, income_doc_blockers(app))
+        self._str(app, 'TAN AH KOW')
+        out = income_doc_blockers(app)
+        self.assertIn('income_evidence_missing:father', out)
+        self.assertIn('str_needs_recipient_ic:father', out)
 
     def test_a_different_given_name_is_still_a_stranger(self):
         from apps.scholarship.income_str_ownership import STR_NOT_HOUSEHOLD, str_recipient_is_stranger

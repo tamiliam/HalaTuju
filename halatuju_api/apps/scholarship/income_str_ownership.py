@@ -160,10 +160,27 @@ def str_ic_slots(sc, application) -> dict:
     (``student_str_payload`` → the served ``str_check.ic_slots``). A demand and an offer that read
     the same fact must be one reading, or the student is chased for a document the page will not
     take (docs/lessons.md, TD-262 F2) — so both call this, and neither holds a copy."""
-    members = str_unjudged_members(application, sc) if _positive_mismatch(sc) else []
-    on_file = set(((sc or {}).get('ic_read_members') or {}).get('on_file') or ())
+    read = (sc or {}).get('ic_read_members') or {}
+    near = set(read.get('near_miss') or ())    # TD-404: their card read fine — it is the STR that cannot tell
+    members = [m for m in (str_unjudged_members(application, sc) if _positive_mismatch(sc) else [])
+               if m not in near]
+    on_file = set(read.get('on_file') or ())
     return {'missing': [m for m in members if m not in on_file],
             'unreadable': [m for m in members if m in on_file]}
+
+
+#: TD-404 review: the gate's ask when the STR's recipient name is one romanised syllable from a household
+#: card (TAN AH KOW / TAN AH KAU — or brothers, TAN AH KAI) and the STR shows no IC number to settle it.
+STR_NEEDS_RECIPIENT_IC = 'str_needs_recipient_ic'
+
+
+def str_recipient_ic_needed(application) -> str:
+    """The member whose card the STR's recipient name is one romanised syllable from, when the STR shows
+    no IC number — '' otherwise. Neither a match nor a stranger: the card read fine, so the ask is for
+    the STR page that carries the recipient's IC number (never "upload a clearer photo")."""
+    sc = _latest_str_check(application) or {}
+    near = (sc.get('ic_read_members') or {}).get('near_miss') or []
+    return near[0] if near and not (sc.get('nric') or '').strip() else ''
 
 
 def str_owner_ic_asks(application) -> dict:

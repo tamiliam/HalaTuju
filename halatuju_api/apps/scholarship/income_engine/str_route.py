@@ -189,6 +189,8 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
         # path (the IC/NRIC is asked), never a stranger's positive mismatch. NRIC still decides alone.
         if ic_name and name_hit is None and _romanised_near_miss(name, ic_name):
             ic_name = ''
+            if read_into is not None:          # the gate asks for the STR's IC-number page (review)
+                read_into.setdefault('near_miss', []).append(m)
         deferred = ic_second_opinion_deferred(ic)
         earner_deferred = earner_deferred or (deferred and m == tagged_member)
         clean_name_seen = clean_name_seen or (bool(ic_name) and not deferred)
