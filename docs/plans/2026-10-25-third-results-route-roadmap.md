@@ -426,6 +426,11 @@ before/after list before anything that moves applicants.
 - **D16 (2026-10-27):** whether a gift asks for STPM-level results is PER GIFT
   (`Programme.asks_higher_results`, default on; BrightPath flagship off — a post-SPM programme). Off:
   no D12/D14 mapping, no `higher_owed`, no reverse move; eligibility unchanged. See decisions.md.
+- **D16c (2026-10-27) — supersedes the per-gift switch:** ONE place for the instruction — an intake that
+  sets a minimum STPM CGPA asks for STPM-level results (by course level); a blank box makes it SPM-only.
+  For an SPM-only intake, STPM-level holders are tested on the intake's SPM bars (not passed
+  automatically). BrightPath flagship's box is cleared (owner agreed; intake closed). The Configuration
+  row becomes "Academic results", locked Required like "Proof of household income"; no separate switch.
 - Still open: **D8** (default: classify at read time only), **D10**
   (default: the approved mock covers S2b; the S3 upload card gets a quick mock first).
 
