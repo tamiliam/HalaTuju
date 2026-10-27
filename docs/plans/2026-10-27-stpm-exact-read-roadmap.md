@@ -31,6 +31,8 @@ Both are issued by Majlis Peperiksaan Malaysia and show the same facts, but in d
 | Serial | bottom right ("nnnnnnn / yy") | "No. Siri :" — the same number |
 | Fixed text | "Bilangan Mata Pelajaran Lulus", signatories | "Nota Penting: Slip keputusan ini bukan sijil STPM" |
 
+The exam year (title / "Tahun Peperiksaan") is the year BEFORE the results date: STPM 2025 results were
+released on 18 Jun 2026. The reader takes the exam year from the title, never from the release date.
 The slip's paper rows must not be read as subjects; only the subject rows (with a KOD) count.
 **Layouts vary slightly between years** (stable over about 3 years). The reader keys on a SET of anchors
 with tolerance, never on one exact phrase or position, and an unknown variant falls back to AI.
