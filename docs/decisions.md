@@ -15051,14 +15051,21 @@ request — counting an STR the ruling says does not count. **Alternatives rejec
 unmatched STR (tells a family their own STR is a stranger's); leaving the request open with the generic
 "still checking — refresh" (the read is finished; nothing will change without a person).
 
-## 2026-10-27 — TD-410: a suspect income proof shows no income (owner ruling)
+## 2026-10-27 — TD-410: an income proof flagged as possibly fake shows no income (owner ruling, option A)
 
-**Ruling (owner, 2026-10-27):** *"Suspect shouldn't count."*
-**Decision:** a payslip, EPF statement or supporting letter whose stored genuineness is FLAGGED — suspect or
-not_<type> (`genuineness.bands.needs_attention`) — does not show a member's income (`income_shown.
-proof_flagged`), at every door that reads the per-earner answer: the submission gate, the cluster, the
-verdict band, Check 2's proof ask and TD-409's hold. Until now a suspect payslip counted (fail-open, read as
-"informal"; V5 known limitation #13).
+**Ruling (owner, 2026-10-27):** *"Suspect shouldn't count"* — then, on the impact count, **option A**: only
+a proof flagged as possibly FAKE stops counting. The live "suspect" payslips were almost all the informal
+family (5 not submitted, ~21 submitted): the salary model returns `suspect` ONLY as `family='informal'`
+("not a standard payslip" — an informal employer's slip), never for private / govt / singapore / gig, which
+are always `genuine`. Those still count; the reviewer checks them as before.
+**Decision:** `income_shown.proof_flagged` is True for a `not_<type>` wrong-type score, a `suspect` payslip
+whose `doc_seen` names a family other than `informal` (no current writer: a legacy holistic score or a
+future formal-family band; a suspect slip naming no family is read as informal), or a suspect support
+letter (none is scored today) — and such a proof shows no member's income at every door that reads the
+per-earner answer: the submission gate, the cluster, the verdict band, Check 2's proof ask, TD-409's hold.
+**EPF is exempt until TD-411:** 8 submitted statements (and 2 from corpus C4) that the scorer names `epf`
+read `not_epf` at p=0.00 — not one signature matched, which a real statement's text cannot do; the likely
+cause is an unreadable PDF text layer taken as the OCR text. Trusting that score would refuse real EPFs.
 **Unscored is not suspect (the lead asked us to decide and justify).** A proof with NO genuineness signal —
 never scored, a known issuer not fingerprinted (`unchecked`), read while `DOC_GENUINENESS_CHECK_ENABLED` was
 off, or deferred by our outage — still counts. Why: (1) TD-394's owner ruling is "a money gate never passes
@@ -15074,6 +15081,9 @@ income as passed whatever the AI band says; no new path. Before submission the f
 payslip, an EPF statement, or a declared amount with a supporting letter.
 **What the student is told:** the existing `income_evidence_missing` ask ("Show {member}'s income — a
 payslip, EPF, or an amount with a supporting letter") — honest, and it accuses no one. No new student copy.
+**Revisit if:** the salary model gains a formal-family suspect band (it then flags at once — check the
+count first), or TD-411 is fixed (then drop the EPF exemption).
+
 **Revisit if:** the payslip scorer's suspect band proves to catch many genuine informal payslips (count it
 first: the lead's production query in the TD-410 report).
 

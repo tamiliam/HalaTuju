@@ -13,8 +13,8 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 Changed since the move, deliberately and once: `has_valid_str` now also asks WHOSE STR it is
 (TD-285, owner ruling 2026-09-29). Then, on 2026-10-03 (TD-293), its three stored-genuineness
 reads moved onto `genuineness.bands.stored_status`, so a malformed value reads as no signal.
-And on 2026-10-27 (TD-410, owner: "Suspect shouldn't count") a payslip, EPF or support letter whose
-genuineness is flagged suspect / not_<type> no longer shows income (`income_shown.proof_flagged`).
+And on 2026-10-27 (TD-410, owner option A) an income proof flagged as possibly FAKE no longer shows
+income (`income_shown.proof_flagged`); an informal payslip still does, and EPF waits on TD-411.
 """
 from __future__ import annotations
 
@@ -159,8 +159,9 @@ def usable_salary_slip(application, member) -> bool:
     """A salary_slip tagged to *member* that reads as an actual payslip — the #47 fix: a doc scored
     'not_salary' (a MyKad/other doc in the salary-slip slot) no longer satisfies the income-proof
     requirement. SOFT: the miss becomes a Check-2 're-upload the payslip' item, never a hard trap.
-    TD-410 (owner 2026-10-27, "Suspect shouldn't count"): a slip scored SUSPECT no longer counts
-    either (`income_shown.proof_flagged`); one with no genuineness signal still does."""
+    TD-410 (owner 2026-10-27, option A): a slip flagged as possibly FAKE no longer counts either
+    (`income_shown.proof_flagged`); an INFORMAL slip (`suspect`, family `informal`) and one with no
+    genuineness signal still do."""
     from ..income_shown import proof_flagged
     return any(not proof_flagged(d, 'salary_slip')
                for d in _cluster_docs(application, member, 'salary_slip'))
@@ -169,8 +170,8 @@ def usable_salary_slip(application, member) -> bool:
 def _member_has_epf_value(application, member) -> bool:
     """A readable EPF statement tagged to *member* — a monthly-salary figure could be derived
     (including 0.0 for an all-zeros / lapsed account). It documents the member's income situation,
-    so it counts as income evidence for the gate (owner 2026-07-25) — unless its genuineness is
-    flagged suspect / not_epf (TD-410, `income_shown.proof_flagged`)."""
+    so it counts as income evidence for the gate (owner 2026-07-25). TD-410's `proof_flagged` is read
+    here but exempts EPF until TD-411 (the scorer's not_epf on a recognised statement)."""
     from ..income_shown import proof_flagged
     return any(_epf_monthly_salary(_doc_fields(e)) is not None and not proof_flagged(e, 'epf')
                for e in _cluster_docs(application, member, 'epf'))
@@ -366,8 +367,8 @@ def has_income_support_doc(application, member):
     the gap, so Check 2 keeps asking for real evidence.
 
     The reading lives in ``income_shown`` (TD-262 chunks 2+3) so the per-earner answer and this
-    predicate can never disagree about which letters are in scope. TD-410: a letter whose
-    genuineness is flagged suspect backs nothing (`proof_flagged`), as on the student's wizard."""
+    predicate can never disagree about which letters are in scope. TD-410: a letter flagged as
+    possibly fake backs nothing (`proof_flagged`), as on the student's wizard."""
     from ..income_shown import income_support_doc_read, income_support_docs, proof_flagged
     return any(income_support_doc_read(d) and not proof_flagged(d, 'income_support_doc')
                for d in income_support_docs(application, member))

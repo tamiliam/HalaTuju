@@ -1555,17 +1555,29 @@ class TestStrRouteNoStrFallsThroughToSalary(TestCase):
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
         self.assertNotIn('income_proof_missing', _codes(f['unresolved']))
 
-    def test_a_suspect_payslip_no_longer_carries_the_fall_through(self):
+    def test_suspect_payslip_does_not_cap_the_green_matching_the_salary_route(self):
         # #106's REAL payslip is informal — 1 wage label, no statutory scaffold, scored 'suspect'
-        # at p=0.5 — and until TD-410 it greened here (V5 known limitation #13: salary evidence
-        # carried no genuineness protection on either route). TD-410, owner 2026-10-27: "Suspect
-        # shouldn't count." A suspect payslip shows no income, so the cluster is not complete, the
-        # §6 fall-through is not taken, and the absent STR is the gap again — on BOTH routes alike,
-        # because both read `income_shown` (the evenness rule holds).
+        # (family 'informal') at p=0.5 — and it still greens. That is DELIBERATE and it is the
+        # evenness rule: `_income_genuineness_docs` caps only the documents a route REQUIRES, and the
+        # salary route has no fingerprint cap at all. TD-410 (owner option A, 2026-10-27) keeps it so:
+        # the informal family's `suspect` means "not a standard payslip", not "may be fake", and it
+        # still COUNTS; only a proof flagged as possibly fake stops counting (the test below).
         app = self._app()
         slip = self._documented_father(app)
-        slip.vision_fields = dict(slip.vision_fields,
-                                  authenticity={'status': 'suspect', 'probability': 0.5})
+        slip.vision_fields = dict(slip.vision_fields, authenticity={
+            'status': 'suspect', 'probability': 0.5, 'doc_seen': 'informal'})
+        slip.save(update_fields=['vision_fields'])
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertNotIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_a_payslip_flagged_as_possibly_fake_no_longer_carries_the_fall_through(self):
+        # TD-410: a suspect slip naming a FORMAL family (no current writer — a legacy holistic score)
+        # shows no income, so the §6 fall-through is not taken and the absent STR is the gap again.
+        app = self._app()
+        slip = self._documented_father(app)
+        slip.vision_fields = dict(slip.vision_fields, authenticity={
+            'status': 'suspect', 'probability': 0.5, 'doc_seen': 'private'})
         slip.save(update_fields=['vision_fields'])
         f = _facts(app)['income']
         self.assertNotEqual(f['status'], 'verified')

@@ -15,8 +15,8 @@ fourth arm here IS the ruling — adding one silences the salary-picture asks th
 ``income_engine.declared_amount`` + ``income_engine.has_income_support_doc`` — so the answer is
 the same answer the submission gate has given since 2026-07-25. What is new is that ONE place
 gives it, that it names WHICH documents carry it, and that it names, in a STABLE CODE, why a
-document the family sent does not. (TD-410, owner 2026-10-27: a proof whose genuineness is flagged
-suspect or not_<type> carries nothing, on every arm — `proof_flagged`.)
+document the family sent does not. (TD-410, owner 2026-10-27, option A: a proof flagged as possibly
+FAKE carries nothing — `proof_flagged`; an informal payslip still counts, EPF waits on TD-411.)
 
 Its readers: ``income_engine.member_income_evidenced`` (the frozen gate answer, expressed as
 ``shown or str_not_breached``), ``income_engine._member_income_documented`` (the officer's chase
@@ -48,32 +48,53 @@ WAYS = (WAY_SALARY_SLIP, WAY_EPF, WAY_DECLARED_LETTER)
 # ── Why a document that WAS sent does not carry this earner's income ─────────────────────────
 # ⚠ EVERY CODE HERE IS A STATE THE EXISTING PREDICATES ACTUALLY TEST. There is deliberately no
 # 'unreadable': `usable_salary_slip` asks nothing about whether a payslip's figures read. Since TD-410
-# (owner 2026-10-27) every arm also refuses a proof whose genuineness is FLAGGED (`proof_flagged`):
-# a payslip scored `not_*` keeps `not_salary`; any other flagged proof reads `suspect`. Inventing a
+# (owner 2026-10-27) every arm also refuses a proof flagged as possibly fake (`proof_flagged`): a
+# payslip scored `not_*` keeps `not_salary`; any other flagged proof reads `suspect`. Inventing a
 # finer vocabulary here would put words on the officer's screen that no code can ever produce.
 REASON_NOT_SALARY = 'not_salary'                 # payslip slot: scored `not_*` (a MyKad, #47)
 REASON_NO_VALUE = 'no_value'                     # EPF: no monthly figure could be derived
 REASON_LETTER_UNREAD = 'letter_unread'           # support letter: student_verdict != 'ok' (V1 #2)
 REASON_NO_DECLARED_AMOUNT = 'no_declared_amount'  # letter read, but nothing was declared to back
-REASON_SUSPECT = 'suspect'                       # TD-410: scored suspect / not_<type> (not a wrong-type slip)
+REASON_SUSPECT = 'suspect'                       # TD-410: flagged as possibly fake (`proof_flagged`)
 REASONS = (REASON_NOT_SALARY, REASON_NO_VALUE, REASON_LETTER_UNREAD, REASON_NO_DECLARED_AMOUNT,
            REASON_SUSPECT)
 
 
-def proof_flagged(doc, doc_type) -> bool:
-    """TD-410 (owner ruling 2026-10-27: *"Suspect shouldn't count."*). True when an income proof's
-    stored genuineness is FLAGGED — ``suspect`` or ``not_<type>`` (``bands.needs_attention``) — so it
-    carries no member's income, on any arm (payslip, EPF, support letter) and so at every door that
-    reads this module: the gate, the cluster, the verdict band, the chase list, Check 2, TD-409's hold.
+#: The salary-slip FAMILY whose `suspect` is "not a standard payslip", not "may be fake": the signature
+#: model (`genuineness.salary_doc`, 1.0.0+) returns `suspect` ONLY as `family='informal'` (wage labels, no
+#: statutory scaffold) — private / govt / singapore / gig are always `genuine`, a non-payslip `not_salary`.
+_INFORMAL_SLIP = 'informal'
 
-    ⚠ NO SIGNAL STILL COUNTS — an unscored document, a known issuer we have not fingerprinted
-    (``unchecked``), a read made with the genuineness flag off or deferred by our outage. Those are OUR
-    gaps, not the family's: TD-394's rule ("a money gate never passes on a document nobody has READ")
+
+def proof_flagged(doc, doc_type) -> bool:
+    """TD-410 (owner ruling 2026-10-27: *"Suspect shouldn't count"*, narrowed by option A the same day:
+    only a proof flagged as possibly FAKE). True when an income proof carries no member's income, read at
+    every door of this module (the gate, the cluster, the verdict band, the chase list, Check 2, TD-409's
+    hold):
+      * a ``not_<type>`` wrong-type score, on any arm (a payslip's ``not_salary`` already failed before);
+      * a ``suspect`` payslip that names a family OTHER than ``informal`` in ``doc_seen``. The current
+        model never emits one — every suspect slip is informal, a real B40 family's employer letter, and
+        STILL COUNTS (the reviewer checks it as today) — so this catches a legacy holistic score
+        ("not an official document") or a future formal-family band;
+      * a ``suspect`` support letter (none is genuineness-scored today).
+    ⚠ EPF IS EXCLUDED until TD-411: eight live statements the scorer itself names `epf` read ``not_epf``
+    at p=0.00 — no signature matched at all, the shape of a text it could not read, not of a wrong document.
+
+    ⚠ NO SIGNAL STILL COUNTS — an unscored document, ``unchecked``, the flag off, a read our outage
+    deferred. Those are OUR gaps: TD-394's rule ("a money gate never passes on a document nobody has READ")
     is about the read, which this does not change, and the student's own wizard has always counted an
-    unscored proof (``IncomeWizard.notFlaggedFake``: "we never gate on our own missing scan"). The
-    verdict still holds an unscored proof at Probable (TD-114) for the officer to look at."""
-    from .genuineness.bands import needs_attention, stored_status
-    return needs_attention(stored_status(getattr(doc, 'vision_fields', None)), doc_type)
+    unscored proof ("we never gate on our own missing scan"). The verdict still holds it at Probable."""
+    if doc_type == 'epf':
+        return False                                   # TD-411: the EPF scorer's not_epf is not trusted yet
+    from .genuineness.bands import canonical_status, stored_authenticity, stored_status
+    vf = getattr(doc, 'vision_fields', None)
+    status = canonical_status(stored_status(vf), doc_type)
+    if status in ('', 'genuine'):
+        return False
+    seen = (stored_authenticity(vf).get('doc_seen') or '').strip().lower()
+    # A suspect slip naming no family is read as the informal one: no writer stores it, and the
+    # benefit of the doubt is the family's (as for no signal).
+    return not (status == 'suspect' and doc_type == 'salary_slip' and seen in ('', _INFORMAL_SLIP))
 
 
 @dataclass(frozen=True)

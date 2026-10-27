@@ -75,15 +75,23 @@ An STPM results document in the higher-results slot was always read by Gemini (`
   stored reads change only on a re-read (S4).
 - **Tests:** `test_stpm_parse.py` (synthetic twins of every layout), wiring tests in `test_third_route_s3.py`.
 
-## TD-410 — a suspect income proof shows no income (owner ruling: "Suspect shouldn't count") - 2026-10-27
+## TD-410 — an income proof flagged as possibly fake shows no income (owner ruling, option A) - 2026-10-27
 
-- **One predicate, every door.** `income_shown.proof_flagged`: a payslip, EPF statement or supporting letter
-  whose stored genuineness is suspect or not_<type> carries no member's income. It is read by
+- **The ruling, narrowed by the impact count.** "Suspect shouldn't count" — but the live suspect payslips
+  were almost all the INFORMAL family, which the salary model (`genuineness/salary_doc.py`, 1.0.0+) marks
+  `suspect` by design: it returns `suspect` ONLY as `family='informal'` (wage labels, no statutory
+  scaffold); private / govt / singapore / gig slips are always `genuine`. Owner option A: only a proof
+  flagged as possibly FAKE stops counting; an informal payslip still counts (the reviewer checks it).
+- **One predicate, every door.** `income_shown.proof_flagged` is True for a `not_<type>` wrong-type score, a
+  `suspect` payslip naming a family other than `informal` (none from today's model — a legacy holistic
+  score or a future band), or a suspect support letter (none is scored today). EPF is EXEMPT until TD-411
+  (raised): 8 live statements the scorer names `epf` read `not_epf` at p=0.00 — no signature matched at
+  all, the shape of an unreadable PDF text layer, not of a wrong document. It is read by
   `income_shown` (all three arms), `usable_salary_slip`, `_member_has_epf_value` and
   `has_income_support_doc`, so the gate (`income_doc_blockers`, the per-member loop, the stranger / pending
   STR checks), the cluster (`member_cluster_complete`, `salary_income_satisfied`, `income_established`),
-  Check 2's per-member proof ask, TD-409's hold and the verdict band all follow. A suspect payslip used to
-  count (fail-open, "informal"). `VERDICT_ENGINE_VERSION` 2026-10-27.4 (a band moves).
+  Check 2's per-member proof ask, TD-409's hold and the verdict band all follow.
+  `VERDICT_ENGINE_VERSION` 2026-10-27.4 (a band can move for a flagged proof).
 - **No signal still counts.** An unscored proof, a known issuer not fingerprinted (`unchecked`), a read made
   with the genuineness flag off or deferred by our outage: our gap, not the family's — TD-394's rule is
   about a document nobody READ, and the wizard has always counted an unscored proof.
@@ -91,8 +99,9 @@ An STPM results document in the higher-results slot was always read by Gemini (`
   it" (`suspect`, en/ms/ta). The student's income wizard follows the served answer
   (`incomeShown.servedRefuses`) because a payslip's suspect chip is hidden from her; she is asked with the
   existing "Show {member}'s income — a payslip, EPF, or an amount with a supporting letter" copy.
-- **Tests:** `test_td410_suspect_income_proof.py` + three web cases; every change bitten. Two older tests
-  that pinned the old fail-open now pin the ruling. TD-410 closed.
+- **Tests:** `test_td410_suspect_income_proof.py` + three web cases; every change bitten. #106's informal
+  slip still greens (its test now stores `doc_seen='informal'`, as production does); a formal-family
+  suspect slip does not. TD-410 closed; TD-411 raised.
 
 ## TD-409 — an STR no household card matched never closes an STR request (owner ruling A) - 2026-10-27
 

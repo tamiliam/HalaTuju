@@ -93,8 +93,10 @@ class TestUsableSalarySlipGate(TestCase):
             cohort=cohort, profile=profile, status='profile_complete',
             income_route='salary', income_working_members=['father'])
 
-    def _slip(self, auth_status):
+    def _slip(self, auth_status, doc_seen=None):
         vf = {'authenticity': {'status': auth_status}} if auth_status is not None else {}
+        if doc_seen is not None:
+            vf['authenticity']['doc_seen'] = doc_seen
         return ApplicantDocument.objects.create(
             application=self.app, doc_type='salary_slip', household_member='father',
             storage_path='x', vision_fields=vf, uploaded_at=timezone.now())
@@ -107,9 +109,17 @@ class TestUsableSalarySlipGate(TestCase):
         self._slip('genuine')
         self.assertTrue(usable_salary_slip(self.app, 'father'))
 
-    def test_suspect_slip_is_not_usable(self):
-        """TD-410 (owner 2026-10-27: "Suspect shouldn't count") — was usable (fail-open) until then."""
-        self._slip('suspect')
+    def test_suspect_informal_slip_is_usable(self):
+        """TD-410, owner option A: the model's `suspect` IS the informal family — still usable."""
+        for seen in ('informal', None):
+            with self.subTest(seen):
+                ApplicantDocument.objects.filter(application=self.app).delete()
+                self._slip('suspect', doc_seen=seen)
+                self.assertTrue(usable_salary_slip(self.app, 'father'))
+
+    def test_suspect_slip_of_another_family_is_not_usable(self):
+        """TD-410: a suspect slip naming a formal family (no current writer — a legacy / future score)."""
+        self._slip('suspect', doc_seen='private')
         self.assertFalse(usable_salary_slip(self.app, 'father'))
 
     def test_unscored_legacy_slip_fails_open(self):
