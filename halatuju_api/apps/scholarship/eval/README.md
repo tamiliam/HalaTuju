@@ -46,6 +46,35 @@ python manage.py eval_doc_recognition --json           # machine-readable
 ```
 Typical output: `9/10 correct · 1 regression: water_bill_other_name expected 'ok', got 'mismatch'`.
 
+## The results_split corpus (STPM exact-read, S1)
+`fixtures/results_split/<folder>/` holds results documents sorted by the owner and split by page:
+`stpm_cert`, `stpm_slip` (the STPM corpus) and the controls `spm_cert`, `spm_slip`, `fake`,
+`matric`, `diploma`, `asasi`, `muet`, `spvm`, `other`. File stems are the keys.
+
+`capture_ocr.py` reads each document the way production feeds the reader
+(`vision.ocr_document_full`): a digital PDF with a usable text layer is read from that layer for
+free; anything else goes to Google Vision, one billable call per page. It writes, per key, into
+`snapshots/`:
+
+| File | Contents |
+|------|----------|
+| `<key>.ocr.txt` | Flattened text, all pages in order |
+| `<key>.ocr.words.json` | Vision only: `{"pages": [{page, text, words: [{text, cx, cy, h, angle, x0, y0, x1, y1}], error}]}` — production's word shape plus bounds; `pages[0]` is what production OCRs |
+| `<key>.ocr.meta.json` | `path` (`text_layer` or `vision`), page count, Vision calls |
+| `<key>.expect.json` | Hand-checked expected answer (STPM: layout, year, name, IC, index no., serial, PNGK, subject rows, readable; controls: `{layout, stpm: false}`) |
+
+**All four are real student data (PII) and gitignored** — never copy a value into a tracked file
+or a test.
+
+```bash
+cd halatuju_api
+python apps/scholarship/eval/capture_ocr.py results_split/stpm_cert   # nested path under fixtures/
+python apps/scholarship/eval/capture_ocr.py results_slip              # a plain doc_type still works
+```
+Re-runs skip keys that already have an `.ocr.txt`, and each run prints how many Vision calls it
+made. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
+else gcloud Application Default Credentials.
+
 ## Limits (honest)
 - It scores each document **in isolation**. A check that needs a companion document present
   (e.g. a payslip verified against the matching parent IC) sees only the one doc — note such
