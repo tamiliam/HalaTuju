@@ -89,8 +89,11 @@ There are no OCR caches for STPM yet. The stored prod reads (snapshots `higher_r
 - Replace the blanket `higher_results_not_checked` with a real result.
 - A checker page (1A) asks the student for the real slip or certificate. A certified copy (2A) is accepted.
 - Certificate and slip are judged the same way. No new reviewer label.
-- Date-consistency signal (soft; owner to confirm): a release date whose year is not the exam year + 1 lowers
-  the genuineness score. It never rejects alone, because a misprint is possible.
+- ~~Date-consistency signal~~ DROPPED (S1, 2026-10-27): two different genuine-looking "STPM 2025" slips carry
+  release date 18 Jun 2025, so it is a recurring council misprint; a date check would wrongly mark real students.
+- Owner ruling (2026-10-27) on online-portal prints: a PDF saved from the MPM results website (URL + timestamp
+  footer) is ACCEPTED like a slip. A phone photo of a screen showing it is treated as a checker screenshot
+  (1A): ask for the real slip or certificate.
 - Bump `MODEL_VERSION` to 1.10.0, and `VERDICT_ENGINE_VERSION` (bands can move).
 - **Done when:** d3303-style checker pages are asked for the real document; certified copies pass;
   Matric/Diploma docs are not misjudged as STPM; owner sees the before/after list of affected applications
