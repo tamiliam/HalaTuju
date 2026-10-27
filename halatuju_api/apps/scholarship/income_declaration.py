@@ -75,10 +75,12 @@ def read_approval(doc, ex, ocr_text, image_fn):
         until = prior.get(APPROVAL_UNTIL) if isinstance(prior, dict) else None
         return {**ex, APPROVAL_ERROR: why,
                 APPROVAL_UNTIL: until or int((timezone.now() + APPROVAL_RETRY_WINDOW).timestamp())}
-    if doc.doc_type == 'salary_slip':
-        from .genuineness.declaration_doc import income_doc_genuineness
-        if income_doc_genuineness(ocr_text or '', 'salary_slip').get('family') not in _INFORMAL_TEXT_FAMILIES:
-            return ex
+    from .genuineness.declaration_doc import income_doc_genuineness
+    family = income_doc_genuineness(ocr_text or '', doc.doc_type).get('family')
+    if doc.doc_type == 'salary_slip' and family not in _INFORMAL_TEXT_FAMILIES:
+        return ex
+    if _bank_statement(ex['fields'].get('kind'), family):
+        return ex                                   # owner ruling 4A: the bank's header is enough — no call
     from . import vision
     from .pdf_pages import pdf_pages_png
     data = image_fn()
@@ -131,10 +133,19 @@ def is_declaration(doc) -> bool:
     return _seen(doc) == DECLARATION
 
 
+def _bank_statement(kind, seen) -> bool:
+    """Owner ruling 4A (2026-10-28): a bank statement (the text read's own `kind`) is exempt from the approver
+    rule — the bank's header is enough — unless the scorer reads it as a DECLARATION form."""
+    return str(kind or '').strip().lower() == 'bank_statement' and (seen or '') != DECLARATION
+
+
 def is_informal(doc) -> bool:
-    """Ruling 2A: a supporting income document, or a payslip read as informal / a declaration form."""
+    """Ruling 2A: a supporting income document, or a payslip read as informal / a declaration form — save a
+    bank statement (ruling 4A, `_bank_statement`)."""
     dt = getattr(doc, 'doc_type', '')
-    return dt == 'income_support_doc' or (dt == 'salary_slip' and _seen(doc) in _INFORMAL_SLIP_FAMILIES)
+    if dt == 'income_support_doc':
+        return not _bank_statement(_fields(doc).get('kind'), _seen(doc))
+    return dt == 'salary_slip' and _seen(doc) in _INFORMAL_SLIP_FAMILIES
 
 
 def _fields(doc) -> dict:

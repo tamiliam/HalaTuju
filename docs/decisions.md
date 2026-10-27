@@ -15199,6 +15199,10 @@ e-Penyata, a GRED code): the sector field every income form carries no longer re
   signatory is needed when an official stamp is visible. Kept: a header is still required; a hand signature
   WITHOUT a stamp still needs a named or titled signer; a QR-only or unmarked letter still fails. The read
   answers `has_stamp_or_signature` = "stamp" / "signature" / "no" (an older "yes" counts as a signature).
+- **4A — a bank statement is exempt from the approver rule** (owner, 2026-10-28): the bank's header is
+  enough. An `income_support_doc` whose text read labels it `kind = 'bank_statement'` is not "informal"
+  for the rule and costs no image call — unless the scorer reads it as a DECLARATION form, which still needs
+  its approver (a self-written statement labelled a bank statement does not escape the rule).
 - **The approval is read from the IMAGE (review round 2):** one multimodal Gemini call per informal income
   document (`income_declaration.read_approval`) — a text read cannot tell a stamped box from an empty one
   whose label is printed, nor see a hand signature. A failure on our side stores nothing (still "not yet
