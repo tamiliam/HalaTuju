@@ -2138,7 +2138,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
                                       postcode=postcode, city=city, street=street,
                                       check_address=check_address)
-        result = {'fields': ex['fields'], 'warnings': ex['warnings'], **{k: ex[k] for k in ex if k in ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point')},
+        result = {'fields': ex['fields'], 'warnings': ex['warnings'], **{k: ex[k] for k in ex if k in ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error', 'approval_read_until')},
                   'student_verdict': verdict, 'capture': ex.get('capture', 'ai'), 'error': ''}
     # Genuineness fingerprint (flag-gated, soft): a multimodal "does this look like a real
     # official document?" read → vision_fields['authenticity']. One extra Gemini call per

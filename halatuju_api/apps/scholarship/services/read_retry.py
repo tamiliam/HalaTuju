@@ -103,7 +103,9 @@ def approval_unchecked_documents(limit):
     the approver fields — every `income_support_doc`, and a payslip read as informal / declaration / govt —
     so the hourly sweep re-reads them even if the lead's manual re-read misses one; until then they count
     for nothing and the family is told "still checking". Only a row that HAS a read (the never-read half
-    of the sweep owns the rest), never one this sweep already tried (`APPROVAL_TRIED`), oldest first.
+    of the sweep owns the rest), never one this sweep already tried (`APPROVAL_TRIED`) — unless its approval
+    IMAGE read failed on our side and its 72-hour window (`income_declaration.APPROVAL_UNTIL`) is still open;
+    never once that window has closed (the officer checks it by eye). Oldest first.
     The re-read is the cockpit's Re-run core (`_reread`): a failed read never replaces the stored one,
     and TD-407 keeps a stored genuineness score the re-read did not freshly replace. Never raises."""
     if limit <= 0:
@@ -116,7 +118,12 @@ def approval_unchecked_documents(limit):
                             vision_fields__authenticity__doc_seen__in=_APPROVAL_SLIP_FAMILIES),
                         superseded_at__isnull=True, vision_fields__has_key='fields')
                 .exclude(vision_fields__fields__has_key='has_stamp_or_signature')
-                .exclude(vision_fields__has_key=APPROVAL_TRIED)
+                # Round 3 (TD-390's window): an approval IMAGE read that failed on our side is retried every
+                # run while its window is open, whatever the once-only stamp says; never after it closes.
+                .exclude(Q(vision_fields__has_key=APPROVAL_TRIED)
+                         & ~Q(vision_fields__approval_read_until__gt=int(timezone.now().timestamp())))
+                .exclude(vision_fields__has_key='approval_read_error',
+                         vision_fields__approval_read_until__lte=int(timezone.now().timestamp()))
                 .exclude(application__status__in=CASE_CLOSED_STATES)
                 .order_by('uploaded_at')[:limit])
         return [d for d in rows if (d.vision_fields or {}).get('fields')]

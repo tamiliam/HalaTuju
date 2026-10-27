@@ -15203,7 +15203,10 @@ e-Penyata, a GRED code): the sector field every income form carries no longer re
   document (`income_declaration.read_approval`) — a text read cannot tell a stamped box from an empty one
   whose label is printed, nor see a hand signature. A failure on our side stores nothing (still "not yet
   checked"), never "no". Cost: one extra Gemini image call per support letter and per informal /
-  declaration payslip; formal payslips and EPF cost nothing extra.
+  declaration payslip; formal payslips and EPF cost nothing extra. A PDF goes as its pages stacked (≤ 3:
+  the first two and the last) in that one call. A failure on our side is retried by the hourly sweep for
+  72 hours from the first failure (TD-390's shape); after that the officer checks it by eye
+  (`approval_unreadable`) and the family gets the normal sign-and-stamp ask.
 - **JPA / PERKESO pension statements stay formal (review of d0d5d079):** they are computer-printed and never
   stamped, so the salary model reads them `govt` on their STATEMENT layout — a pension issuer word
   (JABATAN PERKHIDMATAN AWAM in full, KWAP, PENCEN) together with a statement marker (Penyata Bayaran,

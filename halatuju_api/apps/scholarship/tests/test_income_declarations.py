@@ -143,8 +143,61 @@ class TheExtraction(SimpleTestCase):
                 out, _gem = self._read(self._doc(), answer, image=image)
                 self.assertFalse(set(APPROVAL_FIELDS) & set(out['fields']))
                 doc = self._doc()
-                doc.vision_fields = {'fields': out['fields']}
+                doc.vision_fields = {'fields': out['fields'], **{k: out[k] for k in out if k.startswith('approval_read')}}
                 self.assertIs(approval_unchecked(doc), True)
+
+    def test_a_failed_image_read_is_retried_for_72_hours_then_checked_by_eye(self):
+        """Round 3, TD-390's shape: the window is stamped at the FIRST failure and kept on the next; after it
+        the officer checks by eye ("approval_unreadable") and the family is asked again (the normal ask)."""
+        import time
+        from apps.scholarship.income_declaration import (APPROVAL_ERROR, APPROVAL_UNTIL, approval_counts,
+                                                         approval_expired, approval_missing, approval_unchecked,
+                                                         missing_reason)
+        out, _gem = self._read(self._doc(), {'_error': 'Gemini error: 503'})
+        self.assertAlmostEqual(out[APPROVAL_UNTIL], time.time() + 72 * 3600, delta=60)
+        again = self._doc()
+        again.vision_fields = {APPROVAL_ERROR: 'x', APPROVAL_UNTIL: 1234}
+        out2, _gem = self._read(again, {'_error': 'Gemini error: 503'})
+        self.assertEqual(out2[APPROVAL_UNTIL], 1234)                         # never pushed forward
+        doc = self._doc()
+        doc.vision_fields = {'fields': {'amount': 'RM800'}, APPROVAL_ERROR: 'x', APPROVAL_UNTIL: int(time.time()) + 600}
+        self.assertEqual((approval_unchecked(doc), approval_expired(doc), missing_reason(doc)),
+                         (True, False, 'approval_unchecked'))
+        doc.vision_fields[APPROVAL_UNTIL] = int(time.time()) - 1
+        self.assertEqual((approval_unchecked(doc), approval_expired(doc), missing_reason(doc)),
+                         (False, True, 'approval_unreadable'))
+        self.assertEqual(approval_missing(doc), ('header', 'approver'))
+        self.assertIs(approval_counts(doc), False)
+
+    def test_a_two_page_form_is_read_with_its_last_page(self):
+        """Round 3: the stamp is on page 2 — the one image call sees it (pages stacked, page 1 first)."""
+        import io
+        from PIL import Image
+        from apps.scholarship.pdf_pages import pdf_pages_png
+        white = Image.new('RGB', (200, 280), 'white')
+        stamped = Image.new('RGB', (200, 280), 'white')
+        stamped.paste(Image.new('RGB', (80, 80), (255, 0, 0)), (60, 100))     # the "stamp", page 2 only
+        buf = io.BytesIO()
+        white.save(buf, format='PDF', save_all=True, append_images=[stamped])
+        pdf = buf.getvalue()
+        doc = ApplicantDocument(doc_type='income_support_doc', content_type='application/pdf', vision_fields={})
+        out, gem = self._read(doc, {'issuer_header': 'KEDAI CONTOH', 'approver_name': '', 'approver_title': '',
+                                    'has_stamp_or_signature': 'stamp'}, image=pdf)
+        self.assertEqual(gem.call_count, 1)
+        self.assertEqual(gem.call_args.kwargs['mime_type'], 'image/png')
+        sheet = Image.open(io.BytesIO(gem.call_args.kwargs['image'])).convert('RGB')
+
+        def red(px):
+            return px[0] > 180 and px[1] < 90 and px[2] < 90
+        reds = [y for y in range(sheet.height) if red(sheet.getpixel((sheet.width // 2, y)))]
+        self.assertTrue(reds and min(reds) > sheet.height // 2)                # the stamp, in the lower page
+        self.assertEqual(out['fields']['has_stamp_or_signature'], 'stamp')
+        five = io.BytesIO()                                                    # a long form: first two + last
+        white.save(five, format='PDF', save_all=True, append_images=[white, white, white, stamped])
+        sheet5 = Image.open(io.BytesIO(pdf_pages_png(five.getvalue()))).convert('RGB')
+        self.assertAlmostEqual(sheet5.height / sheet.height, 1.5, delta=0.1)   # 3 pages, not 5
+        self.assertTrue(any(red(sheet5.getpixel((sheet5.width // 2, y)))
+                            for y in range(2 * sheet5.height // 3, sheet5.height)))
 
     def test_the_read_path_adds_the_image_approval(self):
         """Wired: a support letter's field read ends with the image approval read (one image call)."""
@@ -161,6 +214,22 @@ class TheExtraction(SimpleTestCase):
             vision._run_field_extraction_impl(doc, names=['AHMAD'], ocr=ocr)
         self.assertEqual(doc.vision_fields['fields']['has_stamp_or_signature'], 'stamp')
         self.assertTrue(any(c.kwargs.get('image') == b'img' for c in gem.call_args_list))
+
+    def test_the_read_path_stores_a_failed_image_read_for_the_retry(self):
+        from unittest import mock
+        from apps.scholarship import vision
+        from apps.scholarship.income_declaration import APPROVAL_ERROR, APPROVAL_UNTIL, approval_unchecked
+        doc = ApplicantDocument(doc_type='income_support_doc', content_type='image/jpeg', storage_path='x',
+                                vision_fields={})
+        doc.save = lambda *a, **k: None
+        text_read = {'name': 'AHMAD', 'amount': 'RM800', 'issuer': 'JKKK', 'kind': 'community_letter', 'warnings': []}
+        ocr = {'text': 'SURAT PENGESAHAN PENDAPATAN\nRM800', 'words': None, 'image': b'img', 'error': None}
+        with mock.patch('apps.scholarship.vision._call_gemini_json',
+                        side_effect=[text_read, {'_error': 'Gemini error: 503'}]):
+            vision._run_field_extraction_impl(doc, names=['AHMAD'], ocr=ocr)
+        self.assertIn(APPROVAL_ERROR, doc.vision_fields)
+        self.assertIn(APPROVAL_UNTIL, doc.vision_fields)
+        self.assertIs(approval_unchecked(doc), True)
 
     def test_only_informal_income_documents_cost_the_extra_call(self):
         _out, gem = self._read(self._doc('salary_slip'), {}, text=GOVT_SLIP)            # a formal payslip
@@ -412,6 +481,20 @@ class TheCoachAndCheckTwo(_Case):
                 mock.patch('apps.scholarship.reextract.reextract_document') as rx:    # a read that lands nothing
             reprocess_unread_ic_documents()
         self.assertNotIn(letter.id, {d.id for d in approval_unchecked_documents(50)})   # tried: officer's now
+
+    def test_the_sweep_retries_a_failed_image_read_inside_its_window_only(self):
+        import time
+        from apps.scholarship.services.read_retry import APPROVAL_TRIED, approval_unchecked_documents
+        app = self._app()
+        now = int(time.time())
+        live = _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800'})
+        live.vision_fields = {**live.vision_fields, APPROVAL_TRIED: now, 'approval_read_error': 'x',
+                              'approval_read_until': now + 3600}
+        live.save(update_fields=['vision_fields'])
+        gone = _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM900'})
+        gone.vision_fields = {**gone.vision_fields, 'approval_read_error': 'x', 'approval_read_until': now - 1}
+        gone.save(update_fields=['vision_fields'])
+        self.assertEqual({d.id for d in approval_unchecked_documents(50)}, {live.id})
 
     def test_check_two_waits_while_her_document_is_unchecked(self):
         """Not asked again for what she sent: the re-read decides (`check2_deferred`)."""

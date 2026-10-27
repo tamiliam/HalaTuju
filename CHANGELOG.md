@@ -155,7 +155,13 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
   rubber-stamp impression and a signature handwritten; printed labels, logos, QR codes and empty boxes are
   neither. **Cost: one extra Gemini image call (plus one image download on the text path) per
   `income_support_doc` and per payslip whose text reads informal / declaration; formal payslips, EPF and every
-  other type cost nothing extra.** `results_doc.MODEL_VERSION` 1.12.0.
+  other type cost nothing extra.** `results_doc.MODEL_VERSION` 1.12.0. A PDF is sent as its pages stacked
+  in one image — all of them up to 3, else the first two and the LAST (`pdf_pages.pdf_pages_png`), still ONE
+  call — because a form's "Tandatangan dan Cap Rasmi" box is often on its last page (review round 3; other
+  callers keep page 1 only). If the image read fails on OUR side the read is marked and the hourly sweep
+  retries it for 72 hours (stamped at the first failure — TD-390's shape); after that the officer's drawer
+  says "could not be read — check by eye" (`approval_unreadable`) and the family gets the normal "upload it
+  signed and stamped" ask.
 - **The rule (`income_declaration`), owner ruling 2A (2026-10-28): EVERY informal income document** — every
   supporting letter (penghulu / JKKK / employer letter, a declaration), and a payslip the salary model reads as
   INFORMAL or as a declaration form — counts as income shown ONLY with an issuing body AND an approver: a
@@ -189,7 +195,10 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
 - **Bundle room:** `scholarship.consent.blocker.str_not_household` shortened (owner OK) — "This STR isn't in
   the name of anyone in your family. Upload your own household's STR, or show your income another way." —
   and the student's `scholarship.consent.blocker.income_document_mismatch` deleted (en/ms/ta): no code has
-  emitted it since the verification-accuracy pass (2026-06-11). The officer's copy of it stays.
+  emitted it since the verification-accuracy pass (2026-06-11). The officer's copy of it stays. Round 3: the
+  two coach fallbacks `scholarship.docs.help.fallback.bank_holder_mismatch` / `bank_details_unclear` deleted
+  (en/ms/ta) — `fallbackKeyFor` maps only `HELP_VERDICTS`, which never held them, so they were unreachable
+  (with the AI off a bank statement's coach shows the generic note, as before).
 - **Tests:** `test_income_declarations.py` (synthetic text only) + verdict cases; the characterisation
   matrix (`test_income_whose_str_vouches`) gains a #374 layer on top of its untouched record; fixtures that
   mean "a letter / informal slip that counts" now carry `factories.APPROVED_INFORMAL_FIELDS`; every change

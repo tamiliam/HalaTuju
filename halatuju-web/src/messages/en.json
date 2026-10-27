@@ -1360,9 +1360,7 @@
           "income_rel_doc_needed": "This family member's IC is in and matches the income document. The last required step is the document that links them to you — a birth certificate for a mother, or a guardianship letter for a guardian. Please upload it to complete your application.",
           "income_rel_doc_unreadable": "You've uploaded your birth certificate (or guardianship letter), but we couldn't read the names on it that link this family member to you — it may be unclear, or the wrong document. Please check it's a clear photo or PDF of the actual document and upload it again to complete your application.",
           "str_not_current": "We couldn't confirm this STR shows it was approved. To prove your family qualifies, upload your STR showing “Lulus” — a MySTR “Semakan Status” or Dashboard screenshot showing the status “Lulus” (with your parent's name and IC), or your official STR approval letter. A plain screenshot that shows “Lulus” is enough. Please make sure it's your STR (Sumbangan Tunai Rahmah) — a SARA letter is a different aid and isn't accepted on its own. No current STR? You can show your family's income with a salary slip / EPF instead. If your STR is from this year, we may have misread it — upload a clearer copy or the Semakan Status page.",
-          "generic": "Something didn't look right with this upload. Have another look, then try uploading again.",
-          "bank_holder_mismatch": "The account holder on this statement is not you. The bursary can only be paid into a bank account in your own name — please upload a statement for your own account.",
-          "bank_details_unclear": "We could not clearly read all three details (bank name, account number, and account holder). Please upload a clearer photo or PDF where all three are visible."
+          "generic": "Something didn't look right with this upload. Have another look, then try uploading again."
         },
         "school_leaving_cert": "A photo/PDF of your school-leaving certificate (surat berhenti sekolah) or testimonial."
       },
@@ -4781,7 +4779,8 @@
             "approval_no_header": "an informal income document with no issuing body (header)",
             "approval_no_approver": "an informal income document not signed and stamped by an approver",
             "approval_no_header_approver": "an informal income document with no issuing body and no approver's signature or stamp",
-            "approval_unchecked": "an informal income document read before the approver check — re-read it to check its issuing body and approver"
+            "approval_unchecked": "an informal income document read before the approver check — re-read it to check its issuing body and approver",
+            "approval_unreadable": "its issuing body and approver could not be read (our check failed for 3 days) — check by eye"
           }
         },
         "view": "View",

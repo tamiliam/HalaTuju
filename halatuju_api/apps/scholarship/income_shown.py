@@ -58,7 +58,8 @@ REASON_NO_DECLARED_AMOUNT = 'no_declared_amount'  # letter read, but nothing was
 REASON_SUSPECT = 'suspect'                       # TD-410: flagged as possibly fake (`proof_flagged`)
 REASONS = (REASON_NOT_SALARY, REASON_NO_VALUE, REASON_LETTER_UNREAD, REASON_NO_DECLARED_AMOUNT,
            REASON_SUSPECT,   # + an informal document's own (#374 / 2A, `income_declaration`): what it lacks
-           'approval_no_header', 'approval_no_approver', 'approval_no_header_approver', 'approval_unchecked')
+           'approval_no_header', 'approval_no_approver', 'approval_no_header_approver', 'approval_unchecked',
+           'approval_unreadable')
 
 
 #: The salary model's FORMAL families (`genuineness.salary_doc`). Its `suspect` is ONLY `family='informal'`

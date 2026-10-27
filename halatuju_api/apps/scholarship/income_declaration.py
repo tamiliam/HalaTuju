@@ -26,6 +26,8 @@ One reader for every door: `income_shown.proof_flagged` (so the gate, the cluste
 TD-409's hold), the student's blocker (`member_approval_state`), the coach (`approval_coach`) and the
 officer's drawer reason (`missing_reason`).
 """
+from datetime import timedelta
+
 from .genuineness.declaration_doc import DECLARATION
 
 _STR = {'type': 'string'}
@@ -59,25 +61,62 @@ def read_approval(doc, ex, ocr_text, image_fn):
     Gemini image call per such document (formal payslips, EPF and every other type: none).
 
     A read that failed, or a document of another kind, comes back unchanged. If the image cannot be had or
-    the call fails — our side, never the family's — the fields are NOT added, so the document stays "not
-    yet checked" (`approval_unchecked`): no count, no blame, and the hourly sweep tries once more."""
+    the call fails — our side, never the family's — the fields are NOT added and the read is marked
+    (`APPROVAL_ERROR`, with a window `APPROVAL_UNTIL` stamped at the FIRST failure, TD-390's shape): the
+    document stays "not yet checked" (`approval_unchecked`) and the hourly sweep retries it within the window;
+    after it, `approval_expired` — the officer checks by eye and the family is asked again."""
     if ex.get('error') or not isinstance(ex.get('fields'), dict) or \
             getattr(doc, 'doc_type', '') not in ('salary_slip', 'income_support_doc'):
         return ex
+
+    def failed(why):
+        from django.utils import timezone
+        prior = getattr(doc, 'vision_fields', None)
+        until = prior.get(APPROVAL_UNTIL) if isinstance(prior, dict) else None
+        return {**ex, APPROVAL_ERROR: why,
+                APPROVAL_UNTIL: until or int((timezone.now() + APPROVAL_RETRY_WINDOW).timestamp())}
     if doc.doc_type == 'salary_slip':
         from .genuineness.declaration_doc import income_doc_genuineness
         if income_doc_genuineness(ocr_text or '', 'salary_slip').get('family') not in _INFORMAL_TEXT_FAMILIES:
             return ex
     from . import vision
+    from .pdf_pages import pdf_pages_png
     data = image_fn()
-    img, mime = vision._as_image_for_gemini(data, getattr(doc, 'content_type', '')) if data else (None, '')
+    if data and vision._is_pdf(getattr(doc, 'content_type', ''), data):
+        # Round 3: a form's approval box is often on its LAST page — send the pages stacked (first two +
+        # the last, `pdf_pages.MAX_STACKED_PAGES`), still ONE call. Other callers keep page 1 only.
+        stacked = pdf_pages_png(data)
+        img, mime = (stacked, 'image/png') if stacked else (None, '')
+    else:
+        img, mime = vision._as_image_for_gemini(data, getattr(doc, 'content_type', '')) if data else (None, '')
     if img is None:
-        return ex
+        return failed('no image')
     got = vision._call_gemini_json(APPROVAL_PROMPT, _APPROVAL_SCHEMA, image=img, mime_type=mime)
     if not isinstance(got, dict) or got.get('_error'):
-        return ex
+        return failed(str((got or {}).get('_error') or 'no answer')[:200] if isinstance(got, dict) else 'no answer')
     approval = {k: (got.get(k) if isinstance(got.get(k), str) else '') for k in APPROVAL_FIELDS}
     return {**ex, 'fields': {**ex['fields'], **approval}}
+
+
+#: Round 3 (TD-390's pattern): an approval image read that failed on OUR side is retried by the hourly sweep
+#: within this window, stamped at the first failure; after it the read is given up (`approval_expired`).
+APPROVAL_ERROR = 'approval_read_error'
+APPROVAL_UNTIL = 'approval_read_until'          # epoch seconds, a number on SQLite and Postgres alike
+APPROVAL_RETRY_WINDOW = timedelta(hours=72)
+
+
+def _vf(doc) -> dict:
+    vf = getattr(doc, 'vision_fields', None)
+    return vf if isinstance(vf, dict) else {}
+
+
+def approval_expired(doc) -> bool:
+    """An informal document whose approval read failed on our side for the whole retry window: no longer
+    "still checking" — the officer checks it by eye and the family is asked again (the normal ask)."""
+    import time
+    vf = _vf(doc)
+    return (is_informal(doc) and APPROVAL_ERROR in vf and not any(k in _fields(doc) for k in APPROVAL_FIELDS)
+            and float(vf.get(APPROVAL_UNTIL) or 0) <= time.time())
 
 #: The payslip families that are informal income documents (`genuineness.salary_doc` / `declaration_doc`).
 _INFORMAL_SLIP_FAMILIES = frozenset({'informal', DECLARATION})
@@ -105,8 +144,9 @@ def _fields(doc) -> dict:
 
 
 def approval_unchecked(doc) -> bool:
-    """An informal document whose read predates the approval fields — NOT judged yet (none of the keys)."""
-    return is_informal(doc) and not any(k in _fields(doc) for k in APPROVAL_FIELDS)
+    """An informal document NOT judged yet (none of the keys): read before the approval fields, or its image
+    read failed on our side and is still inside its retry window (`approval_expired` takes over after)."""
+    return is_informal(doc) and not any(k in _fields(doc) for k in APPROVAL_FIELDS) and not approval_expired(doc)
 
 
 def approval_missing(doc) -> tuple:
@@ -121,6 +161,8 @@ def approval_missing(doc) -> tuple:
     "no"; a bare "yes" (an older wording) is taken as a signature, the stricter of the two."""
     if not is_informal(doc) or approval_unchecked(doc):
         return ()
+    if approval_expired(doc):
+        return ('header', 'approver')            # nothing could be confirmed: the normal rule asks again
     f = _fields(doc)
 
     def filled(key):
@@ -143,11 +185,14 @@ def approval_counts(doc) -> bool:
 _REASON = {('header',): 'approval_no_header', ('approver',): 'approval_no_approver',
            ('header', 'approver'): 'approval_no_header_approver'}
 UNCHECKED_REASON = 'approval_unchecked'
+UNREADABLE_REASON = 'approval_unreadable'        # round 3: the image read failed for the whole window
 
 
 def missing_reason(doc) -> str:
     """The drawer reason for an informal document the approver rule refuses, '' otherwise."""
-    return UNCHECKED_REASON if approval_unchecked(doc) else _REASON.get(approval_missing(doc), '')
+    if approval_unchecked(doc):
+        return UNCHECKED_REASON
+    return UNREADABLE_REASON if approval_expired(doc) else _REASON.get(approval_missing(doc), '')
 
 
 #: The student's blocker code and the coach code: "upload it signed and stamped by an approver".
