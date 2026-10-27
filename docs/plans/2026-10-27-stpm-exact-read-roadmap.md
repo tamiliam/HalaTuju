@@ -8,8 +8,13 @@ only the fallback. STPM results are always read by **AI**: `higher_results.extra
 not accepted) only works in the `results_slip` slot. Example: corpus doc d3303, a checker screenshot in the
 STPM place, was never flagged.
 
-The owner wants STPM read Exact, and the system to tell an **STPM certificate** from an **STPM results slip**
-(as it already does for SPM).
+The owner wants STPM read Exact. To read well, the parser must know whether it holds an **STPM certificate**
+or an **STPM results slip**, because the two print the same facts in different places. This was the lesson
+from SPM.
+
+**Owner ruling (2026-10-27): the certificate/slip difference is for the READER ONLY.** For our purpose the two
+are one and the same document. Nothing is shown to reviewers or students. There is no label, marker or note,
+and no rule treats a certificate differently from a slip.
 
 ## Corpus (local, gitignored, PII)
 `halatuju_api/apps/scholarship/eval/fixtures/results_split/`, sorted by the owner and split by page on
@@ -42,23 +47,24 @@ There are no OCR caches for STPM yet. The stored prod reads (snapshots `higher_r
 - Text-first parser (like `offer_parse`/`bc_parse`), so a digital PDF works from its text layer.
 - It reads: name, NRIC, index number, year, PNGK, subject–grade rows (STPM grade scale A … F) and MUET where
   printed.
-- It classifies by fixed printed markers: **certificate** (certificate wording, Higher School Certificate,
-  notes back page) / **results slip** (Keputusan / slip wording) / **checker page** (web-checker markers).
+- It first recognises the layout from fixed printed markers: **certificate** (certificate wording, Higher
+  School Certificate, notes back page) or **results slip** (Keputusan / slip wording). Then it applies that
+  layout's reading rules. The layout is an internal routing step only. It is not stored as a field anyone sees
+  and no rule reads it.
 - Unsure → returns nothing, and the read falls back to Gemini (still AI). It never guesses.
-- Wired into `higher_results.extract`. A hit stores `capture='deterministic'` and `stpm_doc_form`. The same
-  seam serves an STPM doc in the `results_slip` slot.
+- Wired into `higher_results.extract`. A hit stores `capture='deterministic'`. The same seam serves an STPM
+  doc in the `results_slip` slot.
 - The web chip reads the stored tag, so no change is expected there; verify.
 - `PARSER_VERSION`; unit tests from synthetic twins (no PII in tests); offline score against S1.
-- **Done when:** at least 90% of the corpus reads Exact with the right form and correct PNGK/grades; 0 wrong
-  values (a miss falls back to AI, never a wrong Exact); full gates green.
+- **Done when:** at least 90% of the corpus reads Exact with correct name/PNGK/grades; 0 wrong values (a miss
+  falls back to AI, never a wrong Exact); full gates green.
 
-### S3 — STPM genuineness in the STPM results place + 1A/2A + reviewer label · medium · ~10 h
+### S3 — STPM genuineness in the STPM results place + 1A/2A · medium · ~9 h
 - Score STPM docs in `higher_results` with the existing C3 STPM signatures (`genuineness/stpm_doc.py`) plus
   the crest check.
 - Replace the blanket `higher_results_not_checked` with a real result.
 - A checker page (1A) asks the student for the real slip or certificate. A certified copy (2A) is accepted.
-- The reviewer sees "STPM certificate" or "STPM results slip" on the Academic card (en/ms/ta; Guide + FAQ
-  line).
+- Certificate and slip are judged the same way. No new reviewer label.
 - Bump `MODEL_VERSION` to 1.10.0, and `VERDICT_ENGINE_VERSION` (bands can move).
 - **Done when:** d3303-style checker pages are asked for the real document; certified copies pass;
   Matric/Diploma docs are not misjudged as STPM; owner sees the before/after list of affected applications
@@ -70,13 +76,13 @@ There are no OCR caches for STPM yet. The stored prod reads (snapshots `higher_r
 - CHANGELOG, decisions, retrospective, and a completion note.
 - **Done when:** live STPM docs show Exact (or AI with a reason); no stored genuineness was wiped.
 
-**Total: 4 sprints, ~29 h.** S1 is safe to start at once. S2 is the core. S3 is where students and reviewers
+**Total: 4 sprints, ~28 h.** S1 is safe to start at once. S2 is the core. S3 is where students and reviewers
 see a change, so the owner sees a before/after list first.
 
 ## Owner decisions
 1. **1A in the STPM place:** a checker screenshot uploaded as STPM results → ask for the real slip or
    certificate (same as the SPM place). Default: yes (existing ruling 1A).
-2. **Reviewer label:** show "STPM certificate" / "STPM results slip" on the Academic card. Default: yes.
+2. ~~Reviewer label~~ — RULED 2026-10-27: no. Certificate vs slip is for the reader only; nothing is shown.
 3. **Paid steps:** S1 Vision OCR (a few cents) and S4 live re-read — approve at each step.
 4. **Out of scope:** Matriculation / Asasi / Diploma Exact reads (corpus too small: 3 / 1 / 5) and a MUET
    document (1 sample). Revisit when more arrive.
