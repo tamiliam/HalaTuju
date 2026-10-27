@@ -47,6 +47,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-27 TD-407 sprint (a re-read never wipes a genuineness score; hand-run re-read commands refuse without the flag, the hourly self-heal warns) — 9bdb163f, e65a9cd3
 - 2026-10-27 TD-404 sprint (ANAK = AK and BINTI = BT/BTE in every name match; a one-syllable STR name is "cannot judge" and asks for the IC-number page) — b1fe889c, 71e38f89, 0e03a678
 - 2026-10-27 TD-409 sprint (an STR no household card matched never closes an STR request — held for the officer, owner ruling A; Check 2 asks for a near-miss STR's IC-number page; two review rounds) — ddd46dda, ddb26b60
+- 2026-10-27 TD-410 sprint (a suspect payslip, EPF or support letter shows no income, owner ruling "Suspect shouldn't count"; no genuineness signal still counts; VERDICT 2026-10-27.4) — 87df3719
 - 2026-10-26 TD-403 sprint (an STR counts as income proof only if it is from this year, strict; a later year's page is neutral `future`; a submitted case keeps its submission year; owner rulings; three review rounds) — 32a847f1, cafcfc43, 85921925, b67dd4f5, ed342354
 
 ## Reviews
