@@ -2363,6 +2363,10 @@
         "higher_results_name_mismatch": {
           "title": "Semak nama pada keputusan anda",
           "desc": "Nama pada keputusan anda tidak sepadan dengan profil anda. Sila semak semula."
+        },
+        "higher_results_requested": {
+          "title": "Sila muat naik keputusan {kind} anda",
+          "desc": "Kursus ijazah memerlukan keputusan {kind} anda, dan ia belum ada dalam permohonan anda. Muat naik slip keputusan atau transkrip rasmi anda, dengan nama dan PNGK anda jelas kelihatan."
         }
       },
       "vircle": {
@@ -4023,11 +4027,11 @@
       },
       "requestWhich": {
         "spm": "SPM",
-        "higher_stpm": "Keputusan STPM",
-        "higher_matric": "Keputusan Matrikulasi",
-        "higher_asasi": "Keputusan Asasi",
-        "higher_diploma": "Keputusan Diploma",
-        "cgpa": "CGPA kolej semasa",
+        "higher_stpm": "STPM",
+        "higher_matric": "Matrikulasi",
+        "higher_asasi": "Asasi",
+        "higher_diploma": "Diploma",
+        "cgpa": "Kolej semasa",
         "water_bill": "Air",
         "electricity_bill": "Elektrik",
         "school_leaving_cert": "Surat berhenti sekolah",
@@ -4560,6 +4564,7 @@
           "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "higher_results_missing": "Tiada keputusan STPM / Matrikulasi / Asasi / Diploma dimuat naik.",
+          "higher_results_not_on_file": "Keputusan {held} tiada dalam fail. Permohonan ini dihantar sebelum muat naik keputusan pengajian tinggi wujud, jadi slip SPM sahaja tidak boleh menjadikan Akademik Pasti.",
           "higher_results_unreadable": "Keputusan pengajian tinggi tidak dapat dibaca — minta salinan yang lebih jelas.",
           "higher_results_name_mismatch": "Keputusan pengajian tinggi atas nama berbeza. Sahkan.",
           "higher_results_name_ok": "Keputusan pengajian tinggi atas nama pelajar.",
@@ -4913,7 +4918,8 @@
         },
         "refiledSpm": "Pada {date}, sebelum menghantar, pelajar memindahkan slip SPM dari kad keputusan pengajian tinggi ke slip keputusan SPM.",
         "refiledHigher": "Pada {date}, sebelum menghantar, pelajar memindahkan keputusan {kind} mereka dari slip keputusan SPM ke kad keputusan pengajian tinggi.",
-        "refiledHigherTeam": "Dipindahkan dari kad SPM ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}."
+        "refiledHigherTeam": "Dipindahkan dari kad SPM ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}.",
+        "refiledHigherTeamSemester": "Dipindahkan dari kad keputusan semester ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}."
       }
     },
     "students": "Pelajar",

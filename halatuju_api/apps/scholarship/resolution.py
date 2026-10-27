@@ -124,6 +124,11 @@ def _ticketable_unresolved(application):
             code = item['code']
             if code in CODE_TO_TICKET:
                 out[code] = {'fact': fact['fact'], 'params': item.get('params', {})}
+    # #388: while Check 2's ask for owed higher results is open it is the ONE Action-Centre card for
+    # that document — S3's higher-results tickets are not raised beside it (an open one auto-resolves).
+    from .higher_owed import ask_owns_higher_tickets
+    if any(CODE_TO_TICKET[c].get('doc_type') == 'higher_results' for c in out)             and ask_owns_higher_tickets(application):
+        out = {c: v for c, v in out.items() if CODE_TO_TICKET[c].get('doc_type') != 'higher_results'}
     return out
 
 

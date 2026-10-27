@@ -126,6 +126,9 @@ export const KNOWN_CODES = [
   'higher_results_missing',
   'higher_results_unreadable',
   'higher_results_name_mismatch',
+  // #388 (2026-10-27) — Check 2 asks a student submitted before S3a for the higher results she
+  // holds ("Please upload your STPM results"; `higher_owed.ASK_CODE`, params.results_kind).
+  'higher_results_requested',
   'academic_missing_subjects',
   'academic_grade_mismatch',
   // #71 — the slip's letter AND Malay band agree but differ from the typed grade (a confident,
@@ -409,6 +412,10 @@ export function localiseParams(
       // ⚠ TD-259: this was `t(…) || String(v)`, which NEVER falls back — `t` returns the key
       // itself when it cannot resolve one, and a key is a truthy string. `tOr` knows that.
       out[k] = tOr(t, `scholarship.actionCentre.pathwayName.${v}`, String(v))
+    } else if (k === 'results_kind' && typeof v === 'string' && v) {
+      // #388: the held kind (stpm/matric/…) as its word, for "Please upload your {kind} results".
+      out.kind = tOr(t, `documentsTab.higher.kind.${v}`, String(v))
+      out[k] = String(v)
     } else if (k === 'programme' && typeof v === 'string' && params?.offer_pathway === 'pismp') {
       // PISMP: the generic "Program Ijazah…(PISMP)" isn't useful — the letter states the BIDANG. Show
       // the resolved course name (or the raw bidang) so the card names the actual specialisation.

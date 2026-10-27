@@ -107,7 +107,9 @@ export const roleReviewer: ManualChapter = {
         <strong> Outstanding</strong> box. Best done before the interview so your conversation is focused.
         Results are asked for <strong>by name</strong>: under <strong>Results slip</strong> choose the SPM slip, or
         STPM, Matriculation, Asasi or Diploma results; her upload lands in that card and closes the request only
-        when it is that kind of results. The system never asks for an SPM slip by itself.</>
+        when it is that kind of results. The system never asks for an SPM slip by itself. It does ask for
+        the STPM, Matriculation, Asasi or Diploma results of a degree-bound student who submitted before those
+        could be uploaded and has none on file; her upload closes that request.</>
       ),
       img: '/reviewer-guide/step6-outstanding.png',
       alt: 'The Outstanding box and the raise-a-query controls',

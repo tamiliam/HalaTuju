@@ -176,7 +176,7 @@ class TestTheStudentNeverComparesAWrongSlip(TestCase):
 
 class TestTheReviewerSeesWhatItIs(TestCase):
     def test_the_engine_version_moved(self):
-        self.assertEqual(VERDICT_ENGINE_VERSION, '2026-10-27.1')
+        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-27.1')   # .2: #388 (higher_owed)
 
     def test_153_shape_shows_no_false_chips(self):
         app = _app(SPM_HELD, POLY)

@@ -89,13 +89,30 @@ export function resolveReq(catKey: string, qual: string): ResolvedReq | null {
 /** The Academic card's line for one `results_change_notes` entry (third results route S3b + S4):
  *  "SPM results only", an SPM slip moved out of the higher card, or (S4, D15) a higher result moved
  *  OUT of the SPM card — by the student, or by the team (`by: 'team'`, the 2026-10-26 backfill). */
-export function resultsChangeKey(n: { kind: string; by?: string }): string {
+export function resultsChangeKey(n: { kind: string; by?: string; from?: string }): string {
   if (n.kind === 'refiled_spm') return 'admin.scholarship.resultsChanged.refiledSpm'
   if (n.kind === 'refiled_higher') {
-    return n.by === 'team' ? 'admin.scholarship.resultsChanged.refiledHigherTeam'
-      : 'admin.scholarship.resultsChanged.refiledHigher'
+    // The team's moves (2026-10-27) name the card they came FROM: the SPM card or the semester result.
+    if (n.by === 'team') {
+      return n.from === 'semester_result' ? 'admin.scholarship.resultsChanged.refiledHigherTeamSemester'
+        : 'admin.scholarship.resultsChanged.refiledHigherTeam'
+    }
+    return 'admin.scholarship.resultsChanged.refiledHigher'
   }
   return 'admin.scholarship.resultsChanged.onlySpm'
+}
+
+/** The higher-results slot the Documents drawer draws as MISSING, read off the SERVED Academic
+ *  fact (never re-derived here): S3's `higher_results_missing` (kind unknown → '') or, for an
+ *  application submitted before S3a that owes them (#388), `higher_results_not_on_file` with the
+ *  kind held. `null` = nothing missing. */
+export function missingHigherKind(app: Pick<AdminScholarshipDetail, 'verdict'>): string | null {
+  const academic = (app.verdict || []).find((f) => f.fact === 'academic')
+  const item = academic?.unresolved.find((i) =>
+    i.code === 'higher_results_missing' || i.code === 'higher_results_not_on_file')
+  if (!item) return null
+  const kind = item.params?.kind
+  return typeof kind === 'string' ? kind : ''
 }
 
 // The fact a requested document belongs to comes from `@/lib/docCategory` — see

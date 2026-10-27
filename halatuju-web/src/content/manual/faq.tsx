@@ -110,7 +110,7 @@ export const FAQ: Record<Audience, QA[]> = {
         chose a degree must upload higher results too (a degree needs them), as well as her SPM slip. On a <strong>post-SPM pathway</strong>
         (Matriculation, Form 6, Polytechnic, ILKBS, PISMP and so on) only the <strong>SPM results slip</strong> is
         required. With no course chosen yet, it follows the results she holds. An application keeps the
-        requirement it was submitted under. The Academic card checks the higher results&rsquo; name, which
+        requirement it was submitted under &mdash; but one submitted before the higher-results upload existed (26 October 2026) by a degree-bound student holding STPM, Matriculation, Asasi or Diploma results, with none uploaded, shows that slot as <strong>Missing</strong>, its Academic card is at most <strong>Probable</strong> (&ldquo;STPM results not on file&rdquo;), and the system asks her for them (raised while the case is Completed, instead of the semester-result request); nothing sends it back to her. The Academic card checks the higher results&rsquo; name, which
         results they are and the CGPA (and, for STPM, the subject grades) against what she entered; an SPM slip
         is compared only if one is on file. Their genuineness is <strong>not checked</strong> yet &mdash; read the
         document yourself. When the document looks like a different kind of results, or an SPM slip, the card
@@ -126,7 +126,7 @@ export const FAQ: Record<Audience, QA[]> = {
         SPM slot. The note gives the date (and, for the first, which results went and their CGPA). She may
         have been shortlisted on the results she removed: the shortlist was <strong>not</strong> run again, so
         judge the change yourself and ask at interview if it is unclear. Once an application is submitted
-        these actions are closed &mdash; request any document you need instead. A higher result moved OUT of the SPM card (by her, or by the HalaTuju team on 26 October 2026) is noted the same way.</>,
+        these actions are closed &mdash; request any document you need instead. A higher result moved OUT of the SPM card (by her, or by the HalaTuju team on 26 October 2026) is noted the same way, naming the card it came from (the SPM card or the semester result).</>,
     },
     {
       q: <>Why did STPM students move up the list when I sort by <strong>merit</strong>?</>,

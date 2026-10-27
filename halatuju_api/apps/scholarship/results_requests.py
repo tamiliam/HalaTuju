@@ -13,8 +13,9 @@ officer ResolutionItem (`resolution.add_officer_item`) with `doc_type` 'results_
   (`answers`): an STPM result put into an "SPM results slip" request, or an SPM slip put into a
   higher-results request, scans clean and is kept, but the request stays open for the reviewer.
 
-⚠ NO AUTOMATIC ASK (owner ruling D9): nothing here raises a request by itself — the system's
-Check-2 asks (`check2_queries.DOC_SPECS`) are unchanged. And the officer's own gate is unchanged:
+⚠ NO AUTOMATIC SPM ASK (owner ruling D9): nothing here raises a request by itself. The one system
+Check-2 ask for RESULTS is for owed HIGHER results (`higher_owed`, #388, owner option A,
+2026-10-27) — never for an SPM slip. And the officer's own gate is unchanged:
 a request is accepted only while `services.officer_requests_state` is 'open' (request #40).
 """
 from __future__ import annotations
@@ -55,11 +56,12 @@ def answers(doc, item) -> bool:
     """Does this clean upload answer this RESULTS item? A 'results_slip' item — the officer's OR the
     system's (`results_slip_missing`, review finding 2) — is not answered by a higher result, nor an
     officer's higher-results request by an SPM slip (each document is kept where it was put; the
-    reviewer sees it and the item stays open). Every other item → True (unchanged)."""
+    reviewer sees it and the item stays open). The system's Check-2 ask for owed higher results
+    (`higher_owed.ASK_CODE`, #388) follows the officer's rule. Every other item → True (unchanged)."""
     if item.doc_type == 'results_slip':
         from .wrong_slip import fills_spm_slot
         return fills_spm_slot(doc)
-    if getattr(item, 'source', '') != 'officer':
+    if getattr(item, 'source', '') not in ('officer', 'check2'):   # check2: #388's ask (higher_owed)
         return True
     if item.doc_type == 'higher_results' and doc.doc_type == 'higher_results':
         from .higher_results import student_higher_check

@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Higher results owed over a pre-S3 snapshot (#388, owner option A) - 2026-10-27
+
+A SUBMITTED application frozen before S3a ("SPM slip required", no `higher_results` key) whose
+student holds STPM / Matriculation / Asasi / Diploma results (incl. D1's promotion) and is bound for
+a university degree, with no higher-results upload on file, now shows the gap — never by un-submitting
+it. New `apps/scholarship/higher_owed.py`. **`VERDICT_ENGINE_VERSION` 2026-10-27.2.** No migration, no
+`MODEL_VERSION`, no gate touched (the frozen snapshot, `requirements.resolve`, completeness, revert,
+blockers and consent read nothing new — pinned by a test that fails if any of them reads the module).
+- **Shown** — the Academic fact carries `higher_results_not_on_file` ("STPM results not on file …");
+  the cockpit Documents drawer draws the "STPM results" slot as **Missing** from that served item (and
+  from S3's own `higher_results_missing`), `view/shared.tsx` `missingHigherKind`.
+- **Verdict** — that fact is never Certain: 'verified' falls to Probable with the reason named; a worse
+  band stands. Once a higher-results upload is on file the Academic card reads it
+  (`higher_results.anchors_on_higher` gains `higher_owed.late_anchor`) — the card choice now sits in
+  `higher_results.academic_fact`.
+- **Asked** — one system Check-2 document request `higher_results_requested` (`check2_queries.DOC_SPECS`,
+  governed by the core results item, held while our outage defers the read), params `results_kind`;
+  student copy "Please upload your {kind} results" (en/ms/ta; `localiseParams` renders the kind's
+  word). The sync's own rules: created only in the Completed stage; closed when a live upload reads
+  clean and is not an SPM slip (`results_requests.answers` now applies the officer's rule to this
+  ask); re-opened if the gap returns, like every `DOC_SPECS` request. The upload lands in the higher
+  card with the held kind. While it is open it is the ONE ask for those results: no
+  `semester_result_missing` ask beside it (an open one auto-resolves), and no S3 higher-results ticket
+  (`higher_results_unreadable` …) from the late-anchored card (`resolution._ticketable_unresolved`).
+  Not for: a post-SPM pathway, an SPM holder, no course chosen, a snapshot already requiring them, a
+  programme asking no results, or a higher result already in the SPM card (S4's note speaks). No SPM
+  ask (D9 unchanged).
+- **Team note wording** — a `refiled_higher` note with `by: 'team'` names the card it came from
+  (`from`): "Moved from the SPM card …" or "Moved from the semester result card …" (en/ms/ta admin).
+- Reviewer FAQ + Guide lines. Tests: `test_third_route_higher_owed.py` (27), `view/higherOwed.test.tsx`.
+- Live (read-only, 2026-10-27): 6 submitted applications get the slot, the cap and the ask —
+  #132, #133, #254, #255, #265, #388 (all `profile_complete`).
+
 ## Third results route S4 — reviewer requests and wrong slips - 2026-10-27
 
 Reviewers ask for results BY NAME (#37), and an STPM / Matriculation / Asasi / Diploma result

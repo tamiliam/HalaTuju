@@ -198,7 +198,9 @@ export interface AdminScholarshipDetail {
   results_change_notes?: { at: string; kind: 'only_spm' | 'refiled_spm' | 'refiled_higher'; submitted?: boolean;
     cleared?: string; cgpa?: number | null; by?: string; document_id?: number
     /** S4 (D15): the kind a higher result moved out of the SPM card was filed as. */
-    results_kind?: string }[]
+    results_kind?: string
+    /** The team's moves (2026-10-27): the card it came from — 'results_slip' | 'semester_result'. */
+    from?: string }[]
   // "Your story" narrative (S2) + support + declaration
   first_in_family: boolean
   parents_occupation: string

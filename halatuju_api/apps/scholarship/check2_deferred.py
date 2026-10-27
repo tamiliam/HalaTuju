@@ -17,7 +17,8 @@ from .read_errors import deferred_by_us
 #: The Check-2 doc requests a deferred read holds. Each one's document type is read from the sync's
 #: own `DOC_SPECS`, never restated here.
 HELD_WHILE_DEFERRED = ('water_bill_recheck', 'electricity_bill_recheck', 'school_leaving_cert_missing',
-                       'semester_result_missing', 'declared_income_evidence_missing')
+                       'semester_result_missing', 'declared_income_evidence_missing',
+                       'higher_results_requested')     # #388 (`higher_owed.ASK_CODE`)
 
 
 def held_doc_requests(application, doc_specs, existing, wanted):

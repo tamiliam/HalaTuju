@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## Higher results owed over a pre-S3 snapshot are shown, capped and asked for — never un-submitted — 2026-10-27 (#388; owner option A)
+
+An application submitted before S3a keeps the requirement it froze (S3 rule, unchanged). Where that
+freeze says "SPM slip required" but the student holds tertiary results and is bound for a degree (D12
+would require the higher results today) and none is on file, `higher_owed` answers three things on
+top, and nothing else: the Academic fact names `higher_results_not_on_file` (the drawer's Missing slot
+is read off it — a served value, not a browser rule); the fact cannot be Certain (Probable at most);
+and Check 2 asks (`higher_results_requested`, by the existing sync: created only in the Completed
+stage, closed when an upload answers it, and — like every `DOC_SPECS` request — RE-OPENED if the gap
+returns after a close; not strictly once). While it is open it is the ONE ask for those results: the
+`semester_result_missing` ask is not raised beside it (an open one auto-resolves — #254/#255/#265/#388
+had both, the pairing that put STPM certificates in the semester slot), and S3's own higher-results
+tickets (`higher_results_unreadable` …, from the `late_anchor` card) are not raised either
+(`resolution._ticketable_unresolved`), so one document never has two Action-Centre cards. It is
+deliberately NOT a requirement: re-reading it into `requirements.resolve` or completeness would let
+`revert_if_profile_incomplete` send a submitted application back to the wizard, which the owner ruled
+out. Asked through Check 2 rather than as a system ticket (`CODE_TO_TICKET`) so there is one ask, with
+the Check-2 lifecycle (stage gate, outage hold, re-open). Excluded where the higher result already sits
+in the SPM card (S4's wrong-slip note): asking for it again would ask for what she sent. Once she
+uploads, the higher card reads it for these applications too (`late_anchor`). The band can move →
+`VERDICT_ENGINE_VERSION` 2026-10-27.2. D9 stands: no SPM ask. The team's `refiled_higher` notes carry
+`from` ('results_slip' | 'semester_result') and the cockpit names the source card.
+
 ## A higher result in the SPM card is named, never SPM-compared; reviewers ask for results by name; D1 promotes on a document only — 2026-10-27 (third results route S4; rulings D1 D9 D12 D15)
 
 **What a document in the SPM card IS** is answered at read time from what is stored

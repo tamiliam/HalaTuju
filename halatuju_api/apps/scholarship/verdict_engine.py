@@ -94,8 +94,9 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-26.1 — corpus-gaps C1: a known public TVET issuer's offer is NOT CHECKED (no step; Probable).
 #   2026-10-26.2 — TD-403: an STR's year is asked against THIS calendar year; a later year = 'future' (Unsure).
 #   2026-10-26.3 — third route S3: the higher-results Academic card; the SPM slip reads spm_grades_for.
-#   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared.
-VERDICT_ENGINE_VERSION = '2026-10-27.1'
+#   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared;
+#   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
+VERDICT_ENGINE_VERSION = '2026-10-27.2'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -285,12 +286,11 @@ def _verdict_academic(application, spm_only=False):
     """The slip must be the student's (name match), every subject on it must be entered
     (completeness), and the typed grades must match the slip (accuracy). All three clean →
     'verified'. Two independent readings: agreement verifies, a disagreement pinpoints the cell.
-    Third route S3: a higher-results applicant's card is `higher_results.verdict_academic`, which
-    folds THIS answer in (`spm_only`) only when an SPM slip is on file (D9)."""
+    Third route S3 / #388: `higher_results.academic_fact` picks the card; `spm_only` = the SPM card."""
     from .academic_engine import compare_academics, read_slip, _slip_name_status
     from . import higher_results, wrong_slip
-    if not spm_only and higher_results.anchors_on_higher(application):
-        return higher_results.verdict_academic(application, _verdict_academic(application, True))
+    if not spm_only:      # the higher card (S3), or the SPM card capped while they are owed (#388)
+        return higher_results.academic_fact(application, lambda: _verdict_academic(application, True))
     evidence, unresolved = [], []
     slip = _latest_doc(application, 'results_slip')
     if slip is None:

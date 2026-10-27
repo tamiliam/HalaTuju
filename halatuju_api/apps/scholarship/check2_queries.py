@@ -23,7 +23,7 @@ gaps become student clarify queries. Subjective / sensitive / motivational gaps
 from django.db import IntegrityError
 from django.utils import timezone
 
-from . import high_utility_variant as hu
+from . import high_utility_variant as hu, higher_owed
 from .models import ResolutionItem
 from .str_check_memo import one_str_reading
 from .submission_review import completeness_gaps
@@ -84,8 +84,7 @@ CLARIFY_SPECS = {
     'high_utility_expense':       {'fact': 'income'},   # vs declared/slip income
     'high_utility_expense_noincome': {'fact': 'income'},   # TD-306 — no income to quote
     'high_utility_expense_str':   {'fact': 'income'},   # vs STR status
-    # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
-    # (§7), not a one-line factual answer.
+    # 'motivation_missing' is intentionally NOT here — reviewer texture (§7), not a one-line answer.
 }
 
 # Full-household-income PROOF requests (kind='doc') — an earning parent with no income
@@ -123,20 +122,19 @@ DOC_SPECS = {
     'guardian_epf_missing': {'member': 'guardian', 'doc_type': 'epf'},
     'brother_epf_missing':  {'member': 'brother', 'doc_type': 'epf'},
     'sister_epf_missing':   {'member': 'sister', 'doc_type': 'epf'},
-    # DEPRECATED (2026-07-04) — the memberless EPF requests, replaced by the per-member codes above.
-    # Kept in DOC_SPECS ONLY so an existing OPEN item auto-resolves (never re-added to proof_wanted).
+    # DEPRECATED (2026-07-04) memberless EPF asks (per-member above): kept ONLY so an open one auto-resolves.
     'unemployment_epf_missing': {'doc_type': 'epf'},
     'epf_statement_missing':    {'doc_type': 'epf'},
     # V4 — promoted human ask-themes (audit §E). All soft doc-requests (uncapped), gap-detected in
     # income_engine, auto-resolved when the gap clears.
     'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
+    higher_owed.ASK_CODE: {'doc_type': 'higher_results', 'fact': 'academic'},  # #388: owed over a pre-S3 snapshot
     # Per-bill utility re-upload (owner 2026-07-08): each bill that is missing / stale / undated /
     # unreadable → its own request. Clears when a clean, current bill of that type supersedes it.
     'water_bill_recheck':       {'doc_type': 'water_bill'},
     'electricity_bill_recheck': {'doc_type': 'electricity_bill'},
-    # DEPRECATED (2026-07-08) — the either-or 'neither bill' request, replaced by the two per-bill
-    # recheck codes above. Kept in DOC_SPECS ONLY so an existing OPEN item auto-resolves.
+    # DEPRECATED (2026-07-08) either-or 'neither bill' ask (per-bill above): kept ONLY so an open one auto-resolves.
     'utility_bill_missing':         {'doc_type': 'water_bill'},
 }
 _MEMBER_EPF_CODE = {
@@ -267,6 +265,7 @@ GOVERNED_BY = {
     'epf_statement_missing': _INCOME,            # deprecated code, still auto-resolves
     'school_leaving_cert_missing': (('document', 'school_leaving_cert'),),
     'semester_result_missing': None,             # continuing-student rule, not a catalogue card
+    higher_owed.ASK_CODE: (('document', 'results_slip'),),   # the core results item (higher_owed)
     'water_bill_recheck': (('document', 'water_bill'),),
     'electricity_bill_recheck': (('document', 'electricity_bill'),),
     'utility_bill_missing': _BILLS,              # deprecated code, still auto-resolves
@@ -393,8 +392,9 @@ def _gap_sets(application):
     # V4 — the four promoted DOC-REQUEST themes.
     if school_leaving_cert_gap(application):
         proof_wanted.add('school_leaving_cert_missing')
-    if semester_result_gap(application):
+    if semester_result_gap(application) and not higher_owed.owes_higher(application):   # #388: one ask
         proof_wanted.add('semester_result_missing')
+    proof_wanted |= higher_owed.ask_codes(application)   # #388: submitted pre-S3, tertiary, degree-bound
     # Per-bill utility re-upload (owner 2026-07-08): each of water / electricity that is missing,
     # stale (>3mo / undated), or unreadable → its OWN re-upload request, so 'both bills, current,
     # clear' is enforced in logic (replaces the either-or utility_bill_missing).
@@ -509,7 +509,7 @@ def sync_check2_queries(application):
                     # (`_cluster_docs` is strict-tag on salary) yet auto-resolved by doc_type and was
                     # never re-asked (~29 blank-tagged prod docs, the "Earner's IC" mislabel root).
                     # The FE (ActionCentre.tsx onFile) already forwards item.params.household_member.
-                    params = {'household_member': spec['member']} if spec.get('member') else {}
+                    params = {'household_member': spec['member']} if spec.get('member') else higher_owed.ask_params(application, code)
                     ResolutionItem.objects.create(
                         application=application, source='check2', code=code,
                         fact=spec.get('fact', 'income'), kind='doc',

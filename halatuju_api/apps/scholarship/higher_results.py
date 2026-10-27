@@ -263,11 +263,24 @@ def match_verdict(doc) -> str:
 
 
 def anchors_on_higher(application) -> bool:
-    """Is the Academic fact about the higher results? Exactly when they are the REQUIRED upload
-    (live D12 rule, or frozen at submit). Every application submitted before S3a, and every SPM
-    route, keeps the SPM card unchanged."""
-    from . import requirements
-    return requirements.resolve(application, 'document').get('higher_results') == 'required'
+    """Is the Academic fact about the higher results? When they are the REQUIRED upload (live D12
+    rule, or frozen at submit) — or, for an application submitted before S3a that OWES them (#388,
+    `higher_owed`), once a higher-results upload is on file. Every other application submitted
+    before S3a, and every SPM route, keeps the SPM card unchanged."""
+    from . import higher_owed, requirements
+    return (requirements.resolve(application, 'document').get('higher_results') == 'required'
+            or higher_owed.late_anchor(application))
+
+
+def academic_fact(application, spm_fact):
+    """`verdict_engine._verdict_academic`'s card choice. `spm_fact()` builds the SPM card's own
+    answer (called once). The higher card when it anchors (S3); else the SPM card — capped at
+    Probable with the reason named while the higher results are owed and none is on file (#388)."""
+    from . import higher_owed
+    if anchors_on_higher(application):
+        return verdict_academic(application, spm_fact())
+    kind = higher_owed.owed_kind(application)
+    return higher_owed.cap(spm_fact(), kind) if kind else spm_fact()
 
 
 def verdict_academic(application, spm_fact):

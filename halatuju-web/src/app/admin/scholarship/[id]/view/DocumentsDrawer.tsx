@@ -22,7 +22,7 @@ import {
 import type { AdminScholarshipDetail, AdminApplicantDocument } from '@/lib/admin-api'
 import type { ViewerDoc } from '@/components/DocViewer'
 
-import type { T } from './shared'
+import { missingHigherKind, type T } from './shared'
 
 export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
   app: AdminScholarshipDetail
@@ -271,7 +271,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                       {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
                     </p>
                   )}
-                  {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
+                  {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && !d.academic_check?.higher_kind && (
                     <p className="text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}
                 </div>
@@ -331,11 +331,32 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                     </div>
                   )
                 }
-                if (docs.length === 0) return null
+                // The higher-results slot the served Academic fact says is missing (S3, and #388's
+                // pre-S3 submissions that owe them) — a Missing row like a compulsory income slot.
+                const higherMissing = key === 'academic' ? missingHigherKind(app) : null
+                if (docs.length === 0 && higherMissing === null) return null
                 return (
                   <div key={key}>
                     <p className={subLabel}>{t(`admin.scholarship.docsDrawer.group.${key}`)}</p>
-                    <ul className="space-y-1.5">{docs.map((d) => docRow(d))}</ul>
+                    <ul className="space-y-1.5">
+                      {higherMissing !== null && (
+                        <li key="ph-higher" data-testid="higher-missing"
+                          className="flex items-center gap-2 rounded-lg border border-dashed border-ground-200 p-2.5">
+                          <span className="shrink-0 text-ground-300 text-base" aria-hidden>📄</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-ground-500">
+                              {higherMissing ? t(`admin.scholarship.docsDrawer.higherKind.${higherMissing}`)
+                                : t('admin.scholarship.docsDrawer.type.higher_results')}
+                            </span>
+                            <span className="text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
+                          </div>
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600">
+                            {t('admin.scholarship.docsDrawer.pill.missing')}
+                          </span>
+                        </li>
+                      )}
+                      {docs.map((d) => docRow(d))}
+                    </ul>
                   </div>
                 )
               })}
