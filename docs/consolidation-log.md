@@ -26,6 +26,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a 95937b41
 - 2026-10-21 TD-360 Sprint 1 (the admin message slice; budgets ratcheted, TD-344 closed) — 7d5f5054 8b1b57ce f0318c14
 - 2026-10-21 request #39 Sprint 4 (the permission editor on People; history table, scholarship 0175) — a6cc35d1 f9499251 390596f8
+- 2026-10-27 STPM exact-read S3 (genuineness in the higher-results place; checker page = 1A; MODEL 1.11.0, VERDICT .4) — 1198e045
 - 2026-10-27 STPM exact-read S1+S2 (capture_ocr all pages; stpm_parse.py reads STPM Exact, MODEL_VERSION 1.10.0) — 12a5d71c d1883440
 - 2026-10-27 D16c (the intake's STPM floor is the one instruction; SPM-only intake tests STPM-level holders on the SPM grade bars) — 2cb9d113
 - 2026-10-27 D16 (per-gift STPM-level switch, scholarship 0179; superseded by D16c) — 98fe145d
