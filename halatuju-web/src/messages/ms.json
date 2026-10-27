@@ -4928,7 +4928,10 @@
         "refiledSpm": "Pada {date}, sebelum menghantar, pelajar memindahkan slip SPM dari kad keputusan pengajian tinggi ke slip keputusan SPM.",
         "refiledHigher": "Pada {date}, sebelum menghantar, pelajar memindahkan keputusan {kind} mereka dari slip keputusan SPM ke kad keputusan pengajian tinggi.",
         "refiledHigherTeam": "Dipindahkan dari kad SPM ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}.",
-        "refiledHigherTeamSemester": "Dipindahkan dari kad keputusan semester ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}."
+        "refiledHigherTeamSemester": "Dipindahkan dari kad keputusan semester ke kad keputusan {kind} oleh pasukan HalaTuju pada {date}.",
+        "refiledSpmTeam": "Dipindahkan dari kad keputusan pengajian tinggi ke slip keputusan SPM oleh pasukan HalaTuju pada {date}.",
+        "teamSplitSpm": "Pada {date} pasukan HalaTuju memisahkan muat naik gabungan: hlm. {pages} difailkan sebagai slip keputusan SPM.",
+        "teamSplitHigher": "Pada {date} pasukan HalaTuju memisahkan muat naik gabungan: hlm. {pages} difailkan dalam kad keputusan {kind}."
       }
     },
     "students": "Pelajar",

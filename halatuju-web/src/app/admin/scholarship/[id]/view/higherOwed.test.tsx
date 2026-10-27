@@ -11,7 +11,7 @@
  */
 import { render, screen } from '@testing-library/react'
 import { DocumentsDrawer } from './DocumentsDrawer'
-import { missingHigherKind, resultsChangeKey } from './shared'
+import { missingHigherKind, notePages, resultsChangeKey } from './shared'
 import { KNOWN_CODES, localiseParams } from '@/lib/actionCentre'
 import type { AdminScholarshipDetail, AdminVerdictFact } from '@/lib/admin-api'
 import en from '@/messages/en.json'
@@ -88,5 +88,28 @@ describe("the student's Check-2 ask", () => {
     expect(out.kind).toBe(word)
     expect(lookup(cat)('scholarship.actionCentre.item.higher_results_requested.title').replace('{kind}', out.kind))
       .toBe(cat === en ? 'Please upload your STPM results' : 'Sila muat naik keputusan Matrikulasi anda')
+  })
+})
+
+describe("the team's split of a combined upload, and its move back to SPM, read as the team's", () => {
+  it.each([
+    [{ kind: 'team_split', by: 'team', slot: 'higher_results' }, 'admin.scholarship.resultsChanged.teamSplitHigher'],
+    [{ kind: 'team_split', by: 'team', slot: 'results_slip' }, 'admin.scholarship.resultsChanged.teamSplitSpm'],
+    [{ kind: 'refiled_spm', by: 'team' }, 'admin.scholarship.resultsChanged.refiledSpmTeam'],
+    [{ kind: 'refiled_spm' }, 'admin.scholarship.resultsChanged.refiledSpm'],
+  ])('%j → %s', (note, key) => {
+    expect(resultsChangeKey(note)).toBe(key)
+  })
+  it('names the pages', () => {
+    expect([notePages([1]), notePages([2, 3]), notePages([1, 3]), notePages(undefined)])
+      .toEqual(['1', '2–3', '1, 3', '—'])
+  })
+  it('the lines exist in all three languages', () => {
+    for (const cat of [en, ms, ta]) {
+      const rc = cat.admin.scholarship.resultsChanged
+      expect(rc.teamSplitHigher).toContain('{kind}')
+      for (const k of ['teamSplitHigher', 'teamSplitSpm'] as const) expect(rc[k]).toContain('{pages}')
+      expect(rc.refiledSpmTeam).toContain('{date}')
+    }
   })
 })

@@ -175,6 +175,19 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    endpoint, which swallows errors as a 200) only WARNS — log + stdout — and runs, so the self-heal never
    stops quietly; billing off only warns everywhere. The operational rule above still stands — without
    the flag a re-read keeps old scores but scores nothing new.
+12. **A one-off team command runs through the `release-decisions` job with an args override** (its
+   container command is `python`; its stored args are `manage.py,send_pending_decision_emails`). A value
+   holding commas (JSON) needs gcloud's alternate delimiter `^@^`. Example — `split_combined_results`
+   (2026-10-28; splits a combined results PDF into parts filed in the right results card, or moves a
+   whole results document; PREVIEW unless `--apply`; plan from `--plan <file|inline JSON>` or the
+   `SPLIT_RESULTS_PLAN` env var; the gitignored plan file never reaches the image, so pass it inline):
+   `gcloud run jobs execute release-decisions --region asia-southeast1 --wait --account tamiliam@gmail.com
+   --project gen-lang-client-0871147736 --args="^@^manage.py@split_combined_results@--plan@<compact JSON>"`
+   (add `@--apply` to perform), or `--update-env-vars="^@^SPLIT_RESULTS_PLAN=<compact JSON>"
+   --args=manage.py,split_combined_results[,--apply]`. It reads nothing with Gemini/Vision, so it needs
+   none of item 11's read flags: the new/moved documents are left unread and the LIVE service's hourly
+   self-heal reads them with the service's own flags. It needs `SUPABASE_URL` /
+   `SUPABASE_SERVICE_ROLE_KEY` (on the job). Read the execution's log for the preview before `--apply`.
 
 **Where documents go:** a new retrospective in `docs/retrospectives/`, release notes in
 `docs/releases/`, sprint and incident history in `docs/sprint-history.md`, a domain rule in

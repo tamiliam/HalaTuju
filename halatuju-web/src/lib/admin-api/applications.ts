@@ -195,12 +195,14 @@ export interface AdminScholarshipDetail {
   /** Third results route S3b (D13, review fix 3): results changes the student made before submitting
    *  — "SPM results only" or an SPM slip moved out of the higher-results card; S4 (D15): a higher
    *  result moved out of the SPM card ('refiled_higher', by the student or `by: 'team'`). */
-  results_change_notes?: { at: string; kind: 'only_spm' | 'refiled_spm' | 'refiled_higher'; submitted?: boolean;
+  results_change_notes?: { at: string; kind: 'only_spm' | 'refiled_spm' | 'refiled_higher' | 'team_split'; submitted?: boolean;
     cleared?: string; cgpa?: number | null; by?: string; document_id?: number
     /** S4 (D15): the kind a higher result moved out of the SPM card was filed as. */
     results_kind?: string
     /** The team's moves (2026-10-27): the card it came from — 'results_slip' | 'semester_result'. */
-    from?: string }[]
+    from?: string
+    /** The team's split (`team_split`, 2026-10-28): the part's pages and the card it was filed in. */
+    pages?: number[]; slot?: string }[]
   // "Your story" narrative (S2) + support + declaration
   first_in_family: boolean
   parents_occupation: string

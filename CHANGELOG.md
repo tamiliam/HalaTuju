@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Third results route follow-up — `split_combined_results`, the team's split of combined results uploads - 2026-10-28
+
+Some students uploaded ONE file holding several results documents (an SPM slip on page 1, an STPM
+certificate on page 2). A scan is read on page 1 only, so the rest was never seen. A one-time TEAM command
+(owner approved by name) splits such a file and files each part in the right card, or moves one whole
+document. Built and tested only: NOT run against production.
+- `manage.py split_combined_results --plan <file|inline JSON> [--apply]` (or `SPLIT_RESULTS_PLAN`). Preview
+  by default (ids and states only, no names or ICs). Each part becomes a new PDF (pypdf, which the image
+  carries) uploaded under the upload's own key scheme, and a new unread document — empty read, NULL run
+  stamps, so the live hourly self-heal reads it on the LIVE service; nothing calls Gemini or Vision. The
+  original is kept as history (superseded by the part in its own card). One live document per card, with
+  no contest: an item whose target card already holds another live document is refused (the preview
+  names it), so every part becomes its card's live document and is read. Pages given to no part (MUET) stay in the original only.
+- A move reuses `results_route._refile_to_higher_locked` / `refile_to_spm`, which gain a `by` parameter
+  (the team's note says `by: 'team'`; a student's move is unchanged).
+- Notes: one `team_split` reviewer note per part (pages, card, source document, unassigned pages); a move
+  keeps the `refiled_higher` / `refiled_spm` kinds. The cockpit's Academic card reads them
+  (`resultsChangeKey`): "On {date} the HalaTuju team split a combined upload: p. 2–3 filed in the STPM
+  results card" (or "as the SPM results slip"), and a team move to SPM now reads as the team's, not the
+  student's (en/ms/ta; admin strings, no budgeted bundle moves).
+- A SUBMITTED application whose higher-card document is live has its frozen requirement re-mapped by
+  `results_route.map_documents` ONLY when her recorded results are tertiary (the 'required' arm: higher
+  results required, SPM slip optional) — never for an SPM-only record. The change and the arm are recorded
+  on the snapshot (`amended`). A move OUT of a higher card the snapshot requires is refused. Not submitted:
+  no snapshot change. The preview also prints `semester_result_gap` (report only).
+- Guards: the document is the application's, live, and in a results card; a split needs a PDF (an image
+  is refused — move it whole), pages that exist, no overlap, one part per card; slots and kinds checked;
+  a higher-card part needs a kind; a final status (`review_sla.TERMINAL`: recommended, awarded, active,
+  maintenance, closed, rejected, withdrawn, expired) is refused. A damaged PDF, or an upload failing part
+  way (every object uploaded so far is deleted), refuses that item only. Each item is atomic; a refused
+  item never stops the others. Running the same plan twice writes nothing.
+- Tests: `test_split_combined_results.py` (27).
+
 ## STPM exact-read S4 — live re-read of every higher-results document - 2026-10-28
 
 - Dry run first (local, production-identical input; owner approved option A: re-read all). Then one run of

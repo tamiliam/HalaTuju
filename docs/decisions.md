@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## A combined results upload is split into NEW documents; the original stays as history — 2026-10-28 (`split_combined_results`)
+
+When the team splits one upload holding several results documents, each part is a NEW document (new PDF,
+new Storage key, unread) rather than the original re-labelled: the original's read describes page 1 only,
+so no part may inherit it, and the original file is never altered. The original is superseded and points
+(`superseded_by`) at the part filed in its OWN card (else the first part), so the drawer's history reads
+"replaced by" the like-for-like document. Pages assigned to no part (a MUET page) stay in the original only.
+There is no promotion contest: an item whose target card already holds another live document is refused,
+because a part that lost a contest would sit as history, never read.
+An image is never split (it is one page); it can be moved whole. For a SUBMITTED application, a document
+live in the higher card re-maps the frozen requirement with the live rule (`results_route.map_documents`,
+D12/D14) only for a student whose recorded results are tertiary — never the 'required_with_slip' arm for an
+SPM-only record — and records the amendment and the arm on the snapshot: the one exception to "a submitted
+snapshot is never rewritten", taken by the team only, never when the snapshot already requires the higher
+results. A document is never taken OUT of a higher card the submitted snapshot requires.
+
 ## STPM results are read Exact from fixed labels; the certificate/slip layout is for the reader only; the exam year is the title's — 2026-10-27 (STPM exact-read S2; owner rulings)
 
 `stpm_parse` recognises the certificate, the results slip and the transcript only to know WHERE each fact

@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/formatDate'
 import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
-import { Card, Field, Grades, joinOr, resultsChangeKey, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
+import { Card, Field, Grades, joinOr, notePages, resultsChangeKey, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
 import { GuardianCorrect } from './GuardianCorrect'
 import { GuardianCallRecord } from './GuardianCallRecord'
 import { FamilyAnswers } from './FamilyAnswers'
@@ -244,6 +244,7 @@ export function ApplicantCards({
                         cleared: t(`admin.scholarship.resultsChanged.kind.${n.cleared || 'other'}`),
                         kind: t(`admin.scholarship.resultsChanged.kind.${n.results_kind || 'other'}`),
                         cgpa: n.cgpa != null ? Number(n.cgpa).toFixed(2) : '—',
+                        pages: notePages(n.pages),
                       })}
                     </p>
                   ))}

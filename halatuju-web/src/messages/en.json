@@ -4928,7 +4928,10 @@
         "refiledSpm": "On {date}, before submitting, the student moved an SPM slip out of the higher-results card into the SPM results slip.",
         "refiledHigher": "On {date}, before submitting, the student moved their {kind} results out of the SPM results slip into the higher-results card.",
         "refiledHigherTeam": "Moved from the SPM card to the {kind} results card by the HalaTuju team on {date}.",
-        "refiledHigherTeamSemester": "Moved from the semester result card to the {kind} results card by the HalaTuju team on {date}."
+        "refiledHigherTeamSemester": "Moved from the semester result card to the {kind} results card by the HalaTuju team on {date}.",
+        "refiledSpmTeam": "Moved from the higher-results card to the SPM results slip by the HalaTuju team on {date}.",
+        "teamSplitSpm": "On {date} the HalaTuju team split a combined upload: p. {pages} filed as the SPM results slip.",
+        "teamSplitHigher": "On {date} the HalaTuju team split a combined upload: p. {pages} filed in the {kind} results card."
       }
     },
     "students": "Students",

@@ -196,14 +196,18 @@ def _note(application, kind, **fields):
     return note
 
 
-def refile_to_spm(application, doc) -> 'object':
+def refile_to_spm(application, doc, *, by: str = '', **note_fields) -> 'object':
     """Move a higher-results upload that reads as an SPM slip into the SPM slot, BEFORE submit only
     (the caller refuses otherwise). The FILE is kept; its higher-results READ is cleared (fix 6) so
     the live service reads it again as an SPM slip — the self-heal sweep picks up a document whose
     run stamps are NULL and whose `vision_fields` is empty (`services.blockers`); it is never
     re-read from a local checkout. One live slip per slot: the moved slip and any live SPM slip are
     compared by `promotion.should_promote` and the weaker becomes history (Old / Replaced). The
-    higher-results card then asks again. A reviewer note records the move. Returns the document."""
+    higher-results card then asks again. A reviewer note records the move. Returns the document.
+
+    ``by`` / ``note_fields`` (2026-10-28, `split_combined_results`): the TEAM's move records
+    ``by='team'`` and its own fields on the note; a student's move passes neither, so its note is
+    exactly as before."""
     from . import promotion
     from .document_snapshot import live_docs
     from .models import ApplicantDocument
@@ -222,7 +226,7 @@ def refile_to_spm(application, doc) -> 'object':
     else:
         ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=now, superseded_by=existing)
     doc.refresh_from_db()
-    _note(application, 'refiled_spm', document_id=doc.id)
+    _note(application, 'refiled_spm', document_id=doc.id, **({'by': by} if by else {}), **note_fields)
     logger.info('AUDIT results_refiled_to_spm app=%s doc=%s kept_existing=%s', application.id,
                 doc.id, bool(doc.superseded_at))
     from .resolution import sync_resolution_items
@@ -230,7 +234,7 @@ def refile_to_spm(application, doc) -> 'object':
     return doc
 
 
-def refile_to_higher(application, doc, kind) -> 'object':
+def refile_to_higher(application, doc, kind, *, by: str = 'student', **note_fields) -> 'object':
     """D15 (S4, 2026-10-27) — the mirror of `refile_to_spm`: "Move it to STPM results". A document
     in the SPM card that reads as a higher result (`wrong_slip.higher_kind`) is re-filed into the
     higher-results card with that kind, BEFORE submit only (the caller refuses otherwise, and offers
@@ -240,7 +244,8 @@ def refile_to_higher(application, doc, kind) -> 'object':
     checkout. One live higher-results upload: the moved document and any live one are compared by
     `promotion.should_promote` and the weaker becomes history. If the kind differs from the results
     page, the S3 "Different results" note then speaks in the higher card. A reviewer note of its own
-    kind (`refiled_higher`) records the move. Returns the document."""
+    kind (`refiled_higher`) records the move, ``by`` the student unless the team's command
+    (`split_combined_results`, ``by='team'`` plus its own ``note_fields``) says so. Returns the document."""
     from django.db import transaction
     from . import promotion
     from .document_snapshot import live_docs
@@ -250,10 +255,12 @@ def refile_to_higher(application, doc, kind) -> 'object':
         locked = ApplicantDocument.objects.select_for_update().filter(pk=doc.pk).first()
         if locked is None or locked.doc_type != 'results_slip' or locked.superseded_at is not None:
             return locked or doc
-        return _refile_to_higher_locked(application, locked, kind, promotion, live_docs, ApplicantDocument)
+        return _refile_to_higher_locked(application, locked, kind, promotion, live_docs, ApplicantDocument,
+                                        by=by, **note_fields)
 
 
-def _refile_to_higher_locked(application, doc, kind, promotion, live_docs, ApplicantDocument):
+def _refile_to_higher_locked(application, doc, kind, promotion, live_docs, ApplicantDocument, *,
+                             by='student', **note_fields):
     existing = live_docs(application, 'higher_results').exclude(id=doc.id).first()
     doc.doc_type, doc.results_kind, doc.request_code = 'higher_results', kind, ''
     doc.vision_fields, doc.vision_fields_run_at, doc.vision_run_at = {}, None, None
@@ -269,7 +276,7 @@ def _refile_to_higher_locked(application, doc, kind, promotion, live_docs, Appli
     else:
         ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=now, superseded_by=existing)
     doc.refresh_from_db()
-    _note(application, 'refiled_higher', document_id=doc.id, results_kind=kind, by='student')
+    _note(application, 'refiled_higher', document_id=doc.id, results_kind=kind, by=by, **note_fields)
     logger.info('AUDIT results_refiled_to_higher app=%s doc=%s kind=%s kept_existing=%s',
                 application.id, doc.id, kind, bool(doc.superseded_at))
     from .resolution import sync_resolution_items
