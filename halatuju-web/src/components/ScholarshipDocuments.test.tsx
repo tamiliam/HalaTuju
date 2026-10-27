@@ -263,13 +263,41 @@ describe('the per-earner income tick counts what the server counts', () => {
     members: Array<'father' | 'mother'>,
     declared: Record<string, number>,
     documents: api.ApplicantDocument[],
+    incomeShown?: Record<string, unknown>,
   ) => {
     mockApi.listDocuments.mockResolvedValue({ documents })
     await render_({
       ...sandboxApplication, requirements: FULL, income_route: 'salary', income_earner: '',
-      income_working_members: members, income_declared: declared,
+      income_working_members: members, income_declared: declared, income_shown: incomeShown,
     } as unknown as ScholarshipApplication)
   }
+
+  /** A payslip the api scored SUSPECT — its chip is hidden as amber noise, so the student payload
+   *  carries no `authenticity`; only the served answer knows the server will not count it (TD-410). */
+  const payslip = (id: number) => ({
+    id, doc_type: 'salary_slip', household_member: 'father',
+    original_filename: `slip-${id}.pdf`, content_type: 'application/pdf', size: 2048,
+    verification_status: 'pending', download_url: 'https://example.test/d', uploaded_at: '2026-06-01',
+  }) as unknown as api.ApplicantDocument
+  const refused = (id: number, docType: string) => ({ father: { shown: false, way: null, documents: [],
+    unusable: [{ doc_id: id, doc_type: docType, reason: 'suspect' }] } })
+
+  it('TD-410: a payslip the server refuses as suspect does not tick the earner', async () => {
+    await salaryStudent(['father'], {}, [payslip(21)], refused(21, 'salary_slip'))
+    expect(screen.getByText(NOT_SHOWN)).toBeTruthy()
+    expect(screen.queryByText(SHOWN)).toBeNull()
+  })
+
+  it('TD-410: the same payslip the server counts still ticks it', async () => {
+    await salaryStudent(['father'], {}, [payslip(22)],
+      { father: { shown: true, way: 'salary_slip', documents: [22], unusable: [] } })
+    expect(screen.getByText(SHOWN)).toBeTruthy()
+  })
+
+  it('TD-410: a supporting letter the server refuses as suspect backs nothing', async () => {
+    await salaryStudent(['father'], { father: 900 }, [letter(23, 'father')], refused(23, 'income_support_doc'))
+    expect(screen.getByText(NOT_SHOWN)).toBeTruthy()
+  })
 
   it('a declared amount + an UNTAGGED letter that read: the earner reads as shown', async () => {
     // W7. `has_income_support_doc` filters `household_member__in=[member, '']` — an Action-Centre

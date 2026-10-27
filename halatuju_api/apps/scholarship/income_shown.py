@@ -15,7 +15,8 @@ fourth arm here IS the ruling — adding one silences the salary-picture asks th
 ``income_engine.declared_amount`` + ``income_engine.has_income_support_doc`` — so the answer is
 the same answer the submission gate has given since 2026-07-25. What is new is that ONE place
 gives it, that it names WHICH documents carry it, and that it names, in a STABLE CODE, why a
-document the family sent does not.
+document the family sent does not. (TD-410, owner 2026-10-27: a proof whose genuineness is flagged
+suspect or not_<type> carries nothing, on every arm — `proof_flagged`.)
 
 Its readers: ``income_engine.member_income_evidenced`` (the frozen gate answer, expressed as
 ``shown or str_not_breached``), ``income_engine._member_income_documented`` (the officer's chase
@@ -46,16 +47,33 @@ WAYS = (WAY_SALARY_SLIP, WAY_EPF, WAY_DECLARED_LETTER)
 
 # ── Why a document that WAS sent does not carry this earner's income ─────────────────────────
 # ⚠ EVERY CODE HERE IS A STATE THE EXISTING PREDICATES ACTUALLY TEST. There is deliberately no
-# 'unreadable' and no 'flagged_not_genuine': `usable_salary_slip` asks ONE question of a payslip
-# (does its stored genuineness say it is not a payslip at all — the #47 fix) and nothing about
-# whether its figures read; `_member_has_epf_value` asks only whether a monthly figure could be
-# derived and consults no genuineness signal. Inventing a finer vocabulary here would put words
-# on the officer's screen that no code can ever produce.
+# 'unreadable': `usable_salary_slip` asks nothing about whether a payslip's figures read. Since TD-410
+# (owner 2026-10-27) every arm also refuses a proof whose genuineness is FLAGGED (`proof_flagged`):
+# a payslip scored `not_*` keeps `not_salary`; any other flagged proof reads `suspect`. Inventing a
+# finer vocabulary here would put words on the officer's screen that no code can ever produce.
 REASON_NOT_SALARY = 'not_salary'                 # payslip slot: scored `not_*` (a MyKad, #47)
 REASON_NO_VALUE = 'no_value'                     # EPF: no monthly figure could be derived
 REASON_LETTER_UNREAD = 'letter_unread'           # support letter: student_verdict != 'ok' (V1 #2)
 REASON_NO_DECLARED_AMOUNT = 'no_declared_amount'  # letter read, but nothing was declared to back
-REASONS = (REASON_NOT_SALARY, REASON_NO_VALUE, REASON_LETTER_UNREAD, REASON_NO_DECLARED_AMOUNT)
+REASON_SUSPECT = 'suspect'                       # TD-410: scored suspect / not_<type> (not a wrong-type slip)
+REASONS = (REASON_NOT_SALARY, REASON_NO_VALUE, REASON_LETTER_UNREAD, REASON_NO_DECLARED_AMOUNT,
+           REASON_SUSPECT)
+
+
+def proof_flagged(doc, doc_type) -> bool:
+    """TD-410 (owner ruling 2026-10-27: *"Suspect shouldn't count."*). True when an income proof's
+    stored genuineness is FLAGGED — ``suspect`` or ``not_<type>`` (``bands.needs_attention``) — so it
+    carries no member's income, on any arm (payslip, EPF, support letter) and so at every door that
+    reads this module: the gate, the cluster, the verdict band, the chase list, Check 2, TD-409's hold.
+
+    ⚠ NO SIGNAL STILL COUNTS — an unscored document, a known issuer we have not fingerprinted
+    (``unchecked``), a read made with the genuineness flag off or deferred by our outage. Those are OUR
+    gaps, not the family's: TD-394's rule ("a money gate never passes on a document nobody has READ")
+    is about the read, which this does not change, and the student's own wizard has always counted an
+    unscored proof (``IncomeWizard.notFlaggedFake``: "we never gate on our own missing scan"). The
+    verdict still holds an unscored proof at Probable (TD-114) for the officer to look at."""
+    from .genuineness.bands import needs_attention, stored_status
+    return needs_attention(stored_status(getattr(doc, 'vision_fields', None)), doc_type)
 
 
 @dataclass(frozen=True)
@@ -122,19 +140,25 @@ def income_shown(application, member) -> IncomeShown:
     unusable = []
 
     slips = list(ie._cluster_docs(application, member, 'salary_slip'))
-    usable_slips = [d for d in slips if ie._salary_slip_not_wrongtype(d)]
-    unusable += _unusable([d for d in slips if d not in usable_slips],
-                          'salary_slip', REASON_NOT_SALARY)
+    wrong_type = [d for d in slips if not ie._salary_slip_not_wrongtype(d)]
+    usable_slips = [d for d in slips if not proof_flagged(d, 'salary_slip')]       # TD-410
+    unusable += _unusable(wrong_type, 'salary_slip', REASON_NOT_SALARY)
+    unusable += _unusable([d for d in slips if d not in usable_slips and d not in wrong_type],
+                          'salary_slip', REASON_SUSPECT)
 
     epfs = list(ie._cluster_docs(application, member, 'epf'))
-    readable_epfs = [e for e in epfs if ie._epf_monthly_salary(ie._doc_fields(e)) is not None]
-    unusable += _unusable([e for e in epfs if e not in readable_epfs], 'epf', REASON_NO_VALUE)
+    valued = [e for e in epfs if ie._epf_monthly_salary(ie._doc_fields(e)) is not None]
+    readable_epfs = [e for e in valued if not proof_flagged(e, 'epf')]                # TD-410
+    unusable += _unusable([e for e in epfs if e not in valued], 'epf', REASON_NO_VALUE)
+    unusable += _unusable([e for e in valued if e not in readable_epfs], 'epf', REASON_SUSPECT)
 
     letters = income_support_docs(application, member)
-    read_letters = [d for d in letters if income_support_doc_read(d)]
+    read = [d for d in letters if income_support_doc_read(d)]
+    read_letters = [d for d in read if not proof_flagged(d, 'income_support_doc')]  # TD-410
     declared = ie.declared_amount(application, member)
-    unusable += _unusable([d for d in letters if d not in read_letters],
+    unusable += _unusable([d for d in letters if d not in read],
                           'income_support_doc', REASON_LETTER_UNREAD)
+    unusable += _unusable([d for d in read if d not in read_letters], 'income_support_doc', REASON_SUSPECT)
     if declared is None:
         unusable += _unusable(read_letters, 'income_support_doc', REASON_NO_DECLARED_AMOUNT)
 

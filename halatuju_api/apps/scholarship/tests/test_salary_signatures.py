@@ -107,9 +107,10 @@ class TestUsableSalarySlipGate(TestCase):
         self._slip('genuine')
         self.assertTrue(usable_salary_slip(self.app, 'father'))
 
-    def test_suspect_informal_slip_is_usable(self):
+    def test_suspect_slip_is_not_usable(self):
+        """TD-410 (owner 2026-10-27: "Suspect shouldn't count") — was usable (fail-open) until then."""
         self._slip('suspect')
-        self.assertTrue(usable_salary_slip(self.app, 'father'))
+        self.assertFalse(usable_salary_slip(self.app, 'father'))
 
     def test_unscored_legacy_slip_fails_open(self):
         self._slip(None)   # no authenticity yet (the existing 100 slips)

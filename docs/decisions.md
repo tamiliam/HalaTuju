@@ -15051,6 +15051,32 @@ request — counting an STR the ruling says does not count. **Alternatives rejec
 unmatched STR (tells a family their own STR is a stranger's); leaving the request open with the generic
 "still checking — refresh" (the read is finished; nothing will change without a person).
 
+## 2026-10-27 — TD-410: a suspect income proof shows no income (owner ruling)
+
+**Ruling (owner, 2026-10-27):** *"Suspect shouldn't count."*
+**Decision:** a payslip, EPF statement or supporting letter whose stored genuineness is FLAGGED — suspect or
+not_<type> (`genuineness.bands.needs_attention`) — does not show a member's income (`income_shown.
+proof_flagged`), at every door that reads the per-earner answer: the submission gate, the cluster, the
+verdict band, Check 2's proof ask and TD-409's hold. Until now a suspect payslip counted (fail-open, read as
+"informal"; V5 known limitation #13).
+**Unscored is not suspect (the lead asked us to decide and justify).** A proof with NO genuineness signal —
+never scored, a known issuer not fingerprinted (`unchecked`), read while `DOC_GENUINENESS_CHECK_ENABLED` was
+off, or deferred by our outage — still counts. Why: (1) TD-394's owner ruling is "a money gate never passes
+on a document nobody has READ"; it is about the read, and a missing genuineness score is not a missing read
+(EPF and letters still need their read value, unchanged); (2) the gap is OURS — the throttle that skips a
+read stores `review_manually`, an outage defers, a job without the flag scores nothing — and TD-390 / TD-394
+never block or blame a family for our gap in a way they cannot fix; (3) the student's own wizard has
+always counted an unscored proof ("we never gate on our own missing scan"), and TD-114 already holds an
+unscored document's fact at Probable for the officer. A payslip whose read our outage deferred therefore
+still counts, as before (TD-394 left the payslip arm out; unchanged here).
+**The hand-accept:** the reviewer's own per-fact decision in the cockpit (`officer_verdict.income`) records
+income as passed whatever the AI band says; no new path. Before submission the family can send another
+payslip, an EPF statement, or a declared amount with a supporting letter.
+**What the student is told:** the existing `income_evidence_missing` ask ("Show {member}'s income — a
+payslip, EPF, or an amount with a supporting letter") — honest, and it accuses no one. No new student copy.
+**Revisit if:** the payslip scorer's suspect band proves to catch many genuine informal payslips (count it
+first: the lead's production query in the TD-410 report).
+
 ## 2026-10-27 — STPM exact-read S3: STPM results in the higher-results slot are checked for genuineness; 1A there
 
 **Decision:** An upload in the `higher_results` slot whose own printed markers read STPM (`results_kind.detect`)

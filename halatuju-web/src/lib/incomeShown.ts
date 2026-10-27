@@ -61,3 +61,11 @@ export function unusableReason(
   const hit = (answer.unusable || []).find((u) => u.doc_id === docId)
   return hit ? hit.reason : ''
 }
+
+/** TD-410 — does the SERVED answer say this document cannot carry this earner's income (e.g. a
+ *  payslip scored suspect, whose chip the api hides as amber noise)? `false` with nothing served. */
+export function servedRefuses(
+  served: IncomeShownMap | null | undefined, member: string, docId: number | null | undefined,
+): boolean {
+  return unusableReason(answerFor(served, member), docId) !== ''
+}

@@ -38,6 +38,7 @@ import {
 } from '@/lib/incomeWizard'
 import { earningMembers, sameMemberSet } from '@/lib/familyRoster'
 import { clusterAnchorKey, clusterDocKey } from '@/lib/documentHelp'
+import { servedRefuses } from '@/lib/incomeShown'
 import IncomeClusterCoach from '../IncomeClusterCoach'
 import MemberIncomeGroup from '../scholarship/MemberIncomeGroup'
 import { docKey, CollapsibleSection } from './cards'
@@ -290,7 +291,8 @@ export default function IncomeWizard({
       const g = d.guardianship_check
       return notFlaggedFake(d) && g?.ward_status === 'match' && g?.guardian_status === 'match'
     })
-    return inSlot.some(notFlaggedFake)   // any other compulsory doc: present + not flagged non-genuine
+    // any other compulsory doc: present + not flagged non-genuine + not refused by the served answer (TD-410)
+    return inSlot.some((d) => notFlaggedFake(d) && !servedRefuses(app.income_shown, slotMember, d.id))
   }
   const strComplete = ans.income_route === 'str' && !!strEarner
     && reqs.compulsory.every((dt) => slotVerified(dt, STR_EARNER_DOCS.has(dt) ? strEarner : ''))
@@ -303,7 +305,7 @@ export default function IncomeWizard({
   // this cue reads as the GATE reads (the officer's panel claims it once — TD-262 chunk 2).
   const supportLetterCounts = (d: ApplicantDocument, m: WorkingMember): boolean =>
     ((d.household_member || '') === m || (d.household_member || '') === '')
-    && notFlaggedFake(d)
+    && notFlaggedFake(d) && !servedRefuses(app.income_shown, m, d.id)   // TD-410: a suspect letter
     && (d.vision_fields?.student_verdict || '') === 'ok'
   // A member's income is SHOWN any one way — the three ways the server counts for THIS EARNER
   // (income_engine.member_income_evidenced, arms 1-3; the backend gate is authoritative, and this

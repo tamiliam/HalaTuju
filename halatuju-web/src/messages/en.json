@@ -4773,7 +4773,8 @@
             "not_salary": "this is not a salary slip",
             "no_value": "no contribution figure could be read",
             "letter_unread": "the letter could not be read",
-            "no_declared_amount": "no declared amount for it to support"
+            "no_declared_amount": "no declared amount for it to support",
+            "suspect": "its genuineness check flagged it"
           }
         },
         "view": "View",

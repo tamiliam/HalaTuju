@@ -1555,24 +1555,21 @@ class TestStrRouteNoStrFallsThroughToSalary(TestCase):
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
         self.assertNotIn('income_proof_missing', _codes(f['unresolved']))
 
-    def test_suspect_payslip_does_not_cap_the_green_matching_the_salary_route(self):
+    def test_a_suspect_payslip_no_longer_carries_the_fall_through(self):
         # #106's REAL payslip is informal — 1 wage label, no statutory scaffold, scored 'suspect'
-        # at p=0.5 — and it still greens. That is DELIBERATE and it is the evenness rule, not a
-        # hole this sprint opened: `_income_genuineness_docs` caps only the documents a route
-        # REQUIRES, and the salary route has no fingerprint cap at all ("the required salary slip
-        # isn't fingerprintable"). A salary-route household with this identical payslip greens
-        # today, so a household falling through to the same assessment must band the same colour
-        # (V5 §8 rule 1). The underlying gap — salary evidence carries no genuineness protection on
-        # EITHER route — is V5's recorded known limitation #13, owned by the salary-track redesign.
-        # Pinned here so that redesign changes both routes together and neither is forgotten.
+        # at p=0.5 — and until TD-410 it greened here (V5 known limitation #13: salary evidence
+        # carried no genuineness protection on either route). TD-410, owner 2026-10-27: "Suspect
+        # shouldn't count." A suspect payslip shows no income, so the cluster is not complete, the
+        # §6 fall-through is not taken, and the absent STR is the gap again — on BOTH routes alike,
+        # because both read `income_shown` (the evenness rule holds).
         app = self._app()
         slip = self._documented_father(app)
         slip.vision_fields = dict(slip.vision_fields,
                                   authenticity={'status': 'suspect', 'probability': 0.5})
         slip.save(update_fields=['vision_fields'])
         f = _facts(app)['income']
-        self.assertEqual(f['status'], 'verified')
-        self.assertNotIn('document_not_genuine', _codes(f['unresolved']))
+        self.assertNotEqual(f['status'], 'verified')
+        self.assertIn('income_proof_missing', _codes(f['unresolved']))
 
     def test_a_suspect_str_still_caps_when_the_str_is_what_settled_it(self):
         # The other half of the same rule, so the test above cannot be read as "genuineness never

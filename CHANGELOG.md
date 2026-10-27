@@ -75,6 +75,25 @@ An STPM results document in the higher-results slot was always read by Gemini (`
   stored reads change only on a re-read (S4).
 - **Tests:** `test_stpm_parse.py` (synthetic twins of every layout), wiring tests in `test_third_route_s3.py`.
 
+## TD-410 — a suspect income proof shows no income (owner ruling: "Suspect shouldn't count") - 2026-10-27
+
+- **One predicate, every door.** `income_shown.proof_flagged`: a payslip, EPF statement or supporting letter
+  whose stored genuineness is suspect or not_<type> carries no member's income. It is read by
+  `income_shown` (all three arms), `usable_salary_slip`, `_member_has_epf_value` and
+  `has_income_support_doc`, so the gate (`income_doc_blockers`, the per-member loop, the stranger / pending
+  STR checks), the cluster (`member_cluster_complete`, `salary_income_satisfied`, `income_established`),
+  Check 2's per-member proof ask, TD-409's hold and the verdict band all follow. A suspect payslip used to
+  count (fail-open, "informal"). `VERDICT_ENGINE_VERSION` 2026-10-27.4 (a band moves).
+- **No signal still counts.** An unscored proof, a known issuer not fingerprinted (`unchecked`), a read made
+  with the genuineness flag off or deferred by our outage: our gap, not the family's — TD-394's rule is
+  about a document nobody READ, and the wizard has always counted an unscored proof.
+- **What people see.** The officer's documents drawer lists it as not usable — "its genuineness check flagged
+  it" (`suspect`, en/ms/ta). The student's income wizard follows the served answer
+  (`incomeShown.servedRefuses`) because a payslip's suspect chip is hidden from her; she is asked with the
+  existing "Show {member}'s income — a payslip, EPF, or an amount with a supporting letter" copy.
+- **Tests:** `test_td410_suspect_income_proof.py` + three web cases; every change bitten. Two older tests
+  that pinned the old fail-open now pin the ruling. TD-410 closed.
+
 ## TD-409 — an STR no household card matched never closes an STR request (owner ruling A) - 2026-10-27
 
 - **The upload's verdict.** `resolution.doc_match_verdict` gives an STR whose recipient matched no household

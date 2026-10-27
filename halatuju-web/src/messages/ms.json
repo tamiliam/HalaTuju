@@ -4773,7 +4773,8 @@
             "not_salary": "ini bukan slip gaji",
             "no_value": "tiada angka caruman yang dapat dibaca",
             "letter_unread": "surat itu tidak dapat dibaca",
-            "no_declared_amount": "tiada jumlah diisytiharkan untuk disokong"
+            "no_declared_amount": "tiada jumlah diisytiharkan untuk disokong",
+            "suspect": "semakan ketulenannya menandakannya"
           }
         },
         "view": "Lihat",
