@@ -6227,8 +6227,10 @@
         "sourcesFixedTitle": "Pilihan tetap",
         "sourcesFixedHint": "Dipaparkan selepas sumber pemberian ini sendiri. Matikan satu dan borang ini tidak lagi menawarkannya; {other} kekal pada setiap borang.",
         "sourcesAlwaysOn": "Sentiasa ada",
-        "asksHigher": "Minta keputusan peringkat STPM",
-        "asksHigherHint": "Pelajar yang memiliki keputusan STPM, Matrikulasi, Asasi atau Diploma diminta memuat naiknya, dan kursus ijazah memerlukannya. Matikan untuk pemberian lepasan SPM: pemberian itu kemudian hanya meminta slip keputusan SPM. Permohonan yang telah dihantar kekal dengan apa yang diminta.",
+        "academic": {
+          "title": "Keputusan akademik",
+          "note": "Bukan satu muat naik — slip keputusan SPM, atau keputusan STPM, Matrikulasi, Asasi atau Diploma bagi pelajar yang menuju ke kursus ijazah, apabila ambilan menetapkan PNGK STPM minimum. Salah satu daripadanya sentiasa wajib."
+        },
         "sourceGone": "{source} telah dimatikan dalam Sumber, jadi ia tiada lagi dalam senarai ini. Tiada apa-apa disimpan; semak dan simpan semula.",
         "desc": {
           "document": {
@@ -6452,6 +6454,7 @@
         "bornIn": "Lahir di",
         "bornInHint": "Dibaca daripada nombor IC. Biarkan semua tidak bertanda untuk menerima pelajar yang lahir di mana-mana.",
         "pngk": "STPM - minimum PNGK",
+        "pngkHint": "Biarkan kosong untuk menjadikan ambilan ini SPM sahaja: pelajar menghantar slip keputusan SPM, dan pemegang STPM, Matrikulasi, Asasi atau Diploma diuji pada gred SPM di atas.",
         "merit": "Mata merit minimum",
         "meritHint": "UPU score out of 100. SPM applicants only.",
         "income": "Household income at most (RM per month)",

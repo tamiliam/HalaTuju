@@ -92,7 +92,11 @@ class Programme(models.Model):
     # SPM slip stays as the programme set it), no higher-results card, no `higher_owed` ask, no
     # "Move it to STPM results". It is about documents only: the eligibility gate (merit / CGPA
     # floor) is untouched. ON by default, in the DATABASE too (`db_default`): every gift asked
-    # before this. The ONE reader is `results_route.gift_asks_higher`; nothing else should be.
+    # before this.
+    #
+    # ⚠ SUPERSEDED, NOT READ (owner ruling D16c, 2026-10-27): whether a gift asks for STPM-level
+    # results is now INFERRED from the intake's `min_stpm_pngk` (`results_route.gift_asks_higher`).
+    # Nothing reads or writes this column; a later migration drops it.
     asks_higher_results = models.BooleanField(
         default=True, db_default=True,
         verbose_name='Ask for STPM-level results',

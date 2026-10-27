@@ -16,6 +16,9 @@ The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan
                    STPM: PNGK >= min_stpm_pngk                            → else REJECT
                    Matriculation / Asasi / Diploma (third results route S2a): the OVERALL
                    CGPA (`exam_questions.overall_cgpa`) >= min_stpm_pngk  → else REJECT
+                   STPM-level held but NO `min_stpm_pngk` (owner ruling D16c): the intake is
+                   SPM-only, so the SPM GRADE bars above (A-, B+, credits; not the merit
+                   point — D3) on their SPM grades                        → else REJECT
                    (a Diploma not from a PUBLIC institution is a hard gate, step 1: D5)
   3. Income      — STR recipient → PASS (bucket A);
                    else gross household income <= income_ceiling (the DOSM B40 line)
@@ -35,6 +38,11 @@ The admin screen ticks a requirement by writing a value and unticks it by cleari
 value IS the switch**, deliberately with no companion boolean, because two columns can disagree
 and one cannot.
 
+⚠ EXCEPT `min_stpm_pngk` (owner ruling D16c, 2026-10-27): blank no longer means "no STPM-level test,
+pass" — it makes the intake SPM-ONLY, so an STPM / Matriculation / Asasi / Diploma holder is tested on
+the SPM GRADE bars with their SPM grades (not `min_merit_score`, which stays SPM-only by D3).
+The same blank tells the document rules the intake asks for no STPM-level results (`results_route.gift_asks_higher`).
+
 Consequences worth stating rather than discovering:
   * No academic requirement set at all → the academic test passes. That is a legitimate shape for
     a programme to have, and it takes an admin clearing every box on a screen that shows them.
@@ -49,7 +57,7 @@ Consequences worth stating rather than discovering:
 from dataclasses import dataclass
 
 from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, diploma_is_public,
-                                         results_held, third_route_overall)
+                                         results_held, spm_grades_for, third_route_overall)
 
 from .birth_state import check as check_birth_state
 
@@ -136,6 +144,7 @@ def _academic_ok(profile, cohort):
     was NOT NULL with a default, so every test always ran — BrightPath never asked for an STPM
     floor and PNGK >= 2.90 was applied to all nine of its STPM applicants for a whole intake.
     An organisation must be able to say "we do not use this one", and a missing value is how.
+    The one exception is `min_stpm_pngk` (D16c): blank is "SPM-only", tested below, not a pass.
 
     ⚠ NO REQUIREMENT SET AT ALL => PASSES. The academic test is then simply not part of this
     programme, which is a legitimate thing for a programme to be. It is NOT a silent hole: it
@@ -151,10 +160,18 @@ def _academic_ok(profile, cohort):
     # Scheduler job on that door (lead, 2026-10-02).
     exam = (results_held(profile) or 'spm') if profile else 'spm'
 
+    # ⚠ OWNER RULING D16c (2026-10-27): A BLANK `min_stpm_pngk` MAKES THE INTAKE SPM-ONLY. It used
+    # to mean "no STPM-level test, so pass"; an STPM / Matriculation / Asasi / Diploma holder on such
+    # an intake now faces the intake's SPM GRADE bars, on their SPM grades (`spm_grades_for`:
+    # `grades` over the STPM page's SPM block). NOT the merit bar (D3: SPM applicants only — their
+    # co-curriculum and stream are written only by the SPM grades step, so a merit would be guessed
+    # low). With a floor set, both branches below are unchanged.
+    spm_only = (exam == 'stpm' or exam in THIRD_ROUTE) and cohort.min_stpm_pngk is None
+    if spm_only:
+        return _spm_bars(profile, cohort, spm_grades_for(profile), spm_held=False)
+
     if exam == 'stpm':
         floor = cohort.min_stpm_pngk
-        if floor is None:
-            return True, ''          # this programme sets no STPM requirement
         p = getattr(profile, 'stpm_cgpa', None) if profile else None
         if p is None:
             return False, 'STPM PNGK not provided'
@@ -168,8 +185,6 @@ def _academic_ok(profile, cohort):
         # branch above is left byte-identical (it compares the stored figure raw). The reason
         # names the qualification, because a reviewer reads it: "Matriculation CGPA 2.70 below 2.90".
         floor = cohort.min_stpm_pngk
-        if floor is None:
-            return True, ''
         label = QUALIFICATION_LABELS[exam]
         raw = getattr(profile, 'higher_cgpa', None)
         if raw is None:
@@ -183,13 +198,21 @@ def _academic_ok(profile, cohort):
             return True, ''
         return False, f'{label} CGPA {overall:.2f} below {floor:.2f}'
 
-    grades = getattr(profile, 'grades', None) if profile else None
+    return _spm_bars(profile, cohort, getattr(profile, 'grades', None) if profile else None)
+
+
+def _spm_bars(profile, cohort, grades, spm_held=True):
+    """The intake's SPM bars on `grades`. `spm_held=False` is D16c's door (an STPM-level holder on
+    an SPM-only intake): the GRADE bars only — `min_merit_score` stays SPM-only (D3) — no SPM
+    grades at all against a set grade bar is said plainly, and the reason names the door."""
+    min_a, min_strong = cohort.min_spm_a_count, cohort.min_spm_bplus_count
+    min_credit = cohort.min_spm_credit_count
+    if not spm_held and not grades and any(b is not None for b in (min_a, min_strong, min_credit)):
+        return False, 'SPM-only intake: SPM grades not provided'
     a = count_spm_a_grades(grades)
     strong = count_spm_strong_grades(grades)
     credits = count_spm_credit_grades(grades)
-    min_a, min_strong = cohort.min_spm_a_count, cohort.min_spm_bplus_count
-    min_credit = cohort.min_spm_credit_count
-    min_merit = getattr(cohort, 'min_merit_score', None)
+    min_merit = getattr(cohort, 'min_merit_score', None) if spm_held else None
 
     failures = []
     if min_a is not None and a < min_a:
@@ -213,6 +236,8 @@ def _academic_ok(profile, cohort):
 
     if not failures:
         return True, ''
+    if not spm_held:
+        return False, 'SPM-only intake: ' + '; '.join(failures)
     return False, '; '.join(failures)
 
 

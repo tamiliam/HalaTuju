@@ -55,6 +55,15 @@ export function isHeavy(item: ProgrammeConfigItem): boolean {
   return item.kind === 'document' && item.code === 'income_proof'
 }
 
+/**
+ * The core results item, shown on Configuration as "Academic results" (owner ruling D16b,
+ * 2026-10-27): like household income it is a combination, not one upload — the SPM slip, or
+ * STPM-level results by course where the intake sets a minimum STPM CGPA (D16c).
+ */
+export function isAcademic(item: ProgrammeConfigItem): boolean {
+  return item.kind === 'document' && item.code === 'results_slip'
+}
+
 export type Draft = Record<string, ProgrammeItemState>   // key = `${kind}:${code}`
 
 export const itemKey = (i: Pick<ProgrammeConfigItem, 'kind' | 'code'>) => `${i.kind}:${i.code}`

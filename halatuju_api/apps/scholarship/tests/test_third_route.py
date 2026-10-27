@@ -207,8 +207,10 @@ class TestTheGate(SimpleTestCase):
 
     def test_the_spm_bars_do_not_apply_D3(self):
         """`min_merit_score` and the A-counts are SPM tests; the CGPA floor is the tertiary bar."""
+        # With the floor SET (amended 2026-10-27, D16c: a blank floor makes the intake SPM-only,
+        # pinned in test_spm_only_intake_gate).
         p = _p(**MATRIC)
-        self.assertEqual(shortlisting._academic_ok(p, _cohort(min_merit_score=99,
+        self.assertEqual(shortlisting._academic_ok(p, _cohort(min_stpm_pngk=2.0, min_merit_score=99,
                                                               min_spm_a_count=10)), (True, ''))
 
     def test_no_floor_set_passes(self):

@@ -148,7 +148,7 @@ class TestOptionalRequirements(TestCase):
     one", and a missing value is how that becomes sayable.
     """
 
-    def test_no_stpm_requirement_lets_an_stpm_applicant_through_with_no_pngk_at_all(self):
+    def test_an_stpm_applicant_with_no_pngk_at_all_on_either_floor(self):
         # `grades=None`: an STPM applicant with no results of either kind. Amended 2026-10-02
         # (TD-324): this used the default SPM grades, which with no STPM results is the Form Six
         # explorer — the owner's ruling now tests her on the SPM bar, which she clears, so that
@@ -159,10 +159,12 @@ class TestOptionalRequirements(TestCase):
         self.assertEqual(r.verdict, 'rejected')
         self.assertEqual(r.category, 'merit')
         self.assertIn('STPM PNGK not provided', r.reason)   # the STPM branch ran
-        # Unticked, the test does not run, so there is nothing to be missing.
+        # Unticked: amended 2026-10-27 (owner ruling D16c) — a blank STPM floor no longer passes
+        # her; the intake is SPM-only and she faces its SPM bars, holding no SPM grades either.
         r = evaluate(app(qualification='stpm', stpm_pngk=None, grades=None),
                      cohort(min_stpm_pngk=None))
-        self.assertEqual(r.verdict, 'shortlisted')
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertIn('SPM-only intake:', r.reason)
 
     def test_no_academic_requirement_at_all_passes_the_academic_test(self):
         # A programme that sets no results requirement is a legitimate shape, not a hole: it takes

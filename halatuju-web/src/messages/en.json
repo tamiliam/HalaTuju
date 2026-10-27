@@ -6227,8 +6227,10 @@
         "sourcesFixedTitle": "Fixed choices",
         "sourcesFixedHint": "Shown after this gift's own sources. Switch one off and this form stops offering it; {other} stays on every form.",
         "sourcesAlwaysOn": "Always on",
-        "asksHigher": "Ask for STPM-level results",
-        "asksHigherHint": "Students holding STPM, Matriculation, Asasi or Diploma results are asked to upload them, and a degree course needs them. Switch off for a post-SPM gift: it then asks for the SPM results slip only. Submitted applications keep what they were asked.",
+        "academic": {
+          "title": "Academic results",
+          "note": "Not one upload — the SPM results slip, or STPM, Matriculation, Asasi or Diploma results for a student going to a degree course, when the intake sets a minimum STPM CGPA. One of them is always required."
+        },
         "sourceGone": "{source} was switched off in Sources, so it has left this list. Nothing was saved; check and save again.",
         "desc": {
           "document": {
@@ -6452,6 +6454,7 @@
         "bornIn": "Born in",
         "bornInHint": "Read from the IC number. Leave all unticked to accept students born anywhere.",
         "pngk": "STPM - minimum PNGK",
+        "pngkHint": "Leave blank to make the intake SPM-only: students submit the SPM results slip, and STPM, Matriculation, Asasi or Diploma holders are tested on the SPM grades above.",
         "merit": "Minimum merit point",
         "meritHint": "UPU score out of 100. SPM applicants only.",
         "income": "Household income at most (RM per month)",

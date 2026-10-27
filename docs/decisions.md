@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## Whether an intake asks for STPM-level results is inferred from its STPM floor; blank = SPM-only, at the gate too — 2026-10-27 (owner rulings D16b + D16c, superseding D16's switch)
+
+One place for the instruction: the intake's `min_stpm_pngk`. Set → the intake asks for STPM-level
+results (D12/D14 mapping, `higher_owed`, the reverse move); blank → SPM-only. `results_route.
+gift_asks_higher` reads the floor; D16's per-gift `Programme.asks_higher_results` and its
+Configuration toggle are withdrawn (column left in place, unread — a later migration drops it), so a
+gift cannot say one thing while its intake's rules say another. The same blank now also changes
+ELIGIBILITY, reversing D16's "documents only": an STPM / Matriculation / Asasi / Diploma holder on an
+SPM-only intake is tested on the intake's SPM GRADE bars (A-, B+, credit count) with their SPM grades
+(`spm_grades_for`), not passed outright as Sabah S2a's "blank = not applied" did — but NOT on the
+merit bar, which stays SPM applicants only (D3): their co-curriculum and stream are written only by
+the SPM grades step, so a merit would be guessed low. No SPM grades against a set grade bar fails
+with "SPM grades not provided". The other thresholds keep "blank = not
+applied". On Configuration (per gift) the results row is "Academic results", locked like household
+income, with a neutral note; the per-intake rule is stated on the floor field itself.
+
 ## Whether a gift asks for STPM-level results is a per-gift setting; off = SPM-only evidence — 2026-10-27 (owner ruling D16)
 
 BrightPath flagship is a POST-SPM programme (students submit SPM results; it was never for post-STPM

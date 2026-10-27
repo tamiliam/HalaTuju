@@ -1,24 +1,25 @@
-"""Owner ruling D16 (2026-10-27) — whether a gift asks for STPM-level results is a PER-GIFT setting,
-`Programme.asks_higher_results`, read through ONE helper, `results_route.gift_asks_higher`.
+"""Owner rulings D16 + D16c (2026-10-27) — whether an application's gift asks for STPM-level
+results is INFERRED from its INTAKE: `cohort.min_stpm_pngk` set → it asks; blank → SPM only. ONE
+reader, `results_route.gift_asks_higher`. There is no per-gift switch any more (D16c superseded the
+D16 Configuration toggle; `Programme.asks_higher_results` is left in place, unread, for a later drop).
 
-BrightPath flagship (`brightpath-flagship`) is a POST-SPM programme; BrightPath Sabah is where
-STPM-level results matter. Pinned here, on the SHAPES of live rows (never their data):
+BrightPath flagship (`brightpath-flagship`, intake b40-2026) is a POST-SPM programme with its STPM
+floor cleared; BrightPath Sabah sets one. Pinned here, on the SHAPES of live rows (never their data):
 
-1. **Default ON** — a new gift, an existing one, and an application with no gift at all.
-2. **OFF (flagship-shaped)** — a tertiary-held, degree-bound applicant: the SPM slip stays required
-   as the programme set it, no higher-results card (D12 / D14 mapping not applied), no
+1. **A floor asks** — the default intake (2.9), and an application with no intake at all.
+2. **Blank floor (flagship-shaped)** — a tertiary-held, degree-bound applicant: the SPM slip stays
+   required as the programme set it, no higher-results card (D12 / D14 mapping not applied), no
    "Move it to STPM results"; once submitted, no `higher_owed` slot, cap or Check-2 ask.
-3. **ON** — the same applicant gets today's behaviour, unchanged.
+3. **A floor set** — the same applicant gets today's behaviour, unchanged.
 4. **Frozen snapshots are never rewritten** — a submitted application keeps what it froze.
-5. **Configuration** — the gift's toggle is served, saved through the existing PUT, audited only on
-   a change, a non-boolean is refused writing nothing, and the org fence is unchanged.
+5. **No switch** — the gift's column is not read, and Configuration neither serves nor saves it.
 """
 from django.test import TestCase, override_settings
 
 from apps.scholarship import higher_owed, requirements, results_route
 from apps.scholarship.academic_engine import student_slip_check
 from apps.scholarship.check2_queries import sync_check2_queries
-from apps.scholarship.models import Programme, ResolutionItem
+from apps.scholarship.models import ResolutionItem
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_cohort, make_org, make_programme,
 )
@@ -32,7 +33,8 @@ AUDIT_LOGGER = 'apps.scholarship.views_admin'
 
 
 def _gift(asks):
-    return make_cohort(programme=make_programme(asks_higher_results=asks))
+    """An intake that sets an STPM floor (asks) or leaves it blank (SPM only)."""
+    return make_cohort(min_stpm_pngk=2.9 if asks else None)
 
 
 def _live(profile=STPM_HELD, asks=False):
@@ -47,20 +49,26 @@ def _submitted(asks=False):
     return _fresh(app)
 
 
-class TestDefaultOn(TestCase):
-    def test_a_new_gift_asks(self):
-        gift = Programme.objects.create(organisation=make_org('d16-new'), code='d16-new', name_en='N')
-        gift.refresh_from_db()
-        self.assertTrue(gift.asks_higher_results)
+class TestInferredFromTheIntake(TestCase):
+    def test_the_default_intake_asks(self):
+        self.assertTrue(results_route.gift_asks_higher(_fresh(_app(STPM_HELD, DEGREE))))
 
-    def test_the_helper_reads_true_by_default_and_with_no_gift(self):
+    def test_the_helper_reads_the_intake_floor(self):
         self.assertTrue(results_route.gift_asks_higher(_live(asks=True)))
         self.assertTrue(results_route.gift_asks_higher(None))
         self.assertFalse(results_route.gift_asks_higher(_live(asks=False)))
 
+    def test_the_gift_column_is_not_read(self):
+        """D16c: the per-gift switch is gone. Its column says the opposite of the intake both
+        ways round, and the intake wins both times."""
+        on = make_cohort(programme=make_programme(asks_higher_results=False), min_stpm_pngk=2.5)
+        off = make_cohort(programme=make_programme(asks_higher_results=True), min_stpm_pngk=None)
+        self.assertTrue(results_route.gift_asks_higher(_fresh(_app(STPM_HELD, DEGREE, cohort=on))))
+        self.assertFalse(results_route.gift_asks_higher(_fresh(_app(STPM_HELD, DEGREE, cohort=off))))
+
 
 class TestAnSpmOnlyGift(TestCase):
-    """The flagship shape: `asks_higher_results` False."""
+    """The flagship shape: the intake leaves the STPM floor blank."""
 
     def test_the_spm_slip_stays_required_and_no_higher_card(self):
         docs = requirements.resolve(_live(), 'document')
@@ -107,7 +115,7 @@ class TestAnSpmOnlyGift(TestCase):
 
 
 class TestAGiftThatAsks(TestCase):
-    """The same shapes on a gift that asks (`asks_higher_results` True): today's behaviour."""
+    """The same shapes on an intake with an STPM floor: today's behaviour."""
 
     def test_the_higher_card_is_required_and_the_spm_slip_optional(self):
         docs = requirements.resolve(_live(asks=True), 'document')
@@ -142,50 +150,30 @@ class TestFrozenSnapshotsAreKept(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
-class TestTheConfigurationToggle(TestCase):
+class TestNoConfigurationSwitch(TestCase):
+    """D16c: Configuration neither serves nor saves `asks_higher_results`."""
+
     @classmethod
     def setUpTestData(cls):
         from django.core.management import call_command
         call_command('seed_application_catalogue', verbosity=0)
         cls.org = make_org('d16-org')
         cls.gift = make_programme(organisation=cls.org, code='d16-a', is_active=True)
-        cls.other = make_programme(organisation=cls.org, code='d16-b', is_active=True)
-        cls.foreign = make_programme(organisation=make_org('d16-foreign'), code='d16-x')
         cls.oa = make_admin('org_admin', owning_org=cls.org)
 
-    def _put(self, body, gift='d16-a', who=None):
-        return authed_client(who or self.oa).put(f'{CONFIG}?programme={gift}', body, format='json')
-
-    def test_served_on_by_default(self):
+    def test_not_served(self):
         resp = authed_client(self.oa).get(f'{CONFIG}?programme=d16-a')
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertIs(resp.json()['asks_higher_results'], True)
+        self.assertNotIn('asks_higher_results', resp.json())
 
-    def test_switching_off_saves_that_gift_only_and_audits(self):
+    def test_not_saved_alone_and_ignored_beside_items(self):
+        client = authed_client(self.oa)
+        resp = client.put(f'{CONFIG}?programme=d16-a', {'asks_higher_results': False}, format='json')
+        self.assertEqual((resp.status_code, resp.json()['code']), (400, 'bad_items'))
         with self.assertLogs(AUDIT_LOGGER, 'INFO') as logs:
-            resp = self._put({'asks_higher_results': False})
+            resp = client.put(f'{CONFIG}?programme=d16-a',
+                              {'asks_higher_results': False, 'sources': {'social': False}}, format='json')
         self.assertEqual(resp.status_code, 200, resp.content)
-        self.assertIs(resp.json()['asks_higher_results'], False)
         self.gift.refresh_from_db()
-        self.other.refresh_from_db()
-        self.assertEqual((self.gift.asks_higher_results, self.other.asks_higher_results), (False, True))
-        self.assertIn('AUDIT programme_setting_set programme=d16-a setting=asks_higher_results '
-                      f'was=on now=off by={self.oa.email}', ' | '.join(r.getMessage() for r in logs.records))
-
-    def test_a_no_op_is_not_audited(self):
-        with self.assertLogs(AUDIT_LOGGER, 'INFO') as logs:
-            self._put({'asks_higher_results': True, 'sources': {'social': False}})
+        self.assertTrue(self.gift.asks_higher_results)
         self.assertFalse([r for r in logs.records if 'programme_setting_set' in r.getMessage()])
-
-    def test_a_non_boolean_is_refused_and_nothing_is_written(self):
-        resp = self._put({'asks_higher_results': 'off', 'sources': {'social': False}})
-        self.assertEqual((resp.status_code, resp.json()['code']), (400, 'bad_asks_higher_results'))
-        self.gift.refresh_from_db()
-        self.assertEqual((self.gift.asks_higher_results, self.gift.offers_social), (True, True))
-
-    def test_the_org_fence_and_the_role_are_unchanged(self):
-        self.assertEqual(self._put({'asks_higher_results': False}, gift='d16-x').status_code, 404)
-        self.foreign.refresh_from_db()
-        self.assertTrue(self.foreign.asks_higher_results)
-        plain = make_admin('admin', owning_org=self.org)
-        self.assertEqual(self._put({'asks_higher_results': False}, who=plain).status_code, 403)

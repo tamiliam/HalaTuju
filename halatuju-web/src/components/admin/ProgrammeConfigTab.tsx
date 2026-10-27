@@ -18,27 +18,27 @@ import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
 import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import ProgrammeSourcesCard from '@/components/admin/ProgrammeSourcesCard'
-import { Toggle } from '@/components/sources/shared'
 import {
   getProgrammeConfiguration, saveProgrammeConfiguration,
   type ProgrammeConfigItem, type ProgrammeConfiguration, type ProgrammeItemState,
 } from '@/lib/admin-api'
 import {
-  ITEM_STATES, allowedStates, changes, documents, draftFrom, isHeavy, itemKey, questions,
+  ITEM_STATES, allowedStates, changes, documents, draftFrom, isAcademic, isHeavy, itemKey, questions,
   sourceChanges, sourceDraftFrom, sourceSwitches, tally, type Draft, type SourceDraft,
 } from '@/lib/programmeConfig'
 import { useProgrammeScope } from '@/lib/programmeScope'
 
 /** The three-state control. Rendered per row; a locked row offers `required` only. */
-function StateControl({ item, value, onChange, t }: {
+function StateControl({ item, label, value, onChange, t }: {
   item: ProgrammeConfigItem
+  label: string
   value: ProgrammeItemState
   onChange: (next: ProgrammeItemState) => void
   t: (k: string) => string
 }) {
   const allowed = allowedStates(item)
   return (
-    <div role="radiogroup" aria-label={t(item.label_key)}
+    <div role="radiogroup" aria-label={label}
       className="inline-flex rounded-lg bg-ground-100 p-0.5" data-item={itemKey(item)}>
       {ITEM_STATES.map((s) => {
         const selected = value === s
@@ -65,18 +65,31 @@ function ItemRow({ item, value, onChange, t }: {
   onChange: (next: ProgrammeItemState) => void
   t: (k: string) => string
 }) {
-  const heavy = isHeavy(item)
+  const academic = isAcademic(item)
+  // Both combination rows are drawn heavier (owner ruling D16b: "Academic results" is treated
+  // exactly like household income — not one upload, always required).
+  const heavy = isHeavy(item) || academic
+  // The Configuration row is renamed; the student's "SPM results slip" card is not — it is still
+  // that one document, so the item's own label_key stays as it is.
+  const title = academic ? t('admin.programme.config.academic.title') : t(item.label_key)
   return (
     <li className={`flex items-start justify-between gap-4 px-5 py-4 ${
       heavy ? 'bg-primary-50/60 border-l-4 border-brand-shape' : ''}`}
       data-testid={`row-${itemKey(item)}`}>
       <div className="min-w-0">
-        <p className="font-medium text-ground-900">{t(item.label_key)}</p>
+        <p className="font-medium text-ground-900">{title}</p>
         <p className="mt-0.5 text-sm text-ground-500">
           {t(`admin.programme.config.desc.${item.kind}.${item.code}`)}
         </p>
-        {heavy && (
+        {isHeavy(item) && (
           <p className="mt-1 text-xs text-ground-600">{t('admin.programme.config.heavyNote')}</p>
+        )}
+        {/* Neutral on purpose (D16c): this screen is per GIFT, while what is asked follows each
+            INTAKE's minimum STPM CGPA (blank = SPM-only) — set on the Rules tab. */}
+        {academic && (
+          <p className="mt-1 text-xs text-ground-600" data-testid="academic-note">
+            {t('admin.programme.config.academic.note')}
+          </p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-3">
@@ -88,7 +101,7 @@ function ItemRow({ item, value, onChange, t }: {
             {t('admin.programme.config.alwaysRequired')}
           </span>
         )}
-        <StateControl item={item} value={value} onChange={onChange} t={t} />
+        <StateControl item={item} label={title} value={value} onChange={onChange} t={t} />
       </div>
     </li>
   )
@@ -103,9 +116,6 @@ export default function ProgrammeConfigTab() {
   // The referral-source switches (2026-10-08) are a second draft beside the items, shown by
   // `ProgrammeSourcesCard` and saved by the SAME bar — one Save, one pending count, one Discard.
   const [sourceDraft, setSourceDraft] = useState<SourceDraft>({})
-  // D16 (2026-10-27): "Ask for STPM-level results" — one more switch in the SAME draft and bar.
-  // null = untouched; the server's value is `config.asks_higher_results`.
-  const [higherDraft, setHigherDraft] = useState<boolean | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [programmeChoices, setProgrammeChoices] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
@@ -141,7 +151,6 @@ export default function ProgrammeConfigTab() {
       setConfig(c)
       setDraft(draftFrom(c.items))
       setSourceDraft(sourceDraftFrom(sourceSwitches(c)))
-      setHigherDraft(null)
       setProgrammeChoices(null)
     } catch (e) {
       const err = e as Error & { body?: { code?: string; programmes?: string[] } }
@@ -160,10 +169,7 @@ export default function ProgrammeConfigTab() {
   // The sources AND the switchable fixed choices (request #44): one draft, one diff, one PUT map.
   const switches = useMemo(() => sourceSwitches(config), [config])
   const pendingSources = useMemo(() => sourceChanges(switches, sourceDraft), [switches, sourceDraft])
-  const higherOn = higherDraft ?? config?.asks_higher_results ?? true
-  const higherChanged = config?.asks_higher_results !== undefined && higherDraft !== null
-    && higherDraft !== config.asks_higher_results
-  const pendingCount = pending.length + Object.keys(pendingSources).length + (higherChanged ? 1 : 0)
+  const pendingCount = pending.length + Object.keys(pendingSources).length
   const docs = useMemo(() => (config ? documents(config.items) : []), [config])
   const qs = useMemo(() => (config ? questions(config.items) : []), [config])
 
@@ -183,7 +189,6 @@ export default function ProgrammeConfigTab() {
       setDraft(draftFrom(config.items))
       setSourceDraft(sourceDraftFrom(sourceSwitches(config)))
     }
-    setHigherDraft(null)
     setOutcome({ kind: 'idle' })
   }
 
@@ -193,13 +198,10 @@ export default function ProgrammeConfigTab() {
     // Do NOT clear the outcome here on the way in — a refusal must never be wiped by a loader
     // (the sponsor-terms lesson). It is replaced only by this save's own result.
     try {
-      const c = higherChanged
-        ? await saveProgrammeConfiguration(pending, programme, { token }, pendingSources, higherOn)
-        : await saveProgrammeConfiguration(pending, programme, { token }, pendingSources)
+      const c = await saveProgrammeConfiguration(pending, programme, { token }, pendingSources)
       setConfig(c)
       setDraft(draftFrom(c.items))
       setSourceDraft(sourceDraftFrom(sourceSwitches(c)))
-      setHigherDraft(null)
       setOutcome({ kind: 'saved' })
     } catch (e) {
       const err = e as Error & { body?: { code?: string; item?: string; source?: string } }
@@ -287,17 +289,6 @@ export default function ProgrammeConfigTab() {
               {key === 'documents' && (
                 <ProgrammeSourcesCard sources={sources} fixed={config.fixed_sources} draft={sourceDraft}
                   onToggle={toggleSource} t={t} />
-              )}
-              {key === 'documents' && config.asks_higher_results !== undefined && (
-                <section className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-ground-200 bg-ground-0 px-5 py-4 shadow-sm"
-                  data-testid="asks-higher">
-                  <div className="min-w-0">
-                    <p className="font-medium text-ground-900">{t('admin.programme.config.asksHigher')}</p>
-                    <p className="mt-0.5 text-sm text-ground-500">{t('admin.programme.config.asksHigherHint')}</p>
-                  </div>
-                  <Toggle on={higherOn} label={t('admin.programme.config.asksHigher')}
-                    onClick={() => { setOutcome({ kind: 'idle' }); setHigherDraft(!higherOn) }} />
-                </section>
               )}
               <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"
                 aria-labelledby={`section-${key}`}>

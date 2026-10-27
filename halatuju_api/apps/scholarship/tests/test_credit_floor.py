@@ -147,8 +147,14 @@ class TestSTPMApplicantsAreUntouched(_Engine):
         return evaluate(make_application(cohort=c, student=s), c)
 
     def test_a_credit_floor_does_not_reject_an_stpm_applicant_with_no_spm_credits(self):
-        self.assertEqual(self._stpm().verdict, 'shortlisted')
         self.assertEqual(self._stpm(min_stpm_pngk=2.9).verdict, 'shortlisted')
+
+    def test_on_an_spm_only_intake_the_credit_floor_does_test_them_D16c(self):
+        # Amended 2026-10-27 (owner ruling D16c): a blank STPM floor makes the intake SPM-only, so
+        # the STPM holder faces the SPM bars on their SPM grades — here 0 credits against 6.
+        r = self._stpm()
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertEqual(r.reason, FLOOR + 'SPM-only intake: 0 at C or better (need 6)')
 
     def test_the_stpm_applicant_is_still_tested_on_the_PNGK(self):
         r = self._stpm(min_stpm_pngk=3.6)

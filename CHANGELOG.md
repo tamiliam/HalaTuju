@@ -47,6 +47,37 @@ on 2026-10-24).
   kept on a no-signal re-read, the IC path, the sweep, each command's pre-flight); the two command test
   classes now run with the flag on. Every change bitten. TD-407 closed.
 
+## Academic results follow the intake, not a per-gift switch (owner rulings D16b + D16c) - 2026-10-27
+
+Supersedes the D16 Configuration toggle (below). Whether an application's gift asks for STPM-level
+results is now INFERRED from its INTAKE: `cohort.min_stpm_pngk` set → it asks (D12/D14 mapping,
+`higher_owed`, reverse move, as before); blank → SPM-only. One place for the instruction.
+- **Reader** — `results_route.gift_asks_higher(application)` reads the intake floor (no intake →
+  True). `Programme.asks_higher_results` is no longer read or written anywhere; the column stays
+  (scholarship 0179) for a later drop. No migration.
+- **Gate (eligibility)** — `shortlisting._academic_ok`: an STPM / Matriculation / Asasi / Diploma
+  holder on an intake with NO `min_stpm_pngk` is tested on the intake's SPM GRADE bars (A-, B+,
+  credit count) on their SPM grades (`spm_grades_for`), reason "SPM-only intake: …" ("SPM grades
+  not provided" when they hold none and a grade bar is set) — no longer passed outright. NOT the
+  merit bar: `min_merit_score` stays SPM applicants only (D3; their co-curriculum / stream are
+  written only by the SPM step). With a floor set, and for SPM holders, unchanged. D5 runs first.
+- **Configuration** — the separate card, its toggle wiring and the API's GET/PUT field + audit line
+  are removed (a PUT carrying only `asks_higher_results` is `bad_items`). The Documents row "SPM
+  results slip" is renamed **Academic results** on this screen only (the student's card keeps its
+  name), drawn like household income: locked Always required, with a neutral "Not one upload — …"
+  note. The intake's "STPM - minimum PNGK" field (Rules / intake form) says that blank makes the
+  intake SPM-only. en/ms/ta (admin slice); org-admin Guide line.
+- Tests: `test_spm_only_intake_gate.py` (11, red first; review fixes pinned), `test_gift_asks_higher.py` (16, on the
+  intake floor), `ProgrammeConfigTab.academic.test.tsx` (5, replaces `.asksHigher`); the old "no
+  floor → pass" pins amended in `test_shortlisting`, `test_credit_floor` (+1) and `test_third_route`
+  (D3 now pinned with a floor set).
+- Live (read-only, 2026-10-27): b40-2026 (flagship) floor NULL, `2026-bpb-s` and
+  `bpb-gss-ipoh-2026` 2.0 — the inferred answer equals the old column on every cohort, so the
+  `higher_owed` set is unchanged (#254, #255, #265, #388). No application has a NULL cohort.
+  b40-2026 has no `submitted` application (the only status the rescore door re-runs); its open ones
+  — #132, #133 (profile_complete, STPM declared) and #140 (interviewed, SPM) — are past the gate,
+  decisions released, and are not re-gated.
+
 ## A gift chooses whether it asks for STPM-level results (owner ruling D16) - 2026-10-27
 
 BrightPath flagship (`brightpath-flagship`, b40-2026) is a POST-SPM programme; BrightPath Sabah is

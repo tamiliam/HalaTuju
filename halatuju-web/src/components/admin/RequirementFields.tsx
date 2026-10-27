@@ -63,7 +63,9 @@ export default function RequirementFields(
         value={draft.spmExtra} onChange={set('spmExtra')} />
       <Req id={`${idPrefix}-cr`} label={t('admin.years.req.spmC')} hint={t('admin.years.req.spmCHint')}
         value={draft.credits} onChange={set('credits')} />
-      <Req id={`${idPrefix}-p`} label={t('admin.years.req.pngk')}
+      {/* Owner ruling D16c: a blank STPM floor makes the intake SPM-only — the document rules ask
+          for the SPM slip only and the gate tests STPM-level holders on the SPM bars. */}
+      <Req id={`${idPrefix}-p`} label={t('admin.years.req.pngk')} hint={t('admin.years.req.pngkHint')}
         value={draft.pngk} onChange={set('pngk')} />
       <Req id={`${idPrefix}-m`} label={t('admin.years.req.merit')} hint={t('admin.years.req.meritHint')}
         value={draft.merit} onChange={set('merit')} />

@@ -55,16 +55,20 @@ _PASSED_PRE_U = frozenset({'stpm', 'matric', 'asasi'})
 
 
 def gift_asks_higher(application) -> bool:
-    """Owner ruling D16 (2026-10-27): does this application's GIFT ask for STPM-level results?
-    `Programme.asks_higher_results` — the ONE reader. False (BrightPath flagship, a post-SPM
-    programme): the gift is SPM-only for academic evidence — no D12/D14 mapping
-    (`map_documents`), no `higher_owed` slot / cap / ask, no "Move it to STPM results"
-    (`wrong_slip.move_offered`). True — and no programme at all (the platform floor) — is every
-    rule as before. It decides which DOCUMENTS are asked, never the eligibility gate (merit /
-    CGPA floor unchanged), and a submitted application's frozen snapshot is never rewritten."""
-    from .requirements import _programme_of
-    programme = _programme_of(application)
-    return True if programme is None else bool(getattr(programme, 'asks_higher_results', True))
+    """Owner rulings D16 + D16c (2026-10-27): does this application's gift ask for STPM-level
+    results? INFERRED from its INTAKE — the ONE place the instruction lives: `cohort.min_stpm_pngk`
+    set → it asks; blank → SPM only. (D16's per-gift `Programme.asks_higher_results` switch is
+    superseded and no longer read; its column waits for a later drop.)
+
+    False (BrightPath flagship's b40-2026, floor cleared — a post-SPM programme): SPM-only for
+    academic evidence — no D12/D14 mapping (`map_documents`), no `higher_owed` slot / cap / ask, no
+    "Move it to STPM results" (`wrong_slip.move_offered`); and the gate tests an STPM-level holder
+    on the SPM bars (`shortlisting._academic_ok`). True — and no intake at all (the platform floor)
+    — is every rule as before. A submitted application's frozen snapshot is never rewritten."""
+    cohort = getattr(application, 'cohort', None) if application is not None else None
+    if cohort is None or not hasattr(cohort, 'min_stpm_pngk'):     # a stub carrying no floor field
+        return True
+    return cohort.min_stpm_pngk is not None
 
 
 def destination(application) -> str:
