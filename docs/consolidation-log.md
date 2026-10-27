@@ -40,6 +40,8 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-25 TD-401/402 sprint (identity rests on the card's NRIC; an STR is income proof only when a card matched it, both routes, owner ruling A; three review rounds) — 014cae5b, 4f582222, 76a07ee7
 - 2026-10-26 Corpus gaps C1 + C2 (a known public TVET issuer reads not checked, owner rulings A–C; UiTM scores as a public university, OCR and PDF text layer; an officer's offer request held for the officer) — 1a2b4962, 95131a65, 1accaab9, a781b49a
 - 2026-10-26 Corpus gaps C3 + C4 (STPM results scored as STPM, owner rulings 1A/2A; the lead's live re-run of 43 documents — a job-flag incident wiped 16 scores first, TD-407) — 0ae5f431
+- 2026-10-27 TD-407 sprint (a re-read never wipes a genuineness score; hand-run re-read commands refuse without the flag, the hourly self-heal warns) — 9bdb163f, e65a9cd3
+- 2026-10-27 TD-404 sprint (ANAK = AK and BINTI = BT/BTE in every name match; a one-syllable STR name is "cannot judge" and asks for the IC-number page) — b1fe889c, 71e38f89, 0e03a678
 - 2026-10-26 TD-403 sprint (an STR counts as income proof only if it is from this year, strict; a later year's page is neutral `future`; a submitted case keeps its submission year; owner rulings; three review rounds) — 32a847f1, cafcfc43, 85921925, b67dd4f5, ed342354
 
 ## Reviews

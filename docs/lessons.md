@@ -1457,3 +1457,12 @@ the same had already happened, unnoticed, to the AI-outage re-reads two days ear
 job writes live data, diff its env against the service whose behaviour it borrows and pass the missing
 flags explicitly; check a sample of written rows for the field the run exists to set; and a write path
 must never replace a stored value with silence because a feature flag happens to be off. (Corpus C4)
+
+## 2026-10-27 — PowerShell code passed through Git Bash goes in a script file; a delete's effect is checked
+
+Removing a `node_modules` junction, `powershell -Command "$p='…'; [IO.Directory]::Delete($p)"` ran from Git Bash,
+which expanded `$p` (and every other `$`) to nothing before PowerShell saw it: the command errored on an empty
+path and deleted nothing — harmless by luck, and it read like a command that had run. **Rule:** any PowerShell
+that uses a `$` variable runs from a `.ps1` file (`powershell -File …`), never inline through bash; and after a
+destructive command, check that the thing is gone AND that its neighbour (here the main checkout's
+`node_modules`) is intact. (TD-404 close)

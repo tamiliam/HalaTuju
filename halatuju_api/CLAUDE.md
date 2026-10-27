@@ -940,7 +940,21 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**The corpus-gaps arc is DONE (2026-10-26): C3 + C4 LIVE (C3 `0ae5f431`, api-01147-9gw; C4 the lead's live
+**TD-407 and TD-404 are LIVE (2026-10-27; TD-407 `9bdb163f` + `e65a9cd3`, api-01151-gmw; TD-404 `b1fe889c` +
+`71e38f89` + `0e03a678`; retro `docs/retrospectives/retrospective-2026-10-27-td407-td404.md`).** A re-read never
+replaces a stored genuineness score with nothing (`genuineness.bands.keep_stored_authenticity`); the hand-run
+re-read commands refuse without the flag, the hourly self-heal warns. Every name match treats ANAK/AK and
+BT/BTE as connectors; a household STR one romanised syllable from a card is "cannot judge" and, with no IC
+number on it, asks for the IC-number page (`str_needs_recipient_ic`). `VERDICT_ENGINE_VERSION` 2026-10-27.3.
+Register: **134 open**.
+- **Next: TD-409 (Now tier)** — after submission an unmatched STR must not close an STR request (`pending`, not
+  `ok`), plus a Check-2 ask for a near-miss STR's IC-number page.
+- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Then TD-408** (order-aware patronymics; the father-name splitter learns ANAK) and **TD-399** (OpenAI fallback
+  for document reads, after the owner's privacy ruling).
+- Proposed: a code-health split of the genuineness wiring out of `vision.py` (at its allowance twice running).
+
+**Earlier — the corpus-gaps arc is DONE (2026-10-26): C3 + C4 LIVE (C3 `0ae5f431`, api-01147-9gw; C4 the lead's live
 re-run of 43 documents; retro `docs/retrospectives/retrospective-2026-10-26-corpus-c3-c4.md`).** STPM results
 are scored as STPM (`genuineness/stpm_doc.py`, MODEL_VERSION 1.9.0) in the results and semester-result
 slots; the online checker page is not a result document (ruling 1A), a certified copy is (2A). C4: 11 UiTM
@@ -948,11 +962,6 @@ offers → genuine, 17 STPM documents → genuine, IKBN d3465 → not checked. �
 JOB must carry the service flags — without `DOC_GENUINENESS_CHECK_ENABLED` it wipes stored scores
 ("How a change reaches production" item 11; TD-407, Now tier). Only the data-gated TVET families remain.
 Register: **134 open** (TD-407 raised).
-- **Next: TD-404 soon** (Sabah/Sarawak `AK`/`ANAK` names — every name match, adversarial review).
-- **Then the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
-- **Then TD-399** — OpenAI fallback for document reads, after the owner's privacy ruling (a second
-  processor) and an eval run on the corpus.
-- **TD-407 (Now tier)** — the re-read guard; small, worth slotting before the next live re-read.
 
 **Earlier — corpus gaps C1 + C2 are LIVE (2026-10-26; C1 `1a2b4962` + `95131a65`, api-01144-sfg / web-00988-nhg;
 C2 `1accaab9` + `a781b49a`; retro `docs/retrospectives/retrospective-2026-10-26-corpus-c1-c2.md`).** C1: a
