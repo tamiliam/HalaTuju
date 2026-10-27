@@ -11,7 +11,7 @@ import re
 from django.utils import timezone
 
 from ..read_errors import ic_second_opinion_deferred, read_deferred
-from .buckets import _name_bucket, _nric_bucket
+from .buckets import _name_bucket, _nric_bucket, _romanised_near_miss
 from .identity_checks import _member_ic_doc, chain_verified_earner
 from .relationships import _MEMBER_ORDER
 
@@ -184,6 +184,11 @@ def _str_recipient_household_match(application, name, nric, tagged_member='', re
             continue
         ic_name = (getattr(ic, 'vision_name', '') or '').strip()
         ic_nric = (getattr(ic, 'vision_nric', '') or '').strip()
+        # TD-404: a name one romanised syllable away from this card (TAN AH KOW / TAN AH KAU) is not a
+        # comparison this card can settle — counted as "not compared on the name", the F1 "cannot judge"
+        # path (the IC/NRIC is asked), never a stranger's positive mismatch. NRIC still decides alone.
+        if ic_name and name_hit is None and _romanised_near_miss(name, ic_name):
+            ic_name = ''
         deferred = ic_second_opinion_deferred(ic)
         earner_deferred = earner_deferred or (deferred and m == tagged_member)
         clean_name_seen = clean_name_seen or (bool(ic_name) and not deferred)

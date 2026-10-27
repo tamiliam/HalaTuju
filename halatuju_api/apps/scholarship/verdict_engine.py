@@ -86,8 +86,7 @@ from .genuineness.offer_issuers import not_checked_issuer
 #                  TD-151: a payslip figure outside RM100-20,000 a month is a misread (no figure).
 #   2026-10-03.1 — TD-323: an EPF-implied salary under RM100/month is no BAND figure (earner falls to a declared
 #                  amount, else verify at interview). No ceiling; evidence/gate/divergence unchanged (review F1).
-#   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (a different one →
-#                  pathway_confirm, red until answered); Saluran Terbuka (SATU) reads red at once.
+#   2026-10-04.1 — TD-145: a one-campus pick compares the offer's university (another → pathway_confirm); SATU red.
 #   2026-10-24.1 — AI outage: a read not yet made is no longer "unreadable" (no student ask).
 #   2026-10-25.1 — TD-390: a card our outage left half-read is "service down", never a mismatch.
 #   2026-10-25.2 — TD-401: an IC with no NRIC read is unreadable (a gap, not a pass on the name).
@@ -96,7 +95,8 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-26.3 — third route S3: the higher-results Academic card; the SPM slip reads spm_grades_for.
 #   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared;
 #   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
-VERDICT_ENGINE_VERSION = '2026-10-27.2'
+#   .3 — TD-404: ANAK=AK, BINTI=BT/BTE in every name match; a one-syllable STR name is "cannot judge".
+VERDICT_ENGINE_VERSION = '2026-10-27.3'
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-404 — Sabah/Sarawak and Chinese names: ANAK = AK, BINTI = BT/BTE; one romanised syllable is not a stranger - 2026-10-27
+
+BrightPath Sabah serves Bumiputra students (Iban, Kadazan, Dusun, Bajau, Murut) and Chinese families,
+whose names reached the matchers in forms they did not know.
+- **One normaliser, every match.** `vision._NAME_NOISE` — read by every name comparison (the student's IC,
+  consent, the STR, birth certificate / guardianship rows, payslip / EPF / bill holders, the offer and slip
+  names, the anomaly flags, the coach) — now strips the patronymic connector ANAK and its short form AK, and
+  BT / BTE for BINTI, exactly as it already stripped BIN / BINTI / A/L / AL. "JOHNNY AK GABRIEL" is "JOHNNY
+  ANAK GABRIEL" (was a mismatch); "SITI BT ALI" is "SITI BINTI ALI" (was partial). A pure equivalence: a
+  comparison can only become more lenient. B. for BIN is NOT added (a lone "B" is too often an initial).
+- **One romanised syllable is "cannot judge", not "stranger".** A household STR whose recipient name differs
+  from a household card in ONE short token sharing its first letter (TAN AH KOW / TAN AH KAU) no longer
+  counts as a positive mismatch against that card: the existing F1 path asks for the IC instead of
+  `str_not_household`. A different given name (KOW / MENG, KAU / KENNETH) and an NRIC mismatch still refuse.
+  The student's own IC keeps its exact spelling. `VERDICT_ENGINE_VERSION` 2026-10-27.3.
+- **Not changed:** the extraction anchors that find a name LINE or split a patronymic (MyKad name line, slip,
+  offer, birth-certificate parse, the father-name splitter) — widening them changes what is read.
+- **Tests:** `test_td404_name_forms.py`; every change bitten. TD-404 closed.
+
 ## TD-407 — a re-read never wipes a genuineness score; re-read commands refuse to run without the flag - 2026-10-27
 
 Corpus C4's first live re-read ran through a Cloud Run job without the service's

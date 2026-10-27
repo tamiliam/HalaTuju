@@ -38,8 +38,10 @@ _NAME_NOISE = re.compile(
     # The slash markers tolerate stray whitespace around the slash ("A/ P", "A / P",
     # "A /P") — a student who types their name that way otherwise leaves orphan single
     # letters "a"/"p" in the token set, which makes the EXACT name_match read a clean
-    # subset → a false 'partial'/mismatch on the IC + offer letter (#20).
-    r"\b(bin|binti|a\s*/\s*l|a\s*/\s*p|al|ap|d\s*/\s*o|s\s*/\s*o|@"
+    # subset → a false 'partial'/mismatch on the IC + offer letter (#20). TD-404: ANAK (Iban/Bidayuh/
+    # Kadazan patronymic "son/daughter of") and its short form AK, and BT/BTE for BINTI, are the same
+    # connectors as BIN/BINTI — stripped the same way, so "JOHNNY AK GABRIEL" is "JOHNNY ANAK GABRIEL".
+    r"\b(bin|binti|bt|bte|anak|ak|a\s*/\s*l|a\s*/\s*p|al|ap|d\s*/\s*o|s\s*/\s*o|@"
     r"|sdr|sdri|saudara|saudari|encik|puan|cik|tuan|dr|datuk|dato|datin)\b",
     flags=re.IGNORECASE,
 )

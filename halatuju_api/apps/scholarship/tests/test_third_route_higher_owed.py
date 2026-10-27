@@ -56,7 +56,8 @@ class TestTheShapeIs388s(TestCase):
         self.assertEqual(results_route.held_kind(app), 'stpm')
 
     def test_the_version_moved(self):
-        self.assertEqual(VERDICT_ENGINE_VERSION, '2026-10-27.2')
+        # #388 shipped at 2026-10-27.2; a later bump (TD-404: .3) must not break this pin.
+        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-27.2')
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
