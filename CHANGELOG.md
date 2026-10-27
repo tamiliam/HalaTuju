@@ -135,8 +135,10 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
 - **The salary scorer (salary_doc 1.2.0).** `govt` now needs a real government-payslip marker: Jabatan
   Akauntan Negara / JANM (a whole word), the title Penyata Gaji / e-Penyata, or a GRED CODE ("GRED N19") —
   or a PENSION-statement marker (review of d0d5d079: JPA pension statements are computer-printed and never
-  stamped): JABATAN PERKHIDMATAN AWAM in full, jpa.gov.my, KWAP (a whole word), or "Penyata Bayaran" printed
-  with "Pencen". 'KUMPULAN PERKHIDMATAN' and a bare 'PERKHIDMATAN AWAM' are gone (every income form's sector
+  stamped) — the STATEMENT layout, never a single word (review round 2): a pension issuer word (JABATAN
+  PERKHIDMATAN AWAM in full, KWAP or PENCEN as whole words) TOGETHER WITH a statement marker (Penyata Bayaran,
+  No. Akaun Pencen, jpa.gov.my), so a self-written statement naming JPA in an occupation line, or "pencen
+  KWAP", is not a government slip. 'KUMPULAN PERKHIDMATAN' and a bare 'PERKHIDMATAN AWAM' are gone (every income form's sector
   field carries them). On the 99 eval payslips: the two JPA pension statements and a PERKESO "Penyata Bayaran
   Faedah" (Pencen Penakat) read govt; the 7 lost "govt" slips are declaration forms; private, Singapore and
   gig slips do not move.
@@ -144,9 +146,16 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
   Pendapatan, Akuan / Pengisytiharan Pendapatan, Akuan Berkanun, statutory / income declaration…) or the
   declarant's own oath ("saya mengaku", "I hereby declare"), in the salary-slip OR the support-document slot
   (the support slot is now scored for this alone) → `suspect`, `doc_seen='declaration'`, never a payslip family.
-- **The extraction reads the approval** — `issuer_header`, `approver_name`, `approver_title`,
-  `has_stamp_or_signature` — for both slots (`income_declaration.APPROVAL_FIELDS` + a prompt hint).
-  `results_doc.MODEL_VERSION` 1.12.0.
+- **The approval is read off the IMAGE** — `issuer_header`, `approver_name`, `approver_title`,
+  `has_stamp_or_signature` ("stamp" / "signature" / "no") — by ONE multimodal Gemini call per informal income
+  document (`income_declaration.read_approval`, hooked into the text read's path; the money fields stay the
+  text read's). Review round 2: real forms print their box labels ("Cop dan tandatangan", "Tandatangan dan Cop
+  Rasmi") whether the box is stamped or EMPTY, and a hand signature has no text, so a text read could pass an
+  unsigned #374 form as "stamp" and fail a signed letter. The prompt says a stamp must be an actual ink /
+  rubber-stamp impression and a signature handwritten; printed labels, logos, QR codes and empty boxes are
+  neither. **Cost: one extra Gemini image call (plus one image download on the text path) per
+  `income_support_doc` and per payslip whose text reads informal / declaration; formal payslips, EPF and every
+  other type cost nothing extra.** `results_doc.MODEL_VERSION` 1.12.0.
 - **The rule (`income_declaration`), owner ruling 2A (2026-10-28): EVERY informal income document** — every
   supporting letter (penghulu / JKKK / employer letter, a declaration), and a payslip the salary model reads as
   INFORMAL or as a declaration form — counts as income shown ONLY with an issuing body AND an approver: a
@@ -162,8 +171,9 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
 - **Not yet checked ≠ missing (TD-394 + never blame).** A document read before the approval fields existed
   has none of them: it does NOT count, the gate shows the existing "our check is still running — please try
   again later" (`ic_service_down`), never "get it signed", Check 2 asks nothing about it (`check2_deferred`),
-  and the officer's drawer says "read before the approver check — re-read it". Every read since stores all
-  four keys (`vision._sanitize_extracted_fields`), so the two states stay apart. **The lead re-reads the
+  and the officer's drawer says "read before the approver check — re-read it". A successful image read
+  stores all four keys; if it fails on OUR side (no image, the call errors) it stores none — the document
+  stays "not yet checked", never "no" — so the two states stay apart. **The lead re-reads the
   existing letters and informal / declaration / govt slips live right after deploy, before families are
   asked**; as a safety net the hourly self-heal sweep (`read_retry.approval_unchecked_documents`, run by
   `reprocess_unread_ic_documents`) also re-reads any live unchecked one on an open case — once each

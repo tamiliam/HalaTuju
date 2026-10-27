@@ -15199,9 +15199,16 @@ e-Penyata, a GRED code): the sector field every income form carries no longer re
   signatory is needed when an official stamp is visible. Kept: a header is still required; a hand signature
   WITHOUT a stamp still needs a named or titled signer; a QR-only or unmarked letter still fails. The read
   answers `has_stamp_or_signature` = "stamp" / "signature" / "no" (an older "yes" counts as a signature).
+- **The approval is read from the IMAGE (review round 2):** one multimodal Gemini call per informal income
+  document (`income_declaration.read_approval`) — a text read cannot tell a stamped box from an empty one
+  whose label is printed, nor see a hand signature. A failure on our side stores nothing (still "not yet
+  checked"), never "no". Cost: one extra Gemini image call per support letter and per informal /
+  declaration payslip; formal payslips and EPF cost nothing extra.
 - **JPA / PERKESO pension statements stay formal (review of d0d5d079):** they are computer-printed and never
-  stamped, so the salary model reads them `govt` on their own markers (JABATAN PERKHIDMATAN AWAM in full,
-  jpa.gov.my, KWAP, "Penyata Bayaran" + "Pencen") and the approver rule never applies to them.
+  stamped, so the salary model reads them `govt` on their STATEMENT layout — a pension issuer word
+  (JABATAN PERKHIDMATAN AWAM in full, KWAP, PENCEN) together with a statement marker (Penyata Bayaran,
+  No. Akaun Pencen, jpa.gov.my); a single word in a self-written statement is not enough (review round 2) —
+  and the approver rule never applies to them.
 **Not yet checked (our decision, against TD-394):** a document read BEFORE the approval fields existed has
 none of them. It does NOT count — a money gate never passes on what nobody has checked — and the family is
 NOT blamed: the gate shows the existing "our check is still running — please try again later"

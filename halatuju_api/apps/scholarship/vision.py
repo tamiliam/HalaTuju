@@ -25,7 +25,7 @@ from .read_errors import (IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, OCR_
                           UNPARSEABLE_RESPONSE, is_ai_service_error, is_ocr_service_error,
                           model_rejected_document, read_deferred)
 from .pdf_pages import pdf_first_page_png as _pdf_first_page_png, pdf_text_layer as _pdf_text_layer
-from .income_declaration import APPROVAL_FIELDS as _APPROVAL, APPROVAL_HINT as _APPROVAL_HINT   # #374
+from .income_declaration import read_approval as _read_approval   # #374: the approval is read off the IMAGE
 from .higher_results import HINT as _HIGHER_HINT, SCHEMA as _HIGHER_SCHEMA, extract as _higher_extract
 
 logger = logging.getLogger(__name__)
@@ -1303,7 +1303,7 @@ _FIELD_SCHEMAS = {
                         'year': _STR, 'amount': _STR, 'source_type': _STR_SOURCE}),
     'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'currency': _STR,
                                 'gross_income': _STR, 'net_income': _STR,
-                                'gross_income_ytd': _STR, 'period': _STR, **_APPROVAL}),
+                                'gross_income_ytd': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'employer_number': _STR,
                         'latest_balance': _STR, 'last_contribution': _STR,
                         'monthly_contribution': _STR, 'months_counted': _STR,
@@ -1370,7 +1370,7 @@ _FIELD_SCHEMAS = {
     # letter it is. A blank/wrong image reads no fields → student_verdict 'wrong_doc' →
     # does NOT clear the declared-income gap (see income_engine.has_income_support_doc).
     'income_support_doc': _doc_schema({'name': _STR, 'nric': _STR, 'amount': _STR,
-                                       'period': _STR, 'issuer': _STR, 'kind': _STR, **_APPROVAL}),
+                                       'period': _STR, 'issuer': _STR, 'kind': _STR}),
     # V4 — a school-leaving certificate (Sijil Berhenti Sekolah): the student's name + NRIC, the
     # school, the conduct rating (kelakuan), and the co-curricular / leadership roles + remarks
     # (activities) — the owner-specified set (2026-07-15). The name is matched against the student
@@ -1553,7 +1553,7 @@ _DOC_HINTS = {
                     'number (RM326.00 must not become 32600). Also: the take-home pay (net) can '
                     'never exceed the gross — if your reading makes net > gross, you have likely '
                     'mis-read a column; re-read. '
-                    'Leave a field empty if it is not present.' + _APPROVAL_HINT),
+                    'Leave a field empty if it is not present.'),
     'epf': (' This is a Malaysian EPF/KWSP statement ("PENYATA AHLI"). "name" = the member\'s '
             'full name; "nric" = "No. Kad Pengenalan" (keep the 12 digits). "employer_number" = '
             '"No. Majikan" EXACTLY as printed, INCLUDING when it is all zeros ("000000000" — that '
@@ -1612,7 +1612,7 @@ _DOC_HINTS = {
                            '(as printed, e.g. "RM1,200"); "period" = the month/period it covers if '
                            'shown; "issuer" = who issued it (employer / bank / penghulu / JKKK); '
                            '"kind" = one of "employer_letter", "bank_statement", "community_letter", '
-                           'else "other". Leave a field empty if it is not present or not legible.' + _APPROVAL_HINT),
+                           'else "other". Leave a field empty if it is not present or not legible.'),
     'semester_result': (' This is a post-SPM SEMESTER result — an STPM MPM slip ("Keputusan '
                         'Peperiksaan Semester"), a Matriculation/Politeknik/university semester '
                         'result slip, or a student-portal results screenshot. Return: "name" = the '
@@ -1786,8 +1786,6 @@ def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
     downstream — never a confident wrong-person mismatch. Pure; never raises."""
     if not isinstance(data, dict):
         return data
-    if doc_type in ('salary_slip', 'income_support_doc'):   # #374: a read that ran ALWAYS carries the approval
-        data = {**dict.fromkeys(_APPROVAL, ''), **data}     # keys, so "never checked" stays tellable from "none"
     if doc_type in ('results_slip', 'higher_results') and data.get('candidate_name'):
         data['candidate_name'] = _strip_name_label(data['candidate_name'])
     elif doc_type == 'offer_letter' and data.get('reporting_date'):
@@ -2130,6 +2128,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
             else:
                 ex = extract_document_fields(r['text'], doc.doc_type)
                 ex['capture'] = 'ai'
+            ex = _read_approval(doc, ex, r['text'], _image)   # #374: informal income docs — one image call
 
     if ex['error']:   # OUR AI outage is a deferred read ('review_manually'), never the student's 'unreadable'
         svc = is_ai_service_error(ex['error'])

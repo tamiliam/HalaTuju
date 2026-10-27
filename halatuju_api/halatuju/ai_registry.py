@@ -70,6 +70,10 @@ JOBS = [
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
      'module': 'apps/scholarship/genuineness/supporting_doc.py'},
+    {'key': 'income_approval', 'label': 'Who approved this informal income document',   # #374 / ruling 2A
+     'seam': SEAM_JSON, 'provider': GEMINI,
+     'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
+     'module': 'apps/scholarship/income_declaration.py'},
     {'key': 'interview_gaps', 'label': 'What to ask at the interview',
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',

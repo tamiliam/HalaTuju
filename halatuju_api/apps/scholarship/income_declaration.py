@@ -10,16 +10,17 @@ covers every declared amount.) Ruling 2A: EVERY informal document, not only a re
 reads as the INFORMAL family or as a DECLARATION form (`authenticity.doc_seen`). A formal payslip, an EPF
 statement and an unscored payslip are not (no genuineness signal is our gap, not the family's — TD-410).
 
-**What the read must find**, in four fields the extraction schema gained for both slots (`APPROVAL_FIELDS`):
-an issuing body (`issuer_header`) and an approver — a visible official stamp / company chop on its own
+**What the read must find**, in four fields read off the document's IMAGE by one multimodal call
+(`APPROVAL_FIELDS`, `read_approval` — review round 2: OCR text cannot tell a stamped box from an empty one
+whose label is printed, nor see a hand signature): an issuing body (`issuer_header`) and an approver — a visible official stamp / company chop on its own
 (owner ruling 3A, 2026-10-28), or a hand signature by a named or titled person (`approver_name` /
 `approver_title`; `has_stamp_or_signature` reads "stamp" / "signature" / "no").
 
 **Never checked is not "missing"** (TD-394: never pass on what nobody has read — and never blame the
 family for OUR gap). A document read before these fields existed carries none of them (`approval_unchecked`):
 it does not count, and the family is told we are still checking (the gate's existing "try again later"),
-never "get it signed"; Check 2 asks nothing about it until it is re-read. Every read since stores all four
-keys (`vision._sanitize_extracted_fields`), so the two states stay tellable apart.
+never "get it signed"; Check 2 asks nothing about it until it is re-read. A successful image read stores
+all four keys and a failed one (our side) stores none, so the two states stay tellable apart.
 
 One reader for every door: `income_shown.proof_flagged` (so the gate, the cluster, the verdict, Check 2 and
 TD-409's hold), the student's blocker (`member_approval_state`), the coach (`approval_coach`) and the
@@ -28,18 +29,55 @@ officer's drawer reason (`missing_reason`).
 from .genuineness.declaration_doc import DECLARATION
 
 _STR = {'type': 'string'}
-#: Added to the `salary_slip` and `income_support_doc` extraction schemas (`vision._FIELD_SCHEMAS`).
+#: The four approval fields — read from the document's IMAGE (`read_approval`), never from its OCR text.
 APPROVAL_FIELDS = {'issuer_header': _STR, 'approver_name': _STR, 'approver_title': _STR,
-                   'has_stamp_or_signature': _STR}
-#: Appended to both slots' extraction prompts.
-APPROVAL_HINT = (
-    ' Also return: "issuer_header" = the issuing body printed as the document\'s letterhead / header '
-    '(an employer, school, village committee, government office) — empty if there is none, and never '
-    'the form\'s own title; "approver_name" = the name of the person who CONFIRMED / APPROVED the '
-    'document (not the person declaring the income); "approver_title" = their position (e.g. Ketua '
-    'Kampung, Penghulu, Guru Besar, Pengurus); "has_stamp_or_signature" = "stamp" if an official '
-    'stamp / company chop is visible (with or without a signature), "signature" if only a hand '
-    'signature is visible, else "no". A printed QR code or logo is neither.')
+                   'has_stamp_or_signature': {'type': 'string', 'enum': ['stamp', 'signature', 'no']}}
+_APPROVAL_SCHEMA = {'type': 'object', 'properties': APPROVAL_FIELDS, 'required': list(APPROVAL_FIELDS)}
+#: Review round 2: a TEXT read cannot see ink. Real forms print their box labels ("Cop dan tandatangan",
+#: "Tandatangan dan Cop Rasmi") whether the box is stamped or EMPTY, and a hand signature has no text at
+#: all — so the approval is read from the picture, in its own multimodal call.
+APPROVAL_PROMPT = (
+    'This image is a Malaysian income document (an employer\'s or village head\'s letter, an informal '
+    'payslip, or an income declaration form). Look at the PICTURE, not just the words. Return: '
+    '"issuer_header" = the issuing body printed as the letterhead / header (an employer, school, village '
+    'committee, government office) — empty if there is none, and never the form\'s own title; '
+    '"approver_name" = the name of the person who CONFIRMED / APPROVED it (not the person declaring the '
+    'income), empty if none; "approver_title" = their position (e.g. Ketua Kampung, Penghulu, Guru Besar, '
+    'Pengurus), empty if none; "has_stamp_or_signature" = "stamp" ONLY if an actual ink or rubber-stamp '
+    'impression / company chop is visible on the page (with or without a signature), "signature" ONLY if '
+    'a HANDWRITTEN signature is visible and no stamp, else "no". Printed labels such as "Cop dan '
+    'tandatangan", printed logos, QR codes and EMPTY signature or stamp boxes are NOT a stamp and NOT a '
+    'signature.')
+_INFORMAL_TEXT_FAMILIES = frozenset({'informal', 'declaration'})
+
+
+def read_approval(doc, ex, ocr_text, image_fn):
+    """Add the four approval fields to a fresh read ``ex`` of an INFORMAL income document — every
+    `income_support_doc`, and a payslip whose OCR text the salary model reads as informal or a declaration
+    (`genuineness.declaration_doc.income_doc_genuineness`, deterministic, no call) — from ONE multimodal
+    Gemini call on the document's image (`image_fn`, the read's own fetch-once helper). ⚠ COST: one extra
+    Gemini image call per such document (formal payslips, EPF and every other type: none).
+
+    A read that failed, or a document of another kind, comes back unchanged. If the image cannot be had or
+    the call fails — our side, never the family's — the fields are NOT added, so the document stays "not
+    yet checked" (`approval_unchecked`): no count, no blame, and the hourly sweep tries once more."""
+    if ex.get('error') or not isinstance(ex.get('fields'), dict) or \
+            getattr(doc, 'doc_type', '') not in ('salary_slip', 'income_support_doc'):
+        return ex
+    if doc.doc_type == 'salary_slip':
+        from .genuineness.declaration_doc import income_doc_genuineness
+        if income_doc_genuineness(ocr_text or '', 'salary_slip').get('family') not in _INFORMAL_TEXT_FAMILIES:
+            return ex
+    from . import vision
+    data = image_fn()
+    img, mime = vision._as_image_for_gemini(data, getattr(doc, 'content_type', '')) if data else (None, '')
+    if img is None:
+        return ex
+    got = vision._call_gemini_json(APPROVAL_PROMPT, _APPROVAL_SCHEMA, image=img, mime_type=mime)
+    if not isinstance(got, dict) or got.get('_error'):
+        return ex
+    approval = {k: (got.get(k) if isinstance(got.get(k), str) else '') for k in APPROVAL_FIELDS}
+    return {**ex, 'fields': {**ex['fields'], **approval}}
 
 #: The payslip families that are informal income documents (`genuineness.salary_doc` / `declaration_doc`).
 _INFORMAL_SLIP_FAMILIES = frozenset({'informal', DECLARATION})

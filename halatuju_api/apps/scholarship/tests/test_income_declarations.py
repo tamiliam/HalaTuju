@@ -54,21 +54,25 @@ class TheSalaryScorer(SimpleTestCase):
                 self.assertEqual((g['status'], g['family']), ('genuine', 'govt'))
 
     def test_a_government_pension_statement_is_govt(self):
-        """Review of d0d5d079: a JPA / PERKESO pension statement is computer-printed and never stamped, so
-        it must stay a formal family — the issuer, its site, KWAP, or the title "Penyata Bayaran" + "Pencen"."""
+        """Review of d0d5d079 / round 2: a JPA / PERKESO pension STATEMENT is computer-printed and never
+        stamped, so it stays a formal family — a pension issuer word WITH a statement marker."""
         from apps.scholarship.genuineness.salary_doc import salary_genuineness
         for text in ('JABATAN PERKHIDMATAN AWAM MALAYSIA\nPENYATA BAYARAN BAGI TAHUN 2026\nPENCEN BULANAN 1,200.00\n'
                      'JUMLAH PENDAPATAN 1,200.00',
-                     'JABATAN PERKHIDMATAN AWAM MALAYSIA\nPENDAPATAN 1,200.00',
-                     'www.jpa.gov.my\nPENDAPATAN 1,200.00', 'KWAP\nPENDAPATAN BERSIH 900.00',
+                     'JABATAN PERKHIDMATAN AWAM MALAYSIA\nwww.jpa.gov.my\nPENDAPATAN 1,200.00',
+                     'KWAP\nNo. Akaun Pencen: 000000\nPENDAPATAN BERSIH 900.00',
                      'PERKESO\nPENYATA BAYARAN FAEDAH 2026\nPENCEN PENAKAT\nJUMLAH PENDAPATAN 687.50'):
             with self.subTest(text[:14]):
                 g = salary_genuineness(text)
                 self.assertEqual((g['status'], g['family']), ('genuine', 'govt'))
 
-    def test_a_form_s_sector_field_or_half_a_pension_title_is_not_govt(self):
+    def test_a_form_s_sector_field_or_a_lone_pension_word_is_not_govt(self):
+        """Round 2: a self-written statement naming JPA in an occupation line, or "pencen KWAP" in a line,
+        has no statement layout — not govt; nor half a pension title, nor the site alone."""
         from apps.scholarship.genuineness.salary_doc import score_family
         for text in (UNTITLED, 'MAKLUMAT\nSektor: Perkhidmatan Awam\nPENDAPATAN BERSIH 800',
+                     'MAKLUMAT IBU BAPA\nPekerjaan: Jabatan Perkhidmatan Awam\nPENDAPATAN BERSIH 900',
+                     'MAKLUMAT\nSumber: pencen KWAP\nPENDAPATAN BERSIH 900', 'www.jpa.gov.my\nPENDAPATAN 800',
                      'PENYATA BAYARAN\nPENDAPATAN 800', 'BAYARAN PENCEN\nPENDAPATAN 800'):
             with self.subTest(text[:14]):
                 self.assertIs(score_family(text)['govt'], False)
@@ -88,23 +92,85 @@ class TheSalaryScorer(SimpleTestCase):
 
 class TheExtraction(SimpleTestCase):
 
-    def test_both_slots_read_the_approval(self):
-        """The four fields and the prompt hint reach both income slots (Gemini reads the image)."""
-        from apps.scholarship import vision
-        from apps.scholarship.income_declaration import APPROVAL_FIELDS, APPROVAL_HINT
-        for slot in ('salary_slip', 'income_support_doc'):
-            with self.subTest(slot):
-                self.assertLessEqual(set(APPROVAL_FIELDS), set(vision._FIELD_SCHEMAS[slot]['properties']))
-                self.assertIn(APPROVAL_HINT, vision._DOC_HINTS[slot])
+    """Review round 2: the approval is read off the IMAGE (one multimodal call), never the OCR text — a form
+    prints "Cop dan tandatangan" whether its box is stamped or EMPTY, and a hand signature has no text."""
 
-    def test_a_read_that_ran_always_carries_the_approval_keys(self):
-        """So 'never checked' (a read before the rule) stays tellable from 'checked, nothing found'."""
+    def _doc(self, doc_type='income_support_doc'):
+        return ApplicantDocument(doc_type=doc_type, content_type='image/jpeg', vision_fields={})
+
+    def _read(self, doc, answer, *, text='SURAT PENGESAHAN\nRM800', image=b'img', ex=None):
+        from unittest import mock
+        from apps.scholarship.income_declaration import read_approval
+        ex = ex if ex is not None else {'fields': {'amount': 'RM800'}, 'warnings': [], 'error': ''}
+        with mock.patch('apps.scholarship.vision._call_gemini_json', return_value=answer) as gem:
+            out = read_approval(doc, ex, text, lambda: image)
+        return out, gem
+
+    def test_the_text_read_no_longer_asks_for_the_approval(self):
         from apps.scholarship import vision
-        from apps.scholarship.income_declaration import APPROVAL_FIELDS
+        from apps.scholarship.income_declaration import APPROVAL_FIELDS, APPROVAL_PROMPT
         for slot in ('salary_slip', 'income_support_doc'):
             with self.subTest(slot):
-                self.assertLessEqual(set(APPROVAL_FIELDS), set(vision._sanitize_extracted_fields(slot, {'name': 'X'})))
-        self.assertNotIn('issuer_header', vision._sanitize_extracted_fields('epf', {'name': 'X'}))
+                self.assertFalse(set(APPROVAL_FIELDS) & set(vision._FIELD_SCHEMAS[slot]['properties']))
+        for words in ('EMPTY signature or stamp boxes', 'HANDWRITTEN', 'ink or rubber-stamp impression'):
+            self.assertIn(words, APPROVAL_PROMPT)
+
+    def test_an_empty_labelled_box_is_not_approval(self):
+        """The model's answer for an empty "Cop dan tandatangan" box ("no") is checked — and not approved."""
+        from apps.scholarship.income_declaration import approval_counts, approval_missing
+        out, gem = self._read(self._doc(), {'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_name': '',
+                                            'approver_title': '', 'has_stamp_or_signature': 'no'})
+        self.assertEqual(gem.call_count, 1)
+        self.assertEqual(gem.call_args.kwargs['image'], b'img')
+        doc = self._doc()
+        doc.vision_fields = {'fields': out['fields']}
+        self.assertEqual(approval_missing(doc), ('approver',))
+        self.assertIs(approval_counts(doc), False)
+
+    def test_a_stamp_impression_approves(self):
+        from apps.scholarship.income_declaration import approval_counts
+        out, _gem = self._read(self._doc(), {'issuer_header': 'KEDAI CONTOH', 'approver_name': '',
+                                             'approver_title': '', 'has_stamp_or_signature': 'stamp'})
+        doc = self._doc()
+        doc.vision_fields = {'fields': out['fields']}
+        self.assertIs(approval_counts(doc), True)
+        self.assertEqual(out['fields']['amount'], 'RM800')                 # the money fields stay the text read's
+
+    def test_our_failure_leaves_it_unchecked_never_no(self):
+        from apps.scholarship.income_declaration import APPROVAL_FIELDS, approval_unchecked
+        for answer, image in (({'_error': 'Gemini error: 402 credit'}, b'img'), ({'has_stamp_or_signature': 'stamp'}, None)):
+            with self.subTest(image=image):
+                out, _gem = self._read(self._doc(), answer, image=image)
+                self.assertFalse(set(APPROVAL_FIELDS) & set(out['fields']))
+                doc = self._doc()
+                doc.vision_fields = {'fields': out['fields']}
+                self.assertIs(approval_unchecked(doc), True)
+
+    def test_the_read_path_adds_the_image_approval(self):
+        """Wired: a support letter's field read ends with the image approval read (one image call)."""
+        from unittest import mock
+        from apps.scholarship import vision
+        doc = ApplicantDocument(doc_type='income_support_doc', content_type='image/jpeg', storage_path='x',
+                                vision_fields={})
+        doc.save = lambda *a, **k: None
+        answer = {'name': 'AHMAD', 'amount': 'RM800', 'issuer': 'JKKK', 'kind': 'community_letter',
+                  'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_name': 'ENCIK CONTOH',
+                  'approver_title': 'Ketua Kampung', 'has_stamp_or_signature': 'stamp', 'warnings': []}
+        ocr = {'text': 'SURAT PENGESAHAN PENDAPATAN\nRM800', 'words': None, 'image': b'img', 'error': None}
+        with mock.patch('apps.scholarship.vision._call_gemini_json', return_value=dict(answer)) as gem:
+            vision._run_field_extraction_impl(doc, names=['AHMAD'], ocr=ocr)
+        self.assertEqual(doc.vision_fields['fields']['has_stamp_or_signature'], 'stamp')
+        self.assertTrue(any(c.kwargs.get('image') == b'img' for c in gem.call_args_list))
+
+    def test_only_informal_income_documents_cost_the_extra_call(self):
+        _out, gem = self._read(self._doc('salary_slip'), {}, text=GOVT_SLIP)            # a formal payslip
+        gem.assert_not_called()
+        _out, gem = self._read(self._doc('salary_slip'), {}, text=UNTITLED)             # an informal one
+        self.assertEqual(gem.call_count, 1)
+        _out, gem = self._read(self._doc('epf'), {})
+        gem.assert_not_called()
+        _out, gem = self._read(self._doc(), {}, ex={'fields': {}, 'warnings': [], 'error': 'Gemini error: 503'})
+        gem.assert_not_called()                                                          # a failed read: no call
 
 
 #: What a read since the rule stores when the document shows no header or approver at all.
