@@ -382,7 +382,7 @@ def _detect_parent_ic_low_confidence(application) -> Optional[Anomaly]:
 
 # Sprint 2 — genuineness for the standardised supporting documents.
 _GENUINENESS_DOC_LABELS = {
-    'str': 'STR', 'results_slip': 'results slip',
+    'str': 'STR', 'results_slip': 'results slip', 'higher_results': 'STPM results',   # S3: STPM only
     'birth_certificate': 'birth certificate', 'epf': 'EPF statement',
 }
 
@@ -398,6 +398,10 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
         if dt == 'results_slip':                 # S4 (#43): an SPM-list score of a higher result
             from .wrong_slip import spm_genuineness_skipped     # is no signal (C3's own stands)
             if spm_genuineness_skipped(doc):
+                continue
+        if dt == 'higher_results' and doc is not None:   # STPM S3: only when they anchor Academic
+            from .higher_results import anchors_on_higher
+            if not anchors_on_higher(application):
                 continue
         raw = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status
         if needs_attention(raw, dt):         # canonical 'suspect' / 'not_<type>' (folds legacy)

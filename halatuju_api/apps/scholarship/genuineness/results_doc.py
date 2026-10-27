@@ -72,8 +72,7 @@ from .stpm_doc import STPM_LISTS
 #       suspect). Extraction gains `reporting_date_label` (the verbatim label heading). No signature
 #       family/weight change; the verdict logic the scores feed changed + a new extraction field →
 #       bump for traceability (1.2/1.2.1 precedent). Backfill: re-run the <0.70 offers
-#       (reextract_offers pass 2026_07b) so the label lands; genuine ≥0.70 docs don't need it
-#       (their step is already 0 — the bonus is moot).
+#       (reextract_offers pass 2026_07b) so the label lands; genuine ≥0.70 docs don't need it (step 0).
 #   1.6.0 (2026-07-10) — PRIVATE / continuing-education ARM veto (owner: "SPACE is an IPTS —
 #       disqualifying, like AIMST / UTAR; treat all private the same"). A public university's
 #       fee-paying continuing-education arm (UTM SPACE, UM CCE, …) prints the PARENT UA name, so the
@@ -98,7 +97,8 @@ from .stpm_doc import STPM_LISTS
 #   1.9.0 (2026-10-26) — corpus-gaps C3: the STPM family (slip + certificate, `stpm_doc`) beside the
 #       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
 #   1.10.0 (2026-10-27) — STPM exact-read S2: STPM higher results read Exact (`stpm_parse`). Backfill: S4.
-MODEL_VERSION = '1.10.0'
+#   1.11.0 (2026-10-27) — STPM exact-read S3: STPM in the higher-results slot scored + ruling 1A. Backfill: S4.
+MODEL_VERSION = '1.11.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

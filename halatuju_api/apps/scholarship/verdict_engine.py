@@ -96,7 +96,7 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared;
 #   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
 #   .3 — TD-404: ANAK=AK, BINTI=BT/BTE in every name match; a one-syllable STR name is "cannot judge".
-VERDICT_ENGINE_VERSION = '2026-10-27.3'
+VERDICT_ENGINE_VERSION = '2026-10-27.4'   # .4 — STPM S3: an STPM higher result is scored (+1A)
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

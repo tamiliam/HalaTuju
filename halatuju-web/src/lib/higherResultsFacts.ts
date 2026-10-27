@@ -15,6 +15,7 @@ type DocumentFactLabel = { key: string; status: FactStatus }
 export function higherResultsFacts(
   c: HigherCheck | null | undefined,
   factStatus: (s: string | undefined | null) => FactStatus,
+  genuine: DocumentFactLabel | null = null,   // STPM exact-read S3: the Genuine / Wrong-type chip of a scored page
 ): DocumentFactLabel[] {
   if (!c) return []
   const facts: DocumentFactLabel[] = [
@@ -23,6 +24,7 @@ export function higherResultsFacts(
     { key: 'cgpa', status: factStatus(c.cgpa_status) },
   ]
   if (c.grades_status) facts.push({ key: 'results', status: factStatus(c.grades_status) })
+  if (genuine) facts.push(genuine)
   return facts
 }
 

@@ -15050,3 +15050,30 @@ unconfirmed) from the live slot; a stale, future or rejected matched copy is rep
 request — counting an STR the ruling says does not count. **Alternatives rejected:** `mismatch` for every
 unmatched STR (tells a family their own STR is a stranger's); leaving the request open with the generic
 "still checking — refresh" (the read is finished; nothing will change without a person).
+
+## 2026-10-27 — STPM exact-read S3: STPM results in the higher-results slot are checked for genuineness; 1A there
+
+**Decision:** An upload in the `higher_results` slot whose own printed markers read STPM (`results_kind.detect`)
+is scored on the C3 STPM slip / certificate lists (`genuineness/stpm_doc.stpm_higher_genuineness`, MODEL_VERSION
+1.11.0), text only, and stored in the results-slot shape; the Academic card shows the real outcome instead of
+`higher_results_not_checked`, which stays for every unscored kind. Ruling 1A is a page check on top of the score:
+the results-CHECKER page, known only by its own furniture (Halaman Keputusan, Kembali ke Carian, Maklumat Calon —
+no generic words) → `not_stpm_result`. **Owner ruling A (2026-10-27):** a printout of the MPM results web page is
+a slip in any form — saved PDF, scan, photo or certified (2A) — judged by the signatures alone. A real photo of a
+screen showing the results page without the checker's heading or buttons cannot be told apart from a printout and
+is judged by the signatures the same way. (An earlier draft also treated the browser print footer on a picture as
+1A; withdrawn by this ruling.) 2A needs nothing (a certified copy carries the document's text).
+The student's "ask" reuses the SPM slot's: the Documents-card genuineness note (re-upload the real document);
+after submission the reviewer requests it (the SPM slot raises no automatic Action-Centre ask either).
+**Scope limits:** Matriculation / Asasi / Diploma / SPM / MUET / cannot-tell → not scored. An MPM transcript
+(title or MPM's cover letter) → not scored: a genuine one reads 0.69 (suspect) on the slip list, and one sample
+is too few for a list of its own. No crest read on this path (it would be a new Gemini call; the certificate
+clears 0.70 without it). No date-consistency check (owner). The SPM slot is unchanged — note that a checker
+page that prints the slip's wording scores genuine (0.92) THERE; carrying the 1A page check into the results
+slot is a separate decision.
+**Why:** 1A only worked in the SPM slot, and only for a checker page that does not print the slip's wording
+(corpus d3303); a STPM checker screenshot in the STPM place was never flagged. **Alternatives rejected:** a
+lower suspect floor (cannot see a checker page that prints the slip); scoring transcripts on the slip list
+(marks a genuine MPM document "may not be genuine"); a new reviewer label for 1A (owner: none; `doc_seen` and the
+reason name it); the print-footer rule (marks a scanned or photographed printout, which ruling A accepts).
+The interview flag ("STPM results") fires only when the higher results anchor the Academic card, like the ladder.

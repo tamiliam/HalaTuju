@@ -64,7 +64,8 @@ export const roleReviewer: ManualChapter = {
         card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when
         she has entered them. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
         results uploads those results instead of an SPM slip; the Documents drawer names them by kind
-        (for example <strong>STPM results</strong>). Beside the NRIC, the header shows where her IC says she was
+        (for example <strong>STPM results</strong>); STPM results are checked for genuineness like an SPM slip, and a screenshot of
+        the online results-checker page is flagged as not the real slip. Beside the NRIC, the header shows where her IC says she was
         <strong> born</strong>.</>
       ),
       img: '/reviewer-guide/step1-list.png',

@@ -92,8 +92,9 @@ There are no OCR caches for STPM yet. The stored prod reads (snapshots `higher_r
 - ~~Date-consistency signal~~ DROPPED (S1, 2026-10-27): two different genuine-looking "STPM 2025" slips carry
   release date 18 Jun 2025, so it is a recurring council misprint; a date check would wrongly mark real students.
 - Owner ruling (2026-10-27) on online-portal prints: a PDF saved from the MPM results website (URL + timestamp
-  footer) is ACCEPTED like a slip. A phone photo of a screen showing it is treated as a checker screenshot
-  (1A): ask for the real slip or certificate.
+  footer) is ACCEPTED like a slip. Owner ruling A (2026-10-27, after review): a printout of the MPM results web
+  page counts as a slip in ANY form — scanned, photographed or certified (2A). Only the CHECKER PAGE itself is 1A,
+  recognised by its own heading / buttons; a screen photo without them is judged by the signatures.
 - Bump `MODEL_VERSION` to 1.10.0, and `VERDICT_ENGINE_VERSION` (bands can move).
 - **Done when:** d3303-style checker pages are asked for the real document; certified copies pass;
   Matric/Diploma docs are not misjudged as STPM; owner sees the before/after list of affected applications
@@ -110,7 +111,8 @@ see a change, so the owner sees a before/after list first.
 
 ## Owner decisions
 1. **1A in the STPM place:** a checker screenshot uploaded as STPM results → ask for the real slip or
-   certificate (same as the SPM place). Default: yes (existing ruling 1A).
+   certificate (same as the SPM place). RULED: yes — the checker page only (its own heading / buttons); a
+   printout of the results web page in any form is a slip (ruling A, 2026-10-27).
 2. ~~Reviewer label~~ — RULED 2026-10-27: no. Certificate vs slip is for the reader only; nothing is shown.
 3. **Paid steps:** S1 Vision OCR (a few cents) and S4 live re-read — approve at each step.
 4. **Out of scope:** Matriculation / Asasi / Diploma Exact reads (corpus too small: 3 / 1 / 5) and a MUET

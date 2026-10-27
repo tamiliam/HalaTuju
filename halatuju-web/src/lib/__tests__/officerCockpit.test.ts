@@ -28,6 +28,7 @@ import {
   type DecisionTrailInput,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument } from '@/lib/admin-api'
+import type { HigherCheck } from '@/lib/api/documents'
 import type { BcCheck, IncomeProofCheck } from '@/lib/api'
 import enMessages from '@/messages/en.json'
 import msMessages from '@/messages/ms.json'
@@ -361,6 +362,21 @@ describe('documentFacts', () => {
   it('results slip → Name, Subjects, Results from the 3-check', () => {
     expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ name: 'match', subjects: 'partial', results: 'match' }) })))
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
+  })
+
+  it('higher results (STPM exact-read S3) → its own facts, plus the Genuine chip once an STPM page is scored', () => {
+    const hc: HigherCheck = { name: 'match', candidate_name: '', exam: '', kind_held: 'stpm', kind_detected: 'stpm',
+      kind_status: 'match', cgpa_slip: 3.5, cgpa_entered: 3.5, cgpa_status: 'match', grades_status: '',
+      missing: [], mismatched: [], readable: true, note: '', note_kind: '', note_path: '' }
+    const base = [{ key: 'name', status: 'verified' }, { key: 'type', status: 'verified' }, { key: 'cgpa', status: 'verified' }]
+    const higher = (authenticity: AdminApplicantDocument['authenticity']) =>
+      doc({ doc_type: 'higher_results', higher_check: hc, authenticity })
+    expect(documentFacts(higher(null))).toEqual(base)                                     // not scored: unchanged
+    expect(documentFacts(higher({ status: 'genuine', reason: '', doc_seen: 'stpm_slip' }))).toEqual(base)
+    expect(documentFacts(higher({ status: 'not_higher_results', reason: '', doc_seen: 'x' })))   // ruling 1A
+      .toEqual([...base, { key: 'wrongType', status: 'not' }])
+    expect(documentFacts(higher({ status: 'suspect', reason: '', doc_seen: 'stpm_slip' })))
+      .toEqual([...base, { key: 'genuine', status: 'partial' }])
   })
 
   it('school-leaving cert → School/Name/IC match chips + Behaviour quality chip (owner 2026-07-15)', () => {

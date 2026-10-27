@@ -928,7 +928,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
         if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
                                 'offer_letter', 'salary_slip', 'electricity_bill', 'water_bill',
-                                'school_leaving_cert'):
+                                'school_leaving_cert', 'higher_results'):   # + STPM exact-read S3
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')

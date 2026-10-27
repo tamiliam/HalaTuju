@@ -112,8 +112,8 @@ export const FAQ: Record<Audience, QA[]> = {
         required. With no course chosen yet, it follows the results she holds. An application keeps the
         requirement it was submitted under &mdash; but one submitted before the higher-results upload existed (26 October 2026) by a degree-bound student holding STPM, Matriculation, Asasi or Diploma results, with none uploaded, shows that slot as <strong>Missing</strong>, its Academic card is at most <strong>Probable</strong> (&ldquo;STPM results not on file&rdquo;), and the system asks her for them (raised while the case is Completed, instead of the semester-result request); nothing sends it back to her. The Academic card checks the higher results&rsquo; name, which
         results they are and the CGPA (and, for STPM, the subject grades) against what she entered; an SPM slip
-        is compared only if one is on file. Their genuineness is <strong>not checked</strong> yet &mdash; read the
-        document yourself. When the document looks like a different kind of results, or an SPM slip, the card
+        is compared only if one is on file. STPM results (slip or certificate) are checked for genuineness like an SPM slip: a screenshot of the online results-checker page is flagged, and her Documents page asks her to re-upload the real document (after she submits, request it yourself); a printout of the MPM results web page (PDF, scan or photo) or a certified copy is fine.
+        Matriculation, Asasi and Diploma results are <strong>not checked</strong> yet &mdash; read the document yourself. When the document looks like a different kind of results, or an SPM slip, the card
         says so and the student was shown a note; none of these stops her application. Since 27 October 2026 a higher result uploaded as her
         <strong> SPM slip</strong> is recognised too: the card says it is a higher result, not an SPM slip, nothing is compared with her SPM
         grades and she is never told to change them; where her page shows the higher-results card she is offered a one-tap move into it.</>,

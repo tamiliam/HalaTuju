@@ -2189,19 +2189,19 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
                         'missing': auth['missing'], 'model_version': auth.get('model_version')}
                        if 'probability' in auth else {}),
                 }
-        elif doc.doc_type in ('birth_certificate', 'epf', 'semester_result'):
+        elif doc.doc_type in ('birth_certificate', 'epf', 'semester_result', 'higher_results'):
             # Probabilistic SIGNATURE genuineness over the OCR text (deterministic + auditable;
             # TD-122). Text-dominant — the visual markers (BC barcode/crest, KWSP logo) are bonus
             # and the text signatures already clear the band; the EPF scorer also doubles as the
-            # wrong-type backstop (tax form / withdrawal / STR-as-EPF → not_epf). A failed/empty
-            # OCR read yields NO signal (never penalise a student for our failure). A semester_result
-            # is scored only when it is an STPM document (1.9.0, `stpm_doc`); other slips stay unscored.
+            # wrong-type backstop (tax form / withdrawal / STR-as-EPF → not_epf). A failed/empty OCR
+            # read yields NO signal. A semester_result (1.9.0) / higher_results (1.11.0, + ruling 1A)
+            # is scored only when it is an STPM document (`stpm_doc`); anything else stays unscored.
             from .genuineness.results_doc import signature_genuineness
-            from .genuineness.stpm_doc import stpm_semester_genuineness
+            from .genuineness.stpm_doc import stpm_slot_genuineness
             rr = ocr if ocr is not None else ocr_document(doc)
             text = (rr or {}).get('text', '') or ''
-            sg = ({} if not text.strip() or (rr or {}).get('error') else stpm_semester_genuineness(text)
-                  if doc.doc_type == 'semester_result' else signature_genuineness(text, doc_type=doc.doc_type))
+            sg = ({} if not text.strip() or (rr or {}).get('error') else stpm_slot_genuineness(doc, text)
+                  if doc.doc_type not in ('birth_certificate', 'epf') else signature_genuineness(text, doc_type=doc.doc_type))
             if sg:
                 result['authenticity'] = {
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],

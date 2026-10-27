@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM exact-read S3 — STPM results in the higher-results slot are checked for genuineness; ruling 1A applies there - 2026-10-27
+
+Every higher-results upload said "genuineness not checked". Now an STPM one is checked like an SPM slip.
+- **The check** (`genuineness/stpm_doc.py`: `stpm_higher_genuineness`, `stpm_slot_genuineness`; MODEL_VERSION
+  1.11.0). A page whose own printed markers read STPM (`results_kind.detect`) is scored on the existing C3
+  STPM slip / certificate lists, text only (the crest would need a new Gemini call on this path; the
+  certificate clears 0.70 without it). Slip and certificate are judged the same way. Matriculation, Asasi,
+  Diploma, SPM, MUET and anything we cannot tell are not scored ("not checked", as before). An MPM
+  transcript (title or MPM's cover letter) is not scored either: on the slip list a genuine one reads 0.69.
+- **Ruling 1A** on top of the score (the signatures cannot see it: one real checker page prints the slip's
+  wording and scores 0.92): the results-CHECKER page, known only by its own furniture (Halaman Keputusan,
+  Kembali ke Carian, Maklumat Calon — never generic words like Cetak / Semakan) → `not_stpm_result`,
+  `doc_seen` `stpm_online_results_page`. Owner ruling A (2026-10-27): a printout of the MPM results web page
+  is a slip in any form — saved PDF, scan, photo, certified copy — and is judged by the signatures alone; a
+  photo of a screen with no checker heading or button cannot be told apart and is judged the same. The
+  upload is never fetched again for the score. Certified copies (2A) carry the document's text and pass.
+- **Stored in the results-slot shape** by the existing semester-result branch of `vision.py` (now also
+  `higher_results`; net 0 lines). No new Gemini call.
+- **What it changes:** the Academic card drops `higher_results_not_checked` once a score is stored (a stored
+  NOT CHECKED still shows it); the existing ladder steps it (genuine → can reach Certain; 1A → −2 and
+  `document_not_genuine`); the serializer exposes `authenticity` for `higher_results`, so the student's
+  Documents card shows the existing genuineness note ("re-upload the real document") and the reviewer
+  cockpit shows the existing Genuine / Wrong-type chip on the higher-results row; the interview flag names
+  "STPM results" (only when the higher results anchor the Academic card). No new web strings. The SPM slot is unchanged.
+- **Live:** scores are written only at read time, and no higher-results document has one today, so nothing
+  changes on a live application until S4's re-read (or a new upload). VERDICT_ENGINE_VERSION
+  2026-10-27.4 (a band can move: not checked → scored).
+- **Corpus** (`eval/stpm_genuineness_check.py`, new): certificates genuine 20 / suspect 1 (a garbled text
+  layer); slips genuine 15, not scored 1 (a cropped table with no title); the transcript not scored; both
+  checker pages 1A; both portal printouts (PDF and picture) genuine; 4/4 certified copies genuine; 0 of 38
+  non-STPM controls scored.
+- Tests: `tests/test_stpm_exact_read_s3.py` (synthetic), officerCockpit jest; Guide + FAQ lines.
+
 ## STPM exact-read S2 — STPM results are read Exact, Gemini only when the reader is unsure - 2026-10-27
 
 An STPM results document in the higher-results slot was always read by Gemini (`capture='ai'`).

@@ -5,9 +5,10 @@ What this module owns, in the order a document meets it:
 
 1. **The read** (`SCHEMA`, `HINT`, `extract`) — one Gemini read of the image for the name, the
    exam title, the CGPA and (STPM) the subject grades, plus the routing detection of
-   `results_kind.py` from the upload's OCR text. ⚠ No genuineness step: higher results have no
-   signature family yet (the corpus work, #47), so the Academic card shows "not checked" and the
-   TD-114 floor holds the fact at Probable at best — never a "suspect" it has not earned.
+   `results_kind.py` from the upload's OCR text. Genuineness (STPM exact-read S3): an STPM page is
+   scored in `vision` by `genuineness.stpm_doc.stpm_higher_genuineness` (+ ruling 1A); every other
+   kind has no signature family yet, so its card shows "not checked" and the TD-114 floor holds the
+   fact at Probable at best — never a "suspect" it has not earned.
 2. **The student's check** (`student_higher_check`) — the facts the Documents card shows and the
    ONE note it may add (D13), each with one link:
      (D) an SPM slip in this card → "This appears to be your SPM results slip …" + "Move it to SPM
@@ -353,7 +354,8 @@ def verdict_academic(application, spm_fact):
         unresolved.append(_item('higher_results_subjects_missing', subjects=', '.join(chk['missing'])))
     for m in chk['mismatched']:
         unresolved.append(_item('higher_results_grade_mismatch', **m))
-    evidence.append(_item('higher_results_not_checked'))       # genuineness: no family yet
+    if not _scored(doc):     # S3: an STPM page is scored; the ladder says why when it is not genuine
+        evidence.append(_item('higher_results_not_checked'))
     clean = (chk['name'] == 'match' and chk['readable'] and chk['kind_status'] == 'match'
              and chk['cgpa_status'] == 'match' and chk['grades_status'] in ('', 'match'))
     if spm_fact is not None and _latest_doc(application, 'results_slip') is not None:
@@ -361,6 +363,13 @@ def verdict_academic(application, spm_fact):
         unresolved += spm_fact['unresolved']
         clean = clean and spm_fact['status'] == 'verified'
     return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)
+
+
+def _scored(doc) -> bool:
+    """Does this upload carry a genuineness signal (STPM exact-read S3)? The same reading the ladder
+    takes (`canonical_status`): a stored NOT CHECKED or no block at all is no signal."""
+    from .genuineness.bands import canonical_status, stored_status
+    return bool(canonical_status(stored_status(doc.vision_fields), 'higher_results'))
 
 
 def red_chips(application) -> int:

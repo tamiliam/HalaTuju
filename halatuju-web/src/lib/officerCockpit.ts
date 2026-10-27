@@ -422,7 +422,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     if (gf) facts.push(gf)
     return facts
   }
-  if (dt === 'higher_results') return higherResultsFacts(doc.higher_check, factStatus)   // S3b
+  if (dt === 'higher_results') return higherResultsFacts(doc.higher_check, factStatus, gf)   // S3b; + Genuine chip (STPM S3)
   if (dt === 'offer_letter') {
     const c = doc.pathway_check
     if (!c) return []
