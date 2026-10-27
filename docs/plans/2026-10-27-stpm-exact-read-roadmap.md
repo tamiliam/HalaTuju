@@ -16,6 +16,25 @@ from SPM.
 are one and the same document. Nothing is shown to reviewers or students. There is no label, marker or note,
 and no rule treats a certificate differently from a slip.
 
+## The two layouts (owner's 2025 examples, 2026-10-27)
+Both are issued by Majlis Peperiksaan Malaysia and show the same facts, but in different places:
+
+| Fact | Certificate | Results slip |
+|---|---|---|
+| Title | "SIJIL TINGGI PERSEKOLAHAN MALAYSIA (MALAYSIA HIGHER SCHOOL CERTIFICATE)", bilingual labels | "Slip Keputusan Peperiksaan STPM <year>" |
+| Name | sentence after "Dengan ini disahkan bahawa" | "Nama :" row in a key–value block |
+| IC | "No. Kad Pengenalan", digits without dashes | "No. Kad Pengenalan :", with dashes |
+| Index no. | "Angka Giliran" + school name | "Angka Giliran :" |
+| Year | "Tahun Peperiksaan: <year>" | in the title |
+| Subjects | one row per subject: Gred, Nilai Gred, LULUS PENUH | KOD + subject row, then paper rows (e.g. Pengajian Am 1–4, with % and paper grade); subject grade + Nilai Gred on the subject row |
+| PNGK | "Purata Nilai Gred Keseluruhan", bottom right | "Purata Nilai Gred Keseluruhan (PNGK) :", top block |
+| Serial | bottom right ("nnnnnnn / yy") | "No. Siri :" — the same number |
+| Fixed text | "Bilangan Mata Pelajaran Lulus", signatories | "Nota Penting: Slip keputusan ini bukan sijil STPM" |
+
+The slip's paper rows must not be read as subjects; only the subject rows (with a KOD) count.
+**Layouts vary slightly between years** (stable over about 3 years). The reader keys on a SET of anchors
+with tolerance, never on one exact phrase or position, and an unknown variant falls back to AI.
+
 ## Corpus (local, gitignored, PII)
 `halatuju_api/apps/scholarship/eval/fixtures/results_split/`, sorted by the owner and split by page on
 2026-10-27:
