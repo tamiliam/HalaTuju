@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing settings move to the screens whose scope they match - 2026-10-28
+
+The owner filled in the invoice settings for the first time and the form took an address across
+three boxes: the postcode landed in Phone and the city landed in **Bank**. Both forms also sat on
+Billing & usage, grouped by the task (issuing) rather than by the scope they have.
+
+- **Who is BILLING moved to Platform -> Billing** (the old Billing rates page), now two tabs:
+  **Your details** and **Rates**. One row for the whole platform, super-only, beside the margins it
+  belongs with. The page title widened; "Billing rates" no longer covers what is on it.
+- **Who is BILLED moved to Organisation -> Settings**, a third tab beside Colours and
+  Configuration, keyed on the organisation CODE exactly as its two siblings are.
+- **An organisation may now edit its own billing details** (owner ruling). It may NOT touch what it
+  is billed FOR (build hours) or AT (rates) - the line `AdminOrgBuildHoursView` already drew.
+  Fenced server-side to the caller's own organisation; cross-organisation is a 404.
+- **The Settings tab is gone from Billing & usage.** Two controls answering one question on a money
+  screen is a defect. The readiness card now links to whichever page holds the missing detail.
+- **The form that caused this**: "Bank" is now **"Bank name"**, and the nine boxes are grouped
+  under four headings, so the address column visibly ends before the bank begins.
+- **The rates page no longer hides behind its own fetch.** It returned a single loading state for
+  the whole page, so a slow rates read would have hidden the issuer form - the one thing that must
+  be filled in before any invoice can exist. Each half loads and fails on its own.
+- **A dead guard removed.** The new bill-to view carried its own role check; a bite-check deleted
+  it and nothing failed, because `_InvoiceBase._caller` already refuses every other role. Behaviour
+  unchanged; the one real gate is now named in the docstring.
+- No model, no migration, no data move. en/ms/ta. TD-412 (three copies of `_organisation_for`).
+
 ## TD-408 + TD-411 — father/son name order; a scanner watermark is not a text layer; the KWSP app screen is an EPF proof (MODEL 1.17.0, VERDICT 2026-10-28.2) - 2026-10-28
 
 - **TD-408 (VERDICT 2026-10-28.2; live dry-run 1448 real pairs, 3 changed, all an Iban father now confirmed; two review rounds) — word order in a patronymic name.**

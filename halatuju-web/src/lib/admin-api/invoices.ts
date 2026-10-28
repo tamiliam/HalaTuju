@@ -78,6 +78,8 @@ export interface InvoiceProblem {
 export interface InvoiceReadiness {
   organisation_id: number
   organisation: string
+  /** Lets the "fix this" link open THAT organisation's settings instead of a picker. */
+  organisation_code: string
   problems: InvoiceProblem[]
 }
 
@@ -149,32 +151,49 @@ export interface InvoiceIssuerSettings {
 export interface TenantBillingDetails {
   organisation_id: number
   organisation: string
+  /** The code the server resolved. A save sends it back, so the two calls cannot disagree. */
+  organisation_code: string
   bill_to_name: string
   address: string
   emails: string[]
   missing: string[]
 }
 
-export interface InvoiceSettingsPayload {
+/** ⚠ TWO CALLS, TWO SCOPES (2026-10-28). They were one endpoint on Billing & usage, grouped by the
+ *  task (issuing) rather than by scope. Who is BILLING is one platform-wide row a super owns; who is
+ *  BILLED is per-organisation and that organisation may edit its own. Keeping them in one call meant
+ *  one fence deciding two different questions. */
+export interface InvoiceIssuerPayload {
   issuer: InvoiceIssuerSettings
-  tenants: TenantBillingDetails[]
 }
 
-export async function getInvoiceSettings(options?: ApiOptions): Promise<InvoiceSettingsPayload> {
-  return adminFetch('/api/v1/admin/scholarship/billing/invoice-settings/', options)
+/** SUPER-ONLY. 403 for anyone else — it carries the platform's own bank account. */
+export async function getInvoiceIssuer(options?: ApiOptions): Promise<InvoiceIssuerPayload> {
+  return adminFetch('/api/v1/admin/scholarship/billing/issuer/', options)
 }
 
 export async function saveInvoiceIssuer(
   issuer: Partial<Omit<InvoiceIssuerSettings, 'missing'>>, options?: ApiOptions
-): Promise<InvoiceSettingsPayload> {
-  return adminMutate('/api/v1/admin/scholarship/billing/invoice-settings/', 'POST', { issuer }, options)
+): Promise<InvoiceIssuerPayload> {
+  return adminMutate('/api/v1/admin/scholarship/billing/issuer/', 'POST', { issuer }, options)
 }
 
-export async function saveTenantBillingDetails(
-  data: { organisation_id: number; bill_to_name: string; address: string; emails: string[] },
+/** One organisation's bill-to, named by CODE like the sibling Organisation → Settings tabs.
+ *  A super may name any tenant; an org_admin only its own — anything else is a 404, the same
+ *  answer as an organisation that does not exist. Omit the code and the server returns the sole
+ *  tenant, or refuses with `organisation_required` and the list. */
+export async function getOrgBillingDetails(
+  code?: string, options?: ApiOptions
+): Promise<TenantBillingDetails> {
+  const q = code ? `?organisation=${encodeURIComponent(code)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/billing/bill-to/${q}`, options)
+}
+
+export async function saveOrgBillingDetails(
+  data: { organisation: string; bill_to_name: string; address: string; emails: string[] },
   options?: ApiOptions
-): Promise<InvoiceSettingsPayload> {
-  return adminMutate('/api/v1/admin/scholarship/billing/invoice-settings/', 'POST', data, options)
+): Promise<TenantBillingDetails> {
+  return adminMutate('/api/v1/admin/scholarship/billing/bill-to/', 'POST', data, options)
 }
 
 export interface BillingRateRow {

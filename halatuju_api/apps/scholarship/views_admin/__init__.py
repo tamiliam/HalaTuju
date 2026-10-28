@@ -50,7 +50,8 @@ from .intake_years import (
 )
 from .invoices import (
     _InvoiceBase, _invoice_money, _invoice_payload, AdminInvoiceActionView, AdminInvoicePdfView,
-    AdminInvoiceSettingsView, AdminInvoicesView, AdminOrgBuildHoursView,
+    AdminInvoiceIssuerView, AdminInvoicesView, AdminOrgBillingDetailsView,
+    AdminOrgBuildHoursView,
 )
 from .payments import (
     _PAYMENTS_READ, _PAYMENTS_WRITE, _PaymentsBase, _payment_item_dict,

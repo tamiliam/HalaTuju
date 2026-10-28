@@ -144,7 +144,8 @@ from .views_admin import (
     AdminBillingUsageView,
     AdminOrgBuildHoursView,
     AdminPlatformCostsView,
-    AdminInvoicesView, AdminInvoiceActionView, AdminInvoicePdfView, AdminInvoiceSettingsView,
+    AdminInvoicesView, AdminInvoiceActionView, AdminInvoicePdfView,
+    AdminInvoiceIssuerView, AdminOrgBillingDetailsView,
     AdminOrgRequestListView,
     AdminOrgRequestCountView,
     AdminOrgRequestDetailView,
@@ -311,7 +312,11 @@ urlpatterns = [
     path('admin/scholarship/billing/invoices/<int:pk>/pdf/', AdminInvoicePdfView.as_view(), {'kind': 'invoice'}),
     path('admin/scholarship/billing/receipts/<int:pk>/pdf/', AdminInvoicePdfView.as_view(), {'kind': 'receipt'}),
     path('admin/scholarship/billing/invoices/<int:pk>/<str:action>/', AdminInvoiceActionView.as_view()),
-    path('admin/scholarship/billing/invoice-settings/', AdminInvoiceSettingsView.as_view()),
+    # Who is BILLING: platform-wide, super-only, and it sits with the rates on the Platform
+    # menu. Who is BILLED moved the other way, to that organisation's own settings page, and
+    # is keyed by org id so the fence has something to narrow on (owner, 2026-10-28).
+    path('admin/scholarship/billing/issuer/', AdminInvoiceIssuerView.as_view()),
+    path('admin/scholarship/billing/bill-to/', AdminOrgBillingDetailsView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
 
     # Sponsor spending S4 — the officer's view of what students spent, and the one

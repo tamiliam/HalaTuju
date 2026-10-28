@@ -12,23 +12,22 @@
  * It loads its OWN data and holds its OWN error, like the costs section: a failure here must never
  * darken the usage half of the page, which an org_admin is entitled to read.
  */
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import TableFrame from '@/components/admin/TableFrame'
 import {
-  fetchBillingPdf, getInvoiceSettings, getInvoices, issueInvoice, recordInvoiceReceipt,
-  saveInvoiceIssuer, saveTenantBillingDetails, sendInvoice, voidInvoice,
-  type InvoiceProblem, type InvoiceReadiness, type InvoiceRow, type InvoiceSettingsPayload,
-  type InvoicesPayload, type TenantBillingDetails,
+  fetchBillingPdf, getInvoices, issueInvoice, recordInvoiceReceipt, sendInvoice, voidInvoice,
+  type InvoiceProblem, type InvoiceReadiness, type InvoiceRow, type InvoicesPayload,
 } from '@/lib/admin-api'
 import { formatMyr } from '@/lib/billingCosts'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  canRecordPayment, canSend, canVoid, formatDay, issueMode, needsSettings, orderedInvoices,
-  orderedProblems, splitEmails, statusChip, todayIso,
+  canRecordPayment, canSend, canVoid, formatDay, issueMode, orderedInvoices,
+  orderedProblems, settingsHref, statusChip, todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
-type Tab = 'toissue' | 'issued' | 'settings'
+type Tab = 'toissue' | 'issued'
 
 const INPUT = 'mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm text-ground-900'
 const PRIMARY = 'rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50'
@@ -65,13 +64,12 @@ function Chip({ status, t }: { status: InvoiceRow['status']; t: T }) {
 
 // ── To issue ─────────────────────────────────────────────────────────────────────────────────
 
-function ReadinessCard({ row, month, busy, t, onIssue, onGoSettings }: {
+function ReadinessCard({ row, month, busy, t, onIssue }: {
   row: InvoiceReadiness
   month: string
   busy: boolean
   t: T
   onIssue: (orgId: number, reason: string) => void
-  onGoSettings: () => void
 }) {
   const [reason, setReason] = useState('')
   // A month already invoiced is DONE, not "not ready": its other warnings were weighed when it was
@@ -120,11 +118,15 @@ function ReadinessCard({ row, month, busy, t, onIssue, onGoSettings }: {
           ))}
         </ul>
       )}
-      {needsSettings(row.problems) && (
-        <button type="button" className="mt-2 text-sm text-primary-600 underline" onClick={onGoSettings}>
-          {t('admin.billing.invoice.fillSettings')}
-        </button>
-      )}
+      {/* ⚠ TWO DESTINATIONS, because the two blank forms now live on different pages and a
+          single "Settings" link would send half the readers to the wrong one. Who is BILLING is
+          platform-wide; who is BILLED belongs to the organisation. */}
+      {settingsHref(row.problems, row.organisation_code).map((dest) => (
+        <Link key={dest.code} href={dest.href}
+          className="mt-2 block text-sm text-primary-600 underline">
+          {t(`admin.billing.invoice.fix.${dest.code}`)}
+        </Link>
+      ))}
 
       {mode === 'override' && (
         <label className="mt-3 block">
@@ -486,96 +488,10 @@ function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token,
 
 // ── Settings ─────────────────────────────────────────────────────────────────────────────────
 
-const ISSUER_FIELDS: Array<{ key: string; multiline?: boolean }> = [
-  { key: 'legal_name' }, { key: 'registration_no' }, { key: 'address', multiline: true },
-  { key: 'email' }, { key: 'phone' }, { key: 'bank_name' }, { key: 'bank_account_name' },
-  { key: 'bank_account_no' }, { key: 'payment_terms_days' },
-]
-
-function SettingsPanel({ settings, busy, t, onSaveIssuer, onSaveTenant }: {
-  settings: InvoiceSettingsPayload
-  busy: boolean
-  t: T
-  onSaveIssuer: (values: Record<string, string>) => void
-  onSaveTenant: (row: TenantBillingDetails, values: { bill_to_name: string; address: string; emails: string }) => void
-}) {
-  const [issuer, setIssuer] = useState<Record<string, string>>(() => Object.fromEntries(
-    ISSUER_FIELDS.map((f) => [f.key, String((settings.issuer as unknown as Record<string, unknown>)[f.key] ?? '')])))
-
-  return (
-    <div className="grid items-start gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border bg-ground-0 p-4 shadow-sm" data-testid="issuer-form">
-        <h3 className="text-sm font-semibold text-ground-900">{t('admin.billing.invoice.settings.issuerTitle')}</h3>
-        <p className="mt-1 text-xs text-ground-500">{t('admin.billing.invoice.settings.issuerSub')}</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {ISSUER_FIELDS.map((f) => {
-            const missing = settings.issuer.missing.includes(f.key)
-            const cls = `${INPUT} ${missing ? 'border-critical-300' : ''}`
-            return (
-              <label key={f.key} className={`block ${f.multiline || f.key === 'legal_name' ? 'sm:col-span-2' : ''}`}>
-                <span className="block text-[11px] text-ground-500">{t(`admin.billing.invoice.settings.field.${f.key}`)}</span>
-                {f.multiline ? (
-                  <textarea className={`${cls} min-h-[4rem]`} value={issuer[f.key]}
-                    onChange={(e) => setIssuer((v) => ({ ...v, [f.key]: e.target.value }))} />
-                ) : (
-                  <input type="text" className={cls} value={issuer[f.key]}
-                    inputMode={f.key === 'payment_terms_days' ? 'numeric' : undefined}
-                    onChange={(e) => setIssuer((v) => ({ ...v, [f.key]: e.target.value }))} />
-                )}
-              </label>
-            )
-          })}
-        </div>
-        <button type="button" className={`${PRIMARY} mt-3`} disabled={busy} onClick={() => onSaveIssuer(issuer)}>
-          {t('admin.billing.invoice.settings.save')}
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {settings.tenants.map((row) => (
-          <TenantForm key={row.organisation_id} row={row} busy={busy} t={t} onSave={onSaveTenant} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function TenantForm({ row, busy, t, onSave }: {
-  row: TenantBillingDetails
-  busy: boolean
-  t: T
-  onSave: (row: TenantBillingDetails, values: { bill_to_name: string; address: string; emails: string }) => void
-}) {
-  const [name, setName] = useState(row.bill_to_name)
-  const [address, setAddress] = useState(row.address)
-  const [emails, setEmails] = useState(row.emails.join(', '))
-  const cls = (k: string) => `${INPUT} ${row.missing.includes(k) ? 'border-critical-300' : ''}`
-  return (
-    <div className="rounded-xl border bg-ground-0 p-4 shadow-sm" data-testid={`bill-to-${row.organisation_id}`}>
-      <h3 className="text-sm font-semibold text-ground-900">
-        {t('admin.billing.invoice.settings.billToTitle', { organisation: row.organisation })}
-      </h3>
-      <div className="mt-3 grid gap-2">
-        <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.settings.field.bill_to_name')}</span>
-          <input type="text" className={cls('bill_to_name')} value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.settings.field.address')}</span>
-          <textarea className={`${cls('address')} min-h-[4rem]`} value={address} onChange={(e) => setAddress(e.target.value)} /></label>
-        <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.settings.field.emails')}</span>
-          <input type="text" className={cls('emails')} value={emails} onChange={(e) => setEmails(e.target.value)} /></label>
-      </div>
-      <button type="button" className={`${PRIMARY} mt-3`} disabled={busy}
-        onClick={() => onSave(row, { bill_to_name: name, address, emails })}>
-        {t('admin.billing.invoice.settings.save')}
-      </button>
-    </div>
-  )
-}
-
 // ── The section ──────────────────────────────────────────────────────────────────────────────
 
 export default function InvoicesSection({ token, isSuper, t }: { token: string; isSuper: boolean; t: T }) {
   const [data, setData] = useState<InvoicesPayload | null>(null)
-  const [settings, setSettings] = useState<InvoiceSettingsPayload | null>(null)
   const [tab, setTab] = useState<Tab>('toissue')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -590,10 +506,7 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
         if (/404|not_found/.test(String(e))) setData(null)
         else setError(errorText(e))
       })
-    if (isSuper) {
-      getInvoiceSettings({ token }).then(setSettings).catch((e) => setError(errorText(e)))
-    }
-  }, [token, isSuper])
+  }, [token])
 
   useEffect(() => { load() }, [load])
 
@@ -622,7 +535,7 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
       ) : (
         <>
           <div className="mt-3 flex gap-1 border-b" role="tablist" aria-label={t('admin.billing.invoice.title')}>
-            {(['toissue', 'issued', 'settings'] as Tab[]).map((k) => (
+            {(['toissue', 'issued'] as Tab[]).map((k) => (
               <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                 className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === k
                   ? 'border-primary-600 font-semibold text-ground-900' : 'border-transparent text-ground-500'}`}>
@@ -641,7 +554,6 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
               })}</p>
               {(data.readiness || []).map((row) => (
                 <ReadinessCard key={row.organisation_id} row={row} month={data.month || ''} busy={busy} t={t}
-                  onGoSettings={() => setTab('settings')}
                   onIssue={(orgId, reason) => act(
                     issueInvoice({ organisation_id: orgId, period_month: data.month || '', override_reason: reason }, { token }),
                     () => setTab('issued'))} />
@@ -658,24 +570,6 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
             </div>
           )}
 
-          {tab === 'settings' && settings && (
-            <div className="mt-4 space-y-3">
-              <p className="text-sm text-ground-500">{t('admin.billing.invoice.settings.lead')}</p>
-              <SettingsPanel settings={settings} busy={busy} t={t}
-                onSaveIssuer={(v) => {
-                  // A blank "days to pay" is left out rather than sent as 0, which would make every
-                  // future invoice due on the day it is issued.
-                  const { payment_terms_days: days, ...rest } = v
-                  const body: Parameters<typeof saveInvoiceIssuer>[0] = { ...rest }
-                  if (days.trim() !== '') body.payment_terms_days = Number(days)
-                  act(saveInvoiceIssuer(body, { token }))
-                }}
-                onSaveTenant={(row, v) => act(saveTenantBillingDetails({
-                  organisation_id: row.organisation_id, bill_to_name: v.bill_to_name.trim(),
-                  address: v.address.trim(), emails: splitEmails(v.emails),
-                }, { token }))} />
-            </div>
-          )}
         </>
       )}
     </section>

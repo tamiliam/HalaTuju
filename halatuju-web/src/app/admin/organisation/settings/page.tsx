@@ -19,8 +19,12 @@ import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import OrganisationColoursTab from '@/components/admin/OrganisationColoursTab'
 import OrganisationConfigurationTab from '@/components/admin/OrganisationConfigurationTab'
+import OrganisationBillingTab from '@/components/admin/OrganisationBillingTab'
 
-const TABS = ['colours', 'configuration'] as const
+// Billing joined on 2026-10-28: where this organisation's invoices are addressed and sent.
+// Its scope is the organisation, so it belongs here rather than on Billing & usage, and the
+// organisation may edit its own (owner ruling) — the server fences it to the caller's own.
+const TABS = ['colours', 'configuration', 'billing'] as const
 type Tab = (typeof TABS)[number]
 
 export default function AdminOrganisationSettingsPage() {
@@ -61,6 +65,11 @@ export default function AdminOrganisationSettingsPage() {
       {tab === 'configuration' && (
         <div role="tabpanel" id="panel-configuration" aria-labelledby="tab-configuration">
           <OrganisationConfigurationTab />
+        </div>
+      )}
+      {tab === 'billing' && (
+        <div role="tabpanel" id="panel-billing" aria-labelledby="tab-billing">
+          <OrganisationBillingTab />
         </div>
       )}
     </div>

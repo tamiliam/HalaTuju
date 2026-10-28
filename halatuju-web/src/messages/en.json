@@ -5379,8 +5379,7 @@
         "title": "Invoices",
         "tab": {
           "toissue": "To issue",
-          "issued": "Issued",
-          "settings": "Settings"
+          "issued": "Issued"
         },
         "superLead": "Invoices for {month} are issued automatically on the {day}th. Issuing sends nothing: an organisation sees an invoice only after you press Send.",
         "tenantLead": "Invoices appear here once they have been sent to you.",
@@ -5390,7 +5389,6 @@
         "alreadyIssued": "Issued",
         "mustFix": "Must fix",
         "warning": "Warning",
-        "fillSettings": "Fill in Settings",
         "overrideReason": "Why issue anyway (kept on the invoice)",
         "issue": "Issue invoice",
         "issueAnyway": "Issue anyway",
@@ -5445,25 +5443,9 @@
         "voidedBecause": "Voided: {reason}",
         "overrideLine": "Issued despite a warning: {reason}",
         "replaces": "Replaces {number}.",
-        "settings": {
-          "lead": "Changes apply to the next invoice. Every invoice already issued keeps the details it was issued with.",
-          "issuerTitle": "Who is billing",
-          "issuerSub": "Printed at the top of every invoice and receipt. Nothing can be issued until the boxes outlined in red are filled.",
-          "billToTitle": "{organisation}: who is billed",
-          "save": "Save",
-          "field": {
-            "legal_name": "Legal name",
-            "registration_no": "Registration number (optional)",
-            "address": "Address",
-            "email": "Billing email",
-            "phone": "Phone (optional)",
-            "bank_name": "Bank",
-            "bank_account_name": "Account name",
-            "bank_account_no": "Account number",
-            "payment_terms_days": "Days to pay",
-            "bill_to_name": "Name on the invoice",
-            "emails": "Send invoices to (comma between addresses)"
-          }
+        "fix": {
+          "issuer_incomplete": "Fill in your own billing details",
+          "bill_to_incomplete": "Fill in this organisation’s billing details"
         }
       },
       "usageTitle": "Usage this month",
@@ -6547,7 +6529,8 @@
       "subtitle": "What your organisation decides for itself. These apply across every gift programme you run.",
       "tab": {
         "colours": "Colours",
-        "configuration": "Configuration"
+        "configuration": "Configuration",
+        "billing": "Billing"
       },
       "config": {
         "subtitle": "Values your organisation can tune. A blank field follows the platform default.",
@@ -6962,7 +6945,66 @@
       "team": "the HalaTuju team",
       "empty": "No changes yet. {name} has the {role} set."
     },
-    "permissionsReset": "Their custom permissions go back to the new role’s set."
+    "permissionsReset": "Their custom permissions go back to the new role’s set.",
+    "platformBilling": {
+      "title": "Billing",
+      "subtitle": "Who is billing, and the margins and hourly rate that turn what we pay, and the hours we work, into what we charge.",
+      "tab": {
+        "details": "Your details",
+        "rates": "Rates"
+      }
+    },
+    "issuer": {
+      "sub": "Printed at the top of every invoice and receipt you send. Saving changes the next invoice only — an invoice already issued keeps the details it was issued with.",
+      "blocked": "No invoice can be issued until these are filled in: {fields}.",
+      "loading": "Loading your details…",
+      "loadFailed": "Your details could not be loaded.",
+      "saved": "Saved.",
+      "failed": "That could not be saved.",
+      "bad_email": "That email address does not look right.",
+      "bad_terms": "Days to pay must be a whole number between 0 and 365.",
+      "save": "Save",
+      "group": {
+        "who": "Who you are",
+        "reach": "How to reach you",
+        "bank": "Where payment goes",
+        "terms": "Payment terms"
+      },
+      "groupHint": {
+        "who": "The name and address printed at the top of the invoice.",
+        "reach": "Replies to an invoice come back to this address.",
+        "bank": "Printed under \"How to pay\". Put the whole address above, not here.",
+        "terms": "How long an organisation has to pay after an invoice is issued."
+      },
+      "field": {
+        "legal_name": "Legal name",
+        "registration_no": "Registration number (optional)",
+        "address": "Address, including postcode and town",
+        "email": "Billing email",
+        "phone": "Phone (optional)",
+        "bank_name": "Bank name",
+        "bank_account_name": "Account name",
+        "bank_account_no": "Account number",
+        "payment_terms_days": "Days to pay"
+      }
+    },
+    "orgBilling": {
+      "sub": "Where this organisation’s invoices are addressed and sent.",
+      "nextInvoiceOnly": "This changes the next invoice only. An invoice already sent keeps the details it was sent with.",
+      "pickOrganisation": "Which organisation?",
+      "loading": "Loading billing details…",
+      "loadFailed": "Billing details could not be loaded.",
+      "saved": "Saved.",
+      "failed": "That could not be saved.",
+      "bad_email": "One of those email addresses does not look right.",
+      "save": "Save",
+      "emailsHint": "Separate addresses with a comma. Everyone listed gets a copy of each invoice.",
+      "field": {
+        "bill_to_name": "Name on the invoice",
+        "address": "Address",
+        "emails": "Send invoices to"
+      }
+    }
   },
   "documentsTab": {
     "higher": {

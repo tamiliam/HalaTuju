@@ -155,6 +155,9 @@ class AdminInvoicesView(_InvoiceBase):
             payload['readiness'] = [{
                 'organisation_id': org.id,
                 'organisation': org.name,
+                # The CODE, so a "fix this" link can open THAT organisation's settings rather than
+                # landing on a picker. One tenant today; the link is wrong the day there are two.
+                'organisation_code': org.code,
                 'problems': invoicing.readiness(org, month),
             } for org in PartnerOrganisation.objects.tenants().order_by('name')]
         return Response(payload)
@@ -266,109 +269,219 @@ class AdminInvoicePdfView(_InvoiceBase):
         return resp
 
 
-class AdminInvoiceSettingsView(_InvoiceBase):
-    """SUPER-ONLY: who bills (the issuer) and who is billed (each tenant's billing details).
+class AdminInvoiceIssuerView(_InvoiceBase):
+    """SUPER-ONLY, PLATFORM-WIDE: who is billing — the block printed atop every invoice.
 
-    GET returns both. POST saves ONE of them: `{"issuer": {...}}` or
-    `{"organisation_id": N, "bill_to_name": ..., "address": ..., "emails": [...]}`. Saving changes
-    the NEXT invoice only — every issued invoice holds its own snapshot.
+    Lives beside the rates (Platform -> Billing) because its SCOPE is the platform: there is exactly
+    one issuer row for every organisation that will ever be billed, and what it says is commercial.
+    It used to sit on Billing & usage, grouped by the task you were doing (issuing) rather than by
+    the scope it has — which is why the owner went hunting for a bank field on a page about usage
+    (2026-10-28). Who is BILLED moved the other way, to that organisation's own settings.
+
+    Saving changes the NEXT invoice only: every issued invoice holds its own frozen snapshot.
     """
 
     ISSUER_FIELDS = ('legal_name', 'registration_no', 'address', 'email', 'phone', 'bank_name',
                      'bank_account_name', 'bank_account_no')
 
     def _payload(self):
-        from apps.courses.models import PartnerOrganisation
-
         from .. import invoicing
         who = invoicing.issuer()
-        tenants = []
-        for org in PartnerOrganisation.objects.tenants().order_by('name'):
-            d = invoicing.billing_details(org)
-            tenants.append({'organisation_id': org.id, 'organisation': org.name,
-                            'bill_to_name': d.bill_to_name, 'address': d.address,
-                            'emails': d.clean_emails(), 'missing': d.missing()})
-        return {
-            'issuer': {**{f: getattr(who, f) for f in self.ISSUER_FIELDS},
-                       'payment_terms_days': who.payment_terms_days,
-                       'missing': who.missing()},
-            'tenants': tenants,
-        }
+        return {'issuer': {**{f: getattr(who, f) for f in self.ISSUER_FIELDS},
+                           'payment_terms_days': who.payment_terms_days,
+                           'missing': who.missing()}}
+
+    def _super_only(self, request):
+        admin, is_super, err = self._caller(request)
+        if err:
+            return None, err
+        if not is_super:
+            return None, self._deny_role()
+        return admin, None
 
     def get(self, request):
-        admin, is_super, err = self._caller(request)
-        if err:
-            return err
-        if not is_super:
-            return self._deny_role()
-        return Response(self._payload())
+        admin, err = self._super_only(request)
+        return err or Response(self._payload())
 
     def post(self, request):
-        admin, is_super, err = self._caller(request)
+        admin, err = self._super_only(request)
         if err:
             return err
-        if not is_super:
-            return self._deny_role()
         from django.core.exceptions import ValidationError
         from django.core.validators import validate_email
 
-        from apps.courses.models import PartnerOrganisation
-
         from .. import invoicing
-        from ..models import InvoiceIssuer, OrgBillingDetails
+        from ..models import InvoiceIssuer
 
         def bad(code):
             return Response({'error': code, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
 
-        data = request.data or {}
-        if isinstance(data.get('issuer'), dict):
-            src = data['issuer']
-            who = invoicing.issuer()
-            if who.pk is None:
-                who = InvoiceIssuer()
-            for f in self.ISSUER_FIELDS:
-                if f in src:
-                    setattr(who, f, str(src.get(f) or '').strip())
-            if who.email:
-                try:
-                    validate_email(who.email)
-                except ValidationError:
-                    return bad('bad_email')
-            if 'payment_terms_days' in src:
-                try:
-                    days = int(src.get('payment_terms_days'))
-                except (TypeError, ValueError):
-                    return bad('bad_terms')
-                if not 0 <= days <= 365:
-                    return bad('bad_terms')
-                who.payment_terms_days = days
-            who.updated_by_email = admin.email or ''
-            who.save()
-            return Response(self._payload())
+        src = request.data.get('issuer')
+        if not isinstance(src, dict):
+            return bad('bad_issuer')
+        who = invoicing.issuer()
+        if who.pk is None:
+            who = InvoiceIssuer()
+        for f in self.ISSUER_FIELDS:
+            if f in src:
+                setattr(who, f, str(src.get(f) or '').strip())
+        if who.email:
+            try:
+                validate_email(who.email)
+            except ValidationError:
+                return bad('bad_email')
+        if 'payment_terms_days' in src:
+            try:
+                days = int(src.get('payment_terms_days'))
+            except (TypeError, ValueError):
+                return bad('bad_terms')
+            if not 0 <= days <= 365:
+                return bad('bad_terms')
+            who.payment_terms_days = days
+        who.updated_by_email = admin.email or ''
+        who.save()
+        return Response(self._payload())
 
-        org = (PartnerOrganisation.objects.tenants()
-               .filter(pk=data.get('organisation_id')).first())
-        if org is None:
-            return Response({'error': 'not_found', 'code': 'not_found'},
-                            status=status.HTTP_404_NOT_FOUND)
+
+class AdminOrgBillingDetailsView(_InvoiceBase):
+    """Where ONE organisation's invoices are addressed and sent. Super, or that org's own org_admin.
+
+    WARNING - **THE TENANT MAY WRITE THIS, AND THAT IS A DELIBERATE LINE** (owner, 2026-10-28). The
+    sibling `AdminOrgBuildHoursView` says only a super may record hours, because *"a tenant
+    recording what it will be billed for is not a control anyone would accept"* — and that line is
+    kept. This is the other side of it: not what the tenant is billed FOR, nor what it is billed AT,
+    but WHERE the bill is addressed and which inbox it reaches. That is their own name and staff.
+
+    Three things make it safe, and all three are structural rather than trusted:
+      * the debt is recorded against `organisation_id`, which no tenant can reach from here;
+      * an issued invoice carries a FROZEN `bill_to_snapshot`, so editing this cannot alter a bill
+        already issued or sent — only the next one;
+      * a super reads the printed name at Send, the one moment a bill leaves the building.
+
+    WARNING - "who may act" and "who may see" look identical at a call site and answer different
+    questions (People actions, 2026-09-09). This is a who-may-ACT surface: `admin`, `finance`, `qc`
+    and `reviewer` are refused even though some of them may READ the organisation page this tab
+    sits on. `_InvoiceBase._caller` is the one place that decides it.
+
+    Cross-organisation is a **404**, never a 403 — consistent with every sibling, so the route
+    leaks no existence.
+    """
+
+    #: How many inboxes one organisation may list. See the comment at the check.
+    MAX_EMAILS = 10
+
+    #: ⚠ THE ROLE GATE IS `_InvoiceBase._caller`, WHICH ADMITS ONLY `super` AND `org_admin`.
+    #: This class carried its own `ROLES = ('org_admin',)` check until a bite-check deleted that
+    #: check and nothing failed: `_caller` had already refused every other role one call earlier.
+    #: A second guard that cannot fire is worse than none, because its presence invites the next
+    #: reader to trust it and to copy the pattern somewhere it IS the only gate (this codebase's
+    #: dead-safeguard lesson, twice in September). The behaviour is unchanged and still proven
+    #: through the door by `test_who_may_act_is_not_who_may_see`.
+
+    def _org(self, request):
+        """-> (admin, organisation, error). The organisation this caller may act on.
+
+        Keyed on `?organisation=<code>`, NOT an id, because this is the third tab of ORGANISATION ->
+        Settings and its two siblings (Colours, Configuration) resolve exactly this way — a reader
+        of the page should recognise the third from the first. Mirrors
+        `AdminOrganisationConfigurationView._organisation_for`, which in turn mirrors
+        `AdminOrganisationThemeView`; three copies is the signal to unify them (TD raised).
+
+        With no code: the sole tenant, or `organisation_required` naming the choices. Never a
+        silent pick — guessing which organisation a bill is addressed to is the one thing this
+        endpoint must not do.
+        """
+        from apps.courses.models import PartnerOrganisation
+
+        admin, is_super, err = self._caller(request)
+        if err:
+            return None, None, err
+
+        # ⚠ `request.data` is whatever JSON arrived — a LIST for `[1,2]`, on which `.get`
+        # raises and the client sees a 500 instead of a refusal. Read it only when it is an object.
+        body = request.data if isinstance(request.data, dict) else {}
+        code = (request.query_params.get('organisation')
+                or body.get('organisation') or '').strip()
+        qs = PartnerOrganisation.objects.tenants().filter(is_active=True)
+        if not is_super:
+            # org-fence: a tenant's queryset is narrowed to its OWN organisation before the code is
+            # even read, so a code naming another tenant finds nothing and answers 404.
+            qs = qs.filter(id=admin.owning_organisation_id) if admin.owning_organisation_id else qs.none()
+        not_found = Response({'error': 'not_found', 'code': 'not_found'},
+                             status=status.HTTP_404_NOT_FOUND)
+        if code:
+            org = qs.filter(code=code).first()
+            return (None, None, not_found) if org is None else (admin, org, None)
+        orgs = list(qs.order_by('code')[:2])
+        if not orgs:
+            return None, None, not_found
+        if len(orgs) > 1:
+            return None, None, Response(
+                {'error': 'organisation_required', 'code': 'organisation_required',
+                 'organisations': [o.code for o in qs.order_by('code')]},
+                status=status.HTTP_400_BAD_REQUEST)
+        return admin, orgs[0], None
+
+    def _payload(self, org):
+        from .. import invoicing
+        d = invoicing.billing_details(org)
+        # The CODE travels back so a save names the same organisation the read resolved —
+        # never a second guess from an empty query string.
+        return {'organisation_id': org.id, 'organisation': org.name,
+                'organisation_code': org.code,
+                'bill_to_name': d.bill_to_name, 'address': d.address,
+                'emails': d.clean_emails(), 'missing': d.missing()}
+
+    def get(self, request):
+        admin, org, err = self._org(request)
+        return err or Response(self._payload(org))
+
+    def post(self, request):
+        admin, org, err = self._org(request)
+        if err:
+            return err
+        from django.core.exceptions import ValidationError
+        from django.core.validators import validate_email
+
+        from ..models import OrgBillingDetails
+
+        def bad():
+            return Response({'error': 'bad_email', 'code': 'bad_email'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        data = request.data if isinstance(request.data, dict) else {}
         emails = data.get('emails') or []
         if isinstance(emails, str):
             emails = [e for e in (x.strip() for x in emails.replace(';', ',').split(',')) if e]
         if not isinstance(emails, list):
-            return bad('bad_email')
+            return bad()
         emails = [str(e).strip() for e in emails if str(e).strip()]
+        # ⚠ A CAP, because the sending quota is the PLATFORM's, not this tenant's. Every address
+        # here gets a copy of every invoice, and Brevo's allowance is shared across the whole
+        # platform — so an unbounded list is one tenant able to spend everyone else's mail.
+        # Ten is far above any real finance team and far below anything that costs us a day.
+        if len(emails) > self.MAX_EMAILS:
+            return Response({'error': 'too_many_emails', 'code': 'too_many_emails',
+                             'limit': self.MAX_EMAILS}, status=status.HTTP_400_BAD_REQUEST)
         for e in emails:
             try:
                 validate_email(e)
             except ValidationError:
-                return bad('bad_email')
+                return bad()
+        name = str(data.get('bill_to_name') or '').strip()
+        # `bill_to_name` is a 200-char column; a longer value is a database error, which reaches
+        # the caller as a 500. Refuse it in words rather than crashing on a save.
+        if len(name) > OrgBillingDetails._meta.get_field('bill_to_name').max_length:
+            return Response({'error': 'name_too_long', 'code': 'name_too_long'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # org-fence: keyed on the organisation resolved above, never on anything in the body.
         details, _ = OrgBillingDetails.objects.get_or_create(organisation=org)
-        details.bill_to_name = str(data.get('bill_to_name') or '').strip()
+        details.bill_to_name = name
         details.address = str(data.get('address') or '').strip()
         details.emails = list(dict.fromkeys(emails))
         details.updated_by_email = admin.email or ''
         details.save()
-        return Response(self._payload())
+        return Response(self._payload(org))
 
 
 class AdminOrgBuildHoursView(_AdminBase):

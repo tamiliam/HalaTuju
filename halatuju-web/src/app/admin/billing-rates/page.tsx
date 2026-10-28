@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import IssuerDetailsTab from '@/components/admin/IssuerDetailsTab'
 import { getBillingRates, setBillingRate, type BillingRateRow } from '@/lib/admin-api'
 import {
   rateGrid, formatMyr, formatPct, rateMonthOptions, RATE_MONTHS_BACK, blockedKey,
@@ -178,6 +179,7 @@ export default function AdminBillingRatesPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const mayView = canAccess('/admin/billing-rates', effectiveRole(role))
+  const [tab, setTab] = useState<'details' | 'rates'>('details')
 
   const [rows, setRows] = useState<BillingRateRow[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -215,16 +217,47 @@ export default function AdminBillingRatesPage() {
   if (role && !mayView) {
     return <p className="text-critical-600 p-6">{t('apiErrors.superAdminRequired')}</p>
   }
-  if (loading && rows === null) {
-    return <p className="p-6 text-ground-500">{t('admin.billingRates.loading')}</p>
-  }
-
+  // ⚠ NOT an early return on the whole page (2026-10-28). The RATES fetch used to block the
+  // header and the tabs, so a slow or failing rates read hid "Your details" — the tab that has to
+  // be filled in before anything can be invoiced at all. Each half now loads and fails on its own,
+  // the same split Billing & usage already draws between usage and costs.
+  const ratesLoading = loading && rows === null
   const grid = rateGrid(rows)
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-ground-900">{t('admin.billingRates.title')}</h1>
-      <p className="mt-1 text-sm text-ground-500">{t('admin.billingRates.subtitle')}</p>
+      <h1 className="text-xl font-bold text-ground-900">{t('admin.platformBilling.title')}</h1>
+      <p className="mt-1 text-sm text-ground-500">{t('admin.platformBilling.subtitle')}</p>
+
+      {/* TWO TABS since 2026-10-28. "Your details" is who is BILLING — one platform-wide row that
+          used to sit on Billing & usage, grouped by the task rather than by its scope. It comes
+          first because an invoice cannot be issued at all until it is filled in. */}
+      <div role="tablist" aria-label={t('admin.platformBilling.title')}
+        className="mt-5 flex gap-6 border-b border-ground-200">
+        {(['details', 'rates'] as const).map((key) => (
+          <button key={key} type="button" role="tab" id={`tab-${key}`}
+            aria-selected={tab === key} aria-controls={`panel-${key}`}
+            data-testid={`tab-${key}`} onClick={() => setTab(key)}
+            className={`-mb-px border-b-2 pb-3 text-sm ${
+              tab === key
+                ? 'border-primary-600 font-semibold text-ground-900'
+                : 'border-transparent font-medium text-ground-500 hover:text-ground-700'}`}>
+            {t(`admin.platformBilling.tab.${key}`)}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'details' && (
+        <div role="tabpanel" id="panel-details" aria-labelledby="tab-details">
+          <IssuerDetailsTab />
+        </div>
+      )}
+      {tab === 'rates' && (
+        <div role="tabpanel" id="panel-rates" aria-labelledby="tab-rates">
+        {ratesLoading ? (
+          <p className="p-6 text-ground-500">{t('admin.billingRates.loading')}</p>
+        ) : (
+        <>
 
       {/* ⚠ The one sentence that makes the whole mechanism visible. Without it the page looks
           like it overwrites a number, and it will be used as if it does. */}
@@ -248,6 +281,10 @@ export default function AdminBillingRatesPage() {
           />
         ))}
       </div>
+        </>
+        )}
+        </div>
+      )}
     </div>
   )
 }

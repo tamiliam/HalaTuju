@@ -15349,3 +15349,48 @@ layer may go without its count, never a scan. A number that IS read must match; 
 belongs ("S", "4.", "(4)") → None.
 **Why:** the count only cross-checks the rows, and the PNGK sum already proves them; a faint count cost a
 correct Exact read (corpus a265).
+
+## A setting lives on the screen whose SCOPE matches it, not the task that needs it - 2026-10-28
+
+**Decision:** the invoice issuer (one row, platform-wide) moved to Platform -> Billing beside the
+rates; an organisation's bill-to (one row per tenant) moved to Organisation -> Settings. The
+Settings tab on Billing & usage was deleted rather than left as a second route.
+
+**Alternatives considered:** leave both where they were and only fix the labels; move one and not
+the other; keep the old tab as a convenience shortcut.
+
+**Rationale:** owner, 2026-10-28, after filling the form: *"The issuer details settings should be
+under billing rates, I think, because this is a superset... The receiver details should be under
+organisation setting."* Grouping by task reads well only while you are doing that task; the owner
+went hunting for a bank field on a page about usage. Keeping the old tab would have left two
+controls answering one question on a money screen - the fault the Payments gift picker was deleted
+for (TD-241).
+
+**Trade-offs:** the readiness card now needs two links instead of one, because the fix for a
+blocked invoice lives on one of two pages depending on which detail is blank. That is more honest
+than one link that is wrong half the time.
+
+**Revisit if:** a third invoice setting appears that belongs to neither scope.
+
+## An organisation may set where its bill GOES, never what it is billed for or at - 2026-10-28
+
+**Decision:** `AdminOrgBillingDetailsView` accepts a write from the organisation's own `org_admin`
+(name, address, inboxes). Build hours and billing rates stay super-only.
+
+**Alternatives considered:** keep the bill-to super-only and move it purely for tidiness; let the
+tenant edit the address and inboxes but not the name.
+
+**Rationale:** it is their own name and their own staff's inboxes, and a wrong one is theirs to
+fix; making them ask is friction for no safety. `AdminOrgBuildHoursView` already states the line -
+*"a tenant recording what it will be billed for is not a control anyone would accept"* - and this
+sits on the other side of it. Three structural facts make it safe rather than trusted: the debt is
+recorded against `organisation_id`, which the tenant cannot reach from here; an issued invoice
+carries a FROZEN `bill_to_snapshot`, so an edit cannot alter a bill already issued; and a super
+reads the printed name at Send.
+
+**Trade-offs:** a tenant can change the name printed on its next invoice. The name is presentation;
+the liability is the organisation id, which is untouchable from this endpoint.
+
+**Revisit if:** an organisation ever disputes an invoice on the ground that the bill-to was changed
+after issue - which the snapshot already makes impossible, but the complaint would show the
+snapshot is not visible enough.

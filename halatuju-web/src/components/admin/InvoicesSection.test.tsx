@@ -3,8 +3,8 @@
  *
  * The Invoices section (2026-09-14). Written from the harms, not the markup:
  *
- *  * a tenant gets NO issuing controls and NO settings — the server fences the data, and the screen
- *    must not offer a door the server would refuse;
+ *  * a tenant gets NO issuing controls — the server fences the data, and the screen must not
+ *    offer a door the server would refuse;
  *  * nothing is sent without a confirm that NAMES the inboxes (owner: "you press send");
  *  * a warning can be issued past ONLY with a written reason, and a blocker not at all;
  *  * a fully discounted month's '0.00' is a truthy string, and must not offer a payment form;
@@ -35,21 +35,12 @@ function inv(over: Partial<api.InvoiceRow> = {}): api.InvoiceRow {
   }
 }
 
-const SETTINGS: api.InvoiceSettingsPayload = {
-  issuer: { legal_name: '', registration_no: '', address: '', email: '', phone: '', bank_name: '',
-    bank_account_name: '', bank_account_no: '', payment_terms_days: 30,
-    missing: ['legal_name', 'address', 'bank_name', 'bank_account_name', 'bank_account_no'] },
-  tenants: [{ organisation_id: 1, organisation: 'BrightPath', bill_to_name: 'BrightPath Bursary',
-    address: '', emails: ['finance@bp.example'], missing: ['address'] }],
-}
-
 function superPayload(over: Partial<api.InvoicesPayload> = {}): api.InvoicesPayload {
   return { invoices: [], month: '2026-08', issue_day: 15, readiness: [], ...over }
 }
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockApi.getInvoiceSettings.mockResolvedValue(SETTINGS)
   mockApi.issueInvoice.mockResolvedValue(inv())
   mockApi.sendInvoice.mockResolvedValue(inv({ status: 'sent' }))
   mockApi.recordInvoiceReceipt.mockResolvedValue(inv())
@@ -62,7 +53,6 @@ describe('what a tenant is offered', () => {
     const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
     await waitFor(() => within(container).getAllByText('INV-2026-0003'))
     expect(within(container).queryByRole('tablist')).toBeNull()
-    expect(mockApi.getInvoiceSettings).not.toHaveBeenCalled()
 
     fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
     await waitFor(() => within(container).getAllByTestId('detail-7'))
@@ -90,7 +80,7 @@ describe('what a tenant is offered', () => {
 
 describe('issuing', () => {
   it('a blocker leaves nothing to press, and points to Settings', async () => {
-    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath',
+    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'issuer_incomplete', message: 'Your own billing details are incomplete.', overridable: false },
         { code: 'supplier_missing', message: 'twilio missing', overridable: true }] }] }))
     const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
@@ -98,12 +88,27 @@ describe('issuing', () => {
     const issue = within(card).getByText('admin.billing.invoice.issue') as HTMLButtonElement
     expect(issue.disabled).toBe(true)
     expect(within(card).queryByText('admin.billing.invoice.issueAnyway')).toBeNull()
-    fireEvent.click(within(card).getByText('admin.billing.invoice.fillSettings'))
-    await waitFor(() => within(container).getByTestId('issuer-form'))
+    // ⚠ The fix now lives on ANOTHER PAGE, and which page depends on which detail is blank.
+    // A single "Settings" link would send half the readers somewhere that cannot help them.
+    const link = within(card).getByText('admin.billing.invoice.fix.issuer_incomplete')
+    expect(link.closest('a')?.getAttribute('href')).toBe('/admin/billing-rates')
+    expect(within(card).queryByText('admin.billing.invoice.fix.bill_to_incomplete')).toBeNull()
+  })
+
+  it('points at the organisation when it is THEIR details that are blank', async () => {
+    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
+      problems: [{ code: 'bill_to_incomplete', message: 'Billing details for BrightPath are incomplete.', overridable: false }] }] }))
+    const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
+    const card = await waitFor(() => within(container).getByTestId('readiness-1'))
+    const link = within(card).getByText('admin.billing.invoice.fix.bill_to_incomplete')
+    // ⚠ The link NAMES the organisation the card is about, so the super lands on BrightPath
+    // rather than on a picker re-asking what the card just said.
+    expect(link.closest('a')?.getAttribute('href'))
+      .toBe('/admin/organisation/settings?organisation=brightpath')
   })
 
   it('a warning is issued past only with a written reason, and the reason is sent', async () => {
-    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath',
+    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'supplier_missing', message: 'twilio missing', overridable: true }] }] }))
     const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
     const card = await waitFor(() => within(container).getByTestId('readiness-1'))
@@ -118,7 +123,7 @@ describe('issuing', () => {
   })
 
   it('a month already invoiced reads as issued, not as a list of alarms', async () => {
-    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath',
+    mockApi.getInvoices.mockResolvedValue(superPayload({ readiness: [{ organisation_id: 1, organisation: 'BrightPath', organisation_code: 'brightpath',
       problems: [{ code: 'already_issued', message: 'already', overridable: false },
         { code: 'unbilled_hours', message: '27 hours', overridable: true }] }] }))
     const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
@@ -182,22 +187,5 @@ describe('after issue', () => {
     fireEvent.change(within(detail).getByLabelText('admin.billing.invoice.voidReason'), { target: { value: 'Wrong month' } })
     fireEvent.click(confirm)
     await waitFor(() => expect(mockApi.voidInvoice).toHaveBeenCalledWith(7, 'Wrong month', { token: 'tok' }))
-  })
-})
-
-describe('settings', () => {
-  it('a blank days-to-pay is left out rather than sent as zero', async () => {
-    mockApi.getInvoices.mockResolvedValue(superPayload())
-    mockApi.saveInvoiceIssuer.mockResolvedValue(SETTINGS)
-    const { container } = render(<InvoicesSection token="tok" isSuper t={t} />)
-    await waitFor(() => within(container).getByRole('tablist'))
-    fireEvent.click(within(container).getByText('admin.billing.invoice.tab.settings'))
-    const form = await waitFor(() => within(container).getByTestId('issuer-form'))
-    const inputs = form.querySelectorAll('input')
-    const days = inputs[inputs.length - 1] as HTMLInputElement
-    fireEvent.change(days, { target: { value: '' } })
-    fireEvent.click(within(form).getByText('admin.billing.invoice.settings.save'))
-    await waitFor(() => expect(mockApi.saveInvoiceIssuer).toHaveBeenCalled())
-    expect(mockApi.saveInvoiceIssuer.mock.calls[0][0]).not.toHaveProperty('payment_terms_days')
   })
 })

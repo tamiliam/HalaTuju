@@ -38,6 +38,15 @@ jest.mock('@/lib/admin-api')
 
 const mockApi = api as jest.Mocked<typeof api>
 
+/** The page gained a "Your details" tab on 2026-10-28 and it comes FIRST, because no invoice can
+ *  be issued until the issuer is filled in. Every test below is about the Rates half, so each one
+ *  opens that tab — the click is the page's own behaviour, not scaffolding around a bug. */
+function renderRates() {
+  const view = render(<BillingRatesPage />)
+  fireEvent.click(within(view.container).getByTestId('tab-rates'))
+  return view
+}
+
 const rate = (over: Partial<api.BillingRateRow> & { id: number; category: string; kind: string }):
   api.BillingRateRow => ({
   value: '15.00', effective_from: '2026-07-01', updated_by_email: 'super@x.com', note: '', ...over,
@@ -54,7 +63,7 @@ describe('what the screen says about a rate nobody has set', () => {
     mockApi.getBillingRates.mockResolvedValue({
       rates: [rate({ id: 1, category: 'infrastructure', kind: 'margin_pct' })],
     })
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
 
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
@@ -64,7 +73,7 @@ describe('what the screen says about a rate nobody has set', () => {
   })
 
   it('every rate that exists gets a card on a completely empty table', async () => {
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     await waitFor(() => within(container).getByTestId('rate-infrastructure-margin_pct'))
     for (const id of ['infrastructure-margin_pct', 'metered-margin_pct',
       'development-margin_pct', 'development-hourly_rate']) {
@@ -75,7 +84,7 @@ describe('what the screen says about a rate nobody has set', () => {
   it('⚠ offers NO hourly rate for infrastructure or metered usage', async () => {
     // Owner, 2026-09-11, on seeing the page: three of its six boxes made no sense. You do not
     // bill infrastructure by the hour, and nothing ever read those two.
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     await waitFor(() => within(container).getByTestId('rate-infrastructure-margin_pct'))
     expect(within(container).queryByTestId('rate-infrastructure-hourly_rate')).toBeNull()
     expect(within(container).queryByTestId('rate-metered-hourly_rate')).toBeNull()
@@ -92,7 +101,7 @@ describe('what the screen says about a rate nobody has set', () => {
 
   it("each card carries its OWN unset message, not the neighbouring kind", async () => {
     // Keyed by category alone, the hourly-rate cards displayed the margin's sentence.
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const rate = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
     const margin = within(container).getByTestId('rate-development-margin_pct')
@@ -104,7 +113,7 @@ describe('what the screen says about a rate nobody has set', () => {
     mockApi.getBillingRates.mockResolvedValue({
       rates: [rate({ id: 1, category: 'infrastructure', kind: 'margin_pct', value: '15.00' })],
     })
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-infrastructure-margin_pct'))
     expect(within(card).getByText('15%')).not.toBeNull()
@@ -114,7 +123,7 @@ describe('what the screen says about a rate nobody has set', () => {
 
 describe('saving', () => {
   it('adds a rate from a chosen month — it does not edit the current one', async () => {
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
 
@@ -137,7 +146,7 @@ describe('saving', () => {
   })
 
   it('a save re-reads the whole table rather than patching the card', async () => {
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
     expect(mockApi.getBillingRates).toHaveBeenCalledTimes(1)
@@ -154,7 +163,7 @@ describe('saving', () => {
     // `disabled:opacity-50` is what 164 other controls in this console already do. Two earlier
     // passes invented a treatment for this one screen — plain grey, then opacity-40. A button
     // that behaves like every other button teaches the reader nothing new, which is the point.
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-metered-margin_pct'))
     const btn = within(card).getByText('admin.billingRates.save') as HTMLButtonElement
@@ -166,7 +175,7 @@ describe('saving', () => {
   })
 
   it('typing a value makes the button live again', async () => {
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
     const btn = within(card).getByText('admin.billingRates.save') as HTMLButtonElement
@@ -179,7 +188,7 @@ describe('saving', () => {
   })
 
   it('whitespace alone is not something to save', async () => {
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-margin_pct'))
     fireEvent.change(within(card).getByLabelText(/billingRates.category.development/), {
@@ -190,7 +199,7 @@ describe('saving', () => {
   })
 
   it('the effective-from control is a native select, never a date input', async () => {
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
     const control = within(card).getByLabelText('admin.billingRates.from')
@@ -207,7 +216,7 @@ describe('history', () => {
         rate({ id: 2, category: 'development', kind: 'hourly_rate', value: '200.00', effective_from: '2026-08-01' }),
       ],
     })
-    const { container } = render(<BillingRatesPage />)
+    const { container } = renderRates()
     const card = await waitFor(() =>
       within(container).getByTestId('rate-development-hourly_rate'))
 
@@ -217,5 +226,24 @@ describe('history', () => {
     fireEvent.click(within(card).getByText('admin.billingRates.history:1'))
     expect(within(within(card).getByTestId('history-development-hourly_rate'))
       .getByText('RM150.00')).not.toBeNull()
+  })
+})
+
+describe('the two halves load apart', () => {
+  it('shows "Your details" even while the rates are still loading or failed', async () => {
+    // ⚠ The rates fetch used to block the whole page. The issuer form is the one that has to be
+    // filled in before ANY invoice can be issued, so a slow rates read must never hide it.
+    mockApi.getBillingRates.mockReturnValue(new Promise(() => {}))
+    const { container } = render(<BillingRatesPage />)
+    expect(within(container).getByTestId('tab-details')).not.toBeNull()
+    expect(within(container).getByTestId('tab-rates')).not.toBeNull()
+    expect(within(container).queryByText('admin.billingRates.loading')).toBeNull()
+  })
+
+  it('says the rates are loading inside their own tab, not over the page', async () => {
+    mockApi.getBillingRates.mockReturnValue(new Promise(() => {}))
+    const { container } = render(<BillingRatesPage />)
+    fireEvent.click(within(container).getByTestId('tab-rates'))
+    expect(within(container).getByText('admin.billingRates.loading')).not.toBeNull()
   })
 })

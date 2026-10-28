@@ -1,5 +1,5 @@
 import {
-  canRecordPayment, canSend, canVoid, formatDay, issueMode, needsSettings, orderedInvoices,
+  canRecordPayment, canSend, canVoid, formatDay, issueMode, orderedInvoices, settingsHref,
   orderedProblems, splitEmails, statusChip, todayIso,
 } from '@/lib/invoices'
 import type { InvoiceProblem, InvoiceRow } from '@/lib/admin-api'
@@ -27,10 +27,23 @@ describe('issueMode', () => {
   it('puts the blocker first so it is read before the warning', () => {
     expect(orderedProblems([warn, block]).map((p) => p.code)).toEqual(['issuer_incomplete', 'supplier_missing'])
   })
-  it('sends the reader to Settings only for missing billing details', () => {
-    expect(needsSettings([warn])).toBe(false)
-    expect(needsSettings([block])).toBe(true)
-    expect(needsSettings([{ code: 'bill_to_incomplete', message: '', overridable: false }])).toBe(true)
+  it('sends the reader to the page that can actually fix their problem', () => {
+    // 2026-10-28: the two forms moved to the pages whose scope they match, so one link no longer
+    // serves both. A supplier warning sends nobody anywhere.
+    const billTo = { code: 'bill_to_incomplete', message: '', overridable: false }
+    expect(settingsHref([warn])).toEqual([])
+    expect(settingsHref([block])).toEqual([
+      { code: 'issuer_incomplete', href: '/admin/billing-rates' }])
+    expect(settingsHref([billTo])).toEqual([
+      { code: 'bill_to_incomplete', href: '/admin/organisation/settings' }])
+  })
+
+  it('offers BOTH when both are blank, the issuer first', () => {
+    // The first day in production is exactly this case: nothing is filled in anywhere, and the
+    // issuer comes first because no invoice can be issued at all without it.
+    const billTo = { code: 'bill_to_incomplete', message: '', overridable: false }
+    expect(settingsHref([billTo, block]).map((d) => d.code))
+      .toEqual(['issuer_incomplete', 'bill_to_incomplete'])
   })
 })
 

@@ -89,11 +89,6 @@ beforeEach(() => {
   mockApi.recordBuildHours.mockResolvedValue({ id: 1 })
   // The invoices section loads on its own; these tests are about the other halves of the page.
   mockApi.getInvoices.mockResolvedValue({ invoices: [], month: '2026-08', issue_day: 15, readiness: [] })
-  mockApi.getInvoiceSettings.mockResolvedValue({
-    issuer: { legal_name: '', registration_no: '', address: '', email: '', phone: '', bank_name: '',
-      bank_account_name: '', bank_account_no: '', payment_terms_days: 30, missing: ['legal_name'] },
-    tenants: [],
-  })
 })
 
 describe('what the platform cost', () => {

@@ -183,8 +183,11 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> Programmes</strong> is your organisation&rsquo;s front page: it lists your <strong>gift
         programmes</strong> and is where a new one is created — the gifts you run are what your organisation
         IS, so they sit there rather than off in a menu entry of their own. <strong>Organisation Settings</strong>
-        holds the choices that belong to the whole organisation, starting with your <strong>colours</strong>: one
-        colour, applying to every gift you run.
+        holds the choices that belong to the whole organisation: your <strong>colours</strong> (one colour,
+        applying to every gift you run), your <strong>configuration</strong>, and your <strong>billing</strong>
+        &mdash; the name printed on your invoices, the address under it, and the inboxes each invoice is sent
+        to. Billing applies to your <em>next</em> invoice; one already sent keeps what it was sent with. What
+        you are charged for, and at what rate, stays with us.
         <br /><br />
         Your programme&rsquo;s own group — <strong>Overview</strong>, <strong>Applications</strong>,
         <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants

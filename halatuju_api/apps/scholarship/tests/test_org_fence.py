@@ -490,7 +490,12 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminInvoicesView': 'invoice-fenced (org_admin own sent invoices; super all + issue)',
         'AdminInvoiceActionView': 'super-only (send / void / record receipt)',
         'AdminInvoicePdfView': 'invoice-fenced (org_admin own sent invoice or its receipt)',
-        'AdminInvoiceSettingsView': 'super-only (issuer + tenant billing details)',
+        'AdminInvoiceIssuerView': 'super-only (who is billing: one platform-wide row)',
+        # The ONE invoice surface a tenant may write. Not what it is billed FOR (build hours,
+        # super-only) nor AT (rates, super-only) — only WHERE its own bill is addressed and
+        # sent. Fenced on the caller's own organisation; cross-org is 404. Proven through the
+        # endpoint from the widening side in test_invoice_settings_homes.py.
+        'AdminOrgBillingDetailsView': 'org-fenced (own org bill-to; super any)',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',

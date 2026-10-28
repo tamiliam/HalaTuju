@@ -58,9 +58,30 @@ export function orderedProblems(problems: InvoiceProblem[]): InvoiceProblem[] {
   return [...list.filter((p) => !p.overridable), ...list.filter((p) => p.overridable)]
 }
 
-/** Problems that send the reader to the Settings tab rather than anywhere else. */
-export function needsSettings(problems: InvoiceProblem[]): boolean {
-  return (problems || []).some((p) => p.code === 'issuer_incomplete' || p.code === 'bill_to_incomplete')
+/** Where to send a reader whose invoice is blocked on a blank form.
+ *
+ * ⚠ TWO DESTINATIONS SINCE 2026-10-28, and that is the point. The two forms used to share one tab,
+ * so one link served both. They now live on the pages whose SCOPE they match — who is billing is
+ * platform-wide, who is billed belongs to the organisation — and a single "Settings" link would
+ * send half the readers to a page that cannot fix their problem.
+ *
+ * Order follows `orderedProblems`: a blocker before a warning, and the issuer before the bill-to
+ * because nothing at all can be issued without it. */
+export function settingsHref(
+  problems: InvoiceProblem[], organisationCode?: string,
+): Array<{ code: string; href: string }> {
+  const codes = new Set((problems || []).map((p) => p.code))
+  const out: Array<{ code: string; href: string }> = []
+  if (codes.has('issuer_incomplete')) {
+    out.push({ code: 'issuer_incomplete', href: '/admin/billing-rates' })
+  }
+  if (codes.has('bill_to_incomplete')) {
+    // ⚠ NAME THE ORGANISATION. A super reading "BrightPath is blocked" must land on BrightPath,
+    // not on a "which organisation?" picker — the card already answered that question.
+    const q = organisationCode ? `?organisation=${encodeURIComponent(organisationCode)}` : ''
+    out.push({ code: 'bill_to_incomplete', href: `/admin/organisation/settings${q}` })
+  }
+  return out
 }
 
 /** "a@x.com, b@y.com; c@z.com" → a clean, de-duplicated list. */

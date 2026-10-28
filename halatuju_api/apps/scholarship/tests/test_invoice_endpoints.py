@@ -165,9 +165,8 @@ class TestTheFenceFromTheWideningSide(_Doors):
             with self.subTest(action=action):
                 self.assertEqual(oa.post(f'{BASE}/invoices/{inv.id}/{action}/', {},
                                          format='json').status_code, 403)
-        self.assertEqual(oa.get(f'{BASE}/invoice-settings/').status_code, 403)
-        self.assertEqual(oa.post(f'{BASE}/invoice-settings/', {'issuer': {'legal_name': 'X'}},
-                                 format='json').status_code, 403)
+        # The issuer and bill-to screens moved out on 2026-10-28; their fences are proven in
+        # test_invoice_settings_homes.py, where a tenant may write one of the two and not the other.
         self.assertEqual(InvoiceIssuer.objects.get().legal_name, 'HalaTuju Platform')
 
     @override_settings(BILLING_USAGE_ENABLED=False)
@@ -188,9 +187,11 @@ class TestWhatASuperDoes(_Doors):
         body = self.client_for('super-uid').get(f'{BASE}/invoices/').json()
         self.assertEqual(body['month'], '2026-08')
         self.assertEqual(body['issue_day'], 15)
+        # The CODE rides along (2026-10-28) so a "fix this" link can open THAT organisation's
+        # settings rather than a picker re-asking what this card already said.
         self.assertEqual(body['readiness'],
                          [{'organisation_id': self.org.id, 'organisation': self.org.name,
-                           'problems': []}])
+                           'organisation_code': self.org.code, 'problems': []}])
 
     def test_issue_then_send_then_record_payment_then_download_the_receipt(self):
         su = self.client_for('super-uid')
@@ -252,42 +253,6 @@ class TestWhatASuperDoes(_Doors):
         r = self.client_for('super-uid').get(f'{BASE}/invoices/{inv.id}/pdf/')
         self.assertEqual(r.status_code, 200)
         self.assertIn('INV-2026-0001.pdf', r['Content-Disposition'])
-
-    def test_settings_save_the_issuer_and_a_tenants_billing_details(self):
-        su = self.client_for('super-uid')
-        r = su.post(f'{BASE}/invoice-settings/',
-                    {'issuer': {'legal_name': 'New Name Berhad', 'payment_terms_days': 14}},
-                    format='json')
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()['issuer']['legal_name'], 'New Name Berhad')
-        self.assertEqual(InvoiceIssuer.objects.get().payment_terms_days, 14)
-
-        r = su.post(f'{BASE}/invoice-settings/',
-                    {'organisation_id': self.org.id, 'bill_to_name': 'BP Berhad',
-                     'address': 'KL', 'emails': 'a@bp.example; b@bp.example'}, format='json')
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(OrgBillingDetails.objects.get(organisation=self.org).emails,
-                         ['a@bp.example', 'b@bp.example'])
-
-    def test_settings_refuse_a_bad_email_and_a_non_tenant(self):
-        su = self.client_for('super-uid')
-        r = su.post(f'{BASE}/invoice-settings/', {'issuer': {'email': 'not-an-email'}},
-                    format='json')
-        self.assertEqual(r.status_code, 400)
-        r = su.post(f'{BASE}/invoice-settings/', {'organisation_id': self.org.id,
-                                                  'emails': ['ok@x.com', 'broken']}, format='json')
-        self.assertEqual(r.status_code, 400)
-        school = PartnerOrganisation.objects.create(code='school', name='School')
-        r = su.post(f'{BASE}/invoice-settings/', {'organisation_id': school.id,
-                                                  'emails': ['ok@x.com']}, format='json')
-        self.assertEqual(r.status_code, 404)
-
-    def test_the_first_day_in_production_nothing_is_set_and_the_screen_says_so(self):
-        """No issuer row exists on the day this ships. The settings read must not create one."""
-        InvoiceIssuer.objects.all().delete()
-        body = self.client_for('super-uid').get(f'{BASE}/invoice-settings/').json()
-        self.assertIn('legal_name', body['issuer']['missing'])
-        self.assertFalse(InvoiceIssuer.objects.exists())
 
 
 class TestTheDoor(_Doors):

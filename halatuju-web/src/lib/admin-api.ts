@@ -159,15 +159,17 @@ export type {
   UnbilledRequest, BillingCostsPayload,
 } from './admin-api/billing'
 
-// Tenant invoices, receipts, issuer settings and build hours.
+// Tenant invoices, receipts, build hours, and the two settings that feed an invoice: who is
+// BILLING (platform-wide, Platform -> Billing) and who is BILLED (per organisation, that
+// organisation's own settings). They were one call until 2026-10-28.
 export {
   getInvoices, issueInvoice, sendInvoice, voidInvoice, recordInvoiceReceipt, fetchBillingPdf,
-  getInvoiceSettings, saveInvoiceIssuer, saveTenantBillingDetails, getBillingRates,
-  setBillingRate, recordBuildHours,
+  getInvoiceIssuer, saveInvoiceIssuer, getOrgBillingDetails, saveOrgBillingDetails,
+  getBillingRates, setBillingRate, recordBuildHours,
 } from './admin-api/invoices'
 export type {
   InvoiceStatus, InvoiceLineRow, InvoiceReceiptRow, InvoiceRow, InvoiceProblem, InvoiceReadiness,
-  InvoicesPayload, InvoiceIssuerSettings, TenantBillingDetails, InvoiceSettingsPayload,
+  InvoicesPayload, InvoiceIssuerSettings, InvoiceIssuerPayload, TenantBillingDetails,
   BillingRateRow,
 } from './admin-api/invoices'
 
