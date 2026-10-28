@@ -1,5 +1,8 @@
 'use client'
 
+// TD-416: the shell itself shows sponsor* words, so it loads their slice before it renders. Each
+// page imports it too, so the slice is counted in that page's first-load JS (TD-304), not hidden here.
+import '@/lib/messagesSponsor'
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import BrandLogo from '@/components/BrandLogo'

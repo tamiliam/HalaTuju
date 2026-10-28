@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 // Programme → Configuration — everything a person SETS about one gift, on one screen.
 //
 // THREE TABS, IN THE OWNER'S ORDER (2026-09-06): Intake year · Rules · What we ask for.

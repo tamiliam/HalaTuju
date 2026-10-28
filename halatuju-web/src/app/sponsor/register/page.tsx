@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BrandLogo from '@/components/BrandLogo'

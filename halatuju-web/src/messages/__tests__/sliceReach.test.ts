@@ -34,6 +34,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as ts from 'typescript'
 
+import { CORE_KEEPS as KEEPS } from '../../../scripts/messages-slice-loader'
+
 const SRC = path.join(__dirname, '..', '..')              // .../src
 const APP = path.join(SRC, 'app')
 const ADMIN_LOADER = path.join(SRC, 'lib', 'messagesAdmin.ts')
@@ -62,9 +64,12 @@ const SANDBOX_ENTRY = /^(page|layout)\.sandbox\.tsx$/
  *    is spelled with `${}` for each hole (`` `admin.${h}` `` → `admin.${}`). Literals in a TYPE
  *    position (`type SliceName = 'core' | 'admin'`) are erased at build and are not collected.
  *  - `readsLabelKey`: the file reads a `.label_key` property (a key the SERVER chose; see below).
+ *  - `lazy`: the subset of `specifiers` reached by `import()` (TD-416: the scholarship rule needs
+ *    to know what evaluates BEFORE a route renders, and an `import()` does not).
  */
 interface FileScan {
   specifiers: string[]
+  lazy: string[]
   strings: Array<{ text: string; line: number }>
   readsLabelKey: boolean
 }
@@ -72,7 +77,7 @@ interface FileScan {
 function scanSource(fileName: string, source: string): FileScan {
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true,
     /\.[jt]sx$/.test(fileName) ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
-  const out: FileScan = { specifiers: [], strings: [], readsLabelKey: false }
+  const out: FileScan = { specifiers: [], lazy: [], strings: [], readsLabelKey: false }
   const specifierNodes = new Set<ts.Node>()
   const lineOf = (n: ts.Node) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1
   const inTypePosition = (n: ts.Node) => ts.isLiteralTypeNode(n.parent)
@@ -90,6 +95,7 @@ function scanSource(fileName: string, source: string): FileScan {
         || (ts.isIdentifier(node.expression) && node.expression.text === 'require'))) {
       specifierNodes.add(node.arguments[0])
       out.specifiers.push(node.arguments[0].text)
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) out.lazy.push(node.arguments[0].text)
     } else if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
       && !specifierNodes.has(node) && !inTypePosition(node)) {
       out.strings.push({ text: node.text, line: lineOf(node) })
@@ -334,6 +340,218 @@ const UNROUTED: Record<string, string> = {
     'Hidden from /admin/scholarship on 2026-06-13 pending the owner\'s placement decision; the '
     + 'component is kept (see the comment at its old import in app/admin/scholarship/page.tsx).',
 }
+
+/**
+ * ═══ TD-416 (2026-10-29): THE SCHOLARSHIP AND SPONSOR SLICES ══════════════════════════════════
+ *
+ * Two more slices left the English core every route downloads: `scholarship.*` (~30 kB gz) and the
+ * four `sponsor*` namespaces (~6 kB gz). Each is loaded by its own module (`lib/messagesScholarship.ts`,
+ * `lib/messagesSponsor.ts`), which the PAGE of each route that shows those words imports — so the
+ * slice is counted in exactly those routes' first-load JS and in no other's. `scholarship` keeps
+ * the children `CORE_KEEPS` names in core (`scholarship.nav` / `.subnav` for `AppHeader`,
+ * `.banner` for `/dashboard`).
+ *
+ * The same failure as the admin slice, if this breaks: a screen shows a RAW DOTTED KEY in
+ * production while every jest render passes (jest hands every slice the whole file). So, for each
+ * slice and each ROUTE (a page plus every layout above it — what evaluates before the page renders):
+ *
+ *  A. if anything the route can reach — statically OR through an `import()` — holds a key of the
+ *     slice, the route reaches the slice's loader STATICALLY (the words are merged before render);
+ *  B. the shared special files (`error`, `loading`, `not-found`, …) reach no key of the slice —
+ *     they render on routes that never load it (`loading.tsx` even before the page's module runs);
+ *  C. the routes that load it are exactly the slice's declared `owners` — a slice costs first-load
+ *     JS wherever it goes, so putting it on another route is a decision that edits this list;
+ *  D. only `'use client'` route files (a page or a layout) import the loader: a server component
+ *     would merge the words on the server only, and a shared component would carry the slice to
+ *     every route that mounts it;
+ *  E. a route whose LAYOUT loads the slice loads it from its PAGE too, so the budgeted page figure
+ *     counts it (TD-304: weight a layout carries is printed, not budgeted). The sandbox is exempt:
+ *     it is compiled out of production, so it has no budgeted figure.
+ *
+ * Conservative on purpose, like the admin rule: a key in a reachable file counts even if that
+ * branch never renders there. For `scholarship` a key is any literal or template starting
+ * `scholarship.` whose child is not kept — `'scholarship.'` alone and `` `scholarship.${x}` `` count,
+ * since the child cannot be known.
+ */
+const CORE_KEEPS = KEEPS as Record<string, string[]>
+const KEPT = CORE_KEEPS.scholarship
+
+interface SliceRule {
+  loader: string
+  /** A literal or template that is a key of this slice. */
+  key: RegExp
+  /** …except these (file names that happen to start like a namespace). */
+  notKey: RegExp
+  /** The routes that load it — the production routes, plus the sandbox where it mounts one. */
+  owners: string[]
+}
+
+const SLICE_RULES: Record<'scholarship' | 'sponsor', SliceRule> = {
+  scholarship: {
+    loader: path.join(SRC, 'lib', 'messagesScholarship.ts'),
+    key: new RegExp(`^scholarship\\.(?!(?:${KEPT.join('|')})(?:\\.|$))|\\$\\{\\}scholarship\\.`),
+    notKey: /^scholarship\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    // The 17 routes that show these words on 2026-10-29, plus the sandbox.
+    owners: [
+      '/admin/profile', '/admin/programme', '/admin/requests', '/admin/requests/[id]',
+      '/admin/scholarship', '/admin/scholarship/[id]', '/admin/sources', '/admin/students',
+      '/admin/students/[id]', '/onboarding/profile', '/profile', '/sandbox', '/sandbox/[surface]',
+      '/scholarship', '/scholarship/application', '/scholarship/apply', '/scholarship/award',
+      '/scholarship/in-programme', '/scholarship/onboarding',
+    ],
+  },
+  sponsor: {
+    loader: path.join(SRC, 'lib', 'messagesSponsor.ts'),
+    key: /^sponsor(Portal|Auth|Pool|Landing)\.|\$\{\}sponsor(Portal|Auth|Pool|Landing)\./,
+    notKey: /^sponsor\w*\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    // The 10 sponsor routes that show these words on 2026-10-29, plus the sandbox (it mounts the
+    // sponsor Students PAGE itself, which brings the slice with it).
+    owners: [
+      '/sandbox', '/sandbox/[surface]',
+      '/sponsor', '/sponsor/account', '/sponsor/auth/reset', '/sponsor/login', '/sponsor/my-students/[id]',
+      '/sponsor/register', '/sponsor/students', '/sponsor/students/[id]', '/sponsor/terms', '/sponsor/trust',
+    ],
+  },
+}
+
+const PAGE_FILE = /^page(\.sandbox)?\.(tsx|ts|jsx|js)$/
+const LAYOUT_FILE = /^layout(\.sandbox)?\.(tsx|ts|jsx|js)$/
+const SPECIAL_FILE = /^(error|not-found|loading|template|global-error|default)\.(tsx|ts|jsx|js)$/
+const PAGES = FILES.filter((f) => f.startsWith(APP + path.sep) && PAGE_FILE.test(path.basename(f)))
+const SPECIALS = FILES.filter((f) => f.startsWith(APP + path.sep) && SPECIAL_FILE.test(path.basename(f)))
+
+/** `app/sponsor/(portal)/students/[id]/page.tsx` → `/sponsor/students/[id]` (groups dropped). */
+function routeOf(page: string): string {
+  const segs = path.relative(APP, path.dirname(page)).split(path.sep)
+    .filter((s) => s && !/^\(.*\)$/.test(s))
+  return `/${segs.join('/')}`
+}
+
+/** Every layout above a page, nearest first. */
+function layoutsAbove(page: string): string[] {
+  const out: string[] = []
+  for (let dir = path.dirname(page); dir.startsWith(APP); dir = path.dirname(dir)) {
+    for (const f of FILES) if (path.dirname(f) === dir && LAYOUT_FILE.test(path.basename(f))) out.push(f)
+    if (dir === APP) break
+  }
+  return out
+}
+
+/** Breadth-first like `reach`, but over STATIC edges only (no `import()`). */
+function reachStatic(entries: string[]): Map<string, string | null> {
+  const parent = new Map<string, string | null>(entries.map((e) => [e, null]))
+  const queue = [...entries]
+  while (queue.length) {
+    const f = queue.shift() as string
+    // Each `import()` removes ONE occurrence, so a module imported both ways is still static.
+    const lazy = [...(SCAN.get(f) as FileScan).lazy]
+    for (const spec of (SCAN.get(f) as FileScan).specifiers) {
+      const at = lazy.indexOf(spec)
+      if (at >= 0) { lazy.splice(at, 1); continue }
+      const to = resolveSpecifier(f, spec)
+      if (to && !parent.has(to)) { parent.set(to, f); queue.push(to) }
+    }
+  }
+  return parent
+}
+
+const ROUTES = PAGES.map((page) => {
+  const files = [page, ...layoutsAbove(page)]
+  return { route: routeOf(page), page, all: reach(files), stat: reachStatic(files), pageOnly: reachStatic([page]) }
+})
+
+const keysOf = (rule: SliceRule, f: string) => hitsIn(f, rule.key, rule.notKey)
+const isClientRouteFile = (f: string) => f.startsWith(APP + path.sep)
+  && (PAGE_FILE.test(path.basename(f)) || LAYOUT_FILE.test(path.basename(f)))
+  && /^\s*['"]use client['"]/.test(fs.readFileSync(f, 'utf8'))
+
+describe('TD-416: the slice patterns', () => {
+  test('scholarship: every unkept child counts; kept children and file names do not', () => {
+    const rule = SLICE_RULES.scholarship
+    const keys = (src: string) => scanSource('x.ts', src).strings
+      .filter((s) => rule.key.test(s.text) && !rule.notKey.test(s.text)).map((s) => s.text)
+    expect(keys("t('scholarship.apply.title')")).toEqual(['scholarship.apply.title'])
+    expect(keys('t(`scholarship.docs.type.${c}`)')).toEqual(['scholarship.docs.type.${}'])
+    expect(keys('t(`scholarship.${area}.title`)')).toEqual(['scholarship.${}.title'])
+    expect(keys("const p = 'scholarship.'")).toEqual(['scholarship.'])
+    expect(keys('t(`${ns}scholarship.x`)')).toEqual(['${}scholarship.x'])
+    expect(keys("t('scholarship.nav.home'); t('scholarship.subnav.x'); t('scholarship.banner.cta')")).toEqual([])
+    expect(keys("t('scholarship.navigator.x')")).toEqual(['scholarship.navigator.x'])
+    expect(keys("router.push('/scholarship/apply'); const f = 'scholarship.ts'")).toEqual([])
+  })
+
+  test('sponsor: the four namespaces count; admin.sponsors and paths do not', () => {
+    const rule = SLICE_RULES.sponsor
+    const keys = (src: string) => scanSource('x.ts', src).strings
+      .filter((s) => rule.key.test(s.text) && !rule.notKey.test(s.text)).map((s) => s.text)
+    expect(keys("t('sponsorPortal.nav.home'); t('sponsorAuth.email')")).toEqual(['sponsorPortal.nav.home', 'sponsorAuth.email'])
+    expect(keys('t(`sponsorPool.${k}`); t(`sponsorLanding.hero.${x}`)')).toEqual(['sponsorPool.${}', 'sponsorLanding.hero.${}'])
+    expect(keys("t('admin.sponsors.title'); router.push('/sponsor/login'); t('sponsorship.x')")).toEqual([])
+  })
+
+  test('static and lazy edges are told apart', () => {
+    const s = scanSource('x.tsx', "import a from '@/lib/a'\nconst b = import('@/lib/b')\n")
+    expect(s.specifiers).toEqual(['@/lib/a', '@/lib/b'])
+    expect(s.lazy).toEqual(['@/lib/b'])
+  })
+})
+
+describe.each(Object.entries(SLICE_RULES))('TD-416: the %s slice is loaded wherever its words are read', (name, rule) => {
+  const keyFiles = FILES.filter((f) => keysOf(rule, f).length > 0)
+  const loaders = ROUTES.filter((r) => r.stat.has(rule.loader))
+
+  test('the walk really read the tree (floors)', () => {
+    expect(PAGES.length).toBeGreaterThanOrEqual(80)
+    expect(SPECIALS.map(rel)).toContain('app/loading.tsx')
+    expect(keyFiles.length).toBeGreaterThanOrEqual(name === 'scholarship' ? 40 : 10)
+    expect(loaders.length).toBeGreaterThanOrEqual(10)
+  })
+
+  test('⚠ A: every route that can reach a key of the slice loads it before it renders', () => {
+    const offenders = ROUTES.filter((r) => !r.stat.has(rule.loader)).flatMap((r) => {
+      const holder = [...r.all.keys()].find((f) => keysOf(rule, f).length > 0)
+      return holder ? [`${r.route}: ${keysOf(rule, holder)[0]}\n    via ${chain(r.all, holder)}`] : []
+    })
+    // ⚠ If this fails, that route would show RAW DOTTED KEYS in production. Either the route really
+    // shows these words — import the slice's module from its page (and add the route to the
+    // slice's owners: the slice now costs that route its weight) — or a widely shared component
+    // has started reading a key of the slice, and the key belongs in that component's own namespace.
+    expect({ routesReadingTheSliceWithoutLoadingIt: offenders })
+      .toEqual({ routesReadingTheSliceWithoutLoadingIt: [] })
+  })
+
+  test('B: the shared special files (error, loading, not-found…) reach no key of the slice', () => {
+    const offenders = SPECIALS.flatMap((s) => {
+      const from = reach([s])
+      const holder = [...from.keys()].find((f) => keysOf(rule, f).length > 0)
+      return holder ? [`${rel(s)}: ${keysOf(rule, holder)[0]}\n    via ${chain(from, holder)}`] : []
+    })
+    expect({ specialFilesReadingTheSlice: offenders }).toEqual({ specialFilesReadingTheSlice: [] })
+  })
+
+  test('C: the routes that load the slice are exactly its declared owners', () => {
+    // A route here that is not declared carries the slice's weight; see A for the other way round.
+    expect(loaders.map((r) => r.route).sort()).toEqual([...rule.owners].sort())
+  })
+
+  test('D: only client route files (a page or a layout) import the loader', () => {
+    const importers = FILES.filter((f) => (EDGES.get(f) ?? []).includes(rule.loader))
+    expect(importers.length).toBeGreaterThanOrEqual(10)
+    expect(importers.filter((f) => !isClientRouteFile(f)).map(rel)).toEqual([])
+  })
+
+  test('E: a production route that loads the slice loads it from its PAGE, so the budget counts it', () => {
+    const hidden = loaders.filter((r) => !r.route.startsWith('/sandbox') && !r.pageOnly.has(rule.loader))
+      .map((r) => `${r.route}: loaded by a layout only (${chain(r.stat, rule.loader)})`)
+    expect({ sliceHiddenInALayout: hidden }).toEqual({ sliceHiddenInALayout: [] })
+  })
+
+  test('the admin slice is untouched by this: no student or sponsor owner reaches the admin loader', () => {
+    const leaking = loaders.filter((r) => !r.route.startsWith('/admin') && !r.route.startsWith('/sandbox')
+      && r.all.has(ADMIN_LOADER)).map((r) => r.route)
+    expect(leaking).toEqual([])
+  })
+})
 
 describe('every admin.* key lives where the console loads it', () => {
   test('each file holding an admin.* key is reachable from an admin (or sandbox) entry', () => {

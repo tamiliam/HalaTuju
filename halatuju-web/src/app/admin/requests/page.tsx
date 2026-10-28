@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'

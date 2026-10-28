@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { isTertiary, isThirdRoute } from '@/lib/qualification'   // third results route S2b
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'

@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'

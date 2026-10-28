@@ -1508,3 +1508,14 @@ and layout belong to an image read. (Income declarations close)
   Sprint A grew `scrape_mohe_stpm.Command.handle` to 154 lines (limit 150) and was caught only when Sprint B
   ran the scholarship suite. Run `test_code_standards.py` with ANY backend change, whichever app it touches.
   (Bumi coverage Sprint B, 2026-10-28)
+
+## 2026-10-29 — Cutting one gzip stream in two costs the routes that need both halves
+
+Moving `scholarship.*` out of the core message chunk took 28.6 kB off the median route, and put the three
+ledgered scholarship routes 0.55 to 0.71 kB OVER their lines: two chunks compress worse than one, because the
+second loses the dictionary the first built (TD-360 saw the same as +2.9 kB on the admin first paint, which is
+not budgeted, so nobody had to pay it). **Rule:** before splitting a chunk, estimate the cost on the routes that
+load BOTH halves as gz(A) + gz(B) − gz(A ∪ B), and plan where it is paid back; here a second slice (the sponsor
+words, which those routes never read) paid it. Also: **Next's link prefetch EVALUATES the linked page's
+modules**, so a side-effect import in a page (a slice loader) runs on every page that links to it once the link
+is prefetched — weight moved off a route's first load can still travel in the background. (TD-416)

@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'

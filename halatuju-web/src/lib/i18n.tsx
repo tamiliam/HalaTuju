@@ -20,6 +20,7 @@ import {
   catalogueIfLoaded,
   catalogueVersion,
   loadCatalogue,
+  sliceAbsent,
   subscribeCatalogues,
   type Catalogue,
 } from '@/lib/messages'
@@ -79,13 +80,14 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string {
  *
  * ⚠ NEVER a fallback for a missing KEY. A namespace that is present but lacks the key returns the
  * key itself, exactly as before — the contract `tOr` and the key-echo guard are built on.
+ * (TD-416: for a namespace split across slices — `scholarship` — "present" means the key's CHILD of
+ * it is present; see `sliceAbsent` in `lib/messages.ts`.)
  */
 function lookup(catalogue: Catalogue, key: string): string {
-  if (catalogue !== FALLBACK_CATALOGUE) {
-    const namespace = key.split('.', 1)[0]
-    if (!Object.prototype.hasOwnProperty.call(catalogue, namespace)) {
-      return getNestedValue(FALLBACK_CATALOGUE, key)
-    }
+  // TD-416: `sliceAbsent` is the namespace test, plus one level down for a namespace split across
+  // slices (`scholarship`: its menu words are in core, the rest in its own slice).
+  if (catalogue !== FALLBACK_CATALOGUE && sliceAbsent(catalogue, key)) {
+    return getNestedValue(FALLBACK_CATALOGUE, key)
   }
   return getNestedValue(catalogue, key)
 }

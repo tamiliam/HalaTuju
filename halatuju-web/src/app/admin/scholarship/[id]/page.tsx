@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 /**
  * The officer cockpit's ROUTE, and nothing else.
  *

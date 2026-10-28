@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-416 — scholarship/sponsor message slices (web first-load JS) - 2026-10-29
+
+- **Two more slices left the English catalogue every route downloads** (TD-360 Sprint 2, the owner's go):
+  `scholarship.*` (~30 kB gz) and the four `sponsor*` namespaces (~6 kB gz). Same mechanism as the admin slice:
+  cut at build time by `scripts/messages-slice-loader.js`, one provider, literal `import()`s for Malay and
+  Tamil, English merged before the first render. The three message files are untouched (same keys, same path).
+- **Loaded by the PAGE of each route that shows the words** — `lib/messagesScholarship.ts` on 17 routes (the
+  six `/scholarship/*` pages, `/profile`, `/onboarding/profile`, nine admin pages that show applicant answers),
+  `lib/messagesSponsor.ts` on the 10 sponsor routes (plus the portal layout, which reads them itself). Page
+  imports, not layouts, so the budget counts the weight where it is really downloaded (TD-304).
+- **`scholarship` is split one level down:** `scholarship.nav`, `.subnav` (AppHeader, on most pages) and
+  `.banner` (/dashboard) stay in core (0.1 kB). `mergeSlice` merges the namespace's children and the English
+  fallback for a slice still in the air now asks `sliceAbsent` (namespace absent, or — for a split namespace —
+  the key's child absent). A missing KEY still echoes, as before.
+- **Measured (real `next build`, this machine):** median 179.9 -> **146.377 kB** (room 0.100 kB; 0 -> 29 routes
+  may cross before the median does, before the ratchet); `/profile` 202.554 -> 197.245; `/scholarship/apply`
+  192.716 -> 187.406; `/scholarship/application` 215.668 -> 210.36; worst 223.742 -> 218.433
+  (`/admin/scholarship/[id]`); first-paint median 220.752 -> 203.307; `/` 182.321 -> 146.28; `/dashboard`
+  203.51 -> 167.469; `/search` 193.227 -> 157.186. Splitting one gzip stream into two costs
+  the slice's own routes ~0.6 kB; the sponsor cut pays that back on them.
+- **Ratchet:** median 180 -> 148, `/profile` 203 -> 199, `/scholarship/apply` 193 -> 189,
+  `/scholarship/application` 216 -> 212 (build + up to 2 kB, the TD-309 rule). Nothing raised.
+- **Guards:** `sliceReach.test.ts` now proves, per slice and per route, that every route that can reach a key
+  of the slice (statically or through `import()`) loads it before rendering; that `error` / `loading` /
+  `not-found` reach none; that the routes loading it are exactly the declared owners; that only client route
+  files import a loader; and that no production route hides a slice in a layout. `messagesSlice.test.ts`
+  proves the five slices rebuild each file exactly (merged in either order); `oneLocalePerVisitor.test.ts`
+  pins the two new static imports and the four new literal `import()`s.
+- **Known, not fixed:** Next's link prefetch evaluates a linked page's modules, so a Malay or Tamil reader on a
+  page that links to `/scholarship` or `/sponsor` (the header does) fetches those slices in the background
+  after load. Off the first-load path, words always correct; recorded for the lead.
+
 ## Small change: STPM results page streams follow the MPM grouping - 2026-10-29
 
 - **Sains Sukan is listed under Arts only** (it was in both streams). MPM groups it under "Arts and Health"

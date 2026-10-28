@@ -34,6 +34,10 @@
  *    `catalogueIfLoaded` answers only when every required slice is in.
  *  - A slice arriving later (the admin slice of a language already on screen) is merged into the
  *    SAME object and announced through `subscribeCatalogues`, so the provider re-renders.
+ *  - TD-416 (2026-10-29): `scholarship` is a slice too (`lib/messagesScholarship.ts`, loaded by the
+ *    pages that show it), and the first one that SPLITS a namespace: `scholarship.nav`, `.subnav`
+ *    and `.banner` stay in core. `mergeSlice` merges such a namespace's children, and `sliceAbsent`
+ *    is the English-fallback test that knows about it.
  *
  * ⚠ **NOT ONE WORD OF ANY LANGUAGE CHANGES HERE, AND NO KEY LEAVES ANY FILE.** All three
  * catalogues keep all ~5,400 keys and the i18n parity guards read them straight off disk. This
@@ -66,6 +70,43 @@ export type { SliceName }
  * and it is reached lazily. `oneLocalePerVisitor.test.ts` fails if another appears.
  */
 export const FALLBACK_CATALOGUE: Catalogue = { ...enCore }
+
+/**
+ * TD-416: the namespaces split ACROSS slices one level down — a few children in core, the rest in
+ * a named slice (`CORE_KEEPS` in `scripts/messages-slice-loader.js`; `messagesSlice.test.ts` holds
+ * the two lists together). For these, "the namespace is present" does not mean "its slice is in",
+ * so `i18n.tsx`'s English fallback asks `sliceAbsent` instead of looking at the namespace alone.
+ */
+export const SPLIT_NAMESPACES: ReadonlySet<string> = new Set(['scholarship'])
+
+/**
+ * Merge one slice INTO `target`. A namespace both hold (a `SPLIT_NAMESPACES` one) gets its CHILDREN
+ * merged into a fresh object — replacing it would drop the half that arrived first, whichever that
+ * was (Malay core and Malay scholarship are fetched in parallel). Every other namespace is assigned.
+ */
+export function mergeSlice(target: Catalogue, slice: Catalogue): Catalogue {
+  for (const [ns, value] of Object.entries(slice)) {
+    const have = target[ns]
+    target[ns] = SPLIT_NAMESPACES.has(ns) && have && typeof have === 'object' && value && typeof value === 'object'
+      ? { ...(have as Catalogue), ...(value as Catalogue) }
+      : value
+  }
+  return target
+}
+
+/**
+ * TD-360's English-fallback test, one level deeper for a split namespace: true when the part of
+ * `catalogue` that would hold `key` has not arrived — its whole top-level namespace is absent, or,
+ * for a `SPLIT_NAMESPACES` one, the key's CHILD of it is. Never true for a merely missing KEY: a
+ * child that is present but lacks the key still echoes the key (the `tOr` / key-echo contract).
+ */
+export function sliceAbsent(catalogue: Catalogue, key: string): boolean {
+  const [namespace, child] = key.split('.', 2)
+  if (!Object.prototype.hasOwnProperty.call(catalogue, namespace)) return true
+  if (!SPLIT_NAMESPACES.has(namespace) || child === undefined) return false
+  const value = catalogue[namespace]
+  return !!value && typeof value === 'object' && !Object.prototype.hasOwnProperty.call(value, child)
+}
 
 /** The slices every catalogue must hold before it is handed out. `admin` joins via `requireSlice`. */
 const required = new Set<SliceName>(['core'])
@@ -126,7 +167,7 @@ function loadSlice(locale: Locale, slice: SliceName): Promise<void> {
     .then((mod) => {
       // webpack/ts-jest hand back a module namespace; the parsed object is its default export.
       const parsed = ((mod as { default?: Catalogue }).default ?? mod) as Catalogue
-      merged[locale] = Object.assign(merged[locale] ?? {}, parsed)
+      merged[locale] = mergeSlice(merged[locale] ?? {}, parsed)
       have[locale].add(slice)
       delete inFlight[locale][slice]
       announce()
@@ -169,7 +210,7 @@ export function loadCatalogue(locale: Locale): Promise<Catalogue> {
  */
 export function requireSlice(slice: SliceName, english: Catalogue): void {
   if (!have.en.has(slice)) {
-    Object.assign(FALLBACK_CATALOGUE, english)
+    mergeSlice(FALLBACK_CATALOGUE, english)
     have.en.add(slice)
   }
   if (required.has(slice)) return
