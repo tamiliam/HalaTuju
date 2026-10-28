@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Income declarations hotfix — approved village forms, government statements, bank letterheads - 2026-10-28
+
+The live re-read (60 documents) wrongly failed genuinely approved forms; 7 not-submitted students blocked.
+- **A stamp with a named / titled approver needs no letterhead.** Approved = (stamp + approver name or title)
+  OR (header + signature + named) OR (header + stamp). Village forms have no letterhead; the stamp with its
+  Ketua Kampung / Pengerusi JKKK / Pesuruhjaya Sumpah is the issuing authority. #374 / #133 (unmarked), a
+  header-only letter and a stamp nobody is named for still fail.
+- **Government payslips and pension statements are not informal.** A payslip the text model calls informal
+  whose letterhead (image read) names a government body — Jabatan, Kementerian, Dewan Bahasa dan Pustaka,
+  Lembaga, Majlis, Perbadanan, ATM / Angkatan Tentera — is exempt from the approver rule (JHEV veteran
+  pension statements, a DBP payslip). A declaration form printed on a ministry's form keeps the rule.
+- **A bank statement's bank may be named on its letterhead** (image read) as well as by the text issuer.
+- No scorer change (no MODEL bump); a band can move back up → `VERDICT_ENGINE_VERSION` at push time.
+- Tests from the live field shapes; every change bitten.
+
 ## STPM certificate under production's PDF library (pypdf 5.9.0); eval caches recaptured; version guard - 2026-10-28
 
 - **Root cause:** local Python had pypdf 6.19.0 / pypdfium2 5.13.0; production's `requirements.lock` pins 5.9.0 /

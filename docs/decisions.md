@@ -15246,6 +15246,16 @@ the existing letters and informal slips must be re-read live after deploy, befor
 lose those documents from the verdict.
 **Existing documents** keep the score they were read with until re-read (live, with the flags — TD-407).
 **Versions:** genuineness `MODEL_VERSION` 1.13.0 (salary_doc 1.2.0); `VERDICT_ENGINE_VERSION` 2026-10-27.6.
+**Hotfix 2026-10-28 (live re-read of 60 documents wrongly failed approved forms):** approved = (stamp + a
+named or titled approver) OR (header + signature + named) OR (header + stamp) — a village form has no
+letterhead, and the stamp with its Ketua Kampung / Pengerusi JKKK / Pesuruhjaya Sumpah IS the issuing
+authority; header-only, unmarked (#374, #133) and a stamp nobody is named for still fail. A payslip or
+pension statement the text model calls INFORMAL whose letterhead (image read) names a government body
+(Jabatan, Kementerian, Dewan Bahasa dan Pustaka, Lembaga, Majlis, Perbadanan, ATM / Angkatan Tentera) is an
+official statement and exempt (JHEV veteran pensions, a DBP payslip) — chosen over widening the scorer: it
+reads the printed letterhead, and a DECLARATION form on a ministry's form keeps the rule. A bank statement's
+bank may be named by its text issuer OR its letterhead (image read) — the least loose of the options, since
+it still needs a known bank's name read off the document.
 
 ## 2026-10-28 — The SPM certificate is read row by row from positions; an STPM certificate's passed count may be absent
 

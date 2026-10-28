@@ -409,6 +409,52 @@ class ThePerEarnerAnswerAndTheGate(_Case):
                     out = income_doc_blockers(app)
                     self.assertEqual('income_doc_unapproved:father' in out, not counts)
 
+    def test_hotfix_live_shapes_a_village_stamp_with_its_approver_needs_no_letterhead(self):
+        """Hotfix 2026-10-28, from the live re-read's field shapes: a stamp + a named/titled approver counts
+        with NO header (a village form has none); #374 / #133 (mark 'no', no approver) and a header-only letter
+        still fail."""
+        from apps.scholarship.income_engine import has_income_support_doc
+        blank = {'issuer_header': '', 'approver_name': '', 'approver_title': '', 'has_stamp_or_signature': 'no'}
+        cases = (({'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp'}, True),
+                 ({'approver_title': 'Pengerusi JKKK', 'has_stamp_or_signature': 'stamp'}, True),
+                 ({'approver_name': 'ENCIK CONTOH', 'approver_title': 'Pesuruhjaya Sumpah',
+                   'has_stamp_or_signature': 'stamp'}, True),
+                 ({'approver_name': 'ENCIK CONTOH', 'has_stamp_or_signature': 'stamp'}, True),
+                 ({'has_stamp_or_signature': 'stamp'}, False),                     # a stamp nobody is named for
+                 ({'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'signature'}, False),  # no header
+                 ({}, False),                                                      # #374 / #133: mark 'no'
+                 ({'issuer_header': 'JKKK KAMPUNG CONTOH'}, False))               # header only
+        for fields, counts in cases:
+            with self.subTest(fields):
+                app = self._app(income_declared={'father': 800})
+                _doc(app, 'income_support_doc', fields={'amount': 'RM800', **blank, **fields})
+                self.assertIs(has_income_support_doc(app, 'father'), counts)
+
+    def test_hotfix_a_government_payslip_or_pension_statement_is_not_informal(self):
+        """JHEV veteran pension statements and a Dewan Bahasa dan Pustaka payslip (scored 'informal', mark 'no')
+        are official statements; a DECLARATION form on a ministry's form keeps the approver rule."""
+        from apps.scholarship.income_shown import income_shown
+        blank = {'approver_name': '', 'approver_title': '', 'has_stamp_or_signature': 'no'}
+        for seen, header, shown in (('informal', 'JABATAN HAL EHWAL VETERAN ATM KEMENTERIAN PERTAHANAN', True),
+                                    ('informal', 'DEWAN BAHASA DAN PUSTAKA', True),
+                                    ('informal', 'KEDAI RUNCIT CONTOH', False),
+                                    ('declaration', 'KEMENTERIAN PENDIDIKAN BAHAGIAN MATRIKULASI', False)):
+            with self.subTest(header):
+                app = self._app()
+                _doc(app, 'salary_slip', seen=seen, fields={'gross_income': '1,800.00', 'issuer_header': header, **blank})
+                self.assertIs(income_shown(app, 'father').shown, shown)
+
+    def test_hotfix_a_bank_named_on_the_letterhead_counts(self):
+        """A live statement's text read named no issuer; its letterhead (the image read) did."""
+        from apps.scholarship.income_engine import has_income_support_doc
+        for header, counts in (('MAYBANK ISLAMIC BERHAD', True), ('', False)):
+            with self.subTest(header):
+                app = self._app(income_declared={'father': 800})
+                _doc(app, 'income_support_doc', seen=None,
+                     fields={'kind': 'bank_statement', 'issuer': '', 'amount': 'RM800', **CHECKED,
+                             'issuer_header': header})
+                self.assertIs(has_income_support_doc(app, 'father'), counts)
+
     def test_owner_ruling_4a_a_bank_statement_needs_no_approver(self):
         """4A (2026-10-28): the bank's header is enough — a statement whose issuer NAMES a known Malaysian bank
         counts with no approver (and is not "still checking"); a self-typed "PENYATA BANK" naming no bank, or

@@ -26,6 +26,7 @@ One reader for every door: `income_shown.proof_flagged` (so the gate, the cluste
 TD-409's hold), the student's blocker (`member_approval_state`), the coach (`approval_coach`) and the
 officer's drawer reason (`missing_reason`).
 """
+import re
 from datetime import timedelta
 
 from .genuineness.declaration_doc import DECLARATION
@@ -161,10 +162,30 @@ def is_informal(doc) -> bool:
     """Ruling 2A: a supporting income document, or a payslip read as informal / a declaration form — save a
     bank statement (ruling 4A, `_bank_statement`)."""
     dt = getattr(doc, 'doc_type', '')
+    f = _fields(doc)
     if dt == 'income_support_doc':
-        f = _fields(doc)
-        return not _bank_statement(f.get('kind'), _seen(doc), f.get('issuer'))
-    return dt == 'salary_slip' and _seen(doc) in _INFORMAL_SLIP_FAMILIES
+        # The bank's name may be read from the text (`issuer`) OR off the image (`issuer_header`, hotfix
+        # 2026-10-28: a live statement's text read named no issuer, its letterhead did).
+        return not (_bank_statement(f.get('kind'), _seen(doc), f.get('issuer'))
+                    or _bank_statement(f.get('kind'), _seen(doc), f.get('issuer_header')))
+    if dt != 'salary_slip' or _seen(doc) not in _INFORMAL_SLIP_FAMILIES:
+        return False
+    return not (_seen(doc) == 'informal' and _names_a_government_body(f.get('issuer_header')))
+
+
+#: Hotfix 2026-10-28: a printed payslip / pension statement whose letterhead (read off the IMAGE) names a
+#: GOVERNMENT body — a Jabatan / Kementerian / statutory body or the armed forces — is an official statement,
+#: not an informal one (live: JHEV veteran pension statements, a Dewan Bahasa dan Pustaka payslip, both scored
+#: 'informal' by the text model). Only the INFORMAL family is exempted: a DECLARATION form printed on a
+#: ministry's form (a matriculation "Borang Pengesahan Pendapatan") keeps the approver rule, and #374's
+#: village forms read no such header.
+_GOVERNMENT_BODY = re.compile(r'\b(JABATAN|KEMENTERIAN|DEWAN BAHASA DAN PUSTAKA|LEMBAGA|MAJLIS|PERBADANAN'
+                              r'|ANGKATAN TENTERA|ATM)\b')
+
+
+def _names_a_government_body(header) -> bool:
+    from .genuineness.results_doc import _norm_fold_upper_alnum
+    return bool(_GOVERNMENT_BODY.search(_norm_fold_upper_alnum(header or '')))
 
 
 def _fields(doc) -> dict:
@@ -202,8 +223,13 @@ def approval_missing(doc) -> tuple:
     mark = str(f.get('has_stamp_or_signature') or '').strip().lower()
     stamped = mark in ('stamp', 'chop', 'cop', 'both')
     signed = mark in ('signature', 'yes', 'ya', 'true')
-    approver = stamped or (signed and (filled('approver_name') or filled('approver_title')))
-    return tuple(part for part, ok in (('header', filled('issuer_header')), ('approver', approver)) if not ok)
+    named = filled('approver_name') or filled('approver_title')
+    approver = stamped or (signed and named)
+    # Hotfix 2026-10-28 (live re-read): a village form has no letterhead — a STAMP with a named / titled
+    # approver (Ketua Kampung, Pengerusi JKKK, Pesuruhjaya Sumpah…) IS the issuing authority. So approved =
+    # (stamp + named) or (header + signature + named) or (header + stamp); header-only or unmarked still fails.
+    header = filled('issuer_header') or (stamped and named)
+    return tuple(part for part, ok in (('header', header), ('approver', approver)) if not ok)
 
 
 def approval_counts(doc) -> bool:
