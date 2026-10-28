@@ -14,6 +14,7 @@ import { resultsSyncFields, syncProfileSafely } from '@/lib/resultsSync'
 import { resultsEditPath } from '@/lib/qualification'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
 import { applyPagePath } from '@/lib/applyPagePath'
+import { isMalaysian } from '@/lib/bumiputera'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -28,6 +29,9 @@ export default function ProfileInputPage() {
   const { token, isAnonymous, refreshProfile } = useAuth()
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
+  // Bumi coverage Sprint B: COURSE GUIDE ONLY (unlocks Bumiputera-only courses). null = not
+  // answered yet. Asked only of a Malaysian; a Foreign student saves null.
+  const [bumiputera, setBumiputera] = useState<boolean | null>(null)
   const [state, setState] = useState<string>('')
   // Optional guided school (reuses the MOE secondary-school list). Captured here so
   // the normal course-guide signup records it the same guided way the B40 apply form does.
@@ -60,6 +64,7 @@ export default function ProfileInputPage() {
       const parsed = JSON.parse(savedProfile)
       if (parsed.gender) setGender(parsed.gender)
       if (parsed.nationality) setNationality(parsed.nationality)
+      if (typeof parsed.bumiputera === 'boolean') setBumiputera(parsed.bumiputera)
       if (parsed.state) setState(parsed.state)
       if (parsed.school) setSchool(parsed.school)
       if (parsed.colorblind !== undefined) setColorblind(parsed.colorblind)
@@ -75,6 +80,7 @@ export default function ProfileInputPage() {
         if (p.school) { setSchool(p.school); setSchoolKnown(true) }
         if (p.gender) setGender(p.gender)
         if (p.nationality) setNationality(p.nationality)
+        if (typeof p.bumiputera === 'boolean') setBumiputera(p.bumiputera)
         if (p.colorblind !== undefined) setColorblind(!!p.colorblind)
         if (p.disability !== undefined) setDisability(!!p.disability)
 
@@ -88,7 +94,11 @@ export default function ProfileInputPage() {
     }
   }, [token, isAnonymous])
 
-  const isComplete = gender !== ''
+  const malaysian = isMalaysian(nationality)
+  // Required like gender — but only asked of a Malaysian (a Foreign student is never Bumiputera).
+  const isComplete = gender !== '' && (!malaysian || bumiputera !== null)
+  // What is saved: the answer for a Malaysian, null for a Foreign student (the server agrees).
+  const savedBumiputera = malaysian ? bumiputera : null
 
   const handleContinue = async () => {
     if (!isComplete) return
@@ -100,6 +110,7 @@ export default function ProfileInputPage() {
       ...prev,
       gender,
       nationality,
+      bumiputera: savedBumiputera,
       state,
       school,
       colorblind,
@@ -112,6 +123,7 @@ export default function ProfileInputPage() {
       const syncPayload: SyncProfileData = {
         gender,
         nationality,
+        bumiputera: savedBumiputera,
         preferred_state: state,
         colorblind,
         disability,
@@ -314,8 +326,10 @@ export default function ProfileInputPage() {
           </div>
           )}
 
-          {/* Row 2: Jantina */}
-          <div className="mb-6">
+          {/* Row 2: Jantina + Bumiputera — side by side on wide screens, stacked on phones (the
+              owner-approved Stitch layout). Bumiputera is asked only of a Malaysian. */}
+          <div className={`grid grid-cols-1 ${malaysian ? 'md:grid-cols-2' : ''} gap-5 mb-6`}>
+          <div>
             <label className="block text-sm font-medium text-ground-700 mb-2">
               {t('onboarding.gender')} <span className="text-critical-600">*</span>
             </label>
@@ -349,6 +363,39 @@ export default function ProfileInputPage() {
                 {t('onboarding.female')}
               </button>
             </div>
+          </div>
+
+          {/* Bumiputera — course guide only: it shows Bumiputera-only courses (UiTM, MARA). */}
+          {malaysian && (
+          <div data-testid="onboarding-bumiputera">
+            <label className="block text-sm font-medium text-ground-700 mb-2">
+              {t('onboarding.bumiputera')} <span className="text-critical-600">*</span>
+            </label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBumiputera(true)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
+                  bumiputera === true
+                    ? 'border-brand-shape bg-primary-50 text-primary-700'
+                    : 'border-ground-200 text-ground-600 hover:border-ground-300'
+                }`}
+              >
+                {t('onboarding.bumiYes')}
+              </button>
+              <button
+                onClick={() => setBumiputera(false)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
+                  bumiputera === false
+                    ? 'border-brand-shape bg-primary-50 text-primary-700'
+                    : 'border-ground-200 text-ground-600 hover:border-ground-300'
+                }`}
+              >
+                {t('onboarding.bumiNo')}
+              </button>
+            </div>
+            <p className="text-xs text-ground-400 mt-2">{t('onboarding.bumiHelp')}</p>
+          </div>
+          )}
           </div>
 
           {/* Row 4: Keperluan Khas */}

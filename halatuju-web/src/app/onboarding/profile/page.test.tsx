@@ -63,7 +63,9 @@ beforeEach(() => {
   jest.clearAllMocks()
   localStorage.clear()
   sessionStorage.clear()
-  profileMock.mockResolvedValue({ gender: 'female', school: '' })
+  // Bumi coverage Sprint B: a Malaysian must answer Bumiputera before continuing, so the stored
+  // profile these return-trip tests start from carries an answer.
+  profileMock.mockResolvedValue({ gender: 'female', bumiputera: false, school: '' })
 })
 
 describe('(a) the apply stash prefills the school', () => {
@@ -77,7 +79,7 @@ describe('(a) the apply stash prefills the school', () => {
   it("the profile's own school wins over the stash", async () => {
     detourFrom('SMK Taman Desa')
     sessionStorage.removeItem(APPLY_RETURN_KEY)
-    profileMock.mockResolvedValue({ gender: 'female', school: 'SMK Bukit Jalil' })
+    profileMock.mockResolvedValue({ gender: 'female', bumiputera: false, school: 'SMK Bukit Jalil' })
     await mount()
     expect(schoolInput().value).toBe('SMK Bukit Jalil')
   })
@@ -96,7 +98,7 @@ describe('(b) on the way back to the application', () => {
 
   it('hides it when only the profile knows the school, and saving does not erase it', async () => {
     detourFrom('')
-    profileMock.mockResolvedValue({ gender: 'female', school: 'SMK Bukit Jalil' })
+    profileMock.mockResolvedValue({ gender: 'female', bumiputera: false, school: 'SMK Bukit Jalil' })
     await mount()
     expect(schoolBox()).toBeNull()
     await pressContinue()
@@ -119,11 +121,64 @@ describe('(b) on the way back to the application', () => {
 
 describe('outside the return trip nothing changes', () => {
   it('shows the School box with the profile school, as before', async () => {
-    profileMock.mockResolvedValue({ gender: 'female', school: 'SMK Bukit Jalil' })
+    profileMock.mockResolvedValue({ gender: 'female', bumiputera: false, school: 'SMK Bukit Jalil' })
     await mount()
     expect(screen.getByText('onboarding.seeRecommendations')).toBeTruthy()
     expect(schoolInput().value).toBe('SMK Bukit Jalil')
     await pressContinue()
     expect(push).toHaveBeenCalledWith('/dashboard')
+  })
+})
+
+// Bumi coverage Sprint B (owner ruling 2026-10-28): the Bumiputera answer — course guide only.
+describe('the Bumiputera question', () => {
+  const bumiBlock = () => screen.queryByTestId('onboarding-bumiputera')
+  const continueButton = () =>
+    screen.getByRole('button', { name: /onboarding\.seeRecommendations/ }) as HTMLButtonElement
+
+  it('is asked of a Malaysian, and is required like gender', async () => {
+    profileMock.mockResolvedValue({ gender: 'female', nationality: 'malaysian', school: '' })
+    await mount()
+    expect(bumiBlock()).toBeTruthy()
+    expect(screen.getByText('onboarding.bumiHelp')).toBeTruthy()
+    expect(continueButton().disabled).toBe(true)          // unanswered: cannot continue
+    fireEvent.click(screen.getByRole('button', { name: 'onboarding.bumiNo' }))
+    expect(continueButton().disabled).toBe(false)
+  })
+
+  it('a yes is saved to this browser and sent with the sync', async () => {
+    profileMock.mockResolvedValue({ gender: 'female', nationality: 'malaysian', school: '' })
+    await mount()
+    fireEvent.click(screen.getByRole('button', { name: 'onboarding.bumiYes' }))
+    await pressContinue()
+    expect(syncMock.mock.calls[0][0].bumiputera).toBe(true)
+    expect(JSON.parse(localStorage.getItem(KEY_PROFILE) as string).bumiputera).toBe(true)
+  })
+
+  it('the stored answer is shown again', async () => {
+    profileMock.mockResolvedValue({ gender: 'female', nationality: 'malaysian', bumiputera: true, school: '' })
+    await mount()
+    expect(continueButton().disabled).toBe(false)
+    await pressContinue()
+    expect(syncMock.mock.calls[0][0].bumiputera).toBe(true)
+  })
+
+  it('is hidden for a Foreign student, who can continue without it and saves null', async () => {
+    profileMock.mockResolvedValue({ gender: 'female', nationality: 'non_malaysian', school: '' })
+    await mount()
+    expect(bumiBlock()).toBeNull()
+    expect(continueButton().disabled).toBe(false)
+    await pressContinue()
+    expect(syncMock.mock.calls[0][0]).toHaveProperty('bumiputera', null)
+    expect(JSON.parse(localStorage.getItem(KEY_PROFILE) as string).bumiputera).toBeNull()
+  })
+
+  it('switching to Foreign after a yes hides it and sends null, never the old yes', async () => {
+    profileMock.mockResolvedValue({ gender: 'female', nationality: 'malaysian', bumiputera: true, school: '' })
+    await mount()
+    fireEvent.click(screen.getByRole('button', { name: /onboarding\.nonMalaysian/ }))
+    expect(bumiBlock()).toBeNull()
+    await pressContinue()
+    expect(syncMock.mock.calls[0][0]).toHaveProperty('bumiputera', null)
   })
 })

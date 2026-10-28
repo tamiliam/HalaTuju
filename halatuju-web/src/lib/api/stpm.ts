@@ -30,6 +30,8 @@ export interface StpmEligibilityRequest {
   gender?: string
   nationality?: string
   colorblind?: boolean
+  /** Bumi coverage Sprint B: true unlocks Bumiputera-only courses (server ignores it if Foreign). */
+  bumiputera?: boolean
 }
 
 export interface StpmEligibilityResponse {
@@ -167,6 +169,8 @@ export interface StpmSearchParams {
   q?: string
   university?: string
   stream?: string
+  /** Bumi coverage Sprint B: the student says they are Bumiputera (see `isBumiputera`). */
+  bumiputera?: boolean
   limit?: number
   offset?: number
 }
@@ -247,6 +251,7 @@ export async function searchStpmCourses(
   if (params.q) searchParams.set('q', params.q)
   if (params.university) searchParams.set('university', params.university)
   if (params.stream) searchParams.set('stream', params.stream)
+  if (params.bumiputera) searchParams.set('bumiputera', '1')   // Bumi-only courses shown (Sprint B)
   if (params.limit) searchParams.set('limit', String(params.limit))
   if (params.offset) searchParams.set('offset', String(params.offset))
   const qs = searchParams.toString()

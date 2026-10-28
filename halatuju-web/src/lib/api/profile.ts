@@ -17,6 +17,9 @@ export interface StudentProfile {
   grades: Record<string, string>
   gender: 'male' | 'female'
   nationality: 'malaysian' | 'non_malaysian'
+  /** Bumi coverage Sprint B: COURSE GUIDE ONLY — unlocks Bumiputera-only courses. null = not
+   *  answered, or Foreign (the server stores null for a foreign student). Read via `isBumiputera`. */
+  bumiputera?: boolean | null
   colorblind?: boolean
   disability?: boolean
   coq_score?: number
@@ -204,6 +207,8 @@ export interface SyncProfileData {
   grades?: Record<string, string>
   gender?: string
   nationality?: string
+  /** Bumi coverage Sprint B: null when Foreign (the server forces null for a foreign student). */
+  bumiputera?: boolean | null
   colorblind?: boolean
   disability?: boolean
   student_signals?: Record<string, Record<string, number>>

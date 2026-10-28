@@ -56,7 +56,8 @@ beforeEach(() => {
   jest.clearAllMocks()
   sessionStorage.clear()
   localStorage.clear()
-  localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'male', state: 'Johor' }))
+  // Bumi coverage Sprint B: a Malaysian answers Bumiputera before the last step can be pressed.
+  localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'male', bumiputera: false, state: 'Johor' }))
 })
 
 /** The apply form's "edit results": the stash and the return marker, exactly as it writes them. */

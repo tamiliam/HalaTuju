@@ -143,6 +143,8 @@ export interface SearchParams {
   state?: string
   qualification?: string
   aliran?: string
+  /** Bumi coverage Sprint B: the student says they are Bumiputera (see `isBumiputera`). */
+  bumiputera?: boolean
   limit?: number
   offset?: number
 }
@@ -159,6 +161,7 @@ export async function searchCourses(
   if (params.state) query.set('state', params.state)
   if (params.qualification) query.set('qualification', params.qualification)
   if (params.aliran) query.set('aliran', params.aliran)
+  if (params.bumiputera) query.set('bumiputera', '1')   // Bumi-only courses shown (Sprint B)
   if (params.limit) query.set('limit', String(params.limit))
   if (params.offset) query.set('offset', String(params.offset))
   const qs = query.toString()

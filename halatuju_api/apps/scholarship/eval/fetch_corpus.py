@@ -23,6 +23,23 @@ BUCKET = "b40-documents"
 EXT = {"image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "application/pdf": "pdf",
        "image/heic": "heic", "image/heif": "heif", "image/webp": "webp"}
 SNAP_COLS = ["vision_nric", "vision_name", "vision_address", "vision_error", "vision_fields"]
+# ⚠ AN EXPLICIT COLUMN LIST, NEVER "*" (Bumi coverage Sprint B, 2026-10-28): "*" would copy the
+# course-guide-only Bumiputera answer into applicants.json, and the scholarship side must never
+# hold it (guard: apps/scholarship/tests/test_bumiputera_blind.py). What the eval uses: the join
+# key, then the declared record `_test_fixtures._set_safe` can load (text/JSON/bool/int columns,
+# which includes name + nric for context.json and stpm_grades for stpm_parse_check).
+PROFILE_COLS = (
+    "supabase_user_id,grades,name,school,address,postal_code,city,contact_email,"
+    "contact_email_verified,contact_phone,contact_phone_verified,whatsapp_opt_in,nric,nric_verified,"
+    "angka_giliran,household_income,household_size,receives_str,receives_jkm,guardians,father_name,"
+    "father_occupation,father_occupation_other,mother_name,mother_occupation,mother_occupation_other,"
+    "other_family_members,siblings_in_school,siblings_in_tertiary,pathway_certainty,chosen_pathway,"
+    "pre_u_track,pre_u_institution,chosen_programme,pathways_considered,uncertainty_reasons,"
+    "uncertainty_note,gender,nationality,colorblind,disability,student_signals,preferred_state,"
+    "preferred_call_language,financial_pressure,travel_willingness,exam_type,results_exam_type,"
+    "higher_institution_type,completed_qualifications,stpm_grades,stpm_koko_unconfirmed,muet_band,"
+    "spm_prereq_grades,stream_subjects,elective_subjects,spm_elective_subjects,spm_stream,"
+    "referral_source")
 
 
 def rest(base, key, table, select, params=None):
@@ -80,7 +97,7 @@ def main():
         "vision_nric,vision_name,vision_address,vision_error,vision_run_at,vision_fields,application_id",
         {"doc_type": f"in.{types_in}"})
     apps = {a["id"]: a for a in rest(sb_base, sb_key, "scholarship_applications", "*")}
-    profs = {p["supabase_user_id"]: p for p in rest(sb_base, sb_key, "api_student_profiles", "*")}
+    profs = {p["supabase_user_id"]: p for p in rest(sb_base, sb_key, "api_student_profiles", PROFILE_COLS)}
     rows = []
     for d in docs:
         if not (d.get("storage_path") or "").strip():
