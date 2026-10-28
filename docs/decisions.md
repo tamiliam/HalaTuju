@@ -15444,3 +15444,15 @@ not followed. Found by the Consolidation Review of 2026-10-28.
 
 **Revisit if:** a count genuinely needs "was ever offered" (the stamp) rather than "was awarded" —
 give it its own name, beside this one, and narrow the guard with the reason.
+
+## 2026-10-28 — Bumiputera-only courses and Islamic subjects come into scope (owner ruling; supersedes 2026-03-18 agama ruling and the launch "Bumi out of scope" rule)
+**Decision:** HalaTuju covers every public UPU course (post-SPM and post-STPM) and, where possible, UP_TVET,
+including Bumiputera-only programmes (UiTM, MARA, others) and the Islamic SPM subjects. A Bumiputera Yes/No on
+"A Few More Details" decides who sees Bumi-only courses; only students who say Yes see them.
+**Constraints (owner):** (1) the Bumi answer is course-guide ONLY — never sent to the scholarship engine,
+sponsors, reports or CSV exports, so the s44(6) "we do not collect ethnicity" stance for the scholarship holds;
+(2) no religion question and no "Muslim only" label — Islamic courses are open to anyone, gated by subject
+grades alone (Sprint A found no programme on either track that asks for a religion).
+**Bumi source of truth:** the portal's own "Program BUMI" filter AND the Syarat wording, both captured; they
+agreed on every programme on 2026-10-28. The listing's "Feeder Bumiputera" badge is not a Bumi rule.
+**Revisit if:** the two signals ever disagree on a programme, or a programme starts asking for a religion.

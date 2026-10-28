@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi + Islamic coverage — Sprint A: data inventory (scraper flags only, NO DB writes) - 2026-10-28
+
+- **`scrape_mohe_stpm` gains two opt-in Bumiputera signals.** `--with-bumi` runs a second listing pass with the
+  portal's own "Program BUMI = Ya" filter (a server-session toggle, so it runs in a fresh browser context and
+  refuses to continue if the count did not narrow); `--with-syarat` fetches each programme's Syarat modal and
+  flags the "Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja" wording.
+  Both off by default, so `refresh_stpm` is unchanged. +14 pure-logic tests.
+- **Inventory:** `docs/bumi-inventory-2026-10-28.md`. Both signals agree on every programme. STPM: the 162
+  courses we flag are exactly the portal's 162 — nothing to add. SPM: 150 to add in Sprint D (136 Bumi-only,
+  87 of them UiTM; 14 open Islamic-subject diplomas/Tamhidi at UniSZA, USIM, UM). Input file
+  `halatuju_api/data/spm/mohe_bumi_2026-10-28.csv`. UP_TVET MARA sample: 20/20 "Calon Bumiputera Sahaja".
+- Roadmap: `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md` (Sprint E dropped).
 ## Consolidation review — ten small changes, forty-one sprint lines; two guards (docs and tests only, nothing to deploy) - 2026-10-28
 
 - **Reviewed** the ten small changes since 2026-10-18 and moved four sprint lines out of `## Pending`
