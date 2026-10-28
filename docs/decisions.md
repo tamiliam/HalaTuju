@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## No second AI company reads student documents: TD-399 (OpenAI fallback) is parked — 2026-10-28 (owner ruling)
+
+Asked: when Gemini is down, may student documents (ICs, payslips, EPF statements, results) be sent to OpenAI to
+be read instead? **Owner: "No, not now."** Gemini stays the only AI that reads student documents. An outage is
+covered by what already exists: our failure is a deferred read, never the student's "unreadable" (2026-10-24);
+the hourly self-heal re-reads deferred documents for 72 hours; the super-admin System health light (2026-10-28)
+and the outage email show an outage at once. Why: a second processor would see students' identity and income
+papers, needing a privacy-notice change, and the one real outage (prepaid credit, 2026-10-23) was ours to fix,
+not Gemini's. `OPENAI_API_KEY` stays on halatuju-api, unused for documents. Revisit only if Gemini outages recur
+despite auto-reload. Supersedes in part 2026-10-24 item 4 (which left it pending this ruling).
+
 ## Two Check-2 asks complete an STPM student's results; the CGPA matches within 0.01 everywhere — 2026-10-28 (STPM CGPA C4, owner rulings)
 
 **Decision:** after Submit, Check 2 asks (1) `stpm_grades_incomplete` when an STPM-results applicant's grades are
@@ -15444,3 +15455,23 @@ not followed. Found by the Consolidation Review of 2026-10-28.
 
 **Revisit if:** a count genuinely needs "was ever offered" (the stamp) rather than "was awarded" —
 give it its own name, beside this one, and narrow the guard with the reason.
+
+## 2026-10-28 — Bumiputera-only courses and Islamic subjects come into scope (owner ruling; supersedes 2026-03-18 agama ruling and the launch "Bumi out of scope" rule)
+**Decision:** HalaTuju covers every public UPU course (post-SPM and post-STPM) and, where possible, UP_TVET,
+including Bumiputera-only programmes (UiTM, MARA, others) and the Islamic SPM subjects. A Bumiputera Yes/No on
+"A Few More Details" decides who sees Bumi-only courses; only students who say Yes see them.
+**Constraints (owner):** (1) the Bumi answer is course-guide ONLY — never sent to the scholarship engine,
+sponsors, reports or CSV exports, so the s44(6) "we do not collect ethnicity" stance for the scholarship holds;
+(2) no religion question and no "Muslim only" label — Islamic courses are open to anyone, gated by subject
+grades alone (Sprint A found no programme on either track that asks for a religion).
+**Bumi source of truth:** the portal's own "Program BUMI" filter AND the Syarat wording, both captured; they
+agreed on every programme on 2026-10-28. The listing's "Feeder Bumiputera" badge is not a Bumi rule.
+**Revisit if:** the two signals ever disagree on a programme, or a programme starts asking for a religion.
+
+## 2026-10-28 — The scholarship programme pickers show every course and never read the Bumiputera answer (owner, Option A)
+**Decision:** the scholarship apply page and the /profile "Your Plans" picker (`loadDegreeChoices(..., { allCourses: true })`)
+list every course, Bumi-only included, to every student, and never read `StudentProfile.bumiputera`.
+**Why:** a picker filtered on the answer would let a reviewer or sponsor infer it from the programme chosen. A
+non-Bumi student who picks a Bumi-only course simply will not get a place, and the offer letter corrects it.
+Sponsors are never told the answer; a guess from the institution is accepted (owner).
+**Revisit if:** a scholarship rule ever needs to know whether a chosen programme is reachable for the student.

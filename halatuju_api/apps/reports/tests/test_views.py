@@ -184,6 +184,25 @@ class TestReportViews(TestCase):
         self.assertEqual(call_kwargs['muet_band'], 4)
 
     @patch('apps.reports.views.generate_report')
+    def test_the_bumiputera_answer_never_reaches_the_report(self, mock_gen):
+        """Bumi coverage Sprint B (owner ruling 2026-10-28): the answer is COURSE-GUIDE ONLY. It is
+        neither handed to the report writer nor stored in the report's profile snapshot — fails the
+        day somebody adds it to either (the s44(6) stance, docs/decisions.md)."""
+        mock_gen.return_value = {
+            'markdown': 'text', 'model_used': 'gemini-2.5-flash', 'generation_time_ms': 100,
+        }
+        self.profile.bumiputera = True
+        self.profile.save()
+        self.client.post('/api/v1/reports/generate/',
+                         {'eligible_courses': [{'course_name': 'Diploma IT'}], 'insights': {}},
+                         format='json')
+        mock_gen.assert_called_once()
+        self.assertFalse([k for k in mock_gen.call_args[1] if 'bumi' in k.lower()])
+        snap = GeneratedReport.objects.latest('id').student_profile_snapshot
+        self.assertNotIn('bumiputera', snap)
+        self.assertNotIn('bumi', str(snap).lower())
+
+    @patch('apps.reports.views.generate_report')
     def test_spm_student_passes_spm_exam_type(self, mock_gen):
         """POST /api/v1/reports/generate/ passes exam_type='spm' and no STPM data for SPM students."""
         mock_gen.return_value = {

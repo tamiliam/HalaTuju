@@ -199,7 +199,9 @@ export default function ScholarshipApplyPage() {
     if (isTertiary(held)) {
       // STPM: its eligible degrees; Matriculation / Asasi / Diploma: EVERY degree, unfiltered (D2).
       // Lazy: only a tertiary student needs the degree loader (and the bytes stay off the page entry).
-      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token))
+      // Owner ruling 2026-10-28 (Bumi coverage, Option A): EVERY course, Bumi-only included, for every
+      // student — the Bumiputera answer is course-guide only and is never read here.
+      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token, { allCourses: true }))
         .then(setEligibleCourses)
         .catch(() => setEligibleCourses([]))
         .finally(() => setPathwayLoading(false))

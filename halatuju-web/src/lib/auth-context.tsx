@@ -221,6 +221,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { /* malformed — start fresh */ }
     if (profile.gender) demo.gender = profile.gender
     if (profile.nationality) demo.nationality = profile.nationality
+    // Bumi coverage Sprint B: the server's answer wins, null included (Foreign, or a switch to
+    // Foreign on another device). The sign-in sync has already sent this browser's answer up.
+    if (profile.bumiputera !== undefined) demo.bumiputera = profile.bumiputera
     if (profile.colorblind != null) demo.colorblind = profile.colorblind
     if (profile.disability != null) demo.disability = profile.disability
     // CoQ is persisted on the profile as snake_case `coq_score`, but the app reads

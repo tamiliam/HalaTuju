@@ -86,7 +86,8 @@ it('My Results names the qualification and shows the served overall CGPA', async
 
 it.each(['matric', 'asasi', 'diploma'])('My Plans offers a %s holder EVERY degree, unfiltered (D2)', async (kind) => {
   mount({ ...MATRIC, exam_type: kind, results_exam_type: kind, results_held: kind })
-  await waitFor(() => expect(searchStpmCourses).toHaveBeenCalledWith({}, { token: 'tkn' }))
+  // Every degree, Bumiputera-only ones included (owner ruling 2026-10-28, Bumi coverage Option A).
+  await waitFor(() => expect(searchStpmCourses).toHaveBeenCalledWith({ bumiputera: true }, { token: 'tkn' }))
   expect(checkStpmEligibility).not.toHaveBeenCalled()
   expect(checkEligibility).not.toHaveBeenCalled()
 })

@@ -55,6 +55,7 @@ from .serializers import (
     normalize_gender,
     normalize_nationality,
 )
+from .bumiputera import foreign_never_bumi, nationality_payload, resolve_bumiputera, search_bumiputera
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import check_stpm_eligibility
 from .stpm_pngk import stpm_calculation, stpm_cgpa_payload
@@ -113,6 +114,7 @@ class CourseSearchView(APIView):
       &source_type=poly        (CourseRequirement.source_type)
       &state=Selangor          (Institution.state via CourseInstitution)
       &qualification=SPM|STPM  (filter by qualification; empty = both)
+      &bumiputera=1            (Bumi-only courses shown; `search_bumiputera`, Sprint B)
       &limit=24&offset=0       (pagination)
     """
     permission_classes = [AllowAny]
@@ -245,8 +247,9 @@ class CourseSearchView(APIView):
         if include_stpm:
             stpm_qs = StpmCourse.objects.select_related('requirement', 'institution').filter(is_active=True)
 
-            # Exclude bumiputera-only courses
-            stpm_qs = stpm_qs.exclude(requirement__req_bumiputera=True)
+            # Bumiputera-only courses: only for a student who says they are Bumi (Sprint B).
+            if not search_bumiputera(request.query_params):
+                stpm_qs = stpm_qs.exclude(requirement__req_bumiputera=True)
 
             if q:
                 stpm_qs = stpm_qs.filter(course_name__icontains=q)
@@ -294,7 +297,11 @@ class CourseSearchView(APIView):
             Course.objects.values_list('level', flat=True)
             .distinct().order_by('level')
         )
-        stpm_levels = ['Ijazah Sarjana Muda'] if StpmCourse.objects.filter(is_active=True).exists() else []
+        # Sprint B: the STPM pick-lists offer only what this student's search can return.
+        stpm_visible = StpmCourse.objects.filter(is_active=True)
+        if not search_bumiputera(request.query_params):
+            stpm_visible = stpm_visible.exclude(requirement__req_bumiputera=True)
+        stpm_levels = ['Ijazah Sarjana Muda'] if stpm_visible.exists() else []
         all_levels = sorted(set(spm_levels + stpm_levels))
 
         spm_field_keys = list(
@@ -303,7 +310,7 @@ class CourseSearchView(APIView):
             .distinct()
         )
         stpm_field_keys = list(
-            StpmCourse.objects.filter(is_active=True).exclude(field_key__isnull=True)
+            stpm_visible.exclude(field_key__isnull=True)
             .values_list('field_key', flat=True)
             .distinct()
         )
@@ -316,7 +323,7 @@ class CourseSearchView(APIView):
             .distinct().order_by('field')
         )
         stpm_fields = list(
-            StpmCourse.objects.filter(is_active=True).exclude(field='')
+            stpm_visible.exclude(field='')
             .values_list('field', flat=True)
             .distinct().order_by('field')
         )
@@ -1090,7 +1097,7 @@ class ProfileView(APIView):
         return Response({
             'grades': profile.grades,
             'gender': profile.gender,
-            'nationality': profile.nationality,
+            **nationality_payload(profile),     # + the Bumiputera answer (Sprint B), hers only
             'colorblind': profile.colorblind,
             'disability': profile.disability,
             'student_signals': profile.student_signals,
@@ -1178,7 +1185,8 @@ class ProfileView(APIView):
         old_contact_email = profile.contact_email
         old_contact_phone = profile.contact_phone
 
-        profile = serializer.save()
+        # Sprint B: a foreign student is never Bumiputera (`bumiputera.foreign_never_bumi`).
+        profile = serializer.save(**foreign_never_bumi(profile, serializer.validated_data))
 
         # Reset verification when contact details actually change
         if 'contact_email' in serializer.validated_data and profile.contact_email != old_contact_email:
@@ -1257,7 +1265,7 @@ class ProfileSyncView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        profile = serializer.save()
+        profile = serializer.save(**foreign_never_bumi(profile, serializer.validated_data))  # Sprint B
 
         # A `?ref=` code the browser resends on EVERY sign-in: the REFERRAL PARTNER column only,
         # first touch, partner rows only — never the bursary's source (two columns, 2026-10-09).
@@ -1680,14 +1688,17 @@ class StpmEligibilityCheckView(APIView):
         # Normalise demographics to the engine's values — the profile sends raw
         # 'male'/'malaysian', but the engine compares against 'Lelaki'/'Warganegara'.
         # Without this, every Malaysian-required course (all of them) is excluded → 0.
+        nationality = normalize_nationality(request.data.get('nationality', 'Warganegara'))
         results = check_stpm_eligibility(
             stpm_grades=stpm_grades,
             spm_grades=spm_grades,
             cgpa=float(cgpa),
             muet_band=int(muet_band),
             gender=normalize_gender(request.data.get('gender', '')),
-            nationality=normalize_nationality(request.data.get('nationality', 'Warganegara')),
+            nationality=nationality,
             colorblind=request.data.get('colorblind', False),
+            # Bumi coverage Sprint B: course guide only; a foreign student is never Bumi.
+            bumiputera=resolve_bumiputera(request.data.get('bumiputera'), nationality),
         )
 
         return Response({
@@ -1743,6 +1754,11 @@ class StpmSearchView(APIView):
 
     def get(self, request):
         qs = StpmCourse.objects.select_related('requirement').filter(is_active=True)
+        # Bumi-only courses: CourseSearchView's rule (Sprint B). `visible` also feeds the filters.
+        visible = StpmCourse.objects.filter(is_active=True)
+        if not search_bumiputera(request.query_params):
+            qs = qs.exclude(requirement__req_bumiputera=True)
+            visible = visible.exclude(requirement__req_bumiputera=True)
 
         q = request.query_params.get('q', '').strip()
         if q:
@@ -1788,11 +1804,11 @@ class StpmSearchView(APIView):
 
         filters = {
             'universities': sorted(
-                StpmCourse.objects.filter(is_active=True).values_list('university', flat=True)
+                visible.values_list('university', flat=True)
                 .distinct().order_by('university')
             ),
             'streams': sorted(
-                StpmCourse.objects.filter(is_active=True).values_list('stream', flat=True)
+                visible.values_list('stream', flat=True)
                 .distinct().order_by('stream')
             ),
         }

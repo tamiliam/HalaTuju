@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi + Islamic coverage — Sprint B: the Bumiputera answer (migration 0087, migrate-first) - 2026-10-28
+
+- **Students say whether they are Bumiputera.** "A Few More Details" asks Malaysians Yes/No (required, beside
+  Gender; hidden for Foreign students, who are stored as NULL). /profile shows and edits it. Older profiles read
+  as "No" until answered. `StudentProfile.bumiputera` (nullable), migration `courses/0087`.
+- **Bumi-only STPM courses (162, all UiTM) now show to Bumi students only** — in STPM eligibility and in both
+  course searches. `StpmSearchView` used to show them to everyone; both searches and their filter pick-lists
+  now follow one rule (`apps/courses/bumiputera.py`). A switch to Foreign wipes a stored yes, server and browser.
+- **Course guide only (owner, s44(6)).** Guard tests fail if the answer reaches scholarship, sponsor, reports,
+  partner detail or CSV export, or Django admin; the eval corpus no longer selects every profile column; a web
+  allowlist test names the only files that may read it.
+- **Owner Option A:** the scholarship programme pickers (apply page, /profile plans) show every course,
+  Bumi-only included, and never read the answer — the offer letter corrects a wrong pick.
+- /profile: the page was split first (moves only); "My Course Interests" now loads lazily to keep the route
+  inside its first-load budget. Golden masters unchanged (STPM 2,026, SPM 5,319).
+
+## Bumi + Islamic coverage — Sprint A: data inventory (scraper flags only, NO DB writes) - 2026-10-28
+
+- **`scrape_mohe_stpm` gains two opt-in Bumiputera signals.** `--with-bumi` runs a second listing pass with the
+  portal's own "Program BUMI = Ya" filter (a server-session toggle, so it runs in a fresh browser context and
+  refuses to continue if the count did not narrow); `--with-syarat` fetches each programme's Syarat modal and
+  flags the "Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja" wording.
+  Both off by default, so `refresh_stpm` is unchanged. +14 pure-logic tests.
+- **Inventory:** `docs/bumi-inventory-2026-10-28.md`. Both signals agree on every programme. STPM: the 162
+  courses we flag are exactly the portal's 162 — nothing to add. SPM: 150 to add in Sprint D (136 Bumi-only,
+  87 of them UiTM; 14 open Islamic-subject diplomas/Tamhidi at UniSZA, USIM, UM). Input file
+  `halatuju_api/data/spm/mohe_bumi_2026-10-28.csv`. UP_TVET MARA sample: 20/20 "Calon Bumiputera Sahaja".
+- Roadmap: `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md` (Sprint E dropped).
 ## Consolidation review — ten small changes, forty-one sprint lines; two guards (docs and tests only, nothing to deploy) - 2026-10-28
 
 - **Reviewed** the ten small changes since 2026-10-18 and moved four sprint lines out of `## Pending`

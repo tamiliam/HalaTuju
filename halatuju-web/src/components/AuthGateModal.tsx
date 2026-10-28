@@ -155,6 +155,10 @@ export default function AuthGateModal() {
         const p = JSON.parse(prof)
         if (p.gender) syncData.gender = p.gender
         if (p.nationality) syncData.nationality = p.nationality
+        // Bumi coverage Sprint B: a Yes / No given before signing in. A null is NEVER sent — it may
+        // be an old copy of "unanswered" and would wipe an answer given on another device; a
+        // Foreign student needs none (the nationality above makes the server store null).
+        if (typeof p.bumiputera === 'boolean') syncData.bumiputera = p.bumiputera
         if (p.state) syncData.preferred_state = p.state
         if (p.colorblind) syncData.colorblind = p.colorblind
         if (p.disability) syncData.disability = p.disability

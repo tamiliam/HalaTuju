@@ -998,7 +998,7 @@ must change with any Cloud Scheduler change). A reversed patronymic (father/son)
 ANAK/AK/BT/BTE give a father name, which can only turn 'unknown' into 'match'. A PDF text layer that is only a
 scanner stamp is no layer (`pdf_pages.usable_text_layer`); the KWSP app screen reads suspect `epf_app`.
 Genuineness `MODEL_VERSION` 1.17.1; `VERDICT_ENGINE_VERSION` 2026-10-28.2 (the other session's C4 takes .3).
-- **Next: TD-399** (OpenAI fallback for document reads) — needs the owner's privacy ruling first.
+- **TD-399 PARKED** (owner, 2026-10-28: "No, not now" — no second company reads student documents). Next: pick from the Open Items Index (Now tier first).
 - A rule that turns away text or documents is dry-run on the LIVE stored data before deploy, not only on the
   eval corpus (lesson 2026-10-28: the corpus missed a Canva-style statement the live run caught).
 - ⚠ Bundle budget: median 179.49 kB of 180 — about 0.5 kB headroom.

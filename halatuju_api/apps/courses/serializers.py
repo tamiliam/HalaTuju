@@ -526,7 +526,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile
         fields = [
-            'grades', 'gender', 'nationality', 'colorblind', 'disability',
+            'grades', 'gender', 'nationality', 'bumiputera', 'colorblind', 'disability',
             'student_signals', 'preferred_state', 'preferred_call_language',
             'name', 'school',
             'nric', 'angka_giliran', 'address', 'postal_code', 'city',

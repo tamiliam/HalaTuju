@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { searchCourses, checkEligibility, checkStpmEligibility, type SearchCourse, type SearchFilters, type EligibleCourse, type StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
@@ -13,6 +13,7 @@ import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
 import { isThirdRoute } from '@/lib/qualification'
+import { isBumiputera } from '@/lib/bumiputera'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
 
 export default function SearchPage() {
@@ -55,8 +56,14 @@ function SearchPageInner() {
   // Matriculation / Asasi / Diploma results held in this browser (third results route S2b)?
   const [thirdRoute, setThirdRoute] = useState(false)
   // The server's results_held when a profile is loaded (S2b review), else this browser's own.
+  // Bumi coverage Sprint B: a Malaysian who said yes also sees Bumiputera-only courses. Read from
+  // this browser's profile (AuthProvider writes the server's answer into it on every hydrate).
+  const [bumi, setBumi] = useState(false)
   useEffect(() => {
     setThirdRoute(isThirdRoute(authProfile?.results_held || localStorage.getItem(KEY_EXAM_TYPE)))
+    let demo: Record<string, unknown> = {}
+    try { demo = JSON.parse(localStorage.getItem(KEY_PROFILE) || '{}') } catch { /* malformed — no */ }
+    setBumi(isBumiputera(demo as { nationality?: string; bumiputera?: boolean | null }))
   }, [authProfile])
 
   // Eligible toggle
@@ -114,6 +121,7 @@ function SearchPageInner() {
           gender: genderMap[profileData.gender] || '',
           nationality: nationalityMap[profileData.nationality] || 'Warganegara',
           colorblind: !!profileData.colorblind,
+          bumiputera: isBumiputera(profileData),   // Bumi coverage Sprint B
         })
 
         // Map STPM eligible courses to EligibleCourse format
@@ -167,6 +175,17 @@ function SearchPageInner() {
     }
   }, [eligibleOnly, isAuthenticated, eligibleIds, showAuthGate, fetchEligibleIds])
 
+  // Bumi coverage Sprint B: the eligible set was worked out under one Bumiputera answer. A new
+  // answer drops it (and re-fetches when the toggle is on), so it never shows the old answer's.
+  const bumiSeen = useRef(bumi)
+  useEffect(() => {
+    if (bumiSeen.current === bumi) return
+    bumiSeen.current = bumi
+    setEligibleIds(null)
+    setEligibleMap(null)
+    if (eligibleOnly) fetchEligibleIds()
+  }, [bumi, eligibleOnly, fetchEligibleIds])
+
   // Auto-activate toggle after login (user was trying to enable it)
   useEffect(() => {
     if (isAuthenticated && !eligibleOnly && !eligibleIds) {
@@ -219,6 +238,7 @@ function SearchPageInner() {
         state: state || undefined,
         qualification: qualification || undefined,
         aliran: aliran || undefined,
+        bumiputera: bumi || undefined,
         limit: 10000,
       })
       setCourses(data.courses)
@@ -232,7 +252,7 @@ function SearchPageInner() {
     } finally {
       setIsLoading(false)
     }
-  }, [debouncedQuery, level, field, sourceType, state, qualification, aliran, filters])
+  }, [debouncedQuery, level, field, sourceType, state, qualification, aliran, bumi, filters])
 
   useEffect(() => {
     fetchCourses()

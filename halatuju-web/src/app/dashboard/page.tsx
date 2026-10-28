@@ -107,6 +107,8 @@ export default function DashboardPage() {
       gender: genderMap[profile.gender] || '',
       nationality: nationalityMap[profile.nationality] || 'Warganegara',
       colorblind: !!profile.colorblind,
+      // Bumi coverage Sprint B: already resolved by `resolveCachedResults` (Malaysian + yes).
+      bumiputera: !!profile.bumiputera,
     }).then(data => {
       // Chain ranking after eligibility — use STPM quiz signals if available
       const stpmSignalsStr = localStorage.getItem(KEY_STPM_QUIZ_SIGNALS)
@@ -381,6 +383,7 @@ export default function DashboardPage() {
 
         {cached.view === 'higher' && (
           <HigherRouteDegrees kind={cached.higher.kind} savedIds={savedIds} onToggleSave={handleSaveOrGate}
+            bumiputera={!!cached.profile.bumiputera}
             onLoadMoreGate={() => { if (!isAuthenticated) { showAuthGate('loadmore'); return true } return false }} />
         )}
 

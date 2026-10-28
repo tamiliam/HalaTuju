@@ -52,12 +52,32 @@ describe('PathwayPicker reads the results held, not the declared exam (TD-325)',
     expect(checkEligibility).not.toHaveBeenCalled()
   })
 
+  // Owner ruling 2026-10-28 (Bumi coverage, Option A): "Your Plans" offers EVERY course, Bumi-only
+  // included, to EVERY student, and never reads the Bumiputera answer (course-guide only).
+  it.each([false, null, undefined, true])(
+    'the STPM degree check includes Bumi-only courses whatever the stored answer (%s)', async (answer) => {
+      mount({ ...sandboxProfileStpm, results_held: 'stpm', nationality: 'malaysian', bumiputera: answer })
+      await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
+      expect((checkStpmEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)
+    })
+
+  it('does not read the stored answer at all', async () => {
+    const reads: string[] = []
+    const profile = new Proxy({ ...sandboxProfileStpm, results_held: 'stpm', bumiputera: false }, {
+      get(target, key, recv) { if (key === 'bumiputera') reads.push('read'); return Reflect.get(target, key, recv) },
+    })
+    mount(profile)
+    await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
+    expect(reads).toEqual([])
+  })
+
   it.each(['matric', 'asasi', 'diploma'])(
     'a %s holder gets the UNFILTERED degree list (D2) — never an eligibility check fed nothing',
     async (kind) => {
       (searchStpmCourses as jest.Mock).mockClear()
-      mount({ ...sandboxProfileStpm, results_held: kind, higher_cgpa: 3.4 })
-      await waitFor(() => expect(searchStpmCourses).toHaveBeenCalledWith({}, { token: 'tkn' }))
+      mount({ ...sandboxProfileStpm, results_held: kind, higher_cgpa: 3.4, bumiputera: false })
+      // Every degree, Bumi-only included (Option A), though this student answered No.
+      await waitFor(() => expect(searchStpmCourses).toHaveBeenCalledWith({ bumiputera: true }, { token: 'tkn' }))
       expect(checkStpmEligibility).not.toHaveBeenCalled()
       expect(checkEligibility).not.toHaveBeenCalled()
     })

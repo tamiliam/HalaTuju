@@ -141,3 +141,40 @@ describe('the server\'s results_held picks the view when it is known (S2b review
     expect(resolveCachedResults(store(STORE), '').view).toBe('spm')
   })
 })
+
+// Bumi coverage Sprint B: the resolved profile IS the dashboard's results key (react-query keys
+// its eligibility check on it, and the STPM check re-runs on it), so the Bumiputera answer must be
+// in it — or changing the answer would show the results of the old one.
+describe('the Bumiputera answer is part of the results key (Bumi coverage Sprint B)', () => {
+  const demo = (extra: Record<string, unknown>) =>
+    JSON.stringify({ gender: 'male', nationality: 'malaysian', ...extra })
+  const spm = (extra: Record<string, unknown>) => resolveCachedResults(store({
+    [KEY_EXAM_TYPE]: 'spm', [KEY_GRADES]: SPM_GRADES, [KEY_PROFILE]: demo(extra),
+  }))
+  const stpm = (extra: Record<string, unknown>) => resolveCachedResults(store({
+    [KEY_EXAM_TYPE]: 'stpm', [KEY_PROFILE]: demo(extra),
+    [KEY_STPM_GRADES]: STPM_GRADES, [KEY_STPM_CGPA]: '3.5', [KEY_MUET_BAND]: '4',
+  }))
+  const bumi = (r: ReturnType<typeof resolveCachedResults>) =>
+    r.view === 'spm' || r.view === 'stpm' || r.view === 'higher' ? r.profile.bumiputera : undefined
+
+  it('a Malaysian who said yes carries true, on the SPM and the STPM views', () => {
+    expect(bumi(spm({ bumiputera: true }))).toBe(true)
+    expect(bumi(stpm({ bumiputera: true }))).toBe(true)
+  })
+
+  it('no, unanswered or Foreign carries false', () => {
+    expect(bumi(stpm({ bumiputera: false }))).toBe(false)
+    expect(bumi(stpm({}))).toBe(false)
+    expect(bumi(stpm({ bumiputera: null }))).toBe(false)
+    expect(bumi(stpm({ bumiputera: true, nationality: 'non_malaysian' }))).toBe(false)
+    expect(bumi(spm({ bumiputera: true, nationality: 'non_malaysian' }))).toBe(false)
+  })
+
+  it('changing the answer changes the key', () => {
+    const yes = spm({ bumiputera: true })
+    const no = spm({ bumiputera: false })
+    if (yes.view !== 'spm' || no.view !== 'spm') throw new Error('narrowing')
+    expect(JSON.stringify(yes.profile)).not.toEqual(JSON.stringify(no.profile))
+  })
+})
