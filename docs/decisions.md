@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## No second AI company reads student documents: TD-399 (OpenAI fallback) is parked — 2026-10-28 (owner ruling)
+
+Asked: when Gemini is down, may student documents (ICs, payslips, EPF statements, results) be sent to OpenAI to
+be read instead? **Owner: "No, not now."** Gemini stays the only AI that reads student documents. An outage is
+covered by what already exists: our failure is a deferred read, never the student's "unreadable" (2026-10-24);
+the hourly self-heal re-reads deferred documents for 72 hours; the super-admin System health light (2026-10-28)
+and the outage email show an outage at once. Why: a second processor would see students' identity and income
+papers, needing a privacy-notice change, and the one real outage (prepaid credit, 2026-10-23) was ours to fix,
+not Gemini's. `OPENAI_API_KEY` stays on halatuju-api, unused for documents. Revisit only if Gemini outages recur
+despite auto-reload. Supersedes in part 2026-10-24 item 4 (which left it pending this ruling).
+
 ## Two Check-2 asks complete an STPM student's results; the CGPA matches within 0.01 everywhere — 2026-10-28 (STPM CGPA C4, owner rulings)
 
 **Decision:** after Submit, Check 2 asks (1) `stpm_grades_incomplete` when an STPM-results applicant's grades are
