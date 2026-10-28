@@ -1,5 +1,26 @@
 # Architectural Decisions — HalaTuju
 
+## Two Check-2 asks complete an STPM student's results; the CGPA matches within 0.01 everywhere — 2026-10-28 (STPM CGPA C4, owner rulings)
+
+**Decision:** after Submit, Check 2 asks (1) `stpm_grades_incomplete` when an STPM-results applicant's grades are
+fewer than Pengajian Am + three (`pngk_from_grades` -> None), closing by itself once they give a PNGK, and (2)
+`stpm_koko_confirm` when `StudentProfile.stpm_koko_unconfirmed` is TRUE, closing by itself once it is cleared. Both
+are `kind='explanation'` items (`source='check2'`, fact academic) answered on the onboarding STPM page, not typed:
+the Action Centre shows a button there and no reply box. They live in `stpm_asks.py`; `check2_queries.py` (at its
+size allowance) calls it once, net zero lines. Raised / re-raised after a system close only while the machine may
+ask (Completed); a student answer or an officer waiver is never re-opened. The marker is set by the one-off
+`flag_stpm_koko_unconfirmed --applications <ids>` (preview default, `--apply`), because the backfill's "not clean"
+rule cannot be recomputed now production's `stpm_cgpa` holds the PNGK. It is CLEARED only when the onboarding STPM
+step itself saved the score (`stpm_koko_confirmed` on the sync, sent once from a browser marker): a sign-in sync
+resends the stored, derived score, and that must not count as the student confirming it. (3) an STPM CGPA matches within 0.01 (`higher_results.STPM_CGPA_TOLERANCE`,
+was 0.05), the figure the C3 marks now import — so a 0.02 gap differs in both places; the third route keeps
+`CGPA_TOLERANCE` 0.05 (a typed CGPA against a print that may show one decimal). Review fixes: the grades ask is
+only for an applicant holding COMPLETED STPM (`holds_completed_stpm`: STPM held + the form recorded complete, or a
+legacy typed CGPA with no grades) — never a Form Six student's exploratory grades; the resolve endpoint refuses a
+typed answer to either ask (`answer_on_page`); the flag command prints each status and skips applications not
+submitted or in a final status (`review_sla.TERMINAL`). `VERDICT_ENGINE_VERSION` 2026-10-28.2. Migration courses 0086 (additive, nullable, DDL in its
+docstring). **Revisit if:** an STPM print rounds its PNGK differently from the calculation.
+
 ## The cockpit's STPM grades and CGPA are counter-checked against the STPM results, on the server — 2026-10-28 (STPM CGPA C3, owner ruling)
 
 The owner ruled: the cockpit's STPM subjects, grades and CGPA come from onboarding and are checked against the

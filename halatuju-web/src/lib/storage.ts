@@ -72,6 +72,11 @@ export const KEY_STPM_STREAM = 'halatuju_stpm_stream'
 /** Koko score for STPM (string) */
 export const KEY_KOKO_SCORE = 'halatuju_koko_score'
 
+/** STPM CGPA C4: '1' = the STPM step's Continue just saved a co-curriculum score (the student's own
+ *  confirmation). The next profile sync sends `stpm_koko_confirmed` and removes it; a sign-in resend
+ *  of the stored score never carries it. */
+export const KEY_STPM_KOKO_CONFIRMED = 'halatuju_stpm_koko_confirmed'
+
 /** SPM stream for STPM prereq entry: 'science' | 'arts' | 'technical' | 'vocational' */
 export const KEY_SPM_STREAM = 'halatuju_spm_stream'
 

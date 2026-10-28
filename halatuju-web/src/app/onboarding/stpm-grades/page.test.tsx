@@ -19,6 +19,7 @@ import { MAX_SPM_ELECTIVES } from '@/lib/subjects'
 import {
   KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_MUET_BAND, KEY_SPM_ALIRAN, KEY_SPM_ELEKTIF,
   KEY_SPM_PREREQ, KEY_SPM_STREAM, KEY_STPM_GRADES, KEY_STPM_STREAM, KEY_KOKO_SCORE, KEY_STPM_CGPA,
+  KEY_STPM_KOKO_CONFIRMED,
 } from '@/lib/storage'
 
 const push = jest.fn()
@@ -125,6 +126,8 @@ describe('the SPM-prerequisite section rebuilds from the durable record', () => 
     // STPM CGPA sprint C2: the PNGK (never a typed or plain-average figure) and the koko score
     expect(localStorage.getItem(KEY_STPM_CGPA)).toBe('3.75')
     expect(localStorage.getItem(KEY_KOKO_SCORE)).toBe('8')
+    // C4: saving here is the student's own confirmation of the score (the next sync says so).
+    expect(localStorage.getItem(KEY_STPM_KOKO_CONFIRMED)).toBe('1')
   })
 })
 

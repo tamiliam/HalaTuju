@@ -218,6 +218,8 @@ export interface SyncProfileData {
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   stpm_koko?: number
+  /** STPM CGPA C4: the STPM step's own save — clears the server's "score unconfirmed" marker. */
+  stpm_koko_confirmed?: boolean
   muet_band?: number
   coq_score?: number
   stream_subjects?: string[]

@@ -105,9 +105,12 @@ def _fields(doc):
     return vf, (f if isinstance(f, dict) else {})
 
 
-#: How far a slip's CGPA may sit from the one entered and still agree (review fix 7): a print
-#: rounds to two places and some transcripts to one, so 0.01 read rounding as a mismatch.
+#: How far a slip's CGPA may sit from the one entered and still agree (review fix 7): a TYPED
+#: Matriculation / Asasi / Diploma CGPA against a print that may round to one place — 0.05.
 CGPA_TOLERANCE = 0.05
+#: STPM (C4, owner 2026-10-28): the PNGK is worked out from the grades and the print is two-place,
+#: so 0.01 (+ float slack) — the cockpit marks' figure too (`stpm_marks` imports it).
+STPM_CGPA_TOLERANCE = 0.01 + 1e-9
 #: A label that names a CUMULATIVE figure — the only one a mismatch may be asserted against. A bare
 #: PNG / GPA is one semester's (review fix 7); an unlabelled number cannot be told apart.
 _CUMULATIVE_LABEL = re.compile(r'PNGK|CGPA|KUMULATIF|CUMULATIVE|HIMPUNAN', re.IGNORECASE)
@@ -285,7 +288,7 @@ def student_higher_check(doc) -> dict:
         cgpa_status = 'unreadable'
     elif entered is None:
         cgpa_status = 'pending'
-    elif abs(slip_cgpa - entered) <= CGPA_TOLERANCE:
+    elif abs(slip_cgpa - entered) <= (STPM_CGPA_TOLERANCE if kind_held == 'stpm' else CGPA_TOLERANCE):
         cgpa_status = 'match'
     elif _CUMULATIVE_LABEL.search(str(f.get('cgpa_label') or '')):
         cgpa_status = 'mismatch'

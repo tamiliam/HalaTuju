@@ -309,6 +309,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                                          max_value=10)
     # STPM CGPA sprint C2 (owner 2026-10-28): the STPM co-curriculum score, for the MERIT only.
     stpm_koko = serializers.FloatField(required=False, allow_null=True, min_value=0, max_value=10)
+    # C4: sent (true) only by the onboarding STPM step's own save, never by a sign-in resend.
+    stpm_koko_confirmed = serializers.BooleanField(required=False, write_only=True)
 
     def validate(self, attrs):
         """⚠ `results_exam_type` MUST BE BACKED BY RESULTS, and that is checked HERE — on the
@@ -374,7 +376,18 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 attrs['completed_qualifications'] = done
         self._never_demote_held_results(attrs, _merged, _backed)
         self._stpm_cgpa_from_grades(attrs, _merged)
+        self._stpm_koko_confirmed(attrs)
         return attrs
+
+    def _stpm_koko_confirmed(self, attrs):
+        """STPM CGPA C4 (owner 2026-10-28): a co-curriculum score saved through the onboarding STPM
+        step CLEARS `stpm_koko_unconfirmed` (FALSE), which closes the Check-2 ask `stpm_koko_confirm`.
+        Only with the step's own `stpm_koko_confirmed` beside a score: a sign-in sync resends the
+        stored (derived) score, and that is not the student confirming it. Never a column to write."""
+        confirmed = attrs.pop('stpm_koko_confirmed', False)
+        if (confirmed and attrs.get('stpm_koko') is not None
+                and getattr(self.instance, 'stpm_koko_unconfirmed', None)):
+            attrs['stpm_koko_unconfirmed'] = False
 
     @staticmethod
     def _stpm_cgpa_from_grades(attrs, _merged):
@@ -524,7 +537,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             # the page reads/writes household_* (this fixes that latent gap too).
             'household_income', 'household_size',
             'exam_type', 'results_exam_type',
-            'stpm_grades', 'stpm_cgpa', 'stpm_koko', 'muet_band', 'coq_score',
+            'stpm_grades', 'stpm_cgpa', 'stpm_koko', 'stpm_koko_confirmed', 'muet_band', 'coq_score',
             # Third results route S2a (Matriculation / Asasi / Diploma) + "highest completed"
             'higher_cgpa', 'higher_koko', 'higher_institution_type', 'completed_qualifications',
             # `referral_source` is NOT here (two columns, 2026-10-09): PUT ignores it, and the sync

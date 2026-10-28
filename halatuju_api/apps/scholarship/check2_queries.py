@@ -23,7 +23,7 @@ gaps become student clarify queries. Subjective / sensitive / motivational gaps
 from django.db import IntegrityError
 from django.utils import timezone
 
-from . import high_utility_variant as hu, higher_owed, income_str_ownership as own
+from . import high_utility_variant as hu, higher_owed, income_str_ownership as own, stpm_asks
 from .genuineness.offer_issuers import released_from_officer
 from .models import ResolutionItem
 from .str_check_memo import one_str_reading
@@ -576,8 +576,8 @@ def sync_check2_queries(application):
         raised_student_visible = True
 
     # The one-tap household-size confirmation (the roster describes more people than the stated
-    # size) — also a 'confirm' outside the clarify cap.
-    if _sync_household_size_confirm(application, existing, now):
+    # size) — also a 'confirm' outside the clarify cap. C4: + the two STPM results asks (`stpm_asks`).
+    if _sync_household_size_confirm(application, existing, now) | stpm_asks.sync(application, existing, now, may_ask):
         raised_student_visible = True
 
     if raised_student_visible:

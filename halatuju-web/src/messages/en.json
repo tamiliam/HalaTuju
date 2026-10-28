@@ -2232,6 +2232,14 @@
           "title": "Upload your latest semester result",
           "desc": "As you're already studying, please upload your most recent semester result slip showing your current CGPA. It helps us see how you're doing right now."
         },
+        "stpm_grades_incomplete": {
+          "title": "Add the rest of your STPM subjects",
+          "desc": "We need Pengajian Am and at least three other STPM subjects, with their grades, to work out your CGPA. Please add the subjects that are missing."
+        },
+        "stpm_koko_confirm": {
+          "title": "Please confirm your co-curriculum score",
+          "desc": "We are not sure the STPM co-curriculum score we have for you is right. Please check it and enter your score (out of 10)."
+        },
         "epf_statement_missing": {
           "title": "Upload your parent's EPF statement (optional)",
           "desc": "If your working parent has an EPF (KWSP) statement, upload it alongside their payslip. It would help confirm their income."
@@ -2430,6 +2438,8 @@
         "body": "Thank you — we've received what you sent. Our team is now checking this personally, so there's nothing more you need to upload here for now. We'll be in touch if we need anything else."
       },
       "updatePathwayOnProfile": "Update on your profile",
+      "addStpmSubjects": "Add my STPM subjects",
+      "confirmStpmKoko": "Confirm my score",
       "confirmPathwaySwitchYes": "Yes, I've switched to this pathway",
       "confirmPathwaySwitchOnProfile": "Confirm and choose your programme",
       "pathwayName": {

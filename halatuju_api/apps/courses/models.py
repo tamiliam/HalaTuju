@@ -835,14 +835,13 @@ class StudentProfile(models.Model):
     completed_qualifications = models.JSONField(
         default=list, blank=True, db_default=Value([], output_field=models.JSONField()),
         help_text="Qualifications whose results form was COMPLETED, e.g. ['spm', 'matric'].")
-    stpm_grades = models.JSONField(
-        default=dict, blank=True,
-        help_text="STPM grades: {'PA': 'A', 'MATH_T': 'B+', ...}"
-    )
+    stpm_grades = models.JSONField(default=dict, blank=True, help_text="STPM grades: {'PA': 'A', 'MATH_T': 'B+', ...}")
     stpm_cgpa = models.FloatField(null=True, blank=True)
     # THE STPM CGPA every reader uses (CGPA sprint C2): from the grades, else `stpm_cgpa` as stored.
     stpm_pngk = property(stpm_cgpa_of)
     stpm_koko = models.FloatField(null=True, blank=True, help_text="STPM co-curriculum score (0-10): merit only, never the CGPA (stpm_pngk.stpm_merit_overall).")
+    # C4: TRUE = the backfill could not work this koko back cleanly -> Check 2 asks (`stpm_asks`).
+    stpm_koko_unconfirmed = models.BooleanField(null=True, blank=True, help_text="TRUE: the stored STPM co-curriculum score was derived, not cleanly; the student is asked to confirm it. Cleared when they save one through onboarding.")
     muet_band = models.IntegerField(null=True, blank=True)
     coq_score = models.FloatField(
         null=True, blank=True,

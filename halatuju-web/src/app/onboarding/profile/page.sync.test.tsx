@@ -13,7 +13,8 @@ import ProfileInputPage from './page'
 import { getProfile, syncProfile } from '@/lib/api'
 import {
   KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_HIGHER_INSTITUTION, KEY_HIGHER_KOKO, KEY_PROFILE,
-  KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES,
+  KEY_RESULTS_EXAM_TYPE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_STPM_GRADES, KEY_KOKO_SCORE,
+  KEY_STPM_KOKO_CONFIRMED,
 } from '@/lib/storage'
 
 const push = jest.fn()
@@ -132,4 +133,21 @@ it('any other failure is not retried', async () => {
   await finish()
   await act(async () => { await Promise.resolve() })
   expect(syncMock).toHaveBeenCalledTimes(1)
+})
+
+it('C4: a score just saved on the STPM step is sent as confirmed, once; a resend is not', async () => {
+  localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A', PHYSICS: 'A', CHEMISTRY: 'B' }))
+  localStorage.setItem(KEY_KOKO_SCORE, '8')
+  localStorage.setItem(KEY_STPM_KOKO_CONFIRMED, '1')
+  const sent = await finish()
+  expect(sent).toMatchObject({ stpm_koko: 8, stpm_koko_confirmed: true })
+  await waitFor(() => expect(localStorage.getItem(KEY_STPM_KOKO_CONFIRMED)).toBeNull())
+})
+
+it('C4: a stored score with no fresh STPM-step save carries no confirmation', async () => {
+  localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A', PHYSICS: 'A', CHEMISTRY: 'B' }))
+  localStorage.setItem(KEY_KOKO_SCORE, '8')
+  const sent = await finish()
+  expect(sent.stpm_koko).toBe(8)
+  expect(sent.stpm_koko_confirmed).toBeUndefined()
 })

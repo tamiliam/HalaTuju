@@ -27,8 +27,9 @@ from __future__ import annotations
 from apps.courses.exam_questions import results_held
 
 #: The calculated PNGK and the printed one are both two-place figures, so they agree exactly; the
-#: 0.01 (plus float slack) only absorbs a print that rounds the last place the other way.
-CGPA_MATCH_TOLERANCE = 0.01 + 1e-9
+#: 0.01 (plus float slack) only absorbs a print that rounds the last place the other way. ONE
+#: figure with the verdict's "CGPA matches" line since C4 (owner 2026-10-28): `higher_results`'.
+from .higher_results import STPM_CGPA_TOLERANCE as CGPA_MATCH_TOLERANCE
 
 
 def _cgpa_mark(chk, calculated, fields):

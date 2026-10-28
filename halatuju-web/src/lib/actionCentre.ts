@@ -208,6 +208,10 @@ export const KNOWN_CODES = [
   // V4 — the nine promoted human ask-themes (audit §E). Doc-requests:
   'school_leaving_cert_missing',
   'semester_result_missing',
+  // STPM CGPA C4 — the STPM results are incomplete (fewer than PA + three) / the co-curriculum score
+  // needs confirming. Answered on the onboarding STPM page (`onboardingAskFor`), never typed.
+  'stpm_grades_incomplete',
+  'stpm_koko_confirm',
   'epf_statement_missing',
   // Per-member EPF requests (replace the memberless epf_statement_missing; tagged to the person).
   'father_epf_missing',
@@ -345,6 +349,17 @@ export function confirmTargetFor(fact: string): ConfirmTarget {
 export function profilePickerHref(item: Pick<ResolutionItem, 'params'>): string {
   const hint = typeof item.params?.aliran_hint === 'string' ? item.params.aliran_hint : ''
   return hint ? `/profile?aliran=${encodeURIComponent(hint)}` : '/profile'
+}
+
+/** STPM CGPA C4: the Check-2 asks a student answers on an ONBOARDING page, not by typing — the page
+ *  and the button's i18n key. The card shows that button instead of a reply box; the page's own
+ *  save (then "Save & return") closes the ask server-side. null for every other code. */
+const ONBOARDING_ASKS: Record<string, { path: string; buttonKey: string }> = {
+  stpm_grades_incomplete: { path: '/onboarding/stpm-grades', buttonKey: 'scholarship.actionCentre.addStpmSubjects' },
+  stpm_koko_confirm: { path: '/onboarding/stpm-grades', buttonKey: 'scholarship.actionCentre.confirmStpmKoko' },
+}
+export function onboardingAskFor(code: string): { path: string; buttonKey: string } | null {
+  return ONBOARDING_ASKS[code] ?? null
 }
 
 /** True when the circuit-breaker (Phase 2) escalated this doc-request to a human after repeated

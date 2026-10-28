@@ -11,7 +11,7 @@ import { STPM_SUBJECTS, stpmSubjectLabel, STPM_GRADES } from '@/lib/stpmResultsS
 import { calculateCgpa, type StpmCgpaResult } from '@/lib/api'
 import SpmResultsBlock, { useSpmResultsBlock } from '@/components/SpmResultsBlock'
 import { keepOneHigherLocally } from '@/lib/resultsLocal'
-import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
+import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_STPM_KOKO_CONFIRMED, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 
 type Stream = 'science' | 'arts'
 
@@ -146,6 +146,7 @@ export default function StpmGradesPage() {
     localStorage.setItem(KEY_STPM_CGPA, String(cgpa))
     localStorage.setItem(KEY_MUET_BAND, String(muetBand))
     localStorage.setItem(KEY_KOKO_SCORE, String(koko))
+    localStorage.setItem(KEY_STPM_KOKO_CONFIRMED, '1')   // C4: the student saved it here — the sync says so
     spm.save()
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     // Completed, so it is a RESULT and not merely a selection — see results_exam_type.

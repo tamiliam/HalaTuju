@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM CGPA C4 — Check 2 asks for missing STPM subjects and an unconfirmed co-curriculum score; CGPA match 0.01 (NOT LIVE) - 2026-10-28
+
+- **`stpm_grades_incomplete`** (owner ruling): a submitted STPM-results applicant with fewer than Pengajian Am +
+  three graded subjects is asked to add the rest; closes by itself once the grades give a PNGK.
+- **`stpm_koko_confirm`** (owner ruling): asked while `StudentProfile.stpm_koko_unconfirmed` is TRUE (courses
+  `0086`, MIGRATE-FIRST, DDL in its docstring); closes by itself once cleared. Set by the one-off
+  `flag_stpm_koko_unconfirmed --applications <ids>` (preview default, `--apply`; ids only in its output); cleared by
+  the profile writer when the onboarding STPM step saves a score (`stpm_koko_confirmed`, sent once by the step —
+  never by a sign-in resend).
+- Both asks: `apps/scholarship/stpm_asks.py` (new), one call from `sync_check2_queries` (net zero lines);
+  `kind='explanation'`, outside the clarify cap. The Action Centre shows a button to `/onboarding/stpm-grades`
+  (returning to the application) and no reply box. en/ms/ta copy (ms/ta first drafts).
+- **CGPA match tolerance** for STPM 0.05 -> 0.01 in `higher_results` (`STPM_CGPA_TOLERANCE`, the verdict's "CGPA
+  matches"), the C3 marks' figure, now one constant; Matriculation / Asasi / Diploma keep 0.05 (one-decimal prints).
+  `VERDICT_ENGINE_VERSION` 2026-10-28.3.
+- Review fixes: the grades ask only for COMPLETED STPM (`holds_completed_stpm`; legacy typed-CGPA holders included,
+  a Form Six student's exploratory grades never); a typed answer to either ask is refused (`answer_on_page`); the
+  flag command prints each status and skips unsubmitted / final-status applications.
+- Reviewer Guide + FAQ: the two asks and the 0.01 match. Tests: `test_stpm_asks.py`,
+  `ActionCentre.stpmAsks.test.tsx`, the STPM step and onboarding sync tests; `test_third_route_s3` tolerance case.
+
 ## Billing settings move to the screens whose scope they match - 2026-10-28
 
 The owner filled in the invoice settings for the first time and the form took an address across

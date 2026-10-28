@@ -39,6 +39,7 @@ import {
   latestDocFor,
   needsOfficerEye,
   profilePickerHref,
+  onboardingAskFor,
   type ActionIcon,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
@@ -48,6 +49,7 @@ import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
 import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
+import { setOnboardingReturn } from '@/lib/scholarship'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
@@ -163,6 +165,8 @@ function ActionCard({
     && item.params?.offer_pathway === 'pismp' && !pismpResolved
   const routesToPicker = item.code === 'pathway_undeclared' || isPismpSwitch
   const pickerHref = profilePickerHref(item)
+  // STPM CGPA C4: an ask answered on an onboarding page (the STPM results step), which then returns here.
+  const onboardingAsk = onboardingAskFor(item.code)
 
   // #15a: re-surface the doc-anchored coach for a NON-cluster held task from the fetched
   // documents, so a page reload keeps Gopal's advice (not just the in-session upload).
@@ -414,7 +418,17 @@ function ActionCard({
               </a>
             )}
 
-            {((item.kind === 'explanation' && item.code !== 'pathway_undeclared') || item.kind === 'clarify' ||
+            {onboardingAsk && (
+              <a
+                href={onboardingAsk.path}
+                onClick={() => setOnboardingReturn('/scholarship/application')}
+                className="block w-full rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover"
+              >
+                {t(onboardingAsk.buttonKey)}
+              </a>
+            )}
+
+            {((item.kind === 'explanation' && item.code !== 'pathway_undeclared' && !onboardingAsk) || item.kind === 'clarify' ||
               (formLocked && item.kind === 'confirm' && !ONE_TAP_CONFIRM.has(item.code))) && (
               <div className="space-y-2">
                 <textarea

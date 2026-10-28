@@ -1506,15 +1506,15 @@ class ResolutionItemResolveView(APIView):
 
     def post(self, request, pk):
         from .models import ResolutionItem
-        from .resolution import resolve_item
+        from .resolution import VIRCLE_CODE, resolve_item
         from .serializers import ResolutionItemSerializer
         item = ResolutionItem.objects.filter(
             pk=pk, application__profile_id=request.user_id, status='open',
         ).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from .resolution import VIRCLE_CODE
         from .services import querying_locked
+        from .stpm_asks import CODES as STPM_ASKS   # C4: answered on the STPM page, closed by the gap
         # Querying is LOCKED from the interview onward — and an awarded student is well past
         # that. The Vircle task is a post-award operational step, not a Check-2 query, so it
         # must be exempt or the student could never confirm. (The bank task sidesteps this by
@@ -1522,9 +1522,9 @@ class ResolutionItemResolveView(APIView):
         # here.)
         if item.code != VIRCLE_CODE and querying_locked(item.application):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
-        if item.kind == 'doc':
-            return Response({'error': 'upload_doc_instead', 'doc_type': item.doc_type},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if item.kind == 'doc' or item.code in STPM_ASKS:
+            return Response({'error': 'upload_doc_instead' if item.kind == 'doc' else 'answer_on_page',
+                             'doc_type': item.doc_type}, status=status.HTTP_400_BAD_REQUEST)
         if item.kind == 'human':   # reviewer-only — not the student's to answer
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         text = (request.data.get('text') or '').strip()

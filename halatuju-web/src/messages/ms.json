@@ -2232,6 +2232,14 @@
           "title": "Muat naik keputusan semester terkini anda",
           "desc": "Oleh kerana anda sedang belajar, sila muat naik slip keputusan semester terkini anda yang menunjukkan PNGK semasa. Ia membantu kami melihat pencapaian anda sekarang."
         },
+        "stpm_grades_incomplete": {
+          "title": "Tambah subjek STPM anda yang lain",
+          "desc": "Kami memerlukan Pengajian Am dan sekurang-kurangnya tiga subjek STPM lain, berserta gred, untuk mengira PNGK anda. Sila tambah subjek yang belum dimasukkan."
+        },
+        "stpm_koko_confirm": {
+          "title": "Sila sahkan markah kokurikulum anda",
+          "desc": "Kami tidak pasti markah kokurikulum STPM yang kami ada untuk anda adalah betul. Sila semak dan masukkan markah anda (daripada 10)."
+        },
         "epf_statement_missing": {
           "title": "Muat naik penyata KWSP ibu/bapa anda (pilihan)",
           "desc": "Jika ibu/bapa anda yang bekerja mempunyai penyata EPF (KWSP), muat naik bersama slip gaji mereka. Ia akan membantu mengesahkan pendapatan mereka."
@@ -2430,6 +2438,8 @@
         "body": "Terima kasih — kami telah menerima apa yang anda hantar. Pasukan kami kini sedang menyemaknya secara peribadi, jadi buat masa ini tiada apa lagi yang perlu anda muat naik di sini. Kami akan menghubungi anda jika kami memerlukan apa-apa lagi."
       },
       "updatePathwayOnProfile": "Kemas kini di profil anda",
+      "addStpmSubjects": "Tambah subjek STPM saya",
+      "confirmStpmKoko": "Sahkan markah saya",
       "confirmPathwaySwitchYes": "Ya, saya telah bertukar ke laluan ini",
       "confirmPathwaySwitchOnProfile": "Sahkan dan pilih program anda",
       "pathwayName": {

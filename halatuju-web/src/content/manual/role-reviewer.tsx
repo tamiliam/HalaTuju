@@ -65,7 +65,8 @@ export const roleReviewer: ManualChapter = {
         she has entered them. Her STPM grades and CGPA carry a <strong>tick</strong> when her uploaded STPM
         results show the same, and a small <strong>&ne;</strong> marker (hover for the document&rsquo;s figure)
         when they differ; the CGPA says <strong>not calculated</strong> when she entered fewer than Pengajian Am
-        + three grades. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
+        + three grades &mdash; she is then asked to add the rest (and, where her co-curriculum score could not be
+        worked out cleanly, to confirm it); both requests close by themselves when she saves her STPM results page. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
         results uploads those results instead of an SPM slip; the Documents drawer names them by kind
         (for example <strong>STPM results</strong>); STPM results are checked for genuineness like an SPM slip, and a screenshot of
         the online results-checker page is flagged as not the real slip. Beside the NRIC, the header shows where her IC says she was
