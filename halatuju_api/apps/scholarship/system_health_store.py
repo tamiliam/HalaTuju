@@ -29,6 +29,8 @@ CRON_PREFIX = 'cron:'
 SINCE_KEY = 'cron:_since'
 #: The stored error name is cut to this — a class name, never a message.
 _ERROR_MAX = 80
+#: How many failure timestamps the email row keeps (newest first) — enough to count a day's worth.
+_RECENT_FAILURES_KEPT = 10
 
 #: Once this process has seen `SINCE_KEY` exist, it stops asking (one query saved per write).
 _since_seen = False
@@ -81,6 +83,8 @@ def record_email(ok: bool, error: str = ''):
             d['last_fail_at'] = now
             d['last_error'] = (error or 'send failed')[:_ERROR_MAX]
             d['consecutive_failures'] = int(d.get('consecutive_failures') or 0) + 1
+            # The newest failure times, so the light can count failures within a day.
+            d['recent_failures'] = ([now] + list(d.get('recent_failures') or []))[:_RECENT_FAILURES_KEPT]
     _record(EMAIL_KEY, mutate)
 
 

@@ -7001,7 +7001,8 @@
           "no_record": "Belum ada e-mel direkodkan.",
           "recent_failure": "Satu penghantaran gagal pada {time}.",
           "failing": "{count} penghantaran terakhir semuanya gagal.",
-          "no_success": "Penghantaran gagal: tiada yang berjaya dalam 24 jam."
+          "no_success": "Penghantaran gagal: tiada yang berjaya dalam 24 jam.",
+          "failing_stale": "{count} penghantaran terakhir gagal lebih sehari lalu, dan tiada apa-apa dihantar sejak itu."
         },
         "cron": {
           "ok": "Kesemua {count} tugas berjadual tepat pada masanya.",
@@ -7057,7 +7058,8 @@
         "sponsor-digests": "Ringkasan penaja",
         "partner-digests": "Ringkasan rakan kongsi",
         "issue-monthly-invoices": "Invois bulanan",
-        "refresh-reminder": "Peringatan katalog kursus"
+        "refresh-reminder": "Peringatan katalog kursus",
+        "decision-emails": "E-mel keputusan"
       }
     }
   },

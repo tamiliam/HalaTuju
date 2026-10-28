@@ -22,9 +22,12 @@ class RecordingSMTPBackend(EmailBackend):
         except Exception as exc:
             store.record_email(False, store.error_name(exc))
             raise
-        if messages:
+        # A message with no recipients is skipped by Django without an attempt (it is never counted
+        # as sent), so it says nothing about the relay and is neither a success nor a failure.
+        addressed = sum(1 for m in messages if m.recipients())
+        if addressed:
             # `fail_silently` swallows the error and returns how many went; fewer than asked = a failure.
-            if (sent or 0) >= len(messages):
+            if (sent or 0) >= addressed:
                 store.record_email(True)
             else:
                 store.record_email(False, 'not all sent (silenced)')

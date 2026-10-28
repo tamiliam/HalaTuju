@@ -9,19 +9,25 @@ The thresholds are named constants below so the rules can be read, and changed, 
 """
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
 from ..cron_health import EXPECTED_CADENCE
 from ..models import ApplicantDocument
 from .. import system_health_store as store
-from .outage import _outage_stats, gemini_read_outcome, ic_second_opinion_outcome, vision_outcome
+from .outage import (HOURLY_MIN_APPLICATIONS, HOURLY_MIN_FAILURES, _outage_stats,
+                     gemini_read_outcome, ic_second_opinion_outcome, vision_outcome)
 
 GREEN, AMBER, RED = 'green', 'amber', 'red'
+#: Every time the light sends is Malaysia time: ISO with its +08:00 offset, and HH:MM params likewise.
+MYT = ZoneInfo('Asia/Kuala_Lumpur')
 _RANK = {GREEN: 0, AMBER: 1, RED: 2}
 
 # ── Gemini / Vision ────────────────────────────────────────────────────────────────────────
-#: Red when `outage.is_down` holds over this window: every read in it failed on our side.
+#: Red when `outage.is_down` holds over this window AT THE OUTAGE ALERT'S OWN BAR: no success, and at
+#: least `HOURLY_MIN_FAILURES` failures from `HOURLY_MIN_APPLICATIONS` applications. One stuck document
+#: (or one family's documents) is amber, never red: it is not an outage.
 READ_DOWN_WINDOW_HOURS = 2
 #: Amber when any read in this window failed on our side (but the service is not down).
 READ_FAILURE_WINDOW_HOURS = 1
@@ -30,10 +36,12 @@ LAST_OK_LOOKBACK = timedelta(days=7)
 LAST_OK_SCAN = 300
 
 # ── Email ──────────────────────────────────────────────────────────────────────────────────
-#: Red when this many sends in a row have failed…
+#: Red when this many sends in a row have failed AND the latest is within `EMAIL_NO_SUCCESS_WINDOW` (an
+#: older streak with nothing sent since is amber: nothing says the relay is still refusing)…
 EMAIL_RED_STREAK = 3
-#: …or when there were failures and no success at all within this window.
+#: …or when at least `EMAIL_NO_SUCCESS_MIN_FAILURES` sends failed within this window and none succeeded.
 EMAIL_NO_SUCCESS_WINDOW = timedelta(hours=24)
+EMAIL_NO_SUCCESS_MIN_FAILURES = 2
 #: Amber when any send failed within this window.
 EMAIL_AMBER_WINDOW = timedelta(hours=1)
 
@@ -57,7 +65,11 @@ ROW_KEYS = ('gemini', 'vision', 'email', 'cron', 'credit')
 
 def _row(key, status, code, params=None, last_ok_at=None):
     return {'key': key, 'status': status, 'code': code, 'params': params or {},
-            'last_ok_at': last_ok_at.isoformat() if last_ok_at else None}
+            'last_ok_at': _iso(last_ok_at)}
+
+
+def _iso(dt):
+    return dt.astimezone(MYT).isoformat() if dt else None
 
 
 def _parse(value):
@@ -71,7 +83,7 @@ def _parse(value):
 
 
 def _hhmm(dt):
-    return timezone.localtime(dt).strftime('%H:%M')
+    return dt.astimezone(MYT).strftime('%H:%M')
 
 
 # ── Gemini / Vision ────────────────────────────────────────────────────────────────────────
@@ -117,11 +129,13 @@ def _last_ok(events):
 
 
 def read_service_row(key, now, events):
-    """Gemini ('gemini') or Vision ('vision'): red when down over the last
-    `READ_DOWN_WINDOW_HOURS`, amber on any service failure in the last `READ_FAILURE_WINDOW_HOURS`."""
+    """Gemini ('gemini') or Vision ('vision'): red when down over the last `READ_DOWN_WINDOW_HOURS` at
+    the outage alert's bar; amber on any service failure in the last `READ_FAILURE_WINDOW_HOURS`, or on
+    failures with no success over the two hours that fall below that bar."""
     service = key
     last_ok = _last_ok(events)
-    down = _outage_stats(service, now, READ_DOWN_WINDOW_HOURS)
+    down = _outage_stats(service, now, READ_DOWN_WINDOW_HOURS, min_failures=HOURLY_MIN_FAILURES,
+                         min_apps=HOURLY_MIN_APPLICATIONS)
     if down['is_down']:
         return _row(key, RED, 'down', {'count': str(down['service_failures']),
                                        'hours': str(READ_DOWN_WINDOW_HOURS)}, last_ok)
@@ -129,6 +143,9 @@ def read_service_row(key, now, events):
     if recent['service_failures']:
         return _row(key, AMBER, 'failures', {'count': str(recent['service_failures']),
                                              'attempts': str(recent['attempts'])}, last_ok)
+    if down['service_failures'] and not down['successes']:
+        return _row(key, AMBER, 'failures', {'count': str(down['service_failures']),
+                                             'attempts': str(down['attempts'])}, last_ok)
     if not recent['attempts']:
         return _row(key, GREEN, 'idle', {}, last_ok)
     return _row(key, GREEN, 'ok', {'count': str(recent['successes'])}, last_ok)
@@ -156,12 +173,18 @@ def email_row(now, data):
         return _row('email', GREEN, 'no_record')
     last_ok, last_fail = _parse(data.get('last_ok_at')), _parse(data.get('last_fail_at'))
     streak = int(data.get('consecutive_failures') or 0)
+    day_ago = now - EMAIL_NO_SUCCESS_WINDOW
+    fails_today = sum(1 for f in (data.get('recent_failures') or []) if (_parse(f) or day_ago) > day_ago)
+    fresh_fail = bool(last_fail and last_fail >= day_ago)
     if streak >= EMAIL_RED_STREAK:
-        return _row('email', RED, 'failing', {'count': str(streak)}, last_ok)
-    if (last_fail and last_fail >= now - EMAIL_NO_SUCCESS_WINDOW
-            and (last_ok is None or last_ok < now - EMAIL_NO_SUCCESS_WINDOW)):
+        if fresh_fail:
+            return _row('email', RED, 'failing', {'count': str(streak)}, last_ok)
+        return _row('email', AMBER, 'failing_stale', {'count': str(streak)}, last_ok)
+    if fails_today >= EMAIL_NO_SUCCESS_MIN_FAILURES and (last_ok is None or last_ok < day_ago):
         return _row('email', RED, 'no_success', {}, last_ok)
-    if last_fail and last_fail >= now - EMAIL_AMBER_WINDOW:
+    # Amber: a failure in the last hour, or a failure today that no send has succeeded after.
+    if last_fail and (last_fail >= now - EMAIL_AMBER_WINDOW
+                      or (fresh_fail and (last_ok is None or last_ok < last_fail))):
         return _row('email', AMBER, 'recent_failure', {'time': _hhmm(last_fail)}, last_ok)
     return _row('email', GREEN, 'ok', {}, last_ok)
 
@@ -251,4 +274,4 @@ def snapshot(now=None):
         cron_row(now, records),
         credit_row(now, gemini_events),
     ]
-    return {'overall': overall(rows), 'checked_at': now.isoformat(), 'rows': rows}
+    return {'overall': overall(rows), 'checked_at': _iso(now), 'rows': rows}

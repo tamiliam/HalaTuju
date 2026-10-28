@@ -7001,7 +7001,8 @@
           "no_record": "No emails recorded yet.",
           "recent_failure": "A send failed at {time}.",
           "failing": "The last {count} sends all failed.",
-          "no_success": "Sends are failing: none has gone through in 24 hours."
+          "no_success": "Sends are failing: none has gone through in 24 hours.",
+          "failing_stale": "The last {count} sends failed over a day ago, and nothing has been sent since."
         },
         "cron": {
           "ok": "All {count} scheduled jobs are on time.",
@@ -7057,7 +7058,8 @@
         "sponsor-digests": "Sponsor digests",
         "partner-digests": "Partner digests",
         "issue-monthly-invoices": "Monthly invoices",
-        "refresh-reminder": "Course catalogue reminder"
+        "refresh-reminder": "Course catalogue reminder",
+        "decision-emails": "Decision emails"
       }
     }
   },

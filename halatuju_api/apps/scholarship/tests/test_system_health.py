@@ -9,7 +9,9 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
 from apps.scholarship import system_health_store as store
-from apps.scholarship.cron_health import DAILY, EVERY_15_MIN, EXPECTED_CADENCE, HOURLY, WEEKLY
+from apps.scholarship.cron_health import (
+    DAILY, EVERY_15_MIN, EXPECTED_CADENCE, HOURLY, MONTHLY, WEEKLY, YEARLY,
+)
 from apps.scholarship.models import ApplicantDocument, SystemHealthStatus
 from apps.scholarship.services import system_health as sh
 from apps.scholarship.tests.factories import (
@@ -43,7 +45,8 @@ class EmailRow(SimpleTestCase):
         ok = self.now - timedelta(minutes=5)
         r = self.row(last_ok_at=_iso(ok), consecutive_failures=0)
         self.assertEqual((r['status'], r['code']), ('green', 'ok'))
-        self.assertEqual(r['last_ok_at'], ok.isoformat())
+        self.assertEqual(r['last_ok_at'], ok.astimezone(sh.MYT).isoformat())   # the same instant, in MYT
+        self.assertTrue(r['last_ok_at'].endswith('+08:00'))
 
     def test_three_failures_running_is_red(self):
         r = self.row(last_ok_at=_iso(self.now - timedelta(minutes=30)),
@@ -56,14 +59,34 @@ class EmailRow(SimpleTestCase):
                      last_fail_at=_iso(self.now - timedelta(minutes=10)), consecutive_failures=2)
         self.assertEqual((r['status'], r['code']), ('amber', 'recent_failure'))
 
-    def test_failures_and_no_success_in_24h_is_red(self):
-        r = self.row(last_ok_at=_iso(self.now - timedelta(hours=30)),
-                     last_fail_at=_iso(self.now - timedelta(hours=5)), consecutive_failures=1)
+    def test_two_failures_and_no_success_in_24h_is_red(self):
+        fails = [_iso(self.now - timedelta(hours=5)), _iso(self.now - timedelta(hours=9))]
+        r = self.row(last_ok_at=_iso(self.now - timedelta(hours=30)), last_fail_at=fails[0],
+                     consecutive_failures=2, recent_failures=fails)
         self.assertEqual((r['status'], r['code']), ('red', 'no_success'))
 
-    def test_failures_and_never_a_success_is_red(self):
-        r = self.row(last_fail_at=_iso(self.now - timedelta(hours=2)), consecutive_failures=1)
-        self.assertEqual(r['status'], 'red')
+    def test_one_failure_and_no_success_in_24h_is_only_amber(self):
+        fail = _iso(self.now - timedelta(hours=5))
+        r = self.row(last_ok_at=_iso(self.now - timedelta(hours=30)), last_fail_at=fail,
+                     consecutive_failures=1, recent_failures=[fail])
+        self.assertEqual((r['status'], r['code']), ('amber', 'recent_failure'))
+
+    def test_failures_older_than_a_day_do_not_count_toward_no_success(self):
+        old = [_iso(self.now - timedelta(hours=30)), _iso(self.now - timedelta(hours=40))]
+        r = self.row(last_fail_at=_iso(self.now - timedelta(hours=5)), consecutive_failures=1,
+                     recent_failures=[_iso(self.now - timedelta(hours=5))] + old)
+        self.assertEqual(r['status'], 'amber')
+
+    def test_a_stale_streak_with_nothing_sent_since_is_amber(self):
+        r = self.row(last_ok_at=_iso(self.now - timedelta(days=4)),
+                     last_fail_at=_iso(self.now - timedelta(hours=30)), consecutive_failures=5)
+        self.assertEqual((r['status'], r['code'], r['params']['count']), ('amber', 'failing_stale', '5'))
+
+    def test_the_failure_time_is_malaysia_time(self):
+        fail = timezone.now().replace(hour=1, minute=30, second=0, microsecond=0)   # 01:30 UTC
+        r = sh.email_row(fail + timedelta(minutes=5), {'last_fail_at': fail.isoformat(),
+                                                      'consecutive_failures': 1})
+        self.assertEqual(r['params']['time'], '09:30')
 
     def test_an_old_failure_with_sends_since_is_green(self):
         r = self.row(last_ok_at=_iso(self.now - timedelta(minutes=5)),
@@ -170,6 +193,21 @@ class CronRow(SimpleTestCase):
 
 
 class CadenceRegistry(SimpleTestCase):
+    def test_the_watched_set_is_exactly_the_live_scheduler_fleet(self):
+        self.assertEqual(set(EXPECTED_CADENCE), {
+            'application-nudges', 'decision-emails', 'interview-reminders', 'notify-contact-submissions',
+            'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
+            'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime',
+            'application-reminders', 'backfill-assigned-profiles', 'expire-temp-passwords',
+            'lapse-expired-offers', 'purge-referrals', 'query-reminders', 'review-nudges',
+            'spending-ingest', 'sync-vircle-sheet', 'vision-outage',
+            'backup-documents', 'course-data-check', 'partner-digests', 'sponsor-digests',
+            'issue-monthly-invoices', 'refresh-reminder',
+        })
+        self.assertEqual(EXPECTED_CADENCE['decision-emails'], EVERY_15_MIN)
+        self.assertEqual(EXPECTED_CADENCE['issue-monthly-invoices'], MONTHLY)
+        self.assertEqual(EXPECTED_CADENCE['refresh-reminder'], YEARLY)
+
     def test_every_expected_job_is_a_real_cron_job(self):
         self.assertEqual(set(EXPECTED_CADENCE) - set(CronRunView.JOBS), set())
 
@@ -191,7 +229,7 @@ class CadenceRegistry(SimpleTestCase):
         import os
         codes = {
             'read': {'ok', 'idle', 'failures', 'down'},
-            'email': {'ok', 'no_record', 'recent_failure', 'failing', 'no_success'},
+            'email': {'ok', 'no_record', 'recent_failure', 'failing', 'failing_stale', 'no_success'},
             'cron': {'ok', 'waiting', 'late', 'missed', 'never', 'errored', 'errored_twice'},
             'credit': {'ok', 'payment_error', 'recovered'},
         }
@@ -278,7 +316,18 @@ class ReadServiceRows(TestCase):
         self.vision_read(self.apps[0], 10, error='empty image')
         self.assertEqual(self.vision()['status'], 'green')
         self.vision_read(self.apps[1], 20, error='503 Service Unavailable')
-        self.assertEqual(self.vision()['status'], 'red')
+        self.assertEqual(self.vision()['status'], 'amber')      # one failure is not an outage
+        self.vision_read(self.apps[0], 70, error='503 Service Unavailable')
+        self.assertEqual(self.vision()['status'], 'red')        # two failures, two applications
+
+    def test_two_failures_from_one_application_is_amber(self):
+        self.gemini_read(self.apps[0], 10, _SERVICE_DOWN)
+        self.gemini_read(self.apps[0], 90, _SERVICE_DOWN)
+        self.assertEqual((self.gemini()['status'], self.gemini()['code']), ('amber', 'failures'))
+
+    def test_one_failure_over_an_hour_ago_with_no_success_is_amber(self):
+        self.gemini_read(self.apps[0], 90, _SERVICE_DOWN)
+        self.assertEqual(self.gemini()['status'], 'amber')
 
     def test_credit_is_green_without_a_payment_error(self):
         self.gemini_read(self.apps[0], 10, _SERVICE_DOWN)
@@ -302,7 +351,10 @@ class ReadServiceRows(TestCase):
 
     def test_snapshot_has_five_rows_and_the_worst_colour(self):
         self.gemini_read(self.apps[1], 30, _402)
+        self.gemini_read(self.apps[0], 60 * 3)
         snap = sh.snapshot(self.now)
+        self.assertTrue(snap['checked_at'].endswith('+08:00'))
+        self.assertTrue(snap['rows'][0]['last_ok_at'].endswith('+08:00'))
         self.assertEqual([r['key'] for r in snap['rows']], list(sh.ROW_KEYS))
         self.assertEqual(snap['overall'], 'red')
 
@@ -350,6 +402,7 @@ class SystemHealthEndpoint(TestCase):
         SystemHealthStatus.objects.create(key=store.EMAIL_KEY, data={
             'last_fail_at': timezone.now().isoformat(), 'consecutive_failures': 5})
         self.assertEqual(client.get(self.URL).json(), first)
+        self.assertEqual(client.get(self.URL + '?fresh=0').json(), first)    # only 1 skips it
         fresh = client.get(self.URL + '?fresh=1').json()
         self.assertEqual(fresh['rows'][2]['status'], 'red')
         self.assertEqual(fresh['overall'], 'red')

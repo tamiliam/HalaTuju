@@ -5,13 +5,13 @@ of each scheduled job (2026-10-28).
 run's outcome is recorded (`system_health_store.record_cron`). It lives here rather than in
 `views.py` because that file is a ledgered oversize file with no room left to grow.
 
-`EXPECTED_CADENCE` is the LIVE Cloud Scheduler fleet as read on 2026-10-28, keyed by `CronRunView.JOBS`
-key (the scheduler's own job names differ — `halatuju-vircle-sheet-sync` calls `sync-vircle-sheet`,
-`doc-backup` calls `backup-documents`). A job in JOBS but not here (a one-off door, an unscheduled
-report) is never expected to run and is not watched. `release-decisions-15m` is a Cloud Run JOB,
-not a call to this endpoint, so it cannot be watched here.
+`EXPECTED_CADENCE` is EXACTLY the live Cloud Scheduler fleet that calls this endpoint, as the lead read
+it on 2026-10-28, keyed by `CronRunView.JOBS` key (the Scheduler's own job names differ —
+`release-decisions-15m` calls `decision-emails`, `halatuju-vircle-sheet-sync` calls `sync-vircle-sheet`).
+Times are MYT. A job in JOBS but not here (a one-off door, an unscheduled report) is never expected to
+run and is not watched.
 ⚠ When a Scheduler entry is added, paused or re-timed, change this dict in the same change —
-`test_system_health.py` holds every key to a real JOBS entry.
+`test_system_health.py` pins the set and holds every key to a real JOBS entry.
 """
 import io
 import logging
@@ -31,39 +31,38 @@ MONTHLY = timedelta(days=31)     # the 15th of each month; 31 days so no month r
 YEARLY = timedelta(days=366)
 
 EXPECTED_CADENCE = {
+    # every 15 minutes
+    'application-nudges': EVERY_15_MIN,
+    'decision-emails': EVERY_15_MIN,         # Scheduler: release-decisions-15m
+    'interview-reminders': EVERY_15_MIN,
+    'notify-contact-submissions': EVERY_15_MIN,
     # hourly
-    'sponsor-realtime': HOURLY,
-    'query-emails': HOURLY,
-    'release-award-offer-emails': HOURLY,
     'auto-sponsor': HOURLY,
     'partner-milestones': HOURLY,
+    'query-emails': HOURLY,
     'read-outage-start': HOURLY,             # at :05
+    'release-award-offer-emails': HOURLY,
     'reprocess-ic-vision': HOURLY,
-    # every 15 minutes
-    'notify-contact-submissions': EVERY_15_MIN,
-    'interview-reminders': EVERY_15_MIN,
-    'application-nudges': EVERY_15_MIN,
+    'sponsor-realtime': HOURLY,
     # daily
-    'purge-referrals': DAILY,
-    'query-reminders': DAILY,
-    'application-reminders': DAILY,
-    # ⚠ The Scheduler entry is named `backfill-profiles`; JOBS has no such key, and this is the
-    # nearest one. Confirm against `gcloud scheduler jobs describe` and correct it if not.
-    'backfill-assigned-profiles': DAILY,
-    'review-nudges': DAILY,
-    'spending-ingest': DAILY,
-    'vision-outage': DAILY,
-    'sync-vircle-sheet': DAILY,              # Scheduler: halatuju-vircle-sheet-sync, 07:05 MYT
-    'expire-temp-passwords': DAILY,
-    'lapse-expired-offers': DAILY,
-    # weekly
-    'backup-documents': WEEKLY,              # Scheduler: doc-backup
-    'course-data-check': WEEKLY,
-    'sponsor-digests': WEEKLY,
-    'partner-digests': WEEKLY,
+    'application-reminders': DAILY,          # 09:00
+    'backfill-assigned-profiles': DAILY,     # 04:00
+    'expire-temp-passwords': DAILY,          # 09:30
+    'lapse-expired-offers': DAILY,           # 09:00
+    'purge-referrals': DAILY,                # 03:00
+    'query-reminders': DAILY,                # 09:00
+    'review-nudges': DAILY,                  # 09:00
+    'spending-ingest': DAILY,                # 07:00
+    'sync-vircle-sheet': DAILY,              # 07:05
+    'vision-outage': DAILY,                  # 02:00
+    # weekly (Mondays)
+    'backup-documents': WEEKLY,              # 03:00
+    'course-data-check': WEEKLY,             # 03:00
+    'partner-digests': WEEKLY,               # 08:00
+    'sponsor-digests': WEEKLY,               # 09:00
     # monthly / yearly
-    'issue-monthly-invoices': MONTHLY,
-    'refresh-reminder': YEARLY,
+    'issue-monthly-invoices': MONTHLY,       # the 15th, 09:00
+    'refresh-reminder': YEARLY,              # 1 December, 09:00
 }
 
 

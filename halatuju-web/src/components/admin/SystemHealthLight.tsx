@@ -33,7 +33,7 @@ export function worstStatus(rows: HealthRow[] | undefined): HealthStatus | null 
 /** The runtime-built key families, listed so the i18n guard can hold each one to a real string. */
 export const HEALTH_LINE_CODES: Record<string, string[]> = {
   read: ['ok', 'idle', 'failures', 'down'],
-  email: ['ok', 'no_record', 'recent_failure', 'failing', 'no_success'],
+  email: ['ok', 'no_record', 'recent_failure', 'failing', 'failing_stale', 'no_success'],
   cron: ['ok', 'waiting', 'late', 'missed', 'never', 'errored', 'errored_twice'],
   credit: ['ok', 'payment_error', 'recovered'],
 }
@@ -59,21 +59,23 @@ const LINE_INK: Record<HealthStatus, string> = {
 
 type T = (key: string, params?: Record<string, string>) => string
 
-const HHMM = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
-const DAY_MONTH = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
+/** Every time on the panel is Malaysia time, whatever the viewer's device says — the server's
+ *  HH:MM params are MYT too, so a row's line and its "last OK" can never disagree. */
+const MYT = 'Asia/Kuala_Lumpur'
+const HHMM = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: MYT })
+const DAY_MONTH = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: MYT })
+const DAY_KEY = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: MYT })
 
-function sameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-}
-
-/** "last OK 14:05", "last OK yesterday 23:10", "last OK 21 Oct". */
+/** "last OK 14:05", "last OK yesterday 23:10", "last OK 21 Oct" — today/yesterday by the MYT calendar
+ *  (Malaysia keeps no daylight saving, so "a day earlier" is exactly 24 hours). */
 export function lastOkText(t: T, iso: string | null, now: Date = new Date()): string {
   if (!iso) return t('admin.systemHealth.lastOkNone')
   const at = new Date(iso)
-  if (sameDay(at, now)) return t('admin.systemHealth.lastOk', { time: HHMM.format(at) })
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  if (sameDay(at, yesterday)) return t('admin.systemHealth.lastOkYesterday', { time: HHMM.format(at) })
+  const day = DAY_KEY.format(at)
+  if (day === DAY_KEY.format(now)) return t('admin.systemHealth.lastOk', { time: HHMM.format(at) })
+  if (day === DAY_KEY.format(new Date(now.getTime() - 86_400_000))) {
+    return t('admin.systemHealth.lastOkYesterday', { time: HHMM.format(at) })
+  }
   return t('admin.systemHealth.lastOk', { time: DAY_MONTH.format(at) })
 }
 

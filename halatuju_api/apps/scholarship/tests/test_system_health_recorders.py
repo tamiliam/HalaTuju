@@ -110,6 +110,23 @@ class MailBackend(_Base):
         self.assertEqual(sent, 0)
         self.assertEqual(_data(store.EMAIL_KEY)['consecutive_failures'], 1)
 
+    def test_a_message_with_no_recipients_is_neither_success_nor_failure(self):
+        nobody = EmailMessage('s', 'b', 'noreply@halatuju.xyz', [])
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(self.backend().send_messages([nobody]), 0)
+        self.assertIsNone(_data(store.EMAIL_KEY))
+        with self.captureOnCommitCallbacks(execute=True):
+            self.assertEqual(self.backend().send_messages([nobody, self.message()]), 1)
+        self.assertEqual(_data(store.EMAIL_KEY)['consecutive_failures'], 0)   # 1 of 1 addressed went
+
+    def test_failure_times_are_kept_newest_first_and_capped(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            for _ in range(12):
+                store.record_email(False, 'X')
+        recent = _data(store.EMAIL_KEY)['recent_failures']
+        self.assertEqual(len(recent), 10)
+        self.assertEqual(recent, sorted(recent, reverse=True))
+
     def test_nothing_to_send_records_nothing(self):
         with self.captureOnCommitCallbacks(execute=True):
             self.backend().send_messages([])

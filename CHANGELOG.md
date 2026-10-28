@@ -12,10 +12,12 @@ All notable changes to this project will be documented in this file.
   shell is mounted; never mounted, and never fetched, for any other admin. Light and dark themes via the
   existing tone tokens. Strings under `admin.systemHealth.*` (Malay and Tamil are first drafts, for Sol).
 - **The rows** (`apps/scholarship/services/system_health.py`, thresholds as named constants):
-  Document reading (Gemini) and Text recognition (Vision) — red when the outage rule says down over 2 hours,
-  amber on any service failure in the last hour, green otherwise ("No reads in the last hour" when idle);
-  Email sending — red after 3 failed sends running or failures with no success in 24 hours, amber on a
-  failure in the last hour; Scheduled jobs — red when a job missed two expected runs (2 x cadence + grace) or
+  Document reading (Gemini) and Text recognition (Vision) — red only at the outage alert's own bar over 2
+  hours (no success, >= 2 failures from >= 2 applications), amber on any service failure in the last hour or
+  failures below that bar, green otherwise ("No reads in the last hour" when idle);
+  Email sending — red after 3 failed sends running with the latest inside 24 hours (an older streak with
+  nothing sent since is amber), or >= 2 failures and no success in 24 hours; amber on a failure in the last
+  hour or one not yet followed by a success; a message with no recipients counts as neither; Scheduled jobs — red when a job missed two expected runs (2 x cadence + grace) or
   errored twice running, amber for one missed run or one error, naming the worst job ("'Query emails' has
   not run for 26 hours (expected hourly)"), "waiting for first run" until two cadences after the recorder's
   first write; AI credit balance — red on a Gemini 402 / prepay / credit / billing error in the last day with
@@ -23,11 +25,14 @@ All notable changes to this project will be documented in this file.
 - **Recorders.** Every email: `EMAIL_BACKEND` is now `apps.scholarship.mail_backend.RecordingSMTPBackend` (the
   SMTP backend unchanged, plus one line recording success / failure and the exception CLASS name — never an
   address, subject, body or message). Every cron run: `CronRunView`'s body moved to `cron_health.run_job`,
-  which records ok / error class; expected cadences in `cron_health.EXPECTED_CADENCE`. Writes run after the
+  which records ok / error class; expected cadences in `cron_health.EXPECTED_CADENCE` — exactly the 27 live
+  Scheduler jobs that call the endpoint (incl. `decision-emails`, every 15 min, via `release-decisions-15m`),
+  pinned by a test. All times are Malaysia time (ISO with +08:00 from the server; the web formats in
+  Asia/Kuala_Lumpur whatever the device says). Writes run after the
   caller's transaction (`on_commit`), in their own short transaction, and can never break a send or a run.
 - **New table `system_health_status`** (scholarship `0180`) — MIGRATE-FIRST, Postgres DDL + RLS policy in the
   migration's docstring. Endpoint `GET /api/v1/admin/scholarship/system-health/` — super only (403 for every
-  other admin, 401 anonymous), read-only, 60-second cache, `?fresh=1` from the refresh button.
+  other admin, 401 anonymous), read-only, 60-second cache, `?fresh=1` (exactly 1) from the refresh button.
 - `services/outage.py`: the per-document Vision / Gemini outcome rules are now named functions
   (`vision_outcome`, `gemini_read_outcome`, `ic_second_opinion_outcome`) shared by the outage alert and the
   light; behaviour unchanged.

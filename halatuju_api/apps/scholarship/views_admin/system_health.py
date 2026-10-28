@@ -24,7 +24,8 @@ class AdminSystemHealthView(_AdminBase):
             return self._deny()
         if not admin.is_super:
             return Response({'error': 'forbidden'}, status=403)
-        payload = None if request.query_params.get('fresh') else cache.get(CACHE_KEY)
+        fresh = request.query_params.get('fresh') == '1'      # exactly '1'; `fresh=0` reads the cache
+        payload = None if fresh else cache.get(CACHE_KEY)
         if payload is None:
             payload = snapshot()
             cache.set(CACHE_KEY, payload, CACHE_SECONDS)

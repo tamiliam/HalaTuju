@@ -138,14 +138,23 @@ describe('the words', () => {
     expect(lineText((k) => k, row('email', 'amber', 'brand_new_code'))).toBe('brand_new_code')
   })
 
-  it('says today, yesterday or a date for last OK', () => {
-    const now = new Date(2026, 9, 28, 15, 0)
+  it('says today, yesterday or a date for last OK — all in Malaysia time', () => {
+    const now = new Date('2026-10-28T15:00:00+08:00')
     expect(lastOkText(t, null, now)).toBe('admin.systemHealth.lastOkNone')
-    expect(lastOkText(t, new Date(2026, 9, 28, 14, 5).toISOString(), now))
+    expect(lastOkText(t, '2026-10-28T14:05:00+08:00', now))
       .toBe('admin.systemHealth.lastOk{"time":"14:05"}')
-    expect(lastOkText(t, new Date(2026, 9, 27, 23, 10).toISOString(), now))
+    expect(lastOkText(t, '2026-10-27T23:10:00+08:00', now))
       .toBe('admin.systemHealth.lastOkYesterday{"time":"23:10"}')
-    expect(lastOkText(t, new Date(2026, 9, 21, 9, 0).toISOString(), now))
+    expect(lastOkText(t, '2026-10-21T09:00:00+08:00', now))
       .toBe('admin.systemHealth.lastOk{"time":"21 Oct"}')
+  })
+
+  it('formats a UTC instant in MYT, whatever the device timezone', () => {
+    // 2026-10-27T17:30Z is 01:30 on the 28th in Kuala Lumpur: today, not yesterday.
+    const now = new Date('2026-10-28T10:00:00+08:00')
+    expect(lastOkText(t, '2026-10-27T17:30:00+00:00', now))
+      .toBe('admin.systemHealth.lastOk{"time":"01:30"}')
+    expect(lastOkText(t, '2026-10-27T15:59:00Z', now))
+      .toBe('admin.systemHealth.lastOkYesterday{"time":"23:59"}')
   })
 })
