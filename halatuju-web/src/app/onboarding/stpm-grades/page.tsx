@@ -162,7 +162,7 @@ export default function StpmGradesPage() {
   // 2026-10-28). Nothing is shown until there is a PNGK; ungraded rows show nothing.
   const countTag = (id: string) => {
     if (cgpa === null || !stpmGrades[id]) return null
-    const counts = calc?.counted.includes(id)
+    const counts = calc?.counted?.includes(id)   // optional: an API answering before C2 has no list
     const label = id === 'PA' ? 'onboarding.stpmCountsAlways'
       : counts ? 'onboarding.stpmCounts' : 'onboarding.stpmNotCounted'
     return (
