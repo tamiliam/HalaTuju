@@ -15229,4 +15229,4 @@ the existing letters and informal slips must be re-read live after deploy, befor
 (TD-407 flags on the job). Until then the households they carry read "still checking" at the gate and
 lose those documents from the verdict.
 **Existing documents** keep the score they were read with until re-read (live, with the flags — TD-407).
-**Versions:** genuineness `MODEL_VERSION` 1.12.0 (salary_doc 1.2.0); `VERDICT_ENGINE_VERSION` 2026-10-27.6.
+**Versions:** genuineness `MODEL_VERSION` 1.13.0 (salary_doc 1.2.0); `VERDICT_ENGINE_VERSION` 2026-10-27.6.

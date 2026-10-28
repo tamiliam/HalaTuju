@@ -155,7 +155,7 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
   rubber-stamp impression and a signature handwritten; printed labels, logos, QR codes and empty boxes are
   neither. **Cost: one extra Gemini image call (plus one image download on the text path) per
   `income_support_doc` and per payslip whose text reads informal / declaration; formal payslips, EPF and every
-  other type cost nothing extra.** `results_doc.MODEL_VERSION` 1.12.0. A PDF is sent as its pages stacked
+  other type cost nothing extra.** `results_doc.MODEL_VERSION` 1.13.0. A PDF is sent as its pages stacked
   in one image — all of them up to 3, else the first two and the LAST (`pdf_pages.pdf_pages_png`), still ONE
   call — because a form's "Tandatangan dan Cap Rasmi" box is often on its last page (review round 3; other
   callers keep page 1 only). If the image read fails on OUR side the read is marked and the hourly sweep
