@@ -530,6 +530,142 @@ class TheColumnOrderedCertificate(SimpleTestCase):
         self.assertIsNone(stpm_parse._parse_cert(rows, words_given=True))       # a scan's rows
 
 
+# ── The SAME certificate as pypdf 5.9.0 (production's locked library) lays it out (parser 1.3.0) ──
+# Subject names run together on two lines, every letter on the "Gred (Grade)" line, every point on
+# one line, and the year / PNGK END their label lines after the English subtitle.
+
+def cert_merged_text(subjects, *, grades=None, points=None, passed=None, pngk='3.50', year='2024',
+                     name='DEVI A/P RAMAN', ic='050707-07-0707', cut=5, status='(LULUS PENUH)',
+                     year_subtitle='(Year of Examination)', pngk_subtitle='(Cumulative Grade Point Average)'):
+    """The merged-line text layer: the subject words are broken after word `cut` (by the index
+    number), wherever that falls — even inside a subject name."""
+    grades = [g for _n, g, _p in subjects] if grades is None else grades
+    points = [p for _n, _g, p in subjects] if points is None else points
+    words = ' '.join(n for n, _g, _p in subjects).split()
+    lines = [f'No. Kad Pengenalan {ic} Identity Card No.',
+             f'Dengan ini disahkan bahawa {name} (This is to certify that', 'SI)IL TINGGI',
+             'Angka Giliran: (Index No.)',
+             'PERSEKOLAHAN MALAYSIA dan telah memperoleh gred MALAYSIA HIGHER SCHOOL CERTIFICATE '
+             'examination and obtained the following', 'Mata Pelajaran (Subject)', 'MPM',
+             'seperti yang berikut dalam mata pelajaran grades in the subjects below:)',
+             ' '.join(words[:cut]), 'SD0007/7007', ' '.join(words[cut:]),
+             'Bilangan Mata Pelajaran Lulus: (Number of Subjects Passed)', 'Peperiksaan (Pengenalan)',
+             '12345/24 AS1234567', 'MAJLIS PEPERIKSAAN MALAYSIA (MALAYSIAN EXAMINATIONS COUNCIL) SIJIL TINGGI '
+             'PERSEKOLAHAN MALAYSIA (MALAYSIA HIGHER SCHOOL CERTIFICATE)',
+             str(len(subjects) if passed is None else passed),
+             'Sijil ini sah. Majlis Peperiksaan Malaysia (Malaysian Examinations Council )',
+             'Gred (Grade) ' + ' '.join(grades), 'telah menduduki peperiksaan', 'Kod Pusat (No.)',
+             'sat for the', 'Nilai Gred (Grade Point)', 'berikut',
+             f'Tahun Peperiksaan: {year_subtitle} {year}'.rstrip(),
+             ' '.join(f'{p} {status}' for p in points),
+             f'Purata Nilai Gred Kumulatif: {pngk_subtitle} {pngk}'.rstrip(),
+             'Ketua Eksekutif (Chief Executive ) Majlis Peperiksaan Malaysia (Malaysian Examinations '
+             'Council ) Tarikh keputusan diumumkan: (Results announced on) 23 Julai 2025 S', '12345']
+    return '\n'.join(lines)
+
+
+class TheMergedLineCertificate(SimpleTestCase):
+    """pypdf 5.9.0's merged lines of the column-ordered certificate: the same bounded, equal-length
+    lists, the same gates — tokenised from the merged lines."""
+
+    def test_it_reads_exact(self):
+        r = parse(cert_merged_text(COL_FIVE))
+        self.assertEqual((r['candidate_name'], r['nric'], r['exam_year'], r['cgpa']),
+                         ('DEVI A/P RAMAN', '050707070707', '2024', '3.50'))
+        self.assertEqual([(x['subject'], x['grade']) for x in r['results']],
+                         [(n, g) for n, g, _p in COL_FIVE])
+
+    def test_a_subject_name_broken_across_the_lines_is_rejoined(self):
+        for cut in (1, 3, 6, 7):                       # inside PENGAJIAN AM, BAHASA MELAYU, PERNIAGAAN
+            r = parse(cert_merged_text(COL_FIVE, cut=cut))
+            self.assertEqual([x['subject'] for x in r['results']], [n for n, _g, _p in COL_FIVE], cut)
+
+    def test_the_one_item_per_line_twin_reads_the_same(self):
+        merged, lines = parse(cert_merged_text(COL_FIVE)), parse(cert_columns_text(COL_FIVE))
+        self.assertEqual(merged['results'], lines['results'])
+
+    def test_multi_word_and_bracketed_subjects(self):
+        subjects = [('PENGAJIAN AM', 'A-', '3.67'), ('MATEMATIK LANJUTAN (T)', 'B', '3.00'),
+                    ('MATEMATIK (T)', 'B+', '3.33'), ('TAHFIZ AL-QURAN', 'A', '4.00')]   # PNGK 3.50
+        r = parse(cert_merged_text(subjects, cut=4))
+        self.assertEqual([x['subject'] for x in r['results']], [n for n, _g, _p in subjects])
+
+    def test_a_dropped_sign_is_taken_from_the_point_on_counted_rows(self):
+        r = parse(cert_merged_text(COL_FIVE, grades=['A', 'B', 'B+', 'C+', 'A']))
+        self.assertEqual(r['results'][0]['grade'], 'A-')
+        self.assertEqual(r['_rows_sign_from_point'], ['PENGAJIAN AM'])
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, grades=['A-', 'B', 'B+', 'C', 'A'])))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, grades=['B', 'B', 'B+', 'C+', 'A'])))
+
+    def test_lists_of_different_lengths_fall_back(self):
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, grades=['A-', 'B', 'B+', 'C+'])))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, points=['3.67', '3.00', '3.33', '2.33'])))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE[:4], grades=[g for _n, g, _p in COL_FIVE],
+                                                 points=[p for _n, _g, p in COL_FIVE])))
+
+    def test_every_existing_gate_still_applies(self):
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, pngk='3.58')))            # PNGK
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, passed='4')))             # count
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, points=['3.67', '3.00', '3.50', '2.33',
+                                                                   '4.00'])))        # off-scale
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, name='DEVI DIAKUI')))     # one name
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE) + '\n040404-04-0404'))    # one IC
+        unknown = [('PENGAJIAN AMX', 'A-', '3.67')] + COL_FIVE[1:]
+        self.assertIsNone(parse(cert_merged_text(unknown)))                          # vocabulary
+
+    def test_an_unknown_word_among_the_subjects_is_never_skipped(self):
+        text = cert_merged_text(COL_FIVE).replace('EKONOMI PENGAJIAN', 'EKONOMI INGGERIS PENGAJIAN')
+        self.assertIsNone(parse(text))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE).replace('SD0007/7007', 'KESUSASTERAAN INGGERIS')))
+
+    def test_a_cut_that_is_not_the_only_one_falls_back(self):
+        from unittest import mock
+        from apps.scholarship import stpm_columns
+        extra = {'PENGAJIAN': 'PENGAJIAN', 'AM': 'AM'}           # makes "PENGAJIAN AM" cut two ways
+        with mock.patch.dict(stpm_columns._SUBJECT_BY_KEY, extra):
+            self.assertIsNone(stpm_columns._split_names(['PENGAJIAN', 'AM', 'SEJARAH']))
+        self.assertEqual(stpm_columns._split_names(['PENGAJIAN', 'AM', 'SEJARAH']), ['PENGAJIAN AM', 'SEJARAH'])
+        self.assertIsNone(stpm_columns._split_names(['PENGAJIAN', 'SEJARAH']))
+
+    def test_the_year_and_pngk_need_their_exact_subtitle_and_one_value(self):
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, year='')))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, year='2024 2025')))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, year_subtitle='(Date of Results)')))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, year_subtitle='')))     # no subtitle
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, pngk='')))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, pngk_subtitle='(Overall Average)')))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, pngk='3.50 3.50')))
+
+    def test_the_grade_line_holds_letters_only(self):
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE).replace('Gred (Grade) A-', 'Gred (Grade) A- 9')))
+        twice = cert_merged_text(COL_FIVE).replace('berikut', 'Gred (Grade) A')
+        self.assertIsNone(parse(twice))                                              # two headers
+
+    def test_the_point_line_is_strict(self):
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, status='(LULUS PENUH')))   # not closed
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, status='(LULUS) X')))       # debris
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, status='LULUS PENUH')))     # no bracket
+        stray = cert_merged_text(COL_FIVE).replace('berikut', '3.00 (LULUS PENUH)')
+        self.assertIsNone(parse(stray))                                              # a point elsewhere
+
+    def test_a_status_must_be_exactly_a_known_status(self):
+        tail = cert_merged_text(COL_FIVE).replace('4.00 (LULUS PENUH)', '4.00 (LULUS PENUH) Nota: (x)')
+        self.assertIsNone(parse(tail))
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE, status='(LULUS) (X)')))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE).replace('4.00 (LULUS PENUH)',
+                                                                    '4.00 (LULUS PENUH) Nota: (x)')))
+        self.assertIsNotNone(parse(cert_merged_text(COL_FIVE, status='(LULUS)')))
+
+    def test_a_subject_word_with_debris_is_never_skipped(self):
+        self.assertIsNone(parse(cert_merged_text(COL_FIVE).replace('SD0007/7007', 'SEJARAH,')))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE).replace('SD0007/7007', 'SEJARAH,')))
+
+    def test_only_a_text_layer_reads_this_way(self):
+        rows = stpm_parse._rows_of(cert_merged_text(COL_FIVE), None)
+        self.assertIsNotNone(stpm_parse._parse_cert(rows))
+        self.assertIsNone(stpm_parse._parse_cert(rows, words_given=True))
+
+
 class RulingB(SimpleTestCase):
     """Owner ruling B (2026-10-28): a missing +/- sign may be taken from the clearly read point, when
     the point is the SAME base letter with a sign, on a row the PNGK counts, the PNGK still adding up."""
@@ -662,7 +798,7 @@ class TheScale(SimpleTestCase):
             self.assertEqual(stpm_parse._layout(flat(text), rows)[0], layout)
 
     def test_the_parser_version(self):
-        self.assertEqual(PARSER_VERSION, '1.2.0')
+        self.assertEqual(PARSER_VERSION, '1.3.0')
 
 
 # ── The owner's grade rule (2026-10-27): letter and point agree; an unclear one is completed from

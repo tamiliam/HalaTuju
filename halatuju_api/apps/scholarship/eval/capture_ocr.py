@@ -15,7 +15,16 @@ one response carries both the text and the word boxes (``vision._vision_words``)
 rasterises only PAGE 1 of a scanned PDF; this capture OCRs every page (one Vision call each) so
 later sprints can see the whole document — page 1 is always ``pages[0]`` in the words file, so
 a replay can still feed the reader exactly what production sees. The rule is replicated here
-rather than imported, because vision.py pulls Django settings at import.
+rather than imported, because vision.py pulls Django settings at import. The PDF readers themselves
+(text layer, raster scale) ARE production's own ``pdf_pages`` functions (Django-free), never a copy.
+
+⚠ LIBRARY VERSIONS (2026-10-28). pypdf and pypdfium2 lay out a text layer differently from one
+version to the next (pypdf 6.19 kept an STPM certificate's columns one item per line; production's
+5.9.0 merges them). A cache captured under other versions describes a document production never
+sees, so every run prints a WARNING when the installed versions differ from ``requirements.lock``.
+``--recapture-text-layer`` rewrites every cached TEXT-LAYER read (meta ``text_layer``) under the
+installed libraries — free, no Vision call; a doc whose layer would now route to Vision is reported
+and left alone.
 
 Re-runs skip already-cached keys (a key counts as cached when its ``.ocr.txt`` exists), so each
 document is billed at most once. The cached text is then replayed offline and free.
@@ -27,6 +36,7 @@ Usage (from halatuju_api/):
     python apps/scholarship/eval/capture_ocr.py                        # results_slip (default)
     python apps/scholarship/eval/capture_ocr.py ic                     # any doc_type folder
     python apps/scholarship/eval/capture_ocr.py results_split/stpm_cert   # nested, relative to fixtures/
+    python apps/scholarship/eval/capture_ocr.py results_split/stpm_cert --recapture-text-layer
 """
 import glob
 import json
@@ -38,13 +48,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))   # halatuju_api/
 REPO = os.path.abspath(os.path.join(ROOT, '..'))                # repo root
 SNAP = os.path.join(HERE, 'snapshots')
+LOCK = os.path.join(ROOT, 'requirements.lock')
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+from apps.scholarship import pdf_pages  # noqa: E402 - production's own PDF readers (Django-free)
 
-# Mirrors vision._MIN_PDF_TEXT and pdf_pages.RASTER_DPI / MAX_RASTER_SIDE_PX / MAX_PAGE_SIDE_PT.
+# Mirrors vision._MIN_PDF_TEXT (vision.py pulls Django settings at import).
 MIN_PDF_TEXT = 25
-RASTER_DPI = 200
-MAX_RASTER_SIDE_PX = 4000
-MAX_PAGE_SIDE_PT = 20000
 PDF_MAGIC = b'%PDF-'
+PDF_LIBS = ('pypdf', 'pypdfium2')
 
 
 # ── Pure helpers (unit-tested in tests/test_capture_ocr.py) ──────────────────────────────────
@@ -58,12 +70,42 @@ def choose_path(pdf: bool, text_layer: str) -> str:
     return 'text_layer' if pdf and len(text_layer or '') >= MIN_PDF_TEXT else 'vision'
 
 
-def raster_scale(width_pt: float, height_pt: float):
-    """pdf_pages.raster_scale: 200 DPI, shrunk to the pixel budget; None for an absurd page."""
-    longer = max(width_pt, height_pt)
-    if not (width_pt > 0 and height_pt > 0) or longer > MAX_PAGE_SIDE_PT:
-        return None
-    return min(RASTER_DPI / 72.0, MAX_RASTER_SIDE_PX / longer)
+raster_scale = pdf_pages.raster_scale
+
+
+def locked_versions(lock_text: str) -> dict:
+    """{library: pinned version} for the PDF libraries in a requirements.lock text."""
+    out = {}
+    for line in lock_text.splitlines():
+        name, sep, ver = line.split('#', 1)[0].strip().partition('==')
+        if sep and name.strip().lower() in PDF_LIBS:
+            out[name.strip().lower()] = ver.strip()
+    return out
+
+
+def version_mismatches(installed: dict, locked: dict) -> list:
+    """'lib installed X, requirements.lock Y' for each PDF library that differs (or is missing)."""
+    return [f'{lib} installed {installed.get(lib)}, requirements.lock {locked[lib]}'
+            for lib in PDF_LIBS if lib in locked and installed.get(lib) != locked[lib]]
+
+
+def warn_on_version_drift():
+    """Print a WARNING when the installed PDF libraries differ from requirements.lock."""
+    from importlib import metadata
+    installed = {}
+    for lib in PDF_LIBS:
+        try:
+            installed[lib] = metadata.version(lib)
+        except metadata.PackageNotFoundError:
+            installed[lib] = None
+    try:
+        with open(LOCK, encoding='utf-8') as fh:
+            locked = locked_versions(fh.read())
+    except OSError:
+        print(f'WARNING: {LOCK} not found - cannot check the PDF library versions.')
+        return
+    for msg in version_mismatches(installed, locked):
+        print(f'WARNING: {msg} - text-layer caches will NOT match production.')
 
 
 def word_box(text: str, vertices) -> dict:
@@ -101,17 +143,7 @@ def _api_key():
     return ''
 
 
-def _pdf_text_layer(data: bytes) -> str:
-    """pdf_pages.pdf_text_layer: all pages joined by newlines; '' on any failure."""
-    try:
-        import io
-        from pypdf import PdfReader
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted:
-            reader.decrypt('')        # a failure here lands in the except below → ''
-        return '\n'.join((p.extract_text() or '') for p in reader.pages).strip()
-    except Exception:  # noqa: BLE001 — any unreadable PDF degrades to the Vision path
-        return ''
+_pdf_text_layer = pdf_pages.pdf_text_layer   # production's own reader, all pages
 
 
 def _pdf_page_pngs(data: bytes):
@@ -192,14 +224,49 @@ def capture_one(path, vision_mod, client):
     return '\n'.join(t for t in texts if t), pages, meta, calls
 
 
+def recapture_text_layer(docs):
+    """Rewrite each cached TEXT-LAYER read under the installed libraries (free, no Vision)."""
+    changed = same = skipped = 0
+    for p in docs:
+        key = os.path.basename(p).rsplit('.', 1)[0]
+        meta_path = os.path.join(SNAP, f'{key}.ocr.meta.json')
+        if not os.path.exists(meta_path):
+            continue
+        with open(meta_path, encoding='utf-8') as fh:
+            if json.load(fh).get('path') != 'text_layer':
+                continue
+        with open(p, 'rb') as fh:
+            layer = _pdf_text_layer(fh.read())
+        if choose_path(True, layer) != 'text_layer':
+            skipped += 1
+            print(f'  SKIP {key}: the layer would now route to Vision - cache left as it was')
+            continue
+        txt_path = os.path.join(SNAP, f'{key}.ocr.txt')
+        old = open(txt_path, encoding='utf-8').read() if os.path.exists(txt_path) else None
+        if old == layer:
+            same += 1
+            continue
+        with open(txt_path, 'w', encoding='utf-8') as f:
+            f.write(layer)
+        changed += 1
+        print(f'  rewrote {key} [{len(layer)} chars]')
+    print(f'\nText-layer recapture: {changed} rewritten, {same} unchanged, {skipped} skipped.')
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    flags = [a for a in argv if a.startswith('--')]
+    argv = [a for a in argv if not a.startswith('--')]
+    warn_on_version_drift()
     target = argv[0] if argv else 'results_slip'
     docs = []
     for folder in doc_folders(target):
         for p in sorted(glob.glob(os.path.join(folder, '*'))):
             if os.path.isfile(p) and not p.endswith('.gitkeep'):
                 docs.append(p)
+    if '--recapture-text-layer' in flags:
+        recapture_text_layer(docs)
+        return
     pending = [p for p in docs if not os.path.exists(
         os.path.join(SNAP, os.path.basename(p).rsplit('.', 1)[0] + '.ocr.txt'))]
     vision_mod = client = None

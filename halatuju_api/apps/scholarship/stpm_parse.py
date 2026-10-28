@@ -5,7 +5,8 @@ number, exam year, PNGK and one grade per subject — under fixed printed labels
 them from the OCR text (a digital PDF's text layer) or, for a scan / photo, from the Vision WORD
 BOXES re-linearised into visual rows (`academic_engine._group_rows`, the SPM slip's row builder).
 
-(A certificate whose text layer is stored column by column is paired in `stpm_columns`, 1.1.0.)
+(A certificate whose text layer is stored column by column is paired in `stpm_columns`, 1.1.0; its
+merged-line form under pypdf 5.9.0, 1.3.0.)
 It first recognises the LAYOUT from a SET of printed anchors (never one exact phrase), because the
 certificate and the slip print the facts in different places. ⚠ The layout is a READER-ONLY routing
 step (owner ruling 2026-10-27): it is never returned, stored or shown, and no rule reads it. A
@@ -47,7 +48,9 @@ from decimal import ROUND_HALF_UP, Decimal
 # 1.1.0 (2026-10-28): a certificate's COLUMN-ordered text layer (names, then letters, then points).
 # 1.2.0 (2026-10-28): a certificate's passed count may be ABSENT (label, no number) when the rows equal the
 #   subjects the student entered (no entry: text layer only); never mis-read.
-PARSER_VERSION = '1.2.0'
+# 1.3.0 (2026-10-28): the column-ordered certificate as pypdf 5.9.0 (production's locked library) lays it
+#   out: merged lines (names run together, letters on the "Gred (Grade)" line, every point on one line).
+PARSER_VERSION = '1.3.0'
 
 #: The STPM subject grade scale and its printed grade points (the slip's "Nilai Gred").
 GRADE_POINTS = {'A': '4.00', 'A-': '3.67', 'B+': '3.33', 'B': '3.00', 'B-': '2.67', 'C+': '2.33',

@@ -60,3 +60,28 @@ class TestCaptureHelpers(SimpleTestCase):
         fx, _ = cap.doc_folders('results_slip')
         self.assertEqual(os.path.normpath(fx),
                          os.path.normpath(os.path.join(cap.HERE, 'fixtures', 'results_slip')))
+
+
+class TestCaptureUsesProductionPdfLibraries(SimpleTestCase):
+    """The capture reads PDFs with production's own pdf_pages functions, and warns when the installed
+    pypdf / pypdfium2 differ from requirements.lock (another version lays a text layer out differently)."""
+
+    def test_the_text_layer_is_production_s_own_reader(self):
+        from apps.scholarship import pdf_pages
+        self.assertIs(cap._pdf_text_layer, pdf_pages.pdf_text_layer)
+        self.assertIs(cap.raster_scale, pdf_pages.raster_scale)
+
+    def test_locked_versions_are_read_from_the_lock_text(self):
+        lock = 'Django==5.0\npypdf==5.9.0  # pinned\npypdfium2==4.30.0\npillow==10.0\n'
+        self.assertEqual(cap.locked_versions(lock), {'pypdf': '5.9.0', 'pypdfium2': '4.30.0'})
+
+    def test_a_version_drift_is_reported(self):
+        locked = {'pypdf': '5.9.0', 'pypdfium2': '4.30.0'}
+        self.assertEqual(cap.version_mismatches({'pypdf': '5.9.0', 'pypdfium2': '4.30.0'}, locked), [])
+        drift = cap.version_mismatches({'pypdf': '6.19.0', 'pypdfium2': None}, locked)
+        self.assertEqual(len(drift), 2)
+        self.assertIn('pypdf installed 6.19.0, requirements.lock 5.9.0', drift[0])
+
+    def test_the_real_lock_pins_both_libraries(self):
+        with open(cap.LOCK, encoding='utf-8') as fh:
+            self.assertEqual(set(cap.locked_versions(fh.read())), {'pypdf', 'pypdfium2'})

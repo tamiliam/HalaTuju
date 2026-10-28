@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## Local PDF libraries must match requirements.lock; eval caches are captured with production's own readers — 2026-10-28 (`stpm_parse` 1.3.0)
+
+pypdf and pypdfium2 lay out a PDF's text layer differently from one version to the next. Local Python had
+pypdf 6.19.0 / pypdfium2 5.13.0 while production runs the locked pypdf 5.9.0 / pypdfium2 4.30.0. A digital
+STPM certificate read Exact locally (6.19 kept its columns one item per line) but fell to Gemini live (5.9.0
+merges them: every subject name on one or two lines, every letter on the "Gred (Grade)" line, every "point
+(LULUS PENUH)" on one line). Every local measurement of a text-layer document was therefore measuring a
+layout production never sees. Decisions: (1) the local interpreter MUST carry the versions pinned in
+`requirements.lock`; (2) `eval/capture_ocr.py` reads PDFs with `apps.scholarship.pdf_pages` (production's
+own functions, not a copy) and prints a WARNING on every run when the installed versions differ from the
+lock; `--recapture-text-layer` rewrites every cached text-layer read for free (no Vision call); (3)
+`stpm_columns` reads BOTH shapes of the column order, with every gate unchanged: the run of subject words
+is cut into known subjects only when exactly ONE cut exists; the letters on the header line must all be
+STPM-scale letters; a merged point line must split, at each point, into closed "(status)" groups; the year
+and the PNGK on their label line only after EXACTLY their English subtitle and as the one value left.
+
 ## A column-ordered certificate text layer is paired by order only from bounded, equal-length lists; a dropped sign is taken from the point (owner ruling B) — 2026-10-28 (`stpm_parse` 1.1.0)
 
 Some digital 2023/24 paper certificates store their text layer column by column (every subject name, then

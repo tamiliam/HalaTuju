@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM certificate under production's PDF library (pypdf 5.9.0); eval caches recaptured; version guard - 2026-10-28
+
+- **Root cause:** local Python had pypdf 6.19.0 / pypdfium2 5.13.0; production's `requirements.lock` pins 5.9.0 /
+  4.30.0, which lay a text layer out differently. A digital column-ordered STPM certificate read Exact locally
+  but under 5.9.0 its text layer is 28 MERGED lines (all subject names on one or two lines, every letter on the
+  "Gred (Grade)" line, every "point (LULUS PENUH)" on one line), so `stpm_columns.cert_columns` returned None
+  and live fell to Gemini. Local is now aligned to the lock.
+- **`stpm_parse` 1.3.0 / `stpm_columns`:** reads the merged-line shape as well as one item per line. The run of
+  subject words between "(Subject)" and "Bilangan Mata Pelajaran Lulus" is cut into known subjects only when
+  exactly one cut exists (a name broken across lines, "(T)", "AL-QURAN" handled; a subject word among other
+  capitals → None); letters on the header line must all be STPM-scale letters (one header only); a merged point
+  line must split at each point into closed "(status)" groups, with no point elsewhere; the year / PNGK may end
+  their label line only after exactly their English subtitle, as the one value left. Every other gate (equal
+  lengths, vocabulary, grade rule incl. ruling B + completion proof, count, PNGK equality, one name, one IC)
+  is unchanged. Synthetic twins for both shapes (`TheMergedLineCertificate`, 14 tests).
+- **`eval/capture_ocr.py`:** reads PDFs with `apps.scholarship.pdf_pages` (production's own functions); prints a
+  WARNING when the installed pypdf / pypdfium2 differ from `requirements.lock`; `--recapture-text-layer`
+  rewrites cached text-layer reads (no Vision call). 11 of the 17 text-layer caches changed and were rewritten.
+- **Corpus under the production libraries:** STPM certificates 14 Exact / 7 fallback / 0 wrong, slips 13 / 5 / 0,
+  controls 0 of 31; STPM genuineness ruling checks 0 failed; SPM certificates 7 / 1 / 0, controls 0 of 62 (the
+  digital-PDF certificate unchanged, Exact). The live check4098 certificate now reads Exact (was Gemini).
+
 ## SPM certificate read row by row from positions; STPM certificate count may be absent - 2026-10-28
 
 - **`spm_cert_parse.parse_spm_cert`** (new module) replaces `academic_engine.parse_spm_cert` (deleted). It pairs
