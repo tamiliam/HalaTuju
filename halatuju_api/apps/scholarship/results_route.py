@@ -303,12 +303,12 @@ def clear_to_spm(application, *, by: str = 'student') -> dict:
     if not grades and isinstance(profile.spm_prereq_grades, dict) and profile.spm_prereq_grades:
         grades = dict(profile.spm_prereq_grades)
     profile.grades = grades
-    profile.stpm_grades, profile.stpm_cgpa = {}, None
+    profile.stpm_grades, profile.stpm_cgpa, profile.stpm_koko = {}, None, None
     profile.higher_cgpa, profile.higher_koko, profile.higher_institution_type = None, None, ''
     profile.completed_qualifications = ['spm'] if grades else []
     profile.results_exam_type = 'spm' if grades else ''
     profile.exam_type = 'spm'
-    profile.save(update_fields=['grades', 'stpm_grades', 'stpm_cgpa', 'higher_cgpa', 'higher_koko',
+    profile.save(update_fields=['grades', 'stpm_grades', 'stpm_cgpa', 'stpm_koko', 'higher_cgpa', 'higher_koko',
                                 'higher_institution_type', 'completed_qualifications',
                                 'results_exam_type', 'exam_type'])
     note = _note(application, 'only_spm', cleared=before, cgpa=cgpa, by=by)

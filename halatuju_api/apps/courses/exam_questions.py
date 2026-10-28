@@ -230,14 +230,16 @@ def third_route_overall(kind, cgpa, koko):
 
 def overall_cgpa(profile):
     """THE overall CGPA of the tertiary results we hold - computed, never stored for the third
-    route. STPM: the stored `stpm_cgpa` (already the overall figure). Third route:
-    ``third_route_overall``. None for SPM, no profile, or nothing usable (a stored STPM value
-    outside (0, 4] included - S1's guard)."""
+    route. STPM (CGPA sprint C2, 2026-10-28): the PNGK worked out from the grades, else the stored
+    `stpm_cgpa` ("not calculated") - `stpm_pngk.stpm_cgpa_of`. Third route:
+    ``third_route_overall``. None for SPM, no profile, or nothing usable (a value outside (0, 4]
+    included - S1's guard)."""
     if not profile:
         return None
     held = results_held(profile)
     if held == 'stpm':
-        cgpa = _as_float(getattr(profile, 'stpm_cgpa', None))
+        from .stpm_pngk import stpm_cgpa_of
+        cgpa = _as_float(stpm_cgpa_of(profile))
         if cgpa is None or not 0 < cgpa <= 4.0:
             return None
         return cgpa
@@ -319,9 +321,13 @@ def merit_100(profile):
 
     * **STPM and the third route** (S2a) — ``overall_cgpa`` / 4 x 100, rounded to 2 decimals: the course side's own rule
       (`courses.views.CalculateCgpaView`: ``merit_percent = round(overall / 4.0 * 100, 2)``).
-      `stpm_cgpa` already holds the OVERALL CGPA (academic x 0.9 + koko x 0.04): the STPM results
-      page stores the calculator's ``cgpa`` (the overall figure), never ``academic_cgpa``, and it
-      is the only writer. So 3.70 -> 92.5, 4.00 -> 100.0.
+      Until CGPA sprint C2 (2026-10-28) an STPM holder's figure was the stored `stpm_cgpa` (the
+      onboarding calculator's overall: plain average x 0.9 + koko x 0.04). Since C2 the STPM figure
+      is ``overall_from(PNGK, stpm_koko)`` (`stpm_pngk.stpm_merit_overall`) — the same arithmetic
+      with the PNGK in place of the plain average; co-curriculum STAYS in merit (owner ruling
+      2026-10-28: CGPA and merit are different, so this is NOT `overall_cgpa`, which is the PNGK).
+      Too few grades for a PNGK: the stored figure, as before. So PNGK 3.75 + koko 8 ->
+      overall 3.69 -> 92.25; PNGK 4.00 + koko 10 -> 4.00 -> 100.0.
     * **SPM** — the course-guide merit from the stored grades / stream / co-curriculum, rounded to
       1 decimal. Byte-identical to the admin merit before S1 (`tests/test_merit_100.py`).
 
@@ -337,7 +343,11 @@ def merit_100(profile):
         # STPM and the third route (S2a): overall CGPA / 4 x 100. `overall_cgpa` carries S1's guard
         # - outside (0, 4] is not a CGPA (a 0 stored before the calculator answered, or a hand-sent
         # value): absent, never a made-up figure that would top or sink the sort (S1 review).
-        cgpa = overall_cgpa(profile)
+        if results_held(profile) == 'stpm':
+            from .stpm_pngk import stpm_merit_overall
+            cgpa = stpm_merit_overall(profile)
+        else:
+            cgpa = overall_cgpa(profile)
         if cgpa is None:
             return None
         return round(cgpa / 4.0 * 100, 2)

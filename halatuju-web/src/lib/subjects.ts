@@ -277,63 +277,10 @@ export const SPM_PREREQ_STREAM_POOLS: Record<string, SpmSubject[]> = {
 }
 
 // ---------------------------------------------------------------------------
-// STPM subject definitions (keys match backend stpm_engine.py)
+// STPM subject definitions — `lib/stpmResultsSubjects.ts` (moved out 2026-10-28, STPM CGPA C1/C2:
+// the labels in three languages are needed by the STPM results step and the STPM quiz only, and
+// riding here they weighed on every route that imports an SPM list).
 // ---------------------------------------------------------------------------
-
-export interface StpmSubject {
-  id: string
-  name: string
-  stream: 'science' | 'arts' | 'both' | 'compulsory'
-}
-
-export const STPM_SUBJECTS: StpmSubject[] = [
-  { id: 'PA', name: 'Pengajian Am', stream: 'compulsory' },
-  { id: 'MATH_T', name: 'Matematik T', stream: 'science' },
-  { id: 'PHYSICS', name: 'Fizik', stream: 'science' },
-  { id: 'CHEMISTRY', name: 'Kimia', stream: 'science' },
-  { id: 'BIOLOGY', name: 'Biologi', stream: 'science' },
-  { id: 'FURTHER_MATH', name: 'Matematik Lanjutan T', stream: 'science' },
-  { id: 'ECONOMICS', name: 'Ekonomi', stream: 'arts' },
-  { id: 'ACCOUNTING', name: 'Perakaunan', stream: 'arts' },
-  { id: 'BUSINESS', name: 'Pengajian Perniagaan', stream: 'arts' },
-  { id: 'GEOGRAFI', name: 'Geografi', stream: 'arts' },
-  { id: 'SEJARAH', name: 'Sejarah', stream: 'arts' },
-  { id: 'KESUSASTERAAN_MELAYU', name: 'Kesusasteraan Melayu', stream: 'arts' },
-  { id: 'BAHASA_MELAYU', name: 'Bahasa Melayu', stream: 'arts' },
-  { id: 'BAHASA_CINA', name: 'Bahasa Cina', stream: 'arts' },
-  { id: 'BAHASA_TAMIL', name: 'Bahasa Tamil', stream: 'arts' },
-  { id: 'SENI_VISUAL', name: 'Seni Visual', stream: 'arts' },
-  { id: 'SYARIAH', name: 'Syariah Islamiah', stream: 'arts' },
-  { id: 'USULUDDIN', name: 'Usuluddin', stream: 'arts' },
-  { id: 'ICT', name: 'Sains Komputer / ICT', stream: 'arts' },
-  { id: 'MATH_M', name: 'Matematik M', stream: 'arts' },
-]
-
-export const STPM_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F']
-
-/** Map frontend subject IDs (localStorage) to backend API keys (stpm_quiz_engine). */
-export const STPM_SUBJECT_TO_API_KEY: Record<string, string> = {
-  MATH_T: 'mathematics_t',
-  MATH_M: 'mathematics_m',
-  PHYSICS: 'physics',
-  CHEMISTRY: 'chemistry',
-  BIOLOGY: 'biology',
-  FURTHER_MATH: 'further_mathematics',
-  ECONOMICS: 'economics',
-  ACCOUNTING: 'accounting',
-  BUSINESS: 'business_studies',
-  GEOGRAFI: 'geography',
-  SEJARAH: 'history',
-  KESUSASTERAAN_MELAYU: 'kesusasteraan_melayu',
-  BAHASA_MELAYU: 'bahasa_melayu',
-  BAHASA_CINA: 'bahasa_cina',
-  BAHASA_TAMIL: 'bahasa_tamil',
-  SENI_VISUAL: 'visual_arts',
-  SYARIAH: 'syariah',
-  USULUDDIN: 'usuluddin',
-  ICT: 'ict',
-  PA: 'pengajian_am',
-}
 
 export const MUET_BANDS = [1, 2, 3, 4, 5, 6]
 

@@ -1164,17 +1164,35 @@ class TestCalculateEndpoints(TestCase):
     # --- CGPA endpoint tests ---
 
     def test_cgpa_calculation(self):
-        """POST STPM grades A, B+, B with koko_score=8 returns expected CGPA values."""
+        """STPM CGPA sprint C2 (owner 2026-10-28): the CGPA is the PNGK (PA + best three) and the
+        merit is SEPARATE — overall_from(PNGK, koko) / 4 x 100, co-curriculum kept in merit."""
         url = '/api/v1/calculate/cgpa/'
         payload = {
-            'stpm_grades': {'PA': 'A', 'MATH_T': 'B+', 'PHYSICS': 'B'},
+            'stpm_grades': {'PA': 'A', 'MATH_T': 'B+', 'PHYSICS': 'B', 'CHEMISTRY': 'C'},
             'koko_score': 8,
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertAlmostEqual(response.data['academic_cgpa'], 3.44, places=2)
-        self.assertAlmostEqual(response.data['cgpa'], 3.42, places=2)
-        self.assertAlmostEqual(response.data['merit_percent'], 85.5, places=1)
+        # (4 + 3.33 + 3 + 2) / 4 = 3.0825 -> 3.08; 0.9 x 3.08 + 0.04 x 8 = 3.092 -> 3.09
+        self.assertEqual(response.data, {'cgpa': 3.08, 'counted': ['PA', 'MATH_T', 'PHYSICS', 'CHEMISTRY'],
+                                         'overall': 3.09, 'merit_percent': 77.25})
+
+    def test_cgpa_calculation_below_pa_plus_three_is_not_calculated(self):
+        response = self.client.post('/api/v1/calculate/cgpa/', {
+            'stpm_grades': {'PA': 'A', 'MATH_T': 'B+', 'PHYSICS': 'B'}, 'koko_score': 8}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {'cgpa': None, 'counted': [], 'overall': None,
+                                         'merit_percent': None})
+
+    def test_cgpa_calculation_without_koko_has_a_cgpa_but_no_merit(self):
+        for koko in (None, '', 11, -1):
+            with self.subTest(koko=str(koko)):
+                body = {'stpm_grades': {'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A', 'CHEMISTRY': 'A'}}
+                if koko is not None:
+                    body['koko_score'] = koko
+                r = self.client.post('/api/v1/calculate/cgpa/', body, format='json')
+                self.assertEqual((r.data['cgpa'], r.data['overall'], r.data['merit_percent']),
+                                 (4.0, None, None))
 
     def test_cgpa_missing_grades(self):
         """POST empty body returns 400."""

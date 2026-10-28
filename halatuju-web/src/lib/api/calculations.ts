@@ -36,6 +36,19 @@ export interface CgpaResult {
   merit_percent: number
 }
 
+/**
+ * STPM CGPA sprint C2 (owner ruling 2026-10-28): the STPM calculator answers the CGPA and the merit
+ * SEPARATELY (`stpm_pngk.stpm_calculation`). `cgpa` is the PNGK — Pengajian Am + the best three — or
+ * null below PA + three; `counted` names the subjects it counts; `overall` / `merit_percent` keep
+ * co-curriculum (0.9 x PNGK + 0.04 x koko) and are null until there is a PNGK and a koko score.
+ */
+export interface StpmCgpaResult {
+  cgpa: number | null
+  counted: string[]
+  overall: number | null
+  merit_percent: number | null
+}
+
 export interface PathwayResult {
   pathway: 'matric' | 'stpm'
   trackId: string
@@ -71,9 +84,9 @@ export async function calculateMerit(
 
 export async function calculateCgpa(
   stpmGrades: Record<string, string>,
-  kokoScore: number = 0,
+  kokoScore: number | null,
   options?: ApiOptions
-): Promise<CgpaResult> {
+): Promise<StpmCgpaResult> {
   return apiRequest('/api/v1/calculate/cgpa/', {
     method: 'POST',
     body: JSON.stringify({ stpm_grades: stpmGrades, koko_score: kokoScore }),

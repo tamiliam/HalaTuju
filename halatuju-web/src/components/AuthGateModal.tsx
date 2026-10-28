@@ -6,7 +6,7 @@ import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { claimNric, getProfile, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { signInResultsFields, syncProfileSafely } from '@/lib/resultsSync'
 import IcInput from './IcInput'
 import IcClaimPanel from './IcClaimPanel'
@@ -171,6 +171,9 @@ export default function AuthGateModal() {
       if (stpmGrades) syncData.stpm_grades = JSON.parse(stpmGrades)
       const stpmCgpa = localStorage.getItem(KEY_STPM_CGPA)
       if (stpmCgpa) syncData.stpm_cgpa = parseFloat(stpmCgpa)
+      // STPM CGPA sprint C2: the STPM co-curriculum score, stored for the MERIT (never the CGPA).
+      const stpmKoko = stpmGrades ? parseFloat(localStorage.getItem(KEY_KOKO_SCORE) ?? '') : NaN
+      if (Number.isFinite(stpmKoko)) syncData.stpm_koko = stpmKoko
       const muetBand = localStorage.getItem(KEY_MUET_BAND)
       if (muetBand) syncData.muet_band = parseInt(muetBand)
     } catch { /* ignore */ }

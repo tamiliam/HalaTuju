@@ -381,7 +381,9 @@ class TestWhatTheImageAlreadyServingNeeds(_World):
             'household_income', 'household_size', 'receives_str', 'receives_jkm',
             # Third results route S2a (2026-10-25): ADDED keys only; none of the above moved
             'higher_cgpa', 'higher_koko', 'higher_institution_type', 'completed_qualifications',
-            'results_held'})
+            'results_held',
+            # STPM CGPA sprint C2 (2026-10-28): ADDED — the STPM merit's co-curriculum score
+            'stpm_koko'})
         self.assertEqual(app.intake_snapshot['profile']['referral_source'], 'smc')
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
         # The value is the SOURCE this application named, under `source` (Sprint C). The old

@@ -88,7 +88,7 @@ export type {
 export {
   fetchFieldTaxonomy, calculateMerit, calculateCgpa, calculateHigherCgpa, calculatePathways,
 } from './api/calculations'
-export type { FieldTaxonomyEntry, MeritResult, CgpaResult, PathwayResult } from './api/calculations'
+export type { FieldTaxonomyEntry, MeritResult, CgpaResult, StpmCgpaResult, PathwayResult } from './api/calculations'
 
 // The bursary application itself, and the intake it is made against.
 export {

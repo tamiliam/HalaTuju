@@ -22,6 +22,8 @@ class PartnerStudentListSerializer(serializers.ModelSerializer):
 class PartnerStudentDetailSerializer(serializers.ModelSerializer):
     saved_courses = serializers.SerializerMethodField()
     org_name = serializers.SerializerMethodField()
+    # CGPA sprint C2 (2026-10-28): the CGPA worked out from the grades, else the stored figure.
+    stpm_cgpa = serializers.FloatField(source='stpm_pngk', read_only=True)
 
     class Meta:
         model = StudentProfile

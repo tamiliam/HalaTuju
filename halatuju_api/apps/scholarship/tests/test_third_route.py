@@ -325,7 +325,10 @@ class TestTheGateIsNotReRunElsewhere(SimpleTestCase):
             if re.search(r'(?<![\w.])evaluate\(\s*\w|shortlisting\.evaluate\(\s*\w|'
                          r'_academic_ok\(\s*\w', src):
                 callers.append(rel)
-        self.assertEqual(callers, ['apps/scholarship/services/intake.py'])
+        # STPM CGPA sprint C2: the backfill PREVIEW asks the gate before/after for the owner's list
+        # and writes no verdict — a declared read-only caller, not a re-run.
+        self.assertEqual(sorted(callers), ['apps/scholarship/management/commands/backfill_stpm_cgpa.py',
+                                           'apps/scholarship/services/intake.py'])
 
 
 class TestTheSponsorLine(TestCase):
@@ -361,7 +364,8 @@ class TestTheReadersOnAMatricHolder(TestCase):
         self.assertIn('Merit score (out of 100): 86.75', prompt)
         # NO bump in S2a (review round 1): no live profile's input moved while the route was
         # shut. S2b opens the route and bumps it (superseding the S2a pin of '2026-10-25.1').
-        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-10-26.1')
+        # STPM CGPA sprint C2 (2026-10-28) bumps it again: the STPM PNGK and merit inputs moved.
+        self.assertEqual(profile_engine.PROMPT_VERSION, '2026-10-28.1')
 
     def test_the_ai_profile_input_is_unchanged_for_spm(self):
         from apps.scholarship import profile_engine
@@ -490,11 +494,18 @@ class TestTheCgpaCalculator(APITestCase):
             with self.subTest(body=repr(body)):
                 self.assertEqual(self.client.post(self.URL, body, format='json').status_code, 400)
 
-    def test_the_stpm_branch_is_unchanged(self):
+    def test_the_stpm_branch_answers_the_pngk_and_the_merit_apart(self):
+        """Superseded 2026-10-28 (STPM CGPA sprint C2, owner ruling: CGPA and merit are different).
+        This pinned the old plain-average answer (cgpa 3.42 / merit 85.5 for PA + two); the STPM
+        branch now answers the PNGK and, separately, overall_from(PNGK, koko) / 4 x 100. PA + two has
+        no PNGK. The third-route branch above is untouched."""
         r = self.client.post(self.URL, {'stpm_grades': {'PA': 'A', 'MATH_T': 'B+', 'PHYSICS': 'B'},
                                         'koko_score': 8}, format='json')
-        self.assertAlmostEqual(r.data['cgpa'], 3.42, places=2)
-        self.assertAlmostEqual(r.data['merit_percent'], 85.5, places=1)
+        self.assertEqual((r.data['cgpa'], r.data['merit_percent']), (None, None))
+        r = self.client.post(self.URL, {'stpm_grades': {'PA': 'A', 'MATH_T': 'B+', 'PHYSICS': 'B',
+                                                        'CHEMISTRY': 'B'}, 'koko_score': 8}, format='json')
+        # (4 + 3.33 + 3 + 3) / 4 = 3.3325 -> 3.33; 0.9 x 3.33 + 0.04 x 8 = 3.317 -> 3.32 -> 83.0
+        self.assertEqual((r.data['cgpa'], r.data['overall'], r.data['merit_percent']), (3.33, 3.32, 83.0))
 
 
 class TestTheDoorIsShutUntilS2b(TestCase):

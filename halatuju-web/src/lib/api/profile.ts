@@ -62,6 +62,8 @@ export interface StudentProfile {
   results_held?: '' | Qualification
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
+  /** STPM CGPA sprint C2: the STPM co-curriculum score (0-10), for the MERIT only. */
+  stpm_koko?: number | null
   muet_band?: number
   /** Third results route (S2a, served): the Matriculation / Asasi / Diploma CGPA as entered,
    *  the co-curriculum score (null for Diploma), where a Diploma is from, what "highest" ranks
@@ -215,6 +217,7 @@ export interface SyncProfileData {
   results_exam_type?: string
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
+  stpm_koko?: number
   muet_band?: number
   coq_score?: number
   stream_subjects?: string[]

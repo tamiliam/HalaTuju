@@ -18,7 +18,7 @@ import { AuthProvider } from '@/lib/auth-context'
 import { MAX_SPM_ELECTIVES } from '@/lib/subjects'
 import {
   KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_MUET_BAND, KEY_SPM_ALIRAN, KEY_SPM_ELEKTIF,
-  KEY_SPM_PREREQ, KEY_SPM_STREAM, KEY_STPM_GRADES, KEY_STPM_STREAM,
+  KEY_SPM_PREREQ, KEY_SPM_STREAM, KEY_STPM_GRADES, KEY_STPM_STREAM, KEY_KOKO_SCORE, KEY_STPM_CGPA,
 } from '@/lib/storage'
 
 const push = jest.fn()
@@ -29,8 +29,17 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/onboarding/stpm-grades',
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+/**
+ * The server's calculator (`stpm_pngk.stpm_calculation`), faked by its contract: a PNGK only from
+ * PA + three graded subjects, a merit only with a co-curriculum score too.
+ */
+const mockCalculateCgpa = jest.fn((grades: Record<string, string>, koko: number | null) =>
+  Promise.resolve(Object.keys(grades).length < 4
+    ? { cgpa: null, counted: [], overall: null, merit_percent: null }
+    : { cgpa: 3.75, counted: ['PA', 'MATH_T', 'PHYSICS', 'CHEMISTRY'],
+        overall: koko === null ? null : 3.69, merit_percent: koko === null ? null : 92.25 }))
 jest.mock('@/lib/api', () => ({
-  calculateCgpa: jest.fn().mockResolvedValue({ academic_cgpa: 3.5, cgpa: 3.6 }),
+  calculateCgpa: (g: Record<string, string>, k: number | null) => mockCalculateCgpa(g, k),
   getProfile: jest.fn(() => Promise.resolve(mockProfile)),
 }))
 jest.mock('@/lib/supabase', () => ({
@@ -71,6 +80,7 @@ beforeEach(() => {
   localStorage.clear()
   push.mockClear()
   mockProfile = {}
+  mockCalculateCgpa.mockClear()
 })
 
 describe('the SPM-prerequisite section rebuilds from the durable record', () => {
@@ -101,14 +111,20 @@ describe('the SPM-prerequisite section rebuilds from the durable record', () => 
     localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify(PREREQ))
     localStorage.setItem(KEY_SPM_ELEKTIF, JSON.stringify(ELECTIVES))
     localStorage.setItem(KEY_SPM_STREAM, 'science')
+    localStorage.setItem(KEY_KOKO_SCORE, '8')
     render(<StpmGradesPage />)
 
-    fireEvent.click(screen.getByText('common.continue'))
+    const button = screen.getByText('common.continue').closest('button') as HTMLButtonElement
+    await waitFor(() => expect(button.disabled).toBe(false))      // the server's PNGK has arrived
+    fireEvent.click(button)
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding/profile'))
     expect(JSON.parse(localStorage.getItem(KEY_SPM_ELEKTIF) as string)).toEqual(ELECTIVES)
     expect(JSON.parse(localStorage.getItem(KEY_SPM_ALIRAN) as string)).toEqual(['phy', 'chem'])
     expect(JSON.parse(localStorage.getItem(KEY_SPM_PREREQ) as string)).toEqual(PREREQ)
+    // STPM CGPA sprint C2: the PNGK (never a typed or plain-average figure) and the koko score
+    expect(localStorage.getItem(KEY_STPM_CGPA)).toBe('3.75')
+    expect(localStorage.getItem(KEY_KOKO_SCORE)).toBe('8')
   })
 })
 
@@ -210,6 +226,7 @@ describe('D4 — Continue waits for the SPM results block', () => {
     localStorage.setItem(KEY_STPM_STREAM, 'science')
     localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A', PHYSICS: 'A', CHEMISTRY: 'B' }))
     localStorage.setItem(KEY_MUET_BAND, '4')
+    localStorage.setItem(KEY_KOKO_SCORE, '8')
   }
   const continueButton = () => screen.getByText('common.continue').closest('button') as HTMLButtonElement
 
@@ -228,7 +245,7 @@ describe('D4 — Continue waits for the SPM results block', () => {
     render(<StpmGradesPage />)
     const mathRow = screen.getByText('Matematik').parentElement as HTMLElement
     fireEvent.change(mathRow.querySelector('select') as HTMLSelectElement, { target: { value: 'B+' } })
-    expect(continueButton().disabled).toBe(false)
+    await waitFor(() => expect(continueButton().disabled).toBe(false))
     fireEvent.click(continueButton())
     await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding/profile'))
     expect(JSON.parse(localStorage.getItem(KEY_SPM_PREREQ) as string)).toMatchObject({ math: 'B+' })
@@ -248,11 +265,12 @@ describe('the required SPM block prefills from the SPM grades on file', () => {
     localStorage.setItem(KEY_STPM_GRADES, JSON.stringify({ PA: 'A', MATH_T: 'A', PHYSICS: 'A', CHEMISTRY: 'B' }))
     localStorage.setItem(KEY_MUET_BAND, '4')
     localStorage.setItem(KEY_GRADES, JSON.stringify({ bm: 'A', eng: 'B+', hist: 'B', math: 'A-', moral: 'A' }))
+    localStorage.setItem(KEY_KOKO_SCORE, '8')
     render(<StpmGradesPage />)
     const mathRow = screen.getByText('Matematik').parentElement as HTMLElement
     expect((mathRow.querySelector('select') as HTMLSelectElement).value).toBe('A-')
     const button = screen.getByText('common.continue').closest('button') as HTMLButtonElement
-    expect(button.disabled).toBe(false)
+    await waitFor(() => expect(button.disabled).toBe(false))
     fireEvent.click(button)
     await waitFor(() => expect(push).toHaveBeenCalledWith('/onboarding/profile'))
     // only the compulsory four are copied — never the rest of the SPM record
@@ -265,5 +283,61 @@ describe('the required SPM block prefills from the SPM grades on file', () => {
     render(<StpmGradesPage />)
     const bmRow = screen.getByText('Bahasa Melayu').parentElement as HTMLElement
     expect((bmRow.querySelector('select') as HTMLSelectElement).value).toBe('C')
+  })
+})
+
+// ── STPM CGPA sprint C2 (owner 2026-10-28; mock approved): the CGPA is worked out, the merit apart ──
+describe('C2 — the CGPA (PNGK) worked out from the grades, the merit shown separately', () => {
+  const ready = (grades: Record<string, string>, koko: string | null = '8') => {
+    localStorage.setItem(KEY_STPM_STREAM, 'science')
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify(grades))
+    localStorage.setItem(KEY_MUET_BAND, '4')
+    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify(CORE))
+    if (koko !== null) localStorage.setItem(KEY_KOKO_SCORE, koko)
+  }
+  const continueButton = () => screen.getByText('common.continue').closest('button') as HTMLButtonElement
+  const FIVE = { PA: 'A', MATH_T: 'A', PHYSICS: 'A-', CHEMISTRY: 'B+', BIOLOGY: 'C' }
+
+  it('shows the PNGK and the merit as two figures, and marks which subjects count', async () => {
+    ready(FIVE)
+    render(<StpmGradesPage />)
+    await waitFor(() => expect(screen.getByTestId('stpm-cgpa').textContent).toBe('3.75'))
+    expect(screen.getByTestId('stpm-merit').textContent).toBe('92.25')
+    expect(screen.getByText('onboarding.stpmCgpaLabel')).toBeTruthy()
+    expect(screen.getByText('onboarding.meritLabel')).toBeTruthy()
+    expect(screen.getByTestId('count-PA').textContent).toBe('onboarding.stpmCountsAlways')
+    for (const id of ['MATH_T', 'PHYSICS', 'CHEMISTRY']) {
+      expect(screen.getByTestId(`count-${id}`).textContent).toBe('onboarding.stpmCounts')
+    }
+    expect(screen.getByTestId('count-BIOLOGY').textContent).toBe('onboarding.stpmNotCounted')
+    expect(mockCalculateCgpa).toHaveBeenLastCalledWith(FIVE, 8)
+  })
+
+  it('below PA + three: no CGPA ("not calculated yet"), the ask to add a subject, and Continue stays off', async () => {
+    ready({ PA: 'A', MATH_T: 'A', PHYSICS: 'A-' })
+    render(<StpmGradesPage />)
+    await waitFor(() => expect(mockCalculateCgpa).toHaveBeenCalled())
+    expect(screen.getByTestId('stpm-cgpa').textContent).toBe('—')
+    expect(screen.getByText('onboarding.stpmCgpaNotYet')).toBeTruthy()
+    expect(screen.getByText('onboarding.stpmCgpaNeedMore')).toBeTruthy()
+    expect(screen.queryByTestId('count-PA')).toBeNull()
+    expect(continueButton().disabled).toBe(true)
+  })
+
+  it('needs a co-curriculum score: no merit without one, and Continue stays off until it is entered', async () => {
+    ready(FIVE, null)
+    render(<StpmGradesPage />)
+    await waitFor(() => expect(screen.getByTestId('stpm-cgpa').textContent).toBe('3.75'))
+    expect(screen.getByTestId('stpm-merit').textContent).toBe('—')
+    expect(continueButton().disabled).toBe(true)
+    for (const bad of ['11', '-1']) {
+      fireEvent.change(screen.getByPlaceholderText('0.00 – 10.00'), { target: { value: bad } })
+      await waitFor(() => expect(mockCalculateCgpa).toHaveBeenLastCalledWith(FIVE, null))
+      expect(continueButton().disabled).toBe(true)
+    }
+    fireEvent.change(screen.getByPlaceholderText('0.00 – 10.00'), { target: { value: '7.5' } })
+    await waitFor(() => expect(continueButton().disabled).toBe(false))
+    await waitFor(() => expect(mockCalculateCgpa).toHaveBeenLastCalledWith(FIVE, 7.5))
+    await waitFor(() => expect(screen.getByTestId('stpm-merit').textContent).toBe('92.25'))
   })
 })

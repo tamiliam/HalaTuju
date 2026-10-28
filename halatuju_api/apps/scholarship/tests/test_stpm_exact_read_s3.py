@@ -22,7 +22,7 @@ from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.tests.test_corpus_gaps_c3 import (CERTIFIED_COPY, ONLINE_CHECKER_PAGE, STPM_CERTIFICATE,
                                                         STPM_SLIP)
 from apps.scholarship.tests.test_third_route_s3 import (DEGREE, MATRIC_HELD, MATRIC_PATHWAY, SPM_HELD, STPM_HELD,
-                                                        STPM_READ, _app, _doc)
+                                                        STPM_FULL_HELD, STPM_FULL_READ, STPM_READ, _app, _doc)
 
 # The browser's print footer of the MPM results page (the result URL, a timestamp, "Page n of n").
 FOOTER = '\nhttps://stpm.mpm.edu.my/stpmX/result.php\n18/06/2026, 1:01 PM\nPage 1 of 2\n'
@@ -192,13 +192,16 @@ class TheDoors(TestCase):
 
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
     def test_the_verdict_engine_reads_the_real_outcome(self):
-        f = self._academic(self._app_with(None)[0])                     # unscored: as before
+        # STPM CGPA sprint C2 (2026-10-28): a CLEAN upload is PA + three (the PNGK needs them) — the
+        # PA + two fixture's CGPA now reads 'pending', so it can no longer reach 'verified'.
+        full = dict(fields=STPM_FULL_READ, held=STPM_FULL_HELD)
+        f = self._academic(self._app_with(None, **full)[0])             # unscored: as before
         self.assertIn('higher_results_not_checked', {i['code'] for i in f['evidence']})
         self.assertEqual(f['status'], 'review')
-        f = self._academic(self._app_with(self.GENUINE)[0])             # scored genuine: Certain
+        f = self._academic(self._app_with(self.GENUINE, **full)[0])     # scored genuine: Certain
         self.assertNotIn('higher_results_not_checked', {i['code'] for i in f['evidence']})
         self.assertEqual(f['status'], 'verified')
-        f = self._academic(self._app_with(self.ONE_A)[0])               # 1A: the −2 step + the caveat
+        f = self._academic(self._app_with(self.ONE_A, **full)[0])       # 1A: the −2 step + the caveat
         self.assertNotIn('higher_results_not_checked', {i['code'] for i in f['evidence']})
         self.assertIn('document_not_genuine', {i['code'] for i in f['unresolved']})
         self.assertEqual(f['status'], 'recommend')

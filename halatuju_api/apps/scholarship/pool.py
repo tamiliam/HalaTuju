@@ -14,6 +14,8 @@ import re
 
 from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, overall_cgpa,
                                          results_held)
+from apps.courses.stpm_pngk import stpm_cgpa_of
+
 from .shortlisting import count_spm_a_grades
 
 # Fixed salt so a student's public alias is stable across deploys but not a
@@ -46,7 +48,7 @@ def academic_band(profile):
         return ''
     held = results_held(profile)
     if held == 'stpm':
-        cgpa = getattr(profile, 'stpm_cgpa', None)
+        cgpa = stpm_cgpa_of(profile)      # CGPA sprint C2: from the grades, else the stored figure
         return f'STPM · PNGK {cgpa}' if cgpa is not None else 'STPM'
     if held in THIRD_ROUTE:
         label = QUALIFICATION_LABELS[held]

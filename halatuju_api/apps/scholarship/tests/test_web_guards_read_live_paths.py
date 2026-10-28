@@ -63,6 +63,7 @@ GUARD_FILES = (
     'src/lib/__tests__/requestStatusDrift.test.ts',
     'src/lib/__tests__/soft-evidence-drift.test.ts',
     'src/lib/__tests__/staffDrift.test.ts',
+    'src/lib/__tests__/stpmSubjectsDrift.test.ts',    # STPM CGPA sprint C1, 2026-10-28
     'src/lib/__tests__/strCoachDrift.test.ts',
     'src/lib/__tests__/studentScreenDrift.test.ts',
     'src/lib/__tests__/themeContrastDrift.test.ts',

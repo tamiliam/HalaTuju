@@ -662,7 +662,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         source='profile.pk', read_only=True, allow_null=True,
     )
     exam_type = ResultsHeldField()   # live: the results we HOLD, not the declared exam (TD-218)
-    stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
+    stpm_pngk = serializers.FloatField(source='profile.stpm_pngk', read_only=True)   # CGPA sprint C2
     household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
     receives_str = serializers.BooleanField(source='profile.receives_str', read_only=True)

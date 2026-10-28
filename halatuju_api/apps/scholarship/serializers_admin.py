@@ -232,7 +232,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     # The qualification we hold RESULTS for, not the one declared at sign-up — see
     # `held_qualification`. A Form Six student holds SPM results and reads SPM.
     qualification = serializers.SerializerMethodField()
-    stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
+    stpm_pngk = serializers.FloatField(source='profile.stpm_pngk', read_only=True)   # CGPA sprint C2
     overall_cgpa = serializers.SerializerMethodField()    # S2a: tertiary CGPA; None for SPM
     spm_a_count = serializers.SerializerMethodField()
     # Source (THIS application's answer, kept at submit — sources Sprint C) + the merit, for the list.
@@ -304,7 +304,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
     # The qualification we hold RESULTS for, not the one declared at sign-up — see
     # `held_qualification`. A Form Six student holds SPM results and reads SPM.
     qualification = serializers.SerializerMethodField()
-    stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
+    stpm_pngk = serializers.FloatField(source='profile.stpm_pngk', read_only=True)   # CGPA sprint C2
     overall_cgpa = serializers.SerializerMethodField()    # S2a: tertiary CGPA; None for SPM
     household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)

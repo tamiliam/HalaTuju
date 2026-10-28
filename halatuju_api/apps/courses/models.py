@@ -13,6 +13,7 @@ from django.db import models
 from django.db.models import Q, Value
 
 from .exam_questions import EXAM_CHOICES, INSTITUTION_TYPE_CHOICES
+from .stpm_pngk import stpm_cgpa_of
 from .utils import tidy_parentage_marker
 
 
@@ -839,6 +840,9 @@ class StudentProfile(models.Model):
         help_text="STPM grades: {'PA': 'A', 'MATH_T': 'B+', ...}"
     )
     stpm_cgpa = models.FloatField(null=True, blank=True)
+    # THE STPM CGPA every reader uses (CGPA sprint C2): from the grades, else `stpm_cgpa` as stored.
+    stpm_pngk = property(stpm_cgpa_of)
+    stpm_koko = models.FloatField(null=True, blank=True, help_text="STPM co-curriculum score (0-10): merit only, never the CGPA (stpm_pngk.stpm_merit_overall).")
     muet_band = models.IntegerField(null=True, blank=True)
     coq_score = models.FloatField(
         null=True, blank=True,
