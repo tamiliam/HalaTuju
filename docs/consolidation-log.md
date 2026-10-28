@@ -26,6 +26,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a 95937b41
 - 2026-10-21 TD-360 Sprint 1 (the admin message slice; budgets ratcheted, TD-344 closed) — 7d5f5054 8b1b57ce f0318c14
 - 2026-10-21 request #39 Sprint 4 (the permission editor on People; history table, scholarship 0175) — a6cc35d1 f9499251 390596f8
+- 2026-10-28 STPM column reader on production's pypdf 5.9 text; local libs aligned to the lock; MODEL 1.15.0 — c84b8cda
 - 2026-10-28 SPM certificate read by visual rows (spm_cert_parse); STPM count may be absent when rows match the entry; MODEL 1.14.0 — e29aa5d3
 - 2026-10-28 STPM reader: column-ordered text layers + ruling B (sign from point); MODEL 1.12.0 — f918b574
 - 2026-10-28 semester ask skips STPM completers (found while splitting #254/#265) — 4475bb4b
