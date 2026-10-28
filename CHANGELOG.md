@@ -63,8 +63,21 @@ found the work — none of it was visible from reading the code.
   `worked_date`) → `request_hours.py`. Every one of the three files ends smaller than it started
   and its `oversize_files` entry was lowered, never raised (`platform_cost.py` 681 → 659).
 - ⚠ **Still open:** `metered margin_pct` has no 1 July row, so July prints one line instead of two
-  (a rate-table gap, not a code fault); `triaged_kind` reads 'feature' for all 16 finished requests
-  including 7 filed as bugs, so the Bug reports line prints nothing until they are re-triaged.
+  (a rate-table gap, not a code fault); the September bills and October's Anthropic + Supabase are
+  not imported; August's 27.0 hours and September's 0.5 are not recorded.
+- **Raised, not fixed:** TD-417 (supplier tax is pooled and apportioned pro-rata, so Anthropic's
+  SST puts ~RM9 of marked-up tax on a tenant's charge although Anthropic's own cost is excluded —
+  pre-existing, never billed) and TD-418 (an acceptance carries a date but no name).
+
+## Small change: STPM results page streams follow the MPM grouping - 2026-10-29
+
+- **Sains Sukan is listed under Arts only** (it was in both streams). MPM groups it under "Arts and Health"
+  with Seni Visual, not with the sciences (owner ruling, option A).
+- **Matematik (M) and ICT are listed under both streams** (they were Arts only). MPM groups them under
+  "Science and Mathematics", but schools often teach them in arts classes.
+- The stream only decides which subjects show in the three main slots; it is not stored on the server and moves
+  no eligibility, merit or CGPA. The fourth (elective) slot still offers every subject. No live profile holds
+  Sains Sukan; the 10 with ICT / Matematik (M) keep them under Arts. `src/lib/stpmResultsSubjects.ts`.
 
 ## Bumi + Islamic coverage — Sprint B: the Bumiputera answer (migration 0087, migrate-first) - 2026-10-28
 

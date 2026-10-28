@@ -7,6 +7,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries and the four sprint lines wrongly logged here are listed in that review, and line by line in git at `6e1d66db`)_
 
+- 2026-10-29 a75d80ff fix: STPM results page streams follow the MPM grouping - Sains Sukan under Arts only, Matematik (M) and ICT under both (halatuju-web/src/lib/stpmResultsSubjects.ts, halatuju-web/src/lib/__tests__/stpmSubjectsDrift.test.ts)
+
 ## Sprints since the last review
 
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
