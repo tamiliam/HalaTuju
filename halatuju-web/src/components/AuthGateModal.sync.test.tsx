@@ -17,7 +17,7 @@ import AuthGateModal from './AuthGateModal'
 import * as api from '@/lib/api'
 import {
   KEY_ELEKTIF, KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_HIGHER_INSTITUTION, KEY_HIGHER_KOKO,
-  KEY_RESULTS_EXAM_TYPE, KEY_SPM_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_STREAM, KEY_STPM_GRADES,
+  KEY_PROFILE, KEY_RESULTS_EXAM_TYPE, KEY_SPM_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_STREAM, KEY_STPM_GRADES,
 } from '@/lib/storage'
 
 jest.mock('next/navigation', () => ({
@@ -243,5 +243,32 @@ describe('a move UP is sent at sign-in; the server still refuses a move down', (
     render(<AuthGateModal />)
     await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
     expect(mockApi.syncProfile.mock.calls[0][0]).not.toHaveProperty('results_exam_type')
+  })
+})
+
+// Bumi coverage Sprint B (review round 3): the sign-in sync never re-sends a stale Bumiputera yes.
+// After a switch to Foreign this browser holds `bumiputera: null`; a later switch back to Malaysian
+// leaves it unset — so the gate must send nothing, and only a real Yes / No is ever sent.
+describe('the Bumiputera answer at sign-in', () => {
+  const signIn = async (demo: Record<string, unknown>) => {
+    localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'female', ...demo }))
+    render(<AuthGateModal />)
+    await waitFor(() => expect(mockApi.syncProfile).toHaveBeenCalled())
+    return mockApi.syncProfile.mock.calls[0][0]
+  }
+
+  it('Malaysian -> Foreign -> Malaysian: the unset answer is not sent', async () => {
+    const sent = await signIn({ nationality: 'malaysian', bumiputera: null })
+    expect(sent).not.toHaveProperty('bumiputera')
+  })
+
+  it('Foreign: nothing about it is sent (the nationality makes the server store null)', async () => {
+    const sent = await signIn({ nationality: 'non_malaysian', bumiputera: null })
+    expect(sent).not.toHaveProperty('bumiputera')
+    expect(sent.nationality).toBe('non_malaysian')
+  })
+
+  it('a real Yes / No given before sign-in is sent', async () => {
+    expect((await signIn({ nationality: 'malaysian', bumiputera: true })).bumiputera).toBe(true)
   })
 })
