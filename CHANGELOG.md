@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## TD-411 — a scanner app's watermark is not a text layer; the KWSP app balance screen is an EPF proof (BUILT, NOT LIVE) - 2026-10-28
+## TD-408 + TD-411 — father/son name order; a scanner watermark is not a text layer; the KWSP app screen is an EPF proof (MODEL 1.17.0, VERDICT 2026-10-28.2) - 2026-10-28
+
+- **TD-408 (VERDICT 2026-10-28.2; live dry-run 1448 real pairs, 3 changed, all an Iban father now confirmed; two review rounds) — word order in a patronymic name.**
+  "ALI BIN ABU" (Ali, son of Abu) no longer matches "ABU BIN ALI", nor "JOHNNY ANAK GABRIEL" "GABRIEL ANAK
+  JOHNNY". New `apps/scholarship/name_order.py`: when BOTH names carry a connector (BIN, BINTI, BT, BTE, ANAK,
+  AK, A/L, A/P, S/O, D/O) each is split at its first connector, and a TRUE REVERSAL is vetoed — A's given name
+  matches B's parent's name, A's parent's name matches B's given name, and the given names differ, each judged
+  by the caller's own matcher — in `vision.name_match` and `vision.relationship_name_match` (match/partial →
+  mismatch only). Every other pair keeps the set comparison exactly. Narrowed after the live dry-run (1448
+  pairs, 4 changed): the first version vetoed whenever either part mismatched, which split a Chinese name at
+  its BIN syllable and turned a genuine birth-certificate mother partial → mismatch (now a regression test).
+  The TD-404 near miss (`buckets._romanised_near_miss`) is refused only for a reversal. `father_name_from_ic`
+  now reads the father off a bare ANAK / AK and BT / BTE (word-bounded; a name that STARTS with a connector has
+  no patronymic; a leading AK title — Awangku — is skipped, "AK MOHD SHAHRUL BIN AK OSMAN" → "AK OSMAN"). A father
+  name only those new connectors give can only turn 'unknown' into 'match' (an Iban student's father link): any
+  other answer stays 'unknown', so the birth-certificate fallback runs as before, and the BC's father row stays
+  `no_ref`. Siblings are judged as before. A band can move (see TD-408). Tests `test_td408_name_order.py`.
 
 - **The fault, confirmed read-only.** Of 31 live EPF-slot documents scored `not_epf`, about 26 are genuinely the
   wrong document (the scorer is right). Doc 3281, a real Penyata Ahli scanned with CamScanner, had a text layer
@@ -76,21 +92,6 @@ All notable changes to this project will be documented in this file.
   subject marked "always counts" / "counts" / "not counted") and the merit as a separate figure; Continue needs
   Pengajian Am + three graded subjects and a co-curriculum score (0–10). `/calculate/cgpa/` answers
   `{cgpa (PNGK), counted, overall, merit_percent}`. Malay and Tamil strings are first drafts.
-- **TD-408 (built, NOT LIVE, awaiting the live dry-run + adversarial review) — word order in a patronymic name.**
-  "ALI BIN ABU" (Ali, son of Abu) no longer matches "ABU BIN ALI", nor "JOHNNY ANAK GABRIEL" "GABRIEL ANAK
-  JOHNNY". New `apps/scholarship/name_order.py`: when BOTH names carry a connector (BIN, BINTI, BT, BTE, ANAK,
-  AK, A/L, A/P, S/O, D/O) each is split at its first connector, and a TRUE REVERSAL is vetoed — A's given name
-  matches B's parent's name, A's parent's name matches B's given name, and the given names differ, each judged
-  by the caller's own matcher — in `vision.name_match` and `vision.relationship_name_match` (match/partial →
-  mismatch only). Every other pair keeps the set comparison exactly. Narrowed after the live dry-run (1448
-  pairs, 4 changed): the first version vetoed whenever either part mismatched, which split a Chinese name at
-  its BIN syllable and turned a genuine birth-certificate mother partial → mismatch (now a regression test).
-  The TD-404 near miss (`buckets._romanised_near_miss`) is refused only for a reversal. `father_name_from_ic`
-  now reads the father off a bare ANAK / AK and BT / BTE (word-bounded; a name that STARTS with a connector has
-  no patronymic; a leading AK title — Awangku — is skipped, "AK MOHD SHAHRUL BIN AK OSMAN" → "AK OSMAN"). A father
-  name only those new connectors give can only turn 'unknown' into 'match' (an Iban student's father link): any
-  other answer stays 'unknown', so the birth-certificate fallback runs as before, and the BC's father row stays
-  `no_ref`. Siblings are judged as before. A band can move (see TD-408). Tests `test_td408_name_order.py`.
 
 ## Income declarations follow-ups — tighter government letterhead; the approver is never a printed label - 2026-10-28
 
