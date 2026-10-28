@@ -225,10 +225,13 @@ class TestStpmSearchIsActive:
 
     def test_inactive_course_excluded_from_search(self, client):
         from apps.courses.models import StpmCourse
-        total_before = StpmCourse.objects.filter(is_active=True).count()
+        # Bumi coverage Sprint B: the search now hides Bumiputera-only courses unless the student
+        # says they are Bumi (it used to show them to everyone), so count what it shows.
+        visible = StpmCourse.objects.filter(is_active=True).exclude(requirement__req_bumiputera=True)
+        total_before = visible.count()
 
         # Deactivate one course
-        course = StpmCourse.objects.first()
+        course = visible.first()
         course.is_active = False
         course.save(update_fields=['is_active'])
 

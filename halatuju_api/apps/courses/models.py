@@ -778,6 +778,7 @@ class StudentProfile(models.Model):
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, default='Warganegara')
+    bumiputera = models.BooleanField(null=True, blank=True, default=None)  # ⚠ course guide ONLY: bumiputera.py
     colorblind = models.BooleanField(default=False)
     disability = models.BooleanField(default=False)
 

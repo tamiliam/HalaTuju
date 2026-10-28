@@ -28,6 +28,7 @@
  * for onboarding the student has already done.
  */
 import type { StudentProfile } from '@/lib/api'
+import { isBumiputera } from '@/lib/bumiputera'
 import { isThirdRoute, type ThirdRouteKind } from '@/lib/qualification'
 import {
   KEY_ALIRAN, KEY_EXAM_TYPE, KEY_GRADES, KEY_HIGHER_CGPA, KEY_MERIT, KEY_MUET_BAND, KEY_PROFILE,
@@ -88,6 +89,9 @@ function spmProfile(store: ReadableStore): StudentProfile | null {
     grades,
     gender: d.gender as StudentProfile['gender'],
     nationality: d.nationality as StudentProfile['nationality'],
+    // ⚠ PART OF THE RESULTS KEY (Bumi coverage Sprint B): the dashboard keys its eligibility query
+    // on this profile, so a changed answer is a new key and never a stale cached result.
+    bumiputera: isBumiputera(d as { nationality?: string; bumiputera?: boolean | null }),
     colorblind: !!d.colorblind,
     disability: !!d.disability,
     coq_score: (d.coqScore as number) ?? 5.0,
@@ -118,6 +122,7 @@ function bareProfile(store: ReadableStore): StudentProfile {
     grades: {},
     gender: (d.gender as StudentProfile['gender']) || 'male',
     nationality: (d.nationality as StudentProfile['nationality']) || 'malaysian',
+    bumiputera: isBumiputera(d as { nationality?: string; bumiputera?: boolean | null }),   // the results key, as above
     colorblind: !!d.colorblind,
     disability: !!d.disability,
   } as StudentProfile

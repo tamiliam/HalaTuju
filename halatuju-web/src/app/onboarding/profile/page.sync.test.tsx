@@ -53,8 +53,15 @@ beforeEach(() => {
   jest.clearAllMocks()
   localStorage.clear()
   sessionStorage.clear()
-  ;(getProfile as jest.Mock).mockResolvedValue({ gender: 'female' })
-  localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'female' }))
+  // Bumi coverage Sprint B: a Malaysian answers Bumiputera before continuing.
+  ;(getProfile as jest.Mock).mockResolvedValue({ gender: 'female', bumiputera: false })
+  localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'female', bumiputera: false }))
+})
+
+it('Bumi coverage Sprint B: the Bumiputera answer travels with the demographics', async () => {
+  ;(getProfile as jest.Mock).mockResolvedValue({ gender: 'female', nationality: 'malaysian', bumiputera: true })
+  const sent = await finish()
+  expect(sent).toMatchObject({ gender: 'female', nationality: 'malaysian', bumiputera: true })
 })
 
 it('an Asasi completion: CGPA, koko, MUET-free set and the full list [spm, asasi]', async () => {

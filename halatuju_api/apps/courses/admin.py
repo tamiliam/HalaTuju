@@ -69,6 +69,8 @@ class StudentProfileAdmin(admin.ModelAdmin):
     list_display = ['supabase_user_id', 'gender', 'nationality', 'created_at']
     list_filter = ['gender', 'nationality']
     readonly_fields = ['created_at', 'updated_at']
+    # Bumi coverage Sprint B: the Bumiputera answer is course-guide only — staff never see it.
+    exclude = ['bumiputera']
 
 
 @admin.register(SavedCourse)

@@ -91,7 +91,9 @@ export default function PathwayPicker({
     const held = profileAcademicSummary(profile).examType
     if (isTertiary(held)) {
       // STPM: the degrees its results qualify for; the third route: every degree, unfiltered (D2).
-      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token))
+      // Owner ruling 2026-10-28 (Bumi coverage, Option A): EVERY course, Bumi-only included, for every
+      // student — the Bumiputera answer is course-guide only and is never read here.
+      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token, { allCourses: true }))
         .then(setEligibleCourses)
         .catch(() => setEligibleCourses([]))
         .finally(() => setLoading(false))

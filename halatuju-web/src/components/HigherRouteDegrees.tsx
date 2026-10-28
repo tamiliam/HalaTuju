@@ -18,11 +18,13 @@ import { useT } from '@/lib/i18n'
 import { resultsEditPath, type ThirdRouteKind } from '@/lib/qualification'
 import { COURSE_PAGE_SIZE } from '@/lib/storage'
 
-export default function HigherRouteDegrees({ kind, savedIds, onToggleSave, onLoadMoreGate }: {
+export default function HigherRouteDegrees({ kind, savedIds, onToggleSave, onLoadMoreGate, bumiputera = false }: {
   kind: ThirdRouteKind
   savedIds: Set<string>
   onToggleSave?: (courseId: string) => void
   onLoadMoreGate?: () => boolean
+  /** Bumi coverage Sprint B: list the Bumiputera-only degrees too (a Malaysian who said yes). */
+  bumiputera?: boolean
 }) {
   const { t } = useT()
   const [courses, setCourses] = useState<{ course: EligibleCourse; university: string }[] | null>(null)
@@ -30,7 +32,7 @@ export default function HigherRouteDegrees({ kind, savedIds, onToggleSave, onLoa
 
   useEffect(() => {
     let live = true
-    searchStpmCourses({})
+    searchStpmCourses(bumiputera ? { bumiputera } : {})
       .then((r) => {
         if (!live) return
         setCourses(r.courses.map((c) => ({
@@ -45,7 +47,7 @@ export default function HigherRouteDegrees({ kind, savedIds, onToggleSave, onLoa
       })
       .catch(() => { if (live) setCourses([]) })
     return () => { live = false }
-  }, [])
+  }, [bumiputera])
 
   const remaining = (courses?.length ?? 0) - shown
 

@@ -361,7 +361,7 @@ def check_stpm_subject_group(req, stpm_grades):
 
 def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
                             gender='', nationality='Warganegara',
-                            colorblind=False, disability=False):
+                            colorblind=False, disability=False, bumiputera=False):
     """Check which STPM degree courses a student qualifies for.
 
     Args:
@@ -371,6 +371,9 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         muet_band: int 1-6
         gender, nationality: demographic strings
         colorblind, disability: boolean flags
+        bumiputera: the student said they are Bumiputera (course guide only). Only a real True
+            from a Malaysian unlocks Bumiputera-only courses; None / False / a foreign
+            nationality never does. Default False keeps the golden master (2,026) unchanged.
 
     Returns:
         List of dicts, each with: course_id, course_name, university, stream,
@@ -378,6 +381,9 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
     """
     # Import inside function to avoid circular imports and keep pure functions testable
     from apps.courses.models import StpmRequirement
+
+    # `is True`, not truthiness: None (not answered) and any stray value read as "not Bumi".
+    bumi = bumiputera is True and nationality == 'Warganegara'
 
     eligible = []
     all_reqs = StpmRequirement.objects.select_related('course').filter(course__is_active=True)
@@ -402,8 +408,9 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
             continue
         if req.req_female and gender != 'Perempuan':
             continue
-        # Bumiputera-only courses (e.g. UiTM) are out of scope
-        if req.req_bumiputera:
+        # Bumiputera-only courses (e.g. UiTM): shown only to a Malaysian student who said they
+        # are Bumiputera (Bumi coverage Sprint B, owner ruling 2026-10-28).
+        if req.req_bumiputera and not bumi:
             continue
 
         # 4. Individual STPM subject requirements
