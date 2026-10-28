@@ -20,8 +20,22 @@ All notable changes to this project will be documented in this file.
   slip's PNGK with PA + best three (was the plain average) → `VERDICT_ENGINE_VERSION` 2026-10-28.1.
 - **Backfill** `backfill_stpm_cgpa` (PREVIEW by default; `--apply` writes `stpm_cgpa`): per application, stored
   vs calculated CGPA, merit before → after and the gate before → after (`GATE FLIPS` marked). Not run.
-- **Onboarding UI not built**: static mock for approval `docs/plans/stpm-cgpa-onboarding-mock.html`.
-- ⚠ STPM merit no longer carries co-curriculum (the server never stored the STPM koko score); see the PR.
+- **CGPA and merit are different (owner ruling 2026-10-28, supersedes the line above about merit).** The CGPA
+  is the PNGK (display, the `min_stpm_pngk` gate, the document comparison). The STPM MERIT keeps co-curriculum
+  as it always did: `overall_from(PNGK, koko)` / 4 x 100 (0.9 x CGPA + 0.04 x koko) —
+  `stpm_pngk.stpm_merit_overall`, read by `merit_100` (officer list, cockpit, merit sort, sponsor-profile
+  `Merit score:`); "not calculated" rows keep the stored figure, which already carries koko. A PNGK with no
+  koko score is no merit (absent, never a made-up 0). Sponsor-profile `PROMPT_VERSION` 2026-10-28.1.
+- **STPM koko stored.** `StudentProfile.stpm_koko` (courses `0085`, MIGRATE-FIRST, DDL in its docstring),
+  written by the onboarding sync and sign-in sync, served on the profile payload and hydrated back, cleared with
+  the rest of the STPM results (third-route switch, "only SPM"), kept in the submit snapshot.
+- **Backfill** now also derives each existing student's koko = (stored `stpm_cgpa` − 0.9 × the old plain average
+  of all grades) / 0.04, half-up to 0.01 (the form's step), clamped to 0–10; rows where it does not reproduce the
+  stored figure are flagged `KOKO NOT CLEAN`. The preview lists CGPA, merit and gate before → after (ids only).
+- **Onboarding UI built per the approved mock.** The STPM step shows the PNGK (worked out by the server, each
+  subject marked "always counts" / "counts" / "not counted") and the merit as a separate figure; Continue needs
+  Pengajian Am + three graded subjects and a co-curriculum score (0–10). `/calculate/cgpa/` answers
+  `{cgpa (PNGK), counted, overall, merit_percent}`. Malay and Tamil strings are first drafts.
 
 ## Income declarations follow-ups — tighter government letterhead; the approver is never a printed label - 2026-10-28
 

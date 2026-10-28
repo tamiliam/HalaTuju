@@ -11,7 +11,7 @@ import {
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { STPM_SUBJECT_TO_API_KEY } from '@/lib/subjects'
+import { STPM_SUBJECT_TO_API_KEY } from '@/lib/stpmResultsSubjects'
 import {
   KEY_STPM_GRADES,
   KEY_STPM_QUIZ_SIGNALS,

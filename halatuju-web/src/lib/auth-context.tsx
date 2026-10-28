@@ -15,7 +15,7 @@ import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -240,6 +240,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (profile.stpm_cgpa != null) {
       localStorage.setItem(KEY_STPM_CGPA, String(profile.stpm_cgpa))
+    }
+    if (profile.stpm_koko != null) {
+      localStorage.setItem(KEY_KOKO_SCORE, String(profile.stpm_koko))
     }
     if (profile.muet_band != null) {
       localStorage.setItem(KEY_MUET_BAND, String(profile.muet_band))

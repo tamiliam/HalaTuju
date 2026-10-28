@@ -7,6 +7,10 @@ pull request; a new reader belongs here the day it is added.
 
 The student: five graded subjects (made up) — PNGK (PA + best three) = (4 + 4 + 3.67 + 3.33) / 4 =
 3.75, the plain average of all five = 3.40, and a stored figure of 3.21 that matches neither.
+
+CGPA AND MERIT ARE DIFFERENT (owner ruling 2026-10-28). Every CGPA door shows the PNGK; every MERIT
+door (`TestTheMeritDoors`) shows overall_from(PNGK, koko) / 4 x 100 — co-curriculum stays in
+merit. Her stored co-curriculum score is 8: 0.9 x 3.75 + 0.04 x 8 = 3.695 -> 3.69 -> merit 92.25.
 """
 from unittest.mock import patch
 
@@ -27,8 +31,10 @@ from .factories import (TEST_JWT_SECRET, authed_client, make_admin, make_applica
 GRADES = {'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A-', 'CHEMISTRY': 'B+', 'BIOLOGY': 'C'}
 PNGK = 3.75
 STORED = 3.21
+KOKO = 8.0
+MERIT = 92.25
 STPM = dict(exam_type='stpm', results_exam_type='stpm', stpm_grades=GRADES, stpm_cgpa=STORED,
-            completed_qualifications=['spm', 'stpm'], grades={'bm': 'A', 'eng': 'B'})
+            stpm_koko=KOKO, completed_qualifications=['spm', 'stpm'], grades={'bm': 'A', 'eng': 'B'})
 #: PA + two others — no PNGK can be worked out, so the stored figure stands ("not calculated").
 SHORT = {**STPM, 'stpm_grades': {'PA': 'A', 'MATH_T': 'B'}}
 
@@ -38,9 +44,9 @@ class TestTheDoors(TestCase):
     def setUp(self):
         self.student = make_student(**STPM)
 
-    def test_overall_cgpa_and_merit(self):
+    def test_overall_cgpa_is_the_pngk_and_the_merit_keeps_koko(self):
         self.assertEqual(eq.overall_cgpa(self.student), PNGK)
-        self.assertEqual(eq.merit_100(self.student), 93.75)
+        self.assertEqual(eq.merit_100(self.student), MERIT)
 
     def test_the_model_property(self):
         self.assertEqual(self.student.stpm_pngk, PNGK)
@@ -72,12 +78,14 @@ class TestTheDoors(TestCase):
         self.assertIn(f'STPM PNGK: {PNGK}', profile_engine._build_prompt(app))
 
     def test_the_submit_snapshot(self):
-        self.assertEqual(build_intake_snapshot(self.student, {})['profile']['stpm_cgpa'], PNGK)
+        snap = build_intake_snapshot(self.student, {})['profile']
+        self.assertEqual((snap['stpm_cgpa'], snap['stpm_koko']), (PNGK, KOKO))
 
     def test_the_student_profile_payload(self):
         r = authed_client(self.student).get('/api/v1/profile/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual((r.json()['stpm_cgpa'], r.json()['stpm_cgpa_calculated']), (PNGK, True))
+        self.assertEqual((r.json()['stpm_cgpa'], r.json()['stpm_cgpa_calculated'], r.json()['stpm_koko']),
+                         (PNGK, True, KOKO))
 
     def test_the_partner_student_detail(self):
         self.assertEqual(PartnerStudentDetailSerializer(self.student).data['stpm_cgpa'], PNGK)
@@ -101,6 +109,40 @@ class TestTheDoors(TestCase):
             format='json')
         gen.assert_called_once()
         self.assertEqual(gen.call_args[1]['stpm_cgpa'], PNGK)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheMeritDoors(TestCase):
+    """Every reader of the MERIT: overall_from(PNGK, koko) / 4 x 100 — not the CGPA / 4 x 100."""
+
+    def setUp(self):
+        self.app = make_application('submitted', student=make_student(**STPM))
+
+    def test_the_officer_list_and_the_merit_sort(self):
+        self.assertEqual(AdminApplicationListSerializer(self.app).data['merit_score'], MERIT)
+        client = authed_client(make_admin('org_admin', owning_org=self.app.cohort.owning_organisation))
+        r = client.get('/api/v1/admin/scholarship/applications/?sort=merit')
+        self.assertEqual(r.status_code, 200, r.content[:200])
+        self.assertEqual([a['merit_score'] for a in r.json()['applications']], [MERIT])
+
+    def test_the_cockpit(self):
+        client = authed_client(make_admin('org_admin', owning_org=self.app.cohort.owning_organisation))
+        body = client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        self.assertEqual((body['merit_score'], body['stpm_pngk']), (MERIT, PNGK))
+
+    def test_the_sponsor_profile_prompt(self):
+        self.assertIn(f'Merit score (out of 100): {MERIT}', profile_engine._build_prompt(self.app))
+
+    def test_no_koko_is_no_merit_never_a_made_up_zero(self):
+        s = make_student(**{**STPM, 'stpm_koko': None})
+        self.assertEqual((eq.merit_100(s), s.stpm_pngk), (None, PNGK))
+
+    def test_the_calculator_agrees_with_the_stored_profile(self):
+        from rest_framework.test import APIClient
+        r = APIClient().post('/api/v1/calculate/cgpa/', {'stpm_grades': GRADES, 'koko_score': KOKO},
+                             format='json')
+        self.assertEqual((r.data['cgpa'], r.data['merit_percent']), (PNGK, MERIT))
+        self.assertEqual(r.data['counted'], ['PA', 'MATH_T', 'PHYSICS', 'CHEMISTRY'])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -140,6 +182,28 @@ class TestTheWriter(TestCase):
         p = make_student()
         saved = self._save(p, {'stpm_grades': {'PA': 'A', 'MATH_T': 'B'}, 'stpm_cgpa': 3.3})
         self.assertEqual(saved.stpm_cgpa, 3.3)
+
+    def test_the_koko_score_is_stored_and_range_checked(self):
+        p = make_student()
+        saved = self._save(p, {'exam_type': 'stpm', 'results_exam_type': 'stpm',
+                               'stpm_grades': GRADES, 'stpm_koko': 7.5})
+        self.assertEqual((saved.stpm_cgpa, saved.stpm_koko), (PNGK, 7.5))
+        for bad in (-1, 10.5):
+            with self.subTest(koko=bad):
+                self.assertFalse(ProfileUpdateSerializer(p, data={'stpm_koko': bad}, partial=True).is_valid())
+
+    def test_completing_the_third_route_clears_the_stpm_koko_too(self):
+        p = make_student(**STPM)
+        saved = self._save(p, {'exam_type': 'matric', 'results_exam_type': 'matric', 'higher_cgpa': 3.5,
+                               'higher_koko': 8, 'completed_qualifications': ['spm', 'matric']})
+        self.assertEqual((saved.stpm_grades, saved.stpm_cgpa, saved.stpm_koko), ({}, None, None))
+
+    def test_only_spm_clears_the_stpm_koko_too(self):
+        from apps.scholarship.results_route import clear_to_spm
+        app = make_application('submitted', student=make_student(**STPM))
+        clear_to_spm(app)
+        app.profile.refresh_from_db()
+        self.assertEqual((app.profile.stpm_cgpa, app.profile.stpm_koko), (None, None))
 
     def test_a_write_that_does_not_touch_stpm_leaves_the_column_alone(self):
         p = make_student(**STPM)

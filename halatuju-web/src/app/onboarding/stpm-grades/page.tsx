@@ -6,13 +6,9 @@ import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
-import {
-  STPM_SUBJECTS,
-  stpmSubjectLabel,
-  STPM_GRADES,
-  MUET_BANDS,
-} from '@/lib/subjects'
-import { calculateCgpa } from '@/lib/api'
+import { MUET_BANDS } from '@/lib/subjects'
+import { STPM_SUBJECTS, stpmSubjectLabel, STPM_GRADES } from '@/lib/stpmResultsSubjects'
+import { calculateCgpa, type StpmCgpaResult } from '@/lib/api'
 import SpmResultsBlock, { useSpmResultsBlock } from '@/components/SpmResultsBlock'
 import { keepOneHigherLocally } from '@/lib/resultsLocal'
 import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_STPM_CGPA, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
@@ -100,26 +96,27 @@ export default function StpmGradesPage() {
     setStpmGrades(prev => ({ ...prev, [subjectId]: grade }))
   }
 
-  const [academicCgpa, setAcademicCgpa] = useState(0)
-  const [overallCgpa, setOverallCgpa] = useState(0)
+  // STPM CGPA sprint C2 (owner ruling 2026-10-28): the CGPA is the PNGK the SERVER works out from the
+  // grades (Pengajian Am + best three, never typed), and the merit is SEPARATE — 0.9 x PNGK + 0.04 x
+  // koko, so co-curriculum stays in merit. Both come from `/calculate/cgpa/`; nothing is derived here.
+  const [calc, setCalc] = useState<StpmCgpaResult | null>(null)
 
-  const koko = parseFloat(kokoScore) || 0
+  // The co-curriculum score, 0-10, or null when blank or out of range (the merit needs one).
+  const kokoNum = kokoScore.trim() === '' ? NaN : Number(kokoScore)
+  const koko = Number.isFinite(kokoNum) && kokoNum >= 0 && kokoNum <= 10 ? kokoNum : null
 
   useEffect(() => {
     const gradesWithValues = Object.fromEntries(
       Object.entries(stpmGrades).filter(([, v]) => v !== '')
     )
     if (Object.keys(gradesWithValues).length === 0) {
-      setAcademicCgpa(0)
-      setOverallCgpa(0)
+      setCalc(null)
       return
     }
 
     const timer = setTimeout(async () => {
       try {
-        const result = await calculateCgpa(gradesWithValues, koko)
-        setAcademicCgpa(result.academic_cgpa)
-        setOverallCgpa(result.cgpa)
+        setCalc(await calculateCgpa(gradesWithValues, koko))
       } catch {
         // Silently fail
       }
@@ -129,8 +126,12 @@ export default function StpmGradesPage() {
   }, [stpmGrades, koko])
 
   const gradedSubjects = Object.entries(stpmGrades).filter(([, v]) => v !== '')
+  const cgpa = calc?.cgpa ?? null
+  // PA + three graded subjects (the PNGK needs them), a co-curriculum score, and the server's PNGK.
   const isComplete = stpmGrades.PA !== '' && stpmGrades.PA !== undefined
-    && gradedSubjects.length >= 3
+    && gradedSubjects.length >= 4
+    && koko !== null
+    && cgpa !== null
     && muetBand !== null
     && stream !== null
     && spm.complete          // D4 (third results route S2b): the SPM results block is REQUIRED
@@ -142,9 +143,9 @@ export default function StpmGradesPage() {
     )
     localStorage.setItem(KEY_STPM_STREAM, stream!)
     localStorage.setItem(KEY_STPM_GRADES, JSON.stringify(cleanGrades))
-    localStorage.setItem(KEY_STPM_CGPA, String(overallCgpa))
+    localStorage.setItem(KEY_STPM_CGPA, String(cgpa))
     localStorage.setItem(KEY_MUET_BAND, String(muetBand))
-    localStorage.setItem(KEY_KOKO_SCORE, kokoScore)
+    localStorage.setItem(KEY_KOKO_SCORE, String(koko))
     spm.save()
     localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     // Completed, so it is a RESULT and not merely a selection — see results_exam_type.
@@ -156,6 +157,21 @@ export default function StpmGradesPage() {
 
   // All currently selected subject IDs (for filtering dropdowns)
   const allSelected = [...selectedSubjects, electiveSubject].filter(Boolean)
+
+  // Whether a graded subject counts towards the PNGK — the server's `counted` list (mock approved
+  // 2026-10-28). Nothing is shown until there is a PNGK; ungraded rows show nothing.
+  const countTag = (id: string) => {
+    if (cgpa === null || !stpmGrades[id]) return null
+    const counts = calc?.counted.includes(id)
+    const label = id === 'PA' ? 'onboarding.stpmCountsAlways'
+      : counts ? 'onboarding.stpmCounts' : 'onboarding.stpmNotCounted'
+    return (
+      <span data-testid={`count-${id}`}
+        className={`text-xs flex-shrink-0 ${counts ? 'text-primary-600' : 'text-ground-400 max-w-[11rem]'}`}>
+        {t(label)}
+      </span>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
@@ -222,6 +238,7 @@ export default function StpmGradesPage() {
                   <span className="font-medium text-ground-900">Pengajian Am</span>
                   <span className="text-critical-600 text-xs">*</span>
                 </div>
+                {countTag('PA')}
                 <select
                   value={stpmGrades.PA || ''}
                   onChange={(e) => handleStpmGradeChange('PA', e.target.value)}
@@ -263,6 +280,7 @@ export default function StpmGradesPage() {
                       {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                   )}
+                  {subjectId && countTag(subjectId)}
                   <button
                     onClick={() => handleSubjectChange(index, '')}
                     className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
@@ -302,6 +320,7 @@ export default function StpmGradesPage() {
                       {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                   )}
+                  {electiveSubject && countTag(electiveSubject)}
                   <button
                     onClick={() => { handleElectiveChange(''); setShowElective(false) }}
                     className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
@@ -371,19 +390,37 @@ export default function StpmGradesPage() {
               <p className="text-xs text-ground-400 mt-1">{t('onboarding.kokoHint')}</p>
             </div>
 
-            {/* CGPA display */}
-            {academicCgpa > 0 && (
-              <div className="border-t pt-4 flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-ground-500">{t('onboarding.cgpaLabel')}</div>
-                  <div className="text-xs text-ground-400">{t('onboarding.cgpaFormula')}</div>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-baseline gap-1 justify-end">
-                    <span className="text-3xl font-bold text-ground-900">{overallCgpa.toFixed(2)}</span>
-                    <span className="text-sm text-ground-400">/ 4.00</span>
+            {/* The CGPA (PNGK) and the merit, SEPARATELY (owner ruling 2026-10-28) */}
+            {gradedSubjects.length > 0 && (
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-ground-500">{t('onboarding.stpmCgpaLabel')}</div>
+                    <div className="text-xs text-ground-400">{t('onboarding.stpmCgpaFormula')}</div>
                   </div>
-                  <div className="text-xs text-ground-400 mt-0.5">{t('onboarding.cgpaAutoCalc')}</div>
+                  <div className="text-right">
+                    <div className="flex items-baseline gap-1 justify-end">
+                      <span data-testid="stpm-cgpa" className={`text-3xl font-bold ${cgpa === null ? 'text-ground-400' : 'text-ground-900'}`}>
+                        {cgpa === null ? '—' : cgpa.toFixed(2)}
+                      </span>
+                      {cgpa !== null && <span className="text-sm text-ground-400">/ 4.00</span>}
+                    </div>
+                    <div className="text-xs text-ground-400 mt-0.5">
+                      {t(cgpa === null ? 'onboarding.stpmCgpaNotYet' : 'onboarding.stpmCgpaCheck')}
+                    </div>
+                  </div>
+                </div>
+                {cgpa === null && (
+                  <p className="text-sm rounded-lg px-3 py-2 bg-caution-50 text-caution-700">{t('onboarding.stpmCgpaNeedMore')}</p>
+                )}
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-ground-500">{t('onboarding.meritLabel')}</div>
+                    <div className="text-xs text-ground-400">{t('onboarding.cgpaFormula')}</div>
+                  </div>
+                  <span data-testid="stpm-merit" className="text-2xl font-bold text-ground-900">
+                    {calc?.merit_percent == null ? '—' : calc.merit_percent.toFixed(2)}
+                  </span>
                 </div>
               </div>
             )}

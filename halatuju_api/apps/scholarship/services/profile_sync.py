@@ -147,6 +147,7 @@ def build_intake_snapshot(profile, app_data):
             'exam_type': getattr(p, 'exam_type', '') if p else '',
             'grades': getattr(p, 'grades', {}) if p else {},
             'stpm_cgpa': stpm_cgpa_of(p),     # CGPA sprint C2: the figure the gate used (grades first)
+            'stpm_koko': getattr(p, 'stpm_koko', None) if p else None,   # C2: the merit's co-curriculum
             # Third results route S2a: what was declared for Matriculation / Asasi / Diploma, and
             # the results held at submit (the "highest completed" rule's answer then).
             'higher_cgpa': getattr(p, 'higher_cgpa', None) if p else None,

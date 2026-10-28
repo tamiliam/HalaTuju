@@ -842,6 +842,7 @@ class StudentProfile(models.Model):
     stpm_cgpa = models.FloatField(null=True, blank=True)
     # THE STPM CGPA every reader uses (CGPA sprint C2): from the grades, else `stpm_cgpa` as stored.
     stpm_pngk = property(stpm_cgpa_of)
+    stpm_koko = models.FloatField(null=True, blank=True, help_text="STPM co-curriculum score (0-10): merit only, never the CGPA (stpm_pngk.stpm_merit_overall).")
     muet_band = models.IntegerField(null=True, blank=True)
     coq_score = models.FloatField(
         null=True, blank=True,

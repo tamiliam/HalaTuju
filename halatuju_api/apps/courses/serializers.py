@@ -307,6 +307,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                                          max_value=4)
     higher_koko = serializers.FloatField(required=False, allow_null=True, min_value=0,
                                          max_value=10)
+    # STPM CGPA sprint C2 (owner 2026-10-28): the STPM co-curriculum score, for the MERIT only.
+    stpm_koko = serializers.FloatField(required=False, allow_null=True, min_value=0, max_value=10)
 
     def validate(self, attrs):
         """⚠ `results_exam_type` MUST BE BACKED BY RESULTS, and that is checked HERE — on the
@@ -401,7 +403,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         results are no longer on file). A marker sent with no results behind it clears nothing."""
         kept = (attrs.get('results_exam_type') or '').strip().lower()
         if kept in THIRD_ROUTE and attrs.get('higher_cgpa') is not None:
-            attrs['stpm_grades'], attrs['stpm_cgpa'] = {}, None
+            attrs['stpm_grades'], attrs['stpm_cgpa'], attrs['stpm_koko'] = {}, None, None
         elif kept == 'stpm' and (attrs.get('stpm_grades') or attrs.get('stpm_cgpa') is not None):
             attrs['higher_cgpa'], attrs['higher_koko'], attrs['higher_institution_type'] = None, None, ''
 
@@ -522,7 +524,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             # the page reads/writes household_* (this fixes that latent gap too).
             'household_income', 'household_size',
             'exam_type', 'results_exam_type',
-            'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
+            'stpm_grades', 'stpm_cgpa', 'stpm_koko', 'muet_band', 'coq_score',
             # Third results route S2a (Matriculation / Asasi / Diploma) + "highest completed"
             'higher_cgpa', 'higher_koko', 'higher_institution_type', 'completed_qualifications',
             # `referral_source` is NOT here (two columns, 2026-10-09): PUT ignores it, and the sync

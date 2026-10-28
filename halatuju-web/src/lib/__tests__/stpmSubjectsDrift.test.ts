@@ -1,5 +1,5 @@
 /**
- * THE DRIFT TEST for the STPM subject list — `STPM_SUBJECTS` (`lib/subjects.ts`, named by its
+ * THE DRIFT TEST for the STPM subject list — `STPM_SUBJECTS` (`lib/stpmResultsSubjects.ts`, named by its
  * `drift-test:` marker) against the server's `STPM_SUBJECT_KEYS`
  * (`halatuju_api/apps/courses/stpm_subjects.py`). STPM CGPA sprint C1, 2026-10-28.
  *
@@ -8,7 +8,7 @@
  * A key the form offers and the server does not know is a grade the slip check, the reports and
  * the course requirements never read.
  */
-import { STPM_SUBJECTS, STPM_SUBJECT_TO_API_KEY, stpmSubjectLabel } from '@/lib/subjects'
+import { STPM_SUBJECTS, STPM_SUBJECT_TO_API_KEY, stpmSubjectLabel } from '@/lib/stpmResultsSubjects'
 import { pySeq, readApi } from '@/test/apiSource'
 
 const apiKeys = pySeq(readApi('apps/courses/stpm_subjects.py'), 'STPM_SUBJECT_KEYS')

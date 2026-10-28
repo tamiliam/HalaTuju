@@ -94,7 +94,7 @@ DEFAULT_LANGUAGE = 'English'
 #                  SPM merits are unchanged.
 #   2026-10-26.1 — Third results route S2b (route open): `Qualification:` = `held_summary` (S2a), e.g.
 #                  "Matriculation (STPM-equivalent), overall CGPA 3.47"; SPM / STPM unchanged.
-PROMPT_VERSION = '2026-10-26.1'
+PROMPT_VERSION = '2026-10-28.1'   # 28.1 STPM CGPA C2 (INPUT, STPM only): `STPM PNGK:` = PA + best three; `Merit score:` = overall_from(PNGK, koko) / 4 x 100 (decisions.md 2026-10-28)
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (

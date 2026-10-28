@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { getProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import SchoolSelect from '@/components/SchoolSelect'
-import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { resultsSyncFields, syncProfileSafely } from '@/lib/resultsSync'
 import { resultsEditPath } from '@/lib/qualification'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
@@ -170,6 +170,9 @@ export default function ProfileInputPage() {
 
       const stpmCgpa = localStorage.getItem(KEY_STPM_CGPA)
       if (stpmCgpa) syncPayload.stpm_cgpa = parseFloat(stpmCgpa)
+      // STPM CGPA sprint C2: the STPM co-curriculum score, stored for the MERIT (never the CGPA).
+      const stpmKoko = stpmGradesStr ? parseFloat(localStorage.getItem(KEY_KOKO_SCORE) ?? '') : NaN
+      if (Number.isFinite(stpmKoko)) syncPayload.stpm_koko = stpmKoko
 
       const muetBand = localStorage.getItem(KEY_MUET_BAND)
       if (muetBand) syncPayload.muet_band = parseInt(muetBand)

@@ -51,6 +51,9 @@ NO_DOOR = {
     'backfill_reminder_anchors': 'TD-234 — launch one-off, spent; predates the guard.',
     'backfill_results_exam_type': 'TD-234 — predates the guard; ran locally with exported prod creds.',
     'backfill_spm_field_key': 'TD-234 — catalogue rows; predates the guard.',
+    'backfill_stpm_cgpa': ('STPM CGPA C2 (2026-10-28) — hand-run through the release-decisions job args '
+                           'override (CLAUDE.md, How a change reaches production, item 12): preview, '
+                           '--apply --koko-only before the deploy, --apply after. Owner-gated.'),
     'repair_chosen_programme': 'TD-234 — predates the guard; ran locally with exported prod creds.',
     'repair_interview_credit': 'TD-234 — predates the guard; ran locally with exported prod creds.',
 }

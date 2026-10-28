@@ -39,7 +39,7 @@ from .engine import (
     prepare_merit_inputs,
     calculate_merit_score,
 )
-from .exam_questions import overall_from, results_held, third_route_calculation, third_route_payload
+from .exam_questions import results_held, third_route_calculation, third_route_payload
 from .pathways import check_all_pathways, get_pathway_fit_score
 from .pismp_taxonomy import classify_pismp, aliran_of, ALIRAN_VALUES, ALIRAN_LABELS
 from .serializers import (
@@ -56,8 +56,8 @@ from .serializers import (
     normalize_nationality,
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
-from .stpm_engine import calculate_stpm_cgpa, check_stpm_eligibility
-from .stpm_pngk import stpm_cgpa_payload
+from .stpm_engine import check_stpm_eligibility
+from .stpm_pngk import stpm_calculation, stpm_cgpa_payload
 from .stpm_ranking import get_result_framing, get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
@@ -2104,11 +2104,12 @@ class CalculateCgpaView(APIView):
     """
     POST /api/v1/calculate/cgpa/
 
-    Accepts STPM grades + koko_score, returns CGPA and merit percentage.
-    No authentication required.
+    Accepts STPM grades + koko_score, returns the CGPA and the merit SEPARATELY (owner ruling
+    2026-10-28) — `stpm_pngk.stpm_calculation`. No authentication required.
 
     Request:  {"stpm_grades": {"PA": "A", "MATH_T": "B+", ...}, "koko_score": 8}
-    Response: {"cgpa": 3.42, "academic_cgpa": 3.44, "merit_percent": 85.5}
+    Response: {"cgpa": 3.75 (the PNGK; null below PA + three), "counted": ["PA", ...],
+               "overall": 3.69 (0.9 x PNGK + 0.04 x koko; null without both), "merit_percent": 92.25}
 
     Third route (S2a): {"kind": "matric"|"asasi"|"diploma", "higher_cgpa": 3.5, "koko_score": 8}
     -> {"cgpa": 3.47, "academic_cgpa": 3.5, "merit_percent": 86.75} (Diploma = CGPA as is), from
@@ -2131,16 +2132,7 @@ class CalculateCgpaView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        academic_cgpa = calculate_stpm_cgpa(stpm_grades)
-        koko_score = float(data.get('koko_score', 0))
-        overall = overall_from(academic_cgpa, koko_score)
-        merit_percent = round((overall / 4.0) * 100, 2)
-
-        return Response({
-            'cgpa': overall,
-            'academic_cgpa': academic_cgpa,
-            'merit_percent': merit_percent,
-        })
+        return Response(stpm_calculation(stpm_grades, data.get('koko_score')))
 
 
 class CalculatePathwaysView(APIView):

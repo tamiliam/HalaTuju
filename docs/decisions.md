@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## STPM CGPA and STPM merit are different: the merit keeps co-curriculum — 2026-10-28 (STPM CGPA C2, owner ruling)
+
+Supersedes item (6) of the entry below. The owner ruled: do not change the merit rule. CGPA = the PNGK from the
+grades (display, the `min_stpm_pngk` gate, the document comparison). STPM merit = `overall_from(CGPA, koko)` /
+4 × 100 = (0.9 × CGPA + 0.04 × koko) / 4 × 100, as today, with the PNGK as the CGPA. Decisions: (1) the score is
+stored (`StudentProfile.stpm_koko`, courses 0085) from the onboarding step that already asked for it; (2) one
+function, `stpm_pngk.stpm_merit_overall`, is the STPM merit's figure and `exam_questions.merit_100` reads it —
+`overall_cgpa` stays the PNGK (a CGPA reader); (3) the 7 "not calculated" rows keep the stored figure for both
+(it is the old calculator's overall, koko inside); (4) a PNGK with no koko score is NO merit (absent, never 0 —
+the third route's rule); (5) existing students' koko is derived by the backfill from the stored figure and the
+old plain average, half-up to 0.01, clamped 0–10, and reported when it does not land cleanly; (6) half-up
+rounding of the PNGK confirmed; (7) the onboarding UI is built from the approved mock, CGPA and merit shown
+separately, and Continue needs PA + three and a koko score.
+
 ## An STPM student's CGPA is the PNGK of their grades (PA + best three); every reader asks one function — 2026-10-28 (STPM CGPA C2)
 
 Owner ruling (roadmap `docs/plans/2026-10-28-stpm-cgpa-from-grades-roadmap.md`): subjects, grades and CGPA come

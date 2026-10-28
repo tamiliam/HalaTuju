@@ -1,6 +1,6 @@
 """THE STPM SUBJECT KEYS — every subject a student may enter on the STPM results form.
 
-STPM CGPA sprint C1 (2026-10-28). The web's `STPM_SUBJECTS` (`halatuju-web/src/lib/subjects.ts`)
+STPM CGPA sprint C1 (2026-10-28). The web's `STPM_SUBJECTS` (`halatuju-web/src/lib/stpmResultsSubjects.ts`)
 offers exactly these keys in exactly this order; `src/lib/__tests__/stpmSubjectsDrift.test.ts`
 reads this file and fails on any difference, so the two lists cannot drift apart.
 
