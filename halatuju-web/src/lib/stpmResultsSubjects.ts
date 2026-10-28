@@ -28,7 +28,7 @@ export const STPM_SUBJECTS: StpmSubject[] = [
   { id: 'CHEMISTRY', name: 'Kimia', en: 'Chemistry', ta: 'வேதியியல்', stream: 'science' },
   { id: 'BIOLOGY', name: 'Biologi', en: 'Biology', ta: 'உயிரியல்', stream: 'science' },
   { id: 'FURTHER_MATH', name: 'Matematik Lanjutan (T)', en: 'Further Mathematics (T)', ta: 'மேம்பட்ட கணிதம் (T)', stream: 'science' },
-  { id: 'SAINS_SUKAN', name: 'Sains Sukan', en: 'Sports Science', ta: 'விளையாட்டு அறிவியல்', stream: 'both' },
+  { id: 'SAINS_SUKAN', name: 'Sains Sukan', en: 'Sports Science', ta: 'விளையாட்டு அறிவியல்', stream: 'arts' },
   { id: 'ECONOMICS', name: 'Ekonomi', en: 'Economics', ta: 'பொருளாதாரம்', stream: 'arts' },
   { id: 'ACCOUNTING', name: 'Perakaunan', en: 'Accounting', ta: 'கணக்கியல்', stream: 'arts' },
   { id: 'BUSINESS', name: 'Pengajian Perniagaan', en: 'Business Studies', ta: 'வணிகவியல்', stream: 'arts' },
@@ -44,8 +44,8 @@ export const STPM_SUBJECTS: StpmSubject[] = [
   { id: 'SYARIAH', name: 'Syariah', en: 'Syariah', ta: 'ஷரீஆ', stream: 'arts' },
   { id: 'USULUDDIN', name: 'Usuluddin', en: 'Usuluddin', ta: 'உசுலுதீன்', stream: 'arts' },
   { id: 'TAHFIZ_AL_QURAN', name: 'Tahfiz Al-Quran', en: 'Tahfiz Al-Quran', ta: 'தஹ்ஃபிஸ் அல்-குர்ஆன்', stream: 'arts' },
-  { id: 'ICT', name: 'Teknologi Maklumat dan Komunikasi', en: 'Information and Communications Technology', ta: 'தகவல் தொடர்பு தொழில்நுட்பம்', stream: 'arts' },
-  { id: 'MATH_M', name: 'Matematik (M)', en: 'Mathematics (M)', ta: 'கணிதம் (M)', stream: 'arts' },
+  { id: 'ICT', name: 'Teknologi Maklumat dan Komunikasi', en: 'Information and Communications Technology', ta: 'தகவல் தொடர்பு தொழில்நுட்பம்', stream: 'both' },
+  { id: 'MATH_M', name: 'Matematik (M)', en: 'Mathematics (M)', ta: 'கணிதம் (M)', stream: 'both' },
 ]
 
 /** A subject's label in the reader's language (Malay is the certificate's own name). */

@@ -15475,3 +15475,12 @@ list every course, Bumi-only included, to every student, and never read `Student
 non-Bumi student who picks a Bumi-only course simply will not get a place, and the offer letter corrects it.
 Sponsors are never told the answer; a guess from the institution is accepted (owner).
 **Revisit if:** a scholarship rule ever needs to know whether a chosen programme is reachable for the student.
+
+## 2026-10-29 — STPM results page: streams follow the MPM subject grouping (owner, option A)
+**Decision:** Sains Sukan appears under the Arts stream only; Matematik (M) and ICT appear under both streams.
+**Why:** MPM groups STPM subjects as Language and Literature, Social Sciences and Religion, Science and
+Mathematics, and Arts and Health. Sains Sukan sits in Arts and Health with Seni Visual, not with the sciences
+(owner: "it should be under arts"). Matematik (M) and ICT are MPM Science and Mathematics, but schools commonly
+teach them in arts classes, so both streams offer them. STPM is open-list: the stream is only a filter for the
+three main slots (never stored on the server); the elective slot offers every subject.
+**Revisit if:** MPM regroups its subjects, or a student reports a subject missing from the stream they take.

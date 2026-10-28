@@ -32,8 +32,13 @@ describe('the form offers exactly the server keys', () => {
     expect(Object.keys(STPM_SUBJECT_TO_API_KEY).filter((k) => !ids.includes(k))).toEqual([])
   })
 
-  test('Sains Sukan can be chosen in either stream, so #184 can enter four subjects', () => {
-    expect(STPM_SUBJECTS.find((s) => s.id === 'SAINS_SUKAN')?.stream).toBe('both')
+  // Owner ruling 2026-10-29 (option A): MPM groups Sains Sukan under "Arts and Health", not science;
+  // Matematik (M) and ICT are MPM "Science and Mathematics" but schools teach them in arts classes.
+  test('streams follow the MPM grouping (owner ruling 2026-10-29)', () => {
+    const streamOf = (id: string) => STPM_SUBJECTS.find((s) => s.id === id)?.stream
+    expect(streamOf('SAINS_SUKAN')).toBe('arts')   // #184 (an arts student) can still enter four subjects
+    expect(streamOf('ICT')).toBe('both')
+    expect(streamOf('MATH_M')).toBe('both')
   })
 })
 

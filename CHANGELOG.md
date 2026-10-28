@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: STPM results page streams follow the MPM grouping - 2026-10-29
+
+- **Sains Sukan is listed under Arts only** (it was in both streams). MPM groups it under "Arts and Health"
+  with Seni Visual, not with the sciences (owner ruling, option A).
+- **Matematik (M) and ICT are listed under both streams** (they were Arts only). MPM groups them under
+  "Science and Mathematics", but schools often teach them in arts classes.
+- The stream only decides which subjects show in the three main slots; it is not stored on the server and moves
+  no eligibility, merit or CGPA. The fourth (elective) slot still offers every subject. No live profile holds
+  Sains Sukan; the 10 with ICT / Matematik (M) keep them under Arts. `src/lib/stpmResultsSubjects.ts`.
+
 ## Bumi + Islamic coverage — Sprint B: the Bumiputera answer (migration 0087, migrate-first) - 2026-10-28
 
 - **Students say whether they are Bumiputera.** "A Few More Details" asks Malaysians Yes/No (required, beside
