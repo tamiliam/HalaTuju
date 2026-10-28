@@ -1,4 +1,4 @@
-# STPM CGPA worked out from the grades + full STPM subject list — roadmap (draft 2026-10-28, awaiting owner approval)
+# STPM CGPA worked out from the grades + full STPM subject list — roadmap (APPROVED by the owner 2026-10-28)
 
 ## Why
 - The cockpit, the merit score (0–100) and the minimum STPM CGPA check all use the CGPA the student TYPED
@@ -53,3 +53,27 @@ the local gitignored corpus, Supabase MCP / production DB, gcloud, the local .en
 - work on a **branch** (e.g. `stpm-cgpa-from-grades`), never push to main; open a PR;
 - the before/after list, the backfill apply, the push to main and deploy checks happen back on the local
   machine (or by the owner) after review.
+
+## Cloud-session package (paste as the cloud session's first message)
+Read `docs/plans/2026-10-28-stpm-cgpa-from-grades-roadmap.md` and `CLAUDE.md` / `halatuju_api/CLAUDE.md` first.
+Work on a NEW branch `stpm-cgpa-from-grades` from main. NEVER push to main (a push to main deploys); open a
+PR at the end. Do sprint C1, then sprint C2's code and tests:
+1. C1: add every official MPM STPM subject (https://www.mpm.edu.my/en/stpm/stpm-syllabus?id=96) to
+   `halatuju-web/src/lib/subjects.ts` (STPM_SUBJECTS + STPM_SUBJECT_TO_API_KEY) and every backend place that
+   names STPM subjects (`apps/courses/stpm_engine.py`, `apps/scholarship/higher_results.py` `_STPM_NAMES`,
+   `apps/reports/report_engine.py`, fixtures) — existing keys unchanged; en/ms/ta labels; tests.
+2. C2 server: one function computes PNGK = round((PA + best three others)/4, 2) from `stpm_grades`
+   (A 4.00, A- 3.67, B+ 3.33, B 3.00, B- 2.67, C+ 2.33, C 2.00, C- 1.67, D+ 1.33, D 1.00, F 0.00); fewer than
+   PA + 3 → None ("not calculated", keep the typed value). Merit (`exam_questions.merit_100`), the gate
+   (`shortlisting._academic_ok`), the cockpit, reports and the sponsor profile read it. Write the DOOR LIST
+   (every reader of `stpm_cgpa`) into the PR and test each door. Matric/Asasi/Diploma unchanged.
+3. C2 backfill: a management command, PREVIEW by default, that lists per application old vs new CGPA, merit
+   and gate result; `--apply` writes. Do NOT run it (no production access in the cloud).
+4. C2 onboarding UI: do NOT build it yet — add a static HTML mock (docs/plans/stpm-cgpa-onboarding-mock.html)
+   showing the typed CGPA box replaced by a live calculated CGPA, for owner approval.
+Gates: from halatuju_api `python -m pytest -q -n auto -p no:cacheprovider` + test_code_standards +
+`python manage.py makemigrations --check`; from halatuju-web jest, `npx tsc --noEmit`, `npm run check-i18n`,
+`npm run bundle-budget -- --gate` (median headroom is ~0.4 kB — keep new strings in the admin/onboarding
+slices). Use pypdf 5.9.0 / pypdfium2 4.30.0 (requirements.lock). No real student data in tests or files.
+CHANGELOG + docs/decisions.md entries. Finish with a PR and a short summary: files, door list, test results,
+what is left for the local session (backfill preview on production, owner before/after list, merge, deploy).
