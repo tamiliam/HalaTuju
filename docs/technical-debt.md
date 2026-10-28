@@ -182,7 +182,7 @@ Class C, half a day each. Good small-change-lane work; several go together.
 ### Later — visible but larger, or small hygiene — 55
 Class C at medium or large size, and class D that is small.
 
-- **TD-418** — `org_requests.approve` records `approved_at` but throws away the `admin` and `by_role` it is handed, so a row proves an acceptance happened and cannot say who made it. The owner holds a BrightPath org_admin account as well as a super one, so the customer's own acceptance cannot be told from the owner's on their behalf. Add `approved_by` / `approved_by_role`, as `approve_analysis` already does. *(C · S · raised 2026-10-29 by the grouped-development-lines sprint)*
+- **TD-418** — `org_requests.approve` records `approved_at` but throws away the `admin` and `by_role` it is handed, so a row proves an acceptance happened and cannot say who made it. A record-keeping gap, not an unknown fact — the owner attributed request 38 to BrightPath on 2026-10-29. Add `approved_by` / `approved_by_role`, as `approve_analysis` already does. *(C · S · raised 2026-10-29 by the grouped-development-lines sprint)*
 - **TD-417** — Supplier tax is pooled across the month and apportioned pro-rata over platform / metered / development, so Anthropic's SST puts ~RM9 of marked-up tax on a tenant's charge although Anthropic's own cost is deliberately excluded from it. Pre-existing; nothing has been billed. Bucket a tax row against its own source's rows instead. Owner's ruling — it changes what a customer pays. *(C · M · raised 2026-10-29 by the grouped-development-lines sprint)*
 - **TD-416** — The first-load JS median has sat within 0.12 kB of its 180 kB line across three consecutive sprints, and each sprint has paid for its own feature with a lazy boundary to stay under. The next non-admin string turns the deploy gate red for whoever happens to add it. Take real weight off the shared path, or re-measure and re-record the line from a floor somebody has looked for. *(C · S · raised 2026-10-28 by the back-issue-invoices sprint, agreed with the Bumi session)*
 - **TD-415** — A cockpit test raises a query at `shortlisted`, a stage the server refuses: the shared fixture never serves `officer_requests`, so every rendered cockpit test sees the forms whatever stage it names. Fixture serves it by the server's rule; the test moves to `interviewing`. Test-only. *(D · S · raised 2026-10-28 by the Consolidation Review, from request #40's note)*
@@ -6791,11 +6791,18 @@ BrightPath org admin)"*.
 `org_requests.approve(req, admin, *, by_role)` records `approved_at` and `status` and **throws
 `by_role` and `admin` away**. So the row proves an acceptance happened and cannot say who made it.
 
-That matters more than it looks, for one specific reason the owner named themselves: they hold a
-BrightPath **org_admin** account as well as a super account, and `approve` admits both roles. An
-acceptance made from either is valid — but a reader a year from now, or an auditor asking whether
-the customer agreed to RM4,715 of work on request 38, cannot tell the customer's own acceptance
+That matters for one specific reason the owner named themselves: they hold a BrightPath
+**org_admin** account as well as a super account, and `approve` admits both roles. An acceptance
+made from either is valid — but a reader a year from now cannot tell the customer's own acceptance
 from the owner's acceptance on their behalf. Both are legitimate; they are not the same fact.
+
+⚠ **THE SIZE OF THIS IS A RECORD-KEEPING GAP, NOT AN UNKNOWN FACT.** An earlier note here implied
+request 38's RM4,715 acceptance could not be attributed to anyone. That was overstated: the owner
+attributed it on 2026-10-29 — **request 38 was accepted by BrightPath** (quote 82.0 h stamped
+2026-10-25 14:06 UTC, acceptance 2026-10-26 17:15 UTC, both present and both passing
+`request_hours.consent_gaps`). What is missing is the *stored* name, so the attribution lives in
+this entry and in the owner's memory rather than on the row. That is worth fixing, and it is not
+an emergency.
 
 Compare `org_requests.approve_analysis`, three hundred lines up in the same module, which stores
 `approved_by` precisely so provenance lives on the row — *"Provenance lives on THIS row

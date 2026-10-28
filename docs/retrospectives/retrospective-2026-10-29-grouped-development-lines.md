@@ -145,7 +145,7 @@ heading for that reason.
 | What | Why it matters |
 |---|---|
 | ~~Re-triage the 7 requests filed as bugs~~ | **Settled 2026-10-29.** The triage decision prices; six of the seven agree with the AI or engineer reading the owner accepted. Request 14, the one that did not, is now a bug. |
-| TD-418: `approved_by` on an acceptance | An acceptance has a date and no name. The owner holds a BrightPath org_admin account, so the customer's own acceptance cannot be told from the owner's on their behalf — on request 38 that is RM4,715 of work. |
+| TD-418: `approved_by` on an acceptance | An acceptance has a date and no name, so the customer's own acceptance cannot be told from the owner's on their behalf. A record-keeping gap, not an unknown fact: the owner attributed request 38 to BrightPath on 2026-10-29, and both its quote (82.0 h, 25 Oct) and acceptance (26 Oct) are on the row. |
 | `metered margin_pct` effective 2026-07-01 | Without it July prints one line instead of two. Charges nothing either way — July is 100% discounted. |
 | Import the September bills; record August's 27.0 h and September's 0.5 h | Without them the months bill short. |
 | Drop the October Anthropic + Supabase bills | Both already issued (3 Oct, 8 Oct). Supabase is ~RM117 of October's invoice; Anthropic barely moves it. |
