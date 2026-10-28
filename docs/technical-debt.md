@@ -9,8 +9,8 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-10-28** it runs to **TD-415**, with **412 ids carrying a defining entry
-and 136 of those open** (TD-414 and TD-415 raised by the Consolidation Review on 2026-10-28, which also wrote the missing defining entries of TD-397 to TD-399 — they had existed only as index pointers; TD-412 and TD-413 raised by the billing-settings change on 2026-10-28; TD-408 and TD-411 closed by the TD-408/411 sprint on 2026-10-28; TD-411 raised by the TD-410 impact count on 2026-10-27; TD-410 raised by the TD-409 review on 2026-10-27 and closed by the TD-410 sprint the same day on the owner's ruling; TD-409 raised by the TD-404 final review on 2026-10-27 and closed by the TD-409 sprint the same day; TD-408 raised by the TD-404 review on 2026-10-27; TD-404 closed by the TD-404 sprint on 2026-10-27; TD-407 closed by the TD-407 sprint on 2026-10-27; TD-407 raised by the corpus C4 live re-run on 2026-10-26; TD-406 raised by the corpus-gaps C2 final review on 2026-10-26; TD-403 closed by the TD-403 sprint on 2026-10-26; TD-404 and TD-405 raised by the review of the both-routes STR ruling on 2026-10-25; TD-403 raised by the review of the salary-route STR ruling on 2026-10-25; TD-401 and TD-402 closed by the TD-401/402 sprint on 2026-10-25; TD-402 raised by the TD-390 final review on 2026-10-25; TD-390 closed and TD-400 and TD-401 raised by the TD-390 sprint and its review on 2026-10-25; TD-397 to TD-399 raised by the AI-outage sprint's final review and the owner on 2026-10-25; TD-390 to TD-396 raised by the AI-outage sprint on 2026-10-24, and TD-391 and TD-392 closed by it the same day after its review; TD-344 and TD-360 closed by TD-360 Sprint 1, the admin message slice, on 2026-10-21, and TD-388 and TD-389 raised by its review the same day; TD-387 raised by sources-and-referrals Sprint D on 2026-10-19, which also closed TD-386 (a) and (b) — (c) and (d) keep it open; TD-380 and TD-381 closed by sources-and-referrals Sprint C going live on 2026-10-19; TD-379 closed by sources-and-referrals Sprint B going live on 2026-10-19; TD-386 raised by the sources-and-referrals Sprint B review on 2026-10-18; TD-383 to TD-385 raised by the Consolidation Review on 2026-10-18; TD-335 closed and TD-382 raised by the staff lifecycle sprint on 2026-10-09; TD-380 and TD-381 raised by the per-gift referral sources adversarial review on 2026-10-09; TD-230 closed by per-gift referral sources Sprint 2 on 2026-10-08 and TD-379 raised by it; TD-371 to TD-375 raised by request #31's adversarial review on 2026-10-08 and all five closed the same day — TD-371, TD-372, TD-373 and TD-375 by the follow-up sprint, TD-374 by both services going live — and TD-376, an owner decision, and TD-377 raised by that sprint's review rounds and both closed the same day by the TD-376/377 sprint on the owner's "yes", TD-378 raised by its review; TD-369 and TD-370 raised by the org-timing Sprint 1 review on 2026-10-07, TD-369 closed the same day by its fix;TD-360 to TD-362 raised by the Consolidation Review that day, below; TD-352 closed, TD-363 to TD-368 raised and TD-364 closed by the TD-352 sprint the same day) — every older one read and verified on 2026-09-30 (159 at the review; seven
+a running log; as of **2026-10-28** it runs to **TD-416**, with **413 ids carrying a defining entry
+and 137 of those open** (TD-416 raised by the back-issue-invoices sprint on 2026-10-28, agreed with the Bumi session; TD-414 and TD-415 raised by the Consolidation Review on 2026-10-28, which also wrote the missing defining entries of TD-397 to TD-399 — they had existed only as index pointers; TD-412 and TD-413 raised by the billing-settings change on 2026-10-28; TD-408 and TD-411 closed by the TD-408/411 sprint on 2026-10-28; TD-411 raised by the TD-410 impact count on 2026-10-27; TD-410 raised by the TD-409 review on 2026-10-27 and closed by the TD-410 sprint the same day on the owner's ruling; TD-409 raised by the TD-404 final review on 2026-10-27 and closed by the TD-409 sprint the same day; TD-408 raised by the TD-404 review on 2026-10-27; TD-404 closed by the TD-404 sprint on 2026-10-27; TD-407 closed by the TD-407 sprint on 2026-10-27; TD-407 raised by the corpus C4 live re-run on 2026-10-26; TD-406 raised by the corpus-gaps C2 final review on 2026-10-26; TD-403 closed by the TD-403 sprint on 2026-10-26; TD-404 and TD-405 raised by the review of the both-routes STR ruling on 2026-10-25; TD-403 raised by the review of the salary-route STR ruling on 2026-10-25; TD-401 and TD-402 closed by the TD-401/402 sprint on 2026-10-25; TD-402 raised by the TD-390 final review on 2026-10-25; TD-390 closed and TD-400 and TD-401 raised by the TD-390 sprint and its review on 2026-10-25; TD-397 to TD-399 raised by the AI-outage sprint's final review and the owner on 2026-10-25; TD-390 to TD-396 raised by the AI-outage sprint on 2026-10-24, and TD-391 and TD-392 closed by it the same day after its review; TD-344 and TD-360 closed by TD-360 Sprint 1, the admin message slice, on 2026-10-21, and TD-388 and TD-389 raised by its review the same day; TD-387 raised by sources-and-referrals Sprint D on 2026-10-19, which also closed TD-386 (a) and (b) — (c) and (d) keep it open; TD-380 and TD-381 closed by sources-and-referrals Sprint C going live on 2026-10-19; TD-379 closed by sources-and-referrals Sprint B going live on 2026-10-19; TD-386 raised by the sources-and-referrals Sprint B review on 2026-10-18; TD-383 to TD-385 raised by the Consolidation Review on 2026-10-18; TD-335 closed and TD-382 raised by the staff lifecycle sprint on 2026-10-09; TD-380 and TD-381 raised by the per-gift referral sources adversarial review on 2026-10-09; TD-230 closed by per-gift referral sources Sprint 2 on 2026-10-08 and TD-379 raised by it; TD-371 to TD-375 raised by request #31's adversarial review on 2026-10-08 and all five closed the same day — TD-371, TD-372, TD-373 and TD-375 by the follow-up sprint, TD-374 by both services going live — and TD-376, an owner decision, and TD-377 raised by that sprint's review rounds and both closed the same day by the TD-376/377 sprint on the owner's "yes", TD-378 raised by its review; TD-369 and TD-370 raised by the org-timing Sprint 1 review on 2026-10-07, TD-369 closed the same day by its fix;TD-360 to TD-362 raised by the Consolidation Review that day, below; TD-352 closed, TD-363 to TD-368 raised and TD-364 closed by the TD-352 sprint the same day) — every older one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
 TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, one, TD-321,
@@ -182,6 +182,7 @@ Class C, half a day each. Good small-change-lane work; several go together.
 ### Later — visible but larger, or small hygiene — 55
 Class C at medium or large size, and class D that is small.
 
+- **TD-416** — The first-load JS median has sat within 0.12 kB of its 180 kB line across three consecutive sprints, and each sprint has paid for its own feature with a lazy boundary to stay under. The next non-admin string turns the deploy gate red for whoever happens to add it. Take real weight off the shared path, or re-measure and re-record the line from a floor somebody has looked for. *(C · S · raised 2026-10-28 by the back-issue-invoices sprint, agreed with the Bumi session)*
 - **TD-415** — A cockpit test raises a query at `shortlisted`, a stage the server refuses: the shared fixture never serves `officer_requests`, so every rendered cockpit test sees the forms whatever stage it names. Fixture serves it by the server's rule; the test moves to `interviewing`. Test-only. *(D · S · raised 2026-10-28 by the Consolidation Review, from request #40's note)*
 - **TD-414** — Scholarship and reports reach into the course engine's results rules name by name (21 of 22 new cross-app edges since 2026-10-18: `exam_questions`, `stpm_pngk`, `stpm_engine`); name the public surface and test that it is the only door. Moves only. *(D · S · raised 2026-10-28 by the Consolidation Review's code-health reading, the third-accept rule)*
 - **TD-413** — The FAQ (`content/manual/faq.tsx`) is one line from its 600-line guard; split it per audience, in its own commit, before the next entry. *(D · S · raised 2026-10-28 by the billing-settings change)*
@@ -6696,3 +6697,46 @@ with a drift row against `OFFICER_QUERY_STATUSES`; the query test moves to `inte
 *(D · S)*
 
 **Trigger:** the next change to the cockpit's Outstanding panel or its fixture.
+
+### [TD-416] The bundle median is a shared cliff that every sprint pays for separately - medium
+
+**Raised 2026-10-28** by the back-issue-invoices sprint, agreed with the Bumi session the same day.
+
+The first-load JS median has been within **0.12 kB of its 180 kB line for three consecutive
+sprints**, and the deploy gate's build reads about **0.06 kB heavier** than a local one:
+
+| when | median | room | who paid, and how |
+|---|---|---|---|
+| health light + TD-408/411 | 179.49 | 0.51 kB | — |
+| Bumi Sprints A + B | 179.97 | 0.03 kB | `LazyCourseInterestsSection`, to afford one new field |
+| back-issue invoices (merged) | 179.957 | 0.043 kB | nothing: the work is admin-only (TD-360 slice) |
+
+Each sprint has so far bought its own room with a lazy boundary, which works and is the right
+local answer. It is not a strategy, for two reasons:
+
+1. **The cost lands on the wrong person.** The next change that adds a non-admin `en.json` string —
+   a one-line copy fix — gets a red deploy gate for a reason that has nothing to do with it, and
+   blocks main for every session until somebody finds weight elsewhere to remove.
+2. **The margin is now smaller than the measurement noise.** Two builds of the same tree on this
+   machine differed by 0.015 kB; the local-to-gate drift is 0.06. At 0.043 kB of room, whether a
+   push passes is no longer fully a property of the change.
+
+⚠ **NOT "raise the line".** `code-standards.json` is a ratchet and may only tighten; the note on
+`first_load_js` says so, and TD-300 is the record of what happens when a budget is set at a figure
+with nothing to spare. The two honest options are:
+
+- **take real weight off the shared path** — what every route downloads: the root providers, the
+  core i18n slice (~47 kB gz on 82 entries), the shared admin chunk. TD-360 did this once and won
+  49 kB; there is no obvious second win of that size, which is why this is a piece of work and not
+  a tidy-up; or
+- **find the floor first, then re-record.** TD-300's method: measure what the median route actually
+  is, how many routes sit at or under it, and how many may cross before the median moves (the
+  tightness note `npm run bundle-budget` already prints — it currently reads **NONE**). Re-record
+  from that number with the slack the ratchet itself tolerates, once, with the reasoning written
+  down — rather than each sprint shaving its own feature to fit.
+
+**Fix when it bites:** its own sprint, with a real `next build` before and after, and the tightness
+note read rather than the median alone.
+
+**Trigger:** the first non-admin string that turns the gate red — or, better, before that.
+*(C · S)*
