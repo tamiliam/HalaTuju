@@ -66,6 +66,8 @@ const PATHS: Record<string, string> = {
   pin: 'M3 4h18v16H3zM9 4v16',
   pinned: 'M3 4h18v16H3zM9 4v16M5.5 8.5h1.5M5.5 12h1.5M5.5 15.5h1.5',
   chevron: 'M6 9l6 6 6-6',
+  // Check again — the System health panel's refresh (2026-10-28): an open circle and its arrowhead.
+  refresh: 'M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6',
   // ⚠ THE FALLBACK, AND IT STAYS. `Icon` renders this when a name is unknown, so a menu row added
   // without a glyph shows a dot instead of throwing inside the console shell — the right
   // behaviour in production, and the wrong one in development, because it is SILENT.

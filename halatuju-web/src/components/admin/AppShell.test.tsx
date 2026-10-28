@@ -44,6 +44,11 @@ jest.mock('@/lib/admin-api', () => ({
   getAdminScopes: jest.fn(() => Promise.resolve({ organisations: [], programmes: [] })),
   // #39 S2: the Payments badge counts the runs whose served `your_step` is this person's.
   getPaymentRuns: jest.fn(() => Promise.resolve({ runs: [] })),
+  // The super-only System health light (2026-10-28).
+  getSystemHealth: jest.fn(() => Promise.resolve({
+    overall: 'amber', checked_at: new Date().toISOString(),
+    rows: [{ key: 'email', status: 'amber', code: 'recent_failure', params: {}, last_ok_at: null }],
+  })),
 }))
 
 const asRole = (role: AdminRoleName, extra: Record<string, unknown> = {}) => {
@@ -435,4 +440,32 @@ describe('the rail waits for a gift before offering Configuration', () => {
     render(<AppShell>content</AppShell>)
     expect(screen.getByText('admin.programme.config.nav')).toBeTruthy()
   })
+})
+
+/** The System health light (2026-10-28): a super's alone — no other role renders it or asks for it. */
+describe('the System health light is for a super admin alone', () => {
+  afterEach(() => { mockToken = null })
+
+  it('shows for a super, between the theme selector and help, and takes the worst row', async () => {
+    mockToken = 'test-token'
+    asRole('super')
+    render(<AppShell>content</AppShell>)
+    const light = screen.getByTestId('system-health-light')
+    // straight after the theme selector in the bar
+    const theme = screen.getByRole('combobox', { name: 'theme.label' })
+    expect(theme.compareDocumentPosition(light) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await waitFor(() => expect(light.getAttribute('data-status')).toBe('amber'))
+    expect(jest.requireMock('@/lib/admin-api').getSystemHealth).toHaveBeenCalled()
+  })
+
+  it.each(['admin', 'org_admin', 'reviewer', 'qc', 'finance', 'partner'] as AdminRoleName[])(
+    'is absent for %s, and nothing is fetched', (role) => {
+      mockToken = 'test-token'
+      const api = jest.requireMock('@/lib/admin-api')
+      api.getSystemHealth.mockClear()
+      asRole(role)
+      render(<AppShell>content</AppShell>)
+      expect(screen.queryByTestId('system-health-light')).toBeNull()
+      expect(api.getSystemHealth).not.toHaveBeenCalled()
+    })
 })

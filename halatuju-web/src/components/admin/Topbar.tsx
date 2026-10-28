@@ -47,7 +47,7 @@ function Breadcrumb({ orgName, programmeName, scopes }: {
 export function Topbar({
   orgName, programmeName, adminName, roleLabel, attention,
   onOpenSearch, onOpenMobileNav, onSignOut, guideHref, faqHref, profileHref,
-  navPinned, onTogglePin, scopes,
+  navPinned, onTogglePin, scopes, healthLight,
 }: {
   orgName?: string | null
   programmeName?: string
@@ -63,6 +63,9 @@ export function Topbar({
   /** The scope switchers (nav/IA N3a). When present they REPLACE the static org/programme
    *  crumbs — Topbar stays presentational and never fetches or decides scope itself. */
   scopes?: React.ReactNode
+  /** The System health light — `AppShell` passes it for a SUPER admin only, so Topbar stays
+   *  presentational and never decides who sees it. */
+  healthLight?: React.ReactNode
   guideHref?: string
   faqHref?: string
   profileHref: string
@@ -122,6 +125,8 @@ export function Topbar({
           because a reviewer changing it is changing the thing in front of them — the same reason
           the nav pin is not buried either. A reviewer reads documents on this shell for hours. */}
       <ThemeSelector />
+
+      {healthLight}
 
       {(guideHref || faqHref) && (
         <Menu label={t('admin.shell.help')} trigger={<Icon name="help" size={17} />}>

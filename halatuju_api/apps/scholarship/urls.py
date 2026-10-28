@@ -5,6 +5,7 @@ from .views_branding import BrandingView
 from .views_guardian_contact import StudentGuardianContactView
 from .views_apply_gate import ApplyGateView
 from .views_results import RefileToHigherView, RefileToSpmView, SpmOnlyView
+from .views_admin.system_health import AdminSystemHealthView
 from .views import (
     ApplicationConfirmView,
     ApplicationOnboardingCompleteView,
@@ -298,6 +299,8 @@ urlpatterns = [
     path('admin/scholarship/payments/funding-summary/', AdminPaymentFundingSummaryView.as_view()),
     # Billing & usage v1 (Sprint 13a) — super/org_admin usage screen, flag-gated 404-first.
     path('admin/scholarship/billing/usage/', AdminBillingUsageView.as_view()),
+    # The admin System health light (2026-10-28) — SUPER only, read-only, cached 60s.
+    path('admin/scholarship/system-health/', AdminSystemHealthView.as_view()),
     # Platform-side editable rates (SUPER only) + org-side build hours (super writes,
     # org_admin reads its own). Owner design 2026-07-27.
     path('admin/scholarship/billing/rates/', AdminBillingRatesView.as_view()),

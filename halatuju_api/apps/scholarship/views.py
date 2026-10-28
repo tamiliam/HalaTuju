@@ -2178,10 +2178,8 @@ class CronRunView(APIView):
 
     def post(self, request, job):
         import hmac
-        import io
-        import logging
         from django.conf import settings
-        from django.core.management import call_command
+        from . import cron_health
 
         secret = getattr(settings, 'CRON_SECRET', '') or ''
         provided = request.headers.get('X-Cron-Secret', '') or ''
@@ -2199,13 +2197,9 @@ class CronRunView(APIView):
         args = []
         if isinstance(command, tuple):
             command, args = command[0], list(command[1])
-        out = io.StringIO()
-        try:
-            call_command(command, *args, stdout=out)
-        except Exception as e:  # noqa: BLE001 — report, never 500 into scheduler retries
-            logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
-            return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)
-        return Response({'job': job, 'output': out.getvalue()[:12000]})
+        # Runs it, never raises (no 500 into scheduler retries), and records the outcome for the
+        # admin System health light, whose expected cadences sit beside it (cron_health.py).
+        return Response(cron_health.run_job(job, command, args), status=status.HTTP_200_OK)
 
 
 class VircleAirtableUpdateView(APIView):

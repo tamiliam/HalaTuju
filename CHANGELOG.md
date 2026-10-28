@@ -28,6 +28,49 @@ Billing & usage, grouped by the task (issuing) rather than by the scope they hav
   unchanged; the one real gate is now named in the docstring.
 - No model, no migration, no data move. en/ms/ta. TD-412 (three copies of `_organisation_for`).
 
+## Admin system health light (BRANCH, NOT LIVE) - 2026-10-28
+
+- **A small round light in the admin top bar, for super admins only** (owner-approved Stitch design, between
+  the theme selector and Help). Green / amber / red, showing the WORST of five rows (owner change (a)); click
+  for the "System health" panel: a pill, "Super admins only · checked N minutes ago", a refresh button, five
+  rows (dot, name, one plain line, "last OK HH:MM"), and the footer "Email alerts still go to the owner when
+  something breaks." No "View logs" link (owner change (b)). Fetched on open and every 5 minutes while the
+  shell is mounted; never mounted, and never fetched, for any other admin. Light and dark themes via the
+  existing tone tokens. Strings under `admin.systemHealth.*` (Malay and Tamil are first drafts, for Sol).
+- **The rows** (`apps/scholarship/services/system_health.py`, thresholds as named constants):
+  Document reading (Gemini) and Text recognition (Vision) — red only at the outage alert's own bar over 2
+  hours (no success, >= 2 failures from >= 2 applications), amber on any service failure in the last hour or
+  failures below that bar, green otherwise ("No reads in the last hour" when idle);
+  Email sending — red after 3 failed sends running with the latest inside 24 hours (an older streak with
+  nothing sent since is amber), or >= 2 failures and no success in 24 hours; amber on a failure in the last
+  hour or one not yet followed by a success; a message with no recipients counts as neither; Scheduled jobs — red when a job missed two expected runs (2 x cadence + grace) or
+  errored twice running, amber for one missed run or one error, naming the worst job ("'Query emails' has
+  not run for 26 hours (expected hourly)"), "waiting for first run" until two cadences after the recorder's
+  first write; AI credit balance — red on a Gemini 402 / prepay / credit / billing error in the last day with
+  no read working since, amber when reads have worked since, else "No payment errors seen".
+- **Recorders.** Every email: `EMAIL_BACKEND` is now `apps.scholarship.mail_backend.RecordingSMTPBackend` (the
+  SMTP backend unchanged, plus one line recording success / failure and the exception CLASS name — never an
+  address, subject, body or message). Every cron run: `CronRunView`'s body moved to `cron_health.run_job`,
+  which records ok / error class; expected cadences in `cron_health.EXPECTED_CADENCE` — exactly the 27 live
+  Scheduler jobs that call the endpoint (incl. `decision-emails`, every 15 min, via `release-decisions-15m`),
+  pinned by a test. All times are Malaysia time (ISO with +08:00 from the server; the web formats in
+  Asia/Kuala_Lumpur whatever the device says). Writes run after the
+  caller's transaction (`on_commit`), in their own short transaction, and can never break a send or a run.
+- **New table `system_health_status`** (scholarship `0180`) — MIGRATE-FIRST, Postgres DDL + RLS policy in the
+  migration's docstring. Endpoint `GET /api/v1/admin/scholarship/system-health/` — super only (403 for every
+  other admin, 401 anonymous), read-only, 60-second cache, `?fresh=1` (exactly 1) from the refresh button.
+- `services/outage.py`: the per-document Vision / Gemini outcome rules are now named functions
+  (`vision_outcome`, `gemini_read_outcome`, `ic_second_opinion_outcome`) shared by the outage alert and the
+  light; behaviour unchanged.
+
+## TD-411 hotfix — letter-spaced headings around real prose keep the PDF text layer (MODEL 1.17.1) - 2026-10-28
+
+- **Found by the post-deploy affected-list run** (992 live PDFs, 9 turned away). Doc 3919, a 3-page Canva-style
+  statement of intent, has letter-spaced headings ("S K I L L S", 82% single-letter words) around ordinary prose;
+  the letter-spacing rule turned the whole layer away, so a re-read would have kept page 1 only. A layer with at
+  least 30 ordinary words (`pdf_pages.MIN_REAL_WORDS`) is never judged letter-spaced. The other 8 (CamScanner
+  stamps on 3 ICs/3 parent ICs, an EPF and a results slip) are still turned away, as intended.
+
 ## TD-408 + TD-411 — father/son name order; a scanner watermark is not a text layer; the KWSP app screen is an EPF proof (MODEL 1.17.0, VERDICT 2026-10-28.2) - 2026-10-28
 
 - **TD-408 (VERDICT 2026-10-28.2; live dry-run 1448 real pairs, 3 changed, all an Iban father now confirmed; two review rounds) — word order in a patronymic name.**

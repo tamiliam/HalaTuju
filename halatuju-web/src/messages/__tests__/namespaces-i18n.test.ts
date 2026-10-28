@@ -40,6 +40,9 @@ import { APPLICATION_STATUSES, statusLabelKey } from '@/lib/applicationStatus'
 import { SECTION_KEYS } from '@/lib/overviewLayout'
 import { CATEGORY_CODES } from '@/components/admin/overview/OverviewSections'
 import { MERCHANT_SORT_LABEL, STUDENT_SORT_LABEL } from '@/lib/spendingTable'
+import {
+  HEALTH_CADENCES, HEALTH_LINE_CODES, HEALTH_ROW_KEYS, HEALTH_UNITS,
+} from '@/components/admin/SystemHealthLight'
 
 const SRC_DIR = path.join(__dirname, '..', '..')     // .../src
 const LOCALES = [['en', en], ['ms', ms], ['ta', ta]] as const
@@ -346,6 +349,17 @@ const DYNAMIC: Array<[string, string[]]> = [
     ...['title', 'asAt', 'promised', 'released', 'spent', 'left', 'barLabel', 'chartLabel',
         'other', 'none', 'noteTitle', 'note'].map((k) => `${SPEND}.${k}`),
     ...CATEGORY_CODES.filter((c) => c !== 'none').map((c) => `${SPEND}.cat.${c}`),
+  ]],
+  // ── admin.systemHealth: every line code the server can send (services/system_health.py), the
+  //    five row names, the pill and the duration words. The JOB names are held to the server's
+  //    own list by test_system_health.py (it reads these catalogues), since that list is Python's.
+  ['the System health light', [
+    ...Object.entries(HEALTH_LINE_CODES).flatMap(([group, codes]) =>
+      codes.map((c) => `admin.systemHealth.line.${group}.${c}`)),
+    ...HEALTH_ROW_KEYS.map((k) => `admin.systemHealth.row.${k}`),
+    ...['green', 'amber', 'red', 'unknown'].map((s) => `admin.systemHealth.overall.${s}`),
+    ...HEALTH_UNITS.map((u) => `admin.systemHealth.unit.${u}`),
+    ...HEALTH_CADENCES.map((c) => `admin.systemHealth.cadence.${c}`),
   ]],
 ]
 

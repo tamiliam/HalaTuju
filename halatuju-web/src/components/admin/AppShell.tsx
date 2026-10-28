@@ -18,6 +18,7 @@ import { Sidebar } from '@/components/admin/Sidebar'
 import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
 import { BreadcrumbScopes } from '@/components/admin/ScopeSwitcher'
+import { SystemHealthLight } from '@/components/admin/SystemHealthLight'
 
 /**
  * The console shell: breadcrumb + scope sidebar + the account cluster.
@@ -332,6 +333,9 @@ function Chrome(
         navPinned={pinned}
         onTogglePin={togglePin}
         onSignOut={async () => { await adminSignOut(); router.replace('/admin/login') }}
+        // SUPER ONLY: no other admin mounts the light, so no other browser ever asks for it.
+        // (`r` is `effectiveRole`: the flag OR role 'super', the server's own `is_super` rule.)
+        healthLight={r === 'super' ? <SystemHealthLight token={token} /> : undefined}
         guideHref={hrefOf('guide')}
         faqHref={hrefOf('faq')}
         profileHref={hrefOf('profile') ?? '/admin/profile'}

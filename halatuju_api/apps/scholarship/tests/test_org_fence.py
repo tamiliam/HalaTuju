@@ -478,6 +478,9 @@ class TestFenceCoverageCompleteness(TestCase):
         # charges it returns are not org-fenced BECAUSE only a super ever sees the payload;
         # the tenant list itself comes from `.tenants()`, never a bare `is_active` filter.
         'AdminPlatformCostsView': 'super-only (platform cost ledger + every tenant\'s charge)',
+        # The System health light (2026-10-28): platform services (Gemini, Vision, email, the
+        # scheduler, the AI bill) as five coloured rows — counts and timestamps, no tenant data.
+        'AdminSystemHealthView': 'super-only (platform service health, no tenant data)',
         # Org-scoped: filtered on organisation_id, cross-org is 404. Super writes (a charge
         # against a tenant), org_admin reads its own only.
         'AdminOrgBuildHoursView': 'org-fenced (org_admin own org read; super writes)',

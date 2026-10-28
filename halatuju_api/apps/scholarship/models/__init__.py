@@ -96,3 +96,6 @@ from .sources import ReferralSource
 # Points only at `courses.PartnerAdmin` / `courses.PartnerOrganisation`, by string.
 from .staff_permission_changes import StaffPermissionChange
 
+# Admin System health light (2026-10-28) — model 69, NEW: the email/cron recorders' small store.
+# Points at nothing.
+from .system_health import SystemHealthStatus
