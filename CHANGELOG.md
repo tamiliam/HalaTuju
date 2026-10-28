@@ -8,19 +8,22 @@ All notable changes to this project will be documented in this file.
   wrong document (the scorer is right). Doc 3281, a real Penyata Ahli scanned with CamScanner, had a text layer
   of only "CamScanner" × 4 (46 characters); any layer of 25 characters or more was trusted, so it was "read" as
   that word and never went to Vision. This touched every document type that reads a PDF, not only EPF.
-- **`pdf_pages.usable_text_layer`** — scanner-app stamps (CamScanner, "Scanned with / by / using …", Adobe Scan,
-  Microsoft / Office Lens, Genius Scan, TapScanner and others) are removed; a layer that is then under 25
+- **`pdf_pages.usable_text_layer`** — a line that is only a named scanner-app stamp (CamScanner, Adobe Scan,
+  Microsoft / Office Lens, Genius Scan, TapScanner and others, alone or after "Scanned with / by / using") is
+  dropped; a stamp word inside a content line, or "Scanned by <a person>", is kept; a layer that is then under 25
   characters, dominated by `(cid:NN)` codes, under a quarter letters-or-digits, or letter-spaced counts as no
   layer, so the page image goes to Vision. Both readers in `vision.py` (`extract_text`, `ocr_document_full`) and
   the eval capture use it. A layer with no stamp is returned byte for byte. On the 169 eval PDFs with a layer,
   only one (a 34-character CamScanner PDF) is newly sent to Vision.
 - **The KWSP app "Semakan Baki Simpanan" screen** (doc 1395) is recognised (`genuineness/epf_app_doc.py`,
-  `doc_seen` `epf_app`), scored beside the Penyata Ahli and never above SUSPECT — a screenshot is easy to fake.
+  `doc_seen` `epf_app`, whole-word probes); it competes with the Penyata Ahli only when an app anchor ("Semakan Baki
+  Simpanan" / "Dapatkan Penyata") is present, and never reads above SUSPECT — a screenshot is easy to fake.
   Every printed statement scores exactly as before (13 EPF snapshots unchanged); a payslip with KWSP / Caruman
   Majikan lines still reads `not_epf`.
 - `results_doc.MODEL_VERSION` 1.16.0 → 1.17.0. TD-410's EPF exemption from `proof_flagged` stays (a misfiled
   payslip is still real income evidence); the reason is now written at the exemption. Tests:
-  `test_td411_text_layer.py`. Needs a deploy and a live re-read of the affected documents (owner's go — paid).
+  `test_td411_text_layer.py`. Known limits: a scanned PDF going to Vision is read on page 1 only (pre-existing);
+  `epf_app` is not a misfile family (an app screenshot in another slot is not flagged). Needs a deploy and a live re-read of the affected documents (owner's go — paid).
 
 ## STPM CGPA C3 — cockpit check marks on the STPM grades and CGPA (NOT LIVE) - 2026-10-28
 

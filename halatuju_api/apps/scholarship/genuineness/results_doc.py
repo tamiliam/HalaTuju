@@ -19,7 +19,7 @@ import re
 import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exported for callers)
-from .epf_app_doc import EPF_APP_SIGNATURES, screen_at_most_suspect
+from .epf_app_doc import epf_app_scores, screen_at_most_suspect
 from .stpm_doc import STPM_LISTS
 
 # Version of the deterministic document-recognition model — the signature FAMILIES + weights +
@@ -352,8 +352,7 @@ STR_SEMAKAN_SIGNATURES = [         # MySTR Semakan Status check page
     ('Status Pedalaman',              ['STATUS PEDALAMAN'],                       1, 'text'),
 ]
 
-# A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
-# results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
+# A doc_type is scored against its FAMILY of lists (best fit wins + names the type); slip + cert together.
 _RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES,   # SPM FIRST: max()
                   **STPM_LISTS}                       # gives a tie to the first key (1.9.0, `stpm_doc`)
 _STR_LISTS = {'str_letter': STR_LETTER_SIGNATURES, 'str_dashboard': STR_DASHBOARD_SIGNATURES,
@@ -363,7 +362,7 @@ _OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIG
                 'ua_offer': UA_OFFER_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'birth_certificate': {'birth_certificate': BC_SIGNATURES},
-             'epf': {'epf': EPF_SIGNATURES, 'epf_app': EPF_APP_SIGNATURES}, 'stpm_result': STPM_LISTS,
+             'epf': {'epf': EPF_SIGNATURES}, 'stpm_result': STPM_LISTS,
              'offer_letter': _OFFER_LISTS,
              'str': _STR_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
@@ -443,6 +442,7 @@ def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = Fals
     tn = _norm_fold_upper_alnum(ocr_text)
     lists = _FAMILIES.get(doc_type, _LISTS)
     scores = {name: _score_list(sig, tn, has_qr, has_crest, has_seal) for name, sig in lists.items()}
+    scores.update(epf_app_scores(tn) if doc_type == 'epf' else {})     # 1.17.0 — only with an app anchor
     best = max(scores, key=lambda k: scores[k]['probability'])
     b = scores[best]
     return {'type': best, 'probability': b['probability'],

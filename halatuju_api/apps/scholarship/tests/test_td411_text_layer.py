@@ -14,7 +14,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from apps.scholarship import vision
-from apps.scholarship.genuineness.epf_app_doc import EPF_APP_SIGNATURES, screen_at_most_suspect
+from apps.scholarship.genuineness.epf_app_doc import epf_app_scores, score_app_screen, screen_at_most_suspect
 from apps.scholarship.genuineness.results_doc import (EPF_SIGNATURES, MODEL_VERSION, _norm_fold_upper_alnum,
                                                       _score_list, misfiled_as, signature_genuineness)
 from apps.scholarship.pdf_pages import MIN_TEXT_LAYER_CHARS, usable_text_layer
@@ -35,6 +35,55 @@ Feb-26 Caruman - IWS 20/02/2026 221.00 187.00 408.00
 Mac-26 Caruman - IWS 20/03/2026 221.00 187.00 408.00
 Kembali
 Dapatkan Penyata
+"""
+# A printed Penyata Ahli in the shape Vision reads one (an eval snapshot's layout; invented person + figures).
+PRINTED_PENYATA = """KWSP
+EPF
+SULIT DAN PERSENDIRIAN
+MEENA A/P TESTRAJ
+NO 1 JALAN CONTOH 2/3
+TAMAN CONTOH
+68100 BATU CAVES
+Selangor
+PENYATA AHLI TAHUN 2026
+Tarikh Penyata
+: 31/05/2026
+No. Ahli KWSP
+90000017
+No. Kad Pengenalan
+No. Majikan
+: 850505105050
+: 000000000
+JUMLAH SIMPANAN: RM12,345.60
+RINGKASAN AKAUN
+Jenis Akaun
+Akaun Persaraan (Akaun 1)
+Akaun Sejahtera (Akaun 2)
+Akaun Fleksibel (Akaun 3)
+Baki Pembuka
+JUMLAH (RM)
+CARUMAN SEMASA
+Bulan
+Transaksi
+Caruman
+Jan-26
+Caruman IWS
+Feb-26
+Caruman - IWS
+JUMLAH (RM)
+Caruman Majikan
+Tarikh
+Caruman Ahli
+Jumlah
+16/01/2026
+221.00
+187.00
+408.00
+Penyata ini adalah cetakan komputer dan tidak memerlukan tandatangan.
+Menara KWSP No 1, Persiaran Kwasa Utama, Seksyen U4, 40150 Shah Alam, Selangor
+Tel: 03-89226000/www.kwsp.gov.my
+Cetakan myEPF
+Muka Surat 1
 """
 # A payslip with its EPF deduction lines — must still read not_epf in the EPF slot.
 PAYSLIP_WITH_EPF = """PENYATA GAJI BULANAN OKTOBER 2026
@@ -59,7 +108,7 @@ class UsableTextLayerTests(SimpleTestCase):
         for stamp in ('Scanned with CamScanner\nScanned with CamScanner',
                       'Scanned by CamScanner\n' * 3, 'Scanned with Adobe Scan\nScanned with Adobe Scan',
                       'Microsoft Lens\nOffice Lens\nGenius Scan\nTapScanner',
-                      'Scanned with SomeNewScannerApp 2\nScanned using SomeNewScannerApp 2'):
+                      '— Scanned with CamScanner —\n[CamScanner]\nCamScanner | CamScanner'):
             with self.subTest(stamp=stamp):
                 self.assertEqual(usable_text_layer(stamp), '')
 
@@ -89,6 +138,16 @@ class UsableTextLayerTests(SimpleTestCase):
         self.assertEqual(usable_text_layer('x' * 24), '')
         self.assertEqual(usable_text_layer('x' * 25), 'x' * 25)
         self.assertEqual(vision._MIN_PDF_TEXT, MIN_TEXT_LAYER_CHARS)
+
+    def test_a_stamp_word_inside_a_content_line_is_kept_whole(self):
+        text = 'Simple Scan Enterprise Sdn Bhd\nNo. 12, Jalan Contoh, 40000 Shah Alam\nPENYATA GAJI OKTOBER 2026'
+        self.assertEqual(usable_text_layer(text), text)
+        self.assertEqual(usable_text_layer(text + '\nCamScanner'), text)     # only the stamp-only line goes
+
+    def test_scanned_by_a_person_is_not_a_stamp(self):
+        text = 'Surat Pengesahan Pendapatan\nScanned by Pegawai Kewangan\nKampung Contoh, 09000 Kulim, Kedah'
+        self.assertEqual(usable_text_layer(text), text)
+        self.assertEqual(usable_text_layer('Scanned by Pegawai Kewangan'), 'Scanned by Pegawai Kewangan')
 
     def test_the_word_scanner_in_real_text_is_not_a_stamp(self):
         text = 'Jabatan Pengimbas: scanner operator ADAM BIN SAMPEL, Seksyen 7, 40000 Shah Alam'
@@ -158,10 +217,33 @@ class EpfAppScreenTests(SimpleTestCase):
         p = _score_list(EPF_SIGNATURES, _norm_fold_upper_alnum(EPF_APP_SCREEN), False, False)['probability']
         self.assertLess(p, 0.35)
 
-    def test_a_partial_app_screen_is_suspect_and_a_scrap_is_not_epf(self):
-        table = 'KWSP\nBulan Caruman Transaksi Caruman Majikan Caruman Ahli\nCaruman - IWS\nBaki Simpanan RM 100'
-        self.assertEqual(signature_genuineness(table, doc_type='epf')['status'], 'suspect')
-        self.assertEqual(signature_genuineness('KWSP\nBaki Simpanan RM 100', doc_type='epf')['status'], 'not_epf')
+    def test_a_full_app_screen_clears_the_genuine_band_on_its_list_and_is_capped_to_suspect(self):
+        tn = _norm_fold_upper_alnum(EPF_APP_SCREEN)
+        self.assertGreaterEqual(score_app_screen(tn)['probability'], 0.70)
+        g = signature_genuineness(EPF_APP_SCREEN, doc_type='epf')
+        self.assertEqual((g['type'], g['status']), ('epf_app', 'suspect'))
+        self.assertGreaterEqual(g['probability'], 0.70)
+
+    def test_an_anchored_partial_screen_is_suspect(self):
+        part = 'Semakan Baki Simpanan\nKWSP\nBaki Simpanan 2026 RM 100\nBulan Caruman Caruman Majikan Caruman Ahli'
+        self.assertEqual(signature_genuineness(part, doc_type='epf')['status'], 'suspect')
+
+    def test_without_an_anchor_the_app_list_does_not_compete(self):
+        table = ('KWSP\nBulan Caruman Transaksi Caruman Majikan Caruman Ahli\nCaruman - IWS\nKembali\n'
+                 'Baki Simpanan RM 100')
+        self.assertEqual(epf_app_scores(_norm_fold_upper_alnum(table)), {})
+        g = signature_genuineness(table, doc_type='epf')
+        self.assertEqual((g['type'], g['status']), ('epf', 'not_epf'))
+
+    def test_a_bank_or_tabung_haji_balance_stays_not_epf(self):
+        text = ('LEMBAGA TABUNG HAJI\nPenyata Akaun Simpanan\nBaki Simpanan RM 3,210.00\n'
+                'Tarikh Transaksi Keterangan Jumlah\nSimpanan Tunai 100.00\nKembali')
+        self.assertEqual(signature_genuineness(text, doc_type='epf')['status'], 'not_epf')
+
+    def test_kembali_is_a_whole_word_probe(self):
+        tn = _norm_fold_upper_alnum('Semakan Baki Simpanan. Wang akan dikembalikan; pengembalian caruman')
+        self.assertNotIn('Kembali', score_app_screen(tn)['present'])
+        self.assertIn('Kembali', score_app_screen(_norm_fold_upper_alnum('Kembali'))['present'])
 
     def test_the_app_family_is_never_genuine(self):
         self.assertEqual(screen_at_most_suspect('epf_app', 'genuine', 'r'), ('suspect', 'an app screenshot, not the printed statement — r'))
@@ -183,7 +265,18 @@ class EpfAppScreenTests(SimpleTestCase):
         old = _score_list(EPF_SIGNATURES, tn, False, False)
         g = signature_genuineness(GENUINE_EPF, doc_type='epf')
         self.assertEqual((g['type'], g['probability'], g['status']), ('epf', old['probability'], 'genuine'))
-        self.assertLess(_score_list(EPF_APP_SIGNATURES, tn, False, False)['probability'], old['probability'])
+        self.assertEqual(epf_app_scores(tn), {})                    # no app anchor: the app list never competes
+
+    def test_a_realistic_printed_penyata_stays_epf_with_its_old_status(self):
+        tn = _norm_fold_upper_alnum(PRINTED_PENYATA)
+        old = _score_list(EPF_SIGNATURES, tn, False, False)
+        g = signature_genuineness(PRINTED_PENYATA, doc_type='epf')
+        self.assertEqual((g['type'], g['probability'], g['status']), ('epf', old['probability'], 'genuine'))
+        # A CROPPED Penyata (its contribution table only) keeps its old score and type.
+        crop = PRINTED_PENYATA.split('CARUMAN SEMASA')[1]
+        old_c = _score_list(EPF_SIGNATURES, _norm_fold_upper_alnum(crop), False, False)
+        g_c = signature_genuineness(crop, doc_type='epf')
+        self.assertEqual((g_c['type'], g_c['probability']), ('epf', old_c['probability']))
 
     def test_the_app_screen_is_not_a_misfile_into_the_salary_slot(self):
         # The misfile backstop keeps the Penyata list only: a screenshot never clears it (and is suspect anyway).

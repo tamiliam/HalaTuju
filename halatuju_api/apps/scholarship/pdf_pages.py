@@ -31,32 +31,30 @@ MIN_TEXT_LAYER_CHARS = 25
 _SCANNER_APPS = (r'cam\s?scanner|adobe\s+scan|microsoft\s+lens|office\s+lens|genius\s+scan|'
                  r'tap\s?scanner|clear\s?scan(?:ner)?|tiny\s?scanner|simple\s?scan(?:ner)?|'
                  r'scanner\s+pro|notebloc|vflat|turboscan')
-#: The app's name, alone or as "Scanned with / by / using <app>", anywhere in a line (word-bounded).
+#: A NAMED app, alone or as "Scanned with / by / using <app>" (word-bounded). Only these are stamps:
+#: "Scanned by Pegawai Kewangan" names a person, not an app, and stays.
 _SCANNER_STAMP = re.compile(
     rf'\b(?:(?:scanned|digiti[sz]ed|created|made)\s+(?:with|by|using)\s+)?(?:{_SCANNER_APPS})\b', re.I)
-#: A whole line that is only "Scanned with <something short>" — an app we do not name above.
-_SCANNED_WITH_LINE = re.compile(r'^\s*scanned\s+(?:with|by|using)\s+[\w .\-]{1,30}$', re.I)
 #: pypdf's placeholder for a glyph it cannot map back to a character (a subset-encoded font).
 _CID = re.compile(r'\(cid:\d+\)')
 
 
+def _stamp_only(line: str) -> bool:
+    """True for a line that is ONLY a scanner-app stamp: once the named stamp(s) are taken out, nothing
+    but whitespace / punctuation is left. A stamp word inside a content line ("Simple Scan Enterprise
+    Sdn Bhd") makes it a content line, kept whole."""
+    return bool(_SCANNER_STAMP.search(line)) and not any(c.isalnum() for c in _SCANNER_STAMP.sub('', line))
+
+
 def _without_scanner_stamp(text: str) -> str:
-    """The text layer minus every scanner-app stamp: the stamp words removed wherever they sit, and a
-    line left empty (or one that was only "Scanned with …") dropped. A layer with no stamp comes back
-    BYTE-FOR-BYTE as it was: it is split on '\\n' only (``splitlines`` would also break on the control
-    characters a garbled layer carries, and the parsers that read such a layer must see what they saw)."""
+    """The text layer minus every line that is only a scanner-app stamp (`_stamp_only`). No stamp word is
+    ever cut out of a content line. A layer with no stamp-only line comes back BYTE-FOR-BYTE as it was: it
+    is split on '\\n' only (``splitlines`` would also break on the control characters a garbled layer
+    carries, and the parsers that read such a layer must see what they saw)."""
     text = text or ''
     lines = text.split('\n')
-    if not any(_SCANNER_STAMP.search(ln) or _SCANNED_WITH_LINE.match(ln.strip()) for ln in lines):
-        return text
-    kept = []
-    for line in lines:
-        if _SCANNED_WITH_LINE.match(line.strip()):
-            continue
-        cleaned = _SCANNER_STAMP.sub('', line)
-        if cleaned.strip() or not line.strip():
-            kept.append(cleaned)
-    return '\n'.join(kept).strip()
+    kept = [ln for ln in lines if not _stamp_only(ln)]
+    return text if len(kept) == len(lines) else '\n'.join(kept).strip()
 
 
 def _looks_like_text(text: str) -> bool:
@@ -81,10 +79,10 @@ def _looks_like_text(text: str) -> bool:
 def usable_text_layer(text: str) -> str:
     """The text layer to read in place of a Vision call, or '' when it is not real document text.
 
-    The scanner-app stamp is REMOVED from what is returned (not merely ignored): it is not part of the
+    A stamp-ONLY line is REMOVED from what is returned (not merely ignored): it is not part of the
     document, it can never be a signature, and leaving it in would put "CamScanner" into every name
     and label match downstream. A real digital PDF carries no stamp, so its layer comes back unchanged;
-    a real layer that merely carries a "Scanned with CamScanner" footer keeps all its own text. What is
+    a real layer that merely carries a "Scanned with CamScanner" footer line keeps all its own text. What is
     left must then look like text (`_looks_like_text`) and hold `MIN_TEXT_LAYER_CHARS` characters."""
     cleaned = _without_scanner_stamp(text)
     if len(cleaned) < MIN_TEXT_LAYER_CHARS or not _looks_like_text(cleaned):
