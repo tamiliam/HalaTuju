@@ -122,7 +122,11 @@ def entered_lookup(grades):
     """`subject name → the student's normalised entry for it`, or None when there are no grades."""
     if not isinstance(grades, dict) or not grades:
         return None
-    return lambda subject: entered_grade_value(grades.get(_STPM_BY_NAME.get(_squash(subject)))) or None
+
+    def lookup(subject):
+        return entered_grade_value(grades.get(_STPM_BY_NAME.get(_squash(subject)))) or None
+    lookup.count = sum(1 for g in grades.values() if entered_grade_value(g))   # subjects entered (stpm_parse 1.2.0)
+    return lookup
 
 
 def _entered_grade(doc):

@@ -15230,3 +15230,34 @@ the existing letters and informal slips must be re-read live after deploy, befor
 lose those documents from the verdict.
 **Existing documents** keep the score they were read with until re-read (live, with the flags — TD-407).
 **Versions:** genuineness `MODEL_VERSION` 1.13.0 (salary_doc 1.2.0); `VERDICT_ENGINE_VERSION` 2026-10-27.6.
+
+## 2026-10-28 — The SPM certificate is read row by row from positions; an STPM certificate's passed count may be absent
+
+**Decision (SPM certificate):** `spm_cert_parse.parse_spm_cert` replaces `academic_engine.parse_spm_cert`. Each
+subject is paired with the grade on its OWN visual row — a scan from the Vision word boxes production already
+holds (`ocr_document_full`), a digital PDF from its text layer's character boxes (pypdfium2, page 1). Text with no
+positions is not read Exact (Gemini, as before). A hit needs: the certificate markers; one name row directly
+between the title and the IC row and one IC on the page; every subject-column line a known SPM subject word for
+word (a stamp far to the right is ignored, a word glued to a subject is not); every grade on the SPM scale with
+its letter agreeing with its printed band — an unreadable sign ("A.", "B.", off-scale "B-") is taken from a
+complete band only when the base letter agrees and the band is not "… TINGGI" (which may be "TERTINGGI" with a
+faint "TER": A/A+, B/B+ → None); a clear letter that disagrees → None; one grade cell per row; a subject-only row and
+a grade-only row joined only within 0.8 of a word height; the printed "JUMLAH MATA PELAJARAN" equal where printed
+(label with an unreadable number → None). `vision.py` changes on the same lines (net zero): the call passes the
+shared words and the upload bytes. MODEL_VERSION 1.14.0.
+**Why:** the old reader paired a subject BLOCK with a grade BLOCK by order in the flattened text. On scans it fell
+back (one grade read "A."/"B." and dropped; a school called "… SAINS …" added a subject), and on a scanner's OCR
+text layer stored out of order it paired four of eleven subjects with the WRONG grades (corpus a108, read Exact
+today). **Alternatives rejected:** patching the text reader (it cannot see order, so a scrambled layer still
+pairs wrongly); trusting the letter over the band (the band is a word and reads reliably; the sign does not).
+**Revisit if:** a certificate layout without the "Mata Pelajaran … Gred" header appears, or a name wraps onto two
+rows in practice (today → Gemini).
+
+**Decision (STPM certificate, `stpm_parse` 1.2.0):** "Bilangan Mata Pelajaran Lulus" printed with NO number read
+(nothing after it, or the next printed text — "Purata Nilai Gred", the "(Number of Subjects Passed)" subtitle)
+no longer forces a fallback; every other gate still applies, the printed PNGK must equal the recomputed one, and
+the rows read must equal the number of STPM subjects the student entered — with no entry, only a digital text
+layer may go without its count, never a scan. A number that IS read must match; a stray token where the number
+belongs ("S", "4.", "(4)") → None.
+**Why:** the count only cross-checks the rows, and the PNGK sum already proves them; a faint count cost a
+correct Exact read (corpus a265).

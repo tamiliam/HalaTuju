@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## SPM certificate read row by row from positions; STPM certificate count may be absent - 2026-10-28
+
+- **`spm_cert_parse.parse_spm_cert`** (new module) replaces `academic_engine.parse_spm_cert` (deleted). It pairs
+  each subject with the grade on its own visual row: a scan from the shared Vision word boxes, a digital PDF from
+  its text layer's character boxes (page 1); text alone → Gemini. Gates: certificate markers; one name row
+  between the title and the IC row, one IC on the page; every subject-column line a known SPM subject word for
+  word (a far stamp ignored, a glued word → None); one grade cell per row (a second grade, a second subject or
+  a stray letter on the row → None); letter and band agree (an unreadable sign is taken from a complete band
+  when the base letter agrees, EXCEPT a "TINGGI" band, which may be "TERTINGGI" with a faint "TER" → None; a
+  clear disagreement → None); split rows joined only within 0.8 h;
+  the printed "JUMLAH MATA PELAJARAN" equal where printed. `vision.py`: same lines, net zero (the call passes
+  `pre_words` and the upload bytes). `MODEL_VERSION` 1.14.0.
+- **Why each corpus certificate failed before:** a179 (both copies) and a270 — one grade letter read "A."/"B.",
+  so the grade block was one short; a265 p1 — the school name "MAKTAB RENDAH SAINS …" counted as the subject
+  Sains (one subject too many). And a108, "parsed" before, was WRONG: its scanner OCR text layer stores lines out
+  of order, so four of eleven subjects carried another subject's grade.
+- **Corpus (local, new `eval/spm_cert_check.py`, hand-checked answers `<key>.expect_spm.json` from the page
+  images):** SPM certificates 7 Exact / 1 fallback / 0 wrong (was 4 parsed, one of them wrong; a270 falls back
+  on "B. (KEPUJIAN TINGGI)" by the TINGGI rule); controls (SPM slips, STPM, Matric, Diploma, Asasi, MUET, SPVM,
+  other, fakes) 0 of 62 accepted. ⚠ Four of the eight corpus certificates are pages SPLIT out of combined
+  uploads (`__p<n>`); production reads page 1 only, so the live hit rate on combined uploads is lower.
+- **`stpm_parse` 1.2.0:** a certificate's "Bilangan Mata Pelajaran Lulus" with no number read is allowed when
+  every other gate passes, the printed PNGK equals the recomputed one, AND the rows read equal the number of
+  STPM subjects the student entered (`entered_lookup(...).count`); with no entry, only on a digital text layer,
+  never a scan. A read number must match; a stray token or a bracketed digit ("(4)") in its place → None.
+  Corpus: certificates 14 / 7 / 0 and slips 13 / 5 / 0, unchanged (a265 p2-3 is a scan with no local entry,
+  so it still falls back here; live it reads Exact when its four rows match the student's four entries);
+  controls 0 of 31 accepted.
+- Tests: `test_certificate_parser` rewritten for the row reader (synthetic word boxes, a reportlab PDF stored out
+  of order, the upload seam, the TINGGI and two-cell cases); `test_stpm_parse.ThePassedCountMayBeAbsent` (6).
+
 ## STPM exact-read follow-up — column-ordered certificate text layers; no "institution not specified" note - 2026-10-28
 
 - **`stpm_parse` 1.1.0** (the new layout in `stpm_columns.py`, keeping `stpm_parse` under 600 lines). A digital 2023/24 certificate whose text layer lists the subject names, then the

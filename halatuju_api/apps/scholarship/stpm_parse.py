@@ -22,7 +22,8 @@ CONSERVATIVE — a wrong Exact value is far worse than an AI read. Every hit has
     completed from the scale ONLY when the value that was read matches the grade the STUDENT
     ENTERED for that subject; otherwise (or with no entry, or neither read, or a disagreement)
     → None, and Gemini reads it so the reviewer sees any mismatch as today;
-  * the printed subject count (slip: registered; certificate: passed) matching the rows read;
+  * the printed subject count (slip: registered; certificate: passed) matching the rows read — a
+    certificate's count may be ABSENT (label, no number: 1.2.0), never mis-read;
   * the printed PNGK equal to the PNGK recomputed from the rows (Pengajian Am + the best three
     other subjects, MPM's rule, half-up to two places). One misread grade breaks the sum.
 Owner ruling B (2026-10-28): a bare base letter whose point is that letter WITH a sign (A + 3.67) lost
@@ -44,7 +45,9 @@ from decimal import ROUND_HALF_UP, Decimal
 # rule, the `offer_parse` precedent) so a stored read says which reader made it.
 # 1.0.0 (2026-10-27): S2 — certificate (2023/24 + 2025), results slip (2022-2025), transcript.
 # 1.1.0 (2026-10-28): a certificate's COLUMN-ordered text layer (names, then letters, then points).
-PARSER_VERSION = '1.1.0'
+# 1.2.0 (2026-10-28): a certificate's passed count may be ABSENT (label, no number) when the rows equal the
+#   subjects the student entered (no entry: text layer only); never mis-read.
+PARSER_VERSION = '1.2.0'
 
 #: The STPM subject grade scale and its printed grade points (the slip's "Nilai Gred").
 GRADE_POINTS = {'A': '4.00', 'A-': '3.67', 'B+': '3.33', 'B': '3.00', 'B-': '2.67', 'C+': '2.33',
@@ -360,6 +363,17 @@ def _count_after(rows, i, label_key):
     return 'missing'
 
 
+def _count_absent(rows, i):
+    """The passed-count label is printed with NO number in its place: nothing follows it, or the
+    next printed text does ("Purata Nilai Gred …", the "(Number of Subjects Passed)" subtitle). A
+    stray token where the number belongs ('S', 'l', '4.') is a MIS-read, and a bracketed digit ('(4)')
+    is a printed count — neither is an absence → False."""
+    toks = [t for t in _after(rows[i], 'LULUS') if _letters(t)]
+    if toks and any(c.isdigit() for c in toks[0]):
+        return False
+    return not toks or toks[0].startswith('(') or _letters(toks[0]) == 'PURATA'
+
+
 def _point_after(rows, i, label_key):
     if i < 0:
         return None
@@ -508,8 +522,14 @@ def _parse_cert(rows, entered=None, words_given=False):
         columns = cert_columns(rows, head, lulus, purata)
         if columns is not None:
             read, pngk, year, count = columns
-    if count == 'missing':
-        return None
+    if count == 'missing':      # absent → no count gate; the PNGK must still equal the recomputed one
+        # ... and the rows read must equal the subjects the student entered; with no entry, only a
+        # digital text layer (never a scan) may go without its count (review, 2026-10-28).
+        entered_n = getattr(entered, 'count', None)
+        if not _count_absent(rows, lulus) or read is None or (
+                len(read) != entered_n if entered_n else words_given):
+            return None
+        count = None
     results = _checked_results(read, pngk, count, 'passed', entered)
     if results is None or year is None:
         return None

@@ -74,7 +74,9 @@ python apps/scholarship/eval/capture_ocr.py results_slip              # a plain 
 Re-runs skip keys that already have an `.ocr.txt`, and each run prints how many Vision calls it
 made. `python apps/scholarship/eval/stpm_parse_check.py` scores the STPM Exact reader
 (`stpm_parse`, S2) against these caches — exact / fallback / WRONG per document, every control
-must be None — and prints keys and field names only, never a value. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
+must be None — and prints keys and field names only, never a value. `spm_cert_check.py` does the same for the SPM certificate reader (`spm_cert_parse`) against hand-checked `<key>.expect_spm.json` answers (name, IC digits, year, printed count, subjects + grades, read off each page image; gitignored PII). Four of
+the eight SPM certificates are pages split out of combined uploads (`__p<n>`); production reads page 1 only,
+so the live hit rate on combined uploads is lower than the corpus score. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
 else gcloud Application Default Credentials.
 
 ## Limits (honest)

@@ -381,6 +381,50 @@ class TheCertificate(SimpleTestCase):
         self.assertIsNone(parse('', words))
 
 
+class ThePassedCountMayBeAbsent(SimpleTestCase):
+    """Parser 1.2.0: "Bilangan Mata Pelajaran Lulus" printed with NO number read (the live a265 scan)
+    is allowed when every other gate passes and the printed PNGK equals the recomputed one; a number
+    that IS read must match, and a stray token where the number belongs is a mis-read → None."""
+
+    @staticmethod
+    def _entered(n):
+        def entered(subject):
+            return None
+        entered.count = n            # the number of STPM subjects the student entered
+        return entered
+
+    def _with_count(self, token, **kw):
+        words = cert_words(CERT_FOUR, passed='9', **kw)
+        if token is None:
+            return [w for w in words if w['text'] != '9']
+        return [dict(w, text=token) if w['text'] == '9' else w for w in words]
+
+    def test_an_absent_count_reads_exact_when_the_rows_match_the_entered_subjects(self):
+        r = parse('', self._with_count(None), entered=self._entered(4))
+        self.assertEqual(r['cgpa'], '3.50')
+        self.assertEqual([x['grade'] for x in r['results']], ['B', 'A', 'A', 'B'])
+
+    def test_an_absent_count_on_a_scan_needs_the_entered_subjects(self):
+        self.assertIsNone(parse('', self._with_count(None)))                         # no entry
+        self.assertIsNone(parse('', self._with_count(None), entered=self._entered(5)))  # 4 read, 5 entered
+
+    def test_an_absent_count_on_a_text_layer_needs_no_entry(self):
+        text = cert_text(CERT_FOUR).replace('Lulus: 4 Purata', 'Lulus: Purata')
+        self.assertEqual(parse(text)['cgpa'], '3.50')
+        self.assertIsNone(parse(text, entered=self._entered(3)))                     # entry disagrees
+
+    def test_an_absent_count_still_needs_the_pngk_to_add_up(self):
+        self.assertIsNone(parse('', self._with_count(None, pngk='3.67'), entered=self._entered(4)))
+
+    def test_a_read_count_must_still_match(self):
+        self.assertIsNotNone(parse('', self._with_count('4')))
+        self.assertIsNone(parse('', self._with_count('3')))
+
+    def test_a_misread_count_is_not_an_absent_one(self):
+        for token in ('S', '4.', 'l', 'A', '(4)', '(5)'):
+            self.assertIsNone(parse('', self._with_count(token), entered=self._entered(4)), token)
+
+
 # ── A 2023/24 certificate whose text layer is stored COLUMN BY COLUMN (parser 1.1.0) ─────────────
 
 COL_FIVE = [('PENGAJIAN AM', 'A-', '3.67'), ('BAHASA MELAYU', 'B', '3.00'), ('SEJARAH', 'B+', '3.33'),
@@ -618,7 +662,7 @@ class TheScale(SimpleTestCase):
             self.assertEqual(stpm_parse._layout(flat(text), rows)[0], layout)
 
     def test_the_parser_version(self):
-        self.assertEqual(PARSER_VERSION, '1.1.0')
+        self.assertEqual(PARSER_VERSION, '1.2.0')
 
 
 # ── The owner's grade rule (2026-10-27): letter and point agree; an unclear one is completed from

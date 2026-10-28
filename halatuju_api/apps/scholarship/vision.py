@@ -2034,7 +2034,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
     pre_words = _o.get('words')                 # None = not computed (compute if needed)
     if doc.doc_type == 'results_slip':
         image = _image()
-        from .academic_engine import parse_spm_cert, ensure_exam_year
+        from .spm_cert_parse import parse_spm_cert, ensure_exam_year
         # OCR text for the CERTIFICATE parse (the slip parse below reads word boxes). Prefer the text
         # from the single ocr_document_full read on the upload path; else fetch it once.
         _text = _o.get('text')
@@ -2043,8 +2043,8 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
             _text = (_r or {}).get('text', '') or ''
         # CERTIFICATE first — self-identifying ('layak dianugerahi'), so it runs for ANY student
         # (an STPM student's SPM cert included), NOT gated on the profile exam_type. The cert's
-        # subject/grade blocks are read positionally by parse_spm_cert (the per-row slip parser can't).
-        cert = parse_spm_cert(_text)
+        # rows are read from the word boxes (a digital PDF: its text layer's boxes) by spm_cert_parse.
+        cert = parse_spm_cert(_text, pre_words, image)
         if cert is not None:
             ex = {'fields': cert, 'warnings': [], 'error': '', 'capture': 'deterministic'}
         else:
