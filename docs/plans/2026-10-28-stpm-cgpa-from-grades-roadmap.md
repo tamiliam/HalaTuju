@@ -17,6 +17,11 @@
   document**; a match gets a check mark — as SPM already works.
 - Include **all** official STPM subjects for students to select.
 
+## Owner ruling (2026-10-28, after PR #1): CGPA and MERIT are different — do not change the merit rule
+- CGPA (display, the minimum STPM CGPA gate, the document comparison) = PNGK from the grades.
+- STPM MERIT = overall_from(CGPA, koko) / 4 × 100, i.e. (0.9 × CGPA + 0.04 × koko) / 4 × 100 — co-curriculum
+  stays in the merit, now on the PNGK. The koko score must therefore be stored (it never was).
+
 ## Proposed rules (for the owner to confirm in the plan review)
 - PNGK = round((PA + best three others) / 4, 2), on the fixed scale A 4.00 … F 0.00. Needs PA + ≥3 others.
 - Fewer than PA + 3 subjects entered → no calculated CGPA; keep the old typed value, labelled "not
