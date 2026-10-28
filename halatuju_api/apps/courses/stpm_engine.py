@@ -133,7 +133,7 @@ SPM_CODE_MAP = {
     'TURATH_BAHASA_ARAB_SPM': 'turath_bahasa_arab',
     'BAHASA_ARAB_SPM': 'bahasa_arab',
     'BAHASA_ARAB_TINGGI_SPM': 'bahasa_arab_tinggi',
-    'BAHASA_ARAB_MUASIRAH_SPM': 'bahasa_arab',
+    'BAHASA_ARAB_MUASIRAH_SPM': 'bahasa_arab',   # + lughah_arabiah, see SPM_CODE_ALSO
 
     # --- Languages ---
     'BAHASA_IBAN_SPM': 'bahasa_iban',
@@ -237,6 +237,19 @@ STPM_SUBJECT_BOOL_MAP = {
 }
 
 
+# A requirement code a SECOND subject key also satisfies (Bumi Sprint C). BAHASA_ARAB_MUASIRAH_SPM is
+# "Al-Lughah Al-'Arabiah Al-Mu'asirah", the grade form's own `lughah_arabiah` since that sprint; the
+# old `bahasa_arab` reading is KEPT so no existing student's result moves. Counted once per code.
+SPM_CODE_ALSO = {'BAHASA_ARAB_MUASIRAH_SPM': 'lughah_arabiah'}
+
+
+def _spm_keys(csv_code):
+    """Every engine key that satisfies one requirement code (usually one)."""
+    key = SPM_CODE_MAP.get(csv_code, csv_code.lower())
+    also = SPM_CODE_ALSO.get(csv_code)
+    return (key, also) if also else (key,)
+
+
 def meets_spm_grade(grade, min_grade):
     """Check if an SPM grade meets or exceeds the minimum threshold.
 
@@ -286,13 +299,12 @@ def check_spm_prerequisites(req, spm_grades):
             if subjects:
                 # Specific subject list — check only these
                 for csv_code in subjects:
-                    engine_key = SPM_CODE_MAP.get(csv_code, csv_code.lower())
-                    student_grade = spm_grades.get(engine_key)
-                    if student_grade and meets_spm_grade(student_grade, min_grade):
+                    if any(spm_grades.get(k) and meets_spm_grade(spm_grades[k], min_grade)
+                           for k in _spm_keys(csv_code)):
                         matched += 1
             else:
                 # No subject list — match ANY subject not in exclude list
-                exclude_keys = {SPM_CODE_MAP.get(c, c.lower()) for c in exclude}
+                exclude_keys = {k for c in exclude for k in _spm_keys(c)}
                 for engine_key, student_grade in spm_grades.items():
                     if engine_key in exclude_keys:
                         continue

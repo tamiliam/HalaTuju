@@ -49,16 +49,19 @@ _SUBJECT_BM = {
     'bahasa_punjabi': 'Bahasa Punjabi', 'bible_knowledge': 'Pengetahuan Bible',
     'bahasa_perancis': 'Bahasa Perancis', 'bahasa_jepun': 'Bahasa Jepun',
     'bahasa_jerman': 'Bahasa Jerman', 'b_cina': 'Bahasa Cina', 'b_tamil': 'Bahasa Tamil',
-    'pqs': 'Pendidikan Al-Quran & Al-Sunnah', 'psi': 'Pendidikan Syariah Islamiah',
+    'pqs': 'Pendidikan Al-Quran dan Al-Sunnah', 'psi': 'Pendidikan Syariah Islamiah',
     # Islamic studies (extended) — code-health S1 #4: these blocks had drifted out of
     # sync with subjects.ts (64 keys the grades form offers were unknown here, so a
     # student's entered grade was dropped AND the slip row bounced — a permanent
     # "missing subject" loop). test_subject_drift.py now pins the mirror.
+    # Bumi Sprint C (2026-10-29): the names are the result-slip wording (LP codes 5226-5228,
+    # 5301-5305, 5401-5405), so a whole slip line reads as the subject; was e.g. 'Manahij'.
     'tasawwur_islam': 'Tasawwur Islam', 'usul_aldin': 'Usul Al-Din',
-    'al_syariah': 'Al-Syariah', 'manahij': 'Manahij', 'lughah_arabiah': 'Lughah Arabiah',
-    'adab_balaghah': 'Adab & Balaghah', 'hifz_alquran': 'Hifz Al-Quran',
-    'maharat_alquran': 'Maharat Al-Quran', 'turath_islamiah': 'Turath Islamiah',
-    'turath_quran_sunnah': 'Turath Quran & Sunnah', 'turath_bahasa_arab': 'Turath Bahasa Arab',
+    'al_syariah': 'Al-Syariah', 'manahij': "Manahij Al-'Ulum Al-Islamiah",
+    'lughah_arabiah': "Al-Lughah Al-'Arabiah Al-Mu'asirah",
+    'adab_balaghah': 'Al-Adab Wa Al-Balaghah', 'hifz_alquran': 'Hifz Al-Quran',
+    'maharat_alquran': 'Maharat Al-Quran', 'turath_islamiah': 'Turath Dirasat Islamiah',
+    'turath_quran_sunnah': 'Turath Al-Quran dan Al-Sunnah', 'turath_bahasa_arab': 'Turath Bahasa Arab',
     # Arts & performance
     'reka_bentuk_grafik': 'Reka Bentuk Grafik', 'reka_bentuk_industri': 'Reka Bentuk Industri',
     'reka_bentuk_kraf': 'Reka Bentuk Kraf', 'multimedia_kreatif': 'Multimedia Kreatif',
@@ -143,14 +146,19 @@ def _band_to_grade(phrase: str) -> str:
     return _BAND_TO_GRADE.get(' '.join((phrase or '').lower().split()), '')
 
 
+_APOSTROPHES = re.compile("['‘’`]")      # straight, curly and back-tick apostrophes
+
+
 def _norm_lower_alnum(name: str) -> str:
     """Lowercase, collapse runs of non-alphanumerics to single spaces, strip.
 
     Named for its exact rule by code health H7: this app had four `_norm`s and no two agreed.
     Note that an accented letter is DELETED here rather than folded, so 'Café' reads as 'caf' —
     which is why this cannot be swapped for `results_doc._norm_fold_upper_alnum`.
+    An APOSTROPHE is deleted, not spaced (Bumi Sprint C): the Islamic subjects are printed with and
+    without one ("Mu'asirah" / "Muasirah", "Syari'ah" / "Syariah"), and both must read as one name.
     """
-    return re.sub(r'[^a-z0-9]+', ' ', (name or '').lower()).strip()
+    return re.sub(r'[^a-z0-9]+', ' ', _APOSTROPHES.sub('', (name or '').lower())).strip()
 
 
 def _norm_grade(g: str) -> str:

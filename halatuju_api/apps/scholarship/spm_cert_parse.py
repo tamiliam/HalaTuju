@@ -189,7 +189,9 @@ def _split_row(row, subject_edge, h, ax):
     if ax(row[0]) <= subject_edge:
         norm = [_norm_lower_alnum(t) for t in toks]
         for k in range(min(len(toks), _MAX_SUBJECT_WORDS), 0, -1):
-            seq = tuple(t for t in norm[:k] if t)
+            # One printed word can hold several (Bumi Sprint C): "AL-DIN" normalises to "al din",
+            # so the words are split again before the sequence is compared ("USUL AL-DIN").
+            seq = tuple(p for t in norm[:k] for p in t.split())
             if seq in _SUBJECT_SEQ and norm[k - 1]:
                 subject, n = _SUBJECT_SEQ[seq], k
                 break

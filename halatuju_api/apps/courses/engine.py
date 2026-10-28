@@ -248,8 +248,8 @@ def check_merit_probability(student_merit, course_cutoff):
 # subject in the frontend dropdown but is missing here, its grade silently
 # drops from the 30% stream weight (Sec2) to the 10% elective weight (Sec3).
 # Sciences appear in both SCIENCE and TECHNICAL pools, and a subject may live
-# in more than one pool (matches the official SPM elective grouping). Islamic-
-# stream subjects are intentionally excluded.
+# in more than one pool (matches the official SPM elective grouping). The Islamic-
+# studies subjects are electives in subjects.ts (no stream), so they are in no pool.
 SCIENCE_POOL = {'phy', 'chem', 'bio', 'addmath'}
 ARTS_POOL = {
     'ekonomi', 'poa', 'business', 'geo', 'b_tamil', 'b_cina', 'lukisan',

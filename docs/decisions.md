@@ -15484,3 +15484,14 @@ Mathematics, and Arts and Health. Sains Sukan sits in Arts and Health with Seni 
 teach them in arts classes, so both streams offer them. STPM is open-list: the stream is only a filter for the
 three main slots (never stored on the server); the elective slot offers every subject.
 **Revisit if:** MPM regroups its subjects, or a student reports a subject missing from the stream they take.
+
+## 2026-10-29 — Islamic SPM subjects are ordinary electives in grade entry (Bumi Sprint C; supersedes the 2026-03-18 "Three-stream SPM prereq UI (excluding vocational and Islamic)" ruling for grade entry)
+**Decision:** the 13 Islamic-studies SPM subjects join Pendidikan Islam as selectable ELECTIVES on the SPM grades
+form and in the STPM page's SPM block, under their result-slip names. No Islamic stream button, no religion
+question, no "Muslim only" label, per the owner ruling of 2026-10-28 ("Bumiputera-only courses and Islamic
+subjects come into scope").
+**Why electives, not a stream:** a stream would need a merit pool on both sides (engine.py mirrors subjects.ts)
+and would move how existing students are scored; as electives they only add what a student can enter. A
+student from an Islamic stream scores them at the elective weight, as Pendidikan Islam always has.
+**Revisit if:** students from Islamic-stream schools report a merit far below their UPU figure (the stream
+weight would then be wrong for them), or an official source places these subjects in a Form 6 group.

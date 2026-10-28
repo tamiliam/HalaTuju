@@ -24,7 +24,8 @@ Owner rulings (2026-10-28):
 ## Status
 - **Sprint A DONE 2026-10-28** — `docs/bumi-inventory-2026-10-28.md`. STPM data already exact → **Sprint E dropped**. Sprint D = 150 SPM courses (136 Bumi + 14 Islamic-subject). Sprint F parses `info_url` (kelayakan pages now need a login).
 - **Sprint B BUILT 2026-10-28** (branch `sprint-b-bumi-toggle`; migration 0087 migrate-first). Owner Option A: scholarship pickers show every course and never read the answer.
-- **NEXT = deploy B (owner), then Sprint C.**
+- **Sprint C BUILT 2026-10-29** (branch `bumi-sprint-c`, on TD-416): 13 Islamic subjects selectable as electives under their slip names; doc recognition 1.18.0; `BAHASA_ARAB_MUASIRAH_SPM` also met by `lughah_arabiah`. Golden masters unchanged. `SPM_PREREQ_OPTIONAL` turned out to be dead (the STPM SPM block reads `SPM_ALL_ELECTIVE_SUBJECTS`); `BA` left alone (no fixture uses it); `pathways.py` left alone (no source).
+- **NEXT = deploy B, TD-416 and C (owner), then Sprint D.**
 
 ## Roadmap — 6 sprints (now 5: E dropped)
 

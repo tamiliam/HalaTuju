@@ -71,19 +71,22 @@ export const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   b_cina: { bm: 'Bahasa Cina', en: 'Chinese' },
   b_tamil: { bm: 'Bahasa Tamil', en: 'Tamil' },
 
-  // Islamic studies (extended)
-  pqs: { bm: 'Pendidikan Al-Quran & Al-Sunnah', en: 'Quran & Sunnah Studies' },
+  // Islamic studies (extended). BM names are the result-slip wording (Lembaga Peperiksaan
+  // codes 5226-5228, 5301-5305, 5401-5405; the MOHE syarat text spells them the same way) so a
+  // slip row reads as the subject the student entered. academic_engine._SUBJECT_BM mirrors these.
+  // drift-test: halatuju_api/apps/scholarship/tests/test_subject_drift.py
+  pqs: { bm: 'Pendidikan Al-Quran dan Al-Sunnah', en: 'Quran & Sunnah Studies' },
   psi: { bm: 'Pendidikan Syariah Islamiah', en: 'Islamic Syariah' },
   tasawwur_islam: { bm: 'Tasawwur Islam', en: 'Islamic Worldview' },
   usul_aldin: { bm: 'Usul Al-Din', en: 'Islamic Theology' },
   al_syariah: { bm: 'Al-Syariah', en: 'Islamic Law' },
-  manahij: { bm: 'Manahij', en: 'Islamic Methodology' },
-  lughah_arabiah: { bm: 'Lughah Arabiah', en: 'Arabic Language Studies' },
-  adab_balaghah: { bm: 'Adab & Balaghah', en: 'Arabic Rhetoric' },
+  manahij: { bm: "Manahij Al-'Ulum Al-Islamiah", en: 'Islamic Sciences Methodology' },
+  lughah_arabiah: { bm: "Al-Lughah Al-'Arabiah Al-Mu'asirah", en: 'Modern Arabic Language' },
+  adab_balaghah: { bm: 'Al-Adab Wa Al-Balaghah', en: 'Arabic Literature & Rhetoric' },
   hifz_alquran: { bm: 'Hifz Al-Quran', en: 'Quran Memorisation' },
   maharat_alquran: { bm: 'Maharat Al-Quran', en: 'Quran Skills' },
-  turath_islamiah: { bm: 'Turath Islamiah', en: 'Islamic Heritage' },
-  turath_quran_sunnah: { bm: 'Turath Quran & Sunnah', en: 'Quran & Sunnah Heritage' },
+  turath_islamiah: { bm: 'Turath Dirasat Islamiah', en: 'Islamic Studies Heritage' },
+  turath_quran_sunnah: { bm: 'Turath Al-Quran dan Al-Sunnah', en: 'Quran & Sunnah Heritage' },
   turath_bahasa_arab: { bm: 'Turath Bahasa Arab', en: 'Arabic Language Heritage' },
 
   // Arts & performance
@@ -185,7 +188,9 @@ export const SPM_SUBJECTS: SpmSubject[] = [
   { id: 'chem', streams: ['science', 'technical'] },
   { id: 'bio', streams: ['science', 'technical'] },
   { id: 'addmath', streams: ['science', 'technical'] },
-  // Arts stream (full official list, Islamic-stream subjects excluded)
+  // Arts stream (full official list). The Islamic-studies subjects are electives below, not a
+  // stream, so they sit in no merit pool and a grade in one counts as an elective (Sec3), exactly
+  // as Pendidikan Islam always has.
   { id: 'ekonomi', streams: ['arts'] },
   { id: 'poa', streams: ['arts'] },
   { id: 'business', streams: ['arts'] },
@@ -239,6 +244,21 @@ export const SPM_SUBJECTS: SpmSubject[] = [
   { id: 'addsci', streams: ['technical'] },
   // Elective-only (not part of any stream pool)
   { id: 'islam' },
+  // Islamic-studies electives (owner ruling 2026-10-28: ordinary SPM subjects, open to anyone,
+  // no religion question). Elective-only, so no stream pool and no merit-pool mirror.
+  { id: 'tasawwur_islam' },
+  { id: 'pqs' },
+  { id: 'psi' },
+  { id: 'usul_aldin' },
+  { id: 'al_syariah' },
+  { id: 'manahij' },
+  { id: 'lughah_arabiah' },
+  { id: 'adab_balaghah' },
+  { id: 'hifz_alquran' },
+  { id: 'maharat_alquran' },
+  { id: 'turath_islamiah' },
+  { id: 'turath_quran_sunnah' },
+  { id: 'turath_bahasa_arab' },
   { id: 'moral' },
   { id: 'sci' },
   { id: 'multimedia' },
@@ -266,7 +286,8 @@ export const SPM_STREAM_POOLS: Record<string, SpmSubject[]> = {
 export const SPM_ALL_ELECTIVE_SUBJECTS = SPM_SUBJECTS.filter(s => !s.core)
 
 // SPM stream pools for STPM prerequisite entry
-// 4 streams: science, arts, technical, vocational (no Islamic/agama)
+// 4 streams: science, arts, technical, vocational. The Islamic-studies subjects are electives
+// (SPM_ALL_ELECTIVE_SUBJECTS, which the STPM page's SPM block also offers), not a stream.
 export const SPM_PREREQ_STREAM_POOLS: Record<string, SpmSubject[]> = {
   science: SPM_STREAM_POOLS.science,
   arts: SPM_STREAM_POOLS.arts,

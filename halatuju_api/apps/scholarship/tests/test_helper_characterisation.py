@@ -683,13 +683,14 @@ def _norm_table(outputs):
 
 class TestNormAcademicEngine(_Table):
     """Lower-case, every run of non-alphanumerics to one space. Digits SURVIVE; accented letters
-    are DROPPED (they are not in `[a-z0-9]`), so 'Café' matches 'Caf'."""
+    are DROPPED (they are not in `[a-z0-9]`), so 'Café' matches 'Caf'. An apostrophe is deleted
+    outright (Bumi Sprint C: "SYARI'AH" and "SYARIAH" are one subject on a slip)."""
 
     def test_the_table(self):
         self.check(_fn(academic_engine, '_norm_lower_alnum', '_norm'), _norm_table([
             '', '', '', 'abc', 'abc def', 'a b c', 'ahmad bin ali', 'caf',
             '', 'abc123', '123', 'a b', 'x',
-            'm ller', 'nurul a p samy', 'o brien', '', '',
+            'm ller', 'nurul a p samy', 'obrien', '', '',   # apostrophe DELETED (Bumi Sprint C)
         ]))
 
 

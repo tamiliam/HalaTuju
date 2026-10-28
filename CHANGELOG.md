@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi coverage Sprint C — Islamic SPM subjects in grade entry - 2026-10-29
+
+- **The 13 Islamic-studies SPM subjects can now be entered** (owner ruling 2026-10-28: ordinary SPM subjects,
+  open to anyone; no religion question, no "Muslim only" label). Tasawwur Islam, Pendidikan Al-Quran dan
+  Al-Sunnah, Pendidikan Syariah Islamiah, Usul Al-Din, Al-Syariah, Manahij Al-'Ulum Al-Islamiah, Al-Lughah
+  Al-'Arabiah Al-Mu'asirah, Al-Adab Wa Al-Balaghah, Hifz Al-Quran, Maharat Al-Quran and the three Turath
+  subjects join Pendidikan Islam as ELECTIVES on the SPM grades form and in the STPM page's SPM block (both read
+  `SPM_ALL_ELECTIVE_SUBJECTS`). No new stream, so no merit pool changes: they score as electives (Sec3), as
+  Pendidikan Islam always has. Live trigger: BrightPath request #48 (a slip listing TASAWWUR ISLAM read
+  "Not entered yet" and the coach looped the student to "Adjust my grades").
+- **Slip names.** `SUBJECT_NAMES` (web) and `academic_engine._SUBJECT_BM` (api) now use the result-slip wording
+  (Lembaga Peperiksaan codes 5226-5228, 5301-5305, 5401-5405; the MOHE Syarat text agrees): six short forms
+  were replaced (e.g. "Manahij" -> "Manahij Al-'Ulum Al-Islamiah", "Turath Islamiah" -> "Turath Dirasat
+  Islamiah", "Pendidikan Al-Quran & Al-Sunnah" -> "... dan Al-Sunnah"). The subject normaliser now DELETES an
+  apostrophe instead of spacing it, so "SYARI'AH" and "SYARIAH", "MU'ASIRAH" and "MUASIRAH" read as one name.
+  The certificate reader splits a hyphenated word before comparing ("USUL AL-DIN" never matched before).
+  Document recognition `MODEL_VERSION` 1.17.1 -> **1.18.0** (no signature family or weight change).
+- **STPM entry.** `BAHASA_ARAB_MUASIRAH_SPM` is now also met by `lughah_arabiah` (`stpm_engine.SPM_CODE_ALSO`),
+  counted once; the old `bahasa_arab` reading is kept, so no existing result moves. Course-page labels for the
+  Islamic requirement codes use the same slip names. `report_engine.SUBJECT_LABELS` names all 14.
+- **Unchanged on purpose:** merit pools, `pathways.py` (no KPM source pins where the Islamic subjects sit in the
+  Form 6 Sains Sosial groups), `map_subject_code`'s dead `BA -> b_arab` (no fixture uses `BA`; golden-master file),
+  the scholarship profile summary (`profile_engine._SUBJECT_GROUP`; unlisted keys read "other subjects").
+- **Tests:** the exclusion tests now pin the new truth (electives, never stream subjects); new
+  `test_islamic_subject_slips.py` (every slip name, both apostrophe spellings, the exact slip and certificate
+  readers, the #48 shape end to end) and `test_islamic_spm_subjects.py` (merit, STPM prerequisites, report labels).
+  Golden masters unchanged: SPM 5,319, STPM 2,026.
+
 ## TD-416 — scholarship/sponsor message slices (web first-load JS) - 2026-10-29
 
 - **Two more slices left the English catalogue every route downloads** (TD-360 Sprint 2, the owner's go):
