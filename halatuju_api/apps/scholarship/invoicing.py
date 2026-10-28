@@ -162,6 +162,17 @@ def readiness(organisation, period_month, *, today=None):
     for b in charge['blocked']:
         problems.append(_problem('charge_blocked', b['reason'], True))
 
+    # ⚠ ABSOLUTE, not overridable (owner, 2026-10-29): *"Make sure every feature has a quote and
+    # acceptance from BrightPath."* A feature is priced work, so one the organisation never agreed
+    # to is a charge for something nobody ordered. There IS a remedy — quote it and have it
+    # accepted — so "issue it anyway" must not be on offer. Bugs and hand-typed hours are outside
+    # this; see `request_hours.consent_gaps` for why.
+    for gap in platform_cost.consent_gaps(organisation, period_month):
+        problems.append(_problem(
+            'feature_not_accepted',
+            f'Request {gap["request_id"]} ("{gap["title"][:80]}") is billed as a feature in '
+            f'{label} but is missing {gap["missing"]} from {organisation.name}.', False))
+
     unbilled = [u for u in platform_cost.unbilled_request_hours(organisation)
                 if u['worked_month'] == period_month]
     if unbilled:
@@ -197,12 +208,39 @@ def printable_module(text):
     return _REQUEST_TAG_RE.sub('', text or '').strip()
 
 
+def _sub_description(detail, label):
+    """What one request says as a sub-item: its own wording, then its request number in brackets.
+
+    Owner, 2026-10-29: *"each feature request, too, include the req no in brackets."* The number
+    comes back to the paper here — but at the END and in round brackets, which reads as a
+    reference, rather than at the front in square ones, which read like a bug tracker and is what
+    `printable_module` strips. The two are not in conflict: the stored `[REQ-12]` prefix is still
+    never printed, and the suffix is composed from the id rather than from the stored text.
+
+    The suffix is measured FIRST and the wording truncated around it, so a very long title can
+    never push the number off the end of a 300-character column.
+    """
+    words = printable_module(detail['module']) or f'Development, {label}'
+    if detail.get('request_id') is None:
+        return words[:300]
+    suffix = f' (REQ-{detail["request_id"]})'
+    return f'{words[:300 - len(suffix)]}{suffix}'
+
+
 def build_lines(charge, period_month):
     """The frozen, tenant-safe lines for a charge. Carries NO cost and NO margin.
 
+    Development work is GROUPED (owner, 2026-10-29): a *"Feature requests"* parent carrying the
+    group's hours, rate and amount, with one sub-item per request under it; and, when there were
+    any, a *"Bug reports"* line carrying its hours at a rate of RM0.00 and no sub-items at all —
+    *"these need not be itemised"*. Bugs are free because the 15% development margin already pays
+    for them; see `platform_cost.development_charge`.
+
     ⚠ Checks its own arithmetic before returning, the way `invoice_parsers.ParsedInvoice` refuses
     to exist unless its lines reach the printed total: if the lines do not add up to the charge's
-    subtotal, an invoice that does not add up must not be issued.
+    subtotal, an invoice that does not add up must not be issued. Sub-items are summed TOO, even
+    though each is RM0.00 by construction — the check is there to catch the day that stops being
+    true, and skipping them would make a double-counted group invisible to it.
     """
     label = month_label(period_month)
     out = []
@@ -218,13 +256,35 @@ def build_lines(charge, period_month):
                                         f'messaging), {label}{_share_note(ln)}'),
                         'amount_myr': ln['amount_myr']})
         elif cat == 'development':
-            for d in ln.get('detail', []):
-                out.append({'category': cat, 'quantity': d['hours'],
-                            'unit_amount_myr': ln['billed_rate_myr'],
-                            'description': (printable_module(d['module'])
-                                            or f'Development, {label}')[:300],
-                            'amount_myr': d['amount_myr']})
+            detail = ln.get('detail', [])
+            features = [d for d in detail if d.get('kind') != 'bug']
+            bugs = [d for d in detail if d.get('kind') == 'bug']
+            if features:
+                out.append({
+                    'category': cat,
+                    'quantity': ln.get('feature_hours'),
+                    'unit_amount_myr': ln['billed_rate_myr'],
+                    'description': f'Feature requests, {label}'[:300],
+                    'amount_myr': sum((Decimal(d['amount_myr']) for d in features),
+                                      Decimal('0.00')),
+                    # ⚠ A child's money is 0.00, always. The parent above carries the group's
+                    # whole amount, so the Amount column still adds up to the subtotal.
+                    '_children': [{'category': cat, 'quantity': d['hours'],
+                                   'unit_amount_myr': None,
+                                   'description': _sub_description(d, label),
+                                   'amount_myr': Decimal('0.00')} for d in features],
+                })
+            if bugs:
+                out.append({
+                    'category': cat,
+                    'quantity': ln.get('bug_hours'),
+                    'unit_amount_myr': Decimal('0.00'),
+                    'description': f'Bug reports, {label}'[:300],
+                    'amount_myr': Decimal('0.00'),
+                })
     total = sum((Decimal(x['amount_myr']) for x in out), Decimal('0.00'))
+    total += sum((Decimal(c['amount_myr']) for x in out for c in x.get('_children', [])),
+                 Decimal('0.00'))
     if total != Decimal(charge['subtotal_myr']):
         raise InvoicingError(
             'lines_do_not_add_up',
@@ -322,8 +382,20 @@ def issue_invoice(organisation, period_month, *, issued_by_email='', override_re
                 override_reason=stored_override,
                 replaces=replaces,
             )
-            InvoiceLine.objects.bulk_create([
-                InvoiceLine(invoice=invoice, position=i + 1, **ln) for i, ln in enumerate(lines)])
+            # ⚠ Created one at a time, NOT bulk_create: a sub-item needs its parent's primary
+            # key, and `bulk_create` only fills those in on some backends. `position` keeps
+            # counting across both levels, so the document's order is held by one number and a
+            # child always sorts straight after its parent.
+            position = 0
+            for ln in lines:
+                children = ln.pop('_children', [])
+                position += 1
+                parent = InvoiceLine.objects.create(
+                    invoice=invoice, position=position, **ln)
+                for child in children:
+                    position += 1
+                    InvoiceLine.objects.create(
+                        invoice=invoice, position=position, parent=parent, **child)
     except IntegrityError:
         # The one-live-invoice constraint: somebody issued the same month a moment ago.
         raise InvoiceRefused([_problem(

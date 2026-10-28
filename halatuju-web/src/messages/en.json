@@ -5541,7 +5541,8 @@
       },
       "kind": {
         "bug": "Bug report",
-        "feature": "Feature request"
+        "feature": "Feature request",
+        "filedAs": "filed as {kind}"
       },
       "component": {
         "applications": "Applications",

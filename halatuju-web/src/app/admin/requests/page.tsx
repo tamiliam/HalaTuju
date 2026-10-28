@@ -13,6 +13,7 @@ import {
 import { formatFileSize } from '@/lib/scholarship'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
+  effectiveKind, filedKindDiffers,
   REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey, requestActionsFor,
   listAnalysisTag, listAnalysisTagKey,
 } from '@/lib/requestStatus'
@@ -348,7 +349,14 @@ export default function AdminRequestsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-ground-900 truncate">{r.title}</span>
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(r.kind))}</span>
+                      {/* The ADJUDICATED kind — what the organisation is charged on. See
+                          `effectiveKind`. */}
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(effectiveKind(r)))}</span>
+                      {filedKindDiffers(r) && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-caution-50 text-caution-700">
+                          {t('admin.requests.kind.filedAs', { kind: t(kindLabelKey(r.kind)) })}
+                        </span>
+                      )}
                       {needsAnswer && (
                         <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-caution-100 text-caution-700">{t('admin.requests.list.answerNeeded')}</span>
                       )}

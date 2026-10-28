@@ -81,6 +81,16 @@ def render_invoice_html(invoice):
     for ln in invoice.lines.all():
         qty = f'{ln.quantity}' if ln.quantity is not None else ''
         unit = rm(ln.unit_amount_myr) if ln.unit_amount_myr is not None else ''
+        # ⚠ A SUB-ITEM PRINTS NO AMOUNT, not even RM0.00. Its parent carries the group's money, and
+        # a column of RM0.00 beside real figures invites the reader to wonder what was waived. The
+        # indent and the smaller grey type are what say "this is detail of the line above".
+        if ln.parent_id is not None:
+            rows.append(
+                f'<tr class="row"><td width="58%" class="small muted" '
+                f'style="padding-left:18px">{escape(ln.description)}</td>'
+                f'<td width="10%" class="num small muted">{qty}</td>'
+                f'<td width="14%" class="num"></td><td width="18%" class="num"></td></tr>')
+            continue
         rows.append(
             f'<tr class="row"><td width="58%">{escape(ln.description)}</td>'
             f'<td width="10%" class="num">{qty}</td><td width="14%" class="num">{unit}</td>'

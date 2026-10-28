@@ -16,6 +16,7 @@ import ta from '@/messages/ta.json'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, hasStatusTone,
   kindLabelKey, laneLabelKey, requestActionsFor, hasUnansweredQuestions,
+  effectiveKind, filedKindDiffers,
   canAttach, REQUEST_OPEN_FOR_SHAPING, canComment, REQUEST_TERMINAL,
   REQUEST_COMPONENT_TREE, REQUEST_COMPONENT_PARENTS, REQUEST_COMPONENT_VALUES,
   requestSubComponents, componentLabelKey,
@@ -313,5 +314,34 @@ describe("the requester's 'answer' window", () => {
       .filter((s) => requestActionsFor('super', s, 'feature', false).includes('ask'))
     expect(answerable.length).toBeGreaterThan(askable.length)
     expect(askable).not.toContain('quoted')
+  })
+})
+
+describe('the kind that decides the money (owner, 2026-10-29)', () => {
+  /** The owner opened request 5, read "Bug report" and expected it to be free. It was priced as a
+   *  feature, because triage had adjudicated it as one and the pill printed the FILED kind. These
+   *  pin the resolution rule so the screen, `_effective_kind` and `billable_kind` cannot drift. */
+  test('the triage ruling wins over what was filed', () => {
+    expect(effectiveKind({ kind: 'bug', triaged_kind: 'feature' })).toBe('feature')
+    expect(effectiveKind({ kind: 'feature', triaged_kind: 'bug' })).toBe('bug')
+  })
+
+  test('an untriaged request falls back to what was filed', () => {
+    expect(effectiveKind({ kind: 'bug', triaged_kind: '' })).toBe('bug')
+    expect(effectiveKind({ kind: 'bug' })).toBe('bug')
+  })
+
+  test('nothing at all is an empty string, never a guessed kind', () => {
+    expect(effectiveKind({})).toBe('')
+    expect(effectiveKind({ kind: '', triaged_kind: '' })).toBe('')
+  })
+
+  test('the disagreement is reported only when there really is one', () => {
+    expect(filedKindDiffers({ kind: 'bug', triaged_kind: 'feature' })).toBe(true)
+    expect(filedKindDiffers({ kind: 'bug', triaged_kind: 'bug' })).toBe(false)
+    // Not yet triaged is not a disagreement — there is only one opinion so far.
+    expect(filedKindDiffers({ kind: 'bug', triaged_kind: '' })).toBe(false)
+    expect(filedKindDiffers({ kind: 'bug' })).toBe(false)
+    expect(filedKindDiffers({})).toBe(false)
   })
 })

@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing — the first real invoices: back-dating, grouped development lines, bug work free (migration 0181) - 2026-10-29
+
+The owner asked for the first real invoices (July onwards, each dated the 15th of the following
+month, July fully discounted) and to see them as PDFs before any code was written. Five documents
+were rendered from the real production ledger into a throwaway database first, and that is what
+found the work — none of it was visible from reading the code.
+
+- **An invoice can be dated the day it should have gone out.** `issued_on` is settable, bounded by
+  `invoicing.issue_date_for`: never after today, never on or before the last day of the billed
+  month, never in a closed calendar year (the number follows the printed year). `due_on` follows
+  the printed date. `_refuse_out_of_order` refuses a date earlier than the last invoice already
+  numbered that year, so issue the OLDEST month first. The monthly job passes nothing and is
+  unchanged.
+- **July and August were unreachable from the browser.** The endpoint has taken `?month=` since it
+  shipped; the screen only ever asked for the server's default. It now has a month picker and a
+  plain-text issue-date box (never a native date input — those follow the browser locale).
+- **Development lines are GROUPED** (owner, 2026-10-29): a *"Feature requests"* line carries the
+  group's hours, rate and amount, with one sub-item per request under it showing its own hours and
+  its number in round brackets — `show year SPM was taken (REQ-12)`. `InvoiceLine.parent`
+  (migration `scholarship/0181`). A sub-item carries NO money, so the Amount column still adds up
+  to the subtotal, and `build_lines` checks exactly that before an invoice can exist.
+- **Bug work is charged at zero, and says so.** A *"Bug reports"* line shows the hours at a rate of
+  RM0.00 and is deliberately not itemised. This makes an existing rule visible rather than new: the
+  owner's own note on the 15% development margin says *"The margin should help cover bug fixing
+  which is not billed separately"* — so charging a bug as a feature collected for it twice.
+  `platform_cost.billable_kind` decides per row, and **only the owner's `triaged_kind` may move
+  money** — never the submitter's `kind` and never Gemini's `ai_draft_kind`. Hours with no request
+  behind them stay billable.
+- **The `[REQ-n]` prefix still never prints** (`invoicing.printable_module`) and still stays in
+  `OrgBuildHours.module`, which is what makes a request countable as billed.
+- **A feature cannot be billed without a quote AND an acceptance** (owner, 2026-10-29).
+  `request_hours.consent_gaps` checks every billed feature in the month and `readiness` raises
+  `feature_not_accepted` as an **absolute** refusal — the override button does not work on it,
+  because the remedy is to quote it and have it accepted. Bugs are exempt (free, so nothing to
+  agree to) and so are hand-typed hours rows with no request behind them. All 16 finished requests
+  on production already pass. An acceptance made while signed in as the organisation's own
+  org_admin counts; nothing records WHICH account pressed it (TD-418).
+- **The request pill now shows the kind you are CHARGED on.** It printed `kind` (what the
+  organisation filed) while the money came from `triaged_kind` (what triage adjudicated), so a
+  request could read "Bug report" on screen and be billed as a feature with nothing saying so —
+  which is exactly what the owner found on request 5. One helper, `effectiveKind`, now answers for
+  both surfaces, an amber chip names the filed kind when the two disagree, and
+  `effective-kind-drift.test.ts` reads the two server resolvers so the three cannot drift.
+- **Request 14 re-ruled to a bug** (data): filed as a bug and read as a bug by the engineer's own
+  analysis, it had been triaged as a feature — the one of the seven bug-filed requests that
+  disagreed with its own evidence. August falls RM46.
+- **Supplier bills:** Supabase's INVOICE now parses as well as its RECEIPT ("Amount due" as well as
+  "Amount paid"); a billed window that has not started is refused rather than filed under a month
+  that has not closed; a window straddling the new year takes the year its START falls in.
+  `record_platform_cost --month <m> --convert-held` gives a held foreign row its ringgit figure at
+  the ECB closing rate for the month's last day — nothing could do that before, so Anthropic's
+  September line had sat unconverted since import.
+- **Rate change (data, not code):** the development hourly rate is **RM20** from 1 July 2026
+  (RM20 + 15% = RM23.00 billed), reduced from RM50 on the owner's instruction before any invoice
+  had ever been issued, so nothing was re-priced.
+- Moves only, same sprint, same guards: `AdminOrgBuildHoursView` → `views_admin/build_hours.py`;
+  the months/dates/numbering block → `invoice_dates.py`; the request/hours block
+  (`request_module_tag`, `request_id_from_module`, `billable_kind`, `unbilled_request_hours`,
+  `worked_date`) → `request_hours.py`. Every one of the three files ends smaller than it started
+  and its `oversize_files` entry was lowered, never raised (`platform_cost.py` 681 → 659).
+- ⚠ **Still open:** `metered margin_pct` has no 1 July row, so July prints one line instead of two
+  (a rate-table gap, not a code fault); `triaged_kind` reads 'feature' for all 16 finished requests
+  including 7 filed as bugs, so the Bug reports line prints nothing until they are re-triaged.
+
 ## Bumi + Islamic coverage — Sprint B: the Bumiputera answer (migration 0087, migrate-first) - 2026-10-28
 
 - **Students say whether they are Bumiputera.** "A Few More Details" asks Malaysians Yes/No (required, beside

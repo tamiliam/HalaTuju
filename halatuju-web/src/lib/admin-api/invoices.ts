@@ -17,6 +17,12 @@ export interface InvoiceLineRow {
   /** 'infrastructure' | 'metered' | 'development' */
   category: string
   description: string
+  /**
+   * One request listed UNDER a "Feature requests" group line. A sub-item carries its own hours
+   * and no money — the group above it holds the whole group's amount — so the screen indents it
+   * and leaves the rate and amount cells empty. Older invoices have no sub-items at all.
+   */
+  is_sub_item?: boolean
   /** Hours, development lines only. */
   quantity: string | null
   /** The BILLED hourly rate, so quantity x unit = amount. */

@@ -537,3 +537,35 @@ describe('the quote form stands on the analysis', () => {
 })
 
 afterEach(cleanup)
+
+describe('the kind pill shows what the organisation is CHARGED on (owner, 2026-10-29)', () => {
+  /**
+   * The owner opened request 5, read "Bug report" on it, and reasonably concluded the work was
+   * free — bug fixing is covered by the development margin. It was being billed as a feature,
+   * because triage had adjudicated it as one and the pill printed the FILED kind instead. Nothing
+   * on the page said the two disagreed. These are RENDERED for the reason at the top of this file:
+   * the resolution helpers have their own unit tests, but only a render proves what a reader sees.
+   */
+  it('prints the triage ruling, not what was filed', async () => {
+    await show({ kind: 'bug', triaged_kind: 'feature' })
+    expect(screen.getByText('admin.requests.kind.feature')).toBeTruthy()
+    expect(screen.queryByText('admin.requests.kind.bug')).toBeNull()
+  })
+
+  it('says so when triage disagreed with what was filed', async () => {
+    await show({ kind: 'bug', triaged_kind: 'feature' })
+    expect(screen.getByTestId('filed-kind-differs')).toBeTruthy()
+  })
+
+  it('stays quiet when the two agree', async () => {
+    await show({ kind: 'bug', triaged_kind: 'bug' })
+    expect(screen.getByText('admin.requests.kind.bug')).toBeTruthy()
+    expect(screen.queryByTestId('filed-kind-differs')).toBeNull()
+  })
+
+  it('shows the filed kind, and no disagreement, before triage has happened', async () => {
+    await show({ status: 'submitted', kind: 'bug', triaged_kind: '' })
+    expect(screen.getByText('admin.requests.kind.bug')).toBeTruthy()
+    expect(screen.queryByTestId('filed-kind-differs')).toBeNull()
+  })
+})

@@ -20,6 +20,26 @@ management commands own those, so there is exactly one place each kind of row is
 """
 from decimal import Decimal
 
+# Requests and the hours recorded against them live in `request_hours.py` (moves only, 2026-10-29:
+# this file reached 760 lines against a 701-line allowance). Re-exported so every existing
+# `platform_cost.<name>` caller keeps working, including `mock.patch.object(platform_cost, ...)`.
+#
+# ⚠ BOUND AS NAMES, not `from .request_hours import ...`. A plain re-export import reads as an
+# unused import to the linter and needs an F401 suppression to silence it — and the count of those
+# suppressions is itself a budget that may not rise (`TestNoNewBlindSpots`). Binding through the
+# module USES the import, so there is nothing to suppress. Rebinding also keeps the names
+# patchable: `development_charge` looks `billable_kind` up as a global at call time.
+# (That guard counts the marker as a literal string, so it counts one written in prose too — this
+# comment deliberately describes the marker instead of spelling it.)
+from . import request_hours
+
+billable_kind = request_hours.billable_kind
+consent_gaps = request_hours.consent_gaps                       # the quote + acceptance check
+request_id_from_module = request_hours.request_id_from_module
+request_module_tag = request_hours.request_module_tag
+unbilled_request_hours = request_hours.unbilled_request_hours
+worked_date = request_hours.worked_date
+
 # ── The attribution rule ──────────────────────────────────────────────────────
 # A SKU is attributable when its volume moves with what tenants DO. Matched on the SKU
 # description because that is the grain the invoice is actually billed at — matching on the
@@ -284,6 +304,18 @@ def development_charge(organisation, period_month):
     hours x hourly_rate x (1 + development margin), each factor read from the rate table as at
     the FIRST of the billed month. Returns a dict, never a bare number, because a charge on an
     invoice needs to show its own working — the tenant is entitled to see how it was reached.
+
+    ⚠ **BUG HOURS ARE WORKED AND COUNTED, AND CHARGED AT ZERO.** The owner's own note on the 15%
+    development margin, written 2026-09-11, says why: *"The margin should help cover bug fixing
+    which is not billed separately."* So a bug is already paid for inside the hourly rate, and
+    billing it again as a feature would charge for the same work twice. `billable_kind` makes the
+    call per row; bug rows keep their hours (they are real time, and `hours`/`subtotal_myr` still
+    include them) and take `amount_myr` 0.00.
+
+    ⚠ **`subtotal_myr` IS THE COST OF ALL THE TIME, INCLUDING THE FREE PART.** It is the figure the
+    owner's screen puts beside the charge to answer *"is RM50/hour enough?"*, and dropping the
+    unbilled hours out of it would make the margin look better than it is. A month that was all
+    bug-fixing should read as costly and recover nothing — because that is what happened.
     """
     from .models import OrgBuildHours
 
@@ -292,7 +324,8 @@ def development_charge(organisation, period_month):
     hours = sum((r.hours for r in rows), Decimal('0.0'))
     if not rows:
         return {'month': period_month, 'hours': Decimal('0.0'), 'lines': [],
-                'rate_myr': None, 'margin_pct': None,
+                'rate_myr': None, 'margin_pct': None, 'feature_hours': Decimal('0.0'),
+                'bug_hours': Decimal('0.0'), 'billed_rate_myr': None,
                 'subtotal_myr': Decimal('0.00'), 'charge_myr': Decimal('0.00')}
 
     from .models import BillingRate
@@ -309,12 +342,31 @@ def development_charge(organisation, period_month):
     # supposed to add up. Identical to the old figure whenever the billed rate is whole cents —
     # which RM50 +15% = RM57.50 is.
     billed_rate = (rate * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
-    lines = [{'module': r.module, 'hours': r.hours, 'basis': r.basis,
-              'amount_myr': (r.hours * billed_rate).quantize(Decimal('0.01'))} for r in rows]
+    lines = []
+    for r in rows:
+        kind = billable_kind(r.module)
+        free = kind == 'bug'
+        lines.append({
+            'module': r.module,
+            'request_id': request_id_from_module(r.module),
+            'kind': kind,
+            'hours': r.hours,
+            'basis': r.basis,
+            # A bug's rate is printed as RM0.00 rather than left blank: the owner asked for the
+            # hours AND the rate to show, so the arrangement reads off the paper instead of
+            # needing to be explained.
+            'unit_amount_myr': Decimal('0.00') if free else billed_rate,
+            'amount_myr': (Decimal('0.00') if free
+                           else (r.hours * billed_rate).quantize(Decimal('0.01'))),
+        })
     charge = sum((ln['amount_myr'] for ln in lines), Decimal('0.00'))
+    feature_hours = sum((ln['hours'] for ln in lines if ln['kind'] != 'bug'), Decimal('0.0'))
+    bug_hours = sum((ln['hours'] for ln in lines if ln['kind'] == 'bug'), Decimal('0.0'))
     return {
         'month': period_month,
         'hours': hours,
+        'feature_hours': feature_hours,
+        'bug_hours': bug_hours,
         'lines': lines,
         'rate_myr': rate,
         'margin_pct': margin,
@@ -338,89 +390,11 @@ def apply_margin(amount_myr, category, period_month):
             * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
 
 
-# ── The bill (2026-09-11) ─────────────────────────────────────────────────────
+# ── The bill (2026-09-11) ─────────────────────────────
 
-def request_module_tag(request_id) -> str:
-    """The marker that ties an `OrgBuildHours` line back to the request it came from.
-
-    A convention, not a foreign key, because `OrgBuildHours` deliberately predates this and
-    holds hours that never came from a request at all. The tag is what makes a request
-    countable as billed without narrowing the model to requests only.
-    """
-    return f'[REQ-{request_id}]'
-
-
-def unbilled_request_hours(organisation=None):
-    """Finished request work that carries quoted hours and has NEVER been billed.
-
-    The gap the owner found: *"You also need to include the work we do fulfilling requests,
-    which are billed."* Requests carry `quote_hours`; `OrgBuildHours` carries what is billed;
-    on production the first held 27.5 hours and the second held nothing at all. Nothing joined
-    them, so finished work simply never reached an invoice.
-
-    ⚠ **THE MONTH IS WHEN WE WORKED, NEVER WHEN THE REQUEST WAS RAISED** (owner, 2026-09-11:
-    *"we should consider only when we worked and not when the request was raised."*). On
-    production the two differ substantially — by raised date July carries 4.0 hours and August
-    23.5; by worked date July carries **none at all** and August 27.0, because the two requests
-    raised on 30 July were both scheduled and finished on 1 August. Billing by the raised date
-    would have put four hours into a month where nobody worked.
-
-    `scheduled_for` is the signal: a date field holding the day the work was slotted in. Where a
-    request has none, `updated_at` stands in — it is weaker, because any later edit moves it, so
-    `worked_basis` says which of the two was used and the recorded `basis` repeats it.
-
-    ⚠ **This still does NOT bill anything.** It proposes a month; a person confirms it. The
-    suggestion is good enough to prefill and not good enough to charge on unattended.
-
-    A request counts as billed once an `OrgBuildHours` row names it — matched on the request id
-    written into `module`, which is what the screen prefills.
-    """
-    from .models import OrgBuildHours, OrgRequest
-
-    qs = OrgRequest.objects.filter(status='done').exclude(quote_hours=None)
-    if organisation is not None:
-        qs = qs.filter(organisation=organisation)
-
-    recorded = list(OrgBuildHours.objects.values_list('module', flat=True))
-    out = []
-    for r in qs.select_related('organisation').order_by('id'):
-        tag = request_module_tag(r.id)
-        if any(tag in m for m in recorded):
-            continue
-        worked_on, worked_basis = worked_date(r)
-        out.append({
-            'request_id': r.id,
-            'organisation_id': r.organisation_id,
-            'organisation': r.organisation.name,
-            'title': r.title,
-            'hours': r.quote_hours,
-            # Prefilled for the screen's "record these hours" action, so the tag that makes the
-            # request countable as billed is written by the code, not typed by a human.
-            'module': f'{tag} {r.title}'[:200],
-            # WHEN WE WORKED — the month these hours belong to, and how that was decided.
-            'worked_on': worked_on,
-            'worked_month': worked_on.strftime('%Y-%m'),
-            'worked_basis': worked_basis,
-        })
-    return out
-
-
-def worked_date(request):
-    """The day the work happened, and which field said so.
-
-    Returns ``(date, 'scheduled'|'last touched')``.
-
-    ⚠ NOT `created_at`. That is the day somebody ASKED, which on production sits in a different
-    month from the work for a third of the quoted requests. `scheduled_for` is the day the work
-    was slotted in and is the right answer where it exists; `updated_at` is the fallback and is
-    weaker, because any later edit to the request moves it. The caller reports which was used
-    rather than presenting both as equally sound.
-    """
-    from django.utils import timezone
-
-    if request.scheduled_for:
-        return request.scheduled_for, 'scheduled'
-    return timezone.localtime(request.updated_at).date(), 'last touched'
+# `request_module_tag`, `request_id_from_module`, `billable_kind`, `unbilled_request_hours` and
+# `worked_date` moved to `request_hours.py` on 2026-10-29 and are re-exported at the top of this
+# file, so `platform_cost.<name>` still reaches them.
 
 
 def adjustment_for(organisation, period_month):
@@ -592,6 +566,10 @@ def charge_for(organisation, period_month):
         lines.append({
             'category': 'development',
             'hours': dev['hours'],
+            # The split the invoice groups on. `hours` stays the TOTAL worked, so a screen that
+            # shows it keeps telling the truth about how much time the month took.
+            'feature_hours': dev['feature_hours'],
+            'bug_hours': dev['bug_hours'],
             'rate_myr': dev['rate_myr'],
             'margin_pct': dev['margin_pct'],
             'cost_myr': dev['subtotal_myr'],

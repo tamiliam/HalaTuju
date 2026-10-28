@@ -105,6 +105,14 @@ class InvoiceLine(models.Model):
         ('development', 'Development'),
     ]
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='lines')
+    # ⚠ A SUB-ITEM CARRIES DETAIL, NEVER MONEY. Owner, 2026-10-29: the individual requests belong
+    # *under* a "Feature requests" line rather than beside the two cost lines. The parent holds the
+    # group's hours, the billed rate and the whole group's amount; a child holds only its own
+    # hours, and its `amount_myr` is always 0.00. That is deliberate, not a gap: a reader who adds
+    # the Amount column with a calculator must reach the subtotal, and money at both levels would
+    # make the column total twice. `build_lines` checks exactly that before an invoice can exist.
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE,
+                               related_name='children')
     position = models.PositiveSmallIntegerField()
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     description = models.CharField(max_length=300)

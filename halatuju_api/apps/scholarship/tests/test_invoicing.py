@@ -245,19 +245,39 @@ class TestIssue(InvoiceWorld):
         self.assertEqual(inv.subtotal_myr, Decimal('856.75'))
         self.assertEqual(inv.total_myr, Decimal('856.75'))
         amounts = [ln.amount_myr for ln in inv.lines.all()]
-        self.assertEqual(amounts, [Decimal('115.00'), Decimal('23.00'),
-                                   Decimal('575.00'), Decimal('143.75')])
+        # The two cost lines, then the "Feature requests" PARENT carrying the whole group
+        # (575.00 + 143.75), then its two sub-items, which carry hours and no money.
+        self.assertEqual(amounts, [Decimal('115.00'), Decimal('23.00'), Decimal('718.75'),
+                                   Decimal('0.00'), Decimal('0.00')])
         self.assertEqual(sum(amounts), inv.subtotal_myr)
         self.assertEqual(inv.status, 'issued')
 
-    def test_every_development_line_multiplies_out(self):
-        """A tenant checks hours x rate = amount with a calculator. It must agree."""
-        dev = InvoiceLine.objects.filter(invoice=self.issue(), category='development')
-        self.assertEqual(dev.count(), 2)
-        for ln in dev:
-            self.assertEqual(ln.unit_amount_myr, Decimal('57.50'))   # RM50 + 15%
-            self.assertEqual((ln.quantity * ln.unit_amount_myr).quantize(Decimal('0.01')),
-                             ln.amount_myr)
+    def test_the_amount_column_still_adds_up_once_the_group_has_sub_items(self):
+        """The invariant the grouping could have broken: a reader adding the Amount column with a
+        calculator must reach the subtotal. Money lives at ONE level, never both."""
+        inv = self.issue()
+        self.assertEqual(sum(ln.amount_myr for ln in inv.lines.all()), inv.subtotal_myr)
+        for child in inv.lines.filter(parent__isnull=False):
+            with self.subTest(line=child.description):
+                self.assertEqual(child.amount_myr, Decimal('0.00'))
+                self.assertIsNone(child.unit_amount_myr)
+                self.assertIsNotNone(child.quantity)
+
+    def test_the_feature_group_multiplies_out(self):
+        """A tenant checks hours x rate = amount with a calculator. It must agree.
+
+        Since 2026-10-29 the arithmetic the reader checks is on the GROUP line: total hours x the
+        billed rate = the group's amount. The sub-items under it carry hours only, so there is
+        exactly one row with a rate on it and no way to add the column twice."""
+        inv = self.issue()
+        group = InvoiceLine.objects.get(invoice=inv, category='development', parent__isnull=True)
+        self.assertEqual(group.description, 'Feature requests, August 2026')
+        self.assertEqual(group.unit_amount_myr, Decimal('57.50'))   # RM50 + 15%
+        self.assertEqual((group.quantity * group.unit_amount_myr).quantize(Decimal('0.01')),
+                         group.amount_myr)
+        # And the group's hours are its sub-items' hours, not something computed separately.
+        self.assertEqual(group.quantity,
+                         sum(c.quantity for c in group.children.all()))
 
     def test_lines_that_do_not_multiply_out_at_whole_cents_still_add_up_to_the_charge(self):
         """RM45.55 + 12.5% is 51.24375 — not whole cents. The charge is the sum of the lines at

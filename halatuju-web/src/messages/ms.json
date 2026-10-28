@@ -5541,7 +5541,8 @@
       },
       "kind": {
         "bug": "Laporan pepijat",
-        "feature": "Permintaan ciri"
+        "feature": "Permintaan ciri",
+        "filedAs": "difailkan sebagai {kind}"
       },
       "component": {
         "applications": "Permohonan",

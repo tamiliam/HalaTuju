@@ -9,8 +9,8 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-10-28** it runs to **TD-416**, with **413 ids carrying a defining entry
-and 137 of those open** (TD-416 raised by the back-issue-invoices sprint on 2026-10-28, agreed with the Bumi session; TD-414 and TD-415 raised by the Consolidation Review on 2026-10-28, which also wrote the missing defining entries of TD-397 to TD-399 — they had existed only as index pointers; TD-412 and TD-413 raised by the billing-settings change on 2026-10-28; TD-408 and TD-411 closed by the TD-408/411 sprint on 2026-10-28; TD-411 raised by the TD-410 impact count on 2026-10-27; TD-410 raised by the TD-409 review on 2026-10-27 and closed by the TD-410 sprint the same day on the owner's ruling; TD-409 raised by the TD-404 final review on 2026-10-27 and closed by the TD-409 sprint the same day; TD-408 raised by the TD-404 review on 2026-10-27; TD-404 closed by the TD-404 sprint on 2026-10-27; TD-407 closed by the TD-407 sprint on 2026-10-27; TD-407 raised by the corpus C4 live re-run on 2026-10-26; TD-406 raised by the corpus-gaps C2 final review on 2026-10-26; TD-403 closed by the TD-403 sprint on 2026-10-26; TD-404 and TD-405 raised by the review of the both-routes STR ruling on 2026-10-25; TD-403 raised by the review of the salary-route STR ruling on 2026-10-25; TD-401 and TD-402 closed by the TD-401/402 sprint on 2026-10-25; TD-402 raised by the TD-390 final review on 2026-10-25; TD-390 closed and TD-400 and TD-401 raised by the TD-390 sprint and its review on 2026-10-25; TD-397 to TD-399 raised by the AI-outage sprint's final review and the owner on 2026-10-25; TD-390 to TD-396 raised by the AI-outage sprint on 2026-10-24, and TD-391 and TD-392 closed by it the same day after its review; TD-344 and TD-360 closed by TD-360 Sprint 1, the admin message slice, on 2026-10-21, and TD-388 and TD-389 raised by its review the same day; TD-387 raised by sources-and-referrals Sprint D on 2026-10-19, which also closed TD-386 (a) and (b) — (c) and (d) keep it open; TD-380 and TD-381 closed by sources-and-referrals Sprint C going live on 2026-10-19; TD-379 closed by sources-and-referrals Sprint B going live on 2026-10-19; TD-386 raised by the sources-and-referrals Sprint B review on 2026-10-18; TD-383 to TD-385 raised by the Consolidation Review on 2026-10-18; TD-335 closed and TD-382 raised by the staff lifecycle sprint on 2026-10-09; TD-380 and TD-381 raised by the per-gift referral sources adversarial review on 2026-10-09; TD-230 closed by per-gift referral sources Sprint 2 on 2026-10-08 and TD-379 raised by it; TD-371 to TD-375 raised by request #31's adversarial review on 2026-10-08 and all five closed the same day — TD-371, TD-372, TD-373 and TD-375 by the follow-up sprint, TD-374 by both services going live — and TD-376, an owner decision, and TD-377 raised by that sprint's review rounds and both closed the same day by the TD-376/377 sprint on the owner's "yes", TD-378 raised by its review; TD-369 and TD-370 raised by the org-timing Sprint 1 review on 2026-10-07, TD-369 closed the same day by its fix;TD-360 to TD-362 raised by the Consolidation Review that day, below; TD-352 closed, TD-363 to TD-368 raised and TD-364 closed by the TD-352 sprint the same day) — every older one read and verified on 2026-09-30 (159 at the review; seven
+a running log; as of **2026-10-29** it runs to **TD-418**, with **415 ids carrying a defining entry
+and 139 of those open** (TD-417 and TD-418 raised by the grouped-development-lines sprint on 2026-10-29; TD-416 raised by the back-issue-invoices sprint on 2026-10-28, agreed with the Bumi session; TD-414 and TD-415 raised by the Consolidation Review on 2026-10-28, which also wrote the missing defining entries of TD-397 to TD-399 — they had existed only as index pointers; TD-412 and TD-413 raised by the billing-settings change on 2026-10-28; TD-408 and TD-411 closed by the TD-408/411 sprint on 2026-10-28; TD-411 raised by the TD-410 impact count on 2026-10-27; TD-410 raised by the TD-409 review on 2026-10-27 and closed by the TD-410 sprint the same day on the owner's ruling; TD-409 raised by the TD-404 final review on 2026-10-27 and closed by the TD-409 sprint the same day; TD-408 raised by the TD-404 review on 2026-10-27; TD-404 closed by the TD-404 sprint on 2026-10-27; TD-407 closed by the TD-407 sprint on 2026-10-27; TD-407 raised by the corpus C4 live re-run on 2026-10-26; TD-406 raised by the corpus-gaps C2 final review on 2026-10-26; TD-403 closed by the TD-403 sprint on 2026-10-26; TD-404 and TD-405 raised by the review of the both-routes STR ruling on 2026-10-25; TD-403 raised by the review of the salary-route STR ruling on 2026-10-25; TD-401 and TD-402 closed by the TD-401/402 sprint on 2026-10-25; TD-402 raised by the TD-390 final review on 2026-10-25; TD-390 closed and TD-400 and TD-401 raised by the TD-390 sprint and its review on 2026-10-25; TD-397 to TD-399 raised by the AI-outage sprint's final review and the owner on 2026-10-25; TD-390 to TD-396 raised by the AI-outage sprint on 2026-10-24, and TD-391 and TD-392 closed by it the same day after its review; TD-344 and TD-360 closed by TD-360 Sprint 1, the admin message slice, on 2026-10-21, and TD-388 and TD-389 raised by its review the same day; TD-387 raised by sources-and-referrals Sprint D on 2026-10-19, which also closed TD-386 (a) and (b) — (c) and (d) keep it open; TD-380 and TD-381 closed by sources-and-referrals Sprint C going live on 2026-10-19; TD-379 closed by sources-and-referrals Sprint B going live on 2026-10-19; TD-386 raised by the sources-and-referrals Sprint B review on 2026-10-18; TD-383 to TD-385 raised by the Consolidation Review on 2026-10-18; TD-335 closed and TD-382 raised by the staff lifecycle sprint on 2026-10-09; TD-380 and TD-381 raised by the per-gift referral sources adversarial review on 2026-10-09; TD-230 closed by per-gift referral sources Sprint 2 on 2026-10-08 and TD-379 raised by it; TD-371 to TD-375 raised by request #31's adversarial review on 2026-10-08 and all five closed the same day — TD-371, TD-372, TD-373 and TD-375 by the follow-up sprint, TD-374 by both services going live — and TD-376, an owner decision, and TD-377 raised by that sprint's review rounds and both closed the same day by the TD-376/377 sprint on the owner's "yes", TD-378 raised by its review; TD-369 and TD-370 raised by the org-timing Sprint 1 review on 2026-10-07, TD-369 closed the same day by its fix;TD-360 to TD-362 raised by the Consolidation Review that day, below; TD-352 closed, TD-363 to TD-368 raised and TD-364 closed by the TD-352 sprint the same day) — every older one read and verified on 2026-09-30 (159 at the review; seven
 closed the same day by the Now-tier sweep, eight on 2026-10-01 by Next-tier batch 1, one,
 TD-319, raised by that batch's review, twelve closed the same day by Next-tier batch 2, one,
 TD-320, raised by its review, two, TD-255 and TD-257, closed by Now sprint 1, one, TD-321,
@@ -182,6 +182,8 @@ Class C, half a day each. Good small-change-lane work; several go together.
 ### Later — visible but larger, or small hygiene — 55
 Class C at medium or large size, and class D that is small.
 
+- **TD-418** — `org_requests.approve` records `approved_at` but throws away the `admin` and `by_role` it is handed, so a row proves an acceptance happened and cannot say who made it. The owner holds a BrightPath org_admin account as well as a super one, so the customer's own acceptance cannot be told from the owner's on their behalf. Add `approved_by` / `approved_by_role`, as `approve_analysis` already does. *(C · S · raised 2026-10-29 by the grouped-development-lines sprint)*
+- **TD-417** — Supplier tax is pooled across the month and apportioned pro-rata over platform / metered / development, so Anthropic's SST puts ~RM9 of marked-up tax on a tenant's charge although Anthropic's own cost is deliberately excluded from it. Pre-existing; nothing has been billed. Bucket a tax row against its own source's rows instead. Owner's ruling — it changes what a customer pays. *(C · M · raised 2026-10-29 by the grouped-development-lines sprint)*
 - **TD-416** — The first-load JS median has sat within 0.12 kB of its 180 kB line across three consecutive sprints, and each sprint has paid for its own feature with a lazy boundary to stay under. The next non-admin string turns the deploy gate red for whoever happens to add it. Take real weight off the shared path, or re-measure and re-record the line from a floor somebody has looked for. *(C · S · raised 2026-10-28 by the back-issue-invoices sprint, agreed with the Bumi session)*
 - **TD-415** — A cockpit test raises a query at `shortlisted`, a stage the server refuses: the shared fixture never serves `officer_requests`, so every rendered cockpit test sees the forms whatever stage it names. Fixture serves it by the server's rule; the test moves to `interviewing`. Test-only. *(D · S · raised 2026-10-28 by the Consolidation Review, from request #40's note)*
 - **TD-414** — Scholarship and reports reach into the course engine's results rules name by name (21 of 22 new cross-app edges since 2026-10-18: `exam_questions`, `stpm_pngk`, `stpm_engine`); name the public surface and test that it is the only door. Moves only. *(D · S · raised 2026-10-28 by the Consolidation Review's code-health reading, the third-accept rule)*
@@ -6739,4 +6741,73 @@ with nothing to spare. The two honest options are:
 note read rather than the median alone.
 
 **Trigger:** the first non-admin string that turns the gate red — or, better, before that.
+*(C · S)*
+
+### [TD-417] Supplier tax is pooled, so one supplier's tax lands on a tenant's charge - medium
+
+**Raised 2026-10-29** by the grouped-development-lines sprint, while rendering September's invoice.
+
+`platform_cost.charge_for` pools **every** tax row in the month and apportions it pro-rata across
+the three cost buckets — platform, metered and development — in proportion to their size. Each
+bucket's share is then marked up and charged like the cost it sits beside.
+
+That is defensible for tax on something the tenant uses. It is not defensible for tax on something
+deliberately excluded from their bill. Anthropic is excluded by design: `NOT_A_PLATFORM_SERVICE`
+records it as *"a cost of delivering development hours, recovered through the hourly rate; not a
+service the organisation uses"*, and `charge_for` is careful not to mark it up — *"Marking it up as
+infrastructure would recover Claude twice"*. Its **tax** is not given the same care.
+
+September 2026, from the real ledger:
+
+| | RM |
+|---|---|
+| tax pool (Anthropic SST 32.62 + Workspace 1.40) | 34.02 |
+| cost base it is spread over (platform 126.73 + metered 0.95 + development 407.80) | 535.48 |
+| tax landing on the tenant's platform + metered share | 8.11 |
+| …charged, after the 15% margin | **9.33** |
+
+So about **RM9 of a RM185 invoice — near 5% — is marked-up tax on our own Claude subscription**,
+on a document that is otherwise careful never to show the tenant a cost. The development bucket
+absorbs the rest, which is why the leak is small rather than the whole RM32.62.
+
+⚠ **This is PRE-EXISTING and was never billed.** It predates the grouping work and no invoice has
+been issued, so nothing is owed to anybody. It is recorded rather than fixed because it changes
+what a customer pays, which is the owner's ruling to make, not a tidy-up.
+
+**The fix, when agreed:** bucket a tax row against the non-tax rows of **its own `source`** instead
+of pooling it — Anthropic's SST then falls wholly into development and is absorbed, Workspace's
+service tax falls wholly into platform. Pro-rata would remain for a source whose own rows straddle
+buckets (GCP's `Invoice/Tax` genuinely does).
+
+**Trigger:** the owner's decision, or the first invoice where the share is material.
+*(C · M)*
+
+### [TD-418] An acceptance has a timestamp but no name on it - medium
+
+**Raised 2026-10-29** by the grouped-development-lines sprint, from the owner's instruction that
+every billed feature carry *"a quote and acceptance from BrightPath (including me signed in as
+BrightPath org admin)"*.
+
+`org_requests.approve(req, admin, *, by_role)` records `approved_at` and `status` and **throws
+`by_role` and `admin` away**. So the row proves an acceptance happened and cannot say who made it.
+
+That matters more than it looks, for one specific reason the owner named themselves: they hold a
+BrightPath **org_admin** account as well as a super account, and `approve` admits both roles. An
+acceptance made from either is valid — but a reader a year from now, or an auditor asking whether
+the customer agreed to RM4,715 of work on request 38, cannot tell the customer's own acceptance
+from the owner's acceptance on their behalf. Both are legitimate; they are not the same fact.
+
+Compare `org_requests.approve_analysis`, three hundred lines up in the same module, which stores
+`approved_by` precisely so provenance lives on the row — *"Provenance lives on THIS row
+(`authored_by`, `approved_by`)"*. The request-level acceptance never got the same treatment.
+
+`request_hours.consent_gaps` therefore checks only THAT an acceptance exists, which is all the data
+supports, and says so in its own docstring rather than implying more.
+
+**The fix:** `OrgRequest.approved_by` (FK to PartnerAdmin, nullable) and `approved_by_role`, set in
+`approve()` from the arguments it already receives; shown on the request detail page beside the
+accepted date. Existing rows stay null — honestly unknown, not back-filled with a guess.
+
+**Trigger:** the first time somebody asks who accepted a quote — or an invoice being disputed,
+whichever comes first.
 *(C · S)*

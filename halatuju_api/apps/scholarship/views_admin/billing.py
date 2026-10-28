@@ -186,6 +186,10 @@ class AdminPlatformCostsView(_AdminBase):
                 'organisation': org.name,
                 'lines': [{**ln,
                            'hours': _money(ln.get('hours')),
+                           # The feature/bug split the invoice groups on. Stringified for the same
+                           # reason as everything else here: a bare Decimal renders as a float.
+                           'feature_hours': _money(ln.get('feature_hours')),
+                           'bug_hours': _money(ln.get('bug_hours')),
                            'rate_myr': _money(ln.get('rate_myr')),
                            'margin_pct': _money(ln.get('margin_pct')),
                            'cost_myr': _money(ln.get('cost_myr')),
@@ -197,6 +201,7 @@ class AdminPlatformCostsView(_AdminBase):
                            # Decimal there as a FLOAT (the sponsor-card lesson), so it is
                            # stringified here like every other figure on this payload.
                            'detail': [{**d, 'hours': _money(d['hours']),
+                                       'unit_amount_myr': _money(d.get('unit_amount_myr')),
                                        'amount_myr': _money(d.get('amount_myr'))}
                                       for d in ln.get('detail', [])]}
                           for ln in c['lines']],

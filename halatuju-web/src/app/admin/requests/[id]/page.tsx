@@ -15,7 +15,8 @@ import {
   doneOrgRequest, aiRerunOrgRequest, type OrgRequestDetail,
 } from '@/lib/admin-api'
 import {
-  statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor,
+  statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor, effectiveKind,
+  filedKindDiffers,
   hasUnansweredQuestions, canAttach, type RequestAction, analysisBadge, analysisBadgeKey,
   analysisBadgeTone, analysisApproveKind, analysisApproveCopy,
 } from '@/lib/requestStatus'
@@ -167,7 +168,16 @@ export default function AdminRequestDetailPage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-ground-900">{req.title}</h1>
           <div className="text-xs text-ground-500 mt-1 flex items-center gap-2 flex-wrap">
-            <span className="px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(req.kind))}</span>
+            {/* The ADJUDICATED kind, because that is what the organisation is charged on. When
+                triage disagreed with what they filed, both are shown — the owner read "Bug report"
+                here on 2026-10-29 and was charging for it as a feature. */}
+            <span className="px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(effectiveKind(req)))}</span>
+            {filedKindDiffers(req) && (
+              <span className="px-1.5 py-0.5 rounded-full bg-caution-50 text-caution-700"
+                data-testid="filed-kind-differs">
+                {t('admin.requests.kind.filedAs', { kind: t(kindLabelKey(req.kind)) })}
+              </span>
+            )}
             {req.component && (
               <span className="px-1.5 py-0.5 rounded-full bg-category-2-surface text-category-2-ink">{t(`admin.requests.component.${req.component}`)}</span>
             )}

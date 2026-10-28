@@ -985,8 +985,57 @@ never sent it) and an issue-date box, in `halatuju-web/src/components/admin/Invo
   import time and never returns, so a bill imported before month-end stayed unconverted forever.
 - **Supabase's INVOICE parses as well as its RECEIPT** ("Amount due" / "Amount paid"), and a window that has
   not started is refused rather than filed under a month that has not closed.
+- **Development lines are GROUPED (owner, 2026-10-29).** A *"Feature requests, <month>"* line carries the
+  group's hours, the billed rate and the whole group's amount; one sub-item per request sits under it
+  (`InvoiceLine.parent`, migration `scholarship/0181`) showing its own hours and its number in ROUND brackets
+  — `show year SPM was taken (REQ-12)`. ⚠ **A sub-item carries NO money** (`amount_myr` 0.00, no rate), so a
+  reader adding the Amount column still reaches the subtotal; `build_lines` checks that invariant and refuses.
+  The payload sends `is_sub_item` (a boolean, never the parent id) and the screen indents on it.
+- **Bug work is charged at ZERO and shows on the paper.** A *"Bug reports, <month>"* line carries the hours at
+  a rate of RM0.00 and is deliberately NOT itemised. ⚠ This is not a new rule — the owner's own note on the 15%
+  development margin says *"The margin should help cover bug fixing which is not billed separately"*, so
+  charging a bug as a feature collected for the same work twice. `platform_cost.billable_kind` decides per
+  hours row and **ONLY `OrgRequest.triaged_kind` may move money** — never the submitter's `kind`, never
+  Gemini's `ai_draft_kind`. An untagged hours row, an untriaged request and a dangling tag all read as
+  FEATURE (billable): a human typing the row already made that call, and reading it as free would discard work
+  nobody waived. `development_charge.subtotal_myr` still counts the free hours, because it is what answers
+  "is the rate enough?".
+- **A FEATURE CANNOT BE BILLED WITHOUT A QUOTE AND AN ACCEPTANCE** (owner, 2026-10-29: *"Make sure
+  every feature has a quote and acceptance from BrightPath (including me signed in as BrightPath org
+  admin)."*). `request_hours.consent_gaps` checks each billed feature in the month;
+  `readiness` raises `feature_not_accepted` and it is **ABSOLUTE — the override does not work on
+  it**, because the remedy is to quote it and have it accepted. ⚠ Two deliberate exemptions: a BUG
+  (free, so nothing to consent to) and an hours row with NO `[REQ-n]` tag (a super typed it and
+  meant it). An acceptance from the org's own org_admin counts — and is the only answer available,
+  since `approve()` throws away the `by_role` it is handed (TD-418).
+- ⚠ **THE REQUEST PILL SHOWS THE KIND THAT PRICES, NOT THE ONE THAT WAS FILED.** Both screens used
+  to print `kind`, so request 5 read "Bug report" while being billed as a feature from
+  `triaged_kind`, with nothing saying so. `requestStatus.effectiveKind` is now the single rule
+  (`triaged_kind || kind`), `filedKindDiffers` drives an amber "filed as …" chip, and
+  `halatuju-web/src/lib/__tests__/effective-kind-drift.test.ts` reads
+  `org_requests._effective_kind` AND `request_hours.billable_kind` so the three cannot drift.
+  Bite-checked from both sides.
+- **The hourly rate is RM20 from 1 July 2026** (RM20 + 15% = **RM23.00** billed). Reduced from RM50 on the
+  owner's instruction 2026-10-29, before any invoice had been issued, so nothing was re-priced. ⚠ The 1 August
+  RM50 row was AMENDED rather than superseded, which the append-only doctrine on `BillingRate` otherwise
+  forbids — safe only because `rate_in_force` takes the latest row on or before the month start, so a July row
+  alone would have left RM50 winning for August onward, and because no document depended on RM50.
+- **Who bills UPFRONT:** Anthropic (window 3rd→3rd) and Supabase (8th→7th); Workspace and Twilio bill the
+  calendar month in arrears. An upfront bill is filed under the month its window STARTS, with a `period_note`
+  saying so. Anthropic is excluded from a tenant's charge (a development cost recovered by the hourly rate),
+  so a missing Anthropic bill barely moves an invoice; a missing Supabase bill moves it by ~RM117.
 - ⚠ **OWNER ACTIONS before the first real issue:** add a `metered` `margin_pct` row effective **2026-07-01**
-  (without it July prints one line, not two), import the September bills, and record August's 27.0 hours.
+  (without it July prints one line, not two), import the September bills (and the October Anthropic +
+  Supabase ones), and record August's 27.0 hours and September's 0.5.
+- **The kind question is SETTLED (owner, 2026-10-29): the TRIAGE decision prices, not what was filed.** Of
+  the seven requests filed as bugs, six were read as features by Gemini or by the engineer's own analysis
+  and the owner accepted that reading — so they are priced, and that is not a defect. Only **request 14**
+  disagreed with its own evidence (filed bug, engineer said bug, triaged feature) and it was re-ruled to a
+  bug on 2026-10-29. Do NOT reopen the other six without the owner saying so.
+- ⚠ **Known gap, pre-existing:** tax is pooled across all suppliers and apportioned pro-rata over
+  platform / metered / development. Anthropic's SST therefore puts ~RM9 of tax on a tenant's infrastructure
+  charge even though Anthropic's own cost is excluded. Owner decision pending; a fix would bucket each tax row
+  against its own source.
 - ⚠ **Bundle budget: 0.118 kB under the 180 kB median on MAIN** — measured on both main and this branch,
   identical. The deploy gate prints and passes at this margin, but main is one non-admin string from red.
 

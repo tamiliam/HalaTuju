@@ -59,6 +59,11 @@ def _invoice_payload(inv, *, for_super):
             'position': ln.position,
             'category': ln.category,
             'description': ln.description,
+            # ⚠ A BOOLEAN, not the parent's id. The screen only ever needs to know whether to
+            # indent a row, and `position` already puts a child straight after its parent. Sending
+            # the id would invite the screen to rebuild a tree it has no reason to hold, and the
+            # ids are database keys a tenant-facing payload has no business carrying.
+            'is_sub_item': ln.parent_id is not None,
             'quantity': _invoice_money(ln.quantity),
             'unit_amount_myr': _invoice_money(ln.unit_amount_myr),
             'amount_myr': _invoice_money(ln.amount_myr),

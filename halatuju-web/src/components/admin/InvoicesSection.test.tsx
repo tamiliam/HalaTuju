@@ -47,6 +47,69 @@ beforeEach(() => {
   mockApi.voidInvoice.mockResolvedValue(inv({ status: 'void' }))
 })
 
+describe('grouped development lines (owner, 2026-10-29)', () => {
+  /** The screen must read like the PDF: a group line carrying the money, its requests indented
+   *  under it carrying hours only, and a bug line showing hours at a rate of RM0.00. */
+  const grouped = [
+    { position: 1, category: 'infrastructure', description: 'Platform infrastructure, August 2026',
+      quantity: null, unit_amount_myr: null, amount_myr: '163.89' },
+    { position: 2, category: 'development', description: 'Feature requests, August 2026',
+      quantity: '24.5', unit_amount_myr: '23.00', amount_myr: '563.50' },
+    { position: 3, category: 'development', description: 'show year SPM was taken (REQ-12)',
+      is_sub_item: true, quantity: '6.0', unit_amount_myr: null, amount_myr: '0.00' },
+    { position: 4, category: 'development', description: 'Bug reports, August 2026',
+      quantity: '2.5', unit_amount_myr: '0.00', amount_myr: '0.00' },
+  ]
+
+  async function openDetail() {
+    mockApi.getInvoices.mockResolvedValue({ invoices: [inv({ lines: grouped })] })
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    await waitFor(() => within(container).getAllByText('INV-2026-0003'))
+    fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
+    await waitFor(() => within(container).getAllByTestId('detail-7'))
+    return container
+  }
+
+  it('indents a sub-item and prints no money on it', async () => {
+    const container = await openDetail()
+    const cell = within(container).getAllByText('show year SPM was taken (REQ-12)')[0]
+    expect(cell.className).toContain('pl-6')
+    const cells = cell.closest('tr')!.querySelectorAll('td')
+    expect(cells[1].textContent).toBe('6.0')        // its own hours
+    expect(cells[2].textContent).toBe('')           // no rate
+    expect(cells[3].textContent).toBe('')           // and no amount, so the column still adds up
+  })
+
+  it('keeps the rate and the amount on the group line above it', async () => {
+    const container = await openDetail()
+    const cells = within(container).getAllByText('Feature requests, August 2026')[0]
+      .closest('tr')!.querySelectorAll('td')
+    expect(cells[1].textContent).toBe('24.5')
+    expect(cells[2].textContent).toContain('23.00')
+    expect(cells[3].textContent).toContain('563.50')
+  })
+
+  it('shows a bug line with its hours and a rate of zero', async () => {
+    const container = await openDetail()
+    const cells = within(container).getAllByText('Bug reports, August 2026')[0]
+      .closest('tr')!.querySelectorAll('td')
+    expect(cells[1].textContent).toBe('2.5')
+    expect(cells[2].textContent).toContain('0.00')
+    expect(cells[3].textContent).toContain('0.00')
+  })
+
+  it('leaves an older invoice with no sub-items looking exactly as it did', async () => {
+    mockApi.getInvoices.mockResolvedValue({ invoices: [inv()] })
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    await waitFor(() => within(container).getAllByText('INV-2026-0003'))
+    fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
+    await waitFor(() => within(container).getAllByTestId('detail-7'))
+    const cell = within(container).getAllByText('Payments module')[0]
+    expect(cell.className).not.toContain('pl-6')
+    expect(cell.closest('tr')!.querySelectorAll('td')[3].textContent).toContain('575.00')
+  })
+})
+
 describe('what a tenant is offered', () => {
   it('shows its invoices and nothing to issue, send, pay, void or configure', async () => {
     mockApi.getInvoices.mockResolvedValue({ invoices: [inv({ status: 'sent', sent_at: '2026-09-15T01:00:00Z' })] })

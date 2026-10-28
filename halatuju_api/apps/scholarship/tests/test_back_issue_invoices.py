@@ -70,17 +70,43 @@ class TestTheTagStaysInTheDatabase(InvoiceWorld):
     """The tag must leave the invoice WITHOUT leaving the bookkeeping."""
 
     def setUp(self):
+        # ⚠ THE REQUEST HAS TO EXIST, quoted and accepted. This fixture used to write an hours row
+        # naming request 12 while no request 12 existed anywhere — harmless when the only question
+        # was how the words print, and caught on 2026-10-29 by the new absolute refusal to bill a
+        # feature with no quote or acceptance (`request_hours.consent_gaps`), which reads a tag
+        # pointing at nothing as exactly the gap it exists to stop. The guard is right; the fixture
+        # was not a state production could ever be in.
+        from django.utils import timezone
+
+        from apps.courses.models_staff import PartnerAdmin
+        from apps.scholarship.models import OrgRequest
+
+        admin = PartnerAdmin.objects.create(
+            owning_organisation=self.org, role='org_admin', is_active=True,
+            email='finance@brightpath.example')
+        OrgRequest.objects.create(
+            pk=12, organisation=self.org, submitted_by=admin, kind='feature',
+            title='show year SPM was taken', description='show year SPM was taken',
+            status='done', triaged_kind='feature', quote_hours=Decimal('6.0'),
+            quoted_at=timezone.now(), approved_at=timezone.now())
         self.hours = OrgBuildHours.objects.create(
             organisation=self.org, period_month='2026-08',
             module=f'{platform_cost.request_module_tag(12)} show year SPM was taken',
             hours=Decimal('6.0'), basis='quoted on the request')
 
     def test_the_invoice_line_carries_no_tag(self):
+        """The SQUARE-bracket prefix never prints. The number itself does, at the end.
+
+        The owner asked for both, five hours apart on 2026-10-29, and they are not in conflict:
+        `[REQ-12] show year SPM was taken` reads like a bug tracker and is what gets stripped;
+        `show year SPM was taken (REQ-12)` reads like a reference and is what the owner wants on
+        a sub-item. The suffix is composed from the request id, never from the stored text.
+        """
         inv = self.issue()
         printed = [ln.description for ln in inv.lines.all()]
-        self.assertIn('show year SPM was taken', printed)
+        self.assertIn('show year SPM was taken (REQ-12)', printed)
         self.assertFalse([d for d in printed if '[REQ-' in d],
-                         f'a request tag reached the paper: {printed}')
+                         f'a bug-tracker tag reached the paper: {printed}')
 
     def test_the_hours_row_still_names_the_request_so_it_counts_as_billed(self):
         self.issue()
@@ -96,7 +122,7 @@ class TestTheTagStaysInTheDatabase(InvoiceWorld):
         self.hours.save(update_fields=['module'])
         inv = self.issue()
         descriptions = [ln.description for ln in inv.lines.all()]
-        self.assertIn('Development, August 2026', descriptions)
+        self.assertIn('Development, August 2026 (REQ-12)', descriptions)
         self.assertFalse([d for d in descriptions if d.strip() == ''])
 
 

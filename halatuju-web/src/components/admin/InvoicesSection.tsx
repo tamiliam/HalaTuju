@@ -96,12 +96,14 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
         {/* `tabular-nums` on the figure cells only, not the body: it switches face to Plex
             (Lexend has no even digits), and the descriptions must stay in Lexend (TD-310). */}
         <tbody>
+          {/* A sub-item is indented and prints NO amount, matching the PDF exactly: its parent
+              carries the group's money, so showing RM0.00 here would read as something waived. */}
           {inv.lines.map((ln) => (
             <tr key={ln.position} className="border-b">
-              <td className="px-2 py-1.5 text-ground-900">{ln.description}</td>
+              <td className={ln.is_sub_item ? 'py-1.5 pl-6 pr-2 text-ground-600' : 'px-2 py-1.5 text-ground-900'}>{ln.description}</td>
               <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.quantity ?? ''}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.unit_amount_myr ? formatMyr(ln.unit_amount_myr) : ''}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-ground-900">{formatMyr(ln.amount_myr)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.is_sub_item || !ln.unit_amount_myr ? '' : formatMyr(ln.unit_amount_myr)}</td>
+              <td className="px-2 py-1.5 text-right tabular-nums text-ground-900">{ln.is_sub_item ? '' : formatMyr(ln.amount_myr)}</td>
             </tr>
           ))}
           <tr><td colSpan={3} className="px-2 pt-2 text-right text-ground-500">{t('admin.billing.charge.subtotal')}</td>

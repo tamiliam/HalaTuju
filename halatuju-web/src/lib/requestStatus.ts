@@ -73,6 +73,29 @@ export function kindLabelKey(kind: string): string {
   return `admin.requests.kind.${kind}`
 }
 
+/**
+ * The kind that DECIDES THE MONEY: the triage ruling, falling back to what was filed.
+ *
+ * ⚠ Mirrors the server's `org_requests._effective_kind` and `platform_cost.billable_kind`. A bug is
+ * free (the 15% development margin covers bug fixing), so this is the field a customer is charged
+ * on — which is why it must not be re-derived differently in three places.
+ * drift-test: halatuju-web/src/lib/__tests__/effective-kind-drift.test.ts
+ *
+ * Why it exists as a helper at all: the request pills used to print `kind`, what the ORGANISATION
+ * filed it as. On 2026-10-29 the owner opened request 5, read "Bug report" and reasonably expected
+ * it to be free; it was priced as a feature, because triage had adjudicated it as one and nothing
+ * on the page said so. The pill now shows the adjudicated kind and `filedKindDiffers` surfaces the
+ * disagreement instead of hiding it.
+ */
+export function effectiveKind(req: { kind?: string; triaged_kind?: string }): string {
+  return req.triaged_kind || req.kind || ''
+}
+
+/** True when triage reached a different answer from the one the organisation filed. */
+export function filedKindDiffers(req: { kind?: string; triaged_kind?: string }): boolean {
+  return Boolean(req.triaged_kind && req.kind && req.triaged_kind !== req.kind)
+}
+
 /** i18n key for a lane label ('small_change' | 'sprint'). */
 export function laneLabelKey(lane: string): string {
   return `admin.requests.lane.${lane}`
