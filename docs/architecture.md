@@ -49,7 +49,7 @@ database. v3.0.0 is that **plus a multi-tenant bursary platform**. Structurally:
 
 - **Eligibility** is a hybrid engine: `CourseRequirement` rows load into a pandas DataFrame at start-up
   (`CoursesConfig.ready()`); `engine.py` (SPM) and `stpm_engine.py` (STPM) are pinned by golden
-  masters — SPM 5,319, STPM 2,026. Matric/STPM pre-U tracks are `pathways.py`.
+  masters — SPM 5,319, STPM 2,025 (2,026 until 2026-10-29: one subject counted twice). Matric/STPM pre-U tracks are `pathways.py`.
 - **Ranking** (`ranking_engine.py`, `stpm_ranking.py`) adds fit scores from the quiz signals
   (`quiz_engine.py`, `stpm_quiz_engine.py`, RIASEC for STPM).
 - **Catalogue upkeep** is manual and annual (MOHE e-Panduan scrapes, UP_TVET inventory); the

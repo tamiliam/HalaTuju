@@ -85,3 +85,30 @@ class TheReportPrompt(SimpleTestCase):
         for key in ISLAMIC_KEYS:
             with self.subTest(key=key):
                 self.assertEqual(SUBJECT_LABELS[key], _SUBJECT_BM[key])
+
+
+class EachSubjectCountsOncePerGroup(SimpleTestCase):
+    """Owner ruling 2026-10-29: a student's subject counts at most once per SPM prerequisite group.
+    The fixture lists repeat codes (AL_ADAB_SPM twice in UA6145021 / UA6145033) and map several codes
+    to one key (EKONOMI_SPM + EKONOMI_ASAS_SPM -> ekonomi), which counted one grade two or three times."""
+
+    def test_adab_balaghah_alone_fails_a_two_subject_group(self):
+        req = _req({'subjects': ['AL_ADAB_SPM', 'AL_ADAB_SPM', 'BAHASA_ARAB_SPM'], 'min_count': 2,
+                    'min_grade': 'C'})
+        self.assertFalse(check_spm_prerequisites(req, {'math': 'C', 'adab_balaghah': 'C'}))
+        self.assertTrue(check_spm_prerequisites(req, {'adab_balaghah': 'C', 'bahasa_arab': 'C'}))
+
+    def test_ekonomi_alone_fails_the_ua6314002_group(self):
+        # UA6314002 (UPSI, Ekonomi (Kewangan Islam)) — the row the STPM golden master lost.
+        req = _req({'min_count': 2, 'min_grade': 'C', 'subjects': [
+            'PERDAGANGAN_SPM', 'EKONOMI_ASAS_SPM', 'PRINSIP_PERAKAUNAN_SPM', 'EKONOMI_SPM',
+            'PERNIAGAAN_SPM', 'BAHASA_ARAB_SPM', 'BAHASA_ARAB_SPM', 'BAHASA_ARAB_TINGGI_SPM']},
+            {'min_count': 1, 'min_grade': 'C', 'subjects': ['MATH', 'ADD_MATH']})
+        self.assertFalse(check_spm_prerequisites(req, {'math': 'A', 'ekonomi': 'A', 'geo': 'A'}))
+        self.assertTrue(check_spm_prerequisites(req, {'math': 'A', 'ekonomi': 'A', 'poa': 'B'}))
+
+    def test_bahasa_arab_alone_no_longer_counts_twice(self):
+        req = _req({'subjects': ['BAHASA_ARAB_SPM', 'BAHASA_ARAB_SPM', 'BAHASA_ARAB_MUASIRAH_SPM'],
+                    'min_count': 2, 'min_grade': 'C'})
+        self.assertFalse(check_spm_prerequisites(req, {'bahasa_arab': 'A'}))
+        self.assertTrue(check_spm_prerequisites(req, {'bahasa_arab': 'A', 'lughah_arabiah': 'B'}))

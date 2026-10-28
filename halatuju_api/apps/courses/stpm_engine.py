@@ -297,11 +297,17 @@ def check_spm_prerequisites(req, spm_grades):
             exclude = g.get('exclude', [])
             matched = 0
             if subjects:
-                # Specific subject list — check only these
+                # Specific subject list — check only these. Each STUDENT subject counts at most once
+                # per group (Sprint C review): the lists repeat codes (AL_ADAB_SPM twice) and map
+                # several codes to one key (bahasa_arab), which counted one grade two or three times.
+                counted = set()
                 for csv_code in subjects:
-                    if any(spm_grades.get(k) and meets_spm_grade(spm_grades[k], min_grade)
-                           for k in _spm_keys(csv_code)):
-                        matched += 1
+                    key = next((k for k in _spm_keys(csv_code) if k not in counted
+                                and spm_grades.get(k) and meets_spm_grade(spm_grades[k], min_grade)),
+                               None)
+                    if key:
+                        counted.add(key)
+                matched = len(counted)
             else:
                 # No subject list — match ANY subject not in exclude list
                 exclude_keys = {k for c in exclude for k in _spm_keys(c)}
@@ -385,7 +391,7 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         colorblind, disability: boolean flags
         bumiputera: the student said they are Bumiputera (course guide only). Only a real True
             from a Malaysian unlocks Bumiputera-only courses; None / False / a foreign
-            nationality never does. Default False keeps the golden master (2,026) unchanged.
+            nationality never does. Default False keeps the golden master unchanged.
 
     Returns:
         List of dicts, each with: course_id, course_name, university, stream,

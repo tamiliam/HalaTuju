@@ -72,7 +72,11 @@ class TestStpmGoldenMaster:
             per_student[student['id']] = len(results)
             total += len(results)
 
-        GOLDEN_BASELINE = 2026
+        # 2,026 -> 2,025 ON PURPOSE (owner, 2026-10-29, Bumi Sprint C review): a student's subject now
+        # counts once per SPM prerequisite group. arts_high_muet lost UA6314002 (UPSI, Ekonomi (Kewangan
+        # Islam)): its "2 of" list names EKONOMI_SPM and EKONOMI_ASAS_SPM, both `ekonomi`, so her one
+        # Ekonomi grade used to count twice. She holds no second subject from that list.
+        GOLDEN_BASELINE = 2025
 
         assert total == GOLDEN_BASELINE, (
             f"Golden master mismatch: expected {GOLDEN_BASELINE}, got {total}. "

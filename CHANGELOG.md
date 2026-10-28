@@ -25,6 +25,11 @@ All notable changes to this project will be documented in this file.
   B + KEPUJIAN TERTINGGI") reads as that subject; any other extra word ("UJIAN LISAN ...") does not. Every
   apostrophe-like mark (and a spaced one) is dropped, "&" reads as "dan", and the certificate reader normalises a
   subject's printed words together, so "AL - QURAN" and "MU ' ASIRAH" read as printed names. No two names collide.
+- **A subject counts once per SPM prerequisite group (owner, 2026-10-29).** `check_spm_prerequisites` counted
+  one grade two or three times where a requirement list repeats a code or maps several codes to one key
+  (`EKONOMI_SPM` + `EKONOMI_ASAS_SPM`, `AL_ADAB_SPM` twice). Now each student subject counts once. STPM golden
+  master re-baselined on purpose 2,026 -> **2,025** (`arts_high_muet` loses UA6314002); real students holding one
+  subject behind two codes may see fewer courses. Regression tests in `test_islamic_spm_subjects.py`.
 - **STPM entry.** `BAHASA_ARAB_MUASIRAH_SPM` is now also met by `lughah_arabiah` (`stpm_engine.SPM_CODE_ALSO`),
   counted once; the old `bahasa_arab` reading is kept, so no existing result moves. Course-page labels for the
   Islamic requirement codes use the same slip names. `report_engine.SUBJECT_LABELS` names all 14.
@@ -34,7 +39,7 @@ All notable changes to this project will be documented in this file.
 - **Tests:** the exclusion tests now pin the new truth (electives, never stream subjects); new
   `test_islamic_subject_slips.py` (every slip name, both apostrophe spellings, the exact slip and certificate
   readers, the #48 shape end to end) and `test_islamic_spm_subjects.py` (merit, STPM prerequisites, report labels).
-  Golden masters unchanged: SPM 5,319, STPM 2,026.
+  Golden masters: SPM 5,319 unchanged; STPM 2,025 after the once-per-group ruling below (2,026 before it).
 
 ## TD-416 — scholarship/sponsor message slices (web first-load JS) - 2026-10-29
 

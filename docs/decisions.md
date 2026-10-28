@@ -15495,3 +15495,15 @@ and would move how existing students are scored; as electives they only add what
 student from an Islamic stream scores them at the elective weight, as Pendidikan Islam always has.
 **Revisit if:** students from Islamic-stream schools report a merit far below their UPU figure (the stream
 weight would then be wrong for them), or an official source places these subjects in a Form 6 group.
+
+## 2026-10-29 — A subject counts once per SPM prerequisite group (owner)
+**Decision:** in `stpm_engine.check_spm_prerequisites`, each of the student's SPM subjects counts at most once
+towards a group's "N of these subjects" (`min_count`), however many of the group's codes it satisfies.
+**Why:** the requirement lists repeat codes (`AL_ADAB_SPM` twice in UA6145021 / UA6145033, `BAHASA_ARAB_SPM`
+twice in others) and several codes map to one subject key (`EKONOMI_SPM` and `EKONOMI_ASAS_SPM` → `ekonomi`;
+`SCIENCE_SPM` and `APPLIED_SCIENCE_SPM` → `sci`; three Arabic codes → `bahasa_arab`). One grade was counted two
+or three times, so a "2 of these" group could pass on a single subject. Found by the Bumi Sprint C review.
+**Effect:** STPM golden master 2,026 → 2,025 (`arts_high_muet` loses UA6314002, UPSI Ekonomi (Kewangan Islam):
+her single Ekonomi grade had met a "2 of" group). Real students holding one subject behind two codes may see
+fewer courses; that is the correct reading of the requirement.
+**Revisit if:** an official source says a duplicated code in a requirement list is meant to count twice.
