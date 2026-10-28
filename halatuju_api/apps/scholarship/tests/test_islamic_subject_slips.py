@@ -140,3 +140,99 @@ class TheCertificateReader(SimpleTestCase):
 
     def test_an_unknown_hyphenated_line_still_falls_back(self):
         self.assertIsNone(read(cert(SUBJECTS[:4] + [('AL-KLINGON', 'B (KEPUJIAN TINGGI)')])))
+
+
+# ── Sprint C review: stored reads, and looser printing ────────────────────────────────────────
+#: Subject strings exactly as they sit in live stored reads (18 of 2,313 carry an Islamic subject;
+#: queried by the lead 2026-10-29) → the key the student enters. Stored reads are never re-read.
+LIVE_STORED = [
+    ('Pendidikan Al-Quran & Al-Sunnah', 'pqs'),
+    ("MANAHIJ AL-'ULUM AL-ISLAMIAH", 'manahij'),
+    ("AL-LUGHAH AL-ARABIAH AL-MU'ASIRAH", 'lughah_arabiah'),
+    ('5302 MAHARAT AL - QURAN B + KEPUJIAN TERTINGGI', 'maharat_alquran'),
+    ('5301 HIFZ AL - QURAN B + KEPUJIAN TERTINGGI', 'hifz_alquran'),
+    ('TASAWWUR ISLAM B + ( KEPUJIAN TERTINGGI )', 'tasawwur_islam'),
+    ('5228 PENDIDIKAN SYARIAH ISLAMIAH B + KEPUJIAN TERTINGGI', 'psi'),
+    ('AL-SYARIAH', 'al_syariah'),
+    ('USUL AL-DIN', 'usul_aldin'),
+    ('Pendidikan Syariah Islamiah', 'psi'),
+    ('Maharat Al-Quran', 'maharat_alquran'),
+    ('Hifz Al-Quran', 'hifz_alquran'),
+    ('Tasawwur Islam', 'tasawwur_islam'),
+]
+#: The names before Sprint C (what a read stored before MODEL_VERSION 1.18.0 may hold).
+OLD_NAMES = [('Manahij', 'manahij'), ('Lughah Arabiah', 'lughah_arabiah'),
+             ('Adab & Balaghah', 'adab_balaghah'), ('Turath Islamiah', 'turath_islamiah'),
+             ('Turath Quran & Sunnah', 'turath_quran_sunnah'),
+             ('Pendidikan Al-Quran & Al-Sunnah', 'pqs')]
+
+
+class TheStoredReads(SimpleTestCase):
+    def _missing(self, stored, key):
+        slip = read_slip(_gemini_doc([{'subject': stored, 'grade': 'B+'}], {}))
+        return compare_academics({key: 'B+'}, slip)
+
+    def test_every_live_stored_string_matches_its_key(self):
+        for stored, key in LIVE_STORED:
+            with self.subTest(stored=stored):
+                cmp = self._missing(stored, key)
+                self.assertEqual(cmp['missing'], [])
+                self.assertEqual(cmp['mismatched'], [])
+
+    def test_every_old_short_name_still_matches(self):
+        for old, key in OLD_NAMES:
+            with self.subTest(old=old):
+                self.assertEqual(self._missing(old, key)['missing'], [])
+
+    def test_a_cell_with_another_word_is_not_folded_into_a_subject(self):
+        # "UJIAN LISAN BAHASA MELAYU" is the oral test, not Bahasa Melayu: it must stay its own row.
+        cmp = self._missing('UJIAN LISAN BAHASA MELAYU', 'bm')
+        self.assertEqual(cmp['missing'], ['UJIAN LISAN BAHASA MELAYU'])
+
+    def test_the_missing_list_still_shows_the_printed_text(self):
+        cmp = self._missing('5302 MAHARAT AL - QURAN B + KEPUJIAN TERTINGGI', 'bm')
+        self.assertEqual(len(cmp['missing']), 1)
+        self.assertTrue(cmp['missing'][0].startswith('5302 MAHARAT'))
+
+
+class TheLooserPrinting(SimpleTestCase):
+    def test_apostrophe_forms_and_a_lone_apostrophe(self):
+        for printed in ("MU'ASIRAH", 'MU’ASIRAH', 'MU‘ASIRAH', 'MUʼASIRAH',
+                        'MUʻASIRAH', 'MU´ASIRAH', 'MU′ASIRAH', 'MU`ASIRAH',
+                        "MU ' ASIRAH", 'MUASIRAH'):
+            with self.subTest(printed=printed):
+                self.assertEqual(_norm_lower_alnum(printed), 'muasirah')
+
+    def test_ampersand_reads_as_dan_and_a_spaced_hyphen_as_a_hyphen(self):
+        self.assertEqual(_norm_lower_alnum('Al-Quran & Al-Sunnah'), _norm_lower_alnum('AL-QURAN DAN AL-SUNNAH'))
+        self.assertEqual(_norm_lower_alnum('HIFZ AL - QURAN'), _norm_lower_alnum('Hifz Al-Quran'))
+
+    def test_no_two_subjects_share_a_name_or_a_word_set(self):
+        from apps.scholarship.academic_engine import _KNOWN_SUBJECTS
+        norms = {}
+        for name in set(_SUBJECT_BM.values()):
+            norms.setdefault(_norm_lower_alnum(name), set()).add(name)
+        self.assertEqual([v for v in norms.values() if len(v) > 1], [])
+        sets = {}
+        for name, words in _KNOWN_SUBJECTS:
+            sets.setdefault(words, set()).add(name)
+        self.assertEqual([v for v in sets.values() if len(v) > 1], [])
+
+    def test_the_exact_slip_reader_takes_the_loose_forms(self):
+        for printed, key in (('HIFZ AL - QURAN', 'hifz_alquran'),
+                             ("AL-LUGHAH AL-'ARABIAH AL-MU ' ASIRAH", 'lughah_arabiah'),
+                             ('PENDIDIKAN AL-QURAN & AL-SUNNAH', 'pqs')):
+            with self.subTest(printed=printed):
+                out = parse_spm_slip(_slip_words(HEADER, CORE_ROWS + [(printed, 'A', 'CEMERLANG TINGGI')]))
+                self.assertIn(_SUBJECT_BM[key], [r['subject'] for r in out['results']])
+
+    def test_the_certificate_reader_takes_the_loose_forms_and_old_names(self):
+        for printed, key in (('HIFZ AL - QURAN', 'hifz_alquran'),
+                             ("MANAHIJ AL - 'ULUM AL - ISLAMIAH", 'manahij'),
+                             ("AL-LUGHAH AL-'ARABIAH AL-MU ' ASIRAH", 'lughah_arabiah'),
+                             ('PENDIDIKAN AL-QURAN & AL-SUNNAH', 'pqs'),
+                             ('MANAHIJ', 'manahij')):
+            with self.subTest(printed=printed):
+                r = read(cert(SUBJECTS[:4] + [(printed, 'B (KEPUJIAN TINGGI)')]))
+                self.assertIsNotNone(r)
+                self.assertEqual(r['results'][4]['subject'], _SUBJECT_BM[key])

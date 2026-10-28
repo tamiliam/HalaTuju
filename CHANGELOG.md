@@ -19,6 +19,12 @@ All notable changes to this project will be documented in this file.
   apostrophe instead of spacing it, so "SYARI'AH" and "SYARIAH", "MU'ASIRAH" and "MUASIRAH" read as one name.
   The certificate reader splits a hyphenated word before comparing ("USUL AL-DIN" never matched before).
   Document recognition `MODEL_VERSION` 1.17.1 -> **1.18.0** (no signature family or weight change).
+- **Review fixes (same day).** Reads stored before 1.18.0 keep the old short names ("Manahij", "Turath Islamiah", ...):
+  they are aliases now (`academic_engine._SUBJECT_ALIASES`), so no re-read is needed (18 of 2,313 live reads carry
+  an Islamic name). A stored cell that carries a subject plus only its code / grade / band ("5302 MAHARAT AL - QURAN
+  B + KEPUJIAN TERTINGGI") reads as that subject; any other extra word ("UJIAN LISAN ...") does not. Every
+  apostrophe-like mark (and a spaced one) is dropped, "&" reads as "dan", and the certificate reader normalises a
+  subject's printed words together, so "AL - QURAN" and "MU ' ASIRAH" read as printed names. No two names collide.
 - **STPM entry.** `BAHASA_ARAB_MUASIRAH_SPM` is now also met by `lughah_arabiah` (`stpm_engine.SPM_CODE_ALSO`),
   counted once; the old `bahasa_arab` reading is kept, so no existing result moves. Course-page labels for the
   Islamic requirement codes use the same slip names. `report_engine.SUBJECT_LABELS` names all 14.

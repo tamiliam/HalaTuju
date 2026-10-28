@@ -35,14 +35,14 @@ import re
 import statistics
 
 from .academic_engine import (
-    _BAND_TO_GRADE, _GRADE_TO_BAND, _SUBJECT_BM, _dominant_angle, _group_rows, _norm_lower_alnum,
+    _BAND_TO_GRADE, _CANONICAL, _GRADE_TO_BAND, _dominant_angle, _group_rows, _norm_lower_alnum,
     _spm_exam_year, ensure_exam_year,
 )
 
 __all__ = ['parse_spm_cert', 'ensure_exam_year']     # vision.py imports both from here
 
 #: Known SPM subjects as their exact word sequence (a line must BE one of these, not contain it).
-_SUBJECT_SEQ = {tuple(_norm_lower_alnum(n).split()): n for n in set(_SUBJECT_BM.values())}
+_SUBJECT_SEQ = {tuple(norm.split()): n for norm, n in _CANONICAL.items()}   # + the old names (Sprint C)
 _MAX_SUBJECT_WORDS = max(len(k) for k in _SUBJECT_SEQ)
 _SPM_SCALE = frozenset({'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'})
 #: "A- (CEMERLANG)", "B . ( KEPUJIAN TINGGD", "C + (KEPUJIAN ATAS)" — the grade cell, as one string.
@@ -188,10 +188,10 @@ def _split_row(row, subject_edge, h, ax):
     subject, n = '', 0
     if ax(row[0]) <= subject_edge:
         norm = [_norm_lower_alnum(t) for t in toks]
-        for k in range(min(len(toks), _MAX_SUBJECT_WORDS), 0, -1):
-            # One printed word can hold several (Bumi Sprint C): "AL-DIN" normalises to "al din",
-            # so the words are split again before the sequence is compared ("USUL AL-DIN").
-            seq = tuple(p for t in norm[:k] for p in t.split())
+        for k in range(min(len(toks), 3 * _MAX_SUBJECT_WORDS), 0, -1):   # a spaced "-" / "'" is a word
+            # The first k printed words normalised TOGETHER (Bumi Sprint C), so "AL-DIN", "AL - DIN",
+            # "MU ' ASIRAH" and "&" read as the subject list does ("USUL AL-DIN", "... DAN ...").
+            seq = tuple(_norm_lower_alnum(' '.join(toks[:k])).split())
             if seq in _SUBJECT_SEQ and norm[k - 1]:
                 subject, n = _SUBJECT_SEQ[seq], k
                 break

@@ -146,7 +146,9 @@ def _band_to_grade(phrase: str) -> str:
     return _BAND_TO_GRADE.get(' '.join((phrase or '').lower().split()), '')
 
 
-_APOSTROPHES = re.compile("['‘’`]")      # straight, curly and back-tick apostrophes
+#: Any apostrophe-like mark (straight, curly, modifier, acute, prime, back-tick) and the spaces round it.
+_APOSTROPHES = re.compile(r"\s*['`‘’ʼʻ´′]\s*")
+_AMPERSAND = re.compile(r'\s*&\s*')                # "Al-Quran & Al-Sunnah" reads as "... dan ..."
 
 
 def _norm_lower_alnum(name: str) -> str:
@@ -155,10 +157,13 @@ def _norm_lower_alnum(name: str) -> str:
     Named for its exact rule by code health H7: this app had four `_norm`s and no two agreed.
     Note that an accented letter is DELETED here rather than folded, so 'Café' reads as 'caf' —
     which is why this cannot be swapped for `results_doc._norm_fold_upper_alnum`.
-    An APOSTROPHE is deleted, not spaced (Bumi Sprint C): the Islamic subjects are printed with and
-    without one ("Mu'asirah" / "Muasirah", "Syari'ah" / "Syariah"), and both must read as one name.
+    An APOSTROPHE is deleted with the spaces round it, not spaced (Bumi Sprint C): the Islamic
+    subjects are printed with and without one ("Mu'asirah" / "Muasirah", "Syari'ah" / "Syariah"), and
+    both must read as one name. "&" reads as "dan"; a spaced hyphen ("AL - QURAN") already reads as
+    "AL-QURAN", since every run of non-alphanumerics becomes one space.
     """
-    return re.sub(r'[^a-z0-9]+', ' ', _APOSTROPHES.sub('', (name or '').lower())).strip()
+    s = _AMPERSAND.sub(' dan ', _APOSTROPHES.sub('', (name or '').lower()))
+    return re.sub(r'[^a-z0-9]+', ' ', s).strip()
 
 
 def _norm_grade(g: str) -> str:
@@ -189,12 +194,42 @@ _GRADE_TOKENS = frozenset({'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G',
 _BAND_HEADS = frozenset({'cemerlang', 'kepujian', 'lulus', 'gagal'})
 _BAND_MODS = frozenset({'tertinggi', 'tinggi', 'atas'})
 
+#: The names Sprint C replaced (Bumi coverage, 2026-10-29) → today's name. Reads stored before
+#: MODEL_VERSION 1.18.0 hold the old ones ("Manahij"), and are never re-read, so they stay readable.
+_SUBJECT_ALIASES = {
+    'Manahij': "Manahij Al-'Ulum Al-Islamiah", 'Lughah Arabiah': "Al-Lughah Al-'Arabiah Al-Mu'asirah",
+    'Adab & Balaghah': 'Al-Adab Wa Al-Balaghah', 'Turath Islamiah': 'Turath Dirasat Islamiah',
+    'Turath Quran & Sunnah': 'Turath Al-Quran dan Al-Sunnah',
+    'Pendidikan Al-Quran & Al-Sunnah': 'Pendidikan Al-Quran dan Al-Sunnah',
+}
+#: normalised name (today's or an old one) → today's name.
+_CANONICAL = {**{_norm_lower_alnum(n): n for n in set(_SUBJECT_BM.values())},
+              **{_norm_lower_alnum(old): new for old, new in _SUBJECT_ALIASES.items()}}
+
 # Every known SPM subject as (canonical_name, token_set), LONGEST first so e.g.
-# "Matematik Tambahan" wins over "Matematik" on a subset match.
+# "Matematik Tambahan" wins over "Matematik" on a subset match. "dan" is not required ("&" may be lost).
 _KNOWN_SUBJECTS = sorted(
-    ((name, frozenset(_norm_lower_alnum(name).split())) for name in set(_SUBJECT_BM.values())),
+    ((name, frozenset(norm.split()) - {'dan'}) for norm, name in _CANONICAL.items()),
     key=lambda t: -len(t[1]),
 )
+#: Words a Gemini-read subject cell may carry beside the subject itself: the grade band.
+_CELL_NOISE = _BAND_HEADS | _BAND_MODS | {'tidak', 'hadir', 'gred'}
+
+
+def _slip_key(name: str) -> str:
+    """The comparison key of one slip subject name: today's normalised name when the cell IS a known
+    subject (or an old name of one), or carries one plus only a subject code / grade / band
+    ("5302 MAHARAT AL - QURAN B + KEPUJIAN TERTINGGI"); else the cell's own normalised text. Any
+    other extra word ("UJIAN LISAN BAHASA MELAYU") keeps the cell as it is, never folded."""
+    norm = _norm_lower_alnum(name)
+    if norm in _CANONICAL:
+        return _norm_lower_alnum(_CANONICAL[norm])
+    found = _match_known_subject(name)
+    if found:
+        extra = set(norm.split()) - set(_norm_lower_alnum(found).split())
+        if all(t.isdigit() or len(t) <= 2 or t in _CELL_NOISE for t in extra):
+            return _norm_lower_alnum(found)
+    return norm
 
 
 def _match_known_subject(raw: str) -> str:
@@ -509,7 +544,7 @@ def read_slip(doc) -> dict:
                 g = band_grade or letter
                 if s:
                     names.append(s)
-                    nn = _norm_lower_alnum(s)
+                    nn = _slip_key(s)
                     if g:
                         grades[nn] = g
                     if band_grade:
@@ -542,7 +577,7 @@ def compare_academics(profile_grades, slip) -> dict:
 
     slip_norm = {}  # normname → first readable form
     for n in slip['names']:
-        slip_norm.setdefault(_norm_lower_alnum(n), n)
+        slip_norm.setdefault(_slip_key(n), n)
     bands = slip.get('bands', {})
     letters = slip.get('letters', {})
 
