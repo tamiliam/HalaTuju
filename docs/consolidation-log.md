@@ -30,6 +30,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a 95937b41
 - 2026-10-21 TD-360 Sprint 1 (the admin message slice; budgets ratcheted, TD-344 closed) — 7d5f5054 8b1b57ce f0318c14
 - 2026-10-21 request #39 Sprint 4 (the permission editor on People; history table, scholarship 0175) — a6cc35d1 f9499251 390596f8
+- 2026-10-28 STPM C4: Check-2 asks (missing STPM subjects, confirm koko; courses 0086); STPM CGPA tolerance 0.01; VERDICT 28.3 — a6d48ae4
 - 2026-10-28 STPM C3: cockpit check marks on STPM grades + CGPA (display only) — 07f776e6
 - 2026-10-28 STPM CGPA from the grades + full STPM subject list (PR #1, cloud session; courses 0085 stpm_koko) — c56bc0c5 6c10bd1e ae756af5
 - 2026-10-28 STPM column reader on production's pypdf 5.9 text; local libs aligned to the lock; MODEL 1.15.0 — c84b8cda
