@@ -109,6 +109,29 @@ class TestTechnicalDebtRegister(SimpleTestCase):
         self.assertEqual(len(found), 1, 'the register must carry exactly one collisions comment')
         self.assertEqual({int(n) for n in re.findall(r'\d+', found[0])}, KNOWN_COLLISIONS)
 
+    def test_every_index_pointer_has_a_definition_outside_the_index(self):
+        """Consolidation Review 2026-10-28: TD-397, TD-398 and TD-399 (the AI-outage sprint,
+        2026-10-25) were written ONLY as pointers in the Open Items Index, so for three days the
+        counting tool could not see them and `td_open` read three low — the same fault the
+        2026-10-18 review found for 31 entries written inside the index. The register's rule is
+        "never write a new entry inside the Open Items Index"; this makes the breach loud.
+
+        A definition here is the counting tool's (`code_health.count_td`): a `### [TD-NNN]`
+        heading or a `- **TD-NNN` bullet (struck-through or not) in the register's BODY."""
+        lines = open(_REGISTER, encoding='utf-8').read().split('\n')
+        start = next(i for i, l in enumerate(lines) if l.startswith('## Open Items Index'))
+        end = next(i for i, l in enumerate(lines[start + 1:], start + 1) if l.startswith('## '))
+        pointer = re.compile(r'^- \*\*TD-(\d+)\*\*')
+        pointed = {int(m.group(1)) for l in lines[start:end] for m in [pointer.match(l)] if m}
+        self.assertGreater(len(pointed), 100, 'the index scan found almost no pointers - check its format')
+        body_def = re.compile(r'^(?:#{2,4}\s.*?\[TD-(\d+)|- (?:~~)?\*\*(?:~~)?\[?TD-(\d+))')
+        defined = {int(m.group(1) or m.group(2)) for l in _body_lines() for m in [body_def.match(l)] if m}
+        missing = sorted(pointed - defined)
+        self.assertEqual(missing, [], (
+            f'The Open Items Index points at {missing}, which have no defining entry in the register '
+            'body. Write each entry (`- **TD-NNN (raised …) - …**` or a `### [TD-NNN]` heading) in '
+            'the dated section of the sprint that raised it; the index holds pointers only.'))
+
     def test_the_scan_actually_reads_the_register(self):
         """The floor. If the path or the format moved, the assertion above would pass over an empty
         list for ever — a guard that protects nothing while looking green."""

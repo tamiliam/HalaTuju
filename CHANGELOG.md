@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## Consolidation review — ten small changes, forty-one sprint lines; two guards (docs and tests only, nothing to deploy) - 2026-10-28
+
+- **Reviewed** the ten small changes since 2026-10-18 and moved four sprint lines out of `## Pending`
+  (TD-408, TD-411, the health light, and the billing-settings change, which was sprint-sized: its
+  retrospective and door list are owed). `docs/consolidation-log.md`.
+- **Guard: one definition of "awarded".** `test_awarded_one_definition.py` — no api source outside
+  `closure.py` filters on `awarded_at__isnull`; the gift card and the awards chart still call
+  `ever_awarded_q()`. `decisions.md`: the 2026-09-08 "Awarded" rule marked superseded in part.
+- **Guard: no debt entry lives only in the index.** `test_technical_debt_register.py` fails on an
+  Open Items Index pointer with no defining entry; TD-397 to TD-399's entries written.
+- **Rule:** `halatuju_api/CLAUDE.md` "Serve, never assemble or derive in the browser" names the four
+  ways a screen answered a server question for itself this window (#40, #41, #45, the awarded count).
+- **Register:** TD-414 (the results rules' public surface, from `xapp` 67 → 72, the third accept) and
+  TD-415 (a cockpit fixture that never serves `officer_requests`) raised. Open Items Index
+  regenerated: 136 open of 412. Code-health reading recorded (`docs/code-health.md`).
+
 ## STPM CGPA C4 — Check 2 asks for missing STPM subjects and an unconfirmed co-curriculum score; CGPA match 0.01 (NOT LIVE) - 2026-10-28
 
 - **`stpm_grades_incomplete`** (owner ruling): a submitted STPM-results applicant with fewer than Pengajian Am +

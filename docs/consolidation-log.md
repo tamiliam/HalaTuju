@@ -5,65 +5,133 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits are listed in that review, and line by line in git at `65af2612`)_
-
-- 2026-10-19 25a551b6 fix(onboarding): the school is not asked twice on the results detour (request #35) (web onboarding/profile page + test · 2)
-- 2026-10-19 20c6fe14 fix(apply-copy): an organisation's paragraph breaks show to students (request #34) (web apply page, ApplyCopyTab, ActionCentre + 3 tests; api apply_copy_draft prompt + test; CHANGELOG · 10)
-- 2026-10-19 0ca7eefb refactor(scholarship): move FundingNeed into models/funding_need.py (moves only) (scholarship models · 3; logged by the #39 session for the Sources session)
-- 2026-10-19 3bd909c9 refactor(courses): move StpmCourse and StpmRequirement into models_stpm.py (moves only) (courses models · 3; logged by the #39 session for the Sources session)
-- 2026-10-22 a8ccea58 fix: a gift's Awarded count no longer counts an award that fell through (api closure ever_awarded_q, gifts card, overview awards-per-month + 2 tests; CHANGELOG · 3)
-- 2026-10-22 61d04f40 fix: the Applicants Source filter lists only the chosen gift's sources (request #41) (api source-names view; web applicants page + sources api client + tests; CHANGELOG · 3)
-- 2026-10-22 f604f3f6 test: the IC-shape check no longer matches a random student UUID (test_birth_state_followups · 1; flaky deploy-build failure)
-- 2026-10-22 082487df fix: Request a document explains itself instead of failing silently (request #40) (api querying officer_requests_state + serializer; web OutstandingPanel, view, api type, FAQ, messages + tests · 7 source files; note: view.actions.test "raising a query" still raises at shortlisted, a stage the server refuses)
-- 2026-10-25 4493f60a fix: the cockpit shows the student's family answers, and the parent tick means a real name match (request #45) (api serializers_admin_family + serializer base; web FamilyAnswers, ApplicantCards, fieldVerification, api type, FAQ, messages + tests · 7 source files)
-- 2026-10-28 8a8a56a5 + 3f9ffa74 + 2a12d21f fix: TD-408 order-aware patronymic name match (SPRINT work — TD-408 sprint, three review rounds; retro retrospective-2026-10-28-health-td408-411.md)
-- 2026-10-28 8bac9363 + c4cbc9bd + d9a31e07 fix(TD-411): scanner watermark is not a PDF text layer; KWSP app screen; letter-spaced hotfix (SPRINT work — TD-411 sprint; same retro)
-- 2026-10-28 c73fe6dc + 305b0434 feat: admin System health light (SPRINT work — health light sprint, Stitch-approved, migration 0180; same retro)
-- 2026-10-28 06757a61 feat: billing settings move to the screens whose scope they match (logged by the TD-408/411 session for the billing session; a feat — check it was run as a sprint)
+_(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries and the four sprint lines wrongly logged here are listed in that review, and line by line in git at `6e1d66db`)_
 
 ## Sprints since the last review
 
-_One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review._
+_One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
 
-- 2026-10-19 request #39 Sprint 1 (staff permissions foundation + invite message) — 89537722 ffef65d2 2a5fba2b a67c905b 9b3ed340 69a71cd3
-- 2026-10-19 request #39 Sprint 2 (Finance approves payment runs; org admin fallback) — 96237436 25b2785f e9bf071d 3622cb9c 9234690d
-- 2026-10-19 request #39 Sprint 3 (the student-file, QC, assignment and Spending gates read permissions) — b2680e7c 954eab6a 95937b41
-- 2026-10-21 TD-360 Sprint 1 (the admin message slice; budgets ratcheted, TD-344 closed) — 7d5f5054 8b1b57ce f0318c14
-- 2026-10-21 request #39 Sprint 4 (the permission editor on People; history table, scholarship 0175) — a6cc35d1 f9499251 390596f8
-- 2026-10-28 STPM C4: Check-2 asks (missing STPM subjects, confirm koko; courses 0086); STPM CGPA tolerance 0.01; VERDICT 28.3 — a6d48ae4
-- 2026-10-28 STPM C3: cockpit check marks on STPM grades + CGPA (display only) — 07f776e6
-- 2026-10-28 STPM CGPA from the grades + full STPM subject list (PR #1, cloud session; courses 0085 stpm_koko) — c56bc0c5 6c10bd1e ae756af5
-- 2026-10-28 STPM column reader on production's pypdf 5.9 text; local libs aligned to the lock; MODEL 1.15.0 — c84b8cda
-- 2026-10-28 SPM certificate read by visual rows (spm_cert_parse); STPM count may be absent when rows match the entry; MODEL 1.14.0 — e29aa5d3
-- 2026-10-28 STPM reader: column-ordered text layers + ruling B (sign from point); MODEL 1.12.0 — f918b574
-- 2026-10-28 semester ask skips STPM completers (found while splitting #254/#265) — 4475bb4b
-- 2026-10-28 split_combined_results (team command: split a combined results PDF into the SPM/STPM cards; team_split note) — a071ac6a
-- 2026-10-27 STPM exact-read S3 (genuineness in the higher-results place; checker page = 1A; MODEL 1.11.0, VERDICT .4) — 1198e045
-- 2026-10-27 STPM exact-read S1+S2 (capture_ocr all pages; stpm_parse.py reads STPM Exact, MODEL_VERSION 1.10.0) — 12a5d71c d1883440
-- 2026-10-27 D16c (the intake's STPM floor is the one instruction; SPM-only intake tests STPM-level holders on the SPM grade bars) — 2cb9d113
-- 2026-10-27 D16 (per-gift STPM-level switch, scholarship 0179; superseded by D16c) — 98fe145d
-- 2026-10-27 third results route follow-up (#388: owed STPM results shown + Check-2 ask; 18 legacy slips moved by the team) — fe48cd36
-- 2026-10-27 third results route S4 (requests by name #37, wrong slips #43, reverse move, D1 promotion) — 4bab4086
-- 2026-10-26 third results route S3a+S3b (higher-results upload, detection; scholarship 0178) — 01f8a723 2de36a85
-- 2026-10-26 third results route S2b (the route, student side; THIRD_ROUTE_OPEN=1 set on halatuju-api first) — eddd4ad6
-- 2026-10-26 third results route S2a (the route, server side; courses 0084; shut behind THIRD_ROUTE_OPEN) — e4096440
-- 2026-10-25 third results route S1 (merit on one 0-100 scale; request #38) — 50df8d7f
-- 2026-10-25 request #44 sprint (a gift can switch off Facebook / WhatsApp and Halatuju.xyz; scholarship 0177) — f73161da
-- 2026-10-23 request #42 sprint (the Overview layout per gift; scholarship 0176) — d5861a66
-- 2026-10-22 Team person pages sprint (permissions on each person's page + change history; own clean-up) — 43aa061a
-- 2026-10-25 AI-outage sprint (our read failure is never the student's unreadable; sweep, alert, honest cascade errors; three review rounds) — 9d3ff53a
-- 2026-10-25 TD-390 sprint (a skipped IC second opinion is our outage: mark, honest gate, scoped pending readers, sweep, alert; owner ruling on scenario B) — 46b1c0bd
-- 2026-10-25 TD-401/402 sprint (identity rests on the card's NRIC; an STR is income proof only when a card matched it, both routes, owner ruling A; three review rounds) — 014cae5b, 4f582222, 76a07ee7
-- 2026-10-26 Corpus gaps C1 + C2 (a known public TVET issuer reads not checked, owner rulings A–C; UiTM scores as a public university, OCR and PDF text layer; an officer's offer request held for the officer) — 1a2b4962, 95131a65, 1accaab9, a781b49a
-- 2026-10-26 Corpus gaps C3 + C4 (STPM results scored as STPM, owner rulings 1A/2A; the lead's live re-run of 43 documents — a job-flag incident wiped 16 scores first, TD-407) — 0ae5f431
-- 2026-10-27 TD-407 sprint (a re-read never wipes a genuineness score; hand-run re-read commands refuse without the flag, the hourly self-heal warns) — 9bdb163f, e65a9cd3
-- 2026-10-27 TD-404 sprint (ANAK = AK and BINTI = BT/BTE in every name match; a one-syllable STR name is "cannot judge" and asks for the IC-number page) — b1fe889c, 71e38f89, 0e03a678
-- 2026-10-27 TD-409 sprint (an STR no household card matched never closes an STR request — held for the officer, owner ruling A; Check 2 asks for a near-miss STR's IC-number page; two review rounds) — ddd46dda, ddb26b60
-- 2026-10-27 TD-410 sprint (an income proof flagged as possibly fake shows no income, owner ruling narrowed to option A: an informal payslip still counts, EPF exempt until TD-411; no genuineness signal still counts; VERDICT 2026-10-27.4) — d9ecb08d, dca9cbc1 (rebased from 87df3719, b564564e)
-- 2026-10-28 Income declarations sprint (#374; owner rulings 1A–4A + the chop ruling; five review rounds; the live hotfix and its follow-ups: tighter government letterhead, the approver never a printed label, MODEL 1.16.0, VERDICT 2026-10-27.8) — afaf23cd, 1252fd85, 3dbde44d, 8479e0bf, 03100867, 9212d8f6, 99b24c2c, 8a11d41e, c58b7237 (hotfix), 00f1f7eb, + the close commit
-- 2026-10-26 TD-403 sprint (an STR counts as income proof only if it is from this year, strict; a later year's page is neutral `future`; a submitted case keeps its submission year; owner rulings; three review rounds) — 32a847f1, cafcfc43, 85921925, b67dd4f5, ed342354
+_(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 
 ## Reviews
+
+### 2026-10-28 — ten small changes and forty-one sprint lines, 18 Oct → 28 Oct: four screens answered a server question for themselves, and the lane carried three sprints
+
+**The fix-up first.** At the 2026-10-28 sprint close four sprint lines were written under `## Pending`
+and counted as backlog (13 read, 10 real). Three are the TD-408 / TD-411 / health-light sprints
+(retrospective `docs/retrospectives/retrospective-2026-10-28-health-td408-411.md`): TD-408 `8a8a56a5`
+`3f9ffa74` `2a12d21f` (+ `304d2364` the VERDICT bump), TD-411 `8bac9363` `c4cbc9bd` `d9a31e07`, health
+light `c73fe6dc` `305b0434` (migration 0180). The fourth, **`06757a61` (billing settings move to the
+screens whose scope they match), was a SPRINT run without the ceremony.** Its commit has 28 files, 11
+of them source, two new modules (`IssuerDetailsTab.tsx`, `OrganisationBillingTab.tsx`) and a widening
+of who may write money data (an organisation's own admin may now edit its bill-to) — three of the
+lane's sprint markers. It had what matters most: an adversarial review (five findings fixed), two
+`decisions.md` entries and two TDs (TD-412, TD-413). It had no plan, no door list (`sprint-start.md`
+3b: a change to who may write money data lists its doors), no retrospective and no sprint-close
+line. **Owed: a short retrospective and its door list written after the fact** — the review found
+the doors, so writing them down is cheap and is what the next billing change reads.
+
+**The ten small changes** (commit · source files): request #35 the school asked twice (`25a551b6` · 1);
+#34 an organisation's paragraph breaks (`20c6fe14` · 4); two moves-only splits for the Sources session,
+`FundingNeed` to `models/funding_need.py` (`0ca7eefb` · 2) and the STPM models to `models_stpm.py`
+(`3bd909c9` · 2); a gift's Awarded count (`a8ccea58` · 3); #41 the Source filter per gift (`61d04f40` ·
+3); the IC-shape test against a random UUID (`f604f3f6` · test only); #40 Request a document explains
+itself (`082487df` · 6); #45 the family answers and the parent tick (`4493f60a` · 7, two new modules).
+
+**The sprints since 2026-10-18** (context; each had its own close unless said): request #39 S1–S4
+(`89537722` `ffef65d2` `2a5fba2b` `a67c905b` `9b3ed340` `69a71cd3`; `96237436` `25b2785f` `e9bf071d`
+`3622cb9c` `9234690d`; `b2680e7c` `954eab6a` `95937b41`; `a6cc35d1` `f9499251` `390596f8`); sources
+Sprints B, C and D (`1888184b` `bbe6fac6`; `b56cfd10` `e90179c6`; `ad552cd7` `a5622da9` `378c7601` —
+never given a line here, found because their subjects say "Sprint"); TD-360 S1 (`7d5f5054` `8b1b57ce`
+`f0318c14`); Team person pages (`43aa061a`); #42 (`d5861a66`); the AI outage (`9d3ff53a`); TD-390
+(`46b1c0bd`); #44 (`f73161da`); TD-401/402 (`014cae5b` `4f582222` `76a07ee7`); the third results route
+S1–S4 and follow-up (`50df8d7f` `e4096440` `eddd4ad6` `01f8a723` `2de36a85` `4bab4086` `fe48cd36`); corpus
+gaps C1–C4 (`1a2b4962` `95131a65` `1accaab9` `a781b49a` `0ae5f431`); TD-403 (`32a847f1` `cafcfc43`
+`85921925` `b67dd4f5` `ed342354`); D16 / D16c (`98fe145d` `2cb9d113`); TD-407 (`9bdb163f` `e65a9cd3`);
+TD-404 (`b1fe889c` `71e38f89` `0e03a678`); TD-409 (`ddd46dda` `ddb26b60`); TD-410 (`d9ecb08d`
+`dca9cbc1`); STPM exact-read S1–S3 and follow-ups (`12a5d71c` `d1883440` `1198e045` `a071ac6a` `4475bb4b`
+`f918b574` `e29aa5d3` `c84b8cda`); income declarations #374 (`afaf23cd` `1252fd85` `3dbde44d` `8479e0bf`
+`03100867` `9212d8f6` `99b24c2c` `8a11d41e` `c58b7237` `00f1f7eb` `e8c9c246`); STPM CGPA C1–C4 (`c56bc0c5`
+`6c10bd1e` `ae756af5` `07f776e6` `a6d48ae4`); TD-408, TD-411, the health light and billing (above).
+
+**Reflect.** The ten touched the officer cockpit (#40, #45), the admin Programmes card and Overview
+chart (the awarded count), the Applicants list (#41), the student apply and onboarding pages (#34,
+#35), two model files (the splits) and one test. All ten carry their own tests. Two were the shape
+the code-health arc asks for (moves-only splits, each lowering a ledger). Four were symptoms of
+one thing (below). One left a stale test on the record (#40's note: `view.actions.test.tsx` still
+raises a query at `shortlisted`, which the server refuses) — TD-415. The window's real weight is
+the sprints: forty-one sprint lines, most with two to five review rounds, and the review rounds again found
+the doors the builders missed (TD-403's later-year STR, TD-409's stale matched STR, #374's genuine
+village forms refused in production for two hours).
+
+**Cohere — one cluster, closed by its own fixes; one promoted from the code reading.**
+
+- **A screen answering a server question for itself — four of the ten.** The awarded count derived
+  "awarded" from `awarded_at` and disagreed with the list (66 against 65); #40's cockpit offered a
+  request form the server refuses at `shortlisted`; #45's parent tick meant only "some parent IC was
+  read", not "this name matches"; #41's Source filter listed every source of the organisation on a
+  screen scoped to one gift. Each was cured the same way — the server serves the answer
+  (`closure.ever_awarded_q`, `officer_requests`, `guardian_ic_name_match`, `source-names?programme=`)
+  — so there is nothing left to redesign; what is left is the next one. Guardrails below. Not
+  promoted; a cluster line in the index records it.
+- **The results rules' public surface — TD-414**, from the code-health reading (below), not from
+  the fixes: the third results route and the STPM CGPA arc added 21 cross-app edges into three
+  courses modules, one name at a time.
+- **Decision reconciled: the awarded count contradicted one.** `decisions.md` 2026-09-08 ("Awarded
+  means has EVER been awarded: `awarded_at IS NOT NULL` OR a live status") was overturned in part
+  by `a8ccea58` with no entry. Now marked superseded in part, and the new rule recorded (2026-10-22,
+  `closure.ever_awarded_q`). #41 extends the 2026-10-19 source-names decision (a gift narrows it,
+  the organisation fence is unchanged) — an extension, not a contradiction. #45 and #40 change no
+  recorded decision.
+
+**The lane: which of the ten were small changes?** Against step 1 (≤ ~5 source files; no new module,
+migration, command or derivation of a stored value; nothing touching money / consent / auth / PII):
+- **#45 (`4493f60a`) should have been a sprint.** Seven source files, two new modules, and it
+  changed what a tick on identity data CLAIMS. It shipped well (a server-computed match, tests) —
+  but its door list (every reader of "parent verified") was the builder's diligence, not a step.
+- **#40 (`082487df`) — at the edge, over it by the count.** Six source files and a new served field;
+  read-only (it changes what is offered, not who may do what). Accepted in the lane, noted.
+- **The two splits (`0ca7eefb`, `3bd909c9`) — rightly in the lane.** `wat_lint` WARNs them as "new
+  module", because a moves-only split adds a file; the code-health arc asks for exactly these. A
+  false positive of the 2026-10-27 check, accepted here; not worth a tool exemption yet (two, both
+  declared "moves only" in the subject and both lowering a ledger).
+- The other six: rightly in the lane.
+
+**Anticipate — two guardrails landed in this project, one checklist line, one tool change proposed.**
+
+- **"A screen answers a server question for itself"** (×4 here; the "looks armed, does nothing"
+  class of 2026-08-19, 09-08, 09-18 and 10-06 is its older cousin). **Landed:** (1) the test
+  `apps/scholarship/tests/test_awarded_one_definition.py` — no api source outside `closure.py`
+  filters on `awarded_at__isnull`, and the card and the chart still call `ever_awarded_q()` (a
+  negative paired with a positive, on a floored walk; bitten with a planted
+  `Q(awarded_at__isnull=False)` in `gifts.py` — red, then removed). (2) The live rule in
+  `halatuju_api/CLAUDE.md` "Serve, never assemble or derive in the browser" now names the four
+  forms (whether an action is open, what a tick claims, a count on two screens, what a scoped
+  filter lists) and ends with the check: before building a control, a tick or a count, name the
+  server function it reads. TD-415 is the one place a fixture still answers for the server.
+- **"An entry written only in the Open Items Index"** (×3 here, TD-397 to TD-399; ×31 at the
+  2026-09-30 pass). The register's rule already said never; nothing enforced it, and `td_open` read
+  three low for three days. **Landed:** `test_technical_debt_register.py`
+  `test_every_index_pointer_has_a_definition_outside_the_index` (bitten: with TD-397's entry
+  removed it fails naming 397). The three entries are written.
+- **"Sprint-sized work in the lane, and sprint lines under Pending"** (#45, #40, `06757a61`; the
+  four mislogged lines; three sprints at 2026-10-06; two `fix:` sprints at 2026-10-27). **Proposed
+  for the workspace repo, not landed** (this worktree cannot write there): `wat_lint`
+  `lane_breaches` also tags a commit touching more than five SOURCE files (code, not tests,
+  migrations, message files, docs or JSON) — the half of the 2026-10-06 proposal that never landed.
+  Measured on this window: it tags `082487df` (6), `4493f60a` (7) and `06757a61` (11), and none of
+  the other eight small changes nor the 2026-10-18 review's three (1 to 4 source files each). And
+  a line in this file's `## Sprints since the last review` note: a sprint's commits go there, never
+  under Pending, even when logged for another session.
+
+**Close out.** Pending cleared (13 → 0, counter reset; ten small changes read, three sprint lines and
+the billing sprint moved to their place and then cleared with the sprints section). Promoted:
+TD-414 (new, the third-accept rule) and TD-415 (new). `decisions.md` reconciled for the awarded count.
+Code-health reading taken (plain, `6e1d66d`): `xapp` 67 → 72 FAIL accepted as TD-414 (all five edges
+the STPM CGPA arc's; the billing change adds none); `hot#1` moved to `vision.py` (TD-408 and TD-411).
+Open Items Index regenerated: **136 open of 412 defined**, the tool's `td_open`, every pointer diffed
+against the register both ways and every tier counted. Owed outside this review: the billing
+change's retrospective and door list.
 
 ### 2026-10-18 — forty commits, 6 Oct → 18 Oct: eleven sprints nobody logged, three small changes, and the review kept finding the door the builder missed
 

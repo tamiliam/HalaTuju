@@ -2998,6 +2998,12 @@ prevent. The predicate was deleted with a comment saying so, rather than left in
 an oversight.
 
 ## "Awarded" on a gift card means has EVER been awarded, 2026-09-08
+> **SUPERSEDED IN PART 2026-10-22 (`a8ccea58`; reconciled by the Consolidation Review of 2026-10-28).**
+> The rule "never `status='awarded'` alone" stands. The `awarded_at IS NOT NULL` arm does NOT: an
+> award that falls through before it becomes active keeps its stamp, so this definition counted it
+> (66 on the card against 65 on the list). See "Awarded has ONE definition, `closure.ever_awarded_q`"
+> under 2026-10-22, at the end of this file.
+
 **Decision:** `awarded` counts `awarded_at IS NOT NULL` OR a status in
 (`awarded`, `active`, `maintenance`). Not `status='awarded'`; `closed` is deliberately absent from
 the status arm.
@@ -15415,3 +15421,26 @@ the liability is the organisation id, which is untouchable from this endpoint.
 **Revisit if:** an organisation ever disputes an invoice on the ground that the bill-to was changed
 after issue - which the snapshot already makes impossible, but the complaint would show the
 snapshot is not visible enough.
+
+## Awarded has ONE definition, `closure.ever_awarded_q` - 2026-10-22 (recorded 2026-10-28)
+
+**Decision:** "how many students were awarded" is `closure.ever_awarded_q()`: awarded, active or
+maintenance now, or `closed` after funding began (`active_at` set). A gift's Programmes card and the
+Overview's awards-per-month chart both read it. `awarded_at` alone no longer decides it.
+
+**Supersedes in part:** "Awarded on a gift card means has EVER been awarded" (2026-09-08), whose
+`awarded_at IS NOT NULL` arm counted an award that fell through (the sponsor withdrew, the student
+declined, a lapse or a hold): the stamp is never cleared, so the case kept counting after it went
+back to the pool and was rejected. Found 2026-10-22 when the card read 66 and the applicant list 65
+(the owner's test record). The 2026-09-08 rule's other half — never `status='awarded'` alone, or the
+number falls as students progress — stands.
+
+**Why it was not recorded at the time:** it shipped in the small-change lane (`a8ccea58`) as a
+`fix:`, and the lane's rail for a changed decision ("update `decisions.md` in the same commit") was
+not followed. Found by the Consolidation Review of 2026-10-28.
+
+**Guard:** `apps/scholarship/tests/test_awarded_one_definition.py` — no api source outside
+`closure.py` filters on `awarded_at__isnull`, and the two counts still call `ever_awarded_q()`.
+
+**Revisit if:** a count genuinely needs "was ever offered" (the stamp) rather than "was awarded" —
+give it its own name, beside this one, and narrow the guard with the reason.

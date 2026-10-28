@@ -940,6 +940,15 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
   would show the raw dotted key in production.
 - **Serve, never assemble or derive in the browser:** `apply_url`, a gift's `state`, a request's status;
   a draft (theme or copy) must never reach a visitor; "draft from English" drafts and never saves.
+  **And one server definition per answer a screen shows** (Consolidation Review 2026-10-28: four of the
+  window's nine small fixes were a screen answering a server question for itself, and disagreeing):
+  whether an action is open is served from the endpoint's own predicate (`officer_requests`, request
+  #40 — the cockpit offered a form the server refused); what a tick claims is computed on the server
+  (`guardian_ic_name_match`, #45 — the tick meant only "some parent IC was read"); a count shown on two
+  screens has one definition (`closure.ever_awarded_q`, guarded by `test_awarded_one_definition.py` —
+  66 on the card, 65 on the list); a filter lists only what its scope holds (`source-names?programme=`,
+  #41). Before building a control, a tick or a count, name the server function it reads; if there is
+  none, write it there first.
 - **Status is derived, never stored** (invitations); `last_send_ok` is tri-state (null = not recorded).
 - **Never re-run `build_verdict` over old snapshots** — a snapshot is the historical record.
 - **Version bumps are not optional:** `VERDICT_ENGINE_VERSION` when a band can move;
