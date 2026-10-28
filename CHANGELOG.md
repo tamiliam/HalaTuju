@@ -56,15 +56,16 @@ All notable changes to this project will be documented in this file.
 - **TD-408 (built, NOT LIVE, awaiting the live dry-run + adversarial review) — word order in a patronymic name.**
   "ALI BIN ABU" (Ali, son of Abu) no longer matches "ABU BIN ALI", nor "JOHNNY ANAK GABRIEL" "GABRIEL ANAK
   JOHNNY". New `apps/scholarship/name_order.py`: when BOTH names carry a connector (BIN, BINTI, BT, BTE, ANAK,
-  AK, A/L, A/P, S/O, D/O) each is split at its first connector and the given names and the parents' names are
-  compared pairwise with the caller's own matcher — a pure veto in `vision.name_match` and
-  `vision.relationship_name_match` (match/partial → mismatch only). A name without a connector (Chinese, a
-  mononym, a name typed without its A/L) keeps the set comparison; slash-less AL / AP are not split on. The
-  TD-404 near miss (`buckets._romanised_near_miss`) pairs tokens within each part, so a reversal is not "cannot
-  judge". `father_name_from_ic` now reads the father off a bare ANAK / AK and BT / BTE (word-bounded; a name
-  that STARTS with a connector has no patronymic), so an Iban student's father link is judged instead of
-  falling to the officer; a brother's / sister's card is compared on its own father's name when it carries
-  one. A band can move (see TD-408). Tests `test_td408_name_order.py`.
+  AK, A/L, A/P, S/O, D/O) each is split at its first connector, and a TRUE REVERSAL is vetoed — A's given name
+  matches B's parent's name, A's parent's name matches B's given name, and the given names differ, each judged
+  by the caller's own matcher — in `vision.name_match` and `vision.relationship_name_match` (match/partial →
+  mismatch only). Every other pair keeps the set comparison exactly. Narrowed after the live dry-run (1448
+  pairs, 4 changed): the first version vetoed whenever either part mismatched, which split a Chinese name at
+  its BIN syllable and turned a genuine birth-certificate mother partial → mismatch (now a regression test).
+  The TD-404 near miss (`buckets._romanised_near_miss`) is refused only for a reversal. `father_name_from_ic`
+  now reads the father off a bare ANAK / AK and BT / BTE (word-bounded; a name that STARTS with a connector has
+  no patronymic), so an Iban student's father link is judged instead of falling to the officer. Siblings are
+  judged as before. A band can move (see TD-408). Tests `test_td408_name_order.py`.
 
 ## Income declarations follow-ups — tighter government letterhead; the approver is never a printed label - 2026-10-28
 

@@ -1,11 +1,11 @@
 """TD-408 — word order in a patronymic name, and the father's name off ANAK / AK / BT.
 
-(1) When BOTH names carry a connector (BIN, BINTI, BT, BTE, ANAK, AK, A/L, A/P, S/O, D/O) the given
-name before it must match the other's given name, and the parent's name after it the other's parent:
-"ALI BIN ABU" (Ali, son of Abu) is not "ABU BIN ALI" (Abu, son of Ali). A pure veto, in both matchers
-(`name_match` exact, `relationship_name_match` tolerant, each recursed on the parts), so a romanisation
-or a near miss inside one part still behaves as before. A name without a connector (Chinese, a mononym,
-a name typed without its A/L) keeps the set comparison exactly.
+(1) When BOTH names carry a connector (BIN, BINTI, BT, BTE, ANAK, AK, A/L, A/P, S/O, D/O) and the pair
+is a TRUE REVERSAL — A's given name is B's parent's name, A's parent's name is B's given name, and the
+given names differ — it is a mismatch: "ALI BIN ABU" (Ali, son of Abu) is not "ABU BIN ALI". A pure veto
+in both matchers (`name_match` exact, `relationship_name_match` tolerant, each judging the parts with
+itself); every other pair keeps the set comparison exactly — including a Chinese name whose syllable
+reads BIN (the live dry-run's regression, 2026-10-28).
 (2) `father_name_from_ic` reads the father off a bare ANAK / AK and off BT / BTE, word-bounded.
 """
 from django.test import SimpleTestCase, TestCase
@@ -15,7 +15,7 @@ from apps.scholarship.income_engine.buckets import _name_bucket, _romanised_near
 from apps.scholarship.income_engine.relationships import (father_name_from_ic, father_relationship,
                                                           member_relationship_status)
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.name_order import aligned_parts, split_patronymic
+from apps.scholarship.name_order import patronymic_reversed, split_patronymic
 from apps.scholarship.tests.factories import make_application, make_student
 from apps.scholarship.vision import name_match, relationship_name_match
 
@@ -36,8 +36,16 @@ class AReversedPatronymicIsAnotherPerson(SimpleTestCase):
                 with self.subTest(a=a, b=b, matcher=match.__name__):
                     self.assertEqual(match(a, b), 'mismatch')
 
-    def test_a_reversed_double_patronymic_mismatches_in_the_parent_part(self):
-        self.assertEqual(relationship_name_match('AHMAD BIN ALI BIN ABU', 'AHMAD BIN ABU BIN ALI'), 'mismatch')
+    def test_a_reversal_inside_the_parent_part_alone_is_not_vetoed(self):
+        """Reversal-only, kept simple: the given names agree, so this is not a reversal at the top level
+        and the set comparison stands (as it did before TD-408)."""
+        self.assertEqual(relationship_name_match('AHMAD BIN ALI BIN ABU', 'AHMAD BIN ABU BIN ALI'), 'match')
+
+    def test_a_part_that_does_not_line_up_is_not_vetoed(self):
+        """The first veto (any part pair mismatching) was too strong: only a true reversal is vetoed."""
+        for match in BOTH:
+            with self.subTest(match.__name__):
+                self.assertEqual(match('ALI ABU BIN AHMAD', 'ALI BIN ABU AHMAD'), 'match')
 
     def test_the_same_order_still_matches(self):
         for a, b, want in (('ALI BIN ABU', 'ALI BIN ABU', 'match'),
@@ -85,6 +93,17 @@ class ANameWithoutAConnectorIsUnchanged(SimpleTestCase):
         self.assertIsNone(split_patronymic('MUHAMMAD AL AMIN'))
         self.assertEqual(name_match('RAJU A/L MUNI', 'RAJU AL MUNI'), 'match')
 
+    def test_a_chinese_bin_syllable_is_not_read_as_a_reversal(self):
+        """Live dry-run regression (invented names, the real shape): BIN is a given-name syllable here,
+        not a connector. A birth certificate's mother against her card stayed 'partial' before TD-408 and
+        must stay so — the first veto turned it into a mismatch."""
+        for match in BOTH:
+            with self.subTest(match.__name__):
+                self.assertEqual(match('WONG BIN BIN MEI MEI KELANA BINTIAR', 'WONG BIN BIN @WONG MEI MEI'),
+                                 'partial')
+                self.assertEqual(match('TAN BIN HUAT', 'TAN BIN HUAT'), 'match')
+                self.assertEqual(match('LIM BIN BIN', 'LIM BIN BIN'), 'match')
+
     def test_identity_is_not_loosened(self):
         self.assertEqual(name_match('TAN AH KOW', 'TAN AH KAU'), 'mismatch')
         self.assertEqual(name_match('JOHNNY ANAK GABRIEL', 'JIMMY ANAK GABRIEL'), 'mismatch')
@@ -106,9 +125,11 @@ class TheSplitter(SimpleTestCase):
             with self.subTest(name):
                 self.assertIsNone(split_patronymic(name))
 
-    def test_aligned_parts_needs_both(self):
-        self.assertIsNone(aligned_parts('ALI BIN ABU', 'ALI ABU'))
-        self.assertEqual(len(aligned_parts('ALI BIN ABU', 'ALI A/L ABU')), 2)
+    def test_reversal_needs_both_names_split_and_both_cross_pairs(self):
+        self.assertIs(patronymic_reversed('ALI BIN ABU', 'ABU BIN ALI', name_match), True)
+        self.assertIs(patronymic_reversed('ALI BIN ABU', 'ABU ALI', name_match), False)      # one side unsplit
+        self.assertIs(patronymic_reversed('ALI BIN ABU', 'ALI BIN ABU', name_match), False)  # same order
+        self.assertIs(patronymic_reversed('ALI BIN ABU', 'ABU BIN OSMAN', name_match), False)  # one cross pair
 
 
 class TheFathersNameOffTheStudentsName(SimpleTestCase):
@@ -132,23 +153,23 @@ class TheFathersNameOffTheStudentsName(SimpleTestCase):
         self.assertEqual(father_relationship('MARY ANAK JOHNNY', 'PETER ANAK SIMON'), 'mismatch')
 
     def test_the_grandfather_is_not_the_father(self):
-        """The order veto bites when the derived father name itself carries a connector: the
-        student's father is ALI BIN ABU, and ABU BIN ALI is the father's father."""
+        """The veto bites when the derived father name itself carries a connector: the student's
+        father is ALI BIN ABU, and ABU BIN ALI is the father's father (or son)."""
         self.assertEqual(father_relationship('AHMAD BIN ALI BIN ABU', 'ALI BIN ABU'), 'match')
         self.assertEqual(father_relationship('AHMAD BIN ALI BIN ABU', 'ABU BIN ALI'), 'mismatch')
 
-    def test_a_sibling_is_compared_on_the_siblings_own_father_name(self):
+    def test_a_siblings_card_is_judged_as_before(self):
+        """Unchanged by TD-408: the father's name inside the sibling's full name (a subset counts)."""
         student = 'AHMAD BIN ALI BIN ABU'
         self.assertEqual(member_relationship_status('brother', student, 'HASSAN BIN ALI BIN ABU'), 'match')
         self.assertEqual(member_relationship_status('sister', student, 'AISYAH BINTI ALI BIN ABU'), 'match')
         self.assertEqual(member_relationship_status('brother', 'MARY ANAK JOHNNY', 'PETER ANAK JOHNNY'),
                          'match')
-        self.assertEqual(member_relationship_status('brother', 'MARY ANAK JOHNNY', 'JOHNNY ANAK GABRIEL'),
-                         'mismatch')          # the father's card in the brother's slot
         self.assertEqual(member_relationship_status('brother', 'AHMAD BIN ALI', 'HASSAN BIN ALI'), 'match')
+        self.assertEqual(member_relationship_status('brother', 'AHMAD BIN ALI', 'HASSAN BIN OSMAN'), 'mismatch')
 
 
-class TheNearMissStaysWithinEachPart(SimpleTestCase):
+class TheNearMissRefusesOnlyAReversal(SimpleTestCase):
 
     def test_a_romanised_syllable_inside_one_part_is_still_a_near_miss(self):
         self.assertIs(_romanised_near_miss('TAN AH KOW', 'TAN AH KAU'), True)            # TD-404
@@ -157,6 +178,10 @@ class TheNearMissStaysWithinEachPart(SimpleTestCase):
 
     def test_a_reversed_patronymic_is_not_a_near_miss(self):
         self.assertIs(_romanised_near_miss('KOW ANAK TAN', 'TAN ANAK KAU'), False)   # was True
+        self.assertIs(_romanised_near_miss('ALI BIN KOW', 'KAU BIN ALI'), False)
+
+    def test_a_chinese_bin_name_keeps_its_near_miss(self):
+        self.assertIs(_romanised_near_miss('TAN BIN KOW', 'TAN BIN KAU'), True)
 
     def test_the_bucket_reads_a_reversal_as_a_mismatch(self):
         self.assertEqual(_name_bucket('GABRIEL ANAK JOHNNY', 'JOHNNY ANAK GABRIEL'), 'mismatch')

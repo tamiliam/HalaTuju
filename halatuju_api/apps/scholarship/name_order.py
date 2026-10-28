@@ -4,15 +4,20 @@ Every name comparison (`vision.name_match`, `vision.relationship_name_match`) co
 after the connectors are stripped, so "ALI BIN ABU" (Ali, son of Abu) and "ABU BIN ALI" (Abu, son of
 Ali) — a father and a son built from the same two words — used to match. A patronymic name has two
 parts with different meanings: the person's own given name BEFORE the connector, the parent's name
-AFTER it. When BOTH names carry a connector, this module splits each at its first connector and the
-caller compares the parts pairwise with its own matcher (exact for identity, tolerant for a
-relationship), so a reversed patronymic is a mismatch while a romanisation variant or a near miss
-inside one part still behaves as it always has.
+AFTER it. When BOTH names carry a connector, this module splits each at its first connector and asks
+whether the pair is a TRUE REVERSAL under the caller's own matcher (exact for identity, tolerant for a
+relationship): A's given name matches B's parent's name, A's parent's name matches B's given name, and
+the two given names do NOT match each other. Only that is vetoed.
 
-A pure VETO: it can only turn a 'match' / 'partial' into a 'mismatch', never the reverse; a name
-without a connector (a Chinese name, a mononym, a name typed without its A/L) is not split, so it
-keeps today's set comparison exactly. The connectors are the ones `vision._NAME_NOISE` already
-treats as one (BIN, BINTI, BT, BTE, ANAK, AK, A/L, A/P, S/O, D/O), so a BIN on one side and a BINTI
+Narrowed after the live dry-run (2026-10-28): a first version vetoed whenever EITHER part pair
+mismatched, and a Chinese name whose syllable reads BIN ("LO BIN BIN ...") then split at a "connector"
+that is not one, and a genuine birth-certificate mother went partial -> mismatch. A reversal needs both
+cross pairs to agree, which a mis-split Chinese name practically never does.
+
+A pure VETO: it can only turn a 'match' / 'partial' into a 'mismatch', never the reverse; anything that is
+not a reversal keeps today's set comparison exactly, and a name without a connector (a Chinese name, a
+mononym, a name typed without its A/L) is not split. The connectors are the ones `vision._NAME_NOISE`
+already treats as one (BIN, BINTI, BT, BTE, ANAK, AK, A/L, A/P, S/O, D/O), so a BIN on one side and a BINTI
 on the other still split alike and agree as they did. The slash-less OCR forms AL / AP are NOT split
 on (an Arabic "AL" is a name part): a side that carries only those is simply not split.
 """
@@ -44,18 +49,14 @@ def split_patronymic(name: str):
     return given, parent
 
 
-def aligned_parts(a: str, b: str):
-    """``[(given_a, given_b), (parent_a, parent_b)]`` when BOTH names split, else None."""
+def patronymic_reversed(a: str, b: str, matcher) -> bool:
+    """True only for a TRUE REVERSAL: both names split, A's given part matches B's parent part, A's
+    parent part matches B's given part (``matcher`` answering 'match' or 'partial'), and the two given
+    parts do not match each other ("ALI BIN ABU" / "ABU BIN ALI"). False in every other case, so the
+    caller's set comparison stands unchanged."""
     sa, sb = split_patronymic(a), split_patronymic(b)
     if sa is None or sb is None:
-        return None
-    return [(sa[0], sb[0]), (sa[1], sb[1])]
-
-
-def patronymic_reversed(a: str, b: str, matcher) -> bool:
-    """True when both names carry a connector and their given names, or their parents' names, do not
-    match under ``matcher`` (the caller's own name matcher, recursed on each part — a part that holds
-    a second connector, "ALI BIN ABU" after "AHMAD BIN", is split again). False whenever either name
-    has no connector: the set comparison then stands unchanged."""
-    pairs = aligned_parts(a, b)
-    return pairs is not None and any(matcher(x, y) == 'mismatch' for x, y in pairs)
+        return False
+    (ga, pa), (gb, pb) = sa, sb
+    return (matcher(ga, pb) != 'mismatch' and matcher(pa, gb) != 'mismatch'
+            and matcher(ga, gb) == 'mismatch')

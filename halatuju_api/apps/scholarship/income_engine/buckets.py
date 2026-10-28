@@ -31,28 +31,44 @@ def _romanised_near_miss(extracted, reference):
     STR a stranger's (`str_route._str_recipient_household_match`). A different given name (KOW / MENG)
     does not qualify.
 
-    TD-408: when BOTH names carry a patronymic connector the tokens are paired within each part (given
-    with given, parent with parent), so a near miss still counts inside one part ("TAN AH KOW BIN ALI" /
-    "TAN AH KAU BIN ALI") but a reversed patronymic ("KOW ANAK TAN" / "TAN ANAK KAU") is not one."""
-    from ..name_order import aligned_parts
-    from ..vision import _canonical_name_seq, _tokens_close
-    total, rest, odd = 0, [], []
-    for x_part, y_part in aligned_parts(extracted, reference) or [(extracted, reference)]:
-        a, b = _canonical_name_seq(x_part), _canonical_name_seq(y_part)
-        if len(a) != len(b):
-            return False
-        total, left = total + len(a), list(b)
-        for x in a:
-            hit = next((i for i, y in enumerate(left) if _tokens_close(x, y)), None)
-            if hit is None:
-                odd.append(x)
-            else:
-                left.pop(hit)
-        rest += left
-    if total < 2:
+    TD-408: a reversed patronymic ("KOW ANAK TAN" / "TAN ANAK KAU" — a father and a son) is not a near
+    miss (`_near_miss_reversal`); every other pair keeps the rule above unchanged."""
+    from ..vision import _canonical_name_seq
+    a, b = _canonical_name_seq(extracted), _canonical_name_seq(reference)
+    if len(a) != len(b) or len(a) < 2 or _near_miss_reversal(extracted, reference):
         return False
+    return _one_syllable_apart(a, b)
+
+
+def _one_syllable_apart(a, b):
+    """Two token lists of one length that agree under the tolerant matcher but for ONE short pair
+    sharing its first letter (the TD-404 core, on any length)."""
+    from ..vision import _tokens_close
+    if len(a) != len(b):
+        return False
+    rest, odd = list(b), []
+    for x in a:
+        hit = next((i for i, y in enumerate(rest) if _tokens_close(x, y)), None)
+        if hit is None:
+            odd.append(x)
+        else:
+            rest.pop(hit)
     return (len(odd) == 1 and len(rest) == 1 and odd[0][0] == rest[0][0]
             and max(len(odd[0]), len(rest[0])) <= _SYLLABLE_MAX)
+
+
+def _near_miss_reversal(extracted, reference):
+    """TD-408 — `name_order.patronymic_reversed` with the near miss's own tolerance on each part (the
+    tolerant matcher, or one romanised syllable apart), so KOW / KAU across the connector still counts
+    as the same word in a reversal."""
+    from ..name_order import patronymic_reversed
+    from ..vision import _canonical_name_seq
+
+    def close(x, y):
+        ok = (name_match(x, y) != 'mismatch'
+              or _one_syllable_apart(_canonical_name_seq(x), _canonical_name_seq(y)))
+        return 'match' if ok else 'mismatch'
+    return patronymic_reversed(extracted, reference, close)
 
 
 def _nric_bucket(extracted, reference):

@@ -259,9 +259,7 @@ def member_relationship_status(member: str, student_name: str, member_ic_name: s
     if member == 'father':
         return father_link(student_name, member_ic_name, bc_child_name, bc_father_name)
     if member in _PATRONYMIC_MEMBERS:            # brother / sister — patronymic only
-        # TD-408: a sibling's card is compared on ITS father's name when it carries one — with order
-        # now counting, "ALI BIN ABU" (the father) is not the given part of "HASSAN BIN ALI BIN ABU".
-        return father_relationship(student_name, father_name_from_ic(member_ic_name) or member_ic_name)
+        return father_relationship(student_name, member_ic_name)
     if member == 'mother':
         return mother_relationship(bc_child_name, bc_mother_name, student_name, member_ic_name)
     if member == 'guardian':
