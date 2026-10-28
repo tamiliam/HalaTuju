@@ -21,10 +21,12 @@ import {
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
 import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
+import { isMalaysian } from '@/lib/bumiputera'
+import BumiputeraField from '@/components/profile/BumiputeraField'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
 import LazyGuardianContactSection from '@/components/profile/LazyGuardianContactSection'
-import CourseInterestsSection from '@/components/profile/CourseInterestsSection'
+import CourseInterestsSection from '@/components/profile/LazyCourseInterestsSection'   // own chunk (JS budget)
 import {
   MALAYSIAN_STATES, EMPTY_FAMILY, EMPTY_PATHWAY, countIncomplete, FieldValue, FieldLabel,
 } from '@/components/profile/profileFields'
@@ -63,6 +65,9 @@ export default function ProfilePage() {
   const [nric, setNric] = useState('')
   const [gender, setGender] = useState<'male' | 'female' | ''>('')
   const [nationality, setNationality] = useState<'malaysian' | 'non_malaysian'>('malaysian')
+  // Bumi coverage Sprint B: course guide only; null = not answered. Asked only of a Malaysian.
+  const [bumiputera, setBumiputera] = useState<boolean | null>(null)
+  const malaysian = isMalaysian(nationality), savedBumiputera = malaysian ? bumiputera : null
   const [state, setState] = useState('')
   const [address, setAddress] = useState('')
   const [postalCode, setPostalCode] = useState('')
@@ -149,6 +154,7 @@ export default function ProfilePage() {
       setNric(profileData.nric || '')
       setGender(profileData.gender || '')
       setNationality(profileData.nationality || 'malaysian')
+      setBumiputera(typeof profileData.bumiputera === 'boolean' ? profileData.bumiputera : null)
       setState(profileData.preferred_state || '')
       setAddress(profileData.address || '')
       setPostalCode(profileData.postal_code || '')
@@ -320,6 +326,7 @@ export default function ProfilePage() {
         // nric is read-only on PUT — only the claim path above can change it.
         ...(gender ? { gender } : {}),
         nationality,
+        bumiputera: savedBumiputera,   // a Foreign student is never Bumiputera: null (the server agrees)
         preferred_state: state,
         address,
         postal_code: postalCode,
@@ -362,7 +369,7 @@ export default function ProfilePage() {
       // Keep localStorage in sync so onboarding uses the same values
       const prev = JSON.parse(localStorage.getItem(KEY_PROFILE) || '{}')
       localStorage.setItem(KEY_PROFILE, JSON.stringify({
-        ...prev, gender, nationality, state, colorblind, disability,
+        ...prev, gender, nationality, bumiputera: savedBumiputera, state, colorblind, disability,
       }))
 
       window.dispatchEvent(new Event('profile-updated'))
@@ -376,7 +383,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
+    setSnapshot({ name, nric, gender, nationality, bumiputera, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
     setEditingSection(section)
   }
 
@@ -394,6 +401,7 @@ export default function ProfilePage() {
     setName(snapshot.name as string || '')
     setGender(snapshot.gender as '' | 'male' | 'female' || '')
     setNationality(snapshot.nationality as 'malaysian' | 'non_malaysian' || 'malaysian')
+    setBumiputera(typeof snapshot.bumiputera === 'boolean' ? snapshot.bumiputera : null)
     setState(snapshot.state as string || '')
     setAddress(snapshot.address as string || '')
     setPostalCode(snapshot.postalCode as string || '')
@@ -612,7 +620,7 @@ export default function ProfilePage() {
                       {(['malaysian', 'non_malaysian'] as const).map(n => (
                         <button
                           key={n}
-                          onClick={() => setNationality(n)}
+                          onClick={() => { setNationality(n); if (n !== 'malaysian') setBumiputera(null) }}   // Foreign wipes the answer
                           className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                             nationality === n
                               ? 'bg-primary-50 border-brand-shape text-primary-700'
@@ -625,6 +633,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
+                {malaysian && <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><BumiputeraField value={bumiputera} onChange={setBumiputera} t={t} /></div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.colorBlindness')}</label>
@@ -698,8 +707,9 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-ground-500">{t('onboarding.nationality')}</span>
-                  <span className="text-sm text-ground-900">{nationality === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}</span>
+                  <span className="text-sm text-ground-900">{malaysian ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}</span>
                 </div>
+                {malaysian && <BumiputeraField value={bumiputera} t={t} />}
                 <div className="flex justify-between">
                   <span className="text-sm text-ground-500">{t('profile.colorBlindness')}</span>
                   <span className="text-sm text-ground-900">{colorblind ? t('profile.yes') : t('profile.no')}</span>
