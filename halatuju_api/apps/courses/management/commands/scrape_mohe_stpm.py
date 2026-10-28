@@ -89,6 +89,21 @@ def bumi_in_syarat(text):
     return bool(_BUMI_ONLY_RE.search(text))
 
 
+def csv_fieldnames(with_bumi, with_syarat):
+    """The CSV columns: the base set, plus the Bumi columns for the passes that ran."""
+    fieldnames = [
+        'course_id', 'course_name', 'university', 'merit',
+        'stream', 'mohe_url', 'badges', 'year',
+    ]
+    if with_bumi:
+        fieldnames.append('bumi_portal')
+    if with_syarat:
+        fieldnames += ['bumi_syarat', 'syarat_khas']
+    if with_bumi and with_syarat:
+        fieldnames.append('bumi_agreement')
+    return fieldnames
+
+
 def bumi_filter_applied(filtered_total, unfiltered_total):
     """True when ticking "Program BUMI = Ya" gave a real, smaller listing. The filter is a
     session toggle, so an unticked (or double-ticked) filter shows the full count again."""
@@ -250,42 +265,15 @@ class Command(BaseCommand):
                     time.sleep(delay)
 
             if options['with_bumi']:
-                bumi_codes = set()
-                for cat_code, stream_name in categories:
-                    bumi_codes |= self._scrape_bumi_codes(
-                        browser, cat_code, jenprog, delay, max_pages, cat_totals.get(cat_code, 0))
-                for prog in all_programmes:
-                    prog['bumi_portal'] = 'Y' if prog['course_id'] in bumi_codes else 'N'
-                stray = bumi_codes - {p['course_id'] for p in all_programmes}
-                if stray:
-                    self.stdout.write(self.style.WARNING(
-                        f'  {len(stray)} Bumi-filter codes were not in the main listing: '
-                        f'{", ".join(sorted(stray)[:10])}'
-                    ))
-
+                self._mark_bumi_portal(browser, all_programmes, categories, jenprog, delay,
+                                       max_pages, cat_totals)
             if options['with_syarat']:
-                self.stdout.write(f'\nFetching Syarat for {len(all_programmes)} programmes...')
-                for n, prog in enumerate(all_programmes, 1):
-                    resp = page.request.get(modal_url(prog['cat_code'], prog['course_id']))
-                    text = clean_modal_text(resp.text()) if resp.ok else ''
-                    prog['syarat_khas'] = text
-                    prog['bumi_syarat'] = 'Y' if bumi_in_syarat(text) else 'N'
-                    if n % 50 == 0:
-                        self.stdout.write(f'  {n}/{len(all_programmes)}')
-                    time.sleep(delay / 2)
+                self._fetch_syarat(page, all_programmes, delay)
 
             browser.close()
 
-        fieldnames = [
-            'course_id', 'course_name', 'university', 'merit',
-            'stream', 'mohe_url', 'badges', 'year',
-        ]
-        if options['with_bumi']:
-            fieldnames.append('bumi_portal')
-        if options['with_syarat']:
-            fieldnames += ['bumi_syarat', 'syarat_khas']
+        fieldnames = csv_fieldnames(options['with_bumi'], options['with_syarat'])
         if options['with_bumi'] and options['with_syarat']:
-            fieldnames.append('bumi_agreement')
             for prog in all_programmes:
                 prog['bumi_agreement'] = bumi_agreement(prog['bumi_portal'], prog['bumi_syarat'])
 
@@ -390,6 +378,33 @@ class Command(BaseCommand):
             })
 
         return programmes
+
+    def _mark_bumi_portal(self, browser, programmes, categories, jenprog, delay, max_pages, cat_totals):
+        """Set ``bumi_portal`` Y/N on every programme from the portal's own Bumi filter."""
+        bumi_codes = set()
+        for cat_code, _stream in categories:
+            bumi_codes |= self._scrape_bumi_codes(
+                browser, cat_code, jenprog, delay, max_pages, cat_totals.get(cat_code, 0))
+        for prog in programmes:
+            prog['bumi_portal'] = 'Y' if prog['course_id'] in bumi_codes else 'N'
+        stray = bumi_codes - {p['course_id'] for p in programmes}
+        if stray:
+            self.stdout.write(self.style.WARNING(
+                f'  {len(stray)} Bumi-filter codes were not in the main listing: '
+                f'{", ".join(sorted(stray)[:10])}'
+            ))
+
+    def _fetch_syarat(self, page, programmes, delay):
+        """Set ``syarat_khas`` and ``bumi_syarat`` from each programme's Syarat modal."""
+        self.stdout.write(f'\nFetching Syarat for {len(programmes)} programmes...')
+        for n, prog in enumerate(programmes, 1):
+            resp = page.request.get(modal_url(prog['cat_code'], prog['course_id']))
+            text = clean_modal_text(resp.text()) if resp.ok else ''
+            prog['syarat_khas'] = text
+            prog['bumi_syarat'] = 'Y' if bumi_in_syarat(text) else 'N'
+            if n % 50 == 0:
+                self.stdout.write(f'  {n}/{len(programmes)}')
+            time.sleep(delay / 2)
 
     def _scrape_bumi_codes(self, browser, cat_code, jenprog, delay, max_pages, unfiltered_total):
         """Return the programme codes the portal lists under its own "Program BUMI = Ya" filter.

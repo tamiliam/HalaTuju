@@ -1503,3 +1503,8 @@ and layout belong to an image read. (Income declarations close)
 - **UP_TVET's `semak-pra-syarat` (kelayakan) pages went behind a login; the public `awam-kursus/kursus` page
   still carries the full "Syarat Kursus".** Re-check a stored URL column's reachability before building a
   parser on it. (Bumi coverage Sprint A, 2026-10-28)
+- **The repo-wide size gates live in `apps/scholarship/tests/test_code_standards.py`, so a change under
+  `apps/courses` that runs only the courses suite can pass every test it ran and still break the build.**
+  Sprint A grew `scrape_mohe_stpm.Command.handle` to 154 lines (limit 150) and was caught only when Sprint B
+  ran the scholarship suite. Run `test_code_standards.py` with ANY backend change, whichever app it touches.
+  (Bumi coverage Sprint B, 2026-10-28)

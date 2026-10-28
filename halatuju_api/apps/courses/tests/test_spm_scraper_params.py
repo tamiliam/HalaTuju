@@ -12,6 +12,7 @@ from apps.courses.management.commands.scrape_mohe_stpm import (
     bumi_filter_applied,
     bumi_in_syarat,
     clean_modal_text,
+    csv_fieldnames,
     detail_url,
     modal_url,
 )
@@ -117,3 +118,16 @@ class TestBumiAgreement:
     def test_missing_signal_is_blank(self):
         assert bumi_agreement('', 'Y') == ''
         assert bumi_agreement('Y', None) == ''
+
+
+class TestCsvFieldnames:
+    BASE = ['course_id', 'course_name', 'university', 'merit', 'stream', 'mohe_url', 'badges', 'year']
+
+    def test_default_columns_unchanged(self):
+        # refresh_stpm and the sync commands read this shape.
+        assert csv_fieldnames(False, False) == self.BASE
+
+    def test_bumi_columns_added_only_for_passes_that_ran(self):
+        assert csv_fieldnames(True, False) == self.BASE + ['bumi_portal']
+        assert csv_fieldnames(False, True) == self.BASE + ['bumi_syarat', 'syarat_khas']
+        assert csv_fieldnames(True, True)[-1] == 'bumi_agreement'

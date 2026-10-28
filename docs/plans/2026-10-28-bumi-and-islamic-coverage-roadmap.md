@@ -23,7 +23,8 @@ Owner rulings (2026-10-28):
 
 ## Status
 - **Sprint A DONE 2026-10-28** — `docs/bumi-inventory-2026-10-28.md`. STPM data already exact → **Sprint E dropped**. Sprint D = 150 SPM courses (136 Bumi + 14 Islamic-subject). Sprint F parses `info_url` (kelayakan pages now need a login).
-- **NEXT = Sprint B.**
+- **Sprint B BUILT 2026-10-28** (branch `sprint-b-bumi-toggle`; migration 0087 migrate-first). Owner Option A: scholarship pickers show every course and never read the answer.
+- **NEXT = deploy B (owner), then Sprint C.**
 
 ## Roadmap — 6 sprints (now 5: E dropped)
 

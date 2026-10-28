@@ -15467,3 +15467,11 @@ grades alone (Sprint A found no programme on either track that asks for a religi
 **Bumi source of truth:** the portal's own "Program BUMI" filter AND the Syarat wording, both captured; they
 agreed on every programme on 2026-10-28. The listing's "Feeder Bumiputera" badge is not a Bumi rule.
 **Revisit if:** the two signals ever disagree on a programme, or a programme starts asking for a religion.
+
+## 2026-10-28 — The scholarship programme pickers show every course and never read the Bumiputera answer (owner, Option A)
+**Decision:** the scholarship apply page and the /profile "Your Plans" picker (`loadDegreeChoices(..., { allCourses: true })`)
+list every course, Bumi-only included, to every student, and never read `StudentProfile.bumiputera`.
+**Why:** a picker filtered on the answer would let a reviewer or sponsor infer it from the programme chosen. A
+non-Bumi student who picks a Bumi-only course simply will not get a place, and the offer letter corrects it.
+Sponsors are never told the answer; a guess from the institution is accepted (owner).
+**Revisit if:** a scholarship rule ever needs to know whether a chosen programme is reachable for the student.
