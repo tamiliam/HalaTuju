@@ -960,7 +960,20 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**Income declarations (#374) are LIVE with the hotfix (2026-10-28; `afaf23cd` … `8a11d41e`, hotfix `c58b7237` +
+**Health light, TD-408 and TD-411 are LIVE (2026-10-28; TD-408 + TD-411 `cc47ef04` api-01168-5v7; health light +
+TD-411 hotfix `305b0434` api-01169-s5k / web-01003-xsf; migration scholarship 0180 applied by hand; retro
+`docs/retrospectives/retrospective-2026-10-28-health-td408-411.md`).** Super admins see a System health light in
+the admin top bar (Gemini reads, Vision OCR, email sending, scheduled jobs, AI credit; `cron_health.EXPECTED_CADENCE`
+must change with any Cloud Scheduler change). A reversed patronymic (father/son) no longer matches; bare
+ANAK/AK/BT/BTE give a father name, which can only turn 'unknown' into 'match'. A PDF text layer that is only a
+scanner stamp is no layer (`pdf_pages.usable_text_layer`); the KWSP app screen reads suspect `epf_app`.
+Genuineness `MODEL_VERSION` 1.17.1; `VERDICT_ENGINE_VERSION` 2026-10-28.2 (the other session's C4 takes .3).
+- **Next: TD-399** (OpenAI fallback for document reads) — needs the owner's privacy ruling first.
+- A rule that turns away text or documents is dry-run on the LIVE stored data before deploy, not only on the
+  eval corpus (lesson 2026-10-28: the corpus missed a Canva-style statement the live run caught).
+- ⚠ Bundle budget: median 179.49 kB of 180 — about 0.5 kB headroom.
+
+**Earlier — Income declarations (#374) are LIVE with the hotfix (2026-10-28; `afaf23cd` … `8a11d41e`, hotfix `c58b7237` +
 `00f1f7eb`, api-01164-sfb; follow-ups in the close commit; retro
 `docs/retrospectives/retrospective-2026-10-28-income-declarations.md`).** Every informal income document (support
 letter, informal payslip, declaration form) counts only when approved — a stamp with a named / titled approver,

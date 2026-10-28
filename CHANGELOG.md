@@ -28,7 +28,7 @@ Billing & usage, grouped by the task (issuing) rather than by the scope they hav
   unchanged; the one real gate is now named in the docstring.
 - No model, no migration, no data move. en/ms/ta. TD-412 (three copies of `_organisation_for`).
 
-## Admin system health light (BRANCH, NOT LIVE) - 2026-10-28
+## Admin system health light (LIVE api-01169-s5k / web-01003-xsf; migration scholarship 0180 applied by hand) - 2026-10-28
 
 - **A small round light in the admin top bar, for super admins only** (owner-approved Stitch design, between
   the theme selector and Help). Green / amber / red, showing the WORST of five rows (owner change (a)); click
@@ -63,7 +63,7 @@ Billing & usage, grouped by the task (issuing) rather than by the scope they hav
   (`vision_outcome`, `gemini_read_outcome`, `ic_second_opinion_outcome`) shared by the outage alert and the
   light; behaviour unchanged.
 
-## TD-411 hotfix — letter-spaced headings around real prose keep the PDF text layer (MODEL 1.17.1) - 2026-10-28
+## TD-411 hotfix — letter-spaced headings around real prose keep the PDF text layer (MODEL 1.17.1, LIVE api-01169-s5k) - 2026-10-28
 
 - **Found by the post-deploy affected-list run** (992 live PDFs, 9 turned away). Doc 3919, a 3-page Canva-style
   statement of intent, has letter-spaced headings ("S K I L L S", 82% single-letter words) around ordinary prose;
@@ -71,7 +71,7 @@ Billing & usage, grouped by the task (issuing) rather than by the scope they hav
   least 30 ordinary words (`pdf_pages.MIN_REAL_WORDS`) is never judged letter-spaced. The other 8 (CamScanner
   stamps on 3 ICs/3 parent ICs, an EPF and a results slip) are still turned away, as intended.
 
-## TD-408 + TD-411 — father/son name order; a scanner watermark is not a text layer; the KWSP app screen is an EPF proof (MODEL 1.17.0, VERDICT 2026-10-28.2) - 2026-10-28
+## TD-408 + TD-411 — father/son name order; a scanner watermark is not a text layer; the KWSP app screen is an EPF proof (MODEL 1.17.0, VERDICT 2026-10-28.2, LIVE api-01168-5v7) - 2026-10-28
 
 - **TD-408 (VERDICT 2026-10-28.2; live dry-run 1448 real pairs, 3 changed, all an Iban father now confirmed; two review rounds) — word order in a patronymic name.**
   "ALI BIN ABU" (Ali, son of Abu) no longer matches "ABU BIN ALI", nor "JOHNNY ANAK GABRIEL" "GABRIEL ANAK

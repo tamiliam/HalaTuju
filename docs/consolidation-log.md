@@ -16,6 +16,10 @@ _(cleared at the 2026-10-18 review — counter reset; the 40 reviewed commits ar
 - 2026-10-22 f604f3f6 test: the IC-shape check no longer matches a random student UUID (test_birth_state_followups · 1; flaky deploy-build failure)
 - 2026-10-22 082487df fix: Request a document explains itself instead of failing silently (request #40) (api querying officer_requests_state + serializer; web OutstandingPanel, view, api type, FAQ, messages + tests · 7 source files; note: view.actions.test "raising a query" still raises at shortlisted, a stage the server refuses)
 - 2026-10-25 4493f60a fix: the cockpit shows the student's family answers, and the parent tick means a real name match (request #45) (api serializers_admin_family + serializer base; web FamilyAnswers, ApplicantCards, fieldVerification, api type, FAQ, messages + tests · 7 source files)
+- 2026-10-28 8a8a56a5 + 3f9ffa74 + 2a12d21f fix: TD-408 order-aware patronymic name match (SPRINT work — TD-408 sprint, three review rounds; retro retrospective-2026-10-28-health-td408-411.md)
+- 2026-10-28 8bac9363 + c4cbc9bd + d9a31e07 fix(TD-411): scanner watermark is not a PDF text layer; KWSP app screen; letter-spaced hotfix (SPRINT work — TD-411 sprint; same retro)
+- 2026-10-28 c73fe6dc + 305b0434 feat: admin System health light (SPRINT work — health light sprint, Stitch-approved, migration 0180; same retro)
+- 2026-10-28 06757a61 feat: billing settings move to the screens whose scope they match (logged by the TD-408/411 session for the billing session; a feat — check it was run as a sprint)
 
 ## Sprints since the last review
 
