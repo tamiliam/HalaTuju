@@ -980,7 +980,7 @@ never sent it) and an issue-date box, in `halatuju-web/src/components/admin/Invo
   `OrgBuildHours.module`, which is what makes a request countable as billed. Only lines frozen from now on.
 - **A back-dated invoice carries TODAY's issuer, bill-to and payment terms** — none of the three is versioned.
   The money is the billed month's (rates and discounts are month-keyed); the identity and terms are not.
-- **`record_platform_cost --convert-held <month>`** gives a held foreign row its ringgit figure at the ECB
+- **`record_platform_cost --month <month> --convert-held`** gives a held foreign row its ringgit figure at the ECB
   closing rate for the month's last day. Nothing could do this before: `import_invoices` fetches the rate at
   import time and never returns, so a bill imported before month-end stayed unconverted forever.
 - **Supabase's INVOICE parses as well as its RECEIPT** ("Amount due" / "Amount paid"), and a window that has
