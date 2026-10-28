@@ -13,9 +13,84 @@ and a page box past ``MAX_PAGE_SIDE_PT`` is refused outright rather than rendere
 """
 import io
 import logging
+import re
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+#: A PDF's text layer is trusted (read for free, no Vision call) only when at least this many
+#: characters of REAL text survive `usable_text_layer`. vision.py reads it as ``_MIN_PDF_TEXT``.
+MIN_TEXT_LAYER_CHARS = 25
+
+# ── TD-411 (2026-10-28): is this text layer the document, or only a scanner app's stamp? ─────────
+# A phone scanner app (CamScanner above all) writes its OWN name into the text layer of a scanned PDF
+# and nothing else: doc 3281, a real KWSP Penyata Ahli, had the 46-character layer "CamScanner" × 4, so
+# it was "read" as that word, the Vision read never ran and every scorer saw nothing. The check below
+# decides what is document text; a layer that fails it is treated as no layer, so the page image goes
+# to Vision exactly as a scan with an empty layer always has. Every doc type that reads a PDF is served.
+_SCANNER_APPS = (r'cam\s?scanner|adobe\s+scan|microsoft\s+lens|office\s+lens|genius\s+scan|'
+                 r'tap\s?scanner|clear\s?scan(?:ner)?|tiny\s?scanner|simple\s?scan(?:ner)?|'
+                 r'scanner\s+pro|notebloc|vflat|turboscan')
+#: The app's name, alone or as "Scanned with / by / using <app>", anywhere in a line (word-bounded).
+_SCANNER_STAMP = re.compile(
+    rf'\b(?:(?:scanned|digiti[sz]ed|created|made)\s+(?:with|by|using)\s+)?(?:{_SCANNER_APPS})\b', re.I)
+#: A whole line that is only "Scanned with <something short>" — an app we do not name above.
+_SCANNED_WITH_LINE = re.compile(r'^\s*scanned\s+(?:with|by|using)\s+[\w .\-]{1,30}$', re.I)
+#: pypdf's placeholder for a glyph it cannot map back to a character (a subset-encoded font).
+_CID = re.compile(r'\(cid:\d+\)')
+
+
+def _without_scanner_stamp(text: str) -> str:
+    """The text layer minus every scanner-app stamp: the stamp words removed wherever they sit, and a
+    line left empty (or one that was only "Scanned with …") dropped. A layer with no stamp comes back
+    BYTE-FOR-BYTE as it was: it is split on '\\n' only (``splitlines`` would also break on the control
+    characters a garbled layer carries, and the parsers that read such a layer must see what they saw)."""
+    text = text or ''
+    lines = text.split('\n')
+    if not any(_SCANNER_STAMP.search(ln) or _SCANNED_WITH_LINE.match(ln.strip()) for ln in lines):
+        return text
+    kept = []
+    for line in lines:
+        if _SCANNED_WITH_LINE.match(line.strip()):
+            continue
+        cleaned = _SCANNER_STAMP.sub('', line)
+        if cleaned.strip() or not line.strip():
+            kept.append(cleaned)
+    return '\n'.join(kept).strip()
+
+
+def _looks_like_text(text: str) -> bool:
+    """False for a layer that is not readable document text: dominated by ``(cid:NN)`` glyph codes, with
+    under a quarter of its visible characters letters or digits, or letter-spaced ("K W S P P E N Y A T A").
+
+    The floors are deliberately LOW (calibrated 2026-10-28 on the 169 eval PDFs that carry a layer): a real
+    payslip with dot leaders sits at 0.42 letters-or-digits and a half-garbled STPM layer that the STPM
+    parser reads today at 0.42 too — both keep their layer; every other real one is 0.78 or more. The
+    highest single-letter share of any real layer is 0.20 (grades "A", "B" on a results slip)."""
+    cid_chars = sum(len(m) for m in _CID.findall(text))
+    rest = _CID.sub('', text)
+    visible = [c for c in rest if not c.isspace()]
+    if cid_chars >= len(visible):
+        return False
+    if sum(c.isalnum() for c in visible) < 0.25 * len(visible):
+        return False
+    words = [w for w in rest.split() if w.isalpha()]
+    return not (len(words) >= 10 and sum(len(w) == 1 for w in words) > 0.6 * len(words))
+
+
+def usable_text_layer(text: str) -> str:
+    """The text layer to read in place of a Vision call, or '' when it is not real document text.
+
+    The scanner-app stamp is REMOVED from what is returned (not merely ignored): it is not part of the
+    document, it can never be a signature, and leaving it in would put "CamScanner" into every name
+    and label match downstream. A real digital PDF carries no stamp, so its layer comes back unchanged;
+    a real layer that merely carries a "Scanned with CamScanner" footer keeps all its own text. What is
+    left must then look like text (`_looks_like_text`) and hold `MIN_TEXT_LAYER_CHARS` characters."""
+    cleaned = _without_scanner_stamp(text)
+    if len(cleaned) < MIN_TEXT_LAYER_CHARS or not _looks_like_text(cleaned):
+        return ''
+    return cleaned
+
 
 RASTER_DPI = 200
 #: Longest side of a rendered page, in pixels. 4,000 px square is 16 MP — 64 MB as RGBA, far
@@ -36,7 +111,8 @@ def raster_scale(width_pt: float, height_pt: float) -> Optional[float]:
 
 def pdf_text_layer(data: bytes) -> str:
     """The concatenated text layer of a PDF (all pages). '' if none / encrypted /
-    library missing — caller then falls back to rasterise+OCR."""
+    library missing — caller then falls back to rasterise+OCR. The RAW layer: a caller deciding
+    whether to trust it passes it through `usable_text_layer` first (TD-411)."""
     try:
         from pypdf import PdfReader
         reader = PdfReader(io.BytesIO(data))

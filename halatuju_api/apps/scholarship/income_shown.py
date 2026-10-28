@@ -81,8 +81,12 @@ def proof_flagged(doc, doc_type) -> bool:
         family — so this catches a legacy score or a future formal-family band;
       * an INFORMAL document (a support letter, an informal payslip, a declaration form) with no issuing
         body or approver, or not checked for them yet (owner ruling 2A — see the last paragraph).
-    ⚠ EPF IS EXCLUDED until TD-411: eight live statements the scorer itself names `epf` read ``not_epf``
-    at p=0.00 — no signature matched at all, the shape of a text it could not read, not of a wrong document.
+    ⚠ EPF IS EXCLUDED, AND STAYS EXCLUDED after TD-411 (2026-10-28). TD-411 found the two real faults (a
+    CamScanner PDF "read" as its watermark; the KWSP app balance screen unknown to the scorer) and fixed
+    them, but it also found that almost every live ``not_epf`` IS a wrong-type upload — and most of those
+    are a PAYSLIP, a pension card, a tax form: real income evidence in the wrong slot. Flagging them would
+    hide a real earner's income and block a family over a filing slip, so the EPF slot's ``not_epf`` stays
+    an officer-visible flag, never a refusal here.
 
     ⚠ NO SIGNAL STILL COUNTS — an unscored document, ``unchecked``, the flag off, a read our outage
     deferred. Those are OUR gaps: TD-394's rule ("a money gate never passes on a document nobody has READ")
@@ -96,7 +100,7 @@ def proof_flagged(doc, doc_type) -> bool:
     if is_informal(doc):
         return not approval_counts(doc)
     if doc_type == 'epf':
-        return False                                   # TD-411: the EPF scorer's not_epf is not trusted yet
+        return False                                   # TD-411: a not_epf is mostly real income evidence misfiled
     from .genuineness.bands import canonical_status, stored_authenticity, stored_status
     vf = getattr(doc, 'vision_fields', None)
     status = canonical_status(stored_status(vf), doc_type)

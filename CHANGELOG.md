@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-411 — a scanner app's watermark is not a text layer; the KWSP app balance screen is an EPF proof (BUILT, NOT LIVE) - 2026-10-28
+
+- **The fault, confirmed read-only.** Of 31 live EPF-slot documents scored `not_epf`, about 26 are genuinely the
+  wrong document (the scorer is right). Doc 3281, a real Penyata Ahli scanned with CamScanner, had a text layer
+  of only "CamScanner" × 4 (46 characters); any layer of 25 characters or more was trusted, so it was "read" as
+  that word and never went to Vision. This touched every document type that reads a PDF, not only EPF.
+- **`pdf_pages.usable_text_layer`** — scanner-app stamps (CamScanner, "Scanned with / by / using …", Adobe Scan,
+  Microsoft / Office Lens, Genius Scan, TapScanner and others) are removed; a layer that is then under 25
+  characters, dominated by `(cid:NN)` codes, under a quarter letters-or-digits, or letter-spaced counts as no
+  layer, so the page image goes to Vision. Both readers in `vision.py` (`extract_text`, `ocr_document_full`) and
+  the eval capture use it. A layer with no stamp is returned byte for byte. On the 169 eval PDFs with a layer,
+  only one (a 34-character CamScanner PDF) is newly sent to Vision.
+- **The KWSP app "Semakan Baki Simpanan" screen** (doc 1395) is recognised (`genuineness/epf_app_doc.py`,
+  `doc_seen` `epf_app`), scored beside the Penyata Ahli and never above SUSPECT — a screenshot is easy to fake.
+  Every printed statement scores exactly as before (13 EPF snapshots unchanged); a payslip with KWSP / Caruman
+  Majikan lines still reads `not_epf`.
+- `results_doc.MODEL_VERSION` 1.16.0 → 1.17.0. TD-410's EPF exemption from `proof_flagged` stays (a misfiled
+  payslip is still real income evidence); the reason is now written at the exemption. Tests:
+  `test_td411_text_layer.py`. Needs a deploy and a live re-read of the affected documents (owner's go — paid).
+
 ## STPM CGPA C3 — cockpit check marks on the STPM grades and CGPA (NOT LIVE) - 2026-10-28
 
 - **Owner ruling:** the cockpit's STPM subjects, grades and CGPA come from onboarding (the CGPA is the PNGK of

@@ -19,6 +19,7 @@ import re
 import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exported for callers)
+from .epf_app_doc import EPF_APP_SIGNATURES, screen_at_most_suspect
 from .stpm_doc import STPM_LISTS
 
 # Version of the deterministic document-recognition model — the signature FAMILIES + weights +
@@ -26,21 +27,18 @@ from .stpm_doc import STPM_LISTS
 # weight/anchor/threshold tweak) so a stored genuineness result can be traced to the model that
 # produced it and performance compared across versions. It travels on every result as
 # ``model_version`` (and is persisted in ``vision_fields['authenticity']``). History:
-#   1.0 (2026-06-27) — first full Layer-1 set held-out-validated on unseen prod docs:
-#       results_slip + certificate, birth_certificate (text-only, visual signatures dropped),
-#       epf (+ wrong-type backstop), offer_letter families (stpm / matriculation / polytechnic /
-#       pismp / ua_offer, identity-anchor gated), STR (letter / dashboard / semakan, identity gated).
+#   1.0 (2026-06-27) — first full Layer-1 set held-out-validated on unseen prod docs: results_slip +
+#       certificate, birth_certificate (text-only, visual signatures dropped), epf (+ wrong-type backstop), offer_letter
+#       families (stpm / matriculation / polytechnic / pismp / ua_offer, identity-anchor gated), STR (identity gated).
 #   1.1 (2026-06-27) — ua_offer offer-line now requires the OFFICIAL offer wording ("Tawaran
 #       Kemasukan" / "Surat Tawaran") only; a "Pemakluman Kemasukan" admission notification
 #       (UM SATU / UPU-rayuan pre-offer, #31) no longer matches → floors at suspect. Owner policy:
 #       official offer letters only. (Only a31 used the dropped 'PEMAKLUMAN KEMASUKAN' anchor.)
-#   1.2 (2026-06-29) — STR-proof model rework (docs/scholarship/str-proof-spec.md): structured STR
-#       currency states (wrong_type / rejected / unreadable / stale / unconfirmed / current); a
-#       non-STR in the STR slot (SALINAN / SARA / payslip) is wrong_type (→ RED, not "unconfirmed");
-#       a dateless approved STR is no longer "current" (→ unconfirmed/BLUE); extraction reads the
-#       status VALUE not the "Status Permohonan STR" label, dates only from letter/payment (not nav
-#       chrome), and sharper dashboard-vs-semakan classification. No signature-family/weight change
-#       here, but the STR verdict pipeline it feeds changed → bump for traceability.
+#   1.2 (2026-06-29) — STR-proof rework (docs/scholarship/str-proof-spec.md): structured currency states
+#       (wrong_type / rejected / unreadable / stale / unconfirmed / current); a non-STR in the STR slot
+#       (SALINAN / SARA / payslip) is wrong_type (RED); a dateless approved STR is unconfirmed (BLUE); the
+#       status VALUE is read, not its label; dates only from letter/payment (not nav chrome); sharper
+#       dashboard-vs-semakan split. No family/weight change; the STR verdict it feeds did → bump.
 #   1.2.1 (2026-07-01) — STR-proof refinement (docs/scholarship/str-proof-spec.md): (a) a positive
 #       PAID amount ("Jumlah … STR RM…") now corroborates approval, rescuing a doc whose "Lulus"
 #       token was misread as the "STR" label (payment is EXTRA — "Lulus" alone still suffices, a
@@ -98,7 +96,8 @@ from .stpm_doc import STPM_LISTS
 #   1.10.0 / 1.11.0 (2026-10-27) — STPM exact-read S2: read Exact (`stpm_parse`) / S3: scored + 1A. Backfill: S4.
 #   1.12.0 / 1.14.0 / 1.15.0 (2026-10-28) — stpm_parse 1.1.0 column layer / SPM cert by rows (`spm_cert_parse`) + 1.2.0 / 1.3.0 pypdf-5.9 merged lines.
 #   1.13.0 / 1.16.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields) / the approver read never takes a printed label. Backfill: live list.
-MODEL_VERSION = '1.16.0'
+#   1.17.0 (2026-10-28) — TD-411: a PDF text layer that is only a scanner app's stamp is no layer (`pdf_pages.usable_text_layer`, all doc types) + the KWSP app balance screen (`EPF_APP_SIGNATURES`, at most suspect). Backfill: live re-read of the affected list.
+MODEL_VERSION = '1.17.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -364,7 +363,7 @@ _OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIG
                 'ua_offer': UA_OFFER_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'birth_certificate': {'birth_certificate': BC_SIGNATURES},
-             'epf': {'epf': EPF_SIGNATURES}, 'stpm_result': STPM_LISTS,
+             'epf': {'epf': EPF_SIGNATURES, 'epf_app': EPF_APP_SIGNATURES}, 'stpm_result': STPM_LISTS,
              'offer_letter': _OFFER_LISTS,
              'str': _STR_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
@@ -548,6 +547,7 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
         status = 'not_' + (doc_type or r['type'])
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
+    status, reason = screen_at_most_suspect(r['type'], status, reason)     # 1.17.0 — `epf_app_doc`
     if doc_type == 'offer_letter' and status != 'genuine':     # 1.8.0 — see `offer_issuers`
         from .offer_issuers import unfingerprinted_offer
         return unfingerprinted_offer(ocr_text, r, status, reason, MODEL_VERSION)

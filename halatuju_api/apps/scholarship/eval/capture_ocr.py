@@ -9,7 +9,9 @@ result in snapshots/ (gitignored — real student documents, PII):
 
 The path choice mirrors ``vision.ocr_document_full`` (apps/scholarship/vision.py ~L1187-1212):
 a DIGITAL PDF whose text layer (pypdf, all pages — ``pdf_pages.pdf_text_layer``) holds at least
-``_MIN_PDF_TEXT`` (25) characters is read from that layer for free, with no word boxes
+``_MIN_PDF_TEXT`` (25) characters of REAL text — production's own ``pdf_pages.usable_text_layer``
+(TD-411: a layer that is only a scanner app's stamp, "CamScanner", is no layer) — is read from that
+layer for free, with no word boxes
 (production's ``words`` is None). Anything else goes to Vision DOCUMENT_TEXT_DETECTION, whose
 one response carries both the text and the word boxes (``vision._vision_words``). Production
 rasterises only PAGE 1 of a scanned PDF; this capture OCRs every page (one Vision call each) so
@@ -53,8 +55,8 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from apps.scholarship import pdf_pages  # noqa: E402 - production's own PDF readers (Django-free)
 
-# Mirrors vision._MIN_PDF_TEXT (vision.py pulls Django settings at import).
-MIN_PDF_TEXT = 25
+# Production's own threshold (vision._MIN_PDF_TEXT is this same constant).
+MIN_PDF_TEXT = pdf_pages.MIN_TEXT_LAYER_CHARS
 PDF_MAGIC = b'%PDF-'
 PDF_LIBS = ('pypdf', 'pypdfium2')
 
@@ -66,11 +68,13 @@ def is_pdf(path: str, data: bytes) -> bool:
 
 
 def choose_path(pdf: bool, text_layer: str) -> str:
-    """'text_layer' for a digital PDF with enough real text, else 'vision' (ocr_document_full)."""
-    return 'text_layer' if pdf and len(text_layer or '') >= MIN_PDF_TEXT else 'vision'
+    """'text_layer' for a digital PDF with enough real text, else 'vision' (ocr_document_full).
+    ``text_layer`` is the RAW layer; the TD-411 sanity check is applied here, as production does."""
+    return 'text_layer' if pdf and len(usable_text_layer(text_layer or '')) >= MIN_PDF_TEXT else 'vision'
 
 
 raster_scale = pdf_pages.raster_scale
+usable_text_layer = pdf_pages.usable_text_layer   # TD-411 — production's own rule, never a copy
 
 
 def locked_versions(lock_text: str) -> dict:
@@ -205,7 +209,7 @@ def capture_one(path, vision_mod, client):
     layer = _pdf_text_layer(data) if pdf else ''
     route = choose_path(pdf, layer)
     if route == 'text_layer':
-        return layer, None, {'path': 'text_layer', 'pages': None, 'vision_calls': 0}, 0
+        return usable_text_layer(layer), None, {'path': 'text_layer', 'pages': None, 'vision_calls': 0}, 0
     images = _pdf_page_pngs(data) if pdf else [data]
     pages, texts, calls, errors = [], [], 0, []
     for i, img in enumerate(images, start=1):
@@ -236,7 +240,7 @@ def recapture_text_layer(docs):
             if json.load(fh).get('path') != 'text_layer':
                 continue
         with open(p, 'rb') as fh:
-            layer = _pdf_text_layer(fh.read())
+            layer = usable_text_layer(_pdf_text_layer(fh.read()))
         if choose_path(True, layer) != 'text_layer':
             skipped += 1
             print(f'  SKIP {key}: the layer would now route to Vision - cache left as it was')

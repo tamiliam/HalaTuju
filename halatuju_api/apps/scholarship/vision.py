@@ -24,7 +24,8 @@ from .genuineness.bands import keep_stored_authenticity
 from .read_errors import (IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, OCR_SERVICE_FAILED,
                           UNPARSEABLE_RESPONSE, is_ai_service_error, is_ocr_service_error,
                           model_rejected_document, read_deferred)
-from .pdf_pages import pdf_first_page_png as _pdf_first_page_png, pdf_text_layer as _pdf_text_layer
+from .pdf_pages import (MIN_TEXT_LAYER_CHARS as _MIN_PDF_TEXT, pdf_first_page_png as _pdf_first_page_png,
+                        pdf_text_layer as _pdf_text_layer, usable_text_layer as _usable_text_layer)
 from .income_declaration import read_approval as _read_approval   # #374: the approval is read off the IMAGE
 from .higher_results import HINT as _HIGHER_HINT, SCHEMA as _HIGHER_SCHEMA, extract as _higher_extract
 from .name_order import patronymic_reversed   # TD-408: a reversed patronymic is a different person
@@ -664,9 +665,8 @@ def _extract_address(text: str) -> str:
 # Both libs are OPTIONAL: if absent (or the PDF is corrupt/encrypted), a PDF
 # degrades to "unreadable" — today's behaviour — rather than crashing.
 _PDF_MAGIC = b'%PDF-'
-_MIN_PDF_TEXT = 25      # chars of real text → treat as a digital PDF (skip Vision)
-# The two page readers (_pdf_text_layer, _pdf_first_page_png) live in pdf_pages.py — page 1 renders
-# within a pixel budget since 2026-10-02 (an unbounded raster of one huge-page PDF killed the instance).
+# The page readers live in pdf_pages.py (page 1 within a pixel budget, 2026-10-02), and so does TD-411's
+# _usable_text_layer: a layer that is only a scanner app's stamp ("CamScanner") is no layer → Vision.
 
 
 def _is_pdf(content_type: str, data: bytes) -> bool:
@@ -1040,7 +1040,7 @@ def extract_text(data: bytes, content_type: str = '') -> dict:
     if not data:
         return {'text': '', 'error': 'empty image'}
     if _is_pdf(content_type, data):
-        text = _pdf_text_layer(data)
+        text = _usable_text_layer(_pdf_text_layer(data))
         if len(text) >= _MIN_PDF_TEXT:
             return {'text': text, 'error': None}   # digital PDF — no billable Vision call
         img = _pdf_first_page_png(data)
@@ -1202,7 +1202,7 @@ def ocr_document_full(doc) -> dict:
         if image is None:
             return {'text': '', 'words': None, 'image': None, 'error': 'could not fetch image'}
         if _is_pdf(doc.content_type, image):
-            text = _pdf_text_layer(image)
+            text = _usable_text_layer(_pdf_text_layer(image))
             if len(text) >= _MIN_PDF_TEXT:
                 return {'text': text, 'words': None, 'image': image, 'error': None}
         r = _vision_words(image, doc.content_type)
