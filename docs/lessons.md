@@ -1493,3 +1493,13 @@ The approval (stamp / signature) was first added to the OCR TEXT read because it
 read sees the printed label "Cop dan tandatangan" whether the box is stamped or empty, and never sees a
 signature. **Rule:** before adding a field to a read, ask what that reader can physically observe; ink, marks
 and layout belong to an image read. (Income declarations close)
+- **A portal filter that lives in the server session is a TOGGLE — prove it narrowed, and give each pass a fresh
+  browser context.** e-Panduan's "Program BUMI" checkbox is a form POST kept in the session; ticking it a second
+  time in the same session switches it OFF, and the next listing silently shows everything again (a spike read
+  "96 of 678" as the arts total for exactly this reason). The scraper now runs the filtered pass in a new
+  context and refuses to continue unless the filtered count is above zero AND below the unfiltered count. Also:
+  the STPM S and A listings double-list 567 codes, so always count UNIQUE codes before comparing with the DB.
+  (Bumi coverage Sprint A, 2026-10-28)
+- **UP_TVET's `semak-pra-syarat` (kelayakan) pages went behind a login; the public `awam-kursus/kursus` page
+  still carries the full "Syarat Kursus".** Re-check a stored URL column's reachability before building a
+  parser on it. (Bumi coverage Sprint A, 2026-10-28)
