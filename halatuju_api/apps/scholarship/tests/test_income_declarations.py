@@ -238,10 +238,15 @@ class TheExtraction(SimpleTestCase):
         self.assertEqual(gem.call_count, 1)
         _out, gem = self._read(self._doc('epf'), {})
         gem.assert_not_called()
-        bank = {'fields': {'kind': 'bank_statement', 'amount': 'RM800'}, 'warnings': [], 'error': ''}
+        bank = {'fields': {'kind': 'bank_statement', 'issuer': 'Malayan Banking Berhad (Maybank)', 'amount': 'RM800'},
+                'warnings': [], 'error': ''}
         _out, gem = self._read(self._doc(), {}, text='MAYBANK\nPENYATA AKAUN\nBAKI', ex=bank)   # 4A: no call
         gem.assert_not_called()
         _out, gem = self._read(self._doc(), {}, text=FORM, ex=dict(bank))   # a declaration labelled "bank": call
+        self.assertEqual(gem.call_count, 1)
+        typed = {'fields': {'kind': 'bank_statement', 'issuer': 'PENYATA BANK', 'amount': 'RM800'},
+                 'warnings': [], 'error': ''}
+        _out, gem = self._read(self._doc(), {}, text='PENYATA BANK\nBAKI RM800', ex=typed)   # names no bank: call
         self.assertEqual(gem.call_count, 1)
         _out, gem = self._read(self._doc(), {}, ex={'fields': {}, 'warnings': [], 'error': 'Gemini error: 503'})
         gem.assert_not_called()                                                          # a failed read: no call
@@ -405,16 +410,22 @@ class ThePerEarnerAnswerAndTheGate(_Case):
                     self.assertEqual('income_doc_unapproved:father' in out, not counts)
 
     def test_owner_ruling_4a_a_bank_statement_needs_no_approver(self):
-        """4A (2026-10-28): the bank's header is enough — a bank statement counts with no approver (and is not
-        "still checking"); one the scorer reads as a DECLARATION form still needs its approver."""
+        """4A (2026-10-28): the bank's header is enough — a statement whose issuer NAMES a known Malaysian bank
+        counts with no approver (and is not "still checking"); a self-typed "PENYATA BANK" naming no bank, or
+        one the scorer reads as a DECLARATION form, still needs its approver."""
         from apps.scholarship.income_engine import has_income_support_doc
         from apps.scholarship.income_declaration import is_informal
-        for seen, fields, counts in ((None, {}, True), ('declaration', {}, False), ('declaration', APPROVED, True)):
-            with self.subTest(seen=seen, fields=fields):
+        cases = ((None, 'Malayan Banking Berhad', {}, False, True), (None, 'CIMB BANK BERHAD', {}, False, True),
+                 (None, 'bank islam malaysia', {}, False, True),
+                 (None, 'PENYATA BANK', {}, True, False), (None, 'PENYATA BANK', CHECKED, True, False),
+                 (None, 'Kedai RHBX', {}, True, False),                       # whole words only
+                 ('declaration', 'Maybank', {}, True, False), ('declaration', 'Maybank', APPROVED, True, True))
+        for seen, issuer, fields, informal, counts in cases:
+            with self.subTest(seen=seen, issuer=issuer, fields=fields):
                 app = self._app(income_declared={'father': 800})
                 d = _doc(app, 'income_support_doc', seen=seen,
-                         fields={'kind': 'bank_statement', 'amount': 'RM800', **fields})
-                self.assertIs(is_informal(d), seen == 'declaration')
+                         fields={'kind': 'bank_statement', 'issuer': issuer, 'amount': 'RM800', **fields})
+                self.assertIs(is_informal(d), informal)
                 self.assertIs(has_income_support_doc(app, 'father'), counts)
 
     def test_an_unchecked_letter_does_not_count_and_the_family_is_told_we_are_still_checking(self):

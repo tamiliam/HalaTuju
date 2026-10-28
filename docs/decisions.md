@@ -15201,8 +15201,11 @@ e-Penyata, a GRED code): the sector field every income form carries no longer re
   answers `has_stamp_or_signature` = "stamp" / "signature" / "no" (an older "yes" counts as a signature).
 - **4A — a bank statement is exempt from the approver rule** (owner, 2026-10-28): the bank's header is
   enough. An `income_support_doc` whose text read labels it `kind = 'bank_statement'` is not "informal"
-  for the rule and costs no image call — unless the scorer reads it as a DECLARATION form, which still needs
-  its approver (a self-written statement labelled a bank statement does not escape the rule).
+  for the rule and costs no image call — only when its header (the text read's `issuer`) NAMES a known
+  Malaysian bank (`income_declaration.KNOWN_BANKS`, whole words: Maybank / Malayan Banking, CIMB, Public Bank,
+  RHB, Hong Leong, AmBank, Bank Islam, Bank Rakyat, BSN, Agrobank, Affin, Alliance Bank, OCBC, HSBC, UOB,
+  Standard Chartered, Bank Muamalat, MBSB, Al Rajhi, Kuwait Finance House), and never when the scorer reads
+  it as a DECLARATION form. A self-typed "PENYATA BANK" naming no bank still needs its approver.
 - **The approval is read from the IMAGE (review round 2):** one multimodal Gemini call per informal income
   document (`income_declaration.read_approval`) — a text read cannot tell a stamped box from an empty one
   whose label is printed, nor see a hand signature. A failure on our side stores nothing (still "not yet

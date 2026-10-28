@@ -167,8 +167,9 @@ service marker was "KUMPULAN PERKHIDMATAN" — the form's own sector field — p
   INFORMAL or as a declaration form — counts as income shown ONLY with an issuing body AND an approver: a
   visible official stamp / company chop on its own (owner ruling 3A — a small shop's chopped payslip counts),
   or a hand signature by a named or titled signer; a header-only, QR-only or unmarked letter does not. A
-  BANK STATEMENT (the text read's `kind`) is exempt — the bank's header is enough, no image call (owner
-  ruling 4A) — unless the scorer reads it as a declaration form. Read by `income_shown.proof_flagged`, so the gate,
+  BANK STATEMENT (the text read's `kind`) whose header NAMES a known Malaysian bank (`KNOWN_BANKS`) is
+  exempt — the bank's header is enough, no image call (owner ruling 4A) — unless the scorer reads it as a
+  declaration form; a self-typed "PENYATA BANK" naming no bank still needs its approver. Read by `income_shown.proof_flagged`, so the gate,
   the cluster, Check 2's per-member ask, TD-409's hold and the verdict follow. A formal, unscored or EPF
   proof is untouched; a real payslip or EPF outranks an approved form. Without them the student is asked
   "Upload {member}'s income document signed and stamped by an approver (e.g. employer, ketua kampung,

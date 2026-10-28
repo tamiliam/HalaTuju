@@ -79,7 +79,7 @@ def read_approval(doc, ex, ocr_text, image_fn):
     family = income_doc_genuineness(ocr_text or '', doc.doc_type).get('family')
     if doc.doc_type == 'salary_slip' and family not in _INFORMAL_TEXT_FAMILIES:
         return ex
-    if _bank_statement(ex['fields'].get('kind'), family):
+    if _bank_statement(ex['fields'].get('kind'), family, ex['fields'].get('issuer')):
         return ex                                   # owner ruling 4A: the bank's header is enough — no call
     from . import vision
     from .pdf_pages import pdf_pages_png
@@ -133,10 +133,28 @@ def is_declaration(doc) -> bool:
     return _seen(doc) == DECLARATION
 
 
-def _bank_statement(kind, seen) -> bool:
+#: Ruling 4A's banks: the header that makes a bank statement acceptable must NAME one of these (whole words,
+#: case-insensitive, matched on the normalised text like every marker list; "BANK" alone is not a bank).
+KNOWN_BANKS = ('MAYBANK', 'MALAYAN BANKING', 'CIMB', 'PUBLIC BANK', 'RHB', 'HONG LEONG', 'AMBANK',
+               'BANK ISLAM', 'BANK RAKYAT', 'BSN', 'BANK SIMPANAN NASIONAL', 'AGROBANK', 'AFFIN', 'ALLIANCE BANK',
+               'OCBC', 'HSBC', 'UOB', 'STANDARD CHARTERED', 'BANK MUAMALAT', 'MBSB', 'AL RAJHI',
+               'KUWAIT FINANCE HOUSE')
+
+
+def _names_a_known_bank(issuer) -> bool:
+    import re
+    from .genuineness.results_doc import _norm_fold_upper_alnum
+    tn = f' {_norm_fold_upper_alnum(issuer or "")} '
+    return any(re.search(rf'\b{re.escape(b)}\b', tn) for b in KNOWN_BANKS)
+
+
+def _bank_statement(kind, seen, issuer) -> bool:
     """Owner ruling 4A (2026-10-28): a bank statement (the text read's own `kind`) is exempt from the approver
-    rule — the bank's header is enough — unless the scorer reads it as a DECLARATION form."""
-    return str(kind or '').strip().lower() == 'bank_statement' and (seen or '') != DECLARATION
+    rule — the bank's header is enough — when that header (the text read's `issuer`) NAMES a known Malaysian
+    bank (`KNOWN_BANKS`; a self-typed "PENYATA BANK" names none), and unless the scorer reads it as a
+    DECLARATION form."""
+    return (str(kind or '').strip().lower() == 'bank_statement' and (seen or '') != DECLARATION
+            and _names_a_known_bank(issuer))
 
 
 def is_informal(doc) -> bool:
@@ -144,7 +162,8 @@ def is_informal(doc) -> bool:
     bank statement (ruling 4A, `_bank_statement`)."""
     dt = getattr(doc, 'doc_type', '')
     if dt == 'income_support_doc':
-        return not _bank_statement(_fields(doc).get('kind'), _seen(doc))
+        f = _fields(doc)
+        return not _bank_statement(f.get('kind'), _seen(doc), f.get('issuer'))
     return dt == 'salary_slip' and _seen(doc) in _INFORMAL_SLIP_FAMILIES
 
 
