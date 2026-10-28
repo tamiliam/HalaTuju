@@ -1,5 +1,18 @@
 # Architectural Decisions — HalaTuju
 
+## The cockpit's STPM grades and CGPA are counter-checked against the STPM results, on the server — 2026-10-28 (STPM CGPA C3, owner ruling)
+
+The owner ruled: the cockpit's STPM subjects, grades and CGPA come from onboarding and are checked against the
+uploaded STPM document; a match gets a check mark, exactly as the SPM side works. Decisions: (1) the marks are
+served (`stpm_marks.py`, `stpm_marks` on the detail payload), never derived in the browser; (2) one matcher —
+`higher_results.stpm_rows` is the row walk both `_compare_stpm` and the marks use, behind the same door
+(`student_higher_check`'s `grades_status`: a read STPM page, not an SPM slip); (3) a difference shows a marker
+with the document's value — a per-field fact, like the institution tick (2026-09-10); (4) the CGPA matches
+within 0.01 (both are two-place figures now the CGPA is calculated), while the Academic card's evidence line
+keeps `CGPA_TOLERANCE` 0.05 — so a 0.02-0.05 gap reads "CGPA matches" there and `≠` here; aligning them would
+move a verdict and is the owner's call; (5) a figure not labelled cumulative never gets the marker (review fix
+7); (6) display only, no `VERDICT_ENGINE_VERSION` bump.
+
 ## STPM CGPA and STPM merit are different: the merit keeps co-curriculum — 2026-10-28 (STPM CGPA C2, owner ruling)
 
 Supersedes item (6) of the entry below. The owner ruled: do not change the merit rule. CGPA = the PNGK from the

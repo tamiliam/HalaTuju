@@ -4368,11 +4368,13 @@
           "utilityBill": "the utility bill",
           "parentIc": "the parent's IC",
           "incomeProof": "the income documents",
-          "strDoc": "the STR document"
+          "strDoc": "the STR document",
+          "stpmResults": "the STPM results"
         },
         "sizeAccounted": "Everyone in the household is accounted for",
         "declaredNote": "Declared: {value}",
-        "rosterNote": "Roster counts {count} people"
+        "rosterNote": "Roster counts {count} people",
+        "stpmDiffers": "The STPM results show {value}"
       },
       "institution": "Institution",
       "pathwaysConsidered": "Pathways considered",
@@ -4410,6 +4412,7 @@
       },
       "meritScore": "Merit score (out of 100)",
       "stpmCgpa": "CGPA (out of 4.00)",
+      "stpmCgpaNotCalculated": "not calculated",
       "qualificationLabel": {
         "matric": "Matriculation",
         "asasi": "Asasi",

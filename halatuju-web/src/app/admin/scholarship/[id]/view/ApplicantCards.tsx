@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/formatDate'
 import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
-import { Card, Field, Grades, joinOr, notePages, resultsChangeKey, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
+import { Card, DiffMarker, Field, Grades, joinOr, notePages, resultsChangeKey, yn, NON_PARENT_RELATIONSHIPS, type T, type Vtip } from './shared'
 import { GuardianCorrect } from './GuardianCorrect'
 import { GuardianCallRecord } from './GuardianCallRecord'
 import { FamilyAnswers } from './FamilyAnswers'
@@ -53,6 +53,21 @@ export function ApplicantCards({
         // lines: the qualification + the server's overall CGPA, the CGPA as printed, the SPM block.
         const third = isThirdRoute(app.qualification) ? app.qualification : null
         const fmt2 = (n?: number | null) => (n == null ? n : Number(n).toFixed(2))
+        // STPM CGPA C3 (owner 2026-10-28): the STPM grades and CGPA come from onboarding and are
+        // counter-checked against the uploaded STPM results ON THE SERVER (`stpm_marks.py`, through
+        // higher_results' own matcher) — a match gets the same tick the SPM grades carry, a
+        // difference a marker naming what the document shows; no read document → no mark.
+        const sm = isStpm ? app.stpm_marks : null
+        const stpmMark = (m?: { status: 'match' | 'differ'; doc: string | number } | null) => (!m ? null
+          : m.status === 'match'
+            ? <VerifiedTick label={t('admin.scholarship.verified.tooltip', { source: t('admin.scholarship.verified.source.stpmResults') })} />
+            : <DiffMarker label={t('admin.scholarship.verified.stpmDiffers', { value: String(m.doc) })} />)
+        const gradeMarks = sm ? Object.fromEntries(Object.entries(sm.grades || {}).map(([k, m]) => [k, stpmMark(m)])) : undefined
+        const cgpaMark = sm?.cgpa === 'match' || sm?.cgpa === 'differ'
+          ? stpmMark({ status: sm.cgpa, doc: fmt2(sm.cgpa_doc) ?? '' })
+          : sm?.cgpa === 'not_calculated'
+            ? <span className="ml-1 text-xs text-ground-400">({t('admin.scholarship.stpmCgpaNotCalculated')})</span>
+            : null
         // Pathway context: matric/stpm are INSTITUTION pathways (track + school);
         // everything else (asasi, university, poly, pismp…) is a PROGRAMME pathway
         // (a chosen course), so Pre-U track doesn't apply.
@@ -210,7 +225,7 @@ export function ApplicantCards({
                   {/* Third results route S1: the merit above is now out of 100 on every route (STPM =
                       overall CGPA ÷ 4 × 100), so the CGPA itself — which the shortlist floor reads —
                       gets its own line instead of hiding inside the merit. */}
-                  {isStpm && <Field label={t('admin.scholarship.stpmCgpa')} value={app.stpm_pngk == null ? app.stpm_pngk : Number(app.stpm_pngk).toFixed(2)} />}
+                  {isStpm && <Field label={t('admin.scholarship.stpmCgpa')} value={app.stpm_pngk == null ? app.stpm_pngk : <>{Number(app.stpm_pngk).toFixed(2)}{cgpaMark}</>} />}
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
                   {third && <>
                     <Field label={t('admin.scholarship.heldResults')} value={`${t(`admin.scholarship.qualificationLabel.${third}`)}${app.overall_cgpa != null ? ` · CGPA ${fmt2(app.overall_cgpa)}` : ''}`} />
@@ -232,6 +247,7 @@ export function ApplicantCards({
                   <Grades
                     grades={isStpm ? app.stpm_grades : third ? { ...(app.spm_prereq_grades || {}), ...(app.grades || {}) } : app.grades}
                     trailing={!isStpm && !third && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
+                    marks={gradeMarks}
                   />
                   {/* Third results route S3b (D13, review fix 3): what the student changed in her
                       results before submitting — "SPM results only" or a slip moved to the SPM card;

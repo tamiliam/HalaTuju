@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM CGPA C3 — cockpit check marks on the STPM grades and CGPA (NOT LIVE) - 2026-10-28
+
+- **Owner ruling:** the cockpit's STPM subjects, grades and CGPA come from onboarding (the CGPA is the PNGK of
+  the grades) and are counter-checked against the uploaded STPM results, as the SPM grades are against the slip.
+- **Server** `apps/scholarship/stpm_marks.py` (new): `stpm_marks` on the officer's detail payload (mixin
+  `ServesTheStpmMarks`; `serializers_admin.py` unchanged in size) — per grade `match` / `differ` (+ the
+  document's grade), the CGPA `match` (document PNGK within 0.01 of the calculated one) / `differ` (only when
+  the figure is labelled cumulative) / `not_calculated` (fewer than PA + three). No marks without a read STPM
+  page, or for an SPM slip filed in the card. No second matcher: `higher_results.stpm_rows` is the walk
+  `_compare_stpm` now uses too (`entered_stpm` the shared entry normaliser). Display only — no verdict band or
+  red chip can move, so `VERDICT_ENGINE_VERSION` is unchanged.
+- **Cockpit:** each STPM grade chip carries the tick ("Matches the STPM results") or a `≠` marker whose hover
+  names the document's grade; the CGPA line the same, or "(not calculated)". New `DiffMarker` beside
+  `VerifiedTick`; strings in the admin slice (en/ms/ta; ms/ta first drafts).
+- **Reviewer Guide + FAQ:** the STPM ticks explained. Tests: `test_stpm_marks.py`,
+  `ApplicantCards.stpmMarks.test.tsx`; `test_gift_context` names the new key.
+
 ## STPM CGPA worked out from the grades + the full MPM subject list (C1 + C2 code, BRANCH `stpm-cgpa-from-grades`, NOT LIVE) - 2026-10-28
 
 - **C1 — every official STPM subject can be entered.** `STPM_SUBJECTS` gains Sains Sukan (either stream —

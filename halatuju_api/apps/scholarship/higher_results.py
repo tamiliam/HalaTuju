@@ -225,19 +225,29 @@ def _entered_cgpa(profile, kind):
     return _as_cgpa(getattr(profile, 'higher_cgpa', None))
 
 
-def _compare_stpm(profile, fields):
-    """(missing, mismatched) — printed STPM subjects the student did not enter, and entered
-    grades that differ from the slip's. Unrecognised printed subjects are ignored."""
-    entered = {k: entered_grade_value(g) for k, g in (getattr(profile, 'stpm_grades', None) or {}).items()}
-    missing, mismatched = [], []
+def stpm_rows(fields):
+    """(printed name, subject key, the slip's grade) for each RECOGNISED STPM row of a read — the
+    one matcher `_compare_stpm` and the cockpit's per-grade marks (`stpm_marks`) both walk."""
     for row in fields.get('results') or []:
         if not isinstance(row, dict):
             continue
         name = (row.get('subject') or '').strip()
         key = _STPM_BY_NAME.get(_squash(re.sub(r'^\d+\s*', '', name)))   # "950 MATEMATIK (T)"
-        if key is None:
-            continue
-        slip = re.sub(r'\s+', '', (row.get('grade') or '')).upper()
+        if key is not None:
+            yield name, key, re.sub(r'\s+', '', (row.get('grade') or '')).upper()
+
+
+def entered_stpm(profile):
+    """`{subject key: normalised entered grade}` — the profile side of every STPM comparison."""
+    return {k: entered_grade_value(g) for k, g in (getattr(profile, 'stpm_grades', None) or {}).items()}
+
+
+def _compare_stpm(profile, fields):
+    """(missing, mismatched) — printed STPM subjects the student did not enter, and entered
+    grades that differ from the slip's. Unrecognised printed subjects are ignored."""
+    entered = entered_stpm(profile)
+    missing, mismatched = [], []
+    for name, key, slip in stpm_rows(fields):
         if key not in entered:
             missing.append(name)
         elif slip and slip != entered[key]:

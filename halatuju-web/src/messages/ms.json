@@ -4368,11 +4368,13 @@
           "utilityBill": "bil utiliti",
           "parentIc": "IC ibu bapa",
           "incomeProof": "dokumen pendapatan",
-          "strDoc": "dokumen STR"
+          "strDoc": "dokumen STR",
+          "stpmResults": "keputusan STPM"
         },
         "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
         "declaredNote": "Diisytiharkan: {value}",
-        "rosterNote": "Senarai mencatat {count} orang"
+        "rosterNote": "Senarai mencatat {count} orang",
+        "stpmDiffers": "Keputusan STPM menunjukkan {value}"
       },
       "institution": "Institusi",
       "pathwaysConsidered": "Laluan dipertimbang",
@@ -4410,6 +4412,7 @@
       },
       "meritScore": "Skor merit (daripada 100)",
       "stpmCgpa": "PNGK (daripada 4.00)",
+      "stpmCgpaNotCalculated": "tidak dikira",
       "qualificationLabel": {
         "matric": "Matrikulasi",
         "asasi": "Asasi",

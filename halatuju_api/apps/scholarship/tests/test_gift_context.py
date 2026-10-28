@@ -132,13 +132,14 @@ class TestThePayloadIsStillAnAllowlist(_TwoGifts):
     """`test_admin_detail_payload.py` pins that the serializer NAMES its fields. The gift is
     appended outside `Meta.fields` (the host file may not grow), so this pins the other half: the
     one key the payload carries beyond the named list is `programme`, and nothing else — bar the
-    three request #45 appends (`serializers_admin_family`, same reason), named here one by one."""
+    three request #45 appends (`serializers_admin_family`, same reason) and the STPM CGPA C3
+    check marks (`stpm_marks`, same reason), named here one by one."""
 
     def test_the_only_key_beyond_meta_fields_is_programme(self):
         app = make_application('shortlisted', cohort=make_cohort(programme=self.flagship))
         data = AdminApplicationDetailSerializer(app).data
         extra = set(data) - set(AdminApplicationDetailSerializer.Meta.fields)
         self.assertEqual(extra, {'programme', 'income_declared', 'income_nonearning',
-                                 'guardian_ic_name_match'})
+                                 'guardian_ic_name_match', 'stpm_marks'})
         # …and it is the LAST key, so every existing key kept its position.
         self.assertEqual(list(data)[-1], 'programme')

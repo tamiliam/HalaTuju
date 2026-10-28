@@ -62,7 +62,10 @@ export const roleReviewer: ManualChapter = {
         it is not a zero, and it always sorts last. Click a
         name to open the review screen — everything is on that one page. For an STPM student, the Academic
         card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when
-        she has entered them. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
+        she has entered them. Her STPM grades and CGPA carry a <strong>tick</strong> when her uploaded STPM
+        results show the same, and a small <strong>&ne;</strong> marker (hover for the document&rsquo;s figure)
+        when they differ; the CGPA says <strong>not calculated</strong> when she entered fewer than Pengajian Am
+        + three grades. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
         results uploads those results instead of an SPM slip; the Documents drawer names them by kind
         (for example <strong>STPM results</strong>); STPM results are checked for genuineness like an SPM slip, and a screenshot of
         the online results-checker page is flagged as not the real slip. Beside the NRIC, the header shows where her IC says she was

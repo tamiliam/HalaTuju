@@ -114,6 +114,14 @@ export interface AdminNudge {
   available_at: string | null
 }
 
+/** STPM CGPA C3: one STPM grade / the CGPA against the STPM results document. A subject absent from
+ *  `grades` has no mark (no read document, or not on it). */
+export interface StpmMarks {
+  grades: Record<string, { status: 'match' | 'differ'; doc: string }>
+  cgpa: 'match' | 'differ' | 'not_calculated' | null
+  cgpa_doc: number | null
+}
+
 export interface AdminScholarshipDetail {
   id: number
   name: string
@@ -186,6 +194,9 @@ export interface AdminScholarshipDetail {
   grades: Record<string, string>
   stpm_grades: Record<string, string>
   spm_prereq_grades: Record<string, string>
+  /** STPM CGPA C3 (served, `stpm_marks.py`): the STPM grades and CGPA counter-checked against the
+   *  uploaded STPM results. null/absent for a non-STPM student (or an older api revision). */
+  stpm_marks?: StpmMarks | null
   /** Third results route (S2a, served): the overall CGPA (server-computed), the CGPA as printed,
    *  the co-curriculum score (null for a Diploma) and where a Diploma is from (D5). */
   overall_cgpa?: number | null

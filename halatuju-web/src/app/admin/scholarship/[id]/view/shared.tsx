@@ -217,7 +217,11 @@ export const yn = (v: boolean | null | undefined) => (v === true ? 'Yes' : v ===
 export const joinOr = (a?: string[] | null) => (a && a.length ? a.join(', ') : '—')
 
 /** Grade dict → readable chips (subject key uppercased · grade). */
-export function Grades({ grades, trailing }: { grades?: Record<string, string> | null; trailing?: ReactNode }) {
+/** `marks` (STPM CGPA C3): an optional check mark / difference marker per subject key, rendered
+ *  inside that subject's chip after the grade. */
+export function Grades({ grades, trailing, marks }: {
+  grades?: Record<string, string> | null; trailing?: ReactNode; marks?: Record<string, ReactNode>
+}) {
   const entries = Object.entries(grades || {}).filter(([, g]) => g)
   if (!entries.length) return <span className="text-ground-400 text-sm">—</span>
   return (
@@ -226,9 +230,21 @@ export function Grades({ grades, trailing }: { grades?: Record<string, string> |
         <span key={k} className="inline-flex items-center gap-1 rounded-md bg-ground-100 px-2 py-0.5 text-xs">
           <span className="text-ground-500 uppercase">{k.replace(/_/g, ' ')}</span>
           <span className="font-semibold text-ground-800">{g}</span>
+          {marks?.[k]}
         </span>
       ))}
       {trailing}
     </div>
+  )
+}
+
+/** The companion of `VerifiedTick` (STPM CGPA C3): a small caution mark after a value the uploaded
+ *  document shows DIFFERENTLY. `label` (hover + aria) names what the document shows. */
+export function DiffMarker({ label }: { label: string }) {
+  return (
+    <span title={label} aria-label={label} role="img"
+      className="ml-1 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-caution-100 align-middle text-[10px] font-bold leading-none text-caution-700">
+      ≠
+    </span>
   )
 }

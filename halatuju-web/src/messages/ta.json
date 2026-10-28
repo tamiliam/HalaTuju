@@ -4368,11 +4368,13 @@
           "utilityBill": "பயன்பாட்டு பில்",
           "parentIc": "பெற்றோரின் அடையாள அட்டை",
           "incomeProof": "வருமான ஆவணங்கள்",
-          "strDoc": "STR ஆவணம்"
+          "strDoc": "STR ஆவணம்",
+          "stpmResults": "STPM முடிவுகள்"
         },
         "sizeAccounted": "குடும்பத்தில் உள்ள அனைவரும் கணக்கில் கொள்ளப்பட்டுள்ளனர்",
         "declaredNote": "அறிவிக்கப்பட்டது: {value}",
-        "rosterNote": "பட்டியல் {count} பேரைக் கணக்கிடுகிறது"
+        "rosterNote": "பட்டியல் {count} பேரைக் கணக்கிடுகிறது",
+        "stpmDiffers": "STPM முடிவுகள் {value} எனக் காட்டுகின்றன"
       },
       "institution": "நிறுவனம்",
       "pathwaysConsidered": "பரிசீலித்த பாதைகள்",
@@ -4410,6 +4412,7 @@
       },
       "meritScore": "தகுதி மதிப்பெண் (100-க்கு)",
       "stpmCgpa": "CGPA (4.00-க்கு)",
+      "stpmCgpaNotCalculated": "கணக்கிடப்படவில்லை",
       "qualificationLabel": {
         "matric": "மெட்ரிகுலேஷன்",
         "asasi": "அசாசி",
