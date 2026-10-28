@@ -12,18 +12,17 @@
  * It loads its OWN data and holds its OWN error, like the costs section: a failure here must never
  * darken the usage half of the page, which an org_admin is entitled to read.
  */
-import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import InvoiceToIssue from '@/components/admin/InvoiceToIssue'
 import TableFrame from '@/components/admin/TableFrame'
 import {
   fetchBillingPdf, getInvoices, issueInvoice, recordInvoiceReceipt, sendInvoice, voidInvoice,
-  type InvoiceProblem, type InvoiceReadiness, type InvoiceRow, type InvoicesPayload,
+  type InvoiceProblem, type InvoiceRow, type InvoicesPayload,
 } from '@/lib/admin-api'
 import { formatMyr } from '@/lib/billingCosts'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  canRecordPayment, canSend, canVoid, formatDay, issueMode, orderedInvoices,
-  orderedProblems, settingsHref, statusChip, todayIso,
+  canRecordPayment, canSend, canVoid, formatDay, orderedInvoices, statusChip, todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -59,107 +58,6 @@ function Chip({ status, t }: { status: InvoiceRow['status']; t: T }) {
     <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.className}`}>
       {t(c.key)}
     </span>
-  )
-}
-
-// ── To issue ─────────────────────────────────────────────────────────────────────────────────
-
-function ReadinessCard({ row, month, busy, t, onIssue }: {
-  row: InvoiceReadiness
-  month: string
-  busy: boolean
-  t: T
-  onIssue: (orgId: number, reason: string) => void
-}) {
-  const [reason, setReason] = useState('')
-  // A month already invoiced is DONE, not "not ready": its other warnings were weighed when it was
-  // issued, and re-listing them as blockers would read as an alarm about a settled decision.
-  if (row.problems.some((p) => p.code === 'already_issued')) {
-    return (
-      <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border bg-ground-0 p-4 shadow-sm"
-        data-testid={`readiness-${row.organisation_id}`}>
-        <p className="text-sm">
-          <span className="font-semibold text-ground-900">{row.organisation}</span>
-          <span className="text-ground-400"> · {formatMonth(month)}</span>
-        </p>
-        <span className="rounded-full bg-info-100 px-2 py-0.5 text-[11px] font-semibold text-info-700">
-          {t('admin.billing.invoice.alreadyIssued')}
-        </span>
-      </div>
-    )
-  }
-  const mode = issueMode(row.problems)
-  const chip = mode === 'ready'
-    ? { key: 'admin.billing.invoice.ready', cls: 'bg-positive-100 text-positive-700' }
-    : mode === 'override'
-      ? { key: 'admin.billing.invoice.needsReason', cls: 'bg-caution-100 text-caution-700' }
-      : { key: 'admin.billing.invoice.notReady', cls: 'bg-critical-50 text-critical-700' }
-
-  return (
-    <div className="rounded-xl border bg-ground-0 p-4 shadow-sm" data-testid={`readiness-${row.organisation_id}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm">
-          <span className="font-semibold text-ground-900">{row.organisation}</span>
-          <span className="text-ground-400"> · {formatMonth(month)}</span>
-        </p>
-        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${chip.cls}`}>{t(chip.key)}</span>
-      </div>
-
-      {row.problems.length > 0 && (
-        <ul className="mt-3 space-y-2">
-          {orderedProblems(row.problems).map((p) => (
-            <li key={p.code} className="grid grid-cols-[5.5rem_1fr] items-baseline gap-2 text-sm">
-              <span className={`w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.overridable
-                ? 'bg-caution-100 text-caution-700' : 'bg-critical-50 text-critical-700'}`}>
-                {t(p.overridable ? 'admin.billing.invoice.warning' : 'admin.billing.invoice.mustFix')}
-              </span>
-              <span className="text-ground-700">{p.message}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {/* ⚠ TWO DESTINATIONS, because the two blank forms now live on different pages and a
-          single "Settings" link would send half the readers to the wrong one. Who is BILLING is
-          platform-wide; who is BILLED belongs to the organisation. */}
-      {settingsHref(row.problems, row.organisation_code).map((dest) => (
-        <Link key={dest.code} href={dest.href}
-          className="mt-2 block text-sm text-primary-600 underline">
-          {t(`admin.billing.invoice.fix.${dest.code}`)}
-        </Link>
-      ))}
-
-      {mode === 'override' && (
-        <label className="mt-3 block">
-          <span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.overrideReason')}</span>
-          <textarea className={`${INPUT} min-h-[4rem]`} value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            aria-label={t('admin.billing.invoice.overrideReason')} />
-        </label>
-      )}
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {mode === 'ready' && (
-          <button type="button" className={PRIMARY} disabled={busy}
-            onClick={() => onIssue(row.organisation_id, '')}>
-            {t('admin.billing.invoice.issue')}
-          </button>
-        )}
-        {mode === 'override' && (
-          <button type="button" className={PRIMARY} disabled={busy || reason.trim() === ''}
-            onClick={() => onIssue(row.organisation_id, reason.trim())}>
-            {t('admin.billing.invoice.issueAnyway')}
-          </button>
-        )}
-        {mode === 'blocked' && (
-          <>
-            {/* Shown disabled rather than hidden: the reader should see there IS an action, and
-                that the list above is what stands between them and it. */}
-            <button type="button" className={PRIMARY} disabled>{t('admin.billing.invoice.issue')}</button>
-            <span className="text-xs text-ground-400">{t('admin.billing.invoice.blockedHelp')}</span>
-          </>
-        )}
-      </div>
-    </div>
   )
 }
 
@@ -495,10 +393,14 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
   const [tab, setTab] = useState<Tab>('toissue')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Blank until a super picks one, and then the server is asked for THAT month. Blank is not a
+  // default month held here: the cut-off belongs to the server (`invoicing.previous_month`), and a
+  // second copy of it in the browser is a second answer that would eventually disagree.
+  const [month, setMonth] = useState('')
 
   const load = useCallback(() => {
     if (!token) return
-    getInvoices({ token })
+    getInvoices({ token, month: month || undefined })
       .then((d) => { setData(d); setError('') })
       .catch((e) => {
         // The dark 404 means billing is not live for this reader: render nothing, as the usage
@@ -506,7 +408,7 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
         if (/404|not_found/.test(String(e))) setData(null)
         else setError(errorText(e))
       })
-  }, [token])
+  }, [token, month])
 
   useEffect(() => { load() }, [load])
 
@@ -548,17 +450,16 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
           </div>
 
           {tab === 'toissue' && (
-            <div className="mt-4 space-y-3">
-              <p className="text-sm text-ground-500">{t('admin.billing.invoice.superLead', {
-                month: formatMonth(data.month || ''), day: String(data.issue_day ?? 15),
-              })}</p>
-              {(data.readiness || []).map((row) => (
-                <ReadinessCard key={row.organisation_id} row={row} month={data.month || ''} busy={busy} t={t}
-                  onIssue={(orgId, reason) => act(
-                    issueInvoice({ organisation_id: orgId, period_month: data.month || '', override_reason: reason }, { token }),
-                    () => setTab('issued'))} />
-              ))}
-            </div>
+            // ⚠ `key={data.month}` REMOUNTS the panel on every month change, which is what
+            // re-defaults its issue-date box to the 15th of the month after the new choice.
+            <InvoiceToIssue key={data.month || ''} data={data} busy={busy} t={t}
+              onMonth={setMonth}
+              onIssue={(orgId, period, reason, issuedOn) => act(
+                issueInvoice({
+                  organisation_id: orgId, period_month: period, override_reason: reason,
+                  issued_on: issuedOn,
+                }, { token }),
+                () => setTab('issued'))} />
           )}
 
           {tab === 'issued' && (

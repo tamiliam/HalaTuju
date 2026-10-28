@@ -54,11 +54,18 @@ class Command(BaseCommand):
         parser.add_argument('--note', default='',
                             help='Invoice number, FX rate, what was excluded. Whatever a '
                                  'future reader needs in order to trust the figure.')
+        parser.add_argument('--convert-held', dest='convert_held', action='store_true',
+                            help='Give every HELD row in the month its ringgit figure, at the '
+                                 'ECB closing rate for the last day of that month. Writes '
+                                 'nothing else.')
 
     def handle(self, *args, **opts):
         month = (opts['month'] or '').strip()
         if len(month) != 7 or month[4] != '-':
             raise CommandError("--month must look like 'YYYY-MM'")
+
+        if opts['convert_held']:
+            return self._convert_held(month)
 
         if opts['report']:
             return self._report(month)
@@ -116,6 +123,54 @@ class Command(BaseCommand):
                 '  No --invoice-ref. A hand-entered figure that cannot be traced back to a '
                 'document is hard to trust in three months.'))
         self.stdout.write('')
+        self._report(month)
+
+    def _convert_held(self, month):
+        """Give the month's HELD rows their ringgit figure, at the rate for the month's last day.
+
+        ⚠ **A HELD ROW CANNOT CONVERT ITSELF, AND NOTHING ELSE COULD EITHER.** A row is held when
+        its foreign amount is known and no exchange rate was available — which is the ordinary
+        state of a bill imported before the month has ended, because the ECB publishes the closing
+        rate afterwards. `import_invoices` fetches the rate at IMPORT time and never comes back, so
+        until 2026-10-28 the only way to convert one was to re-import the original PDF. On
+        production that left Anthropic's September line — RM400-odd of real cost — with no ringgit
+        value at all, which makes the month `is_complete` False and refuses the invoice.
+
+        The rate is NOT typed (owner's standing rule): it is fetched, for the last day of the
+        BILLED month, the same rule `import_invoices` uses. `provenance` is left exactly as it was
+        — converting a figure does not change where the figure came from.
+        """
+        from apps.scholarship import fx
+        from apps.scholarship.models import PlatformCost
+
+        held = list(PlatformCost.objects.filter(period_month=month, amount_myr__isnull=True)
+                    .exclude(amount_original__isnull=True))
+        if not held:
+            self.stdout.write(f'Nothing held for {month}: every row already has a ringgit figure.')
+            return
+        on = platform_cost.month_end(month)
+        done = 0
+        for row in held:
+            try:
+                rate, published = fx.closing_rate(row.currency, on)
+            except fx.RateUnavailable as exc:
+                # Reported, never guessed: a held row is the honest state and stays held.
+                self.stdout.write(self.style.WARNING(
+                    f'  STILL HELD {row.source} {row.service} {row.sku}: {exc}'))
+                continue
+            row.fx_rate = rate
+            row.amount_myr = (row.amount_original * rate).quantize(Decimal('0.01'))
+            # ⚠ The date the rate was PUBLISHED, not the date asked for — they differ over a
+            # weekend, and the published one is what a reader can look up again. Same wording as
+            # `import_invoices`, so the two kinds of row read alike.
+            row.note = (row.note + f' Converted at the ECB closing rate {rate} published '
+                        f'{published.isoformat()} by record_platform_cost --convert-held.').strip()
+            row.save(update_fields=['fx_rate', 'amount_myr', 'note', 'updated_at'])
+            self.stdout.write(self.style.SUCCESS(
+                f'  {row.source} {row.service} {row.sku}: {row.currency} '
+                f'{row.amount_original} @ {rate} = MYR {row.amount_myr}'))
+            done += 1
+        self.stdout.write(f'\nConverted {done} of {len(held)} held row(s) for {month}.\n')
         self._report(month)
 
     def _report(self, month):

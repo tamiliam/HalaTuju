@@ -205,8 +205,19 @@ def parse_workspace(text: str) -> ParsedInvoice:
 # exactly what `PlatformCost.period_note` exists to record.
 
 _SB_REF = re.compile(r'Invoice number\s+(\S+)')
-_SB_PAID = re.compile(r'Amount paid\s+\$([\d,.]+)')
+#: ⚠ PAID **OR** DUE, and the difference is which document Supabase was asked for. Their RECEIPT
+#: says "Amount paid"; their INVOICE for the same reference says "Amount due". On 2026-10-28 the
+#: owner supplied September as `Invoice-TPTHYS-00011.pdf` and every field failed at once, which is
+#: this parser working as designed — it refuses rather than reporting a smaller bill.
+#:
+#: Taking "due" is right for a COST ledger: the ledger records what the platform was BILLED, and
+#: an invoice is that bill. It is not a weaker figure either, because the reconciliation below
+#: still refuses unless it equals the printed subtotal — a part-paid document cannot slip through
+#: as a whole one.
+_SB_PAID = re.compile(r'Amount (?:paid|due)\s+\$([\d,.]+)')
 _SB_SUBTOTAL = re.compile(r'Subtotal\s+\$([\d,.]+)')
+#: The day the document itself was written: 'Receipt date Sep 8, 2026' / 'Invoice date Oct 8, 2026'.
+_SB_DOC_DATE = re.compile(r'(?:Receipt|Invoice) date\s+(\w{3})\s+(\d+),\s*(\d{4})')
 # The first usage window on the receipt; every line shares it.
 _SB_WINDOW = re.compile(r'(\w{3})\s+(\d+)\s*[–-]\s*(\w{3})\s+(\d+),\s*(\d{4})')
 _SB_PLAN = re.compile(r'(Pro Plan|Team Plan|Free Plan)')
@@ -221,16 +232,42 @@ def parse_supabase(text: str) -> ParsedInvoice:
     paid = _SB_PAID.search(text)
     subtotal = _SB_SUBTOTAL.search(text)
     window = _SB_WINDOW.search(text)
-    if not (ref and paid and subtotal and window):
+    doc_date = _SB_DOC_DATE.search(text)
+    if not (ref and paid and subtotal and window and doc_date):
         raise InvoiceParseError(
-            'Supabase: could not find the invoice number, the amount paid, the subtotal and '
-            'the billed window. All four are required.')
+            'Supabase: could not find the invoice number, the amount paid or due, the subtotal, '
+            'the billed window and the document date. All five are required.')
     total, sub = _invoice_amount(paid.group(1)), _invoice_amount(subtotal.group(1))
     if total != sub:
         raise InvoiceParseError(
-            f'Supabase {ref.group(1)}: subtotal {sub} and amount paid {total} disagree.')
+            f'Supabase {ref.group(1)}: subtotal {sub} and amount paid/due {total} disagree.')
 
     start_mon, start_day, end_mon, end_day, year = window.groups()
+    # ⚠ THE PRINTED YEAR BELONGS TO THE END OF THE RANGE. 'Dec 8 – Jan 7, 2027' carries one year
+    # and the window straddles two: the start is December **2026**. Reading the printed year for
+    # both would file December 2026 as December 2027 — a month that has not happened — every
+    # January. Found while adding the check below, which would otherwise have turned every
+    # January import into a refusal.
+    # `_period_month` is what validates a month name, so it runs on both before either is indexed.
+    _period_month(start_mon, year), _period_month(end_mon, year)
+    start_year = int(year)
+    if MONTHS[str(start_mon)[:3].lower()] > MONTHS[str(end_mon)[:3].lower()]:
+        start_year -= 1
+    year = str(start_year)
+    # ⚠ THE FIRST WINDOW MUST BE A WINDOW THAT HAS ALREADY STARTED. Supabase lists the past
+    # period's usage first and the NEXT period's plan fee second, and the month is taken from the
+    # first — which is right for the documents seen so far. But a plan-only document (a quiet
+    # month, or a new project) has no usage block, so the first window is the FORWARD one:
+    # 'Oct 8 – Nov 7' on an invoice dated 8 October would file October, a month that has not
+    # closed, and then ask for an exchange rate that does not exist yet. Adversarial review,
+    # 2026-10-28. A window that opens on or after the document's own date is refused rather
+    # than filed under a guess.
+    if _period_month(start_mon, year) >= _period_month(doc_date.group(1), doc_date.group(3)):
+        raise InvoiceParseError(
+            f'Supabase {ref.group(1)}: the first billed window starts {start_mon} {start_day} '
+            f'{year}, which is not before the document date {doc_date.group(1)} '
+            f'{doc_date.group(2)}, {doc_date.group(3)} — so the month this bills cannot be read '
+            f'from it.')
     plan = _SB_PLAN.search(text)
     # ⚠ THE MONTH IS THE ONE THE USAGE WINDOW OPENS IN, not the receipt date. The receipt for
     # 'Aug 8 – Sep 7' is DATED 8 September, so keying on the receipt date would file August's

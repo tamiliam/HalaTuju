@@ -488,7 +488,11 @@ class TestReceipts(InvoiceWorld):
     def test_a_receipt_prints_the_balance_on_its_own_day_not_todays(self):
         """Re-downloaded after a second payment, the first receipt must still say what it said."""
         inv = self.issue()
-        first = self.receipt(inv, '500.00', received_on=date(2026, 9, 10))
+        # ⚠ BOTH ON THE ISSUE DATE. This used to date the first receipt 10 September, five days
+        # before the invoice it pays existed — impossible, and refused since 2026-10-28
+        # (`received_before_issued`). The id tiebreak in `_balance_after` is what orders two
+        # receipts on one day, so the earlier date was never what this test needed.
+        first = self.receipt(inv, '500.00')
         self.receipt(inv, '356.75', reference='second')
         html = invoice_pdf.render_receipt_html(first)
         self.assertIn('RM356.75', html)    # balance after the FIRST payment

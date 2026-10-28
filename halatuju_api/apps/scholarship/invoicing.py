@@ -30,18 +30,19 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from . import money
+# ── Months, dates and numbering: lifted whole into `invoice_dates.py` ────────
+# Moves only, when this file passed the 600-line standard. RE-EXPORTED rather than left behind,
+# because `invoicing.month_label`, `invoicing.previous_month`, `invoicing.MONTH_RE` and
+# `invoicing.next_number` are read from a dozen modules and tests: a split is not a rename.
+from .invoice_dates import (  # noqa: F401  (re-export: see above)
+    DAY_RE, ISSUE_DAY, MONTH_NAMES, MONTH_RE, _refuse_out_of_order, _today, issue_date_for,
+    month_label, month_of, next_number, previous_month, shift_month,
+)
 
 logger = logging.getLogger(__name__)
 
-#: A real calendar month. `2026-00` must not slip through: index -1 would print it as December.
-MONTH_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])$')
-
-#: The day of the month the previous month's invoices are issued (owner, 2026-09-14). The Cloud
-#: Scheduler job fires on this day; `readiness` warns about any earlier issue of that month.
-ISSUE_DAY = 15
-
-MONTH_NAMES = ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
-               'September', 'October', 'November', 'December')
+#: The marker `platform_cost.request_module_tag` writes at the front of an `OrgBuildHours.module`.
+_REQUEST_TAG_RE = re.compile(r'^\s*\[REQ-\d+\]\s*')
 
 
 class InvoicingError(Exception):
@@ -60,55 +61,6 @@ class InvoiceRefused(InvoicingError):
     def __init__(self, problems):
         super().__init__('invoice_refused', '; '.join(p['message'] for p in problems))
         self.problems = problems
-
-
-# ── Months (TD-209: always Malaysian local time) ─────────────────────────────
-
-def _today(today=None):
-    # ⚠ `localdate`, never `now().date()`. Stored times are UTC; at 00:30 on 15 October in
-    # Malaysia it is still 14 October in UTC, and the job would bill the wrong month's cut-off.
-    return today or timezone.localdate()
-
-
-def month_of(d):
-    return f'{d.year:04d}-{d.month:02d}'
-
-
-def shift_month(period_month, delta):
-    year, mon = (int(x) for x in str(period_month).split('-'))
-    index = year * 12 + (mon - 1) + delta
-    return f'{index // 12:04d}-{index % 12 + 1:02d}'
-
-
-def previous_month(today=None):
-    """The month the 15th's run bills: the calendar month before today's."""
-    return shift_month(month_of(_today(today)), -1)
-
-
-def month_label(period_month):
-    year, mon = (int(x) for x in str(period_month).split('-'))
-    return f'{MONTH_NAMES[mon - 1]} {year}'
-
-
-# ── Numbering ────────────────────────────────────────────────────────────────
-
-def next_number(kind, year):
-    """The next gap-free number for a document kind in a year, e.g. 'INV-2026-0007'.
-
-    MUST be called inside the transaction that creates the document: the counter row is locked
-    with `select_for_update`, so a rolled-back issue rolls the counter back and never burns a
-    number, and two concurrent issues cannot draw the same one.
-    """
-    from .models import BillingSequence
-
-    if not transaction.get_connection().in_atomic_block:
-        raise InvoicingError('numbering_outside_transaction',
-                             'A document number must be drawn inside the issuing transaction.')
-    seq, _ = BillingSequence.objects.get_or_create(kind=kind, year=year)
-    seq = BillingSequence.objects.select_for_update().get(pk=seq.pk)
-    seq.last += 1
-    seq.save(update_fields=['last'])
-    return f'{kind}-{year:04d}-{seq.last:04d}'
 
 
 # ── Who bills, who is billed ─────────────────────────────────────────────────
@@ -230,6 +182,21 @@ def _share_note(line):
     return f' (your share: {Decimal(share).normalize():f}%)'
 
 
+def printable_module(text):
+    """What a development line SAYS on the invoice, from what the hours row STORES.
+
+    ⚠ The stored `module` carries `[REQ-12]` at the front, and that tag is the only thing that lets
+    `platform_cost.unbilled_request_hours` know the request has been billed — so it must stay in
+    the database, untouched. It must not reach the paper. The owner read August's preview on
+    2026-10-28 and the lines read like a bug tracker: *"[REQ-12] show year SPM was taken"*. The tag
+    is stripped HERE, in the one place a frozen description is written, and nowhere else.
+
+    The rest is whatever a super typed on the build-hours screen, so the wording is already theirs
+    to edit; this removes only the part no customer should have to read.
+    """
+    return _REQUEST_TAG_RE.sub('', text or '').strip()
+
+
 def build_lines(charge, period_month):
     """The frozen, tenant-safe lines for a charge. Carries NO cost and NO margin.
 
@@ -254,7 +221,8 @@ def build_lines(charge, period_month):
             for d in ln.get('detail', []):
                 out.append({'category': cat, 'quantity': d['hours'],
                             'unit_amount_myr': ln['billed_rate_myr'],
-                            'description': (d['module'] or 'Development')[:300],
+                            'description': (printable_module(d['module'])
+                                            or f'Development, {label}')[:300],
                             'amount_myr': d['amount_myr']})
     total = sum((Decimal(x['amount_myr']) for x in out), Decimal('0.00'))
     if total != Decimal(charge['subtotal_myr']):
@@ -265,16 +233,34 @@ def build_lines(charge, period_month):
 
 
 def issue_invoice(organisation, period_month, *, issued_by_email='', override_reason='',
-                  today=None):
+                  issued_on=None, today=None):
     """Issue ONE invoice, or raise `InvoiceRefused` with every reason it cannot be.
 
     `override_reason` lets a super issue past the overridable problems; it is refused when blank
     and it is stored on the invoice together with the warnings it overrode.
+
+    `issued_on` back-dates the printed issue date — see `issue_date_for` for the three bounds. It
+    is checked EARLY and on its own: a mistyped date is one correction, and burying it under a list
+    of readiness warnings would hide the only thing the person has to fix. Left out (the monthly
+    job, and every ordinary Issue) it is today.
+
+    ⚠ ONE READINESS PROBLEM IS CHECKED BEFORE THE DATE: a month that has not closed. Every date is
+    'before the end of this month' while the month is still running, so the date check would answer
+    *"October ends on the 31st"* — a correctable-looking sentence — in front of the real, absolute
+    reason, which is that October's cost is not known yet.
     """
     from . import platform_cost
     from .models import Invoice, InvoiceLine
 
     today = _today(today)
+    if period_month >= month_of(today):
+        raise InvoiceRefused([p for p in readiness(organisation, period_month, today=today)
+                              if p['code'] == 'month_not_closed'] or
+                             [_problem('month_not_closed',
+                                       f'{month_label(period_month)} has not ended, so its cost '
+                                       f'is not known yet.', False)])
+    issued = issue_date_for(period_month, issued_on, today)
+    _refuse_out_of_order(issued)
     problems = readiness(organisation, period_month, today=today)
     absolute = [p for p in problems if not p['overridable']]
     overridable = [p for p in problems if p['overridable']]
@@ -284,6 +270,22 @@ def issue_invoice(organisation, period_month, *, issued_by_email='', override_re
 
     charge = platform_cost.charge_for(organisation, period_month)
     lines = build_lines(charge, period_month)
+    if Decimal(charge['subtotal_myr']) <= 0:
+        # ⚠ `build_lines` CANNOT catch this, and it is the SUBTOTAL that has to be tested, not the
+        # lines and not the total:
+        #   * an empty line list sums to zero, which equals the zero subtotal of a month with
+        #     nothing in the ledger, so the lines-add-up self-check passes;
+        #   * a month with no costs still produces two lines, each RM0.00 — a document that says
+        #     "Platform infrastructure, August 2026 … RM0.00", which is not a bill either;
+        #   * and the TOTAL is zero for July, which IS a real bill: it carries its lines in full
+        #     and is reduced by a discount row that says so. That is the owner's July requirement
+        #     and must keep working.
+        # So: a real bill has something on it before any discount. Without this a super overriding
+        # `no_costs` would mint a numbered, frozen, permanent document with nothing on it.
+        raise InvoicingError(
+            'nothing_to_bill',
+            f'{month_label(period_month)} has nothing to bill — no costs and no hours — so there '
+            f'is no invoice to issue.')
     who = issuer()
     bill_to = billing_details(organisation)
 
@@ -301,11 +303,14 @@ def issue_invoice(organisation, period_month, *, issued_by_email='', override_re
                         .order_by('-voided_at').first())
             # org-fence: creates the invoice for the organisation named above
             invoice = Invoice.objects.create(
-                number=next_number('INV', today.year),
+                # ⚠ The YEAR OF ISSUE, which for a back-dated invoice is the year printed on it,
+                # not the year somebody pressed the button. January's invoice back-issued in a new
+                # year must not carry the new year's sequence.
+                number=next_number('INV', issued.year),
                 organisation=organisation,
                 period_month=period_month,
-                issued_on=today,
-                due_on=today + timedelta(days=int(who.payment_terms_days or 0)),
+                issued_on=issued,
+                due_on=issued + timedelta(days=int(who.payment_terms_days or 0)),
                 subtotal_myr=charge['subtotal_myr'],
                 discount_pct=charge['discount_pct'],
                 discount_myr=charge['discount_myr'],
@@ -453,6 +458,15 @@ def record_receipt(invoice, *, received_on, amount_myr, reference, method='bank_
             raise InvoicingError('bad_date', 'Enter the date the money arrived.')
     if not isinstance(received_on, date) or received_on > today:
         raise InvoicingError('bad_date', 'The date received cannot be in the future.')
+    if received_on < invoice.issued_on:
+        # ⚠ Money cannot arrive before the bill exists. This was unreachable while every invoice
+        # was dated the day it was issued; back-dating (2026-10-28) is what opens it, because the
+        # owner is now recording July, August and September money against invoices that carry
+        # July, August and September dates, where a month-out typo no longer looks absurd.
+        raise InvoicingError(
+            'received_before_issued',
+            f'{invoice.number} is dated {invoice.issued_on.isoformat()}, so it cannot have been '
+            f'paid on {received_on.isoformat()}.')
     amount = _receipt_amount(amount_myr)
 
     with transaction.atomic():

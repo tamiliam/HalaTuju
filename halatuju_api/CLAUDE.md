@@ -969,7 +969,28 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**Health light, TD-408 and TD-411 are LIVE (2026-10-28; TD-408 + TD-411 `cc47ef04` api-01168-5v7; health light +
+**Back-issuing invoices is READY TO PUSH (2026-10-28; retro
+`docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's
+printed issue date, so July can say 15 August — bounded by `invoicing.issue_date_for`: never after today,
+never on or before the last day of the billed month, never in a closed calendar year (the printed year opens
+that year's run of numbers). `_refuse_out_of_order` keeps the series and the calendar agreeing: **issue the
+OLDEST month first.** The "To issue" tab gained a month picker (the endpoint always took `?month=`; the screen
+never sent it) and an issue-date box, in `halatuju-web/src/components/admin/InvoiceToIssue.tsx`.
+- **`[REQ-n]` is stripped from a printed development line** (`invoicing.printable_module`) and STAYS in
+  `OrgBuildHours.module`, which is what makes a request countable as billed. Only lines frozen from now on.
+- **A back-dated invoice carries TODAY's issuer, bill-to and payment terms** — none of the three is versioned.
+  The money is the billed month's (rates and discounts are month-keyed); the identity and terms are not.
+- **`record_platform_cost --convert-held <month>`** gives a held foreign row its ringgit figure at the ECB
+  closing rate for the month's last day. Nothing could do this before: `import_invoices` fetches the rate at
+  import time and never returns, so a bill imported before month-end stayed unconverted forever.
+- **Supabase's INVOICE parses as well as its RECEIPT** ("Amount due" / "Amount paid"), and a window that has
+  not started is refused rather than filed under a month that has not closed.
+- ⚠ **OWNER ACTIONS before the first real issue:** add a `metered` `margin_pct` row effective **2026-07-01**
+  (without it July prints one line, not two), import the September bills, and record August's 27.0 hours.
+- ⚠ **Bundle budget: 0.118 kB under the 180 kB median on MAIN** — measured on both main and this branch,
+  identical. The deploy gate prints and passes at this margin, but main is one non-admin string from red.
+
+**Earlier — Health light, TD-408 and TD-411 are LIVE (2026-10-28; TD-408 + TD-411 `cc47ef04` api-01168-5v7; health light +
 TD-411 hotfix `305b0434` api-01169-s5k / web-01003-xsf; migration scholarship 0180 applied by hand; retro
 `docs/retrospectives/retrospective-2026-10-28-health-td408-411.md`).** Super admins see a System health light in
 the admin top bar (Gemini reads, Vision OCR, email sending, scheduled jobs, AI credit; `cron_health.EXPECTED_CADENCE`

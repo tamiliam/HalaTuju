@@ -1,4 +1,7 @@
-"""Tenant invoices, receipts and build hours — moved verbatim from `views_admin.py` at H11.
+"""Tenant invoices and receipts — moved verbatim from `views_admin.py` at H11.
+
+Build hours left for `build_hours.py` on 2026-10-28, moves only: this file had reached 591 of the
+600-line standard, and hours were never invoices — they are what a development line is BUILT from.
 
 Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
@@ -172,18 +175,34 @@ class AdminInvoicesView(_InvoiceBase):
 
         from .. import invoicing
 
-        month = (request.data.get('period_month') or '').strip()
+        # A JSON ARRAY body has no `.get`, so reading one off `request.data` is a 500 (the fault an
+        # adversarial review found on the bill-to endpoint on 2026-10-28). Same guard here.
+        body = request.data if isinstance(request.data, dict) else {}
+        month = (body.get('period_month') or '').strip()
         if not invoicing.MONTH_RE.match(month):
             return Response({'error': 'bad_month', 'code': 'bad_month'},
                             status=status.HTTP_400_BAD_REQUEST)
-        org = PartnerOrganisation.objects.filter(pk=request.data.get('organisation_id')).first()
+        # ⚠ DIGITS ONLY, not `int(...)`. `filter(pk='abc')` raises — a 500 — so the id must be
+        # refused before the query; but `int()` is the wrong refusal, because it ACCEPTS things
+        # that are not this id: `int(1.5)` is 1 and `int(True)` is 1, so a float or a boolean
+        # would quietly issue a bill against organisation 1. A money document does not get to
+        # guess which organisation was meant.
+        raw = body.get('organisation_id')
+        text = '' if raw is None else str(raw).strip()
+        if isinstance(raw, bool) or not text.isdigit():
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        org = PartnerOrganisation.objects.filter(pk=int(text)).first()
         if org is None:
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
         try:
             inv = invoicing.issue_invoice(
                 org, month, issued_by_email=admin.email or '',
-                override_reason=request.data.get('override_reason') or '')
+                override_reason=body.get('override_reason') or '',
+                # Blank = today, the ordinary case. A value BACK-DATES the printed issue date and
+                # the due date with it; `invoicing.issue_date_for` holds the bounds.
+                issued_on=str(body.get('issued_on') or '').strip())
         except invoicing.InvoicingError as exc:
             return self._error(exc)
         inv = self._visible_invoices(admin, True).get(pk=inv.pk)
@@ -482,98 +501,3 @@ class AdminOrgBillingDetailsView(_InvoiceBase):
         details.updated_by_email = admin.email or ''
         details.save()
         return Response(self._payload(org))
-
-
-class AdminOrgBuildHoursView(_AdminBase):
-    """Build hours for ONE organisation's modules. Super writes; org_admin reads its own.
-
-    The org side of the owner's 2026-07-27 design. Fenced on `organisation_id` like every other
-    org-scoped surface: an org_admin sees only its own hours, and a cross-org id is a **404**,
-    never a 403 — consistent with the rest of the admin API, so the route leaks no existence.
-
-    Only a super may RECORD hours: it is a charge against a tenant, and a tenant recording what
-    it will be billed for is not a control anyone would accept.
-    """
-
-    def get(self, request, org_id):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        is_super = self.has_role(admin, 'super')
-        if not (is_super or admin.role == 'org_admin'):
-            return self._deny_role()
-        if not is_super and admin.owning_organisation_id != int(org_id):
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        month = (request.query_params.get('month') or '').strip()
-        if month and not _MONTH_RE.match(month):
-            return Response({'error': 'bad_month', 'code': 'bad_month'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        from ..models import OrgBuildHours
-        qs = OrgBuildHours.objects.filter(organisation_id=org_id)  # org-fence: explicit filter
-        if month:
-            qs = qs.filter(period_month=month)
-        payload = {'organisation_id': int(org_id), 'lines': [{
-            'id': r.id, 'period_month': r.period_month, 'module': r.module,
-            'hours': str(r.hours), 'basis': r.basis,
-        } for r in qs]}
-
-        # The charge is only computed when a month is asked for AND its rates are set. A
-        # missing rate is reported as such, never silently rendered as RM0.00.
-        if month:
-            from .. import platform_cost
-            try:
-                charge = platform_cost.development_charge(
-                    admin.owning_organisation if not is_super else _org_or_none(org_id), month)
-                payload['charge'] = {k: (str(v) if v is not None else None)
-                                     for k, v in charge.items() if k != 'lines'}
-            except platform_cost.RateMissing as exc:
-                payload['charge'] = None
-                payload['charge_blocked'] = str(exc)
-        return Response(payload)
-
-    def post(self, request, org_id):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'super'):
-            return self._deny_role()
-
-        from decimal import Decimal, InvalidOperation
-
-        from ..models import OrgBuildHours
-
-        month = (request.data.get('period_month') or '').strip()
-        if not _MONTH_RE.match(month):
-            return Response({'error': 'bad_month', 'code': 'bad_month'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        module = (request.data.get('module') or '').strip()
-        basis = (request.data.get('basis') or '').strip()
-        if not module:
-            return Response({'error': 'module_required', 'code': 'module_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if not basis:
-            # The whole point of the model: an hours figure with no stated reconstruction is
-            # not auditable, and this is the only place that can insist on one.
-            return Response({'error': 'basis_required', 'code': 'basis_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        try:
-            hours = Decimal(str(request.data.get('hours')))
-        except (InvalidOperation, TypeError):
-            return Response({'error': 'bad_hours', 'code': 'bad_hours'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if hours <= 0:
-            return Response({'error': 'bad_hours', 'code': 'bad_hours'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        org = _org_or_none(org_id)
-        if org is None:
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-
-        row = OrgBuildHours.objects.create(
-            organisation=org, period_month=month, module=module, hours=hours,
-            basis=basis, recorded_by_email=(admin.email or ''))
-        return Response({'id': row.id, 'period_month': row.period_month,
-                         'module': row.module, 'hours': str(row.hours)},
-                        status=status.HTTP_201_CREATED)

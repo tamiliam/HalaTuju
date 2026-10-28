@@ -27,6 +27,9 @@ PartnerAdminMixin does the real authorisation.
 from .base import (
     _AdminBase, _MONTH_RE, _org_or_none,
 )
+from .build_hours import (
+    AdminOrgBuildHoursView,
+)
 from .contracts import (
     _CONTRACT_RULE_LABELS, _ContractsBase, _contract_clause_dict, _contract_schedule_dict,
     _contract_template_detail, _contract_template_summary, _contract_validation_dict,
@@ -51,7 +54,6 @@ from .intake_years import (
 from .invoices import (
     _InvoiceBase, _invoice_money, _invoice_payload, AdminInvoiceActionView, AdminInvoicePdfView,
     AdminInvoiceIssuerView, AdminInvoicesView, AdminOrgBillingDetailsView,
-    AdminOrgBuildHoursView,
 )
 from .payments import (
     _PAYMENTS_READ, _PAYMENTS_WRITE, _PaymentsBase, _payment_item_dict,

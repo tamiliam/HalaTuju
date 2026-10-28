@@ -91,6 +91,42 @@ Amount paid $25.00
 2 of 2
 """
 
+#: The SAME provider, the INVOICE rather than the receipt — word for word from
+#: `Invoice-TPTHYS-00011.pdf`, which the owner supplied on 2026-10-28 and which the parser refused
+#: outright. Supabase's receipt says "Amount paid"; its invoice says "Amount due", and the file
+#: that reaches a folder depends on which button was pressed in their dashboard.
+SUPABASE_SEP_INVOICE = """INVOICE
+Supabase Pte. Ltd.
+65 Chulia Street
+Singapore
+Invoice number TPTHYS-00011
+Invoice date Oct 8, 2026
+Due date Oct 8, 2026
+Amount due $25.00
+Description Quantity Rate Amount
+Compute Hours
+Sep 8 – Oct 7, 2026
+$0.00
+Compute Hours (Micro)
+Sep 8 – Oct 7, 2026
+$9.68
+pbrrlyoyyiftckqvzvvo 720 $0.01344 $9.68
+ Discount ($10.00 across 18 prices) -$9.68
+Egress GB
+Sep 8 – Oct 7, 2026
+$0.04
+pbrrlyoyyiftckqvzvvo 0.414663 $0.09 $0.04
+ Discount (-250 units) -$0.04
+1 of 2
+Description Quantity Rate Amount
+Pro Plan
+Oct 8 – Nov 7, 2026
+1 $25.00 $25.00
+Subtotal $25.00
+Amount due $25.00
+2 of 2
+"""
+
 TWILIO_AUG = """Usage Summary per Product
 
  Twilio Inc.
@@ -260,6 +296,81 @@ class TestSupabase(SimpleTestCase):
         note = ip.parse_text(SUPABASE_AUG).period_note
         self.assertIn('Aug 8', note)
         self.assertIn('Sep 7', note)
+
+    # ── The INVOICE, not the receipt (2026-10-28) ────────────────────────────
+
+    def test_the_invoice_form_reads_the_same_as_the_receipt_form(self):
+        """⚠ Supabase's receipt says "Amount paid" and its invoice says "Amount due". The owner
+        supplied September as an invoice and EVERY field failed at once — the parser refusing
+        rather than reporting a smaller bill, which is its job, but the month was then unbillable.
+        A cost ledger records what we were BILLED, so "due" is the right figure to take."""
+        inv = ip.parse_text(SUPABASE_SEP_INVOICE)
+        self.assertEqual(inv.source, 'supabase')
+        self.assertEqual(inv.invoice_ref, 'TPTHYS-00011')
+        self.assertEqual(inv.total, Decimal('25.00'))
+        self.assertEqual([(ln.sku, ln.amount) for ln in inv.lines],
+                         [('Pro Plan', Decimal('25.00'))])
+
+    def test_the_month_is_the_USAGE_window_even_though_the_plan_line_is_the_NEXT_one(self):
+        """⚠ THE TRAP ON THIS DOCUMENT. Its usage covers Sep 8 – Oct 7 and its Pro Plan line
+        covers **Oct 8 – Nov 7**, billed in advance. Keying on the plan line would file September
+        under October — and October is a month that has not closed."""
+        inv = ip.parse_text(SUPABASE_SEP_INVOICE)
+        self.assertEqual(inv.period_month, '2026-09')
+        self.assertIn('Sep 8', inv.period_note)
+        self.assertIn('Oct 7', inv.period_note)
+
+    def test_an_invoice_part_paid_is_still_refused_by_the_reconciliation(self):
+        """Taking "due" must not weaken the self-check: a document whose amount and subtotal
+        disagree is refused however it is worded."""
+        with self.assertRaises(ip.InvoiceParseError):
+            ip.parse_text(SUPABASE_SEP_INVOICE.replace('Amount due $25.00',
+                                                       'Amount due $12.50'))
+
+    def test_a_PLAN_ONLY_invoice_refuses_rather_than_filing_a_month_that_has_not_closed(self):
+        """⚠ THE CASE THE WIDENING BROUGHT INTO SCOPE. A receipt is produced after payment and
+        always carries the past period's usage block, so its first window is the right one. An
+        INVOICE for a quiet month has no usage lines at all, leaving only the forward-looking plan
+        window — 'Oct 8 – Nov 7' on a document dated 8 October. Keying on it would file October,
+        a month that has not closed, and then ask for an exchange rate that does not exist yet.
+        Adversarial review, 2026-10-28."""
+        plan_only = """INVOICE
+Supabase Pte. Ltd.
+Invoice number TPTHYS-00012
+Invoice date Nov 8, 2026
+Amount due $25.00
+Description Quantity Rate Amount
+Pro Plan
+Nov 8 – Dec 7, 2026
+1 $25.00 $25.00
+Subtotal $25.00
+Amount due $25.00
+"""
+        with self.assertRaises(ip.InvoiceParseError) as caught:
+            ip.parse_text(plan_only)
+        self.assertIn('not before the document date', str(caught.exception))
+
+    def test_a_window_that_STRADDLES_the_new_year_takes_the_start_year_not_the_printed_one(self):
+        """⚠ 'Dec 8 – Jan 7, 2027' carries ONE year and spans two: the start is December 2026.
+        Reading the printed year for both filed December 2026 as December 2027 — a month that has
+        not happened — every January. Found while adding the guard above, which would otherwise
+        have turned every January import into a refusal."""
+        turn = SUPABASE_SEP_INVOICE.replace('Invoice date Oct 8, 2026', 'Invoice date Jan 8, 2027')
+        turn = turn.replace('Sep 8 – Oct 7, 2026', 'Dec 8 – Jan 7, 2027')
+        turn = turn.replace('Oct 8 – Nov 7, 2026', 'Jan 8 – Feb 7, 2027')
+        inv = ip.parse_text(turn)
+        self.assertEqual(inv.period_month, '2026-12')
+
+    def test_the_document_date_is_required_so_the_window_can_be_checked_at_all(self):
+        no_date = SUPABASE_SEP_INVOICE.replace('Invoice date Oct 8, 2026', '')
+        with self.assertRaises(ip.InvoiceParseError) as caught:
+            ip.parse_text(no_date)
+        self.assertIn('All five are required', str(caught.exception))
+
+    def test_a_word_that_merely_contains_due_is_not_the_amount(self):
+        # 'Due date Oct 8, 2026' carries no dollar figure, so it cannot be mistaken for one —
+        # asserted rather than assumed, because the regex now matches on two words.
+        self.assertEqual(ip.parse_text(SUPABASE_SEP_INVOICE).total, Decimal('25.00'))
 
 
 class TestTwilio(SimpleTestCase):

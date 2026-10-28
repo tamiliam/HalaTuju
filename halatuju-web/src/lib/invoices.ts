@@ -120,3 +120,82 @@ export function todayIso(now: Date = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
 }
+
+// ── Which month, and dated when (2026-10-28) ─────────────────────────────────────────────────
+// The owner asked to bill from July onwards, each invoice dated the 15th of the following month.
+// Neither was possible from this screen: it only ever asked the server for the DEFAULT month (the
+// one just closed), and the issue date was always the day the button was pressed.
+//
+// ⚠ Every comparison below is a plain string compare on ISO dates, which sorts correctly by
+// construction. No `new Date(...)` anywhere: '2026-08-15' parses as UTC midnight, so a browser
+// west of Greenwich reads it as the 14th — the bug `formatDay` above already exists to avoid.
+
+const MONTH_ONLY_RE = /^(\d{4})-(0[1-9]|1[0-2])$/
+
+/** 'YYYY-MM' shifted by whole months. '' for anything that is not a real calendar month. */
+export function shiftMonth(month: string, delta: number): string {
+  const m = (month || '').match(MONTH_ONLY_RE)
+  if (!m) return ''
+  const index = parseInt(m[1], 10) * 12 + (parseInt(m[2], 10) - 1) + delta
+  if (index < 0) return ''
+  return `${String(Math.floor(index / 12)).padStart(4, '0')}-${String((index % 12) + 1).padStart(2, '0')}`
+}
+
+/** The months a super may pick, newest first: every month that has CLOSED, back `count` of them.
+ *
+ * Two months are never offered:
+ *   - the CURRENT one — its suppliers have not billed, which is the server's `month_not_closed`
+ *     refusal and the reason the whole cut-off exists;
+ *   - anything whose natural issue date (the 15th of the month after it) falls in a PREVIOUS
+ *     calendar year. ⚠ Adversarial review, 2026-10-28: a twelve-month window reached November
+ *     2025, prefilled 15 December 2025, and the server would then have minted `INV-2025-0001` —
+ *     reopening a closed, filed run of numbers. The server refuses that date now; offering the
+ *     month anyway would just hand the reader a prefilled error. So the list stops at December of
+ *     last year, which is the oldest month that can still be dated inside the open year. */
+export function issuableMonths(today: string, count = 12): string[] {
+  const thisMonth = (today || '').slice(0, 7)
+  const year = (today || '').slice(0, 4)
+  const out: string[] = []
+  for (let i = 1; i <= Math.max(count, 1); i += 1) {
+    const m = shiftMonth(thisMonth, -i)
+    if (!m) continue
+    if (shiftMonth(m, 1).slice(0, 4) < year) break
+    out.push(m)
+  }
+  return out
+}
+
+/** The date an invoice for `month` SHOULD carry: the 15th of the month after it — the owner's
+ *  cut-off, the day the monthly job would have sent it. Capped at today, because an invoice
+ *  cannot be dated in the future, so a month closed early carries today instead. */
+export function defaultIssueDate(month: string, today: string): string {
+  const next = shiftMonth(month, 1)
+  if (!next) return today
+  const due = `${next}-15`
+  return due > today ? today : due
+}
+
+/** Why this issue date cannot be used — an i18n key suffix, or '' when it can.
+ *
+ * The SERVER decides (`invoicing.issue_date_for`); this mostly saves a round trip and puts the
+ * message beside the box. Its bounds are the server's:
+ *   - never after today;
+ *   - never in a previous calendar year — the printed year opens that year's run of numbers;
+ *   - never inside the billed month or earlier — a bill cannot predate the thing it bills. On ISO
+ *     strings that is simply `issuedOn`'s own month being at or before `month`.
+ *
+ * ⚠ ONE RULE IS STRICTER HERE THAN ON THE SERVER, DELIBERATELY: a BLANK box is a problem. The
+ * service reads blank as "today", which is right for the monthly job and for every ordinary
+ * Issue — but this panel exists to set a date on purpose, and adversarial review (2026-10-28)
+ * found that clearing the box silently produced the exact failure the panel was built to stop: a
+ * July invoice dated 28 October with a November due date, frozen, remedied only by a void. */
+export function issueDateProblem(month: string, issuedOn: string, today: string): string {
+  const value = (issuedOn || '').trim()
+  if (value === '') return 'issueDateRequired'
+  if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value)) return 'badIssueDate'
+  if (value > today) return 'issueDateFuture'
+  if (value.slice(0, 4) < today.slice(0, 4)) return 'issueDateLastYear'
+  if (!MONTH_ONLY_RE.test(month || '')) return ''
+  if (value.slice(0, 7) <= month) return 'issueDateBeforeMonthEnd'
+  return ''
+}

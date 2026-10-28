@@ -98,9 +98,15 @@ export async function getInvoices(
   return adminFetch(`/api/v1/admin/scholarship/billing/invoices/${q}`, options)
 }
 
-/** Issue ONE invoice. A refusal is a 409 whose `body.problems` lists every reason. */
+/** Issue ONE invoice. A refusal is a 409 whose `body.problems` lists every reason.
+ *
+ * `issued_on` BACK-DATES the printed issue date, and the due date with it (owner, 2026-10-28: July
+ * must say 15 August). Left out, the server uses today — the ordinary case and what the monthly
+ * job does. A bad date is a plain 400 with its own code, not a readiness refusal. */
 export async function issueInvoice(
-  data: { organisation_id: number; period_month: string; override_reason?: string },
+  data: {
+    organisation_id: number; period_month: string; override_reason?: string; issued_on?: string
+  },
   options?: ApiOptions
 ): Promise<InvoiceRow> {
   return adminMutate('/api/v1/admin/scholarship/billing/invoices/', 'POST', data, options)

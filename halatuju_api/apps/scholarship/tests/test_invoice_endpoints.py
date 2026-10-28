@@ -296,3 +296,95 @@ class TestTheDoor(_Doors):
         self.assertFalse(Invoice.objects.exists())
         with self.assertRaises(CommandError):
             call_command('issue_monthly_invoices', '--month', '2026-00')
+
+
+class TestBackIssuingThroughTheDoor(_Doors):
+    """The issue date and the month, at the endpoint (2026-10-28).
+
+    The service tests hold `invoicing.issue_date_for` to its bounds. These hold the DOOR: that the
+    date reaches it at all, that a refusal is a plain 400 with its own code rather than a readiness
+    conflict, and that a body which is not an object is a 400 rather than a 500.
+
+    ⚠ The world is pinned to 15 September 2026, so August is the month just closed and July is a
+    month that has already slipped past — exactly the owner's position on 2026-10-28.
+    """
+
+    def post_issue(self, **data):
+        body = {'organisation_id': self.org.id, 'period_month': '2026-08'}
+        body.update(data)
+        return self.client_for('super-uid').post(f'{BASE}/invoices/', body, format='json')
+
+    def test_a_given_date_is_printed_and_the_due_date_follows_it(self):
+        r = self.post_issue(period_month='2026-07', issued_on='2026-08-15',
+                            override_reason='Back-issuing the first billed month.')
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()['issued_on'], '2026-08-15')
+        self.assertEqual(r.json()['due_on'], '2026-09-14')
+
+    def test_a_blank_date_still_means_today_so_every_ordinary_issue_is_unchanged(self):
+        for blank in ('', '   ', None):
+            with self.subTest(blank=blank):
+                Invoice.objects.all().delete()
+                r = self.post_issue(issued_on=blank)
+                self.assertEqual(r.status_code, 201, r.content)
+                self.assertEqual(r.json()['issued_on'], '2026-09-15')
+
+    def test_the_date_is_not_even_a_field_a_tenant_can_reach(self):
+        """An org_admin is refused at the door before any body is read — the date adds no door."""
+        r = self.client_for('oa-a').post(
+            f'{BASE}/invoices/', {'organisation_id': self.org.id, 'period_month': '2026-08',
+                                  'issued_on': '2026-09-15'}, format='json')
+        self.assertIn(r.status_code, (403, 404))
+        self.assertFalse(Invoice.objects.exists())
+
+    def test_each_refusal_is_a_400_with_its_own_code_not_a_readiness_conflict(self):
+        for value, code in (('2026-09-16', 'issue_date_future'),
+                            ('2026-08-31', 'issue_date_before_month_end'),
+                            ('15/09/2026', 'bad_issue_date'),
+                            ('2026-09-15T10:00:00', 'bad_issue_date')):
+            with self.subTest(value=value):
+                r = self.post_issue(issued_on=value)
+                self.assertEqual((r.status_code, r.json()['code']), (400, code), r.content)
+                self.assertFalse(Invoice.objects.exists())
+
+    def test_a_body_that_is_not_an_object_is_a_400_and_never_a_500(self):
+        """⚠ A JSON ARRAY has no `.get`. The same fault was found on the bill-to endpoint by
+        adversarial review on 2026-10-28; this is the issue door's copy of the guard."""
+        r = self.client_for('super-uid').post(f'{BASE}/invoices/', [1, 2], format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_month'))
+
+    def test_an_organisation_id_that_is_not_a_number_is_a_404_and_never_a_500(self):
+        """`filter(pk='abc')` raises; the id has to be refused before the query."""
+        for bad in ('abc', '', None, [], {'a': 1}, 1.5):
+            with self.subTest(bad=bad):
+                r = self.post_issue(organisation_id=bad)
+                self.assertEqual(r.status_code, 404, r.content)
+
+    def test_a_super_can_ask_for_an_older_month_and_gets_ITS_OWN_readiness(self):
+        """The screen could not reach July at all before this sprint: it only ever read the
+        server's default month. The query parameter is what makes July choosable.
+
+        ⚠ The two months are made to DIFFER first. Asking for July and being handed August's
+        problems under July's heading is the failure worth catching, and a month whose problems
+        happen to match proves nothing — an earlier draft of this test did exactly that."""
+        # July's whole ledger, so July alone answers `no_costs`. August keeps its own rows, and
+        # its supplier check only asks what July BILLED, which an empty July cannot shrink.
+        PlatformCost.objects.filter(period_month='2026-07').delete()
+        su = self.client_for('super-uid')
+
+        july = su.get(f'{BASE}/invoices/?month=2026-07')
+        self.assertEqual(july.status_code, 200)
+        self.assertEqual(july.json()['month'], '2026-07')
+        rows = july.json()['readiness']
+        self.assertEqual([x['organisation_code'] for x in rows], ['brightpath'])
+        self.assertIn('no_costs', [p['code'] for p in rows[0]['problems']])
+
+        august = su.get(f'{BASE}/invoices/?month=2026-08')
+        self.assertEqual(august.json()['month'], '2026-08')
+        self.assertEqual([p['code'] for p in august.json()['readiness'][0]['problems']], [])
+
+    def test_a_month_that_is_not_a_month_is_refused_at_the_read_too(self):
+        for bad in ('2026-00', '2026-13', 'August'):
+            with self.subTest(bad=bad):
+                r = self.client_for('super-uid').get(f'{BASE}/invoices/?month={bad}')
+                self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_month'))

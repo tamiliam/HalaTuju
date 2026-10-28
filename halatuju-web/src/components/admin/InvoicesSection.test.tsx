@@ -118,8 +118,14 @@ describe('issuing', () => {
       { target: { value: '  Twilio was cancelled.  ' } })
     expect(anyway.disabled).toBe(false)
     fireEvent.click(anyway)
+    // `issued_on` rides along on every issue: the prefilled 15th of the month after the billed
+    // one, which for August is 15 September. The server would use today if it were blank, and
+    // "today" on a back-issued month is the wrong date — see InvoiceToIssue.test.tsx.
     await waitFor(() => expect(mockApi.issueInvoice).toHaveBeenCalledWith(
-      { organisation_id: 1, period_month: '2026-08', override_reason: 'Twilio was cancelled.' }, { token: 'tok' }))
+      {
+        organisation_id: 1, period_month: '2026-08', override_reason: 'Twilio was cancelled.',
+        issued_on: '2026-09-15',
+      }, { token: 'tok' }))
   })
 
   it('a month already invoiced reads as issued, not as a list of alarms', async () => {
