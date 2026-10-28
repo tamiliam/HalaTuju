@@ -5,6 +5,7 @@ number, exam year, PNGK and one grade per subject — under fixed printed labels
 them from the OCR text (a digital PDF's text layer) or, for a scan / photo, from the Vision WORD
 BOXES re-linearised into visual rows (`academic_engine._group_rows`, the SPM slip's row builder).
 
+(A certificate whose text layer is stored column by column is paired in `stpm_columns`, 1.1.0.)
 It first recognises the LAYOUT from a SET of printed anchors (never one exact phrase), because the
 certificate and the slip print the facts in different places. ⚠ The layout is a READER-ONLY routing
 step (owner ruling 2026-10-27): it is never returned, stored or shown, and no rule reads it. A
@@ -24,6 +25,8 @@ CONSERVATIVE — a wrong Exact value is far worse than an AI read. Every hit has
   * the printed subject count (slip: registered; certificate: passed) matching the rows read;
   * the printed PNGK equal to the PNGK recomputed from the rows (Pengajian Am + the best three
     other subjects, MPM's rule, half-up to two places). One misread grade breaks the sum.
+Owner ruling B (2026-10-28): a bare base letter whose point is that letter WITH a sign (A + 3.67) lost
+its sign in print → the signed grade, on a PNGK-counted row only, recorded in `_rows_sign_from_point`.
 Grade X (absent) is kept as printed, with no grade point.
 
 Output mirrors the Gemini higher-results schema (`higher_results.SCHEMA`) so the comparison
@@ -40,7 +43,8 @@ from decimal import ROUND_HALF_UP, Decimal
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning
 # rule, the `offer_parse` precedent) so a stored read says which reader made it.
 # 1.0.0 (2026-10-27): S2 — certificate (2023/24 + 2025), results slip (2022-2025), transcript.
-PARSER_VERSION = '1.0.0'
+# 1.1.0 (2026-10-28): a certificate's COLUMN-ordered text layer (names, then letters, then points).
+PARSER_VERSION = '1.1.0'
 
 #: The STPM subject grade scale and its printed grade points (the slip's "Nilai Gred").
 GRADE_POINTS = {'A': '4.00', 'A-': '3.67', 'B+': '3.33', 'B': '3.00', 'B-': '2.67', 'C+': '2.33',
@@ -238,6 +242,16 @@ def _split_subject(tokens):
     return (subject, grade, point) if subject else None
 
 
+def _sign_from_point(letter, point):
+    """Owner ruling B (2026-10-28): a bare base letter (A B C D) whose clearly read point is that SAME
+    letter WITH a sign (A + 3.67 → A-; B + 3.33 → B+) lost its sign in the print → the signed grade.
+    Any other pairing (B + 3.67) is a disagreement → None. Counted rows only (the caller checks)."""
+    if letter not in ('A', 'B', 'C', 'D'):
+        return None
+    hits = [g for g in (letter + '+', letter + '-') if GRADE_POINTS.get(g) == point]
+    return hits[0] if len(hits) == 1 else None
+
+
 def _settle_grade(rows_read, entered):
     """The owner's grade rule, per row. ``entered(subject)`` is the grade the student entered for
     that subject, or None (no profile / no entry → rule 1 only).
@@ -261,7 +275,10 @@ def _settle_grade(rows_read, entered):
             continue
         if g is not None and clear_p is not None:
             if GRADE_POINTS[g] != clear_p:
-                return None
+                signed = _sign_from_point(g, clear_p)        # owner ruling B (2026-10-28)
+                if signed is None:
+                    return None
+                r['grade'], r['sign_from_point'], r['base'] = signed, True, g
             continue
         read = g if g is not None else by_point.get(clear_p)
         mine = entered(r['subject']) if read and entered else None     # normalised by the caller
@@ -284,6 +301,31 @@ def _pngk(rows_read):
     return str(mean.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)), {i for i, _ in counted}
 
 
+def _completions_proven(rows_read, counted, printed_pngk):
+    """Does the PNGK PROVE every completed row (rule 2 `from_entry`, ruling B `sign_from_point`)?
+      * the row counts towards the PNGK, and ties with no uncounted row (else which of two equal
+        points was counted is arbitrary, and the sum cannot tell them apart);
+      * ruling B: with the row's ALTERNATIVE value — the bare letter as read (A → 4.00) — the
+        PNGK, re-ranked, no longer adds up (else the sum fits both readings and proves neither).
+    A rule-2 row has no alternative: only ONE value was read and the completion IS that value (the
+    other was missing or unreadable), so only the first check applies; the student's entry and the
+    sum both corroborate the value read."""
+    for i, r in enumerate(rows_read):
+        if not (r.get('from_entry') or r.get('sign_from_point')):
+            continue
+        ranked = _letters(r['subject']) not in _GENERAL_STUDIES      # PA counts by name, not rank
+        if i not in counted or ranked and any(j not in counted and rows_read[j]['grade'] != 'X'
+                                   and Decimal(rows_read[j]['point']) == Decimal(r['point'])
+                                   for j in range(len(rows_read))):
+            return False
+        if r.get('sign_from_point'):
+            alt = [dict(x) for x in rows_read]
+            alt[i]['point'] = GRADE_POINTS[r['base']]
+            if _pngk(alt)[0] == printed_pngk:
+                return False
+    return True
+
+
 def _checked_results(rows_read, printed_pngk, printed_count, count_kind, entered=None):
     """The results list after every sanity gate, or None."""
     if not rows_read or not printed_pngk or not _GP_RE.match(printed_pngk):
@@ -299,12 +341,10 @@ def _checked_results(rows_read, printed_pngk, printed_count, count_kind, entered
         if n != printed_count:
             return None
     computed, counted = _pngk(rows_read)
-    if computed != printed_pngk:
+    if computed != printed_pngk or not _completions_proven(rows_read, counted, printed_pngk):
         return None
-    if any(r.get('from_entry') and i not in counted for i, r in enumerate(rows_read)):
-        return None                                   # rule 2 only where the PNGK can check it
-    return [{'subject': r['subject'], 'grade': r['grade'], 'from_entry': bool(r.get('from_entry'))}
-            for r in rows_read]
+    return [{'subject': r['subject'], 'grade': r['grade'], 'from_entry': bool(r.get('from_entry')),
+             'sign_from_point': bool(r.get('sign_from_point'))} for r in rows_read]
 
 
 def _count_after(rows, i, label_key):
@@ -432,29 +472,45 @@ def _cert_name_wraps(rows, who):
     the next line, which a same-row read would truncate)? Then the name is not read Exact."""
     ic = _find(rows, 'KADPENGENALAN', start=who)
     for r in rows[who + 1:ic if ic > who else who + 2]:
-        words = [t for t in r if t not in ('(This', 'This', 'is', 'to', 'certify', 'that', '(', ')')]
+        words = [t for t in r if t not in ('(This', 'This', 'is', 'to', 'certify', 'that', '(', ')')
+                 and t not in _NOT_A_NAME]          # the title's own words are never a name
         if any(re.fullmatch(r"[A-Z][A-Z'@/.\-]+", t) for t in words):
             return True
     return False
 
 
-def _parse_cert(rows, entered=None):
+def _name_tokens(row):
+    """The name after "disahkan bahawa", minus the English subtitle when a text layer prints it on
+    the same line — and only that exact phrase ("(This is to certify that"); anything else stays."""
+    tokens = _after(row, 'BAHAWA')
+    cut = next((k for k, t in enumerate(tokens) if t.startswith('(')), None)
+    if cut is not None and _letters(''.join(tokens[cut:])) == 'THISISTOCERTIFYTHAT':
+        tokens = tokens[:cut]
+    return tokens
+
+
+def _parse_cert(rows, entered=None, words_given=False):
     whos = [i for i, r in enumerate(rows) if 'DISAHKANBAHAWA' in _letters(''.join(r))]
     if len(whos) != 1 or _cert_name_wraps(rows, whos[0]):
         return None
-    name = _clean_name(_after(rows[whos[0]], 'BAHAWA'))
+    name = _clean_name(_name_tokens(rows[whos[0]]))
     head = next((i for i, r in enumerate(rows) if _letters(''.join(r)).startswith('MATAPELAJARAN')), -1)
     lulus = _find(rows, 'BILANGANMATAPELAJARANLULUS')
     purata = _find(rows, 'PURATANILAIGRED')
     if not name or head < 0 or lulus <= head:
         return None
     count = _count_after(rows, lulus, 'LULUS')
-    if count == 'missing':
-        return None
     label = 'KESELURUHAN' if _find(rows, 'PURATANILAIGREDKESELURUHAN') >= 0 else 'KUMULATIF'
     pngk = _point_after(rows, purata, label)
-    results = _checked_results(_cert_subjects(rows, head + 1, lulus), pngk, count, 'passed', entered)
-    year = _cert_year(rows)
+    read, year = _cert_subjects(rows, head + 1, lulus), _cert_year(rows)
+    if read is None and not words_given and count == 'missing':   # a column-ordered text layer
+        from .stpm_columns import cert_columns
+        columns = cert_columns(rows, head, lulus, purata)
+        if columns is not None:
+            read, pngk, year, count = columns
+    if count == 'missing':
+        return None
+    results = _checked_results(read, pngk, count, 'passed', entered)
     if results is None or year is None:
         return None
     return {'candidate_name': name, 'nric': _nric(rows, _find(rows, 'KADPENGENALAN')),
@@ -470,7 +526,7 @@ def parse(text, words=None, entered=None):
     None to defer to Gemini. ``entered(subject) -> grade | None`` is the student's own entry for a
     printed subject, already normalised (`higher_results.entered_grade_value`) — rule 2 of
     `_settle_grade`; without it only cleanly read rows pass. The result carries `_rows_from_entry`
-    (subjects completed by rule 2) for the caller to store OUTSIDE the fields. Never raises."""
+    (subjects completed by rule 2) and `_rows_sign_from_point` (ruling B) for the caller to store OUTSIDE the fields. Never raises."""
     try:
         return _parse(text, words, entered)
     except Exception:          # a reader bug must fall back to AI, never break a read
@@ -484,7 +540,7 @@ def _parse(text, words, entered):
     if found is None:
         return None
     layout, year = found
-    fields = (_parse_cert(rows, entered) if layout == 'certificate'
+    fields = (_parse_cert(rows, entered, bool(words)) if layout == 'certificate'
               else _parse_slip(rows, bool(words), entered))
     if fields is None or not fields['nric']:
         return None
@@ -503,4 +559,5 @@ def _parse(text, words, entered):
         'results': [{'subject': r['subject'], 'grade': r['grade']} for r in fields['results']],
         # Audit only: the caller moves this out of the fields, beside `capture` (never a field).
         '_rows_from_entry': [r['subject'] for r in fields['results'] if r['from_entry']],
+        '_rows_sign_from_point': [r['subject'] for r in fields['results'] if r['sign_from_point']],
     }

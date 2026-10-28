@@ -134,6 +134,28 @@ def _entered_grade(doc):
 
 # ── 1. The read ───────────────────────────────────────────────────────────────────────────────
 
+#: A Gemini note that the institution is not printed ("The institution where the candidate studied
+#: is not specified."). An STPM certificate or slip never prints one and nothing checks the field,
+#: so the note only confuses the reviewer; it is dropped on an STPM read. Every other warning is kept.
+_ABSENT = (r'(?:(?:is|was|are)\s+)?(?:not\s+(?:specified|printed|stated|shown|provided|mentioned|'
+           r'found|visible|available|given|listed|indicated|present|included|identified)|missing|'
+           r'unspecified|absent|unknown|unavailable)')
+_NO_INSTITUTION = re.compile(
+    rf'^\W*(?:the\s+)?(?:name\s+of\s+the\s+)?institution\b[^.;]*?\b{_ABSENT}\b[^.;]*\.?\s*$'
+    rf'|^\W*(?:no|missing|unspecified|unknown)\s+institution\b[^.;]*\.?\s*$', re.IGNORECASE)
+
+#: A second clause ("..., and the name does not match"; "..., which may mean it was cropped") is kept.
+_SECOND_CLAUSE = re.compile(r'[,;:]|\b(?:and|but|which|while|although|though|however|or|so)\b',
+                            re.IGNORECASE)
+
+
+def _is_institution_noise(warning) -> bool:
+    """Only a WHOLE short warning that says the institution is absent (one sentence, one clause) —
+    a warning that goes on to say anything else (a mismatch, another field, cropping) is kept."""
+    w = str(warning or '').strip()
+    return not _SECOND_CLAUSE.search(w) and bool(_NO_INSTITUTION.match(w))
+
+
 
 def extract(doc, ocr, image_fn, extract_fn):
     """The higher-results read for `vision._run_field_extraction_impl`. An STPM certificate, slip
@@ -156,7 +178,8 @@ def extract(doc, ocr, image_fn, extract_fn):
     if exact is not None:    # the reader's version is stored beside `capture`, never in the fields
         ex = {'fields': exact, 'warnings': [], 'error': '', 'capture': 'deterministic',
               'parser_version': f'stpm_parse {PARSER_VERSION}',
-              'stpm_rows_from_entry': exact.pop('_rows_from_entry', [])}   # audit: rule-2 rows
+              'stpm_rows_from_entry': exact.pop('_rows_from_entry', []),   # audit: rule-2 rows
+              'stpm_rows_sign_from_point': exact.pop('_rows_sign_from_point', [])}   # ruling B rows
     else:
         image = image_fn()
         if image is not None:
@@ -168,6 +191,8 @@ def extract(doc, ocr, image_fn, extract_fn):
     if isinstance(fields, dict) and fields and not ex.get('error'):
         fields['results_kind_detected'] = detect(text) or detect_from_fields(fields)
         fields['results_kind_markers'] = kinds_seen(text)
+        if ex['capture'] == 'ai' and fields['results_kind_detected'] == 'stpm':   # STPM prints none
+            ex['warnings'] = [w for w in ex.get('warnings') or [] if not _is_institution_noise(w)]
     return ex
 
 

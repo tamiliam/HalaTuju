@@ -23,6 +23,7 @@ from apps.scholarship.services.completeness import application_completeness
 from apps.scholarship.services.consent_blockers import consent_blockers
 from apps.scholarship.services.blockers import document_red_blockers, document_unreadable_blockers
 from apps.scholarship.services.offer_sync import revert_if_profile_incomplete
+from apps.scholarship.stpm_parse import PARSER_VERSION
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_application, make_cohort, make_student, matched_str_pair,
 )
@@ -427,7 +428,7 @@ class TestTheUploadRead(TestCase):
         self.assertEqual(calls, [])
         self.assertEqual((ex['capture'], ex['error']), ('deterministic', ''))
         self.assertEqual(ex['fields']['cgpa'], '3.17')
-        self.assertEqual(ex['parser_version'], 'stpm_parse 1.0.0')     # beside capture
+        self.assertEqual(ex['parser_version'], f'stpm_parse {PARSER_VERSION}')     # beside capture
         self.assertFalse([k for k in ex['fields'] if 'parser' in k])     # never in the fields
         self.assertEqual(ex['fields']['results_kind_detected'], 'stpm')
 
@@ -440,7 +441,7 @@ class TestTheUploadRead(TestCase):
         with patch('apps.scholarship.vision.extract_document_fields', side_effect=AssertionError('gemini')):
             r = vision.run_field_extraction_for_document(
                 doc, names=[], ocr={'text': slip_text(FOUR), 'words': None, 'image': b'x', 'error': None})
-        self.assertEqual((r['capture'], r['parser_version']), ('deterministic', 'stpm_parse 1.0.0'))
+        self.assertEqual((r['capture'], r['parser_version']), ('deterministic', f'stpm_parse {PARSER_VERSION}'))
         self.assertNotIn('parser_version', r['fields'])
 
     def test_a_row_completed_from_the_students_entry_is_stored_with_its_audit_list(self):
@@ -459,6 +460,8 @@ class TestTheUploadRead(TestCase):
         self.assertEqual((r['capture'], r['stpm_rows_from_entry']), ('deterministic', ['EKONOMI']))
         self.assertNotIn('stpm_rows_from_entry', r['fields'])
         self.assertNotIn('_rows_from_entry', r['fields'])
+        self.assertEqual(r['stpm_rows_sign_from_point'], [])           # ruling B: none here
+        self.assertNotIn('_rows_sign_from_point', r['fields'])
         self.assertEqual(r['fields']['results'][3], {'subject': 'EKONOMI', 'grade': 'C'})
         doc.refresh_from_db()
         self.assertEqual(doc.vision_fields['stpm_rows_from_entry'], ['EKONOMI'])
@@ -501,6 +504,28 @@ class TestTheUploadRead(TestCase):
         self.assertEqual(calls, [b'img'])                     # today's Gemini image read, unchanged
         self.assertEqual(ex['capture'], 'ai')
         self.assertEqual(ex['fields']['results_kind_detected'], 'stpm')
+
+    def test_a_missing_institution_note_is_dropped_and_every_other_warning_kept(self):
+        # An STPM certificate / slip never prints an institution: Gemini's note says nothing useful.
+        from apps.scholarship.higher_results import _is_institution_noise, extract
+        doc = _doc(_app(STPM_HELD, DEGREE), 'higher_results')
+        kept = ['The CGPA is partly obscured.', 'The institution name does not match the school.',
+                'Institution not specified; the grade for SEJARAH is unclear.',
+                'Institution not specified, and the candidate name does not match the IC.',
+                'No institution printed and CGPA label differs from the slip.',
+                'The institution is not shown, which may indicate the document was cropped or edited.']
+        noise = ['The institution where the candidate studied is not specified.',
+                 'Institution not printed on the document', 'No institution is shown.',
+                 'The name of the institution is missing.']
+        ex = extract(doc, {'text': 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA'}, lambda: b'img',
+                     lambda *a, **kw: {'fields': {'candidate_name': 'PRIYA'}, 'warnings': noise + kept,
+                                       'error': ''})
+        self.assertEqual(ex['warnings'], kept)
+        self.assertFalse(any(_is_institution_noise(w) for w in kept + ['', None]))
+        matric = extract(doc, {'text': 'PROGRAM MATRIKULASI PNGK 3.50'}, lambda: b'img',
+                         lambda *a, **kw: {'fields': {'candidate_name': 'PRIYA'}, 'warnings': list(noise),
+                                           'error': ''})
+        self.assertEqual(matric['warnings'], noise)          # filtered only on an STPM document
 
     def test_registered_with_the_reader(self):
         from apps.scholarship import vision

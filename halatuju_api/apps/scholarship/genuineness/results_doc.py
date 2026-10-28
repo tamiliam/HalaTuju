@@ -96,9 +96,9 @@ from .stpm_doc import STPM_LISTS
 #   1.8.2 (2026-10-26) — C2 review: a UiTM PDF's text layer (no letterhead) is named by UiTM's own clauses.
 #   1.9.0 (2026-10-26) — corpus-gaps C3: the STPM family (slip + certificate, `stpm_doc`) beside the
 #       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
-#   1.10.0 (2026-10-27) — STPM exact-read S2: STPM higher results read Exact (`stpm_parse`). Backfill: S4.
-#   1.11.0 (2026-10-27) — STPM exact-read S3: STPM in the higher-results slot scored + ruling 1A. Backfill: S4.
-MODEL_VERSION = '1.11.0'
+#   1.10.0 / 1.11.0 (2026-10-27) — STPM exact-read S2: read Exact (`stpm_parse`) / S3: scored + 1A. Backfill: S4.
+#   1.12.0 (2026-10-28) — stpm_parse 1.1.0: column-ordered certificate text layer, same gates. No weight change.
+MODEL_VERSION = '1.12.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

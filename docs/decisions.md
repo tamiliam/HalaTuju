@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## A column-ordered certificate text layer is paired by order only from bounded, equal-length lists; a dropped sign is taken from the point (owner ruling B) — 2026-10-28 (`stpm_parse` 1.1.0)
+
+Some digital 2023/24 paper certificates store their text layer column by column (every subject name, then
+every grade letter, then every grade point). `stpm_parse` now pairs them by order, but only from a TEXT
+layer (never a scan's word boxes) and only when each list comes from a fixed, bounded place: the names are
+the rows that are exactly a known subject between "Mata Pelajaran" / "(Subject)" and "Bilangan Mata
+Pelajaran Lulus" (a row with a grade or point, or an unknown subject-like name, there → None, never
+skipped); the letters are the run directly under the ONE "Gred" / "(Grade)" header; the points are the
+run of "point (status)" rows directly above "Purata Nilai Gred", with no such row elsewhere; the three
+lists must be the same length. The passed count is the page's ONE bare one- or two-digit row; the year
+is the whole row within four rows after "Tahun Peperiksaan" (subtitles and "Nilai Gred" passed over; a
+"Tarikh" row stops the search, so the release date is never read); the PNGK is the whole row within
+two rows after its label. Every existing gate then applies unchanged (vocabulary, the owner's grade rule,
+count, PNGK, one name, one IC). The real case this targets prints "A" where the point is 3.67 (the
+minus is not in the text layer at all). **Owner ruling B (2026-10-28)** settles it, for every layout: a
+bare base letter (A, B, C, D) whose clearly read point (fixed scale, after the 0.05 snap) is that SAME
+base letter with a sign takes the sign from the point — only on a row the PNGK counts (PA + best three)
+and only when the printed PNGK equals the recomputed one; a different base letter (B with 3.67) is still
+a disagreement → None. Such rows are recorded beside `capture` in `stpm_rows_sign_from_point`, as
+rule-2 rows are in `stpm_rows_from_entry`. Chosen over "treat the letter as unclear" (rule 2) because it
+needs no student entry yet stays checked by the PNGK sum. Review (2026-10-28): "checked by the PNGK" means
+PROVEN — a completed row (ruling B or rule 2) that ties with an uncounted row at the best-three boundary,
+or (ruling B) whose bare-letter value also fits the printed PNGK, is not proven → None. A rule-2 row has
+no alternative value (only one value was read), so only the counted/tie test applies to it. Separately, a Gemini higher-results warning that only says the institution is
+not printed is dropped in `higher_results.extract` (STPM documents never print one; nothing checks the
+field); a warning with any second clause is kept, and the filter runs only on a document detected as STPM.
+
 ## "Declared STPM" no longer means "in Form Six" for a holder of tertiary results — 2026-10-28 (`semester_result_gap`)
 
 The semester-result ask's legacy arm (TD-218: on the declaration, `heading_for`) now also requires that

@@ -238,7 +238,7 @@ class TheSlip(SimpleTestCase):
                                         {'subject': 'BAHASA MELAYU', 'grade': 'B'},
                                         {'subject': 'SEJARAH', 'grade': 'B+'},
                                         {'subject': 'GEOGRAFI', 'grade': 'B-'}])
-        self.assertEqual([k for k in r if k.startswith('_')], ['_rows_from_entry'])   # moved out by the caller
+        self.assertEqual([k for k in r if k.startswith('_')], ['_rows_from_entry', '_rows_sign_from_point'])  # moved out
 
     def test_paper_rows_are_never_subjects(self):
         r = parse(slip_text(FOUR))
@@ -381,6 +381,158 @@ class TheCertificate(SimpleTestCase):
         self.assertIsNone(parse('', words))
 
 
+# ── A 2023/24 certificate whose text layer is stored COLUMN BY COLUMN (parser 1.1.0) ─────────────
+
+COL_FIVE = [('PENGAJIAN AM', 'A-', '3.67'), ('BAHASA MELAYU', 'B', '3.00'), ('SEJARAH', 'B+', '3.33'),
+            ('EKONOMI', 'C+', '2.33'), ('PENGAJIAN PERNIAGAAN', 'A', '4.00')]          # PNGK 3.50
+
+
+def cert_columns_text(subjects, *, grades=None, points=None, passed=None, pngk='3.50', year='2024',
+                      name='DEVI A/P RAMAN', ic='050707-07-0707'):
+    """The column-ordered text layer as a digital paper certificate stores it: the subject names
+    (with prose and the index number between them), the passed count far away, then every grade
+    letter under "Gred", then every point with its status, the year a few lines after its label."""
+    grades = [g for _n, g, _p in subjects] if grades is None else grades
+    points = [p for _n, _g, p in subjects] if points is None else points
+    lines = [f'No. Kad Pengenalan {ic} Identity Card No.',
+             f'Dengan ini disahkan bahawa {name} (This is to certify that',
+             'SI)IL TINGGI', 'Angka Giliran:', '(Index No.)',
+             'PERSEKOLAHAN MALAYSIA dan telah memperoleh gred', 'MALAYSIA HIGHER SCHOOL CERTIFICATE '
+             'examination and obtained the following', 'Mata Pelajaran', '(Subject)', 'MPM',
+             'dalam mata pelajaran seperti yang berikut', 'grades in the subjects below']
+    names = [n for n, _g, _p in subjects]
+    lines += names[:3] + ['SD0007/7007'] + names[3:]
+    lines += ['Bilangan Mata Pelajaran Lulus:', '(Number of Subjects Passed)', 'Peperiksaan',
+              'Pengenalan', '12345/24', 'AS1234567', 'MAJLIS PEPERIKSAAN MALAYSIA',
+              '(MALAYSIAN EXAMINATIONS COUNCIL)', 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA',
+              '(MALAYSIA HIGHER SCHOOL CERTIFICATE)',
+              str(len(subjects) if passed is None else passed),
+              'Majlis Peperiksaan Malaysia', 'Gred', '(Grade)']
+    lines += grades
+    lines += ['telah menduduki peperiksaan', 'Nilai Gred', '(Grade Point)', 'berikut',
+              'Tahun Peperiksaan:', '(Year of Examination)', year]
+    lines += [f'{p} (LULUS PENUH)' for p in points]
+    lines += ['Purata Nilai Gred Kumulatif:', '(Cumulative Grade Point Average)', pngk,
+              'Ketua Eksekutif', '(Chief Executive )', 'Majlis Peperiksaan Malaysia',
+              'Tarikh keputusan diumumkan:', '(Results announced on)', '23 Julai 2025', '12345']
+    return '\n'.join(lines)
+
+
+class TheColumnOrderedCertificate(SimpleTestCase):
+    """Names, then letters, then points — paired by order only from bounded, equal-length lists;
+    every gate of the row-ordered read then applies unchanged."""
+
+    def test_it_reads_exact(self):
+        r = parse(cert_columns_text(COL_FIVE))
+        self.assertEqual((r['candidate_name'], r['nric'], r['exam_year'], r['cgpa']),
+                         ('DEVI A/P RAMAN', '050707070707', '2024', '3.50'))
+        self.assertEqual([(x['subject'], x['grade']) for x in r['results']],
+                         [(n, g) for n, g, _p in COL_FIVE])
+        self.assertEqual(r['_rows_from_entry'], [])
+
+    def test_lists_of_different_lengths_fall_back(self):
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, grades=['A-', 'B', 'B+', 'C+'])))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, points=['3.67', '3.00', '3.33', '2.33'])))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE[:4], grades=[g for _n, g, _p in COL_FIVE],
+                                                  points=[p for _n, _g, p in COL_FIVE])))
+
+    def test_a_dropped_sign_is_taken_from_the_point_on_counted_rows(self):
+        # Owner ruling B (2026-10-28) — the real-corpus case: the text layer printed "A" for A-.
+        r = parse(cert_columns_text(COL_FIVE, grades=['A', 'B', 'B+', 'C+', 'A']))
+        self.assertEqual(r['results'][0]['grade'], 'A-')
+        self.assertEqual((r['_rows_sign_from_point'], r['_rows_from_entry']), (['PENGAJIAN AM'], []))
+
+    def test_a_dropped_sign_on_an_uncounted_row_falls_back(self):
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, grades=['A-', 'B', 'B+', 'C', 'A'])))
+
+    def test_the_year_is_never_the_release_date(self):
+        text = cert_columns_text(COL_FIVE).replace('(Year of Examination)\n2024\n', '(Year of Examination)\n')
+        self.assertIsNone(parse(text))
+        far = cert_columns_text(COL_FIVE).replace('(Year of Examination)\n',
+                                                  '(Year of Examination)\nx\ny\nz\nw\n')
+        self.assertIsNone(parse(far))                       # outside the small window
+
+    def test_every_existing_gate_still_applies(self):
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, pngk='3.58')))           # PNGK
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, passed='4')))            # count
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, points=['3.67', '3.00', '3.50', '2.33',
+                                                                    '4.00'])))       # off-scale
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, name='DEVI DIAKUI')))    # one name
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE) + '\n040404-04-0404'))   # one IC
+        unknown = [('PENGAJIAN AMX', 'A-', '3.67')] + COL_FIVE[1:]
+        self.assertIsNone(parse(cert_columns_text(unknown)))                         # vocabulary
+
+    def test_an_unknown_subject_is_never_skipped(self):
+        text = cert_columns_text(COL_FIVE).replace('SD0007/7007', 'SD0007/7007\nKESUSASTERAAN INGGERIS')
+        self.assertIsNone(parse(text))
+
+    def test_an_ambiguous_count_or_stray_point_falls_back(self):
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE).replace('12345/24', '12345/24\n7')))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE).replace('berikut', '3.00 (LULUS PENUH)')))
+
+    def test_a_bilingual_subtitle_in_the_subject_column_is_passed_over(self):
+        text = cert_columns_text(COL_FIVE).replace('\nBAHASA MELAYU\n', '\n(GENERAL STUDIES)\nBAHASA MELAYU\n')
+        self.assertIsNotNone(parse(text))
+
+    def test_the_count_is_read_only_between_its_label_and_the_grade_column(self):
+        self.assertIsNotNone(parse(cert_columns_text(COL_FIVE) + '\n7'))     # a stray digit elsewhere
+        moved = cert_columns_text(COL_FIVE).replace('(MALAYSIA HIGHER SCHOOL CERTIFICATE)\n5\n',
+                                                    '(MALAYSIA HIGHER SCHOOL CERTIFICATE)\n') + '\n5'
+        self.assertIsNone(parse(moved))
+
+    def test_only_a_text_layer_reads_this_way(self):
+        rows = stpm_parse._rows_of(cert_columns_text(COL_FIVE), None)
+        self.assertIsNotNone(stpm_parse._parse_cert(rows))
+        self.assertIsNone(stpm_parse._parse_cert(rows, words_given=True))       # a scan's rows
+
+
+class RulingB(SimpleTestCase):
+    """Owner ruling B (2026-10-28): a missing +/- sign may be taken from the clearly read point, when
+    the point is the SAME base letter with a sign, on a row the PNGK counts, the PNGK still adding up."""
+
+    def test_the_row_reader_completes_a_lost_sign(self):
+        r = parse(slip_text([('900', 'PENGAJIAN AM', 'A', '3.67')] + FOUR[1:]))
+        self.assertEqual(r['results'][0]['grade'], 'A-')
+        self.assertEqual(r['_rows_sign_from_point'], ['PENGAJIAN AM'])
+        r = parse(slip_text([FOUR[0], ('910', 'BAHASA MELAYU', 'B', '3.33'), FOUR[2],
+                             ('942', 'GEOGRAFI', 'B', '2.67')], pngk='3.25'))
+        self.assertEqual([x['grade'] for x in r['results']], ['A-', 'B+', 'B+', 'B-'])
+
+    def test_a_clean_read_records_nothing(self):
+        self.assertEqual(parse(slip_text(FOUR))['_rows_sign_from_point'], [])
+
+    def test_a_different_base_letter_is_a_disagreement(self):
+        self.assertIsNone(parse(slip_text([('900', 'PENGAJIAN AM', 'B', '3.67')] + FOUR[1:])))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, grades=['B', 'B', 'B+', 'C+', 'A'])))
+        self.assertIsNone(parse(slip_text([('900', 'PENGAJIAN AM', 'A', '3.33')] + FOUR[1:])))
+
+    def test_an_uncounted_row_is_refused(self):
+        five = FOUR + [('944', 'EKONOMI', 'C', '1.67')]                 # C- is the fifth: not counted
+        self.assertIsNone(parse(slip_text(five)))
+        self.assertIsNotNone(parse(slip_text(FOUR + [('944', 'EKONOMI', 'C-', '1.67')])))
+
+    def test_a_tie_at_the_counting_boundary_proves_nothing(self):
+        # Review probe: a true B whose point is misread 3.33 beside genuine B+ 3.33 rows — whichever
+        # 3.33 is counted, the PNGK is the same, so the completed B+ is not proven → None.
+        five = [('900', 'PENGAJIAN AM', 'A-', '3.67'), ('910', 'BAHASA MELAYU', 'B+', '3.33'),
+                ('940', 'SEJARAH', 'B+', '3.33'), ('942', 'GEOGRAFI', 'B', '3.33'),
+                ('944', 'EKONOMI', 'B+', '3.33')]
+        self.assertIsNone(parse(slip_text(five, pngk='3.42')))
+        clean = five[:3] + [('942', 'GEOGRAFI', 'B+', '3.33')] + five[4:]
+        self.assertIsNotNone(parse(slip_text(clean, pngk='3.42')))     # read cleanly: no completion
+
+    def test_the_alternative_reading_must_not_also_add_up(self):
+        rows = [{'subject': 'SEJARAH', 'grade': 'B+', 'point': '3.33', 'sign_from_point': True,
+                 'base': 'B'}, {'subject': 'EKONOMI', 'grade': 'B', 'point': '3.00'}]
+        self.assertFalse(stpm_parse._completions_proven(rows, {0, 1}, '3.00'))    # base fits too
+        self.assertTrue(stpm_parse._completions_proven(rows, {0, 1}, '3.17'))
+
+    def test_the_pngk_must_still_add_up(self):
+        self.assertIsNone(parse(slip_text([('900', 'PENGAJIAN AM', 'A', '3.67')] + FOUR[1:], pngk='3.33')))
+        self.assertIsNone(parse(cert_columns_text(COL_FIVE, grades=['A', 'B', 'B+', 'C+', 'A'],
+                                                  pngk='3.67')))
+
+
 class ItFallsBack(SimpleTestCase):
     """Every unsure read is None — the caller then runs today's Gemini read."""
 
@@ -466,7 +618,7 @@ class TheScale(SimpleTestCase):
             self.assertEqual(stpm_parse._layout(flat(text), rows)[0], layout)
 
     def test_the_parser_version(self):
-        self.assertEqual(PARSER_VERSION, '1.0.0')
+        self.assertEqual(PARSER_VERSION, '1.1.0')
 
 
 # ── The owner's grade rule (2026-10-27): letter and point agree; an unclear one is completed from

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM exact-read follow-up — column-ordered certificate text layers; no "institution not specified" note - 2026-10-28
+
+- **`stpm_parse` 1.1.0** (the new layout in `stpm_columns.py`, keeping `stpm_parse` under 600 lines). A digital 2023/24 certificate whose text layer lists the subject names, then the
+  grade letters, then the grade points is now paired by order — text layer only, from bounded blocks
+  (subject header → "Bilangan Mata Pelajaran Lulus"; under the one "Gred" / "(Grade)" header; the
+  "point (status)" run directly above "Purata Nilai Gred"), the three lists the same length, then every
+  existing gate. Year: the whole row within four rows after "Tahun Peperiksaan", never past a "Tarikh" row.
+  The name may share its row with the "(This is to certify that" subtitle; the title's own words on the
+  next row no longer count as a wrapped name. `MODEL_VERSION` 1.12.0 (doc-recognition change).
+- **Corpus (local, `eval/stpm_parse_check.py`): unchanged** — certificates 14 Exact / 7 fallback / 0 wrong,
+  slips 13 / 5 / 0, controls 0 of 31 accepted; `stpm_genuineness_check.py` ruling checks 0 failed. The
+  newer a252 upload (check4098) now reads **Exact**, every field matching the expected answers, via ruling B
+  below (its text layer has no minus sign for A-). The S1 a252 copy has the name away from its label → None.
+- **Owner ruling B (2026-10-28), both readers:** a bare base letter (A B C D) whose clearly read point is
+  that SAME letter with a sign (A + 3.67 → A-; B + 3.33 / 2.67; C + 2.33 / 1.67; D + 1.33) takes the sign
+  from the point — only on a row the PNGK counts, the printed PNGK still equal to the recomputed one. A
+  different base letter stays a disagreement → None. Audit: `vision_fields['stpm_rows_sign_from_point']`
+  beside `capture` (one key added to `vision.py`'s existing pass-through tuple, same line, no line added).
+- **Review fixes:** a completed row (ruling B or rule 2) must be PROVEN by the PNGK — it must count, must
+  not tie with an uncounted row at the best-three boundary (PA, counted by name, excepted), and for ruling
+  B the bare letter's own value (A → 4.00) must NOT also add up; else None. The column path takes the
+  passed count only between "Bilangan Mata Pelajaran Lulus" and the "Gred" header, and passes over
+  "(…)" subtitle rows in the subject column. The institution filter drops only a one-clause warning
+  (no , ; : and/but/which/or …) and only when the document is detected as STPM.
+- **Gemini higher-results warnings:** a warning that only says the institution is not printed ("The
+  institution where the candidate studied is not specified.") is dropped in `higher_results.extract`;
+  every other warning is kept. `vision.py` untouched.
+- Tests: `test_stpm_parse.TheColumnOrderedCertificate` (synthetic twin, 9), `RulingB` (7), the institution filter in
+  `test_third_route_s3.TestTheUploadRead`; version asserts follow `PARSER_VERSION`.
+
 ## Fix — no semester-result ask for a student who has FINISHED STPM - 2026-10-28
 
 `semester_result_gap`'s legacy arm asked every student who declared STPM for a current-semester result
