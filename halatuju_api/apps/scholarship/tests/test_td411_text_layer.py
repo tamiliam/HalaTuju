@@ -119,6 +119,15 @@ class UsableTextLayerTests(SimpleTestCase):
         self.assertEqual(usable_text_layer('~~~ ### @@@ ||| %%% ^^^ &&& *** ((( ))) +++ === ;;;'), '')
         self.assertEqual(usable_text_layer('K W S P P E N Y A T A A H L I T A H U N'), '')
 
+    def test_spaced_headings_around_real_prose_are_kept(self):
+        # Doc 3919 (live, 2026-10-28): a Canva-style statement whose headings and contact block are
+        # letter-spaced (82% single-letter words) around three pages of ordinary prose.
+        spaced = '\n'.join(['S K I L L S', 'C O N T A C T', 'L A N G U A G E S', 'K a m p u n g  B a r u'] * 40)
+        prose = ('I intend to pursue a Bachelor of Accountancy because I want to build a career in the '
+                 'accounting industry and use my knowledge to help my family and my community grow. ') * 3
+        layer = spaced + '\n' + prose
+        self.assertEqual(usable_text_layer(layer), layer)
+
     def test_real_digital_text_is_kept_unchanged(self):
         self.assertEqual(usable_text_layer(REAL_LAYER), REAL_LAYER)
         self.assertEqual(usable_text_layer(GENUINE_EPF.strip()), GENUINE_EPF.strip())

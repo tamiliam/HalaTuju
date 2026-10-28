@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 #: A PDF's text layer is trusted (read for free, no Vision call) only when at least this many
 #: characters of REAL text survive `usable_text_layer`. vision.py reads it as ``_MIN_PDF_TEXT``.
 MIN_TEXT_LAYER_CHARS = 25
+#: A layer holding at least this many ordinary words (3+ letters) is never judged letter-spaced.
+MIN_REAL_WORDS = 30
 
 # ── TD-411 (2026-10-28): is this text layer the document, or only a scanner app's stamp? ─────────
 # A phone scanner app (CamScanner above all) writes its OWN name into the text layer of a scanned PDF
@@ -73,7 +75,11 @@ def _looks_like_text(text: str) -> bool:
     if sum(c.isalnum() for c in visible) < 0.25 * len(visible):
         return False
     words = [w for w in rest.split() if w.isalpha()]
-    return not (len(words) >= 10 and sum(len(w) == 1 for w in words) > 0.6 * len(words))
+    # Letter-spaced only when it is ALL the layer holds: a Canva-style CV/statement spaces its headings
+    # ("S K I L L S", doc 3919: 82% single letters) around paragraphs of real prose that must be kept.
+    real_words = sum(len(w) >= 3 for w in words)
+    return not (len(words) >= 10 and sum(len(w) == 1 for w in words) > 0.6 * len(words)
+                and real_words < MIN_REAL_WORDS)
 
 
 def usable_text_layer(text: str) -> str:

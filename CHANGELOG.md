@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-411 hotfix — letter-spaced headings around real prose keep the PDF text layer (MODEL 1.17.1) - 2026-10-28
+
+- **Found by the post-deploy affected-list run** (992 live PDFs, 9 turned away). Doc 3919, a 3-page Canva-style
+  statement of intent, has letter-spaced headings ("S K I L L S", 82% single-letter words) around ordinary prose;
+  the letter-spacing rule turned the whole layer away, so a re-read would have kept page 1 only. A layer with at
+  least 30 ordinary words (`pdf_pages.MIN_REAL_WORDS`) is never judged letter-spaced. The other 8 (CamScanner
+  stamps on 3 ICs/3 parent ICs, an EPF and a results slip) are still turned away, as intended.
+
 ## TD-408 + TD-411 — father/son name order; a scanner watermark is not a text layer; the KWSP app screen is an EPF proof (MODEL 1.17.0, VERDICT 2026-10-28.2) - 2026-10-28
 
 - **TD-408 (VERDICT 2026-10-28.2; live dry-run 1448 real pairs, 3 changed, all an Iban father now confirmed; two review rounds) — word order in a patronymic name.**
