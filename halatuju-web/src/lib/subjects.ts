@@ -282,32 +282,52 @@ export const SPM_PREREQ_STREAM_POOLS: Record<string, SpmSubject[]> = {
 
 export interface StpmSubject {
   id: string
+  /** The name MPM prints on the certificate (Malay) — also the Malay label. */
   name: string
+  /** English label. */
+  en: string
+  /** Tamil label — first drafts (STPM CGPA sprint C1, 2026-10-28) for the owner to read. */
+  ta: string
   stream: 'science' | 'arts' | 'both' | 'compulsory'
 }
 
+/**
+ * Every subject on the MPM STPM syllabus (STPM CGPA sprint C1, 2026-10-28), plus Matematik
+ * Lanjutan T, which only older certificates carry. Keys never change once stored. The server's
+ * list is `halatuju_api/apps/courses/stpm_subjects.py`, kept in step by
+ * drift-test: src/lib/__tests__/stpmSubjectsDrift.test.ts
+ */
 export const STPM_SUBJECTS: StpmSubject[] = [
-  { id: 'PA', name: 'Pengajian Am', stream: 'compulsory' },
-  { id: 'MATH_T', name: 'Matematik T', stream: 'science' },
-  { id: 'PHYSICS', name: 'Fizik', stream: 'science' },
-  { id: 'CHEMISTRY', name: 'Kimia', stream: 'science' },
-  { id: 'BIOLOGY', name: 'Biologi', stream: 'science' },
-  { id: 'FURTHER_MATH', name: 'Matematik Lanjutan T', stream: 'science' },
-  { id: 'ECONOMICS', name: 'Ekonomi', stream: 'arts' },
-  { id: 'ACCOUNTING', name: 'Perakaunan', stream: 'arts' },
-  { id: 'BUSINESS', name: 'Pengajian Perniagaan', stream: 'arts' },
-  { id: 'GEOGRAFI', name: 'Geografi', stream: 'arts' },
-  { id: 'SEJARAH', name: 'Sejarah', stream: 'arts' },
-  { id: 'KESUSASTERAAN_MELAYU', name: 'Kesusasteraan Melayu', stream: 'arts' },
-  { id: 'BAHASA_MELAYU', name: 'Bahasa Melayu', stream: 'arts' },
-  { id: 'BAHASA_CINA', name: 'Bahasa Cina', stream: 'arts' },
-  { id: 'BAHASA_TAMIL', name: 'Bahasa Tamil', stream: 'arts' },
-  { id: 'SENI_VISUAL', name: 'Seni Visual', stream: 'arts' },
-  { id: 'SYARIAH', name: 'Syariah Islamiah', stream: 'arts' },
-  { id: 'USULUDDIN', name: 'Usuluddin', stream: 'arts' },
-  { id: 'ICT', name: 'Sains Komputer / ICT', stream: 'arts' },
-  { id: 'MATH_M', name: 'Matematik M', stream: 'arts' },
+  { id: 'PA', name: 'Pengajian Am', en: 'General Studies', ta: 'பொதுக் கல்வி', stream: 'compulsory' },
+  { id: 'MATH_T', name: 'Matematik (T)', en: 'Mathematics (T)', ta: 'கணிதம் (T)', stream: 'science' },
+  { id: 'PHYSICS', name: 'Fizik', en: 'Physics', ta: 'இயற்பியல்', stream: 'science' },
+  { id: 'CHEMISTRY', name: 'Kimia', en: 'Chemistry', ta: 'வேதியியல்', stream: 'science' },
+  { id: 'BIOLOGY', name: 'Biologi', en: 'Biology', ta: 'உயிரியல்', stream: 'science' },
+  { id: 'FURTHER_MATH', name: 'Matematik Lanjutan (T)', en: 'Further Mathematics (T)', ta: 'மேம்பட்ட கணிதம் (T)', stream: 'science' },
+  { id: 'SAINS_SUKAN', name: 'Sains Sukan', en: 'Sports Science', ta: 'விளையாட்டு அறிவியல்', stream: 'both' },
+  { id: 'ECONOMICS', name: 'Ekonomi', en: 'Economics', ta: 'பொருளாதாரம்', stream: 'arts' },
+  { id: 'ACCOUNTING', name: 'Perakaunan', en: 'Accounting', ta: 'கணக்கியல்', stream: 'arts' },
+  { id: 'BUSINESS', name: 'Pengajian Perniagaan', en: 'Business Studies', ta: 'வணிகவியல்', stream: 'arts' },
+  { id: 'GEOGRAFI', name: 'Geografi', en: 'Geography', ta: 'புவியியல்', stream: 'arts' },
+  { id: 'SEJARAH', name: 'Sejarah', en: 'History', ta: 'வரலாறு', stream: 'arts' },
+  { id: 'KESUSASTERAAN_MELAYU', name: 'Kesusasteraan Melayu Komunikatif', en: 'Communicative Malay Literature', ta: 'தொடர்பு மலாய் இலக்கியம்', stream: 'arts' },
+  { id: 'LITERATURE_IN_ENGLISH', name: 'Literature in English', en: 'Literature in English', ta: 'ஆங்கில இலக்கியம்', stream: 'arts' },
+  { id: 'BAHASA_MELAYU', name: 'Bahasa Melayu', en: 'Malay Language', ta: 'மலாய் மொழி', stream: 'arts' },
+  { id: 'BAHASA_CINA', name: 'Bahasa Cina', en: 'Chinese Language', ta: 'சீன மொழி', stream: 'arts' },
+  { id: 'BAHASA_TAMIL', name: 'Bahasa Tamil', en: 'Tamil Language', ta: 'தமிழ் மொழி', stream: 'arts' },
+  { id: 'BAHASA_ARAB', name: 'Bahasa Arab', en: 'Arabic Language', ta: 'அரபு மொழி', stream: 'arts' },
+  { id: 'SENI_VISUAL', name: 'Seni Visual', en: 'Visual Arts', ta: 'காட்சிக் கலை', stream: 'arts' },
+  { id: 'SYARIAH', name: 'Syariah', en: 'Syariah', ta: 'ஷரீஆ', stream: 'arts' },
+  { id: 'USULUDDIN', name: 'Usuluddin', en: 'Usuluddin', ta: 'உசுலுதீன்', stream: 'arts' },
+  { id: 'TAHFIZ_AL_QURAN', name: 'Tahfiz Al-Quran', en: 'Tahfiz Al-Quran', ta: 'தஹ்ஃபிஸ் அல்-குர்ஆன்', stream: 'arts' },
+  { id: 'ICT', name: 'Teknologi Maklumat dan Komunikasi', en: 'Information and Communications Technology', ta: 'தகவல் தொடர்பு தொழில்நுட்பம்', stream: 'arts' },
+  { id: 'MATH_M', name: 'Matematik (M)', en: 'Mathematics (M)', ta: 'கணிதம் (M)', stream: 'arts' },
 ]
+
+/** A subject's label in the reader's language (Malay is the certificate's own name). */
+export function stpmSubjectLabel(s: StpmSubject, locale: string): string {
+  return locale === 'en' ? s.en : locale === 'ta' ? s.ta : s.name
+}
 
 export const STPM_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F']
 
@@ -333,6 +353,12 @@ export const STPM_SUBJECT_TO_API_KEY: Record<string, string> = {
   USULUDDIN: 'usuluddin',
   ICT: 'ict',
   PA: 'pengajian_am',
+  // STPM CGPA sprint C1: the rest of the MPM list. `literature_english` is the quiz's existing key;
+  // the other three have no quiz weighting yet and are ignored by the quiz engine (`.get`).
+  LITERATURE_IN_ENGLISH: 'literature_english',
+  BAHASA_ARAB: 'bahasa_arab',
+  TAHFIZ_AL_QURAN: 'tahfiz_al_quran',
+  SAINS_SUKAN: 'sports_science',
 }
 
 export const MUET_BANDS = [1, 2, 3, 4, 5, 6]

@@ -496,7 +496,7 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
                 _fmt_bool(s.colorblind), _fmt_bool(s.disability),
                 s.exam_type,
                 _fmt_json(s.grades), _fmt_json(s.stpm_grades),
-                _fmt_num(s.stpm_cgpa), _fmt_int(s.muet_band),
+                _fmt_num(s.stpm_pngk), _fmt_int(s.muet_band),   # CGPA sprint C2
                 s.financial_pressure, s.travel_willingness,
                 s.referral_source or '', org_name,
                 s.created_at.strftime('%Y-%m-%d'),

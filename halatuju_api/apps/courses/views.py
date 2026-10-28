@@ -57,6 +57,7 @@ from .serializers import (
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import calculate_stpm_cgpa, check_stpm_eligibility
+from .stpm_pngk import stpm_cgpa_payload
 from .stpm_ranking import get_result_framing, get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
@@ -1153,7 +1154,7 @@ class ProfileView(APIView):
             'results_exam_type': profile.results_exam_type,
             'results_held': results_held(profile),       # TD-218 review F1: the ONE rule, served
             'stpm_grades': profile.stpm_grades,
-            'stpm_cgpa': profile.stpm_cgpa,
+            **stpm_cgpa_payload(profile),       # CGPA sprint C2: stpm_cgpa (from the grades) + _calculated
             'muet_band': profile.muet_band,
             'coq_score': profile.coq_score,
             'spm_prereq_grades': profile.spm_prereq_grades,

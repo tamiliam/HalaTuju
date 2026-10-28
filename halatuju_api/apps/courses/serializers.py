@@ -371,7 +371,23 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             if done != stored or 'completed_qualifications' in attrs:
                 attrs['completed_qualifications'] = done
         self._never_demote_held_results(attrs, _merged, _backed)
+        self._stpm_cgpa_from_grades(attrs, _merged)
         return attrs
+
+    @staticmethod
+    def _stpm_cgpa_from_grades(attrs, _merged):
+        """⚠ THE STPM CGPA IS WORKED OUT, NEVER TYPED (STPM CGPA sprint C2, owner 2026-10-28). A
+        write touching the STPM results stores the PNGK of the grades it leaves on file (Pengajian
+        Am + best three, `stpm_pngk.pngk_from_grades`) in `stpm_cgpa`, over whatever figure the
+        browser sent — the onboarding calculator's overall, or a stale copy riding a sync. With
+        fewer than PA + three graded subjects there is no PNGK, and the sent figure stands
+        ("not calculated"). Readers ask `stpm_cgpa_of` either way; this keeps the column honest."""
+        if 'stpm_grades' not in attrs and 'stpm_cgpa' not in attrs:
+            return
+        from .stpm_pngk import pngk_from_grades
+        pngk = pngk_from_grades(_merged('stpm_grades'))
+        if pngk is not None:
+            attrs['stpm_cgpa'] = pngk
 
     @staticmethod
     def _one_higher_qualification(attrs):

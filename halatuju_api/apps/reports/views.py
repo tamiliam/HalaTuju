@@ -119,7 +119,7 @@ class GenerateReportView(APIView):
             lang=lang,
             exam_type=exam_type,
             stpm_grades=profile.stpm_grades if exam_type == 'stpm' else None,
-            stpm_cgpa=profile.stpm_cgpa if exam_type == 'stpm' else None,
+            stpm_cgpa=profile.stpm_pngk if exam_type == 'stpm' else None,   # CGPA sprint C2
             muet_band=profile.muet_band if exam_type == 'stpm' else None,
             higher=higher,
         )
@@ -145,7 +145,7 @@ class GenerateReportView(APIView):
                 **(
                     {
                         'stpm_grades': profile.stpm_grades,
-                        'stpm_cgpa': profile.stpm_cgpa,
+                        'stpm_cgpa': profile.stpm_pngk,
                         'muet_band': profile.muet_band,
                     }
                     if exam_type == 'stpm'

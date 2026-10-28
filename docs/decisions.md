@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## An STPM student's CGPA is the PNGK of their grades (PA + best three); every reader asks one function — 2026-10-28 (STPM CGPA C2)
+
+Owner ruling (roadmap `docs/plans/2026-10-28-stpm-cgpa-from-grades-roadmap.md`): subjects, grades and CGPA come
+from onboarding, and the STPM CGPA is worked out from the subjects and grades, never typed. Live, 54 of 98 STPM
+students carried a CGPA that disagreed with their own grades; every certificate read Exact agrees with
+PNGK = (Pengajian Am + best three others) / 4. Decisions: (1) one function, `apps/courses/stpm_pngk.pngk_from_grades`
+(MQA scale from `stpm_engine.STPM_CGPA_POINTS`, half-up to 2 decimals); the golden-master
+`calculate_stpm_cgpa` (the course guide's plain average) is left untouched; (2) fewer than PA + three graded
+subjects → no PNGK, and `stpm_cgpa_of` falls back to the stored figure ("not calculated"); (3) every reader asks
+`stpm_cgpa_of` (or the model property `stpm_pngk`) — a read-through, so the fix does not wait for the backfill —
+and the profile write also stores the PNGK in `stpm_cgpa`, so the column stays honest for raw readers;
+(4) `backfill_stpm_cgpa` previews before/after (CGPA, merit, gate) and writes only with `--apply`; it re-scores
+nothing; (5) the higher-results slip check compares against the PNGK, so a five-subject certificate now
+matches (`VERDICT_ENGINE_VERSION` 2026-10-28.1); (6) the STPM merit is PNGK / 4 x 100 — the onboarding
+calculator's co-curriculum weighting no longer reaches it, because the STPM koko score was never stored on the
+server. Matriculation / Asasi / Diploma are unchanged.
+
+## The STPM subject list is the MPM syllabus, held once on the server and drift-tested on the web — 2026-10-28 (STPM CGPA C1)
+
+`apps/courses/stpm_subjects.STPM_SUBJECT_KEYS` is the list; `halatuju-web/src/lib/subjects.ts` `STPM_SUBJECTS`
+offers exactly those keys in that order (`stpmSubjectsDrift.test.ts`). It is the 23 MPM subjects plus
+`FURTHER_MATH` (older certificates); stored keys never change. Muzik is NOT added: it is not on the MPM list
+we could check. Sains Sukan is offered in either stream.
+
 ## Local PDF libraries must match requirements.lock; eval caches are captured with production's own readers — 2026-10-28 (`stpm_parse` 1.3.0)
 
 pypdf and pypdfium2 lay out a PDF's text layer differently from one version to the next. Local Python had

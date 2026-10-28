@@ -56,6 +56,14 @@ STPM_READ = {'candidate_name': 'PRIYA', 'exam': 'SIJIL TINGGI PERSEKOLAHAN MALAY
              'results': [{'subject': 'PENGAJIAN AM', 'grade': 'A'},
                          {'subject': 'MATEMATIK (T)', 'grade': 'A-'},
                          {'subject': 'FIZIK', 'grade': 'A-'}]}
+# STPM CGPA sprint C2 (2026-10-28) superseded the "clean upload" cases' use of STPM_HELD: the
+# slip's PNGK is now checked against Pengajian Am + the best THREE others, the certificate's own
+# rule, so PA + two subjects (above) has no PNGK to agree with and its CGPA reads 'pending'. A
+# clean upload is a real certificate: PA + three, PNGK (4 + 3.67 + 3.67 + 3.33) / 4 = 3.67.
+STPM_FULL = {**STPM, 'CHEMISTRY': 'B+'}
+STPM_FULL_HELD = {**STPM_HELD, 'stpm_grades': STPM_FULL}
+STPM_FULL_READ = {**STPM_READ, 'cgpa': '3.67',
+                  'results': STPM_READ['results'] + [{'subject': 'KIMIA', 'grade': 'B+'}]}
 
 
 def _degree_course():
@@ -330,12 +338,19 @@ class TestDetection(SimpleTestCase):
 
 class TestTheStudentCheck(TestCase):
     def test_a_clean_stpm_upload_has_no_note(self):
-        app = _app(STPM_HELD, DEGREE)
-        chk = student_higher_check(_doc(app, 'higher_results', STPM_READ))
+        app = _app(STPM_FULL_HELD, DEGREE)
+        chk = student_higher_check(_doc(app, 'higher_results', STPM_FULL_READ))
         self.assertEqual((chk['name'], chk['kind_status'], chk['cgpa_status'], chk['grades_status']),
                          ('match', 'match', 'match', 'match'))
         self.assertEqual(chk['note'], '')
-        self.assertEqual(chk['cgpa_entered'], 3.78)    # the slip's own (academic) scale
+        self.assertEqual(chk['cgpa_entered'], 3.67)    # the PNGK of the grades: PA + best three
+
+    def test_pa_and_two_subjects_have_no_pngk_to_check(self):
+        """CGPA sprint C2: with fewer than PA + three there is no PNGK, so the slip's figure is
+        neither a match nor a mismatch — 'pending', never a red chip on the student."""
+        app = _app(STPM_HELD, DEGREE)
+        chk = student_higher_check(_doc(app, 'higher_results', STPM_READ))
+        self.assertEqual((chk['cgpa_entered'], chk['cgpa_status'], chk['note']), (None, 'pending', ''))
 
     def test_note_D_an_spm_slip_in_the_card(self):
         app = _app(STPM_HELD, DEGREE)
@@ -557,8 +572,8 @@ class TestTheAcademicCard(TestCase):
         self.assertEqual([i['code'] for i in f['unresolved']], ['higher_results_missing'])
 
     def test_clean_higher_results_without_an_spm_slip(self):
-        app = _app(STPM_HELD, DEGREE)
-        _doc(app, 'higher_results', STPM_READ)
+        app = _app(STPM_FULL_HELD, DEGREE)
+        _doc(app, 'higher_results', STPM_FULL_READ)
         f = self._academic(app)
         codes = {i['code'] for i in f['evidence']}
         self.assertIn('higher_results_not_checked', codes)

@@ -230,14 +230,16 @@ def third_route_overall(kind, cgpa, koko):
 
 def overall_cgpa(profile):
     """THE overall CGPA of the tertiary results we hold - computed, never stored for the third
-    route. STPM: the stored `stpm_cgpa` (already the overall figure). Third route:
-    ``third_route_overall``. None for SPM, no profile, or nothing usable (a stored STPM value
-    outside (0, 4] included - S1's guard)."""
+    route. STPM (CGPA sprint C2, 2026-10-28): the PNGK worked out from the grades, else the stored
+    `stpm_cgpa` ("not calculated") - `stpm_pngk.stpm_cgpa_of`. Third route:
+    ``third_route_overall``. None for SPM, no profile, or nothing usable (a value outside (0, 4]
+    included - S1's guard)."""
     if not profile:
         return None
     held = results_held(profile)
     if held == 'stpm':
-        cgpa = _as_float(getattr(profile, 'stpm_cgpa', None))
+        from .stpm_pngk import stpm_cgpa_of
+        cgpa = _as_float(stpm_cgpa_of(profile))
         if cgpa is None or not 0 < cgpa <= 4.0:
             return None
         return cgpa
@@ -319,9 +321,10 @@ def merit_100(profile):
 
     * **STPM and the third route** (S2a) — ``overall_cgpa`` / 4 x 100, rounded to 2 decimals: the course side's own rule
       (`courses.views.CalculateCgpaView`: ``merit_percent = round(overall / 4.0 * 100, 2)``).
-      `stpm_cgpa` already holds the OVERALL CGPA (academic x 0.9 + koko x 0.04): the STPM results
-      page stores the calculator's ``cgpa`` (the overall figure), never ``academic_cgpa``, and it
-      is the only writer. So 3.70 -> 92.5, 4.00 -> 100.0.
+      Until CGPA sprint C2 (2026-10-28) an STPM holder's figure was the stored `stpm_cgpa` (the
+      onboarding calculator's overall: plain average x 0.9 + koko x 0.04); since C2 it is the PNGK
+      worked out from the grades (`stpm_pngk.stpm_cgpa_of`), the stored figure only when the grades
+      are too few. So 3.70 -> 92.5, 4.00 -> 100.0.
     * **SPM** — the course-guide merit from the stored grades / stream / co-curriculum, rounded to
       1 decimal. Byte-identical to the admin merit before S1 (`tests/test_merit_100.py`).
 

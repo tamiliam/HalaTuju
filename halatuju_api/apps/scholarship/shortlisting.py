@@ -58,6 +58,7 @@ from dataclasses import dataclass
 
 from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, diploma_is_public,
                                          results_held, spm_grades_for, third_route_overall)
+from apps.courses.stpm_pngk import stpm_cgpa_of
 
 from .birth_state import check as check_birth_state
 
@@ -137,8 +138,10 @@ def spm_merit(profile):
     return round(result['final_merit'], 1)
 
 
-def _academic_ok(profile, cohort):
-    """The results test, applying only the requirements this cohort actually sets.
+def _academic_ok(profile, cohort, cgpa_of=stpm_cgpa_of):
+    """The results test, applying only the requirements this cohort actually sets. `cgpa_of` reads
+    an STPM holder's CGPA — `stpm_pngk.stpm_cgpa_of` always, except in the CGPA backfill preview
+    (`backfill_stpm_cgpa`), which passes the stored figure to show the gate as it was before C2.
 
     ⚠ A THRESHOLD OF `None` MEANS THE TEST IS NOT APPLIED (Sabah S2a). Before this, every column
     was NOT NULL with a default, so every test always ran — BrightPath never asked for an STPM
@@ -172,7 +175,7 @@ def _academic_ok(profile, cohort):
 
     if exam == 'stpm':
         floor = cohort.min_stpm_pngk
-        p = getattr(profile, 'stpm_cgpa', None) if profile else None
+        p = cgpa_of(profile)            # CGPA sprint C2: the PNGK from the grades, else the stored one
         if p is None:
             return False, 'STPM PNGK not provided'
         if p >= floor:

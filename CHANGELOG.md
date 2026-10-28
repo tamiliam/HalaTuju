@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM CGPA worked out from the grades + the full MPM subject list (C1 + C2 code, BRANCH `stpm-cgpa-from-grades`, NOT LIVE) - 2026-10-28
+
+- **C1 — every official STPM subject can be entered.** `STPM_SUBJECTS` gains Sains Sukan (either stream —
+  case #184 could enter only three subjects), Bahasa Arab, Literature in English and Tahfiz Al-Quran; names
+  follow MPM (Kesusasteraan Melayu Komunikatif, Matematik (T) / (M)) and show in English / Malay / Tamil
+  (Tamil first drafts). Existing keys unchanged. The server's list is `apps/courses/stpm_subjects.py`; the
+  web list is drift-tested against it (`stpmSubjectsDrift.test.ts`), and every course-requirement subject,
+  slip-check name and report label is checked against it.
+- **C2 — the STPM CGPA is worked out, never typed (owner ruling 2026-10-28).** `apps/courses/stpm_pngk.py`:
+  PNGK = (Pengajian Am + best three others) / 4, half-up to 2 decimals, MQA scale; fewer than PA + three →
+  "not calculated" (the stored figure stands). Every reader asks `stpm_cgpa_of` / `StudentProfile.stpm_pngk`:
+  merit (`merit_100` via `overall_cgpa`), the gate (`shortlisting._academic_ok`), the cockpit and officer list,
+  the student read, the sponsor line and sponsor-profile prompt, the submit snapshot, the student profile
+  payload (+ `stpm_cgpa_calculated`), the partner student detail, the student CSV export and the counselling
+  report. The profile write stores the PNGK over any sent figure. The higher-results slip check compares the
+  slip's PNGK with PA + best three (was the plain average) → `VERDICT_ENGINE_VERSION` 2026-10-28.1.
+- **Backfill** `backfill_stpm_cgpa` (PREVIEW by default; `--apply` writes `stpm_cgpa`): per application, stored
+  vs calculated CGPA, merit before → after and the gate before → after (`GATE FLIPS` marked). Not run.
+- **Onboarding UI not built**: static mock for approval `docs/plans/stpm-cgpa-onboarding-mock.html`.
+- ⚠ STPM merit no longer carries co-curriculum (the server never stored the STPM koko score); see the PR.
+
 ## Income declarations follow-ups — tighter government letterhead; the approver is never a printed label - 2026-10-28
 
 - **Government letterhead tightened.** Exempt only when the letterhead names a ministry (KEMENTERIAN …), Dewan

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STPM CGPA — onboarding mock</title>
+<!--
+  STPM CGPA sprint C2 — STATIC MOCK FOR THE OWNER'S APPROVAL (2026-10-28). Not wired to anything.
+  Roadmap: docs/plans/2026-10-28-stpm-cgpa-from-grades-roadmap.md. The live page is
+  halatuju-web/src/app/onboarding/stpm-grades/page.tsx; nothing there changes until this is approved.
+  All grades are made up.
+-->
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --faint: #9a9893;
+    --line: #e3e1dc; --brand: #0f6b5c; --brand-soft: #e6f2ef; --warn: #8a5a00; --warn-soft: #fff4e0;
+    --drop: #b3b0a9; --old: #a33a2a; --old-soft: #fbecea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --card: #22211f; --ink: #f1efea; --muted: #b2afa8; --faint: #85827c;
+      --line: #383631; --brand: #5cc4b0; --brand-soft: #1d332f; --warn: #f0c070; --warn-soft: #3a2f1a;
+      --drop: #6d6a64; --old: #f08f80; --old-soft: #3a2220;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 24px; max-width: 70ch; }
+  .cols { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { .cols { grid-template-columns: 1fr 1fr; } }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+         text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-bottom: 8px; }
+  .tag.before { background: var(--old-soft); color: var(--old); }
+  .tag.after { background: var(--brand-soft); color: var(--brand); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line);
+         border-radius: 10px; margin-bottom: 8px; }
+  .row .subj { flex: 1; min-width: 0; }
+  .row .grade { width: 52px; text-align: center; font-weight: 600; border-radius: 8px; padding: 4px 0;
+                background: var(--brand-soft); color: var(--brand); }
+  .row.dropped { opacity: .55; }
+  .row.dropped .grade { background: transparent; color: var(--drop); border: 1px dashed var(--drop); }
+  .why { font-size: 12px; color: var(--faint); }
+  .count { font-size: 11px; color: var(--brand); font-weight: 600; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; color: var(--muted); }
+  .input { width: 130px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--muted); }
+  .result { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px;
+            display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .big { font-size: 30px; font-weight: 700; }
+  .small { font-size: 12px; color: var(--muted); }
+  .note { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 10px 12px;
+          font-size: 13px; margin-top: 12px; }
+  .states { margin-top: 28px; }
+  .states h2, .asks h2 { font-size: 17px; margin: 0 0 10px; }
+  .asks { margin-top: 28px; }
+  .asks ol { padding-left: 20px; margin: 0; }
+  .asks li { margin-bottom: 8px; max-width: 80ch; }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>STPM results step — the CGPA is worked out, not entered</h1>
+  <p class="lede">The owner's ruling of 28 October: an STPM student's CGPA comes from the subjects and
+    grades they enter, on the certificate's own rule — <strong>PNGK = (Pengajian Am + the best three
+    other subjects) / 4</strong>. Left: the step today. Right: the proposal. The same student (made-up
+    grades) on both sides.</p>
+
+  <div class="cols">
+    <section>
+      <span class="tag before">Today</span>
+      <div class="card">
+        <div class="row"><span class="subj">Pengajian Am</span><span class="grade">A</span></div>
+        <div class="row"><span class="subj">Matematik (T)</span><span class="grade">A</span></div>
+        <div class="row"><span class="subj">Fizik</span><span class="grade">A-</span></div>
+        <div class="row"><span class="subj">Kimia</span><span class="grade">B+</span></div>
+        <div class="row"><span class="subj">Biologi (elective)</span><span class="grade">C</span></div>
+        <label>Co-curriculum score</label>
+        <div class="input">8.00</div>
+        <div class="small">Co-curriculum marks out of 10 (contributes 10% of overall CGPA)</div>
+        <div class="result">
+          <div><div class="small">Overall CGPA</div><div class="small">90% academic + 10% co-curriculum</div></div>
+          <div style="text-align:right"><span class="big">3.38</span> <span class="small">/ 4.00</span>
+            <div class="small">Auto-calculated</div></div>
+        </div>
+        <div class="note">Academic part = plain average of all five grades (3.40), then 0.9 × 3.40 +
+          0.04 × 8 = 3.38. The certificate says 3.75. This figure is what the merit and the
+          scholarship gate read today.</div>
+      </div>
+    </section>
+
+    <section>
+      <span class="tag after">Proposed</span>
+      <div class="card">
+        <div class="row"><span class="subj">Pengajian Am <span class="count">· always counts</span></span><span class="grade">A</span></div>
+        <div class="row"><span class="subj">Matematik (T) <span class="count">· counts</span></span><span class="grade">A</span></div>
+        <div class="row"><span class="subj">Fizik <span class="count">· counts</span></span><span class="grade">A-</span></div>
+        <div class="row"><span class="subj">Kimia <span class="count">· counts</span></span><span class="grade">B+</span></div>
+        <div class="row dropped"><span class="subj">Biologi (elective)
+          <div class="why">Not counted — only your best three besides Pengajian Am count</div></span><span class="grade">C</span></div>
+        <div class="result">
+          <div><div class="small">Your STPM CGPA (PNGK)</div>
+            <div class="small">Pengajian Am + your best three subjects, ÷ 4</div></div>
+          <div style="text-align:right"><span class="big">3.75</span> <span class="small">/ 4.00</span>
+            <div class="small">Worked out from your grades — check it against your certificate</div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="states">
+    <h2>While the grades are incomplete</h2>
+    <div class="cols">
+      <div class="card">
+        <div class="row"><span class="subj">Pengajian Am</span><span class="grade">A</span></div>
+        <div class="row"><span class="subj">Sains Sukan</span><span class="grade">B</span></div>
+        <div class="row"><span class="subj">Ekonomi</span><span class="grade">B+</span></div>
+        <div class="result">
+          <div><div class="small">Your STPM CGPA (PNGK)</div></div>
+          <div style="text-align:right"><span class="big" style="color:var(--faint)">—</span>
+            <div class="small">Not calculated yet</div></div>
+        </div>
+        <div class="note">Add one more subject and its grade to work out your CGPA (Pengajian Am + three
+          subjects). The Continue button stays off until then — as today.</div>
+      </div>
+      <div class="card">
+        <p class="small" style="margin-top:0">Every official MPM subject can now be chosen (sprint C1, in
+          this PR): Sains Sukan in either stream; Bahasa Arab, Literature in English and Tahfiz Al-Quran
+          added; Kesusasteraan Melayu Komunikatif named as MPM names it. Names show in the reader's
+          language (English / Malay / Tamil).</p>
+        <p class="small">A student who completed the step before C2 and has fewer than PA + three on file
+          keeps the old figure, shown as <em>not calculated</em> in the cockpit; the Action Centre asks
+          them to complete their grades (wording for the owner to agree).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="asks">
+    <h2>For the owner to decide before this is built</h2>
+    <ol>
+      <li><strong>The co-curriculum box.</strong> Today's figure folds co-curriculum in (10%). The
+        certificate's PNGK does not, and the server — merit, gate, cockpit — now reads the PNGK only.
+        The proposal removes the box from this step. Keep it (for the course guide's UPU-style merit) or
+        drop it?</li>
+      <li><strong>Rounding.</strong> The server rounds half-up to 2 decimals (3.585 → 3.59). Confirm
+        against a certificate that lands on a half.</li>
+      <li><strong>Muzik.</strong> Not on the 23-subject MPM list we could check, though the certificate
+        reader knows the word. Add it only if MPM lists it.</li>
+    </ol>
+  </section>
+</main>
+</body>
+</html>

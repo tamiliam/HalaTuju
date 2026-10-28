@@ -76,11 +76,19 @@ _STPM_NAMES = {
     'FURTHER_MATH': ('matematik lanjutan t', 'further mathematics t', 'further mathematics'),
     'ECONOMICS': ('ekonomi', 'economics'), 'ACCOUNTING': ('perakaunan', 'accounting'),
     'BUSINESS': ('pengajian perniagaan', 'business studies'), 'GEOGRAFI': ('geografi', 'geography'),
-    'SEJARAH': ('sejarah', 'history'), 'KESUSASTERAAN_MELAYU': ('kesusasteraan melayu',),
+    'SEJARAH': ('sejarah', 'history'),
+    'KESUSASTERAAN_MELAYU': ('kesusasteraan melayu', 'kesusasteraan melayu komunikatif',
+                             'communicative malay literature'),
     'BAHASA_MELAYU': ('bahasa melayu',), 'BAHASA_CINA': ('bahasa cina', 'chinese language'),
     'BAHASA_TAMIL': ('bahasa tamil', 'tamil language'), 'SENI_VISUAL': ('seni visual', 'visual arts'),
-    'SYARIAH': ('syariah', 'syariah islamiah'), 'USULUDDIN': ('usuluddin',),
+    'SYARIAH': ('syariah', 'syariah islamiah', 'pengajian syariah'),
+    'USULUDDIN': ('usuluddin', 'pengajian usuluddin'),
     'ICT': ('sains komputer', 'ict', 'information and communications technology', 'computing'),
+    # STPM CGPA sprint C1 (2026-10-28): the rest of the MPM list (`courses/stpm_subjects.py`).
+    'BAHASA_ARAB': ('bahasa arab', 'arabic language'),
+    'LITERATURE_IN_ENGLISH': ('literature in english', 'kesusasteraan inggeris'),
+    'TAHFIZ_AL_QURAN': ('tahfiz al-quran', 'tahfiz al quran'),
+    'SAINS_SUKAN': ('sains sukan', 'sports science'),
 }
 
 
@@ -204,18 +212,16 @@ def extract(doc, ocr, image_fn, extract_fn):
 
 
 def _entered_cgpa(profile, kind):
-    """The CGPA the student ENTERED for this kind, on the slip's own scale: STPM — the academic
-    CGPA of the entered grades (`stpm_engine.calculate_stpm_cgpa`, the MQA scale; `stpm_cgpa` is
-    the OVERALL figure with co-curriculum and is not what a slip prints); the third route — the
-    CGPA as entered (`higher_cgpa`). None when nothing was entered."""
+    """The CGPA the student ENTERED for this kind, on the slip's own scale: STPM — the PNGK of the
+    entered grades, Pengajian Am + the best three others (`stpm_pngk.pngk_from_grades`, CGPA sprint
+    C2: the certificate's own rule; until then a plain average of every grade, which disagreed
+    with every certificate of a five-subject candidate), None with fewer than PA + three; the
+    third route — the CGPA as entered (`higher_cgpa`). None when nothing was entered."""
     if profile is None:
         return None
     if kind == 'stpm':
-        grades = getattr(profile, 'stpm_grades', None) or {}
-        if not grades:
-            return None
-        from apps.courses.stpm_engine import calculate_stpm_cgpa
-        return calculate_stpm_cgpa(grades) or None
+        from apps.courses.stpm_pngk import pngk_from_grades
+        return pngk_from_grades(getattr(profile, 'stpm_grades', None))
     return _as_cgpa(getattr(profile, 'higher_cgpa', None))
 
 

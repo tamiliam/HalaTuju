@@ -8,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
 import {
   STPM_SUBJECTS,
+  stpmSubjectLabel,
   STPM_GRADES,
   MUET_BANDS,
 } from '@/lib/subjects'
@@ -20,7 +21,7 @@ type Stream = 'science' | 'arts'
 
 export default function StpmGradesPage() {
   const router = useRouter()
-  const { t } = useT()
+  const { t, contentLocale } = useT()
 
   const [stream, setStream] = useState<Stream | null>(null)
   const [stpmGrades, setStpmGrades] = useState<Record<string, string>>({ PA: '' })
@@ -246,7 +247,7 @@ export default function StpmGradesPage() {
                     <option value="">{t('onboarding.stpmSelectSubject')}</option>
                     {streamSubjects
                       .filter(s => !allSelected.includes(s.id) || s.id === subjectId)
-                      .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      .map(s => <option key={s.id} value={s.id}>{stpmSubjectLabel(s, contentLocale)}</option>)}
                   </select>
                   {subjectId && (
                     <select
@@ -285,7 +286,7 @@ export default function StpmGradesPage() {
                     <option value="">{t('onboarding.stpmElective')}</option>
                     {allOptionalSubjects
                       .filter(s => !allSelected.includes(s.id) || s.id === electiveSubject)
-                      .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      .map(s => <option key={s.id} value={s.id}>{stpmSubjectLabel(s, contentLocale)}</option>)}
                   </select>
                   {electiveSubject && (
                     <select
