@@ -177,6 +177,10 @@ export type {
   LinkFailure, CourseDataStatusEntry, CourseDataCoverage, CourseDataStatusResponse,
 } from './admin-api/courseData'
 
+// The super-admin System health light in the top bar.
+export { getSystemHealth } from './admin-api/systemHealth'
+export type { HealthRow, HealthRowKey, HealthStatus, SystemHealth } from './admin-api/systemHealth'
+
 // Monthly Vircle payment runs and the funding summary behind them.
 export {
   getFundingSummary, getPaymentRuns, createPaymentRun, getPaymentRun, updatePaymentRunItem,

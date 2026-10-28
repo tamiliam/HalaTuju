@@ -42,22 +42,30 @@ def _vision_ocr_window(since, until):
     sample = ''
     for d in docs:
         attempts += 1
-        err = d.vision_error or ''
-        if d.doc_type in ('ic', 'parent_ic'):
-            ok = not err and (d.vision_nric or d.vision_name)
-            failed = bool(err) and not is_ic_decode_error(err)
-        else:
-            # A digital PDF is read from its text layer and never reaches Vision, yet the name check
-            # still stamps `vision_run_at` — so a clean PDF proves nothing about Vision (round 3).
-            ok = not err and not _is_pdf_upload(d)
-            failed = is_ocr_service_error(err)
-        if ok:
+        outcome = vision_outcome(d)
+        if outcome == 'ok':
             successes += 1
-        elif failed:
+        elif outcome == 'failed':
             service_failures += 1
             apps.add(d.application_id)
-            sample = sample or err
+            sample = sample or d.vision_error
     return attempts, successes, service_failures, len(apps), sample
+
+
+def vision_outcome(d):
+    """One stamped Vision OCR attempt: 'ok', 'failed' (the SERVICE failed) or None (an attempt that
+    proves nothing either way — a poor image, a clean digital PDF). Shared by the window above and
+    the admin System health light (`services/system_health.py`), so both read Vision the same way."""
+    err = d.vision_error or ''
+    if d.doc_type in ('ic', 'parent_ic'):
+        ok = not err and (d.vision_nric or d.vision_name)
+        failed = bool(err) and not is_ic_decode_error(err)
+    else:
+        # A digital PDF is read from its text layer and never reaches Vision, yet the name check
+        # still stamps `vision_run_at` — so a clean PDF proves nothing about Vision (round 3).
+        ok = not err and not _is_pdf_upload(d)
+        failed = is_ocr_service_error(err)
+    return 'ok' if ok else ('failed' if failed else None)
 
 
 def _gemini_read_window(since, until):
@@ -73,18 +81,16 @@ def _gemini_read_window(since, until):
     for app_id, vf in ApplicantDocument.objects.filter(
             vision_fields_run_at__gte=since, vision_fields_run_at__lt=until,
     ).values_list('application_id', 'vision_fields'):
-        vf = vf if isinstance(vf, dict) else {}
-        err = vf.get('error') or ''
-        if (vf.get('capture') not in ('ai', 'mixed') or err == RATE_LIMITED
-                or err.startswith(OCR_SERVICE_FAILED)):
+        outcome = gemini_read_outcome(vf)
+        if outcome == 'skip':
             continue
         attempts += 1
-        if not err:
+        if outcome == 'ok':
             successes += 1
-        elif is_ai_service_error(err):
+        elif outcome == 'failed':
             service_failures += 1
             apps.add(app_id)
-            sample = sample or err
+            sample = sample or vf.get('error') or ''
     # TD-390: the IC's Gemini second opinion, where one was REQUIRED, by the IC's own read stamp (an
     # IC never carries `vision_fields_run_at`, so nothing is counted twice). 'theirs' (Gemini looked
     # and refused the image) is an attempt that proves nothing either way.
@@ -92,15 +98,35 @@ def _gemini_read_window(since, until):
             doc_type__in=('ic', 'parent_ic'), vision_run_at__gte=since, vision_run_at__lt=until,
             vision_fields__has_key='ic_second_opinion',
     ).values_list('application_id', 'vision_fields'):
-        outcome = (vf or {}).get('ic_second_opinion')
+        outcome = ic_second_opinion_outcome(vf)
         attempts += 1
         if outcome == 'ok':
             successes += 1
-        elif outcome == 'ours':
+        elif outcome == 'failed':
             service_failures += 1
             apps.add(app_id)
             sample = sample or (vf.get(IC_SECOND_OPINION_ERROR) or '')
     return attempts, successes, service_failures, len(apps), sample
+
+
+def gemini_read_outcome(vf):
+    """One stamped Gemini document read: 'skip' (it never asked Gemini, or it is our own throttle /
+    Vision's failure), 'ok', 'failed' (a service failure) or None (an attempt that proves nothing).
+    Shared by the window above and the admin System health light, so both read Gemini the same way."""
+    vf = vf if isinstance(vf, dict) else {}
+    err = vf.get('error') or ''
+    if (vf.get('capture') not in ('ai', 'mixed') or err == RATE_LIMITED
+            or err.startswith(OCR_SERVICE_FAILED)):
+        return 'skip'
+    if not err:
+        return 'ok'
+    return 'failed' if is_ai_service_error(err) else None
+
+
+def ic_second_opinion_outcome(vf):
+    """The IC's REQUIRED Gemini second opinion: 'ok', 'failed' ('ours') or None ('theirs')."""
+    outcome = (vf if isinstance(vf, dict) else {}).get('ic_second_opinion')
+    return 'ok' if outcome == 'ok' else ('failed' if outcome == 'ours' else None)
 
 
 _OUTAGE_WINDOWS = {'vision': _vision_ocr_window, 'gemini': _gemini_read_window}

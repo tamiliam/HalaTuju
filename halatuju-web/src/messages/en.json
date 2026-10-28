@@ -6962,7 +6962,104 @@
       "team": "the HalaTuju team",
       "empty": "No changes yet. {name} has the {role} set."
     },
-    "permissionsReset": "Their custom permissions go back to the new role’s set."
+    "permissionsReset": "Their custom permissions go back to the new role’s set.",
+    "systemHealth": {
+      "title": "System health",
+      "open": "System health: {status}",
+      "overall": {
+        "green": "All good",
+        "amber": "Minor issue",
+        "red": "Problem",
+        "unknown": "Not checked yet"
+      },
+      "subtitleNow": "Super admins only · checked just now",
+      "subtitleOne": "Super admins only · checked 1 minute ago",
+      "subtitle": "Super admins only · checked {n} minutes ago",
+      "refresh": "Check again",
+      "loading": "Checking…",
+      "error": "Could not check just now. Try again in a moment.",
+      "footer": "Email alerts still go to the owner when something breaks.",
+      "lastOk": "last OK {time}",
+      "lastOkYesterday": "last OK yesterday {time}",
+      "lastOkNone": "no OK seen yet",
+      "row": {
+        "gemini": "Document reading (Gemini AI)",
+        "vision": "Text recognition (Google Vision)",
+        "email": "Email sending",
+        "cron": "Scheduled jobs",
+        "credit": "AI credit balance"
+      },
+      "line": {
+        "read": {
+          "ok": "Working normally.",
+          "idle": "No reads in the last hour.",
+          "failures": "{count} of {attempts} reads failed in the last hour.",
+          "down": "Not working: every read in the last {hours} hours failed."
+        },
+        "email": {
+          "ok": "Sending normally.",
+          "no_record": "No emails recorded yet.",
+          "recent_failure": "A send failed at {time}.",
+          "failing": "The last {count} sends all failed.",
+          "no_success": "Sends are failing: none has gone through in 24 hours."
+        },
+        "cron": {
+          "ok": "All {count} scheduled jobs are on time.",
+          "waiting": "Waiting for the first runs since the last update.",
+          "late": "‘{job}’ is late: last ran {age} ago (expected {cadence}).",
+          "missed": "‘{job}’ has not run for {age} (expected {cadence}).",
+          "never": "‘{job}’ has not run since checking began {age} ago (expected {cadence}).",
+          "errored": "‘{job}’ failed on its last run.",
+          "errored_twice": "‘{job}’ has failed twice running."
+        },
+        "credit": {
+          "ok": "No payment errors seen.",
+          "payment_error": "A payment error at {time}: the AI credit may have run out.",
+          "recovered": "A payment error at {time}; reads have worked since."
+        }
+      },
+      "unit": {
+        "minutes": "{n} minutes",
+        "hours": "{n} hours",
+        "days": "{n} days"
+      },
+      "cadence": {
+        "every15": "every 15 minutes",
+        "hourly": "hourly",
+        "daily": "daily",
+        "weekly": "weekly",
+        "monthly": "monthly",
+        "yearly": "yearly"
+      },
+      "job": {
+        "sponsor-realtime": "Sponsor updates",
+        "query-emails": "Query emails",
+        "release-award-offer-emails": "Award offer emails",
+        "auto-sponsor": "Automatic sponsor matching",
+        "partner-milestones": "Partner milestone emails",
+        "read-outage-start": "Read outage alert",
+        "reprocess-ic-vision": "Re-reading stuck documents",
+        "notify-contact-submissions": "Contact form alerts",
+        "interview-reminders": "Interview reminders",
+        "application-nudges": "Application nudges",
+        "purge-referrals": "Referral clean-up",
+        "query-reminders": "Query reminders",
+        "application-reminders": "Application reminders",
+        "backfill-assigned-profiles": "Sponsor profile drafts",
+        "review-nudges": "Reviewer nudges",
+        "spending-ingest": "Spending import",
+        "vision-outage": "Daily outage check",
+        "sync-vircle-sheet": "Vircle sheet sync",
+        "expire-temp-passwords": "Temporary password expiry",
+        "lapse-expired-offers": "Expired offer lapsing",
+        "backup-documents": "Document backup",
+        "course-data-check": "Course data check",
+        "sponsor-digests": "Sponsor digests",
+        "partner-digests": "Partner digests",
+        "issue-monthly-invoices": "Monthly invoices",
+        "refresh-reminder": "Course catalogue reminder"
+      }
+    }
   },
   "documentsTab": {
     "higher": {

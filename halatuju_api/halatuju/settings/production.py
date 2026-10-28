@@ -106,7 +106,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Deploy must set EMAIL_HOST_USER / EMAIL_HOST_PASSWORD to the Brevo SMTP login + key,
 # and verify the DEFAULT_FROM_EMAIL sender domain in Brevo. All values are env-driven so no
 # personal address ever lives in code.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# The SMTP backend plus one bookkeeping line for the admin System health light (2026-10-28):
+# it records each send's success/failure (never an address or a body). See mail_backend.py.
+EMAIL_BACKEND = 'apps.scholarship.mail_backend.RecordingSMTPBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp-relay.brevo.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = True

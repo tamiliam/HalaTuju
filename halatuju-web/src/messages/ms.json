@@ -6962,7 +6962,104 @@
       "team": "pasukan HalaTuju",
       "empty": "Belum ada perubahan. {name} mempunyai set {role}."
     },
-    "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu."
+    "permissionsReset": "Kebenaran tersuainya kembali kepada set peranan baharu.",
+    "systemHealth": {
+      "title": "Kesihatan sistem",
+      "open": "Kesihatan sistem: {status}",
+      "overall": {
+        "green": "Semua baik",
+        "amber": "Isu kecil",
+        "red": "Masalah",
+        "unknown": "Belum disemak"
+      },
+      "subtitleNow": "Super admin sahaja · disemak sebentar tadi",
+      "subtitleOne": "Super admin sahaja · disemak 1 minit lalu",
+      "subtitle": "Super admin sahaja · disemak {n} minit lalu",
+      "refresh": "Semak semula",
+      "loading": "Menyemak…",
+      "error": "Tidak dapat menyemak sekarang. Cuba lagi sebentar lagi.",
+      "footer": "Amaran e-mel masih dihantar kepada pemilik apabila berlaku kerosakan.",
+      "lastOk": "kali terakhir OK {time}",
+      "lastOkYesterday": "kali terakhir OK semalam {time}",
+      "lastOkNone": "belum pernah OK",
+      "row": {
+        "gemini": "Bacaan dokumen (Gemini AI)",
+        "vision": "Pengecaman teks (Google Vision)",
+        "email": "Penghantaran e-mel",
+        "cron": "Tugas berjadual",
+        "credit": "Baki kredit AI"
+      },
+      "line": {
+        "read": {
+          "ok": "Berfungsi seperti biasa.",
+          "idle": "Tiada bacaan dalam sejam yang lalu.",
+          "failures": "{count} daripada {attempts} bacaan gagal dalam sejam yang lalu.",
+          "down": "Tidak berfungsi: setiap bacaan dalam {hours} jam yang lalu gagal."
+        },
+        "email": {
+          "ok": "Menghantar seperti biasa.",
+          "no_record": "Belum ada e-mel direkodkan.",
+          "recent_failure": "Satu penghantaran gagal pada {time}.",
+          "failing": "{count} penghantaran terakhir semuanya gagal.",
+          "no_success": "Penghantaran gagal: tiada yang berjaya dalam 24 jam."
+        },
+        "cron": {
+          "ok": "Kesemua {count} tugas berjadual tepat pada masanya.",
+          "waiting": "Menunggu larian pertama sejak kemas kini terakhir.",
+          "late": "‘{job}’ lewat: kali terakhir dijalankan {age} lalu (dijangka {cadence}).",
+          "missed": "‘{job}’ tidak dijalankan selama {age} (dijangka {cadence}).",
+          "never": "‘{job}’ belum dijalankan sejak semakan bermula {age} lalu (dijangka {cadence}).",
+          "errored": "‘{job}’ gagal pada larian terakhirnya.",
+          "errored_twice": "‘{job}’ gagal dua kali berturut-turut."
+        },
+        "credit": {
+          "ok": "Tiada ralat pembayaran dilihat.",
+          "payment_error": "Ralat pembayaran pada {time}: kredit AI mungkin telah habis.",
+          "recovered": "Ralat pembayaran pada {time}; bacaan berjaya sejak itu."
+        }
+      },
+      "unit": {
+        "minutes": "{n} minit",
+        "hours": "{n} jam",
+        "days": "{n} hari"
+      },
+      "cadence": {
+        "every15": "setiap 15 minit",
+        "hourly": "setiap jam",
+        "daily": "setiap hari",
+        "weekly": "setiap minggu",
+        "monthly": "setiap bulan",
+        "yearly": "setiap tahun"
+      },
+      "job": {
+        "sponsor-realtime": "Kemas kini penaja",
+        "query-emails": "E-mel pertanyaan",
+        "release-award-offer-emails": "E-mel tawaran anugerah",
+        "auto-sponsor": "Padanan penaja automatik",
+        "partner-milestones": "E-mel pencapaian rakan kongsi",
+        "read-outage-start": "Amaran gangguan bacaan",
+        "reprocess-ic-vision": "Bacaan semula dokumen tersekat",
+        "notify-contact-submissions": "Makluman borang hubungan",
+        "interview-reminders": "Peringatan temu duga",
+        "application-nudges": "Gesaan permohonan",
+        "purge-referrals": "Pembersihan rujukan",
+        "query-reminders": "Peringatan pertanyaan",
+        "application-reminders": "Peringatan permohonan",
+        "backfill-assigned-profiles": "Draf profil penaja",
+        "review-nudges": "Gesaan penyemak",
+        "spending-ingest": "Import perbelanjaan",
+        "vision-outage": "Semakan gangguan harian",
+        "sync-vircle-sheet": "Penyegerakan helaian Vircle",
+        "expire-temp-passwords": "Tamat tempoh kata laluan sementara",
+        "lapse-expired-offers": "Luput tawaran tamat tempoh",
+        "backup-documents": "Sandaran dokumen",
+        "course-data-check": "Semakan data kursus",
+        "sponsor-digests": "Ringkasan penaja",
+        "partner-digests": "Ringkasan rakan kongsi",
+        "issue-monthly-invoices": "Invois bulanan",
+        "refresh-reminder": "Peringatan katalog kursus"
+      }
+    }
   },
   "documentsTab": {
     "higher": {

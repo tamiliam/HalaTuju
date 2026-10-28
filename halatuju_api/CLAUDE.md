@@ -155,6 +155,13 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    window), `read-outage-start` (`halatuju-read-outage-start`, hourly at :05 MYT, `--hourly` start-edge:
    mails once when an outage begins, ≥2 failures from ≥2 applications), `reprocess-ic-vision`
    (`halatuju-reprocess-ic-vision`, hourly: never-read docs + reads our outage deferred).
+   **System health light (2026-10-28):** every cron run's outcome is recorded (`cron_health.run_job`,
+   the body of `CronRunView`) and every email send's (`EMAIL_BACKEND` is now
+   `apps.scholarship.mail_backend.RecordingSMTPBackend`, the SMTP backend plus one bookkeeping line) in
+   `system_health_status` (scholarship `0180`, MIGRATE-FIRST); super admins read it at
+   `GET /api/v1/admin/scholarship/system-health/` (60 s cache). ⚠ **Adding, pausing or re-timing a
+   Scheduler job means editing `cron_health.EXPECTED_CADENCE` in the same change**, or the light reads
+   it as missed (or never watches it). Supabase Auth's own mail (invites, resets) is not seen.
 10. **When more than one agent is in the checkout:** declare the files you own in
    `AGENT-TERRITORY.log` (gitignored); stage explicit paths, never `git add -A`; build in a
    `git worktree` and push from it with `git push origin HEAD:main` — never check out `main` there.
