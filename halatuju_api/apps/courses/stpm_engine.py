@@ -250,6 +250,25 @@ def _spm_keys(csv_code):
     return (key, also) if also else (key,)
 
 
+def _distinct_matches(codes, spm_grades, min_grade):
+    """How many DISTINCT listed subjects the student meets: a repeated code is one subject, and each
+    student subject meets at most one code. A maximum matching, not a first-fit: a greedy pick could
+    spend `bahasa_arab` on BAHASA_ARAB_MUASIRAH_SPM and leave `lughah_arabiah` with nothing to meet."""
+    owner = {}  # student key -> the code it meets
+
+    def assign(code, seen):
+        for k in _spm_keys(code):
+            if k in seen or not (spm_grades.get(k) and meets_spm_grade(spm_grades[k], min_grade)):
+                continue
+            seen.add(k)
+            if k not in owner or assign(owner[k], seen):
+                owner[k] = code
+                return True
+        return False
+
+    return sum(1 for code in dict.fromkeys(codes) if assign(code, set()))
+
+
 def meets_spm_grade(grade, min_grade):
     """Check if an SPM grade meets or exceeds the minimum threshold.
 
@@ -300,14 +319,7 @@ def check_spm_prerequisites(req, spm_grades):
                 # Specific subject list — check only these. Each STUDENT subject counts at most once
                 # per group (Sprint C review): the lists repeat codes (AL_ADAB_SPM twice) and map
                 # several codes to one key (bahasa_arab), which counted one grade two or three times.
-                counted = set()
-                for csv_code in subjects:
-                    key = next((k for k in _spm_keys(csv_code) if k not in counted
-                                and spm_grades.get(k) and meets_spm_grade(spm_grades[k], min_grade)),
-                               None)
-                    if key:
-                        counted.add(key)
-                matched = len(counted)
+                matched = _distinct_matches(subjects, spm_grades, min_grade)
             else:
                 # No subject list — match ANY subject not in exclude list
                 exclude_keys = {k for c in exclude for k in _spm_keys(c)}

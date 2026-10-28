@@ -112,3 +112,11 @@ class EachSubjectCountsOncePerGroup(SimpleTestCase):
                     'min_count': 2, 'min_grade': 'C'})
         self.assertFalse(check_spm_prerequisites(req, {'bahasa_arab': 'A'}))
         self.assertTrue(check_spm_prerequisites(req, {'bahasa_arab': 'A', 'lughah_arabiah': 'B'}))
+
+    def test_list_order_cannot_waste_a_subject(self):
+        # Lead review: a first-fit count spent bahasa_arab on MUASIRAH (listed first) and then had
+        # nothing for BAHASA_ARAB_SPM, so a student with both subjects counted 1, not 2.
+        req = _req({'subjects': ['BAHASA_ARAB_MUASIRAH_SPM', 'BAHASA_ARAB_SPM'], 'min_count': 2,
+                    'min_grade': 'C'})
+        self.assertTrue(check_spm_prerequisites(req, {'bahasa_arab': 'A', 'lughah_arabiah': 'B'}))
+        self.assertFalse(check_spm_prerequisites(req, {'bahasa_arab': 'A'}))
