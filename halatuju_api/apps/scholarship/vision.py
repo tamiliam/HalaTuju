@@ -27,6 +27,7 @@ from .read_errors import (IC_SECOND_OPINION_ERROR, IC_SECOND_OPINION_UNTIL, OCR_
 from .pdf_pages import pdf_first_page_png as _pdf_first_page_png, pdf_text_layer as _pdf_text_layer
 from .income_declaration import read_approval as _read_approval   # #374: the approval is read off the IMAGE
 from .higher_results import HINT as _HIGHER_HINT, SCHEMA as _HIGHER_SCHEMA, extract as _higher_extract
+from .name_order import patronymic_reversed   # TD-408: a reversed patronymic is a different person
 
 logger = logging.getLogger(__name__)
 
@@ -238,15 +239,12 @@ def reference_names(application):
 
 
 def name_match(extracted: str, profile_name: str) -> str:
-    """
-    'match' if the token sets are equal after stripping MyKad parentage tokens;
-    'partial' if one set is a strict subset of the other (so e.g. the profile
-    name omits a middle/surname the IC carries, or vice versa);
-    'mismatch' otherwise. Empty inputs return 'mismatch'.
-    """
+    """'match' if the token sets are equal after stripping MyKad parentage tokens; 'partial' if one is a
+    strict subset of the other (a name omits a middle/surname); 'mismatch' otherwise, or on an empty input.
+    TD-408: two names that BOTH carry a connector compare given name with given name and parent with parent."""
     a = canonical_name_tokens(extracted)
     b = canonical_name_tokens(profile_name)
-    if not a or not b:
+    if not a or not b or patronymic_reversed(extracted, profile_name, name_match):
         return 'mismatch'
     if a == b:
         return 'match'
@@ -315,7 +313,7 @@ def relationship_name_match(extracted: str, reference: str) -> str:
     subset of the other; 'mismatch' otherwise. STRICTLY more lenient than name_match."""
     a = list(canonical_name_tokens(extracted))
     b = list(canonical_name_tokens(reference))
-    if not a or not b:
+    if not a or not b or patronymic_reversed(extracted, reference, relationship_name_match):   # TD-408
         return 'mismatch'
     small, large = (a, b) if len(a) <= len(b) else (b, a)
     used = [False] * len(large)

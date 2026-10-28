@@ -10,16 +10,16 @@ from __future__ import annotations
 import re
 
 from ..document_snapshot import latest_doc, tagged_members
+from ..name_order import CONNECTOR_RE
 from ..vision import relationship_name_match as name_match
 
 
 # ── Father's name from the student's IC patronymic ───────────────────────────
 # A Malaysian full name carries the FATHER's given name after the relationship
 # connector: "DIVASHINI A/P MURUGAN" → father "MURUGAN"; "AHMAD BIN ALI" → "ALI".
-_PATRONYMIC_RE = re.compile(
-    r'\b(?:a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti|anak\s+(?:lelaki|perempuan))\b',
-    re.IGNORECASE,
-)
+# TD-408: the ONE connector list (`name_order.CONNECTOR_RE`) — so a bare ANAK / AK (Iban, Bidayuh,
+# Kadazan: "MARY ANAK JOHNNY" → "JOHNNY") and BT / BTE for BINTI derive the father too.
+_PATRONYMIC_RE = CONNECTOR_RE
 
 
 def father_name_from_ic(student_name: str) -> str:
@@ -29,7 +29,7 @@ def father_name_from_ic(student_name: str) -> str:
     this way and must fall back to officer review rather than guess."""
     s = (student_name or '').strip()
     m = _PATRONYMIC_RE.search(s)
-    if not m:
+    if not m or not re.search(r'[A-Za-z]', s[:m.start()]):   # TD-408: no given name → no patronymic
         return ''
     return s[m.end():].strip(' .,')
 
@@ -259,7 +259,9 @@ def member_relationship_status(member: str, student_name: str, member_ic_name: s
     if member == 'father':
         return father_link(student_name, member_ic_name, bc_child_name, bc_father_name)
     if member in _PATRONYMIC_MEMBERS:            # brother / sister — patronymic only
-        return father_relationship(student_name, member_ic_name)
+        # TD-408: a sibling's card is compared on ITS father's name when it carries one — with order
+        # now counting, "ALI BIN ABU" (the father) is not the given part of "HASSAN BIN ALI BIN ABU".
+        return father_relationship(student_name, father_name_from_ic(member_ic_name) or member_ic_name)
     if member == 'mother':
         return mother_relationship(bc_child_name, bc_mother_name, student_name, member_ic_name)
     if member == 'guardian':

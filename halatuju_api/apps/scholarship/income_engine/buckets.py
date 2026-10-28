@@ -29,18 +29,28 @@ def _romanised_near_miss(extracted, reference):
     odd pair short (≤ ``_SYLLABLE_MAX``) and sharing its first letter. NEVER a match — it only means a
     NAME comparison cannot tell, so the STR ownership rule asks for the IC/NRIC instead of calling the
     STR a stranger's (`str_route._str_recipient_household_match`). A different given name (KOW / MENG)
-    does not qualify."""
+    does not qualify.
+
+    TD-408: when BOTH names carry a patronymic connector the tokens are paired within each part (given
+    with given, parent with parent), so a near miss still counts inside one part ("TAN AH KOW BIN ALI" /
+    "TAN AH KAU BIN ALI") but a reversed patronymic ("KOW ANAK TAN" / "TAN ANAK KAU") is not one."""
+    from ..name_order import aligned_parts
     from ..vision import _canonical_name_seq, _tokens_close
-    a, b = _canonical_name_seq(extracted), _canonical_name_seq(reference)
-    if len(a) != len(b) or len(a) < 2:
+    total, rest, odd = 0, [], []
+    for x_part, y_part in aligned_parts(extracted, reference) or [(extracted, reference)]:
+        a, b = _canonical_name_seq(x_part), _canonical_name_seq(y_part)
+        if len(a) != len(b):
+            return False
+        total, left = total + len(a), list(b)
+        for x in a:
+            hit = next((i for i, y in enumerate(left) if _tokens_close(x, y)), None)
+            if hit is None:
+                odd.append(x)
+            else:
+                left.pop(hit)
+        rest += left
+    if total < 2:
         return False
-    rest, odd = list(b), []
-    for x in a:
-        hit = next((i for i, y in enumerate(rest) if _tokens_close(x, y)), None)
-        if hit is None:
-            odd.append(x)
-        else:
-            rest.pop(hit)
     return (len(odd) == 1 and len(rest) == 1 and odd[0][0] == rest[0][0]
             and max(len(odd[0]), len(rest[0])) <= _SYLLABLE_MAX)
 
