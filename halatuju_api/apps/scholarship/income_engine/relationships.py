@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 
 from ..document_snapshot import latest_doc, tagged_members
-from ..name_order import CONNECTOR_RE
+from ..name_order import CONNECTOR_RE, first_connector
 from ..vision import relationship_name_match as name_match
 
 
@@ -20,6 +20,13 @@ from ..vision import relationship_name_match as name_match
 # TD-408: the ONE connector list (`name_order.CONNECTOR_RE`) — so a bare ANAK / AK (Iban, Bidayuh,
 # Kadazan: "MARY ANAK JOHNNY" → "JOHNNY") and BT / BTE for BINTI derive the father too.
 _PATRONYMIC_RE = CONNECTOR_RE
+# The list before TD-408. A father name only THIS list misses (bare ANAK / AK, BT / BTE) is "newly
+# derived": it may turn an 'unknown' into a 'match', never into a 'mismatch' (review, 2026-10-28) —
+# a non-match keeps the old path (`_newly_derived`).
+_PRE_TD408_RE = re.compile(
+    r'\b(?:a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti|anak\s+(?:lelaki|perempuan))\b',
+    re.IGNORECASE,
+)
 
 
 def father_name_from_ic(student_name: str) -> str:
@@ -28,10 +35,15 @@ def father_name_from_ic(student_name: str) -> str:
     name or a Chinese-style name — so the caller knows it can't derive the father
     this way and must fall back to officer review rather than guess."""
     s = (student_name or '').strip()
-    m = _PATRONYMIC_RE.search(s)
-    if not m or not re.search(r'[A-Za-z]', s[:m.start()]):   # TD-408: no given name → no patronymic
-        return ''
-    return s[m.end():].strip(' .,')
+    # TD-408: the first connector with a name before it — a leading AK (Awangku, a Sabah/Brunei
+    # title: "AK MOHD SHAHRUL BIN AK OSMAN" → "AK OSMAN") is not the patronymic.
+    m = first_connector(s)
+    return s[m.end():].strip(' .,') if m else ''
+
+
+def _newly_derived(student_name: str) -> bool:
+    """TD-408: the father's name comes ONLY from a connector the pre-TD-408 list did not know."""
+    return bool(father_name_from_ic(student_name)) and not _PRE_TD408_RE.search(student_name or '')
 
 
 def student_name_for_link(application) -> str:
@@ -46,14 +58,15 @@ def student_name_for_link(application) -> str:
     we additionally require the two names not to mismatch), so deriving the father from it
     is grounded, never a guess. Falls back to the profile name in every other case."""
     profile_name = (getattr(getattr(application, 'profile', None), 'name', '') or '').strip()
-    if father_name_from_ic(profile_name):
+    # TD-408: a newly derived patronymic does not change which name is chosen (the old choice stands).
+    if father_name_from_ic(profile_name) and not _newly_derived(profile_name):
         return profile_name
     docs = getattr(application, 'documents', None)
     if docs is None:
         return profile_name
     ic = latest_doc(application, 'ic')
     ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
-    if (ic_name and father_name_from_ic(ic_name)
+    if (ic_name and father_name_from_ic(ic_name) and not _newly_derived(ic_name)
             and profile_name and name_match(ic_name, profile_name) != 'mismatch'):
         return ic_name
     return profile_name
@@ -66,13 +79,19 @@ def father_relationship(student_name: str, earner_ic_name: str) -> str:
     """Does the earner IC belong to the student's father? The father's given name
     from the student IC must appear in the earner's full IC name. A subset match
     (the given name inside the earner's fuller name) COUNTS — only disjoint tokens
-    are a real mismatch."""
+    are a real mismatch.
+
+    TD-408: a father name derived only from a bare ANAK / AK or BT / BTE answers 'match' or, as
+    before TD-408, 'unknown' (so `father_link` falls back to the birth certificate exactly as it
+    did) — never a new 'mismatch' or 'pending'."""
     father = father_name_from_ic(student_name)
     if not father:
         return 'unknown'                       # no patronymic → officer reviews
     if not (earner_ic_name or '').strip():
-        return 'pending'                       # earner IC not read yet
-    return 'mismatch' if name_match(father, earner_ic_name) == 'mismatch' else 'match'
+        return 'unknown' if _newly_derived(student_name) else 'pending'   # earner IC not read yet
+    if name_match(father, earner_ic_name) != 'mismatch':
+        return 'match'
+    return 'unknown' if _newly_derived(student_name) else 'mismatch'
 
 
 def _bc_link(bc_child_name: str, bc_parent_name: str,

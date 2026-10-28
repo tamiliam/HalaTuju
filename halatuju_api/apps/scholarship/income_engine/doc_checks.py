@@ -9,7 +9,7 @@ from ..read_errors import ic_second_opinion_deferred
 from ..vision import nric_close
 from .buckets import _combine_relationship, _name_bucket, _nric_bucket
 from .identity_checks import _member_ic_doc, chain_verified_earner
-from .relationships import father_name_from_ic
+from .relationships import _newly_derived, father_name_from_ic
 from .salary_figures import _doc_fields
 
 
@@ -78,6 +78,8 @@ def student_bc_check(doc):
         mother_status = 'no_ref'         # TD-390: a card our outage left half-read proves no clash
     father_name = (f.get('bc_father_name', '') or '').strip()
     father_status = _name_bucket(father_name, father_name_from_ic(student))
+    if father_status != 'match' and _newly_derived(student):
+        father_status = 'no_ref'         # TD-408: a father name only ANAK / AK / BT gives never newly reds
     return {
         'child_name': child_name, 'child_status': child_status,
         'mother_name': mother_name, 'mother_nric': mother_nric, 'mother_status': mother_status,

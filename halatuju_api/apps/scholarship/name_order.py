@@ -33,6 +33,13 @@ CONNECTOR_RE = re.compile(
 )
 
 
+def first_connector(s: str):
+    """The first connector match with a letter BEFORE it, or None. A name that starts with a connector
+    word is skipped past it: a leading AK is the Sabah/Brunei title Awangku ("AK MOHD SHAHRUL BIN AK
+    OSMAN", "AK. MOHD ..."), not a patronymic, so the BIN after it is the connector."""
+    return next((m for m in CONNECTOR_RE.finditer(s or '') if re.search(r'[A-Za-z]', s[:m.start()])), None)
+
+
 def split_patronymic(name: str):
     """``(given, parent)`` — the text before and after the name's FIRST connector — or None when the
     name carries no connector, or when either side holds no name token once the noise is stripped
@@ -40,7 +47,7 @@ def split_patronymic(name: str):
     first (`vision._split_glued_markers`, #48), as every matcher does."""
     from .vision import _split_glued_markers, canonical_name_tokens
     s = _split_glued_markers(name or '')
-    m = CONNECTOR_RE.search(s)
+    m = first_connector(s)
     if not m:
         return None
     given, parent = s[:m.start()], s[m.end():]

@@ -12,8 +12,8 @@ from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
 from apps.scholarship.income_engine.buckets import _name_bucket, _romanised_near_miss
-from apps.scholarship.income_engine.relationships import (father_name_from_ic, father_relationship,
-                                                          member_relationship_status)
+from apps.scholarship.income_engine.relationships import (father_link, father_name_from_ic,
+                                                          father_relationship, member_relationship_status)
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.name_order import patronymic_reversed, split_patronymic
 from apps.scholarship.tests.factories import make_application, make_student
@@ -147,10 +147,37 @@ class TheFathersNameOffTheStudentsName(SimpleTestCase):
             with self.subTest(student):
                 self.assertEqual(father_name_from_ic(student), '')
 
-    def test_an_iban_father_link_is_now_judged(self):
+    def test_a_leading_ak_title_is_not_the_patronymic(self):
+        """Review: AK (Awangku) opens many Sabah/Brunei names; the BIN after it is the connector."""
+        self.assertEqual(father_name_from_ic('AK MOHD SHAHRUL BIN AK OSMAN'), 'AK OSMAN')
+        self.assertEqual(father_name_from_ic('AK. MOHD SHAHRUL BIN AK. OSMAN'), 'AK. OSMAN')
+        self.assertEqual(split_patronymic('AK MOHD SHAHRUL BIN AK OSMAN'), ('AK MOHD SHAHRUL ', ' AK OSMAN'))
+        self.assertEqual(father_relationship('AK MOHD SHAHRUL BIN AK OSMAN', 'AK OSMAN BIN AK HASSAN'), 'match')
+
+    def test_a_newly_derived_father_can_only_match(self):
+        """Review: a father name only ANAK / AK / BT / BTE gives turns 'unknown' into 'match', never into a
+        new 'mismatch' (or 'pending') — anything else keeps the pre-TD-408 'unknown'."""
         self.assertEqual(father_relationship('MARY ANAK JOHNNY', 'JOHNNY ANAK GABRIEL'), 'match')
         self.assertEqual(father_relationship('MARY AK JOHNNY', 'JOHNNY ANAK GABRIEL'), 'match')
-        self.assertEqual(father_relationship('MARY ANAK JOHNNY', 'PETER ANAK SIMON'), 'mismatch')
+        self.assertEqual(father_relationship('SITI BT AHMAD', 'AHMAD BIN OSMAN'), 'match')
+        self.assertEqual(father_relationship('MARY ANAK JOHNNY', 'PETER ANAK SIMON'), 'unknown')
+        self.assertEqual(father_relationship('SITI BT AHMAD', 'YUSOF BIN OSMAN'), 'unknown')
+        self.assertEqual(father_relationship('MARY ANAK JOHNNY', ''), 'unknown')
+        # The connectors known before TD-408 answer exactly as they did.
+        self.assertEqual(father_relationship('SITI BINTI AHMAD', 'YUSOF BIN OSMAN'), 'mismatch')
+        self.assertEqual(father_relationship('SITI BINTI AHMAD', ''), 'pending')
+
+    def test_a_near_spelling_falls_back_to_the_birth_certificate(self):
+        student, card = 'MARY ANAK JOHNNY', 'JONNY ANAK GABRIEL'          # JOHNNY / JONNY: not close
+        self.assertEqual(father_link(student, card, 'MARY ANAK JOHNNY', 'JONNY ANAK GABRIEL'), 'match')
+        self.assertEqual(father_link(student, card), 'unknown')          # no BC: never a new mismatch
+        self.assertEqual(member_relationship_status('father', student, card), 'unknown')
+        self.assertEqual(member_relationship_status('brother', student, card), 'unknown')
+
+    def test_a_chinese_style_ak_name_with_a_matching_bc_still_matches(self):
+        self.assertEqual(father_name_from_ic('TAN AK KOW'), 'KOW')
+        self.assertEqual(father_link('TAN AK KOW', 'TAN AH SENG', 'TAN AK KOW', 'TAN AH SENG'), 'match')
+        self.assertEqual(father_link('TAN AK KOW', 'TAN AH SENG'), 'unknown')
 
     def test_the_grandfather_is_not_the_father(self):
         """The veto bites when the derived father name itself carries a connector: the student's
@@ -230,3 +257,19 @@ class TheHouseholdSTR(TestCase):
         self._cards_and_str(app, 'JOHNNY AK GABRIEL')
         self.assertEqual(self._str_check(app)['name_status'], 'match')
         self.assertIs(str_recipient_is_stranger(app), False)
+
+
+class TheBirthCertificateFatherRow(TestCase):
+    """Review: the BC's father row against a father name only ANAK gives is never a NEW red."""
+
+    def _row(self, bc_father):
+        from apps.scholarship.income_engine.doc_checks import student_bc_check
+        app = make_application('profile_complete', student=make_student(name='Mary Anak Johnny',
+                                                                        nric='080808-13-5566'))
+        bc = _doc(app, 'birth_certificate', vision_fields={'fields': {
+            'bc_child_name': 'MARY ANAK JOHNNY', 'bc_father_name': bc_father}, 'error': ''})
+        return student_bc_check(bc)['father_status']
+
+    def test_a_matching_father_is_green_and_a_different_one_stays_unjudged(self):
+        self.assertEqual(self._row('JOHNNY ANAK GABRIEL'), 'match')
+        self.assertEqual(self._row('PETER ANAK SIMON'), 'no_ref')      # as before TD-408

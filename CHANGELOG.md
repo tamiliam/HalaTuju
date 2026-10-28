@@ -64,8 +64,10 @@ All notable changes to this project will be documented in this file.
   its BIN syllable and turned a genuine birth-certificate mother partial → mismatch (now a regression test).
   The TD-404 near miss (`buckets._romanised_near_miss`) is refused only for a reversal. `father_name_from_ic`
   now reads the father off a bare ANAK / AK and BT / BTE (word-bounded; a name that STARTS with a connector has
-  no patronymic), so an Iban student's father link is judged instead of falling to the officer. Siblings are
-  judged as before. A band can move (see TD-408). Tests `test_td408_name_order.py`.
+  no patronymic; a leading AK title — Awangku — is skipped, "AK MOHD SHAHRUL BIN AK OSMAN" → "AK OSMAN"). A father
+  name only those new connectors give can only turn 'unknown' into 'match' (an Iban student's father link): any
+  other answer stays 'unknown', so the birth-certificate fallback runs as before, and the BC's father row stays
+  `no_ref`. Siblings are judged as before. A band can move (see TD-408). Tests `test_td408_name_order.py`.
 
 ## Income declarations follow-ups — tighter government letterhead; the approver is never a printed label - 2026-10-28
 
