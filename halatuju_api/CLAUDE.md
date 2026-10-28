@@ -953,7 +953,23 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-**TD-409 is pushed (2026-10-27; `ddd46dda` + `ddb26b60`; retro `docs/retrospectives/retrospective-2026-10-27-td409.md`).**
+**Income declarations (#374) are LIVE with the hotfix (2026-10-28; `afaf23cd` … `8a11d41e`, hotfix `c58b7237` +
+`00f1f7eb`, api-01164-sfb; follow-ups in the close commit; retro
+`docs/retrospectives/retrospective-2026-10-28-income-declarations.md`).** Every informal income document (support
+letter, informal payslip, declaration form) counts only when approved — a stamp with a named / titled approver,
+a header with a signed named approver, or a header with a stamp — read off the IMAGE in one extra Gemini call;
+bank statements naming a known bank and government payslips / pension statements are exempt; a declared
+amount is never Certain. Genuineness `MODEL_VERSION` 1.16.0; `VERDICT_ENGINE_VERSION` 2026-10-27.8.
+- **Next: the health status light** (owner chose option A: an admin-console status light) — **Stitch first**.
+- **Then TD-408** (word order: order-aware patronymics; the father-name splitter learns ANAK).
+- **Then TD-411** (EPF `not_epf` p=0.00 on recognised statements). ⚠ The other session's finding: production
+  reads PDF text layers with **pypdf 5.9** while local checkouts had **6.19** (cached) — the two lay text out
+  differently, so any local probe of the EPF text layer must pin pypdf 5.9 (`capture_ocr` now warns on drift).
+- **Then TD-399** (OpenAI fallback for document reads, after the owner's privacy ruling).
+- A new document rule that can refuse a document is dry-run on real approved documents' stored fields before
+  it ships (lesson, 2026-10-28).
+
+**Earlier — TD-409 is pushed (2026-10-27; `ddd46dda` + `ddb26b60`; retro `docs/retrospectives/retrospective-2026-10-27-td409.md`).**
 An STR no household card matched never closes an STR request (owner ruling A): `doc_match_verdict` gives it
 `pending` (red only for a proven stranger's); an upload holds the STR requests it answers for the officer, both
 syncs hold rather than close them (unless a member's income is shown on its own), a re-opened Check-2 request

@@ -1477,3 +1477,19 @@ STR?", and held requests a payslip had already answered. **Rule:** when a guard 
 live document, an open request), key it on the property that makes it worth keeping — still counts, still
 the reason — not on the property that made the new path necessary; and test the guard against the newer,
 better thing it might wrongly block. (TD-409 close)
+
+## 2026-10-28 — A new document rule is validated on real APPROVED documents before it ships
+
+The #374 approver rule was specified from one bad form and tested only on synthetic text. In production it
+refused genuinely approved village forms — their stamp, with the Ketua Kampung named, is the issuing body and
+there is no letterhead — and blocked seven students for two hours. **Rule:** before a rule that can REFUSE a
+document ships, dry-run it over a sample of real approved documents' stored fields and read every refusal; and
+after deploy run the "exact affected list" on the re-read results BEFORE anyone tells families anything.
+(Income declarations close)
+
+## 2026-10-28 — Ask a field of the reader that can see it
+
+The approval (stamp / signature) was first added to the OCR TEXT read because it was the cheapest seam; a text
+read sees the printed label "Cop dan tandatangan" whether the box is stamped or empty, and never sees a
+signature. **Rule:** before adding a field to a read, ask what that reader can physically observe; ink, marks
+and layout belong to an image read. (Income declarations close)

@@ -112,7 +112,8 @@ class TheExtraction(SimpleTestCase):
         for slot in ('salary_slip', 'income_support_doc'):
             with self.subTest(slot):
                 self.assertFalse(set(APPROVAL_FIELDS) & set(vision._FIELD_SCHEMAS[slot]['properties']))
-        for words in ('EMPTY signature or stamp boxes', 'HANDWRITTEN', 'ink or rubber-stamp impression'):
+        for words in ('EMPTY signature or stamp boxes', 'HANDWRITTEN', 'ink or rubber-stamp impression',
+                      'never from a printed label'):
             self.assertIn(words, APPROVAL_PROMPT)
 
     def test_an_empty_labelled_box_is_not_approval(self):
@@ -438,6 +439,10 @@ class ThePerEarnerAnswerAndTheGate(_Case):
         for seen, header, shown in (('informal', 'JABATAN HAL EHWAL VETERAN ATM KEMENTERIAN PERTAHANAN', True),
                                     ('informal', 'DEWAN BAHASA DAN PUSTAKA', True),
                                     ('informal', 'KEDAI RUNCIT CONTOH', False),
+                                    ('informal', 'JABATAN KERJA SENDIRI', False),          # review: bare word
+                                    ('informal', 'MAJLIS BELIA KAMPUNG', False),
+                                    ('informal', 'JABATAN PERTANIAN, PUTRAJAYA', True),    # + a second marker
+                                    ('informal', 'KEMENTERIAN KESIHATAN MALAYSIA', True),  # a ministry by name
                                     ('declaration', 'KEMENTERIAN PENDIDIKAN BAHAGIAN MATRIKULASI', False)):
             with self.subTest(header):
                 app = self._app()

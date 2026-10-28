@@ -15256,6 +15256,17 @@ official statement and exempt (JHEV veteran pensions, a DBP payslip) — chosen 
 reads the printed letterhead, and a DECLARATION form on a ministry's form keeps the rule. A bank statement's
 bank may be named by its text issuer OR its letterhead (image read) — the least loose of the options, since
 it still needs a known bank's name read off the document.
+**Follow-ups 2026-10-28 (sprint close).** (a) The government-letterhead list above was too loose — Lembaga,
+Majlis, Perbadanan and a bare Jabatan also name co-operatives, youth clubs and private firms. Now exempt only
+when the letterhead names a ministry (KEMENTERIAN …), Dewan Bahasa dan Pustaka or Angkatan Tentera, or a
+JABATAN with a second government marker (gov.my, Putrajaya, Pusat Pentadbiran, Kerajaan Malaysia, ATM) —
+the tighter of the two options that still exempts JHEV and DBP. (b) The approver read never takes a printed
+label: name and title stay empty when the approver line is blank or only printed; a title comes only from the
+approver's own stamp or handwriting (a printed "Ketua Kampung" under an empty line is not an approver).
+**Rulings in this sprint, in one place:** 1A declared ≤ Probable; 2A every informal income document needs the
+approver; 3A header + stamp approves; 4A bank statements naming a known bank are exempt; the chop ruling (a
+stamp must be real ink, not a printed label); the hotfix rule (stamp + named / titled approver needs no
+letterhead). Versions at close: `MODEL_VERSION` 1.16.0; `VERDICT_ENGINE_VERSION` 2026-10-27.8.
 
 ## 2026-10-28 — The SPM certificate is read row by row from positions; an STPM certificate's passed count may be absent
 

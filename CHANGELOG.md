@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Income declarations follow-ups — tighter government letterhead; the approver is never a printed label - 2026-10-28
+
+- **Government letterhead tightened.** Exempt only when the letterhead names a ministry (KEMENTERIAN …), Dewan
+  Bahasa dan Pustaka or Angkatan Tentera, or a JABATAN together with a second government marker (gov.my,
+  Putrajaya, Pusat Pentadbiran, Kerajaan Malaysia, ATM). Lembaga / Majlis / Perbadanan alone no longer exempt;
+  "JABATAN KERJA SENDIRI" and "MAJLIS BELIA KAMPUNG" keep the approver rule; JHEV and DBP stay exempt.
+- **The approver read never takes a printed label.** The image prompt leaves approver name and title empty when
+  the approver line is blank or only printed — a title must come from the approver's own stamp or handwriting.
+- Genuineness `MODEL_VERSION` 1.16.0 (the prompt); `VERDICT_ENGINE_VERSION` 2026-10-27.8 (a band can move down).
+- Sprint closed: retrospective `docs/retrospectives/retrospective-2026-10-28-income-declarations.md`.
+
 ## Income declarations hotfix — approved village forms, government statements, bank letterheads - 2026-10-28
 
 The live re-read (60 documents) wrongly failed genuinely approved forms; 7 not-submitted students blocked.

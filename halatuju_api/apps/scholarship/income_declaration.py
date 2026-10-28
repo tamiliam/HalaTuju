@@ -50,7 +50,9 @@ APPROVAL_PROMPT = (
     'impression / company chop is visible on the page (with or without a signature), "signature" ONLY if '
     'a HANDWRITTEN signature is visible and no stamp, else "no". Printed labels such as "Cop dan '
     'tandatangan", printed logos, QR codes and EMPTY signature or stamp boxes are NOT a stamp and NOT a '
-    'signature.')
+    'signature. Leave "approver_name" and "approver_title" EMPTY if the approver line is blank or only '
+    'printed: a title must come from the approver\'s own stamp or handwriting, never from a printed label '
+    '(e.g. a printed "Ketua Kampung" under an empty line is NOT an approver).')
 _INFORMAL_TEXT_FAMILIES = frozenset({'informal', 'declaration'})
 
 
@@ -179,13 +181,19 @@ def is_informal(doc) -> bool:
 #: 'informal' by the text model). Only the INFORMAL family is exempted: a DECLARATION form printed on a
 #: ministry's form (a matriculation "Borang Pengesahan Pendapatan") keeps the approver rule, and #374's
 #: village forms read no such header.
-_GOVERNMENT_BODY = re.compile(r'\b(JABATAN|KEMENTERIAN|DEWAN BAHASA DAN PUSTAKA|LEMBAGA|MAJLIS|PERBADANAN'
-                              r'|ANGKATAN TENTERA|ATM)\b')
+#: Review of the hotfix: a bare word is too loose ("JABATAN KERJA SENDIRI", "MAJLIS BELIA KAMPUNG"). The
+#: header must name a MINISTRY (KEMENTERIAN + its name), a statutory body / the forces by their full name, or a
+#: JABATAN together with a second government marker. MAJLIS / LEMBAGA / PERBADANAN alone are dropped.
+_MINISTRY = re.compile(r'\bKEMENTERIAN [A-Z]')
+_FULL_BODY = re.compile(r'\b(DEWAN BAHASA DAN PUSTAKA|ANGKATAN TENTERA)\b')
+_GOVT_SECOND_MARKER = re.compile(r'\b(GOV MY|PUTRAJAYA|PUSAT PENTADBIRAN|KERAJAAN MALAYSIA|ATM)\b')
 
 
 def _names_a_government_body(header) -> bool:
     from .genuineness.results_doc import _norm_fold_upper_alnum
-    return bool(_GOVERNMENT_BODY.search(_norm_fold_upper_alnum(header or '')))
+    tn = _norm_fold_upper_alnum(header or '')
+    return bool(_MINISTRY.search(tn) or _FULL_BODY.search(tn)
+                or (re.search(r'\bJABATAN\b', tn) and _GOVT_SECOND_MARKER.search(tn)))
 
 
 def _fields(doc) -> dict:

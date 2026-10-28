@@ -97,8 +97,8 @@ from .stpm_doc import STPM_LISTS
 #       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
 #   1.10.0 / 1.11.0 (2026-10-27) — STPM exact-read S2: read Exact (`stpm_parse`) / S3: scored + 1A. Backfill: S4.
 #   1.12.0 / 1.14.0 / 1.15.0 (2026-10-28) — stpm_parse 1.1.0 column layer / SPM cert by rows (`spm_cert_parse`) + 1.2.0 / 1.3.0 pypdf-5.9 merged lines.
-#   1.13.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields). Backfill: live list.
-MODEL_VERSION = '1.15.0'
+#   1.13.0 / 1.16.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields) / the approver read never takes a printed label. Backfill: live list.
+MODEL_VERSION = '1.16.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

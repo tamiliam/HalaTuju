@@ -96,7 +96,7 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared;
 #   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
 #   .3 TD-404 ANAK=AK, BINTI=BT/BTE; .4 STPM S3 scored (+1A); .5 TD-410 a suspect proof shows no income;
-VERDICT_ENGINE_VERSION = '2026-10-27.7'   # .6 #374 declared amount ≤ Probable; .7 #374 hotfix: stamp+approver approves
+VERDICT_ENGINE_VERSION = '2026-10-27.8'   # .6 #374 declared ≤ Probable; .7 hotfix: stamp+approver approves; .8 govt letterhead tightened
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
