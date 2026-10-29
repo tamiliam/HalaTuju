@@ -175,18 +175,27 @@ def _is_institution_noise(warning) -> bool:
 def _exact_read(doc, text, words):
     """(fields, 'reader version') from the deterministic readers, or (None, ''). STPM first
     (`stpm_parse`, S2); then, on a page `results_kind` reads as Matriculation, `matric_parse`
-    (Matric/Diploma M2). A reader that fails or is unsure → (None, '') and Gemini reads it."""
+    (Matric/Diploma M2); on a Diploma page that prints a polytechnic's own name,
+    `poly_diploma_parse` (M3 — UiTM and other diplomas never reach it). A reader that fails or is
+    unsure → (None, '') and Gemini reads it."""
     try:                     # the Exact reader must never break a read: any failure → Gemini
         from .stpm_parse import PARSER_VERSION, parse as stpm_parse
         exact = stpm_parse(text, words, entered=_entered_grade(doc))
         if exact is not None:
             return exact, f'stpm_parse {PARSER_VERSION}'
-        from .results_kind import detect
-        if detect(text) == 'matric':
+        from .results_kind import detect, prints_polytechnic
+        kind = detect(text)
+        if kind == 'matric':
             from .matric_parse import PARSER_VERSION as MATRIC_VERSION, parse as matric_parse
             exact = matric_parse(text, words)
             if exact is not None:
                 return exact, f'matric_parse {MATRIC_VERSION}'
+        elif kind == 'diploma' and prints_polytechnic(text):     # M3: a polytechnic's own transcript
+            from .poly_diploma_parse import PARSER_VERSION as POLY_VERSION
+            from .poly_diploma_parse import read_poly_transcript as poly_parse
+            exact = poly_parse(text, words)
+            if exact is not None:
+                return exact, f'poly_diploma_parse {POLY_VERSION}'
     except Exception:
         pass
     return None, ''

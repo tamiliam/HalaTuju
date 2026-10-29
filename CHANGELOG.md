@@ -72,6 +72,11 @@ SPM batch needs, plus the 87 UiTM rows (84 ingested, 3 flagged for hand entry in
   subject is excluded (12 of the 84 rows changed: 10 strict, 2 de-duplicated); runbook + rollback
   DELETE in the 0088 docstring; partner-admin inference accepted (decisions.md).
 
+- **Live 2026-10-29** in `f5282643` (api 89adcd9c / web 73497e1a SUCCESS). 0088 applied migrate-first;
+  84 UiTM rows ingested by the `release-decisions` job after both revisions served 100% (dry run: 84 CREATE,
+  0 UPDATE); re-revision `halatuju-api-01183-jll` loads them. Live smoke, all-A student: eligibility non-Bumi 0
+  UiTM, Bumi 81, foreigner saying yes 0; search non-Bumi 0, Bumi 80; UE4481001 page shows the Bumi row.
+
 ## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
 
 Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas
@@ -101,6 +106,30 @@ Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record
 - Guide updated (reviewer, general admin and org admin chapters each gain a Scholars section); role matrix gains
   a Scholars section. ⚠ No FAQ entry: `content/manual/faq.tsx` sits at its 600-line limit (TD-413 — the next
   entry must split it first), so the FAQ question waits for that split.
+
+## Matric/Diploma Exact-read M3 - 2026-10-29
+
+- **A polytechnic Diploma academic transcript is read Exact** (`poly_diploma_parse` 1.1.0, from
+  `higher_results.extract`, only on a page `results_kind` reads as Diploma AND that prints a
+  polytechnic's own name, `results_kind.prints_polytechnic`; UiTM and other diplomas never reach it).
+  Name, IC, registration number, polytechnic, every graded course row, the FINAL CGPA.
+- Every hit is proven: each semester's credits equal its box's Credit Earned (a dropped row refuses),
+  its GPA and the running CGPA recomputed (credits × grade points); the two-column page's boxes are
+  paired by their own running Total Credits; the final CGPA is the box whose Total Credits equal the
+  programme's (92.0 / 92.0); 5 or 6 semesters, industrial training only last; STATUS COMPLETED.
+  0-credit rows are left out (no sum proves them). TEXT LAYER ONLY: the corpus has no scanned
+  transcript, so a scan goes to Gemini.
+- Corpus (`eval/poly_parse_check.py`): 1 Exact, 7 Gemini, **0 wrong**; 0 of 169 controls accepted.
+  The one transcript's Gemini-seeded label had a grade wrong — the semester GPA proves the print.
+- `MODEL_VERSION` 1.20.0. `VERDICT_ENGINE_VERSION` unchanged (the M2 reasoning).
+- **Adversarial review (poly 1.1.0, matric 1.2.0):** every line of the header area must be a known
+  header line (a cut-off name's second line refuses), and a name never ends on a connector (BIN,
+  BINTI, A/L … — both readers); the programme must read DIPLOMA (a polytechnic SIJIL or BACHELOR is not
+  filed as one); a wrapped row holding a credit or a remark (ULANG, REPEAT, (R) …) refuses, so a failed
+  row cannot merge into a name; the polytechnic name refuses a glued address; a Kolej Komuniti heading
+  refuses; WANITA and the like are no name words; an IC printed with spaces is caught. Every rule has a
+  test that goes red when only that rule is removed (`TestEveryRuleOnItsOwn`).
+- Tests: `test_poly_diploma_parse.py` (34, synthetic twins of the text layer; every rule bite-checked).
 
 ## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
 

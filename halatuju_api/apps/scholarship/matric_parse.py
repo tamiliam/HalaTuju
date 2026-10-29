@@ -51,12 +51,14 @@ from __future__ import annotations
 import re
 from decimal import ROUND_HALF_UP, Decimal
 
+from .poly_diploma_parse import CONNECTORS
 from .stpm_parse import GRADE_POINTS, _NRIC_RE, _after, _clean_name, _letters, _rows_of
 
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning rule).
 # 1.0.0 (2026-10-29): M2 — the KPM Matriculation academic transcript (2 and 4 semesters).
 # 1.1.0 (2026-10-29): review — core rows only; the semester's shape; code parity; label stops.
-PARSER_VERSION = '1.1.0'
+# 1.2.0 (2026-10-29): M3 review — a name never ends on a connector (BIN, BINTI, A/L …); WANITA etc.
+PARSER_VERSION = '1.2.0'
 
 #: English's language bands (CEFR), printed with no value point.
 BANDS = frozenset({'A1', 'A2', 'B1', 'B2', 'C1', 'C2'})
@@ -82,7 +84,7 @@ _LABELS = ('KOLEJ', 'NOKP', 'NOMATRIK', 'JANTINA', 'JURUSAN', 'SESI')
 #: Label words that may never be part of a name read Exact.
 _NOT_IN_NAME = frozenset({'NO', 'KP', 'IC', 'MATRIK', 'MATRIC', 'KOLEJ', 'COLLEGE', 'JANTINA',
                           'GENDER', 'JURUSAN', 'MAJOR', 'SESI', 'SESSION', 'LELAKI', 'PEREMPUAN',
-                          'MALE', 'FEMALE'})
+                          'MALE', 'FEMALE', 'WANITA', 'BANGSA', 'AGAMA', 'WARGANEGARA'})
 #: A label that ends the college's name when it shares its row ("… LABUAN NO. KP / IC NO. …").
 _COLLEGE_ENDS = frozenset({'NO', 'JANTINA', 'GENDER', 'JURUSAN', 'MAJOR', 'SESI', 'SESSION', 'KP', 'IC'})
 #: Each semester's fixed shape on every corpus transcript (2- and 4-semester, science, accounting,
@@ -202,7 +204,8 @@ def _header(rows):
         return None                             # the name may have wrapped onto the next row
     tokens = [t for t in _after(rows[i], 'NAMANAME') if t != ':']
     name = _clean_name(tokens)
-    if not name or any(t.strip('.,:') in _NOT_IN_NAME for t in tokens):
+    if (not name or any(t.strip('.,:') in _NOT_IN_NAME for t in tokens)
+            or name.split()[-1] in CONNECTORS):     # a name cut off after BIN / BINTI / A/L …
         return None
     # "NO. KP / IC NO." (never the "MATRIC NO." row, whose letters also hold "ICNO"); the college
     # label "KOLEJ / COLLEGE" (OCR may read its slash as I).

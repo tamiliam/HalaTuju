@@ -95,6 +95,20 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   the cumulative label on page 1; the only multi-page diploma (UiTM, 2 pages, scanned) carries its
   last cumulative figure on page 2 — exactly the case production's page-1 read misses.
 - **Done when:** the polytechnic corpus reads Exact; other diplomas still AI; 0 wrong values.
+- **BUILT 2026-10-29** (branch `m3-poly-parse`, not pushed). Notes:
+  - The corpus holds ONE polytechnic academic transcript (3926, a digital PDF); the other three
+    polytechnic documents are two semester RESULT SLIPS (3390, 3397: "Keputusan Penilaian Akhir
+    Semester", HPNM a running figure at 51 / 95 and 68 / 95 credits) and one student-portal screen
+    (1311). So the reader is built for the transcript's TEXT LAYER only; a scan is never read Exact.
+  - Corpus (`eval/poly_parse_check.py`): 1 Exact (3926), 7 to Gemini (the 2 slips, the portal, the 4
+    UiTM), 0 wrong; 0 of 169 controls accepted (Matriculation, STPM, SPM, the slip corpus …).
+  - Every graded row is proven: each semester's credits equal its box's Credit Earned, its GPA and the
+    running CGPA recomputed; the boxes (out of step with their semesters in the two-column text layer)
+    are paired by their own running Total Credits. 0-credit rows (PISPA 3, 4) are left out.
+  - Review fixes (poly 1.1.0, matric 1.2.0): a known header area, no name ending on a connector, a
+    DIPLOMA programme only, no credit or remark inside a wrapped row; each rule isolated by a test.
+  - Its label was WRONG on one grade (Gemini-seeded; the semester GPA proves the printed grade): the
+    LIVE stored Gemini read of 3926 carries the same misread (checked) — M5's re-read fixes it.
 
 ### M4 — Genuineness for Matriculation + polytechnic Diploma · medium · ~7 h
 - Signature sets per family (issuer wording, crest, fixed footers), like `genuineness/stpm_doc.py`.

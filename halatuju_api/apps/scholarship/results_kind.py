@@ -163,3 +163,11 @@ def detection(text, fields):
         return kind, marker
     title, kw = _fields_args(fields)
     return _detect(title, **kw)
+
+
+def prints_polytechnic(text) -> bool:
+    """Does the page print a polytechnic's own name (the `_ISSUERS` diploma marker; the JPPKK
+    department's name is not counted)? The gate before `poly_diploma_parse` (Matric/Diploma M3): a
+    UiTM or private-college diploma never prints one."""
+    up = _NOT_ISSUERS.sub(' ', (text or '').upper())
+    return any(_has(p, up) for p in _ISSUERS['diploma'])
