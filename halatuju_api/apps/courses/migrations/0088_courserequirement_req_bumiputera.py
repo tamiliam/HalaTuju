@@ -33,6 +33,9 @@ ROLLBACK: delete the D1 rows FIRST, then roll back to a pre-0088 image (an old i
 them to everyone). In one transaction:
 
     BEGIN;
+    DELETE FROM saved_courses WHERE course_id IN (D1);
+    DELETE FROM admission_outcomes WHERE course_id IN (D1);
+    DELETE FROM course_tags WHERE course_id IN (D1);
     DELETE FROM course_requirements WHERE course_id IN (D1);
     DELETE FROM course_institutions WHERE course_id IN (D1);
     DELETE FROM courses WHERE course_id IN (D1);

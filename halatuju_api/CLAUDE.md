@@ -136,7 +136,9 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    apply the 0088 SQL → push (api + web) → CONFIRM the new api AND web revisions both serve 100% →
    `ingest_spm_courses --file data/spm/spm_new_courses_D1.json --institution-id UNIV-012` (dry run),
    then `--apply`. The eligibility frame loads at start-up, so the rows show from the next revision.
-   ROLLBACK: delete the 84 D1 rows from `course_requirements`, `course_institutions`, `courses` (the
+   ROLLBACK: delete the 84 D1 rows from `saved_courses`, `admission_outcomes`, `course_tags`,
+   `course_requirements`, `course_institutions`, then `courses` (Postgres has no cascade — Django's
+   CASCADE is Python-side — so a student's saved UiTM course would abort a bare `courses` delete; the
    exact DELETE is in the 0088 docstring) BEFORE rolling back to a pre-0088 image.
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
