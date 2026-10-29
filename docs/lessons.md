@@ -1520,3 +1520,17 @@ words, which those routes never read) paid it. Also: **Next's link prefetch EVAL
 modules**, so a side-effect import in a page (a slice loader) runs on every page that links to it once the link
 is prefetched — weight moved off a route's first load can still travel in the background. (TD-416)
 - **"Count each one once" over a many-to-many map is a MATCHING, not a loop — a greedy dedupe lets the ORDER of the list decide the answer.** Sprint C's once-per-group fix gave each requirement code the first free student subject; with `BAHASA_ARAB_MUASIRAH_SPM` listed before `BAHASA_ARAB_SPM`, `bahasa_arab` was spent on the first code and a student holding both Arabic subjects counted 1, not 2. Every test passed because every test listed the codes in the kind order. **Rule:** when codes map to several keys and keys to several codes, count with a maximum matching (`stpm_engine._distinct_matches`), and write one test with the list in the UNKIND order. (Bumi Sprint C, 2026-10-29)
+- **A money guard reads the STORED decision, never a mirrored or derived field another system can clear.** Student
+  maintenance S1 first wrote "on hold" as "in maintenance AND on hold", and "in maintenance" reads
+  `vircle_activated_at`, which is mirrored from Vircle's relay sheet — clear the stamp and the hold stops holding, so
+  the next payment run pays her. A file/eligibility predicate is allowed to be derived; a decision that stops money
+  is not. **Rule:** when a guard stops money (or grants access), list every field it reads and who else can write
+  each one; anything another system writes, or anything derived, is out — read the officer's stored decision and
+  the status that is actually paid, and test it by clearing the derived field after the decision. (Student
+  maintenance S1, 2026-10-29)
+- **Widening who may WRITE something is also a change to everyone who READS it — list the readers first.**
+  Widening semester-result recording to 65 more students passed every write-side check, and would have put
+  unreviewed, self-reported CGPAs into the sponsor-visible progress band. Likewise a hold gained a side effect on
+  signed payment runs while keeping a gate written when it only touched tranches. **Rule:** before widening a write
+  or adding a side effect, grep every reader of the field (and every object the action now touches) and re-ask
+  the gate as the UNION of those owners' gates. (Student maintenance S1, 2026-10-29)
