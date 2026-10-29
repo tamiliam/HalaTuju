@@ -67,6 +67,30 @@ is not funded yet); generating every term since funding (would mark every long-f
 weeks off; the officer sees the date and the organisation can widen the grace. **Revisit if:** institutions publish
 term calendars we can read, or officers ask to set a student's term dates by hand.
 
+## Owner rulings on Matriculation / polytechnic pages that are not the transcript — 2026-10-29 (Matric/Diploma M4b)
+
+**The rulings (owner, 2026-10-29, verbatim from the lead's brief):**
+1. "a Matriculation or polytechnic SEMESTER RESULT SLIP is NOT accepted: ask the student for the full
+   academic transcript";
+2. "a polytechnic STUDENT-PORTAL screenshot is NOT accepted: ask for the transcript (same treatment as
+   the 1A checker page)";
+3. "a Matriculation OFFER LETTER uploaded in the results card is marked 'not a results document' (the
+   same step STPM uses for not_stpm_result)";
+4. "NO suspect band for these families yet (keep genuine-or-nothing)".
+A 4-semester programme's semester slip and a final "Lulus dan Tamat" slip are both (1) (lead, same brief).
+
+**How.** `matric_poly_doc._ruled_page` recognises each page from fixed wording only, calibrated on the
+corpus as production reads it (page 1 of a scan): every marker set is printed on every corpus page of
+its kind and on no Matriculation or polytechnic transcript, with a count threshold so one mangled
+phrase still recognises a slip and one stray word never rules a page. A page that passes a
+transcript's own gates is NEVER ruled (a real transcript is never asked to re-upload); anything the
+markers do not settle stays "not checked". (1)–(3) are stored `not_matric_result` /
+`not_poly_result` with a `doc_seen` naming the page (`matric_result_slip`, `poly_result_slip`,
+`poly_portal_page`, `matric_offer_letter`) — the canonical not-a-result step (−2) STPM's 1A page
+takes. The student's Documents card picks its note by `doc_seen` (ask for the full academic
+transcript / not a results document); the reviewer's line names the kind. UiTM, Kolej Komuniti,
+Asasi and the SPM card are untouched. `MODEL_VERSION` 1.22.0, `VERDICT_ENGINE_VERSION` 2026-10-29.3
+(the step moves a band). Scores land at M5's re-read.
 ## Only an ACCEPTED result counts — recording widens to every file; standing comes from the organisation — 2026-10-29 (student maintenance S4a)
 
 **Decision:** (1) a student IN MAINTENANCE (`maintenance_scope.is_in_maintenance`, so awarded + activated too) may

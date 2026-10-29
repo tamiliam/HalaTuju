@@ -69,7 +69,9 @@ export const roleReviewer: ManualChapter = {
         worked out cleanly, to confirm it); both requests close by themselves when she saves her STPM results page. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
         results uploads those results instead of an SPM slip; the Documents drawer names them by kind
         (for example <strong>STPM results</strong>); STPM results are checked for genuineness like an SPM slip, and a screenshot of
-        the online results-checker page is flagged as not the real slip. Beside the NRIC, the header shows where her IC says she was
+        the online results-checker page is flagged as not the real slip. Matriculation and polytechnic transcripts are checked
+        too; a semester result slip, a polytechnic student-portal screenshot or a Matriculation offer letter is flagged as not
+        the transcript, and she is asked for her full academic transcript. Beside the NRIC, the header shows where her IC says she was
         <strong> born</strong>.</>
       ),
       img: '/reviewer-guide/step1-list.png',

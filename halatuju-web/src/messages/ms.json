@@ -1558,7 +1558,9 @@
         "note": "Hanya petunjuk — pasukan sentiasa menyemak dokumen anda."
       },
       "genuineness": {
-        "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat."
+        "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat.",
+        "askTranscript": "Ini kelihatan seperti slip keputusan semester atau halaman portal pelajar, bukan transkrip akademik penuh anda. Sila muat naik transkrip akademik penuh anda. Tiada apa-apa disekat.",
+        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik penuh anda. Tiada apa-apa disekat."
       },
       "icCheck": {
         "icNo": "No. KP",
@@ -4081,7 +4083,7 @@
         "parent_ic": "Kad Pengenalan (MyKad) — nama dan nombor IC jelas kelihatan",
         "results_slip": "slip keputusan SPM — slip rasmi penuh dengan nama anda jelas kelihatan",
         "higher_stpm": "slip keputusan atau sijil STPM — dokumen rasmi penuh dengan nama anda jelas kelihatan",
-        "higher_matric": "slip keputusan Matrikulasi — slip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
+        "higher_matric": "transkrip akademik Matrikulasi — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan (slip keputusan semester tidak diterima)",
         "higher_asasi": "transkrip Asasi — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
         "higher_diploma": "transkrip Diploma — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
         "semester_result": "slip keputusan semester kolej/universiti terkini — menunjukkan CGPA semasa anda",

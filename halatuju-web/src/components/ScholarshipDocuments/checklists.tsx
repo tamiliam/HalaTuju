@@ -260,6 +260,18 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
  *  slip / BC / EPF) — verification-assurance Sprint 2. Shows an amber "this doesn't look like
  *  a genuine document" note when the fingerprint is low-confidence or wrong-type. Never blocks;
  *  re-upload via the card's existing controls. (The IC has its own note in ICChecklist.) */
+/** What the higher-results check says a page IS when the owner ruled it is not the results asked for
+ *  (2026-10-29, `genuineness/matric_poly_doc.py`): a semester result slip or the polytechnic student
+ *  portal → ask for the full academic transcript; a Matriculation offer letter → not a results document. */
+const ASK_FOR_TRANSCRIPT = new Set(['matric_result_slip', 'poly_result_slip', 'poly_portal_page'])
+const NOT_RESULTS = new Set(['matric_offer_letter'])
+
+export function genuinenessNoteKey(docSeen: string | undefined): string {
+  if (docSeen && ASK_FOR_TRANSCRIPT.has(docSeen)) return 'scholarship.docs.genuineness.askTranscript'
+  if (docSeen && NOT_RESULTS.has(docSeen)) return 'scholarship.docs.genuineness.notResults'
+  return 'scholarship.docs.genuineness.note'
+}
+
 export function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   const s = doc.authenticity?.status
   if (!s || s === 'genuine') return null   // show for any non-genuine canonical status (suspect / not_<type>)
@@ -268,7 +280,7 @@ export function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: s
       <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
       </svg>
-      <p className="text-xs text-caution-800">{t('scholarship.docs.genuineness.note')}</p>
+      <p className="text-xs text-caution-800">{t(genuinenessNoteKey(doc.authenticity?.doc_seen))}</p>
     </div>
   )
 }

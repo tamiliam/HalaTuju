@@ -382,9 +382,11 @@ def _detect_parent_ic_low_confidence(application) -> Optional[Anomaly]:
 
 # Sprint 2 — genuineness for the standardised supporting documents.
 _GENUINENESS_DOC_LABELS = {
-    'str': 'STR', 'results_slip': 'results slip', 'higher_results': 'STPM results',   # S3: STPM only
+    'str': 'STR', 'results_slip': 'results slip', 'higher_results': 'STPM results',   # by kind below
     'birth_certificate': 'birth certificate', 'epf': 'EPF statement',
 }
+#: The higher-results label by the upload's own kind (M4b: Matriculation / polytechnic pages are scored).
+_HIGHER_LABELS = {'stpm': 'STPM results', 'matric': 'Matriculation results', 'diploma': 'Diploma results'}
 
 
 def _detect_document_not_genuine(application) -> Optional[Anomaly]:
@@ -407,6 +409,10 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
         if needs_attention(raw, dt):         # canonical 'suspect' / 'not_<type>' (folds legacy)
             from .genuineness.bands import stored_authenticity
             seen = stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '')
+            if dt == 'higher_results':           # M4b: Matriculation / polytechnic pages are scored too
+                f = (doc.vision_fields or {}).get('fields') if isinstance(doc.vision_fields, dict) else None
+                kind = (f.get('results_kind_detected') if isinstance(f, dict) else '') or doc.results_kind
+                label = _HIGHER_LABELS.get(kind or '', 'higher results')
             return Anomaly('document_not_genuine',
                            {'doc': label, 'status': canonical_status(raw, dt), 'seen': seen})
     return None

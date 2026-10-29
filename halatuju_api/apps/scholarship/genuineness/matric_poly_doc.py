@@ -8,8 +8,10 @@ would need a new Gemini call; the transcripts clear 0.70 without it), scored by
 `results_doc._score_list` and banded by `bands.band_for`.
 
 GENUINE OR NOTHING, BOTH FAMILIES (review, 2026-10-29). A page that passes a family's gates and
-scores ≥ 0.70 is stored "genuine"; ANYTHING else stays unscored — "not checked", exactly as before
-M4. No suspect and no "not_" is ever stored, because neither band is calibrated: a genuine 2-year
+scores ≥ 0.70 is stored "genuine"; anything else stays unscored — "not checked", exactly as before
+M4 — EXCEPT the three pages the owner ruled on (M4b, below: a semester result slip, the polytechnic
+portal screen, a Matriculation offer letter), recognised from fixed wording only and stored
+`not_<family>_result`. No suspect is ever stored (owner ruling 4, 2026-10-29), because no band is calibrated: a genuine 2-year
 transcript seen page 1 only scores 0.68, a cropped photo 0.64, a noisy scan 0.61. A suspect would
 tell a student with a real transcript that it "does not look genuine" — so until multi-page and
 cropped samples calibrate a suspect band, the floor (Probable at best) is the cautious answer.
@@ -133,13 +135,90 @@ def _poly_gates(ocr_text, tn):
     return bool('ACADEMIC TRANSCRIPT' in _NEGATED_TITLE.sub(' ', tn) and all(g in tn for g in _POLY_GRID))
 
 
+# ── The owner's rulings (2026-10-29, M4b) ─────────────────────────────────────────────────────
+# A page RECOGNISED, from fixed wording only, as one of three things that are not the results the
+# card asks for is stored `not_<family>_result` — the step STPM's ruling 1A uses (`not_stpm_result`):
+# the Academic band takes the −2 step, the reviewer sees `document_not_genuine` naming what it
+# appears to be, and the student's card asks for the right document. Anything we are unsure of
+# stays "not checked". Calibrated on the corpus (page-1 input): each marker set below is printed on
+# EVERY page of its kind and on NO Matriculation or polytechnic transcript.
+#   (1) a Matriculation or polytechnic SEMESTER RESULT SLIP — "is not accepted: ask the student for
+#       the full academic transcript" (any semester, a final "Lulus dan Tamat" slip included);
+#   (2) a polytechnic STUDENT-PORTAL screenshot — "not accepted: ask for the transcript (same
+#       treatment as the 1A checker page)";
+#   (3) a Matriculation OFFER LETTER uploaded as results — "marked not a results document".
+#: (1) Matriculation slip: its title and its disclaimer, both languages (3 corpus slips print all 6;
+#: transcripts 0). Two needed, so one mangled phrase still recognises it.
+_MATRIC_SLIP_MARKS = ('SLIP KEPUTUSAN PEPERIKSAAN', 'EXAMINATION RESULT SLIP', 'BUKAN TRANSKRIP AKADEMIK',
+                      'NOT AN ACADEMIC TRANSCRIPT', 'TRANSKRIP AKADEMIK SEBENAR', 'ACTUAL ACADEMIC TRANSCRIPT')
+#: (1) polytechnic slip: the slip's title AND two of its own column / summary labels (2 corpus slips).
+_POLY_SLIP_TITLE = 'KEPUTUSAN PENILAIAN AKHIR'
+_POLY_SLIP_MARKS = ('HPNM', 'JAM KREDIT', 'KELAS SEMASA', 'NILAI MATA', 'MATA KREDIT')
+#: (2) the polytechnic student portal's own furniture (the corpus screenshot prints all 6; nothing else any).
+_PORTAL_MARKS = ('SEMAKAN BUTIRAN PELAJAR', 'STATUS PENDAFTARAN HAL EHWAL PELAJAR', 'DAFTAR HHP',
+                 'STATUS DAFTAR LATIHAN INDUSTRI', 'KEPUTUSAN PEPERIKSAAN MENGIKUT SEMESTER', 'KEPUTUSAN ASASI TVET')
+#: (3) a Matriculation offer letter's own wording (the 22 Bahagian Matrikulasi offers print 3-4; 0
+#: on every transcript and slip).
+_OFFER_MARKS = ('TAWARAN', 'LAPOR DIRI', 'SURAT TAWARAN', 'KEMASUKAN', 'TARIKH PENDAFTARAN', 'TAHNIAH',
+                'DITAWARKAN', 'OFFER')
+#: What `doc_seen` says for each ruling (the reviewer's "it appears to be" line, the student's note).
+MATRIC_SLIP, POLY_SLIP, POLY_PORTAL, MATRIC_OFFER = (
+    'matric_result_slip', 'poly_result_slip', 'poly_portal_page', 'matric_offer_letter')
+_RULINGS = {
+    MATRIC_SLIP: ('not_matric_result', 'a Matriculation semester result slip, not the academic transcript '
+                  '(owner ruling 2026-10-29) — ask for the full academic transcript'),
+    POLY_SLIP: ('not_poly_result', 'a polytechnic semester result slip, not the academic transcript '
+                '(owner ruling 2026-10-29) — ask for the full academic transcript'),
+    POLY_PORTAL: ('not_poly_result', 'the polytechnic student-portal page, not the academic transcript '
+                  '(owner ruling 2026-10-29, as ruling 1A) — ask for the full academic transcript'),
+    MATRIC_OFFER: ('not_matric_result', 'a Matriculation offer letter, not a results document '
+                   '(owner ruling 2026-10-29)'),
+}
+
+
+def _count(tn, marks):
+    return sum(1 for m in marks if m in tn)
+
+
+def _ruled_page(ocr_text, tn, kind):
+    """The ruling a page is recognised as (`MATRIC_SLIP` …), or '' — never on a page that is a
+    transcript by its own gates."""
+    if _matric_gates(tn) or (kind == 'diploma' and _poly_gates(ocr_text, tn)):
+        return ''
+    if _count(tn, _PORTAL_MARKS) >= 3:
+        return POLY_PORTAL
+    kpm = 'BAHAGIAN MATRIKULASI' in tn or 'MATRICULATION DIVISION' in tn
+    if kind == 'matric' and kpm and _count(tn, _MATRIC_SLIP_MARKS) >= 2:
+        return MATRIC_SLIP
+    if (kind == 'diploma' and prints_polytechnic(ocr_text) and _POLY_SLIP_TITLE in tn
+            and _count(tn, _POLY_SLIP_MARKS) >= 2):
+        return POLY_SLIP
+    if (kind == 'matric' and 'BAHAGIAN MATRIKULASI' in tn and _count(tn, _OFFER_MARKS) >= 2
+            and not _MATRIC_GRID.search(tn)):
+        return MATRIC_OFFER
+    return ''
+
+
+def _ruling_result(ocr_text, seen):
+    from .results_doc import MODEL_VERSION
+    status, reason = _RULINGS[seen]
+    sg = _scored(ocr_text, MATRIC_TRANSCRIPT_SIGNATURES if status == 'not_matric_result'
+                 else POLY_TRANSCRIPT_SIGNATURES, seen)
+    return {**sg, 'status': status, 'type': seen, 'model_version': MODEL_VERSION,
+            'reason': f"{reason}; signatures p={sg['probability']:.2f}"[:300]}
+
+
 def matric_poly_higher_genuineness(ocr_text: str) -> dict:
     """The genuineness of a Matriculation or polytechnic HIGHER-RESULTS page: "genuine" when it
-    passes its family's gates and scores ≥ 0.70, else `{}` (no signal, "not checked"). Never a
-    suspect, never a "not_" (see the module docstring). Pure."""
+    passes its family's gates and scores ≥ 0.70; an owner-ruled page (a semester result slip, the
+    portal screen, an offer letter) `not_<family>_result`; else `{}` (no signal, "not checked").
+    Never a suspect (see the module docstring). Pure."""
     from .results_doc import _norm_fold_upper_alnum
     tn = _norm_fold_upper_alnum(ocr_text)
     kind = detect(ocr_text)
+    seen = _ruled_page(ocr_text, tn, kind)
+    if seen:
+        return _ruling_result(ocr_text, seen)
     if kind == 'matric' and _matric_gates(tn):
         sg = _scored(ocr_text, MATRIC_TRANSCRIPT_SIGNATURES, 'matric_transcript')
     elif kind == 'diploma' and _poly_gates(ocr_text, tn):

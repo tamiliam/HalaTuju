@@ -16,7 +16,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from apps.scholarship import vision
 from apps.scholarship.genuineness import matric_poly_doc
 from apps.scholarship.genuineness.matric_poly_doc import matric_poly_higher_genuineness as score
-from apps.scholarship.genuineness.results_doc import _norm_fold_upper_alnum, _score_list
+from apps.scholarship.genuineness.results_doc import MODEL_VERSION, _norm_fold_upper_alnum, _score_list
 from apps.scholarship.genuineness.stpm_doc import stpm_higher_genuineness, stpm_slot_genuineness
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.tests.test_corpus_gaps_c3 import STPM_SLIP
@@ -60,7 +60,7 @@ class TestGenuineOrNothing(SimpleTestCase):
     def test_a_matric_transcript_is_genuine(self):
         sg = score(MATRIC)
         self.assertEqual((sg['status'], sg['type'], sg['probability']), ('genuine', 'matric_transcript', 1.0))
-        self.assertEqual(sg['model_version'], '1.21.0')
+        self.assertEqual(sg['model_version'], MODEL_VERSION)
 
     def test_a_polytechnic_transcript_is_genuine(self):
         self.assertEqual((score(POLY)['status'], score(POLY)['type']), ('genuine', 'poly_transcript'))
@@ -92,9 +92,8 @@ class TestTheGates(SimpleTestCase):
         self.assertEqual(score(MATRIC + NL + 'Slip keputusan ini bukan transkrip'), {})   # cut-off disclaimer
         self.assertEqual(score(MATRIC + NL + 'before the actual academic transcript is issued'), {})
 
-    def test_review_s1_letters_and_screens_are_never_scored(self):
-        for label, text in (('offer letter', MATRIC_OFFER), ('KPM letter', KPM_LETTER), ('portal', PORTAL)):
-            self.assertEqual(score(text), {}, label)
+    def test_review_s1_a_letter_that_is_no_ruled_kind_is_never_scored(self):
+        self.assertEqual(score(KPM_LETTER), {})                # neither an offer nor a transcript
 
     def test_the_matric_gates_each_hold(self):
         self.assertEqual(score(MATRIC.replace('TRANSKRIP AKADEMIK / ACADEMIC TRANSCRIPT', 'KEPUTUSAN')), {})
@@ -197,5 +196,5 @@ class TestTheLivePath(TestCase):
     def test_the_versions_moved(self):
         from apps.scholarship.genuineness.results_doc import MODEL_VERSION
         from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION
-        self.assertGreaterEqual(tuple(int(p) for p in MODEL_VERSION.split('.')), (1, 21, 0))
-        self.assertGreaterEqual(tuple(int(p) for p in re.split(r'[-.]', VERDICT_ENGINE_VERSION)), (2026, 10, 29, 2))
+        self.assertGreaterEqual(tuple(int(p) for p in MODEL_VERSION.split('.')), (1, 22, 0))
+        self.assertGreaterEqual(tuple(int(p) for p in re.split(r'[-.]', VERDICT_ENGINE_VERSION)), (2026, 10, 29, 3))

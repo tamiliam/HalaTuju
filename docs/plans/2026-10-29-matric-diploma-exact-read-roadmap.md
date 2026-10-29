@@ -128,6 +128,12 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   - The before/after list (ids only) is in the M4 report; scores land only when a document is read
     again (M5), because a stored score is never replaced by silence.
 
+### M4b — Owner rulings (slips, the portal, offer letters) · BUILT 2026-10-29
+- Owner rulings 2026-10-29 (`docs/decisions.md`): a semester result slip and the polytechnic portal
+  page are not accepted (ask for the full academic transcript, as 1A); a Matriculation offer letter
+  here is not a results document; still no suspect band. Built in `matric_poly_doc` from fixed,
+  corpus-calibrated wording; a real transcript is never ruled. Branch `m4b-matric-poly-rulings`.
+
 ### M5 — Live re-read + close · low · ~3 h · paid: Gemini fallback on misses only
 - Targeted live `reextract_documents` for matric/diploma `higher_results` with the job flags.
 - CHANGELOG, decisions, retrospective; completion report on #49 with TOTAL spent vs TOTAL planned.

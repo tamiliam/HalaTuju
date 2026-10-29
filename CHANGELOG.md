@@ -109,6 +109,26 @@ docstring; migrate BEFORE the deploy).
   default, reversible).
 - Daily job `results-overdue-flag` makes and pairs the terms (idempotent). ⚠ Create its Cloud Scheduler entry
   (08:00 MYT) at deploy — the System health light now expects it.
+## Matric/Diploma Exact-read M4b — the owner's rulings on slips, the portal and offer letters - 2026-10-29
+
+- **The owner's four rulings (2026-10-29) are built** in the higher-results card
+  (`genuineness/matric_poly_doc.py`): (1) a Matriculation or polytechnic **semester result slip** (a
+  final "Lulus dan Tamat" slip included) is not accepted — the student is asked for her full
+  academic transcript; (2) a **polytechnic student-portal** screenshot likewise (as ruling 1A); (3) a
+  **Matriculation offer letter** uploaded here is marked not a results document; (4) still no
+  suspect band. (1)–(3) take the step STPM's 1A page takes (`not_<family>_result`).
+- Each is recognised only from fixed wording printed on every corpus page of its kind and on no
+  transcript: the slip's title + disclaimer (two needed), the polytechnic slip's title + two of its
+  labels, six portal furniture phrases (three needed), an offer's own wording (two needed, the
+  Bahagian Matrikulasi header, no transcript grid). A page that passes a transcript's own gates is
+  never ruled, and anything unsure stays "not checked". Corpus: 0 transcripts ruled; ruled — 3
+  Matriculation slips, 2 polytechnic slips, the portal screen, 22 + 1 Matriculation offer letters.
+- **Student:** the Documents card asks for the full academic transcript (slip / portal) or says it
+  is not a results document (offer letter) — new strings en/ms/ta; the officer's "request
+  Matriculation results" text now asks for the academic transcript. **Reviewer:** the card's
+  `document_not_genuine` line names "Matriculation / Diploma results" by kind; Guide + FAQ updated
+  (they still said Matriculation and Diploma were not checked — M4's miss, fixed here).
+- `MODEL_VERSION` 1.22.0; `VERDICT_ENGINE_VERSION` 2026-10-29.3.
 
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 

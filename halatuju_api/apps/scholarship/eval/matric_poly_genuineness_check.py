@@ -7,8 +7,10 @@ a scan's page 1). The committed tests use synthetic twins (`tests/test_matric_po
 Prints, per folder: the status `matric_poly_higher_genuineness` gives each page (what the
 higher-results slot would store), and the RAW probability of every page on each list — the
 controls' maximum is the margin below the 0.35 suspect floor. Keys, statuses and numbers only.
-Exits non-zero if a control page would be scored at all (M4 stores genuine or nothing). A
-Matriculation transcript or the polytechnic transcript that is not genuine shows in the listing.
+M4b: an owner-ruled page (a semester result slip, the portal screen, a Matriculation offer letter)
+is stored `not_<family>_result` and listed with what it appears to be (`doc_seen`). Exits non-zero
+if a page that passes a transcript's own gates is ruled (a real transcript is never asked to
+re-upload) or a control page is stored "genuine".
 
 Usage:  python apps/scholarship/eval/matric_poly_genuineness_check.py [--snapshots PATH]
 """
@@ -36,7 +38,8 @@ def main(argv):
         _io.SNAP = argv[argv.index('--snapshots') + 1]
     sys.path.insert(0, os.path.abspath(os.path.join(HERE, '..', '..', '..')))   # halatuju_api/
     from apps.scholarship.genuineness.matric_poly_doc import (
-        MATRIC_TRANSCRIPT_SIGNATURES, POLY_TRANSCRIPT_SIGNATURES, matric_poly_higher_genuineness)
+        MATRIC_TRANSCRIPT_SIGNATURES, POLY_TRANSCRIPT_SIGNATURES, _matric_gates, _poly_gates,
+        matric_poly_higher_genuineness)
     from apps.scholarship.genuineness.results_doc import _norm_fold_upper_alnum, _score_list
 
     bad = 0
@@ -48,15 +51,19 @@ def main(argv):
             pm = _score_list(MATRIC_TRANSCRIPT_SIGNATURES, tn, False, False)['probability']
             pp = _score_list(POLY_TRANSCRIPT_SIGNATURES, tn, False, False)['probability']
             sg = matric_poly_higher_genuineness(text)
-            st = sg.get('status', '-')
+            st = sg.get('status', '-') + (f" ({sg['type']})" if sg.get('status', '').startswith('not_') else '')
             tally[st] = tally.get(st, 0) + 1
+            transcript = _matric_gates(tn) or _poly_gates(text, tn)
+            if transcript and st.startswith('not_'):
+                bad += 1
+                print(f'  TRANSCRIPT RULED {key} {st}')
             if folder in ('matric', 'diploma'):
                 print(f'  {key:<32} matric p={pm:.2f} poly p={pp:.2f} -> {st}')
             else:
                 top = {'matric': max(top['matric'], pm), 'poly': max(top['poly'], pp)}
-                if st != '-':
+                if st == 'genuine':
                     bad += 1
-                    print(f'  CONTROL SCORED {key} {st}')
+                    print(f'  CONTROL SCORED GENUINE {key}')
         extra = '' if folder in ('matric', 'diploma') else f"  max raw p: matric {top['matric']:.2f}, poly {top['poly']:.2f}"
         print(f'{folder:<14} {tally}{extra}')
     return 1 if bad else 0

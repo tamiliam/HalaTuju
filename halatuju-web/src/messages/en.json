@@ -1558,7 +1558,9 @@
         "note": "Just a hint — the team always reviews your documents."
       },
       "genuineness": {
-        "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked."
+        "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked.",
+        "askTranscript": "This looks like a semester result slip or a student-portal page, not your full academic transcript. Please upload your full academic transcript. Nothing is blocked.",
+        "notResults": "This looks like an offer letter, not a results document. Please upload your full academic transcript. Nothing is blocked."
       },
       "icCheck": {
         "icNo": "IC No",
@@ -4081,7 +4083,7 @@
         "parent_ic": "IC (MyKad) — name and IC number clearly visible",
         "results_slip": "SPM results slip — the full official slip with your name clearly visible",
         "higher_stpm": "STPM results slip or certificate — the full official document with your name clearly visible",
-        "higher_matric": "Matriculation results slip — the full official slip with your name and CGPA clearly visible",
+        "higher_matric": "Matriculation academic transcript — the full official transcript with your name and CGPA clearly visible (a semester result slip is not accepted)",
         "higher_asasi": "Asasi (Foundation) transcript — the full official transcript with your name and CGPA clearly visible",
         "higher_diploma": "Diploma transcript — the full official transcript with your name and CGPA clearly visible",
         "semester_result": "latest college/university semester result slip — showing your current CGPA",
