@@ -157,6 +157,18 @@ def readiness(organisation, period_month, *, today=None):
                 f'Some {label} costs have no ringgit value yet (no exchange rate): '
                 + ', '.join(held) + '.', True))
 
+    # ⚠ THE OCTOBER 2026 FAULT. Every check above asks whether the ledger is consistent with
+    # ITSELF, and an empty ledger is perfectly consistent. This one asks the only question that
+    # catches a sync that never ran: the METER says the tenant was busy, so where is the money?
+    # See `metered_usage.metered_activity_without_cost`, including the diagnosis that was wrong.
+    busy = platform_cost.metered_activity_without_cost(organisation, period_month)
+    if busy:
+        problems.append(_problem(
+            'metered_without_cost',
+            f'The meter recorded {busy["events"]} billable call(s) for {organisation.name} in '
+            f'{label}, but the metered cost for the month is RM{busy["metered_myr"]:.2f}. Run '
+            f'the supplier syncs for {label} before issuing.', True))
+
     # ── The charge itself ────────────────────────────────────────────────────
     charge = platform_cost.charge_for(organisation, period_month)
     for b in charge['blocked']:

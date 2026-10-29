@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing — the busy-meter guard - 2026-10-29
+
+October's invoice preview showed a metered charge of RM0.00 for a month in which BrightPath ran OCR
+and Gemini every day, and nothing in `readiness` objected. Every check it had asks whether the cost
+ledger is consistent with ITSELF, and an empty ledger is perfectly consistent. The cause was that
+`sync_gcp_costs` had never been run for October.
+
+- **`metered_without_cost`**, a new `invoicing.readiness` problem: the meter recorded this tenant's
+  billable calls for the month, but the metered bucket of the cost ledger reads RM0.00. The message
+  names the call count and asks for the supplier syncs. OVERRIDABLE — a free-tier month is real, and
+  a super may issue past it with a written reason — but **the monthly job overrides nothing**, which
+  is the protection that matters: an unattended run is how an under-billed month reaches a customer.
+  It is this tenant's meter only: another organisation's calls, platform work with no organisation,
+  and another month's calls all leave the invoice alone. It stays silent when `fx_missing` already
+  owns the month, so one fault is reported once.
+- ⚠ **The first diagnosis was WRONG and is written down so it is not rebuilt.** Prepaid Gemini
+  credit was not hiding the cost from the BigQuery export: the owner's GCP console and AI Studio both
+  read RM34.95 for October, and the export covers prepay and postpay alike. There is no prepay logic.
+- **A bug the new tests found**, carried in from the old code: `tenant_shares` and `reconcile` set
+  `year = mon = 0` for a month they could not read, on the reasoning that year zero matches no row.
+  Django's `__year` lookup builds `datetime(0, 1, 1)` to bound the query and raises `ValueError:
+  year 0 is out of range`, so an unreadable month crashed instead of coming back empty. Both now
+  answer "nothing", as the comment always claimed.
+- **Moves only, split 3 of 3:** the meter half (`tenant_shares`, `reconcile`) left
+  `platform_cost.py` for the new `metered_usage.py`, which is where the new guard belongs — it is
+  the one question neither half could ask alone. Both are re-exported through the module.
+  `platform_cost.py` fell 664 → 566, UNDER the 600 standard, so its `oversize_files` entry was
+  REMOVED from the budget rather than lowered. Nothing was raised.
+- Tests: `test_metered_without_cost.py` (18, plus the re-export and bad-month subtests).
+
 ## Matric/Diploma Exact-read M1 - 2026-10-29
 
 Sprint M1 of `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a

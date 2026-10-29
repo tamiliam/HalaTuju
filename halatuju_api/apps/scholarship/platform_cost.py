@@ -31,7 +31,10 @@ from decimal import Decimal
 # patchable: `development_charge` looks `billable_kind` up as a global at call time.
 # (That guard counts the marker as a literal string, so it counts one written in prose too — this
 # comment deliberately describes the marker instead of spelling it.)
-from . import request_hours
+# The METER half — `tenant_shares` and `reconcile` — moved to `metered_usage.py` on 2026-10-29,
+# the same way and for the same reason, alongside the new `metered_activity_without_cost` guard
+# that reads the meter against this ledger. Re-exported on the same terms.
+from . import metered_usage, request_hours
 
 billable_kind = request_hours.billable_kind
 bug_reports_fixed = request_hours.bug_reports_fixed             # counted, never priced
@@ -40,6 +43,10 @@ request_id_from_module = request_hours.request_id_from_module
 request_module_tag = request_hours.request_module_tag
 unbilled_request_hours = request_hours.unbilled_request_hours
 worked_date = request_hours.worked_date
+
+metered_activity_without_cost = metered_usage.metered_activity_without_cost   # the busy-meter guard
+reconcile = metered_usage.reconcile
+tenant_shares = metered_usage.tenant_shares
 
 # ── The attribution rule ──────────────────────────────────────────────────────
 # A SKU is attributable when its volume moves with what tenants DO. Matched on the SKU
@@ -407,69 +414,6 @@ def adjustment_for(organisation, period_month):
             .first())
 
 
-def tenant_shares(period_month):
-    """Each tenant's share of the month's platform cost, and the rule that decided it.
-
-    Owner ruling, 2026-09-11: *"For everything apply the markup/margin as determined by the rate
-    that is set."* Applying a margin to a platform-wide cost means first deciding whose cost it
-    is, so the split has to be stated rather than assumed.
-
-    Two rules, because the two cost buckets genuinely differ:
-
-      * **metered** — split by each tenant's share of METERED EVENTS that month. Measured, not
-        invented: it is the same `UsageEvent` table the usage screen already counts. That is what
-        "metered" means, and a tenant that ran nothing pays nothing.
-      * **infrastructure** — split EQUALLY. It is a standing cost: the database, the mailboxes,
-        the phone number and the cron schedule are the same size whether a tenant is busy or
-        idle, so usage-weighting it would charge the active tenant for the idle one's readiness.
-
-    ⚠ **There is ONE tenant today, so both rules return 100% and neither has ever been exercised
-    in anger.** They are written down here, and returned in the payload, precisely so that the
-    day a second tenant arrives the split is a decision somebody reviews rather than a default
-    nobody noticed. Events with no organisation — platform-base work — are excluded from the
-    weighting; they belong to nobody and must not dilute anyone's share.
-
-    Returns ``{org_id: {'metered': Decimal, 'infrastructure': Decimal, 'rule': str}}``.
-    """
-    from django.db.models import Count
-
-    from apps.courses.models import PartnerOrganisation
-
-    from .models import UsageEvent
-
-    # `.tenants()`, never a bare `is_active` filter: this table is dual-role and holds referral
-    # partners alongside tenants. Ten rows on production, one tenant.
-    tenants = list(PartnerOrganisation.objects.tenants().order_by('id'))
-    if not tenants:
-        return {}
-    equal = Decimal('1') / Decimal(len(tenants))
-
-    try:
-        year, mon = (int(x) for x in str(period_month).split('-'))
-    except (ValueError, AttributeError):
-        year = mon = 0
-    counts = {
-        r['organisation_id']: r['n']
-        for r in (UsageEvent.objects
-                  .filter(created_at__year=year, created_at__month=mon,
-                          organisation__isnull=False)
-                  .values('organisation_id')
-                  .annotate(n=Count('id')))
-    }
-    total_events = sum(counts.values())
-
-    out = {}
-    for org in tenants:
-        if total_events:
-            metered = Decimal(counts.get(org.id, 0)) / Decimal(total_events)
-            rule = 'metered by share of usage events; infrastructure split equally'
-        else:
-            metered = equal
-            rule = ('no metered events this month, so both split equally')
-        out[org.id] = {'metered': metered, 'infrastructure': equal, 'rule': rule}
-    return out
-
-
 def charge_for(organisation, period_month):
     """What this organisation is charged for a month — and what could NOT be worked out.
 
@@ -618,47 +562,5 @@ def charge_for(organisation, period_month):
     }
 
 
-def reconcile(period_month):
-    """Compare what the METER recorded against the attributable slice of the real invoice.
-
-    This is the point of the whole ledger. The meter counts events; the invoice counts money.
-    If the two drift apart, either the meter is missing a seam or its unit prices are wrong —
-    and you want to learn that from a monthly reconciliation, not from a customer.
-
-    v1 reports the two figures side by side and the event counts behind them. It deliberately
-    does NOT compute an implied unit price: there is no price table yet (Sprint 13a decision,
-    "NO prices in v1"), and inventing one here would quietly become the thing people cite.
-    """
-    from django.db.models import Count
-
-    from .models import UsageEvent
-
-    totals = month_totals(period_month)
-    try:
-        year, mon = (int(x) for x in str(period_month).split('-'))
-    except (ValueError, AttributeError):
-        year = mon = 0
-
-    events = (UsageEvent.objects
-              .filter(created_at__year=year, created_at__month=mon)
-              .values('service')
-              .annotate(n=Count('id'))
-              .order_by('-n'))
-    counts = {e['service']: e['n'] for e in events}
-    total_events = sum(counts.values())
-    org_null = (UsageEvent.objects
-                .filter(created_at__year=year, created_at__month=mon,
-                        organisation__isnull=True)
-                .count())
-
-    return {
-        **totals,
-        'metered_events': total_events,
-        'metered_by_service': counts,
-        # Unattributed events are the meter's own blind spot. Platform-base work legitimately
-        # has no tenant, so this is a figure to READ, not a failure — but a rising share means
-        # a tenant is being under-charged, which is why it sits on the reconciliation.
-        'metered_org_null': org_null,
-        'metered_org_null_pct': (round(org_null * 100.0 / total_events, 1)
-                                 if total_events else 0.0),
-    }
+# `reconcile` moved to `metered_usage.py` on 2026-10-29 and is re-exported at the top of this
+# file, so `platform_cost.reconcile` still reaches it.
