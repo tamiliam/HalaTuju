@@ -80,6 +80,15 @@ class Invoice(models.Model):
         from decimal import Decimal
         return (Decimal(self.total_myr) - self.amount_paid()).quantize(Decimal('0.01'))
 
+    def has_open_payment_declaration(self):
+        """Has the tenant said it paid, with nobody having checked yet?
+
+        Walks the PREFETCHED rows rather than filtering, so a page of invoices does not fire one
+        query per row — the same reason `amount_paid` sums `self.receipts.all()`.
+        """
+        return any(d.confirmed_at is None and d.rejected_at is None
+                   for d in self.payment_declarations.all())
+
     @property
     def status(self):
         if self.voided_at:
@@ -90,7 +99,15 @@ class Invoice(models.Model):
         if self.total_myr > 0 and paid >= self.total_myr:
             return 'paid'
         if paid > 0:
+            # ⚠ MONEY BEATS A CLAIM. A receipt exists, so the honest word is `part_paid` even if
+            # the tenant has also declared the rest. The open declaration is still carried in the
+            # payload as its own object, so the screen can show both — but the STATUS says what
+            # the bank says, never what somebody told us about the bank.
             return 'part_paid'
+        if self.sent_at and self.has_open_payment_declaration():
+            # ⚠ NOT `paid`, and deliberately nowhere near it. Nothing has been verified: this is
+            # the tenant's word, awaiting a look at the statement. See `payment_declarations`.
+            return 'payment_declared'
         return 'sent' if self.sent_at else 'issued'
 
     def __str__(self):
@@ -159,3 +176,70 @@ class InvoiceReceipt(models.Model):
 
     def __str__(self):
         return f'{self.number} for {self.invoice_id}: RM{self.amount_myr}'
+
+
+class InvoicePaymentDeclaration(models.Model):
+    """The TENANT'S word that they have paid — a claim, not a receipt (2026-10-29).
+
+    ⚠ **A DECLARATION IS NOT MONEY AND MUST NEVER MINT A RECEIPT.** The owner read BrightPath's
+    own billing screen on 2026-10-29 and found no way for a customer to say "we have paid this".
+    The gap is real, and the obvious fix is the dangerous one: letting the tenant's claim create a
+    receipt would let the customer mark their own invoice paid. A receipt is still minted in
+    exactly one place, by a super, after looking at the bank — `invoicing.record_receipt`. This
+    row records who said what and when, so the owner has something to check against.
+
+    ⚠ **NO AMOUNT, AND NO SLIP.** The owner's choice, 2026-10-29: *"Date and bank reference
+    only."* The amount is not asked for because the invoice already states it and a tenant-typed
+    figure would only invite a dispute about which number is right; the owner reads the real
+    amount off the bank. No file is accepted either — a payment slip is a document to store,
+    scan, serve and eventually purge, and the bank reference already identifies the transfer.
+
+    One OPEN declaration at a time (the partial unique constraint). A tenant who declared and was
+    told the money never arrived may declare again with the right reference.
+    """
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE,
+                                related_name='payment_declarations')
+    paid_on = models.DateField(help_text='The date the tenant says the money left their account.')
+    reference = models.CharField(
+        max_length=120,
+        help_text='The bank reference the tenant gives. Required — the whole point of the row is '
+                  'to give the owner something to look up on the statement.')
+    declared_at = models.DateTimeField(auto_now_add=True)
+    declared_by_email = models.EmailField(blank=True, default='')
+    # ── Settled one way or the other ────────────────────────────────────────
+    # ⚠ Exactly one of these is set once the owner has looked. Both blank = still open, which is
+    # what the derived `payment_declared` status reads.
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    confirmed_by_email = models.EmailField(blank=True, default='')
+    receipt = models.ForeignKey(
+        InvoiceReceipt, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='declarations',
+        help_text='The receipt the owner raised on confirming. SET_NULL so a receipt that is '
+                  'ever removed cannot delete the tenant\'s claim with it.')
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejected_by_email = models.EmailField(blank=True, default='')
+    reject_reason = models.TextField(
+        blank=True, default='',
+        help_text='Why the owner could not find it. Shown to the tenant — being told "not found" '
+                  'with no reason is how a customer is left guessing at their own bank.')
+
+    class Meta:
+        db_table = 'invoice_payment_declarations'
+        ordering = ['invoice', '-declared_at', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['invoice'],
+                condition=models.Q(confirmed_at__isnull=True, rejected_at__isnull=True),
+                name='invoice_one_open_payment_declaration'),
+        ]
+        indexes = [
+            models.Index(fields=['invoice', 'declared_at'], name='invoice_decl_invoice_idx'),
+        ]
+
+    @property
+    def is_open(self):
+        return self.confirmed_at is None and self.rejected_at is None
+
+    def __str__(self):
+        state = 'open' if self.is_open else ('confirmed' if self.confirmed_at else 'rejected')
+        return f'declaration for {self.invoice_id} on {self.paid_on} ({state})'

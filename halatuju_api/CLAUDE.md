@@ -992,33 +992,36 @@ void, re-issue or re-number anything under scholarship billing without asking th
 `halatuju-api-01175-xll`, `halatuju-web-01009-x22`. Migrations `scholarship/0181` and `0182` were
 applied MIGRATE-FIRST and recorded — never re-apply that DDL.
 
-**BRANCH `feat/back-issue-invoices` — one commit AHEAD of origin/main, not pushed.** `ceea94e0`
-fixes a flaky onboarding test that turned the deploy gate red (`mount()` flushed one microtask
-waiting for an async profile; it now flushes a macrotask). ⚠ **The tenant-facing invoice status
-wording is ALREADY ON MAIN in `f8fe0698` but has NOT DEPLOYED** — its web build `d42bb043` died on
-that same flake. The next green web build carries both. Verify with `npm run bundle-budget` after
-merging; the line is 148 kB since TD-416.
+**The tenant-facing invoice status wording is LIVE** — web build for `cbe688e8` went green and
+`halatuju-web-01010-mr9` serves 100%. It had been stranded on main in `f8fe0698` behind a flaky
+onboarding test (`mount()` flushed one microtask waiting for an async profile; `ceea94e0` flushes a
+macrotask). Bundle line is 148 kB since TD-416; verify with `npm run bundle-budget`.
 
-**TWO PIECES OF WORK THE OWNER HAS APPROVED AND I HAD NOT STARTED:**
+**BOTH PIECES OF APPROVED WORK ARE NOW BUILT, ON `feat/back-issue-invoices`:**
 
-1. **The metered guard.** An invoice must REFUSE when the meter recorded tenant activity for the
-   month but the metered cost is zero or missing. ⚠ This is not hypothetical: October 2026 held
-   **no GCP rows at all** against a real RM58.85, of which RM48.34 was tenant-driven, on a month
-   that burned 5.36 million Gemini tokens and 2,160 document reads. September held RM3.25 against a
-   real RM14.18. Cause both times: `sync_gcp_costs` had not been run, or was run before the month
-   closed. `platform_cost.reconcile` already says *"if tenant-driven cost moves and metered events
-   do not, a billable seam is missing"* — nothing acted on it. Shape it like `supplier_missing` in
-   `invoicing.readiness`. ⚠ **An early diagnosis blamed prepaid Gemini credits for hiding cost and
-   was WRONG** — AI Studio and the GCP report both read RM34.95 for October, so the billing export
-   already covers prepay AND postpay. Do not rebuild that theory.
+1. **The metered guard — DONE** (`metered_without_cost` in `invoicing.readiness`, the new
+   `metered_usage.py`). An invoice refuses when the meter recorded this tenant's billable calls for
+   the month but the metered bucket of the cost ledger reads RM0.00. Overridable with a written
+   reason (a free-tier month is real); **the monthly job overrides nothing.** ⚠ **The early
+   diagnosis blaming prepaid Gemini credits was WRONG** — AI Studio and the GCP report both read
+   RM34.95 for October, so the export already covers prepay AND postpay. Do not rebuild that
+   theory; the cause was `sync_gcp_costs` not having been run. The split also found a real bug:
+   `tenant_shares` / `reconcile` crashed on an unreadable month (`datetime(0, 1, 1)`).
 
-2. **The tenant payment declaration** (its own sprint). BrightPath cannot tell us it has paid; only
-   a super can record a payment, and only with a bank reference. Owner's choice: **date + bank
-   reference only, NO slip upload** — it keeps their account details out of our storage and the
-   reference is what is matched against. ⚠ **A declaration must NOT mint a receipt.** The standing
-   rule on `InvoiceReceipt` is that a receipt means money actually moved and there is proof; the
-   flow is `Unpaid → Payment declared → owner confirms against the bank → Paid`, with the owner's
-   confirm issuing the real receipt and a Query action for when nothing arrived.
+2. **The tenant payment declaration — DONE** (migration `0184`, `payment_declarations.py`,
+   `AdminInvoiceDeclarationView`, `InvoicePaymentPanel.tsx`). `Unpaid → Payment declared → the owner
+   checks the bank → Paid`, with a reasoned rejection falling back to unpaid. **Date + bank
+   reference only, no amount and no slip** — an amount posted by hand is ignored. ⚠ **A declaration
+   does NOT mint a receipt**; the owner's confirm calls `invoicing.record_receipt`, which stays the
+   one place a receipt is raised. A receipt always outranks a claim, so money in plus a claim open
+   still reads `part_paid`.
+   - **NOT built, and the owner has not been asked:** any notification when a tenant declares. The
+     owner finds out by opening `/admin/billing`, where the chip reads "To check". If they want an
+     email, it is a small addition — `ADMIN_NOTIFY_EMAIL` is already wired for refusals.
+
+⚠ **Migration `0184` must be applied MIGRATE-FIRST, by hand, BEFORE the push.** The DDL, the RLS
+policy and the ledger row are in the migration's docstring. Deploying first is not survivable:
+`Invoice.status` reads the declarations for both audiences on every invoice the screen renders.
 
 **Owner still to do:** record October's 149.5 billable hours (`/admin/billing` → *Finished work not
 yet billed*); obtain the October Supabase, Twilio and Workspace bills; convert the held Anthropic

@@ -69,7 +69,7 @@ from .billing import (
     UsageEvent,
 )
 from .invoices import (
-    Invoice, InvoiceLine, InvoiceReceipt,
+    Invoice, InvoiceLine, InvoicePaymentDeclaration, InvoiceReceipt,
 )
 from .comms_templates import (
     PartnerEmailLog, PartnerEmailTemplate, SponsorEmailLog, SponsorEmailTemplate,

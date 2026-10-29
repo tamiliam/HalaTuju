@@ -1,6 +1,7 @@
 import {
-  canRecordPayment, canSend, canVoid, defaultIssueDate, formatDay, issuableMonths,
-  issueDateProblem, issueMode, orderedInvoices, settingsHref, shiftMonth,
+  canDeclarePayment, canRecordPayment, canSend, canVoid, defaultIssueDate, formatDay,
+  issuableMonths, issueDateProblem, issueMode, lastRejectedDeclaration, openDeclaration,
+  orderedInvoices, settingsHref, shiftMonth,
   orderedProblems, splitEmails, statusChip, todayIso,
 } from '@/lib/invoices'
 import type { InvoiceProblem, InvoiceRow } from '@/lib/admin-api'
@@ -12,6 +13,7 @@ function inv(over: Partial<InvoiceRow> = {}): InvoiceRow {
     currency: 'MYR', subtotal_myr: '856.75', discount_pct: '0.00', discount_myr: '0.00',
     discount_reason: '', total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
     sent_at: null, voided_at: null, void_reason: '', bill_to_name: 'BP', lines: [], receipts: [],
+    payment_declarations: [],
     ...over,
   }
 }
@@ -67,6 +69,8 @@ describe('what each invoice offers', () => {
       expect(statusChip(s).key).toBe(`admin.billing.invoice.status.${s}`)
       expect(statusChip(s).className).toMatch(/^bg-/)
     }
+    // `payment_declared` has no same-named key: both audiences get their own sentence, below.
+    expect(statusChip('payment_declared').className).toMatch(/^bg-/)
   })
 
   describe('the word depends on who is reading it (owner, 2026-10-29)', () => {
@@ -101,6 +105,22 @@ describe('what each invoice offers', () => {
       const late = { ...asOrg, today: '2026-12-01' }
       expect(statusChip('paid', late).key).toBe('admin.billing.invoice.status.paid')
       expect(statusChip('part_paid', late).key).toBe('admin.billing.invoice.status.part_paid')
+    })
+
+    it('gives the owner a job and the organisation a wait when a payment is declared', () => {
+      // ⚠ TWO DIFFERENT SENTENCES. The owner has something to DO; the tenant has something to
+      // WAIT for. A shared word would leave the owner's queue invisible.
+      expect(statusChip('payment_declared', asOrg).key)
+        .toBe('admin.billing.invoice.status.beingChecked')
+      expect(statusChip('payment_declared', { ...asOrg, forOwner: true }).key)
+        .toBe('admin.billing.invoice.status.toCheck')
+    })
+
+    it('never says Overdue while a declared payment is being checked', () => {
+      // The customer has done their part. Turning their row red while we check our own bank
+      // would be blaming them for our queue.
+      expect(statusChip('payment_declared', { ...asOrg, today: '2026-12-01' }).key)
+        .toBe('admin.billing.invoice.status.beingChecked')
     })
 
     it('says Cancelled to the organisation where the owner reads Void', () => {
@@ -233,5 +253,45 @@ describe('the months offered never need a closed-year date', () => {
 
   it('offers only December in early January, because nothing older can be dated yet', () => {
     expect(issuableMonths('2027-01-20', 12)).toEqual(['2026-12'])
+  })
+})
+
+describe('payment declarations (2026-10-29)', () => {
+  const open = {
+    id: 3, paid_on: '2026-10-20', reference: 'MBB-77', declared_at: '2026-10-21T02:00:00Z',
+    declared_by_email: 'oa@x.com', state: 'open' as const, reject_reason: '', receipt_number: '',
+  }
+  const rejected = { ...open, id: 2, state: 'rejected' as const, reject_reason: 'No credit.' }
+  const confirmed = { ...open, id: 1, state: 'confirmed' as const, receipt_number: 'RCP-2026-0001' }
+  const sent = { sent_at: '2026-10-15T02:00:00Z' }
+
+  it('finds the one open claim and ignores the settled ones', () => {
+    expect(openDeclaration(inv({ ...sent, payment_declarations: [open, rejected] }))?.id).toBe(3)
+    expect(openDeclaration(inv({ ...sent, payment_declarations: [rejected, confirmed] })))
+      .toBeUndefined()
+    expect(openDeclaration(inv())).toBeUndefined()
+  })
+
+  it('offers the form on a sent invoice that still owes something', () => {
+    expect(canDeclarePayment(inv(sent))).toBe(true)
+  })
+
+  it('does not offer the form where the server would refuse it', () => {
+    // All four refusals the server raises: unsent, void, nothing owed, a claim already waiting.
+    expect(canDeclarePayment(inv())).toBe(false)
+    expect(canDeclarePayment(inv({ ...sent, status: 'void' }))).toBe(false)
+    expect(canDeclarePayment(inv({ ...sent, balance_myr: '0.00' }))).toBe(false)
+    expect(canDeclarePayment(inv({ ...sent, payment_declarations: [open] }))).toBe(false)
+  })
+
+  it('shows a rejection only while nothing newer has replaced it', () => {
+    // ⚠ A stale "we could not find it" is worse than silence: it tells a customer who has since
+    // declared again, or already paid, that they are still in trouble.
+    expect(lastRejectedDeclaration(inv({ ...sent, payment_declarations: [rejected] }))?.id).toBe(2)
+    expect(lastRejectedDeclaration(inv({ ...sent, payment_declarations: [open, rejected] })))
+      .toBeUndefined()
+    expect(lastRejectedDeclaration(inv({ ...sent, payment_declarations: [confirmed, rejected] })))
+      .toBeUndefined()
+    expect(lastRejectedDeclaration(inv())).toBeUndefined()
   })
 })

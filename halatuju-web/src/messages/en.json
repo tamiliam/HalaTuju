@@ -5437,7 +5437,9 @@
           "void": "Void",
           "unpaid": "Unpaid",
           "overdue": "Overdue",
-          "cancelled": "Cancelled"
+          "cancelled": "Cancelled",
+          "toCheck": "To check",
+          "beingChecked": "Payment being checked"
         },
         "pdf": "PDF",
         "discountLine": "Discount ({pct}%)",
@@ -5471,6 +5473,21 @@
         "fix": {
           "issuer_incomplete": "Fill in your own billing details",
           "bill_to_incomplete": "Fill in this organisation’s billing details"
+        },
+        "declare": {
+          "title": "Tell us you have paid",
+          "help": "Enter the date you paid and your bank reference. We will check it against our account and raise your receipt.",
+          "paidOn": "Date paid (YYYY-MM-DD)",
+          "reference": "Bank reference",
+          "submit": "We have paid this",
+          "waiting": "You told us this was paid on {date}, reference {reference}. We are checking it against our account and will send your receipt.",
+          "rejectedLine": "We could not match the payment you declared for {date}: {reason}. Please check the reference and tell us again.",
+          "checkTitle": "Check the declared payment",
+          "checkHelp": "The organisation says it paid on {date}, reference {reference}. {amount} is outstanding. Enter what actually reached the account.",
+          "confirm": "Confirm and raise receipt",
+          "notFound": "I cannot find it",
+          "reason": "What to tell the organisation",
+          "notFoundConfirm": "Tell them it was not found"
         }
       },
       "usageTitle": "Usage this month",

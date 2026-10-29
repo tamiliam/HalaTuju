@@ -26,6 +26,27 @@ def _invoice_money(v):
                               quantize=False, coerce=False)
 
 
+def _declaration(d):
+    """ONE payment declaration, for either audience. An allowlist, like its invoice.
+
+    `state` is derived and sent as a word rather than three timestamps, because every reader of
+    this payload asks the same question — open, confirmed or not matched? — and three nullable
+    stamps is an invitation to answer it three different ways on three screens.
+    """
+    return {
+        'id': d.id,
+        'paid_on': d.paid_on.isoformat(),
+        'reference': d.reference,
+        'declared_at': d.declared_at.isoformat() if d.declared_at else None,
+        'declared_by_email': d.declared_by_email,
+        'state': 'open' if d.is_open else ('confirmed' if d.confirmed_at else 'rejected'),
+        'reject_reason': d.reject_reason,
+        # The receipt the owner raised on confirming. The NUMBER, not the id: it is what both
+        # sides quote at each other, and the receipt row itself is already in `receipts`.
+        'receipt_number': d.receipt.number if d.receipt_id else '',
+    }
+
+
 def _invoice_payload(inv, *, for_super):
     """ONE invoice as the API returns it. An allowlist, typed out by hand.
 
@@ -76,6 +97,11 @@ def _invoice_payload(inv, *, for_super):
             'method': r.method,
             'reference': r.reference,
         } for r in receipts],
+        # ⚠ BOTH AUDIENCES SEE THESE, and that is the point. The tenant needs to know its claim
+        # was received and, if it was not matched, why; the owner needs something to check against
+        # the statement. Nothing here is money — see `payment_declarations` for why a claim must
+        # never look like a receipt. No amount is carried because none is ever asked for.
+        'payment_declarations': [_declaration(d) for d in inv.payment_declarations.all()],
     }
     if for_super:
         out.update({
@@ -117,8 +143,11 @@ class _InvoiceBase(_AdminBase):
         tenant's screen before then would be sending it by a second door.
         """
         from ..models import Invoice
+        # ⚠ `payment_declarations` IS PREFETCHED BECAUSE `Invoice.status` READS IT. Without it,
+        # rendering a list of invoices fires one extra query per row just to work out the chip.
+        # `receipt` comes along so `_declaration` can print its number without another query each.
         qs = Invoice.objects.select_related('organisation', 'replaces').prefetch_related(  # org-fence: narrowed below for every non-super
-            'lines', 'receipts')
+            'lines', 'receipts', 'payment_declarations__receipt')
         if is_super:
             return qs
         if not admin.owning_organisation_id:

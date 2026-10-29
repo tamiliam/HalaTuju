@@ -492,6 +492,11 @@ class TestFenceCoverageCompleteness(TestCase):
         '_InvoiceBase': 'invoice fence base (own org + sent only for org_admin)',
         'AdminInvoicesView': 'invoice-fenced (org_admin own sent invoices; super all + issue)',
         'AdminInvoiceActionView': 'super-only (send / void / record receipt)',
+        # The ONE endpoint in this space an org_admin may WRITE through, and only to declare that
+        # it has paid its own sent invoice. Fenced by `_visible_invoices` exactly like the two
+        # above; confirm and reject are super-only inside the same view.
+        'AdminInvoiceDeclarationView':
+            'invoice-fenced (org_admin declares on its own sent invoice; super confirms/rejects)',
         'AdminInvoicePdfView': 'invoice-fenced (org_admin own sent invoice or its receipt)',
         'AdminInvoiceIssuerView': 'super-only (who is billing: one platform-wide row)',
         # The ONE invoice surface a tenant may write. Not what it is billed FOR (build hours,

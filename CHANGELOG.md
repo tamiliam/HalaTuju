@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing — the tenant can say it has paid (migration 0184) - 2026-10-29
+
+The owner signed in as BrightPath's org_admin, read the billing page and said: *"there doesn't seem
+to be a way for the client to enter anything to claim settlement."* There was not. A customer who
+had paid could only wait for somebody to notice.
+
+- **`Unpaid → Payment declared → the owner checks the bank → Paid`.** New table
+  `invoice_payment_declarations` and `payment_declarations.py`: the tenant gives a DATE and a BANK
+  REFERENCE, the owner confirms (which raises the receipt) or says it could not be matched, with a
+  reason the tenant is shown. A rejected claim falls back to unpaid and may be declared again.
+- ⚠ **A DECLARATION IS NOT MONEY AND MINTS NO RECEIPT.** If a tenant's claim could raise a receipt,
+  a customer could mark their own invoice paid. A receipt is still raised in exactly one place,
+  `invoicing.record_receipt`, by a super, after looking at the statement. Every tenant-side test
+  also asserts no receipt exists and the balance has not moved.
+- **Date and bank reference only** — the owner's choice, asked and answered. No amount (the invoice
+  states it; a tenant-typed figure only invites an argument about which number is right) and no
+  payment slip (a file is a thing to store, scan, serve and purge; the reference identifies the
+  transfer). An amount sent by hand to the endpoint is ignored, and a test says so.
+- **`payment_declared` is a derived status**, nowhere near `paid`, and a receipt always outranks it:
+  with money in and a claim open the invoice still reads `part_paid`, because the status says what
+  the bank says. The chip gives the owner a job ("To check") and the tenant a wait ("Payment being
+  checked"), and never turns Overdue while we are the ones checking.
+- **Its own door**, `AdminInvoiceDeclarationView`: declaring is the TENANT'S act and the existing
+  action view is super-only. A super may not declare for a customer; an org_admin may not confirm
+  its own claim. The declaration is reached THROUGH the fenced invoice, never by its own id, so
+  September's claim cannot be confirmed against August's bill.
+- **One open claim at a time**, held by a PARTIAL UNIQUE INDEX rather than by the read before it:
+  two org_admins pressing the button together both pass the read and one must lose the write.
+- ⚠ **Migrate first, by hand** — scholarship `0184_invoice_payment_declaration` (DDL, RLS and the
+  ledger row in its docstring). Deploying first is NOT survivable: `Invoice.status` reads the
+  declarations on every invoice the billing screen renders, for both audiences.
+- Tests: `test_payment_declarations.py` (31 + 17 subtests), `InvoicePaymentPanel.test.tsx` (12),
+  and the declaration helpers in `invoices.test.ts`.
+
 ## Billing — the busy-meter guard - 2026-10-29
 
 October's invoice preview showed a metered charge of RM0.00 for a month in which BrightPath ran OCR

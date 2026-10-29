@@ -55,6 +55,9 @@ from .invoices import (
     _InvoiceBase, _invoice_money, _invoice_payload, AdminInvoiceActionView, AdminInvoicePdfView,
     AdminInvoiceIssuerView, AdminInvoicesView, AdminOrgBillingDetailsView,
 )
+from .invoice_declarations import (
+    AdminInvoiceDeclarationView,
+)
 from .payments import (
     _PAYMENTS_READ, _PAYMENTS_WRITE, _PaymentsBase, _payment_item_dict,
     _payment_run_detail, _payment_run_summary, _run_programme, _sig,

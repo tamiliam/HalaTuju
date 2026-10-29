@@ -164,11 +164,13 @@ export type {
 // organisation's own settings). They were one call until 2026-10-28.
 export {
   getInvoices, issueInvoice, sendInvoice, voidInvoice, recordInvoiceReceipt, fetchBillingPdf,
+  declarePayment, confirmPaymentDeclaration, rejectPaymentDeclaration,
   getInvoiceIssuer, saveInvoiceIssuer, getOrgBillingDetails, saveOrgBillingDetails,
   getBillingRates, setBillingRate, recordBuildHours,
 } from './admin-api/invoices'
 export type {
   InvoiceStatus, InvoiceLineRow, InvoiceReceiptRow, InvoiceRow, InvoiceProblem, InvoiceReadiness,
+  InvoicePaymentDeclarationRow,
   InvoicesPayload, InvoiceIssuerSettings, InvoiceIssuerPayload, TenantBillingDetails,
   BillingRateRow,
 } from './admin-api/invoices'

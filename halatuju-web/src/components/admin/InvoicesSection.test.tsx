@@ -30,7 +30,7 @@ function inv(over: Partial<api.InvoiceRow> = {}): api.InvoiceRow {
     sent_at: null, voided_at: null, void_reason: '', bill_to_name: 'BrightPath Bursary',
     lines: [{ position: 1, category: 'development', description: 'Payments module', quantity: '10.0',
       unit_amount_myr: '57.50', amount_myr: '575.00' }],
-    receipts: [], bill_to_emails: ['finance@bp.example'], sent_to: [],
+    receipts: [], payment_declarations: [], bill_to_emails: ['finance@bp.example'], sent_to: [],
     ...over,
   }
 }

@@ -13,10 +13,13 @@
  * darken the usage half of the page, which an org_admin is entitled to read.
  */
 import { useCallback, useEffect, useState } from 'react'
+import InvoicePaymentPanel from '@/components/admin/InvoicePaymentPanel'
+import type { InvoicePaymentPanelProps } from '@/components/admin/InvoicePaymentPanel'
 import InvoiceToIssue from '@/components/admin/InvoiceToIssue'
 import TableFrame from '@/components/admin/TableFrame'
 import {
-  fetchBillingPdf, getInvoices, issueInvoice, recordInvoiceReceipt, sendInvoice, voidInvoice,
+  confirmPaymentDeclaration, declarePayment, fetchBillingPdf, getInvoices, issueInvoice,
+  recordInvoiceReceipt, rejectPaymentDeclaration, sendInvoice, voidInvoice,
   type InvoiceProblem, type InvoiceRow, type InvoicesPayload,
 } from '@/lib/admin-api'
 import { formatMyr } from '@/lib/billingCosts'
@@ -27,6 +30,13 @@ import {
 
 type T = (k: string, vars?: Record<string, string>) => string
 type Tab = 'toissue' | 'issued'
+
+/** The three payment-declaration callbacks, carried as ONE prop.
+ *
+ * They travel four components deep (section → table → row group → detail → panel), and three
+ * separate props at each stop is forty lines of plumbing that says nothing. Grouped, the chain
+ * reads as "pass the declaration actions down", which is what it is. */
+type DeclActions = Pick<InvoicePaymentPanelProps, 'onDeclare' | 'onConfirm' | 'onReject'>
 
 const INPUT = 'mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm text-ground-900'
 const PRIMARY = 'rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50'
@@ -67,7 +77,7 @@ function Chip({ status, t, isSuper, dueOn }: {
 
 // ── Issued ───────────────────────────────────────────────────────────────────────────────────
 
-function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt }: {
+function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt, decl }: {
   inv: InvoiceRow
   isSuper: boolean
   busy: boolean
@@ -76,6 +86,7 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
   onSend: (inv: InvoiceRow) => void
   onVoid: (inv: InvoiceRow, reason: string) => void
   onReceipt: (inv: InvoiceRow, data: { received_on: string; amount_myr: string; method: string; reference: string }) => void
+  decl: DeclActions
 }) {
   const [receivedOn, setReceivedOn] = useState(todayIso())
   const [amount, setAmount] = useState(inv.balance_myr)
@@ -157,6 +168,10 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
             </ul>
           )}
         </div>
+
+        {/* ⚠ ABOVE Record payment and in its own block, never merged with it. A claim is not
+            money; putting the two forms side by side is how they would come to look alike. */}
+        <InvoicePaymentPanel inv={inv} isSuper={isSuper} busy={busy} t={t} {...decl} />
 
         {isSuper && canRecordPayment(inv) && (
           <div>
@@ -251,12 +266,13 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
   )
 }
 
-function InvoiceTable({ invoices, isSuper, busy, t, token, onSend, onVoid, onReceipt }: {
+function InvoiceTable({ invoices, isSuper, busy, t, token, onSend, onVoid, onReceipt, decl }: {
   invoices: InvoiceRow[]
   isSuper: boolean
   busy: boolean
   t: T
   token: string
+  decl: DeclActions
   onSend: (inv: InvoiceRow) => void
   onVoid: (inv: InvoiceRow, reason: string) => void
   onReceipt: (inv: InvoiceRow, data: { received_on: string; amount_myr: string; method: string; reference: string }) => void
@@ -308,7 +324,7 @@ function InvoiceTable({ invoices, isSuper, busy, t, token, onSend, onVoid, onRec
             {open === inv.id && (
               <div className="mt-3 border-t pt-3">
                 <InvoiceDetail inv={inv} isSuper={isSuper} busy={busy} t={t} token={token}
-                  onSend={onSend} onVoid={onVoid} onReceipt={onReceipt} />
+                  onSend={onSend} onVoid={onVoid} onReceipt={onReceipt} decl={decl} />
               </div>
             )}
           </div>
@@ -333,7 +349,7 @@ function InvoiceTable({ invoices, isSuper, busy, t, token, onSend, onVoid, onRec
           {rows.map((inv) => (
             <InvoiceRowGroup key={inv.id} inv={inv} cols={cols} isOpen={open === inv.id}
               onToggle={() => setOpen((o) => (o === inv.id ? null : inv.id))}
-              isSuper={isSuper} busy={busy} t={t} token={token}
+              isSuper={isSuper} busy={busy} t={t} token={token} decl={decl}
               onSend={onSend} onVoid={onVoid} onReceipt={onReceipt} />
           ))}
         </tbody>
@@ -343,7 +359,7 @@ function InvoiceTable({ invoices, isSuper, busy, t, token, onSend, onVoid, onRec
   )
 }
 
-function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token, onSend, onVoid, onReceipt }: {
+function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token, onSend, onVoid, onReceipt, decl }: {
   inv: InvoiceRow
   cols: number
   isOpen: boolean
@@ -352,6 +368,7 @@ function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token,
   busy: boolean
   t: T
   token: string
+  decl: DeclActions
   onSend: (inv: InvoiceRow) => void
   onVoid: (inv: InvoiceRow, reason: string) => void
   onReceipt: (inv: InvoiceRow, data: { received_on: string; amount_myr: string; method: string; reference: string }) => void
@@ -382,7 +399,7 @@ function InvoiceRowGroup({ inv, cols, isOpen, onToggle, isSuper, busy, t, token,
         <tr className="border-b bg-ground-50/60">
           <td colSpan={cols} className="px-4 py-3">
             <InvoiceDetail inv={inv} isSuper={isSuper} busy={busy} t={t} token={token}
-              onSend={onSend} onVoid={onVoid} onReceipt={onReceipt} />
+              onSend={onSend} onVoid={onVoid} onReceipt={onReceipt} decl={decl} />
           </td>
         </tr>
       )}
@@ -425,6 +442,14 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
       .finally(() => setBusy(false))
   }, [load])
 
+  // Built once per render and handed down as one prop. The server decides who may do which of
+  // them: a super calling `declare` is a 403, and an org_admin calling the other two likewise.
+  const decl: DeclActions = {
+    onDeclare: (inv, d) => act(declarePayment(inv.id, d, { token })),
+    onConfirm: (inv, d) => act(confirmPaymentDeclaration(inv.id, d, { token })),
+    onReject: (inv, d) => act(rejectPaymentDeclaration(inv.id, d, { token })),
+  }
+
   if (!data) return error ? <p className="mt-6 text-sm text-critical-600" role="alert">{error}</p> : null
 
   const invoices = data.invoices || []
@@ -438,7 +463,7 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
         <div className="mt-3 space-y-3">
           <p className="text-sm text-ground-500">{t('admin.billing.invoice.tenantLead')}</p>
           <InvoiceTable invoices={invoices} isSuper={false} busy={busy} t={t} token={token}
-            onSend={() => {}} onVoid={() => {}} onReceipt={() => {}} />
+            decl={decl} onSend={() => {}} onVoid={() => {}} onReceipt={() => {}} />
         </div>
       ) : (
         <>
@@ -471,6 +496,7 @@ export default function InvoicesSection({ token, isSuper, t }: { token: string; 
           {tab === 'issued' && (
             <div className="mt-4">
               <InvoiceTable invoices={invoices} isSuper busy={busy} t={t} token={token}
+                decl={decl}
                 onSend={(inv) => act(sendInvoice(inv.id, { token }))}
                 onVoid={(inv, reason) => act(voidInvoice(inv.id, reason, { token }))}
                 onReceipt={(inv, d) => act(recordInvoiceReceipt(inv.id, d, { token }))} />

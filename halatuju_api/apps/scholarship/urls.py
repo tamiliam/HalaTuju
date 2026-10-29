@@ -145,7 +145,7 @@ from .views_admin import (
     AdminBillingUsageView,
     AdminOrgBuildHoursView,
     AdminPlatformCostsView,
-    AdminInvoicesView, AdminInvoiceActionView, AdminInvoicePdfView,
+    AdminInvoicesView, AdminInvoiceActionView, AdminInvoiceDeclarationView, AdminInvoicePdfView,
     AdminInvoiceIssuerView, AdminOrgBillingDetailsView,
     AdminOrgRequestListView,
     AdminOrgRequestCountView,
@@ -314,6 +314,11 @@ urlpatterns = [
     # The PDF routes sit ABOVE the action route, which would otherwise swallow '/pdf/' as an action.
     path('admin/scholarship/billing/invoices/<int:pk>/pdf/', AdminInvoicePdfView.as_view(), {'kind': 'invoice'}),
     path('admin/scholarship/billing/receipts/<int:pk>/pdf/', AdminInvoicePdfView.as_view(), {'kind': 'receipt'}),
+    # ⚠ ALSO ABOVE the action route, for the same reason as the PDFs: a bare '<str:action>' would
+    # swallow 'declaration' and look for an action by that name. It is a SEPARATE view because
+    # declaring is the TENANT'S act and the action view is super-only — see its docstring.
+    path('admin/scholarship/billing/invoices/<int:pk>/declaration/<str:action>/',
+         AdminInvoiceDeclarationView.as_view()),
     path('admin/scholarship/billing/invoices/<int:pk>/<str:action>/', AdminInvoiceActionView.as_view()),
     # Who is BILLING: platform-wide, super-only, and it sits with the rates on the Platform
     # menu. Who is BILLED moved the other way, to that organisation's own settings page, and

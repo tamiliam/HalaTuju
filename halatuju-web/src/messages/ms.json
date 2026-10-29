@@ -5437,7 +5437,9 @@
           "void": "Batal",
           "unpaid": "Belum dibayar",
           "overdue": "Tertunggak",
-          "cancelled": "Dibatalkan"
+          "cancelled": "Dibatalkan",
+          "toCheck": "Perlu diperiksa",
+          "beingChecked": "Pembayaran sedang diperiksa"
         },
         "pdf": "PDF",
         "discountLine": "Diskaun ({pct}%)",
@@ -5471,6 +5473,21 @@
         "fix": {
           "issuer_incomplete": "Isi butiran pengebilan anda sendiri",
           "bill_to_incomplete": "Isi butiran pengebilan organisasi ini"
+        },
+        "declare": {
+          "title": "Beritahu kami anda telah membayar",
+          "help": "Masukkan tarikh anda membayar dan rujukan bank anda. Kami akan memeriksanya dengan akaun kami dan mengeluarkan resit anda.",
+          "paidOn": "Tarikh dibayar (YYYY-MM-DD)",
+          "reference": "Rujukan bank",
+          "submit": "Kami telah membayar ini",
+          "waiting": "Anda memberitahu kami ini dibayar pada {date}, rujukan {reference}. Kami sedang memeriksanya dengan akaun kami dan akan menghantar resit anda.",
+          "rejectedLine": "Kami tidak dapat memadankan pembayaran yang anda nyatakan bagi {date}: {reason}. Sila periksa rujukan dan beritahu kami semula.",
+          "checkTitle": "Periksa pembayaran yang dinyatakan",
+          "checkHelp": "Organisasi menyatakan ia telah membayar pada {date}, rujukan {reference}. {amount} masih tertunggak. Masukkan jumlah yang benar-benar masuk ke akaun.",
+          "confirm": "Sahkan dan keluarkan resit",
+          "notFound": "Saya tidak menemuinya",
+          "reason": "Apa yang hendak diberitahu kepada organisasi",
+          "notFoundConfirm": "Beritahu mereka ia tidak ditemui"
         }
       },
       "usageTitle": "Penggunaan bulan ini",

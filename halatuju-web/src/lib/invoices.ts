@@ -29,6 +29,17 @@ export function statusChip(
       return { key: 'admin.billing.invoice.status.paid', className: 'bg-positive-100 text-positive-700' }
     case 'part_paid':
       return { key: 'admin.billing.invoice.status.part_paid', className: 'bg-caution-100 text-caution-700' }
+    case 'payment_declared':
+      // ⚠ TWO DIFFERENT SENTENCES, not one word dressed twice. The owner has something to DO
+      // ("Check the bank"); the tenant has something to WAIT for ("Payment being checked"). A
+      // shared "Declared" would leave the owner's queue invisible and the tenant unsure anyone
+      // had noticed — which is the whole complaint this feature answers.
+      return {
+        key: owner
+          ? 'admin.billing.invoice.status.toCheck'
+          : 'admin.billing.invoice.status.beingChecked',
+        className: 'bg-caution-100 text-caution-700',
+      }
     case 'sent':
       if (owner) {
         return { key: 'admin.billing.invoice.status.sent', className: 'bg-info-100 text-info-700' }
@@ -61,6 +72,29 @@ export function canSend(inv: InvoiceRow): boolean {
  *  month owes nothing, so it offers no payment button — there is nothing to receive. */
 export function canRecordPayment(inv: InvoiceRow): boolean {
   return inv.status !== 'void' && Number(inv.balance_myr) > 0
+}
+
+/** The tenant's open claim on this invoice, or undefined. The screen shows at most one. */
+export function openDeclaration(inv: InvoiceRow) {
+  return (inv.payment_declarations || []).find((d) => d.state === 'open')
+}
+
+/** The last claim the owner could not match, if it is the most recent thing that happened.
+ *
+ * ⚠ Only shown while nothing newer has replaced it: once the tenant declares again, or the money
+ * is in, a stale "we could not find it" is worse than silence. */
+export function lastRejectedDeclaration(inv: InvoiceRow) {
+  const list = inv.payment_declarations || []
+  if (list.length === 0 || openDeclaration(inv)) return undefined
+  return list[0].state === 'rejected' ? list[0] : undefined
+}
+
+/** Can the TENANT say it has paid? Only its own sent invoice, with something still owed and no
+ *  claim already waiting. The server refuses all four cases; the form follows the same rule so it
+ *  is never offered only to fail. */
+export function canDeclarePayment(inv: InvoiceRow): boolean {
+  return inv.status !== 'void' && inv.sent_at !== null
+    && Number(inv.balance_myr) > 0 && !openDeclaration(inv)
 }
 
 /** Void is refused server-side once money has arrived; the button follows the same rule so it is

@@ -9,8 +9,13 @@ import type { ApiOptions } from './client'
 // ⚠ Every money field is a STRING (the server never sends a float), and a string is truthy at
 // '0.00' — compare through Number(), never `if (row.total_myr)`.
 
-/** issued → sent → part_paid → paid, or void. Derived server-side from the receipts, never stored. */
-export type InvoiceStatus = 'issued' | 'sent' | 'part_paid' | 'paid' | 'void'
+/** issued → sent → payment_declared → part_paid → paid, or void. Derived server-side, never stored.
+ *
+ * ⚠ `payment_declared` is the TENANT'S WORD, not money. Nothing has been verified: the customer has
+ * said it paid and nobody has looked at the bank yet. It sits nowhere near `paid` on purpose, and a
+ * receipt always outranks it — see `has_open_payment_declaration` on the server. */
+export type InvoiceStatus =
+  'issued' | 'sent' | 'payment_declared' | 'part_paid' | 'paid' | 'void'
 
 export interface InvoiceLineRow {
   position: number
@@ -40,6 +45,25 @@ export interface InvoiceReceiptRow {
   reference: string
 }
 
+/** The tenant's claim that it has paid — carried to BOTH audiences, and carrying no money.
+ *
+ * ⚠ There is no amount, by the owner's choice: the invoice already states it, and a tenant-typed
+ * figure would only invite an argument about which number is right. No slip either. */
+export interface InvoicePaymentDeclarationRow {
+  id: number
+  /** The date the tenant says the money left their account. */
+  paid_on: string
+  reference: string
+  declared_at: string | null
+  declared_by_email: string
+  /** 'open' — nobody has looked yet; 'confirmed' — a receipt was raised; 'rejected' — not found. */
+  state: 'open' | 'confirmed' | 'rejected'
+  /** Why the owner could not match it. Shown to the tenant; empty unless rejected. */
+  reject_reason: string
+  /** The receipt raised on confirming, by number. Empty until then. */
+  receipt_number: string
+}
+
 export interface InvoiceRow {
   id: number
   number: string
@@ -63,6 +87,8 @@ export interface InvoiceRow {
   bill_to_name: string
   lines: InvoiceLineRow[]
   receipts: InvoiceReceiptRow[]
+  /** Newest first. Older invoices, and any issued before 2026-10-29, have none. */
+  payment_declarations: InvoicePaymentDeclarationRow[]
   // ── SUPER ONLY — absent from an org_admin payload, not blanked ──
   issued_by_email?: string
   override_reason?: string
@@ -132,6 +158,40 @@ export async function recordInvoiceReceipt(
   options?: ApiOptions
 ): Promise<InvoiceRow> {
   return adminMutate(`/api/v1/admin/scholarship/billing/invoices/${id}/receipt/`, 'POST', data, options)
+}
+
+// ── Payment declarations (2026-10-29) ───────────────────────────────────────────────────────
+// ⚠ A SEPARATE ROUTE from the invoice actions, because `declare` is the TENANT'S act and the
+// action route is super-only. See the server's `AdminInvoiceDeclarationView` docstring.
+
+/** THE TENANT says it has paid. Date and bank reference only — no amount, no slip. Creates no
+ *  receipt and moves no money: the owner still has to look at the bank. */
+export async function declarePayment(
+  id: number, data: { paid_on: string; reference: string }, options?: ApiOptions
+): Promise<InvoiceRow> {
+  return adminMutate(
+    `/api/v1/admin/scholarship/billing/invoices/${id}/declaration/declare/`, 'POST', data, options)
+}
+
+/** THE OWNER found the money: raises the receipt and closes the claim. `amount_myr` is required
+ *  and comes from the bank statement; `received_on` and `reference` default to what the tenant
+ *  declared, and either may be corrected here. */
+export async function confirmPaymentDeclaration(
+  id: number,
+  data: { declaration_id: number; amount_myr: string; received_on?: string; reference?: string;
+          method?: string; note?: string },
+  options?: ApiOptions
+): Promise<InvoiceRow> {
+  return adminMutate(
+    `/api/v1/admin/scholarship/billing/invoices/${id}/declaration/confirm/`, 'POST', data, options)
+}
+
+/** THE OWNER could not match it. The reason is required and is shown to the tenant. */
+export async function rejectPaymentDeclaration(
+  id: number, data: { declaration_id: number; reason: string }, options?: ApiOptions
+): Promise<InvoiceRow> {
+  return adminMutate(
+    `/api/v1/admin/scholarship/billing/invoices/${id}/declaration/reject/`, 'POST', data, options)
 }
 
 /** An invoice or receipt PDF as a Blob. The route needs the auth header, so a plain link cannot
