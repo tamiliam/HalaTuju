@@ -5876,6 +5876,8 @@
         "on_hold": "Ditangguhkan",
         "no_balance": "Anugerah dibayar penuh",
         "already_paid": "Sudah dibayar untuk bulan ini",
+        "gap_month": "Tiada bayaran bulan ini (jeda jadual)",
+        "schedule_complete": "Jadual bayaran telah tamat",
         "agreement_unsigned": "Perjanjian belum ditandatangani"
       },
       "error": {

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## The no-template payment schedule mirrors contract 10 (no migration) - 2026-10-29
+
+No contract template is active, so every live payment run used the old fallback: RM200 a month from a
+per-pathway start month, with no gap months and no end. The owner asked for the default to mirror their
+draft contract 10 ("2026 July 28 BPB").
+
+- **`default_schedule.py` (new):** the default is now a schedule of its own, eight RM200 rows identical to
+  contract 10, read as unsaved `PaymentScheduleRow`s through the same row-choosing rule a template uses
+  (`contracts.pick_schedule_row`, split out of `schedule_row_for`). `payments._schedule_row` never returns
+  `None` any more; `PATHWAY_PAYMENT_START_MONTH` and `_DEFAULT_PAYMENT_START_MONTH` are deleted.
+- **What changes for a run:** Poly and University diploma students are greyed `gap_month` in November;
+  STPM students in December and June; every pathway greys `schedule_complete` after its last paid month.
+- **Seed fixture:** `brightpath_contract_v1.json` poly/university rows gain the November gap, so the seed
+  matches contract 10; `test_default_schedule.py` fails if the default and the fixture drift apart.
+- **Tests:** `test_contract_cutover` December test now expects the gap without a template;
+  `test_on_hold_money` picks a cohort year and pathway that is paid in whatever month the test runs.
+
 ## Student maintenance Sprint 4a — results review and standing - 2026-10-29
 
 Roadmap Sprint 4, first half (4b = reminders, overdue and student emails). Migration **0186** (hand-apply DDL in

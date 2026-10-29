@@ -951,9 +951,14 @@ def schedule_row_for(template, application):
     (via award._stpm_continuing), falling back to variant='' then ('default','')."""
     if template is None:
         return None
+    return pick_schedule_row(template.schedule_rows.all(), application)
+
+
+def pick_schedule_row(rows, application):
+    """The one row-choosing rule, shared with the no-template default (`default_schedule.py`)."""
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
     variant = 'continuing' if award._stpm_continuing(application) else ''
-    by_key = {(r.pathway, r.variant): r for r in template.schedule_rows.all()}
+    by_key = {(r.pathway, r.variant): r for r in rows}
     for key in [(pathway, variant), (pathway, ''), ('default', '')]:
         if key in by_key:
             return by_key[key]

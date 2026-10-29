@@ -47,7 +47,8 @@ from .models.activity import EVENT_PAYMENT_RELEASED
 logger = logging.getLogger(__name__)
 
 # Single flat rate for EVERY student (D6, owner 2026-07-16). STPM is not a higher rate — its
-# RM3,000 award simply runs longer (15 months vs the standard 10).
+# RM3,000 award simply runs longer (15 months vs the standard 10). Read by `import_vircle_csv`;
+# a run reads the governing row's `monthly_amount` (the no-template default is RM200 too).
 MONTHLY_RATE = Decimal('200')
 
 # PAYABLE_STATUSES (awarded / active / maintenance, D3/D4-2) lives in maintenance_scope.py since
@@ -57,26 +58,11 @@ MONTHLY_RATE = Decimal('200')
 # from any of them reverts to draft and clears the signatures collected so far (_revert_to_draft).
 EDITABLE_STATUSES = ('draft', 'admin_signed', 'finance_checked')
 
-# tenancy: rule-1 exemption — template-superseded fallback.
-# Conventions rule 1 says a new tunable belongs on the cohort, not a module constant. These two
-# are NOT a violation and must not be "fixed" by moving them: the org-owned tunable ALREADY
-# exists as `ContractScheduleRow.start_month`, read through `_schedule_row` below, and every
-# lookup here is guarded by `if row is not None`. What survives in this dict is the fallback for
-# PRE-TEMPLATE applications only — the constants mirror the seeded BrightPath rows exactly, so
-# the two paths agree by construction and a legacy run stays byte-identical. Delete them once no
-# live application predates a contract template.
-# D4-3 (owner 2026-07-16) — the MONTH a pathway's payments FIRST open, as a HARD floor applied
-# even to continuing students: STPM/Matric/Asasi → July, Poly/UA Diploma (`university`) →
-# August, PISMP → September. (There is no UA degree — every BrightPath student is post-SPM, so
-# `university` is always the UA Diploma.) A run before a student's floor never pays them; and a
-# student is never paid before they've physically reported (`reporting_date`), so a late arrival
-# isn't paid early. Default is July for any unmapped pathway.
-PATHWAY_PAYMENT_START_MONTH = {
-    'stpm': 7, 'matric': 7, 'asasi': 7,   # July
-    'poly': 8, 'university': 8,           # August (Poly + UA Diploma)
-    'pismp': 9,                           # September
-}
-_DEFAULT_PAYMENT_START_MONTH = 7
+# D4-3 (owner 2026-07-16) — the MONTH a pathway's payments FIRST open is the governing row's
+# `start_month`, a HARD floor applied even to continuing students: STPM/Matric/Asasi → July,
+# Poly/UA Diploma (`university`) → August, PISMP → September. A student is never paid before
+# they've physically reported (`reporting_date`). With no template the row is
+# `default_schedule.row_for` (2026-10-29; until then a `PATHWAY_PAYMENT_START_MONTH` dict here).
 
 _ZERO = Decimal('0')
 _CENTS = Decimal('0.01')
@@ -129,25 +115,23 @@ def _remaining(application):
 def _schedule_row(application):
     """The versioned contract-template schedule row governing this application (the
     signed agreement's pinned template, else THE APPLICATION'S GIFT's active template —
-    per gift since TD-229, 2026-10-03), or ``None`` → the legacy flat behaviour
-    (``MONTHLY_RATE`` + ``PATHWAY_PAYMENT_START_MONTH``, byte-identical to pre-cutover).
-    ⚠ A gift with no template therefore pays the legacy flat rate (TD-328). This is the
+    per gift since TD-229, 2026-10-03), else the no-template default row
+    (``default_schedule.row_for``, mirroring contract 10 since 2026-10-29 — gap months and
+    an end included; until then a flat rate with neither, TD-328). This is the
     ONE seam the payments module reads the contract module through."""
-    from . import contract_scope, contracts
+    from . import contract_scope, contracts, default_schedule
     template = contract_scope.template_for_application(application)
-    if template is None:
-        return None
-    return contracts.schedule_row_for(template, application)
+    row = contracts.schedule_row_for(template, application) if template is not None else None
+    return row if row is not None else default_schedule.row_for(application)
 
 
 def _row_rate(row):
-    return row.monthly_amount if row is not None else MONTHLY_RATE
+    return row.monthly_amount
 
 
 def default_amount(application, row=None):
     """D6: amount_due = clamp(RATE − payment_credit, 0, award_amount − paid_to_date).
-    RATE is the governing template row's ``monthly_amount`` when a contract template
-    governs the app, else ``MONTHLY_RATE`` (seeded BrightPath v1 = RM200 → identical)."""
+    RATE is the governing row's ``monthly_amount`` (a template's, or the default's RM200)."""
     if row is None:
         row = _schedule_row(application)
     credit = application.payment_credit or _ZERO
@@ -173,18 +157,11 @@ def _credit_applied(application, rate=None):
 
 def _pathway_payment_start(application, row=None):
     """D4-3: the 1st-of-the-month a pathway's payments open, in the cohort year (the HARD floor —
-    July / August / September). The month comes from the governing template row's ``start_month``
-    when a template governs the app, else ``PATHWAY_PAYMENT_START_MONTH`` (seeded rows use the
-    same 7/7/7/8/8/9 → identical)."""
+    July / August / September): the governing row's ``start_month`` (`_schedule_row`)."""
     year = application.cohort.year if application.cohort_id else timezone.localdate().year
     if row is None:
         row = _schedule_row(application)
-    if row is not None:
-        month = row.start_month
-    else:
-        pathway = (application.chosen_pathway or '').strip().lower()
-        month = PATHWAY_PAYMENT_START_MONTH.get(pathway, _DEFAULT_PAYMENT_START_MONTH)
-    return date(year, month, 1)
+    return date(year, row.start_month, 1)
 
 
 def _has_started(application, period_month, row=None):
@@ -220,11 +197,11 @@ def _has_started(application, period_month, row=None):
 
 
 def _schedule_status(row, application, period_month):
-    """Where ``period_month`` (the 1st of the covered month) falls in the template
-    schedule: 'paid' | 'gap' (an exam/skip month within the span) | 'complete' (past
-    the last paid month) | None (no template governs the app, or before the schedule
-    — the start-month floor handles that). Drives the gap_month / schedule_complete
-    greyed reasons; None means the legacy path adds no schedule reason (parity)."""
+    """Where ``period_month`` (the 1st of the covered month) falls in the governing
+    schedule (a template's, or the default's): 'paid' | 'gap' (an exam/skip month within
+    the span) | 'complete' (past the last paid month) | None (no period, or before the
+    schedule — the start-month floor handles that). Drives the gap_month /
+    schedule_complete greyed reasons."""
     if row is None or period_month is None:
         return None
     cohort_year = application.cohort.year if application.cohort_id else None
@@ -283,9 +260,8 @@ def eligibility(application, payment_date, period_month=None):
     period = period_month or payment_date.replace(day=1)
     started = _has_started(application, period, row)
     reasons = []
-    # Contract-schedule greying (D5): a template exam/skip month or a month past the
-    # schedule end is greyed with a reason. None (no template) adds nothing → the legacy
-    # run is byte-identical for every paid month.
+    # Contract-schedule greying (D5): an exam/skip month or a month past the schedule end
+    # is greyed with a reason — under a template or the no-template default alike.
     sched = _schedule_status(row, application, period_month)
     if sched == 'gap':
         reasons.append('gap_month')             # exam-month skip (e.g. STPM Dec/Jun)
