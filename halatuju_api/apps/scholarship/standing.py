@@ -51,9 +51,12 @@ def is_failing(cgpa, organisation):
 
 def standing_for(cgpa, graduated, *, has_accepted, has_pending, minimum, failing, overdue=False):
     """The pure rule, on facts a caller already holds (a list row's annotations, or one file).
-    `overdue` (S4b): an open result term is past its due date and the grace. It wins over every
-    CGPA reading — she owes a result — unless one is already waiting for the officer."""
-    if overdue and not has_pending:
+    `overdue` (S4b) is `results_expectations.late` — past due and grace, with nothing she sent this
+    term waiting for the officer. It wins over every CGPA reading (she owes a result), but a
+    graduate is never "not submitted" (review M2)."""
+    if has_accepted and graduated:
+        return PERFORMING
+    if overdue:
         return NOT_SUBMITTED
     if not has_accepted:
         return AWAITING_REVIEW if has_pending else NO_RESULT_YET
@@ -71,14 +74,14 @@ def standing_for(cgpa, graduated, *, has_accepted, has_pending, minimum, failing
 
 def standing_of(application):
     """One application's standing (two small queries: the latest accepted result, any pending)."""
-    from .results_expectations import not_submitted
+    from .results_expectations import late
     from .results_review import has_pending, latest_accepted
     latest = latest_accepted(application)
     minimum, failing = thresholds(application.owning_organisation)
     return standing_for(
         latest.cgpa if latest else None, bool(latest and latest.graduated),
         has_accepted=latest is not None, has_pending=has_pending(application),
-        minimum=minimum, failing=failing, overdue=not_submitted(application))
+        minimum=minimum, failing=failing, overdue=late(application))
 
 
 # ── The contract guard ──────────────────────────────────────────────────────────────────────────

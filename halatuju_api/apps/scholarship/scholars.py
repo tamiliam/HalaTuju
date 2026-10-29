@@ -89,11 +89,21 @@ def annotate(qs):
                       last_activity_at=Subquery(
                           StudentActivity.objects.filter(application=OuterRef('pk'))
                           .order_by('-created_at', '-id').values('created_at')[:1]),
-                      # S4b: her earliest OPEN result term's due date (past = late).
-                      next_due=Subquery(
-                          ResultsExpectation.objects.filter(application=OuterRef('pk'),
-                                                            satisfied_by__isnull=True)
-                          .order_by('due_on').values('due_on')[:1])))
+                      # S4b: her earliest OPEN result term — its due date (past = late) and start.
+                      next_due=Subquery(_open_term(OuterRef('pk')).values('due_on')[:1]),
+                      next_due_starts=Subquery(_open_term(OuterRef('pk')).values('term_starts_on')[:1]))
+            # Something she sent THIS term is waiting for the officer: not her lateness (review M3).
+            .annotate(pending_for_due=Exists(SemesterResult.objects.filter(
+                application=OuterRef('pk'), review_status=PENDING,
+                created_at__date__gte=OuterRef('next_due_starts'))),
+                      # A graduating result accepted: she has finished, never "not submitted" (review M2).
+                      graduated_any=Exists(accepted(SemesterResult.objects.filter(
+                          application=OuterRef('pk'), graduated=True)))))
+
+
+def _open_term(app_ref):
+    return (ResultsExpectation.objects.filter(application=app_ref, satisfied_by__isnull=True)
+            .order_by('due_on', 'id'))
 
 
 def overdue_q(custom=None, today=None):
@@ -108,7 +118,11 @@ def overdue_q(custom=None, today=None):
         owning_organisation_id__in=list(custom))
     for org_id, grace in custom.items():
         cond |= Q(owning_organisation_id=org_id, next_due__lt=today - timedelta(days=grace))
-    return cond
+    # ONE rule with the Standing column and the file (`results_expectations.late`, review M2/M4): in
+    # maintenance, not finished (no accepted graduating result, not ready to close), and nothing she
+    # sent this term waiting for the officer.
+    finished = Q(maintenance_substate='ready_to_close') | Q(graduated_any=True)
+    return cond & maintenance_scope.in_maintenance_q() & ~finished & Q(pending_for_due=False)
 
 
 def custom_lines():
@@ -226,6 +240,7 @@ def rows(apps):
             lines[app.owning_organisation_id] = (*standing.thresholds(org),
                                                  results_expectations.settings_for(org)[2])
         minimum, failing, grace = lines[app.owning_organisation_id]
+        live = maintenance_scope.is_in_maintenance(app)
         latest = _result(app.latest_cgpa, app.latest_semester, app.latest_result_at)
         out.append({
             **_scholar_identity(app, names),
@@ -234,8 +249,10 @@ def rows(apps):
             'standing': standing.standing_for(
                 app.latest_cgpa, bool(app.latest_graduated), has_accepted=latest is not None,
                 has_pending=bool(app.pending_review), minimum=minimum, failing=failing,
-                overdue=results_expectations.is_overdue(app.next_due, grace)),
-            'next_due': app.next_due,
+                overdue=(live and app.maintenance_substate != 'ready_to_close' and not app.graduated_any
+                         and not app.pending_for_due and results_expectations.is_overdue(app.next_due, grace))),
+            # A closed file has no next due date (review M2).
+            'next_due': app.next_due if live else None,
             'mentor': None,
             'last_activity_at': app.last_activity_at,
         })

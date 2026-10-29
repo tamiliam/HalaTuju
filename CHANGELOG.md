@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Student maintenance Sprint 4b (part 2) — the emails a funded student receives about her results - 2026-10-29
 
-One new table (`student_email_templates`), in the same deferred migration as part 1.
+One new table (`student_email_templates`), in the same migration as part 1 (**0188**).
 
 - **Organisation → Settings → Student communications** — the organisation's wording for three emails, each in
   English, Malay and Tamil: a result is due soon, a result is overdue, and an officer queried a result (with the
@@ -18,7 +18,8 @@ One new table (`student_email_templates`), in the same deferred migration as par
 
 ## Student maintenance Sprint 4b (part 1) — when a result is due, and "not submitted" - 2026-10-29
 
-Roadmap Sprint 4b. One new table (`results_expectations`); the migration waits for Billing's 0187 on main.
+Roadmap Sprint 4b. One new table (`results_expectations`), in migration **0188** (hand-apply DDL with RLS in its
+docstring; migrate BEFORE the deploy).
 
 - **Result terms** per funded student, counted from the day she was funded (`ResultsExpectation`): two a year by
   default, each due 45 days after the term ends, "not submitted" 14 days after that — all three on Organisation →
@@ -26,7 +27,13 @@ Roadmap Sprint 4b. One new table (`results_expectations`); the migration waits f
 - An accepted result meets her oldest open term; un-accepting it reopens the term.
 - **Staff standing "Not submitted"**; the Scholars list's **Results overdue** filter and tile are live, with a
   **Next due** column (sortable); the scholar file names the next due date.
-- **My Bursary** tells her when her next result is due, and says so plainly once it is late.
+- **My Bursary** tells her when her next result is due, and says so plainly once the server says she is late.
+- **Review fixes:** terms are stored and chained (a settings or funding-date change never overlaps or back-dates a
+  term); no terms after graduation or "ready to close", and a closed file is never late; a result she sent this term
+  and awaiting review means she is not late — in the standing, the jobs, her page and the list alike; a repeated
+  semester does not use up a term; one overdue line and email per student per run, retried until the email goes;
+  reminders claim their row and give it back on a failed send; no due/overdue emails while she is on hold (owner
+  default, reversible).
 - Daily job `results-overdue-flag` makes and pairs the terms (idempotent). ⚠ Create its Cloud Scheduler entry
   (08:00 MYT) at deploy — the System health light now expects it.
 

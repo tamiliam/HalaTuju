@@ -426,6 +426,8 @@ class TestTheDoorsAreTheListedOnes(TestCase):
         'scholarship/scholars.py::_latest': 'judge',
         'scholarship/sponsor_feed.py::sponsor_activity': 'judge',
         'scholarship/results_expectations.py::reconcile': 'judge',         # S4b: accepted results meet terms
+        'scholarship/results_expectations.py::finished': 'judge',          # S4b review M2: a graduate is done
+        'scholarship/results_expectations.py::pending_since': 'show',      # S4b review M3: waiting this term
         # showing readers (every status, with its review state)
         'scholarship/scholars.py::annotate': 'show',                      # the "a result waits" flag
         'scholarship/views_bursary.py::summary_payload': 'show',           # her own latest, any status

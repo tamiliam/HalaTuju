@@ -99,15 +99,18 @@ class TestTheReminder(TestCase):
 class TestTheKillSwitch(TestCase):
     @override_settings(MAINTENANCE_REMINDERS_ENABLED=False,
                        EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-    def test_off_sends_nothing_and_stamps_nothing(self):
+    def test_off_sends_nothing_and_stamps_no_email(self):
+        """Off: no email, no `reminded_at` / `overdue_emailed_at` — so switching on later still reaches
+        her. The file's "not submitted" line is staff-side and is written either way (review L8)."""
         app, exp = _student()
         _due_in(exp, 5)
         self.assertEqual((rx.send_due_reminders(), rx.flag_overdue()), (0, 0))
         ResultsExpectation.objects.filter(pk=exp.pk).update(due_on=timezone.localdate() - timedelta(days=30))
-        self.assertEqual(rx.flag_overdue(), 0)
+        self.assertEqual(rx.flag_overdue(), 1)
         results_review.review(record_result(app, semester='S', cgpa='3.0'), decision='queried', note='Blurred.')
         exp.refresh_from_db()
-        self.assertEqual((exp.reminded_at, exp.overdue_flagged_at, len(mail.outbox)), (None, None, 0))
+        self.assertEqual((exp.reminded_at, exp.overdue_emailed_at, len(mail.outbox)), (None, None, 0))
+        self.assertIsNotNone(exp.overdue_flagged_at)
 
 
 @ON

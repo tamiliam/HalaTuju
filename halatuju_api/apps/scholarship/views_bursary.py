@@ -23,7 +23,7 @@ from .in_programme import can_record_results
 from .maintenance import is_on_hold
 from .maintenance_scope import has_file_q, is_in_maintenance
 from .models import Disbursement, ScholarshipApplication, SemesterResult
-from .results_expectations import next_due
+from .results_expectations import late, next_due
 from .scholars import _two
 
 
@@ -61,7 +61,10 @@ def summary_payload(app):
                            'at': latest['created_at'], 'review_status': latest['review_status']}
                           if latest else None),
         # S4b: when her next result is due (her earliest open term; a past date means it is late).
-        'next_result_due': next_due(app) if is_in_maintenance(app) else None,
+        'next_result_due': next_due(app),
+        # The SERVER says whether she is late (due date + the organisation's grace, nothing she sent
+        # this term waiting for review) — the page never works it out (review L10).
+        'next_result_overdue': late(app),
     }
 
 

@@ -44,6 +44,22 @@ reopens it (`unlink`). (5) `due_on` is STORED: a settings change moves future te
 column (one extra subquery, no per-row read; one query reads every organisation's minimum AND grace); the file and
 her hub show the next due date.
 
+**Adversarial review fixes (same day).** (H1) Terms are **stored and chained**: a row keeps `term_starts_on`; the
+next term starts on the last row's `term_ends_on` at the length the setting gives WHEN the row is made — a change to
+terms-a-year (2→4, 4→1) or to a funding stamp can no longer overlap, gap or back-date a term (only her FIRST term is
+placed from `funded_since`). (M2) No more terms once a graduating result is accepted or the file is
+`ready_to_close`; both jobs skip them; a graduate is never `not_submitted` (graduated is checked first); a CLOSED
+file is never late and shows no next due date (its open rows are ignored, not deleted). (M3/M4) ONE "late" rule
+(`results_expectations.late`) for the standing, both jobs, the hub and the list filter/tile: past due + grace AND
+nothing she sent since that term began is waiting for review. (M5) An accepted result for a semester already counted
+(case, spacing, punctuation folded) does not use up a new term. (L6) One overdue line and one email per student per
+run (the oldest due date), every late row stamped. (L7) A reminder claims its row (compare-and-set on
+`reminded_at`) and gives the claim back if the send fails; one per student per run. (L8) Each student is wrapped on
+her own; `overdue_emailed_at` is separate from `overdue_flagged_at`, so the staff line is written whatever the switch
+says and a failed or switched-off email is retried. (L9) **Owner default, reversible: while a student is ON HOLD she
+gets no due or overdue email**; her terms and standing still update. (L10) "Late" on her page is the server's
+boolean (`next_result_overdue`), never a date sum in the browser.
+
 **Alternatives considered:** reading the institution's academic calendar (no reliable source; differs per
 institution and programme); counting from the award date for every student (an awarded student without a live wallet
 is not funded yet); generating every term since funding (would mark every long-funded student overdue on day one).
