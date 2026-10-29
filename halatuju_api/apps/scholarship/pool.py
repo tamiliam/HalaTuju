@@ -74,10 +74,6 @@ def has_active_share_consent(application):
 # in_programme import.
 PROGRESS_STATES = ('on_track', 'semester_completed', 'needs_attention', 'graduated')
 
-# A CGPA at or below this is the coarse "needs attention" threshold (Malaysian 4.0
-# scale; 2.00 is the usual minimum good-standing line).
-_NEEDS_ATTENTION_CGPA = 2.0
-
 # Post-award lifecycle (roadmap docs/scholarship/post-award-lifecycle-plan.md):
 # A funder has committed (or the student is in-programme / closed) → no longer in the sponsor
 # DISCOVERY pool. A 'recommended' student is still poolable, awaiting a funder.
@@ -89,22 +85,26 @@ FUNDED_STATES = ('active', 'maintenance')
 
 def derive_progress_state(application):
     """The student's progress band, or None when there's nothing to report yet
-    (not in-programme). Bands (from the latest SemesterResult, non-identifying):
-    ``graduated`` (the result marks graduation) > ``needs_attention`` (CGPA at/below
-    2.00) > ``semester_completed`` (a CGPA is recorded) > ``on_track`` (in-programme,
-    no result yet, or a result with no CGPA)."""
+    (not in-programme). Bands (from the latest ACCEPTED SemesterResult, non-identifying):
+    ``graduated`` (the result marks graduation) > ``needs_attention`` (CGPA strictly below the
+    organisation's ``maintenance_failing_cgpa`` — the staff standing ``failing``) >
+    ``semester_completed`` (a CGPA is recorded) > ``on_track`` (in-programme, no result yet, or a
+    result with no CGPA)."""
     # S4a: on the maintenance predicate (an awarded student with a live wallet now reads on_track,
     # not None), and only an ACCEPTED result moves the band — never a self-reported, unreviewed one.
+    # S4a review M2: ONE line for both audiences — `standing.is_failing` (was a fixed `<= 2.0` here,
+    # so 2.00 itself read "needs attention" to a sponsor while staff called it underperforming).
     from .maintenance_scope import is_in_maintenance
+    from .results_review import latest_accepted
+    from .standing import is_failing
     if not is_in_maintenance(application):
         return None
-    latest = (application.semester_results.filter(review_status='accepted')
-              .order_by('-created_at').first())
+    latest = latest_accepted(application)   # M3: `-created_at, -id` — a tie never flips the band
     if latest is None:
         return 'on_track'
     if latest.graduated:
         return 'graduated'
-    if latest.cgpa is not None and float(latest.cgpa) <= _NEEDS_ATTENTION_CGPA:
+    if latest.cgpa is not None and is_failing(latest.cgpa, application.owning_organisation):
         return 'needs_attention'
     if latest.cgpa is not None:
         return 'semester_completed'
@@ -165,8 +165,8 @@ def sponsor_portfolio_status(application):
     if is_on_hold(application):
         return 'paused'
     sup = supported_semesters(application)
-    if reason == 'completed' or (sup and application.semester_results.filter(
-            review_status='accepted').count() >= sup):
+    from .results_review import accepted_count
+    if reason == 'completed' or (sup and accepted_count(application) >= sup):
         return 'semester_completed'
     if (derive_progress_state(application) == 'needs_attention'
             or getattr(application, 'maintenance_substate', '') == 'probation'):

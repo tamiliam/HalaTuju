@@ -106,14 +106,33 @@ it('records a result with its slip: sign, upload, then name the slip; graduated 
   expect(mockApi.uploadFileToSignedUrl).toHaveBeenCalledWith('https://put.example', file)
 })
 
-it('a refused slip says why, in her words', async () => {
+it('no slip, no result: Save sleeps until she chooses one (owner ruling 2026-10-29)', async () => {
   serve({ can_record_results: true })
-  mockApi.addSemesterResult.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_cgpa' }))
   render(<BursaryPage />)
   fireEvent.click(await screen.findByRole('tab', { name: 'scholarship.bursary.tab.results' }))
   fireEvent.click(await screen.findByText(/scholarship\.inProgramme\.results\.add/))
+  const save = screen.getByText('scholarship.inProgramme.results.save').closest('button')!
+  expect(save.disabled).toBe(true)
+  expect(screen.getByText('scholarship.bursary.slip.hint')).toBeTruthy()
+  fireEvent.click(save)
+  expect(mockApi.addSemesterResult).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByTestId('slip-input'),
+    { target: { files: [new File(['%PDF'], 'slip.pdf', { type: 'application/pdf' })] } })
+  expect(save.disabled).toBe(false)
+})
+
+it.each(['bad_cgpa', 'too_many_results', 'slip_required'])('a refused result (%s) says why, in her words', async (code) => {
+  serve({ can_record_results: true })
+  mockApi.signUploadDocument.mockResolvedValue({ upload_url: 'https://put.example', storage_path: 'p/slip.pdf' } as never)
+  mockApi.uploadFileToSignedUrl.mockResolvedValue(undefined as never)
+  mockApi.addSemesterResult.mockRejectedValue(Object.assign(new Error('x'), { code }))
+  render(<BursaryPage />)
+  fireEvent.click(await screen.findByRole('tab', { name: 'scholarship.bursary.tab.results' }))
+  fireEvent.click(await screen.findByText(/scholarship\.inProgramme\.results\.add/))
+  fireEvent.change(screen.getByTestId('slip-input'),
+    { target: { files: [new File(['%PDF'], 'slip.pdf', { type: 'application/pdf' })] } })
   fireEvent.click(screen.getByText('scholarship.inProgramme.results.save'))
-  expect(await screen.findByText('scholarship.bursary.resultError.bad_cgpa')).toBeTruthy()
+  expect(await screen.findByText(`scholarship.bursary.resultError.${code}`)).toBeTruthy()
 })
 
 it('each result shows its review, and a query shows the officer’s note', async () => {

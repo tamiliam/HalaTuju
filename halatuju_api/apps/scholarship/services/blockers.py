@@ -91,11 +91,13 @@ REPROCESS_ATTEMPTED = 'reprocess_attempted'
 
 def _stuck_unread_documents(limit):
     from django.db.models import Q
+    from ..results_review import SLIP_REQUEST_CODE
     return list(ApplicantDocument.objects
                 .filter(Q(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
                         | Q(doc_type__in=_SELF_HEAL_READ_TYPES, vision_run_at__isnull=True,
                             vision_fields_run_at__isnull=True, superseded_at__isnull=True,
                             vision_fields={}))
+                .exclude(request_code=SLIP_REQUEST_CODE)   # S4a: a results slip is never machine-read
                 .order_by('uploaded_at')[:limit])
 
 

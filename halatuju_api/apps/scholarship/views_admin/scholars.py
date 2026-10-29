@@ -156,7 +156,9 @@ class AdminScholarResultReviewView(_ScholarsBase):
                                   note=note if isinstance(note, str) else '',
                                   by_email=admin.email or '')
         except results_review.ResultsError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            # `slip_required` is a state of the RESULT (no slip yet), not a bad request — 409.
+            code = status.HTTP_409_CONFLICT if e.code == 'slip_required' else status.HTTP_400_BAD_REQUEST
+            return Response({'error': e.code, 'code': e.code}, status=code)
         result.refresh_from_db()
         return Response(scholars.result_dict(result))
 

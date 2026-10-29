@@ -2803,6 +2803,8 @@
         "file_too_large": "Fail itu terlalu besar. Lampirkan foto atau PDF yang lebih kecil.",
         "upload_incomplete": "Slip anda tidak selesai dimuat naik. Sila cuba lagi.",
         "bad_slip": "Kami tidak dapat melampirkan slip itu. Sila cuba lagi.",
+        "too_many_results": "Anda telah menghantar beberapa keputusan hari ini. Sila tunggu sehari sebelum menghantar lagi.",
+        "slip_required": "Muat naik slip keputusan anda dahulu. Keputusan tidak boleh dihantar tanpanya.",
         "generic": "Tidak dapat menyimpan keputusan anda. Sila cuba lagi."
       },
       "review": {
@@ -2812,8 +2814,8 @@
         "queriedNote": "Kami ada soalan tentang keputusan ini: {note}"
       },
       "slip": {
-        "label": "Slip keputusan anda (foto atau PDF)",
-        "hint": "Lampirkan slip daripada institusi anda supaya kami dapat mengesahkan keputusan anda."
+        "label": "Slip keputusan anda (foto atau PDF) — wajib",
+        "hint": "Muat naik slip daripada institusi anda di sini. Keputusan hanya diterima jika slipnya dimuat naik di halaman ini — slip yang dihantar melalui e-mel tidak diterima."
       }
     },
     "subnav": {
@@ -6172,7 +6174,7 @@
         },
         "studentNote": "Catatannya: {note}",
         "viewSlip": "Lihat slip",
-        "noSlip": "Tiada slip dilampirkan",
+        "noSlip": "Tiada slip dimuat naik — minta dia memuat naiknya di sini. Keputusan tanpa slip tidak boleh diterima.",
         "accept": "Terima",
         "query": "Persoalkan",
         "queryPlaceholder": "Apa yang perlu dia semak atau hantar semula?",
@@ -6185,6 +6187,7 @@
         "error": {
           "note_required": "Tulis apa yang perlu dia semak sebelum menghantar soalan.",
           "file_closed": "Fail ini telah ditutup, jadi keputusannya baca sahaja.",
+          "slip_required": "Keputusan hanya boleh diterima dengan slip yang dimuat naik olehnya. Minta dia memuat naiknya.",
           "generic": "Tidak dapat menyimpan semakan. Anda mungkin tiada kebenaran."
         }
       }
@@ -6989,18 +6992,6 @@
           "maintenance_failing_cgpa": {
             "label": "PNGK gagal",
             "desc": "Di bawah nilai ini dia gagal. Mesti di bawah minimum."
-          },
-          "results_terms_per_year": {
-            "label": "Penggal keputusan setahun",
-            "desc": "Berapa keputusan semester yang dihantar pelajar setiap tahun."
-          },
-          "results_due_days_after_term": {
-            "label": "Keputusan perlu dihantar — hari selepas penggal",
-            "desc": "Berapa lama selepas penggal tamat keputusannya perlu dihantar."
-          },
-          "results_overdue_grace_days": {
-            "label": "Tempoh tangguh sebelum \"tidak dihantar\" — hari",
-            "desc": "Berapa lama selepas tarikh akhir sebelum keputusan yang tiada ditandakan."
           }
         },
         "unit": {
@@ -7013,8 +7004,7 @@
           "megabytes": "MB",
           "documents": "dokumen",
           "attempts": "percubaan",
-          "cgpa": "PNGK",
-          "terms": "penggal"
+          "cgpa": "PNGK"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",

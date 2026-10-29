@@ -6,6 +6,7 @@
  *    be visible, never read as accepted;
  *  * the slip opens in the shared DocViewer (a result with no slip says so instead of a dead button);
  *  * Accept sends `accepted`; Query cannot be sent without a note (she must be told what to fix);
+ *  * no slip, no Accept (owner ruling 2026-10-29) — the officer queries her to upload it;
  *  * with no review rights (`canReview` false) there are no buttons at all — the server refuses too;
  *  * a refusal code renders its own sentence, anything else the generic one.
  */
@@ -88,6 +89,23 @@ it('renders a refusal code as its own sentence', async () => {
   await screen.findAllByTestId('admin-result-row')
   fireEvent.click(screen.getByText('admin.scholars.results.accept'))
   await waitFor(() => expect(mockToast).toHaveBeenCalledWith('admin.scholars.results.error.file_closed', 'error'))
+})
+
+it('a result with no slip offers Query, never Accept (owner ruling 2026-10-29)', async () => {
+  mockApi.getScholarResults.mockResolvedValue({ results: [{ ...PENDING, slip: null }] })
+  render(<ScholarResults id={7} token="tok" canReview onChanged={jest.fn()} />)
+  const row = await screen.findByTestId('admin-result-row')
+  expect(row.textContent).toContain('admin.scholars.results.noSlip')
+  expect(screen.queryByText('admin.scholars.results.accept')).toBeNull()
+  expect(screen.getByText('admin.scholars.results.query')).toBeTruthy()
+})
+
+it('the server refusing slip_required reads as its own sentence', async () => {
+  mockApi.reviewScholarResult.mockRejectedValue(Object.assign(new Error('x'), { code: 'slip_required' }))
+  render(<ScholarResults id={7} token="tok" canReview onChanged={jest.fn()} />)
+  await screen.findAllByTestId('admin-result-row')
+  fireEvent.click(screen.getByText('admin.scholars.results.accept'))
+  await waitFor(() => expect(mockToast).toHaveBeenCalledWith('admin.scholars.results.error.slip_required', 'error'))
 })
 
 it('without review rights there are no buttons', async () => {

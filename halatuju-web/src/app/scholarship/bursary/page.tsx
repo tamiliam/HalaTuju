@@ -139,13 +139,13 @@ export default function BursaryPage() {
     try {
       // S4a: the slip goes to storage first (a signed URL), then the result names it — the server
       // records the slip itself, so the pre-award document pipeline never runs on it.
-      let upload: { storage_path: string; original_filename: string; content_type: string; size: number } | undefined
-      if (slip) {
-        const signed = await signUploadDocument('semester_result', { token })
-        await uploadFileToSignedUrl(signed.upload_url, slip)
-        upload = { storage_path: signed.storage_path, original_filename: slip.name,
-          content_type: slip.type, size: slip.size }
-      }
+      // ⚠ OWNER RULING 2026-10-29: no slip uploaded HERE, no result (emailed slips are not accepted).
+      // The server refuses `slip_required`; Save stays asleep until a slip is chosen to mirror it.
+      if (!slip) { setResultError(t('scholarship.bursary.resultError.slip_required')); return }
+      const signed = await signUploadDocument('semester_result', { token })
+      await uploadFileToSignedUrl(signed.upload_url, slip)
+      const upload = { storage_path: signed.storage_path, original_filename: slip.name,
+        content_type: slip.type, size: slip.size }
       await addSemesterResult(app.application_id, {
         semester, cgpa: cgpa.trim() === '' ? null : cgpa.trim(), graduated, slip: upload,
       }, { token })
@@ -153,7 +153,8 @@ export default function BursaryPage() {
       setShowForm(false); setSemester(''); setCgpa(''); setGraduated(false); setSlip(null)
     } catch (e) {
       const code = (e as Error & { code?: string }).code || ''
-      const known = ['bad_cgpa', 'unsupported_format', 'file_too_large', 'upload_incomplete', 'bad_slip']
+      const known = ['bad_cgpa', 'unsupported_format', 'file_too_large', 'upload_incomplete', 'bad_slip', 'too_many_results',
+        'slip_required']
       setResultError(t(`scholarship.bursary.resultError.${known.includes(code) ? code : 'generic'}`))
     } finally { setSavingResult(false) }
   }
@@ -395,7 +396,7 @@ export default function BursaryPage() {
               </div>
               {resultError && <p className="text-sm text-critical-600">{resultError}</p>}
               <div className="flex gap-2">
-                <button onClick={saveResult} disabled={savingResult}
+                <button onClick={saveResult} disabled={savingResult || !slip}
                   className="flex-1 rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
                   {savingResult ? t('scholarship.inProgramme.results.saving') : t('scholarship.inProgramme.results.save')}
                 </button>

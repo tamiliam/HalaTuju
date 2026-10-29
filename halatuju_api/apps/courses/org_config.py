@@ -48,11 +48,12 @@ def validate_values(values, *, pairs=True):
         spec = SETTINGS.get(key)
         if spec is None:
             raise OrgConfigError('unknown_setting', key)
+        # A decimal key (S4a: a CGPA) takes at most `decimals` places; every other key is a whole
+        # NUMBER — an int, never a float (2.0 included: the stored JSON must not drift to floats).
         # `bool` IS an `int` in Python — refuse it explicitly or `True` stores as 1.
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise OrgConfigError('bad_value', key)
-        # A decimal key (S4a: a CGPA) takes at most `decimals` places; every other key is whole.
         places = spec.get('decimals', 0)
+        if isinstance(value, bool) or not isinstance(value, (int, float) if places else int):
+            raise OrgConfigError('bad_value', key)
         if abs(round(value * 10 ** places) - value * 10 ** places) > 1e-6:
             raise OrgConfigError('bad_value', key)
         if value < spec['min'] or value > spec['max']:

@@ -584,3 +584,21 @@ def make_application(stage='submitted', *, outcome=None, cohort=None, student=No
         Consent.objects.create(application=application,
                                consent_type='share_with_sponsors', version='t', is_active=True)
     return application
+
+
+def slip_upload_for(application):
+    """The `slip` a student's results POST carries once she has PUT her slip: the exact key shape the
+    sign-upload door issues (`<org>/<app>/semester_result/<uuid4 hex>`)."""
+    from apps.scholarship.storage import build_doc_key
+    return {'storage_path': build_doc_key(application, application.id, 'semester_result', uuid.uuid4().hex),
+            'original_filename': 'slip.pdf', 'content_type': 'application/pdf', 'size': 1000}
+
+
+def record_result(application, **kw):
+    """A semester result through the ONE writer, as the student records it — WITH her slip (owner
+    ruling 2026-10-29: no slip, no result). Storage is the only thing faked (the blob "landed")."""
+    from unittest import mock
+    from apps.scholarship import in_programme
+    kw.setdefault('slip_upload', slip_upload_for(application))
+    with mock.patch('apps.scholarship.storage.object_exists', return_value=True):
+        return in_programme.record_semester_result(application, **kw)

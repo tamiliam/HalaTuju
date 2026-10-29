@@ -13,6 +13,9 @@ import { getScholarResults, reviewScholarResult, type ScholarResultRow } from '@
  * with her slip (in the shared `DocViewer`) and the officer's review — Accept, or Query with a note
  * she will see. Only an ACCEPTED result counts for her standing and for anything a sponsor reads.
  *
+ * ⚠ OWNER RULING 2026-10-29: "Students must upload at the portal. Emailed docs are not allowed." A
+ * result without her uploaded slip offers no Accept (the server refuses `slip_required`); Query asks
+ * her to upload it. There is no way here to attach a document for her.
  * ⚠ The buttons are an offer (`canReview`, the server's `controls.can_review_results`); the review
  * endpoint judges every request again (`_can_review_app`). Re-reviewing is allowed — a queried
  * result she has explained may be accepted.
@@ -51,7 +54,7 @@ export default function ScholarResults({ id, token, canReview, onChanged }: {
       load(); onChanged()
     } catch (e) {
       const code = (e as { code?: string })?.code || ''
-      showToast(t(['note_required', 'file_closed'].includes(code)
+      showToast(t(['note_required', 'file_closed', 'slip_required'].includes(code)
         ? `admin.scholars.results.error.${code}` : 'admin.scholars.results.error.generic'), 'error')
     } finally { setBusy(0) }
   }
@@ -99,7 +102,8 @@ export default function ScholarResults({ id, token, canReview, onChanged }: {
                   {t('admin.scholars.results.viewSlip')}
                 </button>
               ) : <span className="text-xs text-ground-400">{t('admin.scholars.results.noSlip')}</span>}
-              {canReview && r.review_status !== 'accepted' && (
+              {/* Owner ruling 2026-10-29: no slip she uploaded, no Accept — Query asks her for it. */}
+              {canReview && r.review_status !== 'accepted' && r.slip && (
                 <button type="button" onClick={() => decide(r, 'accepted')} disabled={busy === r.id}
                   className="rounded-lg bg-brand-fill px-3 py-1 text-xs font-medium text-brand-fill-ink disabled:opacity-50">
                   {t('admin.scholars.results.accept')}

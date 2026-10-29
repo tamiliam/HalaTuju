@@ -21,7 +21,7 @@ from apps.scholarship.maintenance_scope import (
 )
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.serializers import ApplicationReadSerializer
-from apps.scholarship.tests.factories import make_application, make_cohort
+from apps.scholarship.tests.factories import make_application, make_cohort, record_result
 
 STAGES = ('submitted', 'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected',
           'expired')
@@ -89,10 +89,10 @@ class TestAwardedWithAWalletIsInMaintenance(TestCase):
     def test_results_open_to_the_predicate_since_s4a_and_start_pending(self):
         """S4a: recording widens to the maintenance predicate now that every result is REVIEWED
         before it counts; without a live wallet she still cannot record one."""
-        row = in_programme.record_semester_result(self.live, semester='Sem 1', cgpa='3.40')
+        row = record_result(self.live, semester='Sem 1', cgpa='3.40')
         self.assertEqual(row.review_status, 'pending')
         with self.assertRaises(InProgrammeError) as ctx:
-            in_programme.record_semester_result(self.no_wallet, semester='Sem 1', cgpa='3.40')
+            record_result(self.no_wallet, semester='Sem 1', cgpa='3.40')
         self.assertEqual(ctx.exception.code, 'not_in_programme')
 
     def test_promotional_consent_follows_the_predicate(self):
@@ -130,7 +130,7 @@ class TestAwardedWithAWalletIsInMaintenance(TestCase):
         from apps.scholarship import pool, results_review
         self.assertEqual(pool.derive_progress_state(self.live), 'on_track')
         self.assertIsNone(pool.derive_progress_state(self.no_wallet))
-        row = in_programme.record_semester_result(self.live, semester='Sem 1', cgpa='1.50')
+        row = record_result(self.live, semester='Sem 1', cgpa='1.50')
         self.assertEqual(pool.derive_progress_state(self.live), 'on_track')       # pending: no move
         results_review.review(row, decision='accepted')
         self.assertEqual(pool.derive_progress_state(self.live), 'needs_attention')
@@ -176,7 +176,7 @@ class TestClosedFile(TestCase):
         self.assertFalse(is_in_maintenance(app))
         in_programme.submit_graduation_message(app, raw_text='Thank you for everything.')
         with self.assertRaises(InProgrammeError):
-            in_programme.record_semester_result(app, semester='Sem 9', cgpa='3.00')
+            record_result(app, semester='Sem 9', cgpa='3.00')
 
     def test_a_stalled_close_after_a_fallen_through_award_has_no_file(self):
         """`revert_to_pool` keeps the wallet stamp; the later pre-award close records `stalled`."""

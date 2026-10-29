@@ -25,6 +25,7 @@ from django.db.models import Count, Exists, F, OuterRef, Q, Subquery
 from apps.courses.search import _digits_expr
 
 from . import card_display, maintenance_scope, standing
+from .results_review import PENDING, accepted, latest_accepted
 from .models import (
     BursaryAgreement, Disbursement, ScholarshipApplication, SemesterResult, StudentActivity,
 )
@@ -57,7 +58,7 @@ def _two(value):
 
 def _latest(field):
     """The latest ACCEPTED result's `field` (S4a: only an accepted result counts)."""
-    return Subquery(SemesterResult.objects.filter(application=OuterRef('pk'), review_status='accepted')
+    return Subquery(accepted(SemesterResult.objects.filter(application=OuterRef('pk')))
                     .order_by('-created_at', '-id').values(field)[:1])
 
 
@@ -81,7 +82,7 @@ def annotate(qs):
             .annotate(latest_cgpa=_latest('cgpa'), latest_semester=_latest('semester'),
                       latest_result_at=_latest('created_at'), latest_graduated=_latest('graduated'),
                       pending_review=Exists(SemesterResult.objects.filter(
-                          application=OuterRef('pk'), review_status='pending')),
+                          application=OuterRef('pk'), review_status=PENDING)),
                       last_activity_at=Subquery(
                           StudentActivity.objects.filter(application=OuterRef('pk'))
                           .order_by('-created_at', '-id').values('created_at')[:1])))
@@ -203,8 +204,8 @@ def rows(apps):
 def file_payload(app):
     """The file header + Overview cards for ONE application the view has fenced."""
     from .payments import _remaining, paid_to_date
-    latest = (SemesterResult.objects.filter(application=app, review_status='accepted')
-              .order_by('-created_at', '-id').values('cgpa', 'semester', 'created_at').first())
+    latest = latest_accepted(app)
+    latest = {'cgpa': latest.cgpa, 'semester': latest.semester, 'created_at': latest.created_at} if latest else None
     paid = paid_to_date(app)
     award = app.award_amount
     last = (Disbursement.objects.filter(application=app, status__in=Disbursement.PAID)

@@ -11,18 +11,43 @@ sponsor-facing reader. (4) Standing (`standing.py`: performing / underperforming
 result yet) is the latest ACCEPTED result against the organisation's `maintenance_min_cgpa` (3.00) and
 `maintenance_failing_cgpa` (2.00), new registry group `maintenance` with a `decimals` unit (2 places) and a rule
 that failing < minimum; a graduated result is performing. Changing a threshold moves the chips with no deploy.
-(5) A contract template whose progress standard names another CGPA (or none) is a settings WARNING, never a refusal.
+(5) A contract template whose English wording — progress standard AND clause bodies — states no CGPA equal to the
+minimum (or none) is a settings WARNING, never a refusal; a number counts only beside a GPA / CGPA / PNGK / "grade
+point average" phrase (the live BrightPath line is in clause 4.1.V; a bare "3.1" is a clause number).
 (6) The browser judges nothing: the hub's own `≤ 2.0 → needs attention` chip is gone; she sees each result's review.
 
-**The doors (every writer and reader of `semester_results`, pinned in `test_results_review.py`):**
+**The doors (every writer and reader of `semester_results`, pinned PER FUNCTION in `test_results_review.py`):**
 writers — `in_programme.record_semester_result` (student, via `SemesterResultView.post`) and
-`results_review.review` (officer, via `AdminScholarResultReviewView`); nothing else creates or changes a row.
-Readers that JUDGE (accepted only) — `pool.derive_progress_state` (sponsor progress band; now on the predicate, so
-an awarded + funded student reads `on_track` instead of nothing), `pool` portfolio count, `sponsor_feed`
-(semester-completed items), `sponsorship` impact (`semesters_completed`), `serializers` sponsor `get_semesters`,
-`scholars._latest` / `standing_of` (staff list + file). Readers that SHOW (all rows, with their review state) — her
-own `SemesterResultView.get`, `views_bursary` latest result, the admin Results tab (`scholars.result_dict`, slip by
-signed URL, org-fenced). A cross-reader test pins that a pending or queried result moves no sponsor reader.
+`results_review.review` (officer, via `AdminScholarResultReviewView`); nothing else creates or changes a row (the
+static fence flags any `.create/.update/.delete` beside a `SemesterResult` use, and any write to `review_status` /
+`term_index` / `cgpa`, anywhere in `apps/` incl. management commands). Readers that JUDGE go through
+`results_review.accepted(...)` (`latest_accepted`, `accepted_count`) — `pool.derive_progress_state` (sponsor band;
+now on the predicate, so an awarded + funded student reads `on_track` instead of nothing), `pool` portfolio count,
+`sponsor_feed`, `sponsorship` impact, `serializers` sponsor `get_semesters`, `scholars._latest` / `standing_of`.
+Readers that SHOW (every status, with its review) — `results_for_file` (her own list and the admin Results tab),
+`views_bursary` latest result, the list's "a result waits" flag. A cross-reader test pins that a pending or queried
+result moves no sponsor reader.
+
+**Review fixes (same day).** (H1) **A slip is evidence.** Her `DocumentDetailView.delete` refuses 409 `slip_locked`
+for an in-programme slip OR any document a result names, whatever the review status; the general documents list
+leaves `request_code='in_programme'` out, and the general upload refuses that slot (409) so a slip can never be
+superseded; no self-heal sweep (`_stuck_unread_documents`, `service_error_documents`, the dry-run count) picks one
+up. (M2) **One failing line for both audiences:** the sponsor band's `needs_attention` IS the staff `failing` —
+strictly below the organisation's `maintenance_failing_cgpa` (`standing.is_failing`), replacing the band's own fixed
+`<= 2.0`. Consequence: a CGPA of exactly 2.00 moves from `needs_attention` to `semester_completed` for a sponsor (0
+live rows — no result has been accepted yet). (M3) **"Latest"** = latest SUBMITTED (`-created_at, -id`) until S4b
+stamps `term_index`; then it is the latest TERM. (L1) a slip path must be exactly `<this application's slip
+prefix>/<32 hex>` (no `..`, capped length). (L2) a whole-number setting takes an int only (2.0 refused). (L3) a sixth
+result inside 24 hours is refused (`too_many_results`) — a student sends one or two a term; five leave room to fix a
+typo.
+
+**OWNER RULING (2026-10-29): "Students must upload at the portal. Emailed docs are not allowed."** It replaces the
+review's L4/L6 note (accept-without-slip). (1) `results_review.review` refuses to ACCEPT a result with no slip — 409
+`slip_required`; a QUERY is still allowed, so the officer asks her to upload it. (2) `record_semester_result`
+refuses a result without the slip she uploaded (`slip_required`) — the typed-only fallback is gone; the server is
+the gate and the hub's Save stays asleep until a slip is chosen. (3) There is NO admin path to attach a document on
+her behalf (the review endpoint ignores any slip in its body — tested). Consequence: a pre-S4a typed-only result
+(born `pending`, no slip) can only be queried until she sends that term's result again with its slip.
 
 **Alternatives considered:** running the slip through the pre-award document pipeline (Gemini read, Check-2, slot
 superseding) — refused: that pipeline judges an APPLICATION, and a post-award slip is read by a person;
@@ -31,8 +56,8 @@ places to keep in step). **Trade-offs:** a result she records reaches a sponsor 
 deliberate delay. **Revisit if:** the officer queue grows past what the team reviews within the 4b due window.
 **Split:** 4b (separate push) = `ResultsExpectation` + `results-due-reminders` / `results-overdue-flag` crons + the
 `StudentEmailTemplate` family (results_due / results_overdue / result_queried; Student communications tab; metered)
-+ the Results overdue filter. The three timing keys (`results_terms_per_year`, `results_due_days_after_term`,
-`results_overdue_grace_days`) are registered now and read by nothing until 4b.
++ the Results overdue filter. The results timing keys (terms a year, due days, overdue grace) arrive in 4b WITH
+their reader — review M1: a setting nothing reads is not registered.
 
 ## A Matriculation or polytechnic transcript is genuineness-checked; every page that needs a ruling stays "not checked" — 2026-10-29 (Matric/Diploma M4)
 

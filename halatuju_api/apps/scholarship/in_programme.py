@@ -12,6 +12,7 @@ import cycle: this module reuses ``pool.scan_anon_for_identifiers`` (the structu
 identifier gate) for the graduation relay, and ``services`` for consent + the
 ``is_minor`` age check.
 """
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
@@ -60,6 +61,10 @@ def _require_can_thank(application):
 # ── Latest-semester results → progress signal ────────────────────────────────
 
 _CGPA_MIN, _CGPA_MAX = Decimal('0'), Decimal('4')
+#: S4a review L3: at most this many results a day per application. A real student sends one or two a
+#: term; five a day leaves room to correct a typo (each result is reviewed, never edited) while a loop
+#: or a script cannot fill storage or the officer's queue.
+MAX_RESULTS_PER_DAY = 5
 
 
 def _clean_cgpa(cgpa):
@@ -76,8 +81,8 @@ def _clean_cgpa(cgpa):
     return value
 
 
-def record_semester_result(application, *, semester='', cgpa=None,
-                           graduated=False, results_slip=None, note='', slip_upload=None):
+def record_semester_result(application, *, semester='', cgpa=None, graduated=False, note='',
+                           slip_upload=None):
     """Record one in-programme semester result for a sponsored student.
 
     The ``results_slip`` (an ``ApplicantDocument``) is myNADI-only evidence — it
@@ -88,16 +93,25 @@ def record_semester_result(application, *, semester='', cgpa=None,
     Writes one ``result_submitted`` activity row in the same transaction (the student is the
     actor, so ``actor_email`` is blank and ``meta.by`` says so). Gated by ``can_record_results``.
     S4a: ``slip_upload`` (the storage path she PUT) is recorded here by ``results_review.record_slip``
-    — refused with a ``ResultsError`` code — and every new result starts ``pending`` review."""
+    — refused with a ``ResultsError`` code — and every new result starts ``pending`` review. A sixth
+    result inside 24 hours is refused (``too_many_results``).
+
+    ⚠ OWNER RULING 2026-10-29: "Students must upload at the portal. Emailed docs are not allowed."
+    A result WITHOUT the slip she uploaded is refused (``slip_required``) — there is no typed-only
+    result and no path for staff to attach a document on her behalf."""
     if not can_record_results(application):
         raise InProgrammeError('not_in_programme')
+    if not slip_upload:
+        raise InProgrammeError('slip_required')
+    if application.semester_results.filter(
+            created_at__gte=timezone.now() - timedelta(hours=24)).count() >= MAX_RESULTS_PER_DAY:
+        raise InProgrammeError('too_many_results')
     from . import results_review
     with transaction.atomic():
-        if slip_upload:
-            try:
-                results_slip = results_review.record_slip(application, slip_upload)
-            except results_review.ResultsError as e:
-                raise InProgrammeError(e.code)
+        try:
+            results_slip = results_review.record_slip(application, slip_upload)
+        except results_review.ResultsError as e:
+            raise InProgrammeError(e.code)
         row = SemesterResult.objects.create(
             application=application,
             semester=(semester or '').strip()[:50],

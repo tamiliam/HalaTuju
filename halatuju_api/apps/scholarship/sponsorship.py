@@ -18,6 +18,7 @@ from django.utils import timezone
 from . import branding as _branding
 from . import money
 from . import pool
+from .results_review import accepted_count
 from . import usage as _usage
 # An award that falls through lands back in the pool — or, on a failed "Born in" rule, at QC
 # (TD-376). Its own module since `sponsorship.py` sits at its `oversize_files` allowance.
@@ -509,7 +510,7 @@ def sponsor_impact(sponsor):
             graduated_count += 1
         else:
             committed += sp.amount
-        semesters_completed += app.semester_results.filter(review_status='accepted').count()   # S4a
+        semesters_completed += accepted_count(app)   # S4a: accepted only
     return {
         'total_given': str(committed + completed),
         'students_supported': len(active),

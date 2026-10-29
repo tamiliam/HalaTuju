@@ -2803,6 +2803,8 @@
         "file_too_large": "That file is too large. Attach a smaller photo or PDF.",
         "upload_incomplete": "Your slip did not finish uploading. Please try again.",
         "bad_slip": "We could not attach that slip. Please try again.",
+        "too_many_results": "You have sent several results today. Please wait a day before sending another.",
+        "slip_required": "Upload your result slip first. A result cannot be sent without it.",
         "generic": "Could not save your result. Please try again."
       },
       "review": {
@@ -2812,8 +2814,8 @@
         "queriedNote": "We have a question about this result: {note}"
       },
       "slip": {
-        "label": "Your result slip (photo or PDF)",
-        "hint": "Attach the slip from your institution so we can confirm your result."
+        "label": "Your result slip (photo or PDF) — required",
+        "hint": "Upload the slip from your institution here. A result is accepted only with its slip uploaded on this page — slips sent by email are not accepted."
       }
     },
     "subnav": {
@@ -6172,7 +6174,7 @@
         },
         "studentNote": "Her note: {note}",
         "viewSlip": "View slip",
-        "noSlip": "No slip attached",
+        "noSlip": "No slip uploaded — query her to upload it here. A result without a slip cannot be accepted.",
         "accept": "Accept",
         "query": "Query",
         "queryPlaceholder": "What should she check or send again?",
@@ -6185,6 +6187,7 @@
         "error": {
           "note_required": "Write what she should check before sending a query.",
           "file_closed": "This file is closed, so its results are read-only.",
+          "slip_required": "A result can be accepted only with the slip she uploaded. Query her to upload it.",
           "generic": "Could not save the review. You may not have permission."
         }
       }
@@ -6989,18 +6992,6 @@
           "maintenance_failing_cgpa": {
             "label": "Failing CGPA",
             "desc": "Below this she is failing. Must be below the minimum."
-          },
-          "results_terms_per_year": {
-            "label": "Result terms a year",
-            "desc": "How many semester results a student sends each year."
-          },
-          "results_due_days_after_term": {
-            "label": "Results due — days after a term",
-            "desc": "How long after a term ends her result is due."
-          },
-          "results_overdue_grace_days": {
-            "label": "Grace before \"not submitted\" — days",
-            "desc": "How long after the due date before a missing result is flagged."
           }
         },
         "unit": {
@@ -7013,8 +7004,7 @@
           "megabytes": "MB",
           "documents": "documents",
           "attempts": "attempts",
-          "cgpa": "CGPA",
-          "terms": "terms"
+          "cgpa": "CGPA"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "defaultNoteClock": "Platform default: {n} (Malaysian time)",

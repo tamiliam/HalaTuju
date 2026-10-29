@@ -15,6 +15,8 @@ Gemini read, the Check-2 asks, the slot that supersedes the previous copy) belon
 application under review, not to a funded student's tenth slip. The row carries
 ``request_code='in_programme'`` so it is its own slot and never resolves a pre-award request.
 """
+import re
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -28,6 +30,8 @@ PENDING = 'pending'
 DECISIONS = (ACCEPTED, QUERIED)
 #: The slot code an in-programme slip carries (never an officer request's `officer_N`).
 SLIP_REQUEST_CODE = 'in_programme'
+#: A storage key longer than this is not one the sign-upload door issued.
+_MAX_SLIP_PATH = 200
 
 
 class ResultsError(Exception):
@@ -40,12 +44,32 @@ class ResultsError(Exception):
 
 def accepted(qs):
     """THE rule: the results that count — accepted ones. `qs` is a SemesterResult queryset or a
-    related manager (`application.semester_results`)."""
+    related manager (`application.semester_results`). Every judging reader goes through here; the
+    doors test (`test_results_review.TestTheDoorsAreTheListedOnes`) fences the call sites."""
     return qs.filter(review_status=ACCEPTED)
 
 
 def latest_accepted(application):
+    """Her latest ACCEPTED result. "Latest" = latest SUBMITTED (newest `created_at`, `-id` breaking a
+    tie) until S4b stamps `term_index`; then it becomes the latest TERM (roadmap 4b)."""
     return accepted(application.semester_results).order_by('-created_at', '-id').first()
+
+
+def accepted_count(application):
+    """How many results count — the sponsor's semester figures."""
+    return accepted(application.semester_results).count()
+
+
+def has_pending(application):
+    """A result is waiting for an officer."""
+    return application.semester_results.filter(review_status=PENDING).exists()
+
+
+def slip_locked(document):
+    """A results slip is EVIDENCE: once recorded the student can neither delete nor replace it,
+    whatever the review says. True for any in-programme slip, and for any document a result names."""
+    return (document.request_code == SLIP_REQUEST_CODE
+            or SemesterResult.objects.filter(results_slip=document).exists())
 
 
 def record_slip(application, upload):
@@ -58,8 +82,12 @@ def record_slip(application, upload):
     from .views import _is_allowed_upload
     if not isinstance(upload, dict):
         raise ResultsError('bad_slip')
-    path = str(upload.get('storage_path') or '')
-    if not path.startswith(build_doc_key(application, application.id, 'semester_result') + '/'):
+    path = upload.get('storage_path')
+    # The exact shape the sign-upload door issues: `<this application's slip prefix>/<32 hex>`.
+    # Nothing else — no `..`, no sub-folder, no other student's or type's prefix, no long tail.
+    prefix = build_doc_key(application, application.id, 'semester_result')
+    if (not isinstance(path, str) or len(path) > _MAX_SLIP_PATH or '..' in path
+            or not re.fullmatch(re.escape(prefix) + r'/[0-9a-f]{32}', path)):
         raise ResultsError('bad_slip')
     name = str(upload.get('original_filename') or '')[:255]
     content_type = str(upload.get('content_type') or '')[:100]
@@ -79,12 +107,18 @@ def record_slip(application, upload):
 def review(result, *, decision, note='', by_email=''):
     """An officer ACCEPTS or QUERIES a result. A query needs a note (the student is told why); an
     accept may carry one. Re-reviewing is allowed (a queried result the student explained may be
-    accepted). Writes `result_reviewed` to the activity log in the same transaction."""
+    accepted). Writes `result_reviewed` to the activity log in the same transaction.
+
+    ⚠ OWNER RULING 2026-10-29 ("Students must upload at the portal. Emailed docs are not allowed."):
+    a result with no slip cannot be ACCEPTED (`slip_required`) — the officer QUERIES it instead, so
+    she is asked to upload it. Nothing lets staff attach a document for her."""
     if decision not in DECISIONS:
         raise ResultsError('bad_decision')
     text = (note or '').strip()[:500]
     if decision == QUERIED and not text:
         raise ResultsError('note_required')
+    if decision == ACCEPTED and result.results_slip_id is None:
+        raise ResultsError('slip_required')
     with transaction.atomic():
         old = result.review_status
         result.review_status = decision

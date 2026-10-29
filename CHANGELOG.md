@@ -15,11 +15,18 @@ its docstring; deploy AFTER migrating).
 - **Admin Results tab** on the scholar file: every result, her slip in the document viewer, Accept / Query with a
   note, who reviewed and when; logged as `result_submitted` / `result_reviewed`.
 - **Standing** from the organisation's settings (new **Student maintenance** group: minimum CGPA 3.00, failing CGPA
-  2.00 — two decimal places, failing must be below minimum; three result-timing settings for 4b). Only an ACCEPTED
-  result counts. The Scholars list shows the standing chip, an **Underperforming** filter and tile (server-side),
-  and the file names the thresholds. A contract whose progress standard names another CGPA is warned in settings.
+  2.00 — two decimal places, failing must be below minimum). Only an ACCEPTED result counts. The Scholars list
+  shows the standing chip, an **Underperforming** filter and tile (server-side), and the file names the thresholds.
+  A contract whose wording (progress standard or clauses) states another CGPA beside a GPA phrase is warned.
 - **Sponsors see only accepted results** — progress band (now on the maintenance predicate), portfolio count,
-  feed and impact agree (cross-reader test).
+  feed and impact agree (cross-reader test); the band's "needs attention" is the staff "failing" line (strictly
+  below the failing CGPA — 2.00 itself no longer reads "needs attention").
+- **Review fixes:** a results slip cannot be deleted or replaced by the student (409 `slip_locked`), is left out of
+  her documents list and of every re-read sweep; slip paths must match the issued shape; at most five results a
+  day (`too_many_results`); whole-number settings take whole numbers only; the doors fence is per function.
+- **Owner ruling — slips are uploaded at the portal only:** a result cannot be sent without its slip, a result with
+  no slip cannot be accepted (the officer queries it), and staff cannot attach a slip for her. Guide (org admin,
+  general admin, reviewer) and the student's hint updated.
 
 ## Bumi coverage Sprint D2 — the other SPM courses, ATAU, the Bumi matric tracks (no migration) - 2026-10-29
 

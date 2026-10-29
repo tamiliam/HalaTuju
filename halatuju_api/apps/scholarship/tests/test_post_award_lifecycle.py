@@ -8,8 +8,9 @@ from django.test import TestCase
 
 from apps.courses.models import StudentProfile
 from apps.scholarship import pool
+from apps.scholarship.tests.factories import record_result
 from apps.scholarship.in_programme import (
-    InProgrammeError, record_semester_result, _require_in_programme,
+    InProgrammeError, _require_in_programme,
 )
 from apps.scholarship.models import (
     Consent, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
@@ -55,7 +56,7 @@ class TestInProgrammeGate(TestCase):
     def test_funded_states_are_in_programme(self):
         for i, status in enumerate(['active', 'maintenance']):
             app = self._app(status, suffix=f'f{i}')
-            r = record_semester_result(app, semester='Sem 1', cgpa='3.5')  # must not raise
+            r = record_result(app, semester='Sem 1', cgpa='3.5')  # must not raise
             self.assertEqual(r.application_id, app.id)
 
     def test_pre_funding_is_not_in_programme(self):

@@ -9,6 +9,7 @@ Covers the three new surfaces and their load-bearing guarantees:
 All synthetic data; no external calls.
 """
 import json
+from unittest import mock
 
 import jwt
 from django.test import TestCase, override_settings
@@ -16,6 +17,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import in_programme, pool
+from apps.scholarship.tests.factories import record_result, slip_upload_for
 from apps.scholarship.models import (
     ApplicantDocument, GraduationMessage, ScholarshipApplication,
     ScholarshipCohort, SemesterResult, Sponsor, Sponsorship,
@@ -67,12 +69,12 @@ class TestSemesterResults(TestCase):
     def test_record_requires_in_programme(self):
         app = _app(self.cohort, 'r1', status='recommended')  # not yet sponsored
         with self.assertRaises(in_programme.InProgrammeError) as ctx:
-            in_programme.record_semester_result(app, semester='2026 S1', cgpa='3.4')
+            record_result(app, semester='2026 S1', cgpa='3.4')
         self.assertEqual(ctx.exception.code, 'not_in_programme')
 
     def test_record_happy_path(self):
         app = _app(self.cohort, 'r2')
-        row = in_programme.record_semester_result(app, semester='2026 S1', cgpa='3.40')
+        row = record_result(app, semester='2026 S1', cgpa='3.40')
         self.assertEqual(row.application_id, app.id)
         self.assertEqual(str(row.cgpa), '3.40')
 
@@ -80,12 +82,12 @@ class TestSemesterResults(TestCase):
         app = _app(self.cohort, 'r3')
         for bad in ('5.0', '-1', 'abc'):
             with self.assertRaises(in_programme.InProgrammeError) as ctx:
-                in_programme.record_semester_result(app, cgpa=bad)
+                record_result(app, cgpa=bad)
             self.assertEqual(ctx.exception.code, 'bad_cgpa')
 
     def test_cgpa_optional(self):
         app = _app(self.cohort, 'r4')
-        row = in_programme.record_semester_result(app, semester='Pending', cgpa=None)
+        row = record_result(app, semester='Pending', cgpa=None)
         self.assertIsNone(row.cgpa)
 
 
@@ -229,11 +231,15 @@ class TestInProgrammeEndpoints(TestCase):
     def test_semester_results_post_and_list(self):
         app = _app(self.cohort, 'e1')
         self._auth(app)
-        r = self.client.post(
-            f'/api/v1/scholarship/applications/{app.id}/semester-results/',
-            {'semester': '2026 S1', 'cgpa': '3.50'}, format='json')
+        url = f'/api/v1/scholarship/applications/{app.id}/semester-results/'
+        # Owner ruling 2026-10-29: no slip she uploaded, no result — a typed-only result is refused.
+        r = self.client.post(url, {'semester': '2026 S1', 'cgpa': '3.50'}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'slip_required'))
+        with mock.patch('apps.scholarship.storage.object_exists', return_value=True):
+            r = self.client.post(url, {'semester': '2026 S1', 'cgpa': '3.50',
+                                       'slip': slip_upload_for(app)}, format='json')
         self.assertEqual(r.status_code, 201)
-        r2 = self.client.get(f'/api/v1/scholarship/applications/{app.id}/semester-results/')
+        r2 = self.client.get(url)
         self.assertEqual(len(r2.json()['results']), 1)
 
     def test_promo_consent_minor_400(self):

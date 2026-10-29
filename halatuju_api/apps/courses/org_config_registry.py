@@ -547,20 +547,8 @@ SETTINGS = {
         'group': 'maintenance', 'unit': 'cgpa', 'min': 0, 'max': 4, 'decimals': 2,
         'default': _default_maintenance_failing_cgpa,
     },
-    # ⚠ Registered now, READ by S4b's results-due / overdue jobs (`ResultsExpectation`): how many
-    # result terms a year, how long after a term the result is due, and the grace before "overdue".
-    'results_terms_per_year': {
-        'group': 'maintenance', 'unit': 'terms', 'min': 1, 'max': 4,
-        'default': lambda: 2,
-    },
-    'results_due_days_after_term': {
-        'group': 'maintenance', 'unit': 'days', 'min': 14, 'max': 120,
-        'default': lambda: 45,
-    },
-    'results_overdue_grace_days': {
-        'group': 'maintenance', 'unit': 'days', 'min': 0, 'max': 60,
-        'default': lambda: 14,
-    },
+    # The results-timing keys (terms a year, due days, overdue grace) arrive in S4b WITH their
+    # reader (`ResultsExpectation` + the due / overdue jobs) — a setting nothing reads is a lie.
 }
 
 # ⚠ THE FOUNDATION SIGNATORY IS NOT HERE, AND MUST NOT BE ADDED. The roadmap's Sprint F line said
