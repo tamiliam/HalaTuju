@@ -26,6 +26,7 @@ import {
 import { rememberBursaryFile } from '@/lib/storage'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import { formatDate } from '@/lib/formatDate'
+import { todayIso } from '@/lib/intakeYears'
 
 /**
  * A STATE map, so these are TONES — not the `category-N` family (Layer 1 F3, 2026-08-31).
@@ -323,6 +324,13 @@ export default function BursaryPage() {
                   semester: app.latest_result.semester || '—', cgpa: app.latest_result.cgpa ?? '—' })
                 : t('scholarship.bursary.latest.none')}
             </p>
+            {app.next_result_due && (
+              <p className={`mt-1 text-sm ${app.next_result_due < todayIso() ? 'font-medium text-critical-700' : 'text-ground-600'}`}
+                data-testid="bursary-next-due">
+                {t(app.next_result_due < todayIso() ? 'scholarship.bursary.nextDue.late' : 'scholarship.bursary.nextDue.on',
+                  { date: formatDate(app.next_result_due) })}
+              </p>
+            )}
             <button type="button" onClick={() => setTab('results')} className="mt-2 text-sm font-medium text-primary-600">
               {t('scholarship.bursary.latest.open')}
             </button>

@@ -129,6 +129,13 @@ def review(result, *, decision, note='', by_email=''):
         activity.log_event(result.application, EVENT_RESULT_REVIEWED, actor_email=by_email, meta={
             'result_id': result.id, 'semester': result.semester, 'old': old, 'new': decision,
             'cgpa': str(result.cgpa) if result.cgpa is not None else None})
+        # S4b: an accepted result meets her oldest open result term; one no longer accepted
+        # reopens the term it met (`results_expectations`).
+        from . import results_expectations
+        if decision == ACCEPTED:
+            results_expectations.reconcile(result.application)
+        elif old == ACCEPTED:
+            results_expectations.unlink(result)
     return result
 
 

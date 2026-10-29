@@ -2816,6 +2816,10 @@
       "slip": {
         "label": "Your result slip (photo or PDF) — required",
         "hint": "Upload the slip from your institution here. A result is accepted only with its slip uploaded on this page — slips sent by email are not accepted."
+      },
+      "nextDue": {
+        "on": "Your next result is due by {date}.",
+        "late": "Your result was due by {date}. Please upload it with your slip on the Results tab."
       }
     },
     "subnav": {
@@ -6060,7 +6064,8 @@
         "onHold": "On hold",
         "probation": "Probation",
         "readyToClose": "Ready to close",
-        "belowMinimum": "Underperforming"
+        "belowMinimum": "Underperforming",
+        "resultsOverdue": "Results overdue"
       },
       "filter": {
         "all": "All",
@@ -6076,14 +6081,16 @@
         "cgpa": "Latest CGPA",
         "standing": "Standing",
         "mentor": "Mentor",
-        "lastActivity": "Last activity"
+        "lastActivity": "Last activity",
+        "nextDue": "Next due"
       },
       "standing": {
         "performing": "Performing",
         "underperforming": "Underperforming",
         "failing": "Failing",
         "awaiting_review": "Awaiting review",
-        "no_result_yet": "No result yet"
+        "no_result_yet": "No result yet",
+        "not_submitted": "Not submitted"
       },
       "tab": {
         "overview": "Overview",
@@ -6114,7 +6121,8 @@
         "noResult": "No semester result recorded yet.",
         "openFile": "Open scholar file",
         "thresholds": "Minimum CGPA {min} · failing below {failing} (organisation settings)",
-        "openResults": "Open results"
+        "openResults": "Open results",
+        "nextDue": "Next result due {date}"
       },
       "money": {
         "award_amount": "Award",
@@ -7024,6 +7032,18 @@
           "maintenance_failing_cgpa": {
             "label": "Failing CGPA",
             "desc": "Below this she is failing. Must be below the minimum."
+          },
+          "results_terms_per_year": {
+            "label": "Result terms a year",
+            "desc": "How many semester results a funded student sends each year. Her terms count from the day she was funded."
+          },
+          "results_due_days_after_term": {
+            "label": "Result due — days after a term ends",
+            "desc": "How long after a term ends her result is due."
+          },
+          "results_overdue_grace_days": {
+            "label": "Grace before \"not submitted\" — days",
+            "desc": "How long after the due date before a missing result shows as not submitted."
           }
         },
         "unit": {
@@ -7036,7 +7056,8 @@
           "megabytes": "MB",
           "documents": "documents",
           "attempts": "attempts",
-          "cgpa": "CGPA"
+          "cgpa": "CGPA",
+          "terms": "terms"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "defaultNoteClock": "Platform default: {n} (Malaysian time)",
@@ -7366,6 +7387,7 @@
         "application-nudges": "Application nudges",
         "purge-referrals": "Referral clean-up",
         "query-reminders": "Query reminders",
+        "results-overdue-flag": "Results overdue flag",
         "application-reminders": "Application reminders",
         "backfill-assigned-profiles": "Sponsor profile drafts",
         "review-nudges": "Reviewer nudges",

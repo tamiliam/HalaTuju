@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 4b (part 1) — when a result is due, and "not submitted" - 2026-10-29
+
+Roadmap Sprint 4b. One new table (`results_expectations`); the migration waits for Billing's 0187 on main.
+
+- **Result terms** per funded student, counted from the day she was funded (`ResultsExpectation`): two a year by
+  default, each due 45 days after the term ends, "not submitted" 14 days after that — all three on Organisation →
+  Settings → Configuration (Student maintenance). No back-dated debt: the schedule starts with the term she is in.
+- An accepted result meets her oldest open term; un-accepting it reopens the term.
+- **Staff standing "Not submitted"**; the Scholars list's **Results overdue** filter and tile are live, with a
+  **Next due** column (sortable); the scholar file names the next due date.
+- **My Bursary** tells her when her next result is due, and says so plainly once it is late.
+- Daily job `results-overdue-flag` makes and pairs the terms (idempotent). ⚠ Create its Cloud Scheduler entry
+  (08:00 MYT) at deploy — the System health light now expects it.
+
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 
 The owner audited every billed request — 3, 5, 10, 12, 14, 18, 27, 28, 29, 30, 31, 33, 38, 39, 42, 44 — and

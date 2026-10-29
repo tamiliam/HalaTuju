@@ -114,6 +114,8 @@ export interface BursarySummary {
     last_payment: { amount: string; at: string } | null
   }
   latest_result: { semester: string; cgpa: string | null; at: string; review_status?: string } | null
+  /** S4b: when her next result is due — a past date means it is late. Null: nothing due. */
+  next_result_due?: string | null
 }
 
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {

@@ -20,6 +20,7 @@ export const STANDING_TONE: Record<ScholarStanding, string> = {
   performing: 'bg-positive-100 text-positive-700',
   underperforming: 'bg-caution-100 text-caution-700',
   failing: 'bg-critical-100 text-critical-700',
+  not_submitted: 'bg-critical-100 text-critical-700',
   awaiting_review: 'bg-ground-100 text-ground-700',
   no_result_yet: 'bg-ground-100 text-ground-500',
 }

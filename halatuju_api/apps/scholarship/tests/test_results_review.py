@@ -214,11 +214,13 @@ class TestSettings(TestCase):
                     org_config.validate_values({'pool_funded_grace_days': bad}, pairs=False)
                 self.assertEqual(ctx.exception.code, 'bad_value')
 
-    def test_the_4b_timing_keys_are_not_registered_yet(self):
-        """M1: a setting arrives with its reader — the results timings ship with S4b."""
+    def test_every_maintenance_key_has_its_reader(self):
+        """M1: a setting arrives with its reader. S4b's three timing keys are read by
+        `results_expectations.settings_for`; the reminder keys arrive with the reminder job."""
         from apps.courses.org_config_registry import SETTINGS
         self.assertEqual(sorted(k for k, v in SETTINGS.items() if v['group'] == 'maintenance'),
-                         ['maintenance_failing_cgpa', 'maintenance_min_cgpa'])
+                         ['maintenance_failing_cgpa', 'maintenance_min_cgpa', 'results_due_days_after_term',
+                          'results_overdue_grace_days', 'results_terms_per_year'])
 
     def test_the_contract_guard(self):
         """The shipped BrightPath template states no CGPA in its progress standard — the settings
@@ -422,12 +424,15 @@ class TestTheDoorsAreTheListedOnes(TestCase):
         # judging readers that query directly (a subquery / one feed query)
         'scholarship/scholars.py::_latest': 'judge',
         'scholarship/sponsor_feed.py::sponsor_activity': 'judge',
+        'scholarship/results_expectations.py::reconcile': 'judge',         # S4b: accepted results meet terms
         # showing readers (every status, with its review state)
         'scholarship/scholars.py::annotate': 'show',                      # the "a result waits" flag
         'scholarship/views_bursary.py::summary_payload': 'show',           # her own latest, any status
         'scholarship/views_admin/scholars.py::AdminScholarResultReviewView.post': 'show',  # fetch to review
     }
-    WRITERS = {'scholarship/in_programme.py::record_semester_result', 'scholarship/results_review.py::review'}
+    WRITERS = {'scholarship/in_programme.py::record_semester_result', 'scholarship/results_review.py::review',
+               # S4b: the term stamp only (`term_index`), never a review or a CGPA
+               'scholarship/results_expectations.py::reconcile', 'scholarship/results_expectations.py::unlink'}
     WRITE_METHODS = {'create', 'update', 'bulk_create', 'bulk_update', 'update_or_create',
                      'get_or_create', 'delete'}
     #: Fields only a SemesterResult carries — assigning one is a write wherever it happens.

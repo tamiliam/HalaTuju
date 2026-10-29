@@ -88,17 +88,20 @@ class AdminScholarListView(_ScholarsBase):
             return qs.filter(Q(programme=programme) | Q(cohort__programme=programme))
 
         closed = q.get('closed') == '1'
-        below = scholars.below_minimum_q()          # one read of every organisation's minimum
+        lines = scholars.custom_lines()             # ONE read: every organisation's minimum + grace
+        below, overdue = scholars.below_minimum_q(lines), scholars.overdue_q(lines)
+        wanted = q.get('standing')
         qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
                                   on_hold=q.get('on_hold') == '1', search=q.get('search', ''),
-                                  below=below if q.get('standing') == 'below_minimum' else None)
+                                  below=below if wanted == 'below_minimum' else None,
+                                  overdue=overdue if wanted == 'results_overdue' else None)
         sort = q.get('sort') or scholars.DEFAULT_SORT
         qs = qs.order_by(*scholars.SORTS.get(sort, scholars.SORTS['name']))
         count = qs.count()
         size = _int(q.get('page_size'), 25, 1, scholars.MAX_PAGE_SIZE)
         page = _int(q.get('page'), 1, 1, max(1, -(-count // size)))
         page_rows = list(qs[(page - 1) * size:page * size])
-        summary = scholars.summary(scholars.annotate(scoped(None)), below)
+        summary = scholars.summary(scholars.annotate(scoped(None)), below, overdue)
         return Response({'summary': summary, 'count': count, 'page': page, 'page_size': size,
                          'results': scholars.rows(page_rows)})
 

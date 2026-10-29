@@ -61,6 +61,17 @@ it('draws the header and the cards from the payload', async () => {
   expect(view.getAttribute('href')).toBe('/admin/scholarship/104')
 })
 
+it('names when her next result is due (S4b), and nothing when no term is open', async () => {
+  mockApi.getScholarFile.mockResolvedValue({ ...FILE, next_due: '2026-12-15' })
+  const { unmount } = render(<ScholarFilePage />)
+  expect((await screen.findByTestId('file-next-due')).textContent).toContain('admin.scholars.file.nextDue')
+  unmount()
+  mockApi.getScholarFile.mockResolvedValue({ ...FILE, next_due: null })
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+  expect(screen.queryByTestId('file-next-due')).toBeNull()
+})
+
 it('keeps the sub-state and Close controls in the cockpit (read-only here)', async () => {
   render(<ScholarFilePage />)
   await screen.findByRole('heading', { name: 'NUR AISYAH' })

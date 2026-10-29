@@ -133,13 +133,19 @@ const TIMINGS: api.OrganisationConfigSetting[] = [
     min: 1, max: 3, value: null, default: 2 },
 ]
 
-// Student maintenance S4a — the first DECIMAL rows (a CGPA, two places). The results timings
-// arrive in S4b with their reader.
+// Student maintenance S4a — the first DECIMAL rows (a CGPA, two places); S4b's result timings
+// (read by `results_expectations`), the terms row a MENU of the four lengths that divide a year.
 const MAINTENANCE: api.OrganisationConfigSetting[] = [
   { key: 'maintenance_min_cgpa', group: 'maintenance', unit: 'cgpa',
     min: 1, max: 4, decimals: 2, value: null, default: 3 },
   { key: 'maintenance_failing_cgpa', group: 'maintenance', unit: 'cgpa',
     min: 0, max: 4, decimals: 2, value: null, default: 2 },
+  { key: 'results_terms_per_year', group: 'maintenance', unit: 'terms',
+    min: 1, max: 4, value: null, default: 2, allowed: [1, 2, 3, 4] },
+  { key: 'results_due_days_after_term', group: 'maintenance', unit: 'days',
+    min: 14, max: 120, value: null, default: 45 },
+  { key: 'results_overdue_grace_days', group: 'maintenance', unit: 'days',
+    min: 0, max: 60, value: null, default: 14 },
 ]
 
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {

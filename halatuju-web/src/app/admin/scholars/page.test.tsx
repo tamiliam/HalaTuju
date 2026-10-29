@@ -4,9 +4,9 @@
  * The officer's Scholars list (student maintenance Sprint 2). Pinned from the harm:
  *  * the list asks the SERVER for each filter, search, sort and page — a client-side filter over a
  *    page of 25 would quietly miss the rest of the list;
- *  * the filters for what is NOT built yet (Results overdue, Wants a mentor) are shown DISABLED,
- *    never faked and never hidden (PanelTabs' rule); Underperforming is live since S4a and asks the
- *    SERVER (`standing=below_minimum`) — the browser never compares a CGPA;
+ *  * the filter for what is NOT built yet (Wants a mentor) is shown DISABLED, never faked and never
+ *    hidden (PanelTabs' rule); Underperforming (S4a) and Results overdue (S4b) are live and ask the
+ *    SERVER (`standing=below_minimum` / `results_overdue`) — the browser never judges a date or a CGPA;
  *  * the row's standing is the server's word (`standing.py`), drawn as given;
  *  * finance cannot open the page (the server refuses too) — names beside case data.
  */
@@ -30,10 +30,10 @@ const ROW: api.ScholarRow = {
   course: 'Diploma in Accounting', institution: 'Politeknik Ungku Omar', status: 'awarded',
   maintenance_substate: 'probation', is_on_hold: false,
   latest_result: { cgpa: '2.85', semester: 'Sem 2', at: '2026-07-12T00:00:00Z' },
-  standing: 'underperforming', mentor: null, last_activity_at: '2026-10-27T00:00:00Z',
+  standing: 'underperforming', next_due: '2026-12-15', mentor: null, last_activity_at: '2026-10-27T00:00:00Z',
 }
 const LIST: api.ScholarList = {
-  summary: { in_programme: 65, on_hold: 1, probation: 5, ready_to_close: 0, closed: 2, below_minimum: 3 },
+  summary: { in_programme: 65, on_hold: 1, probation: 5, ready_to_close: 0, closed: 2, below_minimum: 3, results_overdue: 4 },
   count: 1, page: 1, page_size: 25, results: [ROW],
 }
 
@@ -59,7 +59,7 @@ it('draws the tiles, the row and its link to the file', async () => {
 it('shows the not-yet-built filters disabled', async () => {
   render(<ScholarsPage />)
   await screen.findAllByText('NUR AISYAH')
-  for (const key of ['overdue', 'wantsMentor']) {
+  for (const key of ['wantsMentor']) {
     const tab = screen.getByText(`admin.scholars.filter.${key}`).closest('button')!
     expect([tab.getAttribute('role'), tab.hasAttribute('disabled')]).toEqual(['tab', true])
   }
@@ -74,6 +74,22 @@ it('Underperforming is live: it carries its count and asks the server, never the
   fireEvent.click(tab)
   await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
     expect.objectContaining({ standing: 'below_minimum', closed: false, substate: '' }), { token: 'tok' }))
+})
+
+it('Results overdue is live: its count, its tile, the next-due column, and it asks the server', async () => {
+  render(<ScholarsPage />)
+  await screen.findAllByText('NUR AISYAH')
+  expect(screen.getByText('admin.scholars.tile.resultsOverdue')).toBeTruthy()
+  expect(screen.getByTestId('next-due').textContent).not.toBe('—')
+  const tab = screen.getByRole('tab', { name: /admin\.scholars\.filter\.overdue/ })
+  expect(tab.hasAttribute('disabled')).toBe(false)
+  expect(tab.textContent).toContain('4')
+  fireEvent.click(tab)
+  await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
+    expect.objectContaining({ standing: 'results_overdue', closed: false, substate: '' }), { token: 'tok' }))
+  fireEvent.click(screen.getByRole('button', { name: /admin\.scholars\.col\.nextDue/ }))
+  await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
+    expect.objectContaining({ sort: 'due' }), { token: 'tok' }))
 })
 
 it('asks the server for the filter, the search and the sort', async () => {

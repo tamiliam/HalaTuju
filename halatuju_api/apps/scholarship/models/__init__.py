@@ -57,6 +57,7 @@ from .review import (
     AssignmentEvent, GraduationMessage, ResolutionItem, ReviewerProfile, SemesterResult,
     SponsorReferral,
 )
+from .results import ResultsExpectation
 from .content import (
     StandingGift, TrustContent, WhatsAppMessage,
 )

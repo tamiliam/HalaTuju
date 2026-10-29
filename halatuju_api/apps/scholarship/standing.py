@@ -7,6 +7,8 @@ organisation's settings (Organisation → Settings → Configuration, the ``main
                           or the accepted result marks her graduation;
   * ``underperforming`` — below the minimum, at or above ``maintenance_failing_cgpa`` (2.00);
   * ``failing``         — below the failing line;
+  * ``not_submitted``   — S4b: a result term is past its due date AND the grace
+                          (``results_expectations``), and nothing is waiting for review;
   * ``awaiting_review`` — no accepted result yet, but one is waiting for an officer;
   * ``no_result_yet``   — nothing accepted and nothing waiting (or an accepted result with no CGPA).
 
@@ -24,7 +26,8 @@ UNDERPERFORMING = 'underperforming'
 FAILING = 'failing'
 AWAITING_REVIEW = 'awaiting_review'
 NO_RESULT_YET = 'no_result_yet'
-STANDINGS = (PERFORMING, UNDERPERFORMING, FAILING, AWAITING_REVIEW, NO_RESULT_YET)
+NOT_SUBMITTED = 'not_submitted'
+STANDINGS = (PERFORMING, UNDERPERFORMING, FAILING, NOT_SUBMITTED, AWAITING_REVIEW, NO_RESULT_YET)
 
 
 def thresholds(organisation):
@@ -46,8 +49,12 @@ def is_failing(cgpa, organisation):
     return below(cgpa, Decimal(str(org_config.value(organisation, 'maintenance_failing_cgpa'))))
 
 
-def standing_for(cgpa, graduated, *, has_accepted, has_pending, minimum, failing):
-    """The pure rule, on facts a caller already holds (a list row's annotations, or one file)."""
+def standing_for(cgpa, graduated, *, has_accepted, has_pending, minimum, failing, overdue=False):
+    """The pure rule, on facts a caller already holds (a list row's annotations, or one file).
+    `overdue` (S4b): an open result term is past its due date and the grace. It wins over every
+    CGPA reading — she owes a result — unless one is already waiting for the officer."""
+    if overdue and not has_pending:
+        return NOT_SUBMITTED
     if not has_accepted:
         return AWAITING_REVIEW if has_pending else NO_RESULT_YET
     if graduated:
@@ -64,13 +71,14 @@ def standing_for(cgpa, graduated, *, has_accepted, has_pending, minimum, failing
 
 def standing_of(application):
     """One application's standing (two small queries: the latest accepted result, any pending)."""
+    from .results_expectations import not_submitted
     from .results_review import has_pending, latest_accepted
     latest = latest_accepted(application)
     minimum, failing = thresholds(application.owning_organisation)
     return standing_for(
         latest.cgpa if latest else None, bool(latest and latest.graduated),
         has_accepted=latest is not None, has_pending=has_pending(application),
-        minimum=minimum, failing=failing)
+        minimum=minimum, failing=failing, overdue=not_submitted(application))
 
 
 # ── The contract guard ──────────────────────────────────────────────────────────────────────────

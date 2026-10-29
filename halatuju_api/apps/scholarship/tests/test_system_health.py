@@ -199,7 +199,7 @@ class CadenceRegistry(SimpleTestCase):
             'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
             'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime',
             'application-reminders', 'backfill-assigned-profiles', 'expire-temp-passwords',
-            'lapse-expired-offers', 'purge-referrals', 'query-reminders', 'review-nudges',
+            'lapse-expired-offers', 'purge-referrals', 'query-reminders', 'results-overdue-flag', 'review-nudges',
             'spending-ingest', 'sync-vircle-sheet', 'vision-outage',
             'backup-documents', 'course-data-check', 'partner-digests', 'sponsor-digests',
             'issue-monthly-invoices', 'refresh-reminder',

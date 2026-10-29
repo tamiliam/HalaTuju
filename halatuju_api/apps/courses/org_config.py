@@ -102,11 +102,18 @@ def custom_values(key):
     applications of MANY organisations in one queryset, so it needs the whole map, not one value.
     Organisations absent from the map follow the platform default.
     """
+    return custom_values_many((key,))[key]
+
+
+def custom_values_many(keys):
+    """`{key: {organisation_id: stored value}}` for several keys in ONE query (a list screen that
+    needs two organisation-specific lines must not pay a read for each)."""
     from .models import OrganisationConfiguration
-    out = {}
+    out = {key: {} for key in keys}
     for org_id, values in OrganisationConfiguration.objects.values_list(
             'organisation_id', 'values'):
-        v = (values or {}).get(key)
-        if v is not None:
-            out[org_id] = v
+        for key in keys:
+            v = (values or {}).get(key)
+            if v is not None:
+                out[key][org_id] = v
     return out

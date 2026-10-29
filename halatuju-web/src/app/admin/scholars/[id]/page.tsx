@@ -109,6 +109,11 @@ export default function ScholarFilePage() {
           </p>
         </>
       ) : <Later text={t('admin.scholars.file.noResult')} />}
+      {file.next_due && (
+        <p className="text-xs text-ground-600" data-testid="file-next-due">
+          {t('admin.scholars.file.nextDue', { date: formatDate(file.next_due) })}
+        </p>
+      )}
       {file.thresholds && (
         <p className="text-xs text-ground-500">
           {t('admin.scholars.file.thresholds', { min: file.thresholds.minimum, failing: file.thresholds.failing })}

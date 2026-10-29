@@ -2816,6 +2816,10 @@
       "slip": {
         "label": "Slip keputusan anda (foto atau PDF) — wajib",
         "hint": "Muat naik slip daripada institusi anda di sini. Keputusan hanya diterima jika slipnya dimuat naik di halaman ini — slip yang dihantar melalui e-mel tidak diterima."
+      },
+      "nextDue": {
+        "on": "Keputusan anda yang seterusnya perlu dihantar sebelum {date}.",
+        "late": "Keputusan anda sepatutnya dihantar sebelum {date}. Sila muat naik bersama slip anda di tab Keputusan."
       }
     },
     "subnav": {
@@ -6060,7 +6064,8 @@
         "onHold": "Ditangguhkan",
         "probation": "Percubaan",
         "readyToClose": "Sedia ditutup",
-        "belowMinimum": "Prestasi rendah"
+        "belowMinimum": "Prestasi rendah",
+        "resultsOverdue": "Keputusan lewat"
       },
       "filter": {
         "all": "Semua",
@@ -6076,14 +6081,16 @@
         "cgpa": "PNGK terkini",
         "standing": "Kedudukan",
         "mentor": "Mentor",
-        "lastActivity": "Aktiviti terakhir"
+        "lastActivity": "Aktiviti terakhir",
+        "nextDue": "Tarikh akhir seterusnya"
       },
       "standing": {
         "performing": "Berprestasi",
         "underperforming": "Prestasi rendah",
         "failing": "Gagal",
         "awaiting_review": "Menunggu semakan",
-        "no_result_yet": "Belum ada keputusan"
+        "no_result_yet": "Belum ada keputusan",
+        "not_submitted": "Tidak dihantar"
       },
       "tab": {
         "overview": "Gambaran",
@@ -6114,7 +6121,8 @@
         "noResult": "Belum ada keputusan semester direkodkan.",
         "openFile": "Buka fail penerima",
         "thresholds": "PNGK minimum {min} · gagal di bawah {failing} (tetapan organisasi)",
-        "openResults": "Buka keputusan"
+        "openResults": "Buka keputusan",
+        "nextDue": "Keputusan seterusnya perlu dihantar {date}"
       },
       "money": {
         "award_amount": "Anugerah",
@@ -7024,6 +7032,18 @@
           "maintenance_failing_cgpa": {
             "label": "PNGK gagal",
             "desc": "Di bawah nilai ini dia gagal. Mesti di bawah minimum."
+          },
+          "results_terms_per_year": {
+            "label": "Penggal keputusan setahun",
+            "desc": "Berapa keputusan semester yang dihantar pelajar yang dibiayai setiap tahun. Penggalnya dikira dari hari dia dibiayai."
+          },
+          "results_due_days_after_term": {
+            "label": "Keputusan perlu dihantar — hari selepas penggal tamat",
+            "desc": "Berapa lama selepas penggal tamat keputusannya perlu dihantar."
+          },
+          "results_overdue_grace_days": {
+            "label": "Tempoh tangguh sebelum \"tidak dihantar\" — hari",
+            "desc": "Berapa lama selepas tarikh akhir sebelum keputusan yang tiada ditunjukkan sebagai tidak dihantar."
           }
         },
         "unit": {
@@ -7036,7 +7056,8 @@
           "megabytes": "MB",
           "documents": "dokumen",
           "attempts": "percubaan",
-          "cgpa": "PNGK"
+          "cgpa": "PNGK",
+          "terms": "penggal"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",
@@ -7366,6 +7387,7 @@
         "application-nudges": "Gesaan permohonan",
         "purge-referrals": "Pembersihan rujukan",
         "query-reminders": "Peringatan pertanyaan",
+        "results-overdue-flag": "Bendera keputusan lewat",
         "application-reminders": "Peringatan permohonan",
         "backfill-assigned-profiles": "Draf profil penaja",
         "review-nudges": "Gesaan penyemak",
