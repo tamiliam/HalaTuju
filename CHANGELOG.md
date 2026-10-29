@@ -138,6 +138,10 @@ found the work — none of it was visible from reading the code.
   (`EKONOMI_SPM` + `EKONOMI_ASAS_SPM`, `AL_ADAB_SPM` twice). Now each student subject counts once. STPM golden
   master re-baselined on purpose 2,026 -> **2,025** (`arts_high_muet` loses UA6314002); real students holding one
   subject behind two codes may see fewer courses. Regression tests in `test_islamic_spm_subjects.py`.
+  The count is a maximum matching (`stpm_engine._distinct_matches`), not first-fit: a first-fit count let the
+  ORDER of the list waste a subject (`BAHASA_ARAB_MUASIRAH_SPM` first spent `bahasa_arab`, so a student with
+  both `bahasa_arab` and `lughah_arabiah` counted 1, not 2) — `test_list_order_cannot_waste_a_subject`.
+- **Live 2026-10-29** with TD-416 in `1a4aedc8` (api-01174-4cp, web-01008-hdx, both builds SUCCESS).
 - **STPM entry.** `BAHASA_ARAB_MUASIRAH_SPM` is now also met by `lughah_arabiah` (`stpm_engine.SPM_CODE_ALSO`),
   counted once; the old `bahasa_arab` reading is kept, so no existing result moves. Course-page labels for the
   Islamic requirement codes use the same slip names. `report_engine.SUBJECT_LABELS` names all 14.
