@@ -17,7 +17,7 @@ export type TrackId = 'sains' | 'sains_komputer' | 'kejuruteraan' | 'perakaunan'
 /** Course id → track. The catalogue spells a matriculation course `matric-<track>`. */
 export const MATRIC_TRACK_MAP: Record<string, TrackId> = {
   'matric-sains': 'sains',
-  'matric-sains_komputer': 'sains_komputer',
+  'matric-sains-komputer': 'sains_komputer',   // the catalogue id (was spelt with an underscore, Bumi D2)
   'matric-kejuruteraan': 'kejuruteraan',
   'matric-perakaunan': 'perakaunan',
 }

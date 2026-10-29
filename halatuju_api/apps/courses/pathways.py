@@ -108,6 +108,15 @@ MATRIC_TRACKS = [
     {'id': 'kejuruteraan', 'name': 'Engineering', 'name_ms': 'Kejuruteraan', 'name_ta': 'பொறியியல்'},
     {'id': 'sains_komputer', 'name': 'Computer Science', 'name_ms': 'Sains Komputer', 'name_ta': 'கணினி அறிவியல்'},
     {'id': 'perakaunan', 'name': 'Accounting', 'name_ms': 'Perakaunan', 'name_ta': 'கணக்கியல்'},
+    # Bumi coverage Sprint D2 (owner ruling 2026-10-29): the two Bumiputera-only programmes MOHE
+    # lists under Bahagian Matrikulasi (KA0000002, KA0000006), held as catalogue rows
+    # `matric-sains-4-semester` / `matric-perakaunan-profesional` with `req_bumiputera`, so the
+    # engine's gate decides who sees them. `check_all_pathways` (the /calculate/pathways/ door,
+    # which never reads the Bumiputera answer) leaves them out.
+    {'id': 'sains_4_semester', 'name': 'Science (4 semesters)', 'name_ms': 'Sains (4 Semester)',
+     'name_ta': 'அறிவியல் (4 பருவங்கள்)', 'bumiputera_only': True},
+    {'id': 'perakaunan_profesional', 'name': 'Professional Accounting', 'name_ms': 'Perakaunan Profesional',
+     'name_ta': 'தொழில்முறைக் கணக்கியல்', 'bumiputera_only': True},
 ]
 
 # Subject requirements per track (using backend keys)
@@ -133,6 +142,19 @@ MATRIC_REQUIREMENTS = {
     'perakaunan': [
         {'subject_id': 'math', 'min_grade': 'C'},
         # 3 electives with min C — handled by slot filling
+    ],
+    # Sprint D2, from MOHE's Syarat Khas (2026-10-29). The catalogue row holds the whole rule;
+    # these are the subjects the merit counts first, at the grades MOHE names.
+    'sains_4_semester': [
+        {'subject_id': 'math', 'min_grade': 'C'},
+        {'subject_id': 'addmath', 'min_grade': 'E'},
+        {'subject_id': 'chem', 'min_grade': 'E'},
+        {'subject_id': 'phy', 'min_grade': 'E', 'alternatives': ['bio', 'comp_sci']},
+    ],
+    'perakaunan_profesional': [
+        {'subject_id': 'math', 'min_grade': 'A'},
+        {'subject_id': 'addmath', 'min_grade': 'C'},
+        # 2 electives with min C — handled by slot filling (the row asks A in three of a list)
     ],
 }
 
@@ -362,12 +384,15 @@ def check_all_pathways(grades, coq_score):
         coq_score: Co-curricular score (0-10).
 
     Returns:
-        List of 6 result dicts (4 matric + 2 stpm).
+        List of 6 result dicts (4 matric + 2 stpm). The Bumiputera-only matric tracks are never
+        listed here: this door does not know the answer (they reach a Bumi student through the
+        course catalogue and its gate).
     """
     results = []
 
     for track in MATRIC_TRACKS:
-        results.append(check_matric_track(track['id'], grades, coq_score))
+        if not track.get('bumiputera_only'):
+            results.append(check_matric_track(track['id'], grades, coq_score))
 
     for bidang in STPM_BIDANGS:
         results.append(check_stpm_bidang(bidang['id'], grades))
