@@ -1658,3 +1658,18 @@ is prefetched — weight moved off a route's first load can still travel in the 
   printed in a place where it was not true, asking for the same work twice. **Rule:** a claim about the whole
   record belongs in one place on the screen; before repeating a status line per row, ask whether the sentence
   is still true on the second row. (Billing, 2026-10-30)
+
+- **Re-derive a money figure from the source documents, even when the owner has already done the arithmetic.**
+  The owner audited sixteen billed requests by hand and put August's over-charge at 5.5 hours (RM126.50) from
+  requests 10 and 14. Checking the SENT invoice against each closing report found request 12 billed at its
+  6.0-hour quote after its own report said *"three is what you are charged"* — August billed 27.0 hours against
+  18.5 published, so the real figure was 8.5 hours (RM195.50). The owner had read #12 and not flagged it.
+  **Rule:** when a person hands you a number to act on, reproduce it from the records before using it, and if
+  it differs, say so and ASK rather than quietly substituting your own — it is their money decision, and a
+  silent correction is as wrong as a silent error. (Billing, 2026-10-30)
+
+- **A report that states the CHARGE does not necessarily state the ACTUAL.** Request 38's closing report said
+  "Planned: 82 hours … added work; we are charging the 82 hours quoted" — a charge, a plan, and no figure at
+  all for what it took. Nine of the ten remaining reports gave both; this one looked complete and was not.
+  **Rule:** when transcribing a published figure, read for the specific number you need; "it mentions hours"
+  is not "it states the actual", and the honest move is to ask the one person who knows. (Billing, 2026-10-30)

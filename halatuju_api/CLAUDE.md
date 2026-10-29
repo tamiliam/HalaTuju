@@ -1091,12 +1091,18 @@ overridable). `charged_hours = 0.0` is a real answer and is not NULL. **Nothing 
    - **Both audiences see the FINAL label** (`OrgRequestOrgSerializer.kind` → `_effective_kind`),
      so a charge links to a request labelled the way it was billed. Nine were mislabelled.
 
-**Owner still to do:** record the five audited actuals on each request page (10 → 11.5/11.5,
-14 → 5.0/0.0, 28 → 5.0/5.0, 30 → 4.0/4.0, 31 → 5.0/5.0) and the actuals for #38, #39, #29, #33,
-#42, #44 — **October cannot issue until every finished request has one**; then create October's
-−RM126.50 credit (5.5 h × RM23.00, reason naming requests 10 and 14). Also: the October Supabase,
-Twilio and Workspace bills; convert the held Anthropic rows for October and November once each
-month ends. **Blocked on permissions:** deleting the orphan `.worktrees/budget-base` (already
+**ALL 16 BILLED REQUESTS NOW CARRY THEIR PUBLISHED FIGURES (2026-10-30).** Zero missing. ⚠ The
+owner's own audit figure was SHORT: August's over-charge is **8.5 h = RM195.50**, not the 5.5 h
+first computed, because **request 12 was billed at its 6.0 quote after its report said "three is
+what you are charged"**. August billed 27.0 h against 18.5 h published (10: 15.0→11.5, 12:
+6.0→3.0, 14: 2.0→0.0). `OrgBillingCorrection` id 1 carries −RM195.50 on 2026-10, linked to
+INV-2026-0002. ⚠ #38 published NO actual ("added work; we are charging the 82 hours quoted") — the
+owner supplied 82. #28's October hours row was corrected 2.5 → 5.0 before invoicing (an
+under-charge; no correction row needed, the month is not issued).
+
+**Owner still to do:** the October **Supabase, Twilio and Workspace** bills — the ONLY thing now
+blocking October, which will bill 140.5 h less the RM195.50 credit. Also: convert the held
+Anthropic rows for October and November once each month ends. **Blocked on permissions:** deleting the orphan `.worktrees/budget-base` (already
 git-pruned, no junctions, three harmless files).
 
 ---
