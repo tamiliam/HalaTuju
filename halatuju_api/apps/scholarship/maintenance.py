@@ -20,6 +20,12 @@ run; ``set_substate`` takes her out of every editable run; ``payments.set_item``
 back; ``payments.complete`` refuses a run that still pays her. Lifting the hold re-includes
 nobody — the maker does that by hand.
 
+⚠ THE MONEY HOLD IS NOT THE FILE PREDICATE (lead review, maintenance S1). ``is_on_hold`` reads the
+stored sub-state and a PAYABLE status only — never ``vircle_activated_at``, which is mirrored from
+the Vircle relay sheet: if that stamp were cleared, a hold judged on the file predicate would
+silently stop holding and the next run would pay her again. ``can_set_substate`` decides who may
+be given (or lifted from) a sub-state.
+
 Import direction: ``maintenance → maintenance_scope / activity / models``; ``payments`` is
 imported lazily inside ``_exclude_from_open_runs`` (payments reads ``is_on_hold`` from here).
 """
@@ -27,7 +33,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import activity
-from .maintenance_scope import in_maintenance_q, is_in_maintenance
+from .maintenance_scope import PAYABLE_STATUSES, in_maintenance_q, is_in_maintenance
 from .models import ScholarshipApplication
 from .models.activity import EVENT_SUBSTATE_CHANGED
 
@@ -51,9 +57,28 @@ class MaintenanceError(Exception):
 ON_HOLD_EXCLUDE_REASON = 'On hold'
 
 
-def _require_maintenance(application):
-    # Sub-states only apply to a student in the funded recurring loop (the ONE predicate).
-    if not is_in_maintenance(application):
+def can_set_substate(application, substate=None):
+    """May ``application`` be moved to ``substate`` (None = "to anything")? Only a PAYABLE status
+    (``PAYABLE_STATUSES`` — the statuses a payment run pays) ever takes a sub-state, and then:
+
+      * the student is in maintenance (``maintenance_scope.is_in_maintenance``), OR
+      * she holds a Vircle eWallet ID (``vircle_id``) — a run pays on the ID, and the activation
+        stamp is only advisory there, so an awarded student whose wallet Vircle has not yet
+        reported live is PAID and must be holdable ("on hold stops money whatever the status"), OR
+      * the move LEAVES a stored hold (``on_hold`` → anything else): a hold that is stored can
+        always be lifted, whatever has happened to the wallet fields since it was placed.
+
+    An awarded student with no wallet ID at all is not paid and takes no sub-state."""
+    if application is None or application.status not in PAYABLE_STATUSES:
+        return False
+    if is_in_maintenance(application) or (application.vircle_id or '').strip():
+        return True
+    return (substate is not None and substate != 'on_hold'
+            and application.maintenance_substate == 'on_hold')
+
+
+def _require_maintenance(application, substate):
+    if not can_set_substate(application, substate):
         raise MaintenanceError('not_in_maintenance')
 
 
@@ -82,8 +107,9 @@ def _exclude_from_open_runs(application):
 
 
 def set_substate(application, substate, *, by_email=''):
-    """Set the maintenance sub-state. Requires the student to be in maintenance
-    (``maintenance_scope.is_in_maintenance``) and a valid sub-state. Returns the application.
+    """Set the maintenance sub-state. Requires ``can_set_substate`` (a payable student in
+    maintenance or holding a wallet ID; lifting a stored hold always) and a valid sub-state.
+    Returns the application.
     Free movement between the four is allowed (an admin can put a student on probation, hold,
     resume to on_track, or mark ready to close, and reverse any of these) — the only terminal
     step out of maintenance is the S6 manual CLOSE, which is a separate action.
@@ -94,7 +120,7 @@ def set_substate(application, substate, *, by_email=''):
     (``_exclude_from_open_runs``) — first, so this transaction takes the run's lock BEFORE the
     application's row, the same order ``payments.complete`` takes them (no deadlock). Lifting the
     hold re-includes nobody."""
-    _require_maintenance(application)
+    _require_maintenance(application, substate)
     if substate not in SUBSTATES:
         raise MaintenanceError('bad_substate')
     old = application.maintenance_substate
@@ -115,9 +141,13 @@ def set_substate(application, substate, *, by_email=''):
 
 
 def is_on_hold(application):
-    """True iff the student's support is paused: in maintenance and on hold. THE one definition
-    — ``payments`` and ``disbursement`` both read it, so on hold stops money at every door."""
-    return is_in_maintenance(application) and application.maintenance_substate == 'on_hold'
+    """True iff the student's support is paused: the stored sub-state is ``on_hold`` and her status
+    is one a payment run pays (``PAYABLE_STATUSES``). THE one definition — ``payments`` and
+    ``disbursement`` both read it, so on hold stops money at every door. ⚠ Deliberately NOT the
+    file predicate: it never reads the wallet stamp, so a cleared ``vircle_activated_at`` cannot
+    release a hold (module docstring)."""
+    return (application is not None and application.status in PAYABLE_STATUSES
+            and application.maintenance_substate == 'on_hold')
 
 
 def sponsor_support_status(application):
@@ -125,8 +155,12 @@ def sponsor_support_status(application):
     from the academic band. Only the two states a funder legitimately needs are exposed:
     ``paused`` (on_hold) and ``completing`` (ready_to_close). ``probation`` is internal
     (never surfaced to a sponsor — it isn't the funder's place to see an at-risk flag),
-    and on_track returns None (the academic band already conveys good standing)."""
-    if not is_in_maintenance(application):
+    and on_track returns None (the academic band already conveys good standing).
+
+    Judged like ``is_on_hold`` (a PAYABLE status, the stored sub-state), so a sponsor reads
+    ``paused`` exactly when the money is stopped — the same answer ``pool.sponsor_portfolio_status``
+    gives, which calls ``is_on_hold``."""
+    if application is None or application.status not in PAYABLE_STATUSES:
         return None
     sub = application.maintenance_substate
     if sub == 'on_hold':

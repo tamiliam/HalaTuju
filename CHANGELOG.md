@@ -23,6 +23,8 @@ put on hold, or reach the in-programme page. Backend foundation; the status stat
   loses its signatures, the D2 house rule); `payments.set_item` refuses to re-include her (`on_hold`);
   `payments.complete` refuses a run that still pays an on-hold student (`on_hold_in_run`, the approval
   rolls back); `disbursement.release_tranche` already refused. Lifting the hold re-includes nobody.
+  The money hold is judged on the stored sub-state and a payable status, never the wallet stamp; a
+  student paid on her eWallet ID before Vircle reports it live can be held (`can_set_substate`).
   The payments page maps both new codes (en/ms/ta).
 - **Sponsor-visible:** an on-hold `awarded` student now reads `paused` (support status and portfolio
   badge); the sponsor progress band is unchanged (owner default).

@@ -33,7 +33,12 @@ a completed run is history and is left alone; (c) `payments.complete` refuses `o
 item's student is on hold, so the approval rolls back; (d) `set_item(included=True)` refuses `on_hold`; (e) lifting
 the hold re-includes nobody — the maker does; (f) `disbursement.release_tranche` already refused. Not doors: wallet
 credits (money IN), the one-off `import_vircle_csv` backfill (history). The hold takes the run lock before the
-application row, the order `complete` uses. **Sponsor-visible:** an on-hold `awarded` student reads `paused`.
+application row, the order `complete` uses. **The money hold is NOT the file predicate** (lead review):
+`is_on_hold` = stored `on_hold` AND a status a run pays (`PAYABLE_STATUSES`, now homed in `maintenance_scope`) —
+never the wallet stamp, which is mirrored from the Vircle relay sheet and could be cleared. `can_set_substate`:
+a payable status AND (in maintenance OR a `vircle_id` held — a run pays on the ID, activation is advisory), and
+a stored hold can always be lifted. **Sponsor-visible:** `sponsor_support_status` is judged like `is_on_hold`, so a
+sponsor reads `paused` exactly when money is stopped (agreeing with `pool.sponsor_portfolio_status`).
 **The activity log is written inside the caller's transaction** — the log is part of the record, so the table
 must exist first (migrate-first is mandatory for 0183). Not changed, by design: `pool.FUNDED_STATES` /
 `derive_progress_state` (sponsor band, owner default), `services/consent.py`'s onboarding gate,

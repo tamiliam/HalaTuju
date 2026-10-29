@@ -41,6 +41,12 @@ from .closure import FUNDED_STATUSES, POST_AWARD_REASONS, PRE_AWARD_REASONS
 
 #: The status that is in maintenance only with a live wallet.
 _AWARDED = 'awarded'
+#: Application statuses that may appear in / be paid by a Vircle payment run (payments D3/D4-2).
+#: Wider than ``pool.FUNDED_STATES`` because the cohort is paid while at ``awarded``. Its ONE home
+#: (moved here from ``payments.py`` at maintenance S1, re-exported there) because
+#: ``maintenance.is_on_hold`` reads it too and this module is a leaf: the MONEY hold is judged on
+#: the status that is paid, never on the wallet stamp (see ``maintenance.is_on_hold``).
+PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
 #: Reasons only a close from awarded / active / maintenance may record (see the docstring).
 POST_AWARD_ONLY_REASONS = tuple(r for r in POST_AWARD_REASONS if r not in PRE_AWARD_REASONS)
 

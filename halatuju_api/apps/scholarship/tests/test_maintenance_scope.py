@@ -133,10 +133,15 @@ class TestAwardedWithAWalletIsInMaintenance(TestCase):
         self.assertIn(self.live.id, ids)
         self.assertNotIn(self.no_wallet.id, ids)
 
-    def test_a_stray_on_hold_out_of_scope_is_not_a_hold(self):
+    def test_a_stored_hold_on_a_payable_status_is_a_hold_without_the_wallet_stamp(self):
+        """The MONEY hold is not the file predicate (lead review): a stored hold on a status a run
+        pays holds, whatever the wallet stamp says."""
         self.no_wallet.maintenance_substate = 'on_hold'
         self.no_wallet.save(update_fields=['maintenance_substate'])
-        self.assertFalse(maintenance.is_on_hold(self.no_wallet))
+        self.assertTrue(maintenance.is_on_hold(self.no_wallet))
+        self.assertEqual(maintenance.sponsor_support_status(self.no_wallet), 'paused')
+        closed = make_application('closed', cohort=self.cohort, maintenance_substate='on_hold')
+        self.assertFalse(maintenance.is_on_hold(closed))   # not a payable status
 
     def test_the_student_payload_serves_the_two_answers(self):
         data = ApplicationReadSerializer(self.live).data

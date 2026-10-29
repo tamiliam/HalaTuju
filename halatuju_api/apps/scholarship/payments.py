@@ -40,6 +40,7 @@ from . import activity, money
 # The Vircle ID rules (D9) moved verbatim to vircle_ids.py (student maintenance S1, 2026-10-29);
 # re-exported so every caller keeps writing `payments.valid_vircle_id` / `payments.vircle_id_error`.
 from .vircle_ids import valid_vircle_id, vircle_id_band, vircle_id_error, vircle_id_prefix
+from .maintenance_scope import PAYABLE_STATUSES
 from .models import Disbursement, PaymentRun, PaymentRunItem, ScholarshipApplication
 from .models.activity import EVENT_PAYMENT_RELEASED
 
@@ -49,9 +50,8 @@ logger = logging.getLogger(__name__)
 # RM3,000 award simply runs longer (15 months vs the standard 10).
 MONTHLY_RATE = Decimal('200')
 
-# Application statuses that may appear in / be paid by a run (D3/D4-2). Wider than
-# pool.FUNDED_STATES because the cohort is paid while at 'awarded'.
-PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
+# PAYABLE_STATUSES (awarded / active / maintenance, D3/D4-2) lives in maintenance_scope.py since
+# maintenance S1 — `maintenance.is_on_hold` reads it too; imported above, so `payments.` still works.
 
 # Run statuses that may still be edited / cancelled — i.e. everything before completion. An edit
 # from any of them reverts to draft and clears the signatures collected so far (_revert_to_draft).

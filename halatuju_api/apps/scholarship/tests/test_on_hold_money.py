@@ -23,6 +23,7 @@ from django.utils import timezone
 from apps.scholarship import maintenance, payments
 from apps.scholarship.models import Disbursement, PaymentRunItem, StudentActivity
 from apps.scholarship.models.activity import EVENT_PAYMENT_RELEASED, EVENT_SUBSTATE_CHANGED
+from apps.scholarship.maintenance import MaintenanceError
 from apps.scholarship.payments import PaymentsError
 from apps.scholarship.tests.factories import make_application, make_cohort
 
@@ -114,6 +115,56 @@ class TestHoldAfterTheRunWasMade(_PaidCohort):
         run = self._run()
         maintenance.set_substate(self.held, 'probation')
         self.assertTrue(self._item(run, self.held).included)
+
+
+class TestTheHoldIsNotTheFilePredicate(_PaidCohort):
+    """Lead review: `vircle_activated_at` is mirrored from the relay sheet. The money hold must not
+    lean on it, and a student the run pays on her wallet ID alone must be holdable."""
+
+    def test_a_hold_survives_a_cleared_activation_stamp(self):
+        run = self._run()
+        maintenance.set_substate(self.held, 'on_hold')
+        self.held.vircle_activated_at = None
+        self.held.save(update_fields=['vircle_activated_at'])
+        self.assertTrue(maintenance.is_on_hold(self.held))
+        # A new run leaves her out...
+        fresh = self._run()
+        self.assertFalse(fresh.items.filter(application=self.held).exists())
+        # ...and an item forced back in still stops the completion.
+        PaymentRunItem.objects.filter(run=run, application=self.held).update(
+            included=True, exclude_reason='')
+        with self.assertRaises(PaymentsError) as ctx:
+            payments.complete(run)
+        self.assertEqual(ctx.exception.code, 'on_hold_in_run')
+
+    def test_a_stored_hold_can_always_be_lifted(self):
+        maintenance.set_substate(self.held, 'on_hold')
+        self.held.vircle_activated_at, self.held.vircle_id = None, ''
+        self.held.save(update_fields=['vircle_activated_at', 'vircle_id'])
+        self.assertFalse(maintenance.is_in_maintenance(self.held))      # no wallet fields left
+        self.assertTrue(maintenance.can_set_substate(self.held, 'on_track'))
+        self.assertFalse(maintenance.can_set_substate(self.held))        # no NEW sub-state
+        maintenance.set_substate(self.held, 'on_track')
+        self.held.refresh_from_db()
+        self.assertEqual(self.held.maintenance_substate, 'on_track')
+
+    def test_a_paid_student_whose_wallet_is_not_yet_live_can_be_held(self):
+        pending = make_application(
+            'awarded', cohort=self.cohort, vircle_id=payments.vircle_id_prefix() + '71003',
+            chosen_pathway='matric', reporting_date=date(self.period.year - 1, 6, 8))
+        self.assertIsNone(pending.vircle_activated_at)
+        run = self._run()
+        self.assertTrue(run.items.filter(application=pending).exists())   # the run pays her
+        maintenance.set_substate(pending, 'on_hold')
+        self.assertFalse(self._item(run, pending).included)
+        self.assertFalse(self._run().items.filter(application=pending).exists())
+
+    def test_an_awarded_student_with_no_wallet_id_takes_no_substate(self):
+        unpaid = make_application('awarded', cohort=self.cohort)
+        self.assertEqual(unpaid.vircle_id, '')
+        with self.assertRaises(MaintenanceError) as ctx:
+            maintenance.set_substate(unpaid, 'on_hold')
+        self.assertEqual(ctx.exception.code, 'not_in_maintenance')
 
 
 class TestReIncludeRefused(_PaidCohort):
