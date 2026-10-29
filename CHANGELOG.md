@@ -47,16 +47,21 @@ Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 ro
 - **Matriculation and polytechnic transcripts are genuineness-checked** in the higher-results card
   (`genuineness/matric_poly_doc.py`, called from `stpm_doc.stpm_slot_genuineness` after STPM), so
   their card no longer says "not checked" and the TD-114 floor no longer holds a clean one at Probable.
+  **Genuine or nothing (adversarial review B1):** a page is stored "genuine" or not scored at all —
+  never suspect, never "not_" — because a genuine 2-year transcript seen page 1 only scores 0.68, a
+  cropped photo 0.64; a suspect would wrongly tell a student their real transcript does not look
+  genuine. Positive gates: the transcript title (never inside "bukan transkrip akademik"), a
+  transcript-only grid label, both a Semester I and a Semester II block, no slip wording at all
+  (several phrases, so a mangled disclaimer still excludes it); for a polytechnic page, no Kolej
+  Komuniti anywhere once the JPPKK department's name is removed, and the transcript's own grid.
   Fixed printed wording only, text only, calibrated on the corpus as production reads it (page 1 of a
   scan): Matriculation transcripts p 0.96–1.00 (certified copies included, ruling 2A), every control
   ≤ 0.29; the one polytechnic transcript p 1.00.
-- **Cautious by design:** a polytechnic page is genuine or unscored (one sample cannot set a suspect
-  band); a Matriculation page below the 0.35 floor (in the corpus: offer letters), every semester
-  result slip, the polytechnic student-portal screen, Kolej Komuniti, UiTM and Asasi stay "not
-  checked" — owner questions in the M4 report, never marked fake.
+- **Stays "not checked":** every semester result slip, offer and other letters, the polytechnic
+  student-portal screen, Kolej Komuniti, UiTM and Asasi — owner questions in the M4 report.
 - `MODEL_VERSION` 1.21.0; `VERDICT_ENGINE_VERSION` 2026-10-29.2 (bands can move: a clean, genuine
   Matriculation card can read Certain). Scores land when a document is read again (M5).
-- Hand-run `eval/matric_poly_genuineness_check.py`; tests `test_matric_poly_doc.py` (14, synthetic;
+- Hand-run `eval/matric_poly_genuineness_check.py`; tests `test_matric_poly_doc.py` (18, synthetic, one through the live read to the Academic band;
   every rule bite-checked).
 
 ## Student maintenance Sprint 3 — the student's "My Bursary" hub; the sub-state and Close move to the scholar file - 2026-10-29

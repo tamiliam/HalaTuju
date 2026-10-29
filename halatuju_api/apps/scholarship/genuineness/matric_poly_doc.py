@@ -7,27 +7,30 @@ fingerprinted the way `stpm_doc` fingerprints STPM: a fixed-wording list, text o
 would need a new Gemini call; the transcripts clear 0.70 without it), scored by
 `results_doc._score_list` and banded by `bands.band_for`.
 
-WHICH PAGES ARE SCORED (everything else keeps "not checked", exactly as before):
-  * Matriculation — a page `results_kind.detect` reads as Matriculation that is NOT a semester
-    RESULT SLIP (its own title "Slip Keputusan Peperiksaan" or its disclaimer "bukan transkrip
-    akademik"). Calibrated on the corpus OCR as production reads it (page 1 of a scan): 6 KPM
-    transcripts, 2 of them certified copies (ruling 2A: a certified copy carries the document's own
-    text and scores like it), at p = 0.96–1.00; every control — 95 offer letters (23 from Bahagian
-    Matrikulasi), 98 SPM slips, 39 STPM pages, the UiTM / polytechnic diplomas, fakes — at most
-    p = 0.29 on this list, below the 0.35 suspect floor. Genuine (≥ 0.70) and suspect (0.35–0.70)
-    are stored; BELOW the floor the page is not recognisably a transcript at all — in the corpus,
-    only Matriculation OFFER letters — and whether that should read as a wrong document is an owner
-    ruling not yet made, so it stays unscored ("not checked"), never marked fake.
-  * Polytechnic — a page read as Diploma that prints a polytechnic's own name
-    (`results_kind.prints_polytechnic`) and carries the transcript's own title. ⚠ ONE transcript in
-    the corpus, so the band below "genuine" cannot be calibrated: a polytechnic page scores
-    GENUINE (p ≥ 0.70) or NOTHING ("not checked", as before) — it is never marked suspect or fake
-    on one sample's evidence. The two semester result slips and the student-portal screen in the
-    corpus are therefore unscored (owner questions, M4 report).
-UiTM, private-college diplomas and Asasi are never scored here.
+GENUINE OR NOTHING, BOTH FAMILIES (review, 2026-10-29). A page that passes a family's gates and
+scores ≥ 0.70 is stored "genuine"; ANYTHING else stays unscored — "not checked", exactly as before
+M4. No suspect and no "not_" is ever stored, because neither band is calibrated: a genuine 2-year
+transcript seen page 1 only scores 0.68, a cropped photo 0.64, a noisy scan 0.61. A suspect would
+tell a student with a real transcript that it "does not look genuine" — so until multi-page and
+cropped samples calibrate a suspect band, the floor (Probable at best) is the cautious answer.
 
-Ruling 1A (an online results-CHECKER page is not a result document) has no Matriculation or
-polytechnic checker page in the corpus to recognise; such a page scores below 0.70 on these lists.
+THE GATES (a page must pass every one before it is scored):
+  * Matriculation — `results_kind.detect` reads it as Matriculation; it carries the transcript
+    title ("Transkrip Akademik" / "Academic Transcript", never inside the slip's "bukan transkrip
+    akademik"), at least one transcript-only grid label (Mata Nilaian / Value Point / PNGS), and
+    BOTH a "Semester I" and a "Semester II" block (a semester result slip shows one semester); and
+    no slip-only wording at all (`_MATRIC_SLIP`, several phrases, so a mangled or cut-off
+    disclaimer still excludes it).
+  * Polytechnic — read as Diploma, a polytechnic's own name printed (`prints_polytechnic`), no
+    Kolej Komuniti anywhere once the JPPKK department's name is removed (OCR "KOMUNlTI" too), the
+    transcript title (never inside "not an academic transcript"), the transcript's own grid
+    (CODE COURSE CREDIT GRADE + the cumulative-GPA label), and no result-slip wording.
+Calibrated on the corpus OCR as production reads it (page 1 of a scan): the 6 KPM transcripts (2
+certified copies — ruling 2A) at 0.96–1.00 and the one polytechnic transcript at 1.00 pass and score
+genuine; every control (95 offer letters, 98 SPM slips, 39 STPM pages, the Matriculation and
+polytechnic result slips, the portal screen, UiTM, fakes) fails a gate or scores ≤ 0.29.
+UiTM, private-college / Kolej Komuniti diplomas and Asasi are never scored here. Ruling 1A (an online
+checker page) has no Matriculation / polytechnic example in the corpus; such a page is not scored.
 """
 import re
 
@@ -79,10 +82,21 @@ POLY_TRANSCRIPT_SIGNATURES = [
     ('abbreviation legend',           ['COURSE EXEMPTION', 'CREDIT TRANSFER VERTICAL', 'REPEAT TO IMPROVE GRADE'], 1, 'text'),
 ]   # total weight 21
 
-#: What a Matriculation semester RESULT SLIP prints and a transcript never does — such a page is
-#: not scored (owner question: is a final-semester slip accepted in place of the transcript?).
-_MATRIC_SLIP = ('SLIP KEPUTUSAN PEPERIKSAAN', 'BUKAN TRANSKRIP AKADEMIK', 'NOT AN ACADEMIC TRANSCRIPT')
-_POLY_TITLE = ('ACADEMIC TRANSCRIPT',)
+#: Wording ONLY a Matriculation semester RESULT SLIP prints (its title, its disclaimer in both
+#: languages, in parts so a mangled or cut-off line still matches) — such a page is never scored.
+_MATRIC_SLIP = ('SLIP KEPUTUSAN', 'RESULT SLIP', 'BUKAN TRANSKRIP', 'NOT AN ACADEMIC TRANSCRIPT',
+                'TRANSKRIP AKADEMIK SEBENAR', 'ACTUAL ACADEMIC TRANSCRIPT', 'BERHAK MEMINDA',
+                'RESERVES THE RIGHT TO AMEND')
+#: A polytechnic semester result slip / the portal screen, never a transcript.
+_POLY_SLIP = ('KEPUTUSAN PENILAIAN AKHIR', 'SLIP KEPUTUSAN', 'RESULT SLIP', 'NOT AN ACADEMIC TRANSCRIPT',
+              'BUKAN TRANSKRIP', 'SEMAKAN BUTIRAN PELAJAR', 'KELAS SEMASA')
+#: Negated titles — removed before the title gate reads the page.
+_NEGATED_TITLE = re.compile(r'\b(?:BUKAN|NOT AN|NOT)\s+(?:TRANSKRIP AKADEMIK|ACADEMIC TRANSCRIPT)\b')
+_MATRIC_TITLE = re.compile(r'\b(?:TRANSKRIP AKADEMIK|ACADEMIC TRANSCRIPT)\b')
+_MATRIC_GRID = re.compile(r'\b(?:MATA NILAIAN|VALUE POINT|PNGS)\b')
+_SEM_I, _SEM_II = re.compile(r'\bSEMESTER I\b'), re.compile(r'\bSEMESTER II\b')
+_KOLEJ_KOMUNITI = re.compile(r'\bKOLEJ KOMUN[IL1]TI\b')
+_POLY_GRID = ('CODE COURSE CREDIT GRADE', 'CUMULATIVE GRADE POINT AVERAGE')
 
 
 def _scored(ocr_text, signatures, family):
@@ -100,19 +114,36 @@ def _scored(ocr_text, signatures, family):
             'missing': r['missing'], 'reason': reason[:300], 'model_version': MODEL_VERSION}
 
 
+def _matric_gates(tn):
+    """Is this normalised page a Matriculation TRANSCRIPT (not a slip, not a letter)?"""
+    if any(m in tn for m in _MATRIC_SLIP):
+        return False
+    titled = _NEGATED_TITLE.sub(' ', tn)
+    return bool(_MATRIC_TITLE.search(titled) and _MATRIC_GRID.search(tn) and _SEM_I.search(tn)
+                and _SEM_II.search(tn))
+
+
+def _poly_gates(ocr_text, tn):
+    """Is this normalised page a polytechnic's own TRANSCRIPT (not a slip, the portal, a Kolej Komuniti)?"""
+    from apps.scholarship.results_kind import _NOT_ISSUERS
+    if not prints_polytechnic(ocr_text) or _KOLEJ_KOMUNITI.search(_NOT_ISSUERS.sub(' ', tn)):
+        return False
+    if any(m in tn for m in _POLY_SLIP):
+        return False
+    return bool('ACADEMIC TRANSCRIPT' in _NEGATED_TITLE.sub(' ', tn) and all(g in tn for g in _POLY_GRID))
+
+
 def matric_poly_higher_genuineness(ocr_text: str) -> dict:
-    """The genuineness of a Matriculation or polytechnic HIGHER-RESULTS page, or `{}` (no signal,
-    "not checked") for every other page — see the module docstring for which. Pure."""
+    """The genuineness of a Matriculation or polytechnic HIGHER-RESULTS page: "genuine" when it
+    passes its family's gates and scores ≥ 0.70, else `{}` (no signal, "not checked"). Never a
+    suspect, never a "not_" (see the module docstring). Pure."""
     from .results_doc import _norm_fold_upper_alnum
     tn = _norm_fold_upper_alnum(ocr_text)
     kind = detect(ocr_text)
-    if kind == 'matric':
-        if any(_norm_fold_upper_alnum(m) in tn for m in _MATRIC_SLIP):
-            return {}
+    if kind == 'matric' and _matric_gates(tn):
         sg = _scored(ocr_text, MATRIC_TRANSCRIPT_SIGNATURES, 'matric_transcript')
-        return {} if sg['status'].startswith('not_') else sg      # below the floor: owner question
-    kk = re.search(r'(?m)^\s*KOLEJ KOMUNITI\b', (ocr_text or '').upper())    # a Kolej Komuniti's own page
-    if kind == 'diploma' and prints_polytechnic(ocr_text) and not kk and any(m in tn for m in _POLY_TITLE):
+    elif kind == 'diploma' and _poly_gates(ocr_text, tn):
         sg = _scored(ocr_text, POLY_TRANSCRIPT_SIGNATURES, 'poly_transcript')
-        return sg if sg['probability'] >= GENUINE_MIN else {}     # one sample: genuine or nothing
-    return {}
+    else:
+        return {}
+    return sg if sg['status'] == 'genuine' and sg['probability'] >= GENUINE_MIN else {}

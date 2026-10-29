@@ -15,6 +15,20 @@ the one polytechnic transcript 1.00. Weights sit heaviest on what only a transcr
 value-point column, the semester GPA, the average box, the completion status), so a Matriculation
 offer letter, which shares the division's header, stays below the floor.
 
+**Genuine or nothing (adversarial review B1, 2026-10-29).** Neither family stores a suspect or a
+"not_": a genuine 2-year transcript seen page 1 only scores 0.68, a cropped photo 0.64, a noisy scan
+0.61 — a suspect band would tell a student their real transcript does not look genuine, and no
+multi-page or cropped sample exists to calibrate one. So a page is stored "genuine" (it passes its
+gates and scores ≥ 0.70) or nothing ("not checked", the TD-114 floor, exactly as before M4). The
+gates are POSITIVE: the transcript title (a negated "bukan transkrip akademik" never counts), a
+transcript-only grid label (Mata Nilaian / Value Point / PNGS), both a Semester I and a Semester II
+block, and no slip wording at all (several phrases, so a mangled or cut-off disclaimer still
+excludes a slip); for a polytechnic page, its own name, no Kolej Komuniti anywhere once the JPPKK
+department's name is removed (an OCR "KOMUNlTI" too), the transcript title and its grid.
+**Because nothing but "genuine" is ever stored, `keep_stored_authenticity` (a re-read that returns
+no signal keeps the stored score) can never hold a wrong M4 score — M5's re-read must still run only
+after M4 is final.**
+
 **What is NOT decided here (owner questions).** No genuine corpus document is marked suspect or
 fake, and no ruling is invented: (1) a Matriculation or polytechnic SEMESTER RESULT SLIP, (2) the
 polytechnic student-portal screen, (3) a Matriculation page below 0.35 — in the corpus, offer
@@ -23,7 +37,7 @@ genuine (one sample cannot calibrate a suspect band) all stay unscored — "not 
 best — exactly as before M4. Ruling 1A has no Matriculation / polytechnic checker page to recognise.
 
 **Versions.** `MODEL_VERSION` 1.21.0; `VERDICT_ENGINE_VERSION` 2026-10-29.2 — a scored page lifts the
-TD-114 floor and a suspect one steps the Academic band, so bands can move. A score is written only
+TD-114 floor, so a clean card can read Certain — bands can move (upward only). A score is written only
 when a document is read (`keep_stored_authenticity`), so live cards change at M5's re-read; the
 before/after list went to the owner first.
 

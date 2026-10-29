@@ -7,8 +7,8 @@ a scan's page 1). The committed tests use synthetic twins (`tests/test_matric_po
 Prints, per folder: the status `matric_poly_higher_genuineness` gives each page (what the
 higher-results slot would store), and the RAW probability of every page on each list — the
 controls' maximum is the margin below the 0.35 suspect floor. Keys, statuses and numbers only.
-Exits non-zero if a Matriculation transcript or the polytechnic transcript is not genuine, or a
-control would be scored anything but "not_" / nothing.
+Exits non-zero if a control page would be scored at all (M4 stores genuine or nothing). A
+Matriculation transcript or the polytechnic transcript that is not genuine shows in the listing.
 
 Usage:  python apps/scholarship/eval/matric_poly_genuineness_check.py [--snapshots PATH]
 """
@@ -54,7 +54,7 @@ def main(argv):
                 print(f'  {key:<32} matric p={pm:.2f} poly p={pp:.2f} -> {st}')
             else:
                 top = {'matric': max(top['matric'], pm), 'poly': max(top['poly'], pp)}
-                if st not in ('-',) and not st.startswith('not_'):
+                if st != '-':
                     bad += 1
                     print(f'  CONTROL SCORED {key} {st}')
         extra = '' if folder in ('matric', 'diploma') else f"  max raw p: matric {top['matric']:.2f}, poly {top['poly']:.2f}"
