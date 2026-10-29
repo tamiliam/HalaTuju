@@ -15661,3 +15661,28 @@ or three times, so a "2 of these" group could pass on a single subject. Found by
 her single Ekonomi grade had met a "2 of" group). Real students holding one subject behind two codes may see
 fewer courses; that is the correct reading of the requirement.
 **Revisit if:** an official source says a duplicated code in a requirement list is meant to count twice.
+
+## 2026-10-29 — SPM "N more subjects not yet counted" is a count-once block, beside the legacy OR groups (Bumi Sprint D1)
+**Decision:** `CourseRequirement.complex_requirements` gains an optional `count_once` list (no migration). Each
+block = `counted` (subjects a requirement flag already counted), `groups` (like `or_groups`; a group with
+`slots` takes `count` units from DIFFERENT bullets) and `remaining` (`count` more subjects at `grade`, not in
+`exclude`). A block passes when ONE assignment gives every unit its own student subject (a bipartite matching,
+`spm_count_once.py`). Blocks are independent of each other and of `or_groups`, whose old semantics (each group
+counted on its own) are unchanged, so no existing course moves.
+**How the parser uses it:** Syarat Am "N C dalam mana-mana matapelajaran yang belum dikira" is its own block
+(counted = BM + Sejarah). A Syarat Khas with a "yang belum diambil kira / belum dikira / selain di atas" clause
+puts ALL its subject clauses in ONE block, so "not yet counted" reads against everything the Khas named.
+"Selain di atas" is read like "belum diambil kira" (the subjects USED above, not every subject LISTED above).
+A bullet list whose bullets hold alternatives, where fewer bullets are needed than listed, is a slotted group
+in its own block. Am and Khas are separate blocks: a subject may serve both (assumption; UPU's own reading).
+**Why:** "two MORE subjects" cannot be said with independent OR groups (one subject would count twice), and a
+first-fit loop over a many-to-many map gets it wrong (the lesson behind `stpm_engine._distinct_matches`).
+**Revisit if:** UPU publishes that Syarat Am and Syarat Khas share one count, or that "selain di atas"
+excludes every listed subject — either is a parser change, not an engine one.
+
+## 2026-10-29 — A UiTM (and MARA) course links to ONE parent institution for now (owner, Sprint D1)
+**Decision:** `ingest_spm_courses --institution-id` links every course of a batch to one existing parent
+`Institution` (one `CourseInstitution` row each). Campus-level offerings come later.
+**Why:** MOHE's SPM listing names the university, not the campus; guessing campuses would invent data.
+**Revisit if:** a campus list per programme becomes available (UiTM's own intake pages), or students ask
+which campus a course runs at.

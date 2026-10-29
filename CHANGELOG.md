@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi coverage Sprint D1 — UiTM SPM courses, foundations (migration courses/0088) - 2026-10-29
+
+Sprint D1 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: the parts every later
+SPM batch needs, plus the 87 UiTM rows (84 ingested, 3 flagged for hand entry in D2).
+
+- **Moves-only splits first** (no behaviour change): the SPM merit calculation → `engine_merit.py`,
+  `CourseTag` → `models_course_tag.py`, the STPM quiz views → `views_stpm_quiz.py`; budgets fall
+  (engine 858 → 640, models 1085 → 1051, views 2309 → 2177).
+- **Scraper:** `scrape_mohe_stpm --with-syarat-am` keeps each programme's Syarat Am pane (it is in the
+  listing page; no extra request). Full SPM run: 369/369 rows. `data/spm/mohe_bumi_2026-10-29.csv` =
+  the 2026-10-28 rows + `syarat_am`.
+- **`CourseRequirement.req_bumiputera`** (courses/0088, `db_default` false, MIGRATE-FIRST) and the engine
+  gate after `req_disability`: only a real `True` on `StudentProfile(bumiputera=...)` opens such a course.
+- **New construct, `complex_requirements.count_once`** (`spm_count_once.py`): blocks in which every
+  student subject counts once — "N more subjects not yet counted / other than the above", an optional
+  "tidak termasuk" list, and bullet lists where a bullet of alternatives is one slot. A bipartite
+  matching, not a first-fit loop. Legacy `or_groups` are untouched.
+- **Parser** `apps/courses/spm_syarat.py` (+ `spm_subject_names.py`, the `subject_keys` name table brought
+  into the repo): Syarat Am + Khas text → fields; ATAU and "A- in ONE AND B in THREE" are FLAGGED, never
+  guessed; an unknown subject name is flagged.
+- **`ingest_spm_courses`** — `--build-from-csv` writes the reviewable `data/spm/spm_new_courses_D1.json`
+  (source texts beside the parsed fields); `--file` is a dry run unless `--apply`; one parent
+  `--institution-id` per course (owner ruling). The 84 rows are appended to the test fixtures.
+- **The doors:** the SPM eligibility check reads `bumiputera` through `resolve_bumiputera`; the two
+  scholarship pickers send `bumiputera: true` (Option A, jest guards); the course search hides
+  Bumi-only SPM rows and its pick-lists unless the requester is Bumi; the course page shows the course
+  with a "Bumiputera only" row and the count-once requirements. Blind guard: no scholarship or report
+  code names `req_bumiputera`.
+- **Golden masters:** the ORIGINAL 389 fixture courses are frozen (count + digest); their total stays
+  **5,319** with every student's set identical; full set at bumi=False **5,319**; new bumi=True baseline
+  **5,900**. STPM **2,025**.
+
 ## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
 
 Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas

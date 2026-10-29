@@ -131,6 +131,10 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    DEFERRED` foreign key, run **`SET CONSTRAINTS ALL IMMEDIATE;` before `CREATE INDEX`** in the same
    transaction, or Postgres refuses the index (0163, 2026-10-03). The old image must stay safe
    between migrate and deploy: additive and nullable first, `NOT NULL` in a later migration (0163 → 0164).
+   A NOT NULL column the old image never names takes a DATABASE default (`db_default`, courses 0088).
+   **Catalogue rows a new gate hides go in AFTER the deploy that carries the gate** (Bumi D1:
+   `ingest_spm_courses --apply` after courses/0088 + the deploy), and the eligibility frame is loaded
+   at start-up, so the rows show only on the next revision.
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.
