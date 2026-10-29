@@ -13,8 +13,20 @@
  * The slices:
  *   - `admin` = the `admin` namespace only.
  *   - `documents` = the `documentsTab` namespace only (the student Documents tab's own words).
- *   - `core`  = EVERY OTHER namespace. It is the complement on purpose: a namespace added
- *     tomorrow lands in core by default, so it can never be missing from a route that needs it.
+ *   - `scholarship` = the `scholarship` namespace (TD-416, 2026-10-29) EXCEPT the few children in
+ *     `CORE_KEEPS` — the words a component on most routes reads (`AppHeader`'s menu, the dashboard
+ *     banner). Those children stay in core; the slice holds every other child.
+ *   - `sponsor` = the four `sponsor*` namespaces (`sponsorPortal`, `sponsorAuth`, `sponsorPool`,
+ *     `sponsorLanding`) — the sponsor routes' words (TD-416).
+ *   - `core`  = EVERY OTHER namespace, plus the `CORE_KEEPS` children. It is the complement on
+ *     purpose: a namespace added tomorrow lands in core by default, so it can never be missing from
+ *     a route that needs it. (A new `scholarship.*` CHILD lands in the slice, not core — safe
+ *     because `sliceReach.test.ts` proves every route that reads one loads the slice.)
+ *
+ * ⚠ A NAMESPACE IN `CORE_KEEPS` IS SPLIT ACROSS TWO SLICES, one level down. Whoever merges slices
+ * must merge that namespace's CHILDREN (`lib/messages.ts` `mergeSlice`), never replace the object,
+ * and `lib/messages.ts` `SPLIT_NAMESPACES` must name the same namespaces (`messagesSlice.test.ts`
+ * holds the two lists together).
  * An unknown slice name THROWS (a typo would otherwise ship an empty catalogue and every key on
  * the page would echo as a raw dotted path).
  *
@@ -29,9 +41,32 @@ const SLICES = {
   // Third results route S3 (2026-10-26): the student Documents tab's own words, loaded with the
   // tab's chunk (`lib/messagesDocuments.ts`) — never on a route that does not open the tab.
   documents: ['documentsTab'],
+  // TD-416 (2026-10-29): the student scholarship screens' words — ~30 kB gz, the biggest namespace
+  // after `admin` — loaded by `lib/messagesScholarship.ts` on the routes that show them only.
+  scholarship: ['scholarship'],
+  // TD-416: the sponsor portal's and the sponsor sign-in screens' words (~6 kB gz), loaded by
+  // `lib/messagesSponsor.ts` on the sponsor routes only.
+  sponsor: ['sponsorPortal', 'sponsorAuth', 'sponsorPool', 'sponsorLanding'],
+}
+
+/**
+ * Children of a sliced namespace that STAY IN CORE, because a component on most routes reads them:
+ * `scholarship.nav` / `scholarship.subnav` (`AppHeader`, on nearly every student and sponsor page)
+ * and `scholarship.banner` (`ScholarshipBanner`, on `/dashboard`). 0.1 kB gz together on 2026-10-29.
+ * ⚠ Adding a child here puts it back on every route; that is the trade to weigh, not a free fix.
+ */
+const CORE_KEEPS = {
+  scholarship: ['nav', 'subnav', 'banner'],
 }
 
 const SLICE_NAMES = ['core', ...Object.keys(SLICES)]
+
+/** `json[ns]` with only the children `want` accepts — a fresh object, in file order. */
+function children(value, want) {
+  const out = {}
+  for (const k of Object.keys(value)) if (want(k)) out[k] = value[k]
+  return out
+}
 
 /** The top-level namespaces of `json` that belong to slice `name`, in file order. */
 function pickSlice(json, name) {
@@ -39,12 +74,15 @@ function pickSlice(json, name) {
     throw new Error(`messages-slice-loader: unknown slice "${name}" (known: ${SLICE_NAMES.join(', ')})`)
   }
   const named = new Set(Object.values(SLICES).flat())
-  const keep = name === 'core'
-    ? (ns) => !named.has(ns)
-    : (ns) => SLICES[name].includes(ns)
   const out = {}
   for (const ns of Object.keys(json)) {
-    if (keep(ns)) out[ns] = json[ns]
+    const kept = CORE_KEEPS[ns]
+    if (name === 'core') {
+      if (!named.has(ns)) out[ns] = json[ns]
+      else if (kept) out[ns] = children(json[ns], (k) => kept.includes(k))
+    } else if (SLICES[name].includes(ns)) {
+      out[ns] = kept ? children(json[ns], (k) => !kept.includes(k)) : json[ns]
+    }
   }
   return out
 }
@@ -70,3 +108,4 @@ module.exports.pickSlice = pickSlice
 module.exports.sliceOfQuery = sliceOfQuery
 module.exports.SLICES = SLICES
 module.exports.SLICE_NAMES = SLICE_NAMES
+module.exports.CORE_KEEPS = CORE_KEEPS

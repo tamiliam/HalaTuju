@@ -78,6 +78,77 @@ found the work — none of it was visible from reading the code.
   SST puts ~RM9 of marked-up tax on a tenant's charge although Anthropic's own cost is excluded.
   Pre-existing and never billed; the fix changes what a customer pays, so it is the owner's ruling.
 
+## Bumi coverage Sprint C — Islamic SPM subjects in grade entry - 2026-10-29
+
+- **The 13 Islamic-studies SPM subjects can now be entered** (owner ruling 2026-10-28: ordinary SPM subjects,
+  open to anyone; no religion question, no "Muslim only" label). Tasawwur Islam, Pendidikan Al-Quran dan
+  Al-Sunnah, Pendidikan Syariah Islamiah, Usul Al-Din, Al-Syariah, Manahij Al-'Ulum Al-Islamiah, Al-Lughah
+  Al-'Arabiah Al-Mu'asirah, Al-Adab Wa Al-Balaghah, Hifz Al-Quran, Maharat Al-Quran and the three Turath
+  subjects join Pendidikan Islam as ELECTIVES on the SPM grades form and in the STPM page's SPM block (both read
+  `SPM_ALL_ELECTIVE_SUBJECTS`). No new stream, so no merit pool changes: they score as electives (Sec3), as
+  Pendidikan Islam always has. Live trigger: BrightPath request #48 (a slip listing TASAWWUR ISLAM read
+  "Not entered yet" and the coach looped the student to "Adjust my grades").
+- **Slip names.** `SUBJECT_NAMES` (web) and `academic_engine._SUBJECT_BM` (api) now use the result-slip wording
+  (Lembaga Peperiksaan codes 5226-5228, 5301-5305, 5401-5405; the MOHE Syarat text agrees): six short forms
+  were replaced (e.g. "Manahij" -> "Manahij Al-'Ulum Al-Islamiah", "Turath Islamiah" -> "Turath Dirasat
+  Islamiah", "Pendidikan Al-Quran & Al-Sunnah" -> "... dan Al-Sunnah"). The subject normaliser now DELETES an
+  apostrophe instead of spacing it, so "SYARI'AH" and "SYARIAH", "MU'ASIRAH" and "MUASIRAH" read as one name.
+  The certificate reader splits a hyphenated word before comparing ("USUL AL-DIN" never matched before).
+  Document recognition `MODEL_VERSION` 1.17.1 -> **1.18.0** (no signature family or weight change).
+- **Review fixes (same day).** Reads stored before 1.18.0 keep the old short names ("Manahij", "Turath Islamiah", ...):
+  they are aliases now (`academic_engine._SUBJECT_ALIASES`), so no re-read is needed (18 of 2,313 live reads carry
+  an Islamic name). A stored cell that carries a subject plus only its code / grade / band ("5302 MAHARAT AL - QURAN
+  B + KEPUJIAN TERTINGGI") reads as that subject; any other extra word ("UJIAN LISAN ...") does not. Every
+  apostrophe-like mark (and a spaced one) is dropped, "&" reads as "dan", and the certificate reader normalises a
+  subject's printed words together, so "AL - QURAN" and "MU ' ASIRAH" read as printed names. No two names collide.
+- **A subject counts once per SPM prerequisite group (owner, 2026-10-29).** `check_spm_prerequisites` counted
+  one grade two or three times where a requirement list repeats a code or maps several codes to one key
+  (`EKONOMI_SPM` + `EKONOMI_ASAS_SPM`, `AL_ADAB_SPM` twice). Now each student subject counts once. STPM golden
+  master re-baselined on purpose 2,026 -> **2,025** (`arts_high_muet` loses UA6314002); real students holding one
+  subject behind two codes may see fewer courses. Regression tests in `test_islamic_spm_subjects.py`.
+- **STPM entry.** `BAHASA_ARAB_MUASIRAH_SPM` is now also met by `lughah_arabiah` (`stpm_engine.SPM_CODE_ALSO`),
+  counted once; the old `bahasa_arab` reading is kept, so no existing result moves. Course-page labels for the
+  Islamic requirement codes use the same slip names. `report_engine.SUBJECT_LABELS` names all 14.
+- **Unchanged on purpose:** merit pools, `pathways.py` (no KPM source pins where the Islamic subjects sit in the
+  Form 6 Sains Sosial groups), `map_subject_code`'s dead `BA -> b_arab` (no fixture uses `BA`; golden-master file),
+  the scholarship profile summary (`profile_engine._SUBJECT_GROUP`; unlisted keys read "other subjects").
+- **Tests:** the exclusion tests now pin the new truth (electives, never stream subjects); new
+  `test_islamic_subject_slips.py` (every slip name, both apostrophe spellings, the exact slip and certificate
+  readers, the #48 shape end to end) and `test_islamic_spm_subjects.py` (merit, STPM prerequisites, report labels).
+  Golden masters: SPM 5,319 unchanged; STPM 2,025 after the once-per-group ruling below (2,026 before it).
+
+## TD-416 — scholarship/sponsor message slices (web first-load JS) - 2026-10-29
+
+- **Two more slices left the English catalogue every route downloads** (TD-360 Sprint 2, the owner's go):
+  `scholarship.*` (~30 kB gz) and the four `sponsor*` namespaces (~6 kB gz). Same mechanism as the admin slice:
+  cut at build time by `scripts/messages-slice-loader.js`, one provider, literal `import()`s for Malay and
+  Tamil, English merged before the first render. The three message files are untouched (same keys, same path).
+- **Loaded by the PAGE of each route that shows the words** — `lib/messagesScholarship.ts` on 17 routes (the
+  six `/scholarship/*` pages, `/profile`, `/onboarding/profile`, nine admin pages that show applicant answers),
+  `lib/messagesSponsor.ts` on the 10 sponsor routes (plus the portal layout, which reads them itself). Page
+  imports, not layouts, so the budget counts the weight where it is really downloaded (TD-304).
+- **`scholarship` is split one level down:** `scholarship.nav`, `.subnav` (AppHeader, on most pages) and
+  `.banner` (/dashboard) stay in core (0.1 kB). `mergeSlice` merges the namespace's children and the English
+  fallback for a slice still in the air now asks `sliceAbsent` (namespace absent, or — for a split namespace —
+  the key's child absent). A missing KEY still echoes, as before.
+- **Measured (real `next build`, this machine):** median 179.9 -> **146.377 kB** (room 0.100 kB; 0 -> 29 routes
+  may cross before the median does, before the ratchet); `/profile` 202.554 -> 197.245; `/scholarship/apply`
+  192.716 -> 187.406; `/scholarship/application` 215.668 -> 210.36; worst 223.742 -> 218.433
+  (`/admin/scholarship/[id]`); first-paint median 220.752 -> 203.307; `/` 182.321 -> 146.28; `/dashboard`
+  203.51 -> 167.469; `/search` 193.227 -> 157.186. Splitting one gzip stream into two costs
+  the slice's own routes ~0.6 kB; the sponsor cut pays that back on them.
+- **Ratchet:** median 180 -> 148, `/profile` 203 -> 199, `/scholarship/apply` 193 -> 189,
+  `/scholarship/application` 216 -> 212 (build + up to 2 kB, the TD-309 rule). Nothing raised.
+- **Guards:** `sliceReach.test.ts` now proves, per slice and per route, that every route that can reach a key
+  of the slice (statically or through `import()`) loads it before rendering; that `error` / `loading` /
+  `not-found` reach none; that the routes loading it are exactly the declared owners; that only client route
+  files import a loader; and that no production route hides a slice in a layout. `messagesSlice.test.ts`
+  proves the five slices rebuild each file exactly (merged in either order); `oneLocalePerVisitor.test.ts`
+  pins the two new static imports and the four new literal `import()`s.
+- **Known, not fixed:** Next's link prefetch evaluates a linked page's modules, so a Malay or Tamil reader on a
+  page that links to `/scholarship` or `/sponsor` (the header does) fetches those slices in the background
+  after load. Off the first-load path, words always correct; recorded for the lead.
+
 ## Small change: STPM results page streams follow the MPM grouping - 2026-10-29
 
 - **Sains Sukan is listed under Arts only** (it was in both streams). MPM groups it under "Arts and Health"

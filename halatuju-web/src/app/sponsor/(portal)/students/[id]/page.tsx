@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'

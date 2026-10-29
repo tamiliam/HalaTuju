@@ -4,9 +4,18 @@ import {
   SPM_STREAM_POOLS,
   SPM_ALL_ELECTIVE_SUBJECTS,
   SPM_PREREQ_STREAM_POOLS,
+  SPM_PREREQ_COMPULSORY,
   SUBJECT_NAMES,
   getSubjectName,
 } from '../subjects'
+
+// The Pendidikan Islam elective plus the 13 Islamic-studies subjects (Bumi Sprint C, owner ruling
+// 2026-10-28: ordinary SPM subjects, open to anyone, no religion question).
+const ISLAMIC_KEYS = [
+  'islam', 'tasawwur_islam', 'pqs', 'psi', 'usul_aldin', 'al_syariah', 'manahij',
+  'lughah_arabiah', 'adab_balaghah', 'hifz_alquran', 'maharat_alquran',
+  'turath_islamiah', 'turath_quran_sunnah', 'turath_bahasa_arab',
+]
 
 describe('SPM_SUBJECTS model', () => {
   it('has exactly 4 core subjects', () => {
@@ -29,7 +38,7 @@ describe('SPM_SUBJECTS model', () => {
 })
 
 describe('Stream pools — official source coverage', () => {
-  it('Arts pool covers the full non-Islamic official list (38 entries)', () => {
+  it('Arts pool covers the full official Arts list (38 entries; Islamic studies are electives)', () => {
     expect(SPM_STREAM_POOLS.arts.length).toBe(38)
     const ids = SPM_STREAM_POOLS.arts.map(s => s.id)
     // a representative sample of the newly-added performance/language subjects
@@ -42,14 +51,11 @@ describe('Stream pools — official source coverage', () => {
     }
   })
 
-  it('Arts pool excludes every Islamic-stream subject', () => {
-    const islamic = [
-      'pqs', 'psi', 'tasawwur_islam', 'usul_aldin', 'al_syariah', 'manahij',
-      'lughah_arabiah', 'adab_balaghah', 'hifz_alquran', 'maharat_alquran',
-      'turath_islamiah', 'turath_quran_sunnah', 'turath_bahasa_arab', 'islam',
-    ]
-    const artsIds = new Set(SPM_STREAM_POOLS.arts.map(s => s.id))
-    islamic.forEach(id => expect(artsIds.has(id)).toBe(false))
+  it('Islamic-studies subjects are electives, never stream subjects (no merit-pool mirror)', () => {
+    const streamIds = new Set([
+      ...SPM_STREAM_POOLS.science, ...SPM_STREAM_POOLS.arts, ...SPM_STREAM_POOLS.technical,
+    ].map(s => s.id))
+    ISLAMIC_KEYS.forEach(id => expect(streamIds.has(id)).toBe(false))
   })
 
   it('Technical pool covers the full official Science-Tech list (16 entries)', () => {
@@ -114,10 +120,44 @@ describe('Labels resolve for every selectable subject', () => {
 })
 
 describe('STPM SPM-prerequisite pools', () => {
-  it('mirror the stream pools and add a vocational pool, with no Islamic subjects', () => {
+  it('mirror the stream pools and add a vocational pool; Islamic studies stay electives', () => {
     expect(SPM_PREREQ_STREAM_POOLS.arts).toEqual(SPM_STREAM_POOLS.arts)
     expect(SPM_PREREQ_STREAM_POOLS.technical).toEqual(SPM_STREAM_POOLS.technical)
     expect(SPM_PREREQ_STREAM_POOLS.vocational.map(s => s.id)).toContain('pertanian')
-    expect(SPM_PREREQ_STREAM_POOLS.vocational.every(s => !s.id.startsWith('al_'))).toBe(true)
+    const prereqStreamIds = new Set(Object.values(SPM_PREREQ_STREAM_POOLS).flat().map(s => s.id))
+    ISLAMIC_KEYS.forEach(id => expect(prereqStreamIds.has(id)).toBe(false))
+  })
+})
+
+describe('Islamic-studies subjects in grade entry (Bumi Sprint C)', () => {
+  it.each(ISLAMIC_KEYS)('%s is selectable on the SPM grades form', id => {
+    // the grades page offers SPM_ALL_ELECTIVE_SUBJECTS minus core and the stream picks
+    expect(SPM_ALL_ELECTIVE_SUBJECTS.map(s => s.id)).toContain(id)
+  })
+
+  it.each(ISLAMIC_KEYS)("%s is selectable in the STPM page's SPM block", id => {
+    // SpmResultsBlock's elective pool: SPM_ALL_ELECTIVE_SUBJECTS minus the four compulsory
+    // subjects and the stream picks — replicated here as the grades page test above does.
+    const taken = new Set([...SPM_PREREQ_COMPULSORY.map(s => s.id), 'phy', 'chem'])
+    expect(SPM_ALL_ELECTIVE_SUBJECTS.filter(s => !taken.has(s.id)).map(s => s.id)).toContain(id)
+  })
+
+  it('names each subject as the result slip prints it', () => {
+    const bm = (id: string) => getSubjectName(id, 'ms')
+    expect(bm('tasawwur_islam')).toBe('Tasawwur Islam')
+    expect(bm('pqs')).toBe('Pendidikan Al-Quran dan Al-Sunnah')
+    expect(bm('psi')).toBe('Pendidikan Syariah Islamiah')
+    expect(bm('manahij')).toBe("Manahij Al-'Ulum Al-Islamiah")
+    expect(bm('lughah_arabiah')).toBe("Al-Lughah Al-'Arabiah Al-Mu'asirah")
+    expect(bm('adab_balaghah')).toBe('Al-Adab Wa Al-Balaghah')
+    expect(bm('turath_islamiah')).toBe('Turath Dirasat Islamiah')
+    expect(bm('turath_quran_sunnah')).toBe('Turath Al-Quran dan Al-Sunnah')
+  })
+
+  it('no subject name carries a religion label', () => {
+    ISLAMIC_KEYS.forEach(id => {
+      const { bm, en } = SUBJECT_NAMES[id]
+      expect(`${bm} ${en}`).not.toMatch(/muslim|agama/i)
+    })
   })
 })

@@ -65,6 +65,9 @@ jest.mock('@/lib/messages', () => {
     // version never moves; `localeSlices.test.tsx` drives the real registry slice by slice.
     subscribeCatalogues: () => () => {},
     catalogueVersion: () => 0,
+    // TD-416: the English-fallback test `t()` asks (pure; whole files here, so never absent).
+    sliceAbsent: (c: Record<string, unknown>, key: string) =>
+      jest.requireActual('@/lib/messages').sliceAbsent(c, key),
     catalogueIfLoaded: (l: string) => state.loaded[l],
     isCatalogueLoaded: (l: string) => state.loaded[l] !== undefined,
     loadCatalogue: (l: string) => {

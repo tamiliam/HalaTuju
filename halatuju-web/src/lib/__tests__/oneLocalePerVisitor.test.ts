@@ -66,6 +66,15 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
     + 'reaches through an `import()` (`LazyScholarshipDocuments`) — so they ride in the chunk of '
     + 'the TAB and in the first-load JS of no route. The admin slice pattern: weight OFF every '
     + 'route, not onto one.',
+  'src/lib/messagesScholarship.ts':
+    'TD-416 (2026-10-29). English SCHOLARSHIP words only (`scholarship.*` but its menu and banner '
+    + 'children), imported for its side effect by the PAGE of each of the 17 routes that shows them '
+    + '(and the sandbox layout) — so ~30 kB of words leave the first-load JS of every other route. '
+    + '`sliceReach.test.ts` proves every route that reads one loads it.',
+  'src/lib/messagesSponsor.ts':
+    'TD-416 (2026-10-29). English SPONSOR words only (the four `sponsor*` namespaces), imported for '
+    + 'its side effect by the sponsor portal layout and the pages of the 10 sponsor routes that show '
+    + 'them — so ~6 kB of words leave the first-load JS of every student, public and admin route.',
   // ⚠ `src/lib/preUPlan.ts` WAS HERE, and it is gone — TD-280, closed by code health H18. The
   // officer cockpit's Malay pre-U track label is now RESOLVED BY THE API and served on the
   // payload (`pre_u_track_label`), so the browser downloads no Malay catalogue for it and there
@@ -85,6 +94,8 @@ const STATIC_IMPORT_SHAPE: Record<string, string[]> = {
   'src/lib/messages.ts': ['en?slice=core'],
   'src/lib/messagesAdmin.ts': ['en?slice=admin'],
   'src/lib/messagesDocuments.ts': ['en?slice=documents'],
+  'src/lib/messagesScholarship.ts': ['en?slice=scholarship'],
+  'src/lib/messagesSponsor.ts': ['en?slice=sponsor'],
   'src/lib/applyCopyPlatform.ts': ['en', 'ms', 'ta'],
 }
 
@@ -176,7 +187,7 @@ describe('one locale per visitor', () => {
     // `import('@/messages/' + locale + '.json')`, never a computed `?slice=${…}`.
     const chunks = stripComments(fs.readFileSync(path.join(SRC, 'lib', 'messageChunks.ts'), 'utf8'))
     for (const locale of ['ms', 'ta']) {
-      for (const slice of ['core', 'admin']) {
+      for (const slice of ['core', 'admin', 'documents', 'scholarship', 'sponsor']) {
         expect(chunks).toContain(`import('@/messages/${locale}.json?slice=${slice}')`)
       }
     }

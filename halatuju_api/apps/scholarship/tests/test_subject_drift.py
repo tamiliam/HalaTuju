@@ -25,7 +25,9 @@ _SUBJECTS_TS = _REPO_ROOT / 'halatuju-web' / 'src' / 'lib' / 'subjects.ts'
 def _parse_subjects_ts():
     text = _SUBJECTS_TS.read_text(encoding='utf-8')
     names_block = text.split('SUBJECT_NAMES')[1].split('\n}')[0]
-    subject_names = dict(re.findall(r"^\s*(\w+):\s*\{\s*bm:\s*'([^']+)'", names_block, re.M))
+    # A name with an apostrophe ("Manahij Al-'Ulum ...") is written in double quotes.
+    subject_names = {k: sq or dq for k, sq, dq in re.findall(
+        r"""^\s*(\w+):\s*\{\s*bm:\s*(?:'([^']+)'|"([^"]+)")""", names_block, re.M)}
     spm_block = text.split('SPM_SUBJECTS')[1].split('\n]')[0]
     spm_ids = re.findall(r"\{\s*id:\s*'(\w+)'", spm_block)
     return subject_names, spm_ids

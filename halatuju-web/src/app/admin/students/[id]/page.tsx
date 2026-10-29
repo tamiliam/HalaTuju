@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { isThirdRoute } from '@/lib/qualification'   // third results route S2b
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getPartnerStudent, deleteStudent, type StudentDetailData } from '@/lib/admin-api'

@@ -231,6 +231,13 @@ build, measure, ratchet 0.75 · smoke 0.75 · docs + retrospective 1.0 · code r
 
 ### Sprint 2 — scholarship and sponsor slices (DEFERRED; open question 1)
 
+**Status (2026-10-29): BUILT as TD-416** (owner's go after three sprints of < 0.12 kB median room), branch
+`td416-bundle-weight`. Differences from the plan below: the three `AppHeader` keys were NOT moved (the message
+files stay untouched); instead `scholarship` is split one level down — `nav`, `subnav` and `banner` stay in
+core (`CORE_KEEPS`). No route group: each owning PAGE imports its slice (17 scholarship, 10 sponsor routes +
+the portal layout), so the budget counts it (TD-304). And it DID help the three ledgered lines — the sponsor
+words left them. Median 179.9 -> 146.377 kB, ratcheted to 148; see CHANGELOG.
+
 Would take `scholarship` (29.3 kB gz) and the four `sponsor*` namespaces (6.1 kB gz) off the ~20
 public routes that never show them (`/`, `/about`, `/course/[id]`, `/search`, `/quiz`, `/pathway/*`,
 `/stpm/*`, legal pages…). It does **not** help the three ledgered lines (they need `scholarship`), it

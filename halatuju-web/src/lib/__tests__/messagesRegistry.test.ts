@@ -224,3 +224,60 @@ describe('4. announcements', () => {
     expect(heard).toHaveBeenCalledTimes(3)
   })
 })
+
+/**
+ * TD-416 (2026-10-29): `scholarship` is the first namespace SPLIT across slices — its `nav`,
+ * `subnav` and `banner` children stay in core (most routes read them), the rest is its own slice.
+ * The mocked network cuts both halves from the REAL Tamil file with the REAL loader, so a merge
+ * that replaced the namespace instead of merging its children would lose one half here.
+ */
+describe('5. the split scholarship namespace', () => {
+  const TA_SCHOLARSHIP = TA.scholarship as Record<string, unknown>
+
+  test.each([
+    ['core first', ['ta:core', 'ta:scholarship']],
+    ['scholarship first', ['ta:scholarship', 'ta:core']],
+  ])('a Tamil load merges both halves of scholarship.* whichever arrives first (%s)', async (_n, order) => {
+    const { m, chunks } = fresh()
+    m.requireSlice('scholarship', {})
+    const loading = m.loadCatalogue('ta')
+    expect([...chunks.calls].sort()).toEqual(['ta:core', 'ta:scholarship'])
+    for (const id of order) await settle(chunks, id)
+    const cat = await loading
+    expect(cat.scholarship).toEqual(TA_SCHOLARSHIP)
+    expect(cat.common).toEqual(TA.common)
+  })
+
+  test('sliceAbsent: a split child that has not arrived is absent; a missing KEY is not', async () => {
+    const { m, chunks } = fresh()
+    const loading = m.loadCatalogue('ta')
+    await settle(chunks, 'ta:core')
+    const coreOnly = await loading
+    // Core holds the menu half of the namespace…
+    expect(m.sliceAbsent(coreOnly, 'scholarship.nav.scholarship')).toBe(false)
+    // …so the rest of it is ABSENT (the slice is not in), and t() answers it in English.
+    expect(m.sliceAbsent(coreOnly, 'scholarship.apply.title')).toBe(true)
+    // A namespace not split is judged as TD-360 judged it: present means present.
+    expect(m.sliceAbsent(coreOnly, 'common.noSuchKeyAnywhere')).toBe(false)
+    expect(m.sliceAbsent(coreOnly, 'admin.anything')).toBe(true)
+    // Once the slice is in, a key missing from a PRESENT child still echoes (never a fallback).
+    m.requireSlice('scholarship', {})
+    const again = m.loadCatalogue('ta')
+    await settle(chunks, 'ta:scholarship')
+    const whole = await again
+    expect(m.sliceAbsent(whole, 'scholarship.apply.title')).toBe(false)
+    expect(m.sliceAbsent(whole, 'scholarship.apply.noSuchKey')).toBe(false)
+  })
+
+  test('mergeSlice merges a split namespace\'s children into a FRESH object, others by assignment', () => {
+    const { m } = fresh()
+    const core = { scholarship: { nav: { a: 'A' } }, common: { x: 'X' } }
+    const slice = { scholarship: { apply: { b: 'B' } } }
+    const target: Record<string, unknown> = {}
+    m.mergeSlice(target, core)
+    m.mergeSlice(target, slice)
+    expect(target).toEqual({ scholarship: { nav: { a: 'A' }, apply: { b: 'B' } }, common: { x: 'X' } })
+    expect(core.scholarship).toEqual({ nav: { a: 'A' } })        // the inputs are never mutated
+    expect(target.common).toBe(core.common)
+  })
+})

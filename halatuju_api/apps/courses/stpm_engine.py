@@ -133,7 +133,7 @@ SPM_CODE_MAP = {
     'TURATH_BAHASA_ARAB_SPM': 'turath_bahasa_arab',
     'BAHASA_ARAB_SPM': 'bahasa_arab',
     'BAHASA_ARAB_TINGGI_SPM': 'bahasa_arab_tinggi',
-    'BAHASA_ARAB_MUASIRAH_SPM': 'bahasa_arab',
+    'BAHASA_ARAB_MUASIRAH_SPM': 'bahasa_arab',   # + lughah_arabiah, see SPM_CODE_ALSO
 
     # --- Languages ---
     'BAHASA_IBAN_SPM': 'bahasa_iban',
@@ -237,6 +237,38 @@ STPM_SUBJECT_BOOL_MAP = {
 }
 
 
+# A requirement code a SECOND subject key also satisfies (Bumi Sprint C). BAHASA_ARAB_MUASIRAH_SPM is
+# "Al-Lughah Al-'Arabiah Al-Mu'asirah", the grade form's own `lughah_arabiah` since that sprint; the
+# old `bahasa_arab` reading is KEPT so no existing student's result moves. Counted once per code.
+SPM_CODE_ALSO = {'BAHASA_ARAB_MUASIRAH_SPM': 'lughah_arabiah'}
+
+
+def _spm_keys(csv_code):
+    """Every engine key that satisfies one requirement code (usually one)."""
+    key = SPM_CODE_MAP.get(csv_code, csv_code.lower())
+    also = SPM_CODE_ALSO.get(csv_code)
+    return (key, also) if also else (key,)
+
+
+def _distinct_matches(codes, spm_grades, min_grade):
+    """How many DISTINCT listed subjects the student meets: a repeated code is one subject, and each
+    student subject meets at most one code. A maximum matching, not a first-fit: a greedy pick could
+    spend `bahasa_arab` on BAHASA_ARAB_MUASIRAH_SPM and leave `lughah_arabiah` with nothing to meet."""
+    owner = {}  # student key -> the code it meets
+
+    def assign(code, seen):
+        for k in _spm_keys(code):
+            if k in seen or not (spm_grades.get(k) and meets_spm_grade(spm_grades[k], min_grade)):
+                continue
+            seen.add(k)
+            if k not in owner or assign(owner[k], seen):
+                owner[k] = code
+                return True
+        return False
+
+    return sum(1 for code in dict.fromkeys(codes) if assign(code, set()))
+
+
 def meets_spm_grade(grade, min_grade):
     """Check if an SPM grade meets or exceeds the minimum threshold.
 
@@ -284,15 +316,13 @@ def check_spm_prerequisites(req, spm_grades):
             exclude = g.get('exclude', [])
             matched = 0
             if subjects:
-                # Specific subject list — check only these
-                for csv_code in subjects:
-                    engine_key = SPM_CODE_MAP.get(csv_code, csv_code.lower())
-                    student_grade = spm_grades.get(engine_key)
-                    if student_grade and meets_spm_grade(student_grade, min_grade):
-                        matched += 1
+                # Specific subject list — check only these. Each STUDENT subject counts at most once
+                # per group (Sprint C review): the lists repeat codes (AL_ADAB_SPM twice) and map
+                # several codes to one key (bahasa_arab), which counted one grade two or three times.
+                matched = _distinct_matches(subjects, spm_grades, min_grade)
             else:
                 # No subject list — match ANY subject not in exclude list
-                exclude_keys = {SPM_CODE_MAP.get(c, c.lower()) for c in exclude}
+                exclude_keys = {k for c in exclude for k in _spm_keys(c)}
                 for engine_key, student_grade in spm_grades.items():
                     if engine_key in exclude_keys:
                         continue
@@ -373,7 +403,7 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         colorblind, disability: boolean flags
         bumiputera: the student said they are Bumiputera (course guide only). Only a real True
             from a Malaysian unlocks Bumiputera-only courses; None / False / a foreign
-            nationality never does. Default False keeps the golden master (2,026) unchanged.
+            nationality never does. Default False keeps the golden master unchanged.
 
     Returns:
         List of dicts, each with: course_id, course_name, university, stream,

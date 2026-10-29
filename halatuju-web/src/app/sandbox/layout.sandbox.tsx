@@ -13,6 +13,8 @@
  */
 // TD-360: the sandbox mounts admin surfaces too, so it needs the admin slice like the console.
 import '@/lib/messagesAdmin'
+// TD-416: …and student scholarship surfaces, so it needs the scholarship slice too.
+import '@/lib/messagesScholarship'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'

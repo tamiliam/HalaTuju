@@ -12,7 +12,7 @@ Index). Every ruling: `docs/decisions.md`. Release notes: `docs/releases/`.
 
 HalaTuju (halatuju.xyz, **v3.0.0**, 2026-10-06) is two products in one codebase. The **course guide**
 tells a Malaysian SPM or STPM leaver which courses they qualify for, ranks them and writes a report
-(golden masters: SPM 5,319, STPM 2,026). The **scholarship platform** runs a funder's bursary end to end:
+(golden masters: SPM 5,319, STPM 2,025). The **scholarship platform** runs a funder's bursary end to end:
 apply, results and documents read by OCR and AI, a deterministic verdict, interview, QC, award,
 sponsors, payments through Vircle, and an organisation's own console (tenancy: organisation → gift →
 intake year). Django REST API `halatuju_api/` + Next.js 14 `halatuju-web/`, both on Cloud Run
@@ -389,7 +389,7 @@ python manage.py check
 python manage.py makemigrations --check --dry-run            # "No changes detected"
 ```
 
-Golden masters: **SPM 5,319**, **STPM 2,026** — if either moves, you broke eligibility. At v3.0.0:
+Golden masters: **SPM 5,319**, **STPM 2,025** (2,026 until 2026-10-29, owner: a subject counts once per SPM prerequisite group — decisions.md) — if either moves, you broke eligibility. At v3.0.0:
 8,084 pytest / 3 skipped · 4,146 jest / 252 suites (measured at the cut). Measure your own
 baseline before you start; never quote an inherited number.
 

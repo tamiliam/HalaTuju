@@ -89,15 +89,15 @@ from .stpm_doc import STPM_LISTS
 #       reads NOT CHECKED (`bands.NOT_CHECKED`, no signal) instead of the nearest family's band; a
 #       private college gets an honest reason. No family/weight change. Backfill: roadmap C4 (live).
 #   1.8.1 (2026-10-26) — corpus-gaps C2: UiTM joins the UA family on its own offer line, office (Bahagian
-#       Pengambilan Pelajar) and "hadir mendaftar pada tarikh" (0.40 → 0.80–0.90). Backfill: C4 (live).
-#   1.8.2 (2026-10-26) — C2 review: a UiTM PDF's text layer (no letterhead) is named by UiTM's own clauses.
+#       Pengambilan Pelajar) and "hadir mendaftar pada tarikh" (0.40 → 0.80–0.90). Backfill: C4 (live). 1.8.2: a UiTM PDF's text layer (no letterhead) is named by UiTM's own clauses.
 #   1.9.0 (2026-10-26) — corpus-gaps C3: the STPM family (slip + certificate, `stpm_doc`) beside the
 #       untouched SPM pair, in the results and semester-result slots. Backfill: C4 (live only).
 #   1.10.0 / 1.11.0 (2026-10-27) — STPM exact-read S2: read Exact (`stpm_parse`) / S3: scored + 1A. Backfill: S4.
 #   1.12.0 / 1.14.0 / 1.15.0 (2026-10-28) — stpm_parse 1.1.0 column layer / SPM cert by rows (`spm_cert_parse`) + 1.2.0 / 1.3.0 pypdf-5.9 merged lines.
 #   1.13.0 / 1.16.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields) / the approver read never takes a printed label. Backfill: live list.
 #   1.17.0 (2026-10-28) — TD-411: a PDF text layer that is only a scanner app's stamp is no layer (`pdf_pages.usable_text_layer`, all doc types) + the KWSP app balance screen (`EPF_APP_SIGNATURES`, at most suspect). Backfill: live re-read of the affected list. 1.17.1: letter-spaced headings around real prose keep the layer (doc 3919).
-MODEL_VERSION = '1.17.1'
+#   1.18.0 (2026-10-29) — Bumi Sprint C: the 13 Islamic SPM subjects read by their slip names (`academic_engine._SUBJECT_BM`, e.g. "Manahij Al-'Ulum Al-Islamiah", was "Manahij"); an apostrophe is dropped, not spaced; the cert reader reads a subject's words together ("USUL AL-DIN", "AL - QURAN"); "&" = "dan"; old short names stay aliases. No family/weight change. Backfill: NONE BY DESIGN — 18 of 2,313 stored reads carry Islamic names (some the old short ones); the aliases and the code/band-tolerant slip key keep them matching without a re-read.
+MODEL_VERSION = '1.18.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

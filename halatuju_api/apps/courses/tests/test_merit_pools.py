@@ -42,9 +42,13 @@ class TestMeritPoolMembership(SimpleTestCase):
             self.assertIn(key, SCIENCE_POOL)
             self.assertIn(key, TECHNICAL_POOL)
 
-    def test_no_islamic_subjects_in_pools(self):
+    def test_islamic_subjects_are_electives_not_stream_subjects(self):
+        # Bumi Sprint C: the 13 Islamic-studies subjects are now selectable, as ELECTIVES only
+        # (subjects.ts gives them no stream), so no pool may list them — the mirror holds.
         islamic = {'pqs', 'psi', 'tasawwur_islam', 'usul_aldin', 'al_syariah',
-                   'manahij', 'hifz_alquran', 'maharat_alquran', 'islam'}
+                   'manahij', 'lughah_arabiah', 'adab_balaghah', 'hifz_alquran',
+                   'maharat_alquran', 'turath_islamiah', 'turath_quran_sunnah',
+                   'turath_bahasa_arab', 'islam'}
         self.assertEqual(islamic & (ARTS_POOL | TECHNICAL_POOL | SCIENCE_POOL), set())
 
 

@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'

@@ -73,6 +73,20 @@ SUBJECT_LABELS = {
     'gkt': 'Grafik Komunikasi Teknikal',
     'multimedia': 'Multimedia',
     'reka_cipta': 'Reka Cipta',
+    # Islamic-studies electives, selectable since Bumi Sprint C — the result-slip names
+    # (academic_engine._SUBJECT_BM). tasawwur_islam and islam are above.
+    'pqs': 'Pendidikan Al-Quran dan Al-Sunnah',
+    'psi': 'Pendidikan Syariah Islamiah',
+    'usul_aldin': 'Usul Al-Din',
+    'al_syariah': 'Al-Syariah',
+    'manahij': "Manahij Al-'Ulum Al-Islamiah",
+    'lughah_arabiah': "Al-Lughah Al-'Arabiah Al-Mu'asirah",
+    'adab_balaghah': 'Al-Adab Wa Al-Balaghah',
+    'hifz_alquran': 'Hifz Al-Quran',
+    'maharat_alquran': 'Maharat Al-Quran',
+    'turath_islamiah': 'Turath Dirasat Islamiah',
+    'turath_quran_sunnah': 'Turath Al-Quran dan Al-Sunnah',
+    'turath_bahasa_arab': 'Turath Bahasa Arab',
 }
 
 
