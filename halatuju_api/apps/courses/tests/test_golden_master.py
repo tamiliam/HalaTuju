@@ -27,20 +27,31 @@ from apps.courses.tests.conftest import load_requirements_df
 _D1_FILE = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_courses_D1.json'
 _D2_FILE = _D1_FILE.with_name('spm_new_courses_D2.json')
 _F1_FILE = _D1_FILE.parents[1] / 'tvet' / 'tvet_new_courses_F1.json'
+_F1B_FILE = _D1_FILE.parents[1] / 'tvet' / 'held_flag_fix_F1b.json'
 ORIGINAL_COURSE_COUNT = 389
 ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
+# Bumi F1b (2026-10-30) re-baselined the original catalogue ON PURPOSE: 63 held UP_TVET courses (84 held
+# IJTM-* / IKBN-* rows are part of the original 389) took their pages' req_malaysian / no_colorblind /
+# no_disability (`data/tvet/held_flag_fix_F1b.json`). The 305 other original rows did not move (pinned
+# below by digest), and reversing the file gives back the frozen pre-F1b picture exactly.
 #: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
-ORIGINAL_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
-GOLDEN_BASELINE = 5319                 # the original catalogue, for every student
+ORIGINAL_SETS_SHA256 = 'ebfd00df4c8c6c37d7316b1cbdbcc81b36ce0b8be4357a81a7b7e0de1e2c45b4'
+GOLDEN_BASELINE = 5299                 # the original catalogue, for every student (5,319 before F1b)
+#: The same over the original catalogue WITHOUT the 84 held TVET rows: identical before and after F1b.
+ORIGINAL_NON_HELD_SETS_SHA256 = '23a7420c87261811ef71b7f7afbeb4ec2e21d22f1571781dd9de98a2be903a88'
+ORIGINAL_NON_HELD_BASELINE = 2712
+#: Before F1b (the file's `old` values): the frozen picture every earlier sprint pinned.
+PRE_F1B_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
+PRE_F1B_BASELINE = 5319
 # Sprint F1: the non-MARA UP_TVET rows are mostly OPEN (no academic rule), so a non-Bumi student now
 # gains EXACTLY those F1 rows she meets, and nothing else: pinned as a count and a digest.
 GOLDEN_F1_NON_BUMI_GAIN = 1494        # 30-33 per citizen, 20 if colour-blind, 0 for the non-citizen
 F1_NON_BUMI_GAIN_SHA256 = '07d39bf4539eecbf8a31d5652a6fea97e566cef3c6fbd393e15b0b6021c9eb85'
-GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,813
-# Full catalogue, the same 50 students as Bumiputera: 5,319 + 546 (D1 UiTM, strict reading) + 121 (D2,
+GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,793 (6,813 before F1b)
+# Full catalogue, the same 50 students as Bumiputera: 5,299 + 546 (D1 UiTM, strict reading) + 121 (D2,
 # after review round 1's strict reading of MARA's "any N subjects": 141 -> 121) + 1,592 (F1: the
-# 1,494 above + the two Bumi-only KEMAS rows, 49 each).
-GOLDEN_BASELINE_BUMI = 7578
+# 1,494 above + the two Bumi-only KEMAS rows, 49 each). 7,578 before F1b.
+GOLDEN_BASELINE_BUMI = 7558
 #: What the 50 Bumiputera twins gain over the ORIGINAL catalogue (D1 + D2 + F1 rows they meet), as one
 #: digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
 BUMI_GAIN_SHA256 = '0f70a1c805d7e73077c1bf7b91e2e1665dd3850a7d6bfd2bf17e802e31748818'
@@ -396,3 +407,39 @@ class TestGoldenMaster:
         lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s - original)]
         assert len(lines) == GOLDEN_BASELINE_BUMI - GOLDEN_BASELINE   # 2,259
         assert _digest(lines) == BUMI_GAIN_SHA256, "a Bumiputera twin's gain changed"
+
+    def _held_tvet_ids(self):
+        return {cid for cid in self._original_ids() if cid.startswith(('IJTM-', 'IKBN-'))}
+
+    def test_f1b_moved_only_the_held_tvet_rows(self):
+        """Bumi F1b: over the original catalogue minus the 84 held TVET rows, every golden student's
+        eligible set is exactly what it was before the fix."""
+        held = self._held_tvet_ids()
+        assert len(held) == 84
+        sets = [s & (self._original_ids() - held) for s in self._eligible_sets(GOLDEN_STUDENTS)]
+        assert sum(len(s) for s in sets) == ORIGINAL_NON_HELD_BASELINE
+        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s)]
+        assert _digest(lines) == ORIGINAL_NON_HELD_SETS_SHA256
+
+    def test_reversing_f1b_gives_back_the_frozen_pre_f1b_picture(self):
+        """The fix file's `old` values ARE the pre-F1b fixture: `--reverse --apply` restores the
+        5,319 / digest every earlier sprint pinned, and the forward run returns to today's figures.
+        Who moved (the 50 golden students, bumi False and True alike): the non-citizen (#5) loses 50
+        held rows (req_malaysian), the two colour-blind students (#4, #41) lose 16 each
+        (no_colorblind), and the OKU student #20 gains 62 (no_disability); nobody else moves."""
+        from django.core.management import call_command
+        from io import StringIO
+        original = self._original_ids()
+        after = [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
+        call_command('fix_held_tvet_flags', '--file', str(_F1B_FILE), '--reverse', '--apply', stdout=StringIO())
+        load_requirements_df()
+        before = [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
+        assert sum(len(s) for s in before) == PRE_F1B_BASELINE
+        assert _digest([f'{i}:{cid}' for i, s in enumerate(before, 1) for cid in sorted(s)]) == PRE_F1B_SETS_SHA256
+        moved = {i: (len(b - a), len(a - b)) for i, (b, a) in enumerate(zip(before, after), 1) if a != b}
+        assert moved == {4: (16, 0), 5: (50, 0), 20: (0, 62), 41: (16, 0)}
+        listed = {c['course_id'] for c in json.loads(_F1B_FILE.read_text(encoding='utf-8'))['courses']}
+        assert all(cid in listed for b, a in zip(before, after) for cid in b ^ a)
+        call_command('fix_held_tvet_flags', '--file', str(_F1B_FILE), '--apply', stdout=StringIO())
+        load_requirements_df()
+        assert [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)] == after

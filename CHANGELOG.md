@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi F1b — held TVET flag fix (no migration) - 2026-10-30
+
+The held UP_TVET courses (IJTM-* / IKBN-*, untouched by F1) take their pages' `req_malaysian`,
+`no_colorblind` and `no_disability` (owner rulings 2026-10-29/30, decisions.md). Nothing else changes.
+
+- **Fix file** `halatuju_api/data/tvet/held_flag_fix_F1b.json`, built by code (`tvet_held_flags.py`; rebuilt by
+  a test from the committed `uptvet_F1_source.json`, re-parsed with the F1 parser). Campuses are prod's
+  (course, institution) PAIRS (`held_tvet_links.json`) plus F1's 33 new links; an October page belongs to a pair
+  by its id_kursus (94), the held course's exact name (56), or a duplicate name settled by the pair (1).
+  63 courses / 151 campus pages: `req_malaysian` 63 false -> true; `no_colorblind` 16 false -> true, 43
+  unchanged, **4 conflicts** (campus pages disagree: IJTM-CET-004, IJTM-CET-015, IKBN-CET-003, IKBN-CET-005;
+  left as they are for the owner); `no_disability` 63 true -> false (37 courses carry only the qualified
+  "menyukarkan kerja amali" line; 26 IKBN courses carry no disability wording at all). 142 flag writes.
+  20 held courses have no October page and are unchanged; 92 other differences (`three_m_only` 50,
+  `complex_requirements` 12, `min_pass` 8 ...) are listed in `not_applied` for a later owner decision.
+- **`fix_held_tvet_flags`**: dry run by default; `--apply` = ONE transaction, only the three columns, only the
+  listed flags; COMPARE-AND-SET (every listed course must exist and hold the file's `old` in all three flags, or
+  the whole run is refused with every mismatch printed; the UPDATE re-checks); `--reverse --apply` is the
+  rollback. `--build` writes the file.
+- **Fixture** `requirements.json` mirrors prod after the fix (142 values). F1's review rebuild test reads the
+  held flags as they were (`before_fix`).
+- **Golden master re-baselined on purpose**: original catalogue 5,319 -> 5,299; full bumi=False 6,813 -> 6,793;
+  bumi=True 7,578 -> 7,558. Only held TVET rows moved: the non-citizen (#5) loses 50, the colour-blind #4 and
+  #41 lose 16 each, the OKU student #20 gains 62. The 305 other original rows: 2,712 identical (digest pinned);
+  F1 gain 1,494 and Bumi gain 2,259 digests unchanged. A test reverses the file and gets the pre-F1b 5,319 /
+  digest back exactly. Runbook: halatuju_api/CLAUDE.md "Bumi F1b order".
+
 ## Billing: the month picker offers only months that could be billed - 2026-10-30
 
 Three readings of the live "To issue" tab by the owner, all correct.

@@ -14,6 +14,7 @@ from apps.courses.management.commands.ingest_tvet_courses import (
 )
 from apps.courses.models import Course, CourseInstitution, CourseRequirement, Institution
 from apps.courses.tvet_catalogue_rows import build_review, clean_name, field_of, level_of, semesters_of
+from apps.courses.tvet_held_flags import before_fix
 from apps.courses.tvet_institutions import HELD, held_institution
 
 DATA = Path(__file__).resolve().parents[3] / 'data' / 'tvet'
@@ -34,7 +35,10 @@ class TestReviewFile:
     def test_rebuilt_byte_for_byte_from_the_committed_source(self):
         source = json.loads((DATA / 'uptvet_F1_source.json').read_text(encoding='utf-8'))
         links = DATA / 'held_tvet_links.json'
-        review = build_review(source, load_held_links(links), held_courses_from_fixtures(), not_in_prod=load_not_in_prod(links))
+        # The fixture mirrors prod AFTER Bumi F1b; F1 was built against the held flags before it.
+        fix = json.loads((DATA / 'held_flag_fix_F1b.json').read_text(encoding='utf-8'))
+        held = before_fix(held_courses_from_fixtures(), fix)
+        review = build_review(source, load_held_links(links), held, not_in_prod=load_not_in_prod(links))
         review['built_from'] = 'data/tvet/uptvet_F1_source.json'
         assert json.loads(json.dumps(review, ensure_ascii=False)) == _review()
 

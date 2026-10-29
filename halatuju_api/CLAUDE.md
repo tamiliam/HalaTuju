@@ -182,6 +182,20 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    `DELETE FROM institutions WHERE institution_id IN ('IKBN-022','ILKA-001','ILKA-002','ILKA-003')` (only
    after their links are gone), then a re-revision. The F1 code may stay deployed. F2 (MARA) = the same
    command on a file built with `--families mara` (`MARA-NNN` institutions, category MARA).
+   **Bumi F1b order (no migration; held TVET flags):** read-only SQL first → push (api) → CONFIRM the new
+   api revision serves 100% → `fix_held_tvet_flags --file data/tvet/held_flag_fix_F1b.json` (dry run, through
+   the `release-decisions` job, item 12's form: `--args=manage.py,fix_held_tvet_flags,--file,data/tvet/held_flag_fix_F1b.json`
+   (the file ships in the image); expect "142 flag change(s) on 63 course(s); 63 courses checked", no
+   "Refusing") → the same with `,--apply` ("Applied 142 flag change(s) on 63 course(s).") → a re-revision so the
+   eligibility frame reloads. It writes ONLY `req_malaysian` / `no_colorblind` / `no_disability` of the 63
+   listed courses, in one transaction, and refuses the whole run if any listed course is missing or any of
+   its three flags differs from the file's `old` (compare-and-set; every mismatch printed). Read-only SQL
+   before the push: `python manage.py fix_held_tvet_flags --file data/tvet/held_flag_fix_F1b.json --sql`
+   prints ONE SELECT over `course_requirements` that returns only the listed rows whose three flags differ
+   from the file's `old` (or are missing): it must return 0 rows; any row → stop, the file's picture is not
+   prod's (rebuild or ask the owner; never edit `old` by hand to match). ROLLBACK: `--reverse --apply` (new →
+   old, the same compare-and-set; `--sql --reverse` is its read-only check), then a re-revision. The 4
+   `conflicts` and the `not_applied` differences in the file wait for the owner; nothing applies them.
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.

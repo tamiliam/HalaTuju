@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## Held UP_TVET courses take their pages' three gate flags; campuses that disagree are left for the owner — 2026-10-30 (Bumi F1b, owner rulings 2026-10-29/30, executed)
+
+**Decision.** The held TVET courses (IJTM-* / IKBN-*: ONE `course_requirements` row each, many campuses)
+take `req_malaysian`, `no_colorblind` and `no_disability` from their October UP_TVET pages, re-parsed with the
+F1 parser (`tvet_syarat.py`), and NOTHING else changes. (1) "Warganegara Malaysia Sahaja" -> `req_malaysian`
+true. (2) "Tiada Masalah Penglihatan Atau Rabun Warna" -> `no_colorblind` true. (3) The qualified line "tidak
+mempunyai ketidakupayaan ... yang menyukarkan kerja amali" is TEXT, never a gate -> `no_disability` false; a
+blanket "Tidak menerima sebarang OKU" would keep it (no held page has one). A page with no disability
+wording at all also reads false (26 IKBN courses), as F1 read the same pages for its new rows.
+**The conflict rule.** A course's campuses are prod's (course, institution) PAIRS plus F1's new links (never a
+hyperlink's June id_kursus). Per flag: every linked campus page agrees -> that value; they disagree -> NO
+change and the course is listed in the file's `conflicts` with each page's value and wording, for the owner
+(four, all `no_colorblind`: IJTM-CET-004, IJTM-CET-015, IKBN-CET-003, IKBN-CET-005). A page unreadable for its
+CONDITIONS would put all three of its course's flags in `conflicts`; a page unparsed only for its academic rule
+still counts (IKBN-DIP-003's one page: "no SPM route"). A held course with no October page is unchanged (20).
+**Out of scope.** Every other page-vs-held difference (`three_m_only` 50, `complex_requirements` 12, `min_pass`
+8, ...) is listed in `not_applied` for a later owner decision and is NOT applied.
+**How.** `data/tvet/held_flag_fix_F1b.json` (old / new per course, every campus page with its wording),
+applied by `fix_held_tvet_flags` with compare-and-set on the file's `old` (prod read-only check first);
+`--reverse --apply` is the rollback. The repo fixture mirrors prod after the fix; the golden master was
+re-baselined on purpose (5,319 -> 5,299 over the original catalogue; the 305 non-held rows identical).
+**Revisit if:** the owner rules on a conflict or on a `not_applied` field, or a later UP_TVET re-scrape
+changes a held course's page (rebuild the file against the new source; the command's `old` check catches drift).
+
 ## Student results emails: organisation-worded, defaults in code, one platform switch — 2026-10-29 (student maintenance S4b)
 
 **Decision:** (1) A new per-ORGANISATION family, `StudentEmailTemplate` (organisation, kind, language; unique on the
