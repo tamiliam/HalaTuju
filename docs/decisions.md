@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## A Matriculation or polytechnic transcript is genuineness-checked; every page that needs a ruling stays "not checked" — 2026-10-29 (Matric/Diploma M4)
+
+**What is scored.** `genuineness/matric_poly_doc.py` fingerprints the two single-issuer layouts the
+way `stpm_doc` fingerprints STPM: fixed printed wording, text only, `results_doc._score_list` +
+`band_for`, in the higher-results slot only (`stpm_slot_genuineness` tries STPM first). A
+Matriculation page (`results_kind` reads it as such) that is not a semester result slip is scored
+on the KPM transcript list; a Diploma page that prints a polytechnic's own name and the transcript
+title, and is not headed by a Kolej Komuniti, on the JPPKK transcript list. Calibration (production's
+input, page 1 of a scan): 6 Matriculation transcripts 0.96–1.00, two certified copies among them
+(ruling 2A: a certified copy carries the document's own text); every control — 95 offer letters,
+98 SPM slips, 39 STPM pages, UiTM / polytechnic slips, fakes — ≤ 0.29 on the Matriculation list;
+the one polytechnic transcript 1.00. Weights sit heaviest on what only a transcript prints (the
+value-point column, the semester GPA, the average box, the completion status), so a Matriculation
+offer letter, which shares the division's header, stays below the floor.
+
+**What is NOT decided here (owner questions).** No genuine corpus document is marked suspect or
+fake, and no ruling is invented: (1) a Matriculation or polytechnic SEMESTER RESULT SLIP, (2) the
+polytechnic student-portal screen, (3) a Matriculation page below 0.35 — in the corpus, offer
+letters (should it read "not a transcript", the fake step?), and (4) a polytechnic page below
+genuine (one sample cannot calibrate a suspect band) all stay unscored — "not checked", Probable at
+best — exactly as before M4. Ruling 1A has no Matriculation / polytechnic checker page to recognise.
+
+**Versions.** `MODEL_VERSION` 1.21.0; `VERDICT_ENGINE_VERSION` 2026-10-29.2 — a scored page lifts the
+TD-114 floor and a suspect one steps the Academic band, so bands can move. A score is written only
+when a document is read (`keep_stored_authenticity`), so live cards change at M5's re-read; the
+before/after list went to the owner first.
+
 ## "My Bursary" shows two tabs, and the maintenance controls live on the scholar file — 2026-10-29 (student maintenance S3)
 
 **Decision:** (1) the student hub `/scholarship/bursary` shows **Overview** and **Results** only; Funds, Contract,

@@ -141,8 +141,10 @@ def stpm_higher_genuineness(ocr_text: str) -> dict:
 
 
 def stpm_slot_genuineness(doc, ocr_text: str) -> dict:
-    """`vision`'s one call for the two slots that score STPM only: the semester result (1.9.0) and
-    the higher results (1.11.0). Text only — the upload is never fetched again."""
+    """`vision`'s one call for the two results slots scored here: the semester result (STPM only,
+    1.9.0) and the higher results — STPM (1.11.0), then a Matriculation or polytechnic transcript
+    (`matric_poly_doc`, 1.21.0). Text only — the upload is never fetched again."""
     if doc.doc_type == 'semester_result':
         return stpm_semester_genuineness(ocr_text)
-    return stpm_higher_genuineness(ocr_text)
+    from .matric_poly_doc import matric_poly_higher_genuineness
+    return stpm_higher_genuineness(ocr_text) or matric_poly_higher_genuineness(ocr_text)

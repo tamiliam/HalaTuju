@@ -6,8 +6,9 @@ What this module owns, in the order a document meets it:
 1. **The read** (`SCHEMA`, `HINT`, `extract`) — one Gemini read of the image for the name, the
    exam title, the CGPA and (STPM) the subject grades, plus the routing detection of
    `results_kind.py` from the upload's OCR text. Genuineness (STPM exact-read S3): an STPM page is
-   scored in `vision` by `genuineness.stpm_doc.stpm_higher_genuineness` (+ ruling 1A); every other
-   kind has no signature family yet, so its card shows "not checked" and the TD-114 floor holds the
+   scored in `vision` by `genuineness.stpm_doc.stpm_higher_genuineness` (+ ruling 1A), a
+   Matriculation or polytechnic transcript by `genuineness.matric_poly_doc` (M4); every other page
+   has no signature family yet, so its card shows "not checked" and the TD-114 floor holds the
    fact at Probable at best — never a "suspect" it has not earned.
 2. **The student's check** (`student_higher_check`) — the facts the Documents card shows and the
    ONE note it may add (D13), each with one link:

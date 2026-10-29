@@ -42,6 +42,23 @@ Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 ro
 - **Runbook + rollback:** `halatuju_api/CLAUDE.md` ("Bumi D2 order") — deploy first, read-only SQL, dry run,
   `--create-institutions --apply`, re-revision.
 
+## Matric/Diploma Exact-read M4 - 2026-10-29
+
+- **Matriculation and polytechnic transcripts are genuineness-checked** in the higher-results card
+  (`genuineness/matric_poly_doc.py`, called from `stpm_doc.stpm_slot_genuineness` after STPM), so
+  their card no longer says "not checked" and the TD-114 floor no longer holds a clean one at Probable.
+  Fixed printed wording only, text only, calibrated on the corpus as production reads it (page 1 of a
+  scan): Matriculation transcripts p 0.96–1.00 (certified copies included, ruling 2A), every control
+  ≤ 0.29; the one polytechnic transcript p 1.00.
+- **Cautious by design:** a polytechnic page is genuine or unscored (one sample cannot set a suspect
+  band); a Matriculation page below the 0.35 floor (in the corpus: offer letters), every semester
+  result slip, the polytechnic student-portal screen, Kolej Komuniti, UiTM and Asasi stay "not
+  checked" — owner questions in the M4 report, never marked fake.
+- `MODEL_VERSION` 1.21.0; `VERDICT_ENGINE_VERSION` 2026-10-29.2 (bands can move: a clean, genuine
+  Matriculation card can read Certain). Scores land when a document is read again (M5).
+- Hand-run `eval/matric_poly_genuineness_check.py`; tests `test_matric_poly_doc.py` (14, synthetic;
+  every rule bite-checked).
+
 ## Student maintenance Sprint 3 — the student's "My Bursary" hub; the sub-state and Close move to the scholar file - 2026-10-29
 
 Roadmap Sprint 3; design of record: the owner-approved phone artboard (2026-10-29). No migration.
