@@ -184,7 +184,7 @@ def check_complex_requirements(student_grades, complex_req_json_str):
             return False, "Invalid Complex Requirement Format"
 
     or_groups = data.get('or_groups', [])
-    if not or_groups:
+    if not or_groups and not data.get('count_once'):
         return True, None
 
     for group_idx, group in enumerate(or_groups):
@@ -211,6 +211,12 @@ def check_complex_requirements(student_grades, complex_req_json_str):
             subj_list = ', '.join(subjects[:5]) + ('...' if len(subjects) > 5 else '')
             return False, f"Complex Req Fail: Need {min_count} from [{subj_list}] with grade {min_grade} (Found {count_ok})"
 
+    # Bumi Sprint D1: count-once blocks ("N more subjects not yet counted"), see spm_count_once.py.
+    if data.get('count_once'):
+        from .spm_count_once import count_once_failure
+        failure = count_once_failure(student_grades, data['count_once'])
+        if failure:
+            return False, failure
     return True, None
 
 
@@ -325,7 +331,7 @@ class StudentProfile:
     """
 
     def __init__(self, grades, gender, nationality, colorblind, disability,
-                 other_tech=False, other_voc=False):
+                 other_tech=False, other_voc=False, bumiputera=False):
         self.grades = grades
         self.gender = gender
         self.nationality = nationality
@@ -333,6 +339,7 @@ class StudentProfile:
         self.disability = disability
         self.other_tech = other_tech
         self.other_voc = other_voc
+        self.bumiputera = bumiputera  # course guide only: the caller resolves it (bumiputera.py)
 
         self.credits = 0
         self.passes = 0
@@ -394,6 +401,10 @@ def check_eligibility(student, req):
     # MBPK (special-needs) intake — only students who declared a disability qualify.
     if to_int(req.get('req_disability')) == 1:
         if not check("chk_req_disability", student.disability, "fail_req_disability"):
+            return False, audit
+    # Bumiputera-only (UiTM; Bumi Sprint D1) — only a real True opens it, never a truthy string.
+    if to_int(req.get('req_bumiputera')) == 1:
+        if not check("chk_bumiputera", student.bumiputera is True, "fail_bumiputera"):
             return False, audit
 
     # Age limit (placeholder)

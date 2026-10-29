@@ -177,6 +177,9 @@ class CourseRequirement(models.Model):
         help_text="Student MUST have a declared disability — special-needs (MBPK) intake. "
                   "Gated on the onboarding 'Physical disability' signal."
     )
+    # Bumi coverage Sprint D1: a Bumiputera-only programme (UiTM, MARA). Shown only to a Malaysian
+    # who said yes (`bumiputera.py`); `db_default` so the image still serving inserts (0088).
+    req_bumiputera = models.BooleanField(default=False, db_default=False)
 
     # ===== CORE PASS REQUIREMENTS =====
     pass_bm = models.BooleanField(default=False, help_text="Pass Bahasa Malaysia")
