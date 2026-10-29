@@ -140,6 +140,22 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    `course_requirements`, `course_institutions`, then `courses` (Postgres has no cascade — Django's
    CASCADE is Python-side — so a student's saved UiTM course would abort a bare `courses` delete; the
    exact DELETE is in the 0088 docstring) BEFORE rolling back to a pre-0088 image.
+   **Bumi D2 order (no migration):** read-only SQL first (below) → push (api + web) → CONFIRM the new api
+   AND web revisions both serve 100% (the D2 rows use the `any_of` engine and the Bumi matric tracks need
+   the D2 `pathways.py`; an old image reads an `any_of` group as a unit nobody can meet, so it would hide
+   those 5 ATAU rows from everyone, and would give the matric rows no merit) → `ingest_spm_courses
+   --file data/spm/spm_new_courses_D2.json --create-institutions` (dry run: expect `CREATE INSTITUTION MARA-BPT` and 66 CREATE, 0 UPDATE, 0 flagged) → the same with `--apply` →
+   a re-revision so the frame reloads. The rows carry their own parents (no `--institution-id`). Read-only
+   SQL before `--apply`: none of the 66 ids already in `courses`; `MARA-BPT` not in `institutions`; the
+   seven UNIV ids exist; one IPTA row's shape (`SELECT * FROM institutions WHERE institution_id =
+   'UNIV-006'`) and `SELECT DISTINCT state FROM institutions WHERE state ILIKE '%kuala lumpur%'` to confirm
+   the MARA row's type and state spelling (edit `spm_catalogue_rows.NEW_INSTITUTIONS` and rebuild the file
+   if they differ). ROLLBACK, one transaction, D2 = the 66 ids of `data/spm/spm_new_courses_D2.json`
+   (also the list in `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`, Sprint D2):
+   `DELETE FROM saved_courses / admission_outcomes / course_tags / courses_career_occupations /
+   course_requirements / course_institutions WHERE course_id IN (D2)`, then `DELETE FROM courses WHERE
+   course_id IN (D2)`, then `DELETE FROM institutions WHERE institution_id = 'MARA-BPT'` (only after its
+   course links are gone), then a re-revision. The D2 code may stay deployed (it shows only rows that exist).
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.

@@ -15819,3 +15819,62 @@ which is why every date box here is a text box. `31-02-2026` must be refused, no
 payment date nobody typed is worse than a complaint.
 **Trade-offs:** the owner's own date boxes are still ISO (TD-424); no screen shows both.
 **Revisit if:** the owner wants their boxes moved too, or a third audience appears.
+
+## 2026-10-29 — MOHE "ATAU" is an `any_of` count-once group, read ONLY through a reviewed scope (Bumi Sprint D2)
+**Decision:** a `count_once` group may be `{"any_of": [[groups], [groups], ...]}` — one alternative, each a list
+of ordinary groups (plain, slotted, or another `any_of`), whose units join the block's matching, so the
+chosen alternative counts once with everything else in that block (`spm_count_once.py`). With a "not yet
+counted" clause the ATAU group sits in the Khas block; without one it is a block of its own, like a slotted
+group. Every subject in every alternative is "listed above" for the strict reading.
+**The scope is data, not a guess:** the scraped Syarat text is flat, so "A- English ATAU B+ English. B in
+Arabic." cannot say whether Arabic belongs to the second alternative. `apps/courses/spm_atau_scopes.py`
+records, per programme, how many clauses each alternative spans, read from that programme's MOHE modal HTML
+(2026-10-29): the modal numbers what everyone must meet as `<li>` items and prints alternatives outside the
+list around a centred ATAU, so an alternative runs from its ATAU to the next `<li>`. The parser checks the
+scope fits the text and flags the row otherwise; a row with an ATAU and no entry stays flagged. Five rows
+(UY0000004 [[1,1,1]], UY0000007 [[1,2]], UM0221002 [[1,2]], UQ0010002 [[1,1]], UE4811004 [[1,1]]).
+**Why not a text-only rule:** "one clause each side" reads UY0000004 / UQ0010002 / UE4811004 right and
+UY0000007 / UM0221002 wrong (A- ATAU B+ in English alone would make the A- alternative pointless — the D1
+lesson that a clause everyone meets is a wrong reading).
+**Revisit if:** a re-scrape changes any of the five texts (re-read the modal), or the scraper is taught to
+keep the modal's structure (then the scope can be derived and this table retired).
+
+## 2026-10-29 — "Grade X in ONE AND grade Y in THREE of: list" is four different subjects (Bumi Sprint D2)
+**Decision:** read as two groups over the same list in ONE count-once block — 1 unit at X and 3 at Y, each a
+different subject (UE0520001, UE0545001: A- in one and B in three of Fizik / Add Maths / Kimia / Maths, so
+all four at B or better and one at A-). No engine change: two groups in one block already count once.
+**Why:** the owner's rule that a subject counts once per group, and the D1 count-once reading of MOHE
+wording; reading it as "three at B, one of them A-" would let one grade count twice. A list whose bullets
+hold alternatives under such a clause is flagged (no row has one).
+**Revisit if:** UPU publishes the overlapping reading.
+
+## 2026-10-29 — MARA's SPM programmes link to a NEW parent institution, created only on purpose (Bumi Sprint D2)
+**Decision:** the 15 "MARA, Bahagian Pendidikan Tinggi" rows (Kolej MARA / KPM asasi and diplomas) link to ONE
+new `Institution` row (owner ruling: one parent per course, campuses later), proposed in
+`spm_catalogue_rows.NEW_INSTITUTIONS`: `MARA-BPT`, "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan
+Tinggi", acronym MARA, type MARA, state "Wilayah Persekutuan Kuala Lumpur", url mara.gov.my. It is created
+only by `ingest_spm_courses --create-institutions --apply`, which prints it in the dry run first and never
+overwrites a held id. Every other D2 row links to its university's existing row by the review file's own
+`institution_id` (UIAM UNIV-006, UM UNIV-001, UMS UNIV-009, UNIMAS UNIV-008, USIM UNIV-011, UniSZA UNIV-018,
+UiTM UNIV-012); the two Bumi matric rows link to none, as the four open matric rows.
+**Why:** prod has no MARA row; inventing campus links would invent data; a silent create would hide a
+catalogue change inside a course ingest. **Open:** the id, type and state spelling are a proposal — the
+lead confirms them against an existing IPTA row by read-only SQL before `--apply`.
+**Revisit if:** campus lists (Kolej MARA / KPM sites) become available.
+
+## 2026-10-29 — The two Bumiputera-only Matrikulasi programmes are two Bumi-only matric tracks (owner; Bumi Sprint D2)
+**Decision:** KA0000002 (Sains, 4 semesters) and KA0000006 (Perakaunan Profesional) are held exactly as the
+four open tracks are: synthetic rows `matric-sains-4-semester` / `matric-perakaunan-profesional` (source and
+merit type `matric`, level Pra-U, no institution, no merit cutoff — MOHE publishes none), their rules parsed
+from MOHE's Syarat text, `req_bumiputera` true; `pathways.MATRIC_TRACKS` entries marked `bumiputera_only`;
+`MATRIC_REQUIREMENTS` naming the subjects the merit counts first (Sains 4-sem: Maths C, Add Maths E, Kimia E,
+Fizik/Biologi/Sains Komputer E; Perakaunan Profesional: Maths A, Add Maths C, then the best two at C); the
+course -> track map in `eligibility_service`. The merit FORMULA is untouched.
+**Doors:** eligibility, dashboard and course search go through the engine gate / the visible queryset, so a
+non-Bumi or foreign student never sees them. `/calculate/pathways/` (the matric pathway page and the
+scholarship pickers' track list) never reads the answer, so it NEVER lists them — a Bumi student reaches
+them through the catalogue only. The course page shows them to anyone (with the Bumi row, as D1) and lists
+no colleges for them (no college list is known); it no longer falls back to the Science track's colleges.
+**Assumption to confirm:** which four subjects the official matric merit counts for these two programmes.
+**Revisit if:** the owner wants them on the pathway page (then the page and pickers need the answer, which
+the pickers must never read — Option A), or MOHE publishes their colleges.

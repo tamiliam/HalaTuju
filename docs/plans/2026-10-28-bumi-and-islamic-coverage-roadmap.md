@@ -94,6 +94,27 @@ baseline too. STPM stays **2,025**.
 `--max-pages 2` first; L710 the fixtures are 2 rows behind prod (89 vs 87 MOHE-coded) — reconcile by read-only SQL
 before `--apply`; the slip-name alias lesson (old stored names stay); a count-once rule is a matching.
 
+#### Sprint D2 — built 2026-10-29 (branch `bumi-sprint-d2`, no migration)
+66 rows in `halatuju_api/data/spm/spm_new_courses_D2.json` (ids + buckets: `spm_new_courses_D2.ids`), 0 flagged:
+47 Bumi-only non-UiTM (UIAM 20, MARA 15, UMS 4, UNIMAS 3, UM 3, UniSZA 2), 14 open Islamic (UniSZA 9, USIM 4
+Tamhidi, UM 1), the 3 UiTM rows D1 flagged, and the 2 Bumi matric tracks (`matric-sains-4-semester`,
+`matric-perakaunan-profesional`). New: `any_of` count-once groups for ATAU, read through reviewed scopes
+(`spm_atau_scopes.py`); "X in ONE AND Y in THREE" as two groups in one block; MARA's Syarat Am; per-row parent
+institutions and an explicit `--create-institutions` for the proposed `MARA-BPT`; the search pick-list refresh.
+Golden masters: original 389 = 5,319 identical; full bumi=False 5,319 (+0: no golden student holds an Islamic
+subject); bumi=True 6,006; STPM 2,025. Not done: UL0481001 / FB0500001 (prod-only, not Bumi — lead ruling: not
+in this sprint). Runbook + rollback: `halatuju_api/CLAUDE.md` ("Bumi D2 order"). Rollback ids (D2):
+    'UY0000010', 'UH0010003', 'UY0000015', 'UY0000001', 'UY0000016', 'UY0000014', 'UY0000012',
+    'UY0000011', 'UY0000005', 'UY0000006', 'UY0000004', 'UE0520001', 'UY0520001', 'OM0520001',
+    'OM0520002', 'UM0221002', 'UW0010003', 'UY0000019', 'UY0000018', 'UD0010001', 'UE0545001',
+    'UH0010001', 'UM0440001', 'UW0010002', 'UY0000002', 'UM0421001', 'UW0010001', 'UY0000013',
+    'UY0000017', 'UY0000003', 'UY0481001', 'UD0010004', 'UH0010004', 'UM0010001', 'UY0000009',
+    'UH0010002', 'UY0000007', 'UD4221001', 'UD4224001', 'UD4221005', 'OP4344001', 'OP4344003',
+    'OP4340002', 'OP4340003', 'OP4481001', 'OP4481002', 'OP4213001', 'OP4224001', 'OP4345002',
+    'OP4840001', 'OP4340001', 'OP4343001', 'OP4342001', 'UD4221008', 'UE4811004', 'UD4221002',
+    'UD4221003', 'UD4221007', 'UD4380001', 'UD4221006', 'matric-perakaunan-profesional',
+    'matric-sains-4-semester', 'UQ0340001', 'UQ0421001', 'UQ0010002', 'UQ0381001'
+
 ### Sprint E — STPM refresh check · low
 - Apply any Sprint A changes to STPM bumi flags / new bumi STPM courses. Golden master re-baseline only if rows change.
 

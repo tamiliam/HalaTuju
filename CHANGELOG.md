@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi coverage Sprint D2 — the other SPM courses, ATAU, the Bumi matric tracks (no migration) - 2026-10-29
+
+Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 rows in
+`halatuju_api/data/spm/spm_new_courses_D2.json` (ids and buckets in `spm_new_courses_D2.ids`), **0 flagged**.
+
+- **The rows:** 47 Bumi-only non-UiTM (UIAM 20, MARA Bahagian Pendidikan Tinggi 15, UMS 4, UNIMAS 3, UM 3,
+  UniSZA 2); 14 open rows never loaded because they need an Islamic subject (UniSZA 9 diplomas, USIM 4
+  Tamhidi, UM Asasi Pengajian Islam); the 3 UiTM rows D1 flagged; the 2 Bumi-only Matrikulasi programmes.
+  The bucket rule is a test (`test_spm_d2.py`); the file is reproducible from the scrape.
+- **ATAU → `any_of`** (`spm_count_once.py`): a count-once group of alternatives, each a list of groups whose
+  units join the block's matching. Read ONLY through a reviewed scope (`spm_atau_scopes.py`, from each
+  programme's MOHE modal layout): the flat text cannot say how many clauses an alternative spans
+  (UY0000007: A- English, OR B+ English AND B in Arabic). No scope → flagged.
+- **"A- in ONE AND B in THREE of: list"** = two groups over one list in one block: four different subjects.
+- **Parser:** MARA's Syarat Am (a pass in BM and Sejarah); Tamhidi is level Asasi; a general (0xx) NEC field
+  takes its field key from the name (Asasi Sains Sosial was "life science").
+- **Institutions:** each row names its own parent (`INSTITUTION_IDS`); MARA has no row, so the file proposes
+  `MARA-BPT`, created only by `ingest_spm_courses --create-institutions` (dry run first, never silently).
+- **Two Bumi-only matric tracks** (`matric-sains-4-semester`, `matric-perakaunan-profesional`), held like the
+  four open tracks with `req_bumiputera`: eligibility, dashboard and search go through the gate;
+  `/calculate/pathways/` never lists them (it never reads the answer). The course page no longer shows the
+  Science track's colleges for an unmapped matric id, and the Sains Komputer id is spelt as the catalogue does.
+- **Search (D1 follow-up L4):** a Bumi student's pick-lists re-load when the answer arrives, and a late
+  response asked under the old answer is dropped. First jest harness for `search/page.tsx`.
+- **Golden masters:** original 389 = **5,319**, every set identical; full catalogue at bumi=False **5,319**
+  (+0: none of the 50 students holds the Islamic / Arabic subjects the 14 open rows need — a test shows a
+  student who does gains open rows and ONLY open rows); bumi=True **5,865 → 6,006** (+141); STPM **2,025**.
+- **Not done:** UL0481001 / FB0500001 (prod-only, not Bumi; lead: not this sprint). The Bumi matric tracks
+  are not on the pathway page or the scholarship pickers' track list (decisions.md).
+- **Gates:** pytest 10,134 passed / 3 skipped (`-n auto`); jest 4,891 / 312 suites; tsc 0; lint 0 errors;
+  bundle median 146.3 / 148 kB; makemigrations clean.
+- **Runbook + rollback:** `halatuju_api/CLAUDE.md` ("Bumi D2 order") — deploy first, read-only SQL, dry run,
+  `--create-institutions --apply`, re-revision.
+
 ## Student maintenance Sprint 3 — the student's "My Bursary" hub; the sub-state and Close move to the scholar file - 2026-10-29
 
 Roadmap Sprint 3; design of record: the owner-approved phone artboard (2026-10-29). No migration.
