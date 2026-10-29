@@ -68,29 +68,38 @@ weeks off; the officer sees the date and the organisation can widen the grace. *
 term calendars we can read, or officers ask to set a student's term dates by hand.
 
 ## Owner rulings on Matriculation / polytechnic pages that are not the transcript — 2026-10-29 (Matric/Diploma M4b)
+## Only the FINAL result counts in the higher-results card; a non-final page reads as not yet uploaded — 2026-10-29 (Matric/Diploma M4b, owner rulings)
 
-**The rulings (owner, 2026-10-29, verbatim from the lead's brief):**
-1. "a Matriculation or polytechnic SEMESTER RESULT SLIP is NOT accepted: ask the student for the full
-   academic transcript";
-2. "a polytechnic STUDENT-PORTAL screenshot is NOT accepted: ask for the transcript (same treatment as
-   the 1A checker page)";
-3. "a Matriculation OFFER LETTER uploaded in the results card is marked 'not a results document' (the
-   same step STPM uses for not_stpm_result)";
-4. "NO suspect band for these families yet (keep genuine-or-nothing)".
-A 4-semester programme's semester slip and a final "Lulus dan Tamat" slip are both (1) (lead, same brief).
+**The rulings (owner, 2026-10-29), as given.** The morning's rulings (1) slip and (2) portal — "ask
+for the transcript" with the −2 step — were REPLACED the same day by A–C; D and the no-suspect rule
+stand.
+- **A.** "The higher-results upload is for the FINAL result only: the final academic transcript for
+  Matriculation and Diploma (and the final result for STPM, unchanged). Only the final version
+  counts."
+- **B.** "A non-final document (a Matriculation or polytechnic SEMESTER RESULT SLIP, a polytechnic
+  PORTAL screen, or a transcript with no completion status — e.g. no 'LULUS DAN TAMAT' / 'STATUS
+  COMPLETED') does NOT count as results: treat it as if the final results are NOT YET UPLOADED (the
+  existing 'higher results owed' path, #388 / higher_owed, capping Academic at Probable) — NOT the -2
+  not-a-result step. Student sees 'Please upload your final academic transcript'; reviewer sees that
+  the final transcript is still owed."
+- **C.** "A PROVISIONAL transcript that prints the completion status and the final CGPA COUNTS as
+  final — it is equivalent to SPM or STPM slips as opposed to certs."
+- **D.** "A Matriculation OFFER LETTER uploaded in the results card is marked 'not a results document'
+  (the same step STPM uses for not_stpm_result)"; and "NO suspect band for these families yet".
 
-**How.** `matric_poly_doc._ruled_page` recognises each page from fixed wording only, calibrated on the
-corpus as production reads it (page 1 of a scan): every marker set is printed on every corpus page of
-its kind and on no Matriculation or polytechnic transcript, with a count threshold so one mangled
-phrase still recognises a slip and one stray word never rules a page. A page that passes a
-transcript's own gates is NEVER ruled (a real transcript is never asked to re-upload); anything the
-markers do not settle stays "not checked". (1)–(3) are stored `not_matric_result` /
-`not_poly_result` with a `doc_seen` naming the page (`matric_result_slip`, `poly_result_slip`,
-`poly_portal_page`, `matric_offer_letter`) — the canonical not-a-result step (−2) STPM's 1A page
-takes. The student's Documents card picks its note by `doc_seen` (ask for the full academic
-transcript / not a results document); the reviewer's line names the kind. UiTM, Kolej Komuniti,
-Asasi and the SPM card are untouched. `MODEL_VERSION` 1.22.0, `VERDICT_ENGINE_VERSION` 2026-10-29.3
-(the step moves a band). Scores land at M5's re-read.
+**How.** `matric_poly_doc` stores a non-final page as `bands.NOT_CHECKED` with a `doc_seen` from
+`bands.NOT_FINAL_SEEN` (one home): no genuineness signal, so no step and the TD-114 floor holds.
+`higher_results.final_owed` reads it: the Academic card cannot be Certain and names
+`higher_results_not_final`; the document serializer shows it as `final_owed` (never a `not_` prefix,
+which reads as a fake), and the Documents card asks for the final academic transcript;
+`higher_owed.final_owed_kind` raises the #388 Check-2 ask for a submitted application, and only a
+FINAL upload answers it. A transcript is "genuine" only with its completion status printed; a
+transcript whose end is on the page (the average box / PNGK; "End of results") with no status is
+non-final; one whose end is not on the page stays "not checked" (production reads page 1 of a
+scan, so a missing status there may be a missing page — never ask a student with a real transcript
+to re-upload). Recognition is from fixed, corpus-calibrated wording only. `MODEL_VERSION` 1.22.0,
+`VERDICT_ENGINE_VERSION` 2026-10-29.3 (unreleased; set once for M4b).
+
 ## Only an ACCEPTED result counts — recording widens to every file; standing comes from the organisation — 2026-10-29 (student maintenance S4a)
 
 **Decision:** (1) a student IN MAINTENANCE (`maintenance_scope.is_in_maintenance`, so awarded + activated too) may

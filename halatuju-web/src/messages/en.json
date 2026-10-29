@@ -1559,8 +1559,8 @@
       },
       "genuineness": {
         "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked.",
-        "askTranscript": "This looks like a semester result slip or a student-portal page, not your full academic transcript. Please upload your full academic transcript. Nothing is blocked.",
-        "notResults": "This looks like an offer letter, not a results document. Please upload your full academic transcript. Nothing is blocked."
+        "askFinal": "This is not your final result (it looks like a semester result slip, a student-portal page or a transcript without its completion status). Only the final version counts: please upload your final academic transcript. Nothing is blocked.",
+        "notResults": "This looks like an offer letter, not a results document. Please upload your final academic transcript. Nothing is blocked."
       },
       "icCheck": {
         "icNo": "IC No",
@@ -2398,8 +2398,8 @@
           "desc": "The name on your results doesn't match your profile. Please re-check."
         },
         "higher_results_requested": {
-          "title": "Please upload your {kind} results",
-          "desc": "A degree course needs your {kind} results, and they are not on your application yet. Upload your official results slip or transcript, showing your name and CGPA clearly."
+          "title": "Please upload your final {kind} results",
+          "desc": "Your final {kind} results are not on your application yet. Upload the official final result showing your name and CGPA clearly: for Matriculation or a Diploma, your final academic transcript (a semester result slip does not count)."
         }
       },
       "vircle": {
@@ -4662,6 +4662,7 @@
           "father_pension_proof_missing": "Father is retired/unable and the student confirmed he draws a pension — asked to upload the statement (counts as household income).",
           "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income).",
           "higher_results_missing": "No STPM / Matriculation / Asasi / Diploma results uploaded.",
+          "higher_results_not_final": "The {held} upload is not the final result (a semester result slip, a student-portal page or a transcript without its completion status), so it does not count: the final academic transcript is still owed and has been asked for. Academic cannot be Certain until it is on file.",
           "higher_results_not_on_file": "{held} results not on file. This application was submitted before the higher-results upload existed, so its SPM slip alone cannot make Academic Certain.",
           "higher_results_unreadable": "The higher results could not be read — ask for a clearer copy.",
           "higher_results_name_mismatch": "The higher results are in a different name. Confirm.",

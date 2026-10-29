@@ -1559,8 +1559,8 @@
       },
       "genuineness": {
         "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat.",
-        "askTranscript": "Ini kelihatan seperti slip keputusan semester atau halaman portal pelajar, bukan transkrip akademik penuh anda. Sila muat naik transkrip akademik penuh anda. Tiada apa-apa disekat.",
-        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik penuh anda. Tiada apa-apa disekat."
+        "askFinal": "Ini bukan keputusan akhir anda (ia kelihatan seperti slip keputusan semester, halaman portal pelajar atau transkrip tanpa status tamat pengajian). Hanya versi akhir dikira: sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
+        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat."
       },
       "icCheck": {
         "icNo": "No. KP",
@@ -2398,8 +2398,8 @@
           "desc": "Nama pada keputusan anda tidak sepadan dengan profil anda. Sila semak semula."
         },
         "higher_results_requested": {
-          "title": "Sila muat naik keputusan {kind} anda",
-          "desc": "Kursus ijazah memerlukan keputusan {kind} anda, dan ia belum ada dalam permohonan anda. Muat naik slip keputusan atau transkrip rasmi anda, dengan nama dan PNGK anda jelas kelihatan."
+          "title": "Sila muat naik keputusan akhir {kind} anda",
+          "desc": "Keputusan akhir {kind} anda belum ada dalam permohonan anda. Muat naik keputusan akhir rasmi dengan nama dan PNGK anda jelas kelihatan: bagi Matrikulasi atau Diploma, transkrip akademik akhir anda (slip keputusan semester tidak dikira)."
         }
       },
       "vircle": {
@@ -4662,6 +4662,7 @@
           "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "higher_results_missing": "Tiada keputusan STPM / Matrikulasi / Asasi / Diploma dimuat naik.",
+          "higher_results_not_final": "Muat naik {held} ini bukan keputusan akhir (slip keputusan semester, halaman portal pelajar atau transkrip tanpa status tamat pengajian), jadi ia tidak dikira: transkrip akademik akhir masih belum diterima dan telah diminta. Akademik tidak boleh menjadi Pasti sehingga ia ada dalam fail.",
           "higher_results_not_on_file": "Keputusan {held} tiada dalam fail. Permohonan ini dihantar sebelum muat naik keputusan pengajian tinggi wujud, jadi slip SPM sahaja tidak boleh menjadikan Akademik Pasti.",
           "higher_results_unreadable": "Keputusan pengajian tinggi tidak dapat dibaca — minta salinan yang lebih jelas.",
           "higher_results_name_mismatch": "Keputusan pengajian tinggi atas nama berbeza. Sahkan.",

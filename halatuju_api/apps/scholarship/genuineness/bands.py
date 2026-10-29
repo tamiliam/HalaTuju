@@ -55,6 +55,25 @@ def stored_status(vision_fields) -> str:
     return s if isinstance(s, str) else ''
 
 
+#: Owner ruling B (2026-10-29, Matric/Diploma M4b): a higher-results page that is NOT the final result
+#: (a semester result slip, the polytechnic portal page, a transcript with no completion status) is
+#: stored NOT_CHECKED with one of these `doc_seen` codes — no genuineness signal, never a step — and
+#: read as "the final results are not on file yet" (`higher_results.final_owed`).
+NOT_FINAL_SEEN = frozenset({'matric_result_slip', 'poly_result_slip', 'poly_portal_page',
+                            'matric_transcript_not_final', 'poly_transcript_not_final'})
+#: What the student's and the reviewer's document serializer shows for such a page (not a `not_`
+#: prefix: that reads as a wrong-type fake).
+FINAL_OWED = 'final_owed'
+
+
+def shown_status(raw, doc_type=None, doc_seen='') -> str:
+    """`canonical_status`, except a NOT_CHECKED page that is not the final result reads `FINAL_OWED`
+    (owner ruling B) so the Documents card can ask for the final academic transcript."""
+    if (raw if isinstance(raw, str) else '').strip().lower() == NOT_CHECKED and doc_seen in NOT_FINAL_SEEN:
+        return FINAL_OWED
+    return canonical_status(raw, doc_type)
+
+
 def canonical_status(raw, doc_type=None) -> str:
     """Fold any genuineness status — current OR legacy (likely_genuine / low_confidence / wrong_type
     / not_an_ic) — to the canonical enum: 'genuine' / 'suspect' / 'not_<type>' / '' (no signal). So

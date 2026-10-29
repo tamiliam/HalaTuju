@@ -934,10 +934,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         auth = vf.get('authenticity')
         if not isinstance(auth, dict) or not auth.get('status'):
             return None
-        from .genuineness.bands import canonical_status
+        from .genuineness.bands import shown_status
         # Expose the CANONICAL outcome (genuine / suspect / not_<type>), folding any legacy
         # stored value, so the FE renders one consistent vocabulary across all document types.
-        status = canonical_status(auth.get('status'), obj.doc_type)
+        status = shown_status(auth.get('status'), obj.doc_type, auth.get('doc_seen', ''))   # + M4b final_owed
         # Salary slip (MODEL_VERSION 1.0.0): surface ONLY the WRONG-TYPE reject (not_salary — a MyKad
         # or other document in the salary-slip slot, #47) → the red "wrong document" chip. The informal
         # 'suspect' band (a genuine but weakly-verifiable slip, common for real B40 families) would be

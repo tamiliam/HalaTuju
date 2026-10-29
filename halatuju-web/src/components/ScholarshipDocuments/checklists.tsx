@@ -260,14 +260,17 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
  *  slip / BC / EPF) — verification-assurance Sprint 2. Shows an amber "this doesn't look like
  *  a genuine document" note when the fingerprint is low-confidence or wrong-type. Never blocks;
  *  re-upload via the card's existing controls. (The IC has its own note in ICChecklist.) */
-/** What the higher-results check says a page IS when the owner ruled it is not the results asked for
- *  (2026-10-29, `genuineness/matric_poly_doc.py`): a semester result slip or the polytechnic student
- *  portal → ask for the full academic transcript; a Matriculation offer letter → not a results document. */
-const ASK_FOR_TRANSCRIPT = new Set(['matric_result_slip', 'poly_result_slip', 'poly_portal_page'])
+/** What the higher-results check says a page IS when the owner ruled it does not count (2026-10-29,
+ *  `genuineness/matric_poly_doc.py`, served as `final_owed`): a NON-FINAL page — a semester result
+ *  slip, the polytechnic student portal, a transcript without its completion status — asks for the
+ *  final academic transcript ("only the final version counts"); a Matriculation offer letter is not
+ *  a results document. */
+const NOT_FINAL = new Set(['matric_result_slip', 'poly_result_slip', 'poly_portal_page',
+  'matric_transcript_not_final', 'poly_transcript_not_final'])
 const NOT_RESULTS = new Set(['matric_offer_letter'])
 
 export function genuinenessNoteKey(docSeen: string | undefined): string {
-  if (docSeen && ASK_FOR_TRANSCRIPT.has(docSeen)) return 'scholarship.docs.genuineness.askTranscript'
+  if (docSeen && NOT_FINAL.has(docSeen)) return 'scholarship.docs.genuineness.askFinal'
   if (docSeen && NOT_RESULTS.has(docSeen)) return 'scholarship.docs.genuineness.notResults'
   return 'scholarship.docs.genuineness.note'
 }

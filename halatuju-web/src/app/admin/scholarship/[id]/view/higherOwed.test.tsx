@@ -87,7 +87,7 @@ describe("the student's Check-2 ask", () => {
     const out = localiseParams({ results_kind: kind }, lookup(cat))
     expect(out.kind).toBe(word)
     expect(lookup(cat)('scholarship.actionCentre.item.higher_results_requested.title').replace('{kind}', out.kind))
-      .toBe(cat === en ? 'Please upload your STPM results' : 'Sila muat naik keputusan Matrikulasi anda')
+      .toBe(cat === en ? 'Please upload your final STPM results' : 'Sila muat naik keputusan akhir Matrikulasi anda')   // M4b: only the final result counts
   })
 })
 

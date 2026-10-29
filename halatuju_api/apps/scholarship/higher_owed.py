@@ -82,18 +82,34 @@ def late_anchor(application) -> bool:
 
 def answered(application) -> bool:
     """Does a live higher-results upload answer the ask? Read clean (not pending, unreadable or in
-    another name) and not an SPM slip — the S4 rule `results_requests.answers` applies to an
-    officer's request for named results."""
-    from .higher_results import match_verdict, student_higher_check
+    another name), not an SPM slip — the S4 rule `results_requests.answers` applies to an
+    officer's request for named results — and the FINAL result (owner ruling B, M4b)."""
+    from .higher_results import final_owed, match_verdict, student_higher_check
     return any(match_verdict(d) == 'ok' and student_higher_check(d)['kind_status'] != 'spm'
-               for d in _live_higher(application))
+               and not final_owed(d) for d in _live_higher(application))
+
+
+def final_owed_kind(application) -> str:
+    """Owner ruling B (2026-10-29, M4b): the kind whose FINAL result is still owed because the live
+    higher-results upload is not the final one (a semester slip, the portal page, a transcript with
+    no completion status), for a SUBMITTED application — else ''. The same ask as #388's."""
+    from . import results_route
+    from .higher_results import final_owed
+    if getattr(application, 'profile_completed_at', None) is None:
+        return ''
+    kind = results_route.held_kind(application)      # cheapest first: an SPM holder reads no document
+    if not kind:
+        return ''
+    live = _live_higher(application)
+    return kind if live and all(final_owed(d) for d in live) else ''
 
 
 def ask_codes(application) -> set:
     """`check2_queries._gap_sets`' share: {ASK_CODE} while owed and not answered, else empty. The
     sync's own rules then apply — raised once, only in the Completed stage
     (`services.auto_queries_allowed`), auto-resolved when this empties, re-opened if it re-fires."""
-    return {ASK_CODE} if _owed(application) and not answered(application) else set()
+    owed = (_owed(application) and not answered(application)) or final_owed_kind(application)
+    return {ASK_CODE} if owed else set()
 
 
 def ask_owns_higher_tickets(application) -> bool:
@@ -116,7 +132,7 @@ def owes_higher(application) -> bool:
 def ask_params(application, code) -> dict:
     """The params frozen onto the ask at creation: the kind held, so the copy reads "Please upload
     your STPM results." Every other Check-2 document request carries none ({})."""
-    return {'results_kind': _owed(application)} if code == ASK_CODE else {}
+    return {'results_kind': _owed(application) or final_owed_kind(application)} if code == ASK_CODE else {}
 
 
 def cap(fact, kind):

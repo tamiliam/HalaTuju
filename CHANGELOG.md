@@ -110,25 +110,29 @@ docstring; migrate BEFORE the deploy).
 - Daily job `results-overdue-flag` makes and pairs the terms (idempotent). ⚠ Create its Cloud Scheduler entry
   (08:00 MYT) at deploy — the System health light now expects it.
 ## Matric/Diploma Exact-read M4b — the owner's rulings on slips, the portal and offer letters - 2026-10-29
+## Matric/Diploma Exact-read M4b — only the final result counts; the owner's rulings - 2026-10-29
 
-- **The owner's four rulings (2026-10-29) are built** in the higher-results card
-  (`genuineness/matric_poly_doc.py`): (1) a Matriculation or polytechnic **semester result slip** (a
-  final "Lulus dan Tamat" slip included) is not accepted — the student is asked for her full
-  academic transcript; (2) a **polytechnic student-portal** screenshot likewise (as ruling 1A); (3) a
-  **Matriculation offer letter** uploaded here is marked not a results document; (4) still no
-  suspect band. (1)–(3) take the step STPM's 1A page takes (`not_<family>_result`).
-- Each is recognised only from fixed wording printed on every corpus page of its kind and on no
-  transcript: the slip's title + disclaimer (two needed), the polytechnic slip's title + two of its
-  labels, six portal furniture phrases (three needed), an offer's own wording (two needed, the
-  Bahagian Matrikulasi header, no transcript grid). A page that passes a transcript's own gates is
-  never ruled, and anything unsure stays "not checked". Corpus: 0 transcripts ruled; ruled — 3
-  Matriculation slips, 2 polytechnic slips, the portal screen, 22 + 1 Matriculation offer letters.
-- **Student:** the Documents card asks for the full academic transcript (slip / portal) or says it
-  is not a results document (offer letter) — new strings en/ms/ta; the officer's "request
-  Matriculation results" text now asks for the academic transcript. **Reviewer:** the card's
-  `document_not_genuine` line names "Matriculation / Diploma results" by kind; Guide + FAQ updated
-  (they still said Matriculation and Diploma were not checked — M4's miss, fixed here).
-- `MODEL_VERSION` 1.22.0; `VERDICT_ENGINE_VERSION` 2026-10-29.3.
+- **Only the FINAL result counts** (owner, 2026-10-29): the higher-results upload is the final
+  academic transcript for Matriculation and a Diploma. A **non-final** document — a Matriculation or
+  polytechnic **semester result slip** (a final "Lulus dan Tamat" slip included), the **polytechnic
+  student-portal** screen, or a transcript with **no completion status** — does not count: it is
+  read as if the final results are **not yet uploaded**. No genuineness signal, never the −2 step;
+  the Academic card is capped at Probable with "the final transcript is still owed"
+  (`higher_results_not_final`), the Documents card asks "please upload your final academic
+  transcript", and once she has submitted, Check 2 asks for it (the #388 ask, `higher_owed`), closed
+  only by a final transcript.
+- **A provisional transcript** that prints its completion status and final CGPA counts as final
+  (3926 stays genuine). A Matriculation / polytechnic transcript is "genuine" only with its
+  completion status printed; one whose END is on the page with no status is non-final; one whose
+  end is not visible (a page-1 read of a longer scan) stays "not checked".
+- **A Matriculation offer letter** in the results card is not a results document — the step STPM's
+  1A page takes (`not_matric_result`). Still no suspect band.
+- Each page is recognised only from fixed, corpus-calibrated wording; a final transcript is never
+  ruled. Corpus: 7 final transcripts genuine; non-final — 3 Matriculation slips, 2 polytechnic slips,
+  the portal screen; 23 Matriculation offer letters not a results document.
+- en/ms/ta: the student note, the reviewer item, the officer's Matriculation request and the Check-2
+  ask ("Please upload your final {kind} results"). Guide + FAQ updated.
+- `MODEL_VERSION` 1.22.0; `VERDICT_ENGINE_VERSION` 2026-10-29.3 (unreleased; set once for M4b).
 
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 
@@ -198,6 +202,7 @@ what was communicated back to the requester, not any figure we compute internall
   `ChargeCorrections.tsx` out of the billing page — which now sits at 550 lines and **leaves the oversize ledger
   altogether** — and `RequestAnalysisCard.tsx` out of the request page, whose entry is tightened to 624.
   `views_admin/base._id_or_no_match` holds the one "is this an id?" rule the declarations endpoint had privately.
+
 ## The no-template payment schedule mirrors contract 10 (no migration) - 2026-10-29
 
 No contract template is active, so every live payment run used the old fallback: RM200 a month from a

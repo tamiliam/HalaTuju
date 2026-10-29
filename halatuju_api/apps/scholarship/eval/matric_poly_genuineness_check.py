@@ -7,10 +7,10 @@ a scan's page 1). The committed tests use synthetic twins (`tests/test_matric_po
 Prints, per folder: the status `matric_poly_higher_genuineness` gives each page (what the
 higher-results slot would store), and the RAW probability of every page on each list — the
 controls' maximum is the margin below the 0.35 suspect floor. Keys, statuses and numbers only.
-M4b: an owner-ruled page (a semester result slip, the portal screen, a Matriculation offer letter)
-is stored `not_<family>_result` and listed with what it appears to be (`doc_seen`). Exits non-zero
-if a page that passes a transcript's own gates is ruled (a real transcript is never asked to
-re-upload) or a control page is stored "genuine".
+M4b (owner rulings 2026-10-29): a NON-FINAL page (a semester result slip, the portal screen, a
+transcript with no completion status) is stored "unchecked" with its `doc_seen` (the final
+transcript is still owed); a Matriculation offer letter `not_matric_result`. Exits non-zero if a
+FINAL transcript (its gates + its completion status) is not genuine, or a control is "genuine".
 
 Usage:  python apps/scholarship/eval/matric_poly_genuineness_check.py [--snapshots PATH]
 """
@@ -51,12 +51,13 @@ def main(argv):
             pm = _score_list(MATRIC_TRANSCRIPT_SIGNATURES, tn, False, False)['probability']
             pp = _score_list(POLY_TRANSCRIPT_SIGNATURES, tn, False, False)['probability']
             sg = matric_poly_higher_genuineness(text)
-            st = sg.get('status', '-') + (f" ({sg['type']})" if sg.get('status', '').startswith('not_') else '')
+            st = sg.get('status', '-') + (f" ({sg['type']})" if sg.get('status') not in (None, 'genuine') else '')
             tally[st] = tally.get(st, 0) + 1
-            transcript = _matric_gates(tn) or _poly_gates(text, tn)
-            if transcript and st.startswith('not_'):
+            final = any(m in tn for m in ('LULUS DAN TAMAT', 'PASS AND COMPLETED', 'STATUS COMPLETED'))
+            transcript = (_matric_gates(tn) or _poly_gates(text, tn)) and final
+            if transcript and st != 'genuine':
                 bad += 1
-                print(f'  TRANSCRIPT RULED {key} {st}')
+                print(f'  FINAL TRANSCRIPT NOT GENUINE {key} {st}')
             if folder in ('matric', 'diploma'):
                 print(f'  {key:<32} matric p={pm:.2f} poly p={pp:.2f} -> {st}')
             else:

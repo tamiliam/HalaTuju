@@ -430,15 +430,28 @@ def verdict_academic(application, spm_fact):
         unresolved.append(_item('higher_results_subjects_missing', subjects=', '.join(chk['missing'])))
     for m in chk['mismatched']:
         unresolved.append(_item('higher_results_grade_mismatch', **m))
-    if not _scored(doc):     # S3: an STPM page is scored; the ladder says why when it is not genuine
+    not_final = final_owed(doc)          # owner ruling B (M4b): the final transcript is still owed
+    if not_final:
+        unresolved.append(_item('higher_results_not_final', held=kind, kind=chk['kind_held']))
+    elif not _scored(doc):     # S3: an STPM page is scored; the ladder says why when it is not genuine
         evidence.append(_item('higher_results_not_checked'))
-    clean = (chk['name'] == 'match' and chk['readable'] and chk['kind_status'] == 'match'
+    clean = (not not_final and chk['name'] == 'match' and chk['readable'] and chk['kind_status'] == 'match'
              and chk['cgpa_status'] == 'match' and chk['grades_status'] in ('', 'match'))
     if spm_fact is not None and _latest_doc(application, 'results_slip') is not None:
         evidence += spm_fact['evidence']
         unresolved += spm_fact['unresolved']
         clean = clean and spm_fact['status'] == 'verified'
     return _fact('academic', 'verified' if clean else 'review', evidence, unresolved)
+
+
+def final_owed(doc) -> bool:
+    """Owner ruling B (2026-10-29, M4b): is this live upload NOT the final result — a semester result
+    slip, the polytechnic portal page, a transcript with no completion status (`matric_poly_doc`)?
+    Then it does not count: the final results read as not yet uploaded — the Academic card is
+    capped at Probable with the reason named, and the final transcript is asked for (`higher_owed`)."""
+    from .genuineness.bands import FINAL_OWED, shown_status, stored_authenticity
+    auth = stored_authenticity(getattr(doc, 'vision_fields', None))
+    return shown_status(auth.get('status'), 'higher_results', auth.get('doc_seen', '')) == FINAL_OWED
 
 
 def _scored(doc) -> bool:

@@ -30,7 +30,7 @@ export interface ApplicantDocument {
   // Genuineness fingerprint (verification-assurance): null unless the check ran. Canonical outcome
   // (the backend serializer folds any legacy value): 'genuine' (pass) / 'suspect' (incomplete/cropped/
   // fabricated) / 'not_<type>' (not recognisably that document — e.g. not_ic, not_str, not_results).
-  authenticity?: { status: 'genuine' | 'suspect' | `not_${string}`; reason: string; doc_seen?: string } | null
+  authenticity?: { status: 'genuine' | 'suspect' | 'final_owed' | `not_${string}`; reason: string; doc_seen?: string } | null
   // Supporting-doc soft checks: does the student's/parent's name appear, and
   // (utility bills only) the home address? '' = not run / N/A. Soft, never blocks.
   vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
