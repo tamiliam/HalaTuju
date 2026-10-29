@@ -1574,6 +1574,14 @@ is prefetched — weight moved off a route's first load can still travel in the 
   order on SQLite too, where the default would have passed silently. (Student maintenance S2, 2026-10-29)
 
 - **A reading of a rule that every applicant meets automatically is the wrong reading.** (Bumi Sprint D1, 2026-10-29.) The parser read "N more subjects belum diambil kira / selain di atas" independently of Syarat Am, so BM and Sejarah — which every applicant must have — always filled the "N more" slots, and ten UiTM rules asked for nothing extra. No university writes a clause that is empty by construction. **Rule:** when a parsed requirement can be met by the subjects every applicant already holds, stop and ask for the stricter reading; test each parsed clause with a student who has ONLY the general-requirement subjects. Also: a normaliser that folds two printed names into one key ("Sains Pertanian" / "Pertanian") can create a duplicate inside a list that never had one — dedupe after folding, and count distinct student subjects in every group, on every engine (SPM and STPM).
+- **A new EVIDENCE document type must be checked against every existing student document door — list, delete,
+  replace, and every sweep that re-reads.** (Student maintenance S4a, 2026-10-29.) The results slip was stored in
+  `applicant_documents` and carefully kept out of the pre-award pipeline (OCR, Check-2), but the student's general
+  Remove still deleted it after an officer had accepted the result, the general list showed it, and the general
+  upload could supersede its slot. The design checked the slip against the pipeline it should skip, not against the
+  doors the student already had. **Rule:** when a new kind of document lands in a shared table, list every door
+  onto that table (grep the model across views, services and management commands) and decide each one; pin each
+  decision with a test that would fail if the door reopened.
 - **A new shape in a shared JSON field is a change to EVERY reader of that field, not just the engine.** (Bumi Sprint D2, 2026-10-29.) An `any_of` group was added to `complex_requirements.count_once`; the engine, the parser and the data were tested end to end, and the course page crashed on every ATAU row because `RequirementsCard.tsx` read `group.subjects.length`. **Rule:** when a builder adds a new shape to a stored JSON structure, the brief lists every reader of that field (grep api AND web, including renderers, PDFs and exports), and a test renders each new shape through each reader using the real rows.
 
 - **The authority for a charge is what we TOLD the customer, not what we computed.** Development billing read

@@ -1072,11 +1072,13 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
-**Student maintenance Sprints 1–3 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
-S3 `c007883e`; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` / `-s2.md` / `-s3.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 4, SPLIT: 4a results + standing (slip upload,
-review fields, `standing.py`, admin Results tab, sponsor readers on accepted results only; migration), then 4b the
-results-due/overdue crons + student email templates.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+**Student maintenance Sprints 1–4a are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`, S4a `10072c71` + migration `scholarship/0186` applied by hand; retros
+`docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`; roadmap
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 4b: `ResultsExpectation` + the
+`results-due-reminders` / `results-overdue-flag` crons (kill switch), the results timing settings WITH their readers,
+the `StudentEmailTemplate` family (results_due / results_overdue / result_queried) + a Student communications tab,
+the "not submitted" standing and the Results overdue filter.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
 - ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold`), needs
   `payments.may_prepare` to place or lift (403 `hold_needs_payments`).
 - Admin: `/admin/scholars` (+ `/<id>`) by the Applications rule; the sub-state + post-award Close live in the file
@@ -1085,7 +1087,10 @@ results-due/overdue crons + student email templates.** Design of record: https:/
 - Student: `/scholarship/bursary` (`/scholarship/in-programme` redirects) from `scholarship/bursary/summary/` —
   `support_paused` only, never a sub-state; the header link is a `localStorage` hint, not a gate.
 - ⚠ **MIGRATE FIRST for anything that writes `student_activity`**; deploy the api before the web.
-- `can_record_results` stays active/maintenance until 4a widens it with results review.
+- Results (S4a): recorded on the predicate WITH a portal-uploaded slip (owner ruling: emailed docs not accepted;
+  no staff attach path); ONLY an accepted result counts — standing (`standing.py`, org `maintenance` settings) and
+  every sponsor reader go through `results_review.accepted` (per-function doors fence in `test_results_review.py`).
+  A slip is evidence: never deletable, replaceable, listed with her documents or re-read by a sweep.
 
 ---
 
