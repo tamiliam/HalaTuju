@@ -50,7 +50,8 @@ class TestDoors:
         self.client = APIClient()
         self.bumi_ids = set(CourseRequirement.objects.filter(req_bumiputera=True)
                             .values_list('course_id', flat=True))
-        assert len(self.bumi_ids) == 84, 'fixture: the 84 D1 UiTM rows'
+        # 84 D1 UiTM + 52 D2 (47 non-UiTM, 3 UiTM D1 flagged, 2 Bumi matric tracks)
+        assert len(self.bumi_ids) == 136, 'fixture: the D1 and D2 Bumi-only rows'
 
     # --- Door 1: the SPM eligibility check ---
     def _eligible(self, **extra):

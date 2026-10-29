@@ -21,15 +21,18 @@ from apps.courses.engine import StudentProfile, check_eligibility
 from apps.courses.tests.conftest import load_requirements_df
 
 # Bumi coverage Sprint D1 appended the 84 UiTM rows of `data/spm/spm_new_courses_D1.json` to the
-# fixtures. The ORIGINAL catalogue is everything else, frozen here by count and digest so that a
-# later fixture edit cannot quietly redefine "original".
+# fixtures, and Sprint D2 the 66 rows of `spm_new_courses_D2.json`. The ORIGINAL catalogue is
+# everything else, frozen here by count and digest so that a later fixture edit cannot quietly
+# redefine "original".
 _D1_FILE = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_courses_D1.json'
+_D2_FILE = _D1_FILE.with_name('spm_new_courses_D2.json')
 ORIGINAL_COURSE_COUNT = 389
 ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
 #: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
 ORIGINAL_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
 GOLDEN_BASELINE = 5319                 # original catalogue, and the full one for a non-Bumi student
-GOLDEN_BASELINE_BUMI = 5865   # full catalogue, the same 50 students as Bumiputera (strict reading)
+# Full catalogue, the same 50 students as Bumiputera: 5,319 + 546 (D1 UiTM, strict reading) + 141 (D2).
+GOLDEN_BASELINE_BUMI = 6006
 
 
 def _digest(lines):
@@ -322,10 +325,13 @@ class TestGoldenMaster:
         return [{r['course_id'] for r in rows if check_eligibility(s, r)[0]} for s in students]
 
     @staticmethod
-    def _original_ids():
+    def _added_ids(path):
+        return {c['course_id'] for c in json.loads(path.read_text(encoding='utf-8'))['courses']}
+
+    def _original_ids(self):
         from apps.courses.models import Course
-        d1 = {c['course_id'] for c in json.loads(_D1_FILE.read_text(encoding='utf-8'))['courses']}
-        return set(Course.objects.values_list('course_id', flat=True)) - d1
+        added = self._added_ids(_D1_FILE) | self._added_ids(_D2_FILE)
+        return set(Course.objects.values_list('course_id', flat=True)) - added
 
     def test_the_original_catalogue_is_frozen(self):
         ids = self._original_ids()
@@ -349,8 +355,15 @@ class TestGoldenMaster:
         assert _digest(lines) == ORIGINAL_SETS_SHA256, "a golden student's eligible set changed"
 
     def test_a_non_bumi_student_gains_nothing_from_the_new_rows(self):
-        """Every D1 row is Bumiputera-only, so the FULL catalogue gives the same 5,319."""
-        assert sum(len(s) for s in self._eligible_sets(GOLDEN_STUDENTS)) == GOLDEN_BASELINE
+        """Every D1 row is Bumiputera-only, so the FULL catalogue gives the same 5,319. Of the D2 rows
+        only the 14 open Islamic-subject ones may add anything at bumi=False — and none of the 50
+        golden students holds the Islamic / Arabic subjects they need, so the total is unchanged
+        (`test_spm_d2.py` shows such a student does gain them)."""
+        from apps.courses.models import CourseRequirement
+        sets = self._eligible_sets(GOLDEN_STUDENTS)
+        assert sum(len(s) for s in sets) == GOLDEN_BASELINE
+        bumi_only = set(CourseRequirement.objects.filter(req_bumiputera=True).values_list('course_id', flat=True))
+        assert not any(s & bumi_only for s in sets)
 
     def test_the_bumi_baseline(self):
         bumi = []

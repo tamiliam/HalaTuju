@@ -239,3 +239,22 @@ class TestIngestD2:
         path.write_text(json.dumps(data), encoding='utf-8')
         with pytest.raises(CommandError, match='not a matric row'):
             _run('--file', str(path), '--create-institutions', '--apply')
+
+
+def test_at_bumi_false_only_the_open_islamic_rows_can_be_gained():
+    """The golden master's 50 students hold no Islamic or Arabic subject, so the 14 open rows add
+    nothing there. This student holds them: as a non-Bumi she gains open rows and ONLY open rows;
+    her Bumi twin gains Bumi-only rows as well."""
+    grades = {k: 'A' for k in ISLAMIC | {'bm', 'hist', 'eng', 'math', 'addmath', 'phy', 'chem', 'bio',
+                                         'sci', 'geo', 'ekonomi', 'poa'}}
+    rows = [{**e['requirement'], 'course_id': e['course_id']} for e in _d2()['courses']]
+    open_rows = {r['course_id'] for r in rows if not r['req_bumiputera']}
+
+    def eligible(bumi):
+        student = StudentProfile(grades=grades, gender='Perempuan', nationality='Warganegara',
+                                 colorblind=False, disability=False, bumiputera=bumi)
+        return {r['course_id'] for r in rows if check_eligibility(student, r)[0]}
+
+    plain, bumi = eligible(False), eligible(True)
+    assert plain and plain <= open_rows
+    assert bumi - open_rows and plain <= bumi

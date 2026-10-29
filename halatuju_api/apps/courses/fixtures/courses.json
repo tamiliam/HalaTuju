@@ -8039,5 +8039,1127 @@
       "description_en": "",
       "field_key": "senibina"
     }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000010",
+    "fields": {
+      "course": "Asasi Pengurusan Pelancongan / Foundation In Tourism Management",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Pengurusan Pelancongan / Foundation In Tourism Management",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "hospitaliti"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UH0010003",
+    "fields": {
+      "course": "Asasi Agrisains",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Agrisains",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000015",
+    "fields": {
+      "course": "Asasi Bahasa Arab",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Bahasa Arab",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000001",
+    "fields": {
+      "course": "Asasi Bahasa Arab Untuk Komunikasi Antarabangsa",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Bahasa Arab Untuk Komunikasi Antarabangsa",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000016",
+    "fields": {
+      "course": "Asasi Bahasa Inggeris",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Bahasa Inggeris",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000014",
+    "fields": {
+      "course": "Asasi Bahasa Inggeris Untuk Komunikasi Antarabangsa",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Bahasa Inggeris Untuk Komunikasi Antarabangsa",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000012",
+    "fields": {
+      "course": "Asasi Bahasa Melayu Untuk Komunikasi Antarabangsa",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Bahasa Melayu Untuk Komunikasi Antarabangsa",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000011",
+    "fields": {
+      "course": "Asasi Ekonomi & Sains Pengurusan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Ekonomi & Sains Pengurusan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengurusan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000005",
+    "fields": {
+      "course": "Asasi Farmasi",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Farmasi",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "farmasi"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000006",
+    "fields": {
+      "course": "Asasi Ilmu Pengetahuan Berteraskan Wahyu Dan Warisan Islam",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Ilmu Pengetahuan Berteraskan Wahyu Dan Warisan Islam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000004",
+    "fields": {
+      "course": "Asasi Kejururawatan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Kejururawatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kejururawatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE0520001",
+    "fields": {
+      "course": "Asasi Kejuruteraan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kejuruteraan-am"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0520001",
+    "fields": {
+      "course": "Asasi Kejuruteraan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kejuruteraan-am"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OM0520001",
+    "fields": {
+      "course": "Asasi Kejuruteraan & Teknologi - Universiti Malaysia Pahang Al-Sultan Abdullah",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan & Teknologi - Universiti Malaysia Pahang Al-Sultan Abdullah",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kejuruteraan-am"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OM0520002",
+    "fields": {
+      "course": "Asasi Kejuruteraan & Teknologi - Universiti Teknologi Malaysia",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan & Teknologi - Universiti Teknologi Malaysia",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kejuruteraan-am"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UM0221002",
+    "fields": {
+      "course": "Asasi Pengajian Islam",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Pengajian Islam",
+      "field": "Pengajian Islam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UW0010003",
+    "fields": {
+      "course": "Asasi Pengkomputeran",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Pengkomputeran",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "it-perisian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000019",
+    "fields": {
+      "course": "Asasi Pergigian",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Pergigian",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pergigian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000018",
+    "fields": {
+      "course": "Asasi Perubatan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Perubatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD0010001",
+    "fields": {
+      "course": "Asasi Perubatan Dan Sains Kesihatan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Perubatan Dan Sains Kesihatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE0545001",
+    "fields": {
+      "course": "Asasi Sains",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Sains",
+      "field": "Sains",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UH0010001",
+    "fields": {
+      "course": "Asasi Sains",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UM0440001",
+    "fields": {
+      "course": "Asasi Sains Fizikal",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Fizikal",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-fizikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UW0010002",
+    "fields": {
+      "course": "Asasi Sains Fizikal",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Fizikal",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-fizikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000002",
+    "fields": {
+      "course": "Asasi Sains Fizikal",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Fizikal",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-fizikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UM0421001",
+    "fields": {
+      "course": "Asasi Sains Hayat",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Sains",
+      "field": "Sains Hayat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UW0010001",
+    "fields": {
+      "course": "Asasi Sains Hayat",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Hayat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000013",
+    "fields": {
+      "course": "Asasi Sains Hayat",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Hayat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000017",
+    "fields": {
+      "course": "Asasi Sains Kemanusiaan",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Kemanusiaan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000003",
+    "fields": {
+      "course": "Asasi Sains Kesihatan Bersekutu",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Kesihatan Bersekutu",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0481001",
+    "fields": {
+      "course": "Asasi Sains Komputer",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Teknologi Maklumat",
+      "field": "Sains Komputer",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "it-perisian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD0010004",
+    "fields": {
+      "course": "Asasi Sains Sosial",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Sosial",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UH0010004",
+    "fields": {
+      "course": "Asasi Sains Sosial",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Sosial",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UM0010001",
+    "fields": {
+      "course": "Asasi Sains Sosial",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Sosial",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000009",
+    "fields": {
+      "course": "Asasi Seni Bina Dan Reka Bentuk Alam Sekitar",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Seni Bina Dan Reka Bentuk Alam Sekitar",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senibina"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UH0010002",
+    "fields": {
+      "course": "Asasi Teknologi Maklumat",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Teknologi Maklumat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "it-perisian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UY0000007",
+    "fields": {
+      "course": "Asasi Undang-Undang",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Undang-Undang",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "undang-undang"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221001",
+    "fields": {
+      "course": "Diploma Al Quran & As Sunnah",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Al Quran & As Sunnah",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4224001",
+    "fields": {
+      "course": "Diploma Bahasa & Kesusasteraan Arab",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "Bahasa & Kesusasteraan Arab",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221005",
+    "fields": {
+      "course": "Diploma Dakwah",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Dakwah",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4344001",
+    "fields": {
+      "course": "Diploma In Accounting + Data Analytics",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Accounting + Data Analytics",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4344003",
+    "fields": {
+      "course": "Diploma In Accounting + Sap S/4Hana Financial Accounting Associates Certification",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Accounting + Sap S/4Hana Financial Accounting Associates Certification",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4340002",
+    "fields": {
+      "course": "Diploma In Business Information Technology + Visual Business Analytics Certification",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Business Information Technology + Visual Business Analytics Certification",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4340003",
+    "fields": {
+      "course": "Diploma In Business Studies",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Business Studies",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4481001",
+    "fields": {
+      "course": "Diploma In Computer Science",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Teknologi Maklumat",
+      "field": "In Computer Science",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "it-perisian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4481002",
+    "fields": {
+      "course": "Diploma In Computer Science + Visual Business Analytics Certification",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Teknologi Maklumat",
+      "field": "In Computer Science + Visual Business Analytics Certification",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "it-perisian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4213001",
+    "fields": {
+      "course": "Diploma In Creative Digital Media Production + Digital Media Professional Certificate",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "In Creative Digital Media Production + Digital Media Professional Certificate",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4224001",
+    "fields": {
+      "course": "Diploma In English Communication + Sijil Penterjemahan Bahasa Itbm",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "In English Communication + Sijil Penterjemahan Bahasa Itbm",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4345002",
+    "fields": {
+      "course": "Diploma In Halal Industry + Certified Halal Executive Program",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Halal Industry + Certified Halal Executive Program",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4840001",
+    "fields": {
+      "course": "Diploma In Integrated Logistics Management + Chartered Institute Of Logistics And Transport",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Umum",
+      "field": "In Integrated Logistics Management + Chartered Institute Of Logistics And Transport",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengurusan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4340001",
+    "fields": {
+      "course": "Diploma In International Business + Certified Specialist Digital Leadership",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In International Business + Certified Specialist Digital Leadership",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4343001",
+    "fields": {
+      "course": "Diploma In Islamic Finance + Associate Qualification In Islamic Finance",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Islamic Finance + Associate Qualification In Islamic Finance",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "OP4342001",
+    "fields": {
+      "course": "Diploma In Marketing + Certified Professional Marketer (Asia) Certification",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "In Marketing + Certified Professional Marketer (Asia) Certification",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221008",
+    "fields": {
+      "course": "Diploma Media Penyiaran Islam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Media Penyiaran Islam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4811004",
+    "fields": {
+      "course": "Diploma Pengurusan Perkhidmatan Makanan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Hospitaliti",
+      "field": "Pengurusan Perkhidmatan Makanan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221002",
+    "fields": {
+      "course": "Diploma Pentadbiran Islam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Pentadbiran Islam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221003",
+    "fields": {
+      "course": "Diploma Sejarah & Tamadun Islam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Sejarah & Tamadun Islam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221007",
+    "fields": {
+      "course": "Diploma Syariah",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Syariah",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4380001",
+    "fields": {
+      "course": "Diploma Undang-Undang",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Undang-Undang",
+      "field": "Undang-Undang",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "undang-undang"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UD4221006",
+    "fields": {
+      "course": "Diploma Usuluddin",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Usuluddin",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "matric-perakaunan-profesional",
+    "fields": {
+      "course": "Matrikulasi — Perakaunan Profesional",
+      "wbl": false,
+      "level": "Pra-U",
+      "department": "KPM",
+      "field": "Perakaunan & Kewangan",
+      "semesters": 2,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perakaunan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "matric-sains-4-semester",
+    "fields": {
+      "course": "Matrikulasi — Sains (4 Semester)",
+      "wbl": false,
+      "level": "Pra-U",
+      "department": "KPM",
+      "field": "Sains & Teknologi",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UQ0340001",
+    "fields": {
+      "course": "Tamhidi Perakaunan Dan Muamalat",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Perakaunan Dan Muamalat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perakaunan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UQ0421001",
+    "fields": {
+      "course": "Tamhidi Perubatan, Pergigian Dan Sains",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Sains",
+      "field": "Perubatan, Pergigian Dan Sains",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UQ0010002",
+    "fields": {
+      "course": "Tamhidi Sains Sosial",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Umum",
+      "field": "Sains Sosial",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UQ0381001",
+    "fields": {
+      "course": "Tamhidi Syariah Dan Undang-Undang",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Undang-Undang",
+      "field": "Syariah Dan Undang-Undang",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "undang-undang"
+    }
   }
 ]
