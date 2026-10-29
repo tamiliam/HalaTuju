@@ -22,6 +22,8 @@ node_modules/
 
 # Scraped data snapshots (UP_TVET inventory CSVs — data, not source)
 halatuju_api/data/tvet/*.csv
+# UP_TVET course pages cached by scrape_uptvet_syarat (public pages; rebuilt on demand)
+halatuju_api/data/tvet/pages/
 
 # Document-recognition eval harness — real student documents, their cached Gemini reads,
 # and per-doc profile context are REAL PII → never commit. labels.json is PII-free + committed.

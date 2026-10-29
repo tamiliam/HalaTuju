@@ -121,7 +121,14 @@ class Command(BaseCommand):
             held = ' (already held)' if _norm_inst(inst) in {_norm_inst(x) for x in existing_names} else ''
             self.stdout.write(f'  {n:4d}  {inst}{held}')
 
+        from apps.courses.course_data_status import UPTVET, record_status
+        record_status(UPTVET, {'total': s['total'], 'awam': s['awam'], 'swasta': s['swasta'],
+                               'distinct_institutions': s['distinct_institutions'],
+                               'new_institutions': len(gap['new_institutions']),
+                               'awam_new_programmes': gap['awam_new_programmes']},
+                      detail=f"python manage.py audit_uptvet --csv {options['csv']}")
+
         self.stdout.write(self.style.NOTICE(
-            '\nNo DB writes. Use this to decide the Awam/Swasta ingest scope + the per-institution '
+            '\nNo catalogue writes (only the dashboard status row). Use this to decide the Awam/Swasta ingest scope + the per-institution '
             'priority before the (golden-master-adjacent) TVET ingest sprint.'
         ))

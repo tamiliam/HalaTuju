@@ -114,6 +114,12 @@ class Command(BaseCommand):
             f'(Awam {awam} · Swasta {swasta} · other/blank {len(all_cards) - awam - swasta})'
         ))
 
+        if not max_pages:  # a --max-pages spike is not the catalogue: do not record it as one
+            from apps.courses.course_data_status import UPTVET, record_status
+            record_status(UPTVET, {'scraped': len(all_cards), 'total': len(all_cards), 'awam': awam,
+                                   'swasta': swasta, 'output': output_path},
+                          detail='python manage.py scrape_uptvet')
+
         # Soft sanity check (no hard guard — this writes a CSV, not the DB). A full run that
         # got far fewer than the advertised page count likely means a DOM change broke the parser.
         if not max_pages and last_page and len(all_cards) < last_page * 20 * 0.8:
