@@ -1,6 +1,7 @@
 import {
-  canDeclarePayment, canRecordPayment, canSend, canVoid, defaultIssueDate, formatDay,
-  issuableMonths, issueDateProblem, issueMode, lastRejectedDeclaration, openDeclaration,
+  canDeclarePayment, canRecordPayment, canSend, canVoid, dayFirstFromIso, defaultIssueDate,
+  formatDay, isoFromDayFirst, issuableMonths, issueDateProblem, issueMode,
+  lastRejectedDeclaration, lineRequest, openDeclaration,
   orderedInvoices, settingsHref, shiftMonth,
   orderedProblems, splitEmails, statusChip, todayIso,
 } from '@/lib/invoices'
@@ -289,6 +290,62 @@ describe('the months offered never need a closed-year date', () => {
 
   it('offers only December in early January, because nothing older can be dated yet', () => {
     expect(issuableMonths('2027-01-20', 12)).toEqual(['2026-12'])
+  })
+})
+
+describe('a date written the Malaysian way (owner, 2026-10-29)', () => {
+  it('reads DD-MM-YYYY and hands the server the ISO date it has always parsed', () => {
+    expect(isoFromDayFirst('29-10-2026')).toBe('2026-10-29')
+    expect(isoFromDayFirst('1-9-2026')).toBe('2026-09-01')
+    expect(isoFromDayFirst(' 29 - 10 - 2026 ')).toBe('2026-10-29')
+  })
+
+  it('accepts slashes and dots, because a bank statement uses them', () => {
+    expect(isoFromDayFirst('29/10/2026')).toBe('2026-10-29')
+    expect(isoFromDayFirst('29.10.2026')).toBe('2026-10-29')
+  })
+
+  it('REFUSES a day that does not exist rather than rolling it over', () => {
+    // ⚠ `new Date('2026-02-31')` lands on 3 March. A payment date nobody typed is worse than a
+    // refusal, so the round-trip check throws it out.
+    expect(isoFromDayFirst('31-02-2026')).toBe('')
+    expect(isoFromDayFirst('31-04-2026')).toBe('')
+    expect(isoFromDayFirst('29-02-2025')).toBe('')      // 2025 is not a leap year
+    expect(isoFromDayFirst('29-02-2024')).toBe('2024-02-29')
+  })
+
+  it('refuses anything that is not a date at all', () => {
+    for (const bad of ['', '  ', 'yesterday', '2026-10-29', '29-10-26', '0-10-2026',
+      '29-13-2026', '29-00-2026', '29-10-2026-01']) {
+      expect(isoFromDayFirst(bad)).toBe('')
+    }
+  })
+
+  it('turns a stored ISO date back into the day-first box', () => {
+    expect(dayFirstFromIso('2026-10-29')).toBe('29-10-2026')
+    expect(dayFirstFromIso('')).toBe('')
+    expect(dayFirstFromIso(null)).toBe('')
+  })
+})
+
+describe('a billed request links to the request (owner, 2026-10-29)', () => {
+  it('reads the number back out of the frozen description', () => {
+    // ⚠ The frozen text is the ONLY record of which request a line was for — the line carries no
+    // key — so this is what lets the three invoices already sent gain the link.
+    expect(lineRequest('show year SPM was taken (REQ-12)'))
+      .toEqual({ words: 'show year SPM was taken', requestId: 12 })
+  })
+
+  it('leaves a line that names no request completely alone', () => {
+    for (const plain of ['Platform infrastructure, August 2026',
+      'Bug reports fixed, August 2026 — 5 reports, not charged', '']) {
+      expect(lineRequest(plain)).toEqual({ words: plain, requestId: null })
+    }
+  })
+
+  it('only matches the suffix, never a number mentioned mid-sentence', () => {
+    expect(lineRequest('fix (REQ-3) in the list').requestId).toBeNull()
+    expect(lineRequest('REQ-3 without brackets').requestId).toBeNull()
   })
 })
 

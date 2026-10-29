@@ -72,12 +72,30 @@ describe('grouped development lines (owner, 2026-10-29)', () => {
 
   it('indents a sub-item and prints no money on it', async () => {
     const container = await openDetail()
-    const cell = within(container).getAllByText('show year SPM was taken (REQ-12)')[0]
+    // ⚠ Matched on the WORDS, not the whole cell: the request number is now an anchor, so the
+    // cell's text is split across nodes. The full sentence is still asserted below.
+    const cell = within(container).getAllByText(/show year SPM was taken/)[0].closest('td')!
     expect(cell.className).toContain('pl-6')
+    expect(cell.textContent).toBe('show year SPM was taken (REQ-12)')
     const cells = cell.closest('tr')!.querySelectorAll('td')
     expect(cells[1].textContent).toBe('6.0')        // its own hours
     expect(cells[2].textContent).toBe('')           // no rate
     expect(cells[3].textContent).toBe('')           // and no amount, so the column still adds up
+  })
+
+  it('links the request number, and only the number, to the request itself', async () => {
+    // Owner, 2026-10-29: "Perhaps just the text within the brackets." The wording around it is
+    // the super's own text and means nothing to a router.
+    const container = await openDetail()
+    const link = within(container).getAllByText('REQ-12')[0] as HTMLAnchorElement
+    expect(link.tagName).toBe('A')
+    expect(link.getAttribute('href')).toBe('/admin/requests/12')
+  })
+
+  it('leaves a line that names no request as plain text', async () => {
+    const container = await openDetail()
+    const cell = within(container).getAllByText(/Feature requests, August 2026/)[0].closest('td')!
+    expect(cell.querySelector('a')).toBeNull()
   })
 
   it('keeps the rate and the amount on the group line above it', async () => {
@@ -239,6 +257,33 @@ describe('after issue', () => {
     await waitFor(() => expect(mockApi.recordInvoiceReceipt).toHaveBeenCalledWith(
       7, expect.objectContaining({ amount_myr: '856.75', reference: 'MBB-1', method: 'bank_transfer' }),
       { token: 'tok' }))
+  })
+
+  it('says whether the receipt reached the customer, either way', async () => {
+    // ⚠ NEVER BLANK. A receipt that did not arrive looks identical to one that did unless the
+    // screen says so, and the customer is not going to tell us.
+    const receipt = { id: 3, number: 'RCP-2026-0001', received_on: '2026-09-20',
+      amount_myr: '100.00', method: 'bank_transfer', reference: 'x' }
+    const paid = { status: 'part_paid' as const, amount_paid_myr: '100.00', balance_myr: '756.75' }
+
+    const sent = await openIssued(inv({ ...paid,
+      receipts: [{ ...receipt, emailed_at: '2026-09-21T02:00:00Z' }] }))
+    expect(within(sent.detail).getByText(/receiptEmailed/).textContent)
+      .toContain('21 Sep 2026')
+    sent.unmount()
+
+    const { detail } = await openIssued(inv({ ...paid,
+      receipts: [{ ...receipt, emailed_at: null }] }))
+    expect(within(detail).getByText('admin.billing.invoice.receiptNotEmailed')).toBeTruthy()
+  })
+
+  it('treats a receipt from before the column existed as not emailed', async () => {
+    // Every receipt raised before 2026-10-29 has no `emailed_at` at all, and none of them were.
+    const { detail } = await openIssued(inv({
+      status: 'part_paid', amount_paid_myr: '100.00', balance_myr: '756.75',
+      receipts: [{ id: 3, number: 'RCP-2026-0001', received_on: '2026-09-20',
+        amount_myr: '100.00', method: 'bank_transfer', reference: 'x' }] }))
+    expect(within(detail).getByText('admin.billing.invoice.receiptNotEmailed')).toBeTruthy()
   })
 
   it('void is not offered once money has arrived, and needs a reason before it is', async () => {

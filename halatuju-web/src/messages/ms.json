@@ -5478,7 +5478,7 @@
         "declare": {
           "title": "Beritahu kami anda telah membayar",
           "help": "Masukkan tarikh anda membayar dan rujukan bank anda. Kami akan memeriksanya dengan akaun kami dan mengeluarkan resit anda.",
-          "paidOn": "Tarikh dibayar (YYYY-MM-DD)",
+          "paidOn": "Tarikh dibayar (DD-MM-YYYY)",
           "reference": "Rujukan bank",
           "submit": "Kami telah membayar ini",
           "waiting": "Anda memberitahu kami ini dibayar pada {date}, rujukan {reference}. Kami sedang memeriksanya dengan akaun kami dan akan menghantar resit anda.",
@@ -5488,8 +5488,11 @@
           "confirm": "Sahkan dan keluarkan resit",
           "notFound": "Saya tidak menemuinya",
           "reason": "Apa yang hendak diberitahu kepada organisasi",
-          "notFoundConfirm": "Beritahu mereka ia tidak ditemui"
-        }
+          "notFoundConfirm": "Beritahu mereka ia tidak ditemui",
+          "badDate": "Masukkan tarikh sebagai DD-MM-YYYY, contohnya 29-10-2026."
+        },
+        "receiptEmailed": "Diemel {date}",
+        "receiptNotEmailed": "Tidak diemel — hantar PDF secara manual"
       },
       "usageTitle": "Penggunaan bulan ini",
       "storageOrgNote": "fail organisasi anda sahaja; imej kursus yang dikongsi tidak termasuk",

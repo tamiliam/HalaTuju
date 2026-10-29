@@ -168,6 +168,16 @@ class InvoiceReceipt(models.Model):
     reference = models.CharField(max_length=120)
     note = models.TextField(blank=True, default='')
     recorded_by_email = models.EmailField(blank=True, default='')
+    # ⚠ WHETHER THE CUSTOMER ACTUALLY GOT IT, recorded the same way the invoice records its own
+    # send (2026-10-29). The owner asked whether a receipt is emailed; it was not, and a receipt
+    # the customer has to come and fetch is a receipt they do not know exists. Blank means it was
+    # never emailed — stated on the screen, never left to be assumed either way.
+    emailed_at = models.DateTimeField(null=True, blank=True)
+    # ⚠ NULL, not an empty list, and the pair says one thing: NULL on both means never emailed.
+    # A `default=list` would also have forced the DDL renderer to open a real Postgres connection
+    # to adapt the default for the backfill, which the offline render cannot do; readers go
+    # through `list(... or [])` either way.
+    emailed_to = models.JSONField(null=True, blank=True, default=None)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

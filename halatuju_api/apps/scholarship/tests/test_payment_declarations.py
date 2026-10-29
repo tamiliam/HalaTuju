@@ -198,11 +198,16 @@ class TestTheOwnerIsTold(_World):
         self.assertEqual(self.reread(inv).status, 'payment_declared')
 
     def test_confirming_and_rejecting_send_nothing_to_the_owner(self):
-        """The owner is the one DOING those, so telling them is noise."""
+        """The owner is the one DOING those, so telling them is noise.
+
+        ⚠ Confirming is not silent — it emails the RECEIPT to the customer. What must not happen
+        is a second message back to the owner about their own action, so this asserts on WHO was
+        written to rather than on the outbox being empty.
+        """
         inv, d = self.declared()
         mail.outbox.clear()
         payment_declarations.confirm_payment(d, amount_myr='10.00')
-        self.assertEqual(mail.outbox, [])
+        self.assertEqual([m.to for m in mail.outbox], [['finance@brightpath.example']])
 
         # Only part paid, so the tenant may declare the rest — which gives a second open claim
         # to reject without inventing another month.
@@ -301,6 +306,98 @@ class TestConfirming(_World):
         stale.refresh_from_db()
         self.assertIsNone(stale.rejected_at)
         self.assertEqual(stale.reject_reason, '')
+
+
+class TestTheReceiptReachesTheCustomer(_World):
+    """⚠ A RECEIPT THE CUSTOMER HAS TO COME AND FETCH IS ONE THEY DO NOT KNOW EXISTS. Until
+    2026-10-29 a receipt was raised, numbered, stored and shown, and nothing was sent — while the
+    screen promised *"we will check it against our account and raise your receipt"*.
+
+    TWO DOORS, A TEST EACH, because `email_receipt` is a separate call that a new call site could
+    forget: the super's Record payment, and the owner confirming a declaration.
+    """
+
+    def test_confirming_a_declaration_emails_the_receipt_with_its_pdf(self):
+        inv, d = self.declared()
+        mail.outbox.clear()
+        receipt = payment_declarations.confirm_payment(d, amount_myr=inv.total_myr)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['finance@brightpath.example'])
+        self.assertIn(receipt.number, msg.subject)
+        self.assertIn(inv.number, msg.subject)
+        self.assertEqual([a[0] for a in msg.attachments], [f'{receipt.number}.pdf'])
+        self.assertEqual(msg.attachments[0][2], 'application/pdf')
+        receipt.refresh_from_db()
+        self.assertIsNotNone(receipt.emailed_at)
+        self.assertEqual(receipt.emailed_to, ['finance@brightpath.example'])
+
+    def test_recording_a_payment_at_the_door_emails_it_too(self):
+        inv = self.sent()
+        mail.outbox.clear()
+        r = self.client_for('super-uid').post(
+            f'{BASE}/invoices/{inv.id}/receipt/',
+            {'received_on': PAID_ON, 'amount_myr': '10.00', 'reference': 'MBB-1',
+             'method': 'bank_transfer'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('RCP-2026-0001', mail.outbox[0].subject)
+        self.assertIsNotNone(r.json()['receipts'][0]['emailed_at'])
+
+    def test_the_email_says_what_is_still_owed(self):
+        inv = self.sent()
+        mail.outbox.clear()
+        invoicing.email_receipt(invoicing.record_receipt(
+            inv, received_on=SEPT_15, amount_myr='10.00', reference='MBB-1', today=SEPT_15))
+        self.assertIn('Balance still outstanding', mail.outbox[0].body)
+
+        mail.outbox.clear()
+        invoicing.email_receipt(invoicing.record_receipt(
+            self.reread(inv), received_on=SEPT_15, amount_myr=self.reread(inv).balance(),
+            reference='MBB-2', today=SEPT_15))
+        self.assertIn('settled in full', mail.outbox[0].body)
+
+    def test_a_mail_failure_never_undoes_the_money(self):
+        """⚠ MONEY RECORDED IS MONEY RECORDED. The receipt stands, and `emailed_at` stays blank so
+        the screen says plainly that it did not go rather than implying it is on its way."""
+        from unittest import mock
+
+        inv, d = self.declared()
+        with mock.patch('django.core.mail.EmailMessage.send', side_effect=OSError('smtp down')):
+            receipt = payment_declarations.confirm_payment(d, amount_myr=inv.total_myr)
+        receipt.refresh_from_db()
+        self.assertIsNone(receipt.emailed_at)
+        self.assertIsNone(receipt.emailed_to)
+        self.assertEqual(self.reread(inv).status, 'paid')
+        d.refresh_from_db()
+        self.assertFalse(d.is_open)
+
+    def test_an_invoice_with_no_billing_inbox_records_the_money_and_sends_nothing(self):
+        from apps.scholarship.models import OrgBillingDetails
+
+        inv = self.sent()
+        # The frozen snapshot is what Send used; empty it the way a blank bill-to would leave it.
+        inv.bill_to_snapshot = {**(inv.bill_to_snapshot or {}), 'emails': []}
+        inv.save(update_fields=['bill_to_snapshot'])
+        OrgBillingDetails.objects.filter(organisation=self.org).update(emails=[])
+        mail.outbox.clear()
+        receipt = invoicing.record_receipt(
+            self.reread(inv), received_on=SEPT_15, amount_myr='10.00', reference='MBB-1',
+            today=SEPT_15)
+        self.assertFalse(invoicing.email_receipt(receipt))
+        self.assertEqual(mail.outbox, [])
+        self.assertEqual(self.reread(inv).amount_paid(), Decimal('10.00'))
+
+    def test_the_tenant_is_told_it_was_emailed_but_not_to_which_inboxes(self):
+        """`emailed_at` for both; the recipient LIST is super-only, like the invoice's `sent_to`."""
+        inv, d = self.declared()
+        payment_declarations.confirm_payment(d, amount_myr=inv.total_myr)
+        tenant = self.client_for('oa-a').get(f'{BASE}/invoices/').json()['invoices'][0]
+        self.assertIsNotNone(tenant['receipts'][0]['emailed_at'])
+        self.assertNotIn('emailed_to', tenant['receipts'][0])
+
+        owner = self.client_for('super-uid').get(f'{BASE}/invoices/').json()['invoices'][0]
+        self.assertEqual(owner['receipts'][0]['emailed_to'], ['finance@brightpath.example'])
 
 
 class TestRejecting(_World):

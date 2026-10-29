@@ -89,6 +89,26 @@ export function canRecordPayment(inv: InvoiceRow): boolean {
   return inv.status !== 'void' && Number(inv.balance_myr) > 0
 }
 
+const REQ_SUFFIX_RE = /^(.*?)\s*\(REQ-(\d+)\)$/
+
+/**
+ * Split a frozen line description into its words and the request it names, if any.
+ *
+ * ⚠ **READ BACK OUT OF THE FROZEN TEXT, never re-derived from the database.** An invoice line is
+ * a frozen document and carries no request key — `invoicing._sub_description` composed
+ * `" (REQ-12)"` onto the end when the invoice was issued, and that text is the only record of
+ * which request a line was for. Parsing it here is what lets the number become a link on the
+ * three invoices already sent, which a new payload field never could.
+ *
+ * Returns `{ words, requestId }`; `requestId` is null when the line names no request, which is
+ * every cost line and every invoice issued before 2026-10-29.
+ */
+export function lineRequest(description: string): { words: string; requestId: number | null } {
+  const m = (description || '').match(REQ_SUFFIX_RE)
+  if (!m) return { words: description || '', requestId: null }
+  return { words: m[1], requestId: parseInt(m[2], 10) }
+}
+
 /** The tenant's open claim on this invoice, or undefined. The screen shows at most one. */
 export function openDeclaration(inv: InvoiceRow) {
   return (inv.payment_declarations || []).find((d) => d.state === 'open')
@@ -191,6 +211,39 @@ export function formatDay(iso: string | null | undefined): string {
   const idx = parseInt(m[2], 10) - 1
   if (idx < 0 || idx > 11) return iso || ''
   return `${parseInt(m[3], 10)} ${SHORT_MONTHS[idx]} ${m[1]}`
+}
+
+const DAY_FIRST_RE = /^(\d{1,2})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{4})$/
+
+/** 'DD-MM-YYYY' → 'YYYY-MM-DD'; '' for anything that is not a real calendar date.
+ *
+ * ⚠ **DAY FIRST, because that is how Malaysia writes a date** (owner, 2026-10-29). The customer
+ * types it their way and the server still receives the ISO date it has always parsed — the
+ * conversion lives here, at the edge, rather than teaching the money code a second date format.
+ *
+ * Slashes and dots are accepted as well as dashes: somebody typing a date they read off a bank
+ * statement should not be refused over a separator.
+ *
+ * ⚠ It REJECTS a day that does not exist, rather than letting Date roll it over — `31-02-2026`
+ * would otherwise become 3 March, and a payment date nobody typed is worse than a refusal.
+ */
+export function isoFromDayFirst(text: string): string {
+  const m = (text || '').trim().match(DAY_FIRST_RE)
+  if (!m) return ''
+  const [day, month, year] = [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)]
+  if (month < 1 || month > 12 || day < 1 || day > 31) return ''
+  const p = (n: number) => String(n).padStart(2, '0')
+  const iso = `${year}-${p(month)}-${p(day)}`
+  // The round-trip is the check: `new Date('2026-02-31')` lands on 3 March and would print a
+  // different string than the one we built.
+  const d = new Date(`${iso}T00:00:00Z`)
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== iso ? '' : iso
+}
+
+/** 'YYYY-MM-DD' → 'DD-MM-YYYY', for seeding a day-first box from a stored date. */
+export function dayFirstFromIso(iso: string | null | undefined): string {
+  const m = (iso || '').match(DAY_RE)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : ''
 }
 
 /** Today in the viewer's own calendar as 'YYYY-MM-DD' — the default "received on" date. Built

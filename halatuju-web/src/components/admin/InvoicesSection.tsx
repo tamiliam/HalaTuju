@@ -13,6 +13,7 @@
  * darken the usage half of the page, which an org_admin is entitled to read.
  */
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import InvoicePaymentPanel from '@/components/admin/InvoicePaymentPanel'
 import type { InvoicePaymentPanelProps } from '@/components/admin/InvoicePaymentPanel'
 import InvoiceToIssue from '@/components/admin/InvoiceToIssue'
@@ -25,7 +26,8 @@ import {
 import { formatMyr } from '@/lib/billingCosts'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  canRecordPayment, canSend, canVoid, formatDay, orderedInvoices, statusChip, todayIso,
+  canRecordPayment, canSend, canVoid, formatDay, lineRequest, orderedInvoices, statusChip,
+  todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -76,6 +78,30 @@ function Chip({ status, t, isSuper, dueOn, balanceMyr }: {
   )
 }
 
+/** A frozen line's words, with the request number it names turned into a link.
+ *
+ * ⚠ ONLY THE NUMBER INSIDE THE BRACKETS is the link (owner, 2026-10-29). The wording around it is
+ * the super's own text from the build-hours screen and means nothing to a router; the number is
+ * the one part that identifies something a reader can open.
+ *
+ * ⚠ The text itself is NOT changed — it is a frozen document and the PDF still prints it whole.
+ * This only decides what is wrapped in an anchor on screen. Both audiences get the link: the
+ * Requests space is where the tenant filed the request in the first place.
+ */
+function LineDescription({ description }: { description: string }) {
+  const { words, requestId } = lineRequest(description)
+  if (requestId === null) return <>{description}</>
+  return (
+    <>
+      {words}{' ('}
+      <Link href={`/admin/requests/${requestId}`} className="text-primary-600 hover:underline">
+        {`REQ-${requestId}`}
+      </Link>
+      {')'}
+    </>
+  )
+}
+
 // ── Issued ───────────────────────────────────────────────────────────────────────────────────
 
 function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt, decl }: {
@@ -116,7 +142,9 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
               carries the group's money, so showing RM0.00 here would read as something waived. */}
           {inv.lines.map((ln) => (
             <tr key={ln.position} className="border-b">
-              <td className={ln.is_sub_item ? 'py-1.5 pl-6 pr-2 text-ground-600' : 'px-2 py-1.5 text-ground-900'}>{ln.description}</td>
+              <td className={ln.is_sub_item ? 'py-1.5 pl-6 pr-2 text-ground-600' : 'px-2 py-1.5 text-ground-900'}>
+                <LineDescription description={ln.description} />
+              </td>
               <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.quantity ?? ''}</td>
               <td className="px-2 py-1.5 text-right tabular-nums text-ground-700">{ln.is_sub_item || !ln.unit_amount_myr ? '' : formatMyr(ln.unit_amount_myr)}</td>
               <td className="px-2 py-1.5 text-right tabular-nums text-ground-900">{ln.is_sub_item ? '' : formatMyr(ln.amount_myr)}</td>
@@ -164,6 +192,13 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
                     onClick={() => downloadPdf('receipt', r.id, r.number, token)}>
                     {t('admin.billing.invoice.pdf')}
                   </button>
+                  {/* ⚠ SAID EITHER WAY, never left blank. A receipt that did not reach the
+                      customer looks identical to one that did unless the screen says so. */}
+                  <span className={`block w-full text-[11px] ${r.emailed_at ? 'text-ground-400' : 'text-caution-700'}`}>
+                    {r.emailed_at
+                      ? t('admin.billing.invoice.receiptEmailed', { date: formatDay(r.emailed_at) })
+                      : t('admin.billing.invoice.receiptNotEmailed')}
+                  </span>
                 </li>
               ))}
             </ul>

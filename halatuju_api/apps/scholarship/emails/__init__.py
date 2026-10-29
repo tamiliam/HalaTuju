@@ -39,6 +39,7 @@ from .shared import (
 )
 from .invoice_mail import (
     send_invoice_email, send_invoicing_alert_email, send_payment_declared_email,
+    send_receipt_email,
 )
 from .ops_alerts import send_profile_complete_admin_email, send_vision_outage_alert_email
 from .org_request_mail import (

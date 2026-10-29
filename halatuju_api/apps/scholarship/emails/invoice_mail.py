@@ -49,6 +49,53 @@ def send_invoice_email(invoice, pdf_bytes, to):
         return False
 
 
+def send_receipt_email(receipt, pdf_bytes, to):
+    """Deliver a receipt with its PDF attached. Best-effort → bool.
+
+    ⚠ **THE CUSTOMER IS TOLD THEIR MONEY ARRIVED.** Until 2026-10-29 a receipt was raised, stored
+    and shown on the billing page, and nothing was sent — so the organisation had to come and look
+    for it. The screen already promises *"we will check it against our account and raise your
+    receipt"*; this is the half that makes the promise true.
+
+    ⚠ **BEST-EFFORT, AND THE RECEIPT IS ALREADY SAVED BEFORE THIS RUNS.** Money recorded is money
+    recorded: a mail outage must never undo it, and `invoicing.email_receipt` stamps the receipt
+    only when this returns True, so the screen can say plainly that it did not go.
+
+    Speaks as the PLATFORM, not as the tenant's programme, for the same reason `send_invoice_email`
+    does: this message goes the other way round.
+    """
+    who = receipt.invoice.issuer_snapshot or {}
+    issuer_name = who.get('legal_name') or 'HalaTuju'
+    invoice = receipt.invoice
+    bill_to = (invoice.bill_to_snapshot or {}).get('bill_to_name') or invoice.organisation.name
+    body = (
+        f'Dear {bill_to},\n\n'
+        f'Thank you — we have received your payment. Receipt {receipt.number} is attached.\n\n'
+        f'    Receipt:   {receipt.number}\n'
+        f'    Received:  {receipt.received_on:%d %B %Y}\n'
+        f'    Amount:    RM{receipt.amount_myr:,.2f}\n'
+        f'    Reference: {receipt.reference}\n'
+        f'    Invoice:   {invoice.number}\n\n'
+        + (f'Balance still outstanding on {invoice.number}: RM{invoice.balance():,.2f}.\n\n'
+           if invoice.balance() > 0 else
+           f'{invoice.number} is now settled in full.\n\n')
+        + 'If anything on it looks wrong, reply to this email and we will look into it.\n\n'
+          'Thank you,\n'
+        + f'{issuer_name}\n'
+    )
+    reply_to = [who['email']] if who.get('email') else None
+    try:
+        msg = EmailMessage(
+            subject=f'Receipt {receipt.number} from {issuer_name} ({invoice.number})',
+            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=list(to), reply_to=reply_to)
+        msg.attach(f'{receipt.number}.pdf', pdf_bytes, 'application/pdf')
+        msg.send()
+        return True
+    except Exception:
+        logger.warning('Failed to send receipt %s', receipt.number, exc_info=True)
+        return False
+
+
 def send_payment_declared_email(declaration):
     """Tell the owner a tenant says it has paid. Best-effort → bool.
 

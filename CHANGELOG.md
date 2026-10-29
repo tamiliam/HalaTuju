@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing — the customer's four readings: day-first dates, linked requests, the receipt actually sent (migration 0185) - 2026-10-29
+
+Four things the owner found by reading BrightPath's own billing page.
+
+- **Dates are written DD-MM-YYYY**, the Malaysian way, on the tenant's "Tell us you have paid"
+  box. Slashes and dots are accepted too — somebody copying a date off a bank statement should not
+  be refused over a separator. ⚠ It REFUSES a day that does not exist rather than letting `Date`
+  roll it over: `31-02-2026` would otherwise become 3 March, and a payment date nobody typed is
+  worse than a complaint. `isoFromDayFirst` converts at the edge, so the money code keeps the one
+  date format it has always parsed. The owner's own date boxes are unchanged (neither audience
+  sees both).
+- **A billed request links to the request** — just `REQ-12` inside the brackets, as asked; the
+  wording around it means nothing to a router. ⚠ Read back OUT of the frozen line text, which is
+  the only record of which request a line was for, so **the three invoices already sent gain the
+  links too**. The PDF is untouched and still prints the plain sentence.
+- **The receipt is emailed, with its PDF**, to the same bill-to inboxes the invoice went to — on
+  Record payment and on confirming a declaration alike. It names the amount, the date, the
+  reference, and either what is still owed or that the invoice is settled in full. Until now a
+  receipt was raised, numbered, stored and shown, and nothing was sent, while the screen promised
+  *"we will check it against our account and raise your receipt"*.
+- **Whether it arrived is RECORDED, not assumed** (`emailed_at`, `emailed_to`): the screen reads
+  "Emailed 29 Oct" or, in amber, "Not emailed — send the PDF by hand". ⚠ **A mail failure never
+  undoes the money.** `email_receipt` is a SEPARATE call that runs after the receipt is committed,
+  precisely because `record_receipt` is itself called from inside `confirm_payment`'s
+  transaction — emailing from in there would tell a customer their money arrived and then roll the
+  receipt back if anything later failed. Two doors, a test each.
+- **Answered, not changed:** the invoice PDF is already attached when a super presses **Send**.
+  Issuing stays silent by the owner's own standing rule — *"nothing leaves the building until a
+  super presses Send"*.
+- ⚠ **Migrate first, by hand** — scholarship `0185_receipt_emailed` (DDL and ledger row in its
+  docstring). `_invoice_payload` reads `emailed_at` for both audiences, so deploying first 500s
+  both billing screens the moment a receipt exists.
+
 ## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
 
 Both from the owner reading BrightPath's own billing page after the declaration sprint shipped.

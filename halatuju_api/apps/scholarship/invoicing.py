@@ -589,3 +589,38 @@ def record_receipt(invoice, *, received_on, amount_myr, reference, method='bank_
             recorded_by_email=recorded_by_email or '')
     logger.info('invoicing: receipt %s for %s RM%s', receipt.number, locked.number, amount)
     return receipt
+
+
+def email_receipt(receipt):
+    """Send the receipt to the bill-to inboxes FROZEN on its invoice. Best-effort → bool.
+
+    ⚠ **DELIBERATELY NOT PART OF `record_receipt`.** It must run AFTER the money is committed, and
+    `record_receipt` is itself called from inside another transaction by
+    `payment_declarations.confirm_payment` — emailing from in there would tell a customer their
+    money arrived and then roll the receipt back if anything later failed. Keeping it a separate
+    call makes the ordering visible at each door instead of hidden two layers down.
+
+    ⚠ **A FAILURE NEVER UNDOES THE RECEIPT.** Money recorded is money recorded. `emailed_at` is
+    stamped only when the send succeeded, so a blank one means exactly what it says — it was not
+    sent — and the screen can offer the PDF instead of implying it is on its way.
+
+    There are two doors into this and a test for each: the super's Record payment, and the owner
+    confirming a tenant's declaration.
+    """
+    from . import emails, invoice_pdf
+
+    to = [e for e in (receipt.invoice.bill_to_snapshot or {}).get('emails', []) if e]
+    if not to:
+        return False
+    try:
+        pdf = invoice_pdf.receipt_pdf(receipt)
+    except Exception:                                                    # noqa: BLE001
+        logger.warning('Could not render receipt %s to email it', receipt.number, exc_info=True)
+        return False
+    if not emails.send_receipt_email(receipt, pdf, to):
+        return False
+    receipt.emailed_at = timezone.now()
+    receipt.emailed_to = to
+    receipt.save(update_fields=['emailed_at', 'emailed_to'])
+    logger.info('invoicing: receipt %s emailed to %s', receipt.number, ', '.join(to))
+    return True

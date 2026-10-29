@@ -46,17 +46,34 @@ function mount(over: Partial<InvoiceRow>, isSuper: boolean) {
 }
 
 describe('the tenant side', () => {
-  it('sends the date and the reference, and nothing else', () => {
+  it('takes the date DAY FIRST and sends the server the ISO date', () => {
+    // ⚠ The customer writes it the Malaysian way (owner, 2026-10-29); the money code keeps the
+    // one date format it has always parsed.
     const { container, row, onDeclare } = mount({}, false)
     const form = within(container).getByTestId('declare-7')
     fireEvent.change(within(form).getByLabelText('admin.billing.invoice.declare.paidOn'),
-      { target: { value: '2026-10-20' } })
+      { target: { value: '20-10-2026' } })
     fireEvent.change(within(form).getByLabelText('admin.billing.invoice.declare.reference'),
       { target: { value: ' MBB-77 ' } })
     fireEvent.click(within(form).getByText('admin.billing.invoice.declare.submit'))
     // ⚠ EXACTLY TWO FIELDS. No amount is collected, by the owner's choice: the invoice already
     // states it, and a tenant-typed figure would only invite a dispute.
     expect(onDeclare).toHaveBeenCalledWith(row, { paid_on: '2026-10-20', reference: 'MBB-77' })
+  })
+
+  it('says so, and sends nothing, when the date is not a real date', () => {
+    const { container, onDeclare } = mount({}, false)
+    const form = within(container).getByTestId('declare-7')
+    fireEvent.change(within(form).getByLabelText('admin.billing.invoice.declare.reference'),
+      { target: { value: 'MBB-77' } })
+    fireEvent.change(within(form).getByLabelText('admin.billing.invoice.declare.paidOn'),
+      { target: { value: '31-02-2026' } })
+    expect(within(form).getByTestId('declare-baddate-7')).toBeTruthy()
+    const button = within(form)
+      .getByText('admin.billing.invoice.declare.submit') as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    fireEvent.click(button)
+    expect(onDeclare).not.toHaveBeenCalled()
   })
 
   it('cannot be submitted without a bank reference', () => {

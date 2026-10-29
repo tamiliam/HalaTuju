@@ -23,7 +23,8 @@ import { useState } from 'react'
 import type { InvoicePaymentDeclarationRow, InvoiceRow } from '@/lib/admin-api'
 import { formatMyr } from '@/lib/billingCosts'
 import {
-  canDeclarePayment, formatDay, lastRejectedDeclaration, openDeclaration, todayIso,
+  canDeclarePayment, dayFirstFromIso, formatDay, isoFromDayFirst, lastRejectedDeclaration,
+  openDeclaration, todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -49,8 +50,13 @@ function DeclareForm({ inv, busy, t, onDeclare }: {
   inv: InvoiceRow; busy: boolean; t: T
   onDeclare: InvoicePaymentPanelProps['onDeclare']
 }) {
-  const [paidOn, setPaidOn] = useState(todayIso())
+  // ⚠ DAY FIRST on the screen, ISO on the wire (owner, 2026-10-29). The customer writes the date
+  // the Malaysian way; `isoFromDayFirst` converts at the edge, so the money code keeps the one
+  // date format it has always parsed. An empty conversion means "not a real date" and the button
+  // stays disabled rather than sending something the server will only refuse.
+  const [paidOn, setPaidOn] = useState(dayFirstFromIso(todayIso()))
   const [reference, setReference] = useState('')
+  const iso = isoFromDayFirst(paidOn)
   return (
     <div data-testid={`declare-${inv.id}`}>
       <h4 className="text-xs font-semibold text-ground-900">{t('admin.billing.invoice.declare.title')}</h4>
@@ -59,15 +65,20 @@ function DeclareForm({ inv, busy, t, onDeclare }: {
         <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.declare.paidOn')}</span>
           {/* ⚠ A plain text box, not type="date": a native picker follows the BROWSER's locale and
               can report no value at all until it is satisfied. Same rule as Record payment. */}
-          <input type="text" inputMode="numeric" placeholder="YYYY-MM-DD" className={INPUT} value={paidOn}
+          <input type="text" inputMode="numeric" placeholder="DD-MM-YYYY" className={INPUT} value={paidOn}
             onChange={(e) => setPaidOn(e.target.value)} aria-label={t('admin.billing.invoice.declare.paidOn')} /></label>
         <label className="block"><span className="block text-[11px] text-ground-500">{t('admin.billing.invoice.declare.reference')}</span>
           <input type="text" className={INPUT} value={reference}
             onChange={(e) => setReference(e.target.value)} aria-label={t('admin.billing.invoice.declare.reference')} /></label>
       </div>
+      {paidOn.trim() !== '' && iso === '' && (
+        <p className="mt-1 text-[11px] text-critical-700" data-testid={`declare-baddate-${inv.id}`}>
+          {t('admin.billing.invoice.declare.badDate')}
+        </p>
+      )}
       <button type="button" className={`${PRIMARY} mt-2`}
-        disabled={busy || reference.trim() === '' || paidOn.trim() === ''}
-        onClick={() => onDeclare(inv, { paid_on: paidOn.trim(), reference: reference.trim() })}>
+        disabled={busy || reference.trim() === '' || iso === ''}
+        onClick={() => onDeclare(inv, { paid_on: iso, reference: reference.trim() })}>
         {t('admin.billing.invoice.declare.submit')}
       </button>
     </div>

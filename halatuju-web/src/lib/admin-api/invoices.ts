@@ -43,6 +43,11 @@ export interface InvoiceReceiptRow {
   /** 'bank_transfer' | 'cheque' | 'other' */
   method: string
   reference: string
+  /** When the receipt was emailed to the bill-to inboxes. ⚠ NULL means it was NOT sent — stated,
+   *  never assumed. Receipts raised before 2026-10-29 are all null. */
+  emailed_at?: string | null
+  /** SUPER ONLY, like the invoice's `sent_to`: the tenant knows its own inboxes. */
+  emailed_to?: string[]
 }
 
 /** The tenant's claim that it has paid — carried to BOTH audiences, and carrying no money.

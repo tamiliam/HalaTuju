@@ -96,6 +96,11 @@ def _invoice_payload(inv, *, for_super):
             'amount_myr': _invoice_money(r.amount_myr),
             'method': r.method,
             'reference': r.reference,
+            # ⚠ WHETHER IT REACHED THE CUSTOMER, for BOTH audiences. Null means it was not sent —
+            # stated, never assumed. The recipient LIST is super-only, like `sent_to` above: the
+            # tenant knows its own inboxes, and the owner is the one who needs to check them.
+            'emailed_at': r.emailed_at.isoformat() if r.emailed_at else None,
+            **({'emailed_to': list(r.emailed_to or [])} if for_super else {}),
         } for r in receipts],
         # ⚠ BOTH AUDIENCES SEE THESE, and that is the point. The tenant needs to know its claim
         # was received and, if it was not matched, why; the owner needs something to check against
@@ -265,7 +270,7 @@ class AdminInvoiceActionView(_InvoiceBase):
             elif action == 'void':
                 invoicing.void_invoice(inv, reason=request.data.get('reason'), voided_by_email=by)
             elif action == 'receipt':
-                invoicing.record_receipt(
+                receipt = invoicing.record_receipt(
                     inv,
                     received_on=(request.data.get('received_on') or '').strip(),
                     amount_myr=request.data.get('amount_myr'),
@@ -273,6 +278,10 @@ class AdminInvoiceActionView(_InvoiceBase):
                     method=(request.data.get('method') or 'bank_transfer').strip(),
                     note=request.data.get('note') or '',
                     recorded_by_email=by)
+                # AFTER the money is recorded, never before — see `invoicing.email_receipt`. The
+                # result is not checked here on purpose: the receipt exists either way, and
+                # whether it went is read off `emailed_at` in the payload below.
+                invoicing.email_receipt(receipt)
             else:
                 return Response({'error': 'not_found', 'code': 'not_found'},
                                 status=status.HTTP_404_NOT_FOUND)

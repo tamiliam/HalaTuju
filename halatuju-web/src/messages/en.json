@@ -5478,7 +5478,7 @@
         "declare": {
           "title": "Tell us you have paid",
           "help": "Enter the date you paid and your bank reference. We will check it against our account and raise your receipt.",
-          "paidOn": "Date paid (YYYY-MM-DD)",
+          "paidOn": "Date paid (DD-MM-YYYY)",
           "reference": "Bank reference",
           "submit": "We have paid this",
           "waiting": "You told us this was paid on {date}, reference {reference}. We are checking it against our account and will send your receipt.",
@@ -5488,8 +5488,11 @@
           "confirm": "Confirm and raise receipt",
           "notFound": "I cannot find it",
           "reason": "What to tell the organisation",
-          "notFoundConfirm": "Tell them it was not found"
-        }
+          "notFoundConfirm": "Tell them it was not found",
+          "badDate": "Enter the date as DD-MM-YYYY, for example 29-10-2026."
+        },
+        "receiptEmailed": "Emailed {date}",
+        "receiptNotEmailed": "Not emailed — send the PDF by hand"
       },
       "usageTitle": "Usage this month",
       "storageOrgNote": "your organisation's files only; shared course images are not included",

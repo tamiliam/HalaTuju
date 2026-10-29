@@ -34,7 +34,7 @@ from datetime import date
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from .invoicing import InvoicingError, _today, record_receipt
+from .invoicing import InvoicingError, _today, email_receipt, record_receipt
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +164,11 @@ def confirm_payment(declaration, *, amount_myr, received_on=None, reference='',
     # The caller still holds the object it passed in, so bring it up to date rather than leaving
     # it reading "open" on a claim that is now closed.
     declaration.refresh_from_db()
+    # ⚠ OUTSIDE THE TRANSACTION, which is the whole reason `email_receipt` is not folded into
+    # `record_receipt`: sending from in there would tell the customer their money arrived and then
+    # roll the receipt back if anything after it failed. Unchecked — the receipt exists either way
+    # and `emailed_at` is what the screen reads.
+    email_receipt(receipt)
     logger.info('invoicing: payment declaration confirmed for %s as receipt %s',
                 invoice.number, receipt.number)
     return receipt
