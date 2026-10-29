@@ -150,18 +150,34 @@ colour swatch (the eight are taken): their chip is the neutral ground, and the l
 `req_bumiputera` (a "Bumiputera ATAU citizen" card is citizen only), "Bujang" -> `single` (display only,
 as before). Only the SPM option is the academic rule; SVM / SKM / Tahfiz options are ignored, and a
 card with no SPM route is flagged. Gender or religion wording is flagged (never a gate, never guessed).
-**Builder's reading, for review:** the qualified wording "Calon tidak mempunyai ketidakupayaan ...
-yang menyukarkan kerja-kerja amali" (most ILJTM pages; the same pages pay an OKU allowance) is TEXT,
-not `no_disability`: a gate on it would hide courses from students the page itself provides for.
+**Owner ruling (review, 2026-10-29): the qualified disability line is TEXT only.** "Calon tidak mempunyai
+ketidakupayaan ... yang menyukarkan kerja-kerja amali" (most ILJTM pages; the same pages pay an OKU
+allowance) goes into the remarks and is NEVER `no_disability`; only "Tidak menerima sebarang OKU" is.
+**Owner ruling (review, 2026-10-29): today's catalogue only.** Kraf, PERDA-TECH, veterinary, MARDI,
+Peladang and tenun programmes that were in June's catalogue but are not listed now are NOT ingested,
+although their pages still load.
+**A gate inside an academic card is still a gate (review).** Every line of every option of an academic
+card is read for gender, religion, citizenship, Bumiputera, OKU and colour-vision wording, whatever the
+option (SVM, Tahfiz, open, or the text before the first SPM item). Gender or religion there is UNPARSED; a
+citizenship / Bumi / OKU / colour line is accepted only when a condition card sets the same flag. An SKM
+certificate title or a trade name ("Pakaian Lelaki") is not a gate. A Tahfiz CERTIFICATE offered as one
+route beside an SPM route is allowed: the SPM route decides (18170, 18176, 31450, 45214, 48896, 46249).
+**Owner ruling (review, 2026-10-29): held rows are not touched in F1.** The held courses' flag mismatches
+the review file lists (`req_malaysian` false on all 150 matched rows, `no_colorblind` missing on 59,
+`no_disability` set where the page has only the qualified line) are fixed in a SEPARATE small change after
+F1 ships.
+**Ingest safety (review).** `ingest_tvet_courses --apply` refuses a `courses[]` id that already exists, or
+any id not starting `TVET-`, unless `--allow-update` (which still never lets a non `TVET-` id through), so
+a held course can never be rewritten through the new-course path.
 **Institutions.** A campus prod holds links to its row and is never rewritten. A new campus is proposed
 and created only by `ingest_tvet_courses --create-institutions` (dry run first): KBS -> the next
 `IKBN-NNN` (category ILKBS), every other public body -> `ILKA-NNN` (type ILKA, category `TVET`,
 subcategory = the provider family), MARA (F2) -> `MARA-NNN`, category `MARA`. State spellings as prod.
 The new subcategories have no ranking weight (`INST_PRIORITY_MAP`), so they tie-break below the held
 TVET institutes.
-**Revisit if:** the owner wants the qualified disability wording as a gate, a campus programme is
-found under a different name, or the catalogue lists programmes (Kraf, PERDA, veterinary) that were in
-June's catalogue but not in October's.
+**Revisit if:** a campus programme is found under a different name, the catalogue lists the June-only
+programmes again (then they are ingested like any other), or a page states a disability exclusion in
+other words.
 
 ## A Matriculation or polytechnic transcript is genuineness-checked; every page that needs a ruling stays "not checked" — 2026-10-29 (Matric/Diploma M4)
 

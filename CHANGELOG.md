@@ -32,8 +32,18 @@ Review file: `halatuju_api/data/tvet/tvet_new_courses_F1.json`, rebuilt by a tes
   source-type independent: the KEMAS rows are hidden from a non-Bumi student in eligibility and search.
 - **Golden masters:** original 389 = **5,319** identical; a non-Bumi student gains EXACTLY the F1 rows she
   meets (**1,494**, digest pinned; full **6,813**); bumi=True **5,986 -> 7,578**; STPM **2,025**.
-- **Not done:** MARA (F2; the current rules read 20 of 665 MARA pages, the rest need more condition wording);
-  the held-course rule differences; the 89 flagged rows.
+- **Review round 1:** every line of an academic card (SVM / Tahfiz / open options, text before the first SPM
+  item) is read for gender, religion, citizenship, Bumi, OKU and colour wording: gender / religion or a gate
+  no condition card sets is flagged (SKM titles and trade names like "Pakaian Lelaki" are not gates); a Tahfiz
+  certificate route beside an SPM route stays allowed (tested). `ingest_tvet_courses --apply` refuses an
+  existing or non `TVET-` course id unless `--allow-update` (never for a non `TVET-` id). The Bumi twins' gain
+  is pinned by digest (2,259 over the original). A numbered age line loses its number (TVET-51431 now
+  "Umur 17 hingga 30 tahun."). Owner rulings recorded: today's catalogue only; the qualified disability line is
+  text only. The created set did not move (35 / 39 / 56 / 89 / 4); only TVET-51431's remark text changed.
+- **Not done:** MARA (F2; the current rules read 21 of 665 MARA pages, the rest need more condition wording);
+  the 89 flagged rows; the held-course flag mismatches (`req_malaysian` on 150 rows, `no_colorblind` on 59,
+  `no_disability` on the qualified line) - owner: a SEPARATE small change after F1 ships; F1 leaves held rows
+  untouched.
 
 ## Student maintenance Sprint 4b (part 2) — the emails a funded student receives about her results - 2026-10-29
 

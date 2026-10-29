@@ -164,7 +164,8 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    pathway, so the ILKA-* rows would show as plain "tvet"; an old web has no chips for them) →
    `ingest_tvet_courses --file data/tvet/tvet_new_courses_F1.json --create-institutions` (dry run: expect 4
    `CREATE INSTITUTION` (IKBN-022, ILKA-001..003), 35 `CREATE TVET-…`, 0 UPDATE, 56 `LINK` lines, "94 already
-   held", 89 flagged, and no "Refusing") → the same with `--apply` → a re-revision so the frame reloads. A held
+   held", 89 flagged, and no "Refusing") → the same with `--apply` (it refuses any `courses[]` id that already
+   exists or is not `TVET-…`; a reviewed RE-run of the same file needs `--allow-update`) → a re-revision so the frame reloads. A held
    course (IJTM-* / IKBN-*) only GAINS campus links; its row and rule are never written. Read-only SQL before
    `--apply`: none of the 35 ids in `courses`; none of IKBN-022 / ILKA-001..003 in `institutions`; every
    IJTM-001..034 / IKBN-001..021 present; `SELECT count(*) FROM course_institutions WHERE (course_id,
