@@ -20,17 +20,28 @@
   "header_mismatches": 2,
   "remark_variants": 1,
   "rows": 278,
-  "flagged_rows": 92,
-  "new_courses": 32,
-  "new_offerings": 36,
+  "flagged_rows": 89,
+  "new_courses": 35,
+  "new_offerings": 39,
   "held_links": 150,
   "held_links_new": 56,
   "held_rule_differences": 150,
   "split_by_rule": 0,
-  "open_courses": 29,
-  "new_institutions": 3
+  "open_courses": 32,
+  "new_institutions": 4
  },
  "new_institutions": {
+  "ILKA-001": {
+   "institution_id": "ILKA-001",
+   "institution_name": "Institut Latihan FAMA Kota Bharu (ILFKB)",
+   "acronym": "ILFKB",
+   "type": "ILKA",
+   "category": "TVET",
+   "subcategory": "FAMA",
+   "state": "Kelantan",
+   "address": "Lot 1770, Jalan Dato Lundang, 15200 Kota Bharu, Kelantan",
+   "url": ""
+  },
   "IKBN-022": {
    "institution_id": "IKBN-022",
    "institution_name": "Institut Kemahiran Sukan Negara (AKBG)",
@@ -42,8 +53,8 @@
    "address": "JALAN SULTAN ABDUL SAMAD 42700 BANTING SELANGOR",
    "url": "https://ekampus.kbs.gov.my/"
   },
-  "ILKA-001": {
-   "institution_id": "ILKA-001",
+  "ILKA-002": {
+   "institution_id": "ILKA-002",
    "institution_name": "Akademi Kemahiran KEMAS Gopeng",
    "acronym": "",
    "type": "ILKA",
@@ -53,8 +64,8 @@
    "address": "JABATAN KEMAJUAN MASYARAKAT, LOT 133080 LALUAN PERSEKUTUAN, 31600 GOPENG, PERAK",
    "url": "https://www.kemas.gov.my"
   },
-  "ILKA-002": {
-   "institution_id": "ILKA-002",
+  "ILKA-003": {
+   "institution_id": "ILKA-003",
    "institution_name": "Kolej Pertanian Malaysia, Bukit Tangga",
    "acronym": "",
    "type": "ILKA",
@@ -353,7 +364,7 @@
    "offerings": [
     {
      "id_kursus": "18170",
-     "institution_id": "ILKA-002",
+     "institution_id": "ILKA-003",
      "campus": "KOLEJ PERTANIAN MALAYSIA, BUKIT TANGGA",
      "kod_tauliah": "TVET(S1)/K06022/C107-002-3:2020-MT-A",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=18170",
@@ -398,7 +409,7 @@
    "offerings": [
     {
      "id_kursus": "18176",
-     "institution_id": "ILKA-002",
+     "institution_id": "ILKA-003",
      "campus": "KOLEJ PERTANIAN MALAYSIA, BUKIT TANGGA",
      "kod_tauliah": "TVET(S1)/K06022/A016-003-3:2020-MT-A",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=18176",
@@ -488,7 +499,7 @@
    "offerings": [
     {
      "id_kursus": "31450",
-     "institution_id": "ILKA-002",
+     "institution_id": "ILKA-003",
      "campus": "KOLEJ PERTANIAN MALAYSIA, BUKIT TANGGA",
      "kod_tauliah": "TVET(S1)/K06022/A016-001-3:2016-MT-B",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=31450",
@@ -933,7 +944,7 @@
    "offerings": [
     {
      "id_kursus": "45214",
-     "institution_id": "ILKA-002",
+     "institution_id": "ILKA-003",
      "campus": "KOLEJ PERTANIAN MALAYSIA, BUKIT TANGGA",
      "kod_tauliah": "TVET(S1)/K06022/A032-006-3:2022-ST-A",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45214",
@@ -991,6 +1002,51 @@
     "02 Umur / [Syarat Wajib] Mestilah: / Umur Minimum : 17 / Umur Maksimum : 30",
     "03 Syarat Tambahan / [Syarat Wajib] Mestilah: / 1. Sihat Tubuh Badan (Wajib) / 2. Boleh Membaca, Menulis dan Mengira (Wajib)",
     "04 Warganegara / (Warganegara Malaysia) / [Syarat Wajib] Mestilah: / Warganegara Malaysia Sahaja"
+   ],
+   "warnings": []
+  },
+  {
+   "course_id": "TVET-46249",
+   "course": "Operasi Jualan dan Pemasaran Produk Berasaskan Pertanian",
+   "level": "Sijil",
+   "department": "Pertanian",
+   "field": "Pertanian",
+   "field_key": "pertanian",
+   "semesters": 3,
+   "description": "Pusat Bertauliah bererti penyedia latihan kemahiran, samada institusi atau tempat kerja (workplace) yang telah diluluskan oleh JPK untuk mengendali kemahiran dan menawarkan Persijilan Kemahiran Malaysia bagi bidang dan tahap kemahiran tertentu berdasarkan NOSS",
+   "family": "fama",
+   "requirement": {
+    "source_type": "tvet",
+    "merit_type": "standard",
+    "merit_cutoff": null,
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": false,
+    "req_interview": false,
+    "req_malaysian": true,
+    "no_colorblind": true,
+    "no_disability": false,
+    "single": true,
+    "complex_requirements": null,
+    "subject_group_req": null,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
+   },
+   "offerings": [
+    {
+     "id_kursus": "46249",
+     "institution_id": "ILKA-001",
+     "campus": "INSTITUT LATIHAN FAMA KOTA BHARU (ILFKB)",
+     "kod_tauliah": "TVET(S1)/K06040/A016-003-3:2020-MT-A",
+     "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=46249",
+     "tuition_fee_semester": "",
+     "registration_fee": "RM 320"
+    }
+   ],
+   "source": [
+    "01 KELAYAKAN AKADEMIK / [Syarat Pilihan 1] Bagi calon yang tiada SPM hendaklah mempunyai Sijil Tahfiz dari Institusi Tahfiz / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis / ATAU / [Syarat Pilihan 2] Calon Menduduki SPM / 1. Sekurang-kurangnya Gred G / Bil. Subjek : 1 / Gred Minimum : G / 1103 | BAHASA MELAYU / ATAU / [Syarat Pilihan 3] / Jenis Sijil/Diploma : Sijil / Mempunyai Sijil Tahfiz Dari Sekolah / Minimum CGPA : 0",
+    "02 WARGANEGARA / [Syarat Wajib] CALON MESTILAH / Warganegara Malaysia Sahaja",
+    "03 UMUR / [Syarat Wajib] CALON MESTILAH BERUMUR / Umur Minimum : 17 / Umur Maksimum : 30",
+    "04 SYARAT TAMBAHAN / [Syarat Wajib] CALON DIWAJIBKAN MEMENUHI SYARAT TAMBAHAN BERIKUT: / 1. Sihat Tubuh Badan (Wajib) / 2. Bujang (Wajib) / 3. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib) / 4. Boleh Membaca, Menulis dan Mengira (Wajib)"
    ],
    "warnings": []
   },
@@ -1068,7 +1124,7 @@
    "offerings": [
     {
      "id_kursus": "47045",
-     "institution_id": "ILKA-001",
+     "institution_id": "ILKA-002",
      "campus": "AKADEMI KEMAHIRAN KEMAS GOPENG",
      "kod_tauliah": "TVET(S1)/K09009/C141-001-2:2017-MT-B",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=47045",
@@ -1114,7 +1170,7 @@
    "offerings": [
     {
      "id_kursus": "47051",
-     "institution_id": "ILKA-001",
+     "institution_id": "ILKA-002",
      "campus": "AKADEMI KEMAHIRAN KEMAS GOPENG",
      "kod_tauliah": "TVET(S1)/K09009/I561-005-2:2022-MT-B",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=47051",
@@ -1267,6 +1323,51 @@
    "warnings": []
   },
   {
+   "course_id": "TVET-48398",
+   "course": "Pelaksanaan Kawalan Proses",
+   "level": "Sijil",
+   "department": "Kimia & Proses",
+   "field": "Kimia & Proses",
+   "field_key": "kimia-proses",
+   "semesters": 4,
+   "description": "Dalam kursus ini, pelajar akan diajar pemeriksaan paparan grafik, mengenalpasti bahan-bahan pengukuran, aktiviti asas instrumentasi, kawalan, menganalisa loop, asas litar elektronik dan litar logik. Mengawal dan menganalisa parameter proses seperti aliran, paras, suhu dan tekanan dengan menggunakan sistem elektronik, pneumatik dan hidraulik. Menyelenggara sistem kawalan supaya proses sentiasa stabil.",
+   "family": "iljtm",
+   "requirement": {
+    "source_type": "tvet",
+    "merit_type": "standard",
+    "merit_cutoff": null,
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": false,
+    "req_interview": false,
+    "req_malaysian": true,
+    "no_colorblind": true,
+    "no_disability": false,
+    "single": false,
+    "complex_requirements": null,
+    "subject_group_req": null,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+   },
+   "offerings": [
+    {
+     "id_kursus": "48398",
+     "institution_id": "IJTM-009",
+     "campus": "ADTEC JTM KAMPUS KEPALA BATAS (ILP KEPALA BATAS)",
+     "kod_tauliah": "TVET(S1)/K01017/M749-010-3:2025-ST-A",
+     "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=48398",
+     "tuition_fee_semester": "",
+     "registration_fee": "RM 750"
+    }
+   ],
+   "source": [
+    "01 Umur / (Berumur 17 hingga 35 tahun) / [Syarat Wajib] Berumur 17 hingga 35 tahun / Umur Minimum : 17 / Umur Maksimum : 35",
+    "02 Warganegara / (Pemohon adalah Warganegara Malaysia) / [Syarat Wajib] Pemohon adalah / Warganegara Malaysia Sahaja",
+    "03 Syarat Persekolahan / (Syarat Kemasukan Program) / [Syarat Pilihan 1] Calon mestilah / 1. Tamat Tingkatan 5 / Bil. Subjek : 2 / Gred Minimum : G / 1103 | BAHASA MELAYU ; 1249 | SEJARAH / ATAU / [Syarat Pilihan 2] Calon mestilah / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis",
+    "04 Syarat Am Kemasukan / (Calon tidak mempunyai kurang upaya) / [Syarat Wajib] Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. / 1. Sihat Tubuh Badan (Wajib) / 2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
+   ],
+   "warnings": []
+  },
+  {
    "course_id": "TVET-48896",
    "course": "Penyeliaan Ladang Ruminan",
    "level": "Sijil",
@@ -1295,7 +1396,7 @@
    "offerings": [
     {
      "id_kursus": "48896",
-     "institution_id": "ILKA-002",
+     "institution_id": "ILKA-003",
      "campus": "KOLEJ PERTANIAN MALAYSIA, BUKIT TANGGA",
      "kod_tauliah": "TVET(S1)/K06022/A014-001-3:2019-ST-A",
      "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=48896",
@@ -1533,6 +1634,50 @@
     "02 Warganegara / (Pemohon adalah Warganegara Malaysia) / [Syarat Wajib] Pemohon adalah / Warganegara Malaysia Sahaja",
     "03 Syarat Persekolahan / (Syarat Kemasukan Program) / [Syarat Pilihan 1] Calon mestilah / 1. Tamat Tingkatan 5 / Bil. Subjek : 2 / Gred Minimum : G / 1103 | BAHASA MELAYU ; 1249 | SEJARAH / ATAU / [Syarat Pilihan 2] Calon mestilah / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis",
     "04 Syarat Am Kemasukan / (Calon tidak mempunyai kurang upaya) / [Syarat Wajib] Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. / 1. Sihat Tubuh Badan (Wajib) / 2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
+   ],
+   "warnings": []
+  },
+  {
+   "course_id": "TVET-51431",
+   "course": "Sijil Lanjutan Teknologi Fotografi",
+   "level": "Sijil Lanjutan",
+   "department": "ICT & Multimedia",
+   "field": "ICT & Multimedia",
+   "field_key": "multimedia",
+   "semesters": 4,
+   "description": "Pengenalan Kursus Fotografi",
+   "family": "ilkbs",
+   "requirement": {
+    "source_type": "tvet",
+    "merit_type": "standard",
+    "merit_cutoff": null,
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": false,
+    "req_interview": false,
+    "req_malaysian": true,
+    "no_colorblind": false,
+    "no_disability": false,
+    "single": false,
+    "complex_requirements": null,
+    "subject_group_req": null,
+    "remarks": "1. 17 hingga 30 tahun."
+   },
+   "offerings": [
+    {
+     "id_kursus": "51431",
+     "institution_id": "IKBN-009",
+     "campus": "INSTITUT KEMAHIRAN SUKAN NEGARA",
+     "kod_tauliah": "TVET(S1)/K03017/AC-050-3:2012-MT-C",
+     "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=51431",
+     "tuition_fee_semester": "",
+     "registration_fee": ""
+    }
+   ],
+   "source": [
+    "01 KELAYAKAN AKADEMIK / (Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca dan Menulis) / [Syarat Wajib] / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis",
+    "02 UMUR / (17 hingga 30 tahun) / [Syarat Wajib] / Syarat Umum: / 1. 17 hingga 30 tahun",
+    "03 WARGANEGARA / (Malaysia) / [Syarat Wajib] Warganegara Malaysia / Warganegara Malaysia Sahaja"
    ],
    "warnings": []
   },
@@ -8955,8 +9100,7 @@
    "campus": "KOLEJ PERIKANAN SULTAN NAZRIN MUIZZUDDIN SHAH LUMUT",
    "held_course": null,
    "reasons": [
-    "card 01 'KELAYAKAN AKADEMIK': no SPM route (only other qualifications)",
-    "field_key: no FIELD_RULES pattern names 'DIPLOMA PENGURUSAN VESEL PENANGKAPAN IKAN'"
+    "card 01 'KELAYAKAN AKADEMIK': no SPM route (only other qualifications)"
    ],
    "source": [
     "01 KELAYAKAN AKADEMIK / [Syarat Wajib] Memiliki Salah Satu (1) Sijil Kemahiran Malaysia (SKM) Tahap 3 Seperti Berikut : / OPERASI PERIKANAN TANGKAPAN [A031-002-3:2022] Atau / Operasi Teknologi Perikanan Tangkapan [AF-020-3:2015] Atau / Nakhoda Teknologi Perikanan Tangkapan Pesisir [AF-020-3]",
@@ -9045,22 +9189,6 @@
     "02 Warganegara / [Syarat Wajib] Pemohon adalah / Warganegara Malaysia Sahaja",
     "03 Kelayakan Akademik / [Syarat Wajib] Mempunyai Sijil Kemahiran Malaysia (SKM) Tahap 3 dalam SALAH SATU bidang berikut / Perkhidmatan Rangkaian Komputer [IT-030-3:2013] Atau / Juruteknik Rangkaian Komputer [IT-030-3] Atau / Juruteknik Rangkaian Komputer [D-051-3] Atau / Juruteknik Rangkaian Komputer [D-050-3] Atau / PERKHIDMATAN RANGKAIAN KOMPUTER [J619-003-3:2023]",
     "04 Syarat Am Kemasukan / [Syarat Wajib] Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. / 1. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib) / 2. Sihat Tubuh Badan (Wajib)"
-   ]
-  },
-  {
-   "id_kursus": "46249",
-   "name": "OPERASI JUALAN DAN PEMASARAN PRODUK BERASASKAN PERTANIAN",
-   "family": "fama",
-   "campus": "INSTITUT LATIHAN FAMA KOTA BHARU (ILFKB)",
-   "held_course": null,
-   "reasons": [
-    "condition not recognised: 'CALON DIWAJIBKAN MEMENUHI SYARAT TAMBAHAN BERIKUT:'"
-   ],
-   "source": [
-    "01 KELAYAKAN AKADEMIK / [Syarat Pilihan 1] Bagi calon yang tiada SPM hendaklah mempunyai Sijil Tahfiz dari Institusi Tahfiz / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis / ATAU / [Syarat Pilihan 2] Calon Menduduki SPM / 1. Sekurang-kurangnya Gred G / Bil. Subjek : 1 / Gred Minimum : G / 1103 | BAHASA MELAYU / ATAU / [Syarat Pilihan 3] / Jenis Sijil/Diploma : Sijil / Mempunyai Sijil Tahfiz Dari Sekolah / Minimum CGPA : 0",
-    "02 WARGANEGARA / [Syarat Wajib] CALON MESTILAH / Warganegara Malaysia Sahaja",
-    "03 UMUR / [Syarat Wajib] CALON MESTILAH BERUMUR / Umur Minimum : 17 / Umur Maksimum : 30",
-    "04 SYARAT TAMBAHAN / [Syarat Wajib] CALON DIWAJIBKAN MEMENUHI SYARAT TAMBAHAN BERIKUT: / 1. Sihat Tubuh Badan (Wajib) / 2. Bujang (Wajib) / 3. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib) / 4. Boleh Membaca, Menulis dan Mengira (Wajib)"
    ]
   },
   {
@@ -9247,22 +9375,6 @@
    ]
   },
   {
-   "id_kursus": "48398",
-   "name": "PELAKSANAAN KAWALAN PROSES",
-   "family": "iljtm",
-   "campus": "ADTEC JTM KAMPUS KEPALA BATAS (ILP KEPALA BATAS)",
-   "held_course": null,
-   "reasons": [
-    "field_key: no FIELD_RULES pattern names 'PELAKSANAAN KAWALAN PROSES'"
-   ],
-   "source": [
-    "01 Umur / (Berumur 17 hingga 35 tahun) / [Syarat Wajib] Berumur 17 hingga 35 tahun / Umur Minimum : 17 / Umur Maksimum : 35",
-    "02 Warganegara / (Pemohon adalah Warganegara Malaysia) / [Syarat Wajib] Pemohon adalah / Warganegara Malaysia Sahaja",
-    "03 Syarat Persekolahan / (Syarat Kemasukan Program) / [Syarat Pilihan 1] Calon mestilah / 1. Tamat Tingkatan 5 / Bil. Subjek : 2 / Gred Minimum : G / 1103 | BAHASA MELAYU ; 1249 | SEJARAH / ATAU / [Syarat Pilihan 2] Calon mestilah / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis",
-    "04 Syarat Am Kemasukan / (Calon tidak mempunyai kurang upaya) / [Syarat Wajib] Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. / 1. Sihat Tubuh Badan (Wajib) / 2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-   ]
-  },
-  {
    "id_kursus": "48401",
    "name": "Diploma Teknologi Mekatronik (DKM Tahap 4)",
    "family": "iljtm",
@@ -9381,8 +9493,7 @@
    "campus": "ADTEC JTM KAMPUS BATU PAHAT (ADTEC BATU PAHAT)",
    "held_course": null,
    "reasons": [
-    "card 03 'Kelayakan Akademik': no SPM route (only other qualifications)",
-    "field_key: no FIELD_RULES pattern names 'Diploma Teknologi Keselamatan SIber (DKM Tahap 4) #'"
+    "card 03 'Kelayakan Akademik': no SPM route (only other qualifications)"
    ],
    "source": [
     "01 Umur / [Syarat Wajib] Pemohon berumur 17 hingga 35 tahun / Umur Minimum : 17 / Umur Maksimum : 35",
@@ -9424,31 +9535,13 @@
    ]
   },
   {
-   "id_kursus": "51431",
-   "name": "SIJIL LANJUTAN TEKNOLOGI FOTOGRAFI",
-   "family": "ilkbs",
-   "campus": "INSTITUT KEMAHIRAN SUKAN NEGARA",
-   "held_course": null,
-   "reasons": [
-    "condition not recognised: 'Warganegara Malaysia'",
-    "field_key: no FIELD_RULES pattern names 'SIJIL LANJUTAN TEKNOLOGI FOTOGRAFI'"
-   ],
-   "source": [
-    "01 KELAYAKAN AKADEMIK / (Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca dan Menulis) / [Syarat Wajib] / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis",
-    "02 UMUR / (17 hingga 30 tahun) / [Syarat Wajib] / Syarat Umum: / 1. 17 hingga 30 tahun",
-    "03 WARGANEGARA / (Malaysia) / [Syarat Wajib] Warganegara Malaysia / Warganegara Malaysia Sahaja"
-   ]
-  },
-  {
    "id_kursus": "52502",
    "name": "Penyelenggaraan Vesel Penangkapan Ikan",
    "family": "perikanan",
    "campus": "KOLEJ PERIKANAN SULTAN NAZRIN MUIZZUDDIN SHAH LUMUT",
    "held_course": null,
    "reasons": [
-    "condition not recognised: 'Pemohon Hendaklah Memenuhi Syarat-syarat Tambahan Seperti Berikut :'",
-    "item without a count or grade: 'Perempuan'",
-    "field_key: no FIELD_RULES pattern names 'Penyelenggaraan Vesel Penangkapan Ikan'"
+    "item without a count or grade: 'Perempuan'"
    ],
    "source": [
     "01 KELAYAKAN AKADEMIK / [Syarat Pilihan 1] Pemohon boleh membaca, menulis dan mengira / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis / ATAU / [Syarat Pilihan 2] Pemohon Memiliki Sijil Vokasional Malaysia (SVM) Dari Institusi Yang Diiktiraf / (empty table) / (empty table) / ATAU / [Syarat Pilihan 3] Pemohon Memiliki Sijil Tahfiz atau Pondok Dari Institusi Yang Berdaftar / Jenis Sijil/Diploma : Sijil / Mempunyai SIJIL TAHFIZ ATAU PONDOK Dari INSTITUSI YANG BERDAFTAR / Minimum CGPA : 0 / ATAU / [Syarat Pilihan 4] Pemohon Memiliki Sijil Pelajaran Malaysia / 1. Pemohon Memiliki SPM Dengan Sekurang-kurangnya Gred E Dalam Subjek Berikut : / Bil. Subjek : 2 / Gred Minimum : E / 1103 | BAHASA MELAYU ; 1249 | SEJARAH",

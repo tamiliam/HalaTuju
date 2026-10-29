@@ -57,7 +57,7 @@ LINE_RULES = (
     (r'^Umur Maksimum\s*:\s*(\d+)', 'age_max'),
     (r'\bLelaki\b|\bPerempuan\b|\bWanita\b|\bjantina\b', 'gender'),
     (r'beragama|\bIslam\b|Muslim', 'religion'),
-    (r'Warganegara Malaysia Sahaja|^WARGANEGARA SAHAJA$', 'req_malaysian'),
+    (r'Warganegara Malaysia Sahaja|^WARGANEGARA SAHAJA$|^Warganegara Malaysia$', 'req_malaysian'),
     (r'Bumiputera Sahaja|Berbangsa Melayu, Orang Asli', 'req_bumiputera'),
     (r'Tiada Masalah Penglihatan Atau Rabun Warna', 'no_colorblind'),
     (r'Tidak menerima sebarang OKU', 'no_disability'),
@@ -71,6 +71,8 @@ LINE_RULES = (
     (r'^(Mestilah|Calon mestilah|Pemohon adalah|Pemohon (Hendaklah|mestilah)|Syarat Umum|Syarat-syarat AM|'
      r'MALAYSIA|Mestilah Berumur|Pemohon Hendaklah Berumur|WARGANEGARA SAHAJA|Warganegara sahaja|'
      r'Had Umur Minimum dan Maksimun|Bumiputera sahaja|Calon mestilah :|Minimum)\W*$', 'ignore'),
+    (r'^(Calon diwajibkan memenuhi|Pemohon Hendaklah Memenuhi) syarat(-syarat)? tambahan '
+     r'(berikut|seperti berikut)\W*$', 'ignore'),
 )
 _RULES = [(re.compile(p, re.I), a) for p, a in LINE_RULES]
 FIXED_REMARKS = {'remark_health': 'Sihat tubuh badan',

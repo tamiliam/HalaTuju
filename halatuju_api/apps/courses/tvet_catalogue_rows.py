@@ -32,15 +32,17 @@ from .tvet_syarat import parse_requirements
 # ("PEMBUATAN MAKANAN" is food, not manufacturing; "AUTOMOTIF (PEMBUATAN)" is automotive).
 FIELD_RULES = (
     (r'KAPAL TERBANG|PESAWAT|PENERBANGAN|AERO', 'Aero & Marin', 'aero'),
-    (r'MARIN|PERIKANAN|NAKHODA|PERKAPALAN', 'Aero & Marin', 'marin'),
+    (r'MARIN|PERIKANAN|NAKHODA|PERKAPALAN|VESEL PENANGKAPAN|PENANGKAPAN IKAN', 'Aero & Marin', 'marin'),
     (r'MEKATRONIK|AUTOMASI', 'Mekanikal & Pembuatan', 'mekatronik'),
     (r'AUTOMOTIF|KENDERAAN|KERETA|MOTOSIKAL|JENTERA BERAT|TOLAK TANAH', 'Automotif', 'automotif'),
     (r'ROTI|PASTRI|MAKANAN|KULINARI|MASAKAN|BAKERI|KATERING|KONFEKSIONERI', 'Hospitaliti & Gaya Hidup', 'kulinari'),
     (r'SANITARI', 'Sivil & Bangunan', 'sivil'),
     (r'MINYAK|\bGAS\b|PAIP', 'Minyak & Gas', 'minyak-gas'),
+    (r'KAWALAN PROSES', 'Kimia & Proses', 'kimia-proses'),
+    (r'SIBER', 'ICT & Multimedia', 'it-rangkaian'),
     (r'ELEKTRIK|ELEKTRONIK|PENDAWAIAN|PENYEJUK|PENYAMANAN|TELEKOMUNIKASI|INSTRUMEN', 'Elektrik & Elektronik',
      'elektrik'),
-    (r'KOMPUTER|RANGKAIAN|MULTIMEDIA|GRAFIK|TEKNOLOGI MAKLUMAT|ANIMASI|DIGITAL|PERISIAN', 'ICT & Multimedia',
+    (r'KOMPUTER|RANGKAIAN|MULTIMEDIA|GRAFIK|TEKNOLOGI MAKLUMAT|ANIMASI|DIGITAL|PERISIAN|FOTOGRAFI', 'ICT & Multimedia',
      'multimedia'),
     (r'BINAAN|SENIBINA|TEKNOLOGI AWAM|BANGUNAN|SIVIL|PERABOT|SCAFFOLD|KAYU|UKUR', 'Sivil & Bangunan', 'sivil'),
     (r'KIMPALAN|PEMESINAN|PEMBUATAN|MEKANIKAL|POLIMER|CADD|PERKAKASAN|FABRIKASI|BOILER|REKABENTUK PRODUK|'

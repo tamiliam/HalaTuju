@@ -122,9 +122,12 @@ def catalogue(db):
 class TestIngest:
     def test_dry_run_writes_nothing(self, catalogue, tmp_path):
         path, data = _small(tmp_path)
+        Course.objects.filter(course_id__in=[c['course_id'] for c in data['courses']]).delete()  # fixtures hold F1
+        before = (Course.objects.count(), CourseInstitution.objects.count())
         out = _run('--file', str(path), '--create-institutions')
         assert 'DRY RUN' in out and 'CREATE INSTITUTION ILKA-' in out and 'LINK ' in out
-        assert not Course.objects.filter(course_id=data['courses'][0]['course_id']).exists()
+        assert out.count('CREATE TVET-') == len(data['courses'])
+        assert (Course.objects.count(), CourseInstitution.objects.count()) == before
         assert not Institution.objects.filter(institution_id__startswith='ILKA-').exists()
 
     def test_refuses_a_missing_institution_without_create(self, catalogue, tmp_path):
