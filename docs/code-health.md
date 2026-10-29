@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-30 | 5ce4ee6 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | e6a03fb | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | 860792b | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | 71ae8cc | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 11 | 143 | 0 | 0 | ok | ok |
@@ -107,36 +108,36 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-29, e6a03fb, window 2026-07-31 onward)
+## Latest run (2026-10-30, 5ce4ee6, window 2026-08-01 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju_api/apps/scholarship/vision.py` | 12 | 2338 | 28.1 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 16 | 1657 | 26.5 |
-| `halatuju_api/apps/scholarship/views.py` | 10 | 2433 | 24.3 |
+| `halatuju_api/apps/scholarship/views.py` | 9 | 2435 | 21.9 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 15 | 1356 | 20.3 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 17 | 1004 | 17.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1022 | 11.2 |
 | `halatuju_api/apps/scholarship/serializers.py` | 8 | 1215 | 9.7 |
 | `halatuju_api/apps/courses/views_admin.py` | 9 | 802 | 7.2 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 13 | 557 | 7.2 |
-| `halatuju_api/apps/courses/views.py` | 3 | 2182 | 6.5 |
+| `halatuju_api/apps/courses/views.py` | 3 | 2190 | 6.6 |
 
 ### Fix ratio
-- 222 fix / 207 feat commits since 2026-07-31
+- 221 fix / 215 feat commits since 2026-08-01
 
 ### Files over 1000 lines
-- `2433  halatuju_api/apps/scholarship/views.py`
+- `2435  halatuju_api/apps/scholarship/views.py`
 - `2338  halatuju_api/apps/scholarship/vision.py`
-- `2182  halatuju_api/apps/courses/views.py`
+- `2190  halatuju_api/apps/courses/views.py`
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1356  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1279  halatuju-web/src/app/profile/page.tsx`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
 - `1143  halatuju_api/apps/scholarship/contracts.py`
-- `1090  halatuju-web/src/lib/scholarship.ts`
+- `1092  halatuju-web/src/lib/scholarship.ts`
 - `1074  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1054  halatuju_api/apps/courses/models.py`
 - `1043  halatuju_api/apps/scholarship/profile_engine.py`
@@ -150,14 +151,14 @@ drift tests are counted as the habit they cure). See TD-284.
 - `315  halatuju_api/apps/scholarship/vision.py:2017 _run_field_extraction_impl`
 - `294  halatuju_api/apps/courses/engine.py:354 check_eligibility`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
-- `254  halatuju_api/apps/courses/views.py:117 get`
+- `253  halatuju_api/apps/courses/views.py:126 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `215  halatuju_api/apps/scholarship/verdict_engine.py:499 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:168 autofill_pathway_from_offer`
 - `186  halatuju_api/apps/scholarship/resolution.py:275 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `167  halatuju_api/apps/courses/views_staff.py:193 post`
-- `165  halatuju_api/apps/courses/views.py:1009 get`
+- `165  halatuju_api/apps/courses/views.py:1017 get`
 - `162  halatuju_api/apps/scholarship/help_engine.py:342 verdict_for_document`
 - `151  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
 
@@ -171,7 +172,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 46 edges (218 import statements)
+- scholarship -> courses: 46 edges (222 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -190,7 +191,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 34 of 294 web test files read source text (signals: readFileSync, apiSource); drift 23 (*Drift.test.ts, counted apart)
+- 35 of 298 web test files read source text (signals: readFileSync, apiSource); drift 23 (*Drift.test.ts, counted apart)
 
 ### Debt register
 - 421 entries have a defining line; 142 carry no resolution marker on it
@@ -219,7 +220,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 860792b
+- budgets no looser than at e6a03fb
 
 ### tsc
 - 0 errors in 0 files
@@ -227,11 +228,18 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 5987
+- Total keys per locale: 6067
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-30 (5ce4ee6, Bumi Sprint F1 close) — 0 FAIL; nothing to promote
+
+**0 FAIL, 5 standing WARNs** (`--full`). Against e6a03fb: `fix%` 52 -> 51 (window roll), `big` 16, `long` 15,
+`dup` 4, `xapp` 73 and `td_open` 142 unchanged. F1's new modules (`tvet_*.py`, `catalogue_ingest.py`,
+`ingest_tvet_courses.py`) all sit under 500 lines; `courses/views.py` 2182 -> 2190 and `scholarship.ts`
+1090 -> 1092 for the two new pathways (both already listed over 1000; no new file crossed). **Accepted, no action.**
 
 ### 2026-10-29 (e6a03fb, default payment schedule close) — 0 FAIL; nothing moved
 

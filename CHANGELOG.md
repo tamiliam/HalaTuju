@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Bumi coverage Sprint F1 — public UP_TVET programmes (non-MARA), two new pathways (no migration) - 2026-10-29
 
+**Live 2026-10-30** in `a60662cc` (web-01023-hb6; api-01194-hhv, ingest re-revision api-01195-7wf):
+dry run 4 / 35 / 0 UPDATE / 33 LINK / 116 held / 90 flagged; applied; smoke non-Bumi 33, Bumi 35, foreigner 0.
+Retro `docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`.
+
 Sprint F1 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md` (owner rulings F, decisions.md).
 Review file: `halatuju_api/data/tvet/tvet_new_courses_F1.json`, rebuilt by a test from `uptvet_F1_source.json`.
 
