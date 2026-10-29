@@ -6,18 +6,48 @@
  */
 import type { InvoiceProblem, InvoiceRow, InvoiceStatus } from '@/lib/admin-api'
 
-/** The chip for a status: an i18n key and a semantic tone. Tone is separate from the accent. */
-export function statusChip(status: InvoiceStatus): { key: string; className: string } {
+/**
+ * The chip for a status: an i18n key and a semantic tone. Tone is separate from the accent.
+ *
+ * ⚠ **THE WORD DEPENDS ON WHO IS READING IT.** The owner read the organisation's own invoice list
+ * on 2026-10-29 and found it said "Sent" — true, and meaningless to the person it was sent TO, who
+ * can see it in front of them. What a customer needs to know is whether they owe anything, so the
+ * same `sent` row reads "Unpaid" on their side, and "Overdue" once the due date has passed.
+ *
+ * `today` and `dueOn` are passed in rather than read from the clock here: this module is pure, and
+ * an overdue chip that depends on a hidden `new Date()` cannot be tested at a boundary. Omit them
+ * and nothing is ever overdue, which is the safe direction — a customer wrongly told they are late
+ * is a worse failure than one not told at all.
+ */
+export function statusChip(
+  status: InvoiceStatus,
+  opts: { forOwner?: boolean; today?: string; dueOn?: string | null } = {},
+): { key: string; className: string } {
+  const owner = opts.forOwner !== false      // default to the owner's wording, as before
   switch (status) {
     case 'paid':
       return { key: 'admin.billing.invoice.status.paid', className: 'bg-positive-100 text-positive-700' }
     case 'part_paid':
       return { key: 'admin.billing.invoice.status.part_paid', className: 'bg-caution-100 text-caution-700' }
     case 'sent':
-      return { key: 'admin.billing.invoice.status.sent', className: 'bg-info-100 text-info-700' }
+      if (owner) {
+        return { key: 'admin.billing.invoice.status.sent', className: 'bg-info-100 text-info-700' }
+      }
+      // ⚠ STRING compare on two ISO dates, never `new Date()`: the same reason `todayIso` exists
+      // in this file. A timezone shift must not make a customer's invoice turn red a day early.
+      if (opts.today && opts.dueOn && opts.today > opts.dueOn) {
+        return { key: 'admin.billing.invoice.status.overdue', className: 'bg-critical-100 text-critical-700' }
+      }
+      return { key: 'admin.billing.invoice.status.unpaid', className: 'bg-info-100 text-info-700' }
     case 'void':
-      return { key: 'admin.billing.invoice.status.void', className: 'bg-ground-100 text-ground-500' }
+      return {
+        key: owner ? 'admin.billing.invoice.status.void' : 'admin.billing.invoice.status.cancelled',
+        className: 'bg-ground-100 text-ground-500',
+      }
     default:
+      // `issued` is "Not sent", which the organisation never sees — an invoice reaches them only
+      // once it has been sent. Left as the owner's word rather than invented for a case that
+      // cannot occur.
       return { key: 'admin.billing.invoice.status.issued', className: 'bg-ground-100 text-ground-700' }
   }
 }

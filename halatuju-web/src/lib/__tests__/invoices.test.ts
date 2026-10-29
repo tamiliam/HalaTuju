@@ -68,6 +68,51 @@ describe('what each invoice offers', () => {
       expect(statusChip(s).className).toMatch(/^bg-/)
     }
   })
+
+  describe('the word depends on who is reading it (owner, 2026-10-29)', () => {
+    /** The owner opened the ORGANISATION's own invoice list and it said "Sent" — true, and
+     *  meaningless to the person it was sent TO. What a customer needs is whether they owe. */
+    const asOrg = { forOwner: false as const, today: '2026-10-29', dueOn: '2026-11-14' }
+
+    it('reads Unpaid to the organisation and Sent to the owner', () => {
+      expect(statusChip('sent', asOrg).key).toBe('admin.billing.invoice.status.unpaid')
+      expect(statusChip('sent', { ...asOrg, forOwner: true }).key)
+        .toBe('admin.billing.invoice.status.sent')
+    })
+
+    it('turns Overdue the day AFTER the due date, not on it', () => {
+      // ⚠ The boundary is the whole point. An invoice due on the 14th is not late ON the 14th.
+      expect(statusChip('sent', { ...asOrg, today: '2026-11-14' }).key)
+        .toBe('admin.billing.invoice.status.unpaid')
+      expect(statusChip('sent', { ...asOrg, today: '2026-11-15' }).key)
+        .toBe('admin.billing.invoice.status.overdue')
+    })
+
+    it('never says Overdue when it cannot know', () => {
+      // No date is the safe direction: telling a customer they are late when they are not is a
+      // worse failure than not telling them at all.
+      expect(statusChip('sent', { forOwner: false }).key)
+        .toBe('admin.billing.invoice.status.unpaid')
+      expect(statusChip('sent', { forOwner: false, today: '2026-12-01', dueOn: null }).key)
+        .toBe('admin.billing.invoice.status.unpaid')
+    })
+
+    it('never says Overdue once the money has arrived', () => {
+      const late = { ...asOrg, today: '2026-12-01' }
+      expect(statusChip('paid', late).key).toBe('admin.billing.invoice.status.paid')
+      expect(statusChip('part_paid', late).key).toBe('admin.billing.invoice.status.part_paid')
+    })
+
+    it('says Cancelled to the organisation where the owner reads Void', () => {
+      expect(statusChip('void', asOrg).key).toBe('admin.billing.invoice.status.cancelled')
+      expect(statusChip('void', { ...asOrg, forOwner: true }).key)
+        .toBe('admin.billing.invoice.status.void')
+    })
+
+    it('defaults to the owner wording, so an un-updated caller is unchanged', () => {
+      expect(statusChip('sent').key).toBe('admin.billing.invoice.status.sent')
+    })
+  })
   it('moves a voided invoice below the live ones without reordering the live ones', () => {
     const rows = [inv({ id: 1, status: 'void' }), inv({ id: 2 }), inv({ id: 3, status: 'paid' })]
     expect(orderedInvoices(rows).map((r) => r.id)).toEqual([2, 3, 1])

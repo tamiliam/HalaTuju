@@ -5434,7 +5434,10 @@
           "sent": "Sent",
           "part_paid": "Part paid",
           "paid": "Paid",
-          "void": "Void"
+          "void": "Void",
+          "unpaid": "Unpaid",
+          "overdue": "Overdue",
+          "cancelled": "Cancelled"
         },
         "pdf": "PDF",
         "discountLine": "Discount ({pct}%)",

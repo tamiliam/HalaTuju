@@ -5434,7 +5434,10 @@
           "sent": "Dihantar",
           "part_paid": "Dibayar sebahagian",
           "paid": "Dibayar",
-          "void": "Batal"
+          "void": "Batal",
+          "unpaid": "Belum dibayar",
+          "overdue": "Tertunggak",
+          "cancelled": "Dibatalkan"
         },
         "pdf": "PDF",
         "discountLine": "Diskaun ({pct}%)",
