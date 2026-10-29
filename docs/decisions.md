@@ -15852,14 +15852,20 @@ hold alternatives under such a clause is flagged (no row has one).
 **Decision:** the 15 "MARA, Bahagian Pendidikan Tinggi" rows (Kolej MARA / KPM asasi and diplomas) link to ONE
 new `Institution` row (owner ruling: one parent per course, campuses later), proposed in
 `spm_catalogue_rows.NEW_INSTITUTIONS`: `MARA-BPT`, "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan
-Tinggi", acronym MARA, type MARA, state "Wilayah Persekutuan Kuala Lumpur", url mara.gov.my. It is created
+Tinggi", acronym MARA, type IPTA, state "WP Kuala Lumpur", url mara.gov.my. It is created
 only by `ingest_spm_courses --create-institutions --apply`, which prints it in the dry run first and never
 overwrites a held id. Every other D2 row links to its university's existing row by the review file's own
 `institution_id` (UIAM UNIV-006, UM UNIV-001, UMS UNIV-009, UNIMAS UNIV-008, USIM UNIV-011, UniSZA UNIV-018,
 UiTM UNIV-012); the two Bumi matric rows link to none, as the four open matric rows.
 **Why:** prod has no MARA row; inventing campus links would invent data; a silent create would hide a
-catalogue change inside a course ingest. **Open:** the id, type and state spelling are a proposal — the
-lead confirms them against an existing IPTA row by read-only SQL before `--apply`.
+catalogue change inside a course ingest. **Type and state (review round 1, prod read-only SQL):** prod
+uses only IPTA, ILKA, Kolej Matrikulasi and Sekolah Menengah, and spells the state "WP Kuala Lumpur". IPTA is
+chosen: `Institution.type` is only a LABEL (printed under the name on the course page, an admin list filter,
+and `derive_institution_modifiers` statistics) — no student filter or grouping reads it; the course search
+groups post-SPM providers by the requirement's `source_type` ('ua') and level, which put the MARA rows with
+the other UPU-listed asasi and diplomas. Of the four, IPTA (a public higher-education provider) is the true
+one for a MARA college awarding asasi and diplomas; ILKA is public skills training (TVET), the other two are
+wrong outright.
 **Revisit if:** campus lists (Kolej MARA / KPM sites) become available.
 
 ## 2026-10-29 — The two Bumiputera-only Matrikulasi programmes are two Bumi-only matric tracks (owner; Bumi Sprint D2)
@@ -15872,9 +15878,28 @@ Fizik/Biologi/Sains Komputer E; Perakaunan Profesional: Maths A, Add Maths C, th
 course -> track map in `eligibility_service`. The merit FORMULA is untouched.
 **Doors:** eligibility, dashboard and course search go through the engine gate / the visible queryset, so a
 non-Bumi or foreign student never sees them. `/calculate/pathways/` (the matric pathway page and the
-scholarship pickers' track list) never reads the answer, so it NEVER lists them — a Bumi student reaches
-them through the catalogue only. The course page shows them to anyone (with the Bumi row, as D1) and lists
+scholarship pickers' track list) does not list them: **owner ruling (review round 1) — not offered in the
+scholarship pickers for now, because there is no college list for them yet** (a picker choice needs a
+college); add them when that data exists. (Option A would let the pickers show them to every student — it
+is the missing college data, not the Bumi answer, that keeps them out.) A Bumi student reaches them through
+the catalogue. The course page shows them to anyone (with the Bumi row, as D1) and lists
 no colleges for them (no college list is known); it no longer falls back to the Science track's colleges.
 **Assumption to confirm:** which four subjects the official matric merit counts for these two programmes.
-**Revisit if:** the owner wants them on the pathway page (then the page and pickers need the answer, which
-the pickers must never read — Option A), or MOHE publishes their colleges.
+**Revisit if:** MOHE or KPM publishes their colleges (then add them to the pickers, for every student, as
+Option A, and to the pathway page for Bumi students).
+
+## 2026-10-29 — MARA's "C in any N subjects" is STRICT, like its sister rules (owner, Bumi Sprint D2 review round 1)
+**Decision:** under MARA's Syarat Am ("a pass in BM and Sejarah"), a Syarat Khas "Gred C dalam mana-mana N mata
+pelajaran" WITHOUT "belum diambil kira" is read as N MORE subjects beyond everything named in the Syarat Am and
+above it — a count-once `remaining` entry with that exclude list — not a bare `min_credits` (which BM, Sejarah,
+English and Maths would always fill). Rows changed: OP4340002, OP4481001, OP4213001, OP4224001, OP4345002,
+OP4840001, OP4340001, OP4343001 (8 of the 13 MARA OP rows; the other 5 already said "belum diambil kira").
+The parser applies it only under MARA's Am shape, so no UiTM or other row moves. Bumi golden master 6,006 ->
+5,986. **Why:** the D1 lesson — a clause every applicant meets by construction is a wrong reading — and the
+sister MARA rows say the same thing in full. **Revisit if:** MARA publishes a different reading.
+
+## 2026-10-29 — UM0221002: the "B in ONE Islamic" clause and the ATAU's "B in TWO Islamic" may share a subject (owner, review round 1)
+**Decision:** kept as built. The two clauses have no "not yet counted" phrase, so they are counted separately,
+as every plain Khas pair has been since D1 (2026-10-29, the count-once block decision): the single-clause group
+is its own block and the ATAU is another. A student with two Islamic subjects at B meets both.
+**Revisit if:** UPU or UM publishes that the two lists must be met by different subjects.

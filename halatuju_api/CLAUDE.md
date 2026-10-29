@@ -147,10 +147,13 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    --file data/spm/spm_new_courses_D2.json --create-institutions` (dry run: expect `CREATE INSTITUTION MARA-BPT` and 66 CREATE, 0 UPDATE, 0 flagged) → the same with `--apply` →
    a re-revision so the frame reloads. The rows carry their own parents (no `--institution-id`). Read-only
    SQL before `--apply`: none of the 66 ids already in `courses`; `MARA-BPT` not in `institutions`; the
-   seven UNIV ids exist; one IPTA row's shape (`SELECT * FROM institutions WHERE institution_id =
-   'UNIV-006'`) and `SELECT DISTINCT state FROM institutions WHERE state ILIKE '%kuala lumpur%'` to confirm
-   the MARA row's type and state spelling (edit `spm_catalogue_rows.NEW_INSTITUTIONS` and rebuild the file
-   if they differ). ROLLBACK, one transaction, D2 = the 66 ids of `data/spm/spm_new_courses_D2.json`
+   seven UNIV ids exist (MARA-BPT's type IPTA and state "WP Kuala Lumpur" were checked against prod in
+   review round 1). BEFORE ANY ROLLBACK, read-only: who chose a D2 course (a JSON choice, not a foreign key,
+   so a delete leaves it pointing at nothing): `SELECT id, status FROM scholarship_applications WHERE
+   chosen_programme->>'course_id' IN (D2) OR EXISTS (SELECT 1 FROM jsonb_array_elements(top_choices) e
+   WHERE e->>'course_id' IN (D2))` and `SELECT count(*) FROM api_student_profiles WHERE
+   chosen_programme->>'course_id' IN (D2)`; if either is non-zero, decide with the owner first.
+   ROLLBACK, one transaction, D2 = the 66 ids of `data/spm/spm_new_courses_D2.json`
    (also the list in `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`, Sprint D2):
    `DELETE FROM saved_courses / admission_outcomes / course_tags / courses_career_occupations /
    course_requirements / course_institutions WHERE course_id IN (D2)`, then `DELETE FROM courses WHERE

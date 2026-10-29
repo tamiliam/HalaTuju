@@ -22,17 +22,23 @@ Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 ro
   `MARA-BPT`, created only by `ingest_spm_courses --create-institutions` (dry run first, never silently).
 - **Two Bumi-only matric tracks** (`matric-sains-4-semester`, `matric-perakaunan-profesional`), held like the
   four open tracks with `req_bumiputera`: eligibility, dashboard and search go through the gate;
-  `/calculate/pathways/` never lists them (it never reads the answer). The course page no longer shows the
+  `/calculate/pathways/` (pathway page, scholarship pickers) does not list them until a college list exists (owner). The course page no longer shows the
   Science track's colleges for an unmapped matric id, and the Sains Komputer id is spelt as the catalogue does.
 - **Search (D1 follow-up L4):** a Bumi student's pick-lists re-load when the answer arrives, and a late
   response asked under the old answer is dropped. First jest harness for `search/page.tsx`.
 - **Golden masters:** original 389 = **5,319**, every set identical; full catalogue at bumi=False **5,319**
   (+0: none of the 50 students holds the Islamic / Arabic subjects the 14 open rows need — a test shows a
-  student who does gains open rows and ONLY open rows); bumi=True **5,865 → 6,006** (+141); STPM **2,025**.
+  student who does gains open rows and ONLY open rows); bumi=True **5,865 → 5,986** (+121); STPM **2,025**.
 - **Not done:** UL0481001 / FB0500001 (prod-only, not Bumi; lead: not this sprint). The Bumi matric tracks
   are not on the pathway page or the scholarship pickers' track list (decisions.md).
-- **Gates:** pytest 10,134 passed / 3 skipped (`-n auto`); jest 4,891 / 312 suites; tsc 0; lint 0 errors;
-  bundle median 146.3 / 148 kB; makemigrations clean.
+- **Review round 1:** the course page crashed on every ATAU row (`RequirementsCard` read `subjects` on an
+  `any_of` group) — it now shows "one of these:" and each alternative (en/ms/ta keys, jest on the real
+  shapes); MARA's "C in any N subjects" is STRICT (owner; 8 OP rows, Bumi baseline 6,006 → 5,986); MARA-BPT
+  is type IPTA, state "WP Kuala Lumpur" (prod's spellings); UM0221002's shared-subject reading and the matric
+  tracks' absence from the pickers (no college list yet) recorded; rollback gains a read-only count of
+  applications and profiles that chose a D2 course.
+- **Gates (after review round 1):** pytest 10,135 passed / 3 skipped (`-n auto`); jest 4,897 / 313 suites; tsc 0; lint 0 errors;
+  bundle median 146.343 / 148 kB; makemigrations clean.
 - **Runbook + rollback:** `halatuju_api/CLAUDE.md` ("Bumi D2 order") — deploy first, read-only SQL, dry run,
   `--create-institutions --apply`, re-revision.
 

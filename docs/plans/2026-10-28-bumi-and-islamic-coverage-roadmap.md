@@ -102,7 +102,7 @@ Tamhidi, UM 1), the 3 UiTM rows D1 flagged, and the 2 Bumi matric tracks (`matri
 (`spm_atau_scopes.py`); "X in ONE AND Y in THREE" as two groups in one block; MARA's Syarat Am; per-row parent
 institutions and an explicit `--create-institutions` for the proposed `MARA-BPT`; the search pick-list refresh.
 Golden masters: original 389 = 5,319 identical; full bumi=False 5,319 (+0: no golden student holds an Islamic
-subject); bumi=True 6,006; STPM 2,025. Not done: UL0481001 / FB0500001 (prod-only, not Bumi — lead ruling: not
+subject); bumi=True 5,986 (after review round 1); STPM 2,025. Not done: UL0481001 / FB0500001 (prod-only, not Bumi — lead ruling: not
 in this sprint). Runbook + rollback: `halatuju_api/CLAUDE.md` ("Bumi D2 order"). Rollback ids (D2):
     'UY0000010', 'UH0010003', 'UY0000015', 'UY0000001', 'UY0000016', 'UY0000014', 'UY0000012',
     'UY0000011', 'UY0000005', 'UY0000006', 'UY0000004', 'UE0520001', 'UY0520001', 'OM0520001',
