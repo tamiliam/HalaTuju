@@ -112,6 +112,27 @@ class TestTheRulings(SimpleTestCase):
         damaged = MATRIC.replace('LULUS DAN TAMAT', 'LULUS DAN TAMAI').replace('PASS AND COMPLETED', 'PASS AND C0MPLETED')
         self.assertEqual(score(damaged), {})
 
+    def test_rereview_a_final_transcript_bundled_with_a_slip_or_the_portal_is_never_non_final(self):
+        """One upload, the text layer read whole: the transcript and a slip / the portal, either order."""
+        for one, two in ((MATRIC, matric_slip()), (MATRIC, matric_slip('SEMESTER I', final=False)),
+                         (POLY, POLY_SLIP), (POLY, PORTAL)):
+            for text in (one + NL + two, two + NL + one):
+                self.assertEqual(score(text).get('status'), 'genuine', text[:40])
+
+    def test_rereview_two_slips_bundled_are_still_slips(self):
+        """A slip's disclaimer mentions "the academic transcript": that is no transcript heading."""
+        both = matric_slip('SEMESTER I', final=False) + NL + matric_slip('SEMESTER II')
+        self.assertRuled(both, m.MATRIC_SLIP, NOT_CHECKED)
+        self.assertRuled(POLY_SLIP + NL + PORTAL, m.POLY_PORTAL, NOT_CHECKED)
+
+    def test_rereview_an_in_progress_word_counts_only_in_the_status_value_position(self):
+        legend = POLY + NL + NL.join(['ABBREVIATION STATUS', '[W] - WITHDRAWN', 'GRADE STATUS WITHDRAWN COURSE',
+                                      'REMARK : ACTIVE STATUS COURSE', 'STATUS LEGEND : [AK] AKTIF'])
+        self.assertEqual(score(legend).get('status'), 'genuine')
+        self.assertFalse(m._in_progress('DM STATUS ACTIVE GST ID'))          # the corpus salary slip's line
+        self.assertTrue(m._in_progress('Status : Withdrawn'))
+        self.assertTrue(m._in_progress(' : WITHDRAWNSTATUS'))
+
     def test_sf5_the_portal_rule_is_a_polytechnics_own_portal(self):
         for issuer in ('KOLEJ KOMUNITI CONTOH', 'UNIVERSITI TEKNOLOGI MARA', ''):
             page = PORTAL.replace('POLITEKNIK CONTOH', issuer)
@@ -293,6 +314,48 @@ class TestTheLivePath(TestCase):
             self.assertNotIn('higher_results_not_final', {i['code'] for i in self._academic(app)['unresolved']})
             self.assertEqual(higher_owed.final_owed_kind(fresh), '')
             self.assertEqual(higher_owed.ask_codes(fresh), set())
+
+    def _junk(self, app, verdict='unreadable'):
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='higher_results', results_kind='matric', storage_path='test/junk',
+            vision_fields={'fields': {}, 'student_verdict': verdict, 'error': ''})
+
+    def test_rereview_an_older_junk_upload_never_outranks_a_newer_slip(self):
+        from apps.scholarship import higher_owed
+        from apps.scholarship.higher_results import final_upload, higher_doc
+        app = self._submitted()
+        junk = self._junk(app)
+        _a, slip = self._upload(mine(matric_slip()), app=app)
+        fresh = ScholarshipApplication.objects.get(pk=app.pk)
+        self.assertFalse(final_upload(junk))
+        self.assertEqual(higher_doc(fresh).pk, slip.pk)                        # neither final: the newest
+        self.assertEqual(higher_owed.final_owed_kind(fresh), 'matric')         # so the final one is still asked for
+        _a, final = self._upload(mine(MATRIC), app=app)
+        self._junk(app)                                                        # a newer junk upload after it
+        self.assertEqual(higher_doc(ScholarshipApplication.objects.get(pk=app.pk)).pk, final.pk)
+
+    def test_rereview_a_newer_unreadable_upload_never_blocks_while_a_final_transcript_is_live(self):
+        from apps.scholarship.services.blockers import document_unreadable_blockers
+        only_junk = _app(MATRIC_HELD, DEGREE)
+        self._junk(only_junk)
+        self.assertIn('higher_results_unreadable', document_unreadable_blockers(only_junk))   # it IS asked
+        app = _app(MATRIC_HELD, DEGREE)
+        self._upload(mine(MATRIC), app=app)
+        self._junk(app)
+        self.assertNotIn('higher_results_unreadable',
+                         document_unreadable_blockers(ScholarshipApplication.objects.get(pk=app.pk)))
+
+    def test_rereview_an_offer_letter_never_answers_a_results_ask(self):
+        from apps.scholarship import higher_owed, results_requests
+        from apps.scholarship.higher_results import answers_higher_ask
+        from apps.scholarship.models import ResolutionItem
+        app = self._submitted()
+        ask = ResolutionItem.objects.create(application=app, source='check2', code=higher_owed.ASK_CODE, kind='doc',
+                                            doc_type='higher_results', fact='academic')
+        _a, offer = self._upload(MATRIC_OFFER, app=app)
+        self.assertEqual(offer.vision_fields['authenticity']['status'], 'not_matric_result')
+        self.assertFalse(answers_higher_ask(offer))
+        self.assertFalse(results_requests.answers(offer, ask))
 
     def test_sf6_an_spm_only_intake_with_a_voluntary_slip_asks_nothing(self):
         from apps.scholarship import higher_owed

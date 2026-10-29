@@ -112,6 +112,10 @@ status. One rule each for "this upload answers a higher-results ask"
 any live final one first). The ruling-B ask is raised only when the application asks for higher
 results. M5 replaces stored Matric / Diploma authenticity through
 `reextract_documents --fresh-higher-authenticity`, never by changing TD-407 globally.
+Re-review (same day): a WHOLE final transcript in the text (heading, grid, semesters, completion
+status) is scored as the transcript even with a slip or the portal page bundled into the upload —
+never ruled non-final; the in-progress word counts only in the STATUS value position; the upload
+the verdict and the unreadable blocker read is an explicitly FINAL one when any is live.
 
 ## Only an ACCEPTED result counts — recording widens to every file; standing comes from the organisation — 2026-10-29 (student maintenance S4a)
 

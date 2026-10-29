@@ -168,6 +168,19 @@ docstring; migrate BEFORE the deploy).
   the officer's Diploma request copy matches the Matriculation one. No version bump (1.22.0 /
   2026-10-29.3 are still unreleased).
 
+### Re-review fixes (2026-10-30)
+- **Blocker — a bundled final transcript is never non-final:** before any ruling, if the text holds
+  a WHOLE final transcript once slip / portal wording is ignored (Matriculation: the bilingual
+  "Transkrip Akademik / Academic Transcript" heading, the grid, Semester I and II; polytechnic: the
+  title and grid; both: the recognised completion status, no in-progress status), it is scored as
+  the transcript (genuine if it passes), whatever else the upload holds and in either order. A
+  slip's own "… dalam transkrip akademik" is no heading, so two bundled slips stay slips.
+- **In-progress words only in the STATUS value position** ("STATUS : AKTIF" at a line start, or a
+  whole value-first line) — a legend or remark column cannot trip it; 0 hits on the 558 corpus pages.
+- **`higher_doc` prefers an explicitly FINAL upload** (`final_upload`: genuine, or unscored and read
+  clean — readable, not an SPM slip, not non-final, not an offer letter), else the newest; the
+  gate's `higher_results_unreadable` blocker reads it too; an offer letter never answers a results ask.
+
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 
 The owner audited every billed request — 3, 5, 10, 12, 14, 18, 27, 28, 29, 30, 31, 33, 38, 39, 42, 44 — and

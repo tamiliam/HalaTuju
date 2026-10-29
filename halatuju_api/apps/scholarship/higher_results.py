@@ -456,12 +456,26 @@ def final_owed(doc) -> bool:
 
 def higher_doc(application):
     """The higher-results upload the Academic card reads (review SF4, ONE rule with
-    `higher_owed.final_owed_kind` and the genuineness ladder, `anchor_doc`): the newest LIVE upload
-    that is not a non-final page (ruling B) nor an offer letter (ruling D) — so a final transcript
-    on file counts even when a semester slip or an offer letter came after it — else the newest."""
+    `higher_owed.final_owed_kind`, the genuineness ladder (`anchor_doc`) and the gate's
+    `higher_results_unreadable` blocker): the newest LIVE upload that is explicitly FINAL
+    (`final_upload`) — so a final transcript on file counts even when a semester slip or an offer
+    letter came after it — else the newest (an older junk upload never outranks a newer slip)."""
     from .document_snapshot import live_docs
     docs = list(live_docs(application, 'higher_results'))
-    return next((d for d in docs if not final_owed(d) and not not_results(d)), docs[0] if docs else None)
+    return next((d for d in docs if final_upload(d)), docs[0] if docs else None)
+
+
+def final_upload(doc) -> bool:
+    """Is this upload explicitly a FINAL result (M4b re-review nit 1)? Scored genuine; or UNSCORED
+    and read clean as results — readable, not an SPM slip, not a non-final page (ruling B), not an
+    offer letter (ruling D). A suspect / wrong-type score (a checker page, an offer letter) is not."""
+    from .genuineness.bands import canonical_status, stored_status
+    st = canonical_status(stored_status(doc.vision_fields), 'higher_results')
+    if st:
+        return st == 'genuine'
+    chk = student_higher_check(doc)
+    return (chk['readable'] is True and chk['kind_status'] != 'spm' and not final_owed(doc)
+            and not not_results(doc))
 
 
 def anchor_doc(application, doc_type):
@@ -481,8 +495,8 @@ def answers_higher_ask(doc) -> bool:
     """Review SF3 — the ONE rule for "this higher-results upload answers an ask for higher results",
     read by an officer's request (`results_requests.answers`, so `resolution`'s closure too) and by
     Check 2's #388 / ruling-B ask (`higher_owed.answered`): not an SPM slip, and the FINAL result (a
-    non-final page never closes an ask, so it can never close-then-reopen)."""
-    return student_higher_check(doc)['kind_status'] != 'spm' and not final_owed(doc)
+    non-final page never closes an ask, so it can never close-then-reopen) — nor an offer letter."""
+    return student_higher_check(doc)['kind_status'] != 'spm' and not final_owed(doc) and not not_results(doc)
 
 
 def _scored(doc) -> bool:

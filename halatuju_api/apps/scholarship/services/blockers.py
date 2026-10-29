@@ -520,9 +520,9 @@ def document_unreadable_blockers(application):
     slip = latest_doc(application, 'results_slip') if 'results_slip' in asked else None
     if slip and student_slip_check(slip).get('name') == 'unreadable':
         codes.add('results_slip_unreadable')
-    higher = latest_doc(application, 'higher_results') if 'higher_results' in asked else None
+    from ..higher_results import higher_doc, student_higher_check   # M4b: the upload the verdict reads
+    higher = higher_doc(application) if 'higher_results' in asked else None
     if higher is not None:
-        from ..higher_results import student_higher_check
         if student_higher_check(higher).get('readable') is False:
             codes.add('higher_results_unreadable')
     offer = latest_doc(application, 'offer_letter')

@@ -89,8 +89,11 @@ class TestTheGates(SimpleTestCase):
         self.assertEqual(score(slip), {})                                  # one semester shown
         one_sem = re.sub(r'SEMESTER I\n.*?PNGS / GPA : 3\.25\n', '', MATRIC, flags=re.S)
         self.assertEqual(score(one_sem), {})                               # a cropped slip: no "Semester I"
-        self.assertEqual(score(MATRIC + NL + 'Slip keputusan ini bukan transkrip'), {})   # cut-off disclaimer
-        self.assertEqual(score(MATRIC + NL + 'before the actual academic transcript is issued'), {})
+        # M4b re-review blocker (2026-10-30): a WHOLE final transcript (its bilingual heading, grid, both
+        # semesters, completion status) scores as the transcript even with slip wording in the same upload
+        # (a slip bundled in) — never "not final". A slip with no transcript in it stays unscored (above).
+        self.assertEqual(score(MATRIC + NL + 'Slip keputusan ini bukan transkrip')['status'], 'genuine')
+        self.assertEqual(score(MATRIC + NL + 'before the actual academic transcript is issued')['status'], 'genuine')
 
     def test_review_s1_a_letter_that_is_no_ruled_kind_is_never_scored(self):
         self.assertEqual(score(KPM_LETTER), {})                # neither an offer nor a transcript
@@ -110,8 +113,8 @@ class TestTheGates(SimpleTestCase):
     def test_review_s3_a_negated_title_and_a_slip_are_never_a_transcript(self):
         negated = POLY.replace('ACADEMIC TRANSCRIPT', 'THIS IS NOT AN ACADEMIC TRANSCRIPT')
         self.assertEqual(score(negated), {})
-        slip = POLY + NL + 'KEPUTUSAN PENILAIAN AKHIR SEMESTER'
-        self.assertEqual(score(slip), {})
+        slip = POLY + NL + 'KEPUTUSAN PENILAIAN AKHIR SEMESTER'       # re-review: a whole final transcript
+        self.assertEqual(score(slip)['status'], 'genuine')              # bundled with slip words still scores
         # a negation the slip lists do not name ("NOT ACADEMIC TRANSCRIPT"): only the title gate sees it
         self.assertEqual(score(POLY.replace('ACADEMIC TRANSCRIPT', 'NOT ACADEMIC TRANSCRIPT')), {})
         self.assertEqual(score(MATRIC.replace('TRANSKRIP AKADEMIK / ACADEMIC TRANSCRIPT', 'NOT ACADEMIC TRANSCRIPT')), {})

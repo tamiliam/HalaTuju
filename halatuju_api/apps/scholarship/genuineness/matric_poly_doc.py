@@ -119,21 +119,31 @@ def _scored(ocr_text, signatures, family):
             'missing': r['missing'], 'reason': reason[:300], 'model_version': MODEL_VERSION}
 
 
-def _matric_gates(tn):
-    """Is this normalised page a Matriculation TRANSCRIPT (not a slip, not a letter)?"""
-    if any(m in tn for m in _MATRIC_SLIP):
+#: The slip disclaimer's mention of "the actual academic transcript" — not a transcript's title.
+_SLIP_TITLE_MENTION = re.compile(r'\b(?:TRANSKRIP AKADEMIK SEBENAR|ACTUAL ACADEMIC TRANSCRIPT)\b')
+#: The KPM transcript's own bilingual heading (all 6 corpus transcripts print it, side by side). With
+#: a slip bundled in, its disclaimer also says "... tercatat dalam transkrip akademik", so a bundle
+#: counts as holding a transcript only with this heading.
+_MATRIC_HEADING = re.compile(r'\bTRANSKRIP AKADEMIK ACADEMIC TRANSCRIPT\b')
+
+
+def _matric_gates(tn, bundled=False):
+    """Is this normalised page a Matriculation TRANSCRIPT (not a slip, not a letter)? ``bundled``
+    (re-review blocker): ignore a slip's wording on the page — does it ALSO hold a whole transcript?"""
+    if not bundled and any(m in tn for m in _MATRIC_SLIP):
         return False
-    titled = _NEGATED_TITLE.sub(' ', tn)
-    return bool(_MATRIC_TITLE.search(titled) and _MATRIC_GRID.search(tn) and _SEM_I.search(tn)
-                and _SEM_II.search(tn))
+    titled = _SLIP_TITLE_MENTION.sub(' ', _NEGATED_TITLE.sub(' ', tn))
+    title = _MATRIC_HEADING.search(tn) if bundled else _MATRIC_TITLE.search(titled)
+    return bool(title and _MATRIC_GRID.search(tn) and _SEM_I.search(tn) and _SEM_II.search(tn))
 
 
-def _poly_gates(ocr_text, tn):
-    """Is this normalised page a polytechnic's own TRANSCRIPT (not a slip, the portal, a Kolej Komuniti)?"""
+def _poly_gates(ocr_text, tn, bundled=False):
+    """Is this normalised page a polytechnic's own TRANSCRIPT (not a slip, the portal, a Kolej
+    Komuniti)? ``bundled``: ignore a slip's / the portal's wording — does it ALSO hold a transcript?"""
     from apps.scholarship.results_kind import _NOT_ISSUERS
     if not prints_polytechnic(ocr_text) or _KOLEJ_KOMUNITI.search(_NOT_ISSUERS.sub(' ', tn)):
         return False
-    if any(m in tn for m in _POLY_SLIP):
+    if not bundled and any(m in tn for m in _POLY_SLIP):
         return False
     return bool('ACADEMIC TRANSCRIPT' in _NEGATED_TITLE.sub(' ', tn) and all(g in tn for g in _POLY_GRID))
 
@@ -178,19 +188,40 @@ _OFFER_MARKS = ('TAWARAN', 'LAPOR DIRI', 'SURAT TAWARAN', 'KEMASUKAN', 'TARIKH P
 _MATRIC_FINAL = ('LULUS DAN TAMAT', 'PASS AND COMPLETED')
 _POLY_FINAL = re.compile(r'\bSTATUS\s*COMPLETED\b|\bCOMPLETED\s*STATUS\b')
 #: POSITIVE evidence that a transcript is not final (review B1, lead decision 2026-10-30): an
-#: in-progress status printed against the STATUS label, either order. A transcript whose status is
-#: absent, cut off (page 1 only), OCR-damaged or worded otherwise is NOT ruled non-final — it stays
-#: "not checked" (no genuine, no owed, no ask). No corpus transcript prints one of these (every one
-#: is completed); the words sit only next to the label, so the portal's / offer letters' own AKTIF
-#: (5 offers, 1 portal page) never reaches it — and those pages fail the transcript gates anyway.
-_IN_PROGRESS_WORDS = (r'AKTIF|ACTIVE|DIGANTUNG|GANTUNG|SUSPENDED|SEDANG BELAJAR|SEDANG BERJALAN|'
-                      r'BELUM TAMAT|IN PROGRESS|ONGOING|TANGGUH|DEFERRED|BERHENTI|WITHDRAWN')
-_IN_PROGRESS = re.compile(rf'\bSTATUS\s*(?:{_IN_PROGRESS_WORDS})\b|\b(?:{_IN_PROGRESS_WORDS})\s*STATUS\b')
+#: in-progress word in the STATUS VALUE position of a line (re-review nit 4) — "STATUS : AKTIF" at the
+#: start of a line, or a whole line " : AKTIFSTATUS" (value first) — never a word merely near "STATUS"
+#: (a legend "[W] WITHDRAWN" or a remark column cannot trip it). A transcript whose status is absent,
+#: cut off (page 1 only), OCR-damaged or worded otherwise is NOT ruled non-final — it stays "not
+#: checked" (no genuine, no owed, no ask). No corpus transcript prints one (all are completed); on
+#: the 558 corpus pages the value-position rule matches nothing.
+_IN_PROGRESS_WORDS = (r'AKTIF|ACTIVE|DIGANTUNG|GANTUNG|SUSPENDED|SEDANG[ \t]+BELAJAR|SEDANG[ \t]+BERJALAN|'
+                      r'BELUM[ \t]+TAMAT|IN[ \t]+PROGRESS|ONGOING|TANGGUH|DEFERRED|BERHENTI|WITHDRAWN')
+_IN_PROGRESS = re.compile(rf'^[ \t]*STATUS[ \t]*[:\-]?[ \t]*(?:{_IN_PROGRESS_WORDS})\b'
+                          rf'|^[ \t:]*(?:{_IN_PROGRESS_WORDS})[ \t]*STATUS[ \t]*$', re.M)
+
+
+def _in_progress(ocr_text) -> bool:
+    """Does a line of the page print an in-progress status in the STATUS value position?"""
+    return bool(_IN_PROGRESS.search((ocr_text or '').upper()))
 
 
 def _final(tn, kind):
     """Does this normalised transcript page print its recognised completion status?"""
     return any(m in tn for m in _MATRIC_FINAL) if kind == 'matric' else bool(_POLY_FINAL.search(tn))
+
+
+def _complete_final(ocr_text, tn, kind):
+    """Re-review blocker: does the text hold a WHOLE FINAL transcript — its title, grid, (for
+    Matriculation) both semesters and its recognised completion status, no in-progress status — even
+    with a slip or the portal page bundled into the same upload (either order)? Then it is scored as
+    the transcript, never ruled non-final."""
+    if kind == 'matric':
+        whole = _matric_gates(tn, bundled=True)
+    elif kind == 'diploma':
+        whole = _poly_gates(ocr_text, tn, bundled=True)
+    else:
+        return False
+    return whole and _final(tn, kind) and not _in_progress(ocr_text)
 #: What `doc_seen` says for each ruling (the reviewer's line, the student's note).
 MATRIC_SLIP, POLY_SLIP, POLY_PORTAL, MATRIC_OFFER = (
     'matric_result_slip', 'poly_result_slip', 'poly_portal_page', 'matric_offer_letter')
@@ -218,11 +249,11 @@ def _ruled_page(ocr_text, tn, kind):
     in-progress status (and no completion status). A page that passes a transcript's own gates is a
     transcript: nothing but that status can rule it."""
     if kind in ('matric', 'diploma') and (_matric_gates(tn) if kind == 'matric' else _poly_gates(ocr_text, tn)):
-        if not _IN_PROGRESS.search(tn) or _final(tn, kind):
+        if not _in_progress(ocr_text) or _final(tn, kind):
             return ''
         return MATRIC_NOT_FINAL if kind == 'matric' else POLY_NOT_FINAL
     if (_count(tn, _PORTAL_MARKS) >= 3 and prints_polytechnic(ocr_text)
-            and detect(_PORTAL_MENU.sub(' ', ocr_text)) == 'diploma'):
+            and kind == 'diploma'):
         return POLY_PORTAL      # SF5: a polytechnic's own portal only — KK / UiTM / unnamed stay {}
     kpm = 'BAHAGIAN MATRIKULASI' in tn or 'MATRICULATION DIVISION' in tn
     if kind == 'matric' and kpm and _count(tn, _MATRIC_SLIP_MARKS) >= 2:
@@ -246,22 +277,18 @@ def _ruling_result(ocr_text, seen):
 
 
 def matric_poly_higher_genuineness(ocr_text: str) -> dict:
-    """The genuineness of a Matriculation or polytechnic HIGHER-RESULTS page: "genuine" when it is a
-    FINAL transcript (its gates, its completion status) scoring ≥ 0.70; a non-final page (ruling B)
-    NOT_CHECKED with its `doc_seen`; a Matriculation offer letter `not_matric_result` (ruling D);
-    else `{}` (no signal, "not checked"). Never a suspect. Pure."""
+    """The genuineness of a Matriculation or polytechnic HIGHER-RESULTS page: "genuine" when it holds
+    a whole FINAL transcript (`_complete_final` — a slip or the portal bundled with it never makes it
+    non-final) scoring ≥ 0.70; a non-final page (ruling B) NOT_CHECKED with its `doc_seen`; a
+    Matriculation offer letter `not_matric_result` (ruling D); else `{}` (no signal, "not checked").
+    Never a suspect. The kind is read with the portal's own "Keputusan Asasi TVET" menu item set
+    aside (SF5). Pure."""
     from .results_doc import _norm_fold_upper_alnum
     tn = _norm_fold_upper_alnum(ocr_text)
-    kind = detect(ocr_text)
+    kind = detect(_PORTAL_MENU.sub(' ', ocr_text))
+    if _complete_final(ocr_text, tn, kind):
+        sg = (_scored(ocr_text, MATRIC_TRANSCRIPT_SIGNATURES, 'matric_transcript') if kind == 'matric'
+              else _scored(ocr_text, POLY_TRANSCRIPT_SIGNATURES, 'poly_transcript'))
+        return sg if sg['status'] == 'genuine' and sg['probability'] >= GENUINE_MIN else {}
     seen = _ruled_page(ocr_text, tn, kind)
-    if seen:
-        return _ruling_result(ocr_text, seen)
-    if _IN_PROGRESS.search(tn) or not _final(tn, kind):     # contradictory or unrecognised: {}
-        return {}
-    if kind == 'matric' and _matric_gates(tn):
-        sg = _scored(ocr_text, MATRIC_TRANSCRIPT_SIGNATURES, 'matric_transcript')
-    elif kind == 'diploma' and _poly_gates(ocr_text, tn):
-        sg = _scored(ocr_text, POLY_TRANSCRIPT_SIGNATURES, 'poly_transcript')
-    else:
-        return {}
-    return sg if sg['status'] == 'genuine' and sg['probability'] >= GENUINE_MIN else {}
+    return _ruling_result(ocr_text, seen) if seen else {}

@@ -38,8 +38,8 @@ def main(argv):
         _io.SNAP = argv[argv.index('--snapshots') + 1]
     sys.path.insert(0, os.path.abspath(os.path.join(HERE, '..', '..', '..')))   # halatuju_api/
     from apps.scholarship.genuineness.matric_poly_doc import (
-        _IN_PROGRESS, MATRIC_TRANSCRIPT_SIGNATURES, POLY_TRANSCRIPT_SIGNATURES, _final, _matric_gates,
-        _poly_gates, matric_poly_higher_genuineness)
+        MATRIC_TRANSCRIPT_SIGNATURES, POLY_TRANSCRIPT_SIGNATURES, _complete_final, _in_progress,
+        matric_poly_higher_genuineness)
     from apps.scholarship.genuineness.results_doc import _norm_fold_upper_alnum, _score_list
 
     bad = 0
@@ -53,11 +53,11 @@ def main(argv):
             sg = matric_poly_higher_genuineness(text)
             st = sg.get('status', '-') + (f" ({sg['type']})" if sg.get('status') not in (None, 'genuine') else '')
             tally[st] = tally.get(st, 0) + 1
-            gated = (_matric_gates(tn) and 'matric') or (_poly_gates(text, tn) and 'diploma')
-            if gated and _final(tn, gated) and not _IN_PROGRESS.search(tn) and st != 'genuine':
+            # A whole final transcript (even bundled with a slip / the portal) must score genuine.
+            if (_complete_final(text, tn, 'matric') or _complete_final(text, tn, 'diploma')) and st != 'genuine':
                 bad += 1
                 print(f'  FINAL TRANSCRIPT NOT GENUINE {key} {st}')
-            if gated and 'not_final' in st and not _IN_PROGRESS.search(tn):   # review B1: positive evidence only
+            if 'not_final' in st and not _in_progress(text):          # review B1: positive evidence only
                 bad += 1
                 print(f'  TRANSCRIPT RULED NON-FINAL WITHOUT AN IN-PROGRESS STATUS {key}')
             if folder in ('matric', 'diploma'):

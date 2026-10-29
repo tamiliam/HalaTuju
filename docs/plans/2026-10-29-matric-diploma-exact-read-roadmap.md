@@ -137,6 +137,7 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
 - Adversarial review (2026-10-30): non-final ONLY on positive evidence (slip / portal wording, an
   in-progress status); an absent or unrecognised status is `{}`. One rule for "answers the ask" and
   for "the upload the verdict reads"; the ask only when the application asks for higher results.
+  Re-review: a bundled final transcript (with a slip / the portal) is scored, never non-final.
 
 ### M5 — Live re-read + close · low · ~3 h · paid: Gemini fallback on misses only
 - Targeted live `reextract_documents` for matric/diploma `higher_results` with the job flags.
