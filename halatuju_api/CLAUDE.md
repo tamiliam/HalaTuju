@@ -1159,14 +1159,18 @@ https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
 
 ---
 
-**Bumi + Islamic coverage: Sprints A to D2 are LIVE (D2 2026-10-29, `914d4a5b`; retro
-`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d2.md`). All 150 Sprint A SPM courses are in (136
-Bumi-only, 14 open Islamic) plus 2 Bumi-only matric tracks. NEXT in that arc = Sprint F:** UP_TVET ingest incl.
-MARA (~544 rows in `data/tvet/uptvet_latest.csv`; parse the public `info_url` "Syarat Kursus", the Bumi flag
-from "Taraf Bumiputera"). Follow-ups: fixture drift — the 2 prod rows the fixture lacks (UL0481001, FB0500001) and
-IKBN-DIP-002, which the fixture holds and prod does not (F1 flags its campus row); college lists
-for the 2 Bumi matric tracks (then offer them in the pickers). The Bumi answer stays course-guide only.
-Adversarial review before push.
+**Bumi + Islamic coverage: Sprints A to F1 are LIVE (F1 2026-10-30, `a60662cc`; retro
+`docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`). F1 added 35 public non-MARA UP_TVET courses
+(`TVET-<id_kursus>`; 2 Bumi-only KEMAS), 33 campus links to held courses, institutions IKBN-022 / ILKA-001..003,
+and pathways `mara` + `tvet_other`. NEXT in that arc:** (1) the held-row flag fix, owner-approved as a small
+change — the held IJTM-* / IKBN-* rows lack `req_malaysian` (pages say citizens only), 59 lack `no_colorblind`,
+and they carry `no_disability` on the qualified line the owner ruled text-only (`held_rule_differences` in
+`data/tvet/tvet_new_courses_F1.json`); (2) Sprint F2 = MARA: 665 pages saved in the gitignored page cache,
+the parser reads 21 cleanly, so add condition wording first, then build with `--families mara`
+(`MARA-NNN`, category MARA). Follow-ups: the 90 flagged rows; fixture drift — UL0481001, FB0500001 (prod
+only) and IKBN-DIP-002 (fixture only); college lists for the 2 Bumi matric tracks. The Bumi answer stays
+course-guide only. Adversarial review before push; the lead's read-only prod SQL checks the review file's
+own ids and pairs before the push.
 
 **Back-issuing invoices is READY TO PUSH (2026-10-28; retro
 `docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's

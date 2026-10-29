@@ -27,6 +27,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-10-30 | b9028b4 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
+| 2026-10-30 | 5ce4ee6 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | e6a03fb | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | 860792b | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | 71ae8cc | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 11 | 143 | 0 | 0 | ok | ok |
@@ -254,6 +255,12 @@ clothes of a debt count. No action, and nothing to engineer away.
 `ChargeCard`/`ChargeCorrections`/`UnbilledSection` out of the billing page, which left the web oversize ledger
 entirely). F1 and S4b landed new modules in the same window, so the net is flat. The split is real; the number
 does not show it, and saying otherwise would be taking credit the reading does not support.
+### 2026-10-30 (5ce4ee6, Bumi Sprint F1 close) — 0 FAIL; nothing to promote
+
+**0 FAIL, 5 standing WARNs** (`--full`). Against e6a03fb: `fix%` 52 -> 51 (window roll), `big` 16, `long` 15,
+`dup` 4, `xapp` 73 and `td_open` 142 unchanged. F1's new modules (`tvet_*.py`, `catalogue_ingest.py`,
+`ingest_tvet_courses.py`) all sit under 500 lines; `courses/views.py` 2182 -> 2190 and `scholarship.ts`
+1090 -> 1092 for the two new pathways (both already listed over 1000; no new file crossed). **Accepted, no action.**
 
 ### 2026-10-29 (e6a03fb, default payment schedule close) — 0 FAIL; nothing moved
 

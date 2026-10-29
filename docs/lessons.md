@@ -1592,6 +1592,12 @@ is prefetched — weight moved off a route's first load can still travel in the 
   onto that table (grep the model across views, services and management commands) and decide each one; pin each
   decision with a test that would fail if the door reopened.
 - **A new shape in a shared JSON field is a change to EVERY reader of that field, not just the engine.** (Bumi Sprint D2, 2026-10-29.) An `any_of` group was added to `complex_requirements.count_once`; the engine, the parser and the data were tested end to end, and the course page crashed on every ATAU row because `RequirementsCard.tsx` read `group.subjects.length`. **Rule:** when a builder adds a new shape to a stored JSON structure, the brief lists every reader of that field (grep api AND web, including renderers, PDFs and exports), and a test renders each new shape through each reader using the real rows.
+- **A builder's picture of production is a claim; check it against production before the push.** (Bumi Sprint
+  F1, 2026-10-30.) The review file marked 22 campus links "new" that prod already held (matched on a stale
+  `id_kursus`) and linked a course only the repo fixture holds; the runbook rollback would have deleted 22 real
+  links. D2 had the same class (an institution state and type prod does not use). **Rule:** whatever an ingest
+  calls new or held is matched on the database's own unique key, the command refuses when its picture disagrees
+  with the database, and the lead runs read-only SQL on the review file's exact ids and pairs before the push.
 
 - **The authority for a charge is what we TOLD the customer, not what we computed.** Development billing read
   `quote_hours` — the plan — while the closing report had already published a different number to BrightPath.
