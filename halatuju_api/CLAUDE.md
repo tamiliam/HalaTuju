@@ -1027,6 +1027,13 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
+**Bumi + Islamic coverage: Sprints A, B, C and TD-416 are LIVE (2026-10-29, `1a4aedc8`; retro
+`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-c-td416.md`). NEXT in that arc = Sprint D:** SPM
+catalogue Bumi + Islamic course ingest — `CourseRequirement.req_bumiputera` + the engine check (copy the
+`req_disability` pattern), the approved Sprint A rows, institutions and links; the SPM golden master WILL move
+(re-baseline with a diff showing the old 5,319 rows unchanged); adversarial review before push. The Bumi answer
+stays course-guide only (never scholarship, sponsors, reports, exports). Bundle median 146.4 / 148 kB.
+
 **Back-issuing invoices is READY TO PUSH (2026-10-28; retro
 `docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's
 printed issue date, so July can say 15 August — bounded by `invoicing.issue_date_for`: never after today,

@@ -76,12 +76,20 @@ export interface ScholarshipApplication {
   consent_to_contact: boolean
   status: string
   bucket: string
-  /** Post-award S5: operational sub-state within status='maintenance' (e.g. 'on_hold'). */
-  maintenance_substate: 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
+  /** Maintenance S1 (review L5): the COARSE answer "is my support paused?" (`maintenance.is_on_hold`).
+   *  The raw sub-state is not served to the student — probation is a staff flag. */
+  support_paused?: boolean
   /** Post-award S6: closure bucket — '' unless status='closed'. */
   closure_reason: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated' | 'stalled'
   /** When the award became active (funded); null if never. TD-352: a closed case is in-programme only with it. */
   active_at?: string | null
+  /** Student maintenance S1: the SERVER's answer to "in maintenance" (awarded + live wallet, active,
+   *  maintenance — `maintenance_scope.py`). The results form shows only when true. */
+  in_maintenance?: boolean
+  /** In maintenance, or closed after it (read-only). Decides who reaches the in-programme page. */
+  has_file?: boolean
+  /** May she record a semester result? active / maintenance only until Sprint 4 (review M2). */
+  can_record_results?: boolean
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string

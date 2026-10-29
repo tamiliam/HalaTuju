@@ -32,6 +32,54 @@ ledger is consistent with ITSELF, and an empty ledger is perfectly consistent. T
   REMOVED from the budget rather than lowered. Nothing was raised.
 - Tests: `test_metered_without_cost.py` (18, plus the re-export and bad-month subtests).
 
+## Student maintenance Sprint 1 — one predicate, on hold stops money, the activity log (migration 0183) - 2026-10-29
+
+Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; owner rulings in `docs/decisions.md`
+(2026-10-29). The 65 live funded students are all `awarded` with a live Vircle wallet, and every
+in-programme gate accepted only `active` / `maintenance` — so none of them could record a result, be
+put on hold, or reach the in-programme page. Backend foundation; the status state machine is unchanged.
+
+- **ONE predicate, `maintenance_scope.py`.** In maintenance = `awarded` with `vircle_activated_at`
+  set, OR `active` / `maintenance` (`closure.FUNDED_STATUSES`). `has_file` adds a closed student who
+  was in it (read-only): closed with `active_at`, or with a live wallet AND a post-award-only closure
+  reason. A wallet stamp alone is not trusted on a closed record — `revert_to_pool` keeps it, and a
+  stalled pre-award close must never count (TD-352). Queryset and record forms are proven to agree.
+- **The gates now ask it:** `in_programme._require_in_programme` / `_require_can_thank`,
+  `maintenance._require_maintenance` / `is_on_hold` / `sponsor_support_status` /
+  `ready_to_close_queryset`, `payments._is_on_hold` (now delegates — one definition). `active` is in
+  maintenance too, so an `active` student now takes a sub-state.
+- **On hold stops money, every door:** run creation greys her out (`on_hold`); a hold placed after a
+  run was made takes her item out of every editable run ('On hold' — a signed run reverts to draft and
+  loses its signatures, the D2 house rule); `payments.set_item` refuses to re-include her (`on_hold`);
+  `payments.complete` refuses a run that still pays an on-hold student (`on_hold_in_run`, the approval
+  rolls back); `disbursement.release_tranche` already refused. Lifting the hold re-includes nobody.
+  The money hold is judged on the stored sub-state and a payable status, never the wallet stamp; a
+  student paid on her eWallet ID before Vircle reports it live can be held (`can_set_substate`).
+  The payments page maps both new codes (en/ms/ta).
+- **Sponsor-visible:** an on-hold `awarded` student now reads `paused` (support status and portfolio
+  badge); the sponsor progress band is unchanged (owner default).
+- **Adversarial review fixes:** placing or lifting a hold needs payments-prepare rights (super, org
+  admin, `payments_prepare`; else 403 `hold_needs_payments`), and the runs it touched (signatures
+  cleared or not) are in the activity row and a WARNING AUDIT line; semester-result recording stays
+  active/maintenance until Sprint 4 (served `can_record_results`); an award that falls through resets
+  a stored hold to on_track (logged); `set_substate` judges the stored value and writes conditionally;
+  run items carry `on_hold` (a chip) and the refusal says how many; the student sees `support_paused`,
+  never the raw sub-state.
+- **Who/when for the sub-state:** `maintenance_substate_changed_at` / `_by` (the admin endpoint passes
+  the officer's email).
+- **Activity log foundation:** `StudentActivity` (`student_activity`, RLS + service_role policy) and
+  `activity.py` (`log_event`, `add_entry`). Wired: `substate_changed`, `result_submitted`,
+  `payment_released` (run completion and tranche release), `closed`. Written inside the caller's
+  transaction — the log is part of the record. No endpoints yet (Sprint 2).
+- **Student page:** the in-programme page reads the server's `has_file` / `in_maintenance` instead of
+  deriving it from statuses; the results form follows the served `can_record_results`.
+- **Moves only, first:** the Vircle eWallet ID rules moved verbatim to `vircle_ids.py` (re-exported),
+  so `payments.py` is under 600 lines and leaves the oversize ledger; `test_maintenance.py` converted
+  to the factory.
+- ⚠ **Migrate first, by hand** — scholarship `0183_maintenance_activity_log` (DDL, RLS and ledger row
+  in its docstring). Deploying first is NOT survivable: run approval, tranche release, closure,
+  sub-state changes and results would all roll back without `student_activity`.
+
 ## Matric/Diploma Exact-read M1 - 2026-10-29
 
 Sprint M1 of `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a
@@ -168,6 +216,10 @@ found the work — none of it was visible from reading the code.
   (`EKONOMI_SPM` + `EKONOMI_ASAS_SPM`, `AL_ADAB_SPM` twice). Now each student subject counts once. STPM golden
   master re-baselined on purpose 2,026 -> **2,025** (`arts_high_muet` loses UA6314002); real students holding one
   subject behind two codes may see fewer courses. Regression tests in `test_islamic_spm_subjects.py`.
+  The count is a maximum matching (`stpm_engine._distinct_matches`), not first-fit: a first-fit count let the
+  ORDER of the list waste a subject (`BAHASA_ARAB_MUASIRAH_SPM` first spent `bahasa_arab`, so a student with
+  both `bahasa_arab` and `lughah_arabiah` counted 1, not 2) — `test_list_order_cannot_waste_a_subject`.
+- **Live 2026-10-29** with TD-416 in `1a4aedc8` (api-01174-4cp, web-01008-hdx, both builds SUCCESS).
 - **STPM entry.** `BAHASA_ARAB_MUASIRAH_SPM` is now also met by `lughah_arabiah` (`stpm_engine.SPM_CODE_ALSO`),
   counted once; the old `bahasa_arab` reading is kept, so no existing result moves. Course-page labels for the
   Islamic requirement codes use the same slip names. `report_engine.SUBJECT_LABELS` names all 14.

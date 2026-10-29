@@ -5810,7 +5810,9 @@
         "not_editable": "Larian ini tidak boleh disunting lagi.",
         "bad_state": "Tindakan itu tidak dibenarkan dalam keadaan larian semasa.",
         "not_ready": "CSV tersedia setelah larian ditandatangani.",
-        "finance_check_required": "Larian ini perlu disemak sebelum boleh diluluskan."
+        "finance_check_required": "Larian ini perlu disemak sebelum boleh diluluskan.",
+        "on_hold": "Sokongan pelajar ini ditangguhkan. Sambung semula dalam failnya sebelum memasukkannya semula.",
+        "on_hold_in_run": "{count} pelajar dalam larian ini ditangguhkan. Keluarkan mereka; larian itu kemudian kembali kepada draf dan perlu ditandatangani semula."
       },
       "financeStep": "Disemak",
       "financeSign": "Semak",

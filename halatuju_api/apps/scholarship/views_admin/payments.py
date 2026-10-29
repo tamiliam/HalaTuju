@@ -18,6 +18,8 @@ from .base import _AdminBase
 # state machine and `your_step`; these views are thin.
 from decimal import Decimal as _Decimal
 
+from ..maintenance import is_on_hold as _is_on_hold
+
 
 def _payment_item_dict(item):
     app = item.application
@@ -36,6 +38,9 @@ def _payment_item_dict(item):
         'credit_applied': str(item.credit_applied),
         'included': item.included,
         'exclude_reason': item.exclude_reason,
+        # Maintenance S1 (review L3): the student is on hold NOW — a run that still includes her
+        # cannot be approved (`on_hold_in_run`). Shown as a chip on the run.
+        'on_hold': _is_on_hold(app),
     }
 
 
@@ -303,7 +308,10 @@ class AdminPaymentRunSignView(_PaymentsBase):
         try:
             payments.sign(run, admin, request.data.get('typed_name') or '')
         except payments.PaymentsError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            body = {'error': e.code, 'code': e.code}
+            if e.count is not None:
+                body['count'] = e.count       # on_hold_in_run: how many held students
+            return Response(body, status=status.HTTP_400_BAD_REQUEST)
         run.refresh_from_db()
         return Response(_payment_run_detail(run, admin))
 

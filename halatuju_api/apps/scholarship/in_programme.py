@@ -1,7 +1,7 @@
 """B40 Phase E/F (F9a) — the in-programme student lifecycle.
 
 This module owns the WRITES for a student who is already in the programme
-(``status='sponsored'``): recording latest-semester results, the separate 18+
+(in maintenance — ``maintenance_scope.is_in_maintenance``): recording latest-semester results, the separate 18+
 ``promotional_use`` consent, and the anonymity-preserving graduation thank-you
 relay. The coarse, non-identifying ``progress_state`` a sponsor sees is DERIVED
 from the latest ``SemesterResult`` by ``pool.derive_progress_state`` (a read, kept
@@ -14,10 +14,14 @@ identifier gate) for the graduation relay, and ``services`` for consent + the
 """
 from decimal import Decimal, InvalidOperation
 
+from django.db import transaction
 from django.utils import timezone
 
-from . import pool, services
+from . import activity, pool, services
+from .closure import FUNDED_STATUSES
+from .maintenance_scope import has_file, is_in_maintenance
 from .models import GraduationMessage, SemesterResult
+from .models.activity import EVENT_RESULT_SUBMITTED
 
 
 class InProgrammeError(Exception):
@@ -28,25 +32,30 @@ class InProgrammeError(Exception):
         super().__init__(code)
 
 
-# A student only has an in-programme lifecycle once their award is accepted.
+# A student only has an in-programme lifecycle once she is IN MAINTENANCE — the ONE predicate
+# (`maintenance_scope.is_in_maintenance`, owner ruling 2026-10-29): `awarded` with a live Vircle
+# wallet, or `active` / `maintenance`. Was `active`/`maintenance` only, which shut out every live
+# student (all 65 are paid while `awarded`).
 def _require_in_programme(application):
-    # In-programme = funded: active (executed/pre-payout) or maintenance (funded).
-    if application is None or application.status not in ('active', 'maintenance'):
+    if not is_in_maintenance(application):
         raise InProgrammeError('not_in_programme')
 
 
-# S6: the graduation thank-you relay stays open AFTER closure — a graduated/completed
-# student can still write to their sponsor once the file is closed. So the thank-you path
-# accepts 'closed' too (but NOT semester results / promo consent, which are funded-only).
-_THANK_YOU_STATES = ('active', 'maintenance', 'closed')
+def can_record_results(application):
+    """May the student record a semester result? ``active`` / ``maintenance`` ONLY
+    (``closure.FUNDED_STATUSES``), as before maintenance S1 — deliberately NOT the wider predicate
+    (adversarial review M2): a self-reported result feeds the sponsor progress band unreviewed, so
+    the gate widens in Sprint 4 together with results review and one sponsor-reader rule. Served
+    to the student page as ``can_record_results``, so the form and the server agree."""
+    return application is not None and application.status in FUNDED_STATUSES
 
 
+# S6: the graduation thank-you relay stays open AFTER closure — a graduated/completed student can
+# still write to their sponsor once the file is closed (but NOT semester results / promo consent,
+# which need her in maintenance). `maintenance_scope.has_file`: in maintenance, or closed AFTER
+# being in it. TD-352 holds there: a stalled close before any award has no file and no sponsor.
 def _require_can_thank(application):
-    if application is None or application.status not in _THANK_YOU_STATES:
-        raise InProgrammeError('not_in_programme')
-    # TD-352: `closed` counts only for a case that was FUNDED (`active_at` stamped). An officer may
-    # now close a stalled case before any award; that student has no sponsor to thank.
-    if application.status == 'closed' and application.active_at is None:
+    if not has_file(application):
         raise InProgrammeError('not_in_programme')
 
 
@@ -76,16 +85,27 @@ def record_semester_result(application, *, semester='', cgpa=None,
     The ``results_slip`` (an ``ApplicantDocument``) is myNADI-only evidence — it
     never crosses to a sponsor; only the derived ``cgpa``/``graduated`` band does
     (via ``pool.derive_progress_state``). Each call appends a row; the latest by
-    ``created_at`` is the one the progress signal reads. Returns the new row."""
-    _require_in_programme(application)
-    return SemesterResult.objects.create(
-        application=application,
-        semester=(semester or '').strip()[:50],
-        cgpa=_clean_cgpa(cgpa),
-        graduated=bool(graduated),
-        results_slip=results_slip,
-        note=(note or '').strip()[:500],
-    )
+    ``created_at`` is the one the progress signal reads. Returns the new row.
+
+    Writes one ``result_submitted`` activity row in the same transaction (the student is the
+    actor, so ``actor_email`` is blank and ``meta.by`` says so). Gated by ``can_record_results``
+    (active / maintenance), NOT the maintenance predicate — see there."""
+    if not can_record_results(application):
+        raise InProgrammeError('not_in_programme')
+    with transaction.atomic():
+        row = SemesterResult.objects.create(
+            application=application,
+            semester=(semester or '').strip()[:50],
+            cgpa=_clean_cgpa(cgpa),
+            graduated=bool(graduated),
+            results_slip=results_slip,
+            note=(note or '').strip()[:500],
+        )
+        activity.log_event(application, EVENT_RESULT_SUBMITTED, meta={
+            'by': 'student', 'result_id': row.id, 'semester': row.semester,
+            'cgpa': str(row.cgpa) if row.cgpa is not None else None,
+            'graduated': row.graduated})
+    return row
 
 
 # ── promotional_use consent — SEPARATE, 18+ ONLY (owner decision 2026-06-09) ──

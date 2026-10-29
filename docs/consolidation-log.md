@@ -15,6 +15,10 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 
+- 2026-10-28 Bumi coverage Sprint A (scraper Bumi signals + inventory) — 4350af2f
+- 2026-10-28 Bumi coverage Sprint B (the Bumiputera answer, migration 0087) — 6443120d 8a47851a daf1918d 6c458ed5
+- 2026-10-29 TD-416 message slices + Bumi coverage Sprint C (Islamic SPM subjects) — f1ae0a83 9d1dedca 5a4e186e f4aa714d 1a4aedc8
+
 ## Reviews
 
 ### 2026-10-28 — ten small changes and forty-one sprint lines, 18 Oct → 28 Oct: four screens answered a server question for themselves, and the lane carried three sprints

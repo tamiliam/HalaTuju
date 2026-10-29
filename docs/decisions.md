@@ -1,5 +1,62 @@
 # Architectural Decisions — HalaTuju
 
+## A funded student has one file from award acceptance to closure — 2026-10-29 (student maintenance roadmap, owner rulings)
+
+The owner asked for a whole system to look after students who were awarded and accepted, until their file is
+closed: a student hub ("My Bursary", `/scholarship/bursary`) and an admin Scholars list + maintenance file
+(`/admin/scholars`). Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (8 sprints + 3 later).
+**Rulings:** (1) **who is in it** — from award acceptance to closure: `awarded` with `vircle_activated_at` set, OR
+`active` / `maintenance`; closed students keep read-only access. ONE predicate (`maintenance_scope.py`) replaces the
+four gates that today accept only `active`/`maintenance` — live count 65, all `awarded` + Vircle-activated
+(2026-10-29), so none could record a result or be put on hold before this. The status state machine is unchanged.
+(2) **On hold stops money** — an on-hold student is left out of the Vircle payment run whatever their status (today
+only a `maintenance` student was). (3) **Contract** — the student and admin see only a platform-signed agreement;
+otherwise a neutral "No contract on file". No scan uploads. (4) **Mentors** — records only (list, assignment,
+logged meetings); a mentor login is a later phase. (5) **Results** — automatic friendly reminders before the due
+date and a "not submitted" flag after a grace period; an officer may then send the formal 14-day request (contract
+cl. 5). (6) **Nothing hard-coded** — thresholds (minimum CGPA 3.00 from the contract, due/reminder/grace days) are
+organisation settings in `org_config_registry`; student email and letter wording are DB templates on a new
+Student communications settings tab. Defaults the owner may revisit: the sponsor progress band stays as it is
+(separate from admin standing); letter wording is authored per organisation.
+
+## Sprint 1 built the predicate, the on-hold money doors and the activity log — 2026-10-29 (student maintenance S1)
+
+**Who has a file.** `maintenance_scope.has_file` = in maintenance, OR closed with `active_at` (TD-352), OR closed
+with `vircle_activated_at` AND a post-award-only reason (graduated / completed / lapsed / terminated). The wallet
+stamp ALONE is not trusted on a closed record: `award_revert.revert_to_pool` keeps it when an award falls through,
+and a later stalled pre-award close must not count. A post-award close recorded `stalled`/`withdrawn` without
+`active_at` therefore fails closed (no file). **`active` is in maintenance** (funded by nature), so it now takes a
+sub-state. **On hold stops money — the doors:** (a) `payments.eligibility` greys an on-hold student out of a new run;
+(b) `maintenance.set_substate(→on_hold)` excludes her item from every EDITABLE run via `payments.set_item`
+('On hold'); a signed run reverts to draft and loses its signatures (D2: nobody signs one list and sends another),
+a completed run is history and is left alone; (c) `payments.complete` refuses `on_hold_in_run` if an included
+item's student is on hold, so the approval rolls back; (d) `set_item(included=True)` refuses `on_hold`; (e) lifting
+the hold re-includes nobody — the maker does; (f) `disbursement.release_tranche` already refused. Not doors: wallet
+credits (money IN), the one-off `import_vircle_csv` backfill (history). The hold takes the run lock before the
+application row, the order `complete` uses. **The money hold is NOT the file predicate** (lead review):
+`is_on_hold` = stored `on_hold` AND a status a run pays (`PAYABLE_STATUSES`, now homed in `maintenance_scope`) —
+never the wallet stamp, which is mirrored from the Vircle relay sheet and could be cleared. `can_set_substate`:
+a payable status AND (in maintenance OR a `vircle_id` held — a run pays on the ID, activation is advisory), and
+a stored hold can always be lifted. **Sponsor-visible:** `sponsor_support_status` is judged like `is_on_hold`, so a
+sponsor reads `paused` exactly when money is stopped (agreeing with `pool.sponsor_portfolio_status`).
+**The activity log is written inside the caller's transaction** — the log is part of the record, so the table
+must exist first (migrate-first is mandatory for 0183). Not changed, by design: `pool.FUNDED_STATES` /
+`derive_progress_state` (sponsor band, owner default), `services/consent.py`'s onboarding gate,
+`payments.PAYABLE_STATUSES`, `views._FUNDED_STATES`, `spending_import`, `disbursement._require_funded` (tranche
+scheduling stays active/maintenance — the awarded cohort is paid by runs, not tranches).
+**Adversarial review fixes (same day):** (M1) a move to or from `on_hold` is a MONEY act — it needs
+`payments.may_prepare` (super, the organisation admin, a `payments_prepare` holder), else 403 `hold_needs_payments`;
+the other sub-states keep the app-write gate. `PaymentRun` has no audit trail (its `note` is free text), so the runs
+a hold took her out of, and whether their signatures were cleared, go in the `substate_changed` activity meta plus a
+WARNING AUDIT log line. (M2) **Recording a semester result is NOT widened in Sprint 1**: it stays active /
+maintenance (`in_programme.can_record_results`, served as `can_record_results`) because a self-reported result feeds
+the sponsor band unreviewed; it widens in Sprint 4 with results review and one sponsor-reader rule. Promotional
+consent and the (moderated) thank-you follow the new predicate. (L1) an award that falls through
+(`award_revert.revert_to_pool`) resets a stored sub-state to on_track, stamped `system`, logged; `reopen.py` never
+moves a post-award status, so it needs nothing. (L2) `set_substate` re-reads the stored sub-state and writes
+conditionally (`changed_meanwhile` on a lost race). (L3) a run item says `on_hold`; the refusal carries the count.
+(L5) the student is served `support_paused` (= `is_on_hold`), never the raw sub-state — probation is a staff flag.
+
 ## A transcript is told by its issuer only where no kind is printed; a blank `results_kind` is filled from the results held, never from the detection — 2026-10-29 (Matric/Diploma M1, #49)
 
 **Issuer tier.** `results_kind.detect` reads fixed issuer markers ("POLITEKNIK" / "POLYTECHNIC" →

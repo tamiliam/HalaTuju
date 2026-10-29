@@ -36,8 +36,13 @@ from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
-from . import money
+from . import activity, money
+# The Vircle ID rules (D9) moved verbatim to vircle_ids.py (student maintenance S1, 2026-10-29);
+# re-exported so every caller keeps writing `payments.valid_vircle_id` / `payments.vircle_id_error`.
+from .vircle_ids import valid_vircle_id, vircle_id_band, vircle_id_error, vircle_id_prefix
+from .maintenance_scope import PAYABLE_STATUSES
 from .models import Disbursement, PaymentRun, PaymentRunItem, ScholarshipApplication
+from .models.activity import EVENT_PAYMENT_RELEASED
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +50,8 @@ logger = logging.getLogger(__name__)
 # RM3,000 award simply runs longer (15 months vs the standard 10).
 MONTHLY_RATE = Decimal('200')
 
-# Application statuses that may appear in / be paid by a run (D3/D4-2). Wider than
-# pool.FUNDED_STATES because the cohort is paid while at 'awarded'.
-PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
+# PAYABLE_STATUSES (awarded / active / maintenance, D3/D4-2) lives in maintenance_scope.py since
+# maintenance S1 — `maintenance.is_on_hold` reads it too; imported above, so `payments.` still works.
 
 # Run statuses that may still be edited / cancelled — i.e. everything before completion. An edit
 # from any of them reverts to draft and clears the signatures collected so far (_revert_to_draft).
@@ -81,8 +85,8 @@ _CENTS = Decimal('0.01')
 class PaymentsError(Exception):
     """Raised by the service with a machine code for the view (e.g. 'past_date',
     'name_mismatch', 'same_signer', 'not_draft', 'amount_over_cap')."""
-    def __init__(self, code, message=''):
-        self.code = code
+    def __init__(self, code, message='', count=None):
+        self.code, self.count = code, count     # `count`: how many, for `on_hold_in_run`
         super().__init__(message or code)
 
 
@@ -237,8 +241,10 @@ def _schedule_status(row, application, period_month):
 
 
 def _is_on_hold(application):
-    """D4-5: the only break-like signal in the data today — maintenance 'on_hold'."""
-    return application.status == 'maintenance' and application.maintenance_substate == 'on_hold'
+    """D4-5, widened by the owner 2026-10-29 (ON HOLD STOPS MONEY, whatever the status — the paid
+    cohort is `awarded`): `maintenance.is_on_hold`, the ONE definition, never a copy here."""
+    from .maintenance import is_on_hold
+    return is_on_hold(application)
 
 
 def _vircle_confirmation_pending(application):
@@ -467,6 +473,9 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
     _lock(run)
     if run.status not in EDITABLE_STATUSES:
         raise PaymentsError('not_editable')
+    # On hold stops money (owner 2026-10-29): a maker cannot put a held student back by hand.
+    if included and _is_on_hold(ScholarshipApplication.objects.get(pk=run_item.application_id)):
+        raise PaymentsError('on_hold')
     if run.status != 'draft':
         _revert_to_draft(run)
     fresh = PaymentRunItem.objects.select_for_update().filter(pk=run_item.pk).values(
@@ -516,7 +525,12 @@ def complete(run):
     never from 'awarded'. This mirrors ``disbursement._flip_to_maintenance`` (the same effect the
     ad-hoc release path already had); the payment RUN is the real cohort's first payout, so it must
     carry the same flip. Historically ``complete`` never touched status; that gap left the whole
-    run cohort stuck at 'active' after their first run."""
+    run cohort stuck at 'active' after their first run.
+
+    ON HOLD STOPS MONEY (owner 2026-10-29), the last door: an INCLUDED item whose student is on hold
+    NOW refuses the whole completion (``on_hold_in_run``; ``sign`` rolls back with it, so the run
+    stays signed-but-unpaid and the maker excludes her). Each released item writes one
+    ``payment_released`` activity row, inside this transaction."""
     from . import sheets
     from . import emails
     from .disbursement import _flip_to_maintenance
@@ -528,9 +542,11 @@ def complete(run):
             status='released', reference=f'vircle:{run.reference}'[:100]).exists()):
         raise PaymentsError('already_paid')
 
-    for item in run.items.select_related('application'):
-        if not item.included:
-            continue
+    items = [i for i in run.items.select_related('application') if i.included]
+    held = sum(1 for i in items if _is_on_hold(i.application))
+    if held:
+        raise PaymentsError('on_hold_in_run', count=held)
+    for item in items:
         app = item.application
         if item.amount and item.amount > 0:
             top = app.disbursements.aggregate(m=Max('sequence'))['m'] or 0
@@ -542,6 +558,8 @@ def complete(run):
             )
             item.disbursement = disb
             item.save(update_fields=['disbursement', 'updated_at'])
+            activity.log_event(app, EVENT_PAYMENT_RELEASED, actor_email=actioned_by, meta={
+                'amount': str(item.amount), 'run': run.reference, 'disbursement_id': disb.id})
             # First real payout → enter the recurring loop (active → maintenance). Idempotent
             # and a no-op from 'awarded'/'maintenance'/'closed' (see _flip_to_maintenance).
             _flip_to_maintenance(app)
@@ -565,80 +583,6 @@ def complete(run):
     except Exception:
         logger.warning('Payments: run-email stub failed for run %s', run.reference, exc_info=True)
     return run
-
-
-# ── Vircle ID (D9) ────────────────────────────────────────────────────────────
-
-def vircle_id_prefix():
-    return getattr(settings, 'VIRCLE_ID_PREFIX', '80004001')
-
-
-def vircle_id_band():
-    """(low, high) — the inclusive range the FIRST digit the student types may take.
-
-    Env-tunable (``VIRCLE_ID_BAND_MIN``/``_MAX``, see settings/base.py for the full reasoning):
-    the band is what separates a real eWallet ID from a **truncated DuitNow Transfer number**,
-    which shares the prefix and the length and is therefore invisible to a length+prefix check.
-    """
-    lo = str(getattr(settings, 'VIRCLE_ID_BAND_MIN', '7'))[:1] or '7'
-    hi = str(getattr(settings, 'VIRCLE_ID_BAND_MAX', '9'))[:1] or '9'
-    return lo, hi
-
-
-def valid_vircle_id(value):
-    """D9: a full 13-digit ID starting with the standard prefix, whose first TYPED digit sits in
-    the issued band. Shared by the Action-Centre resolve endpoint and the admin PATCH path — one
-    home, so both write paths cannot drift.
-
-    The band check is the half that catches a DuitNow Transfer number truncated to its last few
-    digits (three live cases, 2026-07-29). Do NOT relax it to make a fixture pass: build fixtures
-    with in-band suffixes instead.
-
-    The prefix is 8 digits since 2026-08-27 (was 9): Vircle's sequence rolled past 800040017xxxx
-    and a 4-digit box could not take the new numbers at all. See settings/base.py for the history.
-    """
-    v = (value or '').strip()
-    prefix = vircle_id_prefix()
-    if not (v.isdigit() and len(v) == 13 and v.startswith(prefix)):
-        return False
-    if len(prefix) >= 13:            # a prefix that leaves nothing typed: length+prefix is all there is
-        return True
-    lo, hi = vircle_id_band()
-    band = v[len(prefix)]
-    if not (lo <= band <= hi):
-        return False
-    if band == hi:
-        # Approaching the end of the issued block. When Vircle rolls past it every NEW student is
-        # refused (or cannot even type the number) until the prefix shortens, so this wants to be
-        # seen before that happens, not after. It fired four times in Aug 2026 and nobody read
-        # the log — the relay sheet's "no id yet" rows are the signal a human actually sees.
-        logger.warning(
-            'vircle_id accepted at the TOP of the issued band (digit %s of %s-%s) — '
-            'the next block needs a SHORTER VIRCLE_ID_PREFIX (settings + ActionCentre.tsx)',
-            band, lo, hi)
-    return True
-
-
-def vircle_id_error(value):
-    """WHICH thing is wrong with a supplied eWallet ID — ``''`` when it is valid.
-
-    ``'duitnow'`` means the value looks like a DuitNow Transfer number (the whole 18-digit thing,
-    or the last five digits of one). That distinction earns its keep in the COPY: the student typed
-    exactly what was on their screen, so "check the number and try again" is both useless and
-    faintly accusing — they need telling WHICH field to read instead. ``'format'`` is everything
-    else (wrong length, non-digits, a different prefix).
-    """
-    v = (value or '').strip()
-    if valid_vircle_id(v):
-        return ''
-    prefix = vircle_id_prefix()
-    if not (v.isdigit() and v.startswith(prefix)):
-        return 'format'
-    # A DuitNow number's first 13 digits ARE the eWallet ID, so it shares the prefix; either the
-    # whole 18 digits, or a 13-digit value whose typed part falls outside the issued band.
-    if len(v) == 18 or len(v) == 13:
-        return 'duitnow'
-    return 'format'
 
 
 # ── the sign-off chain lives in payments_chain.py (moved at #39 Sprint 2); re-exported here so

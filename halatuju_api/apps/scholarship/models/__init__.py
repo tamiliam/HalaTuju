@@ -99,3 +99,6 @@ from .staff_permission_changes import StaffPermissionChange
 # Admin System health light (2026-10-28) — model 69, NEW: the email/cron recorders' small store.
 # Points at nothing.
 from .system_health import SystemHealthStatus
+# Student maintenance Sprint 1 (2026-10-29) — model 70, NEW: the student file's activity log.
+# Points at ScholarshipApplication by string.
+from .activity import StudentActivity

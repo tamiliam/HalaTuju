@@ -494,7 +494,7 @@ class ScholarshipApplication(models.Model):
     #   probation      — at-risk (poor result / concern); support continues but flagged
     #   on_hold        — paused (a tranche release is BLOCKED until resumed)
     #   ready_to_close — support fulfilled / final result in; the S6 manual close reads this
-    # Only meaningful while status='maintenance'; 'on_track' otherwise.
+    # Only meaningful while IN MAINTENANCE (`maintenance_scope.is_in_maintenance`); 'on_track' otherwise.
     MAINTENANCE_SUBSTATES = [
         ('on_track', 'On track'),
         ('probation', 'Probation (at-risk)'),
@@ -503,8 +503,12 @@ class ScholarshipApplication(models.Model):
     ]
     maintenance_substate = models.CharField(
         max_length=20, choices=MAINTENANCE_SUBSTATES, blank=True, default='on_track',
-        help_text="Operational sub-state within status='maintenance'; 'on_track' otherwise",
+        help_text="Operational sub-state while in maintenance; 'on_track' otherwise",
     )
+    # Student maintenance S1 (2026-10-29): who last moved the sub-state, and when (`set_substate`).
+    # db_default: the OLD image inserts rows without the column between migrate and deploy.
+    maintenance_substate_changed_at = models.DateTimeField(null=True, blank=True)
+    maintenance_substate_changed_by = models.CharField(max_length=254, blank=True, default='', db_default='')
 
     # 7-day DECLINE cool-off (#13): an admin decline is recorded SILENTLY here (bucket + due
     # date) instead of flipping status immediately. The release cron reveals it (status →

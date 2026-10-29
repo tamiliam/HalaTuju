@@ -237,6 +237,11 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
         row.closed_at = timezone.now()
         row.closed_by = (by_email or '')[:254]
         row.save(update_fields=['status', 'closure_reason', 'closed_at', 'closed_by'])
+        # Student maintenance S1: the file's activity log records the close, in this transaction.
+        from . import activity
+        from .models.activity import EVENT_CLOSED
+        activity.log_event(row, EVENT_CLOSED, actor_email=by_email,
+                           meta={'reason': closure_reason, 'from': closed_from})
         if closed_from in PRE_AWARD_STATUSES:
             _withdraw_proposed_times(row, row.closed_at)
             if _booking_ahead(row, row.closed_at):

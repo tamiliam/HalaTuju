@@ -213,8 +213,11 @@ class TestMaintenanceBrake(_FundedCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'maintenance')
 
-    def _substate(self, substate):
-        return self.client.post(f'{API}applications/{self.app.id}/maintenance/',
+    def _substate(self, substate, client=None):
+        # A move to/from on_hold is a money act: payments_prepare / org_admin / super (review M1).
+        if client is None and 'on_hold' in (substate, self.app.maintenance_substate):
+            client = authed_client(self.org_admin)
+        return (client or self.client).post(f'{API}applications/{self.app.id}/maintenance/',
                                 {'substate': substate}, format='json')
 
     def test_on_hold_is_recorded_and_then_refuses_the_next_release(self):
@@ -230,15 +233,28 @@ class TestMaintenanceBrake(_FundedCase):
         nxt.refresh_from_db()
         self.assertEqual(nxt.status, 'scheduled')
 
-        # Resuming lifts the brake.
-        self._substate('on_track')
+        # Resuming lifts the brake (a money act too: the org admin).
+        self.assertEqual(self._substate('on_track').status_code, 200)
         self.assertEqual(self._act(nxt, 'release').status_code, 200)
 
     def test_a_case_not_yet_in_maintenance_has_no_substate(self):
-        r = self._substate('probation')
+        # Student maintenance S1: `active` IS in maintenance now (maintenance_scope). The case not
+        # yet in it is an accepted award still `awarded` (held in the cool-off) with no live wallet.
+        held, _sponsor, _sp = fund_through_the_product(self.cohort, reviewer=self.reviewer,
+                                                       cooloff_days=7)
+        self.assertEqual((held.status, held.vircle_activated_at), ('awarded', None))
+        r = self.client.post(f'{API}applications/{held.id}/maintenance/',
+                             {'substate': 'probation'}, format='json')
         self.assertEqual((r.status_code, r.json()['error']), (400, 'not_in_maintenance'))
+        held.refresh_from_db()
+        self.assertNotEqual(held.maintenance_substate, 'probation')   # nothing was written
+
+    def test_an_active_case_takes_a_substate_and_records_who(self):
+        r = self._substate('probation')
+        self.assertEqual(r.status_code, 200, r.content)
         self.app.refresh_from_db()
-        self.assertNotEqual(self.app.maintenance_substate, 'probation')   # nothing was written
+        self.assertEqual((self.app.maintenance_substate, self.app.maintenance_substate_changed_by),
+                         ('probation', self.reviewer.email))
 
     def test_an_unknown_substate_is_refused(self):
         self._into_maintenance()
