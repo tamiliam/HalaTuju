@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi coverage Sprint F1 — public UP_TVET programmes (non-MARA), two new pathways (no migration) - 2026-10-29
+
+Sprint F1 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md` (owner rulings F, decisions.md).
+Review file: `halatuju_api/data/tvet/tvet_new_courses_F1.json`, rebuilt by a test from `uptvet_F1_source.json`.
+
+- **Catalogue re-scraped** (`scrape_uptvet`, 2 pages checked first): 1,006 programmes (Awam 943, Swasta 63;
+  June had 988). Public by family: MARA 665, ILJTM 173, ILKBS 89, KEMAS 7, agriculture 6, fisheries 2, FAMA 1.
+  Kraf, PERDA-TECH, veterinary, MARDI, Peladang and tenun rows of June are no longer listed (not ingested).
+  `scrape_uptvet` / `audit_uptvet` now `record_status('uptvet', ...)`; the card counts Awam as available.
+- **`scrape_uptvet_syarat`**: saves every public course page (943 saved, MARA too for F2, 0 failures) to a
+  gitignored cache; polite (>= 1.5 s), resumable, loud on a page with no requirement card.
+- **Parser** (`tvet_pages.py`, `tvet_syarat.py`, `tvet_subjects.py`): "no formal education" = open; only the SPM
+  option is the academic rule (items in one option count once; "selain di atas" is strict); citizenship,
+  Bumiputera, colour vision, "Bujang" are flags; age, health, reading and the qualified disability wording are
+  TEXT in `remarks`; gender / religion wording, an unknown line, no SPM route, "any N" inside alternatives are
+  flagged. The table wins over its heading (2 headings disagreed; kept in the remarks).
+- **Grouping + ingest** (`tvet_catalogue_rows.py`, `tvet_institutions.py`, `ingest_tvet_courses`, shared code
+  moved first into `catalogue_ingest.py`): of 278 public non-MARA rows, **35 new courses** (39 campus
+  offerings; 32 open, 2 Bumi-only KEMAS), **56 new campus links to 34 held courses** (94 rows prod already
+  links), **89 flagged** (75 no SPM route, 7 ambiguous held names, 4 Tahfiz / religion, 2 gender wording, 1 no field rule), **4
+  proposed institutions** (IKBN-022 IKSN AKBG; ILKA-001 FAMA Kota Bharu, ILKA-002 KEMAS Gopeng, ILKA-003 Kolej
+  Pertanian Bukit Tangga), created only with `--create-institutions`. Held rules never change: 63 held courses
+  differ from their pages (`held_rule_differences`, for review).
+- **Doors:** pathways `mara` and `tvet_other` ("Other skills training") from the institution category, in the
+  dashboard chips, search filter + pick-list, scholarship pathway picker, course page chip (`pathway_type` in
+  the requirement payload), RequirementsCard (remarks-only rows render), sort, scholarship families
+  (tertiary, post-SPM), funding estimate (none). i18n en/ms/ta (Tamil via Sol). The Bumi gate is
+  source-type independent: the KEMAS rows are hidden from a non-Bumi student in eligibility and search.
+- **Golden masters:** original 389 = **5,319** identical; a non-Bumi student gains EXACTLY the F1 rows she
+  meets (**1,494**, digest pinned; full **6,813**); bumi=True **5,986 -> 7,578**; STPM **2,025**.
+- **Not done:** MARA (F2; the current rules read 20 of 665 MARA pages, the rest need more condition wording);
+  the held-course rule differences; the 89 flagged rows.
+
 ## Student maintenance Sprint 4b (part 2) — the emails a funded student receives about her results - 2026-10-29
 
 One new table (`student_email_templates`), in the same migration as part 1 (**0188**).

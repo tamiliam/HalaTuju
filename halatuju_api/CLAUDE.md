@@ -159,6 +159,26 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    course_requirements / course_institutions WHERE course_id IN (D2)`, then `DELETE FROM courses WHERE
    course_id IN (D2)`, then `DELETE FROM institutions WHERE institution_id = 'MARA-BPT'` (only after its
    course links are gone), then a re-revision. The D2 code may stay deployed (it shows only rows that exist).
+   **Bumi F1 order (no migration; UP_TVET public, non-MARA):** read-only SQL first (below) → push (api +
+   web) → CONFIRM the new api AND web revisions both serve 100% (an old api has no `mara` / `tvet_other`
+   pathway, so the ILKA-* rows would show as plain "tvet"; an old web has no chips for them) →
+   `ingest_tvet_courses --file data/tvet/tvet_new_courses_F1.json --create-institutions` (dry run: expect 4
+   `CREATE INSTITUTION` (IKBN-022, ILKA-001..003), 35 `CREATE TVET-…`, 0 UPDATE, 56 `LINK` lines, "94 already
+   held", 89 flagged, and no "Refusing") → the same with `--apply` → a re-revision so the frame reloads. A held
+   course (IJTM-* / IKBN-*) only GAINS campus links; its row and rule are never written. Read-only SQL before
+   `--apply`: none of the 35 ids in `courses`; none of IKBN-022 / ILKA-001..003 in `institutions`; every
+   IJTM-001..034 / IKBN-001..021 present; `SELECT count(*) FROM course_institutions WHERE (course_id,
+   institution_id) IN (F1LINKS)` = 0 (F1LINKS = the 56 `held_links` with `already_linked: false`). BEFORE ANY
+   ROLLBACK, read-only: `SELECT id, status FROM scholarship_applications WHERE chosen_programme->>'course_id'
+   IN (F1) OR EXISTS (SELECT 1 FROM jsonb_array_elements(top_choices) e WHERE e->>'course_id' IN (F1))` and
+   `SELECT count(*) FROM api_student_profiles WHERE chosen_programme->>'course_id' IN (F1)`; non-zero → the
+   owner decides first. ROLLBACK, one transaction, F1 = the 35 `courses[].course_id` of the file:
+   `DELETE FROM saved_courses / admission_outcomes / course_tags / courses_career_occupations /
+   course_requirements / course_institutions WHERE course_id IN (F1)`, then `DELETE FROM course_institutions
+   WHERE (course_id, institution_id) IN (F1LINKS)`, then `DELETE FROM courses WHERE course_id IN (F1)`, then
+   `DELETE FROM institutions WHERE institution_id IN ('IKBN-022','ILKA-001','ILKA-002','ILKA-003')` (only
+   after their links are gone), then a re-revision. The F1 code may stay deployed. F2 (MARA) = the same
+   command on a file built with `--families mara` (`MARA-NNN` institutions, category MARA).
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.

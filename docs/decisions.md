@@ -126,6 +126,43 @@ deliberate delay. **Revisit if:** the officer queue grows past what the team rev
 + the Results overdue filter. The results timing keys (terms a year, due days, overdue grace) arrive in 4b WITH
 their reader — review M1: a setting nothing reads is not registered.
 
+## Public UP_TVET programmes: one course per programme, every campus linked; age and health are text — 2026-10-29 (Bumi coverage Sprint F1, owner rulings F)
+**Scope.** Public (Awam) rows only, no Swasta. F1 = every public provider except MARA (F2 is MARA, data
+only: the same parser, builder and command with `--families mara`).
+**Grouping and ids.** A programme is one course: provider family + normalised name (the page's own
+title; the catalogue heading carries a campus code) + IDENTICAL parsed rule (the remarks text aside).
+Campuses whose rules differ would be separate courses (none did in F1). The id is `TVET-<lowest
+id_kursus>` of the group. Held courses keep their ids (`IJTM-*`, `IKBN-*`): a row is held when prod
+already links its `id_kursus`, else when its normalised name is exactly ONE held course's name in the
+same family; a name that matches two held courses (prod holds four such duplicate pairs) is flagged.
+A held course gains campus links only; its rule never changes, and every difference between the page
+and the held rule is listed in the review file's `held_rule_differences` for a person.
+**Chips.** Two new pathways, `mara` and `tvet_other` ("Other skills training" / "Latihan kemahiran
+lain"), derived like ILJTM / ILKBS from the offering institution's category (`MARA`, and `TVET` for every
+other public body; `tvet_families.TVET_CATEGORY_PATHWAY`). They join the dashboard chips, the search
+filter and its pick-list (shown only when a visible course has that pathway), the scholarship pathway
+picker (`PATHWAY_ORDER`, `PROGRAMME_PATHWAYS`), the course page's chip (the requirement payload now names
+its `pathway_type`), the scholarship pathway family (tertiary, post-SPM) and the sort. They have no
+colour swatch (the eight are taken): their chip is the neutral ground, and the label tells them apart.
+**Requirements (owner).** Age, "Sihat Tubuh Badan", reading / writing and BMI are shown as TEXT
+(`remarks`), never a gate. "No formal education" = no academic rule. Colour vision -> `no_colorblind`,
+"Tidak menerima sebarang OKU" -> `no_disability`, citizenship -> `req_malaysian`, Bumiputera ->
+`req_bumiputera` (a "Bumiputera ATAU citizen" card is citizen only), "Bujang" -> `single` (display only,
+as before). Only the SPM option is the academic rule; SVM / SKM / Tahfiz options are ignored, and a
+card with no SPM route is flagged. Gender or religion wording is flagged (never a gate, never guessed).
+**Builder's reading, for review:** the qualified wording "Calon tidak mempunyai ketidakupayaan ...
+yang menyukarkan kerja-kerja amali" (most ILJTM pages; the same pages pay an OKU allowance) is TEXT,
+not `no_disability`: a gate on it would hide courses from students the page itself provides for.
+**Institutions.** A campus prod holds links to its row and is never rewritten. A new campus is proposed
+and created only by `ingest_tvet_courses --create-institutions` (dry run first): KBS -> the next
+`IKBN-NNN` (category ILKBS), every other public body -> `ILKA-NNN` (type ILKA, category `TVET`,
+subcategory = the provider family), MARA (F2) -> `MARA-NNN`, category `MARA`. State spellings as prod.
+The new subcategories have no ranking weight (`INST_PRIORITY_MAP`), so they tie-break below the held
+TVET institutes.
+**Revisit if:** the owner wants the qualified disability wording as a gate, a campus programme is
+found under a different name, or the catalogue lists programmes (Kraf, PERDA, veterinary) that were in
+June's catalogue but not in October's.
+
 ## A Matriculation or polytechnic transcript is genuineness-checked; every page that needs a ruling stays "not checked" — 2026-10-29 (Matric/Diploma M4)
 
 **What is scored.** `genuineness/matric_poly_doc.py` fingerprints the two single-issuer layouts the
