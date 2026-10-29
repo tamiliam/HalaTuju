@@ -1095,13 +1095,16 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
-**Student maintenance Sprints 1–4a are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
-S3 `c007883e`, S4a `10072c71` + migration `scholarship/0186` applied by hand; retros
-`docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 4b: `ResultsExpectation` + the
-`results-due-reminders` / `results-overdue-flag` crons (kill switch), the results timing settings WITH their readers,
-the `StudentEmailTemplate` family (results_due / results_overdue / result_queried) + a Student communications tab,
-the "not submitted" standing and the Results overdue filter.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+**Student maintenance Sprints 1–4b are LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188` (applied by hand 2026-10-29
+21:40 UTC, api 01193-58g); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`,
+`retrospective-2026-10-30-maintenance-s4b.md`; roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`).
+NEXT = Sprint 5: money summary (admin Money tab: paid, remaining, last releases, spending by category) + the
+Contract tab (admin + student; signed PDF by signed URL, else "No contract on file").** Design of record:
+https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+- ⚠ **OWNER PENDING (S4b):** create the Cloud Scheduler jobs `results-overdue-flag` (08:00 MYT) and
+  `results-due-reminders` (08:30 MYT) — the System health light expects both; `MAINTENANCE_REMINDERS_ENABLED`
+  stays OFF until the owner has read the en/ms/ta wording on Organisation → Settings → Student communications.
 - ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold`), needs
   `payments.may_prepare` to place or lift (403 `hold_needs_payments`).
 - Admin: `/admin/scholars` (+ `/<id>`) by the Applications rule; the sub-state + post-award Close live in the file
@@ -1114,6 +1117,10 @@ the "not submitted" standing and the Results overdue filter.** Design of record:
   no staff attach path); ONLY an accepted result counts — standing (`standing.py`, org `maintenance` settings) and
   every sponsor reader go through `results_review.accepted` (per-function doors fence in `test_results_review.py`).
   A slip is evidence: never deletable, replaceable, listed with her documents or re-read by a sweep.
+- Due dates (S4b): `results_expectations.py` — terms CHAIN from the stored rows (first term from the funding date,
+  no back-dated debt); ONE late rule (`late`) for standing, list, file, hub and both jobs; student emails
+  (`student_comms.py`, defaults in code, org rows only when edited) are all dark behind `MAINTENANCE_REMINDERS_ENABLED`
+  and never go to a student on hold.
 
 ---
 
