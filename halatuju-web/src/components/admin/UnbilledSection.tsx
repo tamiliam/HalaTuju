@@ -14,7 +14,7 @@
 
 import type { BillingCostsPayload, UnbilledRequest } from '@/lib/admin-api/billing'
 import { formatMonth } from '@/lib/billingUsage'
-import { formatHours, unbilledByOrg } from '@/lib/billingCosts'
+import { canRecordUnbilled, formatHours, unbilledByOrg } from '@/lib/billingCosts'
 
 export function UnbilledSection({ payload, t, onRecord, busy }: {
   payload: BillingCostsPayload
@@ -55,7 +55,7 @@ export function UnbilledSection({ payload, t, onRecord, busy }: {
                       figure; where none exists there is NO number and NO button, because the
                       remedy is to record the actual, not to click past a blank. */}
                   <span className="flex items-baseline gap-3">
-                    {r.blocked ? (
+                    {!canRecordUnbilled(r) ? (
                       <span className="text-caution-700">
                         {t('admin.billing.unbilled.noActual')}
                       </span>

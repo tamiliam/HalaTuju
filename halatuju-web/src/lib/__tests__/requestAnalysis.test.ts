@@ -7,7 +7,7 @@ import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import {
   analysisBadge, analysisBadgeKey, analysisBadgeTone, listAnalysisTag, listAnalysisTagKey,
-  analysisApproveKind, analysisApproveCopy, type AnalysisBadge,
+  analysisApproveKind, analysisApproveCopy, hoursAnalysisId, type AnalysisBadge,
 } from '@/lib/requestStatus'
 
 const T = '2026-10-05T00:00:00Z'
@@ -84,5 +84,48 @@ describe('analysisApproveKind', () => {
         for (const loc of [en, ms, ta]) expect(has(loc, key)).toBe(true)
       }
     }
+  })
+})
+
+describe('which analysis carries the hours panel', () => {
+  /** ⚠ ONE PLACE (owner, 2026-10-30). The panel was on every approved, un-superseded card, and
+   *  request #3 has two: after the figures were recorded on the one the invoice reads, the other
+   *  went on saying "No hours recorded yet — the invoice for this month will refuse until they
+   *  are". That was FALSE, and it asked for the same work twice. */
+  const a = (id: number, over: Record<string, unknown> = {}) => ({
+    id, approved_at: `2026-10-0${id}T00:00:00Z`, superseded_at: null,
+    charged_hours: null, ...over,
+  })
+
+  it('picks the analysis the INVOICE reads — the latest one CARRYING a figure', () => {
+    // Request #3, exactly: id 14 holds 3.5/3.5, id 15 is a later approved note with no figures.
+    const rows = [a(4, { charged_hours: '3.5' }), a(5)]
+    expect(hoursAnalysisId(rows)).toBe(4)
+  })
+
+  it('falls to the newest approved analysis while nothing is recorded anywhere', () => {
+    expect(hoursAnalysisId([a(4), a(5)])).toBe(5)
+  })
+
+  it('ignores a draft and a superseded analysis', () => {
+    const draftRow = { ...a(9), approved_at: null }
+    const supersededRow = a(8, { superseded_at: '2026-10-09T00:00:00Z', charged_hours: '2.0' })
+    expect(hoursAnalysisId([a(4), draftRow, supersededRow])).toBe(4)
+  })
+
+  it('treats a recorded ZERO as a figure, because "none of it is charged" is an answer', () => {
+    expect(hoursAnalysisId([a(4, { charged_hours: '0.0' }), a(5)])).toBe(4)
+  })
+
+  it('compares ids as NUMBERS when two share an approval time', () => {
+    // ⚠ `[x, y] > [p, q]` coerces to strings in JavaScript, which puts 9 after 10.
+    const same = '2026-10-01T00:00:00Z'
+    const rows = [{ ...a(9), approved_at: same }, { ...a(10), approved_at: same }]
+    expect(hoursAnalysisId(rows)).toBe(10)
+  })
+
+  it('says NOTHING to write to when no analysis is approved', () => {
+    expect(hoursAnalysisId([{ ...a(1), approved_at: null }])).toBeNull()
+    expect(hoursAnalysisId([])).toBeNull()
   })
 })

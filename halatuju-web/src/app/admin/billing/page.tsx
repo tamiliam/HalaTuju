@@ -21,6 +21,7 @@ import {
 } from '@/lib/billingUsage'
 import {
   formatMyr, formatPct, formatHours, orderedCostSources, costCaveats, unbilledByOrg,
+  canRecordUnbilled,
   isCostWarning,
 } from '@/lib/billingCosts'
 
@@ -355,10 +356,9 @@ export default function AdminBillingPage() {
 
   const recordRequestHours = useCallback((row: UnbilledRequest) => {
     if (!token) return
-    // ⚠ A LAST GUARD, not a fallback. `hours` is null when no closing report published a figure,
-    // and the panel already withholds the button — but the old code recorded `row.hours ?? '0'`,
-    // which would have billed zero hours for real work rather than refusing. Nothing is sent.
-    if (row.hours === null) return
+    // ⚠ THE SAME RULE THE BUTTON READS, not a second spelling of it. The old code recorded
+    // `row.hours ?? '0'`, which would have billed ZERO hours for real work rather than refusing.
+    if (!canRecordUnbilled(row)) return
     setBusy(true)
     recordBuildHours(row.organisation_id, {
       // ⚠ THE MONTH WE WORKED, not the month being viewed and not the month it was raised

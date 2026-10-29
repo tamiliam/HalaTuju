@@ -12,8 +12,26 @@
  * and nothing should: a machine guessing a number that lands on an invoice is exactly how the five
  * got through, and a wrong number is worse than a blank, because a blank REFUSES the month.
  *
+ * ⚠ **IT IS RENDERED ONCE, UNDER THE QUOTE** (owner, 2026-10-30). It began on every approved,
+ * un-superseded analysis card — and request #3 has two. After the figures were recorded on the one
+ * the invoice reads, the other card went on saying *"No hours recorded yet — the invoice for this
+ * month will refuse until they are"*. That sentence was FALSE, and it asked for the same work
+ * twice. The quote is the right home for the opposite reason: there is exactly one of it, every
+ * billable request has one (`consent_gaps` refuses to bill a feature without a quote), and the
+ * plan and the actual are the two numbers a reader wants side by side.
+ *
+ * ⚠ **IT WRITES TO THE ANALYSIS THE INVOICE READS**, chosen by `requestStatus.hoursAnalysisId`,
+ * which mirrors the server's `closing_report`. The figures stay on the published REPORT rather
+ * than on the request, so the record still says WHICH document stated them — the owner's ruling
+ * is about which number is authoritative, and that only means anything if the document is known.
+ * If the two rules ever drift, this screen offers to edit a number the invoice does not read.
+ *
+ * ⚠ **SUPER-ONLY**, inside an otherwise org-facing block. The organisation reads these numbers in
+ * the closing report's prose, which is where they were published; a second machine-readable copy
+ * in front of them recreates the "two figures, which is true?" problem TD-202 removed from the AI.
+ *
  * ⚠ It lives in its own file because `src/app/admin/requests/[id]/page.tsx` sits in the oversize
- * ledger at 663 lines against a 683-line allowance — one line of headroom.
+ * ledger with little headroom.
  */
 
 import { useState } from 'react'

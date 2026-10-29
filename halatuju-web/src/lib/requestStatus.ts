@@ -340,3 +340,37 @@ const APPROVE_COPY = {
 } as const
 
 export function analysisApproveCopy(kind: 'bug' | 'feature') { return APPROVE_COPY[kind] }
+
+/** The ONE analysis whose card carries the hours panel, or null when none may.
+ *
+ * ⚠ **ONE PLACE, NOT ONE PER CARD** (owner, 2026-10-30). The panel was rendered on every
+ * approved, un-superseded analysis, and request #3 has two: the figures were recorded on the
+ * one the invoice reads, and the other went on saying *"No hours recorded yet — the invoice for
+ * this month will refuse until they are"*. That sentence was FALSE — the invoice had what it
+ * needed — and it asked for the same work twice.
+ *
+ * ⚠ **IT MIRRORS THE SERVER'S `closing_report`**, deliberately: the latest approved,
+ * un-superseded analysis that CARRIES a charged figure is the one the invoice reads, so it is
+ * the one whose figures a person may change. Only when nothing is recorded anywhere does the
+ * panel fall to the newest approved analysis — the last thing the organisation was told, which
+ * is where a first recording belongs. If these two rules ever drift, the screen will offer to
+ * edit a number the invoice does not read — so the mirror is ENFORCED, not asked for:
+ * drift-test: halatuju-web/src/lib/__tests__/hoursAnalysisDrift.test.ts
+ *
+ * "Latest" is by `approved_at` then `id`, the same ordering the server uses.
+ */
+export function hoursAnalysisId<T extends AnalysisLike & { id: number; charged_hours?: string | null }>(
+  analyses: readonly T[]
+): number | null {
+  const live = (analyses || []).filter((a) => a.approved_at && !a.superseded_at)
+  if (live.length === 0) return null
+  // ⚠ Compared FIELD BY FIELD, never as arrays: `[a, b] > [c, d]` in JavaScript coerces both
+  // sides to strings, so id 9 would sort after id 10. The server orders on (approved_at, id) and
+  // this has to agree with it exactly.
+  const newer = (a: T, best: T) =>
+    a.approved_at === best.approved_at ? a.id > best.id : (a.approved_at || '') > (best.approved_at || '')
+  const latest = (rows: readonly T[]) =>
+    rows.reduce((best, a) => (!best || newer(a, best) ? a : best), null as T | null)
+  const recorded = live.filter((a) => a.charged_hours !== null && a.charged_hours !== undefined)
+  return (latest(recorded) ?? latest(live))?.id ?? null
+}

@@ -18,25 +18,19 @@ import type { OrgRequestAnalysis, OrgRequestDetail } from '@/lib/admin-api'
 import {
   analysisBadge, analysisBadgeKey, analysisBadgeTone, analysisApproveCopy, analysisApproveKind,
 } from '@/lib/requestStatus'
-import { RequestHoursForm } from '@/components/admin/RequestHoursForm'
 
 type T = (k: string, vars?: Record<string, string>) => string
 
 export function RequestAnalysisCard({
-  analysis: a, req, t, busy, isSuper, predatesLastComment,
-  onApprove, onWithdraw, onRecordHours,
+  analysis: a, req, t, busy, predatesLastComment, onApprove, onWithdraw,
 }: {
   analysis: OrgRequestAnalysis
   req: OrgRequestDetail
   t: T
   busy: boolean
-  isSuper: boolean
   predatesLastComment: boolean
   onApprove: () => void
   onWithdraw: () => void
-  onRecordHours: (data: {
-    actual_hours: string; charged_hours?: string; charge_note?: string
-  }) => void
 }) {
   const badge = analysisBadge(a)
   const copy = analysisApproveCopy(analysisApproveKind(a, req))
@@ -80,13 +74,6 @@ export function RequestAnalysisCard({
         <p className="text-xs text-ground-400 mt-2">
           {t('admin.requests.owner.analysisApprovedBy', { name: a.approved_by_name })} · {formatDate(a.approved_at)}
         </p>
-      )}
-      {/* ⚠ WHAT IT ACTUALLY TOOK — only on an APPROVED, live report, because only a report the
-          organisation was SENT carries any authority about the hours (owner, 2026-10-29: *"What
-          matters is, what was communicated back to the requester."*). A blank REFUSES the month's
-          invoice rather than billing the quote, which is the defect this closes. */}
-      {isSuper && a.approved_at && !a.superseded_at && (
-        <RequestHoursForm analysis={a} t={t} busy={busy} onSave={onRecordHours} />
       )}
       {/* The amber staleness note: an ANSWER can change scope without triggering a
           supersede (only `modify` does), so say so rather than block. */}

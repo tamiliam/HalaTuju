@@ -231,3 +231,24 @@ export function rateGrid(rows: BillingRateRow[] | null | undefined): {
 export function blockedKey(category: string, kind: string): string {
   return `admin.billingRates.blocked.${category}_${kind}`
 }
+
+/** May this finished request's hours be recorded against a month?
+ *
+ * ⚠ **ONE RULE, READ TWICE — by the Record button and by the handler behind it.** It was two:
+ * the panel withheld the button for a row with no published figure, and the handler separately
+ * guarded with `if (row.hours === null) return`. A bite-check on 2026-10-30 found the handler's
+ * guard had no test at all, because every test went through the button that was never rendered —
+ * a guard nobody could see break. Two spellings of the same rule drift; one cannot.
+ *
+ * False means the closing report never said how many hours the work took. Recording anyway is
+ * what billed request 10 for 15.0 hours against 11.5 spent, so the answer is to refuse — never
+ * to fall back to the quote and never to invent a zero.
+ *
+ * ⚠ It is a TYPE GUARD, not a boolean: passing it proves `hours` is a string, so the caller
+ * cannot reach for a `?? '0'` fallback afterwards — the compiler stops being able to want one.
+ */
+export function canRecordUnbilled<T extends { hours: string | null; blocked?: string | null }>(
+  row: T
+): row is T & { hours: string } {
+  return row.hours !== null && !row.blocked
+}

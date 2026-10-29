@@ -6913,3 +6913,26 @@ growing the change. It is still two rules for one idea, and the next date box ha
 follow. **Fix:** move the owner's three boxes to day-first too (the helper and its tests already exist), and
 state the rule in CLAUDE.md so the next box does not re-open the question. Ask the owner first: they read ISO
 dates daily and may prefer them. *(B · S)*
+
+### [TD-425] A correction is carried by ONE named month, so a skipped month silently strands it - medium
+
+**Raised 2026-10-30** while building `OrgBillingCorrection`. `corrections_for` matches `period_month`
+exactly, which is deliberate — the owner picks the month that carries the credit, and one live invoice per
+org per month makes it apply once. But nothing watches a correction whose month never gets invoiced: if
+October is skipped, the −RM126.50 owed to BrightPath simply sits there, correct and unapplied, and no
+screen says so. The readiness check cannot see it either, because it only ever asks about the month being
+issued. **Fix:** report corrections whose `period_month` is older than the month being issued and which no
+live invoice carries — as a readiness WARNING (not a refusal; the owner may be deliberately holding one),
+and on the charge card as "carried forward from {month}". *(B · S)*
+
+### [TD-426] `hoursAnalysisId` and `closing_report` are one rule in two languages - low
+
+**Raised 2026-10-30.** The hours panel writes to the analysis the web helper picks; the invoice bills the
+analysis the Python picks. They agree today and `hoursAnalysisDrift.test.ts` pins the Python's filter,
+ordering and None-case in both directions — a real guard, and it bit when injected. But it pins the SOURCE
+TEXT of `closing_report`, so a rewrite that keeps the behaviour and changes the spelling fails the test for
+the wrong reason, and a rewrite that changes the behaviour while keeping those phrases would pass. **Fix:**
+have the API serve the id — `_serialize` already builds the analyses list and the server already computes
+`closing_report` — and delete the web rule entirely. The drift test then becomes unnecessary rather than
+load-bearing. Cheap; not done this sprint because the panel move was a live-defect fix and the payload
+change wants its own gate. *(B · S)*

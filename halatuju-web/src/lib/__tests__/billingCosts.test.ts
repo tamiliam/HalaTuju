@@ -1,6 +1,6 @@
 import {
   formatMyr, formatPct, formatHours, orderedCostSources, costCaveats,
-  hasDiscount, unbilledByOrg, rateGrid, rateMonthOptions, isCostWarning,
+  hasDiscount, unbilledByOrg, rateGrid, rateMonthOptions, isCostWarning, canRecordUnbilled,
   COST_SOURCE_ORDER, RATE_SLOTS, RATE_MONTHS_BACK, blockedKey,
 } from '@/lib/billingCosts'
 import type {
@@ -258,5 +258,29 @@ describe('where a figure came from', () => {
     expect(costCaveats(costs({ extracted_sources: [] }))).toEqual([])
     // A payload from before the field existed must not crash the page.
     expect(costCaveats(costs({ extracted_sources: undefined as unknown as string[] }))).toEqual([])
+  })
+})
+
+describe('whether a finished request may be recorded', () => {
+  /** ⚠ FOUND BY A BITE-CHECK (2026-10-30), not by a failing test. The rule was written twice —
+   *  once as the Record button's condition and once as a guard inside the handler — and the
+   *  handler's copy had no test, because every test reached it through a button that was never
+   *  rendered. Injecting a fault into it changed nothing, which is a guard nobody can see break. */
+  const row = (over: Record<string, unknown> = {}) =>
+    ({ hours: '4.0', blocked: null, ...over }) as { hours: string | null; blocked: string | null }
+
+  it('allows a row whose closing report published a figure', () => {
+    expect(canRecordUnbilled(row())).toBe(true)
+    // ⚠ ZERO IS A FIGURE. "None of it is charged" is a real answer, not a blank.
+    expect(canRecordUnbilled(row({ hours: '0.0' }))).toBe(true)
+  })
+
+  it('refuses a row with no published figure, rather than inventing one', () => {
+    expect(canRecordUnbilled(row({ hours: null, blocked: 'no_actual_reported' }))).toBe(false)
+  })
+
+  it('refuses on EITHER signal, so neither alone can let a blank through', () => {
+    expect(canRecordUnbilled(row({ hours: null }))).toBe(false)
+    expect(canRecordUnbilled(row({ blocked: 'no_actual_reported' }))).toBe(false)
   })
 })

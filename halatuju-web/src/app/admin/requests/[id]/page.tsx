@@ -20,10 +20,11 @@ import {
   statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor, effectiveKind,
   filedKindDiffers,
   hasUnansweredQuestions, canAttach, type RequestAction, analysisBadge, analysisBadgeKey,
-  analysisBadgeTone, analysisApproveKind, analysisApproveCopy,
+  analysisBadgeTone, analysisApproveKind, analysisApproveCopy, hoursAnalysisId,
 } from '@/lib/requestStatus'
 import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 import { RequestAnalysisCard } from '@/components/admin/RequestAnalysisCard'
+import { RequestHoursForm } from '@/components/admin/RequestHoursForm'
 
 // The Requests detail: the clarification thread + the org's requestee actions (accept / defer /
 // modify / withdraw) and the owner's controls (triage / quote / requote / schedule / done /
@@ -150,6 +151,10 @@ export default function AdminRequestDetailPage() {
   // TD-204. Absent entirely on an org payload — `|| []` is the org case, not a missing-data case.
   const analyses = req.analyses || []
   const currentAnalysis = analyses.find((a) => a.is_current) || null
+  // ⚠ ONE hours panel per request, on the analysis the INVOICE reads — not one per approved card.
+  // Request #3 has two approved, un-superseded analyses, and the second kept claiming the invoice
+  // would refuse after the figures were already recorded on the first (owner, 2026-10-30).
+  const hoursCardId = hoursAnalysisId(analyses)
   // An ANSWER can change scope without superseding (only `modify` does — answers are frequent and
   // superseding on each would be a treadmill). So say the analysis predates the last thing said,
   // and leave the judgement to the owner rather than blocking.
@@ -394,6 +399,16 @@ export default function AdminRequestDetailPage() {
           {req.status === 'declined' && req.decline_reason && (
             <p className="text-sm text-critical-600 mt-2">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
           )}
+          {/* ⚠ ONE panel, beside the plan, SUPER-ONLY — and it writes to the analysis the
+              invoice reads. Every clause there is load-bearing; see `RequestHoursForm`. */}
+          {isSuper && hoursCardId !== null && (
+            <div className="mt-3 border-t pt-3">
+              <RequestHoursForm
+                analysis={analyses.find((a) => a.id === hoursCardId)!}
+                t={t} busy={busy}
+                onSave={(data) => run(() => recordOrgRequestHours(id, hoursCardId, data, opt))} />
+            </div>
+          )}
         </div>
       )}
 
@@ -490,10 +505,9 @@ export default function AdminRequestDetailPage() {
               <ul className="space-y-3">
                 {analyses.map((a) => (
                   <RequestAnalysisCard key={a.id} analysis={a} req={req} t={t} busy={busy}
-                    isSuper={isSuper} predatesLastComment={analysisPredatesLastComment}
+                    predatesLastComment={analysisPredatesLastComment}
                     onApprove={() => run(() => approveOrgRequestAnalysis(id, a.id, opt))}
-                    onWithdraw={() => run(() => withdrawOrgRequestAnalysis(id, a.id, opt))}
-                    onRecordHours={(data) => run(() => recordOrgRequestHours(id, a.id, data, opt))} />
+                    onWithdraw={() => run(() => withdrawOrgRequestAnalysis(id, a.id, opt))} />
                 ))}
               </ul>
             )}
