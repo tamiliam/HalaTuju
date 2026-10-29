@@ -1001,36 +1001,43 @@ void, re-issue or re-number anything under scholarship billing without asking th
 `halatuju-api-01175-xll`, `halatuju-web-01009-x22`. Migrations `scholarship/0181` and `0182` were
 applied MIGRATE-FIRST and recorded — never re-apply that DDL.
 
-**The tenant-facing invoice status wording is LIVE** — web build for `cbe688e8` went green and
-`halatuju-web-01010-mr9` serves 100%. It had been stranded on main in `f8fe0698` behind a flaky
-onboarding test (`mount()` flushed one microtask waiting for an async profile; `ceea94e0` flushes a
-macrotask). Bundle line is 148 kB since TD-416; verify with `npm run bundle-budget`.
+**ALL OF THE BILLING WORK IS LIVE (2026-10-29, main `1065c447`; `halatuju-api-01184-w9l`,
+`halatuju-web-01016-wbr`, both 100%, api health 200).** Migrations `scholarship/0184` and `0185`
+were applied MIGRATE-FIRST by hand and recorded — never re-apply that DDL. Backend 10,097 pass,
+web 4,888, bundle 1.6 kB under the 148 kB line.
 
-**BOTH PIECES OF APPROVED WORK ARE NOW BUILT, ON `feat/back-issue-invoices`:**
+1. **The busy-meter guard** (`metered_without_cost` in `invoicing.readiness`, `metered_usage.py`).
+   An invoice REFUSES when the meter recorded this tenant's billable calls for the month but the
+   metered bucket of the cost ledger reads RM0.00 — the October fault, written down as a guard.
+   Overridable with a written reason (a free-tier month is real); **the monthly job overrides
+   nothing.** ⚠ **The early diagnosis blaming prepaid Gemini credits was WRONG** — AI Studio and
+   the GCP report both read RM34.95 for October, so the export already covers prepay AND postpay.
+   Do not rebuild that theory; the cause was `sync_gcp_costs` not having been run. The split also
+   found a real bug: `tenant_shares` / `reconcile` crashed on an unreadable month.
 
-1. **The metered guard — DONE** (`metered_without_cost` in `invoicing.readiness`, the new
-   `metered_usage.py`). An invoice refuses when the meter recorded this tenant's billable calls for
-   the month but the metered bucket of the cost ledger reads RM0.00. Overridable with a written
-   reason (a free-tier month is real); **the monthly job overrides nothing.** ⚠ **The early
-   diagnosis blaming prepaid Gemini credits was WRONG** — AI Studio and the GCP report both read
-   RM34.95 for October, so the export already covers prepay AND postpay. Do not rebuild that
-   theory; the cause was `sync_gcp_costs` not having been run. The split also found a real bug:
-   `tenant_shares` / `reconcile` crashed on an unreadable month (`datetime(0, 1, 1)`).
+2. **The tenant payment declaration** (`0184`, `payment_declarations.py`,
+   `AdminInvoiceDeclarationView`, `InvoicePaymentPanel.tsx`). `Unpaid → Payment declared → the
+   owner checks the bank → Paid`, a reasoned rejection falling back to unpaid. **Date + bank
+   reference only, no amount and no slip** — an amount posted by hand is ignored. ⚠ **A
+   declaration does NOT mint a receipt**; confirming calls `invoicing.record_receipt`, still the
+   one place a receipt is raised. A receipt outranks a claim, so money in plus a claim open reads
+   `part_paid`. The owner is EMAILED on a declaration (`ADMIN_NOTIFY_EMAIL`), with no amount in it.
 
-2. **The tenant payment declaration — DONE** (migration `0184`, `payment_declarations.py`,
-   `AdminInvoiceDeclarationView`, `InvoicePaymentPanel.tsx`). `Unpaid → Payment declared → the owner
-   checks the bank → Paid`, with a reasoned rejection falling back to unpaid. **Date + bank
-   reference only, no amount and no slip** — an amount posted by hand is ignored. ⚠ **A declaration
-   does NOT mint a receipt**; the owner's confirm calls `invoicing.record_receipt`, which stays the
-   one place a receipt is raised. A receipt always outranks a claim, so money in plus a claim open
-   still reads `part_paid`.
-   - **NOT built, and the owner has not been asked:** any notification when a tenant declares. The
-     owner finds out by opening `/admin/billing`, where the chip reads "To check". If they want an
-     email, it is a small addition — `ADMIN_NOTIFY_EMAIL` is already wired for refusals.
-
-⚠ **Migration `0184` must be applied MIGRATE-FIRST, by hand, BEFORE the push.** The DDL, the RLS
-policy and the ledger row are in the migration's docstring. Deploying first is not survivable:
-`Invoice.status` reads the declarations for both audiences on every invoice the screen renders.
+3. **The owner's four readings of the live page** (2026-10-29, after the above shipped):
+   - **Nothing owed is never late.** A zero balance reads "Nothing to pay", not a red "Overdue"
+     (July is discounted to zero). NOT "Paid" — no money arrived, and `Invoice.status` never
+     claims it did.
+   - **Dates are DD-MM-YYYY** on the tenant's declare box (`isoFromDayFirst`, which refuses a day
+     that does not exist). The owner's own date boxes are still ISO; neither audience sees both.
+   - **`(REQ-12)` links to `/admin/requests/12`** — just the number. Read back OUT of the frozen
+     line text, so the three invoices already sent have the links too. The PDF is untouched.
+   - **The receipt is EMAILED with its PDF** (`0185` adds `emailed_at` / `emailed_to`), on Record
+     payment and on confirming alike; the screen says "Emailed 29 Oct" or, in amber, "Not emailed".
+     ⚠ `invoicing.email_receipt` is a SEPARATE call run AFTER the money is committed, because
+     `record_receipt` is itself called from inside `confirm_payment`'s transaction. A mail failure
+     never undoes the money. Receipts live in `invoice_receipts.py` (moves-only split, 2026-10-29).
+   - **Answered, not changed:** the invoice PDF is already attached when a super presses Send.
+     Issuing stays silent by the owner's standing rule.
 
 **Owner still to do:** record October's 149.5 billable hours (`/admin/billing` → *Finished work not
 yet billed*); obtain the October Supabase, Twilio and Workspace bills; convert the held Anthropic
