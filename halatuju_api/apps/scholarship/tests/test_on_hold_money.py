@@ -33,6 +33,15 @@ def _next_period():
     return date(today.year + (today.month == 12), today.month % 12 + 1, 1)
 
 
+def _paid_cohort_year_and_pathway(period):
+    """A cohort year + pathway whose schedule PAYS ``period`` whatever today is. Since 2026-10-29
+    the no-template default has an end and gap months (`default_schedule.py`): matric pays
+    Jul–Apr of its cohort year, so May/June fall to PISMP (Sep–Jun)."""
+    if period.month in (5, 6):
+        return period.year - 1, 'pismp'
+    return (period.year if period.month >= 7 else period.year - 1), 'matric'
+
+
 @override_settings(BURSARY_AGREEMENT_ENABLED=False)
 class _PaidCohort(TestCase):
     """Two awarded students with live wallets, in one gift, payable next month."""
@@ -40,8 +49,9 @@ class _PaidCohort(TestCase):
     def setUp(self):
         self.period = _next_period()
         self.pay_on = max(timezone.localdate(), payments.earliest_payment_date(self.period))
-        # The pathway floor is July of the cohort year: last year's cohort has started.
-        self.cohort = make_cohort(year=self.period.year - 1)
+        year, self.pathway = _paid_cohort_year_and_pathway(self.period)
+        self.cohort = make_cohort(year=year)
+        self.reported = date(year, 6, 8)          # before every pathway's first paid month
         self.org, self.programme = self.cohort.owning_organisation, self.cohort.programme
         self.held = self._student('71001')
         self.other = self._student('71002')
@@ -49,8 +59,8 @@ class _PaidCohort(TestCase):
     def _student(self, suffix):
         return make_application(
             'awarded', cohort=self.cohort, vircle_activated_at=timezone.now(),
-            vircle_id=payments.vircle_id_prefix() + suffix, chosen_pathway='matric',
-            reporting_date=date(self.period.year - 1, 6, 8))
+            vircle_id=payments.vircle_id_prefix() + suffix, chosen_pathway=self.pathway,
+            reporting_date=self.reported)
 
     def _run(self):
         return payments.create_run(self.org, self.programme, self.pay_on, self.period,
@@ -157,7 +167,7 @@ class TestTheHoldIsNotTheFilePredicate(_PaidCohort):
     def test_a_paid_student_whose_wallet_is_not_yet_live_can_be_held(self):
         pending = make_application(
             'awarded', cohort=self.cohort, vircle_id=payments.vircle_id_prefix() + '71003',
-            chosen_pathway='matric', reporting_date=date(self.period.year - 1, 6, 8))
+            chosen_pathway=self.pathway, reporting_date=self.reported)
         self.assertIsNone(pending.vircle_activated_at)
         run = self._run()
         self.assertTrue(run.items.filter(application=pending).exists())   # the run pays her

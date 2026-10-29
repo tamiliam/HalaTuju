@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-29 | e6a03fb | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | 860792b | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | 71ae8cc | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 11 | 143 | 0 | 0 | ok | ok |
 | 2026-10-29 | f528264 | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 11 | 140 | 0 | 0 | ok | ok |
@@ -106,27 +107,27 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-29, 860792b, window 2026-07-31 onward)
+## Latest run (2026-10-29, e6a03fb, window 2026-07-31 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju_api/apps/scholarship/vision.py` | 12 | 2338 | 28.1 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 16 | 1657 | 26.5 |
-| `halatuju_api/apps/scholarship/views.py` | 9 | 2435 | 21.9 |
+| `halatuju_api/apps/scholarship/views.py` | 10 | 2433 | 24.3 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 15 | 1356 | 20.3 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 17 | 1004 | 17.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1022 | 11.2 |
-| `halatuju_api/apps/scholarship/serializers.py` | 7 | 1215 | 8.5 |
+| `halatuju_api/apps/scholarship/serializers.py` | 8 | 1215 | 9.7 |
 | `halatuju_api/apps/courses/views_admin.py` | 9 | 802 | 7.2 |
-| `halatuju_api/apps/scholarship/services/blockers.py` | 12 | 555 | 6.7 |
+| `halatuju_api/apps/scholarship/services/blockers.py` | 13 | 557 | 7.2 |
 | `halatuju_api/apps/courses/views.py` | 3 | 2182 | 6.5 |
 
 ### Fix ratio
-- 223 fix / 207 feat commits since 2026-07-31
+- 222 fix / 207 feat commits since 2026-07-31
 
 ### Files over 1000 lines
-- `2435  halatuju_api/apps/scholarship/views.py`
+- `2433  halatuju_api/apps/scholarship/views.py`
 - `2338  halatuju_api/apps/scholarship/vision.py`
 - `2182  halatuju_api/apps/courses/views.py`
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
@@ -134,18 +135,18 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1356  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1279  halatuju-web/src/app/profile/page.tsx`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
-- `1138  halatuju_api/apps/scholarship/contracts.py`
+- `1143  halatuju_api/apps/scholarship/contracts.py`
 - `1090  halatuju-web/src/lib/scholarship.ts`
 - `1074  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1054  halatuju_api/apps/courses/models.py`
 - `1043  halatuju_api/apps/scholarship/profile_engine.py`
 - `1022  halatuju_api/apps/scholarship/serializers_admin.py`
-- `1006  halatuju_api/apps/scholarship/sponsorship.py`
+- `1007  halatuju_api/apps/scholarship/sponsorship.py`
 - `1004  halatuju_api/apps/scholarship/verdict_engine.py`
 
 ### Python functions of 150+ lines
 - `333  halatuju_api/apps/courses/ranking_engine.py:379 calculate_fit_score`
-- `318  halatuju_api/apps/scholarship/views.py:1017 post`
+- `320  halatuju_api/apps/scholarship/views.py:1011 post`
 - `315  halatuju_api/apps/scholarship/vision.py:2017 _run_field_extraction_impl`
 - `294  halatuju_api/apps/courses/engine.py:354 check_eligibility`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
@@ -170,7 +171,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 46 edges (214 import statements)
+- scholarship -> courses: 46 edges (218 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -189,7 +190,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 34 of 293 web test files read source text (signals: readFileSync, apiSource); drift 23 (*Drift.test.ts, counted apart)
+- 34 of 294 web test files read source text (signals: readFileSync, apiSource); drift 23 (*Drift.test.ts, counted apart)
 
 ### Debt register
 - 421 entries have a defining line; 142 carry no resolution marker on it
@@ -218,7 +219,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 71ae8cc
+- budgets no looser than at 860792b
 
 ### tsc
 - 0 errors in 0 files
@@ -226,11 +227,19 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 5932
+- Total keys per locale: 5987
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-29 (e6a03fb, default payment schedule close) — 0 FAIL; nothing moved
+
+**0 FAIL, 5 standing WARNs** (`--full`). Against 860792b (D2 close) every headline reading is identical: `fix%`
+52, `hot#1` vision.py 28.1, `big` 16, `long` 15, `dup` 4, `xapp` 73, `guard%` 12, `td_open` 142. The sprint added
+one small module (`default_schedule.py`) and made `payments.py` shorter (595 -> 571 lines, the deleted fallback
+constants). The hotspot table's churn shifts (views.py, serializers.py) are maintenance S4a's commits, not this
+sprint's. **Accepted, no action.**
 
 ### 2026-10-29 (860792b, Bumi Sprint D2 close) — 0 FAIL; nothing to promote
 

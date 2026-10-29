@@ -1634,3 +1634,5 @@ is prefetched — weight moved off a route's first load can still travel in the 
   figure, so the fallback was unreachable — and if it ever became reachable it would have billed ZERO
   hours for real work instead of refusing. **Rule:** a last guard on money REFUSES; it never invents a
   number. `if (x === null) return` beats `x ?? 0` everywhere a figure is priced. (Billing, 2026-10-29)
+- **A change to WHO IS PAYABLE does not reach a payment run already drafted.** (Default schedule, 2026-10-29.) `create_run` snapshots eligibility and `complete()` never re-checks it, so a November draft kept 14 students the new schedule skips. **Rule:** before pushing any change to payment eligibility, list the open (draft / signed) runs and tell the owner to cancel and re-create them after the deploy.
+- **When a change removes an "always true" property, grep every test that leans on it before the suite tells you one at a time.** (Default schedule, 2026-10-29.) Two test files assumed "last year's matric cohort is always payable", true only while the schedule had no end; fixing the failure in sight left the twin red for an 18-minute gate run.

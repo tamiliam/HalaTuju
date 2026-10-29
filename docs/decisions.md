@@ -16004,3 +16004,18 @@ sister MARA rows say the same thing in full. **Revisit if:** MARA publishes a di
 as every plain Khas pair has been since D1 (2026-10-29, the count-once block decision): the single-clause group
 is its own block and the ATAU is another. A student with two Islamic subjects at B meets both.
 **Revisit if:** UPU or UM publishes that the two lists must be met by different subjects.
+
+## 2026-10-29 — The no-template payment schedule mirrors contract 10 (owner)
+**Decision:** when no contract template governs an application, payment runs follow `default_schedule.py`,
+a copy of BrightPath's draft contract 10 ("2026 July 28 BPB"): RM200 a month; Poly/University Aug–Jun
+without November; STPM Jul–Nov of the next year without December and June; STPM continuing Jul–Nov;
+Matric/Asasi/default Jul–Apr; PISMP Sep–Jun. Gap and end months grey a run exactly as a template does.
+**Alternatives considered:** (a) activate contract 10 — not yet, signing (TD-347) is unfinished and
+activation's side effects were not checked; (b) only edit the seed fixture — changes nothing live, since
+no template is active.
+**Rationale:** owner: "change the default to mirror contract 10 for now". One row shape and one choosing
+rule for template and default, so the two can differ only in their numbers.
+**Trade-offs:** supersedes the 2026-07-18 "byte-identical legacy fallback" parity for gap and end months.
+A student who starts a month late gets one fewer payment than their award (the schedule ends first) —
+the same as contract 10 would do; no live student is in that position today.
+**Revisit if:** contract 10 (or another template) is activated for the gift — the default then governs nobody.

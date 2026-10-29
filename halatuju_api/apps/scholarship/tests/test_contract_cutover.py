@@ -99,11 +99,13 @@ class TestGapMonthGreying(TestCase):
         self.cohort = _cohort(2026)
         self.app = _app(self.cohort, pathway='stpm', suffix='g')
 
-    def test_stpm_december_greys_only_under_template(self):
+    def test_stpm_december_greys_with_or_without_a_template(self):
+        # Since 2026-10-29 the no-template default mirrors contract 10, gap months included
+        # (`default_schedule.py`); until then December greyed only under a template.
         dec = datetime.date(2026, 12, 1)
-        legacy = payments.eligibility(self.app, dec, period_month=dec)
-        self.assertNotIn('gap_month', legacy['reasons'])
-        self.assertTrue(legacy['eligible'])
+        default = payments.eligibility(self.app, dec, period_month=dec)
+        self.assertIn('gap_month', default['reasons'])
+        self.assertFalse(default['eligible'])
         _deploy()
         templated = payments.eligibility(self.app, dec, period_month=dec)
         self.assertIn('gap_month', templated['reasons'])

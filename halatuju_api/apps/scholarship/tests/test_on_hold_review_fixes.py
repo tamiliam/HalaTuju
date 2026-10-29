@@ -20,6 +20,7 @@ from apps.scholarship.models.activity import EVENT_SUBSTATE_CHANGED
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
 )
+from apps.scholarship.tests.test_on_hold_money import _paid_cohort_year_and_pathway
 
 API = '/api/v1/admin/scholarship/'
 
@@ -35,7 +36,9 @@ class _Org(TestCase):
     def setUp(self):
         self.period = _next_period()
         self.pay_on = max(timezone.localdate(), payments.earliest_payment_date(self.period))
-        self.cohort = make_cohort(year=self.period.year - 1)
+        # A cohort + pathway the default schedule pays in `period`, whatever today is.
+        year, pathway = _paid_cohort_year_and_pathway(self.period)
+        self.cohort = make_cohort(year=year)
         org = self.cohort.owning_organisation
         self.reviewer = make_admin('reviewer', owning_org=org)
         self.maker = make_admin('admin', owning_org=org, name='Maker One')
@@ -43,7 +46,7 @@ class _Org(TestCase):
         self.app = make_application(
             'awarded', cohort=self.cohort, reviewer=self.reviewer,
             vircle_activated_at=timezone.now(), vircle_id=payments.vircle_id_prefix() + '72001',
-            chosen_pathway='matric', reporting_date=date(self.period.year - 1, 6, 8))
+            chosen_pathway=pathway, reporting_date=date(year, 6, 8))
 
     def _substate(self, admin, substate, app=None):
         app = app or self.app

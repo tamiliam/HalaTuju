@@ -5906,6 +5906,8 @@
         "on_hold": "On hold",
         "no_balance": "Award fully paid",
         "already_paid": "Already paid for this month",
+        "gap_month": "No payment this month (schedule gap)",
+        "schedule_complete": "Payment schedule finished",
         "agreement_unsigned": "Agreement not signed"
       },
       "error": {
