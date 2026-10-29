@@ -109,7 +109,7 @@ docstring; migrate BEFORE the deploy).
   default, reversible).
 - Daily job `results-overdue-flag` makes and pairs the terms (idempotent). ⚠ Create its Cloud Scheduler entry
   (08:00 MYT) at deploy — the System health light now expects it.
-## Matric/Diploma Exact-read M4b — the owner's rulings on slips, the portal and offer letters - 2026-10-29
+
 ## Matric/Diploma Exact-read M4b — only the final result counts; the owner's rulings - 2026-10-29
 
 - **Only the FINAL result counts** (owner, 2026-10-29): the higher-results upload is the final
@@ -180,6 +180,17 @@ docstring; migrate BEFORE the deploy).
 - **`higher_doc` prefers an explicitly FINAL upload** (`final_upload`: genuine, or unscored and read
   clean — readable, not an SPM slip, not non-final, not an offer letter), else the newest; the
   gate's `higher_results_unreadable` blocker reads it too; an offer letter never answers a results ask.
+  **Small intended change for STPM:** with two live higher-results uploads, the verdict (and its
+  genuineness step) now reads an OLDER genuine one over a NEWER suspect or online-checker page,
+  where before it read the newest.
+
+### Final review fix (2026-10-30)
+- **A bundle never borrows a completion status:** when a slip or the portal page shares the upload,
+  the transcript counts only if its OWN section — from its heading (negated titles removed first) to
+  the first slip / portal wording after it — holds the grid, both semesters (Matriculation), the
+  completion status AND what only a whole transcript prints (the average-grade box; "End of
+  results"). A page-1-only or status-less transcript bundled with a final slip or a "completed"
+  portal page is no longer genuine (it reads as the slip / portal: final transcript still owed).
 
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 

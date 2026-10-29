@@ -67,7 +67,6 @@ is not funded yet); generating every term since funding (would mark every long-f
 weeks off; the officer sees the date and the organisation can widen the grace. **Revisit if:** institutions publish
 term calendars we can read, or officers ask to set a student's term dates by hand.
 
-## Owner rulings on Matriculation / polytechnic pages that are not the transcript — 2026-10-29 (Matric/Diploma M4b)
 ## Only the FINAL result counts in the higher-results card; a non-final page reads as not yet uploaded — 2026-10-29 (Matric/Diploma M4b, owner rulings)
 
 **The rulings (owner, 2026-10-29), as given.** The morning's rulings (1) slip and (2) portal — "ask

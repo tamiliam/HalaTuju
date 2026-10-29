@@ -127,14 +127,13 @@ _SLIP_TITLE_MENTION = re.compile(r'\b(?:TRANSKRIP AKADEMIK SEBENAR|ACTUAL ACADEM
 _MATRIC_HEADING = re.compile(r'\bTRANSKRIP AKADEMIK ACADEMIC TRANSCRIPT\b')
 
 
-def _matric_gates(tn, bundled=False):
-    """Is this normalised page a Matriculation TRANSCRIPT (not a slip, not a letter)? ``bundled``
-    (re-review blocker): ignore a slip's wording on the page — does it ALSO hold a whole transcript?"""
-    if not bundled and any(m in tn for m in _MATRIC_SLIP):
+def _matric_gates(tn):
+    """Is this normalised page a Matriculation TRANSCRIPT (not a slip, not a letter)?"""
+    if any(m in tn for m in _MATRIC_SLIP):
         return False
     titled = _SLIP_TITLE_MENTION.sub(' ', _NEGATED_TITLE.sub(' ', tn))
-    title = _MATRIC_HEADING.search(tn) if bundled else _MATRIC_TITLE.search(titled)
-    return bool(title and _MATRIC_GRID.search(tn) and _SEM_I.search(tn) and _SEM_II.search(tn))
+    return bool(_MATRIC_TITLE.search(titled) and _MATRIC_GRID.search(tn) and _SEM_I.search(tn)
+                and _SEM_II.search(tn))
 
 
 def _poly_gates(ocr_text, tn, bundled=False):
@@ -210,18 +209,49 @@ def _final(tn, kind):
     return any(m in tn for m in _MATRIC_FINAL) if kind == 'matric' else bool(_POLY_FINAL.search(tn))
 
 
+#: What only a WHOLE transcript prints (its last block): the KPM average-grade box; the polytechnic's
+#: "End of results" line (every corpus transcript prints its own).
+_MATRIC_WHOLE = ('PURATA GRED BAGI KURSUS TERAS', 'AVERAGE GRADE FOR CORE COURSES')
+_POLY_WHOLE = ('END OF RESULTS',)
+#: Where a bundled slip / portal page begins (its own title or furniture).
+_BUNDLE_STARTS = tuple(dict.fromkeys(_MATRIC_SLIP + _POLY_SLIP + _PORTAL_MARKS))
+_POLY_TITLE = re.compile(r'\bACADEMIC TRANSCRIPT\b')
+
+
+def _own_section(tn, title):
+    """A bundle's TRANSCRIPT section: from the transcript's own title (negated titles removed first)
+    to the first slip / portal wording after it, or the end. '' when no title is found."""
+    titled = _NEGATED_TITLE.sub(' ', tn)
+    m = title.search(titled)
+    if not m:
+        return ''
+    rest = titled[m.start():]
+    ends = [i for i in (rest.find(x, len(m.group())) for x in _BUNDLE_STARTS) if i > 0]
+    return rest[:min(ends)] if ends else rest
+
+
 def _complete_final(ocr_text, tn, kind):
-    """Re-review blocker: does the text hold a WHOLE FINAL transcript — its title, grid, (for
-    Matriculation) both semesters and its recognised completion status, no in-progress status — even
-    with a slip or the portal page bundled into the same upload (either order)? Then it is scored as
-    the transcript, never ruled non-final."""
-    if kind == 'matric':
-        whole = _matric_gates(tn, bundled=True)
-    elif kind == 'diploma':
-        whole = _poly_gates(ocr_text, tn, bundled=True)
-    else:
+    """Re-review blocker: does the text hold a WHOLE FINAL transcript (its recognised completion
+    status, no in-progress status) — even with a slip or the portal page bundled into the same
+    upload, either order? Then it is scored as the transcript, never ruled non-final. A page that
+    passes a transcript's own gates is read whole. In a BUNDLE (final review, 2026-10-30) everything
+    must sit in the transcript's OWN section (`_own_section`) — its heading (Matriculation: the
+    bilingual one; a slip's disclaimer also says "transkrip akademik"), grid, both semesters, the
+    status, and what only a whole transcript prints (`_MATRIC_WHOLE` / `_POLY_WHOLE`) — so a slip's
+    or the portal's own "completed" never completes a page-1-only or status-less transcript."""
+    if _in_progress(ocr_text) or kind not in ('matric', 'diploma'):
         return False
-    return whole and _final(tn, kind) and not _in_progress(ocr_text)
+    if _matric_gates(tn) if kind == 'matric' else _poly_gates(ocr_text, tn):
+        return _final(tn, kind)
+    if kind == 'matric':
+        sec = _own_section(tn, _MATRIC_HEADING)
+        whole = bool(sec and _MATRIC_GRID.search(sec) and _SEM_I.search(sec) and _SEM_II.search(sec)
+                     and any(w in sec for w in _MATRIC_WHOLE))
+    else:
+        sec = _own_section(tn, _POLY_TITLE)
+        whole = bool(sec and _poly_gates(ocr_text, tn, bundled=True) and all(g in sec for g in _POLY_GRID)
+                     and any(w in sec for w in _POLY_WHOLE))
+    return whole and _final(sec, kind)
 #: What `doc_seen` says for each ruling (the reviewer's line, the student's note).
 MATRIC_SLIP, POLY_SLIP, POLY_PORTAL, MATRIC_OFFER = (
     'matric_result_slip', 'poly_result_slip', 'poly_portal_page', 'matric_offer_letter')

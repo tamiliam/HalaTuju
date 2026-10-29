@@ -119,6 +119,30 @@ class TestTheRulings(SimpleTestCase):
             for text in (one + NL + two, two + NL + one):
                 self.assertEqual(score(text).get('status'), 'genuine', text[:40])
 
+    def test_final_review_a_bundle_never_borrows_the_slips_or_portals_completion_status(self):
+        """In a bundle, the status and the whole-transcript block must sit in the transcript's OWN section."""
+        no_status = MATRIC.replace('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', '').replace(
+            'PASS AND COMPLETED MATRICULATION PROGRAMME', '')
+        poly_no_status = POLY.replace('STATUS  : COMPLETED', 'STATUS  :')
+        portal_done = PORTAL + NL + 'STATUS : COMPLETED'
+        for one, two in ((four_sem_pages()[0], matric_slip('SEMESTER IV')),     # page 1 of a 2-year one
+                         (no_status, matric_slip()),                           # its end, no status
+                         (poly_no_status, portal_done), (poly_no_status, POLY_SLIP + NL + 'STATUS COMPLETED')):
+            for text in (one + NL + two, two + NL + one):
+                self.assertNotEqual(score(text).get('status'), 'genuine', text[:40])
+
+    def test_final_review_a_bundle_needs_what_only_a_whole_transcript_prints(self):
+        no_box = MATRIC.replace('PURATA GRED BAGI KURSUS TERAS DAN ENGLISH', '').replace(
+            'AVERAGE GRADE FOR CORE COURSES AND ENGLISH', '')
+        no_end = POLY.replace('~~~~~End of results~~~~~', '')
+        for text in (no_box + NL + matric_slip(), no_end + NL + POLY_SLIP, PORTAL + NL + no_end):
+            self.assertNotEqual(score(text).get('status'), 'genuine', text[:40])
+        self.assertEqual(score(no_box)['status'], 'genuine')          # alone (no bundle) it is read whole
+
+    def test_final_review_a_negated_heading_never_opens_a_transcript_section(self):
+        negated = MATRIC.replace('TRANSKRIP AKADEMIK / ACADEMIC TRANSCRIPT', 'BUKAN TRANSKRIP AKADEMIK / ACADEMIC TRANSCRIPT')
+        self.assertNotEqual(score(negated + NL + matric_slip()).get('status'), 'genuine')
+
     def test_rereview_two_slips_bundled_are_still_slips(self):
         """A slip's disclaimer mentions "the academic transcript": that is no transcript heading."""
         both = matric_slip('SEMESTER I', final=False) + NL + matric_slip('SEMESTER II')
