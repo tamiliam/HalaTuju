@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { signOut } from '@/lib/supabase'
-import { clearAll, hasGrades } from '@/lib/storage'
+import { clearAll, hasBursaryFile, hasGrades } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from './LanguageSelector'
 import ThemeSelector from './ThemeSelector'
@@ -21,6 +21,12 @@ export default function AppHeader() {
   const { incompleteCount } = useProfileCompleteness()
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  // Student maintenance S3: "My Bursary" joins the BrightPath menu only for a student with a file.
+  // A display hint the pages that already read her applications leave behind (`rememberBursaryFile`)
+  // — read after mount, so the server render and the first paint agree. Never a gate: the hub's
+  // endpoint 404s a student with no file.
+  const [bursary, setBursary] = useState(false)
+  useEffect(() => { setBursary(isAuthenticated && hasBursaryFile()) }, [isAuthenticated, pathname])
   const profileRef = useRef<HTMLDivElement>(null)
 
   // Close the profile dropdown on outside click
@@ -48,6 +54,7 @@ export default function AppHeader() {
     // BrightPath Bursary is the umbrella for both audiences: students who apply + sponsors who give.
     { href: '/scholarship', label: t('scholarship.nav'), children: [
       { href: '/scholarship', label: t('scholarship.subnav.apply') },
+      ...(bursary ? [{ href: '/scholarship/bursary', label: t('scholarship.subnav.bursary') }] : []),
       { href: '/sponsor', label: t('scholarship.subnav.sponsor') },
     ] },
     { href: '/saved', label: t('common.saved'), authRequired: true as const, authReason: 'save' as const },

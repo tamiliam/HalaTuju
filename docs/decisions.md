@@ -1,5 +1,20 @@
 # Architectural Decisions — HalaTuju
 
+## "My Bursary" shows two tabs, and the maintenance controls live on the scholar file — 2026-10-29 (student maintenance S3)
+
+**Decision:** (1) the student hub `/scholarship/bursary` shows **Overview** and **Results** only; Funds, Contract,
+Letters, News and Mentoring are HIDDEN until their sprints, not drawn as "coming soon" (the roadmap's rule that a
+tab appears when its module is on; a student shown six empty tabs reads a programme that is not working). (2) Her
+data comes from her own `scholarship/bursary/summary/`, which serves `support_paused` as the only maintenance
+signal. (3) The header's "My Bursary" link is a `localStorage` HINT left by the pages that already read her
+applications — not a fetch on every page from the shared header; the hub's endpoint is the gate. (4) The sub-state
+and the post-award Close moved from the cockpit to the scholar file, drawn from a server `controls` offer; the
+pre-award Close stays in the cockpit (that case has no file). **Alternatives considered:** a header fetch (a network
+call on ~90 routes for one link); drawing every tab disabled (the admin file does that, for staff; a student is
+not staff). **Trade-offs:** the menu link can lag until she visits a page that reads her applications (the
+dashboard banner, the application page or the hub). **Revisit if:** the header gains a session payload that carries
+it.
+
 ## The Scholars list and file read by the Applications rule — 2026-10-29 (student maintenance S2)
 
 **Decision:** `/admin/scholars` and the maintenance file are fenced exactly as the Applications cockpit is

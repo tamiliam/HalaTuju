@@ -221,6 +221,7 @@ export {
 export type {
   ScholarStanding, ScholarResult, ScholarGift, ScholarRow, ScholarSummary,
   ScholarList, ScholarListQuery, ScholarFile, ActivityKind, ScholarActivity, ScholarActivityPage,
+  ScholarControls,
 } from './admin-api/scholars'
 
 // Org-owned versioned bursary contract templates.

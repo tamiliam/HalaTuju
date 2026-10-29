@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications } from '@/lib/api'
+import { rememberBursaryFile } from '@/lib/storage'
 
 /**
  * Dashboard banner that surfaces a live B40 application when there's something
@@ -22,7 +23,12 @@ export default function ScholarshipBanner() {
     if (status !== 'ready' || !token) return
     let active = true
     getMyScholarshipApplications({ token })
-      .then((res) => { if (active) setAppStatus(res.applications[0]?.status ?? null) })
+      .then((res) => {
+        if (!active) return
+        setAppStatus(res.applications[0]?.status ?? null)
+        // Maintenance S3: leave the header's "My Bursary" hint (server's `has_file`, never derived).
+        rememberBursaryFile(res.applications.some((a) => a.has_file))
+      })
       .catch(() => { /* non-blocking — the banner just stays hidden */ })
     return () => { active = false }
   }, [status, token])

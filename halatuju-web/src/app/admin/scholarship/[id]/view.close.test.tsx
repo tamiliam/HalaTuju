@@ -117,10 +117,12 @@ describe('who — a pre-award close is super / org_admin only (the api answers 4
     expect(screen.queryByText(TITLE)).toBeNull()
   })
 
-  it('a qc still sees the funded Close card', async () => {
+  // Student maintenance S3: a FUNDED close moved to the scholar file (`ScholarControls`); the
+  // cockpit keeps the pre-award close only. Nobody — a qc included — is offered it here now.
+  it('a qc is not offered a funded close here — it is on the scholar file', async () => {
     renderCockpit({ role: 'qc', stage: 'active' })
     await loaded()
-    expect(reasons()).toContain('graduated')
+    expect(screen.queryByText(TITLE)).toBeNull()
   })
 })
 
@@ -132,13 +134,11 @@ describe('an awarded case — no Close card (TD-366: no door releases it; the ap
   })
 })
 
-describe('a funded case — the existing list plus No movement', () => {
-  it('an active case keeps the old reasons and the checklist', async () => {
+describe('a funded case — the close moved to the scholar file (maintenance S3)', () => {
+  it('an active case has no Close card in the cockpit, even for a super', async () => {
     renderCockpit({ role: 'super', stage: 'active' })
     await loaded()
-    expect(reasons()).toEqual(['graduated', 'completed', 'withdrawn', 'lapsed', 'terminated', 'stalled'])
-    expect(within(card()).getByText('admin.closure.note')).toBeTruthy()
-    expect(within(card()).getByText('admin.closure.checklist.finalDisbursement')).toBeTruthy()
+    expect(screen.queryByText(TITLE)).toBeNull()
   })
 })
 

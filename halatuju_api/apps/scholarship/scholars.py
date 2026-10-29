@@ -202,6 +202,35 @@ def file_payload(app):
     }
 
 
+def controls(app, *, can_write, can_hold):
+    """What the file's header may OFFER this officer (maintenance S3 — the sub-state and Close moved
+    here from the cockpit). An offer, never the gate: `AdminMaintenanceSubstateView` and
+    `AdminCloseApplicationView` judge every request again.
+
+      * `can_set_substate` — may write this case (`_can_review_app`) and the case takes a sub-state
+        (`maintenance.can_set_substate`);
+      * `can_hold` — may move it to or from `on_hold`: payments rights (`payments.may_prepare`, S1 M1);
+      * `close_reasons` — the closure table for this status (`closure.reasons_for`), empty when the
+        close would be refused;
+      * `close_refusal` — `sponsorship_open` for an AWARDED case still holding the sponsor's offer or
+        paid money: `close_application` refuses it and no admin door releases it (TD-366). Said, not
+        silently hidden (S1 review L4).
+    """
+    from . import closure
+    from .maintenance import can_set_substate
+    post_award = app.status in closure.POST_AWARD_STATUSES
+    refusal = ''
+    if post_award and app.status not in closure.FUNDED_STATUSES and closure.has_live_money(app):
+        refusal = 'sponsorship_open'
+    return {
+        'can_set_substate': bool(can_write and can_set_substate(app)),
+        'can_hold': bool(can_hold),
+        'close_reasons': (list(closure.reasons_for(app.status))
+                          if can_write and post_award and not refusal else []),
+        'close_refusal': refusal,
+    }
+
+
 def activity_dict(row):
     return {
         'id': row.id, 'kind': row.kind, 'event': row.event, 'body': row.body,

@@ -2764,9 +2764,40 @@
         }
       }
     },
+    "bursary": {
+      "title": "Biasiswa Saya",
+      "hello": "Hai {name}",
+      "state": {
+        "in": "Anda dalam program",
+        "paused": "Sokongan anda ditangguhkan",
+        "closed": "Fail anda telah ditutup"
+      },
+      "tab": {
+        "overview": "Gambaran",
+        "results": "Keputusan"
+      },
+      "funds": {
+        "title": "Dana anda",
+        "of": "diterima daripada {award}",
+        "barLabel": "{pct}% biasiswa anda telah diterima",
+        "last": "Bayaran terakhir {amount} · {date}",
+        "none": "Belum ada bayaran masuk ke dompet anda."
+      },
+      "latest": {
+        "title": "Keputusan terkini",
+        "line": "{semester} · PNGK {cgpa}",
+        "none": "Belum ada keputusan semester direkodkan.",
+        "open": "Buka keputusan"
+      },
+      "card": {
+        "title": "Biasiswa Saya",
+        "body": "Dana anda, keputusan anda dan ucapan terima kasih kepada penaja anda, di satu tempat."
+      }
+    },
     "subnav": {
       "apply": "Mohon bantuan",
-      "sponsor": "Jadi penaja"
+      "sponsor": "Jadi penaja",
+      "bursary": "Biasiswa Saya"
     }
   },
   "authGate": {
@@ -6073,6 +6104,29 @@
         "result_submitted": "Keputusan dihantar · {semester}",
         "closed": "Fail ditutup · {reason}",
         "other": "Kemas kini sistem"
+      },
+      "control": {
+        "title": "Kawalan penyelenggaraan",
+        "substate": "Status penyelenggaraan",
+        "closeFile": "Tutup fail",
+        "holdNeedsPayments": "Menangguhkan pelajar, atau menyambung semula, menghentikan atau memulakan semula bayarannya, jadi ia memerlukan hak larian pembayaran.",
+        "onHoldHint": "Sokongan ditangguhkan: dia dikecualikan daripada larian pembayaran dan pelepasan ansuran sehingga anda menyambung semula.",
+        "movedToFile": "Tukar status, atau tutup fail, dalam fail penerima.",
+        "refusal": {
+          "sponsorship_open": "Anugerah ini masih memegang tawaran penaja atau wang yang telah dibayar, jadi fail tidak boleh ditutup di sini. Tanya pemilik platform."
+        },
+        "error": {
+          "hold_needs_payments": "Hanya pemegang hak larian pembayaran boleh menangguhkan atau menyambung semula.",
+          "not_in_maintenance": "Pelajar ini tidak boleh menerima status itu.",
+          "changed_meanwhile": "Seseorang baru menukar status. Muat semula dan cuba lagi.",
+          "bad_substate": "Pilih status yang sah.",
+          "sponsorship_open": "Anugerah ini masih memegang tawaran penaja atau wang yang telah dibayar. Ia tidak boleh ditutup di sini.",
+          "decline_pending": "Penolakan sedang menunggu. Batalkannya dahulu.",
+          "not_closeable": "Fail ini sudah selesai.",
+          "bad_reason": "Pilih sebab penutupan yang sah.",
+          "reason_not_allowed": "Sebab itu tidak sesuai dengan peringkat ini.",
+          "generic": "Tidak dapat menukar status. Anda mungkin tiada kebenaran."
+        }
       }
     },
     "contracts": {

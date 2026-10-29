@@ -4,6 +4,7 @@ from django.urls import path
 from .views_branding import BrandingView
 from .views_guardian_contact import StudentGuardianContactView
 from .views_apply_gate import ApplyGateView
+from .views_bursary import BursarySummaryView
 from .views_results import RefileToHigherView, RefileToSpmView, SpmOnlyView
 from .views_admin.system_health import AdminSystemHealthView
 from .views import (
@@ -213,6 +214,8 @@ urlpatterns = [
     path('scholarship/intake/', ScholarshipIntakeView.as_view()),
     # May the signed-in student start an application here? The submit's own rule (TD-337).
     path('scholarship/apply-gate/', ApplyGateView.as_view()),
+    # Student maintenance S3: the student's own "My Bursary" hub.
+    path('scholarship/bursary/summary/', BursarySummaryView.as_view()),
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
     path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),

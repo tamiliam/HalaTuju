@@ -82,3 +82,31 @@ export async function getSponsorGraduationMessages(options?: ApiOptions): Promis
   return apiRequest('/api/v1/sponsor/graduation-messages/', options)
 }
 
+// ── Student maintenance S3 — the "My Bursary" hub ──
+
+/** The student's own hub (`scholarship/bursary/summary/`). 404 `no_file` when she has no file.
+ *  ⚠ Money arrives as strings (format at the edge). The only maintenance signal is
+ *  `support_paused` — never a sub-state word, an officer, or a note. */
+export interface BursarySummary {
+  application_id: number
+  name: string
+  gift: string
+  course: string
+  institution: string
+  status: string
+  closure_reason: string
+  in_maintenance: boolean
+  can_record_results: boolean
+  support_paused: boolean
+  funds: {
+    award_amount: string | null
+    received: string
+    remaining: string
+    last_payment: { amount: string; at: string } | null
+  }
+  latest_result: { semester: string; cgpa: string | null; at: string } | null
+}
+
+export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {
+  return apiRequest('/api/v1/scholarship/bursary/summary/', options)
+}

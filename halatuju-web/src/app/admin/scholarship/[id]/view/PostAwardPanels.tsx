@@ -32,7 +32,7 @@ export function PostAwardPanels({
   app, t, busy, isSuper, canWrite, orgSuper,
   bursary, bursaryMsg, doCountersignBursary, doWitnessBursary,
   disbAmount, setDisbAmount, disbLabel, setDisbLabel, disbMsg,
-  doScheduleTranche, doDisbursementAction, doSetSubstate,
+  doScheduleTranche, doDisbursementAction,
   closeReason, setCloseReason, closeMsg, doClose,
 }: {
   app: AdminScholarshipDetail
@@ -65,8 +65,9 @@ export function PostAwardPanels({
   return (<>
 
       {/* Student maintenance S2: the scholar's maintenance file, when the SERVER says there is one
-          (`has_file` — in maintenance, or closed after it). The sub-state and Close controls below
-          stay here until Sprint 3 moves them to the file. */}
+          (`has_file` — in maintenance, or closed after it). Since S3 the sub-state and the post-award
+          Close live THERE (`ScholarControls`); this screen keeps a summary. A PRE-award close (TD-352)
+          stays below — that case has no file. `doSetSubstate` is still passed by view.tsx and unused. */}
       {app.has_file && (
         <Link href={`/admin/scholars/${app.id}`} data-testid="open-scholar-file"
           className="inline-flex items-center gap-1 self-start rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50">
@@ -193,20 +194,7 @@ export function PostAwardPanels({
                     {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
                   </span>
                 </div>
-                {canWrite && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {(['on_track', 'probation', 'on_hold', 'ready_to_close'] as const)
-                      .filter((s) => s !== app.maintenance_substate)
-                      .map((s) => (
-                        <button key={s} type="button"
-                          onClick={() => doSetSubstate(s)}
-                          disabled={busy === 'disbursement'}
-                          className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
-                          {t(`admin.maintenance.action.${s}`)}
-                        </button>
-                      ))}
-                  </div>
-                )}
+                <p className="text-[11px] text-ground-500">{t('admin.scholars.control.movedToFile')}</p>
                 {app.maintenance_substate === 'on_hold' && (
                   <p className="text-[11px] text-critical-600">{t('admin.maintenance.onHoldHint')}</p>
                 )}
@@ -286,7 +274,9 @@ export function PostAwardPanels({
           Terminal. Shows the closed summary once closed (the graduation thank-you relay stays
           open after closure). Before an award: no offboarding checklist, and the note says she
           may apply again in a later round and is emailed. */}
-      {(closeOffer(app.status, orgSuper).show || app.status === 'closed') && (
+      {/* Since maintenance S3 a POST-award close is on the scholar file; only a pre-award one here. */}
+      {((closeOffer(app.status, orgSuper).show && closeOffer(app.status, orgSuper).preAward)
+        || app.status === 'closed') && (
         <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.closure.title')}

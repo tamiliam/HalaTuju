@@ -310,3 +310,39 @@ class TestBatchedCatalogueNames(TestCase):
                                                                 'course_name': 'junk'})
         self.assertEqual(card_display.resolve_course(app, names=names),
                          card_display.resolve_course(app))
+
+
+class TestFileControls(_Scholars):
+    """Maintenance S3: the header OFFERS the sub-state and Close (moved from the cockpit). An offer,
+    never the gate — the cockpit doors judge every request again."""
+
+    def _controls(self, admin, app):
+        return self._get(admin, f'{API}{app.id}/').json()['controls']
+
+    def test_the_org_admin_may_hold_and_close_a_funded_case(self):
+        c = self._controls(self.org_admin, self.bala)                    # active
+        self.assertEqual((c['can_set_substate'], c['can_hold'], c['close_refusal']), (True, True, ''))
+        self.assertIn('graduated', c['close_reasons'])
+
+    def test_an_awarded_case_holding_the_offer_says_why_it_cannot_close(self):
+        from apps.scholarship.models import Sponsor, Sponsorship
+        sponsor = Sponsor.objects.create(supabase_user_id='spn-x', name='S', email='s@example.test',
+                                         status='approved')
+        Sponsorship.objects.create(sponsor=sponsor, application=self.aisyah, amount=Decimal('2000'),
+                                   status='active')
+        c = self._controls(self.org_admin, self.aisyah)
+        self.assertEqual((c['close_reasons'], c['close_refusal']), ([], 'sponsorship_open'))
+        self.assertTrue(c['can_set_substate'])
+
+    def test_a_reviewer_may_not_hold(self):
+        c = self._controls(self.reviewer, self.aisyah)                   # assigned to them
+        self.assertEqual((c['can_set_substate'], c['can_hold']), (True, False))
+
+    def test_a_reader_who_cannot_write_is_offered_nothing(self):
+        c = self._controls(self.officer, self.bala)                      # see_all, not assigned
+        self.assertEqual((c['can_set_substate'], c['close_reasons']), (False, []))
+
+    def test_a_closed_file_offers_nothing(self):
+        c = self._controls(self.org_admin, self.ezra)
+        self.assertEqual((c['can_set_substate'], c['close_reasons'], c['close_refusal']),
+                         (False, [], ''))
