@@ -109,3 +109,43 @@ class TestDoors:
     def test_an_open_course_page_says_false(self):
         cid = CourseRequirement.objects.filter(req_bumiputera=False).first().course_id
         assert self.client.get(f'/api/v1/courses/{cid}/').json()['requirements']['req_bumiputera'] is False
+
+
+class TestReviewProbes:
+    """Review round 1 (2026-10-29): the strict "not listed above" reading (owner ruling) and a
+    subject counting once per group. Each probe runs the REAL D1 row through the engine."""
+
+    @staticmethod
+    def _run(cid, grades):
+        import json
+        from pathlib import Path
+        d1 = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_courses_D1.json'
+        rows = {c['course_id']: c for c in json.loads(d1.read_text(encoding='utf-8'))['courses']}
+        req = dict(rows[cid]['requirement'], course_id=cid)
+        student = StudentProfile(grades, 'Lelaki', 'Warganegara', False, False, bumiputera=True)
+        return check_eligibility(student, req)[0]
+
+    def test_one_pertanian_is_not_two_subjects(self):
+        base = {'bm': 'C', 'hist': 'E', 'eng': 'C', 'math': 'C', 'islam': 'C', 'moral': 'C'}
+        assert not self._run('UE4621001', dict(base, pertanian='E'))
+        assert self._run('UE4621001', dict(base, pertanian='E', chem='E'))
+
+    def test_sains_komputer_bm_and_sejarah_cannot_be_the_two_others(self):
+        assert not self._run('UE4481001', {'bm': 'C', 'hist': 'C', 'eng': 'C', 'math': 'C', 'phy': 'C'})
+        assert self._run('UE4481001', {'bm': 'C', 'hist': 'C', 'eng': 'C', 'math': 'C', 'phy': 'C',
+                                       'geo': 'C', 'islam': 'C'})
+
+    def test_aktuari_needs_a_subject_not_named(self):
+        g = {'bm': 'C', 'hist': 'E', 'eng': 'C', 'math': 'C', 'addmath': 'C'}
+        assert not self._run('UE4462002', g)
+        assert self._run('UE4462002', dict(g, geo='C', islam='C'))
+
+    def test_nursing_add_maths_listed_beside_maths_is_not_selain(self):
+        g = {'bm': 'C', 'hist': 'E', 'eng': 'C', 'math': 'C', 'addmath': 'C', 'bio': 'C', 'chem': 'C'}
+        assert not self._run('UE4723001', g)
+        assert self._run('UE4723001', dict(g, geo='C'))
+
+    def test_tesl_bm_cannot_be_one_of_the_three(self):
+        g = {'bm': 'A-', 'hist': 'E', 'eng': 'A', 'math': 'C', 'geo': 'A-', 'islam': 'A-', 'moral': 'C', 'ekonomi': 'C'}
+        assert not self._run('UE0222001', g)
+        assert self._run('UE0222001', dict(g, ekonomi='A-'))

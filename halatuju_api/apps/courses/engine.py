@@ -195,17 +195,13 @@ def check_complex_requirements(student_grades, complex_req_json_str):
         if not subjects:
             continue
 
-        count_ok = 0
-        for subj in subjects:
-            student_key = map_subject_code(subj)
-            grade = student_grades.get(student_key)
-
-            if grade:
-                pts = AGGREGATE_GRADE_POINTS.get(grade, 10)
-                threshold = AGGREGATE_GRADE_POINTS.get(min_grade, 8)
-
-                if pts <= threshold:
-                    count_ok += 1
+        # A subject counts once per group (owner ruling): DISTINCT student keys, so a code listed
+        # twice, or two codes folding to one key (Sains Pertanian / Pertanian), is one subject.
+        # Each code maps to ONE key, so the distinct set IS the maximum matching.
+        threshold = AGGREGATE_GRADE_POINTS.get(min_grade, 8)
+        met = {map_subject_code(subj) for subj in subjects}
+        count_ok = sum(1 for key in met
+                       if student_grades.get(key) and AGGREGATE_GRADE_POINTS.get(student_grades[key], 10) <= threshold)
 
         if count_ok < min_count:
             subj_list = ', '.join(subjects[:5]) + ('...' if len(subjects) > 5 else '')

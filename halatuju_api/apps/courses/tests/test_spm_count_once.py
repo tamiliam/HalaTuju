@@ -84,6 +84,15 @@ class TestEngineDoor:
                                 {'count': 1, 'grade': 'C', 'subjects': ['phy', 'chem']}]}
         assert check_complex_requirements({'phy': 'A'}, legacy) == (True, None)
 
+    def test_an_or_group_counts_distinct_subjects(self):
+        """Review round 1 (owner ruling: a subject counts once per group): a key listed twice, or
+        two codes that fold to one key, is ONE subject — "2 of" needs two subjects."""
+        twice = {'or_groups': [{'count': 2, 'grade': 'E', 'subjects': ['pertanian', 'pertanian', 'chem']}]}
+        assert not check_complex_requirements({'pertanian': 'E'}, twice)[0]
+        assert check_complex_requirements({'pertanian': 'E', 'chem': 'E'}, twice)[0]
+        folded = {'or_groups': [{'count': 2, 'grade': 'C', 'subjects': ['PHYSICS', 'phy']}]}
+        assert not check_complex_requirements({'phy': 'A'}, folded)[0]
+
     def test_both_must_pass(self):
         data = {'or_groups': [{'count': 1, 'grade': 'C', 'subjects': ['chem']}], 'count_once': [NURSING]}
         assert not check_complex_requirements({'math': 'C', 'bio': 'C', 'bm': 'C'}, data)[0]

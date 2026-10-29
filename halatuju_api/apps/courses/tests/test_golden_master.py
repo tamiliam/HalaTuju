@@ -29,7 +29,7 @@ ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb
 #: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
 ORIGINAL_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
 GOLDEN_BASELINE = 5319                 # original catalogue, and the full one for a non-Bumi student
-GOLDEN_BASELINE_BUMI = 5900        # the full catalogue for the same 50 students as Bumiputera
+GOLDEN_BASELINE_BUMI = 5865   # full catalogue, the same 50 students as Bumiputera (strict reading)
 
 
 def _digest(lines):

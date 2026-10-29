@@ -61,7 +61,11 @@
          "count": 3,
          "grade": "A-",
          "exclude": [
-          "eng"
+          "bm",
+          "hist",
+          "eng",
+          "math",
+          "addmath"
          ]
         }
        ]
@@ -133,6 +137,8 @@
          "count": 3,
          "grade": "A-",
          "exclude": [
+          "bm",
+          "hist",
           "eng",
           "math",
           "addmath"
@@ -208,9 +214,11 @@
          "count": 3,
          "grade": "A-",
          "exclude": [
-          "addmath",
+          "bm",
+          "hist",
+          "eng",
           "math",
-          "eng"
+          "addmath"
          ]
         }
        ]
@@ -724,7 +732,17 @@
         {
          "count": 1,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math",
+          "addmath",
+          "bio",
+          "phy",
+          "chem",
+          "sci"
+         ]
         }
        ]
       }
@@ -1754,7 +1772,6 @@
         "bio",
         "addsci",
         "pertanian",
-        "pertanian",
         "tanaman_makanan",
         "akuakultur",
         "landskap_nurseri",
@@ -2090,7 +2107,18 @@
         {
          "count": 1,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math",
+          "addmath",
+          "phy",
+          "chem",
+          "bio",
+          "addsci",
+          "sci"
+         ]
         }
        ]
       }
@@ -2990,7 +3018,6 @@
         "akuakultur",
         "tanaman_makanan",
         "pertanian",
-        "pertanian",
         "addsci",
         "bio",
         "chem",
@@ -3826,7 +3853,13 @@
         {
          "count": 1,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "math",
+          "addmath",
+          "eng"
+         ]
         }
        ]
       }
@@ -3907,12 +3940,30 @@
         {
          "count": 1,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "math",
+          "phy",
+          "chem",
+          "bio",
+          "sci",
+          "eng"
+         ]
         },
         {
          "count": 1,
          "grade": "E",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "math",
+          "phy",
+          "chem",
+          "bio",
+          "sci",
+          "eng"
+         ]
         }
        ]
       }
@@ -4003,7 +4054,27 @@
         {
          "count": 2,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math",
+          "addmath",
+          "phy",
+          "chem",
+          "bio",
+          "addsci",
+          "sci",
+          "comp_sci",
+          "gkt",
+          "reka_cipta",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "eng_draw",
+          "reka_bentuk_grafik",
+          "produksi_multimedia"
+         ]
         }
        ]
       }
@@ -4074,7 +4145,13 @@
         {
          "count": 1,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "math",
+          "addmath",
+          "eng"
+         ]
         }
        ]
       }
@@ -4697,7 +4774,28 @@
         {
          "count": 2,
          "grade": "C",
-         "exclude": []
+         "exclude": [
+          "bm",
+          "hist",
+          "math",
+          "eng",
+          "addmath",
+          "phy",
+          "chem",
+          "bio",
+          "addsci",
+          "sci",
+          "comp_sci",
+          "eng_mech",
+          "eng_elec",
+          "eng_civil",
+          "reka_cipta",
+          "eng_draw",
+          "ekonomi",
+          "keusahawanan",
+          "business",
+          "poa"
+         ]
         }
        ]
       }

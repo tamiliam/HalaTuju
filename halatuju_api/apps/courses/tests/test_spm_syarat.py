@@ -86,22 +86,24 @@ class TestSyaratKhasClauses:
         assert fields['complex_requirements']['count_once'][1] == {
             'counted': ['eng'],
             'groups': [{'count': 1, 'grade': 'C', 'subjects': ['math', 'addmath']}],
-            'remaining': [{'count': 3, 'grade': 'A-', 'exclude': ['eng', 'math', 'addmath']}]}
+            'remaining': [{'count': 3, 'grade': 'A-', 'exclude': ['bm', 'hist', 'eng', 'math', 'addmath']}]}
 
     @pytest.mark.parametrize('tail', ['yang belum diambil kira', 'yang belum dikira', 'selain diatas'])
     def test_every_remaining_wording(self, tail):
         fields, unparsed, _ = parse(
             f'Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran {tail} ' + BUMI)
         assert unparsed == []
+        # STRICT: the Syarat Am's subjects are listed above, so they never fill it.
         assert fields['complex_requirements']['count_once'][1]['remaining'] == [
-            {'count': 1, 'grade': 'C', 'exclude': []}]
+            {'count': 1, 'grade': 'C', 'exclude': ['bm', 'hist']}]
 
     def test_the_geomatik_typo(self):
         rows = _rows()
         fields, unparsed, _ = parse(rows['UE4581004']['syarat_khas'], rows['UE4581004']['syarat_am'])
         assert unparsed == []
+        LISTED = ['bm', 'hist', 'math', 'phy', 'chem', 'bio', 'sci', 'eng']  # Am, then Khas in order
         assert fields['complex_requirements']['count_once'][1]['remaining'] == [
-            {'count': 1, 'grade': 'C', 'exclude': []}, {'count': 1, 'grade': 'E', 'exclude': []}]
+            {'count': 1, 'grade': 'C', 'exclude': LISTED}, {'count': 1, 'grade': 'E', 'exclude': LISTED}]
 
     def test_any_five_credits_is_min_credits(self):
         fields, _, _ = parse('Mendapat sekurang-kurangnya Gred C dalam mana-mana LIMA (5) mata pelajaran ' + BUMI)
@@ -158,3 +160,19 @@ def test_the_uitm_batch():
         else:
             assert fields['req_bumiputera'] and fields['req_malaysian'], cid
     assert sorted(flagged) == ['UE0520001', 'UE0545001', 'UE4811004']
+
+
+def test_strict_selain_excludes_every_subject_listed_above():
+    """Owner ruling 2026-10-29: "selain di atas" means NOT LISTED above (Am or Khas), not merely unused."""
+    fields, _, _ = parse('Mendapat sekurang-kurangnya Gred C dalam DUA (2) mata pelajaran berikut : '
+                         '• Matematik / Matematik Tambahan • Biologi / Fizik '
+                         'Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran selain diatas ' + BUMI)
+    assert fields['complex_requirements']['count_once'][1]['remaining'][0]['exclude'] == [
+        'bm', 'hist', 'math', 'addmath', 'bio', 'phy']
+
+
+def test_a_key_appears_once_per_group():
+    """Sains Pertanian and Pertanian fold to one key: listed once (UE4621001)."""
+    fields, _, _ = parse('Mendapat sekurang-kurangnya Gred E dalam DUA (2) mata pelajaran berikut : '
+                         '• Sains Pertanian • Pertanian • Kimia ' + BUMI)
+    assert fields['complex_requirements']['or_groups'][0]['subjects'] == ['pertanian', 'chem']

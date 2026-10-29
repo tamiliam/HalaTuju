@@ -120,14 +120,20 @@ def _bullets(text, problems, warnings):
     return slots
 
 
+def _once(keys):
+    """Each engine key once, in order: Sains Pertanian and Pertanian are ONE subject (owner ruling:
+    a subject counts once per group)."""
+    return list(dict.fromkeys(keys))
+
+
 def _list_groups(count, grade, slots):
     """A bullet list -> (legacy groups, slotted group or None). Bullets are slots."""
     if len(slots) == 1 or all(len(s) == 1 for s in slots):
-        return [{'count': count, 'grade': grade, 'subjects': [k for s in slots for k in s]}], None
+        return [{'count': count, 'grade': grade, 'subjects': _once(k for s in slots for k in s)}], None
     if count == len(slots):  # one from each bullet: plain one-subject-of groups say it exactly
         return [{'count': 1, 'grade': grade, 'subjects': s} for s in slots], None
     return [], {'count': count, 'grade': grade, 'slots': slots,
-                'subjects': [k for s in slots for k in s]}
+                'subjects': _once(k for s in slots for k in s)}
 
 
 def _parse_am(am, fields, problems):
@@ -169,8 +175,13 @@ def parse_requirements(syarat_am, syarat_khas):
     fields, problems, warnings = _new_fields(), [], []
     blocks = []
     am_block = _parse_am(syarat_am, fields, problems)
+    # STRICT (owner ruling 2026-10-29): "yang belum diambil kira / selain di atas" = a subject NOT
+    # LISTED above — the Syarat Am's subjects and every subject a Khas clause before it names, used or
+    # not (Add Maths beside Maths cannot be "another subject").
+    listed = []
     if am_block:
         blocks.append(am_block)
+        listed += am_block['counted'] + [k for g in am_block['groups'] for k in g['subjects']]
 
     khas = _tidy(syarat_khas)
     flag_keys, single_groups, list_groups, slotted, remaining = [], [], [], [], []
@@ -192,7 +203,7 @@ def parse_requirements(syarat_am, syarat_khas):
         m = _REMAINING_RE.match(clause)
         if m:
             grade, word, digits, excluded = m.groups()
-            exclude = [k for s in _bullets(excluded, problems, warnings) for k in s]
+            exclude = _once(listed + [k for s in _bullets(excluded, problems, warnings) for k in s])
             remaining.append({'count': _count(word, digits, problems, clause), 'grade': grade,
                               'exclude': exclude})
             continue
@@ -215,6 +226,7 @@ def parse_requirements(syarat_am, syarat_khas):
                 problems.append(f'empty subject list: {clause!r}')
                 continue
             groups, slotted_group = _list_groups(_count(word, digits, problems, clause), grade, slots)
+            listed += [k for s in slots for k in s]
             list_groups += groups
             if slotted_group:
                 slotted.append(slotted_group)
@@ -226,6 +238,7 @@ def parse_requirements(syarat_am, syarat_khas):
             if not keys:
                 problems.append(f'unknown or off-form required subject: {name!r}')
                 continue
+            listed += keys
             flag = SINGLE_SUBJECT_FLAGS.get((keys[0], grade))
             if flag and len(keys) == 1:
                 fields[flag] = True
