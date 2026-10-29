@@ -64,6 +64,7 @@ from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
 from .stpm_quiz_data import SUPPORTED_LANGUAGES as STPM_SUPPORTED_LANGUAGES
+from .tvet_families import TVET_PATHWAYS
 from rest_framework.permissions import AllowAny
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 
@@ -73,6 +74,14 @@ logger = logging.getLogger(__name__)
 SOURCE_TYPE_ORDER = {
     'ua': 5, 'matric': 4, 'stpm': 4, 'pismp': 3, 'poly': 2, 'kkom': 1,
 }
+
+
+def _tvet_pick_list(spm_visible, pathway_map):
+    """The search filter's TVET pathways: iljtm + ilkbs always, mara / tvet_other only when a visible
+    course has that pathway (Bumi Sprint F1)."""
+    tvet_ids = spm_visible.filter(requirement__source_type='tvet').values_list('course_id', flat=True)
+    present = {pathway_map.get(cid) for cid in tvet_ids}
+    return [p for p in TVET_PATHWAYS if p in ('iljtm', 'ilkbs') or p in present]
 
 
 class FieldListView(APIView):
@@ -167,8 +176,8 @@ class CourseSearchView(APIView):
             elif field:
                 qs = qs.filter(field__iexact=field)
             if source_type:
-                # Map iljtm/ilkbs filter to tvet source_type + post-filter
-                if source_type in ('iljtm', 'ilkbs'):
+                # Map a TVET pathway filter (iljtm/ilkbs/mara/tvet_other) to tvet + post-filter
+                if source_type in TVET_PATHWAYS:
                     qs = qs.filter(requirement__source_type='tvet')
                 else:
                     qs = qs.filter(requirement__source_type=source_type)
@@ -200,8 +209,8 @@ class CourseSearchView(APIView):
                 merit_cutoff = req.merit_cutoff if req else None
                 # Resolve TVET → iljtm/ilkbs using pathway map
                 pt = pathway_map.get(c.course_id, st)
-                # If filtering by iljtm/ilkbs, skip courses that don't match
-                if source_type in ('iljtm', 'ilkbs') and pt != source_type:
+                # If filtering by a TVET pathway, skip courses that don't match
+                if source_type in TVET_PATHWAYS and pt != source_type:
                     continue
                 # PISMP facets (Aliran / Elektif) derived at read-time.
                 pismp = classify_pismp(c.course_id, c.course) if st == 'pismp' else None
@@ -226,7 +235,7 @@ class CourseSearchView(APIView):
                 })
 
             # Adjust count if a post-query filter (iljtm/ilkbs or aliran) removed rows
-            if source_type in ('iljtm', 'ilkbs') or aliran:
+            if source_type in TVET_PATHWAYS or aliran:
                 spm_count = len(spm_results)
 
         # ── STPM courses ─────────────────────────────────────────────
@@ -332,10 +341,9 @@ class CourseSearchView(APIView):
             CourseRequirement.objects.filter(course__in=spm_visible).values_list('source_type', flat=True)
             .distinct().order_by('source_type')
         )
-        # Replace 'tvet' with 'iljtm' + 'ilkbs' for filter display
-        if 'tvet' in spm_source_types:
+        if 'tvet' in spm_source_types:   # shown as its pathways (Bumi Sprint F1)
             spm_source_types.remove('tvet')
-            spm_source_types.extend(['iljtm', 'ilkbs'])
+            spm_source_types.extend(_tvet_pick_list(spm_visible, pathway_map))
         stpm_source_types = []
         all_source_types = sorted(set(spm_source_types + stpm_source_types))
 

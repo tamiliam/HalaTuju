@@ -38,6 +38,10 @@ export const TYPE_LABELS: Record<string, string> = {
   poly: 'Politeknik',
   iljtm: 'ILJTM',
   ilkbs: 'ILKBS',
+  // Bumi Sprint F1: the two new TVET pathways. They have NO swatch (the eight are taken, see above),
+  // so their type chip is the neutral ground — the label is what tells them apart.
+  mara: 'MARA',
+  tvet_other: 'Latihan Kemahiran',
   kkom: 'Kolej Komuniti',
   matric: 'Matrikulasi',
   stpm: 'Tingkatan 6',

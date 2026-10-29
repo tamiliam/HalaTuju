@@ -57,6 +57,11 @@ FAMILY_INSTITUTION = {
     'tenun': ('TVET', 'TENUN', 'ILKA', 'Kerajaan Negeri Pahang'),
 }
 
+#: Institution.category -> the pathway chip of a TVET course offered there (`apps.py`). Every TVET
+#: pathway, in chip order, is `TVET_PATHWAYS`; the search filter and pick-list read the same tuple.
+TVET_CATEGORY_PATHWAY = {'ILJTM': 'iljtm', 'ILKBS': 'ilkbs', 'MARA': 'mara', 'TVET': 'tvet_other'}
+TVET_PATHWAYS = ('iljtm', 'ilkbs', 'mara', 'tvet_other')
+
 #: Families Sprint F1 ingests (everything public except MARA, which is F2).
 F1_FAMILIES = tuple(k for k, _ in FAMILY_PATTERNS if k != 'mara')
 

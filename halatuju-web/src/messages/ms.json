@@ -954,7 +954,9 @@
           "kkom": "Kolej Komuniti",
           "pismp": "Perguruan (PISMP / IPG)",
           "iljtm": "Institut latihan kemahiran (ILJTM)",
-          "ilkbs": "Institut kemahiran belia (ILKBS)"
+          "ilkbs": "Institut kemahiran belia (ILKBS)",
+          "mara": "Institut kemahiran MARA",
+          "tvet_other": "Latihan kemahiran awam lain"
         }
       },
       "notesLabel": "Beritahu kami secara ringkas mengapa anda memerlukan bantuan dan apa yang membantu",
@@ -3064,7 +3066,9 @@
       "university": "Universiti",
       "kkom": "Kolej Komuniti",
       "iljtm": "ILJTM",
-      "ilkbs": "ILKBS"
+      "ilkbs": "ILKBS",
+      "mara": "MARA",
+      "tvet_other": "Latihan kemahiran lain"
     },
     "courses": "kursus"
   },

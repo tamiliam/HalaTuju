@@ -954,7 +954,9 @@
           "kkom": "Community college",
           "pismp": "Teaching (PISMP / IPG)",
           "iljtm": "Skills institute (ILJTM)",
-          "ilkbs": "Youth skills institute (ILKBS)"
+          "ilkbs": "Youth skills institute (ILKBS)",
+          "mara": "MARA skills institute",
+          "tvet_other": "Other public skills training"
         }
       },
       "notesLabel": "Tell us briefly why you need assistance and what would help",
@@ -3064,7 +3066,9 @@
       "university": "University",
       "kkom": "Kolej Komuniti",
       "iljtm": "ILJTM",
-      "ilkbs": "ILKBS"
+      "ilkbs": "ILKBS",
+      "mara": "MARA",
+      "tvet_other": "Other skills training"
     },
     "courses": "courses"
   },

@@ -91,7 +91,7 @@ _PATHWAY_FAMILY = {
     'diploma': 'tertiary', 'poly': 'tertiary', 'polytechnic': 'tertiary', 'politeknik': 'tertiary',
     'degree': 'tertiary', 'university': 'tertiary', 'universiti': 'tertiary', 'ua': 'tertiary',
     'ijazah': 'tertiary',
-    'ilkbs': 'tertiary', 'iljtm': 'tertiary', 'kkom': 'tertiary',   # TVET (C1, owner ruling B)
+    'ilkbs': 'tertiary', 'iljtm': 'tertiary', 'kkom': 'tertiary', 'mara': 'tertiary', 'tvet_other': 'tertiary',  # TVET
 }
 
 

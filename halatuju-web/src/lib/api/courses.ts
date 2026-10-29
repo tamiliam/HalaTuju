@@ -69,6 +69,8 @@ export interface MascoOccupation {
 
 export interface CourseRequirements {
   source_type: string
+  /** Bumi Sprint F1: the pathway chip (iljtm / ilkbs / mara / tvet_other for a TVET row). */
+  pathway_type?: string
   general: { key: string; label: string; value?: number }[]
   special: { key: string; label: string }[]
   complex_requirements: { or_groups?: { count: number; grade: string; subjects: string[] }[] } | null

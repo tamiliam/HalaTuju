@@ -954,7 +954,9 @@
           "kkom": "சமூகக் கல்லூரி",
           "pismp": "ஆசிரியர் பயிற்சி (PISMP / IPG)",
           "iljtm": "திறன் பயிற்சி நிறுவனம் (ILJTM)",
-          "ilkbs": "இளைஞர் திறன் நிறுவனம் (ILKBS)"
+          "ilkbs": "இளைஞர் திறன் நிறுவனம் (ILKBS)",
+          "mara": "MARA skills institute",
+          "tvet_other": "Other public skills training"
         }
       },
       "notesLabel": "உங்களுக்கு உதவி ஏன் தேவை, என்ன உதவும் என்பதைச் சுருக்கமாகக் கூறுங்கள்",
@@ -3064,7 +3066,9 @@
       "university": "பல்கலைக்கழகம்",
       "kkom": "கொலேஜ் கொமுனிட்டி",
       "iljtm": "ILJTM",
-      "ilkbs": "ILKBS"
+      "ilkbs": "ILKBS",
+      "mara": "MARA",
+      "tvet_other": "Other skills training"
     },
     "courses": "படிப்புகள்"
   },

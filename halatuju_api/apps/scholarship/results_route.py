@@ -45,7 +45,7 @@ DEGREE, POST_SPM, UNDECIDED = 'degree', 'post_spm', ''
 #: The apply form's post-SPM pathway codes (`PATHWAY_ORDER` less 'university'), plus the offer
 #: autofill's 'diploma'. PISMP is a degree by name but SPM-entry, so post-SPM (D13).
 POST_SPM_CODES = frozenset({'matric', 'stpm', 'asasi', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs',
-                            'diploma'})
+                            'mara', 'tvet_other', 'diploma'})
 #: `offer_pathway.detect_pathway_type` answers that name a post-SPM programme.
 _POST_SPM_TYPES = frozenset({'stpm', 'matric', 'asasi', 'pismp', 'diploma'})
 #: Lead's ruling (review fix 4): pre-university pathways a TERTIARY holder has already completed or

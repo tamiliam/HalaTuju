@@ -72,6 +72,7 @@ export default function CourseDetailPage() {
 
       <CourseHeader
         sourceType={sourceType || 'university'}
+        pathwayType={requirements?.pathway_type}
         level={course.level}
         title={course.course}
         subtitle={subtitle || undefined}
